@@ -1,0 +1,55 @@
+# Human Capital Management front-end — edition spec
+
+Stack-specific specification for the Svelte edition. The
+**cross-cutting spec at [`../../spec/`](../../spec/index.md) is the
+single source of truth**; this file adds only what is specific to
+this edition, and grows topic files (routes, components, i18n) as
+HCM-T18/T19 land.
+
+## Stack
+
+SvelteKit 2 · Svelte 5 **runes only** · TypeScript strict · SPA
+mode + same-origin BFF proxy · vitest + Playwright. Copy-adapt from
+the sibling family front-ends (drift-accepted; the
+project-portfolio-management front-end's operational views, i18n,
+and `money()` are the closest source). BFF auth per
+[../../spec/auth.md](../../spec/auth.md).
+
+## Edition-specific decisions (so far)
+
+- **Personas shape navigation, policy shapes data**: the same routes
+  serve employee/manager/HR/payroll; what renders depends on what
+  the API returns (masked fields render as first-class masked
+  states, not errors).
+- **13-locale i18n from the start** with the parity test.
+- **Money**: minor units + ISO-4217 in, one locale-aware `money()`
+  out; no client-side float arithmetic.
+- **No client-held tokens**: mutations via server routes (session
+  cookie + CSRF).
+
+## Edition-specific implementation notes (as landed)
+
+- **Copy source**: the patient-flow front-end (BFF proxy, session
+  flow, SPA mode) + the PPM front-end's i18n pattern (compact 48-key
+  catalogue here).
+- **Layout**: `src/lib/{i18n.svelte.ts,api/{client,types,hcm}.ts,
+  components/OrgTree.svelte,server/*}`, routes per the README table;
+  the proxy strips cookies, stamps `Accepts-version: 1.0`, and
+  carries the session→PASETO exchange seam.
+- **Masked money**: `money(null, …)` renders an em dash and the
+  employee list/profile render `common.masked` — never a fake 0.
+- **Testing**: vitest (money honesty, i18n parity, the API path
+  map); Playwright against `vite preview` with `page.route` stubs
+  mirroring the service contract (unstubbed calls 404 loudly).
+
+- **Lily Design System** (2026-07-19): the chrome uses the Lily
+  **ThemeSelect** (45-theme catalogue incl. the NHS design-system
+  themes; stylesheets via the `static/assets/themes` symlink; choice
+  persisted to `mxi.hcm.theme`) and **LocaleSelect** (wired to the i18n
+  store, `applyDir` off — the app's own effect owns `lang`/`dir`);
+  the **Lily headless** primitives are available as a dependency.
+
+## Delivery
+
+HCM-T18/T19 **delivered 2026-07-18** — see
+[../../spec/tasks.md](../../spec/tasks.md).

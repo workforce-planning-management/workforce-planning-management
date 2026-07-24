@@ -1,0 +1,165 @@
+# Tasks — delivery checklist
+
+Status legend: `[x]` done · `[~]` in progress · `[ ]` not started.
+Every task traces to design (HCM-D*) and requirement (HCM-R*) ids.
+Three-part rule applies: a behavioural change lands as spec edit +
+code + tests in one PR.
+
+## Phase 0 — specification
+
+- [x] HCM-T0 Cross-cutting spec round: topic files + SDD trio, both
+  edition doc scaffolds, root AGENTS.md wiring. (all HCM-D*, HCM-R*)
+  — landed 2026-07-18. No code.
+
+## Phase 1 — service skeleton & employee core (HCM-R7, HCM-R17)
+
+- [x] HCM-T1 Scaffold `human-capital-management-service-with-rust`:
+  loco app, config, migration crate, family fixtures (forbid-unsafe,
+  tracing/OTLP, `/metrics.prom`, OpenAPI + Swagger, `Accepts-version`
+  middleware, health routes). (HCM-D12)
+- [x] HCM-T2 Employee migrations + models + CRUD: URN validation,
+  unique employee number per organization, status state machine in
+  the pure core, org-chart derivation + cycle refusal, salary in
+  minor units, audit + event seam (`HCM_EVENT_TRANSPORT=memory`).
+  (HCM-D1–D4, HCM-D9; HCM-R7, HCM-R16)
+- [x] HCM-T3 Upstream client seam: person / worker / organization /
+  course traits + `http` + `stub`, config-selected; display-name
+  cache; stub-mode boot test. (HCM-D11)
+- [x] HCM-T4 Seed task: synthetic org (~40 employees across
+  departments, managers, salaries) — synthetic data only. (HCM-R17)
+
+## Phase 2 — talent acquisition & onboarding (HCM-R1–R3)
+
+- [x] HCM-T5 Requisition + Candidate + Application + Interview
+  migrations/models/controllers; pipeline state machines in the pure
+  core; consent-expiry exclusion + purge list; hire-creates-employee
+  in one transaction. (HCM-D3, HCM-D8, HCM-D9; HCM-R1, HCM-R2)
+- [x] HCM-T6 Onboarding checklists: templates → OnboardingItem
+  instantiation, mandatory-complete-or-waived activation gate with
+  recorded reasons. (HCM-D3; HCM-R3)
+
+## Phase 3 — workforce management (HCM-R4–R6)
+
+- [x] HCM-T7 TimeEntry + approval flow; >24h refusal; FTE-scaled
+  overtime derivation in the pure core. (HCM-D3; HCM-R4)
+- [x] HCM-T8 LeaveEntitlement + LeaveRequest: balance arithmetic
+  (annual refusal, sick negative-flag), approval decrements balance
+  in-tx, `FOR UPDATE` race serialization. (HCM-D3, HCM-D9; HCM-R5)
+- [x] HCM-T9 Shift + ShiftAssignment: double-booking + leave-conflict
+  refusal in the pure core; department day-rota view. (HCM-D3;
+  HCM-R6)
+
+## Phase 4 — HR service delivery (HCM-R8, HCM-R9)
+
+- [x] HCM-T10 BenefitPlan + BenefitEnrollment: minor-unit costs,
+  eligibility window, double-enrolment refusal. (HCM-D4; HCM-R9)
+- [x] HCM-T11 Self-service surface: ownership (`$sub`) policy pins —
+  own record/payslips/balances/shared reviews readable, own
+  leave/time writable, others' refused. (HCM-D6; HCM-R8, HCM-R15)
+
+## Phase 5 — talent development (HCM-R10–R12)
+
+- [x] HCM-T12 ReviewCycle / Review / Goal / FeedbackEntry: review
+  state machine (draft → submitted → calibrated → shared),
+  author/subject/HR visibility, content-read audit. (HCM-D3, HCM-D7;
+  HCM-R10)
+- [x] HCM-T13 TrainingEnrollment over course URNs + the
+  expiring-certificates report. (HCM-D10; HCM-R11)
+- [x] HCM-T14 SuccessionPlan + SuccessionCandidate + the gap report
+  (criticality ≥ 4 without `ready_now`); read audit. (HCM-D7;
+  HCM-R12)
+
+## Phase 6 — payroll & compensation (HCM-R13, HCM-R14)
+
+- [x] HCM-T15 PayrollRun + Payslip: run state machine, pure-core
+  payslip derivation (salary × FTE pro-rating + approved overtime −
+  benefit deductions, stub tax tables), `net = gross − Σ deductions`
+  invariant, overflow refusal, approved-run immutability. (HCM-D3,
+  HCM-D4, HCM-D5, HCM-D9; HCM-R13)
+- [x] HCM-T16 Benchmark rows + comparison view with `below_min` /
+  `above_max` flags, payroll/HR-persona gated. (HCM-D4, HCM-D6;
+  HCM-R14)
+
+## Phase 7 — auth activation surface (HCM-R15, HCM-R16)
+
+- [x] HCM-T17 `auth.rs`: offline PASETO verify + blanket
+  `HCM_REQUIRE_AUTH` guard (guard-all / deny-unless-public) + ABAC +
+  record-level `resource.person`/`department`/`status` attrs + `mask`
+  obligation on salary/payslips/reviews; sensitive-read audit wiring;
+  persona test matrix in its own enforcement binary. (HCM-D6, HCM-D7,
+  HCM-D12)
+
+> Phases 1–7 landed 2026-07-18 in one implementation round
+> (`human-capital-management-service-with-rust`, copy-adapted from
+> patient-flow): 7 migrations (23 domain tables + audit + outbox),
+> pure `rules/` core (lifecycle tables, leave/time arithmetic,
+> org-cycle, payslip arithmetic incl. the net invariant + overflow
+> refusal, benchmark flags), 5 pillar controllers + audits/docs/
+> metrics, `auth.rs` with `resource.person` `$sub` ownership +
+> salary/payslip masking. 71 DB-free unit tests, 7 request tests
+> (hire journey, 404/cycle/uniqueness pins, time caps + overtime,
+> leave balance journey incl. decided-race pin + cancel-restores,
+> shift conflicts, payroll derivation incl. approved-run
+> immutability, benchmark flags), 1 enforcement persona-matrix
+> binary — all green against Postgres 18; clippy-pedantic clean;
+> live smoke verified (migrate → seed 40 employees → org chart →
+> version negotiation → 406 → OpenAPI 57 paths → Prometheus).
+> Notes: the seed grants entitlements for reports only; `/api/shifts`
+> rota attaches assignments per shift; CI workflows deferred
+> (nested workflows don't run in the monorepo).
+
+## Phase 8 — front-end (all HCM-R*)
+
+- [x] HCM-T18 Scaffold `human-capital-management-front-end-with-svelte`:
+  SvelteKit 2 + Svelte 5 runes SPA, BFF proxy + session flow,
+  13-locale i18n from the start, typed API client + `money()`.
+  (HCM-D12)
+- [x] HCM-T19 Views: requisition/application boards, onboarding
+  tracker, team calendar + rota, employee profile + org chart,
+  review + enrollment panels, payroll run screen, benchmarking
+  table, HR dashboard; vitest + `page.route`-stubbed Playwright.
+  (HCM-D6, HCM-D12)
+
+> HCM-T18/T19 landed 2026-07-18: SvelteKit 2 + Svelte 5 runes SPA
+> (copy-adapted from the patient-flow front-end: BFF proxy + session
+> flow + `Accepts-version` stamping) with a dependency-free 48-key ×
+> 13-locale i18n module (parity-tested, RTL for ar/ur), typed HCM
+> client + `money()` (masked/absent renders an em dash, never 0),
+> and views: HR dashboard tiles, employee list (masked salary as
+> first-class state) + profile (onboarding/balances/leave/payslips/
+> reviews/training), recursive org chart, requisition status board +
+> application pipeline with in-row hire, workforce (pending-leave
+> approvals + rota), development (gaps/succession/expiring), payroll
+> runs + run detail with lifecycle actions, benchmarks + comparison
+> flags. svelte-check 0 errors; 5 vitest (money honesty, i18n
+> parity, API path map) + 4 Playwright (page.route-stubbed,
+> unstubbed = 404-loud) green.
+
+## Production gates (before any non-demo exposure)
+
+- [ ] HCM-G1 Activate `HCM_REQUIRE_AUTH` + mount a real ABAC policy;
+  verify the persona matrix against the deployment's attributes.
+- [ ] HCM-G2 Retention schedules + subject-access/erasure flows;
+  jurisdiction-correct payroll tables; equality-law review of any
+  scoring ([regulatory.md](regulatory.md)).
+
+- [x] HCM-T20 (2026-07-20) **Learning & development.** Migration
+  `m20260720_000008_learning` (skills catalog + declared
+  `employee_skills`, `learning_paths` + steps + `path_enrollments`,
+  `mentorships` + `mentorship_sessions`). `controllers/learning.rs`:
+  the skills framework (catalog; declared proficiency 1–5 + optional
+  target, upsert), learning paths (ordered course steps; idempotent
+  enrolment; honest per-member **progress** — a step counts only
+  against a *completed* `training_enrollments` row for its
+  `course_ref`), and mentorships (proposed→active→completed lifecycle
+  in `rules::learning`; sessions only on an active pairing).
+  Derived views: skills matrix + gaps by department,
+  training-analytics (completion ratio = completed / non-failed +
+  cert-expiry by department), mentorship overview (active pairs,
+  mentor load, unmatched active employees, stale actives). Front-end:
+  `/learning` (matrix + gaps + analytics + path progress) and
+  `/mentorship`. **Acceptance:** proficiency / lifecycle / progress
+  pure pins; the seeded L&D round-trip green first run — full
+  `--ignored` suite 8/8 vs Postgres 18; clippy pedantic clean;
+  svelte-check 0; vitest 5; Playwright 7.
+
