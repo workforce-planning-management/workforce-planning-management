@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+title: Workforce Planning Management (WPM)
+message: >-
+  If you use this work and you want to cite it,
+  then you can use the metadata from this file.
+type: software
+authors:
+  - given-names: Joel Parker
+    family-names: Henderson
+    email: joel@joelparkerhenderson.com
+    affiliation: joelparkerhenderson.com
+    orcid: 'https://orcid.org/0009-0000-4681-282X'
+identifiers:
+  - type: url
+    value: 'https://github.com/workforce-planning-management/workforce-planning-management/'
+    description: Workforce Planning Management (WPM)
+repository-code: 'https://github.com/workforce-planning-management/workforce-planning-management/'
+abstract: >-
+  Workforce Planning Management (WPM): a demonstration all-in-one HR
+  platform covering the employee lifecycle hire to retire — talent
+  acquisition and onboarding, workforce management, HR service
+  delivery, talent management and development, and payroll and
+  compensation. A Rust/Loco (Axum + SeaORM + PostgreSQL) back-end JSON
+  API and a SvelteKit 2 / Svelte 5 front-end.
+license: See LICENSE.md
