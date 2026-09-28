@@ -15,6 +15,11 @@ present. See [CONTRIBUTING.md](CONTRIBUTING.md#funding).
 
 ## Milestones
 
+- **2026-09-28** — AI tooling authorized to merge pull requests and
+  publish already-decided releases, against explicit checklists
+  ([AI_STATEMENT.md](AI_STATEMENT.md) 1.1.0); both subprojects made
+  publish-eligible (front-end no longer `private`; service's
+  `Cargo.toml` `repository` field corrected).
 - **2026-09-28** — Root special files added per
   [spec/special-files-for-public-repos](spec/special-files-for-public-repos/index.md):
   README, LICENSE.md, CITATION.cff, this file, COMPARISONS.md,

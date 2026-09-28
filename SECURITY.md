@@ -45,5 +45,14 @@ demonstration. See [spec/regulatory.md](spec/regulatory.md).
 
 ## Publishing
 
-Neither subproject is published to a package registry (no crates.io,
-no npm). There is no publish step to secure.
+Neither subproject has a released version on a registry yet, but both
+are publish-eligible: the service crate declares `publish = true` in
+`Cargo.toml`, and the front-end package no longer sets `"private": true`
+in `package.json`. Per [AI_STATEMENT.md](AI_STATEMENT.md) §5/§6, AI
+tooling may run `cargo publish` / `npm publish` for an already-merged,
+already-decided version bump once the §6 checklist is met. Whichever
+runs it — maintainer or AI — does so against a locally stored
+credential (a crates.io API token, an npm auth token): the same class
+of long-lived secret this policy's "no secret in logs, no usable
+default outside dev" posture exists to minimize. There is no CI-driven
+publish step today, so no registry token is held in CI configuration.

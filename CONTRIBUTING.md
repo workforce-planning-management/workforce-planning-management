@@ -41,10 +41,21 @@ issue reports, and feedback are welcome.
 ## Contributor expectations for AI tooling
 
 See [AI_STATEMENT.md](AI_STATEMENT.md) — it binds contributors as well
-as the maintainer. A contribution with AI-generated content shall say
-so in the pull-request description: which tool, and what it did. The
-contributor remains responsible for their submission in full:
-understood, explained on request, tested, and honest.
+as the maintainer. That includes who may merge a change and who may
+decide a release is ready and publish it: AI tooling may merge a pull
+request once it clears an explicit checklist (the discipline for its
+kind of change is followed, the green gate above passes, the evidence
+is documented, no unresolved specification-facing question is raised),
+and may judge an already-merged version bump ready and run the
+registry publish directly — neither without a maintainer-decided *what*
+behind it ([AI_STATEMENT.md](AI_STATEMENT.md) §5/§6,
+[GOVERNANCE.md](GOVERNANCE.md)). A contributor's own change still lands
+the same way as any other: spec + code + test, the same green gate,
+merged once that checklist is met — by the maintainer, or by AI acting
+on it. A contribution with AI-generated content shall say so in the
+pull-request description: which tool, and what it did. The contributor
+remains responsible for their submission in full: understood,
+explained on request, tested, and honest.
 
 ## Funding
 
