@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `assessments`. One administration of one instrument to one candidate or employee (WPM-R20).
+//! `SeaORM` Entity — `assessments`. One administration of one instrument to one candidate or worker (WPM-R20).
 
 #![allow(missing_docs)]
 

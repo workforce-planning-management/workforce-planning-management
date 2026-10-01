@@ -1,4 +1,4 @@
-//! In-app notifications (WPM-R31 / WPM-D23) — the employee's own
+//! In-app notifications (WPM-R31 / WPM-D23) — the worker's own
 //! list (unread first) and the mark-read action. Reference-only rows;
 //! the write side lives in the handlers that make the change.
 
@@ -10,7 +10,7 @@ use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::notifications;
 use crate::models::records;
 
-/// `GET /api/employees/{pid}/notifications` — the employee's
+/// `GET /api/workers/{pid}/notifications` — the worker's
 /// notifications, unread first, newest within each. `$sub`-owned.
 #[debug_handler]
 async fn list_notifications(
@@ -18,15 +18,15 @@ async fn list_notifications(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let mut rows = notifications::Entity::find()
-        .filter(notifications::Column::EmployeePid.eq(employee.pid))
+        .filter(notifications::Column::WorkerPid.eq(worker.pid))
         .order_by_desc(notifications::Column::Id)
         .all(&ctx.db)
         .await?;
@@ -36,7 +36,7 @@ async fn list_notifications(
 
 /// `POST /api/notifications/{pid}/read` — mark one notification read.
 /// Owner-only: the record-level check runs against the notification's
-/// employee, so nobody clears another person's bell.
+/// worker, so nobody clears another person's bell.
 #[debug_handler]
 async fn mark_read(
     State(ctx): State<AppContext>,
@@ -48,11 +48,11 @@ async fn mark_read(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    let owner = records::find_employee(&ctx.db, notification.employee_pid).await?;
+    let owner = records::find_worker(&ctx.db, notification.worker_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
-        &auth::employee_resource_attrs(&owner),
+        &auth::worker_resource_attrs(&owner),
     )
     .map_err(record_rejection)?;
     let mut active: notifications::ActiveModel = notification.into();
@@ -65,6 +65,6 @@ async fn mark_read(
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
-        .add("/employees/{pid}/notifications", get(list_notifications))
+        .add("/workers/{pid}/notifications", get(list_notifications))
         .add("/notifications/{pid}/read", post(mark_read))
 }

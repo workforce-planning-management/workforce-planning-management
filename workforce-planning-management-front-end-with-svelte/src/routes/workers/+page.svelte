@@ -6,17 +6,17 @@
     Willow as FilterTheme,
     createArrayFilter,
   } from "@svar-ui/svelte-filter";
-  import { listEmployees, money } from "$lib/api/wpm";
+  import { listWorkers, money } from "$lib/api/wpm";
   import { i18n, t } from "$lib/i18n.svelte";
-  import type { Employee } from "$lib/api/types";
+  import type { Worker } from "$lib/api/types";
 
-  let employees = $state<Employee[] | null>(null);
+  let workers = $state<Worker[] | null>(null);
   let error = $state<string | null>(null);
 
   $effect(() => {
     void (async () => {
       try {
-        employees = await listEmployees();
+        workers = await listWorkers();
       } catch (cause) {
         error = cause instanceof Error ? cause.message : String(cause);
       }
@@ -24,7 +24,7 @@
   });
 
   const columns = $derived([
-    { id: "employee_number", header: t("emp.number"), width: 120 },
+    { id: "worker_number", header: t("emp.number"), width: 120 },
     { id: "display_name", header: t("common.name"), flexgrow: 1 },
     { id: "job_title", header: t("common.jobTitle"), width: 170 },
     { id: "department", header: t("common.department"), width: 140 },
@@ -32,12 +32,12 @@
     { id: "salary", header: t("emp.salary"), width: 130 },
   ]);
 
-  // Flatten employees to grid rows; a masked salary renders the
+  // Flatten workers to grid rows; a masked salary renders the
   // translated "Hidden" token, never a fake zero.
   const rows = $derived(
-    (employees ?? []).map((e) => ({
+    (workers ?? []).map((e) => ({
       id: e.pid,
-      employee_number: e.employee_number,
+      worker_number: e.worker_number,
       display_name: e.display_name,
       job_title: e.job_title,
       department: e.department,
@@ -50,7 +50,7 @@
   );
 
   const filterFields = $derived([
-    { id: "employee_number", label: t("emp.number"), type: "text" },
+    { id: "worker_number", label: t("emp.number"), type: "text" },
     { id: "display_name", label: t("common.name"), type: "text" },
     { id: "job_title", label: t("common.jobTitle"), type: "text" },
     { id: "department", label: t("common.department"), type: "text" },
@@ -63,24 +63,24 @@
       : rows,
   );
 
-  // Row selection opens the employee profile.
+  // Row selection opens the worker profile.
   function initGrid(api: {
     on(action: string, cb: (ev: { id: string | number }) => void): void;
   }) {
     api.on("select-row", (ev) => {
-      void goto(`/employees/${ev.id}`);
+      void goto(`/workers/${ev.id}`);
     });
   }
 </script>
 
-<h1>{t("nav.employees")}</h1>
+<h1>{t("nav.workers")}</h1>
 
 {#if error}
   <p class="error" data-testid="error">{t("common.error")}: {error}</p>
-{:else if employees === null}
+{:else if workers === null}
   <p>{t("common.loading")}</p>
 {:else}
-  <div data-testid="employee-table">
+  <div data-testid="worker-table">
     <GridTheme>
       <FilterTheme>
         <div class="filter-wrap">

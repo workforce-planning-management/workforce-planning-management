@@ -34,6 +34,25 @@ export async function requestMagicLink(
   return res.ok;
 }
 
+/** Build the authentication service's SSO (Keycloak) start URL, telling it
+ *  to return to THIS app's `/verify/sso` — same per-app `return_url`
+ *  convention as {@link requestMagicLink}. WPM never talks to Keycloak
+ *  directly; only the authentication service does. */
+export function ssoStartUrl(returnUrl: string): string {
+  const url = new URL(`${AUTH_API_URL}/api/auth/sso/start`);
+  url.searchParams.set("return_url", returnUrl);
+  return url.toString();
+}
+
+/** Exchange an SSO callback `code` for a session; returns the raw upstream
+ *  response so the caller can read the `Set-Cookie`, mirroring
+ *  {@link verifyMagicLink}. */
+export function verifySso(fetchFn: FetchFn, code: string): Promise<Response> {
+  return fetchFn(
+    `${AUTH_API_URL}/api/auth/sso/callback?code=${encodeURIComponent(code)}`,
+  );
+}
+
 /** Exchange the opaque session id for a short-lived PASETO (server-to-
  *  server; sends the session as a `Cookie` header). `null` if invalid. */
 export async function exchangeToken(

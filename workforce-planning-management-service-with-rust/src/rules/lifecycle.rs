@@ -5,11 +5,11 @@
 //! Tables are `(from, to)` pairs — small, explicit, and exhaustively
 //! unit-tested below. Terminal states simply have no outgoing pairs.
 
-/// The legal employee status transitions (WPM-R7).
+/// The legal worker status transitions (WPM-R7).
 /// `onboarding → active` additionally requires the onboarding gate
 /// ([`crate::rules::workforce`] has no say here — the controller checks
 /// item completion; this table is the shape).
-pub const EMPLOYEE: &[(&str, &str)] = &[
+pub const WORKER: &[(&str, &str)] = &[
     ("onboarding", "active"),
     ("active", "on_leave"),
     ("on_leave", "active"),
@@ -110,7 +110,7 @@ mod tests {
             &'static [&'static str],
         );
         let cases: &[Case] = &[
-            (EMPLOYEE, tokens::EMPLOYEE_STATUSES),
+            (WORKER, tokens::WORKER_STATUSES),
             (REQUISITION, tokens::REQUISITION_STATUSES),
             (APPLICATION, tokens::APPLICATION_STAGES),
             (LEAVE, tokens::LEAVE_STATUSES),
@@ -125,10 +125,10 @@ mod tests {
         }
     }
 
-    /// The employee lifecycle: the happy path is legal, terminal states
+    /// The worker lifecycle: the happy path is legal, terminal states
     /// are terminal, and skips are refused.
     #[test]
-    fn employee_matrix() {
+    fn worker_matrix() {
         for (from, to) in [
             ("onboarding", "active"),
             ("active", "on_leave"),
@@ -137,7 +137,7 @@ mod tests {
             ("offboarding", "terminated"),
             ("offboarding", "retired"),
         ] {
-            assert!(permits(EMPLOYEE, from, to), "{from}->{to} must be legal");
+            assert!(permits(WORKER, from, to), "{from}->{to} must be legal");
         }
         for (from, to) in [
             ("onboarding", "on_leave"),
@@ -146,7 +146,7 @@ mod tests {
             ("retired", "active"),
             ("active", "active"),
         ] {
-            assert!(!permits(EMPLOYEE, from, to), "{from}->{to} must be illegal");
+            assert!(!permits(WORKER, from, to), "{from}->{to} must be illegal");
         }
     }
 

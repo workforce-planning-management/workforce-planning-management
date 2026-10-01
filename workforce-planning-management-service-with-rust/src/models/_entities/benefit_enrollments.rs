@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `benefit_enrollments`. One employee's enrolment in one plan (WPM-R9).
+//! `SeaORM` Entity — `benefit_enrollments`. One worker's enrolment in one plan (WPM-R9).
 
 #![allow(missing_docs)]
 
@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub pid: Uuid,
     pub plan_pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub starts_on: Date,
     pub ends_on: Option<Date>,
     pub deleted_at: Option<DateTimeWithTimeZone>,

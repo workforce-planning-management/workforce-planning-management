@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub pid: Uuid,
     pub program_pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub supervisor_pid: Option<Uuid>,
     pub started_on: Date,
     pub ends_on: Option<Date>,

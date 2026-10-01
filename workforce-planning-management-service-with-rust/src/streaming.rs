@@ -12,10 +12,10 @@
 //!   Fluvio is roadmap, family-wide.
 //!
 //! Unlike the single-entity registries, WPM emits for several record
-//! kinds, so `entity` and `kind` are `String`s: `employee` /
+//! kinds, so `entity` and `kind` are `String`s: `worker` /
 //! `requisition` / `application` / `leave_request` / `payroll_run` /
-//! … × `created` / `updated` / `deleted` / `employee_hired` /
-//! `employee_activated` / `employee_terminated` / `leave_approved` /
+//! … × `created` / `updated` / `deleted` / `worker_hired` /
+//! `worker_activated` / `worker_terminated` / `leave_approved` /
 //! `payroll_run_calculated` / `review_shared` / … (the full kind list
 //! is spec `audit.md`).
 
@@ -38,7 +38,7 @@ pub struct Envelope {
     pub event_id: Uuid,
     /// Envelope schema version ([`SCHEMA_VERSION`]).
     pub schema_version: u32,
-    /// The record kind: `employee`, `requisition`, `payroll_run`, ….
+    /// The record kind: `worker`, `requisition`, `payroll_run`, ….
     pub entity: String,
     /// The change kind: `created`, `bed_state_changed`, ….
     pub kind: String,
@@ -48,7 +48,7 @@ pub struct Envelope {
     pub seq: u64,
     /// The acting user's pid, when a verified token was presented.
     pub actor: Option<String>,
-    /// Human-oriented label (employee number, requisition title — already
+    /// Human-oriented label (worker number, requisition title — already
     /// subject to masking rules at the read surface).
     pub name: String,
     /// Kind-specific detail (old/new state, edge fields, …).
@@ -239,19 +239,19 @@ mod tests {
     #[test]
     fn envelope_and_view_shape() {
         let a = envelope(
-            "employee",
-            "employee_hired",
+            "worker",
+            "worker_hired",
             "pid-1",
             "E-1001",
             Some("u1"),
             None,
         );
-        let b = envelope("employee", "employee_hired", "pid-1", "E-1001", None, None);
+        let b = envelope("worker", "worker_hired", "pid-1", "E-1001", None, None);
         assert_eq!(a.schema_version, SCHEMA_VERSION);
         assert_ne!(a.event_id, b.event_id);
         assert!(b.seq > a.seq);
         let view = EventView::from(&a);
-        assert_eq!(view.kind, "employee_hired");
+        assert_eq!(view.kind, "worker_hired");
         assert_eq!(view.pid, "pid-1");
         assert_eq!(view.seq, a.seq);
     }

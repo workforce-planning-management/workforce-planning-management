@@ -128,11 +128,11 @@ mod tests {
     #[test]
     fn token_rules() {
         let mut p = Problems::new();
-        p.require_token("status", crate::rules::tokens::EMPLOYEE_STATUSES, "active");
+        p.require_token("status", crate::rules::tokens::WORKER_STATUSES, "active");
         p.token_opt("kind", crate::rules::tokens::LEAVE_KINDS, None);
         assert!(p.into_vec().is_empty());
         let mut p = Problems::new();
-        p.require_token("status", crate::rules::tokens::EMPLOYEE_STATUSES, "hired");
+        p.require_token("status", crate::rules::tokens::WORKER_STATUSES, "hired");
         assert_eq!(p.into_vec().len(), 1);
     }
 
@@ -164,7 +164,7 @@ mod tests {
         // Worker: a well-formed ref of the *wrong* type is rejected...
         let mut p = Problems::new();
         p.require_ref(
-            "employee_ref",
+            "upstream_worker_ref",
             EntityType::Worker,
             &format!("person:{}", uuid::Uuid::new_v4()),
         );
@@ -174,7 +174,7 @@ mod tests {
         // ...but the matching type is accepted.
         let mut p = Problems::new();
         p.require_ref(
-            "employee_ref",
+            "upstream_worker_ref",
             EntityType::Worker,
             &format!("worker:{}", uuid::Uuid::new_v4()),
         );

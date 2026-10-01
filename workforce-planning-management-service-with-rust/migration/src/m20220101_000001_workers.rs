@@ -1,6 +1,6 @@
-//! Migration: create the `employees` table — the single source of
+//! Migration: create the `workers` table — the single source of
 //! employment truth (WPM-R7). Identities are `EntityRef` URNs; the
-//! employee number is unique per organization; salary is minor units
+//! worker number is unique per organization; salary is minor units
 //! (sensitive — masked at the read surface).
 //!
 //! Written as explicit SQL (family lesson: the loco `create_table`
@@ -9,13 +9,13 @@
 
 use sea_orm_migration::prelude::*;
 
-/// The `employees` migration.
+/// The `workers` migration.
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
-    /// Create `employees` + its uniqueness and lookup indexes.
+    /// Create `workers` + its uniqueness and lookup indexes.
     ///
     /// # Errors
     ///
@@ -23,15 +23,15 @@ impl MigrationTrait for Migration {
     async fn up(&self, m: &SchemaManager) -> Result<(), DbErr> {
         let conn = m.get_connection();
         conn.execute_unprepared(
-            "CREATE TABLE IF NOT EXISTS employees (
+            "CREATE TABLE IF NOT EXISTS workers (
                  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
                  person_ref VARCHAR NOT NULL,
-                 worker_ref VARCHAR NULL,
+                 upstream_worker_ref VARCHAR NULL,
                  organization_ref VARCHAR NOT NULL,
-                 employee_number VARCHAR NOT NULL,
+                 worker_number VARCHAR NOT NULL,
                  display_name VARCHAR NOT NULL,
                  status VARCHAR NOT NULL,
                  employment_type VARCHAR NOT NULL,
@@ -47,33 +47,33 @@ impl MigrationTrait for Migration {
              )",
         )
         .await?;
-        // The per-organization employee-number uniqueness (WPM-R7),
+        // The per-organization worker-number uniqueness (WPM-R7),
         // scoped to live rows so a re-used number after termination +
         // soft delete stays possible.
         conn.execute_unprepared(
-            "CREATE UNIQUE INDEX IF NOT EXISTS employees_org_number \
-             ON employees (organization_ref, employee_number) WHERE deleted_at IS NULL",
+            "CREATE UNIQUE INDEX IF NOT EXISTS workers_org_number \
+             ON workers (organization_ref, worker_number) WHERE deleted_at IS NULL",
         )
         .await?;
         conn.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS employees_department ON employees (department)",
+            "CREATE INDEX IF NOT EXISTS workers_department ON workers (department)",
         )
         .await?;
         conn.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS employees_manager ON employees (manager_pid)",
+            "CREATE INDEX IF NOT EXISTS workers_manager ON workers (manager_pid)",
         )
         .await?;
         Ok(())
     }
 
-    /// Drop `employees` (rollback).
+    /// Drop `workers` (rollback).
     ///
     /// # Errors
     ///
     /// Propagates any DDL error.
     async fn down(&self, m: &SchemaManager) -> Result<(), DbErr> {
         m.get_connection()
-            .execute_unprepared("DROP TABLE IF EXISTS employees")
+            .execute_unprepared("DROP TABLE IF EXISTS workers")
             .await?;
         Ok(())
     }

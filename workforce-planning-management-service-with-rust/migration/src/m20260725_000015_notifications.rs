@@ -1,6 +1,6 @@
 //! Migration: in-app notifications (WPM-R31 / WPM-D23) — rows written
 //! by WPM's own lifecycle transitions, reference-only (never scores,
-//! comments, or masked-tier values), owned by one employee.
+//! comments, or masked-tier values), owned by one worker.
 
 use sea_orm_migration::prelude::*;
 
@@ -23,14 +23,14 @@ impl MigrationTrait for Migration {
                      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                      id SERIAL PRIMARY KEY,
                      pid UUID NOT NULL UNIQUE,
-                     employee_pid UUID NOT NULL,
+                     worker_pid UUID NOT NULL,
                      kind VARCHAR NOT NULL,
                      body VARCHAR NOT NULL,
                      data JSONB NOT NULL DEFAULT '{}',
                      read_at TIMESTAMPTZ NULL
                  );
-                 CREATE INDEX IF NOT EXISTS notifications_employee
-                     ON notifications (employee_pid, read_at);",
+                 CREATE INDEX IF NOT EXISTS notifications_worker
+                     ON notifications (worker_pid, read_at);",
             )
             .await?;
         Ok(())

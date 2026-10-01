@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { decideLeave, ergonomicIssues, listEmployees, listLeaveRequests, listShifts, workingTime } from "$lib/api/wpm";
+  import { decideLeave, ergonomicIssues, listWorkers, listLeaveRequests, listShifts, workingTime } from "$lib/api/wpm";
   import { t } from "$lib/i18n.svelte";
-  import type { Employee, LeaveRequest } from "$lib/api/types";
+  import type { Worker, LeaveRequest } from "$lib/api/types";
 
   type ShiftRow = Awaited<ReturnType<typeof listShifts>>[number];
   type WorkingTimeSignals = Awaited<ReturnType<typeof workingTime>>;
 
-  let pending = $state<(LeaveRequest & { employee?: Employee })[] | null>(null);
+  let pending = $state<(LeaveRequest & { worker?: Worker })[] | null>(null);
   let shifts = $state<ShiftRow[]>([]);
   let signals = $state<WorkingTimeSignals | null>(null);
   let ergIssues = $state<Awaited<ReturnType<typeof ergonomicIssues>> | null>(null);
@@ -15,15 +15,15 @@
 
   async function load() {
     try {
-      const employees = await listEmployees();
-      const byPid = new Map(employees.map((e) => [e.pid, e]));
+      const workers = await listWorkers();
+      const byPid = new Map(workers.map((e) => [e.pid, e]));
       const requestLists = await Promise.all(
-        employees.map((e) => listLeaveRequests(e.pid)),
+        workers.map((e) => listLeaveRequests(e.pid)),
       );
       pending = requestLists
         .flat()
         .filter((r) => r.status === "requested")
-        .map((r) => ({ ...r, employee: byPid.get(r.employee_pid) }));
+        .map((r) => ({ ...r, worker: byPid.get(r.worker_pid) }));
       shifts = await listShifts();
       signals = await workingTime();
       ergIssues = await ergonomicIssues();
@@ -62,7 +62,7 @@
     <tbody>
       {#each pending as request (request.pid)}
         <tr>
-          <td>{request.employee?.display_name ?? request.employee_pid.slice(0, 8)}</td>
+          <td>{request.worker?.display_name ?? request.worker_pid.slice(0, 8)}</td>
           <td>{request.kind}</td>
           <td>{request.start_on} → {request.end_on} ({request.days} {t("common.days")})</td>
           <td>
@@ -110,7 +110,7 @@
     {:else}
       <table data-testid="working-time">
         <tbody>
-          {#each signals.flagged as flag (flag.employee_pid)}
+          {#each signals.flagged as flag (flag.worker_pid)}
             <tr>
               <td>{flag.display_name} <span class="muted">({flag.department})</span></td>
               <td>

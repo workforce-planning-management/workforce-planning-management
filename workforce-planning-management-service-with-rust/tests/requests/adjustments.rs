@@ -1,6 +1,6 @@
 //! The reasonable-adjustments round-trip (WPM-R33 / WPM-D25): the
 //! useful bit is required (barrier + impact + change), the lifecycle
-//! decides with a note and notifies the employee, and the words stay
+//! decides with a note and notifies the worker, and the words stay
 //! on the record — in writing, in the subject-access export.
 
 use loco_rs::testing::prelude::*;
@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management_service::app::App;
 
-use super::{activate, an_org, seed_employee};
+use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
@@ -16,14 +16,14 @@ use super::{activate, an_org, seed_employee};
 async fn adjustments_round_trip() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let employee = seed_employee!(&request, &org, "RA-1", None).await;
-        activate!(&request, &employee).await;
+        let worker = seed_worker!(&request, &org, "RA-1", None).await;
+        activate!(&request, &worker).await;
 
         // The useful bit is required — a request without the barrier
         // (or an unknown category) is refused.
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee}/adjustment-requests"))
+                .post(&format!("/api/workers/{worker}/adjustment-requests"))
                 .json(&json!({ "category": "quieter_workspace", "barrier": " ",
                                "impact": "x", "adjustment": "y" }))
                 .await
@@ -33,7 +33,7 @@ async fn adjustments_round_trip() {
         );
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee}/adjustment-requests"))
+                .post(&format!("/api/workers/{worker}/adjustment-requests"))
                 .json(&json!({ "category": "diagnosis", "barrier": "b",
                                "impact": "i", "adjustment": "a" }))
                 .await
@@ -42,7 +42,7 @@ async fn adjustments_round_trip() {
             "categories are practical, closed, and hold no label"
         );
         let created: Value = request
-            .post(&format!("/api/employees/{employee}/adjustment-requests"))
+            .post(&format!("/api/workers/{worker}/adjustment-requests"))
             .json(&json!({
                 "category": "quieter_workspace",
                 "barrier": "Open-plan noise makes sustained focus hard",
@@ -56,7 +56,7 @@ async fn adjustments_round_trip() {
         // The list carries the words verbatim (unmasked read) and the
         // read is audited.
         let listed: Value = request
-            .get(&format!("/api/employees/{employee}/adjustment-requests"))
+            .get(&format!("/api/workers/{worker}/adjustment-requests"))
             .await
             .json();
         assert_eq!(listed[0]["status"], "requested");
@@ -98,10 +98,10 @@ async fn adjustments_round_trip() {
         assert_eq!(in_place["status"], "in_place");
         assert_eq!(in_place["decision_note"], "Corner desk from Monday");
 
-        // Each decision notified the employee — category + state only,
+        // Each decision notified the worker — category + state only,
         // never the words.
         let bells: Value = request
-            .get(&format!("/api/employees/{employee}/notifications"))
+            .get(&format!("/api/workers/{worker}/notifications"))
             .await
             .json();
         let updates: Vec<&Value> = bells
@@ -120,7 +120,7 @@ async fn adjustments_round_trip() {
         // Save a copy: the subject-access export carries the request
         // verbatim.
         let export: Value = request
-            .get(&format!("/api/employees/{employee}/subject-access"))
+            .get(&format!("/api/workers/{worker}/subject-access"))
             .await
             .json();
         assert!(

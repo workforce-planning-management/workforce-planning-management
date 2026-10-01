@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management_service::app::App;
 
-use super::{activate, an_org, seed_employee};
+use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
@@ -17,19 +17,19 @@ use super::{activate, an_org, seed_employee};
 async fn subject_rights_round_trip() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let employee = seed_employee!(&request, &org, "SR-1", Some(3_600_000)).await;
-        activate!(&request, &employee).await;
+        let worker = seed_worker!(&request, &org, "SR-1", Some(3_600_000)).await;
+        activate!(&request, &worker).await;
 
-        // Give the employee a footprint: time (with a note), leave,
+        // Give the worker a footprint: time (with a note), leave,
         // and a wellbeing acknowledgement.
         request
-            .post(&format!("/api/employees/{employee}/time-entries"))
+            .post(&format!("/api/workers/{worker}/time-entries"))
             .json(&json!({ "worked_on": "2026-07-20", "minutes": 480,
                            "notes": "client visit in Leeds" }))
             .await
             .assert_status_ok();
         request
-            .post(&format!("/api/employees/{employee}/leave-entitlements"))
+            .post(&format!("/api/workers/{worker}/leave-entitlements"))
             .json(&json!({ "kind": "annual", "year": 2026, "entitled_days": 25 }))
             .await
             .assert_status_ok();
@@ -40,7 +40,7 @@ async fn subject_rights_round_trip() {
             .json();
         request
             .post(&format!(
-                "/api/employees/{employee}/wellbeing-acknowledgements"
+                "/api/workers/{worker}/wellbeing-acknowledgements"
             ))
             .json(&json!({ "entitlement_pid": rule["pid"], "response": "done" }))
             .await
@@ -49,10 +49,10 @@ async fn subject_rights_round_trip() {
         // ── Subject access: the footprint is present, exclusions named,
         // and the export is audited.
         let export: Value = request
-            .get(&format!("/api/employees/{employee}/subject-access"))
+            .get(&format!("/api/workers/{worker}/subject-access"))
             .await
             .json();
-        assert_eq!(export["employee"]["employee_number"], "SR-1");
+        assert_eq!(export["worker"]["worker_number"], "SR-1");
         assert_eq!(export["time_entries"][0]["notes"], "client visit in Leeds");
         assert_eq!(export["leave_entitlements"][0]["entitled_days"], 25);
         assert_eq!(export["wellbeing_acknowledgements"][0]["response"], "done");
@@ -72,7 +72,7 @@ async fn subject_rights_round_trip() {
         // ── Erasure is refused while employment is open.
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee}/erase"))
+                .post(&format!("/api/workers/{worker}/erase"))
                 .await
                 .status_code(),
             422,
@@ -81,20 +81,20 @@ async fn subject_rights_round_trip() {
         // Terminate (via offboarding — the lifecycle's path), then erase.
         for to in ["offboarding", "terminated"] {
             request
-                .post(&format!("/api/employees/{employee}/status"))
+                .post(&format!("/api/workers/{worker}/status"))
                 .json(&json!({ "to": to }))
                 .await
                 .assert_status_ok();
         }
         let erased: Value = request
-            .post(&format!("/api/employees/{employee}/erase"))
+            .post(&format!("/api/workers/{worker}/erase"))
             .await
             .json();
-        assert_eq!(erased["erased"], employee.as_str());
-        // The employee is gone from reads (soft-deleted) …
+        assert_eq!(erased["erased"], worker.as_str());
+        // The worker is gone from reads (soft-deleted) …
         assert_eq!(
             request
-                .get(&format!("/api/employees/{employee}"))
+                .get(&format!("/api/workers/{worker}"))
                 .await
                 .status_code(),
             404

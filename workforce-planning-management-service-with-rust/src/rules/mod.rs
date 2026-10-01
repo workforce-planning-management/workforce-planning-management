@@ -14,6 +14,7 @@ pub mod leave;
 pub mod lifecycle;
 pub mod notify;
 pub mod org;
+pub mod org_access;
 pub mod payroll;
 pub mod privacy;
 pub mod pulse;

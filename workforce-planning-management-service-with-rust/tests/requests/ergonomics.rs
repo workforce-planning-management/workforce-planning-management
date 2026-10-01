@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management_service::app::App;
 
-use super::{activate, an_org, seed_employee};
+use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
@@ -15,26 +15,26 @@ use super::{activate, an_org, seed_employee};
 async fn ergonomics_round_trip() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let employee = seed_employee!(&request, &org, "DSE-1", None).await;
-        activate!(&request, &employee).await;
+        let worker = seed_worker!(&request, &org, "DSE-1", None).await;
+        activate!(&request, &worker).await;
 
         // Blank workstation refused; default checklist instantiates.
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee}/ergonomic-assessments"))
+                .post(&format!("/api/workers/{worker}/ergonomic-assessments"))
                 .json(&json!({ "workstation": "  " }))
                 .await
                 .status_code(),
             422
         );
         let created: Value = request
-            .post(&format!("/api/employees/{employee}/ergonomic-assessments"))
+            .post(&format!("/api/workers/{worker}/ergonomic-assessments"))
             .json(&json!({ "workstation": "Desk 4.12" }))
             .await
             .json();
         let a_pid = created["pid"].as_str().unwrap().to_string();
         let listed: Value = request
-            .get(&format!("/api/employees/{employee}/ergonomic-assessments"))
+            .get(&format!("/api/workers/{worker}/ergonomic-assessments"))
             .await
             .json();
         let assessment = &listed.as_array().unwrap()[0];
@@ -91,14 +91,14 @@ async fn ergonomics_round_trip() {
 
         // A custom checklist is honoured.
         let custom: Value = request
-            .post(&format!("/api/employees/{employee}/ergonomic-assessments"))
+            .post(&format!("/api/workers/{worker}/ergonomic-assessments"))
             .json(&json!({ "workstation": "home office",
                            "items": ["Laptop stand present", "External keyboard present"] }))
             .await
             .json();
         assert!(custom["pid"].is_string());
         let listed: Value = request
-            .get(&format!("/api/employees/{employee}/ergonomic-assessments"))
+            .get(&format!("/api/workers/{worker}/ergonomic-assessments"))
             .await
             .json();
         let newest = &listed.as_array().unwrap()[0];

@@ -14,7 +14,7 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub workstation: String,
     pub status: String,
     pub assessed_on: Option<Date>,

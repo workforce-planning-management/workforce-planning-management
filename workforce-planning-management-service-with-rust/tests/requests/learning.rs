@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management_service::app::App;
 
-use super::{activate, an_org, seed_employee};
+use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
@@ -16,11 +16,11 @@ use super::{activate, an_org, seed_employee};
 async fn learning_round_trip() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let mentor = seed_employee!(&request, &org, "E-1", None).await;
+        let mentor = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &mentor).await;
-        let mentee = seed_employee!(&request, &org, "E-2", None).await;
+        let mentee = seed_worker!(&request, &org, "E-2", None).await;
         activate!(&request, &mentee).await;
-        let bystander = seed_employee!(&request, &org, "E-3", None).await;
+        let bystander = seed_worker!(&request, &org, "E-3", None).await;
         activate!(&request, &bystander).await;
 
         // ── Skills catalog + declared proficiency (validated 1-5).
@@ -41,7 +41,7 @@ async fn learning_round_trip() {
         );
         assert_eq!(
             request
-                .put(&format!("/api/employees/{mentor}/skills"))
+                .put(&format!("/api/workers/{mentor}/skills"))
                 .json(&json!({ "skill_pid": skill_pid, "proficiency": 9 }))
                 .await
                 .status_code(),
@@ -49,23 +49,23 @@ async fn learning_round_trip() {
             "proficiency is 1-5"
         );
         request
-            .put(&format!("/api/employees/{mentor}/skills"))
+            .put(&format!("/api/workers/{mentor}/skills"))
             .json(&json!({ "skill_pid": skill_pid, "proficiency": 5 }))
             .await
             .assert_status_ok();
         // A gap: mentee at 2, target 4.
         request
-            .put(&format!("/api/employees/{mentee}/skills"))
+            .put(&format!("/api/workers/{mentee}/skills"))
             .json(&json!({ "skill_pid": skill_pid, "proficiency": 2, "target": 4 }))
             .await
             .assert_status_ok();
         // Upsert: re-declare mentor to 4 (one row).
         request
-            .put(&format!("/api/employees/{mentor}/skills"))
+            .put(&format!("/api/workers/{mentor}/skills"))
             .json(&json!({ "skill_pid": skill_pid, "proficiency": 4 }))
             .await
             .assert_status_ok();
-        let listed: Value = request.get(&format!("/api/employees/{mentor}/skills")).await.json();
+        let listed: Value = request.get(&format!("/api/workers/{mentor}/skills")).await.json();
         assert_eq!(listed.as_array().unwrap().len(), 1, "upsert keeps one row");
 
         // ── Skills matrix: engineering has both, one below target.
@@ -73,7 +73,7 @@ async fn learning_round_trip() {
         let cell = matrix["matrix"].as_array().unwrap().iter()
             .find(|c| c["department"] == "engineering" && c["skill"] == "Rust")
             .expect("matrix cell").clone();
-        assert_eq!(cell["employees"], 2);
+        assert_eq!(cell["workers"], 2);
         assert_eq!(cell["below_target"], 1);
         assert_eq!(matrix["gaps"].as_array().unwrap().len(), 1);
         assert_eq!(matrix["gaps"][0]["skill"], "Rust");
@@ -93,13 +93,13 @@ async fn learning_round_trip() {
         let path_pid = path["pid"].as_str().unwrap().to_string();
         request
             .post(&format!("/api/learning-paths/{path_pid}/enrollments"))
-            .json(&json!({ "employee_pid": mentee }))
+            .json(&json!({ "worker_pid": mentee }))
             .await
             .assert_status_ok();
         assert_eq!(
             request
                 .post(&format!("/api/learning-paths/{path_pid}/enrollments"))
-                .json(&json!({ "employee_pid": mentee }))
+                .json(&json!({ "worker_pid": mentee }))
                 .await
                 .status_code(),
             422,
@@ -107,7 +107,7 @@ async fn learning_round_trip() {
         );
         // Mentee completes one of the two courses.
         let enrollment: Value = request
-            .post(&format!("/api/employees/{mentee}/training-enrollments"))
+            .post(&format!("/api/workers/{mentee}/training-enrollments"))
             .json(&json!({ "course_ref": "course:11111111-1111-4111-8111-111111111111" }))
             .await
             .json();
@@ -188,15 +188,15 @@ async fn learning_round_trip() {
             .json();
         assert_eq!(overview["active_pairings"], 1);
         assert_eq!(overview["mentor_load"][0]["active_mentees"], 1);
-        // The bystander is the only unmatched active employee.
-        let unmatched: Vec<&str> = overview["unmatched_employees"]
+        // The bystander is the only unmatched active worker.
+        let unmatched: Vec<&str> = overview["unmatched_workers"]
             .as_array()
             .unwrap()
             .iter()
             .filter_map(|u| u["display_name"].as_str())
             .collect();
-        assert!(unmatched.contains(&"Test Employee E-3"));
-        assert!(!unmatched.contains(&"Test Employee E-1"));
+        assert!(unmatched.contains(&"Test Worker E-3"));
+        assert!(!unmatched.contains(&"Test Worker E-1"));
     })
     .await;
 }

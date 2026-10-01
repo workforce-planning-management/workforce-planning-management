@@ -15,7 +15,7 @@
 //!   on who reads it.
 //! - **Progress is evidence, not a claim.** A plan reports both its
 //!   declared progress (items marked `achieved`) *and* its verified
-//!   progress (the employee's declared proficiency actually reaching
+//!   progress (the worker's declared proficiency actually reaching
 //!   the target), so the two can disagree in the open.
 //! - **An apprenticeship cannot be completed below its off-the-job
 //!   training minimum** — completing one that has not met its hours
@@ -30,8 +30,8 @@ use uuid::Uuid;
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    candidates, development_plan_items, development_plans, early_career_programs, employee_skills,
-    employees, pipeline_members, program_placements, skills, talent_pipelines,
+    candidates, development_plan_items, development_plans, early_career_programs, worker_skills,
+    workers, pipeline_members, program_placements, skills, talent_pipelines,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -55,7 +55,7 @@ impl PidRef {
 
 // ─── Development plans (upskilling / reskilling) ─────────────────────────────
 
-/// `POST /api/employees/{pid}/development-plans` body.
+/// `POST /api/workers/{pid}/development-plans` body.
 #[derive(Debug, Deserialize)]
 struct PlanPayload {
     /// `upskill` (deepen the current role) or `reskill` (build toward a
@@ -87,11 +87,11 @@ struct PlanItemPayload {
     due_on: Option<chrono::NaiveDate>,
 }
 
-/// `POST /api/employees/{pid}/development-plans` — open a plan
+/// `POST /api/workers/{pid}/development-plans` — open a plan
 /// (`draft`) with its skill steps.
 ///
 /// The kind and the target role must agree
-/// ([`rules::target_matches_kind`]); a reskill toward the employee's
+/// ([`rules::target_matches_kind`]); a reskill toward the worker's
 /// *current* job title is refused, since that is an upskill by another
 /// name. Every step must raise the level on the 1–5 scale, and no skill
 /// may appear twice.
@@ -103,11 +103,11 @@ async fn create_plan(
     Path(pid): Path<String>,
     Json(payload): Json<PlanPayload>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
 
@@ -129,13 +129,13 @@ async fn create_plan(
         && payload
             .target_job_title
             .as_deref()
-            .is_some_and(|t| t == employee.job_title)
+            .is_some_and(|t| t == worker.job_title)
         && payload
             .target_department
             .as_deref()
-            .is_none_or(|d| d == employee.department)
+            .is_none_or(|d| d == worker.department)
     {
-        problems.push("the target role is the employee's current role; use kind `upskill` instead");
+        problems.push("the target role is the worker's current role; use kind `upskill` instead");
     }
     let mut seen: Vec<Uuid> = Vec::new();
     for (index, item) in payload.items.iter().enumerate() {
@@ -158,7 +158,7 @@ async fn create_plan(
     let txn = ctx.db.begin().await?;
     let plan = development_plans::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         kind: ActiveValue::set(payload.kind.clone()),
         target_job_title: ActiveValue::set(payload.target_job_title.clone()),
         target_department: ActiveValue::set(payload.target_department.clone()),
@@ -209,7 +209,7 @@ async fn create_plan(
         "development_plan",
         "created",
         &plan.pid.to_string(),
-        &employee.display_name,
+        &worker.display_name,
         caller.actor(),
         Some(serde_json::json!({ "kind": payload.kind })),
     )
@@ -218,7 +218,7 @@ async fn create_plan(
     format::json(PidRef::of(plan.pid))
 }
 
-/// `GET /api/employees/{pid}/development-plans` — one employee's plans
+/// `GET /api/workers/{pid}/development-plans` — one worker's plans
 /// with both progress readings (declared and verified).
 #[debug_handler]
 async fn list_plans(
@@ -226,21 +226,21 @@ async fn list_plans(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
 
     let plans = development_plans::Entity::find()
-        .filter(development_plans::Column::EmployeePid.eq(employee.pid))
+        .filter(development_plans::Column::WorkerPid.eq(worker.pid))
         .filter(development_plans::Column::DeletedAt.is_null())
         .order_by_asc(development_plans::Column::Id)
         .all(&ctx.db)
         .await?;
-    let declared = declared_levels(&ctx, employee.pid).await?;
+    let declared = declared_levels(&ctx, worker.pid).await?;
 
     let mut view = Vec::with_capacity(plans.len());
     for plan in &plans {
@@ -252,7 +252,7 @@ async fn list_plans(
         view.push(plan_view(plan, &items, &declared));
     }
     format::json(serde_json::json!({
-        "employee_pid": employee.pid,
+        "worker_pid": worker.pid,
         "derivation": PROGRESS_DERIVATION,
         "plans": view,
     }))
@@ -292,11 +292,11 @@ fn plan_view(
     })
 }
 
-/// One employee's declared skill levels, keyed by skill.
-async fn declared_levels(ctx: &AppContext, employee_pid: Uuid) -> Result<BTreeMap<Uuid, i32>> {
-    let rows = employee_skills::Entity::find()
-        .filter(employee_skills::Column::EmployeePid.eq(employee_pid))
-        .filter(employee_skills::Column::DeletedAt.is_null())
+/// One worker's declared skill levels, keyed by skill.
+async fn declared_levels(ctx: &AppContext, worker_pid: Uuid) -> Result<BTreeMap<Uuid, i32>> {
+    let rows = worker_skills::Entity::find()
+        .filter(worker_skills::Column::WorkerPid.eq(worker_pid))
+        .filter(worker_skills::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
     Ok(rows
@@ -372,9 +372,9 @@ struct ItemUpdate {
 
 /// `PUT /api/development-plan-items/{pid}` — move one step's status.
 ///
-/// Marking a step `achieved` does **not** change the employee's
+/// Marking a step `achieved` does **not** change the worker's
 /// declared proficiency: that is a separate, evidenced act
-/// (`PUT /api/employees/{pid}/skills`). The plan view reports both, so
+/// (`PUT /api/workers/{pid}/skills`). The plan view reports both, so
 /// a claimed achievement with no proficiency behind it is visible
 /// rather than hidden.
 #[debug_handler]
@@ -499,7 +499,7 @@ async fn member_stages(ctx: &AppContext, pipeline_pid: Uuid) -> Result<Vec<Strin
 /// `POST /api/talent-pipelines/{pid}/members` body.
 #[derive(Debug, Deserialize)]
 struct MemberPayload {
-    /// `candidate` or `employee`.
+    /// `candidate` or `worker`.
     subject_kind: String,
     subject_pid: Uuid,
     #[serde(default)]
@@ -527,8 +527,8 @@ async fn add_member(
     ensure_valid(&problems.into_vec())?;
 
     // The subject must exist.
-    if payload.subject_kind == "employee" {
-        records::find_employee(&ctx.db, payload.subject_pid).await?;
+    if payload.subject_kind == "worker" {
+        records::find_worker(&ctx.db, payload.subject_pid).await?;
     } else {
         candidates::Entity::find()
             .filter(candidates::Column::Pid.eq(payload.subject_pid))
@@ -634,9 +634,9 @@ async fn get_pipeline(State(ctx): State<AppContext>, Path(pid): Path<String>) ->
         .await?;
     let mut view = Vec::with_capacity(members.len());
     for member in &members {
-        let display_name = if member.subject_kind == "employee" {
-            employees::Entity::find()
-                .filter(employees::Column::Pid.eq(member.subject_pid))
+        let display_name = if member.subject_kind == "worker" {
+            workers::Entity::find()
+                .filter(workers::Column::Pid.eq(member.subject_pid))
                 .one(&ctx.db)
                 .await?
                 .map(|e| e.display_name)
@@ -836,7 +836,7 @@ fn placement_rollup(placements: &[program_placements::Model]) -> serde_json::Val
 /// `POST /api/early-career-programs/{pid}/placements` body.
 #[derive(Debug, Deserialize)]
 struct PlacementPayload {
-    employee_pid: Uuid,
+    worker_pid: Uuid,
     #[serde(default)]
     supervisor_pid: Option<Uuid>,
     started_on: chrono::NaiveDate,
@@ -854,11 +854,11 @@ async fn create_placement(
     Json(payload): Json<PlacementPayload>,
 ) -> Result<Response> {
     let program = records::find_early_career_program(&ctx.db, records::parse_pid(&pid)?).await?;
-    let employee = records::find_employee(&ctx.db, payload.employee_pid).await?;
+    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
 
@@ -869,20 +869,20 @@ async fn create_placement(
         problems.push("ends_on cannot be before started_on");
     }
     if let Some(supervisor_pid) = payload.supervisor_pid
-        && supervisor_pid == employee.pid
+        && supervisor_pid == worker.pid
     {
         problems.push("a placement's supervisor must be someone else");
     }
     ensure_valid(&problems.into_vec())?;
     if let Some(supervisor_pid) = payload.supervisor_pid {
-        records::find_employee(&ctx.db, supervisor_pid).await?;
+        records::find_worker(&ctx.db, supervisor_pid).await?;
     }
 
     let txn = ctx.db.begin().await?;
     let row = program_placements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         program_pid: ActiveValue::set(program.pid),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         supervisor_pid: ActiveValue::set(payload.supervisor_pid),
         started_on: ActiveValue::set(payload.started_on),
         ends_on: ActiveValue::set(payload.ends_on),
@@ -1050,24 +1050,24 @@ async fn placement_status(
     format::json(updated)
 }
 
-/// `GET /api/employees/{pid}/placements` — one person's early-career
+/// `GET /api/workers/{pid}/placements` — one person's early-career
 /// placements, with the off-the-job hours against the requirement.
 #[debug_handler]
-async fn list_employee_placements(
+async fn list_worker_placements(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
 
     let placements = program_placements::Entity::find()
-        .filter(program_placements::Column::EmployeePid.eq(employee.pid))
+        .filter(program_placements::Column::WorkerPid.eq(worker.pid))
         .filter(program_placements::Column::DeletedAt.is_null())
         .order_by_asc(program_placements::Column::Id)
         .all(&ctx.db)
@@ -1093,7 +1093,7 @@ async fn list_employee_placements(
         }));
     }
     format::json(serde_json::json!({
-        "employee_pid": employee.pid,
+        "worker_pid": worker.pid,
         "placements": view,
     }))
 }
@@ -1103,8 +1103,8 @@ pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
         // Development plans (upskilling / reskilling)
-        .add("/employees/{pid}/development-plans", post(create_plan))
-        .add("/employees/{pid}/development-plans", get(list_plans))
+        .add("/workers/{pid}/development-plans", post(create_plan))
+        .add("/workers/{pid}/development-plans", get(list_plans))
         .add("/development-plans/{pid}/status", post(plan_status))
         .add("/development-plan-items/{pid}", put(update_item))
         // Talent pipelines
@@ -1122,7 +1122,7 @@ pub fn routes() -> Routes {
         )
         .add("/program-placements/{pid}/hours", post(log_hours))
         .add("/program-placements/{pid}/status", post(placement_status))
-        .add("/employees/{pid}/placements", get(list_employee_placements))
+        .add("/workers/{pid}/placements", get(list_worker_placements))
 }
 
 #[cfg(test)]
@@ -1154,7 +1154,7 @@ mod tests {
             updated_at: chrono::Utc::now().into(),
             id: 1,
             pid: Uuid::new_v4(),
-            employee_pid: Uuid::new_v4(),
+            worker_pid: Uuid::new_v4(),
             kind: kind.to_string(),
             target_job_title: None,
             target_department: None,
@@ -1174,7 +1174,7 @@ mod tests {
             id: 1,
             pid: Uuid::new_v4(),
             program_pid: Uuid::new_v4(),
-            employee_pid: Uuid::new_v4(),
+            worker_pid: Uuid::new_v4(),
             supervisor_pid: None,
             started_on: chrono::NaiveDate::from_ymd_opt(2026, 1, 6).expect("date"),
             ends_on: None,

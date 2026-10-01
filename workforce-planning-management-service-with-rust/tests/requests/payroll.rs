@@ -8,39 +8,39 @@ use serial_test::serial;
 use workforce_planning_management_service::app::App;
 use workforce_planning_management_service::rules::payroll as rules;
 
-use super::{activate, an_org, seed_employee};
+use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
-// Two salaried employees (one with a pension enrolment and approved
+// Two salaried workers (one with a pension enrolment and approved
 // overtime) get reconciled payslips; approve freezes the run.
 async fn payroll_run_derives_reconciled_payslips() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let plain = seed_employee!(&request, &org, "E-2001", Some(3_600_000)).await;
-        let enrolled = seed_employee!(&request, &org, "E-2002", Some(4_800_000)).await;
+        let plain = seed_worker!(&request, &org, "E-2001", Some(3_600_000)).await;
+        let enrolled = seed_worker!(&request, &org, "E-2002", Some(4_800_000)).await;
         activate!(&request, &plain).await;
         activate!(&request, &enrolled).await;
-        // A pension plan + enrolment for the second employee.
+        // A pension plan + enrolment for the second worker.
         let plan: Value = request
             .post("/api/benefit-plans")
             .json(&json!({
                 "name": "Pension 5%", "kind": "pension", "provider": "Demo Provider",
-                "employee_cost_minor": 15_000, "employer_cost_minor": 30_000,
+                "worker_cost_minor": 15_000, "employer_cost_minor": 30_000,
                 "currency": "GBP",
             }))
             .await
             .json();
         request
-            .post(&format!("/api/employees/{enrolled}/benefit-enrollments"))
+            .post(&format!("/api/workers/{enrolled}/benefit-enrollments"))
             .json(&json!({ "plan_pid": plan["pid"], "starts_on": "2026-01-01" }))
             .await
             .assert_status_ok();
         // Approved overtime inside the period: a full extra contracted
         // day (450 regular + 450 more = 450 overtime minutes).
         let entry: Value = request
-            .post(&format!("/api/employees/{enrolled}/time-entries"))
+            .post(&format!("/api/workers/{enrolled}/time-entries"))
             .json(&json!({ "worked_on": "2026-07-06", "minutes": 900 }))
             .await
             .json();
@@ -54,7 +54,7 @@ async fn payroll_run_derives_reconciled_payslips() {
         // Unapproved time must NOT count: another 900-minute day left
         // in `recorded`.
         request
-            .post(&format!("/api/employees/{enrolled}/time-entries"))
+            .post(&format!("/api/workers/{enrolled}/time-entries"))
             .json(&json!({ "worked_on": "2026-07-07", "minutes": 900 }))
             .await
             .assert_status_ok();
@@ -96,11 +96,11 @@ async fn payroll_run_derives_reconciled_payslips() {
                 .sum();
             assert_eq!(net, gross - deductions, "payslip reconciles");
         }
-        // The enrolled employee's slip: base 400000 + overtime
+        // The enrolled worker's slip: base 400000 + overtime
         // (450 min × 400000 / 9750) + pension deduction present.
         let enrolled_slip = payslips
             .iter()
-            .find(|s| s["employee_pid"].as_str() == Some(enrolled.as_str()))
+            .find(|s| s["worker_pid"].as_str() == Some(enrolled.as_str()))
             .unwrap();
         let expected_base = 400_000;
         let expected_overtime = rules::overtime_pay_minor(expected_base, 450).unwrap();
@@ -115,7 +115,7 @@ async fn payroll_run_derives_reconciled_payslips() {
                 .unwrap()
                 .iter()
                 .any(|d| d["label"] == "Pension 5%"),
-            "benefit employee-cost is a deduction line"
+            "benefit worker-cost is a deduction line"
         );
         // Approve → immutable (no recalculate, no reopen); then paid.
         request
@@ -141,9 +141,9 @@ async fn payroll_run_derives_reconciled_payslips() {
             .post(&format!("/api/payroll-runs/{run_pid}/pay"))
             .await
             .assert_status_ok();
-        // Self-service payslips list for the employee.
+        // Self-service payslips list for the worker.
         let mine: Value = request
-            .get(&format!("/api/employees/{enrolled}/payslips"))
+            .get(&format!("/api/workers/{enrolled}/payslips"))
             .await
             .json();
         assert_eq!(mine.as_array().unwrap().len(), 1);
@@ -154,13 +154,13 @@ async fn payroll_run_derives_reconciled_payslips() {
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
-// Benchmarks: band validation, and the comparison flags employees
+// Benchmarks: band validation, and the comparison flags workers
 // below/within/above without echoing salary amounts.
 async fn benchmark_comparison_flags() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let low = seed_employee!(&request, &org, "E-3001", Some(2_000_000)).await;
-        let high = seed_employee!(&request, &org, "E-3002", Some(9_900_000)).await;
+        let low = seed_worker!(&request, &org, "E-3001", Some(2_000_000)).await;
+        let high = seed_worker!(&request, &org, "E-3002", Some(9_900_000)).await;
         let bad_band = request
             .post("/api/benchmarks")
             .json(&json!({
@@ -186,7 +186,7 @@ async fn benchmark_comparison_flags() {
         let rows = comparison["rows"].as_array().unwrap();
         let flag_of = |pid: &str| {
             rows.iter()
-                .find(|r| r["employee_pid"].as_str() == Some(pid))
+                .find(|r| r["worker_pid"].as_str() == Some(pid))
                 .and_then(|r| r["flag"].as_str().map(ToString::to_string))
         };
         assert_eq!(flag_of(&low).as_deref(), Some("below_min"));

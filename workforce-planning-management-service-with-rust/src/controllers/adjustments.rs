@@ -24,7 +24,7 @@ struct PidRef {
     pid: String,
 }
 
-/// `POST /api/employees/{pid}/adjustment-requests` body — the useful
+/// `POST /api/workers/{pid}/adjustment-requests` body — the useful
 /// bit and nothing else: barrier, impact, change.
 #[derive(Debug, Deserialize)]
 struct RequestPayload {
@@ -34,7 +34,7 @@ struct RequestPayload {
     adjustment: String,
 }
 
-/// `POST /api/employees/{pid}/adjustment-requests` — put it in
+/// `POST /api/workers/{pid}/adjustment-requests` — put it in
 /// writing. All three texts required; `$sub` ownership applies (HR
 /// may file on behalf per policy). Audited.
 #[debug_handler]
@@ -53,16 +53,16 @@ async fn create_request(
     problems.require_text("adjustment", &payload.adjustment);
     problems.cap_text("adjustment", &payload.adjustment);
     ensure_valid(&problems.into_vec())?;
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let row = adjustment_requests::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         category: ActiveValue::set(payload.category.clone()),
         barrier: ActiveValue::set(payload.barrier.clone()),
         impact: ActiveValue::set(payload.impact.clone()),
@@ -90,7 +90,7 @@ async fn create_request(
     })
 }
 
-/// `GET /api/employees/{pid}/adjustment-requests` — the employee's
+/// `GET /api/workers/{pid}/adjustment-requests` — the worker's
 /// requests, newest first. `$sub`-owned; content-tier: a masked read
 /// keeps category + status and **withholds the words**; unmasked
 /// reads are audited.
@@ -100,16 +100,16 @@ async fn list_requests(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let masked = obligations.iter().any(|o| o == "mask");
     let rows = adjustment_requests::Entity::find()
-        .filter(adjustment_requests::Column::EmployeePid.eq(employee.pid))
+        .filter(adjustment_requests::Column::WorkerPid.eq(worker.pid))
         .filter(adjustment_requests::Column::DeletedAt.is_null())
         .order_by_desc(adjustment_requests::Column::Id)
         .all(&ctx.db)
@@ -118,7 +118,7 @@ async fn list_requests(
         Audit::record(
             &ctx.db,
             "adjustment_request",
-            employee.pid,
+            worker.pid,
             "adjustments_read",
             caller.actor(),
             None,
@@ -157,7 +157,7 @@ struct DecisionPayload {
 
 /// `POST /api/adjustment-requests/{pid}/status` — decide (pure
 /// machine); stamps the date, records the practical note, audits, and
-/// notifies the employee in-app.
+/// notifies the worker in-app.
 #[debug_handler]
 async fn decide(
     State(ctx): State<AppContext>,
@@ -177,7 +177,7 @@ async fn decide(
     rules::transition(&row.status, &payload.to).map_err(|reason| unprocessable(&reason))?;
     let from = row.status.clone();
     let row_pid = row.pid;
-    let employee_pid = row.employee_pid;
+    let worker_pid = row.worker_pid;
     let category = row.category.clone();
     let mut active: adjustment_requests::ActiveModel = row.into();
     active.status = ActiveValue::set(payload.to.clone());
@@ -195,11 +195,11 @@ async fn decide(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
-    // Tell the employee — the body names the category and the state,
+    // Tell the worker — the body names the category and the state,
     // never the words (WPM-D23 reference-only posture).
     Notification::push(
         &ctx.db,
-        employee_pid,
+        worker_pid,
         "adjustment_update",
         &format!("Adjustment request ({category}): {}", payload.to),
         serde_json::json!({ "adjustment_request_pid": row_pid }),
@@ -212,7 +212,7 @@ async fn decide(
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
-        .add("/employees/{pid}/adjustment-requests", post(create_request))
-        .add("/employees/{pid}/adjustment-requests", get(list_requests))
+        .add("/workers/{pid}/adjustment-requests", post(create_request))
+        .add("/workers/{pid}/adjustment-requests", get(list_requests))
         .add("/adjustment-requests/{pid}/status", post(decide))
 }

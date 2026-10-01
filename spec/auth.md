@@ -76,3 +76,77 @@ on ownership-enforcing handlers; department-scoped manager rules are
 written per department (`{"manager": ["true"],
 "resource.department": ["engineering"]}`) because subject-vs-resource
 attribute equality has no template.
+
+## Keycloak as the identity provider (WPM-G2)
+
+By default WPM never talks to an identity provider itself — it
+verifies PASETO tokens (`WPM_PASETO_KEYS_URL`/`WPM_PASETO_KEYS` above,
+the `paseto` Cargo feature, on by default) minted by the sibling
+**authentication service**
+([authentication-sessions](../../agents/share/authentication-sessions.md)),
+and every front-end (this one included) reaches that service only
+through its own BFF server, per `AGENTS.md` §3 — no OIDC/Keycloak
+library in this repo or the Rust service. Pointing that authentication
+service at Keycloak as its upstream IdP is entirely its own
+configuration; this section exists so a deployment doesn't have to
+rediscover the claim mapping from scratch.
+
+A second, independent integration point exists for a deployment that
+wants this service to skip the sibling authentication service
+entirely and verify a Keycloak-issued JWT itself: the `keycloak` Cargo
+feature (mutually exclusive with `paseto` — see
+`workforce-planning-management-service-with-rust/Cargo.toml`'s
+`[features]` table and `src/auth/keycloak.rs`'s module docs for its
+own `WPM_KEYCLOAK_*` environment). It uses the *same* claim-mapping
+table below, so a deployment can switch which component talks to
+Keycloak without re-deriving the realm-mapper configuration.
+
+1. **Register a confidential client** in the Keycloak realm for the
+   authentication service (not per front-end — WPM's front-ends only
+   ever redirect to the authentication service's own
+   `/api/auth/sso/start`, never to Keycloak directly). Redirect URI is
+   the authentication service's own callback, not any WPM app's.
+2. **Configure the authentication service's upstream IdP** via its own
+   `AUTH_OIDC_*` environment:
+   - `AUTH_OIDC_ISSUER_URL` — the realm issuer, e.g.
+     `https://keycloak.example/realms/wpm`.
+   - `AUTH_OIDC_CLIENT_ID` / `AUTH_OIDC_CLIENT_SECRET` — the
+     confidential client from step 1.
+   - `AUTH_OIDC_SCOPES` — `openid email profile`, plus whatever scope
+     carries the realm/client roles and group path used below (Keycloak
+     ships these on `email profile` by default; a custom scope is only
+     needed for the organization mapper).
+3. **Map Keycloak claims to the `attrs` this policy already reads**
+   (client scope → *Mapper Type* in Keycloak's admin console; every
+   mapper below is a **User Realm Role**, **User Client Role**, **Group
+   Membership**, or **User Attribute** mapper writing into a named
+   token claim, which the authentication service then copies verbatim
+   into the PASETO's `attrs` map — it does not invent new attribute
+   names, only relays Keycloak's):
+
+   | WPM `attrs` key | Keycloak source | Mapper shape |
+   |---|---|---|
+   | `hr` | realm role `wpm-hr` | role present ⇒ `attrs.hr = ["true"]` |
+   | `payroll` | realm role `wpm-payroll` | role present ⇒ `attrs.payroll = ["true"]` |
+   | `svc` | realm role `wpm-svc` | role present ⇒ `attrs.svc = ["true"]` (granted only to a service-account client, never a human realm user) |
+   | `access` | realm role `wpm-admin` | role present ⇒ `attrs.access = ["admin"]`; otherwise a plain authenticated human gets `attrs.access = ["write"]` (the self-service-write allow the engine limits above call for) |
+   | `department` | group path, e.g. `/org/engineering` | group membership ⇒ the path's leaf segment, `attrs.department = ["engineering"]` (one row per department group the user is in) |
+   | `organization_ref` | a custom user/group attribute holding the org's URN (see [`memberships.rs`](../workforce-planning-management-service-with-rust/src/models/memberships.rs) for the multi-organization membership model this feeds) | attribute mapper ⇒ `attrs.organization_ref = ["organization:<uuid>", …]`, multi-valued for a person in several organizations |
+
+   `resource.person = $sub` self-rules need no mapper: `$sub` is
+   Keycloak's own `sub` claim, relayed as-is.
+4. **Verify** the same way as the activation runbook above: mint a
+   token for a Keycloak test user with each role/group combination and
+   run `cargo test --test enforcement -- --ignored` against it, plus a
+   manual round trip through `/signin` → *Sign in with SSO* → Keycloak
+   login → back at `/`, confirming the front-end's dashboard shows the
+   organizations and role the group/attribute mappers above should
+   produce.
+
+**Not yet wired**: today only this front-end links to
+`/signin/sso`; every sibling front-end in the family still shows only
+the magic-link form and needs the same link added (`../signin/sso`
+redirect route + the button, both trivial per-app copies of this
+app's `src/routes/signin/+page.svelte` and
+`src/routes/signin/sso/+server.ts`) — tracked as a follow-up, not
+attempted here since those repos aren't part of this change.

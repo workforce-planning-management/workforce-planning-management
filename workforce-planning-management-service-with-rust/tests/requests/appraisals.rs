@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management_service::app::App;
 
-use super::{activate, an_org, seed_employee};
+use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
@@ -17,13 +17,13 @@ use super::{activate, an_org, seed_employee};
 async fn appraisal_round_trip() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let subject = seed_employee!(&request, &org, "A-0", None).await;
+        let subject = seed_worker!(&request, &org, "A-0", None).await;
         activate!(&request, &subject).await;
-        let manager = seed_employee!(&request, &org, "A-M", None).await;
+        let manager = seed_worker!(&request, &org, "A-M", None).await;
         activate!(&request, &manager).await;
         let mut peers = Vec::new();
         for n in 0..3 {
-            let pid = seed_employee!(&request, &org, &format!("A-P{n}"), None).await;
+            let pid = seed_worker!(&request, &org, &format!("A-P{n}"), None).await;
             activate!(&request, &pid).await;
             peers.push(pid);
         }
@@ -31,7 +31,7 @@ async fn appraisal_round_trip() {
         // Create: competencies required and unique.
         assert_eq!(
             request
-                .post(&format!("/api/employees/{subject}/appraisals"))
+                .post(&format!("/api/workers/{subject}/appraisals"))
                 .json(&json!({ "competencies": [] }))
                 .await
                 .status_code(),
@@ -39,7 +39,7 @@ async fn appraisal_round_trip() {
             "at least one competency"
         );
         let appraisal: Value = request
-            .post(&format!("/api/employees/{subject}/appraisals"))
+            .post(&format!("/api/workers/{subject}/appraisals"))
             .json(&json!({ "competencies": ["communication", "delivery"] }))
             .await
             .json();
@@ -113,7 +113,7 @@ async fn appraisal_round_trip() {
         // Moving to collecting notified every rater — self included —
         // with a reference-only body (WPM-R31/D23).
         let manager_bell: Value = request
-            .get(&format!("/api/employees/{manager}/notifications"))
+            .get(&format!("/api/workers/{manager}/notifications"))
             .await
             .json();
         let bells = manager_bell.as_array().unwrap();
@@ -123,10 +123,10 @@ async fn appraisal_round_trip() {
             bells[0]["body"]
                 .as_str()
                 .unwrap()
-                .contains("Test Employee A-0")
+                .contains("Test Worker A-0")
         );
         let self_bell: Value = request
-            .get(&format!("/api/employees/{subject}/notifications"))
+            .get(&format!("/api/workers/{subject}/notifications"))
             .await
             .json();
         assert!(
@@ -146,7 +146,7 @@ async fn appraisal_round_trip() {
         assert!(read["read_at"].is_string());
 
         // Nominations freeze once collecting.
-        let late = seed_employee!(&request, &org, "A-L", None).await;
+        let late = seed_worker!(&request, &org, "A-L", None).await;
         assert_eq!(
             request
                 .post(&format!("/api/appraisals/{a_pid}/nominations"))
@@ -160,20 +160,20 @@ async fn appraisal_round_trip() {
         // The rater's self-service view: the manager sees one pending
         // request naming the subject, group, and competencies.
         let requests: Value = request
-            .get(&format!("/api/employees/{manager}/appraisal-requests"))
+            .get(&format!("/api/workers/{manager}/appraisal-requests"))
             .await
             .json();
         let pending = requests.as_array().unwrap();
         assert_eq!(pending.len(), 1);
         assert_eq!(pending[0]["group"], "manager");
-        assert_eq!(pending[0]["subject"], "Test Employee A-0");
+        assert_eq!(pending[0]["subject"], "Test Worker A-0");
         assert_eq!(
             pending[0]["competencies"],
             json!(["communication", "delivery"])
         );
-        // A non-nominated employee has no requests.
+        // A non-nominated worker has no requests.
         let none: Value = request
-            .get(&format!("/api/employees/{late}/appraisal-requests"))
+            .get(&format!("/api/workers/{late}/appraisal-requests"))
             .await
             .json();
         assert!(none.as_array().unwrap().is_empty());
@@ -218,7 +218,7 @@ async fn appraisal_round_trip() {
         );
         // Responding clears the rater's pending request.
         let requests: Value = request
-            .get(&format!("/api/employees/{manager}/appraisal-requests"))
+            .get(&format!("/api/workers/{manager}/appraisal-requests"))
             .await
             .json();
         assert!(
@@ -321,7 +321,7 @@ async fn appraisal_round_trip() {
         // Sharing notified the subject — and the notification carries
         // no rater content (WPM-D21 survives the bell).
         let subject_bell: Value = request
-            .get(&format!("/api/employees/{subject}/notifications"))
+            .get(&format!("/api/workers/{subject}/notifications"))
             .await
             .json();
         let shared_note = subject_bell

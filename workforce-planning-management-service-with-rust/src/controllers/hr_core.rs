@@ -1,9 +1,9 @@
-//! HR core (WPM-R7–R9): employee CRUD + the status state machine +
+//! HR core (WPM-R7–R9): worker CRUD + the status state machine +
 //! the derived org chart, and benefits administration.
 //!
 //! Every mutation runs on one transaction: the row change, its audit
 //! entry, and (under the `outbox` transport) its event share a commit
-//! boundary (WPM-D9). Employee reads run the record-level ABAC pass
+//! boundary (WPM-D9). Worker reads run the record-level ABAC pass
 //! and honour the `mask` obligation (salary redaction, WPM-R15).
 
 use loco_rs::prelude::*;
@@ -15,21 +15,21 @@ use uuid::Uuid;
 use super::{Page, ensure_valid, record_rejection, unprocessable, with_page_headers};
 use crate::auth::{self, MaybeAuthUser};
 use crate::metrics::Metrics;
-use crate::models::_entities::{benefit_enrollments, benefit_plans, employees, onboarding_items};
+use crate::models::_entities::{benefit_enrollments, benefit_plans, workers, onboarding_items};
 use crate::models::audit_logs::Model as Audit;
-use crate::models::records;
+use crate::models::{memberships, records};
 use crate::rules::{lifecycle, org, tokens};
 use crate::streaming;
 use crate::validation::Problems;
 
-/// `POST /api/employees` body.
+/// `POST /api/workers` body.
 #[derive(Debug, Deserialize)]
-struct EmployeePayload {
+struct WorkerPayload {
     person_ref: String,
     #[serde(default)]
-    worker_ref: Option<String>,
+    upstream_worker_ref: Option<String>,
     organization_ref: String,
-    employee_number: String,
+    worker_number: String,
     display_name: String,
     employment_type: String,
     #[serde(default = "default_fte")]
@@ -45,9 +45,9 @@ struct EmployeePayload {
     hired_on: chrono::NaiveDate,
 }
 
-/// `PUT /api/employees/{pid}` body — the mutable employment facts.
+/// `PUT /api/workers/{pid}` body — the mutable employment facts.
 #[derive(Debug, Deserialize)]
-struct EmployeeUpdate {
+struct WorkerUpdate {
     #[serde(default)]
     display_name: Option<String>,
     #[serde(default)]
@@ -65,10 +65,10 @@ struct EmployeeUpdate {
     #[serde(default)]
     salary_currency: Option<String>,
     #[serde(default)]
-    worker_ref: Option<String>,
+    upstream_worker_ref: Option<String>,
 }
 
-/// `POST /api/employees/{pid}/status` body.
+/// `POST /api/workers/{pid}/status` body.
 #[derive(Debug, Deserialize)]
 struct StatusPayload {
     to: String,
@@ -82,12 +82,12 @@ struct BenefitPlanPayload {
     name: String,
     kind: String,
     provider: String,
-    employee_cost_minor: i64,
+    worker_cost_minor: i64,
     employer_cost_minor: i64,
     currency: String,
 }
 
-/// `POST /api/employees/{pid}/benefit-enrollments` body.
+/// `POST /api/workers/{pid}/benefit-enrollments` body.
 #[derive(Debug, Deserialize)]
 struct EnrollmentPayload {
     plan_pid: Uuid,
@@ -106,20 +106,20 @@ const fn default_fte() -> i32 {
     100
 }
 
-fn validate_employee(p: &EmployeePayload) -> Vec<String> {
+fn validate_worker(p: &WorkerPayload) -> Vec<String> {
     let mut problems = Problems::new();
     problems.require_ref("person_ref", entity_ref::EntityType::Person, &p.person_ref);
     problems.ref_opt(
-        "worker_ref",
+        "upstream_worker_ref",
         entity_ref::EntityType::Worker,
-        p.worker_ref.as_deref(),
+        p.upstream_worker_ref.as_deref(),
     );
     problems.require_ref(
         "organization_ref",
         entity_ref::EntityType::Organization,
         &p.organization_ref,
     );
-    problems.require_text("employee_number", &p.employee_number);
+    problems.require_text("worker_number", &p.worker_number);
     problems.require_text("display_name", &p.display_name);
     problems.require_token(
         "employment_type",
@@ -140,12 +140,12 @@ fn validate_employee(p: &EmployeePayload) -> Vec<String> {
     problems.into_vec()
 }
 
-/// The live `manager_of` map for the cycle check (employee pid →
+/// The live `manager_of` map for the cycle check (worker pid →
 /// manager pid).
 async fn manager_map(db: &DatabaseConnection) -> Result<HashMap<Uuid, Uuid>> {
-    let rows = employees::Entity::find()
-        .filter(employees::Column::DeletedAt.is_null())
-        .filter(employees::Column::ManagerPid.is_not_null())
+    let rows = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::ManagerPid.is_not_null())
         .all(db)
         .await?;
     Ok(rows
@@ -154,24 +154,24 @@ async fn manager_map(db: &DatabaseConnection) -> Result<HashMap<Uuid, Uuid>> {
         .collect())
 }
 
-/// `POST /api/employees` — create in `onboarding` status.
+/// `POST /api/workers` — create in `onboarding` status.
 #[debug_handler]
-async fn create_employee(
+async fn create_worker(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    Json(payload): Json<EmployeePayload>,
+    Json(payload): Json<WorkerPayload>,
 ) -> Result<Response> {
-    ensure_valid(&validate_employee(&payload))?;
+    ensure_valid(&validate_worker(&payload))?;
     if let Some(manager) = payload.manager_pid {
-        records::find_employee(&ctx.db, manager).await?;
+        records::find_worker(&ctx.db, manager).await?;
     }
     let txn = ctx.db.begin().await?;
-    let row = employees::ActiveModel {
+    let row = workers::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         person_ref: ActiveValue::set(payload.person_ref.clone()),
-        worker_ref: ActiveValue::set(payload.worker_ref.clone()),
+        upstream_worker_ref: ActiveValue::set(payload.upstream_worker_ref.clone()),
         organization_ref: ActiveValue::set(payload.organization_ref.clone()),
-        employee_number: ActiveValue::set(payload.employee_number.clone()),
+        worker_number: ActiveValue::set(payload.worker_number.clone()),
         display_name: ActiveValue::set(payload.display_name.clone()),
         status: ActiveValue::set("onboarding".to_string()),
         employment_type: ActiveValue::set(payload.employment_type.clone()),
@@ -190,7 +190,7 @@ async fn create_employee(
     .await?;
     Audit::record(
         &txn,
-        "employee",
+        "worker",
         row.pid,
         "created",
         caller.actor(),
@@ -199,10 +199,10 @@ async fn create_employee(
     .await?;
     streaming::emit_on(
         &txn,
-        "employee",
+        "worker",
         "created",
         &row.pid.to_string(),
-        &row.employee_number,
+        &row.worker_number,
         caller.actor(),
         None,
     )
@@ -213,22 +213,22 @@ async fn create_employee(
     })
 }
 
-/// Default page size for `GET /api/employees` — the cap this endpoint
+/// Default page size for `GET /api/workers` — the cap this endpoint
 /// applied before pagination existed (WPM-T40), so omitting `?limit=`
 /// returns what it always did.
-const EMPLOYEE_LIST_DEFAULT_LIMIT: u64 = 500;
+const WORKER_LIST_DEFAULT_LIMIT: u64 = 500;
 
-/// `GET /api/employees` — active employees, filterable by
+/// `GET /api/workers` — active workers, filterable by
 /// `?department=` and `?status=`, paginated via `?limit=&offset=`
 /// (WPM-T40; `agents/share/restful.md`). Record-level masking applies
 /// per row (a list must never reveal more than the single read).
 #[derive(Debug, Deserialize)]
-struct EmployeeListParams {
+struct WorkerListParams {
     #[serde(default)]
     department: Option<String>,
     #[serde(default)]
     status: Option<String>,
-    /// Page size; absent, zero, or unparseable ⇒ [`EMPLOYEE_LIST_DEFAULT_LIMIT`].
+    /// Page size; absent, zero, or unparseable ⇒ [`WORKER_LIST_DEFAULT_LIMIT`].
     #[serde(default)]
     limit: Option<u64>,
     /// Rows to skip; absent ⇒ 0.
@@ -237,96 +237,99 @@ struct EmployeeListParams {
 }
 
 #[debug_handler]
-async fn list_employees(
+async fn list_workers(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    Query(params): Query<EmployeeListParams>,
+    Query(params): Query<WorkerListParams>,
 ) -> Result<Response> {
     let page = Page {
         limit: params.limit,
         offset: params.offset,
     };
     page.check_offset()?;
-    let (limit, offset) = page.resolve(EMPLOYEE_LIST_DEFAULT_LIMIT);
-    let mut query = employees::Entity::find().filter(employees::Column::DeletedAt.is_null());
+    let (limit, offset) = page.resolve(WORKER_LIST_DEFAULT_LIMIT);
+    let mut query = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
     if let Some(department) = &params.department {
-        query = query.filter(employees::Column::Department.eq(department));
+        query = query.filter(workers::Column::Department.eq(department));
     }
     if let Some(status) = &params.status {
-        query = query.filter(employees::Column::Status.eq(status));
+        query = query.filter(workers::Column::Status.eq(status));
+    }
+    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+        query = query.filter(workers::Column::OrganizationRef.is_in(refs));
     }
     let total = query.clone().count(&ctx.db).await?;
     let rows = query
-        .order_by_asc(employees::Column::Id)
+        .order_by_asc(workers::Column::Id)
         .limit(limit)
         .offset(offset)
         .all(&ctx.db)
         .await?;
     let mut out = Vec::with_capacity(rows.len());
-    for employee in rows {
+    for worker in rows {
         let obligations = auth::authorize_record(
             &caller,
             authentication_verifier::Action::Read,
-            &auth::employee_resource_attrs(&employee),
+            &auth::worker_resource_attrs(&worker),
         )
         .map_err(record_rejection)?;
         out.push(if obligations.iter().any(|o| o == "mask") {
-            auth::mask_employee(employee)
+            auth::mask_worker(worker)
         } else {
-            employee
+            worker
         });
     }
     Ok(with_page_headers(format::json(out)?, total, limit, offset))
 }
 
-/// `GET /api/employees/{pid}` — one employee; a salary-bearing read
+/// `GET /api/workers/{pid}` — one worker; a salary-bearing read
 /// is audited (WPM-D7); the `mask` obligation redacts the salary.
 #[debug_handler]
-async fn get_employee(
+async fn get_worker(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let masked = obligations.iter().any(|o| o == "mask");
-    if employee.salary_minor.is_some() && !masked {
+    if worker.salary_minor.is_some() && !masked {
         Audit::record(
             &ctx.db,
-            "employee",
-            employee.pid,
+            "worker",
+            worker.pid,
             "salary_read",
             caller.actor(),
-            Some(serde_json::json!({ "department": employee.department })),
+            Some(serde_json::json!({ "department": worker.department })),
         )
         .await?;
     }
     format::json(if masked {
-        auth::mask_employee(employee)
+        auth::mask_worker(worker)
     } else {
-        employee
+        worker
     })
 }
 
-/// `PUT /api/employees/{pid}` — update mutable employment facts.
+/// `PUT /api/workers/{pid}` — update mutable employment facts.
 /// A manager change runs the org-chart cycle check (WPM-R7).
 #[debug_handler]
-async fn update_employee(
+async fn update_worker(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    Json(payload): Json<EmployeeUpdate>,
+    Json(payload): Json<WorkerUpdate>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let mut problems = Problems::new();
@@ -345,20 +348,20 @@ async fn update_employee(
         problems.push("salary_minor must be non-negative".to_string());
     }
     problems.ref_opt(
-        "worker_ref",
+        "upstream_worker_ref",
         entity_ref::EntityType::Worker,
-        payload.worker_ref.as_deref(),
+        payload.upstream_worker_ref.as_deref(),
     );
     ensure_valid(&problems.into_vec())?;
     if let Some(manager) = payload.manager_pid {
-        records::find_employee(&ctx.db, manager).await?;
+        records::find_worker(&ctx.db, manager).await?;
         let map = manager_map(&ctx.db).await?;
-        if org::would_create_cycle(employee.pid, manager, &map) {
+        if org::would_create_cycle(worker.pid, manager, &map) {
             return Err(unprocessable("manager assignment would create a cycle"));
         }
     }
     let txn = ctx.db.begin().await?;
-    let mut active: employees::ActiveModel = employee.clone().into();
+    let mut active: workers::ActiveModel = worker.clone().into();
     if let Some(v) = payload.display_name {
         active.display_name = ActiveValue::set(v);
     }
@@ -382,13 +385,13 @@ async fn update_employee(
     if let Some(v) = payload.salary_currency {
         active.salary_currency = ActiveValue::set(Some(v));
     }
-    if let Some(v) = payload.worker_ref {
-        active.worker_ref = ActiveValue::set(Some(v));
+    if let Some(v) = payload.upstream_worker_ref {
+        active.upstream_worker_ref = ActiveValue::set(Some(v));
     }
     let row = active.update(&txn).await?;
     Audit::record(
         &txn,
-        "employee",
+        "worker",
         row.pid,
         "updated",
         caller.actor(),
@@ -397,19 +400,19 @@ async fn update_employee(
     .await?;
     streaming::emit_on(
         &txn,
-        "employee",
+        "worker",
         "updated",
         &row.pid.to_string(),
-        &row.employee_number,
+        &row.worker_number,
         caller.actor(),
         None,
     )
     .await?;
     txn.commit().await?;
-    format::json(auth::mask_employee(row))
+    format::json(auth::mask_worker(row))
 }
 
-/// `POST /api/employees/{pid}/status` — one lifecycle transition.
+/// `POST /api/workers/{pid}/status` — one lifecycle transition.
 /// `onboarding → active` requires every mandatory onboarding item
 /// complete or waived (WPM-R3).
 #[debug_handler]
@@ -420,26 +423,26 @@ async fn change_status(
     Json(payload): Json<StatusPayload>,
 ) -> Result<Response> {
     let mut problems = Problems::new();
-    problems.require_token("to", tokens::EMPLOYEE_STATUSES, &payload.to);
+    problems.require_token("to", tokens::WORKER_STATUSES, &payload.to);
     problems.cap_opt("reason", payload.reason.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     lifecycle::check(
-        "employee",
-        lifecycle::EMPLOYEE,
-        &employee.status,
+        "worker",
+        lifecycle::WORKER,
+        &worker.status,
         &payload.to,
     )
     .map_err(|e| unprocessable(&e))?;
-    if employee.status == "onboarding" && payload.to == "active" {
+    if worker.status == "onboarding" && payload.to == "active" {
         let open = onboarding_items::Entity::find()
-            .filter(onboarding_items::Column::EmployeePid.eq(employee.pid))
+            .filter(onboarding_items::Column::WorkerPid.eq(worker.pid))
             .filter(onboarding_items::Column::DeletedAt.is_null())
             .filter(onboarding_items::Column::Mandatory.eq(true))
             .filter(onboarding_items::Column::Status.eq("pending"))
@@ -452,24 +455,24 @@ async fn change_status(
         }
     }
     let txn = ctx.db.begin().await?;
-    let from = employee.status.clone();
-    let number = employee.employee_number.clone();
-    let department = employee.department.clone();
-    let mut active: employees::ActiveModel = employee.clone().into();
+    let from = worker.status.clone();
+    let number = worker.worker_number.clone();
+    let department = worker.department.clone();
+    let mut active: workers::ActiveModel = worker.clone().into();
     active.status = ActiveValue::set(payload.to.clone());
     if payload.to == "terminated" || payload.to == "retired" {
         active.terminated_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
     }
     let row = active.update(&txn).await?;
     let kind = match payload.to.as_str() {
-        "active" if from == "onboarding" => "employee_activated",
-        "terminated" => "employee_terminated",
-        "retired" => "employee_retired",
-        _ => "employee_status_changed",
+        "active" if from == "onboarding" => "worker_activated",
+        "terminated" => "worker_terminated",
+        "retired" => "worker_retired",
+        _ => "worker_status_changed",
     };
     Audit::record(
         &txn,
-        "employee",
+        "worker",
         row.pid,
         kind,
         caller.actor(),
@@ -481,7 +484,7 @@ async fn change_status(
     .await?;
     streaming::emit_on(
         &txn,
-        "employee",
+        "worker",
         kind,
         &row.pid.to_string(),
         &number,
@@ -491,37 +494,37 @@ async fn change_status(
     .await?;
     txn.commit().await?;
     match kind {
-        "employee_activated" => Metrics::global().employee_activated_total.inc(),
-        "employee_terminated" => Metrics::global().employee_terminated_total.inc(),
+        "worker_activated" => Metrics::global().worker_activated_total.inc(),
+        "worker_terminated" => Metrics::global().worker_terminated_total.inc(),
         _ => {}
     }
-    format::json(auth::mask_employee(row))
+    format::json(auth::mask_worker(row))
 }
 
-/// `DELETE /api/employees/{pid}` — soft delete.
+/// `DELETE /api/workers/{pid}` — soft delete.
 #[debug_handler]
-async fn delete_employee(
+async fn delete_worker(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Destructive,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let txn = ctx.db.begin().await?;
-    let pid = employee.pid;
-    let number = employee.employee_number.clone();
-    let mut active: employees::ActiveModel = employee.into();
+    let pid = worker.pid;
+    let number = worker.worker_number.clone();
+    let mut active: workers::ActiveModel = worker.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
     active.update(&txn).await?;
-    Audit::record(&txn, "employee", pid, "deleted", caller.actor(), None).await?;
+    Audit::record(&txn, "worker", pid, "deleted", caller.actor(), None).await?;
     streaming::emit_on(
         &txn,
-        "employee",
+        "worker",
         "deleted",
         &pid.to_string(),
         &number,
@@ -546,8 +549,8 @@ struct OrgNode {
 /// Build one org-chart node (bounded depth; the write path
 /// prevents cycles).
 fn build_org_node(
-    node: &employees::Model,
-    children: &HashMap<Option<Uuid>, Vec<&employees::Model>>,
+    node: &workers::Model,
+    children: &HashMap<Option<Uuid>, Vec<&workers::Model>>,
     depth: usize,
 ) -> OrgNode {
     let reports = if depth > 32 {
@@ -572,7 +575,7 @@ fn build_org_node(
 }
 
 /// `GET /api/org-chart?organization=<ref>` — the manager forest for
-/// one organization (roots = employees with no manager).
+/// one organization (roots = workers with no manager).
 #[derive(Debug, Deserialize)]
 struct OrgChartParams {
     organization: String,
@@ -581,15 +584,19 @@ struct OrgChartParams {
 #[debug_handler]
 async fn org_chart(
     State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
     Query(params): Query<OrgChartParams>,
 ) -> Result<Response> {
-    let rows = employees::Entity::find()
-        .filter(employees::Column::DeletedAt.is_null())
-        .filter(employees::Column::OrganizationRef.eq(&params.organization))
-        .order_by_asc(employees::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let mut children: HashMap<Option<Uuid>, Vec<&employees::Model>> = HashMap::new();
+    let mut query = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::OrganizationRef.eq(&params.organization));
+    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+        // `params.organization` outside the caller's scope ANDs down to
+        // zero rows here — no separate 403 needed for this read.
+        query = query.filter(workers::Column::OrganizationRef.is_in(refs));
+    }
+    let rows = query.order_by_asc(workers::Column::Id).all(&ctx.db).await?;
+    let mut children: HashMap<Option<Uuid>, Vec<&workers::Model>> = HashMap::new();
     for e in &rows {
         children.entry(e.manager_pid).or_default().push(e);
     }
@@ -616,7 +623,7 @@ async fn create_plan(
     problems.require_token("kind", tokens::BENEFIT_KINDS, &payload.kind);
     problems.require_text("provider", &payload.provider);
     problems.require_text("currency", &payload.currency);
-    if payload.employee_cost_minor < 0 || payload.employer_cost_minor < 0 {
+    if payload.worker_cost_minor < 0 || payload.employer_cost_minor < 0 {
         problems.push("benefit costs must be non-negative".to_string());
     }
     ensure_valid(&problems.into_vec())?;
@@ -626,7 +633,7 @@ async fn create_plan(
         name: ActiveValue::set(payload.name.clone()),
         kind: ActiveValue::set(payload.kind.clone()),
         provider: ActiveValue::set(payload.provider.clone()),
-        employee_cost_minor: ActiveValue::set(payload.employee_cost_minor),
+        worker_cost_minor: ActiveValue::set(payload.worker_cost_minor),
         employer_cost_minor: ActiveValue::set(payload.employer_cost_minor),
         currency: ActiveValue::set(payload.currency.clone()),
         deleted_at: ActiveValue::set(None),
@@ -696,7 +703,7 @@ async fn list_plans(
     Ok(with_page_headers(format::json(rows)?, total, limit, offset))
 }
 
-/// `POST /api/employees/{pid}/benefit-enrollments` — enrol; the
+/// `POST /api/workers/{pid}/benefit-enrollments` — enrol; the
 /// partial unique index refuses a double enrolment (WPM-R9).
 #[debug_handler]
 async fn enroll(
@@ -705,25 +712,25 @@ async fn enroll(
     Path(pid): Path<String>,
     Json(payload): Json<EnrollmentPayload>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let plan = records::find_benefit_plan(&ctx.db, payload.plan_pid).await?;
     if payload.ends_on.is_some_and(|end| end < payload.starts_on) {
         return Err(unprocessable("ends_on is before starts_on"));
     }
     let existing = benefit_enrollments::Entity::find()
         .filter(benefit_enrollments::Column::PlanPid.eq(plan.pid))
-        .filter(benefit_enrollments::Column::EmployeePid.eq(employee.pid))
+        .filter(benefit_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(benefit_enrollments::Column::DeletedAt.is_null())
         .count(&ctx.db)
         .await?;
     if existing > 0 {
-        return Err(unprocessable("employee is already enrolled in this plan"));
+        return Err(unprocessable("worker is already enrolled in this plan"));
     }
     let txn = ctx.db.begin().await?;
     let row = benefit_enrollments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         plan_pid: ActiveValue::set(plan.pid),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         starts_on: ActiveValue::set(payload.starts_on),
         ends_on: ActiveValue::set(payload.ends_on),
         deleted_at: ActiveValue::set(None),
@@ -756,15 +763,15 @@ async fn enroll(
     })
 }
 
-/// `GET /api/employees/{pid}/benefit-enrollments`.
+/// `GET /api/workers/{pid}/benefit-enrollments`.
 #[debug_handler]
 async fn list_enrollments(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let rows = benefit_enrollments::Entity::find()
-        .filter(benefit_enrollments::Column::EmployeePid.eq(employee.pid))
+        .filter(benefit_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(benefit_enrollments::Column::DeletedAt.is_null())
         .order_by_asc(benefit_enrollments::Column::Id)
         .all(&ctx.db)
@@ -812,18 +819,18 @@ async fn unenroll(
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
-        .add("/employees", post(create_employee))
-        .add("/employees", get(list_employees))
-        .add("/employees/{pid}", get(get_employee))
-        .add("/employees/{pid}", put(update_employee))
-        .add("/employees/{pid}", delete(delete_employee))
-        .add("/employees/{pid}/status", post(change_status))
+        .add("/workers", post(create_worker))
+        .add("/workers", get(list_workers))
+        .add("/workers/{pid}", get(get_worker))
+        .add("/workers/{pid}", put(update_worker))
+        .add("/workers/{pid}", delete(delete_worker))
+        .add("/workers/{pid}/status", post(change_status))
         .add("/org-chart", get(org_chart))
         .add("/benefit-plans", post(create_plan))
         .add("/benefit-plans", get(list_plans))
-        .add("/employees/{pid}/benefit-enrollments", post(enroll))
+        .add("/workers/{pid}/benefit-enrollments", post(enroll))
         .add(
-            "/employees/{pid}/benefit-enrollments",
+            "/workers/{pid}/benefit-enrollments",
             get(list_enrollments),
         )
         .add("/benefit-enrollments/{pid}", delete(unenroll))

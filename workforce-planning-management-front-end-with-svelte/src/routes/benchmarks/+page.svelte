@@ -1,19 +1,37 @@
 <script lang="ts">
-  import { benchmarkComparison, listBenchmarks, listEmployees, money } from "$lib/api/wpm";
+  import { page } from "$app/state";
+  import { benchmarkComparison, listBenchmarks, money } from "$lib/api/wpm";
   import { i18n, t } from "$lib/i18n.svelte";
   import type { Benchmark, ComparisonRow } from "$lib/api/types";
 
+  // No switcher: every organization this person can read gets its own
+  // comparison section below, fetched in parallel — not a single
+  // guessed org. `scope` (not `organizations`) since it's expanded
+  // through org confederation: a membership in a parent confederation
+  // reads as every descendant too. The benchmark bands themselves are
+  // a shared reference table, not organization-scoped, so they stay a
+  // single list.
+  const organizationRefs = $derived((page.data.scope ?? []) as string[]);
+
   let benchmarks = $state<Benchmark[] | null>(null);
-  let rows = $state<ComparisonRow[]>([]);
+  let rowsByOrganization = $state<Record<string, ComparisonRow[]> | null>(null);
   let error = $state<string | null>(null);
 
   $effect(() => {
+    const refs = organizationRefs;
     void (async () => {
       try {
-        benchmarks = await listBenchmarks();
-        const employees = await listEmployees();
-        const organization = employees[0]?.organization_ref;
-        rows = organization ? (await benchmarkComparison(organization)).rows : [];
+        const [bands, entries] = await Promise.all([
+          listBenchmarks(),
+          Promise.all(
+            refs.map(async (ref) => {
+              const comparison = await benchmarkComparison(ref);
+              return [ref, comparison.rows] as const;
+            }),
+          ),
+        ]);
+        benchmarks = bands;
+        rowsByOrganization = Object.fromEntries(entries);
       } catch (cause) {
         error = cause instanceof Error ? cause.message : String(cause);
       }
@@ -25,7 +43,7 @@
 
 {#if error}
   <p class="error" data-testid="error">{t("common.error")}: {error}</p>
-{:else if benchmarks === null}
+{:else if benchmarks === null || rowsByOrganization === null}
   <p>{t("common.loading")}</p>
 {:else}
   <table data-testid="bands">
@@ -45,24 +63,33 @@
   </table>
 
   <h2>{t("bench.flag")}</h2>
-  <table data-testid="comparison">
-    <tbody>
-      {#each rows as row (row.employee_pid)}
-        <tr>
-          <td><a href={`/employees/${row.employee_pid}`}>{row.employee_pid.slice(0, 8)}</a></td>
-          <td>{row.job_title}</td>
-          <td>{row.department}</td>
-          <td>
-            {#if row.flag}
-              <span class={`chip flag-${row.flag}`}>{row.flag}</span>
-            {:else}
-              <span class="muted">—</span>
-            {/if}
-          </td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if organizationRefs.length === 0}
+    <p class="muted">{t("org.noOrganizations")}</p>
+  {:else}
+    {#each organizationRefs as ref (ref)}
+      <section class="benchmark-org-section">
+        <h3><code>{ref}</code></h3>
+        <table data-testid="comparison">
+          <tbody>
+            {#each rowsByOrganization[ref] ?? [] as row (row.worker_pid)}
+              <tr>
+                <td><a href={`/workers/${row.worker_pid}`}>{row.worker_pid.slice(0, 8)}</a></td>
+                <td>{row.job_title}</td>
+                <td>{row.department}</td>
+                <td>
+                  {#if row.flag}
+                    <span class={`chip flag-${row.flag}`}>{row.flag}</span>
+                  {:else}
+                    <span class="muted">—</span>
+                  {/if}
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </section>
+    {/each}
+  {/if}
 {/if}
 
 <style>
@@ -71,5 +98,16 @@
   }
   .flag-above_max {
     color: var(--state-reserved, #b57e10);
+  }
+  .benchmark-org-section + .benchmark-org-section {
+    margin-top: 1rem;
+  }
+  .benchmark-org-section h3 {
+    font-size: 0.9rem;
+    margin: 0.75rem 0 0.5rem;
+  }
+  .benchmark-org-section h3 code {
+    color: var(--muted);
+    font-weight: 400;
   }
 </style>

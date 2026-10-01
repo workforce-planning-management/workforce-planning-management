@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `notifications`. One in-app notification (WPM-R31): reference-only (WPM-D23 — a kind, a neutral body, pids/names; never scores, comments, or masked-tier values), owned by one employee.
+//! `SeaORM` Entity — `notifications`. One in-app notification (WPM-R31): reference-only (WPM-D23 — a kind, a neutral body, pids/names; never scores, comments, or masked-tier values), owned by one worker.
 
 #![allow(missing_docs)]
 
@@ -14,7 +14,7 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub kind: String,
     pub body: String,
     pub data: Json,

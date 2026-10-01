@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `pipeline_members`. One candidate or employee in a talent pipeline (WPM-R22).
+//! `SeaORM` Entity — `pipeline_members`. One candidate or worker in a talent pipeline (WPM-R22).
 
 #![allow(missing_docs)]
 

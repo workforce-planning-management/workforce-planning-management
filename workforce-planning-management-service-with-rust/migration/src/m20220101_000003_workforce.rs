@@ -27,7 +27,7 @@ impl MigrationTrait for Migration {
                  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  worked_on DATE NOT NULL,
                  minutes INTEGER NOT NULL,
                  kind VARCHAR NOT NULL,
@@ -38,8 +38,8 @@ impl MigrationTrait for Migration {
         )
         .await?;
         conn.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS time_entries_employee_day \
-             ON time_entries (employee_pid, worked_on)",
+            "CREATE INDEX IF NOT EXISTS time_entries_worker_day \
+             ON time_entries (worker_pid, worked_on)",
         )
         .await?;
         conn.execute_unprepared(
@@ -48,7 +48,7 @@ impl MigrationTrait for Migration {
                  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  kind VARCHAR NOT NULL,
                  year INTEGER NOT NULL,
                  entitled_days INTEGER NOT NULL,
@@ -59,7 +59,7 @@ impl MigrationTrait for Migration {
         .await?;
         conn.execute_unprepared(
             "CREATE UNIQUE INDEX IF NOT EXISTS leave_entitlements_key \
-             ON leave_entitlements (employee_pid, kind, year) WHERE deleted_at IS NULL",
+             ON leave_entitlements (worker_pid, kind, year) WHERE deleted_at IS NULL",
         )
         .await?;
         conn.execute_unprepared(
@@ -68,7 +68,7 @@ impl MigrationTrait for Migration {
                  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  kind VARCHAR NOT NULL,
                  start_on DATE NOT NULL,
                  end_on DATE NOT NULL,
@@ -83,8 +83,8 @@ impl MigrationTrait for Migration {
         )
         .await?;
         conn.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS leave_requests_employee \
-             ON leave_requests (employee_pid)",
+            "CREATE INDEX IF NOT EXISTS leave_requests_worker \
+             ON leave_requests (worker_pid)",
         )
         .await?;
         conn.execute_unprepared(
@@ -112,14 +112,14 @@ impl MigrationTrait for Migration {
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
                  shift_pid UUID NOT NULL,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  deleted_at TIMESTAMPTZ NULL
              )",
         )
         .await?;
         conn.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS shift_assignments_employee \
-             ON shift_assignments (employee_pid)",
+            "CREATE INDEX IF NOT EXISTS shift_assignments_worker \
+             ON shift_assignments (worker_pid)",
         )
         .await?;
         Ok(())

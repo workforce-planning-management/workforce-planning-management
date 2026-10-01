@@ -15,13 +15,14 @@ use uuid::Uuid;
 use super::_entities::{
     applications, assessment_instruments, assessment_results, assessments, benchmarks,
     benefit_enrollments, benefit_plans, candidates, development_plan_items, development_plans,
-    early_career_programs, employees, feedback_entries, goals, interviews, leave_entitlements,
-    leave_requests, onboarding_items, payroll_runs, payslips, pipeline_members, program_placements,
-    requisitions, review_cycles, reviews, shift_assignments, shifts, succession_candidates,
-    succession_plans, talent_pipelines, time_entries, training_enrollments,
+    early_career_programs, workers, feedback_entries, goals, interviews, leave_entitlements,
+    leave_requests, onboarding_items, organization_confederations, organization_memberships,
+    payroll_runs, payslips, pipeline_members, program_placements, requisitions, review_cycles,
+    reviews, shift_assignments, shifts, succession_candidates, succession_plans, talent_pipelines,
+    time_entries, training_enrollments,
 };
 
-impl ActiveModelBehavior for employees::ActiveModel {}
+impl ActiveModelBehavior for workers::ActiveModel {}
 impl ActiveModelBehavior for requisitions::ActiveModel {}
 impl ActiveModelBehavior for assessment_instruments::ActiveModel {}
 impl ActiveModelBehavior for assessments::ActiveModel {}
@@ -53,6 +54,8 @@ impl ActiveModelBehavior for succession_candidates::ActiveModel {}
 impl ActiveModelBehavior for payroll_runs::ActiveModel {}
 impl ActiveModelBehavior for payslips::ActiveModel {}
 impl ActiveModelBehavior for benchmarks::ActiveModel {}
+impl ActiveModelBehavior for organization_memberships::ActiveModel {}
+impl ActiveModelBehavior for organization_confederations::ActiveModel {}
 
 /// Parse a path `pid` string to a [`Uuid`], mapping failure to `404`
 /// (an unparsable pid can never name a record).
@@ -86,7 +89,7 @@ macro_rules! find_active_by_pid {
     };
 }
 
-find_active_by_pid!(find_employee, employees);
+find_active_by_pid!(find_worker, workers);
 find_active_by_pid!(find_requisition, requisitions);
 find_active_by_pid!(find_candidate, candidates);
 find_active_by_pid!(find_application, applications);
@@ -109,3 +112,5 @@ find_active_by_pid!(find_talent_pipeline, talent_pipelines);
 find_active_by_pid!(find_pipeline_member, pipeline_members);
 find_active_by_pid!(find_early_career_program, early_career_programs);
 find_active_by_pid!(find_program_placement, program_placements);
+find_active_by_pid!(find_organization_membership, organization_memberships);
+find_active_by_pid!(find_organization_confederation, organization_confederations);

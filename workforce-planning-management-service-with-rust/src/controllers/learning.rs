@@ -1,6 +1,6 @@
 //! Learning & development — the skills framework (catalog + declared
-//! employee proficiency), learning paths (ordered course steps +
-//! per-employee enrolment with honest progress), and mentorships
+//! worker proficiency), learning paths (ordered course steps +
+//! per-worker enrolment with honest progress), and mentorships
 //! (lifecycle + session log). Declared/recorded data plus derived
 //! views; the pure rules live in [`crate::rules::learning`], and the
 //! progress derivation counts only real course completions.
@@ -13,7 +13,7 @@ use uuid::Uuid;
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    employee_skills, employees, learning_path_steps, learning_paths, mentorship_sessions,
+    worker_skills, workers, learning_path_steps, learning_paths, mentorship_sessions,
     mentorships, path_enrollments, skills, training_enrollments,
 };
 use crate::models::audit_logs::Model as Audit;
@@ -80,24 +80,24 @@ async fn list_skills(State(ctx): State<AppContext>) -> Result<Response> {
     format::json(rows)
 }
 
-/// `PUT /api/employees/{pid}/skills` body — declare (upsert) an
-/// employee's proficiency in a skill (1–5, optional target).
+/// `PUT /api/workers/{pid}/skills` body — declare (upsert) an
+/// worker's proficiency in a skill (1–5, optional target).
 #[derive(Debug, Deserialize)]
-struct EmployeeSkillPayload {
+struct WorkerSkillPayload {
     skill_pid: Uuid,
     proficiency: i32,
     #[serde(default)]
     target: Option<i32>,
 }
 
-/// `PUT /api/employees/{pid}/skills` — declare or update the
-/// proficiency (one row per employee+skill).
+/// `PUT /api/workers/{pid}/skills` — declare or update the
+/// proficiency (one row per worker+skill).
 #[debug_handler]
 async fn declare_skill(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    Json(payload): Json<EmployeeSkillPayload>,
+    Json(payload): Json<WorkerSkillPayload>,
 ) -> Result<Response> {
     let mut problems = Problems::new();
     if !rules::valid_proficiency(payload.proficiency) {
@@ -109,22 +109,22 @@ async fn declare_skill(
         problems.push("target must be between 1 and 5");
     }
     ensure_valid(&problems.into_vec())?;
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let skill = skills::Entity::find()
         .filter(skills::Column::Pid.eq(payload.skill_pid))
         .filter(skills::Column::DeletedAt.is_null())
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    let existing = employee_skills::Entity::find()
-        .filter(employee_skills::Column::EmployeePid.eq(employee.pid))
-        .filter(employee_skills::Column::SkillPid.eq(skill.pid))
+    let existing = worker_skills::Entity::find()
+        .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
+        .filter(worker_skills::Column::SkillPid.eq(skill.pid))
         .one(&ctx.db)
         .await?;
     let today = chrono::Utc::now().date_naive();
     let row = match existing {
         Some(row) => {
-            let mut active: employee_skills::ActiveModel = row.into();
+            let mut active: worker_skills::ActiveModel = row.into();
             active.proficiency = ActiveValue::set(payload.proficiency);
             active.target = ActiveValue::set(payload.target);
             active.assessed_on = ActiveValue::set(today);
@@ -132,9 +132,9 @@ async fn declare_skill(
             active.update(&ctx.db).await?
         }
         None => {
-            employee_skills::ActiveModel {
+            worker_skills::ActiveModel {
                 pid: ActiveValue::set(Uuid::new_v4()),
-                employee_pid: ActiveValue::set(employee.pid),
+                worker_pid: ActiveValue::set(worker.pid),
                 skill_pid: ActiveValue::set(skill.pid),
                 proficiency: ActiveValue::set(payload.proficiency),
                 target: ActiveValue::set(payload.target),
@@ -148,7 +148,7 @@ async fn declare_skill(
     };
     Audit::record(
         &ctx.db,
-        "employee_skill",
+        "worker_skill",
         row.pid,
         "declared",
         caller.actor(),
@@ -158,16 +158,16 @@ async fn declare_skill(
     format::json(row)
 }
 
-/// `GET /api/employees/{pid}/skills` — one employee's declared skills.
+/// `GET /api/workers/{pid}/skills` — one worker's declared skills.
 #[debug_handler]
-async fn list_employee_skills(
+async fn list_worker_skills(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
-    let rows = employee_skills::Entity::find()
-        .filter(employee_skills::Column::EmployeePid.eq(employee.pid))
-        .filter(employee_skills::Column::DeletedAt.is_null())
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let rows = worker_skills::Entity::find()
+        .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
+        .filter(worker_skills::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
     format::json(rows)
@@ -270,11 +270,11 @@ async fn list_paths(State(ctx): State<AppContext>) -> Result<Response> {
 /// `POST /api/learning-paths/{pid}/enrollments` body.
 #[derive(Debug, Deserialize)]
 struct PathEnrollPayload {
-    employee_pid: Uuid,
+    worker_pid: Uuid,
 }
 
-/// `POST /api/learning-paths/{pid}/enrollments` — enrol an employee
-/// (idempotent per employee+path).
+/// `POST /api/learning-paths/{pid}/enrollments` — enrol a worker
+/// (idempotent per worker+path).
 #[debug_handler]
 async fn enroll_path(
     State(ctx): State<AppContext>,
@@ -283,20 +283,20 @@ async fn enroll_path(
     Json(payload): Json<PathEnrollPayload>,
 ) -> Result<Response> {
     let path = find_path(&ctx, &pid).await?;
-    let employee = records::find_employee(&ctx.db, payload.employee_pid).await?;
+    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
     let existing = path_enrollments::Entity::find()
         .filter(path_enrollments::Column::PathPid.eq(path.pid))
-        .filter(path_enrollments::Column::EmployeePid.eq(employee.pid))
+        .filter(path_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(path_enrollments::Column::DeletedAt.is_null())
         .one(&ctx.db)
         .await?;
     if existing.is_some() {
-        return Err(unprocessable("employee is already enrolled in this path"));
+        return Err(unprocessable("worker is already enrolled in this path"));
     }
     let row = path_enrollments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         path_pid: ActiveValue::set(path.pid),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         enrolled_on: ActiveValue::set(chrono::Utc::now().date_naive()),
         deleted_at: ActiveValue::set(None),
         ..Default::default()
@@ -315,9 +315,9 @@ async fn enroll_path(
     format::json(PidRef::of(row.pid))
 }
 
-/// `GET /api/learning-paths/{pid}/progress` — each enrolled employee's
+/// `GET /api/learning-paths/{pid}/progress` — each enrolled worker's
 /// honest progress: steps completed (a step counts only if the
-/// employee has a **completed** training enrolment for that
+/// worker has a **completed** training enrolment for that
 /// `course_ref`) out of the path's step count.
 #[debug_handler]
 async fn path_progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
@@ -336,7 +336,7 @@ async fn path_progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -
     let mut members = Vec::new();
     for enrollment in &enrollments {
         let completed: Vec<String> = training_enrollments::Entity::find()
-            .filter(training_enrollments::Column::EmployeePid.eq(enrollment.employee_pid))
+            .filter(training_enrollments::Column::WorkerPid.eq(enrollment.worker_pid))
             .filter(training_enrollments::Column::DeletedAt.is_null())
             .filter(training_enrollments::Column::Status.eq("completed"))
             .all(&ctx.db)
@@ -345,13 +345,13 @@ async fn path_progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -
             .map(|t| t.course_ref)
             .collect();
         let (done, total) = rules::path_progress(&step_courses, &completed);
-        let employee = employees::Entity::find()
-            .filter(employees::Column::Pid.eq(enrollment.employee_pid))
+        let worker = workers::Entity::find()
+            .filter(workers::Column::Pid.eq(enrollment.worker_pid))
             .one(&ctx.db)
             .await?;
         members.push(serde_json::json!({
-            "employee_pid": enrollment.employee_pid,
-            "display_name": employee.map(|e| e.display_name),
+            "worker_pid": enrollment.worker_pid,
+            "display_name": worker.map(|e| e.display_name),
             "completed_steps": done,
             "total_steps": total,
         }));
@@ -362,7 +362,7 @@ async fn path_progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -
         "steps": steps.iter().map(|s| serde_json::json!({
             "course_ref": s.course_ref, "title": s.title, "position": s.position,
         })).collect::<Vec<_>>(),
-        "derivation": "a step is complete iff the employee has a completed training \
+        "derivation": "a step is complete iff the worker has a completed training \
                        enrolment for its course_ref; real completions only",
         "members": members,
     }))
@@ -389,11 +389,11 @@ async fn create_mentorship(
     problems.require_text("focus", &payload.focus);
     problems.cap_text("focus", &payload.focus);
     if payload.mentor_pid == payload.mentee_pid {
-        problems.push("mentor and mentee must be different employees");
+        problems.push("mentor and mentee must be different workers");
     }
     ensure_valid(&problems.into_vec())?;
-    records::find_employee(&ctx.db, payload.mentor_pid).await?;
-    records::find_employee(&ctx.db, payload.mentee_pid).await?;
+    records::find_worker(&ctx.db, payload.mentor_pid).await?;
+    records::find_worker(&ctx.db, payload.mentee_pid).await?;
     let row = mentorships::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         mentor_pid: ActiveValue::set(payload.mentor_pid),
@@ -541,17 +541,17 @@ async fn get_mentorship(
 // ─── Derived views ──────────────────────────────────────────────────────────
 
 /// `GET /api/learning/skills-matrix` — per-department skill coverage:
-/// for each (department, skill) the count of employees at each
+/// for each (department, skill) the count of workers at each
 /// proficiency and the average, plus per-skill gap counts
 /// (proficiency below a declared target).
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // one pass over the declared skills
 async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Response> {
-    let employee_rows = employees::Entity::find()
-        .filter(employees::Column::DeletedAt.is_null())
+    let worker_rows = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    let dept_of: std::collections::BTreeMap<Uuid, String> = employee_rows
+    let dept_of: std::collections::BTreeMap<Uuid, String> = worker_rows
         .iter()
         .map(|e| (e.pid, e.department.clone()))
         .collect();
@@ -563,8 +563,8 @@ async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Response> {
         .iter()
         .map(|s| (s.pid, s.name.as_str()))
         .collect();
-    let declared = employee_skills::Entity::find()
-        .filter(employee_skills::Column::DeletedAt.is_null())
+    let declared = worker_skills::Entity::find()
+        .filter(worker_skills::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
     // (department, skill) → (count, sum, gap_count)
@@ -572,7 +572,7 @@ async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Response> {
         std::collections::BTreeMap::new();
     let mut gaps: Vec<serde_json::Value> = Vec::new();
     for row in &declared {
-        let Some(department) = dept_of.get(&row.employee_pid) else {
+        let Some(department) = dept_of.get(&row.worker_pid) else {
             continue;
         };
         let cell = cells
@@ -583,7 +583,7 @@ async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Response> {
         if row.target.is_some_and(|t| row.proficiency < t) {
             cell.2 += 1;
             gaps.push(serde_json::json!({
-                "employee_pid": row.employee_pid,
+                "worker_pid": row.worker_pid,
                 "department": department,
                 "skill": skill_name.get(&row.skill_pid),
                 "proficiency": row.proficiency,
@@ -599,7 +599,7 @@ async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Response> {
             serde_json::json!({
                 "department": department,
                 "skill": skill_name.get(skill_pid),
-                "employees": count,
+                "workers": count,
                 "average_proficiency": average,
                 "below_target": gap,
             })
@@ -632,11 +632,11 @@ async fn training_analytics(
     let horizon_days = query.expiring_within_days.unwrap_or(90).clamp(0, 3650);
     let today = chrono::Utc::now().date_naive();
     let horizon = today + chrono::Duration::days(horizon_days);
-    let employee_rows = employees::Entity::find()
-        .filter(employees::Column::DeletedAt.is_null())
+    let worker_rows = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    let dept_of: std::collections::BTreeMap<Uuid, String> = employee_rows
+    let dept_of: std::collections::BTreeMap<Uuid, String> = worker_rows
         .iter()
         .map(|e| (e.pid, e.department.clone()))
         .collect();
@@ -650,7 +650,7 @@ async fn training_analytics(
         (std::collections::BTreeMap<String, usize>, usize),
     > = std::collections::BTreeMap::new();
     for row in &enrollments {
-        let Some(department) = dept_of.get(&row.employee_pid) else {
+        let Some(department) = dept_of.get(&row.worker_pid) else {
             continue;
         };
         let entry = per_dept.entry(department.clone()).or_default();
@@ -696,7 +696,7 @@ async fn training_analytics(
 }
 
 /// `GET /api/learning/mentorship-overview?days=` — active pairings,
-/// mentor load (active mentees per mentor), unmatched employees (no
+/// mentor load (active mentees per mentor), unmatched workers (no
 /// active mentorship as mentor or mentee), and stale actives (no
 /// session in the window).
 #[debug_handler]
@@ -707,11 +707,11 @@ async fn mentorship_overview(
     let stale_days = query.days.unwrap_or(30).clamp(1, 365);
     let today = chrono::Utc::now().date_naive();
     let stale_before = today - chrono::Duration::days(stale_days);
-    let employee_rows = employees::Entity::find()
-        .filter(employees::Column::DeletedAt.is_null())
+    let worker_rows = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    let name_of: std::collections::BTreeMap<Uuid, &str> = employee_rows
+    let name_of: std::collections::BTreeMap<Uuid, &str> = worker_rows
         .iter()
         .map(|e| (e.pid, e.display_name.as_str()))
         .collect();
@@ -758,7 +758,7 @@ async fn mentorship_overview(
             serde_json::json!({ "mentor_pid": mentor, "mentor": name_of.get(mentor), "active_mentees": count })
         })
         .collect();
-    let unmatched: Vec<serde_json::Value> = employee_rows
+    let unmatched: Vec<serde_json::Value> = worker_rows
         .iter()
         .filter(|e| e.status == "active" && !engaged.contains(&e.pid))
         .map(|e| serde_json::json!({ "pid": e.pid, "display_name": e.display_name, "department": e.department }))
@@ -767,7 +767,7 @@ async fn mentorship_overview(
         "as_of": today,
         "active_pairings": active.len(),
         "mentor_load": load_view,
-        "unmatched_employees": unmatched,
+        "unmatched_workers": unmatched,
         "stale_days": stale_days,
         "stale_mentorships": stale,
     }))
@@ -795,8 +795,8 @@ pub fn routes() -> Routes {
         .prefix("/api")
         .add("/skills", post(create_skill))
         .add("/skills", get(list_skills))
-        .add("/employees/{pid}/skills", put(declare_skill))
-        .add("/employees/{pid}/skills", get(list_employee_skills))
+        .add("/workers/{pid}/skills", put(declare_skill))
+        .add("/workers/{pid}/skills", get(list_worker_skills))
         .add("/learning-paths", post(create_path))
         .add("/learning-paths", get(list_paths))
         .add("/learning-paths/{pid}/enrollments", post(enroll_path))

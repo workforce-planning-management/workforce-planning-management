@@ -16,7 +16,7 @@ pub use super::candidates::Entity as Candidates;
 pub use super::development_plan_items::Entity as DevelopmentPlanItems;
 pub use super::development_plans::Entity as DevelopmentPlans;
 pub use super::early_career_programs::Entity as EarlyCareerPrograms;
-pub use super::employees::Entity as Employees;
+pub use super::workers::Entity as Workers;
 pub use super::entitlement_acknowledgements::Entity as EntitlementAcknowledgements;
 pub use super::ergonomic_assessments::Entity as ErgonomicAssessments;
 pub use super::ergonomic_items::Entity as ErgonomicItems;

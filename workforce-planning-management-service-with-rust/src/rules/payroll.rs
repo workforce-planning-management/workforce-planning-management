@@ -88,7 +88,7 @@ pub fn stub_tax_minor(gross_minor: i64) -> Result<i64, String> {
 
 /// Compute one payslip from the period inputs: monthly base (salary ×
 /// FTE), overtime pay, then deductions (stub tax + the benefit
-/// employee-costs). The net is derived, never supplied.
+/// worker-costs). The net is derived, never supplied.
 ///
 /// # Errors
 ///

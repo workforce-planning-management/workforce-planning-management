@@ -18,7 +18,7 @@
 //!    counts: no salary, no assessment score, no review content. The
 //!    one place an individual is named is the succession
 //!    single-point-of-failure list, which names *roles* and their
-//!    incumbent employee pid — the same information the succession
+//!    incumbent worker pid — the same information the succession
 //!    endpoints already return under their own audit.
 //!
 //! Aggregates are computed in-process from the entity rows rather than
@@ -32,8 +32,8 @@ use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use crate::models::_entities::{
-    assessment_instruments, assessments, development_plans, early_career_programs, employee_skills,
-    employees, pipeline_members, program_placements, skills, succession_candidates,
+    assessment_instruments, assessments, development_plans, early_career_programs, worker_skills,
+    workers, pipeline_members, program_placements, skills, succession_candidates,
     succession_plans, talent_pipelines,
 };
 use crate::rules::assessment as assessment_rules;
@@ -69,7 +69,7 @@ async fn overview(
     let as_of = query
         .as_of
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
-    let staff = live_employees(&ctx).await?;
+    let staff = live_workers(&ctx).await?;
 
     let mut by_department: BTreeMap<String, usize> = BTreeMap::new();
     let mut by_status: BTreeMap<String, usize> = BTreeMap::new();
@@ -78,18 +78,18 @@ async fn overview(
     let mut fte_percent_total: i64 = 0;
     let mut span_of_control: BTreeMap<Uuid, usize> = BTreeMap::new();
 
-    for employee in &staff {
+    for worker in &staff {
         *by_department
-            .entry(employee.department.clone())
+            .entry(worker.department.clone())
             .or_default() += 1;
-        *by_status.entry(employee.status.clone()).or_default() += 1;
+        *by_status.entry(worker.status.clone()).or_default() += 1;
         *by_employment_type
-            .entry(employee.employment_type.clone())
+            .entry(worker.employment_type.clone())
             .or_default() += 1;
-        let months = rules::months_of_service(employee.hired_on, as_of);
+        let months = rules::months_of_service(worker.hired_on, as_of);
         *by_tenure.entry(rules::tenure_bucket(months)).or_default() += 1;
-        fte_percent_total += i64::from(employee.fte_percent);
-        if let Some(manager) = employee.manager_pid {
+        fte_percent_total += i64::from(worker.fte_percent);
+        if let Some(manager) = worker.manager_pid {
             *span_of_control.entry(manager).or_default() += 1;
         }
     }
@@ -112,7 +112,7 @@ async fn overview(
 
     format::json(serde_json::json!({
         "as_of": as_of,
-        "derivation": "headcount counts live (not soft-deleted) employee records; FTE is the \
+        "derivation": "headcount counts live (not soft-deleted) worker records; FTE is the \
                        sum of declared fte_percent (in hundredths of a person); tenure is whole \
                        completed months since hired_on",
         "headcount": staff.len(),
@@ -136,7 +136,7 @@ async fn overview(
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // one pass over skills, plans, and sittings
 async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
-    let staff = live_employees(&ctx).await?;
+    let staff = live_workers(&ctx).await?;
     let headcount = staff.len();
     let department_of: BTreeMap<Uuid, &str> = staff
         .iter()
@@ -151,8 +151,8 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
         .iter()
         .map(|s| (s.pid, s.name.as_str()))
         .collect();
-    let declared = employee_skills::Entity::find()
-        .filter(employee_skills::Column::DeletedAt.is_null())
+    let declared = worker_skills::Entity::find()
+        .filter(worker_skills::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
 
@@ -160,15 +160,15 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     let mut per_skill: BTreeMap<Uuid, (usize, usize, usize)> = BTreeMap::new();
     let mut people_with_a_gap: std::collections::HashSet<Uuid> = std::collections::HashSet::new();
     for row in &declared {
-        if !department_of.contains_key(&row.employee_pid) {
-            continue; // a declaration from a departed employee
+        if !department_of.contains_key(&row.worker_pid) {
+            continue; // a declaration from a departed worker
         }
         let entry = per_skill.entry(row.skill_pid).or_default();
         entry.0 += 1;
         match row.target {
             Some(target) if row.proficiency < target => {
                 entry.2 += 1;
-                people_with_a_gap.insert(row.employee_pid);
+                people_with_a_gap.insert(row.worker_pid);
             }
             Some(_) => entry.1 += 1,
             None => {}
@@ -208,14 +208,14 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     let people_on_active_plans: std::collections::HashSet<Uuid> = plans
         .iter()
         .filter(|p| p.status == "active")
-        .map(|p| p.employee_pid)
+        .map(|p| p.worker_pid)
         .collect();
     let gap_covered = people_with_a_gap
         .iter()
         .filter(|pid| people_on_active_plans.contains(pid))
         .count();
 
-    // Assessment coverage: employees with at least one completed sitting.
+    // Assessment coverage: workers with at least one completed sitting.
     let sittings = assessments::Entity::find()
         .filter(assessments::Column::DeletedAt.is_null())
         .all(&ctx.db)
@@ -227,7 +227,7 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
         .collect();
     let mut assessed_by_category: BTreeMap<&str, std::collections::HashSet<Uuid>> = BTreeMap::new();
     for sitting in &sittings {
-        if sitting.subject_kind != "employee" || sitting.status != "completed" {
+        if sitting.subject_kind != "worker" || sitting.status != "completed" {
             continue;
         }
         if let Some(category) = category_of.get(&sitting.instrument_pid) {
@@ -245,7 +245,7 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
                 .map_or(0, std::collections::HashSet::len);
             serde_json::json!({
                 "category": category,
-                "employees_assessed": assessed,
+                "workers_assessed": assessed,
                 "coverage": ratio_json(rules::ratio(assessed, headcount)),
             })
         })
@@ -254,7 +254,7 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     format::json(serde_json::json!({
         "derivation": "coverage counts DECLARED skills over live headcount — a skill nobody \
                        declared is `undeclared`, not absent; a gap is a declared proficiency \
-                       below a declared target; assessment coverage counts employees with at \
+                       below a declared target; assessment coverage counts workers with at \
                        least one COMPLETED sitting in that category",
         "headcount": headcount,
         "skills": coverage,
@@ -431,10 +431,10 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
     }))
 }
 
-/// Every live (not soft-deleted) employee record.
-async fn live_employees(ctx: &AppContext) -> Result<Vec<employees::Model>> {
-    let rows = employees::Entity::find()
-        .filter(employees::Column::DeletedAt.is_null())
+/// Every live (not soft-deleted) worker record.
+async fn live_workers(ctx: &AppContext) -> Result<Vec<workers::Model>> {
+    let rows = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
     Ok(rows)

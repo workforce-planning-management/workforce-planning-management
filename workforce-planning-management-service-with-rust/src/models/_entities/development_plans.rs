@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `development_plans`. One employee's upskilling or reskilling plan (WPM-R21).
+//! `SeaORM` Entity — `development_plans`. One worker's upskilling or reskilling plan (WPM-R21).
 
 #![allow(missing_docs)]
 
@@ -14,7 +14,7 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub kind: String,
     pub target_job_title: Option<String>,
     pub target_department: Option<String>,

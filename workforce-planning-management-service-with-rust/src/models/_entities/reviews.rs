@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `reviews`. One employee's review in one cycle; content is high-sensitivity (WPM-R10).
+//! `SeaORM` Entity — `reviews`. One worker's review in one cycle; content is high-sensitivity (WPM-R10).
 
 #![allow(missing_docs)]
 
@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub pid: Uuid,
     pub cycle_pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub reviewer_ref: String,
     pub status: String,
     pub rating: Option<i32>,

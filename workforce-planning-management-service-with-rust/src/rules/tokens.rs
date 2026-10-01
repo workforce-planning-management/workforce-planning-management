@@ -4,8 +4,8 @@
 //! database stores the token verbatim (WPM-D2 keeps the schema plain
 //! strings so a vocabulary can grow by data migration, not DDL).
 
-/// Employee statuses (lifecycle in [`crate::rules::lifecycle`]).
-pub const EMPLOYEE_STATUSES: &[&str] = &[
+/// Worker statuses (lifecycle in [`crate::rules::lifecycle`]).
+pub const WORKER_STATUSES: &[&str] = &[
     "onboarding",
     "active",
     "on_leave",
@@ -82,6 +82,14 @@ pub const READINESS: &[&str] = &["ready_now", "ready_1y", "ready_2y"];
 /// Payroll run statuses (lifecycle in [`crate::rules::lifecycle`]).
 pub const PAYROLL_STATUSES: &[&str] = &["draft", "calculated", "approved", "paid"];
 
+/// Organization membership roles — covers both employment-linked
+/// membership (paired with a `worker_pid`; ordinarily `member`) and
+/// staff/admin-only privilege grants (no `worker_pid`) in one closed
+/// vocabulary, so a role reliably maps to what it grants in
+/// `rules::org_access`.
+pub const ORGANIZATION_ROLES: &[&str] =
+    &["member", "hr_admin", "payroll_admin", "org_admin", "viewer"];
+
 /// Whether `value` is a member of the closed set `set`.
 #[must_use]
 pub fn is_token(set: &[&str], value: &str) -> bool {
@@ -94,10 +102,13 @@ mod tests {
 
     #[test]
     fn membership_is_exact_and_case_sensitive() {
-        assert!(is_token(EMPLOYEE_STATUSES, "onboarding"));
-        assert!(!is_token(EMPLOYEE_STATUSES, "Onboarding"));
-        assert!(!is_token(EMPLOYEE_STATUSES, "hired"));
+        assert!(is_token(WORKER_STATUSES, "onboarding"));
+        assert!(!is_token(WORKER_STATUSES, "Onboarding"));
+        assert!(!is_token(WORKER_STATUSES, "hired"));
         assert!(is_token(LEAVE_KINDS, "sick"));
         assert!(!is_token(LEAVE_KINDS, ""));
+        assert!(is_token(ORGANIZATION_ROLES, "org_admin"));
+        assert!(!is_token(ORGANIZATION_ROLES, "Org_Admin"));
+        assert!(!is_token(ORGANIZATION_ROLES, "superadmin"));
     }
 }

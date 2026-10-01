@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `appraisals`. One 360° appraisal (WPM-R29): a subject employee, the declared competencies, the lifecycle.
+//! `SeaORM` Entity — `appraisals`. One 360° appraisal (WPM-R29): a subject worker, the declared competencies, the lifecycle.
 
 #![allow(missing_docs)]
 
@@ -14,7 +14,7 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub competencies: Json,
     pub status: String,
     pub shared_on: Option<Date>,

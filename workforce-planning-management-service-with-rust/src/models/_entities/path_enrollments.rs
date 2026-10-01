@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub pid: Uuid,
     pub path_pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub enrolled_on: Date,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }

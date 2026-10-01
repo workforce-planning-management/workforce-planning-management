@@ -9,7 +9,7 @@
 
 use chrono::{Datelike, NaiveDate};
 
-/// The closed acknowledgement vocabulary: what an employee can say
+/// The closed acknowledgement vocabulary: what a worker can say
 /// about a prompt. An HR workflow fact — never a clinical status.
 pub const RESPONSES: &[&str] = &["booked", "done", "declined", "dismissed"];
 
@@ -86,11 +86,11 @@ pub fn active_on(predicates: &Predicates<'_>, today: NaiveDate) -> bool {
         && predicates.active_until.is_none_or(|until| today <= until)
 }
 
-/// Whether an employee is eligible under the rule on `today`:
+/// Whether a worker is eligible under the rule on `today`:
 /// the rule is active, the age band matches (an **unknown age fails a
 /// banded rule** — unknown is not a match), and the department /
 /// job-title lists (case-insensitive; empty = all) contain the
-/// employee's values.
+/// worker's values.
 #[must_use]
 pub fn eligible(
     predicates: &Predicates<'_>,
@@ -116,7 +116,7 @@ pub fn eligible(
     contains(predicates.departments, department) && contains(predicates.job_titles, job_title)
 }
 
-/// What an eligible employee should currently see for one rule, given
+/// What an eligible worker should currently see for one rule, given
 /// their acknowledgement state.
 #[derive(Debug, PartialEq, Eq)]
 pub enum PromptState {

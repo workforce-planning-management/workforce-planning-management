@@ -28,7 +28,8 @@ use crate::{auth, controllers, models::_entities::prelude::*, tasks};
 
 /// Blanket auth-enforcement middleware: reads `WPM_REQUIRE_AUTH` per
 /// request and delegates to the pure [`auth::enforce`] (public paths
-/// and the disabled flag pass through; otherwise a valid bearer PASETO
+/// and the disabled flag pass through; otherwise a valid bearer token —
+/// PASETO or Keycloak JWT, per the `paseto`/`keycloak` Cargo feature —
 /// is required (`401`) and its `attrs` must satisfy the ABAC policy
 /// for the derived action (`403`)). Off by default — see `auth.rs` and
 /// `agents/share/security.md` §4.
@@ -97,15 +98,16 @@ impl Hooks for App {
             .add_route(controllers::notifications::routes())
             .add_route(controllers::ergonomics::routes())
             .add_route(controllers::adjustments::routes())
+            .add_route(controllers::organizations::routes())
             .add_route(controllers::audits::routes())
             .add_route(controllers::docs::routes())
             .add_route(controllers::metrics::routes())
     }
 
     async fn after_routes(router: AxumRouter, _ctx: &AppContext) -> Result<AxumRouter> {
-        // Seed the PASETO verifier (boot-time key fetch when
-        // `WPM_PASETO_KEYS_URL` is set; env fallback — the service
-        // always boots), then keep keys + policy fresh.
+        // Seed the active backend's verifier (boot-time key/JWKS fetch;
+        // env fallback — the service always boots), then keep keys +
+        // policy fresh.
         auth::init().await;
         auth::spawn_key_refresh();
         auth::spawn_policy_watcher();
@@ -170,7 +172,7 @@ impl Hooks for App {
         truncate_table(&ctx.db, Applications).await?;
         truncate_table(&ctx.db, Candidates).await?;
         truncate_table(&ctx.db, Requisitions).await?;
-        truncate_table(&ctx.db, Employees).await?;
+        truncate_table(&ctx.db, Workers).await?;
         Ok(())
     }
 

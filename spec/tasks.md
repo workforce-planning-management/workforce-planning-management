@@ -716,3 +716,156 @@ code + tests in one PR.
       `cargo test --lib` (140 passed), `cargo test -- --ignored` against
       a real Postgres (21 passed, including both new tests), `cargo fmt
       --check`.
+
+## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
+
+Not tasks yet — each item below needs a design pass (a `spec/*.md`
+addition with new WPM-D/WPM-R ids) before it can become a scoped WPM-T
+entry, per the Phase 0 precedent and the "Three-part rule" at the top
+of this file. Researched 2026-09-28 against current workforce-planning
+and HR-tech vendor practice (Orgvue, Anaplan, Workday, SAP
+SuccessFactors, Visier, ChartHop, Gloat, Eightfold, Fuel50) to ground
+each definition, not guessed. Grouped by theme; cross-references note
+where WPM already has a partial foundation to build on.
+
+### Strategic planning, scenario modeling & forecasting
+
+- [ ] **Workforce transformation.** The umbrella discipline —
+      redesigning structure, headcount, and skills around a strategic
+      shift (a restructure, an M&A, an automation programme) rather
+      than incremental headcount changes. Orgvue frames it as
+      connecting strategy to structure so leaders can see how a
+      workforce decision moves cost, skills, and performance together.
+      For WPM this would sit above the existing `succession_plans` /
+      `talent_pipelines` tables (WPM-T14, WPM-T22) as a
+      higher-altitude "current structure vs. target structure" diff
+      view, not a new data model of its own.
+- [ ] **Workforce scenario modeling.** "What-if" comparison of
+      multiple future headcount/cost/skills states before committing —
+      e.g. Anaplan's strength is modelling flexibility tied to
+      financial forecasts for restructuring, M&A workforce impact, or
+      multi-geography headcount plans. WPM has no scenario/draft
+      concept anywhere in the schema today — every table is the
+      current live state. A scenario feature needs a first-class
+      "draft plan" object that can hold hypothetical headcount/org
+      changes without touching live `employees` rows, plus a diff view
+      against the live org chart (WPM-T2's cycle-safe derivation could
+      likely be reused for a draft tree too).
+- [ ] **Workforce forecasting.** Projecting future headcount/attrition/
+      cost from historical trend + planned change, distinct from
+      scenario modeling (forecasting projects one likely path;
+      scenario modeling compares several deliberate ones). Needs a
+      time-series of historical headcount snapshots WPM does not
+      currently retain (the schema is present-state only outside of
+      `audit`/`outbox` rows) — a forecasting feature would first need a
+      periodic headcount-snapshot job before any projection math is
+      possible.
+- [ ] **Future-state modeling.** Closely related to transformation and
+      scenario modeling above — SHRM/Orgvue describe workforce
+      planning as three pillars (current state, desired future state,
+      the path between them). WPM's "current state" pillar is already
+      strong (employees, org chart, skills, succession); "future
+      state" and "path" have no representation yet. Likely the same
+      draft-plan primitive as scenario modeling above, rather than a
+      separate concept — worth designing together.
+
+### Skills, talent, and internal mobility
+
+- [ ] **Skills, intelligence, and talent matching.** The Gloat/
+      Eightfold/Fuel50 category: a continuously-updated skills graph
+      matching people to roles, gigs, or projects, not just open
+      requisitions. WPM already has a real (if simpler) skills
+      foundation — `employee_skills` with declared 1–5 proficiency +
+      optional target (WPM-T20) — that a matching feature could
+      extend, rather than reintroducing a duplicate model. The gap
+      versus the vendor category: today's skills data is
+      self-declared, not inferred, and nothing matches a skill profile
+      against an open requisition or pipeline (WPM-T5, WPM-T22)
+      automatically.
+- [ ] **Internal mobility.** Employees moving laterally or upward
+      inside the org rather than leaving — the core use case of the
+      Gloat/Fuel50 "talent marketplace" category, distinct from
+      `talent_pipelines`/succession (WPM-T22), which are
+      manager/HR-curated rather than employee-initiated. WPM has the
+      skills and profile data an internal-mobility feature would read
+      from, but no employee-facing "browse open roles that fit my
+      skills" surface, and no data model for an employee expressing
+      interest in a move. Adjacent to — and should reuse the audience/
+      visibility conventions of — the existing self-service surface
+      (WPM-T11) and "My 360 requests" pattern (WPM-T29).
+- [ ] **Skills gap identification.** WPM already ships this at the
+      department level — the skills-matrix gap report (WPM-T20,
+      `below_target` counts) and the cognitive/psychometric assessment
+      gap views (WPM-T21, WPM-T35). The vendor bar (Visier, ChartHop)
+      goes further: gaps compared against a *future* role's
+      requirements, not just today's declared target — which depends
+      on the future-state modeling item above existing first.
+- [ ] **Workforce capability analysis.** Aggregate "do we have enough
+      of the critical skills to compete" reporting across the whole
+      org, as distinct from the per-employee/per-department gap
+      reports above — a strategic rather than operational read of the
+      same skills data. Likely a new read-only aggregate view over
+      `employee_skills` + `learning_paths` (WPM-T20) rather than new
+      stored state, in the same spirit as the existing
+      workforce-intelligence read views (WPM-T22,
+      `/api/workforce-intelligence/*`).
+
+### Metrics, analytics, and visualization
+
+- [ ] **Workforce metrics.** The base layer every item on this list
+      depends on — standard counts/rates (headcount, turnover, time-
+      to-fill, span of control, tenure mix) as a shared, named
+      vocabulary rather than one-off numbers computed per screen. WPM
+      already computes several of these ad hoc (dashboard tiles,
+      benchmark rows (WPM-T16), working-time flags (WPM-T26)); a
+      metrics layer would centralise the *definitions* so "headcount"
+      means the same thing everywhere it's shown — the honesty-format
+      module (WPM-T39) is the right precedent for how to centralise
+      this kind of shared, tested derivation rather than reinventing
+      it per route.
+- [ ] **Workforce analytics and insights.** The narrative/diagnostic
+      layer on top of workforce metrics — Visier's own framing is
+      turning the metrics above into "why" and "what should we do
+      about it" rather than raw numbers on a dashboard. This is the
+      most open-ended item on this list and the one most dependent on
+      workforce metrics existing first as a well-defined foundation.
+- [ ] **Organizational visualization.** WPM already has a recursive
+      org-chart derivation (WPM-T2) but only ever renders one view of
+      it. ChartHop's category is a *highly visual*, multi-mode org
+      chart — by department, manager, location, job level, tenure —
+      synced live from the underlying data. For WPM this is a
+      front-end-heavy extension of the existing `/org-chart` route
+      (view-mode switches over the same derivation) rather than a new
+      data model.
+
+### Cross-cutting
+
+- [ ] **Financial planning-led workforce planning.** FP&A-driven
+      headcount planning — workforce cost is typically ~70% of opex,
+      so Finance (not just HR) needs to model compensation strategy
+      and headcount affordability directly, per BARC/Visier's framing
+      of HR-Finance alignment. WPM's payroll domain (WPM-T15, WPM-T16)
+      already holds the compensation data this would need to read;
+      the gap is a Finance-facing "what can we afford to hire" planning
+      view over that data, most naturally landing alongside the
+      scenario-modeling / draft-plan work above rather than as its own
+      silo.
+- [ ] **Support for AI-driven change.** Gartner and SHRM's 2026
+      CHRO research frames this as two things: (1) HR tooling that
+      itself uses AI (inference, matching, forecasting — several items
+      above), and (2) HR *supporting* an organization through AI-driven
+      role and workflow change (which roles are displaced/reshaped,
+      what reskilling is needed). WPM's existing pure-core rules
+      style (no ML dependency anywhere in the stack today) suggests
+      (2) — an operational workflow for tracking role/skill impact
+      from an automation initiative — is the better fit than adding a
+      model-inference dependency for (1).
+- [ ] **Support for learning management system (LMS) users.** WPM's
+      own `training_enrollments`/course-URN model (WPM-T13) already
+      assumes an upstream course catalog; the vendor pattern (xAPI/
+      SCORM/LTI, or a REST roster-sync integration) is a *real* LMS
+      feeding completions and skill evidence back into WPM rather than
+      WPM being the LMS itself. This is closer to WPM-T3's existing
+      upstream-client seam (`EntityRef`-keyed resolver, `http`/`stub`
+      mode) than to a new subsystem — likely a new upstream client
+      plus a webhook or polling endpoint for completion events.

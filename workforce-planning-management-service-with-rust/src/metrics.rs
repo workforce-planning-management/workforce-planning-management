@@ -16,18 +16,18 @@ pub const CONTENT_TYPE: &str = "text/plain; version=0.0.4";
 pub struct Metrics {
     /// The underlying registry.
     pub registry: Registry,
-    /// Employees hired (application `hired` transitions).
-    pub employee_hired_total: Counter,
-    /// Employees activated (`onboarding → active`).
-    pub employee_activated_total: Counter,
-    /// Employees terminated.
-    pub employee_terminated_total: Counter,
+    /// Workers hired (application `hired` transitions).
+    pub worker_hired_total: Counter,
+    /// Workers activated (`onboarding → active`).
+    pub worker_activated_total: Counter,
+    /// Workers terminated.
+    pub worker_terminated_total: Counter,
     /// Leave requests decided (approved + rejected).
     pub leave_decided_total: Counter,
     /// Payroll runs calculated.
     pub payroll_calculated_total: Counter,
-    /// Live gauge: active employees.
-    pub employees_active: IntGauge,
+    /// Live gauge: active workers.
+    pub workers_active: IntGauge,
     /// Live gauge: open requisitions.
     pub requisitions_open: IntGauge,
     /// Live gauge: leave requests awaiting decision.
@@ -45,24 +45,24 @@ impl Metrics {
         let gauge = |name: &str, help: &str| {
             IntGauge::with_opts(Opts::new(name, help)).expect("static gauge opts are always valid")
         };
-        let employee_hired_total = counter("employee_hired_total", "Total employees hired.");
-        let employee_activated_total =
-            counter("employee_activated_total", "Total employees activated.");
-        let employee_terminated_total =
-            counter("employee_terminated_total", "Total employees terminated.");
+        let worker_hired_total = counter("worker_hired_total", "Total workers hired.");
+        let worker_activated_total =
+            counter("worker_activated_total", "Total workers activated.");
+        let worker_terminated_total =
+            counter("worker_terminated_total", "Total workers terminated.");
         let leave_decided_total = counter("leave_decided_total", "Total leave requests decided.");
         let payroll_calculated_total =
             counter("payroll_calculated_total", "Total payroll runs calculated.");
-        let employees_active = gauge("employees_active", "Employees currently active.");
+        let workers_active = gauge("workers_active", "Workers currently active.");
         let requisitions_open = gauge("requisitions_open", "Requisitions currently open.");
         let leave_pending = gauge("leave_pending", "Leave requests awaiting decision.");
         for collector in [
-            Box::new(employee_hired_total.clone()) as Box<dyn prometheus::core::Collector>,
-            Box::new(employee_activated_total.clone()),
-            Box::new(employee_terminated_total.clone()),
+            Box::new(worker_hired_total.clone()) as Box<dyn prometheus::core::Collector>,
+            Box::new(worker_activated_total.clone()),
+            Box::new(worker_terminated_total.clone()),
             Box::new(leave_decided_total.clone()),
             Box::new(payroll_calculated_total.clone()),
-            Box::new(employees_active.clone()),
+            Box::new(workers_active.clone()),
             Box::new(requisitions_open.clone()),
             Box::new(leave_pending.clone()),
         ] {
@@ -72,12 +72,12 @@ impl Metrics {
         }
         Self {
             registry,
-            employee_hired_total,
-            employee_activated_total,
-            employee_terminated_total,
+            worker_hired_total,
+            worker_activated_total,
+            worker_terminated_total,
             leave_decided_total,
             payroll_calculated_total,
-            employees_active,
+            workers_active,
             requisitions_open,
             leave_pending,
         }
@@ -116,11 +116,11 @@ mod tests {
     #[test]
     fn render_yields_valid_prometheus_text() {
         let m = Metrics::global();
-        m.employee_hired_total.inc();
-        m.employees_active.set(42);
+        m.worker_hired_total.inc();
+        m.workers_active.set(42);
         let body = m.render();
-        assert!(body.contains("# TYPE employee_hired_total counter"));
-        assert!(body.contains("# TYPE employees_active gauge"));
-        assert!(body.contains("employees_active 42"));
+        assert!(body.contains("# TYPE worker_hired_total counter"));
+        assert!(body.contains("# TYPE workers_active gauge"));
+        assert!(body.contains("workers_active 42"));
     }
 }

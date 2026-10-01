@@ -10,7 +10,7 @@ use uuid::Uuid;
 pub use super::_entities::notifications::{self, ActiveModel, Entity, Model};
 
 impl Model {
-    /// Push one notification to an employee. Generic over
+    /// Push one notification to a worker. Generic over
     /// [`ConnectionTrait`] so it can ride the handler's transaction.
     ///
     /// # Errors
@@ -18,14 +18,14 @@ impl Model {
     /// When the insert fails.
     pub async fn push<C: ConnectionTrait>(
         db: &C,
-        employee_pid: Uuid,
+        worker_pid: Uuid,
         kind: &str,
         body: &str,
         data: serde_json::Value,
     ) -> ModelResult<Self> {
         let entry = notifications::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
-            employee_pid: ActiveValue::set(employee_pid),
+            worker_pid: ActiveValue::set(worker_pid),
             kind: ActiveValue::set(kind.to_string()),
             body: ActiveValue::set(body.to_string()),
             data: ActiveValue::set(data),

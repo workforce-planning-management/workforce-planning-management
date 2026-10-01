@@ -38,7 +38,7 @@ impl MigrationTrait for Migration {
                      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                      id SERIAL PRIMARY KEY,
                      pid UUID NOT NULL UNIQUE,
-                     employee_pid UUID NOT NULL,
+                     worker_pid UUID NOT NULL,
                      kind VARCHAR NOT NULL,
                      target_job_title VARCHAR NULL,
                      target_department VARCHAR NULL,
@@ -48,8 +48,8 @@ impl MigrationTrait for Migration {
                      target_on DATE NULL,
                      deleted_at TIMESTAMPTZ NULL
                  );
-                 CREATE INDEX IF NOT EXISTS development_plans_employee
-                     ON development_plans (employee_pid);
+                 CREATE INDEX IF NOT EXISTS development_plans_worker
+                     ON development_plans (worker_pid);
                  CREATE INDEX IF NOT EXISTS development_plans_kind
                      ON development_plans (kind);
                  CREATE TABLE IF NOT EXISTS development_plan_items (
@@ -117,7 +117,7 @@ impl MigrationTrait for Migration {
                      id SERIAL PRIMARY KEY,
                      pid UUID NOT NULL UNIQUE,
                      program_pid UUID NOT NULL,
-                     employee_pid UUID NOT NULL,
+                     worker_pid UUID NOT NULL,
                      supervisor_pid UUID NULL,
                      started_on DATE NOT NULL,
                      ends_on DATE NULL,
@@ -128,8 +128,8 @@ impl MigrationTrait for Migration {
                  );
                  CREATE INDEX IF NOT EXISTS program_placements_program
                      ON program_placements (program_pid);
-                 CREATE INDEX IF NOT EXISTS program_placements_employee
-                     ON program_placements (employee_pid);",
+                 CREATE INDEX IF NOT EXISTS program_placements_worker
+                     ON program_placements (worker_pid);",
             )
             .await?;
         Ok(())

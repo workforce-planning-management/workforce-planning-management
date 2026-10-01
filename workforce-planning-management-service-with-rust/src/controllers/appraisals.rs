@@ -1,5 +1,5 @@
 //! 360° appraisals (WPM-R29) — multi-rater feedback around a subject
-//! employee: nominations by group (`self | manager | peer | report`),
+//! worker: nominations by group (`self | manager | peer | report`),
 //! once-per-rater responses while collecting, and a group-floored
 //! report once shared. Rater anonymity is **procedural** (WPM-D21):
 //! the store links a response to its nomination so once-per-rater and
@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{appraisal_nominations, appraisal_responses, appraisals, employees};
+use crate::models::_entities::{appraisal_nominations, appraisal_responses, appraisals, workers};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::notifications::Model as Notification;
 use crate::models::records;
@@ -31,13 +31,13 @@ struct PidRef {
     pid: String,
 }
 
-/// `POST /api/employees/{pid}/appraisals` body.
+/// `POST /api/workers/{pid}/appraisals` body.
 #[derive(Debug, Deserialize)]
 struct AppraisalPayload {
     competencies: Vec<String>,
 }
 
-/// `POST /api/employees/{pid}/appraisals` — open a draft 360° for the
+/// `POST /api/workers/{pid}/appraisals` — open a draft 360° for the
 /// subject; the subject's `self` nomination is created automatically.
 #[debug_handler]
 async fn create_appraisal(
@@ -63,11 +63,11 @@ async fn create_appraisal(
         problems.push("competencies must be unique");
     }
     ensure_valid(&problems.into_vec())?;
-    let subject = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let subject = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let txn = ctx.db.begin().await?;
     let row = appraisals::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
-        employee_pid: ActiveValue::set(subject.pid),
+        worker_pid: ActiveValue::set(subject.pid),
         competencies: ActiveValue::set(serde_json::json!(payload.competencies)),
         status: ActiveValue::set("draft".to_string()),
         shared_on: ActiveValue::set(None),
@@ -92,7 +92,7 @@ async fn create_appraisal(
     })
 }
 
-/// `GET /api/employees/{pid}/appraisals` — the subject's appraisals
+/// `GET /api/workers/{pid}/appraisals` — the subject's appraisals
 /// with nomination/response counts (never content).
 #[debug_handler]
 async fn list_appraisals(
@@ -100,15 +100,15 @@ async fn list_appraisals(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let subject = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let subject = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&subject),
+        &auth::worker_resource_attrs(&subject),
     )
     .map_err(record_rejection)?;
     let rows = appraisals::Entity::find()
-        .filter(appraisals::Column::EmployeePid.eq(subject.pid))
+        .filter(appraisals::Column::WorkerPid.eq(subject.pid))
         .filter(appraisals::Column::DeletedAt.is_null())
         .order_by_desc(appraisals::Column::Id)
         .all(&ctx.db)
@@ -164,8 +164,8 @@ async fn nominate(
     if appraisal.status != "draft" {
         return Err(unprocessable("nominations are frozen once collecting"));
     }
-    let rater = records::find_employee(&ctx.db, payload.rater_pid).await?;
-    if rater.pid == appraisal.employee_pid {
+    let rater = records::find_worker(&ctx.db, payload.rater_pid).await?;
+    if rater.pid == appraisal.worker_pid {
         return Err(unprocessable("the subject rates only as `self`"));
     }
     let existing = appraisal_nominations::Entity::find()
@@ -251,13 +251,13 @@ async fn appraisal_status(
         .iter()
         .map(|n| n.rater_pid)
         .collect();
-    let subject = employees::Entity::find()
-        .filter(employees::Column::Pid.eq(updated.employee_pid))
+    let subject = workers::Entity::find()
+        .filter(workers::Column::Pid.eq(updated.worker_pid))
         .one(&ctx.db)
         .await?;
     let subject_name = subject.map_or_else(String::new, |s| s.display_name);
     for (recipient, kind) in
-        notify::appraisal_recipients(&payload.to, updated.employee_pid, &rater_pids)
+        notify::appraisal_recipients(&payload.to, updated.worker_pid, &rater_pids)
     {
         let body = if kind == "appraisal_shared" {
             "Your 360\u{b0} report is ready".to_string()
@@ -304,8 +304,8 @@ async fn get_appraisal(State(ctx): State<AppContext>, Path(pid): Path<String>) -
         responses.iter().map(|r| r.nomination_pid).collect();
     let mut nomination_view = Vec::new();
     for nomination in &nominations {
-        let rater = employees::Entity::find()
-            .filter(employees::Column::Pid.eq(nomination.rater_pid))
+        let rater = workers::Entity::find()
+            .filter(workers::Column::Pid.eq(nomination.rater_pid))
             .one(&ctx.db)
             .await?;
         nomination_view.push(serde_json::json!({
@@ -318,7 +318,7 @@ async fn get_appraisal(State(ctx): State<AppContext>, Path(pid): Path<String>) -
     }
     format::json(serde_json::json!({
         "pid": appraisal.pid,
-        "employee_pid": appraisal.employee_pid,
+        "worker_pid": appraisal.worker_pid,
         "status": appraisal.status,
         "competencies": appraisal.competencies,
         "shared_on": appraisal.shared_on,
@@ -360,11 +360,11 @@ async fn respond(
     let declared: Vec<String> =
         serde_json::from_value(appraisal.competencies.clone()).unwrap_or_default();
     rules::check_scores(&declared, &payload.scores).map_err(|reason| unprocessable(&reason))?;
-    let rater = records::find_employee(&ctx.db, payload.rater_pid).await?;
+    let rater = records::find_worker(&ctx.db, payload.rater_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
-        &auth::employee_resource_attrs(&rater),
+        &auth::worker_resource_attrs(&rater),
     )
     .map_err(record_rejection)?;
     let nomination = appraisal_nominations::Entity::find()
@@ -372,7 +372,7 @@ async fn respond(
         .filter(appraisal_nominations::Column::RaterPid.eq(rater.pid))
         .one(&ctx.db)
         .await?
-        .ok_or_else(|| unprocessable("this employee is not a nominated rater"))?;
+        .ok_or_else(|| unprocessable("this worker is not a nominated rater"))?;
     let already = appraisal_responses::Entity::find()
         .filter(appraisal_responses::Column::NominationPid.eq(nomination.pid))
         .one(&ctx.db)
@@ -419,11 +419,11 @@ async fn report(
     if appraisal.status != "shared" {
         return Err(unprocessable("the report is readable once shared"));
     }
-    let subject = records::find_employee(&ctx.db, appraisal.employee_pid).await?;
+    let subject = records::find_worker(&ctx.db, appraisal.worker_pid).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&subject),
+        &auth::worker_resource_attrs(&subject),
     )
     .map_err(record_rejection)?;
     // Comments are review-content tier (spec auth.md): a masked read
@@ -491,7 +491,7 @@ async fn report(
     format::json(serde_json::json!({
         "appraisal": {
             "pid": appraisal.pid,
-            "employee_pid": appraisal.employee_pid,
+            "worker_pid": appraisal.worker_pid,
             "competencies": declared,
             "shared_on": appraisal.shared_on,
         },
@@ -504,7 +504,7 @@ async fn report(
     }))
 }
 
-/// `GET /api/employees/{pid}/appraisal-requests` — the rater's own
+/// `GET /api/workers/{pid}/appraisal-requests` — the rater's own
 /// pending requests: `collecting` appraisals where they are nominated
 /// and have not yet responded, with the subject, group, and declared
 /// competencies. `$sub`-owned; discloses only what the rater already
@@ -515,11 +515,11 @@ async fn rater_requests(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let rater = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let rater = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&rater),
+        &auth::worker_resource_attrs(&rater),
     )
     .map_err(record_rejection)?;
     let nominations = appraisal_nominations::Entity::find()
@@ -544,13 +544,13 @@ async fn rater_requests(
         if responded {
             continue;
         }
-        let subject = employees::Entity::find()
-            .filter(employees::Column::Pid.eq(appraisal.employee_pid))
+        let subject = workers::Entity::find()
+            .filter(workers::Column::Pid.eq(appraisal.worker_pid))
             .one(&ctx.db)
             .await?;
         requests.push(serde_json::json!({
             "appraisal_pid": appraisal.pid,
-            "subject_pid": appraisal.employee_pid,
+            "subject_pid": appraisal.worker_pid,
             "subject": subject.map(|s| s.display_name),
             "group": nomination.rater_group,
             "competencies": appraisal.competencies,
@@ -573,9 +573,9 @@ async fn find_appraisal(ctx: &AppContext, pid: &str) -> Result<appraisals::Model
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
-        .add("/employees/{pid}/appraisals", post(create_appraisal))
-        .add("/employees/{pid}/appraisals", get(list_appraisals))
-        .add("/employees/{pid}/appraisal-requests", get(rater_requests))
+        .add("/workers/{pid}/appraisals", post(create_appraisal))
+        .add("/workers/{pid}/appraisals", get(list_appraisals))
+        .add("/workers/{pid}/appraisal-requests", get(rater_requests))
         .add("/appraisals/{pid}", get(get_appraisal))
         .add("/appraisals/{pid}/nominations", post(nominate))
         .add("/appraisals/{pid}/status", post(appraisal_status))

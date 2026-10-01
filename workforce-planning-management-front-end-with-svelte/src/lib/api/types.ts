@@ -2,12 +2,12 @@
 // the contract; drift is a test failure in the stubbed e2e suite).
 
 /** One employment relationship (salary fields null when masked). */
-export interface Employee {
+export interface Worker {
   pid: string;
   person_ref: string;
-  worker_ref: string | null;
+  upstream_worker_ref: string | null;
   organization_ref: string;
-  employee_number: string;
+  worker_number: string;
   display_name: string;
   status: string;
   employment_type: string;
@@ -19,6 +19,25 @@ export interface Employee {
   salary_currency: string | null;
   hired_on: string;
   terminated_on: string | null;
+}
+
+/**
+ * One organization membership for the signed-in caller — a person can
+ * hold several of these at once (no switcher; every org they belong
+ * to is visible together). `employed` is `true` when this membership
+ * is a literal employment relationship (`worker_pid` set); `false`
+ * for a staff/admin-only role grant in an org they aren't employed
+ * in.
+ */
+export interface MyOrganization {
+  pid: string;
+  person_ref: string;
+  organization_ref: string;
+  worker_pid: string | null;
+  employed: boolean;
+  role: string;
+  starts_on: string;
+  ends_on: string | null;
 }
 
 /** One org-chart node (recursive). */
@@ -56,7 +75,7 @@ export interface Application {
 /** One onboarding checklist item. */
 export interface OnboardingItem {
   pid: string;
-  employee_pid: string;
+  worker_pid: string;
   name: string;
   mandatory: boolean;
   status: string;
@@ -66,7 +85,7 @@ export interface OnboardingItem {
 /** One leave entitlement (balance) row. */
 export interface LeaveEntitlement {
   pid: string;
-  employee_pid: string;
+  worker_pid: string;
   kind: string;
   year: number;
   entitled_days: number;
@@ -76,7 +95,7 @@ export interface LeaveEntitlement {
 /** One leave request. */
 export interface LeaveRequest {
   pid: string;
-  employee_pid: string;
+  worker_pid: string;
   kind: string;
   start_on: string;
   end_on: string;
@@ -98,7 +117,7 @@ export interface PayrollRun {
 export interface Payslip {
   pid: string;
   run_pid: string;
-  employee_pid: string;
+  worker_pid: string;
   currency: string;
   gross_minor: number;
   deductions: { label: string; amount_minor: number }[];
@@ -132,7 +151,7 @@ export interface Ratio {
 
 /** One benchmark-comparison row (flags only, no amounts). */
 export interface ComparisonRow {
-  employee_pid: string;
+  worker_pid: string;
   job_title: string;
   department: string;
   benchmark_pid: string | null;
@@ -143,7 +162,7 @@ export interface ComparisonRow {
 export interface Review {
   pid: string;
   cycle_pid: string;
-  employee_pid: string;
+  worker_pid: string;
   reviewer_ref: string;
   status: string;
   rating: number | null;
@@ -153,7 +172,7 @@ export interface Review {
 /** One training enrolment. */
 export interface TrainingEnrollment {
   pid: string;
-  employee_pid: string;
+  worker_pid: string;
   course_ref: string;
   status: string;
   completed_on: string | null;
@@ -170,7 +189,7 @@ export interface SuccessionEntry {
   };
   candidates: {
     pid: string;
-    employee_pid: string;
+    worker_pid: string;
     readiness: string;
     rank: number;
   }[];

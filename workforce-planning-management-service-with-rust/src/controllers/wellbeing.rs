@@ -5,9 +5,9 @@
 //! year) and can predicate only on non-clinical facts — an age band
 //! (birth date resolved best-effort via the upstream person client),
 //! department, job title — per WPM-D17. WPM prompts and records the
-//! employee's acknowledgement; it does not book appointments and
-//! stores no vaccination status. Acknowledgements are employee-owned
-//! (`$sub` ownership rules apply on the employee record); HR sees
+//! worker's acknowledgement; it does not book appointments and
+//! stores no vaccination status. Acknowledgements are worker-owned
+//! (`$sub` ownership rules apply on the worker record); HR sees
 //! **aggregate counts only** (WPM-D16 terms), and no manager view
 //! exists at all.
 
@@ -256,30 +256,30 @@ fn string_list(value: &serde_json::Value) -> Vec<String> {
     serde_json::from_value(value.clone()).unwrap_or_default()
 }
 
-/// `GET /api/employees/{pid}/wellbeing-prompts` — the employee's live
+/// `GET /api/workers/{pid}/wellbeing-prompts` — the worker's live
 /// prompts: every active rule they are eligible for and have not
 /// acknowledged, plus at most **one** reminder per multi-dose course
 /// they acknowledged `booked`/`done` (serving a reminder stamps it, so
 /// it appears exactly once). Eligibility runs over age (resolved
 /// best-effort from the person service — unknown age fails an
 /// age-banded rule), department, and job title; the payload names that
-/// derivation. Employee-owned: `$sub` ownership policies on the
-/// employee record apply.
+/// derivation. Worker-owned: `$sub` ownership policies on the
+/// worker record apply.
 #[debug_handler]
-async fn employee_prompts(
+async fn worker_prompts(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let today = chrono::Utc::now().date_naive();
-    let age = match entity_ref::EntityRef::from_str(&employee.person_ref) {
+    let age = match entity_ref::EntityRef::from_str(&worker.person_ref) {
         Ok(person) => crate::clients::birth_date(&person)
             .await
             .and_then(|born| rules::age_on(born, today)),
@@ -291,13 +291,13 @@ async fn employee_prompts(
         .all(&ctx.db)
         .await?;
     let acks = entitlement_acknowledgements::Entity::find()
-        .filter(entitlement_acknowledgements::Column::EmployeePid.eq(employee.pid))
+        .filter(entitlement_acknowledgements::Column::WorkerPid.eq(worker.pid))
         .all(&ctx.db)
         .await?;
-    // The plans this employee is live-enrolled in: a plan-linked rule
+    // The plans this worker is live-enrolled in: a plan-linked rule
     // goes quiet for them — derived here, never stored (WPM-D18).
     let enrolled_plans: Vec<Uuid> = benefit_enrollments::Entity::find()
-        .filter(benefit_enrollments::Column::EmployeePid.eq(employee.pid))
+        .filter(benefit_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(benefit_enrollments::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?
@@ -326,8 +326,8 @@ async fn employee_prompts(
         if !rules::eligible(
             &predicates,
             age,
-            &employee.department,
-            &employee.job_title,
+            &worker.department,
+            &worker.job_title,
             today,
         ) {
             continue;
@@ -375,18 +375,18 @@ async fn employee_prompts(
     }))
 }
 
-/// `POST /api/employees/{pid}/wellbeing-acknowledgements` body.
+/// `POST /api/workers/{pid}/wellbeing-acknowledgements` body.
 #[derive(Debug, Deserialize)]
 struct AcknowledgePayload {
     entitlement_pid: Uuid,
     response: String,
 }
 
-/// `POST /api/employees/{pid}/wellbeing-acknowledgements` — record (or
-/// restate) the employee's response to a prompt: one row per
-/// employee + entitlement, upserted. The stored fact is the
+/// `POST /api/workers/{pid}/wellbeing-acknowledgements` — record (or
+/// restate) the worker's response to a prompt: one row per
+/// worker + entitlement, upserted. The stored fact is the
 /// acknowledgement of a prompt — never a vaccination status (WPM-D17).
-/// Employee-owned (`$sub` ownership policies apply); audited.
+/// Worker-owned (`$sub` ownership policies apply); audited.
 #[debug_handler]
 async fn acknowledge(
     State(ctx): State<AppContext>,
@@ -397,11 +397,11 @@ async fn acknowledge(
     let mut problems = Problems::new();
     problems.require_token("response", rules::RESPONSES, &payload.response);
     ensure_valid(&problems.into_vec())?;
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let entitlement = wellbeing_entitlements::Entity::find()
@@ -413,7 +413,7 @@ async fn acknowledge(
     let today = chrono::Utc::now().date_naive();
     let existing = entitlement_acknowledgements::Entity::find()
         .filter(entitlement_acknowledgements::Column::EntitlementPid.eq(entitlement.pid))
-        .filter(entitlement_acknowledgements::Column::EmployeePid.eq(employee.pid))
+        .filter(entitlement_acknowledgements::Column::WorkerPid.eq(worker.pid))
         .one(&ctx.db)
         .await?;
     let row = match existing {
@@ -427,7 +427,7 @@ async fn acknowledge(
             entitlement_acknowledgements::ActiveModel {
                 pid: ActiveValue::set(Uuid::new_v4()),
                 entitlement_pid: ActiveValue::set(entitlement.pid),
-                employee_pid: ActiveValue::set(employee.pid),
+                worker_pid: ActiveValue::set(worker.pid),
                 response: ActiveValue::set(payload.response.clone()),
                 responded_on: ActiveValue::set(today),
                 reminded_on: ActiveValue::set(None),
@@ -455,10 +455,10 @@ async fn acknowledge(
 /// only** (WPM-R25): per entitlement, the acknowledgement counts by
 /// response and the uptake rate with its terms (WPM-D16). A
 /// plan-linked rule additionally reports **enrolment conversion** —
-/// of the distinct employees who acknowledged, how many now hold a
+/// of the distinct workers who acknowledged, how many now hold a
 /// live enrolment in the linked plan (derived per request, never
-/// stored; WPM-D18). No employee appears in the payload, and there is
-/// deliberately no per-manager or per-employee variant of this view.
+/// stored; WPM-D18). No worker appears in the payload, and there is
+/// deliberately no per-manager or per-worker variant of this view.
 #[debug_handler]
 async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
     let entitlements = wellbeing_entitlements::Entity::find()
@@ -470,7 +470,7 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
         .all(&ctx.db)
         .await?;
     let today = chrono::Utc::now().date_naive();
-    // Live (plan, employee) enrolment pairs, for the conversion terms.
+    // Live (plan, worker) enrolment pairs, for the conversion terms.
     let live_enrollments: std::collections::HashSet<(Uuid, Uuid)> =
         benefit_enrollments::Entity::find()
             .filter(benefit_enrollments::Column::DeletedAt.is_null())
@@ -478,7 +478,7 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
             .await?
             .into_iter()
             .filter(|enrollment| enrollment.ends_on.is_none_or(|end| end >= today))
-            .map(|enrollment| (enrollment.plan_pid, enrollment.employee_pid))
+            .map(|enrollment| (enrollment.plan_pid, enrollment.worker_pid))
             .collect();
     let view: Vec<serde_json::Value> = entitlements
         .iter()
@@ -491,13 +491,13 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
                 if let Some(count) = by_response.get_mut(ack.response.as_str()) {
                     *count += 1;
                 }
-                acknowledgers.insert(ack.employee_pid);
+                acknowledgers.insert(ack.worker_pid);
             }
             #[allow(clippy::cast_precision_loss)] // display ratio
             let conversion = entitlement.benefit_plan_pid.map(|plan| {
                 let enrolled = acknowledgers
                     .iter()
-                    .filter(|employee| live_enrollments.contains(&(plan, **employee)))
+                    .filter(|worker| live_enrollments.contains(&(plan, **worker)))
                     .count();
                 let value = if acknowledgers.is_empty() {
                     serde_json::Value::Null
@@ -619,12 +619,12 @@ async fn list_surveys(State(ctx): State<AppContext>) -> Result<Response> {
     format::json(view)
 }
 
-/// `POST /api/pulse-surveys/{pid}/responses` body. The employee names
+/// `POST /api/pulse-surveys/{pid}/responses` body. The worker names
 /// themself so the department can be derived and ownership enforced —
 /// then the identity is dropped: the stored row has no author.
 #[derive(Debug, Deserialize)]
 struct PulseResponsePayload {
-    employee_pid: Uuid,
+    worker_pid: Uuid,
     score: i32,
 }
 
@@ -658,17 +658,17 @@ async fn submit_response(
     if !pulse::survey_open(survey.active_from, survey.active_until, today) {
         return Err(super::unprocessable("this survey is not open"));
     }
-    let employee = records::find_employee(&ctx.db, payload.employee_pid).await?;
+    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let row = pulse_responses::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         survey_pid: ActiveValue::set(survey.pid),
-        department: ActiveValue::set(employee.department.clone()),
+        department: ActiveValue::set(worker.department.clone()),
         score: ActiveValue::set(payload.score),
         submitted_on: ActiveValue::set(today),
         ..Default::default()
@@ -763,9 +763,9 @@ pub fn routes() -> Routes {
         .add("/wellbeing-entitlements", get(list_entitlements))
         .add("/wellbeing-entitlements/{pid}", put(update_entitlement))
         .add("/wellbeing-entitlements/{pid}", delete(delete_entitlement))
-        .add("/employees/{pid}/wellbeing-prompts", get(employee_prompts))
+        .add("/workers/{pid}/wellbeing-prompts", get(worker_prompts))
         .add(
-            "/employees/{pid}/wellbeing-acknowledgements",
+            "/workers/{pid}/wellbeing-acknowledgements",
             post(acknowledge),
         )
         .add("/wellbeing/uptake", get(uptake))

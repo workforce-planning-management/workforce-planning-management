@@ -13,7 +13,7 @@ use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, appraisal_nominations, appraisal_responses, appraisals, assessments,
-    benefit_enrollments, candidates, development_plans, employee_skills, employees,
+    benefit_enrollments, candidates, development_plans, worker_skills, workers,
     entitlement_acknowledgements, ergonomic_assessments, leave_entitlements, leave_requests,
     mentorships, notifications, path_enrollments, payslips, pipeline_members, program_placements,
     reviews, shift_assignments, time_entries, training_enrollments,
@@ -22,14 +22,14 @@ use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::privacy as rules;
 
-/// The tombstone URN an erased employee's `person_ref` becomes: a
+/// The tombstone URN an erased worker's `person_ref` becomes: a
 /// syntactically valid `EntityRef` that resolves to no one.
 const TOMBSTONE_PERSON: &str = "person:00000000-0000-0000-0000-000000000000";
 
 /// The scrub placeholder for erased free text and names.
 const ERASED: &str = "[erased]";
 
-/// Rows keyed by one employee in `module` (helper macro: filter on the
+/// Rows keyed by one worker in `module` (helper macro: filter on the
 /// given column, return the models as JSON).
 macro_rules! rows_for {
     ($db:expr, $module:ident, $column:ident, $pid:expr) => {
@@ -42,8 +42,8 @@ macro_rules! rows_for {
     };
 }
 
-/// `GET /api/employees/{pid}/subject-access` — everything WPM holds
-/// keyed to this employee, in one audited JSON document. Exclusions
+/// `GET /api/workers/{pid}/subject-access` — everything WPM holds
+/// keyed to this worker, in one audited JSON document. Exclusions
 /// are named, not hidden: pulse responses (no author link exists,
 /// WPM-D20) and other raters' 360° content about the subject
 /// (third-party data; the shared report aggregate stands in).
@@ -54,11 +54,11 @@ async fn subject_access(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     // A masked read of a *full export* would be a contradiction — the
@@ -74,7 +74,7 @@ async fn subject_access(
         )));
     }
     let db = &ctx.db;
-    let epid = employee.pid;
+    let epid = worker.pid;
     // 360°: appraisals about them, nominations naming them as rater,
     // and only the responses THEY authored.
     let their_nominations = appraisal_nominations::Entity::find()
@@ -96,28 +96,28 @@ async fn subject_access(
         .await?;
     let export = serde_json::json!({
         "as_of": chrono::Utc::now(),
-        "employee": employee,
-        "time_entries": rows_for!(db, time_entries, EmployeePid, epid),
-        "leave_entitlements": rows_for!(db, leave_entitlements, EmployeePid, epid),
-        "leave_requests": rows_for!(db, leave_requests, EmployeePid, epid),
-        "shift_assignments": rows_for!(db, shift_assignments, EmployeePid, epid),
-        "benefit_enrollments": rows_for!(db, benefit_enrollments, EmployeePid, epid),
-        "reviews": rows_for!(db, reviews, EmployeePid, epid),
-        "training_enrollments": rows_for!(db, training_enrollments, EmployeePid, epid),
-        "skills": rows_for!(db, employee_skills, EmployeePid, epid),
-        "learning_path_enrollments": rows_for!(db, path_enrollments, EmployeePid, epid),
-        "development_plans": rows_for!(db, development_plans, EmployeePid, epid),
-        "program_placements": rows_for!(db, program_placements, EmployeePid, epid),
-        "payslips": rows_for!(db, payslips, EmployeePid, epid),
+        "worker": worker,
+        "time_entries": rows_for!(db, time_entries, WorkerPid, epid),
+        "leave_entitlements": rows_for!(db, leave_entitlements, WorkerPid, epid),
+        "leave_requests": rows_for!(db, leave_requests, WorkerPid, epid),
+        "shift_assignments": rows_for!(db, shift_assignments, WorkerPid, epid),
+        "benefit_enrollments": rows_for!(db, benefit_enrollments, WorkerPid, epid),
+        "reviews": rows_for!(db, reviews, WorkerPid, epid),
+        "training_enrollments": rows_for!(db, training_enrollments, WorkerPid, epid),
+        "skills": rows_for!(db, worker_skills, WorkerPid, epid),
+        "learning_path_enrollments": rows_for!(db, path_enrollments, WorkerPid, epid),
+        "development_plans": rows_for!(db, development_plans, WorkerPid, epid),
+        "program_placements": rows_for!(db, program_placements, WorkerPid, epid),
+        "payslips": rows_for!(db, payslips, WorkerPid, epid),
         "wellbeing_acknowledgements":
-            rows_for!(db, entitlement_acknowledgements, EmployeePid, epid),
-        "notifications": rows_for!(db, notifications, EmployeePid, epid),
-        "ergonomic_assessments": rows_for!(db, ergonomic_assessments, EmployeePid, epid),
-        "adjustment_requests": rows_for!(db, adjustment_requests, EmployeePid, epid),
+            rows_for!(db, entitlement_acknowledgements, WorkerPid, epid),
+        "notifications": rows_for!(db, notifications, WorkerPid, epid),
+        "ergonomic_assessments": rows_for!(db, ergonomic_assessments, WorkerPid, epid),
+        "adjustment_requests": rows_for!(db, adjustment_requests, WorkerPid, epid),
         "assessments": rows_for!(db, assessments, SubjectPid, epid),
         "pipeline_memberships": rows_for!(db, pipeline_members, SubjectPid, epid),
         "mentorships": mentorship_rows,
-        "appraisals_as_subject": rows_for!(db, appraisals, EmployeePid, epid),
+        "appraisals_as_subject": rows_for!(db, appraisals, WorkerPid, epid),
         "appraisal_nominations_as_rater": their_nominations,
         "appraisal_responses_authored": authored_responses,
         "exclusions": [
@@ -130,7 +130,7 @@ async fn subject_access(
     });
     Audit::record(
         &ctx.db,
-        "employee",
+        "worker",
         epid,
         "subject_access_exported",
         caller.actor(),
@@ -140,8 +140,8 @@ async fn subject_access(
     format::json(export)
 }
 
-/// `POST /api/employees/{pid}/erase` — anonymise (WPM-D22): scrub the
-/// employee's identity fields and soft-delete the row, scrub free text
+/// `POST /api/workers/{pid}/erase` — anonymise (WPM-D22): scrub the
+/// worker's identity fields and soft-delete the row, scrub free text
 /// they authored (time-entry notes, 360 comments, mentorship session
 /// notes), close their appraisals-as-subject, and delete their
 /// wellbeing acknowledgements. Payroll/financial rows remain, keyed to
@@ -153,33 +153,33 @@ async fn erase(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Destructive,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    if !rules::erasable(&employee.status) {
+    if !rules::erasable(&worker.status) {
         return Err(unprocessable(
             "erasure requires a terminated or retired employment (the active \
              relationship is the lawful basis for the data)",
         ));
     }
-    let epid = employee.pid;
+    let epid = worker.pid;
     let txn = ctx.db.begin().await?;
     // Identity fields scrubbed in place; the row soft-deleted.
-    let mut scrubbed: employees::ActiveModel = employee.into();
+    let mut scrubbed: workers::ActiveModel = worker.into();
     scrubbed.display_name = ActiveValue::set(ERASED.to_string());
     scrubbed.person_ref = ActiveValue::set(TOMBSTONE_PERSON.to_string());
-    scrubbed.worker_ref = ActiveValue::set(None);
+    scrubbed.upstream_worker_ref = ActiveValue::set(None);
     scrubbed.salary_minor = ActiveValue::set(None);
     scrubbed.salary_currency = ActiveValue::set(None);
     scrubbed.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
     scrubbed.update(&txn).await?;
     // Free text they authored, and rows that are about them only.
     let statements = [
-        format!("UPDATE time_entries SET notes = NULL WHERE employee_pid = '{epid}'"),
+        format!("UPDATE time_entries SET notes = NULL WHERE worker_pid = '{epid}'"),
         format!(
             "UPDATE appraisal_responses SET comment = NULL WHERE nomination_pid IN \
              (SELECT pid FROM appraisal_nominations WHERE rater_pid = '{epid}')"
@@ -189,21 +189,21 @@ async fn erase(
              (SELECT pid FROM mentorships WHERE mentor_pid = '{epid}' OR mentee_pid = '{epid}')"
         ),
         format!(
-            "UPDATE appraisals SET deleted_at = now() WHERE employee_pid = '{epid}' AND deleted_at IS NULL"
+            "UPDATE appraisals SET deleted_at = now() WHERE worker_pid = '{epid}' AND deleted_at IS NULL"
         ),
-        format!("DELETE FROM entitlement_acknowledgements WHERE employee_pid = '{epid}'"),
-        format!("DELETE FROM notifications WHERE employee_pid = '{epid}'"),
+        format!("DELETE FROM entitlement_acknowledgements WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM notifications WHERE worker_pid = '{epid}'"),
         format!(
             "UPDATE ergonomic_items SET note = NULL, deleted_at = now() WHERE assessment_pid IN \
-             (SELECT pid FROM ergonomic_assessments WHERE employee_pid = '{epid}')"
+             (SELECT pid FROM ergonomic_assessments WHERE worker_pid = '{epid}')"
         ),
         format!(
-            "UPDATE ergonomic_assessments SET deleted_at = now() WHERE employee_pid = '{epid}' AND deleted_at IS NULL"
+            "UPDATE ergonomic_assessments SET deleted_at = now() WHERE worker_pid = '{epid}' AND deleted_at IS NULL"
         ),
         format!(
             "UPDATE adjustment_requests SET barrier = '{ERASED}', impact = '{ERASED}', \
              adjustment = '{ERASED}', decision_note = NULL, deleted_at = now() \
-             WHERE employee_pid = '{epid}' AND deleted_at IS NULL"
+             WHERE worker_pid = '{epid}' AND deleted_at IS NULL"
         ),
     ];
     let mut affected = Vec::new();
@@ -213,7 +213,7 @@ async fn erase(
     }
     Audit::record(
         &txn,
-        "employee",
+        "worker",
         epid,
         "erased",
         caller.actor(),
@@ -349,8 +349,8 @@ async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
-        .add("/employees/{pid}/subject-access", get(subject_access))
-        .add("/employees/{pid}/erase", post(erase))
+        .add("/workers/{pid}/subject-access", get(subject_access))
+        .add("/workers/{pid}/erase", post(erase))
         .add("/retention", get(retention_report))
         .add("/retention/sweep", post(retention_sweep))
 }

@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `leave_entitlements`. One employee's leave entitlement per kind and year, whole days (WPM-R5).
+//! `SeaORM` Entity — `leave_entitlements`. One worker's leave entitlement per kind and year, whole days (WPM-R5).
 
 #![allow(missing_docs)]
 
@@ -14,7 +14,7 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub kind: String,
     pub year: i32,
     pub entitled_days: i32,

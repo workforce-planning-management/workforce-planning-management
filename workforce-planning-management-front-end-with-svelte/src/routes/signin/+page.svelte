@@ -34,5 +34,20 @@
         Could not send the sign-in link. Please try again.
       </p>
     {/if}
+    <p class="divider">or</p>
+    <a class="btn" href="/signin/sso">Sign in with SSO</a>
   </div>
 {/if}
+
+<style>
+  .divider {
+    text-align: center;
+    color: var(--muted);
+    margin: 0.75rem 0;
+  }
+  a.btn {
+    display: inline-block;
+    text-decoration: none;
+  }
+</style>
+

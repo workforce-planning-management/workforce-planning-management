@@ -1,6 +1,6 @@
 //! Salary benchmarking flags (WPM-R14), DB-free.
 
-/// The comparison verdict for one employee against a benchmark.
+/// The comparison verdict for one worker against a benchmark.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BenchmarkFlag {

@@ -8,7 +8,7 @@ rust-version = "1.96"
 publish = true
 default-run = "workforce-planning-management-service"
 authors = ["Joel Parker Henderson <joel@joelparkerhenderson.com>"]
-description = "Workforce planning management service — employee lifecycle, ATS, workforce, payroll"
+description = "Workforce planning management service — worker lifecycle, ATS, workforce, payroll"
 readme = "README.md"
 repository = "https://github.com/workforce-planning-management/workforce-planning-management/tree/main/workforce-planning-management-service-with-rust"
 license = "MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only"
@@ -23,6 +23,20 @@ include = ["src/**/*", "README.md"]
 # agents/share/jwt.md. Dropping it removes the vulnerable crate from the
 # dependency graph rather than suppressing the advisory.
 loco-rs = { version = "1.1.0", default-features = false, features = ["cli", "with-db", "cache_inmem", "worker"] }
+
+[features]
+# Exactly one token-verification backend, chosen at build time —
+# `src/auth.rs` `compile_error!`s otherwise. `paseto` is the family
+# default (offline PASETO v4.public against the sibling authentication
+# service's published keys); `keycloak` verifies a Keycloak-issued JWT
+# directly against the realm's JWKS (see `spec/auth.md`'s "Keycloak as
+# the identity provider" runbook for the env vars and claim mapping).
+# Both produce the same `authentication_verifier::Claims`, so the ABAC
+# policy engine, `MaybeAuthUser`, and every controller are unaffected
+# by the choice.
+default = ["paseto"]
+paseto = []
+keycloak = ["dep:jsonwebtoken", "dep:aws-lc-rs"]
 
 [dependencies]
 loco-rs = { workspace = true }
@@ -57,8 +71,24 @@ reqwest = { version = "0.12", default-features = false, features = [
 # people/workers/organizations/courses are referenced, never duplicated.
 entity-ref = { path = "../../link/entity-ref-rust-crate" }
 
-# Offline PASETO v4.public verification + the shared ABAC engine.
+# Offline PASETO v4.public verification + the shared ABAC engine. The
+# `Claims`/`Policy`/`Action` types here are backend-agnostic (see the
+# `keycloak` feature above) — only `Verifier` (PASETO signature
+# verification) is `paseto`-specific.
 authentication-verifier = { path = "../../authentication/authentication-verifier-rust-crate", features = ["fetch"] }
+
+# `keycloak` feature only: direct verification of a Keycloak-issued JWT
+# against the realm's JWKS. `aws_lc_rs` is the ONLY crypto backend this
+# selects (`default-features = false`) — the alternative, `rust_crypto`,
+# pulls in the `rsa` crate (RUSTSEC-2023-0071) that dropping loco's own
+# `auth` feature above was meant to avoid. `aws_lc_rs` verifies RS256 via
+# a BoringSSL derivative instead, so Keycloak's default RS256 realm keys
+# stay usable without that crate in the graph.
+jsonwebtoken = { version = "11", optional = true, default-features = false, features = ["aws_lc_rs"] }
+# Already pulled in transitively by `jsonwebtoken`'s `aws_lc_rs` feature
+# above; declared directly too so `src/auth/keycloak.rs`'s own tests can
+# generate an EC test keypair without adding a second crypto crate.
+aws-lc-rs = { version = "1", optional = true }
 
 [[bin]]
 name = "workforce-planning-management-service"

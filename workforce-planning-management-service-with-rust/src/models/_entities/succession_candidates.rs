@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub pid: Uuid,
     pub plan_pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub readiness: String,
     pub rank: i32,
     pub deleted_at: Option<DateTimeWithTimeZone>,

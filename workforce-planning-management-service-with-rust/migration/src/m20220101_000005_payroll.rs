@@ -40,7 +40,7 @@ impl MigrationTrait for Migration {
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
                  run_pid UUID NOT NULL,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  currency VARCHAR NOT NULL,
                  gross_minor BIGINT NOT NULL,
                  deductions JSONB NOT NULL,
@@ -52,7 +52,7 @@ impl MigrationTrait for Migration {
         conn.execute_unprepared("CREATE INDEX IF NOT EXISTS payslips_run ON payslips (run_pid)")
             .await?;
         conn.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS payslips_employee ON payslips (employee_pid)",
+            "CREATE INDEX IF NOT EXISTS payslips_worker ON payslips (worker_pid)",
         )
         .await?;
         conn.execute_unprepared(

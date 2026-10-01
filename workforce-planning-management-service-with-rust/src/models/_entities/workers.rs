@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `employees`. One employment relationship: the single source of employment truth (WPM-R7). Identities are `EntityRef` URNs; salary is minor units (sensitive).
+//! `SeaORM` Entity — `workers`. One employment relationship: the single source of employment truth (WPM-R7). Identities are `EntityRef` URNs; salary is minor units (sensitive).
 
 #![allow(missing_docs)]
 
@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "employees")]
+#[sea_orm(table_name = "workers")]
 pub struct Model {
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
@@ -15,9 +15,9 @@ pub struct Model {
     #[sea_orm(unique)]
     pub pid: Uuid,
     pub person_ref: String,
-    pub worker_ref: Option<String>,
+    pub upstream_worker_ref: Option<String>,
     pub organization_ref: String,
-    pub employee_number: String,
+    pub worker_number: String,
     pub display_name: String,
     pub status: String,
     pub employment_type: String,

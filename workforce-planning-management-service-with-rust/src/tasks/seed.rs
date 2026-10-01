@@ -9,7 +9,7 @@ use sea_orm::ActiveValue;
 use uuid::Uuid;
 
 use crate::models::_entities::{
-    benchmarks, benefit_plans, employees, leave_entitlements, requisitions,
+    benchmarks, benefit_plans, workers, leave_entitlements, requisitions,
 };
 
 /// The demo-organization seed task.
@@ -20,7 +20,7 @@ impl Task for Seed {
     fn task(&self) -> TaskInfo {
         TaskInfo {
             name: "seed".to_string(),
-            detail: "Seed a synthetic demo organization (~40 employees, requisitions, plans, benchmarks)"
+            detail: "Seed a synthetic demo organization (~40 workers, requisitions, plans, benchmarks)"
                 .to_string(),
         }
     }
@@ -43,12 +43,12 @@ impl Task for Seed {
             // One department head (no manager), then nine reports.
             let head = Uuid::new_v4();
             n += 1;
-            employees::ActiveModel {
+            workers::ActiveModel {
                 pid: ActiveValue::set(head),
                 person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
-                worker_ref: ActiveValue::set(Some(format!("worker:{}", Uuid::new_v4()))),
+                upstream_worker_ref: ActiveValue::set(Some(format!("worker:{}", Uuid::new_v4()))),
                 organization_ref: ActiveValue::set(org.clone()),
-                employee_number: ActiveValue::set(format!("E-{n:04}")),
+                worker_number: ActiveValue::set(format!("E-{n:04}")),
                 display_name: ActiveValue::set(format!("Test Head {n:03}")),
                 status: ActiveValue::set("active".to_string()),
                 employment_type: ActiveValue::set("permanent".to_string()),
@@ -74,13 +74,13 @@ impl Task for Seed {
                 n += 1;
                 let (title, salary) = titles[usize::try_from(n).unwrap_or(0) % titles.len()];
                 let pid = Uuid::new_v4();
-                employees::ActiveModel {
+                workers::ActiveModel {
                     pid: ActiveValue::set(pid),
                     person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
-                    worker_ref: ActiveValue::set(None),
+                    upstream_worker_ref: ActiveValue::set(None),
                     organization_ref: ActiveValue::set(org.clone()),
-                    employee_number: ActiveValue::set(format!("E-{n:04}")),
-                    display_name: ActiveValue::set(format!("Test Employee {n:03}")),
+                    worker_number: ActiveValue::set(format!("E-{n:04}")),
+                    display_name: ActiveValue::set(format!("Test Worker {n:03}")),
                     status: ActiveValue::set(
                         if i == 8 { "onboarding" } else { "active" }.to_string(),
                     ),
@@ -100,7 +100,7 @@ impl Task for Seed {
                     salary_currency: ActiveValue::set(Some("GBP".to_string())),
                     hired_on: ActiveValue::set(
                         chrono::NaiveDate::from_ymd_opt(2023, 3, 1).ok_or_else(|| {
-                            Error::string("seed data: invalid employee hired_on date")
+                            Error::string("seed data: invalid worker hired_on date")
                         })?,
                     ),
                     terminated_on: ActiveValue::set(None),
@@ -113,7 +113,7 @@ impl Task for Seed {
                 for (kind, days) in [("annual", 25), ("sick", 10)] {
                     leave_entitlements::ActiveModel {
                         pid: ActiveValue::set(Uuid::new_v4()),
-                        employee_pid: ActiveValue::set(pid),
+                        worker_pid: ActiveValue::set(pid),
                         kind: ActiveValue::set(kind.to_string()),
                         year: ActiveValue::set(2026),
                         entitled_days: ActiveValue::set(days),
@@ -155,7 +155,7 @@ impl Task for Seed {
             .await?;
         }
         // Benefit plans + benchmarks.
-        for (name, kind, employee_cost, employer_cost) in [
+        for (name, kind, worker_cost, employer_cost) in [
             ("Pension 5%", "pension", 15_000_i64, 30_000_i64),
             ("Health Cover", "health", 8_000, 20_000),
         ] {
@@ -164,7 +164,7 @@ impl Task for Seed {
                 name: ActiveValue::set(name.to_string()),
                 kind: ActiveValue::set(kind.to_string()),
                 provider: ActiveValue::set("Demo Provider Ltd".to_string()),
-                employee_cost_minor: ActiveValue::set(employee_cost),
+                worker_cost_minor: ActiveValue::set(worker_cost),
                 employer_cost_minor: ActiveValue::set(employer_cost),
                 currency: ActiveValue::set("GBP".to_string()),
                 deleted_at: ActiveValue::set(None),
@@ -196,8 +196,8 @@ impl Task for Seed {
             .insert(db)
             .await?;
         }
-        tracing::info!(organization = %org, employees = n, "seeded synthetic demo organization");
-        println!("seeded: organization {org} with {n} employees");
+        tracing::info!(organization = %org, workers = n, "seeded synthetic demo organization");
+        println!("seeded: organization {org} with {n} workers");
         Ok(())
     }
 }

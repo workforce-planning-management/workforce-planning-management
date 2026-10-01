@@ -27,13 +27,13 @@ async function signIn(page: Page) {
   ]);
 }
 
-const EMPLOYEE = {
+const WORKER = {
   pid: "11111111-1111-4111-8111-111111111111",
   person_ref: "person:22222222-2222-4222-8222-222222222222",
-  worker_ref: null,
+  upstream_worker_ref: null,
   organization_ref: "organization:33333333-3333-4333-8333-333333333333",
-  employee_number: "E-0001",
-  display_name: "Test Employee 001",
+  worker_number: "E-0001",
+  display_name: "Test Worker 001",
   status: "active",
   employment_type: "permanent",
   fte_percent: 100,
@@ -46,10 +46,10 @@ const EMPLOYEE = {
   terminated_on: null,
 };
 
-const MASKED_EMPLOYEE = {
-  ...EMPLOYEE,
+const MASKED_WORKER = {
+  ...WORKER,
   pid: "44444444-4444-4444-8444-444444444444",
-  employee_number: "E-0002",
+  worker_number: "E-0002",
   display_name: "Masked Person",
   salary_minor: null,
   salary_currency: null,
@@ -90,14 +90,40 @@ test.describe("sign-in gate (WPM-T38)", () => {
   test("a signed-out visitor is redirected from a protected page to /signin", async ({
     page,
   }) => {
-    await page.goto("/employees");
+    await page.goto("/workers");
     await expect(page).toHaveURL(/\/signin$/);
   });
 
-  test("a signed-out visitor is redirected from the dashboard too", async ({
+  test("a signed-out visitor sees the marketing splash at / instead of a redirect", async ({
     page,
   }) => {
-    await page.goto("/");
+    const response = await page.goto("/");
+    expect(response?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByTestId("splash")).toBeVisible();
+    await expect(page.getByTestId("splash")).toContainText(
+      "People operations, all in one place",
+    );
+    await page.getByTestId("hero-cta").click();
+    await expect(page).toHaveURL(/\/signin$/);
+  });
+
+  test("/tour stays reachable with no session and covers the app in depth", async ({
+    page,
+  }) => {
+    const response = await page.goto("/tour");
+    expect(response?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/tour$/);
+    await expect(page.locator("h1")).toHaveText(
+      "See how it all fits together",
+    );
+    await expect(page.locator("body")).toContainText(
+      "Hiring & onboarding, start to finish",
+    );
+    await expect(page.locator("body")).toContainText(
+      "Belong to more than one organization",
+    );
+    await page.locator('nav.top a[href="/signin"]').click();
     await expect(page).toHaveURL(/\/signin$/);
   });
 
@@ -122,18 +148,18 @@ test.describe("signed-in smoke coverage", () => {
         body: "unstubbed: " + route.request().url(),
       }),
     );
-    await page.route("**/api/proxy/employees", (route) =>
-      route.fulfill({ json: [EMPLOYEE, MASKED_EMPLOYEE] }),
+    await page.route("**/api/proxy/workers", (route) =>
+      route.fulfill({ json: [WORKER, MASKED_WORKER] }),
     );
-    await page.route("**/api/proxy/employees?status=active", (route) =>
-      route.fulfill({ json: [EMPLOYEE, MASKED_EMPLOYEE] }),
+    await page.route("**/api/proxy/workers?status=active", (route) =>
+      route.fulfill({ json: [WORKER, MASKED_WORKER] }),
     );
     await page.route("**/api/proxy/requisitions?status=open", (route) =>
       route.fulfill({
         json: [
           {
             pid: "55555555-5555-4555-8555-555555555555",
-            organization_ref: EMPLOYEE.organization_ref,
+            organization_ref: WORKER.organization_ref,
             department: "engineering",
             job_title: "Platform Engineer",
             headcount: 1,
@@ -149,6 +175,44 @@ test.describe("signed-in smoke coverage", () => {
     await page.route("**/api/proxy/succession-plans/gaps", (route) =>
       route.fulfill({ json: { gaps: [] } }),
     );
+    await page.route("**/api/proxy/me/organizations", (route) =>
+      route.fulfill({
+        json: [
+          {
+            pid: "88888888-8888-4888-8888-888888888888",
+            person_ref: WORKER.person_ref,
+            organization_ref: WORKER.organization_ref,
+            worker_pid: WORKER.pid,
+            employed: true,
+            role: "member",
+            starts_on: "2026-01-05",
+            ends_on: null,
+          },
+          {
+            pid: "99999999-9999-4999-9999-999999999999",
+            person_ref: WORKER.person_ref,
+            organization_ref: "organization:44444444-4444-4444-8444-444444444444",
+            worker_pid: null,
+            employed: false,
+            role: "hr_admin",
+            starts_on: "2026-02-01",
+            ends_on: null,
+          },
+        ],
+      }),
+    );
+    // Read scope, expanded through org confederation server-side — in
+    // this fixture it equals the two direct memberships above (no
+    // confederation edges), so `/org-chart` and `/benchmarks` render
+    // the same two sections the dashboard's membership list does.
+    await page.route("**/api/proxy/me/organizations/scope", (route) =>
+      route.fulfill({
+        json: [
+          WORKER.organization_ref,
+          "organization:44444444-4444-4444-8444-444444444444",
+        ],
+      }),
+    );
   });
 
   test("dashboard renders live tiles from the stubbed API", async ({
@@ -160,11 +224,135 @@ test.describe("signed-in smoke coverage", () => {
     await expect(page.getByTestId("tile-gaps")).toContainText("0");
   });
 
-  test("employee list shows money for visible salaries and Hidden for masked", async ({
+  test("dashboard lists every organization membership at once, no switcher", async ({
     page,
   }) => {
-    await page.goto("/employees");
-    const table = page.getByTestId("employee-table");
+    await page.goto("/");
+    const section = page.getByTestId("my-organizations");
+    await expect(section).toContainText(WORKER.organization_ref);
+    await expect(section).toContainText("member");
+    await expect(section).toContainText("Employed here");
+    await expect(section).toContainText(
+      "organization:44444444-4444-4444-8444-444444444444",
+    );
+    await expect(section).toContainText("hr_admin");
+    await expect(section).toContainText("Staff access");
+  });
+
+  test("org chart renders one section per organization membership, no switcher", async ({
+    page,
+  }) => {
+    const secondOrg = "organization:44444444-4444-4444-8444-444444444444";
+    await page.route(
+      (url) =>
+        url.pathname === "/api/proxy/org-chart" &&
+        url.searchParams.get("organization") === WORKER.organization_ref,
+      (route) =>
+        route.fulfill({
+          json: [
+            {
+              pid: WORKER.pid,
+              display_name: WORKER.display_name,
+              job_title: WORKER.job_title,
+              department: WORKER.department,
+              reports: [],
+            },
+          ],
+        }),
+    );
+    await page.route(
+      (url) =>
+        url.pathname === "/api/proxy/org-chart" &&
+        url.searchParams.get("organization") === secondOrg,
+      (route) => route.fulfill({ json: [] }),
+    );
+    await page.goto("/org-chart");
+    const sections = page.getByTestId("org-chart");
+    await expect(sections).toHaveCount(2);
+    await expect(sections.nth(0)).toContainText(WORKER.organization_ref);
+    await expect(sections.nth(0)).toContainText(WORKER.display_name);
+    await expect(sections.nth(1)).toContainText(secondOrg);
+  });
+
+  test("org confederation expands org chart to a descendant with no direct membership", async ({
+    page,
+  }) => {
+    // A membership in a parent confederation reads as membership in
+    // every descendant too — the backend's `scope` already includes
+    // this third org even though it never appears in `/me/organizations`
+    // (the dashboard's literal-grants list, unaffected by confederation).
+    const confederatedChild =
+      "organization:55555555-5555-4555-8555-555555555555";
+    await page.route("**/api/proxy/me/organizations/scope", (route) =>
+      route.fulfill({
+        json: [
+          WORKER.organization_ref,
+          "organization:44444444-4444-4444-8444-444444444444",
+          confederatedChild,
+        ],
+      }),
+    );
+    await page.route(
+      (url) => url.pathname === "/api/proxy/org-chart",
+      (route) => route.fulfill({ json: [] }),
+    );
+    await page.goto("/org-chart");
+    await expect(page.getByTestId("org-chart")).toHaveCount(3);
+    await expect(page.locator("body")).toContainText(confederatedChild);
+
+    // The dashboard's membership list is unaffected: still exactly the
+    // two literal grants, no confederation-only descendant.
+    await page.goto("/");
+    const membershipSection = page.getByTestId("my-organizations");
+    await expect(membershipSection).not.toContainText(confederatedChild);
+  });
+
+  test("benchmark comparison renders one section per organization membership", async ({
+    page,
+  }) => {
+    const secondOrg = "organization:44444444-4444-4444-8444-444444444444";
+    await page.route("**/api/proxy/benchmarks", (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await page.route(
+      (url) =>
+        url.pathname === "/api/proxy/benchmarks/comparison" &&
+        url.searchParams.get("organization") === WORKER.organization_ref,
+      (route) =>
+        route.fulfill({
+          json: {
+            organization: WORKER.organization_ref,
+            rows: [
+              {
+                worker_pid: WORKER.pid,
+                job_title: WORKER.job_title,
+                department: WORKER.department,
+                benchmark_pid: null,
+                flag: null,
+              },
+            ],
+          },
+        }),
+    );
+    await page.route(
+      (url) =>
+        url.pathname === "/api/proxy/benchmarks/comparison" &&
+        url.searchParams.get("organization") === secondOrg,
+      (route) => route.fulfill({ json: { organization: secondOrg, rows: [] } }),
+    );
+    await page.goto("/benchmarks");
+    const tables = page.getByTestId("comparison");
+    await expect(tables).toHaveCount(2);
+    await expect(page.locator("body")).toContainText(WORKER.organization_ref);
+    await expect(page.locator("body")).toContainText(secondOrg);
+    await expect(tables.nth(0)).toContainText(WORKER.pid.slice(0, 8));
+  });
+
+  test("worker list shows money for visible salaries and Hidden for masked", async ({
+    page,
+  }) => {
+    await page.goto("/workers");
+    const table = page.getByTestId("worker-table");
     await expect(table).toContainText("E-0001");
     await expect(table).toContainText("£36,000.00");
     await expect(table).toContainText("Hidden");
@@ -173,7 +361,7 @@ test.describe("signed-in smoke coverage", () => {
   test("payroll run detail drives the lifecycle actions", async ({ page }) => {
     const run = {
       pid: "66666666-6666-4666-8666-666666666666",
-      organization_ref: EMPLOYEE.organization_ref,
+      organization_ref: WORKER.organization_ref,
       period_start: "2026-07-01",
       period_end: "2026-07-31",
       status: "calculated",
@@ -187,7 +375,7 @@ test.describe("signed-in smoke coverage", () => {
           {
             pid: "77777777-7777-4777-8777-777777777777",
             run_pid: run.pid,
-            employee_pid: EMPLOYEE.pid,
+            worker_pid: WORKER.pid,
             currency: "GBP",
             gross_minor: 300000,
             deductions: [{ label: "tax", amount_minor: 39050 }],
@@ -208,12 +396,28 @@ test.describe("signed-in smoke coverage", () => {
   test("locale switcher retranslates the chrome (and ar flips direction)", async ({
     page,
   }) => {
-    await page.goto("/employees");
-    await expect(page.locator("nav.top")).toContainText("Employees");
+    await page.goto("/workers");
+    await expect(page.locator("h1")).toHaveText("Workers");
     await chooseLocale(page, "Deutsch");
-    await expect(page.locator("nav.top")).toContainText("Mitarbeiter");
+    await expect(page.locator("h1")).toHaveText("Arbeitskräfte");
     await chooseLocale(page, "العربية");
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  });
+
+  test("hamburger menu opens the left nav drawer with every section link", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const drawer = page.locator(".drawer");
+    await expect(drawer).toBeHidden();
+    await page.getByRole("button", { name: "Menu" }).click();
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toContainText("Workers");
+    await expect(drawer).toContainText("Org chart");
+    await expect(drawer).toContainText("Benchmarks");
+    await drawer.getByRole("link", { name: "Workers" }).click();
+    await expect(page).toHaveURL(/\/workers$/);
+    await expect(drawer).toBeHidden();
   });
 
   test("requisition board renders SVAR Kanban columns and cards", async ({
@@ -224,7 +428,7 @@ test.describe("signed-in smoke coverage", () => {
         json: [
           {
             pid: "99999999-9999-4999-8999-999999999999",
-            organization_ref: EMPLOYEE.organization_ref,
+            organization_ref: WORKER.organization_ref,
             department: "engineering",
             job_title: "Platform Engineer",
             headcount: 2,
@@ -256,14 +460,14 @@ test.describe("signed-in smoke coverage", () => {
             {
               department: "engineering",
               skill: "Rust",
-              employees: 2,
+              workers: 2,
               average_proficiency: 3.5,
               below_target: 1,
             },
           ],
           gaps: [
             {
-              employee_pid: "e2",
+              worker_pid: "e2",
               department: "engineering",
               skill: "Rust",
               proficiency: 2,
@@ -307,7 +511,7 @@ test.describe("signed-in smoke coverage", () => {
             "a step is complete iff a completed training enrolment matches",
           members: [
             {
-              employee_pid: "e2",
+              worker_pid: "e2",
               display_name: "Sam Mentee",
               completed_steps: 1,
               total_steps: 2,
@@ -342,7 +546,7 @@ test.describe("signed-in smoke coverage", () => {
           mentor_load: [
             { mentor_pid: "e1", mentor: "Ada Mentor", active_mentees: 1 },
           ],
-          unmatched_employees: [
+          unmatched_workers: [
             { pid: "e3", display_name: "Solo Dev", department: "engineering" },
           ],
           stale_days: 30,
@@ -522,7 +726,7 @@ test.describe("signed-in smoke coverage", () => {
         json: {
           as_of: "2026-07-25T00:00:00Z",
           horizon_days: 365,
-          soft_deleted_past_horizon: { employees: 2, time_entries: 14 },
+          soft_deleted_past_horizon: { workers: 2, time_entries: 14 },
           expired_consent_candidates: 3,
           derivation:
             "soft-deleted rows older than the horizon are hard-deleted by the sweep",
@@ -533,7 +737,7 @@ test.describe("signed-in smoke coverage", () => {
       route.fulfill({
         json: {
           horizon_days: 365,
-          deleted: { employees: 2, time_entries: 14 },
+          deleted: { workers: 2, time_entries: 14 },
           rows_deleted: 16,
           candidates_scrubbed: 3,
         },

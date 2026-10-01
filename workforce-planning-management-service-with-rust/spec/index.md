@@ -37,7 +37,7 @@ tracing + OTLP, Podman.
   Legacy `HCM_*` spellings still read with a deprecation warning
   (`src/compat.rs`).
 - **Identifiers**: public UUID `pid` on every owned record; EntityRef
-  URNs for all upstream references; employee number unique per
+  URNs for all upstream references; worker number unique per
   organization.
 - **Table names all-plural** (the loco `create_table` pluralization
   lesson); `event_outbox` as explicit SQL.
@@ -52,12 +52,12 @@ streaming,validation,version}.rs`, `src/rules/` (pure core, one
   `migration/` (17 migration sets, explicit SQL);
   `config/abac-policy.reference.json` is the shipped persona policy
   the enforcement matrix mounts (WPM-G1).
-- **Masking**: `mask_employee` clears `salary_minor`+currency;
+- **Masking**: `mask_worker` clears `salary_minor`+currency;
   `mask_payslip` zeroes amounts and drops the deduction lines;
-  payslip reads authorize against the **owning employee's** resource
+  payslip reads authorize against the **owning worker's** resource
   attrs, so one policy masks both.
 - **Ownership**: `resource.person` carries the bare person uuid so a
-  `{"resource.person": ["$sub"]}` rule gives employees their own
+  `{"resource.person": ["$sub"]}` rule gives workers their own
   records (deployments map user pid = person uuid).
 - **Payroll**: `calculate` replaces the run's payslips inside one
   transaction; only `approved` time entries feed overtime; benefit

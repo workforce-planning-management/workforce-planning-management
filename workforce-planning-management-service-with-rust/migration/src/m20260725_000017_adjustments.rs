@@ -24,7 +24,7 @@ impl MigrationTrait for Migration {
                      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                      id SERIAL PRIMARY KEY,
                      pid UUID NOT NULL UNIQUE,
-                     employee_pid UUID NOT NULL,
+                     worker_pid UUID NOT NULL,
                      category VARCHAR NOT NULL,
                      barrier VARCHAR NOT NULL,
                      impact VARCHAR NOT NULL,
@@ -34,8 +34,8 @@ impl MigrationTrait for Migration {
                      decided_on DATE NULL,
                      deleted_at TIMESTAMPTZ NULL
                  );
-                 CREATE INDEX IF NOT EXISTS adjustment_requests_employee
-                     ON adjustment_requests (employee_pid);",
+                 CREATE INDEX IF NOT EXISTS adjustment_requests_worker
+                     ON adjustment_requests (worker_pid);",
             )
             .await?;
         Ok(())

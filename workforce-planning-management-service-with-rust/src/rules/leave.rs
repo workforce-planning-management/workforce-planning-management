@@ -1,6 +1,6 @@
 //! Leave balance arithmetic (WPM-R5), DB-free.
 //!
-//! Balances are whole **days** per employee / kind / year. Annual
+//! Balances are whole **days** per worker / kind / year. Annual
 //! leave over the remaining balance is refused; sick leave may go
 //! negative but the result is flagged; other kinds behave like
 //! annual (balance-enforced) except `unpaid`, which has no balance.

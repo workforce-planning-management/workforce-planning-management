@@ -26,11 +26,11 @@ impl ActiveModelBehavior for super::_entities::event_outbox::ActiveModel {}
 pub struct OutboxInsert {
     /// Envelope dedup id.
     pub event_id: Uuid,
-    /// Entity name (`employee` / `requisition` / …).
+    /// Entity name (`worker` / `requisition` / …).
     pub entity: String,
     /// Record pid (bus partition key).
     pub entity_pid: Uuid,
-    /// Change kind token (`created`, `employee_hired`, …).
+    /// Change kind token (`created`, `worker_hired`, …).
     pub kind: String,
     /// When the change occurred.
     pub occurred_at: DateTimeWithTimeZone,
@@ -164,7 +164,7 @@ mod tests {
         Envelope {
             event_id: Uuid::parse_str("22222222-2222-4222-8222-222222222222").unwrap(),
             schema_version: crate::streaming::SCHEMA_VERSION,
-            entity: "employee".to_string(),
+            entity: "worker".to_string(),
             kind: kind.to_string(),
             pid: pid.to_string(),
             seq: 7,
@@ -185,15 +185,15 @@ mod tests {
     #[test]
     fn from_envelope_maps_every_column_and_keeps_the_full_payload() {
         let pid = "0c4f1e2a-0000-4000-8000-000000000000";
-        let env = an_envelope("employee_hired", pid);
+        let env = an_envelope("worker_hired", pid);
         let row = OutboxInsert::from_envelope(&env, an_instant()).unwrap();
         assert_eq!(row.event_id, env.event_id);
-        assert_eq!(row.entity, "employee");
+        assert_eq!(row.entity, "worker");
         assert_eq!(row.entity_pid, Uuid::parse_str(pid).unwrap());
-        assert_eq!(row.kind, "employee_hired");
+        assert_eq!(row.kind, "worker_hired");
         assert_eq!(row.actor.as_deref(), Some("user-1"));
         assert_eq!(row.payload["pid"], pid);
-        assert_eq!(row.payload["kind"], "employee_hired");
+        assert_eq!(row.payload["kind"], "worker_hired");
     }
 
     /// A non-UUID pid is rejected, never panics.

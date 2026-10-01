@@ -1,7 +1,7 @@
 //! Migration: the learning & development tables — a `skills` catalog
-//! and declared `employee_skills` (proficiency 1–5 + optional
+//! and declared `worker_skills` (proficiency 1–5 + optional
 //! target), `learning_paths` (+ ordered `learning_path_steps` of
-//! course refs) with per-employee `path_enrollments`, and
+//! course refs) with per-worker `path_enrollments`, and
 //! `mentorships` (+ a `mentorship_sessions` log). All declared /
 //! recorded data; the derived views live in the controller.
 
@@ -30,18 +30,18 @@ impl MigrationTrait for Migration {
                      category VARCHAR NOT NULL,
                      deleted_at TIMESTAMPTZ NULL
                  );
-                 CREATE TABLE IF NOT EXISTS employee_skills (
+                 CREATE TABLE IF NOT EXISTS worker_skills (
                      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                      id SERIAL PRIMARY KEY,
                      pid UUID NOT NULL UNIQUE,
-                     employee_pid UUID NOT NULL,
+                     worker_pid UUID NOT NULL,
                      skill_pid UUID NOT NULL,
                      proficiency INTEGER NOT NULL,
                      target INTEGER NULL,
                      assessed_on DATE NOT NULL DEFAULT CURRENT_DATE,
                      deleted_at TIMESTAMPTZ NULL,
-                     UNIQUE (employee_pid, skill_pid)
+                     UNIQUE (worker_pid, skill_pid)
                  );
                  CREATE TABLE IF NOT EXISTS learning_paths (
                      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -70,10 +70,10 @@ impl MigrationTrait for Migration {
                      id SERIAL PRIMARY KEY,
                      pid UUID NOT NULL UNIQUE,
                      path_pid UUID NOT NULL,
-                     employee_pid UUID NOT NULL,
+                     worker_pid UUID NOT NULL,
                      enrolled_on DATE NOT NULL DEFAULT CURRENT_DATE,
                      deleted_at TIMESTAMPTZ NULL,
-                     UNIQUE (path_pid, employee_pid)
+                     UNIQUE (path_pid, worker_pid)
                  );
                  CREATE TABLE IF NOT EXISTS mentorships (
                      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -121,7 +121,7 @@ impl MigrationTrait for Migration {
                  DROP TABLE IF EXISTS path_enrollments;
                  DROP TABLE IF EXISTS learning_path_steps;
                  DROP TABLE IF EXISTS learning_paths;
-                 DROP TABLE IF EXISTS employee_skills;
+                 DROP TABLE IF EXISTS worker_skills;
                  DROP TABLE IF EXISTS skills;",
             )
             .await?;

@@ -104,10 +104,10 @@ async fn enforcement_personas_gate_and_mask() {
         assert_eq!(request.get("/metrics.prom").await.status_code(), 200);
 
         // Protected: no token ⇒ 401; junk token ⇒ 401.
-        assert_eq!(request.get("/api/employees").await.status_code(), 401);
+        assert_eq!(request.get("/api/workers").await.status_code(), 401);
         assert_eq!(
             request
-                .get("/api/employees")
+                .get("/api/workers")
                 .add_header("authorization", "Bearer v4.public.junk")
                 .await
                 .status_code(),
@@ -117,7 +117,7 @@ async fn enforcement_personas_gate_and_mask() {
         // Plain authenticated caller: reads allowed, mutations 403.
         assert_eq!(
             request
-                .get("/api/employees")
+                .get("/api/workers")
                 .add_header("authorization", bearer(&other))
                 .await
                 .status_code(),
@@ -125,7 +125,7 @@ async fn enforcement_personas_gate_and_mask() {
         );
         assert_eq!(
             request
-                .post("/api/employees")
+                .post("/api/workers")
                 .add_header("authorization", bearer(&other))
                 .json(&json!({ "person_ref": "person:x" }))
                 .await
@@ -133,15 +133,15 @@ async fn enforcement_personas_gate_and_mask() {
             403
         );
 
-        // `access=write` creates my employee record (salary present).
+        // `access=write` creates my worker record (salary present).
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         let created = request
-            .post("/api/employees")
+            .post("/api/workers")
             .add_header("authorization", bearer(&writer))
             .json(&json!({
                 "person_ref": format!("person:{my_person}"),
                 "organization_ref": org,
-                "employee_number": "E-8001", "display_name": "Mask Test Person",
+                "worker_number": "E-8001", "display_name": "Mask Test Person",
                 "employment_type": "permanent", "department": "engineering",
                 "job_title": "Engineer",
                 "salary_minor": 3_600_000, "salary_currency": "GBP",
@@ -149,12 +149,12 @@ async fn enforcement_personas_gate_and_mask() {
             }))
             .await;
         assert_eq!(created.status_code(), 200);
-        let employee_pid = created.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let worker_pid = created.json::<Value>()["pid"].as_str().unwrap().to_string();
 
         // Self-read (`$sub` = my person uuid): salary visible.
         let mine: Value = {
             let response = request
-                .get(&format!("/api/employees/{employee_pid}"))
+                .get(&format!("/api/workers/{worker_pid}"))
                 .add_header("authorization", bearer(&me))
                 .await;
             assert_eq!(response.status_code(), 200);
@@ -162,11 +162,11 @@ async fn enforcement_personas_gate_and_mask() {
         };
         assert_eq!(mine["salary_minor"], 3_600_000, "self-read sees the salary");
 
-        // Another employee's read falls through to the mask rule:
+        // Another worker's read falls through to the mask rule:
         // employment facts visible, salary redacted.
         let theirs: Value = {
             let response = request
-                .get(&format!("/api/employees/{employee_pid}"))
+                .get(&format!("/api/workers/{worker_pid}"))
                 .add_header("authorization", bearer(&other))
                 .await;
             assert_eq!(response.status_code(), 200);
@@ -179,7 +179,7 @@ async fn enforcement_personas_gate_and_mask() {
         );
         assert!(theirs["salary_currency"].is_null());
 
-        // Payslips inherit the employee masking: build a run as the
+        // Payslips inherit the worker masking: build a run as the
         // machine peer, then read as the masked caller.
         let run: Value = {
             let response = request
@@ -194,10 +194,10 @@ async fn enforcement_personas_gate_and_mask() {
             response.json()
         };
         let run_pid = run["pid"].as_str().unwrap();
-        // Activate the employee so the run picks them up, then calculate.
+        // Activate the worker so the run picks them up, then calculate.
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee_pid}/status"))
+                .post(&format!("/api/workers/{worker_pid}/status"))
                 .add_header("authorization", bearer(&machine))
                 .json(&json!({ "to": "active" }))
                 .await
@@ -227,7 +227,7 @@ async fn enforcement_personas_gate_and_mask() {
         // The self-reader sees their real payslip.
         let my_slips: Value = {
             let response = request
-                .get(&format!("/api/employees/{employee_pid}/payslips"))
+                .get(&format!("/api/workers/{worker_pid}/payslips"))
                 .add_header("authorization", bearer(&me))
                 .await;
             assert_eq!(response.status_code(), 200);
@@ -240,10 +240,10 @@ async fn enforcement_personas_gate_and_mask() {
                 > 0
         );
 
-        // The payroll persona reads the employee unmasked.
+        // The payroll persona reads the worker unmasked.
         let payroll_view: Value = {
             let response = request
-                .get(&format!("/api/employees/{employee_pid}"))
+                .get(&format!("/api/workers/{worker_pid}"))
                 .add_header("authorization", bearer(&payroll))
                 .await;
             assert_eq!(response.status_code(), 200);
@@ -256,7 +256,7 @@ async fn enforcement_personas_gate_and_mask() {
         // HR reads masked (salary stays payroll + self).
         let hr_view: Value = {
             let response = request
-                .get(&format!("/api/employees/{employee_pid}"))
+                .get(&format!("/api/workers/{worker_pid}"))
                 .add_header("authorization", bearer(&writer))
                 .await;
             assert_eq!(response.status_code(), 200);
@@ -268,17 +268,17 @@ async fn enforcement_personas_gate_and_mask() {
         // masked caller is refused outright — a full export cannot be
         // "masked".
         let my_export = request
-            .get(&format!("/api/employees/{employee_pid}/subject-access"))
+            .get(&format!("/api/workers/{worker_pid}/subject-access"))
             .add_header("authorization", bearer(&me))
             .await;
         assert_eq!(my_export.status_code(), 200);
         assert_eq!(
-            my_export.json::<Value>()["employee"]["salary_minor"],
+            my_export.json::<Value>()["worker"]["salary_minor"],
             3_600_000
         );
         assert_eq!(
             request
-                .get(&format!("/api/employees/{employee_pid}/subject-access"))
+                .get(&format!("/api/workers/{worker_pid}/subject-access"))
                 .add_header("authorization", bearer(&other))
                 .await
                 .status_code(),
@@ -291,7 +291,7 @@ async fn enforcement_personas_gate_and_mask() {
         // (the lawful basis holds regardless of privilege).
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee_pid}/erase"))
+                .post(&format!("/api/workers/{worker_pid}/erase"))
                 .add_header("authorization", bearer(&writer))
                 .await
                 .status_code(),
@@ -300,7 +300,7 @@ async fn enforcement_personas_gate_and_mask() {
         );
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee_pid}/erase"))
+                .post(&format!("/api/workers/{worker_pid}/erase"))
                 .add_header("authorization", bearer(&machine))
                 .await
                 .status_code(),
@@ -341,11 +341,11 @@ async fn enforcement_personas_gate_and_mask() {
         }
         let mut rater_pids = Vec::new();
         for n in 0..3 {
-            let rater = with_auth!(request.post("/api/employees"), &machine)
+            let rater = with_auth!(request.post("/api/workers"), &machine)
                 .json(&json!({
                     "person_ref": format!("person:{}", uuid::Uuid::new_v4()),
                     "organization_ref": org,
-                    "employee_number": format!("E-90{n}"),
+                    "worker_number": format!("E-90{n}"),
                     "display_name": format!("Rater {n}"),
                     "employment_type": "permanent", "department": "engineering",
                     "job_title": "Engineer", "hired_on": "2026-01-05",
@@ -355,7 +355,7 @@ async fn enforcement_personas_gate_and_mask() {
             rater_pids.push(rater["pid"].as_str().unwrap().to_string());
         }
         let appraisal = with_auth!(
-            request.post(&format!("/api/employees/{employee_pid}/appraisals")),
+            request.post(&format!("/api/workers/{worker_pid}/appraisals")),
             &machine,
         )
         .json(&json!({ "competencies": ["communication"] }))
@@ -438,7 +438,7 @@ async fn enforcement_personas_gate_and_mask() {
         // Writer may not delete; the machine peer may.
         assert_eq!(
             request
-                .delete(&format!("/api/employees/{employee_pid}"))
+                .delete(&format!("/api/workers/{worker_pid}"))
                 .add_header("authorization", bearer(&writer))
                 .await
                 .status_code(),
@@ -447,7 +447,7 @@ async fn enforcement_personas_gate_and_mask() {
         );
         assert_eq!(
             request
-                .delete(&format!("/api/employees/{employee_pid}"))
+                .delete(&format!("/api/workers/{worker_pid}"))
                 .add_header("authorization", bearer(&machine))
                 .await
                 .status_code(),

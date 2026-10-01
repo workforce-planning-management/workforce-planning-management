@@ -91,7 +91,7 @@ impl MigrationTrait for Migration {
                  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  name VARCHAR NOT NULL,
                  mandatory BOOLEAN NOT NULL,
                  status VARCHAR NOT NULL,
@@ -102,8 +102,8 @@ impl MigrationTrait for Migration {
         )
         .await?;
         conn.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS onboarding_items_employee \
-             ON onboarding_items (employee_pid)",
+            "CREATE INDEX IF NOT EXISTS onboarding_items_worker \
+             ON onboarding_items (worker_pid)",
         )
         .await?;
         Ok(())

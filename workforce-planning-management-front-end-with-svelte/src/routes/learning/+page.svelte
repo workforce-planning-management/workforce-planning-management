@@ -67,14 +67,14 @@
   <p class="muted">{matrix.note}</p>
   <table data-testid="skills-matrix">
     <thead>
-      <tr><th>Department</th><th>Skill</th><th>Employees</th><th>Avg proficiency</th><th>Below target</th></tr>
+      <tr><th>Department</th><th>Skill</th><th>Workers</th><th>Avg proficiency</th><th>Below target</th></tr>
     </thead>
     <tbody>
       {#each matrix.matrix as cell (cell.department + cell.skill)}
         <tr>
           <td>{cell.department}</td>
           <td>{cell.skill ?? "—"}</td>
-          <td>{cell.employees}</td>
+          <td>{cell.workers}</td>
           <td>{cell.average_proficiency.toFixed(1)}</td>
           <td class:warn={cell.below_target > 0}>{cell.below_target}</td>
         </tr>
@@ -136,11 +136,11 @@
 {#if progress}
   <p class="muted">{progress.derivation}</p>
   <table data-testid="path-progress">
-    <thead><tr><th>Employee</th><th>Completed</th><th>Progress</th></tr></thead>
+    <thead><tr><th>Worker</th><th>Completed</th><th>Progress</th></tr></thead>
     <tbody>
-      {#each progress.members as member (member.employee_pid)}
+      {#each progress.members as member (member.worker_pid)}
         <tr>
-          <td>{member.display_name ?? member.employee_pid}</td>
+          <td>{member.display_name ?? member.worker_pid}</td>
           <td>{member.completed_steps} / {member.total_steps}</td>
           <td>{percentOf(member.completed_steps, member.total_steps)}</td>
         </tr>

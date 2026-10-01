@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `payslips`. One employee's payslip in one run: gross, deduction lines (JSONB), net (WPM-R13).
+//! `SeaORM` Entity — `payslips`. One worker's payslip in one run: gross, deduction lines (JSONB), net (WPM-R13).
 
 #![allow(missing_docs)]
 
@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub pid: Uuid,
     pub run_pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub currency: String,
     pub gross_minor: i64,
     pub deductions: Json,

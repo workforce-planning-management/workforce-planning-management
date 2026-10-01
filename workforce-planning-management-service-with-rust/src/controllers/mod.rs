@@ -18,6 +18,7 @@ pub mod intelligence;
 pub mod learning;
 pub mod metrics;
 pub mod notifications;
+pub mod organizations;
 pub mod payroll;
 pub mod privacy;
 pub mod talent;

@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `shift_assignments`. One employee assigned to one shift; unassign = soft delete (WPM-R6).
+//! `SeaORM` Entity — `shift_assignments`. One worker assigned to one shift; unassign = soft delete (WPM-R6).
 
 #![allow(missing_docs)]
 
@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub pid: Uuid,
     pub shift_pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

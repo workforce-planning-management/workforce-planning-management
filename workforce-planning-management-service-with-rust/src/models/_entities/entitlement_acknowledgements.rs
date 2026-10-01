@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `entitlement_acknowledgements`. One employee's response to a wellbeing prompt (WPM-R25): an HR workflow fact (`booked | done | declined | dismissed`), never a vaccination status (WPM-D17).
+//! `SeaORM` Entity — `entitlement_acknowledgements`. One worker's response to a wellbeing prompt (WPM-R25): an HR workflow fact (`booked | done | declined | dismissed`), never a vaccination status (WPM-D17).
 
 #![allow(missing_docs)]
 
@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub pid: Uuid,
     pub entitlement_pid: Uuid,
-    pub employee_pid: Uuid,
+    pub worker_pid: Uuid,
     pub response: String,
     pub responded_on: Date,
     pub reminded_on: Option<Date>,

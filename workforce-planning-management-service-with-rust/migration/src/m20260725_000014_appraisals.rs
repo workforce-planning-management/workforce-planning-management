@@ -26,14 +26,14 @@ impl MigrationTrait for Migration {
                      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                      id SERIAL PRIMARY KEY,
                      pid UUID NOT NULL UNIQUE,
-                     employee_pid UUID NOT NULL,
+                     worker_pid UUID NOT NULL,
                      competencies JSONB NOT NULL DEFAULT '[]',
                      status VARCHAR NOT NULL DEFAULT 'draft',
                      shared_on DATE NULL,
                      deleted_at TIMESTAMPTZ NULL
                  );
-                 CREATE INDEX IF NOT EXISTS appraisals_employee
-                     ON appraisals (employee_pid);
+                 CREATE INDEX IF NOT EXISTS appraisals_worker
+                     ON appraisals (worker_pid);
                  CREATE TABLE IF NOT EXISTS appraisal_nominations (
                      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

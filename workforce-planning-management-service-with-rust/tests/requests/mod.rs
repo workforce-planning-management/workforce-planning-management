@@ -1,4 +1,4 @@
-//! Request-level test suites: the hire journey + employee lifecycle
+//! Request-level test suites: the hire journey + worker lifecycle
 //! in [`hr`], the time / leave / shift flows in [`workforce`], the
 //! payroll derivation in [`payroll`], the L&D surface in [`learning`],
 //! the aptitude / personality / psychometric / selection tests in
@@ -11,6 +11,7 @@ mod assessments;
 mod ergonomics;
 mod hr;
 mod learning;
+mod organizations;
 mod pagination;
 mod payroll;
 mod privacy;
@@ -33,9 +34,9 @@ pub fn a_worker() -> String {
     format!("worker:{}", uuid::Uuid::new_v4())
 }
 
-/// Create one active employee (no onboarding gate: the status stays
+/// Create one active worker (no onboarding gate: the status stays
 /// `onboarding` unless a test activates it). Expands to a value
-/// (`String`, the employee pid), await it like a function call.
+/// (`String`, the worker pid), await it like a function call.
 ///
 /// A macro, not a function: the `request` handed to each test by
 /// loco's `request()` helper is a `loco_rs`-internal-pinned
@@ -44,7 +45,7 @@ pub fn a_worker() -> String {
 /// dependency (defeating the point of tracking a newer one for the
 /// dev-dependency's own sake). Expanding inline sidesteps naming the
 /// type at all; the actual value's type is inferred at each call site.
-macro_rules! seed_employee {
+macro_rules! seed_worker {
     ($request:expr, $org:expr, $number:expr, $salary_minor:expr) => {
         async {
             let request = $request;
@@ -54,8 +55,8 @@ macro_rules! seed_employee {
             let body = serde_json::json!({
                 "person_ref": $crate::requests::a_person(),
                 "organization_ref": org,
-                "employee_number": number,
-                "display_name": format!("Test Employee {number}"),
+                "worker_number": number,
+                "display_name": format!("Test Worker {number}"),
                 "employment_type": "permanent",
                 "department": "engineering",
                 "job_title": "Engineer",
@@ -64,23 +65,23 @@ macro_rules! seed_employee {
                 "hired_on": "2026-01-05",
             });
             let created: serde_json::Value =
-                request.post("/api/employees").json(&body).await.json();
-            created["pid"].as_str().expect("employee pid").to_string()
+                request.post("/api/workers").json(&body).await.json();
+            created["pid"].as_str().expect("worker pid").to_string()
         }
     };
 }
-pub(crate) use seed_employee;
+pub(crate) use seed_worker;
 
-/// Activate an employee (no mandatory onboarding items exist in the
+/// Activate a worker (no mandatory onboarding items exist in the
 /// test flows unless a test adds them). Same macro rationale as
-/// [`seed_employee`].
+/// [`seed_worker`].
 macro_rules! activate {
     ($request:expr, $pid:expr) => {
         async {
             let request = $request;
             let pid = $pid;
             let response = request
-                .post(&format!("/api/employees/{pid}/status"))
+                .post(&format!("/api/workers/{pid}/status"))
                 .json(&serde_json::json!({ "to": "active" }))
                 .await;
             assert_eq!(response.status_code(), 200, "activate {pid}");

@@ -6,7 +6,7 @@
 </script>
 
 <div class="node">
-  <a href={`/employees/${node.pid}`}>{node.display_name}</a>
+  <a href={`/workers/${node.pid}`}>{node.display_name}</a>
   <span class="muted">— {node.job_title} · {node.department}</span>
   {#if node.reports.length}
     <div class="reports">

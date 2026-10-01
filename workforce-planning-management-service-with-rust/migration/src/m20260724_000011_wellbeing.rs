@@ -1,11 +1,11 @@
 //! Migration: the wellbeing tables (WPM-R25) — configurable
 //! **health-entitlement rules** (e.g. NHS vaccination cohorts) and the
-//! per-employee **acknowledgements** of their prompts.
+//! per-worker **acknowledgements** of their prompts.
 //!
 //! The rule row can hold only non-clinical predicates — an age band and
 //! department / job-title lists (WPM-D17): there is deliberately no
 //! column a health-status cohort could be expressed in. The
-//! acknowledgement row records the employee's response to a prompt
+//! acknowledgement row records the worker's response to a prompt
 //! (`booked | done | declined | dismissed`) — an HR workflow fact,
 //! never a vaccination status.
 
@@ -48,14 +48,14 @@ impl MigrationTrait for Migration {
                      id SERIAL PRIMARY KEY,
                      pid UUID NOT NULL UNIQUE,
                      entitlement_pid UUID NOT NULL,
-                     employee_pid UUID NOT NULL,
+                     worker_pid UUID NOT NULL,
                      response VARCHAR NOT NULL,
                      responded_on DATE NOT NULL,
                      reminded_on DATE NULL,
-                     UNIQUE (entitlement_pid, employee_pid)
+                     UNIQUE (entitlement_pid, worker_pid)
                  );
-                 CREATE INDEX IF NOT EXISTS entitlement_acks_employee
-                     ON entitlement_acknowledgements (employee_pid);
+                 CREATE INDEX IF NOT EXISTS entitlement_acks_worker
+                     ON entitlement_acknowledgements (worker_pid);
                  CREATE INDEX IF NOT EXISTS entitlement_acks_entitlement
                      ON entitlement_acknowledgements (entitlement_pid);",
             )

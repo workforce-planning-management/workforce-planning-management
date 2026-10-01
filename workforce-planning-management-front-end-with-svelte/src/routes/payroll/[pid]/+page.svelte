@@ -67,7 +67,7 @@
   <table data-testid="payslips">
     <thead>
       <tr>
-        <th>{t("nav.employees")}</th>
+        <th>{t("nav.workers")}</th>
         <th>{t("pay.gross")}</th>
         <th>{t("pay.deductions")}</th>
         <th>{t("pay.net")}</th>
@@ -76,7 +76,7 @@
     <tbody>
       {#each payslips as slip (slip.pid)}
         <tr>
-          <td><a href={`/employees/${slip.employee_pid}`}>{slip.employee_pid.slice(0, 8)}</a></td>
+          <td><a href={`/workers/${slip.worker_pid}`}>{slip.worker_pid.slice(0, 8)}</a></td>
           <td>{money(slip.gross_minor, slip.currency, i18n.locale)}</td>
           <td>
             {#each slip.deductions as deduction (deduction.label)}

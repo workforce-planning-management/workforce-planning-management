@@ -7,17 +7,17 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management_service::app::App;
 
-use super::{activate, an_org, seed_employee};
+use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
-#[allow(clippy::too_many_lines)] // one employee, the whole assessment surface
+#[allow(clippy::too_many_lines)] // one worker, the whole assessment surface
 async fn assessment_round_trip() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let employee = seed_employee!(&request, &org, "A-1", None).await;
-        activate!(&request, &employee).await;
+        let worker = seed_worker!(&request, &org, "A-1", None).await;
+        activate!(&request, &worker).await;
 
         // ── The instrument catalog enforces the category↔scale rule.
         assert_eq!(
@@ -78,8 +78,8 @@ async fn assessment_round_trip() {
             .post("/api/assessments")
             .json(&json!({
                 "instrument_pid": aptitude_pid,
-                "subject_kind": "employee",
-                "subject_pid": employee,
+                "subject_kind": "worker",
+                "subject_pid": worker,
                 "administered_by": "hr-ops",
             }))
             .await
@@ -201,7 +201,7 @@ async fn assessment_round_trip() {
 
         // ── The derived profile.
         let profile: Value = request
-            .get(&format!("/api/employees/{employee}/assessment-profile"))
+            .get(&format!("/api/workers/{worker}/assessment-profile"))
             .await
             .json();
         let aptitude_slice = profile["categories"]
@@ -250,7 +250,7 @@ async fn assessment_round_trip() {
             .await
             .assert_status_ok();
         let after: Value = request
-            .get(&format!("/api/employees/{employee}/assessment-profile"))
+            .get(&format!("/api/workers/{worker}/assessment-profile"))
             .await
             .json();
         let aptitude_after = after["categories"]

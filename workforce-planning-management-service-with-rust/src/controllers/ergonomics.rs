@@ -1,5 +1,5 @@
 //! Ergonomic (DSE) workstation assessments (WPM-R32 / WPM-D24) — a
-//! checklist per employee + workstation, answered item by item,
+//! checklist per worker + workstation, answered item by item,
 //! completed only when every item is answered; open issues surface in
 //! a rota-tier department report. About the workstation, never the
 //! body: no symptom field exists anywhere on this surface.
@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{employees, ergonomic_assessments, ergonomic_items};
+use crate::models::_entities::{workers, ergonomic_assessments, ergonomic_items};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::ergonomics as rules;
@@ -23,7 +23,7 @@ struct PidRef {
     pid: String,
 }
 
-/// `POST /api/employees/{pid}/ergonomic-assessments` body. Omitted
+/// `POST /api/workers/{pid}/ergonomic-assessments` body. Omitted
 /// `items` ⇒ the default DSE checklist.
 #[derive(Debug, Deserialize)]
 struct AssessmentPayload {
@@ -32,7 +32,7 @@ struct AssessmentPayload {
     items: Vec<String>,
 }
 
-/// `POST /api/employees/{pid}/ergonomic-assessments` — open an
+/// `POST /api/workers/{pid}/ergonomic-assessments` — open an
 /// assessment with its checklist (default DSE items when none given).
 #[debug_handler]
 async fn create_assessment(
@@ -46,7 +46,7 @@ async fn create_assessment(
     problems.cap_text("workstation", &payload.workstation);
     problems.cap_list("items", &payload.items);
     ensure_valid(&problems.into_vec())?;
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let items: Vec<String> = if payload.items.is_empty() {
         rules::DSE_ITEMS.iter().map(ToString::to_string).collect()
     } else {
@@ -55,7 +55,7 @@ async fn create_assessment(
     let txn = ctx.db.begin().await?;
     let assessment = ergonomic_assessments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         workstation: ActiveValue::set(payload.workstation.clone()),
         status: ActiveValue::set("open".to_string()),
         assessed_on: ActiveValue::set(None),
@@ -92,16 +92,16 @@ async fn create_assessment(
     })
 }
 
-/// `GET /api/employees/{pid}/ergonomic-assessments` — the employee's
+/// `GET /api/workers/{pid}/ergonomic-assessments` — the worker's
 /// assessments with their items.
 #[debug_handler]
 async fn list_assessments(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let assessments = ergonomic_assessments::Entity::find()
-        .filter(ergonomic_assessments::Column::EmployeePid.eq(employee.pid))
+        .filter(ergonomic_assessments::Column::WorkerPid.eq(worker.pid))
         .filter(ergonomic_assessments::Column::DeletedAt.is_null())
         .order_by_desc(ergonomic_assessments::Column::Id)
         .all(&ctx.db)
@@ -227,12 +227,12 @@ async fn complete_assessment(
 
 /// `GET /api/ergonomics/issues` — every `issue`-flagged item on a
 /// live assessment, grouped by department (rota-tier visibility,
-/// WPM-R27 precedent): employee, workstation, item, note; plus
+/// WPM-R27 precedent): worker, workstation, item, note; plus
 /// per-department counts.
 #[debug_handler]
 async fn issues(State(ctx): State<AppContext>) -> Result<Response> {
-    let employee_rows = employees::Entity::find()
-        .filter(employees::Column::DeletedAt.is_null())
+    let worker_rows = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
     let assessments = ergonomic_assessments::Entity::find()
@@ -251,19 +251,19 @@ async fn issues(State(ctx): State<AppContext>) -> Result<Response> {
         let Some(assessment) = assessments.iter().find(|a| a.pid == item.assessment_pid) else {
             continue;
         };
-        let Some(employee) = employee_rows
+        let Some(worker) = worker_rows
             .iter()
-            .find(|e| e.pid == assessment.employee_pid)
+            .find(|e| e.pid == assessment.worker_pid)
         else {
             continue;
         };
         *by_department
-            .entry(employee.department.clone())
+            .entry(worker.department.clone())
             .or_default() += 1;
         listed.push(serde_json::json!({
-            "department": employee.department,
-            "employee_pid": employee.pid,
-            "display_name": employee.display_name,
+            "department": worker.department,
+            "worker_pid": worker.pid,
+            "display_name": worker.display_name,
             "workstation": assessment.workstation,
             "item": item.name,
             "note": item.note,
@@ -285,11 +285,11 @@ pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
         .add(
-            "/employees/{pid}/ergonomic-assessments",
+            "/workers/{pid}/ergonomic-assessments",
             post(create_assessment),
         )
         .add(
-            "/employees/{pid}/ergonomic-assessments",
+            "/workers/{pid}/ergonomic-assessments",
             get(list_assessments),
         )
         .add("/ergonomic-items/{pid}", put(answer_item))

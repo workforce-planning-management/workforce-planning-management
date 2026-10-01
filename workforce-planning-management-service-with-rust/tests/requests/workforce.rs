@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management_service::app::App;
 
-use super::{activate, an_org, seed_employee};
+use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
@@ -16,23 +16,23 @@ use super::{activate, an_org, seed_employee};
 async fn time_caps_and_overtime() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let employee = seed_employee!(&request, &org, "E-1001", None).await;
-        activate!(&request, &employee).await;
+        let worker = seed_worker!(&request, &org, "E-1001", None).await;
+        activate!(&request, &worker).await;
         // 20h recorded fine; +5h more the same day breaks the cap.
         let first: Value = request
-            .post(&format!("/api/employees/{employee}/time-entries"))
+            .post(&format!("/api/workers/{worker}/time-entries"))
             .json(&json!({ "worked_on": "2026-07-06", "minutes": 1200 }))
             .await
             .json();
         assert!(first["pid"].is_string());
         let over = request
-            .post(&format!("/api/employees/{employee}/time-entries"))
+            .post(&format!("/api/workers/{worker}/time-entries"))
             .json(&json!({ "worked_on": "2026-07-06", "minutes": 300 }))
             .await;
         assert_eq!(over.status_code(), 422, "day total over 24h refused");
         // Overtime: 1200 min regular vs 450 contracted ⇒ 750 overtime.
         let listed: Value = request
-            .get(&format!("/api/employees/{employee}/time-entries"))
+            .get(&format!("/api/workers/{worker}/time-entries"))
             .await
             .json();
         assert_eq!(listed["overtime"][0]["overtime_minutes"], 750);
@@ -59,27 +59,27 @@ async fn time_caps_and_overtime() {
 async fn leave_balance_journey() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let employee = seed_employee!(&request, &org, "E-1002", None).await;
-        activate!(&request, &employee).await;
+        let worker = seed_worker!(&request, &org, "E-1002", None).await;
+        activate!(&request, &worker).await;
         request
-            .post(&format!("/api/employees/{employee}/leave-entitlements"))
+            .post(&format!("/api/workers/{worker}/leave-entitlements"))
             .json(&json!({ "kind": "annual", "year": 2026, "entitled_days": 5 }))
             .await
             .assert_status_ok();
         request
-            .post(&format!("/api/employees/{employee}/leave-entitlements"))
+            .post(&format!("/api/workers/{worker}/leave-entitlements"))
             .json(&json!({ "kind": "sick", "year": 2026, "entitled_days": 2 }))
             .await
             .assert_status_ok();
         // Annual over balance: 6 days vs 5 ⇒ 422.
         let over = request
-            .post(&format!("/api/employees/{employee}/leave-requests"))
+            .post(&format!("/api/workers/{worker}/leave-requests"))
             .json(&json!({ "kind": "annual", "start_on": "2026-08-03", "end_on": "2026-08-08" }))
             .await;
         assert_eq!(over.status_code(), 422);
         // Annual within balance.
         let annual: Value = request
-            .post(&format!("/api/employees/{employee}/leave-requests"))
+            .post(&format!("/api/workers/{worker}/leave-requests"))
             .json(&json!({ "kind": "annual", "start_on": "2026-08-03", "end_on": "2026-08-07" }))
             .await
             .json();
@@ -87,7 +87,7 @@ async fn leave_balance_journey() {
         assert_eq!(annual["negative_balance"], false);
         // Sick beyond balance: allowed but flagged.
         let sick: Value = request
-            .post(&format!("/api/employees/{employee}/leave-requests"))
+            .post(&format!("/api/workers/{worker}/leave-requests"))
             .json(&json!({ "kind": "sick", "start_on": "2026-09-01", "end_on": "2026-09-04" }))
             .await
             .json();
@@ -99,7 +99,7 @@ async fn leave_balance_journey() {
             .await
             .assert_status_ok();
         let balances: Value = request
-            .get(&format!("/api/employees/{employee}/leave-entitlements"))
+            .get(&format!("/api/workers/{worker}/leave-entitlements"))
             .await
             .json();
         let annual_balance = balances
@@ -121,7 +121,7 @@ async fn leave_balance_journey() {
             .await
             .assert_status_ok();
         let balances: Value = request
-            .get(&format!("/api/employees/{employee}/leave-entitlements"))
+            .get(&format!("/api/workers/{worker}/leave-entitlements"))
             .await
             .json();
         let annual_balance = balances
@@ -146,8 +146,8 @@ async fn leave_balance_journey() {
 async fn shift_conflicts() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let employee = seed_employee!(&request, &org, "E-1003", None).await;
-        activate!(&request, &employee).await;
+        let worker = seed_worker!(&request, &org, "E-1003", None).await;
+        activate!(&request, &worker).await;
         let early: Value = request
             .post("/api/shifts")
             .json(&json!({
@@ -179,7 +179,7 @@ async fn shift_conflicts() {
                 "/api/shifts/{}/assignments",
                 early["pid"].as_str().unwrap()
             ))
-            .json(&json!({ "employee_pid": employee }))
+            .json(&json!({ "worker_pid": worker }))
             .await
             .assert_status_ok();
         let double = request
@@ -187,7 +187,7 @@ async fn shift_conflicts() {
                 "/api/shifts/{}/assignments",
                 overlapping["pid"].as_str().unwrap()
             ))
-            .json(&json!({ "employee_pid": employee }))
+            .json(&json!({ "worker_pid": worker }))
             .await;
         assert_eq!(double.status_code(), 422, "double booking refused");
         request
@@ -195,17 +195,17 @@ async fn shift_conflicts() {
                 "/api/shifts/{}/assignments",
                 late["pid"].as_str().unwrap()
             ))
-            .json(&json!({ "employee_pid": employee }))
+            .json(&json!({ "worker_pid": worker }))
             .await
             .assert_status_ok();
         // Approved leave blocks a same-day assignment.
         request
-            .post(&format!("/api/employees/{employee}/leave-entitlements"))
+            .post(&format!("/api/workers/{worker}/leave-entitlements"))
             .json(&json!({ "kind": "annual", "year": 2026, "entitled_days": 10 }))
             .await
             .assert_status_ok();
         let leave: Value = request
-            .post(&format!("/api/employees/{employee}/leave-requests"))
+            .post(&format!("/api/workers/{worker}/leave-requests"))
             .json(&json!({ "kind": "annual", "start_on": "2026-07-10", "end_on": "2026-07-10" }))
             .await
             .json();
@@ -229,7 +229,7 @@ async fn shift_conflicts() {
                 "/api/shifts/{}/assignments",
                 on_leave_shift["pid"].as_str().unwrap()
             ))
-            .json(&json!({ "employee_pid": employee }))
+            .json(&json!({ "worker_pid": worker }))
             .await;
         assert_eq!(
             conflicted.status_code(),
@@ -249,9 +249,9 @@ async fn shift_conflicts() {
 async fn working_time_guardrails() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let heavy = seed_employee!(&request, &org, "WT-1", None).await;
+        let heavy = seed_worker!(&request, &org, "WT-1", None).await;
         activate!(&request, &heavy).await;
-        let light = seed_employee!(&request, &org, "WT-2", None).await;
+        let light = seed_worker!(&request, &org, "WT-2", None).await;
         activate!(&request, &light).await;
 
         // 35 recorded 24-hour days inside the 17-week window ending
@@ -260,15 +260,15 @@ async fn working_time_guardrails() {
         let mut day = chrono::NaiveDate::from_ymd_opt(2026, 4, 1).unwrap();
         for _ in 0..35 {
             request
-                .post(&format!("/api/employees/{heavy}/time-entries"))
+                .post(&format!("/api/workers/{heavy}/time-entries"))
                 .json(&json!({ "worked_on": day, "minutes": 1440 }))
                 .await
                 .assert_status_ok();
             day += chrono::Duration::days(1);
         }
-        // The light employee records one modest day.
+        // The light worker records one modest day.
         request
-            .post(&format!("/api/employees/{light}/time-entries"))
+            .post(&format!("/api/workers/{light}/time-entries"))
             .json(&json!({ "worked_on": "2026-07-01", "minutes": 480 }))
             .await
             .assert_status_ok();
@@ -287,7 +287,7 @@ async fn working_time_guardrails() {
             let shift_pid = shift["pid"].as_str().unwrap();
             request
                 .post(&format!("/api/shifts/{shift_pid}/assignments"))
-                .json(&json!({ "employee_pid": heavy }))
+                .json(&json!({ "worker_pid": heavy }))
                 .await
                 .assert_status_ok();
         }
@@ -296,11 +296,11 @@ async fn working_time_guardrails() {
             .get("/api/workforce/working-time?as_of=2026-07-10")
             .await
             .json();
-        assert!(signals["employees_checked"].as_u64().unwrap() >= 2);
+        assert!(signals["workers_checked"].as_u64().unwrap() >= 2);
         let flagged = signals["flagged"].as_array().unwrap();
         let row = flagged
             .iter()
-            .find(|f| f["employee_pid"] == heavy.as_str())
+            .find(|f| f["worker_pid"] == heavy.as_str())
             .expect("heavy worker flagged");
         assert_eq!(row["over_48h"], true);
         assert_eq!(row["average_weekly"]["numerator_minutes"], 50_400);
@@ -308,7 +308,7 @@ async fn working_time_guardrails() {
         assert_eq!(row["rest_breaches"].as_array().unwrap().len(), 1);
         assert_eq!(row["rest_breaches"][0]["gap_minutes"], 600);
         assert!(
-            !flagged.iter().any(|f| f["employee_pid"] == light.as_str()),
+            !flagged.iter().any(|f| f["worker_pid"] == light.as_str()),
             "a modest week is not flagged"
         );
         // The department filter scopes the check.
@@ -316,7 +316,7 @@ async fn working_time_guardrails() {
             .get("/api/workforce/working-time?department=finance&as_of=2026-07-10")
             .await
             .json();
-        assert_eq!(scoped["employees_checked"], 0);
+        assert_eq!(scoped["workers_checked"], 0);
         assert!(scoped["flagged"].as_array().unwrap().is_empty());
     })
     .await;

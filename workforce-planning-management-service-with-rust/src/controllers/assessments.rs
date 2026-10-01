@@ -3,7 +3,7 @@
 //!
 //! Three record kinds: an **instrument** catalog (the named test, its
 //! category, and the scales it reports), an **assessment** (one
-//! administration of an instrument to one candidate or employee,
+//! administration of an instrument to one candidate or worker,
 //! optionally tied to an application), and per-scale **results**.
 //!
 //! The pure rules live in [`crate::rules::assessment`]: the
@@ -171,9 +171,9 @@ async fn list_instruments(
 #[derive(Debug, Deserialize)]
 struct AssessmentPayload {
     instrument_pid: Uuid,
-    /// `candidate` or `employee`.
+    /// `candidate` or `worker`.
     subject_kind: String,
-    /// The candidate's or employee's pid (existence is checked).
+    /// The candidate's or worker's pid (existence is checked).
     subject_pid: Uuid,
     /// The application this sitting belongs to, for a hiring process.
     #[serde(default)]
@@ -187,7 +187,7 @@ struct AssessmentPayload {
 }
 
 /// `POST /api/assessments` — schedule a sitting for a candidate or an
-/// employee. The subject and (when given) the application must exist;
+/// worker. The subject and (when given) the application must exist;
 /// an application-linked sitting must belong to that application's
 /// candidate, so a result can never be filed against the wrong hire.
 #[debug_handler]
@@ -596,26 +596,26 @@ async fn candidate_profile(
     subject_profile(&ctx, &caller, "candidate", candidate.pid, query.as_of).await
 }
 
-/// `GET /api/employees/{pid}/assessment-profile` — an employee's
-/// profile. Authorized (and masked) at the **employee** level, so an
-/// assessment profile is never a way around the employee's own
+/// `GET /api/workers/{pid}/assessment-profile` — a worker's
+/// profile. Authorized (and masked) at the **worker** level, so an
+/// assessment profile is never a way around the worker's own
 /// record-level policy.
 #[debug_handler]
-async fn employee_profile(
+async fn worker_profile(
     axum::extract::Query(query): axum::extract::Query<ProfileQuery>,
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
-        &auth::employee_resource_attrs(&employee),
+        &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
     let masked = obligations.iter().any(|o| o == "mask");
-    build_profile(&ctx, "employee", employee.pid, query.as_of, masked).await
+    build_profile(&ctx, "worker", worker.pid, query.as_of, masked).await
 }
 
 /// Shared body of the candidate profile: authorize coarsely (there is
@@ -936,25 +936,25 @@ fn declared_scales(instrument: &assessment_instruments::Model) -> Option<Vec<Str
     }
 }
 
-/// Resolve the subject (candidate or employee) and return its display
+/// Resolve the subject (candidate or worker) and return its display
 /// name, `404`-ing when it does not exist — so a sitting can never be
-/// booked against a subject that is not there. An employee subject is
-/// additionally authorized at the employee level.
+/// booked against a subject that is not there. A worker subject is
+/// additionally authorized at the worker level.
 async fn subject_display_name(
     ctx: &AppContext,
     subject_kind: &str,
     subject_pid: Uuid,
     caller: &MaybeAuthUser,
 ) -> Result<String> {
-    if subject_kind == "employee" {
-        let employee = records::find_employee(&ctx.db, subject_pid).await?;
+    if subject_kind == "worker" {
+        let worker = records::find_worker(&ctx.db, subject_pid).await?;
         auth::authorize_record(
             caller,
             authentication_verifier::Action::Write,
-            &auth::employee_resource_attrs(&employee),
+            &auth::worker_resource_attrs(&worker),
         )
         .map_err(record_rejection)?;
-        return Ok(employee.display_name);
+        return Ok(worker.display_name);
     }
     let candidate = candidates::Entity::find()
         .filter(candidates::Column::Pid.eq(subject_pid))
@@ -985,7 +985,7 @@ pub fn routes() -> Routes {
             "/candidates/{pid}/assessment-profile",
             get(candidate_profile),
         )
-        .add("/employees/{pid}/assessment-profile", get(employee_profile))
+        .add("/workers/{pid}/assessment-profile", get(worker_profile))
 }
 
 #[cfg(test)]

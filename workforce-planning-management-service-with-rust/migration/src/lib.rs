@@ -2,7 +2,7 @@
 //! `workforce-planning-management-service`.
 //!
 //! The [`Migrator`] runs the ordered list below at boot (or via
-//! `cargo loco db migrate`): the employee core, the acquisition
+//! `cargo loco db migrate`): the worker core, the acquisition
 //! pipeline, the workforce tables, benefits + development, payroll,
 //! then the `audit_logs` and `event_outbox` side tables. Employment
 //! data is personal data, so the audit trail is the who/what/when
@@ -13,7 +13,7 @@
 #![warn(clippy::pedantic)]
 #![allow(elided_lifetimes_in_paths)]
 pub use sea_orm_migration::prelude::*;
-mod m20220101_000001_employees;
+mod m20220101_000001_workers;
 mod m20220101_000002_acquisition;
 mod m20220101_000003_workforce;
 mod m20220101_000004_development;
@@ -30,6 +30,8 @@ mod m20260725_000014_appraisals;
 mod m20260725_000015_notifications;
 mod m20260725_000016_ergonomics;
 mod m20260725_000017_adjustments;
+mod m20260928_000018_organization_memberships;
+mod m20260929_000019_organization_confederations;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -37,12 +39,12 @@ pub struct Migrator;
 
 #[async_trait::async_trait]
 impl MigratorTrait for Migrator {
-    /// The ordered migration set. Order matters: employees first (most
+    /// The ordered migration set. Order matters: workers first (most
     /// tables reference them), then the pillar tables, then the side
     /// tables.
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
         vec![
-            Box::new(m20220101_000001_employees::Migration),
+            Box::new(m20220101_000001_workers::Migration),
             Box::new(m20220101_000002_acquisition::Migration),
             Box::new(m20220101_000003_workforce::Migration),
             Box::new(m20220101_000004_development::Migration),
@@ -59,6 +61,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20260725_000015_notifications::Migration),
             Box::new(m20260725_000016_ergonomics::Migration),
             Box::new(m20260725_000017_adjustments::Migration),
+            Box::new(m20260928_000018_organization_memberships::Migration),
+            Box::new(m20260929_000019_organization_confederations::Migration),
             // inject-above (do not remove this comment)
         ]
     }

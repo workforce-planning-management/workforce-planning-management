@@ -1,6 +1,6 @@
 //! Talent acquisition (WPM-R1–R3): requisitions, candidates,
 //! applications + interviews, and onboarding checklists. Hiring an
-//! application creates the Employee in one transaction (WPM-D9).
+//! application creates the Worker in one transaction (WPM-D9).
 
 use loco_rs::prelude::*;
 use sea_orm::{PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
@@ -11,10 +11,10 @@ use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::metrics::Metrics;
 use crate::models::_entities::{
-    applications, candidates, employees, interviews, onboarding_items, requisitions,
+    applications, candidates, workers, interviews, onboarding_items, requisitions,
 };
 use crate::models::audit_logs::Model as Audit;
-use crate::models::records;
+use crate::models::{memberships, records};
 use crate::rules::{lifecycle, tokens};
 use crate::streaming;
 use crate::validation::Problems;
@@ -56,16 +56,16 @@ struct ApplicationPayload {
 }
 
 /// `POST /api/applications/{pid}/stage` body. Moving to `hired`
-/// requires the employee fields.
+/// requires the worker fields.
 #[derive(Debug, Deserialize)]
 struct StagePayload {
     to: String,
-    /// Required on `hired`: the person URN for the new employee.
+    /// Required on `hired`: the person URN for the new worker.
     #[serde(default)]
     person_ref: Option<String>,
-    /// Required on `hired`: the employee number.
+    /// Required on `hired`: the worker number.
     #[serde(default)]
-    employee_number: Option<String>,
+    worker_number: Option<String>,
     #[serde(default)]
     employment_type: Option<String>,
     #[serde(default)]
@@ -95,7 +95,7 @@ struct OutcomePayload {
     notes: Option<String>,
 }
 
-/// `POST /api/employees/{pid}/onboarding` body — add checklist items.
+/// `POST /api/workers/{pid}/onboarding` body — add checklist items.
 #[derive(Debug, Deserialize)]
 struct OnboardingPayload {
     items: Vec<OnboardingItemPayload>,
@@ -204,11 +204,15 @@ struct RequisitionListParams {
 #[debug_handler]
 async fn list_requisitions(
     State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
     Query(params): Query<RequisitionListParams>,
 ) -> Result<Response> {
     let mut query = requisitions::Entity::find().filter(requisitions::Column::DeletedAt.is_null());
     if let Some(status) = &params.status {
         query = query.filter(requisitions::Column::Status.eq(status));
+    }
+    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+        query = query.filter(requisitions::Column::OrganizationRef.is_in(refs));
     }
     let rows = query
         .order_by_asc(requisitions::Column::Id)
@@ -467,8 +471,8 @@ async fn list_applications(
 }
 
 /// `POST /api/applications/{pid}/stage` — one stage transition.
-/// `hired` creates the Employee (onboarding status) **in the same
-/// transaction** (WPM-R2, WPM-D9) and emits `employee_hired`.
+/// `hired` creates the Worker (onboarding status) **in the same
+/// transaction** (WPM-R2, WPM-D9) and emits `worker_hired`.
 #[allow(clippy::too_many_lines)] // one linear stage walk incl. the in-tx hire
 #[debug_handler]
 async fn application_stage(
@@ -516,7 +520,7 @@ async fn application_stage(
     )
     .await?;
 
-    let mut employee_pid = None;
+    let mut worker_pid = None;
     if payload.to == "hired" {
         let person_ref = payload
             .person_ref
@@ -525,10 +529,10 @@ async fn application_stage(
             .ok_or_else(|| {
                 unprocessable("hiring requires person_ref (on the payload or the candidate)")
             })?;
-        let employee_number = payload
-            .employee_number
+        let worker_number = payload
+            .worker_number
             .clone()
-            .ok_or_else(|| unprocessable("hiring requires employee_number"))?;
+            .ok_or_else(|| unprocessable("hiring requires worker_number"))?;
         let mut problems = Problems::new();
         problems.require_ref("person_ref", entity_ref::EntityType::Person, &person_ref);
         let employment_type = payload
@@ -541,12 +545,12 @@ async fn application_stage(
             &employment_type,
         );
         ensure_valid(&problems.into_vec())?;
-        let employee = employees::ActiveModel {
+        let worker = workers::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
             person_ref: ActiveValue::set(person_ref),
-            worker_ref: ActiveValue::set(None),
+            upstream_worker_ref: ActiveValue::set(None),
             organization_ref: ActiveValue::set(requisition.organization_ref.clone()),
-            employee_number: ActiveValue::set(employee_number),
+            worker_number: ActiveValue::set(worker_number),
             display_name: ActiveValue::set(candidate.display_name.clone()),
             status: ActiveValue::set("onboarding".to_string()),
             employment_type: ActiveValue::set(employment_type),
@@ -569,33 +573,33 @@ async fn application_stage(
         .await?;
         Audit::record(
             &txn,
-            "employee",
-            employee.pid,
-            "employee_hired",
+            "worker",
+            worker.pid,
+            "worker_hired",
             caller.actor(),
             Some(serde_json::json!({
-                "application_pid": row.pid, "department": employee.department,
+                "application_pid": row.pid, "department": worker.department,
             })),
         )
         .await?;
         streaming::emit_on(
             &txn,
-            "employee",
-            "employee_hired",
-            &employee.pid.to_string(),
-            &employee.employee_number,
+            "worker",
+            "worker_hired",
+            &worker.pid.to_string(),
+            &worker.worker_number,
             caller.actor(),
             None,
         )
         .await?;
-        employee_pid = Some(employee.pid);
+        worker_pid = Some(worker.pid);
     }
     txn.commit().await?;
-    if employee_pid.is_some() {
-        Metrics::global().employee_hired_total.inc();
+    if worker_pid.is_some() {
+        Metrics::global().worker_hired_total.inc();
     }
     format::json(serde_json::json!({
-        "pid": row.pid, "stage": row.stage, "employee_pid": employee_pid,
+        "pid": row.pid, "stage": row.stage, "worker_pid": worker_pid,
     }))
 }
 
@@ -691,7 +695,7 @@ async fn interview_outcome(
     format::json(row)
 }
 
-/// `POST /api/employees/{pid}/onboarding` — add checklist items.
+/// `POST /api/workers/{pid}/onboarding` — add checklist items.
 #[debug_handler]
 async fn add_onboarding(
     State(ctx): State<AppContext>,
@@ -699,7 +703,7 @@ async fn add_onboarding(
     Path(pid): Path<String>,
     Json(payload): Json<OnboardingPayload>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     if payload.items.is_empty() {
         problems.push("items must be non-empty".to_string());
@@ -716,7 +720,7 @@ async fn add_onboarding(
     for item in &payload.items {
         let row = onboarding_items::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
-            employee_pid: ActiveValue::set(employee.pid),
+            worker_pid: ActiveValue::set(worker.pid),
             name: ActiveValue::set(item.name.clone()),
             mandatory: ActiveValue::set(item.mandatory),
             status: ActiveValue::set("pending".to_string()),
@@ -731,8 +735,8 @@ async fn add_onboarding(
     }
     Audit::record(
         &txn,
-        "employee",
-        employee.pid,
+        "worker",
+        worker.pid,
         "onboarding_items_added",
         caller.actor(),
         Some(serde_json::json!({ "count": pids.len() })),
@@ -742,15 +746,15 @@ async fn add_onboarding(
     format::json(serde_json::json!({ "pids": pids }))
 }
 
-/// `GET /api/employees/{pid}/onboarding`.
+/// `GET /api/workers/{pid}/onboarding`.
 #[debug_handler]
 async fn list_onboarding(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let rows = onboarding_items::Entity::find()
-        .filter(onboarding_items::Column::EmployeePid.eq(employee.pid))
+        .filter(onboarding_items::Column::WorkerPid.eq(worker.pid))
         .filter(onboarding_items::Column::DeletedAt.is_null())
         .order_by_asc(onboarding_items::Column::Id)
         .all(&ctx.db)
@@ -840,8 +844,8 @@ pub fn routes() -> Routes {
         .add("/applications/{pid}/interviews", post(create_interview))
         .add("/applications/{pid}/interviews", get(list_interviews))
         .add("/interviews/{pid}", put(interview_outcome))
-        .add("/employees/{pid}/onboarding", post(add_onboarding))
-        .add("/employees/{pid}/onboarding", get(list_onboarding))
+        .add("/workers/{pid}/onboarding", post(add_onboarding))
+        .add("/workers/{pid}/onboarding", get(list_onboarding))
         .add("/onboarding-items/{pid}/complete", post(complete_item))
         .add("/onboarding-items/{pid}/waive", post(waive_item))
 }

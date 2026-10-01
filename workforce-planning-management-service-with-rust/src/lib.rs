@@ -1,7 +1,7 @@
 //! `workforce-planning-management-service` — a loco.rs consumer application
-//! for **workforce planning management** across the employee lifecycle:
+//! for **workforce planning management** across the worker lifecycle:
 //! requisitions and the applicant-tracking pipeline, onboarding
-//! checklists, employee records with the derived org chart, time &
+//! checklists, worker records with the derived org chart, time &
 //! attendance, leave, shift scheduling, benefits, performance reviews,
 //! training enrollments, succession planning, payroll runs with
 //! derived payslips, and salary benchmarking.
@@ -21,7 +21,8 @@
 //!   flags. DB-free and exhaustively unit-tested.
 //! - [`models`] — `SeaORM` entities + CRUD helpers.
 //! - [`clients`] — upstream service lookups (stub-first).
-//! - [`auth`] — offline PASETO verification + ABAC + masking.
+//! - [`auth`] — bearer-token verification (PASETO or Keycloak JWT,
+//!   `paseto`/`keycloak` Cargo feature) + ABAC + masking.
 //! - [`streaming`] — event envelope + in-memory / outbox transports.
 //!
 //! See `../spec/index.md` for the living specification.

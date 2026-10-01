@@ -2,9 +2,9 @@
 //! when erasure is allowed, how the retention horizon is read, and
 //! which tables the sweep covers. No I/O.
 
-/// Employee statuses in which erasure is allowed: the employment
+/// Worker statuses in which erasure is allowed: the employment
 /// relationship is the lawful basis for the data, so an active (or
-/// on-leave, or onboarding) employee cannot be erased.
+/// on-leave, or onboarding) worker cannot be erased.
 #[must_use]
 pub fn erasable(status: &str) -> bool {
     matches!(status, "terminated" | "retired")
@@ -41,8 +41,8 @@ pub const SOFT_DELETED_TABLES: &[&str] = &[
     "candidates",
     "development_plans",
     "early_career_programs",
-    "employee_skills",
-    "employees",
+    "worker_skills",
+    "workers",
     "ergonomic_assessments",
     "ergonomic_items",
     "feedback_entries",
@@ -111,7 +111,7 @@ mod tests {
         sorted.dedup();
         assert_eq!(sorted, SOFT_DELETED_TABLES, "sorted and unique");
         assert_eq!(SOFT_DELETED_TABLES.len(), 41);
-        for table in ["employees", "payslips", "candidates", "appraisals"] {
+        for table in ["workers", "payslips", "candidates", "appraisals"] {
             assert!(SOFT_DELETED_TABLES.contains(&table));
         }
     }

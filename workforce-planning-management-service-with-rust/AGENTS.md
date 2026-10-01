@@ -6,7 +6,7 @@ subproject. Read this **before** opening a PR.
 ## What this project is
 
 A **back-end JSON API**, written in Rust on [Loco](https://loco.rs)
-(Axum + SeaORM + PostgreSQL), for workforce planning management: employee
+(Axum + SeaORM + PostgreSQL), for workforce planning management: worker
 records and the employment lifecycle, the applicant-tracking
 pipeline and onboarding checklists, time & attendance, leave, shift
 scheduling with working-time guardrails, benefits, wellbeing &
@@ -49,7 +49,7 @@ duplicated demographics. See the cross-cutting spec's
    `worker` (Postgres-backed) jobs, in-memory loco cache. See
    [rust-loco-stack](../../agents/share/rust-loco-stack.md).
 3. **Pure core.** Every lifecycle state machine (requisition,
-   application, employee status, leave, review, payroll run), the
+   application, worker status, leave, review, payroll run), the
    leave-balance and overtime arithmetic, shift-conflict checks, the
    org-chart cycle check, and payslip derivation live in DB-free
    `src/rules/` modules with exhaustive unit tests; controllers only

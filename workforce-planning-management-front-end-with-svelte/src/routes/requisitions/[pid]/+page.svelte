@@ -37,7 +37,7 @@
     try {
       await applicationStage(application.pid, {
         to,
-        ...(to === "hired" ? { employee_number: hireNumber } : {}),
+        ...(to === "hired" ? { worker_number: hireNumber } : {}),
       });
       await load();
     } catch (cause) {

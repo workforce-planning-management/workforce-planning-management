@@ -1,6 +1,6 @@
 //! `audit_logs` model — record and query the audit trail.
 //!
-//! Every mutation **and every sensitive read** (salary-bearing employee reads,
+//! Every mutation **and every sensitive read** (salary-bearing worker reads,
 //! payslips, review content, succession plans) writes one row. The `snapshot` JSON carries the action
 //! detail (old/new state, override reasons, the `department` where
 //! relevant — which is what the department-scoped query filters on).

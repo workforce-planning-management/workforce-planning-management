@@ -17,7 +17,7 @@ pub struct Model {
     pub name: String,
     pub kind: String,
     pub provider: String,
-    pub employee_cost_minor: i64,
+    pub worker_cost_minor: i64,
     pub employer_cost_minor: i64,
     pub currency: String,
     pub deleted_at: Option<DateTimeWithTimeZone>,

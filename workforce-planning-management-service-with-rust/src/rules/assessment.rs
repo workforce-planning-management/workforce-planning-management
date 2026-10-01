@@ -104,10 +104,10 @@ pub const ASSESSMENT_STATUSES: &[&str] = &[
 ];
 
 /// Who an assessment is about: a `candidate` (during hiring) or an
-/// `employee` (development, internal moves). Both may sit any category
+/// `worker` (development, internal moves). Both may sit any category
 /// — selection tests are typically hiring, but an internal candidate
 /// takes them too, so the vocabulary does not gate on it.
-pub const ASSESSMENT_SUBJECTS: &[&str] = &["candidate", "employee"];
+pub const ASSESSMENT_SUBJECTS: &[&str] = &["candidate", "worker"];
 
 /// Score bands, weakest to strongest.
 pub const SCORE_BANDS: &[&str] = &["low", "below_average", "average", "above_average", "high"];

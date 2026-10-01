@@ -33,7 +33,7 @@ pub fn check_day_minutes(existing_minutes: i32, new_minutes: i32) -> Result<(), 
     Ok(())
 }
 
-/// The contracted day for an employee at `fte_percent` (100 ⇒ full
+/// The contracted day for a worker at `fte_percent` (100 ⇒ full
 /// time), rounded down to whole minutes.
 #[must_use]
 pub fn contracted_day_minutes(fte_percent: i32) -> i32 {

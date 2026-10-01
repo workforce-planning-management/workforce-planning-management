@@ -17,7 +17,7 @@ use std::collections::BTreeMap;
 
 /// The two kinds of development plan.
 ///
-/// - `upskill` — deepen the skills of the employee's **current** role.
+/// - `upskill` — deepen the skills of the worker's **current** role.
 /// - `reskill` — build the skills for a **different** role, so the
 ///   plan must name its target (see [`target_matches_kind`]).
 pub const DEVELOPMENT_PLAN_KINDS: &[&str] = &["upskill", "reskill"];
@@ -132,7 +132,7 @@ pub fn plan_progress(item_statuses: &[String]) -> (usize, usize) {
 }
 
 /// Progress **verified against declared proficiency**: an item counts
-/// only when the employee's declared level for that skill has actually
+/// only when the worker's declared level for that skill has actually
 /// reached the item's target. Returns `(verified, total)`.
 ///
 /// This is the honest counterpart of [`plan_progress`]: marking an item
@@ -166,7 +166,7 @@ pub const PIPELINE_STAGES: &[&str] = &[
 ];
 
 /// Who can be in a pipeline.
-pub const PIPELINE_SUBJECTS: &[&str] = &["candidate", "employee"];
+pub const PIPELINE_SUBJECTS: &[&str] = &["candidate", "worker"];
 
 /// Readiness ratings, shared with succession
 /// ([`crate::rules::tokens::READINESS`]).

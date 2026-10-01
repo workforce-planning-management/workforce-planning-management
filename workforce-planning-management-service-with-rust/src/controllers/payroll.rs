@@ -2,7 +2,7 @@
 //! calculated → approved → paid), derived payslips (WPM-D5: payroll
 //! is a derivation, not an editor), and salary benchmarking.
 //! Payslip reads honour the `mask` obligation via the owning
-//! employee's record-level ABAC pass (WPM-R15).
+//! worker's record-level ABAC pass (WPM-R15).
 
 use loco_rs::prelude::*;
 use sea_orm::{QueryOrder, QuerySelect, TransactionTrait};
@@ -13,10 +13,10 @@ use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::metrics::Metrics;
 use crate::models::_entities::{
-    benchmarks, benefit_enrollments, benefit_plans, employees, payroll_runs, payslips, time_entries,
+    benchmarks, benefit_enrollments, benefit_plans, workers, payroll_runs, payslips, time_entries,
 };
 use crate::models::audit_logs::Model as Audit;
-use crate::models::records;
+use crate::models::{memberships, records};
 use crate::rules::{benchmark, lifecycle, payroll as rules, workforce};
 use crate::streaming;
 use crate::validation::Problems;
@@ -108,9 +108,13 @@ async fn create_run(
 
 /// `GET /api/payroll-runs`.
 #[debug_handler]
-async fn list_runs(State(ctx): State<AppContext>) -> Result<Response> {
-    let rows = payroll_runs::Entity::find()
-        .filter(payroll_runs::Column::DeletedAt.is_null())
+async fn list_runs(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
+    let mut query =
+        payroll_runs::Entity::find().filter(payroll_runs::Column::DeletedAt.is_null());
+    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+        query = query.filter(payroll_runs::Column::OrganizationRef.is_in(refs));
+    }
+    let rows = query
         .order_by_asc(payroll_runs::Column::Id)
         .limit(200)
         .all(&ctx.db)
@@ -125,11 +129,11 @@ async fn get_run(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Resu
 }
 
 /// `POST /api/payroll-runs/{pid}/calculate` — derive one payslip per
-/// salaried in-scope employee from salary × FTE, **approved**
-/// overtime in the period, and benefit employee-costs; stub tax
+/// salaried in-scope worker from salary × FTE, **approved**
+/// overtime in the period, and benefit worker-costs; stub tax
 /// (WPM-R13, WPM-D5). Re-calculation replaces the run's payslips
 /// (drafts only — the lifecycle gate enforces it).
-#[allow(clippy::too_many_lines)] // one linear derivation walk per employee
+#[allow(clippy::too_many_lines)] // one linear derivation walk per worker
 #[debug_handler]
 async fn calculate_run(
     State(ctx): State<AppContext>,
@@ -139,11 +143,11 @@ async fn calculate_run(
     let run = records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?;
     lifecycle::check("payroll run", lifecycle::PAYROLL, &run.status, "calculated")
         .map_err(|e| unprocessable(&e))?;
-    let staff = employees::Entity::find()
-        .filter(employees::Column::DeletedAt.is_null())
-        .filter(employees::Column::OrganizationRef.eq(&run.organization_ref))
-        .filter(employees::Column::Status.is_in(["active", "on_leave"]))
-        .filter(employees::Column::SalaryMinor.is_not_null())
+    let staff = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::OrganizationRef.eq(&run.organization_ref))
+        .filter(workers::Column::Status.is_in(["active", "on_leave"]))
+        .filter(workers::Column::SalaryMinor.is_not_null())
         .all(&ctx.db)
         .await?;
     let txn = ctx.db.begin().await?;
@@ -153,17 +157,17 @@ async fn calculate_run(
         .exec(&txn)
         .await?;
     let mut count: u64 = 0;
-    for employee in &staff {
-        let Some(salary) = employee.salary_minor else {
+    for worker in &staff {
+        let Some(salary) = worker.salary_minor else {
             continue;
         };
-        let currency = employee
+        let currency = worker
             .salary_currency
             .clone()
             .unwrap_or_else(|| "GBP".to_string());
         // Approved time in the period → overtime minutes.
         let entries = time_entries::Entity::find()
-            .filter(time_entries::Column::EmployeePid.eq(employee.pid))
+            .filter(time_entries::Column::WorkerPid.eq(worker.pid))
             .filter(time_entries::Column::Status.eq("approved"))
             .filter(time_entries::Column::WorkedOn.gte(run.period_start))
             .filter(time_entries::Column::WorkedOn.lte(run.period_end))
@@ -186,13 +190,13 @@ async fn calculate_run(
                 i64::from(workforce::overtime_minutes(
                     *regular,
                     *explicit,
-                    employee.fte_percent,
+                    worker.fte_percent,
                 ))
             })
             .sum();
-        // Benefit employee-costs (same currency only).
+        // Benefit worker-costs (same currency only).
         let enrollments = benefit_enrollments::Entity::find()
-            .filter(benefit_enrollments::Column::EmployeePid.eq(employee.pid))
+            .filter(benefit_enrollments::Column::WorkerPid.eq(worker.pid))
             .filter(benefit_enrollments::Column::DeletedAt.is_null())
             .all(&txn)
             .await?;
@@ -204,21 +208,21 @@ async fn calculate_run(
                 .one(&txn)
                 .await?
                 && plan.currency.eq_ignore_ascii_case(&currency)
-                && plan.employee_cost_minor > 0
+                && plan.worker_cost_minor > 0
             {
-                benefit_costs.push((plan.name.clone(), plan.employee_cost_minor));
+                benefit_costs.push((plan.name.clone(), plan.worker_cost_minor));
             }
         }
-        let slip = rules::compute_payslip(salary, employee.fte_percent, overtime, &benefit_costs)
+        let slip = rules::compute_payslip(salary, worker.fte_percent, overtime, &benefit_costs)
             .map_err(|e| {
-            unprocessable(&format!("payslip for {}: {e}", employee.employee_number))
+            unprocessable(&format!("payslip for {}: {e}", worker.worker_number))
         })?;
         // The persist gate re-checks the invariant (WPM-R13).
         rules::reconcile(&slip).map_err(|e| unprocessable(&e))?;
         payslips::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
             run_pid: ActiveValue::set(run.pid),
-            employee_pid: ActiveValue::set(employee.pid),
+            worker_pid: ActiveValue::set(worker.pid),
             currency: ActiveValue::set(currency),
             gross_minor: ActiveValue::set(slip.gross_minor),
             deductions: ActiveValue::set(
@@ -333,8 +337,8 @@ async fn reopen_run(
 }
 
 /// Payslip read + mask helper: the record-level pass runs against the
-/// **owning employee's** attributes, so the same policy that masks an
-/// employee's salary masks their payslips.
+/// **owning worker's** attributes, so the same policy that masks an
+/// worker's salary masks their payslips.
 async fn masked_payslips(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
@@ -342,11 +346,11 @@ async fn masked_payslips(
 ) -> Result<Vec<payslips::Model>> {
     let mut out = Vec::with_capacity(rows.len());
     for slip in rows {
-        let employee = records::find_employee(&ctx.db, slip.employee_pid).await?;
+        let worker = records::find_worker(&ctx.db, slip.worker_pid).await?;
         let obligations = auth::authorize_record(
             caller,
             authentication_verifier::Action::Read,
-            &auth::employee_resource_attrs(&employee),
+            &auth::worker_resource_attrs(&worker),
         )
         .map_err(record_rejection)?;
         out.push(if obligations.iter().any(|o| o == "mask") {
@@ -385,25 +389,25 @@ async fn run_payslips(
     format::json(masked_payslips(&ctx, &caller, rows).await?)
 }
 
-/// `GET /api/employees/{pid}/payslips` — one employee's payslips
+/// `GET /api/workers/{pid}/payslips` — one worker's payslips
 /// (self-service surface, WPM-R8); audited.
 #[debug_handler]
-async fn employee_payslips(
+async fn worker_payslips(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let rows = payslips::Entity::find()
-        .filter(payslips::Column::EmployeePid.eq(employee.pid))
+        .filter(payslips::Column::WorkerPid.eq(worker.pid))
         .filter(payslips::Column::DeletedAt.is_null())
         .order_by_asc(payslips::Column::Id)
         .all(&ctx.db)
         .await?;
     Audit::record(
         &ctx.db,
-        "employee",
-        employee.pid,
+        "worker",
+        worker.pid,
         "payslips_read",
         caller.actor(),
         None,
@@ -465,7 +469,7 @@ async fn list_benchmarks(State(ctx): State<AppContext>) -> Result<Response> {
 }
 
 /// `GET /api/benchmarks/comparison?organization=<ref>` — every
-/// salaried employee vs the newest benchmark for their job title:
+/// salaried worker vs the newest benchmark for their job title:
 /// `below_min` / `within` / `above_max` (WPM-R14). Salary values are
 /// **not** echoed — only the flags — so the view is compensation-
 /// persona data without leaking amounts; the read is audited.
@@ -480,34 +484,38 @@ async fn benchmark_comparison(
     caller: MaybeAuthUser,
     Query(params): Query<ComparisonParams>,
 ) -> Result<Response> {
-    let staff = employees::Entity::find()
-        .filter(employees::Column::DeletedAt.is_null())
-        .filter(employees::Column::OrganizationRef.eq(&params.organization))
-        .filter(employees::Column::SalaryMinor.is_not_null())
-        .all(&ctx.db)
-        .await?;
+    let mut staff_query = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::OrganizationRef.eq(&params.organization))
+        .filter(workers::Column::SalaryMinor.is_not_null());
+    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+        // `params.organization` outside the caller's scope ANDs down to
+        // zero rows here — no separate 403 needed for this read.
+        staff_query = staff_query.filter(workers::Column::OrganizationRef.is_in(refs));
+    }
+    let staff = staff_query.all(&ctx.db).await?;
     let bands = benchmarks::Entity::find()
         .filter(benchmarks::Column::DeletedAt.is_null())
         .order_by_desc(benchmarks::Column::AsOf)
         .all(&ctx.db)
         .await?;
     let mut rows = Vec::new();
-    for employee in &staff {
+    for worker in &staff {
         let (Some(salary), Some(currency)) =
-            (employee.salary_minor, employee.salary_currency.as_deref())
+            (worker.salary_minor, worker.salary_currency.as_deref())
         else {
             continue;
         };
         let band = bands
             .iter()
-            .find(|b| b.job_title.eq_ignore_ascii_case(&employee.job_title));
+            .find(|b| b.job_title.eq_ignore_ascii_case(&worker.job_title));
         let flag = band.and_then(|b| {
             benchmark::compare(salary, currency, b.min_minor, b.max_minor, &b.currency)
         });
         rows.push(serde_json::json!({
-            "employee_pid": employee.pid,
-            "job_title": employee.job_title,
-            "department": employee.department,
+            "worker_pid": worker.pid,
+            "job_title": worker.job_title,
+            "department": worker.department,
             "benchmark_pid": band.map(|b| b.pid),
             "flag": flag,
         }));
@@ -536,7 +544,7 @@ pub fn routes() -> Routes {
         .add("/payroll-runs/{pid}/pay", post(pay_run))
         .add("/payroll-runs/{pid}/reopen", post(reopen_run))
         .add("/payroll-runs/{pid}/payslips", get(run_payslips))
-        .add("/employees/{pid}/payslips", get(employee_payslips))
+        .add("/workers/{pid}/payslips", get(worker_payslips))
         .add("/benchmarks", post(create_benchmark))
         .add("/benchmarks", get(list_benchmarks))
         .add("/benchmarks/comparison", get(benchmark_comparison))

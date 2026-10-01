@@ -1,53 +1,51 @@
 //! Bearer-token authentication for the workforce-planning-management API.
 //!
-//! [`AuthUser`] is an Axum extractor that pulls `Authorization: Bearer
-//! <paseto>`, verifies the PASETO `v4.public` (Ed25519) signature, issuer,
-//! audience and expiry against the
-//! [authentication-service](../../../authentication/authentication-service-with-loco)
-//! published key set, and yields the verified [`Claims`]. Verification is
-//! stateless and offline — no database hit, no introspection call — so any
-//! handler can require authentication by taking an `AuthUser` argument, and
-//! a handler that wants the caller identity *when present* (e.g. to stamp
-//! an audit `actor`) takes [`MaybeAuthUser`] instead.
+//! Exactly one token-verification **backend** is compiled in, chosen at
+//! build time by Cargo feature (see `Cargo.toml`'s `[features]` table);
+//! mixing both, or neither, is a compile error below. Both backends
+//! verify a bearer token into the *same* [`Claims`] type (from the
+//! `authentication-verifier` crate) and hand it to the *same*
+//! downstream code in this module — the ABAC policy engine
+//! ([`policy`], [`authorize_record`]), masking ([`mask_worker`],
+//! [`mask_payslip`]), and the [`AuthUser`]/[`MaybeAuthUser`] extractors
+//! — so no controller, and nothing below this point in the file, knows
+//! or cares which backend is active.
 //!
-//! ## Key source
+//! - **`paseto`** (default; [`paseto`] submodule) — offline PASETO
+//!   `v4.public` (Ed25519) verification against the sibling
+//!   [authentication-service](../../../authentication/authentication-service-with-loco)'s
+//!   published key set. See that submodule's docs for
+//!   `WPM_PASETO_KEYS*` / `WPM_TOKEN_*`.
+//! - **`keycloak`** ([`keycloak`] submodule) — this service verifies a
+//!   Keycloak-issued JWT directly against the realm's JWKS; no PASETO,
+//!   no sibling authentication service in this request path. See that
+//!   submodule's docs for `WPM_KEYCLOAK_*` and the realm-claim → ABAC
+//!   `attrs` mapping (also documented in `spec/auth.md`'s "Keycloak as
+//!   the identity provider" runbook, which additionally covers the
+//!   *other*, independent way Keycloak enters this family: as the
+//!   sibling authentication service's own upstream IdP via its
+//!   `AUTH_OIDC_*` config — a different integration point from this
+//!   one, and usable without ever enabling this crate's `keycloak`
+//!   feature).
 //!
-//! The process-wide [`verifier`] is seeded once at boot ([`init`] is
-//! called from `App::after_routes`, before the app serves traffic) and
-//! built from the environment:
-//!
-//! - `WPM_PASETO_KEYS_URL` — optional URL of the auth service's
-//!   published key set (`/.well-known/paseto-keys`). Set (non-blank) ⇒
-//!   the key set is fetched over HTTP **once at boot** via
-//!   [`Verifier::from_paseto_keys_url`]; on success the fetched key set
-//!   wins over `WPM_PASETO_KEYS` (`tracing::info!`), on failure the
-//!   service logs a `tracing::warn!` and falls back to the env path
-//!   below — the service always boots. The key set is then **re-fetched
-//!   periodically** ([`spawn_key_refresh`]) so a key rotation is picked
-//!   up without a restart (interval `WPM_PASETO_KEYS_REFRESH_SECS`,
-//!   default 1 h; `0` disables; keeps the current keys on a failed
-//!   fetch).
-//! - `WPM_PASETO_KEYS` — the Ed25519 key set (JSON, OKP/Ed25519
-//!   JWK form) the auth service publishes at `/.well-known/paseto-keys`.
-//!   Absent ⇒ an empty key set, so every token is rejected (the service
-//!   still boots).
-//! - `WPM_TOKEN_ISSUER` — expected `iss` (default
-//!   `authentication-service`).
-//! - `WPM_TOKEN_AUDIENCE` — expected `aud` (default
-//!   `main-x-service`).
+//! [`AuthUser`] is an Axum extractor that requires a valid bearer
+//! token and yields the verified [`Claims`]; a handler that wants the
+//! caller identity *when present* (e.g. to stamp an audit `actor`)
+//! takes [`MaybeAuthUser`] instead. Both backends verify statelessly
+//! and offline — no database hit, no introspection call per request.
 //!
 //! ## Blanket enforcement
 //!
 //! When `WPM_REQUIRE_AUTH` is truthy (`1`/`true`/`yes`/`on`,
-//! case-insensitive), the [`enforce`] decision — wired as an Axum
-//! middleware layer in `src/app.rs` — requires a valid bearer token on
-//! every route except the public health/ping, OpenAPI/Swagger, and
-//! Prometheus metrics paths (see [`is_public_path`]). It is **off by
-//! default**: unset/blank/junk
-//! ⇒ today's behaviour, where the extractor is opt-in per handler and
-//! the extractor path proves end-to-end verification.
-//! Activation is an operations decision once the SSO token flow is live;
-//! see `agents/share/authentication-sessions.md` and
+//! case-insensitive), the active backend's `enforce` decision — wired
+//! as an Axum middleware layer in `src/app.rs` — requires a valid
+//! bearer token on every route except the public health/ping,
+//! OpenAPI/Swagger, and Prometheus metrics paths (see
+//! [`is_public_path`]). It is **off by default**: unset/blank/junk ⇒
+//! today's behaviour, where the extractor is opt-in per handler and
+//! the extractor path proves end-to-end verification. Activation is an
+//! operations decision once the SSO token flow is live; see
+//! `agents/share/authentication-sessions.md` and
 //! `agents/share/jwt-enforcement.md` for the family-wide contract.
 //!
 //! ## Authorization (ABAC)
@@ -59,7 +57,8 @@
 //! derived from the HTTP method plus this crate's destructive named
 //! POSTs ([`DESTRUCTIVE_POST_SUFFIXES`]), and the shared engine in the
 //! `authentication-verifier` crate evaluates the policy over the
-//! token's `attrs` claim. The policy is read once per process
+//! token's `attrs` claim — populated identically regardless of which
+//! backend produced it. The policy is read once per process
 //! ([`policy`], built by [`policy_from_env`]) from `WPM_ABAC_POLICY`
 //! (inline JSON) or `WPM_ABAC_POLICY_FILE` (path); unset or unparsable
 //! ⇒ the built-in default policy (`svc=true` ⇒ everything;
@@ -74,14 +73,30 @@
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
-use crate::models::_entities::{employees, payslips};
-use authentication_verifier::{
-    Action, Claims, Policy, ReloadablePolicy, ReloadableVerifier, Verifier,
-};
+use crate::models::_entities::{payslips, workers};
+use authentication_verifier::{Action, Claims, Policy, ReloadablePolicy};
 use axum::extract::FromRequestParts;
-use axum::http::header::AUTHORIZATION;
 use axum::http::request::Parts;
-use axum::http::{HeaderMap, Method, StatusCode};
+use axum::http::{Method, StatusCode};
+
+#[cfg(all(feature = "paseto", feature = "keycloak"))]
+compile_error!(
+    "enable exactly one of the \"paseto\" or \"keycloak\" Cargo features, not both (see Cargo.toml's [features] table)"
+);
+#[cfg(not(any(feature = "paseto", feature = "keycloak")))]
+compile_error!(
+    "enable exactly one of the \"paseto\" or \"keycloak\" Cargo features (see Cargo.toml's [features] table)"
+);
+
+#[cfg(feature = "paseto")]
+mod paseto;
+#[cfg(feature = "paseto")]
+pub use paseto::*;
+
+#[cfg(feature = "keycloak")]
+mod keycloak;
+#[cfg(feature = "keycloak")]
+pub use keycloak::*;
 
 /// The resource entity this crate guards, as seen by ABAC policies
 /// (the `entity` pseudo-attribute in rule `when` clauses).
@@ -91,128 +106,13 @@ pub const ENTITY: &str = "wpm";
 /// `authorization-attributes.md` §2): the family-wide trio — record
 /// merge, batch deduplicate, bulk import (listed ahead of the
 /// corresponding features so the guard is already correct when they
-/// land) — plus WPM's subject-rights operations (WPM-R30): employee
+/// land) — plus WPM's subject-rights operations (WPM-R30): worker
 /// **erasure** and the retention **sweep**, both of which destroy or
 /// irreversibly anonymise data and so must require `access=admin`.
 /// A POST whose path ends with one of these derives
 /// [`Action::Destructive`] instead of [`Action::Write`].
 pub const DESTRUCTIVE_POST_SUFFIXES: [&str; 5] =
     ["/merge", "/deduplicate", "/import", "/erase", "/sweep"];
-
-/// Default issuer expected in tokens (`iss`).
-const DEFAULT_ISSUER: &str = "authentication-service";
-/// Default audience expected in tokens (`aud`).
-const DEFAULT_AUDIENCE: &str = "main-x-service";
-
-/// The process-wide **hot-reloadable** token verifier. Lazily built from
-/// the environment on first use ([`build_from_env`]); [`init`] swaps in
-/// the boot-time fetched key set, and [`spawn_key_refresh`] swaps in a
-/// re-fetched key set periodically (**key rotation without a restart**).
-static VERIFIER: OnceLock<ReloadableVerifier> = OnceLock::new();
-
-/// The process-wide reloadable token verifier. Read the active snapshot
-/// with `verifier().current()` per request; it is swapped by [`init`]
-/// (boot fetch) and [`spawn_key_refresh`] (periodic re-fetch).
-#[must_use]
-pub fn verifier() -> &'static ReloadableVerifier {
-    VERIFIER.get_or_init(|| ReloadableVerifier::new(build_from_env()))
-}
-
-/// Seed the process-wide [`verifier`] before the app serves traffic
-/// (called from `App::after_routes`). When `WPM_PASETO_KEYS_URL` is set
-/// (non-blank) the published key set is fetched over HTTP **once at boot**
-/// and, on success, swapped in over the env-built one; on fetch failure,
-/// or with the URL unset/blank, the env-built verifier stands, so the
-/// service always boots. Idempotent enough to call once at boot.
-pub async fn init() {
-    if let Some(url) =
-        crate::compat::env_var("WPM_PASETO_KEYS_URL").filter(|s| !s.trim().is_empty())
-    {
-        let issuer = env_or("WPM_TOKEN_ISSUER", DEFAULT_ISSUER);
-        let audience = env_or("WPM_TOKEN_AUDIENCE", DEFAULT_AUDIENCE);
-        // `fetch_or` keeps the env-built verifier as the fallback on a
-        // failed fetch, so the service always has a usable verifier.
-        let fetched = fetch_or(url.trim(), &issuer, &audience, build_from_env()).await;
-        verifier().store(fetched);
-    }
-}
-
-/// Default key-set refresh interval (seconds) when
-/// `WPM_PASETO_KEYS_REFRESH_SECS` is unset. One hour — key rotation is
-/// infrequent, so a slow poll suffices.
-const KEY_REFRESH_DEFAULT_SECS: u64 = 3600;
-
-/// Spawn a background task that periodically re-fetches the published
-/// key set from `WPM_PASETO_KEYS_URL` and swaps it into the live
-/// [`verifier`], so a **key rotation** at the auth-service is picked up
-/// **without restarting** this service. On a failed fetch it keeps the
-/// current key set (a transient auth-service outage never locks callers
-/// out). Interval from `WPM_PASETO_KEYS_REFRESH_SECS` (default
-/// [`KEY_REFRESH_DEFAULT_SECS`]); **`0` disables** the loop.
-///
-/// A no-op when `WPM_PASETO_KEYS_URL` is unset (env-supplied keys have
-/// nothing to re-fetch). Call once at boot (`app.rs::after_routes`).
-pub fn spawn_key_refresh() {
-    let Some(url) = crate::compat::env_var("WPM_PASETO_KEYS_URL")
-        .map(|u| u.trim().to_string())
-        .filter(|u| !u.is_empty())
-    else {
-        return;
-    };
-    let secs = crate::compat::env_var("WPM_PASETO_KEYS_REFRESH_SECS")
-        .and_then(|v| v.trim().parse::<u64>().ok())
-        .unwrap_or(KEY_REFRESH_DEFAULT_SECS);
-    if secs == 0 {
-        return; // explicitly disabled
-    }
-    let issuer = env_or("WPM_TOKEN_ISSUER", DEFAULT_ISSUER);
-    let audience = env_or("WPM_TOKEN_AUDIENCE", DEFAULT_AUDIENCE);
-    tokio::spawn(async move {
-        let mut ticker = tokio::time::interval(std::time::Duration::from_secs(secs));
-        ticker.tick().await; // the first tick is immediate — skip it
-        loop {
-            ticker.tick().await;
-            match Verifier::from_paseto_keys_url(&url, &issuer, &audience).await {
-                Ok(fetched) => {
-                    tracing::info!(keys = fetched.key_count(), "refreshed PASETO key set");
-                    verifier().store(fetched);
-                }
-                Err(error) => {
-                    tracing::warn!(%error, "PASETO key-set refresh failed; keeping current keys");
-                }
-            }
-        }
-    });
-    tracing::info!(secs, "polling WPM_PASETO_KEYS_URL for key rotation");
-}
-
-/// Build a verifier by fetching the published key set from `url`
-/// ([`Verifier::from_paseto_keys_url`]); on success the fetched key set
-/// wins (`tracing::info!`), on any fetch/parse failure the given
-/// `fallback` verifier is returned after a `tracing::warn!` — never a
-/// panic, so the caller always boots. Pure dependency injection (URL,
-/// issuer, audience and fallback are all passed in), so it is testable
-/// against a local HTTP listener without touching the process global.
-pub async fn fetch_or(url: &str, issuer: &str, audience: &str, fallback: Verifier) -> Verifier {
-    match Verifier::from_paseto_keys_url(url, issuer, audience).await {
-        Ok(fetched) => {
-            tracing::info!(
-                url,
-                keys = fetched.key_count(),
-                "PASETO key set fetched over HTTP; fetched key set wins over the env key set"
-            );
-            fetched
-        }
-        Err(error) => {
-            tracing::warn!(
-                url,
-                %error,
-                "PASETO key set fetch failed; falling back to the env-configured key set"
-            );
-            fallback
-        }
-    }
-}
 
 /// Whether blanket `/api/*` enforcement is on, read once from
 /// `WPM_REQUIRE_AUTH` and cached. Off by default — see the
@@ -240,7 +140,7 @@ pub fn parse_bool(value: &str) -> bool {
 /// `OpenAPI` doc + Swagger UI, and the Prometheus metrics endpoint (so a
 /// scraper needs no bearer token). Everything else requires a valid bearer
 /// token.
-fn is_public_path(path: &str) -> bool {
+pub(crate) fn is_public_path(path: &str) -> bool {
     path == "/_health"
         || path == "/_ping"
         || path == "/api-docs/openapi.json"
@@ -407,50 +307,18 @@ fn file_mtime(path: &str) -> Option<std::time::SystemTime> {
         .ok()
 }
 
-/// The blanket-enforcement decision: authentication, then ABAC
-/// authorization. `Ok(())` ⇒ let the request through; `Err((401|403,
-/// msg))` ⇒ reject. Pure: the caller passes the flag, method, path,
-/// headers, verifier and policy, so it is fully unit-testable without
-/// booting the app or a database.
-///
-/// # Errors
-///
-/// `401` when enforcement is on, the path is not public, and the request
-/// carries no valid bearer token (missing/malformed/expired/tampered).
-/// `403` when the token is valid but the ABAC policy denies the derived
-/// action (the message names the deciding rule, per
-/// `authorization-attributes.md` §5).
-pub fn enforce(
-    require_auth: bool,
-    method: &Method,
-    path: &str,
-    headers: &HeaderMap,
-    verifier: &Verifier,
-    policy: &Policy,
-) -> Result<(), (StatusCode, String)> {
-    if !require_auth || is_public_path(path) {
-        return Ok(());
-    }
-    let claims = bearer_claims(headers, verifier)?;
-    let decision = policy.evaluate(&claims, derive_action(method, path), ENTITY);
-    if decision.allowed {
-        Ok(())
-    } else {
-        Err((StatusCode::FORBIDDEN, decision.reason))
-    }
-}
-
 /// Derive the **record-level resource attributes** of a stored
-/// employee for the ABAC decision (`authorization-attributes.md` §9).
+/// worker for the ABAC decision (`authorization-attributes.md` §9).
 /// Keys a policy matches with `resource.<key>`:
 ///
 /// | Resource key | From | Example tokens |
 /// |---|---|---|
-/// | `resource.person` | `Employee::person_ref` | the bare person uuid (enables `$sub` self-rules) |
-/// | `resource.person_ref` | `Employee::person_ref` | the full `person:` URN |
-/// | `resource.department` | `Employee::department` | `engineering`, `cardiology`, … |
-/// | `resource.status` | `Employee::status` | `onboarding`, `active`, `terminated`, … |
-/// | `resource.manager` | `Employee::manager_pid` | the manager's employee pid |
+/// | `resource.person` | `Worker::person_ref` | the bare person uuid (enables `$sub` self-rules) |
+/// | `resource.person_ref` | `Worker::person_ref` | the full `person:` URN |
+/// | `resource.department` | `Worker::department` | `engineering`, `cardiology`, … |
+/// | `resource.status` | `Worker::status` | `onboarding`, `active`, `terminated`, … |
+/// | `resource.manager` | `Worker::manager_pid` | the manager's worker pid |
+/// | `resource.organization_ref` | `Worker::organization_ref` | the full `organization:` URN |
 ///
 /// A deployment can then write e.g. "allow read only when
 /// `resource.department` is one of the caller's `dept` attributes",
@@ -458,17 +326,21 @@ pub fn enforce(
 /// "allow a **masked** read otherwise" (an `allow` rule with the
 /// `mask` obligation) — entirely as policy, no code change.
 #[must_use]
-pub fn employee_resource_attrs(employee: &employees::Model) -> BTreeMap<String, Vec<String>> {
+pub fn worker_resource_attrs(worker: &workers::Model) -> BTreeMap<String, Vec<String>> {
     let mut attrs = BTreeMap::new();
-    let person = employee
+    let person = worker
         .person_ref
         .split_once(':')
-        .map_or(employee.person_ref.as_str(), |(_, id)| id);
+        .map_or(worker.person_ref.as_str(), |(_, id)| id);
     attrs.insert("person".to_string(), vec![person.to_string()]);
-    attrs.insert("person_ref".to_string(), vec![employee.person_ref.clone()]);
-    attrs.insert("department".to_string(), vec![employee.department.clone()]);
-    attrs.insert("status".to_string(), vec![employee.status.clone()]);
-    if let Some(manager_pid) = employee.manager_pid {
+    attrs.insert("person_ref".to_string(), vec![worker.person_ref.clone()]);
+    attrs.insert("department".to_string(), vec![worker.department.clone()]);
+    attrs.insert("status".to_string(), vec![worker.status.clone()]);
+    attrs.insert(
+        "organization_ref".to_string(),
+        vec![worker.organization_ref.clone()],
+    );
+    if let Some(manager_pid) = worker.manager_pid {
         attrs.insert("manager".to_string(), vec![manager_pid.to_string()]);
     }
     attrs
@@ -478,19 +350,19 @@ pub fn employee_resource_attrs(employee: &employees::Model) -> BTreeMap<String, 
 /// obligation (spec `auth.md`).
 pub const MASKED: &str = "\u{2022}\u{2022}\u{2022}";
 
-/// Apply the `mask` obligation to an employee: redact the salary
+/// Apply the `mask` obligation to a worker: redact the salary
 /// (amount **and** currency). Employment facts — title, department,
 /// dates, status — remain visible (WPM-R15: structure stays, money
 /// goes).
 #[must_use]
-pub fn mask_employee(mut employee: employees::Model) -> employees::Model {
-    employee.salary_minor = None;
-    employee.salary_currency = None;
-    employee
+pub fn mask_worker(mut worker: workers::Model) -> workers::Model {
+    worker.salary_minor = None;
+    worker.salary_currency = None;
+    worker
 }
 
 /// Apply the `mask` obligation to a payslip: zero the amounts and
-/// drop the deduction lines, leaving the run/employee linkage (a
+/// drop the deduction lines, leaving the run/worker linkage (a
 /// masked caller can see a payslip *exists*, not what it pays).
 #[must_use]
 pub fn mask_payslip(mut payslip: payslips::Model) -> payslips::Model {
@@ -581,76 +453,26 @@ pub fn authorize_record(
 }
 
 /// Read env var `name`, treating unset/blank as absent and falling back
-/// to `default`. Used for the issuer/audience so a blank value doesn't
-/// override the sensible default. Goes through
-/// [`crate::compat::env_var`], so a deployment still setting the
-/// pre-rename `HCM_*` spelling keeps working (with a deprecation
+/// to `default`. Used by both backends for issuer/audience-style
+/// config so a blank value doesn't override the sensible default. Goes
+/// through [`crate::compat::env_var`], so a deployment still setting
+/// the pre-rename `HCM_*` spelling keeps working (with a deprecation
 /// warning) instead of silently reverting to the default.
-fn env_or(name: &str, default: &str) -> String {
+pub(crate) fn env_or(name: &str, default: &str) -> String {
     crate::compat::env_var(name).unwrap_or_else(|| default.to_string())
 }
 
-/// Build the process-wide [`Verifier`] from the environment: issuer,
-/// audience, and the published key set. A missing/blank/unparseable key
-/// set yields an empty key set (every token rejected) so the service still
-/// boots without credentials configured.
-fn build_from_env() -> Verifier {
-    let issuer = env_or("WPM_TOKEN_ISSUER", DEFAULT_ISSUER);
-    let audience = env_or("WPM_TOKEN_AUDIENCE", DEFAULT_AUDIENCE);
-    let keys = crate::compat::env_var("WPM_PASETO_KEYS")
-        .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
-        .unwrap_or_else(|| serde_json::json!({ "keys": [] }));
-    Verifier::from_paseto_keys_value(&keys, &issuer, &audience)
-        .unwrap_or_else(|_| empty_verifier(&issuer, &audience))
-}
-
-/// A verifier with no keys: rejects every token until a real key set is
-/// configured. Infallible — an empty `keys` array always parses.
-fn empty_verifier(issuer: &str, audience: &str) -> Verifier {
-    let empty = serde_json::json!({ "keys": [] });
-    Verifier::from_paseto_keys_value(&empty, issuer, audience).expect("empty key set always builds")
-}
-
-/// Extract and verify the bearer token from request headers. Pure (the
-/// verifier is passed in), so it is unit-testable without the global.
-///
-/// # Errors
-///
-/// `401` when the `Authorization` header is missing, is not a bearer
-/// token, or the token fails PASETO signature / issuer / audience / expiry
-/// verification.
-pub fn bearer_claims(
-    headers: &HeaderMap,
-    verifier: &Verifier,
-) -> Result<Claims, (StatusCode, String)> {
-    let header = headers
-        .get(AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            "missing authorization header".to_string(),
-        ))?;
-    let token = header
-        .strip_prefix("Bearer ")
-        .or_else(|| header.strip_prefix("bearer "))
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            "expected bearer token".to_string(),
-        ))?;
-    verifier
-        .verify(token.trim())
-        .map_err(|e| (StatusCode::UNAUTHORIZED, e.to_string()))
-}
-
-/// A request whose bearer token passed PASETO signature / issuer /
-/// audience / expiry verification. The wrapped [`Claims`] identify the
-/// caller (`sub` is the user `pid`). Taking this argument makes a handler
+/// A request whose bearer token passed the active backend's signature /
+/// issuer / audience / expiry verification (PASETO or Keycloak JWT, per
+/// the `paseto`/`keycloak` feature). The wrapped [`Claims`] identify the
+/// caller (`sub` is the user id). Taking this argument makes a handler
 /// require authentication.
 pub struct AuthUser(pub Claims);
 
 /// Extracting an [`AuthUser`] verifies the request's bearer token against
-/// the process-wide [`verifier`]; a missing/invalid token rejects with
-/// `401` before the handler runs, so the type is the "require auth" gate.
+/// the active backend's process-wide [`verifier`]; a missing/invalid
+/// token rejects with `401` before the handler runs, so the type is the
+/// "require auth" gate.
 impl<S: Send + Sync> FromRequestParts<S> for AuthUser {
     type Rejection = (StatusCode, String);
 
@@ -694,169 +516,16 @@ impl<S: Send + Sync> FromRequestParts<S> for MaybeAuthUser {
     }
 }
 
-/// DB-free, fully in-process pins for token verification and the blanket
-/// `enforce` decision. A throwaway Ed25519 key mints PASETO tokens and a
-/// matching key set, so the whole verification path (valid / missing /
-/// non-bearer / expired / tampered / empty-keys) and the on/off/public-path
-/// enforcement matrix are exercised without the auth service or a database.
+/// Backend-agnostic pins: ABAC-policy evaluation, resource-attribute
+/// derivation, masking, and the `env.*`/`derive_action`/`parse_bool`
+/// helpers — none of which touch token verification, so these run
+/// identically regardless of which of `paseto`/`keycloak` is compiled
+/// in. Each backend's own token-verification round trip (signing,
+/// `bearer_claims`, `enforce`) is pinned in that backend's own test
+/// module instead (`src/auth/paseto.rs`, `src/auth/keycloak.rs`).
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base64::Engine;
-    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-    use ed25519_dalek::SigningKey;
-    use rusty_paseto::core::{
-        Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4,
-    };
-    use sha2::{Digest, Sha256};
-
-    /// Issuer the test tokens and verifier agree on.
-    const ISSUER: &str = "authentication-service";
-    /// Audience the test tokens and verifier agree on.
-    const AUDIENCE: &str = "main-x-service";
-    /// A throwaway Ed25519 seed, used only to mint test tokens and a
-    /// matching key set in-process. Not a secret — never used in production.
-    const SEED: [u8; 32] = [
-        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-        3, 3,
-    ];
-
-    /// Build a key set + matching `kid` from the test public key, the same
-    /// way the auth service publishes it.
-    fn test_keys_and_kid() -> (serde_json::Value, String) {
-        let public = SigningKey::from_bytes(&SEED).verifying_key().to_bytes();
-        let kid = URL_SAFE_NO_PAD.encode(Sha256::digest(public));
-        let keys = serde_json::json!({
-            "keys": [{
-                "kty": "OKP", "crv": "Ed25519", "use": "sig",
-                "kid": kid, "x": URL_SAFE_NO_PAD.encode(public),
-            }]
-        });
-        (keys, kid)
-    }
-
-    /// Mint a signed PASETO `v4.public` token for the test identity with
-    /// `kid` in the footer and `exp` set `exp_offset_secs` from a fixed
-    /// `iat` (negative offsets produce an already-expired token).
-    fn sign(kid: &str, exp_offset_secs: i64) -> String {
-        sign_with_attrs(kid, exp_offset_secs, &[])
-    }
-
-    /// Like [`sign`], with the given ABAC subject attributes minted into
-    /// the token's `attrs` claim (e.g. `&[("access", &["write"])]`).
-    fn sign_with_attrs(kid: &str, exp_offset_secs: i64, attrs: &[(&str, &[&str])]) -> String {
-        let iat: i64 = 1_700_000_000;
-        let claims = Claims {
-            sub: "11111111-1111-1111-1111-111111111111".into(),
-            email: "alice@example.com".into(),
-            name: "Alice".into(),
-            iss: ISSUER.into(),
-            aud: AUDIENCE.into(),
-            exp: iat + exp_offset_secs,
-            iat,
-            nbf: None,
-            sid: "test-sid".into(),
-            scope: Vec::new(),
-            roles: Vec::new(),
-            attrs: attrs
-                .iter()
-                .map(|(key, values)| {
-                    (
-                        (*key).to_string(),
-                        values.iter().map(ToString::to_string).collect(),
-                    )
-                })
-                .collect(),
-        };
-        let keypair = SigningKey::from_bytes(&SEED).to_keypair_bytes();
-        let key = Key::<64>::from(keypair);
-        let private = PasetoAsymmetricPrivateKey::<V4, Public>::from(&key);
-        let payload = serde_json::to_string(&claims).expect("serialize claims");
-        let footer = format!(r#"{{"kid":"{kid}"}}"#);
-        let mut builder = Paseto::<V4, Public>::builder();
-        builder.set_payload(Payload::from(payload.as_str()));
-        builder.set_footer(Footer::from(footer.as_str()));
-        builder.try_sign(&private).expect("sign")
-    }
-
-    /// Wrap a token in a `HeaderMap` with `Authorization: Bearer <token>`.
-    fn bearer(token: &str) -> HeaderMap {
-        let mut h = HeaderMap::new();
-        h.insert(AUTHORIZATION, format!("Bearer {token}").parse().unwrap());
-        h
-    }
-
-    /// A well-formed, in-date, correctly-signed token verifies and yields
-    /// the expected claims.
-    #[test]
-    fn valid_token_yields_claims() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let token = sign(&kid, 10_000_000_000);
-        let claims = bearer_claims(&bearer(&token), &verifier).expect("valid token verifies");
-        assert_eq!(claims.sub, "11111111-1111-1111-1111-111111111111");
-        assert_eq!(claims.email, "alice@example.com");
-    }
-
-    /// No `Authorization` header ⇒ `401`.
-    #[test]
-    fn missing_header_is_401() {
-        let (keys, _) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let err = bearer_claims(&HeaderMap::new(), &verifier).unwrap_err();
-        assert_eq!(err.0, StatusCode::UNAUTHORIZED);
-    }
-
-    /// A non-bearer scheme (e.g. `Basic`) ⇒ `401`.
-    #[test]
-    fn non_bearer_header_is_401() {
-        let (keys, _) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let mut h = HeaderMap::new();
-        h.insert(AUTHORIZATION, "Basic abc123".parse().unwrap());
-        assert_eq!(
-            bearer_claims(&h, &verifier).unwrap_err().0,
-            StatusCode::UNAUTHORIZED
-        );
-    }
-
-    /// A token whose `exp` is in the past ⇒ `401`.
-    #[test]
-    fn expired_token_is_401() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let token = sign(&kid, -60);
-        assert_eq!(
-            bearer_claims(&bearer(&token), &verifier).unwrap_err().0,
-            StatusCode::UNAUTHORIZED
-        );
-    }
-
-    /// Flipping a token character breaks PASETO verification ⇒ `401`.
-    #[test]
-    fn tampered_token_is_401() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let mut token = sign(&kid, 10_000_000_000);
-        let last = token.pop().unwrap();
-        token.push(if last == 'a' { 'b' } else { 'a' });
-        assert_eq!(
-            bearer_claims(&bearer(&token), &verifier).unwrap_err().0,
-            StatusCode::UNAUTHORIZED
-        );
-    }
-
-    /// A no-key verifier (the boot fallback) rejects even a valid token.
-    #[test]
-    fn empty_verifier_rejects_everything() {
-        let verifier = empty_verifier(ISSUER, AUDIENCE);
-        let (_, kid) = test_keys_and_kid();
-        let token = sign(&kid, 10_000_000_000);
-        assert_eq!(
-            bearer_claims(&bearer(&token), &verifier).unwrap_err().0,
-            StatusCode::UNAUTHORIZED
-        );
-    }
 
     /// `parse_bool` accepts the documented truthy set and rejects the
     /// rest (including empty, `0`, and junk).
@@ -868,167 +537,6 @@ mod tests {
         for f in ["", " ", "0", "false", "no", "off", "junk", "2"] {
             assert!(!parse_bool(f), "{f:?} should parse false");
         }
-    }
-
-    /// The default policy the enforcement tests share (what an
-    /// unconfigured service uses).
-    fn policy() -> Policy {
-        Policy::default_policy()
-    }
-
-    /// Enforcement off ⇒ a protected path passes with no token — for
-    /// reads and mutations alike (no authn and no authz when the flag
-    /// is off; today's default behaviour stays intact).
-    #[test]
-    fn enforce_off_allows_without_token() {
-        let (keys, _) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let policy = policy();
-        for method in [Method::GET, Method::POST, Method::DELETE] {
-            assert!(
-                enforce(
-                    false,
-                    &method,
-                    "/api/wards",
-                    &HeaderMap::new(),
-                    &verifier,
-                    &policy
-                )
-                .is_ok(),
-                "{method} should pass with enforcement off"
-            );
-        }
-    }
-
-    /// SEC-G8 — the default-off **exposure pin**. With `WPM_REQUIRE_AUTH`
-    /// off (the shipped default), the most sensitive reads — the audit
-    /// trail, patient locate, and a single stay's PII — are **open without
-    /// a token**. This is by design
-    /// (see `agents/share/security.md` §4), but it means **activation is a
-    /// tracked release gate**: a deployment exposed to untrusted callers
-    /// MUST set the flag before it is reachable. This test documents that
-    /// exposure explicitly so flipping the default cannot happen silently.
-    #[test]
-    fn default_off_exposes_sensitive_reads_activation_is_a_release_gate() {
-        let (keys, _) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let policy = policy();
-        let no_token = HeaderMap::new();
-        for path in [
-            "/api/stays/0c4f1e2a-0000-4000-8000-000000000001", // a stay's PII
-            "/api/locate/person:0c4f1e2a-0000-4000-8000-000000000001", // patient location
-            "/api/audits/recent",                              // system-wide audit
-            "/api/whiteboard/0c4f1e2a-0000-4000-8000-000000000002", // ward board
-        ] {
-            assert!(
-                enforce(false, &Method::GET, path, &no_token, &verifier, &policy).is_ok(),
-                "SEC-G8: with the flag OFF, {path} is open without a token (activation is the gate)"
-            );
-        }
-    }
-
-    /// Enforcement on ⇒ the public paths (health/ping, `OpenAPI`,
-    /// Swagger UI, Prometheus metrics) still pass without a token.
-    #[test]
-    fn enforce_on_allows_public_paths() {
-        let (keys, _) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let policy = policy();
-        for path in [
-            "/_health",
-            "/_ping",
-            "/api-docs/openapi.json",
-            "/swagger-ui",
-            "/swagger-ui/index.html",
-            "/metrics.prom",
-        ] {
-            assert!(
-                enforce(
-                    true,
-                    &Method::GET,
-                    path,
-                    &HeaderMap::new(),
-                    &verifier,
-                    &policy
-                )
-                .is_ok(),
-                "{path} should be public"
-            );
-        }
-    }
-
-    /// Enforcement on, protected path, no token ⇒ `401`.
-    #[test]
-    fn enforce_on_protected_without_token_is_401() {
-        let (keys, _) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let err = enforce(
-            true,
-            &Method::GET,
-            "/api/wards",
-            &HeaderMap::new(),
-            &verifier,
-            &policy(),
-        )
-        .unwrap_err();
-        assert_eq!(err.0, StatusCode::UNAUTHORIZED);
-    }
-
-    /// Enforcement on, protected path, valid token ⇒ a read passes.
-    #[test]
-    fn enforce_on_protected_with_valid_token_is_ok() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let token = sign(&kid, 10_000_000_000);
-        assert!(
-            enforce(
-                true,
-                &Method::GET,
-                "/api/wards",
-                &bearer(&token),
-                &verifier,
-                &policy()
-            )
-            .is_ok()
-        );
-    }
-
-    /// Enforcement on, protected path, expired token ⇒ `401`.
-    #[test]
-    fn enforce_on_protected_with_expired_token_is_401() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let token = sign(&kid, -60);
-        let err = enforce(
-            true,
-            &Method::GET,
-            "/api/wards",
-            &bearer(&token),
-            &verifier,
-            &policy(),
-        )
-        .unwrap_err();
-        assert_eq!(err.0, StatusCode::UNAUTHORIZED);
-    }
-
-    /// Enforcement on, protected path, tampered token ⇒ `401`.
-    #[test]
-    fn enforce_on_protected_with_tampered_token_is_401() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let mut token = sign(&kid, 10_000_000_000);
-        let last = token.pop().unwrap();
-        token.push(if last == 'a' { 'b' } else { 'a' });
-        let err = enforce(
-            true,
-            &Method::GET,
-            "/api/wards",
-            &bearer(&token),
-            &verifier,
-            &policy(),
-        )
-        .unwrap_err();
-        assert_eq!(err.0, StatusCode::UNAUTHORIZED);
     }
 
     /// Action derivation (`authorization-attributes.md` §2): safe
@@ -1048,7 +556,7 @@ mod tests {
             "/api/wards/merge",
             "/api/wards/deduplicate",
             "/api/wards/import",
-            "/api/employees/0c4f1e2a-0000-4000-8000-000000000001/erase",
+            "/api/workers/0c4f1e2a-0000-4000-8000-000000000001/erase",
             "/api/retention/sweep",
         ] {
             assert_eq!(derive_action(&Method::POST, path), Action::Destructive);
@@ -1082,211 +590,6 @@ mod tests {
         }
     }
 
-    /// ABAC default policy, empty `attrs` ⇒ GET allowed, POST `403`
-    /// (default allow-read / deny-mutation).
-    #[test]
-    fn abac_empty_attrs_reads_but_cannot_write() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let policy = policy();
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[]);
-        assert!(
-            enforce(
-                true,
-                &Method::GET,
-                "/api/wards",
-                &bearer(&token),
-                &verifier,
-                &policy
-            )
-            .is_ok()
-        );
-        let err = enforce(
-            true,
-            &Method::POST,
-            "/api/wards",
-            &bearer(&token),
-            &verifier,
-            &policy,
-        )
-        .unwrap_err();
-        assert_eq!(err.0, StatusCode::FORBIDDEN);
-    }
-
-    /// ABAC `access=write` ⇒ POST/PUT allowed; DELETE and the merge
-    /// POST still `403` (write is not destructive).
-    #[test]
-    fn abac_access_write_writes_but_not_destructive() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let policy = policy();
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[("access", &["write"])]);
-        for method in [Method::POST, Method::PUT] {
-            assert!(
-                enforce(
-                    true,
-                    &method,
-                    "/api/wards",
-                    &bearer(&token),
-                    &verifier,
-                    &policy
-                )
-                .is_ok(),
-                "{method} should be allowed for access=write"
-            );
-        }
-        let delete = enforce(
-            true,
-            &Method::DELETE,
-            "/api/wards/1",
-            &bearer(&token),
-            &verifier,
-            &policy,
-        )
-        .unwrap_err();
-        assert_eq!(delete.0, StatusCode::FORBIDDEN);
-        let merge = enforce(
-            true,
-            &Method::POST,
-            "/api/wards/merge",
-            &bearer(&token),
-            &verifier,
-            &policy,
-        )
-        .unwrap_err();
-        assert_eq!(merge.0, StatusCode::FORBIDDEN);
-    }
-
-    /// ABAC `access=admin` ⇒ DELETE and the destructive named POSTs
-    /// are allowed (destructive covers delete).
-    #[test]
-    fn abac_access_admin_allows_destructive() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let policy = policy();
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[("access", &["admin"])]);
-        assert!(
-            enforce(
-                true,
-                &Method::DELETE,
-                "/api/wards/1",
-                &bearer(&token),
-                &verifier,
-                &policy
-            )
-            .is_ok()
-        );
-        for path in ["/api/wards/merge", "/api/wards/deduplicate"] {
-            assert!(
-                enforce(
-                    true,
-                    &Method::POST,
-                    path,
-                    &bearer(&token),
-                    &verifier,
-                    &policy
-                )
-                .is_ok(),
-                "{path} should be allowed for access=admin"
-            );
-        }
-    }
-
-    /// ABAC `svc=true` (machine peer) ⇒ everything is allowed.
-    #[test]
-    fn abac_svc_true_allows_everything() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let policy = policy();
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[("svc", &["true"])]);
-        for (method, path) in [
-            (Method::GET, "/api/wards"),
-            (Method::POST, "/api/wards"),
-            (Method::PUT, "/api/wards/1"),
-            (Method::DELETE, "/api/wards/1"),
-            (Method::POST, "/api/wards/merge"),
-            (Method::POST, "/api/wards/deduplicate"),
-        ] {
-            assert!(
-                enforce(true, &method, path, &bearer(&token), &verifier, &policy).is_ok(),
-                "{method} {path} should be allowed for svc=true"
-            );
-        }
-    }
-
-    /// A configured deny rule ahead of an allow rule wins
-    /// (first-match-wins pin, through the guard).
-    #[test]
-    fn abac_configured_deny_beats_later_allow() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let policy = Policy::from_json(
-            r#"{ "rules": [
-                { "effect": "deny",  "actions": ["write"], "when": { "purpose": ["research"] } },
-                { "effect": "allow", "actions": ["write"], "when": { "access": ["write"] } }
-            ] }"#,
-        )
-        .expect("policy parses");
-        let denied = sign_with_attrs(
-            &kid,
-            10_000_000_000,
-            &[("access", &["write"]), ("purpose", &["research"])],
-        );
-        let err = enforce(
-            true,
-            &Method::POST,
-            "/api/wards",
-            &bearer(&denied),
-            &verifier,
-            &policy,
-        )
-        .unwrap_err();
-        assert_eq!(err.0, StatusCode::FORBIDDEN);
-        let allowed = sign_with_attrs(&kid, 10_000_000_000, &[("access", &["write"])]);
-        assert!(
-            enforce(
-                true,
-                &Method::POST,
-                "/api/wards",
-                &bearer(&allowed),
-                &verifier,
-                &policy
-            )
-            .is_ok()
-        );
-    }
-
-    /// 401 vs 403: missing/bad credential is `401`; a valid credential
-    /// the policy denies is `403` with the deciding-rule reason.
-    #[test]
-    fn abac_401_versus_403_distinction() {
-        let (keys, kid) = test_keys_and_kid();
-        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let policy = policy();
-        let no_token = enforce(
-            true,
-            &Method::POST,
-            "/api/wards",
-            &HeaderMap::new(),
-            &verifier,
-            &policy,
-        )
-        .unwrap_err();
-        assert_eq!(no_token.0, StatusCode::UNAUTHORIZED);
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[]);
-        let denied = enforce(
-            true,
-            &Method::POST,
-            "/api/wards",
-            &bearer(&token),
-            &verifier,
-            &policy,
-        )
-        .unwrap_err();
-        assert_eq!(denied.0, StatusCode::FORBIDDEN);
-        assert_eq!(denied.1, "default deny");
-    }
-
     /// `policy_from_env` never breaks boot: bad policy JSON falls back
     /// to the built-in default policy (the pure fallback path
     /// `policy_from_env` takes on parse failure).
@@ -1299,57 +602,6 @@ mod tests {
         );
     }
 
-    /// Serve `keys` as the key-set JSON from a local ephemeral-port HTTP
-    /// listener (the auth service's `/.well-known/paseto-keys` stand-in)
-    /// and return the URL to fetch it from.
-    async fn serve_keys(keys: serde_json::Value) -> String {
-        let app = axum::Router::new().route(
-            "/.well-known/paseto-keys",
-            axum::routing::get(move || {
-                let keys = keys.clone();
-                async move { axum::Json(keys) }
-            }),
-        );
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
-            .await
-            .expect("bind ephemeral port");
-        let addr = listener.local_addr().expect("local addr");
-        tokio::spawn(async move {
-            axum::serve(listener, app).await.expect("serve key set");
-        });
-        format!("http://{addr}/.well-known/paseto-keys")
-    }
-
-    /// Boot-time fetch happy path: `fetch_or` against a local listener
-    /// serving a valid key set builds the verifier from the **fetched**
-    /// keys — a token signed by the served key verifies even though the
-    /// fallback verifier has no keys (the fetched key set wins).
-    #[tokio::test]
-    async fn fetch_or_fetched_key_set_wins() {
-        let (keys, kid) = test_keys_and_kid();
-        let url = serve_keys(keys).await;
-        let verifier = fetch_or(&url, ISSUER, AUDIENCE, empty_verifier(ISSUER, AUDIENCE)).await;
-        assert_eq!(verifier.key_count(), 1);
-        let token = sign(&kid, 10_000_000_000);
-        let claims =
-            bearer_claims(&bearer(&token), &verifier).expect("token signed by fetched key");
-        assert_eq!(claims.sub, "11111111-1111-1111-1111-111111111111");
-    }
-
-    /// Boot-time fetch fallback: a fast-failing URL (nothing listens on
-    /// port 1) makes `fetch_or` return the env-style fallback verifier —
-    /// no panic, and tokens signed by the fallback key set still verify,
-    /// so the service always boots.
-    #[tokio::test]
-    async fn fetch_or_unreachable_url_falls_back() {
-        let (keys, kid) = test_keys_and_kid();
-        let fallback = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let verifier = fetch_or("http://127.0.0.1:1/", ISSUER, AUDIENCE, fallback).await;
-        assert_eq!(verifier.key_count(), 1);
-        let token = sign(&kid, 10_000_000_000);
-        assert!(bearer_claims(&bearer(&token), &verifier).is_ok());
-    }
-
     /// Build `Claims` with the given subject attributes for the
     /// record-level decision tests (no signing needed).
     fn claims_with_attrs(attrs: &[(&str, &[&str])]) -> Claims {
@@ -1357,8 +609,8 @@ mod tests {
             sub: "11111111-1111-1111-1111-111111111111".into(),
             email: "alice@example.com".into(),
             name: "Alice".into(),
-            iss: ISSUER.into(),
-            aud: AUDIENCE.into(),
+            iss: "authentication-service".into(),
+            aud: "main-x-service".into(),
             exp: 2_000_000_000,
             iat: 1_900_000_000,
             nbf: None,
@@ -1399,21 +651,21 @@ mod tests {
         }
     }
 
-    /// An employee model for the resource-attribute tests.
-    fn an_employee(
+    /// A worker model for the resource-attribute tests.
+    fn an_worker(
         person: uuid::Uuid,
         department: &str,
         status: &str,
-    ) -> crate::models::_entities::employees::Model {
-        crate::models::_entities::employees::Model {
+    ) -> crate::models::_entities::workers::Model {
+        crate::models::_entities::workers::Model {
             created_at: chrono::Utc::now().into(),
             updated_at: chrono::Utc::now().into(),
             id: 1,
             pid: uuid::Uuid::new_v4(),
             person_ref: format!("person:{person}"),
-            worker_ref: None,
+            upstream_worker_ref: None,
             organization_ref: format!("organization:{}", uuid::Uuid::new_v4()),
-            employee_number: "E-1001".to_string(),
+            worker_number: "E-1001".to_string(),
             display_name: "Ada Lovelace".to_string(),
             status: status.to_string(),
             employment_type: "permanent".to_string(),
@@ -1430,12 +682,12 @@ mod tests {
     }
 
     /// The record-level resource-attribute derivation maps an
-    /// employee's person / department / status to the `resource.*`
+    /// worker's person / department / status to the `resource.*`
     /// tokens a policy matches (`authorization-attributes.md` §9).
     #[test]
-    fn employee_resource_attrs_maps_person_department_status() {
+    fn worker_resource_attrs_maps_person_department_status() {
         let person = uuid::Uuid::new_v4();
-        let attrs = employee_resource_attrs(&an_employee(person, "engineering", "active"));
+        let attrs = worker_resource_attrs(&an_worker(person, "engineering", "active"));
         assert_eq!(attrs["person"], vec![person.to_string()]);
         assert_eq!(attrs["person_ref"], vec![format!("person:{person}")]);
         assert_eq!(attrs["department"], vec!["engineering".to_string()]);
@@ -1443,12 +695,24 @@ mod tests {
         assert!(!attrs.contains_key("manager"), "no manager ⇒ no key");
     }
 
+    /// `resource.organization_ref` (multi-organization, WPM-Rxx) is
+    /// the worker's own organization URN verbatim, enabling an
+    /// org-scoped policy rule the same way `resource.department`
+    /// already does for department scoping.
+    #[test]
+    fn worker_resource_attrs_maps_organization_ref() {
+        let worker = an_worker(uuid::Uuid::new_v4(), "engineering", "active");
+        let org = worker.organization_ref.clone();
+        let attrs = worker_resource_attrs(&worker);
+        assert_eq!(attrs["organization_ref"], vec![org]);
+    }
+
     /// The attributes drive the persona decisions through the shared
-    /// engine: a `$sub` self-rule lets an employee read their own
+    /// engine: a `$sub` self-rule lets a worker read their own
     /// record, a department-scoped HR rule reads the department, and
     /// the mask-obligation fallback yields a masked read for others.
     #[test]
-    fn employee_resource_attrs_drive_self_dept_and_masking() {
+    fn worker_resource_attrs_drive_self_dept_and_masking() {
         let me = uuid::Uuid::new_v4();
         let policy = Policy::from_json(
             r#"{ "rules": [
@@ -1458,14 +722,14 @@ mod tests {
             ] }"#,
         )
         .expect("policy parses");
-        // Self-read: the caller's sub equals the employee's person id.
+        // Self-read: the caller's sub equals the worker's person id.
         let mut own = claims_with_attrs(&[]);
         own.sub = me.to_string();
         let self_read = policy.evaluate_with_resource(
             &own,
             Action::Read,
             ENTITY,
-            &employee_resource_attrs(&an_employee(me, "engineering", "active")),
+            &worker_resource_attrs(&an_worker(me, "engineering", "active")),
         );
         assert!(self_read.allowed);
         assert!(self_read.obligations.is_empty());
@@ -1475,7 +739,7 @@ mod tests {
             &hr,
             Action::Read,
             ENTITY,
-            &employee_resource_attrs(&an_employee(uuid::Uuid::new_v4(), "engineering", "active")),
+            &worker_resource_attrs(&an_worker(uuid::Uuid::new_v4(), "engineering", "active")),
         );
         assert!(dept_read.allowed);
         assert!(dept_read.obligations.is_empty());
@@ -1485,17 +749,17 @@ mod tests {
             &other,
             Action::Read,
             ENTITY,
-            &employee_resource_attrs(&an_employee(me, "finance", "active")),
+            &worker_resource_attrs(&an_worker(me, "finance", "active")),
         );
         assert!(masked_read.allowed, "falls through to the masked-read rule");
         assert!(masked_read.requires("mask"));
     }
 
-    /// `mask_employee` redacts the salary and keeps employment facts;
+    /// `mask_worker` redacts the salary and keeps employment facts;
     /// `mask_payslip` zeroes the money and drops the lines.
     #[test]
     fn mask_redacts_money_and_keeps_structure() {
-        let masked = mask_employee(an_employee(uuid::Uuid::new_v4(), "engineering", "active"));
+        let masked = mask_worker(an_worker(uuid::Uuid::new_v4(), "engineering", "active"));
         assert!(masked.salary_minor.is_none());
         assert!(masked.salary_currency.is_none());
         assert_eq!(masked.department, "engineering");
@@ -1506,7 +770,7 @@ mod tests {
             id: 1,
             pid: uuid::Uuid::new_v4(),
             run_pid: uuid::Uuid::new_v4(),
-            employee_pid: uuid::Uuid::new_v4(),
+            worker_pid: uuid::Uuid::new_v4(),
             currency: "GBP".to_string(),
             gross_minor: 300_000,
             deductions: serde_json::json!([{"label": "tax", "amount_minor": 39_050}]),

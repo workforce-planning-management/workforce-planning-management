@@ -1,8 +1,8 @@
 # Workforce Planning Management — Loco JSON API
 
 A back-end **JSON API** for workforce planning management across the full
-employee lifecycle: requisitions and applicant tracking, onboarding,
-employee records and org charts, time & attendance, leave, shift
+worker lifecycle: requisitions and applicant tracking, onboarding,
+worker records and org charts, time & attendance, leave, shift
 scheduling with working-time guardrails, benefits, wellbeing &
 benefits-awareness prompts, the anonymous pulse, performance reviews
 and 360° multi-rater appraisals with in-app notifications, training,
@@ -16,7 +16,7 @@ salary benchmarking.
 Implemented in Rust on [Loco](https://loco.rs) (Axum + SeaORM +
 PostgreSQL). No built-in UI — the
 [Svelte sibling](../workforce-planning-management-front-end-with-svelte/)
-provides the HR, manager, and employee self-service client.
+provides the HR, manager, and worker self-service client.
 
 > ⚠️ **Demo software.** Not a production HR or payroll system;
 > statutory calculations are illustrative stubs; synthetic data
@@ -34,11 +34,11 @@ work — see [../spec/tasks.md](../spec/tasks.md).
 
 - _Where is this vacancy in its pipeline?_ — requisition +
   application state machines
-- _Can this employee take two weeks in August?_ — leave balances +
+- _Can this worker take two weeks in August?_ — leave balances +
   rota conflicts
 - _Who reports to whom?_ — the derived org chart
 - _What does this month's payroll cost?_ — calculated runs with
-  per-employee payslips (minor-unit arithmetic, stub tax tables)
+  per-worker payslips (minor-unit arithmetic, stub tax tables)
 - _Which critical roles have no ready successor?_ — the succession
   gap report and the single-points-of-failure list
 - _How did this candidate do on the selection tests?_ — the
@@ -68,7 +68,7 @@ work — see [../spec/tasks.md](../spec/tasks.md).
 ## Surface
 
 Requisitions / candidates / applications / interviews · onboarding
-items · employees + org-chart · time entries · leave entitlements +
+items · workers + org-chart · time entries · leave entitlements +
 requests · shifts + assignments · working-time guardrails · benefit
 plans + enrollments · wellbeing entitlements + acknowledgements +
 uptake · pulse surveys + k-floored results · review cycles / reviews /
@@ -120,7 +120,7 @@ the default and is unaffected either way.
 # Postgres 18 with a loco user, then:
 export DATABASE_URL=postgres://loco:loco@localhost:5432/workforce_planning_management_service_development
 cargo run -- db migrate       # create the schema
-cargo run -- task seed        # synthetic demo org (40 employees)
+cargo run -- task seed        # synthetic demo org (40 workers)
 cargo run -- start            # serve on :5150
 curl "localhost:5150/api/org-chart?organization=<org-urn>" | jq .
 ```
@@ -137,13 +137,13 @@ also negotiates `Accepts-version: 1.0` (optional today).
 
 ```bash
 ORG="organization:$(uuidgen)"
-EMP=$(curl -s localhost:5150/api/employees -H 'content-type: application/json' -d '{
+EMP=$(curl -s localhost:5150/api/workers -H 'content-type: application/json' -d '{
   "person_ref": "person:'$(uuidgen)'", "organization_ref": "'$ORG'",
-  "employee_number": "E-1001", "display_name": "Ada Lovelace",
+  "worker_number": "E-1001", "display_name": "Ada Lovelace",
   "employment_type": "permanent", "department": "engineering",
   "job_title": "Engineer", "salary_minor": 3600000,
   "salary_currency": "GBP", "hired_on": "2026-01-05" }' | jq -r .pid)
-curl -s localhost:5150/api/employees/$EMP/status \
+curl -s localhost:5150/api/workers/$EMP/status \
   -H 'content-type: application/json' -d '{"to":"active"}' | jq .status
 ```
 
@@ -155,8 +155,8 @@ RULE=$(curl -s localhost:5150/api/wellbeing-entitlements -H 'content-type: appli
   "name": "Seasonal flu vaccination", "kind": "health",
   "description": "Free NHS flu jab for frontline staff.",
   "departments": ["engineering"], "doses": 2 }' | jq -r .pid)
-curl -s localhost:5150/api/employees/$EMP/wellbeing-prompts | jq '.prompts[].name'
-curl -s localhost:5150/api/employees/$EMP/wellbeing-acknowledgements \
+curl -s localhost:5150/api/workers/$EMP/wellbeing-prompts | jq '.prompts[].name'
+curl -s localhost:5150/api/workers/$EMP/wellbeing-acknowledgements \
   -H 'content-type: application/json' \
   -d '{"entitlement_pid":"'$RULE'","response":"booked"}' | jq .response
 curl -s localhost:5150/api/wellbeing/uptake | jq '.entitlements[0].uptake_rate'
@@ -166,13 +166,13 @@ curl -s localhost:5150/api/wellbeing/uptake | jq '.entitlements[0].uptake_rate'
 notified) → respond → share → the group-floored report:
 
 ```bash
-A=$(curl -s localhost:5150/api/employees/$EMP/appraisals \
+A=$(curl -s localhost:5150/api/workers/$EMP/appraisals \
   -H 'content-type: application/json' \
   -d '{"competencies":["communication","delivery"]}' | jq -r .pid)
 # … nominate manager/peer raters (POST /api/appraisals/$A/nominations),
 # move to collecting, then each rater:
 #   POST /api/appraisals/$A/responses {"rater_pid":…,"scores":{…}}
-# and their own pending list is GET /api/employees/{pid}/appraisal-requests
+# and their own pending list is GET /api/workers/{pid}/appraisal-requests
 curl -s localhost:5150/api/appraisals/$A | jq '.nominations[] | {display_name, group, responded}'
 ```
 
@@ -180,7 +180,7 @@ curl -s localhost:5150/api/appraisals/$A | jq '.nominations[] | {display_name, g
 its exclusions named:
 
 ```bash
-curl -s localhost:5150/api/employees/$EMP/subject-access | jq 'keys, .exclusions'
+curl -s localhost:5150/api/workers/$EMP/subject-access | jq 'keys, .exclusions'
 curl -s localhost:5150/api/retention | jq '{horizon_days, expired_consent_candidates}'
 ```
 
@@ -188,7 +188,7 @@ curl -s localhost:5150/api/retention | jq '{horizon_days, expired_consent_candid
 
 ```bash
 curl -s "localhost:5150/api/workforce/working-time?department=engineering" \
-  | jq '{employees_checked, flagged: [.flagged[].display_name]}'
+  | jq '{workers_checked, flagged: [.flagged[].display_name]}'
 curl -s localhost:5150/api/ergonomics/issues | jq .by_department
 ```
 

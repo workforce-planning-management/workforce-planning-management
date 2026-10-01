@@ -32,7 +32,7 @@ impl MigrationTrait for Migration {
                  name VARCHAR NOT NULL,
                  kind VARCHAR NOT NULL,
                  provider VARCHAR NOT NULL,
-                 employee_cost_minor BIGINT NOT NULL,
+                 worker_cost_minor BIGINT NOT NULL,
                  employer_cost_minor BIGINT NOT NULL,
                  currency VARCHAR NOT NULL,
                  deleted_at TIMESTAMPTZ NULL
@@ -46,17 +46,17 @@ impl MigrationTrait for Migration {
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
                  plan_pid UUID NOT NULL,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  starts_on DATE NOT NULL,
                  ends_on DATE NULL,
                  deleted_at TIMESTAMPTZ NULL
              )",
         )
         .await?;
-        // One live enrolment per employee per plan (WPM-R9).
+        // One live enrolment per worker per plan (WPM-R9).
         conn.execute_unprepared(
             "CREATE UNIQUE INDEX IF NOT EXISTS benefit_enrollments_key \
-             ON benefit_enrollments (plan_pid, employee_pid) WHERE deleted_at IS NULL",
+             ON benefit_enrollments (plan_pid, worker_pid) WHERE deleted_at IS NULL",
         )
         .await?;
         conn.execute_unprepared(
@@ -80,7 +80,7 @@ impl MigrationTrait for Migration {
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
                  cycle_pid UUID NOT NULL,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  reviewer_ref VARCHAR NOT NULL,
                  status VARCHAR NOT NULL,
                  rating INTEGER NULL,
@@ -90,7 +90,7 @@ impl MigrationTrait for Migration {
         )
         .await?;
         conn.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS reviews_employee ON reviews (employee_pid)",
+            "CREATE INDEX IF NOT EXISTS reviews_worker ON reviews (worker_pid)",
         )
         .await?;
         conn.execute_unprepared(
@@ -126,7 +126,7 @@ impl MigrationTrait for Migration {
                  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  course_ref VARCHAR NOT NULL,
                  status VARCHAR NOT NULL,
                  completed_on DATE NULL,
@@ -136,8 +136,8 @@ impl MigrationTrait for Migration {
         )
         .await?;
         conn.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS training_enrollments_employee \
-             ON training_enrollments (employee_pid)",
+            "CREATE INDEX IF NOT EXISTS training_enrollments_worker \
+             ON training_enrollments (worker_pid)",
         )
         .await?;
         conn.execute_unprepared(
@@ -161,7 +161,7 @@ impl MigrationTrait for Migration {
                  id SERIAL PRIMARY KEY,
                  pid UUID NOT NULL UNIQUE,
                  plan_pid UUID NOT NULL,
-                 employee_pid UUID NOT NULL,
+                 worker_pid UUID NOT NULL,
                  readiness VARCHAR NOT NULL,
                  rank INTEGER NOT NULL,
                  deleted_at TIMESTAMPTZ NULL

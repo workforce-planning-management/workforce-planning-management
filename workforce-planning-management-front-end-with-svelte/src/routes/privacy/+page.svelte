@@ -2,7 +2,7 @@
   // Privacy operations (WPM-R30): the retention report — what the
   // next sweep would remove, per table, under the floored horizon —
   // and the sweep itself (destructive; admin-only under enforcement).
-  // Erasure lives on the employee profile (it is per-person).
+  // Erasure lives on the worker profile (it is per-person).
   import { retentionReport, retentionSweep } from "$lib/api/wpm";
   import { t } from "$lib/i18n.svelte";
 

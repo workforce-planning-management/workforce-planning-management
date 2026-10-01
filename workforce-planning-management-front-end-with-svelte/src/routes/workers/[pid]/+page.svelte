@@ -15,13 +15,13 @@
     changeStatus,
     completeItem,
     createAppraisal,
-    employeePayslips,
-    eraseEmployee,
-    employeeWellbeingPrompts,
+    workerPayslips,
+    eraseWorker,
+    workerWellbeingPrompts,
     getAppraisal,
-    getEmployee,
+    getWorker,
     listAppraisals,
-    listEmployees,
+    listWorkers,
     listEntitlements,
     listErgonomicAssessments,
     listLeaveRequests,
@@ -46,7 +46,7 @@
   import { mean } from "$lib/format";
   import { i18n, t } from "$lib/i18n.svelte";
   import type {
-    Employee,
+    Worker,
     LeaveEntitlement,
     LeaveRequest,
     OnboardingItem,
@@ -55,7 +55,7 @@
     TrainingEnrollment,
   } from "$lib/api/types";
 
-  let employee = $state<Employee | null>(null);
+  let worker = $state<Worker | null>(null);
   let onboarding = $state<OnboardingItem[]>([]);
   let balances = $state<LeaveEntitlement[]>([]);
   let leave = $state<LeaveRequest[]>([]);
@@ -80,7 +80,7 @@
   let openRequest = $state<string | null>(null);
   let openAppraisal = $state<Awaited<ReturnType<typeof getAppraisal>> | null>(null);
   let openReport = $state<Awaited<ReturnType<typeof appraisalReport>> | null>(null);
-  let colleagues = $state<Employee[]>([]);
+  let colleagues = $state<Worker[]>([]);
   let nomineePid = $state("");
   let nomineeGroup = $state<"manager" | "peer" | "report">("peer");
   let raterPid = $state("");
@@ -93,16 +93,16 @@
 
   async function load() {
     try {
-      employee = await getEmployee(pid);
+      worker = await getWorker(pid);
       let prompts: { prompts: WellbeingPrompt[] };
       [onboarding, balances, leave, payslips, reviews, training, prompts] = await Promise.all([
         listOnboarding(pid),
         listEntitlements(pid),
         listLeaveRequests(pid),
-        employeePayslips(pid),
+        workerPayslips(pid),
         listReviews(pid),
         listTraining(pid),
-        employeeWellbeingPrompts(pid),
+        workerWellbeingPrompts(pid),
       ]);
       wellbeing = prompts.prompts;
       pulseSurveys = (await listPulseSurveys()).filter((s) => s.open);
@@ -175,7 +175,7 @@
       openAppraisal = await getAppraisal(appraisalPid);
       openReport =
         openAppraisal.status === "shared" ? await appraisalReport(appraisalPid) : null;
-      if (!colleagues.length) colleagues = await listEmployees();
+      if (!colleagues.length) colleagues = await listWorkers();
       raterScores = Object.fromEntries(openAppraisal.competencies.map((c) => [c, 3]));
     } catch (cause) {
       actionError = cause instanceof Error ? cause.message : String(cause);
@@ -195,42 +195,42 @@
 
 {#if error}
   <p class="error" data-testid="error">{t("common.error")}: {error}</p>
-{:else if employee === null}
+{:else if worker === null}
   <p>{t("common.loading")}</p>
 {:else}
-  <h1>{employee.display_name} <span class="muted">({employee.employee_number})</span></h1>
+  <h1>{worker.display_name} <span class="muted">({worker.worker_number})</span></h1>
   <div class="panel" data-testid="facts">
     <p>
-      {employee.job_title} · {employee.department} ·
-      <span class={`chip status-${employee.status}`}>{employee.status}</span>
-      · FTE {employee.fte_percent}%
+      {worker.job_title} · {worker.department} ·
+      <span class={`chip status-${worker.status}`}>{worker.status}</span>
+      · FTE {worker.fte_percent}%
     </p>
     <p>
       {t("emp.salary")}:
-      {#if employee.salary_minor === null}
+      {#if worker.salary_minor === null}
         <span class="muted" data-testid="salary-masked">{t("common.masked")}</span>
       {:else}
-        <span data-testid="salary">{money(employee.salary_minor, employee.salary_currency, i18n.locale)}</span>
+        <span data-testid="salary">{money(worker.salary_minor, worker.salary_currency, i18n.locale)}</span>
       {/if}
     </p>
-    {#if employee.status === "onboarding"}
+    {#if worker.status === "onboarding"}
       <button onclick={() => void transition("active")}>{t("common.actions")}: → active</button>
     {/if}
     {#if actionError}
       <p class="error" data-testid="action-error">{actionError}</p>
     {/if}
     <p>
-      <a href={`/api/proxy/employees/${pid}/subject-access`} target="_blank" rel="noreferrer" data-testid="subject-access">
+      <a href={`/api/proxy/workers/${pid}/subject-access`} target="_blank" rel="noreferrer" data-testid="subject-access">
         {t("emp.subjectAccess")}
       </a>
-      {#if employee.status === "terminated" || employee.status === "retired"}
+      {#if worker.status === "terminated" || worker.status === "retired"}
         <button
           data-testid="erase"
           onclick={() => {
             if (window.confirm(t("emp.erase") + "?")) {
               void act(async () => {
-                await eraseEmployee(pid);
-                window.location.assign("/employees");
+                await eraseWorker(pid);
+                window.location.assign("/workers");
               });
             }
           }}

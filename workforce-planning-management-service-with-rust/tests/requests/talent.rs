@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management_service::app::App;
 
-use super::{activate, an_org, seed_employee};
+use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
@@ -17,8 +17,8 @@ use super::{activate, an_org, seed_employee};
 async fn development_plans_track_claimed_and_verified_progress() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let employee = seed_employee!(&request, &org, "T-1", None).await;
-        activate!(&request, &employee).await;
+        let worker = seed_worker!(&request, &org, "T-1", None).await;
+        activate!(&request, &worker).await;
 
         let skill: Value = request
             .post("/api/skills")
@@ -30,7 +30,7 @@ async fn development_plans_track_claimed_and_verified_progress() {
         // ── Upskill vs reskill: the target role decides the kind.
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee}/development-plans"))
+                .post(&format!("/api/workers/{worker}/development-plans"))
                 .json(&json!({ "kind": "reskill" }))
                 .await
                 .status_code(),
@@ -39,7 +39,7 @@ async fn development_plans_track_claimed_and_verified_progress() {
         );
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee}/development-plans"))
+                .post(&format!("/api/workers/{worker}/development-plans"))
                 .json(&json!({ "kind": "upskill", "target_job_title": "Data Engineer" }))
                 .await
                 .status_code(),
@@ -48,7 +48,7 @@ async fn development_plans_track_claimed_and_verified_progress() {
         );
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee}/development-plans"))
+                .post(&format!("/api/workers/{worker}/development-plans"))
                 .json(&json!({ "kind": "reskill", "target_job_title": "Engineer" }))
                 .await
                 .status_code(),
@@ -57,7 +57,7 @@ async fn development_plans_track_claimed_and_verified_progress() {
         );
         assert_eq!(
             request
-                .post(&format!("/api/employees/{employee}/development-plans"))
+                .post(&format!("/api/workers/{worker}/development-plans"))
                 .json(&json!({
                     "kind": "upskill",
                     "items": [{
@@ -72,7 +72,7 @@ async fn development_plans_track_claimed_and_verified_progress() {
         );
 
         let plan: Value = request
-            .post(&format!("/api/employees/{employee}/development-plans"))
+            .post(&format!("/api/workers/{worker}/development-plans"))
             .json(&json!({
                 "kind": "upskill",
                 "rationale": "platform ownership",
@@ -86,7 +86,7 @@ async fn development_plans_track_claimed_and_verified_progress() {
 
         // ── The item is claimed achieved, but proficiency has not moved.
         let listed: Value = request
-            .get(&format!("/api/employees/{employee}/development-plans"))
+            .get(&format!("/api/workers/{worker}/development-plans"))
             .await
             .json();
         let item_pid = listed["plans"][0]["items"][0]["pid"]
@@ -100,7 +100,7 @@ async fn development_plans_track_claimed_and_verified_progress() {
             .assert_status_ok();
 
         let claimed: Value = request
-            .get(&format!("/api/employees/{employee}/development-plans"))
+            .get(&format!("/api/workers/{worker}/development-plans"))
             .await
             .json();
         assert_eq!(claimed["plans"][0]["declared_progress"]["numerator"], 1);
@@ -111,12 +111,12 @@ async fn development_plans_track_claimed_and_verified_progress() {
 
         // Declaring the proficiency is what makes it verified.
         request
-            .put(&format!("/api/employees/{employee}/skills"))
+            .put(&format!("/api/workers/{worker}/skills"))
             .json(&json!({ "skill_pid": skill_pid, "proficiency": 4 }))
             .await
             .assert_status_ok();
         let verified: Value = request
-            .get(&format!("/api/employees/{employee}/development-plans"))
+            .get(&format!("/api/workers/{worker}/development-plans"))
             .await
             .json();
         assert_eq!(verified["plans"][0]["verified_progress"]["numerator"], 1);
@@ -152,9 +152,9 @@ async fn development_plans_track_claimed_and_verified_progress() {
 async fn pipelines_apprenticeships_and_intelligence() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();
-        let apprentice = seed_employee!(&request, &org, "P-1", None).await;
+        let apprentice = seed_worker!(&request, &org, "P-1", None).await;
         activate!(&request, &apprentice).await;
-        let supervisor = seed_employee!(&request, &org, "P-2", None).await;
+        let supervisor = seed_worker!(&request, &org, "P-2", None).await;
         activate!(&request, &supervisor).await;
 
         // ── Talent pipeline: stages move forward, and readiness may regress.
@@ -180,14 +180,14 @@ async fn pipelines_apprenticeships_and_intelligence() {
 
         let member: Value = request
             .post(&format!("/api/talent-pipelines/{pipeline_pid}/members"))
-            .json(&json!({ "subject_kind": "employee", "subject_pid": apprentice }))
+            .json(&json!({ "subject_kind": "worker", "subject_pid": apprentice }))
             .await
             .json();
         let member_pid = member["pid"].as_str().expect("member pid").to_string();
         assert_eq!(
             request
                 .post(&format!("/api/talent-pipelines/{pipeline_pid}/members"))
-                .json(&json!({ "subject_kind": "employee", "subject_pid": apprentice }))
+                .json(&json!({ "subject_kind": "worker", "subject_pid": apprentice }))
                 .await
                 .status_code(),
             422,
@@ -254,7 +254,7 @@ async fn pipelines_apprenticeships_and_intelligence() {
                 "/api/early-career-programs/{program_pid}/placements"
             ))
             .json(&json!({
-                "employee_pid": apprentice,
+                "worker_pid": apprentice,
                 "supervisor_pid": supervisor,
                 "started_on": "2026-02-02",
             }))
@@ -306,7 +306,7 @@ async fn pipelines_apprenticeships_and_intelligence() {
             .assert_status_ok();
 
         let placements: Value = request
-            .get(&format!("/api/employees/{apprentice}/placements"))
+            .get(&format!("/api/workers/{apprentice}/placements"))
             .await
             .json();
         assert_eq!(placements["placements"][0]["off_the_job"]["hours"], 100);
@@ -377,7 +377,7 @@ async fn pipelines_apprenticeships_and_intelligence() {
 
         let candidate: Value = request
             .post(&format!("/api/succession-plans/{plan_pid}/candidates"))
-            .json(&json!({ "employee_pid": apprentice, "readiness": "ready_2y" }))
+            .json(&json!({ "worker_pid": apprentice, "readiness": "ready_2y" }))
             .await
             .json();
         let candidate_pid = candidate["pid"]

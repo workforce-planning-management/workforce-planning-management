@@ -12,7 +12,7 @@ use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::metrics::Metrics;
 use crate::models::_entities::{
-    employees, leave_entitlements, leave_requests, shift_assignments, shifts, time_entries,
+    workers, leave_entitlements, leave_requests, shift_assignments, shifts, time_entries,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -20,7 +20,7 @@ use crate::rules::{leave, lifecycle, tokens, workforce, working_time};
 use crate::streaming;
 use crate::validation::Problems;
 
-/// `POST /api/employees/{pid}/time-entries` body.
+/// `POST /api/workers/{pid}/time-entries` body.
 #[derive(Debug, Deserialize)]
 struct TimeEntryPayload {
     worked_on: chrono::NaiveDate,
@@ -31,7 +31,7 @@ struct TimeEntryPayload {
     notes: Option<String>,
 }
 
-/// `POST /api/employees/{pid}/leave-entitlements` body.
+/// `POST /api/workers/{pid}/leave-entitlements` body.
 #[derive(Debug, Deserialize)]
 struct EntitlementPayload {
     kind: String,
@@ -39,7 +39,7 @@ struct EntitlementPayload {
     entitled_days: i32,
 }
 
-/// `POST /api/employees/{pid}/leave-requests` body.
+/// `POST /api/workers/{pid}/leave-requests` body.
 #[derive(Debug, Deserialize)]
 struct LeaveRequestPayload {
     kind: String,
@@ -62,7 +62,7 @@ struct ShiftPayload {
 /// `POST /api/shifts/{pid}/assignments` body.
 #[derive(Debug, Deserialize)]
 struct AssignmentPayload {
-    employee_pid: Uuid,
+    worker_pid: Uuid,
 }
 
 /// A `{pid}` reference response.
@@ -78,7 +78,7 @@ const fn default_headcount() -> i32 {
     1
 }
 
-/// `POST /api/employees/{pid}/time-entries` — record time; the day
+/// `POST /api/workers/{pid}/time-entries` — record time; the day
 /// total is capped at 24 h (WPM-R4).
 #[debug_handler]
 async fn create_time_entry(
@@ -87,13 +87,13 @@ async fn create_time_entry(
     Path(pid): Path<String>,
     Json(payload): Json<TimeEntryPayload>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token("kind", tokens::TIME_KINDS, &payload.kind);
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
     let existing: Vec<time_entries::Model> = time_entries::Entity::find()
-        .filter(time_entries::Column::EmployeePid.eq(employee.pid))
+        .filter(time_entries::Column::WorkerPid.eq(worker.pid))
         .filter(time_entries::Column::WorkedOn.eq(payload.worked_on))
         .filter(time_entries::Column::DeletedAt.is_null())
         .all(&ctx.db)
@@ -104,7 +104,7 @@ async fn create_time_entry(
     let txn = ctx.db.begin().await?;
     let row = time_entries::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         worked_on: ActiveValue::set(payload.worked_on),
         minutes: ActiveValue::set(payload.minutes),
         kind: ActiveValue::set(payload.kind.clone()),
@@ -129,7 +129,7 @@ async fn create_time_entry(
         "time_entry",
         "time_recorded",
         &row.pid.to_string(),
-        &employee.employee_number,
+        &worker.worker_number,
         caller.actor(),
         None,
     )
@@ -140,7 +140,7 @@ async fn create_time_entry(
     })
 }
 
-/// `GET /api/employees/{pid}/time-entries?from=&to=` — entries plus
+/// `GET /api/workers/{pid}/time-entries?from=&to=` — entries plus
 /// the derived per-day overtime (WPM-R4).
 #[derive(Debug, Deserialize)]
 struct TimeListParams {
@@ -156,9 +156,9 @@ async fn list_time_entries(
     Path(pid): Path<String>,
     Query(params): Query<TimeListParams>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let mut query = time_entries::Entity::find()
-        .filter(time_entries::Column::EmployeePid.eq(employee.pid))
+        .filter(time_entries::Column::WorkerPid.eq(worker.pid))
         .filter(time_entries::Column::DeletedAt.is_null());
     if let Some(from) = params.from {
         query = query.filter(time_entries::Column::WorkedOn.gte(from));
@@ -187,7 +187,7 @@ async fn list_time_entries(
         .map(|(day, (regular, explicit))| {
             serde_json::json!({
                 "worked_on": day,
-                "overtime_minutes": workforce::overtime_minutes(*regular, *explicit, employee.fte_percent),
+                "overtime_minutes": workforce::overtime_minutes(*regular, *explicit, worker.fte_percent),
             })
         })
         .collect();
@@ -223,7 +223,7 @@ async fn approve_time_entry(
     format::json(row)
 }
 
-/// `POST /api/employees/{pid}/leave-entitlements` — grant.
+/// `POST /api/workers/{pid}/leave-entitlements` — grant.
 #[debug_handler]
 async fn create_entitlement(
     State(ctx): State<AppContext>,
@@ -231,7 +231,7 @@ async fn create_entitlement(
     Path(pid): Path<String>,
     Json(payload): Json<EntitlementPayload>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token("kind", tokens::LEAVE_KINDS, &payload.kind);
     if !(2000..=2100).contains(&payload.year) {
@@ -245,7 +245,7 @@ async fn create_entitlement(
     }
     ensure_valid(&problems.into_vec())?;
     let existing = leave_entitlements::Entity::find()
-        .filter(leave_entitlements::Column::EmployeePid.eq(employee.pid))
+        .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
         .filter(leave_entitlements::Column::Kind.eq(&payload.kind))
         .filter(leave_entitlements::Column::Year.eq(payload.year))
         .filter(leave_entitlements::Column::DeletedAt.is_null())
@@ -259,7 +259,7 @@ async fn create_entitlement(
     let txn = ctx.db.begin().await?;
     let row = leave_entitlements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         kind: ActiveValue::set(payload.kind.clone()),
         year: ActiveValue::set(payload.year),
         entitled_days: ActiveValue::set(payload.entitled_days),
@@ -284,15 +284,15 @@ async fn create_entitlement(
     })
 }
 
-/// `GET /api/employees/{pid}/leave-entitlements` — balances.
+/// `GET /api/workers/{pid}/leave-entitlements` — balances.
 #[debug_handler]
 async fn list_entitlements(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let rows = leave_entitlements::Entity::find()
-        .filter(leave_entitlements::Column::EmployeePid.eq(employee.pid))
+        .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
         .filter(leave_entitlements::Column::DeletedAt.is_null())
         .order_by_asc(leave_entitlements::Column::Id)
         .all(&ctx.db)
@@ -300,7 +300,7 @@ async fn list_entitlements(
     format::json(rows)
 }
 
-/// `POST /api/employees/{pid}/leave-requests` — request leave. The
+/// `POST /api/workers/{pid}/leave-requests` — request leave. The
 /// balance is **checked** here (annual over-balance ⇒ 422; sick may
 /// flag negative) and **decremented on approval** (WPM-R5).
 #[debug_handler]
@@ -310,13 +310,13 @@ async fn create_leave_request(
     Path(pid): Path<String>,
     Json(payload): Json<LeaveRequestPayload>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token("kind", tokens::LEAVE_KINDS, &payload.kind);
     problems.cap_opt("reason", payload.reason.as_deref());
     ensure_valid(&problems.into_vec())?;
     let days = leave::day_span(payload.start_on, payload.end_on).map_err(|e| unprocessable(&e))?;
-    let check = balance_check(&ctx.db, &employee, &payload.kind, payload.start_on, days).await?;
+    let check = balance_check(&ctx.db, &worker, &payload.kind, payload.start_on, days).await?;
     let negative = match check {
         leave::BalanceCheck::Ok { .. } => false,
         leave::BalanceCheck::NegativeFlagged { .. } => true,
@@ -332,7 +332,7 @@ async fn create_leave_request(
     let txn = ctx.db.begin().await?;
     let row = leave_requests::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         kind: ActiveValue::set(payload.kind.clone()),
         start_on: ActiveValue::set(payload.start_on),
         end_on: ActiveValue::set(payload.end_on),
@@ -361,7 +361,7 @@ async fn create_leave_request(
         "leave_request",
         "leave_requested",
         &row.pid.to_string(),
-        &employee.employee_number,
+        &worker.worker_number,
         caller.actor(),
         None,
     )
@@ -373,7 +373,7 @@ async fn create_leave_request(
 /// The balance verdict for `kind` in the request's starting year.
 async fn balance_check(
     db: &DatabaseConnection,
-    employee: &crate::models::_entities::employees::Model,
+    worker: &crate::models::_entities::workers::Model,
     kind: &str,
     start_on: chrono::NaiveDate,
     days: i32,
@@ -381,7 +381,7 @@ async fn balance_check(
     use chrono::Datelike;
     let year = start_on.year();
     let entitlement = leave_entitlements::Entity::find()
-        .filter(leave_entitlements::Column::EmployeePid.eq(employee.pid))
+        .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
         .filter(leave_entitlements::Column::Kind.eq(kind))
         .filter(leave_entitlements::Column::Year.eq(year))
         .filter(leave_entitlements::Column::DeletedAt.is_null())
@@ -391,15 +391,15 @@ async fn balance_check(
     Ok(leave::check_balance(kind, entitled, used, days))
 }
 
-/// `GET /api/employees/{pid}/leave-requests`.
+/// `GET /api/workers/{pid}/leave-requests`.
 #[debug_handler]
 async fn list_leave_requests(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let employee = records::find_employee(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let rows = leave_requests::Entity::find()
-        .filter(leave_requests::Column::EmployeePid.eq(employee.pid))
+        .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
         .filter(leave_requests::Column::DeletedAt.is_null())
         .order_by_asc(leave_requests::Column::Id)
         .all(&ctx.db)
@@ -434,7 +434,7 @@ async fn decide_leave(
     let kind = request.kind.clone();
     let year = request.start_on.year();
     let days = request.days;
-    let employee_pid = request.employee_pid;
+    let worker_pid = request.worker_pid;
     let mut active: leave_requests::ActiveModel = request.into();
     active.status = ActiveValue::set(to.to_string());
     active.decided_by = ActiveValue::set(caller.actor().map(ToString::to_string));
@@ -451,7 +451,7 @@ async fn decide_leave(
     };
     if delta != 0 {
         let entitlement = leave_entitlements::Entity::find()
-            .filter(leave_entitlements::Column::EmployeePid.eq(employee_pid))
+            .filter(leave_entitlements::Column::WorkerPid.eq(worker_pid))
             .filter(leave_entitlements::Column::Kind.eq(&kind))
             .filter(leave_entitlements::Column::Year.eq(year))
             .filter(leave_entitlements::Column::DeletedAt.is_null())
@@ -599,7 +599,7 @@ async fn list_shifts(
     format::json(out)
 }
 
-/// `POST /api/shifts/{pid}/assignments` — assign an employee. Refuses
+/// `POST /api/shifts/{pid}/assignments` — assign a worker. Refuses
 /// a double booking (overlapping assigned shift) and an assignment
 /// overlapping approved leave (WPM-R6).
 #[debug_handler]
@@ -610,10 +610,10 @@ async fn assign_shift(
     Json(payload): Json<AssignmentPayload>,
 ) -> Result<Response> {
     let shift = records::find_shift(&ctx.db, records::parse_pid(&pid)?).await?;
-    let employee = records::find_employee(&ctx.db, payload.employee_pid).await?;
+    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
     // Double-booking: any live assignment to an overlapping shift.
     let their_assignments = shift_assignments::Entity::find()
-        .filter(shift_assignments::Column::EmployeePid.eq(employee.pid))
+        .filter(shift_assignments::Column::WorkerPid.eq(worker.pid))
         .filter(shift_assignments::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
@@ -631,14 +631,14 @@ async fn assign_shift(
             )
         {
             return Err(unprocessable(&format!(
-                "double booking: employee already assigned to an overlapping shift ({})",
+                "double booking: worker already assigned to an overlapping shift ({})",
                 other.pid
             )));
         }
     }
     // Leave conflict: any approved leave overlapping the shift's dates.
     let approved_leave = leave_requests::Entity::find()
-        .filter(leave_requests::Column::EmployeePid.eq(employee.pid))
+        .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
         .filter(leave_requests::Column::Status.eq("approved"))
         .filter(leave_requests::Column::DeletedAt.is_null())
         .all(&ctx.db)
@@ -648,7 +648,7 @@ async fn assign_shift(
     for request in &approved_leave {
         if leave::ranges_overlap(shift_start, shift_end, request.start_on, request.end_on) {
             return Err(unprocessable(&format!(
-                "employee is on approved {} leave {} to {}",
+                "worker is on approved {} leave {} to {}",
                 request.kind, request.start_on, request.end_on
             )));
         }
@@ -657,7 +657,7 @@ async fn assign_shift(
     let row = shift_assignments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         shift_pid: ActiveValue::set(shift.pid),
-        employee_pid: ActiveValue::set(employee.pid),
+        worker_pid: ActiveValue::set(worker.pid),
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
@@ -677,7 +677,7 @@ async fn assign_shift(
         "shift_assignment",
         "shift_assigned",
         &row.pid.to_string(),
-        &employee.employee_number,
+        &worker.worker_number,
         caller.actor(),
         None,
     )
@@ -729,12 +729,12 @@ const REST_WINDOW_DAYS: i64 = 28;
 type ShiftInterval = (chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>);
 
 /// `GET /api/workforce/working-time` — the advisory working-time
-/// guardrails (WPM-R27): per employee, the 17-week average of
+/// guardrails (WPM-R27): per worker, the 17-week average of
 /// **recorded** minutes (all non-deleted entries — a safety signal
 /// does not wait for approval) with WPM-D16 terms and the 48-hour
 /// flag, plus 11-hour rest-gap breaches across recent and planned
 /// shift assignments. Flags only — nothing is refused (WPM-D19).
-/// Visibility equals the rota's: flagged employees are named.
+/// Visibility equals the rota's: flagged workers are named.
 #[debug_handler]
 async fn working_time(
     axum::extract::Query(query): axum::extract::Query<WorkingTimeQuery>,
@@ -744,13 +744,13 @@ async fn working_time(
         .as_of
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
     let window_start = as_of - chrono::Duration::weeks(working_time::REFERENCE_WEEKS);
-    let mut employee_find =
-        employees::Entity::find().filter(employees::Column::DeletedAt.is_null());
+    let mut worker_find =
+        workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
     if let Some(department) = &query.department {
-        employee_find = employee_find.filter(employees::Column::Department.eq(department.as_str()));
+        worker_find = worker_find.filter(workers::Column::Department.eq(department.as_str()));
     }
-    let employee_rows = employee_find.all(&ctx.db).await?;
-    // Recorded minutes per employee over the reference window.
+    let worker_rows = worker_find.all(&ctx.db).await?;
+    // Recorded minutes per worker over the reference window.
     let entries = time_entries::Entity::find()
         .filter(time_entries::Column::DeletedAt.is_null())
         .filter(time_entries::Column::WorkedOn.gt(window_start))
@@ -759,9 +759,9 @@ async fn working_time(
         .await?;
     let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = std::collections::BTreeMap::new();
     for entry in &entries {
-        *minutes_of.entry(entry.employee_pid).or_default() += i64::from(entry.minutes);
+        *minutes_of.entry(entry.worker_pid).or_default() += i64::from(entry.minutes);
     }
-    // Shift intervals per employee around `as_of` (recent + planned).
+    // Shift intervals per worker around `as_of` (recent + planned).
     let rest_start = as_of - chrono::Duration::days(REST_WINDOW_DAYS);
     let rest_end = as_of + chrono::Duration::days(REST_WINDOW_DAYS);
     let shift_rows = shifts::Entity::find()
@@ -793,26 +793,26 @@ async fn working_time(
     for assignment in &assignments {
         if let Some(interval) = window_shifts.get(&assignment.shift_pid) {
             intervals_of
-                .entry(assignment.employee_pid)
+                .entry(assignment.worker_pid)
                 .or_default()
                 .push(*interval);
         }
     }
     let mut flagged = Vec::new();
-    for employee in &employee_rows {
-        let total_minutes = minutes_of.get(&employee.pid).copied().unwrap_or(0);
+    for worker in &worker_rows {
+        let total_minutes = minutes_of.get(&worker.pid).copied().unwrap_or(0);
         let over = working_time::over_average(total_minutes, working_time::REFERENCE_WEEKS);
         let breaches = intervals_of
-            .get(&employee.pid)
+            .get(&worker.pid)
             .map(|intervals| working_time::rest_breaches(intervals))
             .unwrap_or_default();
         if !over && breaches.is_empty() {
             continue;
         }
         flagged.push(serde_json::json!({
-            "employee_pid": employee.pid,
-            "display_name": employee.display_name,
-            "department": employee.department,
+            "worker_pid": worker.pid,
+            "display_name": worker.display_name,
+            "department": worker.department,
             "average_weekly": {
                 "numerator_minutes": total_minutes,
                 "denominator_weeks": working_time::REFERENCE_WEEKS,
@@ -831,7 +831,7 @@ async fn working_time(
         "as_of": as_of,
         "reference_weeks": working_time::REFERENCE_WEEKS,
         "rest_window_days": REST_WINDOW_DAYS,
-        "employees_checked": employee_rows.len(),
+        "workers_checked": worker_rows.len(),
         "flagged": flagged,
         "derivation": "advisory only, nothing is refused (WPM-D19); average = all \
                        recorded (not merely approved) minutes over the trailing 17 \
@@ -844,22 +844,22 @@ async fn working_time(
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
-        .add("/employees/{pid}/time-entries", post(create_time_entry))
-        .add("/employees/{pid}/time-entries", get(list_time_entries))
+        .add("/workers/{pid}/time-entries", post(create_time_entry))
+        .add("/workers/{pid}/time-entries", get(list_time_entries))
         .add("/time-entries/{pid}/approve", post(approve_time_entry))
         .add(
-            "/employees/{pid}/leave-entitlements",
+            "/workers/{pid}/leave-entitlements",
             post(create_entitlement),
         )
         .add(
-            "/employees/{pid}/leave-entitlements",
+            "/workers/{pid}/leave-entitlements",
             get(list_entitlements),
         )
         .add(
-            "/employees/{pid}/leave-requests",
+            "/workers/{pid}/leave-requests",
             post(create_leave_request),
         )
-        .add("/employees/{pid}/leave-requests", get(list_leave_requests))
+        .add("/workers/{pid}/leave-requests", get(list_leave_requests))
         .add("/leave-requests/{pid}/approve", post(approve_leave))
         .add("/leave-requests/{pid}/reject", post(reject_leave))
         .add("/leave-requests/{pid}/cancel", post(cancel_leave))

@@ -5,25 +5,25 @@ use std::collections::HashMap;
 use std::hash::BuildHasher;
 use uuid::Uuid;
 
-/// Whether setting `employee`'s manager to `manager` would create a
-/// cycle, given the current `manager_of` map (employee pid → manager
-/// pid). Walks up from the proposed manager; hitting `employee` means
+/// Whether setting `worker`'s manager to `manager` would create a
+/// cycle, given the current `manager_of` map (worker pid → manager
+/// pid). Walks up from the proposed manager; hitting `worker` means
 /// a cycle. Self-management is a cycle of length one. The walk is
 /// bounded by the map size, so a (corrupt) pre-existing cycle
 /// elsewhere terminates rather than spinning.
 #[must_use]
 pub fn would_create_cycle<S: BuildHasher>(
-    employee: Uuid,
+    worker: Uuid,
     manager: Uuid,
     manager_of: &HashMap<Uuid, Uuid, S>,
 ) -> bool {
-    if employee == manager {
+    if worker == manager {
         return true;
     }
     let mut current = manager;
     for _ in 0..=manager_of.len() {
         match manager_of.get(&current) {
-            Some(&next) if next == employee => return true,
+            Some(&next) if next == worker => return true,
             Some(&next) => current = next,
             None => return false,
         }

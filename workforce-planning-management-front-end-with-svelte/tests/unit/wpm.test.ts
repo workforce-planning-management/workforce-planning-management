@@ -40,8 +40,8 @@ describe("i18n", () => {
   });
 
   it("translates with en fallback and flags RTL locales", () => {
-    expect(translate("nav.employees", "de")).toBe("Mitarbeiter");
-    expect(translate("nav.employees", DEFAULT_LOCALE)).toBe("Employees");
+    expect(translate("nav.workers", "de")).toBe("Arbeitskräfte");
+    expect(translate("nav.workers", DEFAULT_LOCALE)).toBe("Workers");
     expect(isRtl("ar")).toBe(true);
     expect(isRtl("ur")).toBe(true);
     expect(isRtl("en")).toBe(false);
@@ -72,8 +72,8 @@ describe("api path map", () => {
       }),
     );
     const wpm = await import("../../src/lib/api/wpm");
-    await wpm.listEmployees({ department: "engineering" });
-    await wpm.getEmployee("p1");
+    await wpm.listWorkers({ department: "engineering" });
+    await wpm.getWorker("p1");
     await wpm.orgChart("organization:abc");
     await wpm.listRequisitions("open");
     await wpm.listRuns();
@@ -86,7 +86,7 @@ describe("api path map", () => {
     await wpm.pathProgress("path1");
     await wpm.mentorshipOverview(30);
     await wpm.listWellbeingEntitlements();
-    await wpm.employeeWellbeingPrompts("p1");
+    await wpm.workerWellbeingPrompts("p1");
     await wpm.wellbeingUptake();
     await wpm.workingTime("engineering");
     await wpm.listPulseSurveys();
@@ -101,8 +101,8 @@ describe("api path map", () => {
     await wpm.listAdjustmentRequests("p1");
     await wpm.ergonomicIssues();
     expect(calls).toEqual([
-      "/api/proxy/employees?department=engineering",
-      "/api/proxy/employees/p1",
+      "/api/proxy/workers?department=engineering",
+      "/api/proxy/workers/p1",
       "/api/proxy/org-chart?organization=organization%3Aabc",
       "/api/proxy/requisitions?status=open",
       "/api/proxy/payroll-runs",
@@ -115,19 +115,19 @@ describe("api path map", () => {
       "/api/proxy/learning-paths/path1/progress",
       "/api/proxy/learning/mentorship-overview?days=30",
       "/api/proxy/wellbeing-entitlements",
-      "/api/proxy/employees/p1/wellbeing-prompts",
+      "/api/proxy/workers/p1/wellbeing-prompts",
       "/api/proxy/wellbeing/uptake",
       "/api/proxy/workforce/working-time?department=engineering",
       "/api/proxy/pulse-surveys",
       "/api/proxy/pulse-surveys/s1/results",
-      "/api/proxy/employees/p1/appraisals",
-      "/api/proxy/employees/p1/appraisal-requests",
+      "/api/proxy/workers/p1/appraisals",
+      "/api/proxy/workers/p1/appraisal-requests",
       "/api/proxy/appraisals/a1",
       "/api/proxy/appraisals/a1/report",
       "/api/proxy/retention",
-      "/api/proxy/employees/p1/notifications",
-      "/api/proxy/employees/p1/ergonomic-assessments",
-      "/api/proxy/employees/p1/adjustment-requests",
+      "/api/proxy/workers/p1/notifications",
+      "/api/proxy/workers/p1/ergonomic-assessments",
+      "/api/proxy/workers/p1/adjustment-requests",
       "/api/proxy/ergonomics/issues",
     ]);
     vi.unstubAllGlobals();

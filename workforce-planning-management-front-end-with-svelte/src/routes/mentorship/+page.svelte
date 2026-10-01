@@ -1,7 +1,7 @@
 <!--
   Mentorship area (`/mentorship`): the coaching overview — active
   pairings, mentor load (active mentees per mentor), unmatched active
-  employees, and stale mentorships (no session within the window).
+  workers, and stale mentorships (no session within the window).
   All server-derived.
 -->
 <script lang="ts">
@@ -31,7 +31,7 @@
 {#if overview}
   <section class="tiles" data-testid="mentorship-tiles">
     <div class="tile"><strong>{overview.active_pairings}</strong><span>active pairings</span></div>
-    <div class="tile"><strong>{overview.unmatched_employees.length}</strong><span>unmatched</span></div>
+    <div class="tile"><strong>{overview.unmatched_workers.length}</strong><span>unmatched</span></div>
     <div class="tile">
       <strong>{overview.stale_mentorships.length}</strong>
       <span>stale (over {overview.stale_days}d)</span>
@@ -66,10 +66,10 @@
     </table>
   {/if}
 
-  <h2>Unmatched employees</h2>
+  <h2>Unmatched workers</h2>
   <ul data-testid="unmatched">
-    {#each overview.unmatched_employees as employee (employee.pid)}
-      <li>{employee.display_name} <span class="muted">({employee.department})</span></li>
+    {#each overview.unmatched_workers as worker (worker.pid)}
+      <li>{worker.display_name} <span class="muted">({worker.department})</span></li>
     {:else}
       <li class="muted">Everyone active is in a mentorship.</li>
     {/each}

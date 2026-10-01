@@ -9,6 +9,8 @@
 
 pub mod _entities;
 pub mod audit_logs;
+pub mod confederations;
 pub mod event_outbox;
+pub mod memberships;
 pub mod notifications;
 pub mod records;

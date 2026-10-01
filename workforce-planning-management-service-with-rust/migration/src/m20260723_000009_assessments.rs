@@ -1,7 +1,7 @@
 //! Migration: the assessment tables — an `assessment_instruments`
 //! catalog (a named test, its category, and the scales it reports),
 //! per-subject `assessments` (one administration to one candidate or
-//! employee, optionally tied to an application), and the per-scale
+//! worker, optionally tied to an application), and the per-scale
 //! `assessment_results`.
 //!
 //! Scores are integers throughout: percentiles are 0–100 and raw
