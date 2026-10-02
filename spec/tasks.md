@@ -750,12 +750,17 @@ code + tests in one PR.
       `tests/keycloak/realm-wpm.json`, mints tokens with the password
       grant, and checks 401 / 403 / policy-authorised writes against the
       booted app (see `spec/testcontainers-keycloak/index.md`).
-      **Not yet run:** the Podman VM had no outbound network in the
-      authoring session (the Keycloak image could not be pulled), and the
-      Rust crate cannot build here (missing sibling crates). The
-      container + realm-import half was compiled standalone against
-      `testcontainers` 0.28; the realm JSON is unproven against a live
-      Keycloak (the unmanaged `organization_ref` attribute in particular).
+      **Verified (2026-10-02):** the container start, realm import and
+      password-grant token flow ran against a real Keycloak 26.0 on
+      Podman via a standalone `testcontainers` 0.28 program — `hr-user`'s
+      access token carries `aud=wpm-api`, `realm_access.roles`
+      (`wpm-hr`, `wpm-payroll`), `groups=["/org/engineering"]` and
+      `organization_ref`; `plain-user`'s carries none of the role / group
+      / org claims; the JWKS endpoint serves RS256 keys. **Not yet run:**
+      `tests/keycloak.rs` itself (the Rust crate cannot build here —
+      missing sibling crates). Note: the Podman VM had no outbound
+      network, so the image was fetched on the host from the registry API
+      and `podman load`ed.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
