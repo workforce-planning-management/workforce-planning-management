@@ -18,7 +18,7 @@ use crate::metrics::Metrics;
 use crate::models::_entities::{benefit_enrollments, benefit_plans, workers, onboarding_items};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
-use crate::rules::{lifecycle, org, tokens};
+use crate::rules::{lifecycle, org, talent, tokens};
 use crate::streaming;
 use crate::validation::Problems;
 
@@ -543,6 +543,9 @@ struct OrgNode {
     display_name: String,
     job_title: String,
     department: String,
+    /// Whole-month tenure band at the time of the request
+    /// ([`talent::tenure_bucket`]); `not_started` for a future hire date.
+    tenure: &'static str,
     reports: Vec<OrgNode>,
 }
 
@@ -552,6 +555,7 @@ fn build_org_node(
     node: &workers::Model,
     children: &HashMap<Option<Uuid>, Vec<&workers::Model>>,
     depth: usize,
+    as_of: chrono::NaiveDate,
 ) -> OrgNode {
     let reports = if depth > 32 {
         Vec::new() // corrupt-cycle guard; the write path prevents cycles
@@ -560,7 +564,7 @@ fn build_org_node(
             .get(&Some(node.pid))
             .map(|kids| {
                 kids.iter()
-                    .map(|k| build_org_node(k, children, depth + 1))
+                    .map(|k| build_org_node(k, children, depth + 1, as_of))
                     .collect()
             })
             .unwrap_or_default()
@@ -570,6 +574,7 @@ fn build_org_node(
         display_name: node.display_name.clone(),
         job_title: node.job_title.clone(),
         department: node.department.clone(),
+        tenure: talent::tenure_bucket(talent::months_of_service(node.hired_on, as_of)),
         reports,
     }
 }
@@ -600,11 +605,12 @@ async fn org_chart(
     for e in &rows {
         children.entry(e.manager_pid).or_default().push(e);
     }
+    let as_of = chrono::Utc::now().date_naive();
     let roots: Vec<OrgNode> = children
         .get(&None)
         .map(|top| {
             top.iter()
-                .map(|n| build_org_node(n, &children, 0))
+                .map(|n| build_org_node(n, &children, 0, as_of))
                 .collect()
         })
         .unwrap_or_default();

@@ -46,6 +46,9 @@ export interface OrgNode {
   display_name: string;
   job_title: string;
   department: string;
+  /** Tenure band (whole months of service): `under_1y` … `over_10y`, or
+   *  `not_started` for a future hire date. */
+  tenure: string;
   reports: OrgNode[];
 }
 

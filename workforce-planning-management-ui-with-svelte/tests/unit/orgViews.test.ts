@@ -1,17 +1,25 @@
 import { describe, expect, it } from "vitest";
 
 import type { OrgNode } from "../../src/lib/api/types";
-import { byDepartment, byLevel, flatten } from "../../src/lib/orgViews";
+import {
+  byDepartment,
+  byLevel,
+  byTenure,
+  flatten,
+  tenureLabel,
+} from "../../src/lib/orgViews";
 
 const node = (
   pid: string,
   department: string,
   reports: OrgNode[] = [],
+  tenure = "1_to_3y",
 ): OrgNode => ({
   pid,
   display_name: pid,
   job_title: "x",
   department,
+  tenure,
   reports,
 });
 
@@ -53,9 +61,26 @@ describe("org views", () => {
     ]);
   });
 
+  it("byTenure orders bands longest-serving first, unknown last", () => {
+    const tenured = [
+      node("a", "x", [node("b", "x", [], "over_10y")], "under_1y"),
+      node("c", "x", [], "mystery"),
+      node("d", "x", [], "not_started"),
+    ];
+    expect(byTenure(tenured).map((g) => g.band)).toEqual([
+      "over_10y",
+      "under_1y",
+      "not_started",
+      "mystery",
+    ]);
+    expect(tenureLabel("over_10y")).toBe("10+");
+    expect(tenureLabel("not_started")).toBe("—");
+  });
+
   it("an empty forest yields empty views", () => {
     expect(flatten([])).toEqual([]);
     expect(byDepartment([])).toEqual([]);
     expect(byLevel([])).toEqual([]);
+    expect(byTenure([])).toEqual([]);
   });
 });

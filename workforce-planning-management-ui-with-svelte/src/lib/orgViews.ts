@@ -4,7 +4,7 @@
 
 import type { OrgNode } from "./api/types";
 
-export const ORG_VIEWS = ["manager", "department", "level"] as const;
+export const ORG_VIEWS = ["manager", "department", "level", "tenure"] as const;
 export type OrgView = (typeof ORG_VIEWS)[number];
 
 /** A node with its depth in the manager forest (a root is level 1). */
@@ -55,6 +55,58 @@ export function byLevel(
     .sort(([a], [b]) => a - b)
     .map(([level, members]) => ({
       level,
+      members: members.sort((a, b) =>
+        a.display_name.localeCompare(b.display_name),
+      ),
+    }));
+}
+
+/** Tenure bands, longest-serving first; unknown bands sort last. */
+export const TENURE_BANDS = [
+  "over_10y",
+  "5_to_10y",
+  "3_to_5y",
+  "1_to_3y",
+  "under_1y",
+  "not_started",
+] as const;
+
+/** A language-neutral label for a tenure band, in years. */
+export function tenureLabel(band: string): string {
+  switch (band) {
+    case "over_10y":
+      return "10+";
+    case "5_to_10y":
+      return "5–10";
+    case "3_to_5y":
+      return "3–5";
+    case "1_to_3y":
+      return "1–3";
+    case "under_1y":
+      return "<1";
+    default:
+      return "—";
+  }
+}
+
+/** Nodes grouped by tenure band, longest-serving first. */
+export function byTenure(
+  roots: OrgNode[],
+): Array<{ band: string; members: OrgNode[] }> {
+  const groups = new Map<string, OrgNode[]>();
+  for (const { node } of flatten(roots)) {
+    const members = groups.get(node.tenure) ?? [];
+    members.push(node);
+    groups.set(node.tenure, members);
+  }
+  const rank = (band: string) => {
+    const i = (TENURE_BANDS as readonly string[]).indexOf(band);
+    return i === -1 ? TENURE_BANDS.length : i;
+  };
+  return [...groups.entries()]
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([band, members]) => ({
+      band,
       members: members.sort((a, b) =>
         a.display_name.localeCompare(b.display_name),
       ),

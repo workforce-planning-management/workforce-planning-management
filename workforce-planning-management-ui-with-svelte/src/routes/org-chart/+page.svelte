@@ -4,7 +4,14 @@
   import { t } from "#lib/i18n.svelte.js";
   import type { OrgNode } from "#lib/api/types.js";
   import OrgTree from "#lib/components/OrgTree.svelte";
-  import { ORG_VIEWS, byDepartment, byLevel, type OrgView } from "#lib/orgViews.js";
+  import {
+    ORG_VIEWS,
+    byDepartment,
+    byLevel,
+    byTenure,
+    tenureLabel,
+    type OrgView,
+  } from "#lib/orgViews.js";
 
   // No switcher: every organization this person can read gets its own
   // section below, fetched in parallel — not a single guessed org.
@@ -68,6 +75,21 @@
               <li>
                 <a href={`/workers/${member.pid}`}>{member.display_name}</a>
                 <span class="muted">— {member.job_title}</span>
+              </li>
+            {/each}
+          </ul>
+        {/each}
+      {:else if view === "tenure"}
+        {#each byTenure(byOrganization[ref] ?? []) as group (group.band)}
+          <h3>
+            {tenureLabel(group.band)} {t("org.tenureYears")}
+            <span class="muted">({group.members.length})</span>
+          </h3>
+          <ul>
+            {#each group.members as member (member.pid)}
+              <li>
+                <a href={`/workers/${member.pid}`}>{member.display_name}</a>
+                <span class="muted">— {member.job_title} · {member.department}</span>
               </li>
             {/each}
           </ul>

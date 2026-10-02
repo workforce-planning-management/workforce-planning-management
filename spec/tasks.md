@@ -739,10 +739,13 @@ code + tests in one PR.
       a view switch — by manager (the existing tree), by department, by
       level — over the same service-derived manager forest; no API
       change, so every view lists exactly the same people. Regrouping
-      lives in `src/lib/orgViews.ts` (pure, 4 unit tests); strings added
-      to all 16 locales. Tenure / location views need those fields on
-      the org-chart payload first (**open**). svelte-check 0, vitest
-      39/39, build green.
+      lives in `src/lib/orgViews.ts` (pure, 5 unit tests); strings added
+      to all 16 locales. A fourth **by tenure** view reads the new
+      `tenure` band on each org-chart node (`controllers/hr_core.rs`,
+      from `rules::talent::months_of_service` + `tenure_bucket`; Rust
+      change unbuilt — see WPM-T41). **Location** view still open: the
+      `workers` table has no location column (needs a migration). svelte-check 0, vitest
+      40/40, build green.
 
 - [~] WPM-T43 (2026-10-02) **Testcontainers Keycloak integration test.**
       `tests/keycloak.rs` (feature `keycloak`, `#[ignore]`) starts a real
@@ -874,7 +877,7 @@ where WPM already has a partial foundation to build on.
       about it" rather than raw numbers on a dashboard. This is the
       most open-ended item on this list and the one most dependent on
       workforce metrics existing first as a well-defined foundation.
-- [~] **Organizational visualization.** *(manager / department / level views landed as WPM-T42; tenure and location views need API fields.)* WPM already has a recursive
+- [~] **Organizational visualization.** *(manager / department / level / tenure views landed as WPM-T42; a location view needs a `workers.location` column.)* WPM already has a recursive
       org-chart derivation (WPM-T2) but only ever renders one view of
       it. ChartHop's category is a *highly visual*, multi-mode org
       chart — by department, manager, location, job level, tenure —
