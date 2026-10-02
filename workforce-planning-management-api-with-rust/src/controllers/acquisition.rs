@@ -278,6 +278,9 @@ async fn requisition_status(
     if payload.to == "open" {
         active.opened_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
     }
+    if payload.to == "filled" {
+        active.filled_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
+    }
     let row = active.update(&txn).await?;
     let kind = match payload.to.as_str() {
         "open" => "requisition_opened",

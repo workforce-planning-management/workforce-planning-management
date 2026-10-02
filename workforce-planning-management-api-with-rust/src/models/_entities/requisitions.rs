@@ -23,6 +23,7 @@ pub struct Model {
     pub salary_currency: Option<String>,
     pub status: String,
     pub opened_on: Option<Date>,
+    pub filled_on: Option<Date>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

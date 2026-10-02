@@ -36,7 +36,8 @@ pub const DEFINITIONS: &[(&str, &str)] = &[
     ),
     (
         "time_to_fill",
-        "Not available: requisitions record when they open but not when they are filled.",
+        "Whole days from a requisition's opened_on to its filled_on, over requisitions filled \
+         within the period. Requisitions lacking either date are left out, not guessed.",
     ),
 ];
 
@@ -50,12 +51,24 @@ pub struct Tenure {
     pub terminated_on: Option<NaiveDate>,
 }
 
-/// Headcount on `date`: hired on or before it and not yet terminated.
+/// Whether a worker is employed on `date`: hired on or before it, and
+/// not terminated on or before it. **The** definition of "employed" —
+/// every headcount-style figure in the service goes through it.
+#[must_use]
+pub fn is_employed_on(
+    date: NaiveDate,
+    hired_on: NaiveDate,
+    terminated_on: Option<NaiveDate>,
+) -> bool {
+    hired_on <= date && terminated_on.is_none_or(|t| t > date)
+}
+
+/// Headcount on `date`: workers [`is_employed_on`] it.
 #[must_use]
 pub fn headcount_on(date: NaiveDate, workers: &[Tenure]) -> usize {
     workers
         .iter()
-        .filter(|w| w.hired_on <= date && w.terminated_on.is_none_or(|t| t > date))
+        .filter(|w| is_employed_on(date, w.hired_on, w.terminated_on))
         .count()
 }
 
@@ -87,6 +100,54 @@ pub fn turnover_rate(leavers: usize, opening: usize, closing: usize) -> Option<f
     }
     #[allow(clippy::cast_precision_loss)] // display ratio over small counts
     Some(leavers as f64 * 2.0 / mean_twice as f64)
+}
+
+/// Days a requisition took to fill: `filled_on - opened_on`. `None` when
+/// either date is missing or the fill date precedes the opening (bad
+/// data is left out, not reported as a negative duration).
+#[must_use]
+pub fn time_to_fill_days(
+    opened_on: Option<NaiveDate>,
+    filled_on: Option<NaiveDate>,
+) -> Option<i64> {
+    let days = (filled_on? - opened_on?).num_days();
+    (days >= 0).then_some(days)
+}
+
+/// Summary of time-to-fill durations (days).
+#[derive(Debug, PartialEq)]
+pub struct FillTime {
+    /// Requisitions with a usable duration.
+    pub count: usize,
+    /// Mean days.
+    pub mean: f64,
+    /// Median days (mean of the middle two for an even count).
+    pub median: f64,
+}
+
+/// Summarise durations; `None` when there are none.
+#[must_use]
+pub fn fill_time_summary(days: &[i64]) -> Option<FillTime> {
+    if days.is_empty() {
+        return None;
+    }
+    let mut sorted = days.to_vec();
+    sorted.sort_unstable();
+    let n = sorted.len();
+    #[allow(clippy::cast_precision_loss)] // display figures over small counts
+    let (mean, median) = (
+        sorted.iter().sum::<i64>() as f64 / n as f64,
+        if n % 2 == 1 {
+            sorted[n / 2] as f64
+        } else {
+            (sorted[n / 2 - 1] + sorted[n / 2]) as f64 / 2.0
+        },
+    );
+    Some(FillTime {
+        count: n,
+        mean,
+        median,
+    })
 }
 
 /// Span-of-control summary over per-manager direct-report counts.
@@ -202,6 +263,32 @@ mod tests {
         assert_eq!(span.max, 4);
     }
 
+    /// Time-to-fill needs both dates, in order; summaries handle odd and
+    /// even counts and an empty set.
+    #[test]
+    fn time_to_fill() {
+        let d = day(2026, 3, 1);
+        assert_eq!(time_to_fill_days(Some(day(2026, 1, 1)), Some(d)), Some(59));
+        assert_eq!(time_to_fill_days(None, Some(d)), None);
+        assert_eq!(time_to_fill_days(Some(d), None), None);
+        assert_eq!(
+            time_to_fill_days(Some(d), Some(day(2026, 1, 1))),
+            None,
+            "filled before opened"
+        );
+        assert_eq!(
+            time_to_fill_days(Some(d), Some(d)),
+            Some(0),
+            "same-day fill is a real 0"
+        );
+        assert_eq!(fill_time_summary(&[]), None);
+        let odd = fill_time_summary(&[30, 10, 20]).expect("odd");
+        assert_eq!((odd.count, odd.median), (3, 20.0));
+        assert!((odd.mean - 20.0).abs() < 1e-9);
+        let even = fill_time_summary(&[10, 20, 30, 50]).expect("even");
+        assert!((even.median - 25.0).abs() < 1e-9);
+    }
+
     /// Every metric the endpoint reports has a definition.
     #[test]
     fn definitions_cover_the_reported_metrics() {
@@ -211,6 +298,7 @@ mod tests {
             "leavers",
             "turnover_rate",
             "span_of_control",
+            "time_to_fill",
         ] {
             assert!(
                 DEFINITIONS.iter().any(|(n, _)| *n == name),

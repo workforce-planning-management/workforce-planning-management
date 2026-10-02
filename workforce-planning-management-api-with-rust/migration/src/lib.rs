@@ -33,6 +33,7 @@ mod m20260725_000017_adjustments;
 mod m20260928_000018_organization_memberships;
 mod m20260929_000019_organization_confederations;
 mod m20261002_000020_worker_location;
+mod m20261002_000021_requisition_filled_on;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -65,6 +66,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260928_000018_organization_memberships::Migration),
             Box::new(m20260929_000019_organization_confederations::Migration),
             Box::new(m20261002_000020_worker_location::Migration),
+            Box::new(m20261002_000021_requisition_filled_on::Migration),
             // inject-above (do not remove this comment)
         ]
     }

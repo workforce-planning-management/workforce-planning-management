@@ -777,14 +777,19 @@ code + tests in one PR.
       of opening and closing headcount; `None`, never 0, without a base)
       and `span_of_control`. New read-only
       `GET /api/workforce-intelligence/metrics?from=&to=` returns the
-      numbers beside their definitions. **time-to-fill is reported as
-      unavailable** — requisitions record `opened_on` but no fill date
-      (needs a column before it can be derived). **Known inconsistency,
-      not changed here:** `/overview`'s headcount counts every live
-      worker record including terminated ones, whereas `metrics`
-      counts workers employed on the date — reconcile before the UI shows
-      both. DB-gated `workforce_metrics_report_defined_numbers` added.
-      Rust unbuilt (see WPM-T41). **Open:** a front-end view.
+      numbers beside their definitions. **Time-to-fill** is `filled_on - opened_on` in
+      days over requisitions filled in the period (mean, median, count);
+      migration `m20261002_000021_requisition_filled_on` adds nullable
+      `requisitions.filled_on`, set when a requisition moves to `filled`;
+      requisitions with a missing or out-of-order date are left out, not
+      guessed (rules pinned: `time_to_fill_days`, `fill_time_summary`).
+      Requisitions filled before the column existed have no fill date.
+      **Headcount reconciled:** `rules::metrics::is_employed_on` is now
+      the single definition of "employed"; `/overview`, `/capability`,
+      `/capability-analysis` and `/metrics` all count workers employed
+      on the date (previously `/overview` counted every live record,
+      terminated included). DB-gated tests pin `/overview` ==
+      `/metrics` closing headcount. Rust unbuilt (see WPM-T41). **Open:** a front-end view.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 

@@ -306,8 +306,25 @@ async fn workforce_metrics_report_defined_numbers() {
         assert!(view["headcount"]["closing"].as_u64().unwrap() >= 2);
         assert!(view["starters"].as_u64().unwrap() >= 2, "both hired in the period");
         assert_eq!(view["leavers"], 0);
-        assert!(view["time_to_fill"].is_null(), "no fill date is recorded");
+        assert!(
+            view["time_to_fill"].is_null() || view["time_to_fill"]["requisitions"].is_u64(),
+            "time-to-fill is a summary or absent, never a guess"
+        );
         assert!(view["definitions"]["headcount"].is_string());
+
+        // One definition of headcount: `/overview` and `/metrics` agree.
+        let today_metrics: Value = request
+            .get("/api/workforce-intelligence/metrics")
+            .await
+            .json();
+        let overview: Value = request
+            .get("/api/workforce-intelligence/overview")
+            .await
+            .json();
+        assert_eq!(
+            overview["headcount"], today_metrics["headcount"]["closing"],
+            "overview and metrics count the same employed population"
+        );
 
         assert_eq!(
             request

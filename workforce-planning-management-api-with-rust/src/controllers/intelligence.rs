@@ -33,8 +33,8 @@ use uuid::Uuid;
 
 use crate::models::_entities::{
     assessment_instruments, assessments, development_plans, early_career_programs,
-    pipeline_members, program_placements, skills, succession_candidates, succession_plans,
-    talent_pipelines, worker_skills, workers,
+    pipeline_members, program_placements, requisitions, skills, succession_candidates,
+    succession_plans, talent_pipelines, worker_skills, workers,
 };
 use crate::rules::assessment as assessment_rules;
 use crate::rules::capability as capability_rules;
@@ -71,7 +71,7 @@ async fn overview(
     let as_of = query
         .as_of
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
-    let staff = live_workers(&ctx).await?;
+    let staff = employed_workers(&ctx, as_of).await?;
 
     let mut by_department: BTreeMap<String, usize> = BTreeMap::new();
     let mut by_status: BTreeMap<String, usize> = BTreeMap::new();
@@ -112,7 +112,9 @@ async fn overview(
 
     format::json(serde_json::json!({
         "as_of": as_of,
-        "derivation": "headcount counts live (not soft-deleted) worker records; FTE is the \
+        "derivation": "headcount counts workers EMPLOYED on as_of (hired on or before it, not \
+                       terminated on or before it; soft-deleted records excluded) — the same \
+                       definition as /metrics; FTE is the \
                        sum of declared fte_percent (in hundredths of a person); tenure is whole \
                        completed months since hired_on",
         "headcount": staff.len(),
@@ -136,7 +138,7 @@ async fn overview(
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // one pass over skills, plans, and sittings
 async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
-    let staff = live_workers(&ctx).await?;
+    let staff = employed_workers(&ctx, chrono::Utc::now().date_naive()).await?;
     let headcount = staff.len();
     let department_of: BTreeMap<Uuid, &str> = staff
         .iter()
@@ -307,7 +309,7 @@ async fn capability_analysis(
         }
     })?;
 
-    let staff = live_workers(&ctx).await?;
+    let staff = employed_workers(&ctx, chrono::Utc::now().date_naive()).await?;
     let headcount = staff.len();
     let department_of: BTreeMap<Uuid, &str> = staff
         .iter()
@@ -427,7 +429,7 @@ async fn metrics(
     // Span of control over managers of workers employed on `to`.
     let employed: Vec<&workers::Model> = staff
         .iter()
-        .filter(|w| w.hired_on <= to && w.terminated_on.is_none_or(|t| t > to))
+        .filter(|w| metric_rules::is_employed_on(to, w.hired_on, w.terminated_on))
         .collect();
     let mut reports: BTreeMap<Uuid, usize> = BTreeMap::new();
     for worker in &employed {
@@ -437,6 +439,17 @@ async fn metrics(
     }
     let counts: Vec<usize> = reports.values().copied().collect();
     let span = metric_rules::span_of_control(&counts);
+
+    // Time-to-fill over requisitions filled within the period.
+    let filled_days: Vec<i64> = requisitions::Entity::find()
+        .filter(requisitions::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?
+        .iter()
+        .filter(|r| r.filled_on.is_some_and(|d| d >= from && d <= to))
+        .filter_map(|r| metric_rules::time_to_fill_days(r.opened_on, r.filled_on))
+        .collect();
+    let fill_time = metric_rules::fill_time_summary(&filled_days);
 
     let definitions: BTreeMap<&str, &str> = metric_rules::DEFINITIONS.iter().copied().collect();
     format::json(serde_json::json!({
@@ -449,7 +462,9 @@ async fn metrics(
         "span_of_control": span.map(|s| serde_json::json!({
             "managers": s.managers, "mean": s.mean, "max": s.max,
         })),
-        "time_to_fill": null,
+        "time_to_fill": fill_time.map(|f| serde_json::json!({
+            "requisitions": f.count, "mean_days": f.mean, "median_days": f.median,
+        })),
     }))
 }
 
@@ -618,13 +633,27 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
     }))
 }
 
-/// Every live (not soft-deleted) worker record.
+/// Every live (not soft-deleted) worker record, whatever its status.
 async fn live_workers(ctx: &AppContext) -> Result<Vec<workers::Model>> {
     let rows = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
     Ok(rows)
+}
+
+/// Live workers **employed on `date`** ([`metric_rules::is_employed_on`])
+/// — the one population every headcount-style view counts, so the same
+/// word means the same number everywhere.
+async fn employed_workers(
+    ctx: &AppContext,
+    date: chrono::NaiveDate,
+) -> Result<Vec<workers::Model>> {
+    Ok(live_workers(ctx)
+        .await?
+        .into_iter()
+        .filter(|w| metric_rules::is_employed_on(date, w.hired_on, w.terminated_on))
+        .collect())
 }
 
 /// The workforce-intelligence routes (read-only).
