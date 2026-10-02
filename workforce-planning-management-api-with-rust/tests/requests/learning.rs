@@ -386,3 +386,67 @@ async fn headcount_snapshots_are_recorded_idempotently() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn role_profiles_hold_required_skills() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let skill: Value = request
+            .post("/api/skills")
+            .json(&json!({ "name": "Triage", "category": "technical" }))
+            .await
+            .json();
+        let skill_pid = skill["pid"].as_str().unwrap().to_string();
+
+        let profile: Value = request
+            .post("/api/role-profiles")
+            .json(&json!({ "job_title": "  Triage Nurse ", "source_ref": "test:fixture" }))
+            .await
+            .json();
+        let pid = profile["pid"].as_str().unwrap().to_string();
+        assert_eq!(
+            request
+                .post("/api/role-profiles")
+                .json(&json!({ "job_title": "Triage Nurse" }))
+                .await
+                .status_code(),
+            422,
+            "one live profile per job title (after trimming)"
+        );
+
+        let put = |level: i32, importance: &str| {
+            request
+                .put(&format!("/api/role-profiles/{pid}/requirements"))
+                .json(&json!({ "skill_pid": skill_pid, "min_proficiency": level, "importance": importance }))
+        };
+        put(3, "critical").await.assert_status_ok();
+        put(4, "important").await.assert_status_ok(); // upsert: still one row
+        assert_eq!(put(9, "critical").await.status_code(), 422, "proficiency is 1-5");
+        assert_eq!(put(3, "essential").await.status_code(), 422, "importance is a closed set");
+
+        let detail: Value = request.get(&format!("/api/role-profiles/{pid}")).await.json();
+        assert_eq!(detail["job_title"], "Triage Nurse");
+        let reqs = detail["requirements"].as_array().unwrap();
+        assert_eq!(reqs.len(), 1, "an upsert keeps one row per skill");
+        assert_eq!(reqs[0]["min_proficiency"], 4);
+        assert_eq!(reqs[0]["skill"], "Triage");
+
+        let listed: Value = request.get("/api/role-profiles").await.json();
+        let row = listed
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|p| p["pid"] == pid)
+            .unwrap();
+        assert_eq!(row["requirement_count"], 1);
+
+        request
+            .delete(&format!("/api/role-profiles/{pid}/requirements/{skill_pid}"))
+            .await
+            .assert_status_ok();
+        let after: Value = request.get(&format!("/api/role-profiles/{pid}")).await.json();
+        assert!(after["requirements"].as_array().unwrap().is_empty());
+    })
+    .await;
+}

@@ -22,6 +22,7 @@
     ["/workforce", "nav.workforce"],
     ["/development", "nav.development"],
     ["/learning", "nav.learning"],
+    ["/roles", "nav.roles"],
     ["/mentorship", "nav.mentorship"],
     ["/wellbeing", "nav.wellbeing"],
     ["/privacy", "nav.privacy"],

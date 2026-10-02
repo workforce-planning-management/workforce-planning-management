@@ -45,6 +45,8 @@ pub mod pulse_surveys;
 pub mod requisitions;
 pub mod review_cycles;
 pub mod reviews;
+pub mod role_profiles;
+pub mod role_skill_requirements;
 pub mod shift_assignments;
 pub mod shifts;
 pub mod skills;

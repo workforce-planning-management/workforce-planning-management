@@ -819,9 +819,24 @@ first in each, per the three-part rule.
       Also fixed: `rules::privacy::SOFT_DELETED_TABLES` was no longer
       sorted after the `employee_skills` → `worker_skills` rename
       (`sweep_table_list_is_sound` was failing).
-- [ ] WPM-T46 **Role profiles + required skills.** Tables, CRUD, pure
-      validation (proficiency 1–5, importance token, catalogue-skill
-      reference); front-end editor. (WPM-R34)
+- [x] WPM-T46 (2026-10-02) **Role profiles + required skills.**
+      Migration `m20261002_000023_role_profiles` (`role_profiles`, one
+      live per job title; `role_skill_requirements`, one per profile ×
+      skill); pure `rules::roles` (`normalize_job_title`,
+      `validate_requirement`: proficiency 1–5, importance
+      `critical`/`important`/`useful`; 2 tests); `controllers/roles.rs`:
+      `POST`/`GET /api/role-profiles`, `GET /api/role-profiles/{pid}`
+      (requirements critical first), `PUT`/`DELETE
+      …/requirements` (upsert / remove), all audited; `role_profiles` joins
+      the retention sweep list (now 42). Front-end `/roles`: profile
+      select + create, requirements table, add/remove, nav link
+      (`nav.roles` in all 16 locales; page headings in English like
+      `/learning`). Not yet done: importing from ESCO / UK GDAD PCF (see
+      `spec/esco/`, `spec/uk-gdad-pcf/`). **Verified:** Rust
+      type-checks and lib tests pass against stubbed sibling crates,
+      clippy-clean on the new files; DB-gated
+      `role_profiles_hold_required_skills` not run. svelte-check 0,
+      vitest 43/43, build green.
 - [ ] WPM-T47 **Workforce plans + demand lines.** Draft/active/archived
       machine in the pure core, at most one active per organization,
       assumptions, demand lines; no access to worker rows. (WPM-R36,

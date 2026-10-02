@@ -397,6 +397,75 @@ export function capabilityAnalysis(
   );
 }
 
+/** Role profiles (what a role requires): list. */
+export function listRoleProfiles(init?: FetchLike): Promise<
+  Array<{
+    pid: string;
+    job_title: string;
+    description: string | null;
+    source_ref: string | null;
+    requirement_count: number;
+  }>
+> {
+  return api("/role-profiles", init);
+}
+
+/** A role profile with its required skills, critical first. */
+export function getRoleProfile(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  pid: string;
+  job_title: string;
+  description: string | null;
+  source_ref: string | null;
+  requirements: Array<{
+    skill_pid: string;
+    skill: string | null;
+    category: string | null;
+    min_proficiency: number;
+    importance: "critical" | "important" | "useful";
+    note: string | null;
+  }>;
+}> {
+  return api(`/role-profiles/${pid}`, init);
+}
+
+/** Create a role profile for a job title. */
+export function createRoleProfile(body: {
+  job_title: string;
+  description?: string;
+  source_ref?: string;
+}): Promise<{ pid: string }> {
+  return api("/role-profiles", { method: "POST", body });
+}
+
+/** Require a skill at a minimum proficiency (1-5); upsert. */
+export function setRoleRequirement(
+  profilePid: string,
+  body: {
+    skill_pid: string;
+    min_proficiency: number;
+    importance: string;
+    note?: string;
+  },
+): Promise<unknown> {
+  return api(`/role-profiles/${profilePid}/requirements`, {
+    method: "PUT",
+    body,
+  });
+}
+
+/** Drop a requirement from a role profile. */
+export function removeRoleRequirement(
+  profilePid: string,
+  skillPid: string,
+): Promise<unknown> {
+  return api(`/role-profiles/${profilePid}/requirements/${skillPid}`, {
+    method: "DELETE",
+  });
+}
+
 /** The shared workforce metrics (headcount, turnover, time-to-fill, …). */
 export function workforceMetrics(
   period?: { from?: string; to?: string },

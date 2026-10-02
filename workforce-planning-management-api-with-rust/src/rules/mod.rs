@@ -20,6 +20,7 @@ pub mod org_access;
 pub mod payroll;
 pub mod privacy;
 pub mod pulse;
+pub mod roles;
 pub mod talent;
 pub mod tokens;
 pub mod wellbeing;

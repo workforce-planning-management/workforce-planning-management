@@ -38,6 +38,8 @@ pub use super::pulse_surveys::Entity as PulseSurveys;
 pub use super::requisitions::Entity as Requisitions;
 pub use super::review_cycles::Entity as ReviewCycles;
 pub use super::reviews::Entity as Reviews;
+pub use super::role_profiles::Entity as RoleProfiles;
+pub use super::role_skill_requirements::Entity as RoleSkillRequirements;
 pub use super::shift_assignments::Entity as ShiftAssignments;
 pub use super::shifts::Entity as Shifts;
 pub use super::succession_candidates::Entity as SuccessionCandidates;
