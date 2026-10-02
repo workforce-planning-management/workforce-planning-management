@@ -806,6 +806,34 @@ SuccessFactors, Visier, ChartHop, Gloat, Eightfold, Fuel50) to ground
 each definition, not guessed. Grouped by theme; cross-references note
 where WPM already has a partial foundation to build on.
 
+### Priority triage — CPD / upskilling / talent planning (2026-10-02)
+
+Ranked by value to continuing professional development (CPD), worker
+upskilling, and talent planning, weighted by dependency order and by how
+much of the foundation already exists. **Existing foundation:** declared
+skills + targets (WPM-T20), upskill/reskill development plans (WPM-T22),
+learning paths with honest progress (WPM-T20), succession and talent
+pipelines (WPM-T14, WPM-T22), cert-expiry counts (`training_enrollments.
+certificate_expires_on`), capability analysis (WPM-T41), shared metrics
+(WPM-T44). **Finding:** nothing in the repo models CPD itself — no hours or
+points, no required-per-period target, no professional registrations.
+
+| # | Area | Why this rank | Depends on | Size |
+|---|---|---|---|---|
+| 1 | **CPD ledger** (new — not in the backlog above): CPD hours/points per worker per period against a required target, with evidence and registration/certification expiry | The literal meaning of CPD, and entirely absent; self-contained over `training_enrollments` + plans | — | M |
+| 2 | **Role skill requirements** (job profile → required skills and minimum proficiency) | Unlocks four backlog items at once: skills gap vs any role, matching, internal mobility, reskill targets. Today a "target" is per worker, not per role | — | M |
+| 3 | **Skills gap identification** against a target role | Direct upskilling driver; first consumer of #2 | #2 | S |
+| 4 | **Skills matching + internal mobility** (employee-facing: roles that fit my skills; expressing interest) | Highest employee-visible talent value; reuse self-service conventions (WPM-T11, WPM-T29) | #2, #3 | L |
+| 5 | **Headcount snapshot job** (enables forecasting) | Cheap now, impossible to backfill later — each week not captured is lost history for **Workforce forecasting** | — | S |
+| 6 | **LMS completion sync** (xAPI / roster webhook through the WPM-T3 upstream seam) | Feeds #1 and skills evidence; replaces manual enrolment records | #1 | M |
+| 7 | **Support for AI-driven change** (role/skill impact tracker; reskilling) | Reuses reskill plans; meaningful only once #2 exists | #2 | M |
+| 8 | **Future-state / scenario modeling + transformation** (draft-plan primitive) | The biggest talent-planning step, but needs a design pass and new WPM-D/R ids first; do not start as code | design | XL |
+| — | Workforce forecasting (after #5 accrues data) · analytics narrative · financial-planning-led planning | Depend on #5, #8, or are open-ended | #5 / #8 | — |
+
+**Recommended order:** #5 immediately (small, and time-sensitive), then #1
+and #2 in parallel (independent), then #3, #4, #6, #7. Put #8 through the
+spec/design pass in the background.
+
 ### Strategic planning, scenario modeling & forecasting
 
 - [ ] **Workforce transformation.** The umbrella discipline —
