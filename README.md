@@ -21,7 +21,7 @@ each subproject's own README for its own test counts and gate status.
 | Subproject | Role | Stack |
 | --- | --- | --- |
 | [workforce-planning-management-service-with-rust](workforce-planning-management-service-with-rust/) | Back-end JSON API | Rust, Loco (Axum + SeaORM), PostgreSQL |
-| [workforce-planning-management-front-end-with-svelte](workforce-planning-management-front-end-with-svelte/) | HR / manager / self-service UI | SvelteKit 2, Svelte 5 runes, TypeScript |
+| [workforce-planning-management-ui-with-svelte](workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 2, Svelte 5 runes, TypeScript |
 
 Each subproject is self-contained: it owns its own `README.md`,
 `AGENTS.md` (working agreements), `CHANGELOG.md`, and `spec/`
@@ -45,7 +45,7 @@ cd workforce-planning-management-service-with-rust
 cargo run -- db migrate && cargo run -- task seed && cargo run -- start
 
 # Front-end (in another shell)
-cd workforce-planning-management-front-end-with-svelte
+cd workforce-planning-management-ui-with-svelte
 pnpm install && pnpm dev
 ```
 

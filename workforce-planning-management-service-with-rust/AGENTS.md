@@ -20,7 +20,7 @@ intelligence, ergonomic (DSE) workstation assessments, reasonable
 adjustments, subject rights (access / erasure / retention), payroll
 runs with payslips, and salary benchmarking. There is no built-in
 UI — the
-[Svelte sibling](../workforce-planning-management-front-end-with-svelte/)
+[Svelte sibling](../workforce-planning-management-ui-with-svelte/)
 is the HR / manager / self-service client.
 
 **Domain ownership.** WPM **owns the employment relationship and its

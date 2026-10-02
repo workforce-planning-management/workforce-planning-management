@@ -23,7 +23,7 @@ defines them: requirement, recommendation, permission.
 This document covers the use of AI tools in developing everything in this
 repository: both subprojects
 (`workforce-planning-management-service-with-rust` and
-`workforce-planning-management-front-end-with-svelte`) and the
+`workforce-planning-management-ui-with-svelte`) and the
 cross-cutting specification under [spec/](spec/index.md).
 
 It does not cover an AI system in the product, because there is none. AI is used
@@ -122,7 +122,7 @@ once:
 **Publishing a release.** AI **may** decide that an already-merged
 version bump on `main` is ready to release, and execute the registry
 publish for it — `cargo publish` for `workforce-planning-management-service`,
-`npm publish` for `workforce-planning-management-front-end-with-svelte`
+`npm publish` for `workforce-planning-management-ui-with-svelte`
 — once:
 
 1. The version bump is already merged to `main` — through the checklist

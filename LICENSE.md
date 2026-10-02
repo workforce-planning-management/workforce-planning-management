@@ -7,7 +7,7 @@ authoritative for that subproject:
 - **workforce-planning-management-service-with-rust** (`Cargo.toml`
   `license`):
   `MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only`
-- **workforce-planning-management-front-end-with-svelte**
+- **workforce-planning-management-ui-with-svelte**
   (`package.json` `license`): `MIT OR Apache-2.0`
 
 `OR` is the SPDX disjunction: you may use each subproject under **any

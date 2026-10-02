@@ -11,7 +11,7 @@ acknowledgement within a few business days.
 
 Both subprojects: `workforce-planning-management-service-with-rust`
 (the back-end JSON API) and
-`workforce-planning-management-front-end-with-svelte` (the browser
+`workforce-planning-management-ui-with-svelte` (the browser
 client).
 
 ## What deployers must know

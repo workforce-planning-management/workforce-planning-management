@@ -4,7 +4,7 @@
  employee / manager / HR browser
         │  (cookie session; no token in JS)
         ▼
- workforce-planning-management-front-end-with-svelte  (SvelteKit BFF)
+ workforce-planning-management-ui-with-svelte  (SvelteKit BFF)
         │  Authorization: Bearer v4.public.…
         ▼
  workforce-planning-management-service-with-rust  (Loco: Axum + SeaORM + PostgreSQL)

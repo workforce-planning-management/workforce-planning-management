@@ -17,7 +17,7 @@ issue reports, and feedback are welcome.
     `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
     `cargo test` (DB-free unit tests), and `cargo test -- --ignored`
     where you have Postgres available.
-  - Front-end (`workforce-planning-management-front-end-with-svelte`):
+  - Front-end (`workforce-planning-management-ui-with-svelte`):
     `pnpm check` (svelte-check), `pnpm lint`, `pnpm test`, and
     `pnpm exec playwright test` where practical.
 - **Branch per change.** Branch from `main`, merge back with

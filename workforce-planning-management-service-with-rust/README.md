@@ -15,7 +15,7 @@ workstation assessments, reasonable adjustments, subject rights
 salary benchmarking.
 Implemented in Rust on [Loco](https://loco.rs) (Axum + SeaORM +
 PostgreSQL). No built-in UI — the
-[Svelte sibling](../workforce-planning-management-front-end-with-svelte/)
+[Svelte sibling](../workforce-planning-management-ui-with-svelte/)
 provides the HR, manager, and worker self-service client.
 
 > ⚠️ **Demo software.** Not a production HR or payroll system;

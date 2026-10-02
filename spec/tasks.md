@@ -111,7 +111,7 @@ code + tests in one PR.
 
 ## Phase 8 — front-end (all WPM-R*)
 
-- [x] WPM-T18 Scaffold `workforce-planning-management-front-end-with-svelte`:
+- [x] WPM-T18 Scaffold `workforce-planning-management-ui-with-svelte`:
       SvelteKit 2 + Svelte 5 runes SPA, BFF proxy + session flow,
       13-locale i18n from the start, typed API client + `money()`.
       (WPM-D12)

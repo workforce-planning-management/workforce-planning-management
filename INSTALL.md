@@ -38,7 +38,7 @@ podman compose -f compose.test.yaml down
 ## Build and run the front-end
 
 ```sh
-cd workforce-planning-management-front-end-with-svelte
+cd workforce-planning-management-ui-with-svelte
 cp .env.example .env       # WPM_API_URL / AUTH_API_URL — both default
                             # to http://localhost:5150
 pnpm install
