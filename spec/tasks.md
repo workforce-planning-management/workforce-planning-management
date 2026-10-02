@@ -801,11 +801,24 @@ Design: [strategic-workforce-planning.md](strategic-workforce-planning.md).
 Order matters — each task's inputs come from the one before; pure core
 first in each, per the three-part rule.
 
-- [ ] WPM-T45 **Headcount snapshot job.** Table + loco task recording
-      employed headcount, FTE, starters, leavers per organization ×
-      department × date via `rules::metrics::is_employed_on`; idempotent,
-      append-only; read endpoint for history. Start first — history
-      cannot be backfilled. (WPM-R35)
+- [x] WPM-T45 (2026-10-02) **Headcount snapshot job.** Migration
+      `m20261002_000022_headcount_snapshots` (append-only, aggregate
+      only, unique per organization × department × date); pure
+      `rules::metrics::snapshot_rows` (employed headcount, FTE in
+      hundredths, starters/leavers over the window since the previous
+      snapshot — `None`, not 0, for the first; 2 tests); loco task
+      `snapshot_headcount [as_of:YYYY-MM-DD]` (`tasks/snapshot.rs`,
+      idempotent: an existing row is skipped); read endpoint
+      `GET /api/workforce-intelligence/headcount-history`, scoped to the
+      caller's organizations. **Schedule it** (daily or weekly) in
+      deployment — it records nothing by itself. **Verified:** the Rust
+      type-checks (`cargo check --all-targets --workspace`) against
+      signature-only stubs of the two missing sibling crates, my files are
+      clippy-clean, and the lib tests pass; the DB-gated
+      `headcount_snapshots_are_recorded_idempotently` has **not** been run.
+      Also fixed: `rules::privacy::SOFT_DELETED_TABLES` was no longer
+      sorted after the `employee_skills` → `worker_skills` rename
+      (`sweep_table_list_is_sound` was failing).
 - [ ] WPM-T46 **Role profiles + required skills.** Tables, CRUD, pure
       validation (proficiency 1–5, importance token, catalogue-skill
       reference); front-end editor. (WPM-R34)

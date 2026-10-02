@@ -23,6 +23,7 @@ pub use super::ergonomic_items::Entity as ErgonomicItems;
 pub use super::event_outbox::Entity as EventOutbox;
 pub use super::feedback_entries::Entity as FeedbackEntries;
 pub use super::goals::Entity as Goals;
+pub use super::headcount_snapshots::Entity as HeadcountSnapshots;
 pub use super::interviews::Entity as Interviews;
 pub use super::leave_entitlements::Entity as LeaveEntitlements;
 pub use super::leave_requests::Entity as LeaveRequests;

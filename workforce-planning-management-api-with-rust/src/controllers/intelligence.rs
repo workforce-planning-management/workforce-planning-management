@@ -31,11 +31,13 @@ use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
+use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
     assessment_instruments, assessments, development_plans, early_career_programs,
-    pipeline_members, program_placements, requisitions, skills, succession_candidates,
-    succession_plans, talent_pipelines, worker_skills, workers,
+    headcount_snapshots, pipeline_members, program_placements, requisitions, skills,
+    succession_candidates, succession_plans, talent_pipelines, worker_skills, workers,
 };
+use crate::models::memberships;
 use crate::rules::assessment as assessment_rules;
 use crate::rules::capability as capability_rules;
 use crate::rules::metrics as metric_rules;
@@ -468,6 +470,71 @@ async fn metrics(
     }))
 }
 
+/// Query for the headcount-history view.
+#[derive(Debug, Deserialize)]
+struct HistoryQuery {
+    /// Restrict to one organization URN (must be within the caller's scope).
+    organization: Option<String>,
+    /// First snapshot date (inclusive).
+    from: Option<chrono::NaiveDate>,
+    /// Last snapshot date (inclusive).
+    to: Option<chrono::NaiveDate>,
+}
+
+/// `GET /api/workforce-intelligence/headcount-history?organization=&from=&to=`
+/// — the recorded headcount snapshots (WPM-R35), oldest first. Aggregate
+/// only; scoped to the caller's organizations. An empty list means no
+/// snapshot has been taken yet (`cargo loco task snapshot_headcount`),
+/// not that headcount was zero.
+#[debug_handler]
+async fn headcount_history(
+    axum::extract::Query(query): axum::extract::Query<HistoryQuery>,
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+) -> Result<Response> {
+    use sea_orm::QueryOrder;
+    let mut select = headcount_snapshots::Entity::find();
+    if let Some(org) = &query.organization {
+        select = select.filter(headcount_snapshots::Column::OrganizationRef.eq(org));
+    }
+    if let Some(from) = query.from {
+        select = select.filter(headcount_snapshots::Column::AsOf.gte(from));
+    }
+    if let Some(to) = query.to {
+        select = select.filter(headcount_snapshots::Column::AsOf.lte(to));
+    }
+    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+        select = select.filter(headcount_snapshots::Column::OrganizationRef.is_in(refs));
+    }
+    let rows = select
+        .order_by_asc(headcount_snapshots::Column::AsOf)
+        .order_by_asc(headcount_snapshots::Column::OrganizationRef)
+        .order_by_asc(headcount_snapshots::Column::Department)
+        .all(&ctx.db)
+        .await?;
+    let snapshots: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "as_of": r.as_of,
+                "organization_ref": r.organization_ref,
+                "department": r.department,
+                "headcount": r.headcount,
+                "fte_percent_total": r.fte_percent_total,
+                "starters": r.starters,
+                "leavers": r.leavers,
+            })
+        })
+        .collect();
+    format::json(serde_json::json!({
+        "derivation": "one row per organization × department × date, recorded by the \
+                       snapshot_headcount task via the shared employed-on-date definition; \
+                       starters/leavers cover the window since the previous snapshot and are \
+                       null for the first one; FTE is in hundredths of a person",
+        "snapshots": snapshots,
+    }))
+}
+
 /// `GET /api/workforce-intelligence/succession` — bench strength across
 /// the succession plans, and the **single points of failure**: critical
 /// roles with nobody ready now (a high risk of loss lowers the
@@ -664,6 +731,7 @@ pub fn routes() -> Routes {
         .add("/capability", get(capability))
         .add("/capability-analysis", get(capability_analysis))
         .add("/metrics", get(metrics))
+        .add("/headcount-history", get(headcount_history))
         .add("/succession", get(succession))
         .add("/pipelines", get(pipelines))
 }

@@ -337,3 +337,52 @@ async fn workforce_metrics_report_defined_numbers() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn headcount_snapshots_are_recorded_idempotently() {
+    use workforce_planning_management_service::tasks::snapshot::run_snapshot;
+
+    request::<App, _, _>(|request, ctx| async move {
+        let org = an_org();
+        let a = seed_worker!(&request, &org, "E-1", None).await;
+        activate!(&request, &a).await;
+
+        let first_day = chrono::NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
+        let written = run_snapshot(&ctx.db, first_day).await.expect("first snapshot");
+        assert!(written >= 1, "the seeded worker's department is recorded");
+        assert_eq!(
+            run_snapshot(&ctx.db, first_day).await.expect("re-run"),
+            0,
+            "a re-run for the same date writes nothing"
+        );
+
+        let history: Value = request
+            .get(&format!(
+                "/api/workforce-intelligence/headcount-history?organization={org}"
+            ))
+            .await
+            .json();
+        let rows = history["snapshots"].as_array().unwrap();
+        let row = rows.iter().find(|r| r["department"] == "engineering").unwrap();
+        assert_eq!(row["as_of"], "2026-07-01");
+        assert!(row["headcount"].as_u64().unwrap() >= 1);
+        assert!(row["starters"].is_null(), "the first snapshot has no window");
+
+        // A later snapshot measures starters/leavers from the earlier one.
+        run_snapshot(&ctx.db, chrono::NaiveDate::from_ymd_opt(2026, 8, 1).unwrap())
+            .await
+            .expect("second snapshot");
+        let later: Value = request
+            .get(&format!(
+                "/api/workforce-intelligence/headcount-history?organization={org}&from=2026-08-01"
+            ))
+            .await
+            .json();
+        let later_row = &later["snapshots"].as_array().unwrap()[0];
+        assert_eq!(later_row["as_of"], "2026-08-01");
+        assert!(later_row["starters"].is_u64(), "a known window reports a count");
+    })
+    .await;
+}

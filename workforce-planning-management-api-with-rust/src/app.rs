@@ -124,6 +124,7 @@ impl Hooks for App {
 
     fn register_tasks(tasks: &mut Tasks) {
         tasks.register(tasks::seed::Seed);
+        tasks.register(tasks::snapshot::SnapshotHeadcount);
         // tasks-inject (do not remove)
     }
 

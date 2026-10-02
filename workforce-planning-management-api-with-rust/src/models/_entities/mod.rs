@@ -22,6 +22,7 @@ pub mod ergonomic_items;
 pub mod event_outbox;
 pub mod feedback_entries;
 pub mod goals;
+pub mod headcount_snapshots;
 pub mod interviews;
 pub mod learning_path_steps;
 pub mod learning_paths;

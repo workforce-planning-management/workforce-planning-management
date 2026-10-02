@@ -41,8 +41,6 @@ pub const SOFT_DELETED_TABLES: &[&str] = &[
     "candidates",
     "development_plans",
     "early_career_programs",
-    "worker_skills",
-    "workers",
     "ergonomic_assessments",
     "ergonomic_items",
     "feedback_entries",
@@ -71,6 +69,8 @@ pub const SOFT_DELETED_TABLES: &[&str] = &[
     "time_entries",
     "training_enrollments",
     "wellbeing_entitlements",
+    "worker_skills",
+    "workers",
 ];
 
 #[cfg(test)]

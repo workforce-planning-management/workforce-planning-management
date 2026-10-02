@@ -102,6 +102,79 @@ pub fn turnover_rate(leavers: usize, opening: usize, closing: usize) -> Option<f
     Some(leavers as f64 * 2.0 / mean_twice as f64)
 }
 
+/// What a snapshot needs to know about one worker.
+#[derive(Debug, Clone)]
+pub struct WorkerFacts {
+    /// Owning organization URN.
+    pub organization_ref: String,
+    /// Department.
+    pub department: String,
+    /// Declared FTE, in percent (100 = one full-time person).
+    pub fte_percent: i32,
+    /// Hire date.
+    pub hired_on: NaiveDate,
+    /// Termination date, when there is one.
+    pub terminated_on: Option<NaiveDate>,
+}
+
+/// One organization × department row of a headcount snapshot.
+#[derive(Debug, PartialEq, Eq)]
+pub struct SnapshotRow {
+    /// Owning organization URN.
+    pub organization_ref: String,
+    /// Department.
+    pub department: String,
+    /// Workers employed on the snapshot date.
+    pub headcount: usize,
+    /// Sum of declared `fte_percent` over those workers (hundredths of a
+    /// person), so no float rounds a headcount.
+    pub fte_percent_total: i64,
+    /// Hires in `(since, as_of]`; `None` when there is no previous
+    /// snapshot to measure from (unknown, not zero).
+    pub starters: Option<usize>,
+    /// Terminations in `(since, as_of]`; `None` likewise.
+    pub leavers: Option<usize>,
+}
+
+/// Build the snapshot rows for `as_of`: one per organization × department
+/// that has either employed workers or leavers in the window, sorted by
+/// organization then department. `since` is the previous snapshot date
+/// (exclusive); with `None`, starters and leavers are unknown.
+#[must_use]
+pub fn snapshot_rows(
+    as_of: NaiveDate,
+    since: Option<NaiveDate>,
+    workers: &[WorkerFacts],
+) -> Vec<SnapshotRow> {
+    use std::collections::BTreeMap;
+    let in_window = |d: NaiveDate| since.is_some_and(|s| d > s && d <= as_of);
+    let mut rows: BTreeMap<(String, String), SnapshotRow> = BTreeMap::new();
+    for w in workers {
+        let key = (w.organization_ref.clone(), w.department.clone());
+        let row = rows.entry(key).or_insert_with(|| SnapshotRow {
+            organization_ref: w.organization_ref.clone(),
+            department: w.department.clone(),
+            headcount: 0,
+            fte_percent_total: 0,
+            starters: since.map(|_| 0),
+            leavers: since.map(|_| 0),
+        });
+        if is_employed_on(as_of, w.hired_on, w.terminated_on) {
+            row.headcount += 1;
+            row.fte_percent_total += i64::from(w.fte_percent);
+        }
+        if in_window(w.hired_on) {
+            row.starters = row.starters.map(|n| n + 1);
+        }
+        if w.terminated_on.is_some_and(in_window) {
+            row.leavers = row.leavers.map(|n| n + 1);
+        }
+    }
+    rows.into_values()
+        .filter(|r| r.headcount > 0 || r.leavers.is_some_and(|n| n > 0))
+        .collect()
+}
+
 /// Days a requisition took to fill: `filled_on - opened_on`. `None` when
 /// either date is missing or the fill date precedes the opening (bad
 /// data is left out, not reported as a negative duration).
@@ -287,6 +360,76 @@ mod tests {
         assert!((odd.mean - 20.0).abs() < 1e-9);
         let even = fill_time_summary(&[10, 20, 30, 50]).expect("even");
         assert!((even.median - 25.0).abs() < 1e-9);
+    }
+
+    fn facts(
+        org: &str,
+        dept: &str,
+        fte: i32,
+        hired: NaiveDate,
+        left: Option<NaiveDate>,
+    ) -> WorkerFacts {
+        WorkerFacts {
+            organization_ref: org.into(),
+            department: dept.into(),
+            fte_percent: fte,
+            hired_on: hired,
+            terminated_on: left,
+        }
+    }
+
+    /// Rows group by organization × department, count only the employed,
+    /// sum FTE in hundredths, and measure the window `(since, as_of]`.
+    #[test]
+    fn snapshot_rows_group_and_measure() {
+        let ws = vec![
+            facts("o1", "eng", 100, day(2020, 1, 1), None),
+            facts("o1", "eng", 50, day(2026, 6, 10), None),
+            facts("o1", "eng", 100, day(2020, 1, 1), Some(day(2026, 6, 20))),
+            facts("o1", "ops", 100, day(2019, 1, 1), None),
+            facts("o2", "eng", 100, day(2021, 1, 1), None),
+            facts("o1", "gone", 100, day(2018, 1, 1), Some(day(2026, 6, 15))),
+        ];
+        let rows = snapshot_rows(day(2026, 7, 1), Some(day(2026, 6, 1)), &ws);
+        let eng = &rows[0];
+        assert_eq!(
+            (eng.organization_ref.as_str(), eng.department.as_str()),
+            ("o1", "eng")
+        );
+        assert_eq!(eng.headcount, 2, "the leaver is not employed on as_of");
+        assert_eq!(eng.fte_percent_total, 150);
+        assert_eq!(eng.starters, Some(1));
+        assert_eq!(eng.leavers, Some(1));
+        let names: Vec<_> = rows
+            .iter()
+            .map(|r| (r.organization_ref.as_str(), r.department.as_str()))
+            .collect();
+        assert_eq!(
+            names,
+            [("o1", "eng"), ("o1", "gone"), ("o1", "ops"), ("o2", "eng")],
+            "a department that only lost people still appears"
+        );
+        assert_eq!(rows[1].headcount, 0);
+        assert_eq!(rows[1].leavers, Some(1));
+    }
+
+    /// Without a previous snapshot, starters and leavers are unknown —
+    /// `None`, not zero — and an empty department is omitted.
+    #[test]
+    fn first_snapshot_has_unknown_flows() {
+        let ws = vec![
+            facts("o1", "eng", 100, day(2020, 1, 1), None),
+            facts("o1", "gone", 100, day(2018, 1, 1), Some(day(2019, 1, 1))),
+        ];
+        let rows = snapshot_rows(day(2026, 7, 1), None, &ws);
+        assert_eq!(
+            rows.len(),
+            1,
+            "no employed workers and no known leavers ⇒ no row"
+        );
+        assert_eq!(rows[0].starters, None);
+        assert_eq!(rows[0].leavers, None);
+        assert_eq!(snapshot_rows(day(2026, 7, 1), None, &[]), vec![]);
     }
 
     /// Every metric the endpoint reports has a definition.
