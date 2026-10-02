@@ -67,6 +67,8 @@ identities by `EntityRef` URN, never duplicating them.
 | [hr-core.md](hr-core.md)                           | Pillar 3: the employee record, org chart, self-service, benefits, wellbeing, adjustments  |
 | [talent-development.md](talent-development.md)     | Pillar 4: reviews, 360°s, LMS via course-service, assessments, succession                 |
 | [strategic-workforce-planning.md](strategic-workforce-planning.md) | Forecast talent and skill needs, gap analysis vs future goals, strategic alignment (WPM-R34–R38) |
+| [esco/index.md](esco/index.md) | ESCO: the EU occupations, skills, and qualifications classification — what it is, licence, how WPM relates |
+| [uk-gdad-pcf/index.md](uk-gdad-pcf/index.md) | UK Government Digital and Data Profession Capability Framework — shape, licence, mapping to WPM role profiles and CPD |
 | [payroll-compensation.md](payroll-compensation.md) | Pillar 5: payroll runs, payslips, benchmarking                                            |
 | [integrations.md](integrations.md)                 | Upstream family services; EntityRef URNs; `employed_by` links                             |
 | [auth.md](auth.md)                                 | SSO, ABAC personas (employee / manager / HR / payroll), masking                           |

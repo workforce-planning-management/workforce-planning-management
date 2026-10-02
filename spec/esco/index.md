@@ -1,0 +1,134 @@
+# ESCO — European Skills, Competences, Qualifications and Occupations
+
+ESCO is the European Commission's multilingual classification of
+occupations, skills, and qualifications: a shared dictionary for the
+European labour market and for education and training. This topic records
+what ESCO is, how it can be reached and reused, and how WPM should relate to
+it. It is a reference, not a dependency: WPM works without ESCO, and nothing
+here is yet implemented.
+
+Researched 2026-10-02 against the ESCO portal, its API documentation, and
+its copyright notice (sources at the end). Figures are those the portal
+published on that date and will change with each release.
+
+## What it is
+
+- **Owner:** the European Commission, Directorate-General for Employment,
+  Social Affairs and Inclusion (DG EMPL), which develops and runs it.
+- **Cost:** free to consult and to download; reuse terms below.
+- **Languages:** 28 — all official EU languages plus Icelandic, Norwegian,
+  Ukrainian, and Arabic.
+- **Version:** v1.2.1, last updated 2025-12-10. The first full version
+  (v1) launched 2017-07-28. Older versions (v1.0.3 onward) stay
+  downloadable, so an integration should **pin a version** rather than
+  follow "latest".
+- **Identifiers:** every concept has a persistent URI, for example
+  `http://data.europa.eu/esco/occupation/528f90ed-e250-48bd-aacc-ffb7b1de5654`
+  (an occupation) or `http://data.europa.eu/esco/skill/<uuid>` (a skill).
+  The URI is the join key; labels vary by language and version.
+
+## The three pillars
+
+| Pillar | What it holds | Size (v1.2.x) |
+| --- | --- | --- |
+| **Occupations** | Occupation profiles, each with one preferred term plus alternative and hidden terms per language, a description, scope notes, regulatory-aspect information, and the knowledge, skills, and competences that experts consider relevant | 3,039 occupations |
+| **Skills and competences** | Four sub-classifications: *knowledge*; *language skills and knowledge*; *skills*; *transversal skills* | about 13,900 concepts (the portal states 13,939 on one page and 13,890 on the skills page; treat as "about 13,900") |
+| **Qualifications** | A bridge to national qualification databases and the European Qualifications Framework (EQF), linking formal learning outcomes | not published on the pages consulted |
+
+### Occupations and ISCO-08
+
+The occupations pillar is built on **ISCO-08**, the International Standard
+Classification of Occupations. ISCO-08 provides the top four hierarchy
+levels; ESCO occupations sit at level 5 and below. **Each ESCO occupation
+maps to exactly one ISCO-08 code**, which makes ISCO-08 the natural
+cross-walk to national statistics and to other systems.
+
+### Skills
+
+- A skill concept carries: description, formal definition, scope note,
+  **skill type** (knowledge *or* skill/competence), **reusability level**,
+  the occupations for which it is **essential**, the occupations for which
+  it is **optional**, and its URI.
+- ESCO does **not** distinguish "skills" from "competences" — both are one
+  concept type.
+- Reusability level distinguishes transversal skills (relevant across many
+  occupations and sectors) from cross-sector and occupation-specific ones.
+- **ESCO has no proficiency scale.** It says *which* skills an occupation
+  needs and whether each is essential or optional; it does not say how
+  well. Proficiency levels must come from elsewhere (see WPM below).
+
+## Access
+
+| Route | Notes |
+| --- | --- |
+| **Portal** | Browse and search at <https://esco.ec.europa.eu/> |
+| **Downloads** | RDF, TTL, ODS, CSV, XML, and JSON-LD; filter by version, content type, language, and format; link delivered by email |
+| **Web service API** | A web-based, machine-to-machine API over linked data with version selection (`selectedVersion`); documented at <https://ec.europa.eu/esco/api/doc/esco_api_doc.html>. A resource is fetched by URI, for example `GET /resource/skill?uri=<skill URI>&language=en`, with a bulk form taking repeated `uris` parameters. The ESCO team has announced API updates, so confirm the current documentation before building |
+
+For WPM, **prefer a pinned CSV or JSON-LD download over live API calls**:
+it keeps a request path free of third-party calls (the same posture as the
+service's other upstream fetches — short timeout, no redirects, nothing
+required at boot), and a catalogue pinned to a version is reproducible.
+
+## Licence
+
+The ESCO classification may be downloaded, used, reproduced, and reused
+**for any purpose and by any party, free of charge**, under the Commission
+Decision of 12 December 2011 on the reuse of Commission documents
+(2011/833/EU), with the source acknowledged. Europa-owned content is
+generally CC BY 4.0. **Obligation for WPM:** attribute ESCO wherever its
+labels or URIs are republished, and record the ESCO version used. Re-read
+the portal's copyright notice before shipping, since this summary is not
+legal advice.
+
+## How WPM should relate to it
+
+WPM keeps its own skills catalogue (WPM-T20) and is adding role profiles
+(WPM-R34, [strategic-workforce-planning.md](../strategic-workforce-planning.md)).
+ESCO fits as an **optional external reference**, never a second skills model:
+
+1. **Skill reference.** Add an optional external reference to a catalogue
+   skill (framework id `esco`, concept URI, ESCO version). A skill without
+   one is valid; the catalogue stays WPM's own. Matching is by URI, never
+   by label.
+2. **Occupation reference.** A role profile may carry an ESCO occupation URI
+   and, through it, an ISCO-08 code. The mapping is declared by the
+   planner, not inferred — an auto-matched occupation is a guess about a
+   person's job.
+3. **Seeding role profiles.** An occupation's *essential* skills are a
+   sensible first draft of a role profile's required skills, and its
+   *optional* skills a draft of `useful` importance (WPM-R34's
+   `critical` / `important` / `useful`). It is a draft for a human to edit:
+   ESCO says a skill is relevant, not that a given employer needs it.
+4. **Proficiency stays WPM's.** Because ESCO has none, every required-skill
+   level in a role profile is set by the planner on WPM's own 1–5 scale
+   (or imported from a framework that has levels, such as
+   [uk-gdad-pcf](../uk-gdad-pcf/index.md)).
+5. **Qualifications and EQF.** Out of scope until a concrete need appears
+   (for example, regulated professions); the qualifications pillar's size
+   and structure were not confirmed in this research.
+6. **Multilingual labels.** ESCO's 28-language labels could back the
+   locale pickers, but only as display text next to the URI — the same
+   best-effort rule as upstream display names (WPM-T3): never copied as
+   truth, never required.
+
+### Open decisions
+
+- Which languages to import (all 28 is large; start with the locales the UI
+  already ships).
+- Whether to store ESCO data in a WPM table or resolve it from a pinned
+  file at read time. A file is simpler and avoids owning a copy of a
+  classification that changes each release.
+- How to treat a skill whose ESCO concept is deprecated in a later version
+  (keep the pinned URI and flag it, rather than silently re-pointing).
+
+## Sources
+
+- ESCO, "What is ESCO" — <https://esco.ec.europa.eu/en/about-esco/what-esco>
+- ESCO, download — <https://esco.ec.europa.eu/en/use-esco/download>
+- ESCO, occupations pillar — <https://esco.ec.europa.eu/en/classification/occupation_main>
+- ESCO, skills pillar (ESCOpedia) — <https://esco.ec.europa.eu/en/about-esco/escopedia/escopedia/skills-pillar>
+- ESCO, web service API — <https://esco.ec.europa.eu/en/use-esco/use-esco-services-api/esco-web-service-api> and
+  <https://ec.europa.eu/esco/api/doc/esco_api_doc.html>
+- ESCO, copyright notice — <https://esco.ec.europa.eu/en/copyright-notice-esco-skills-competences>
+- European Commission, DG EMPL — <https://employment-social-affairs.ec.europa.eu/policies-and-activities/skills-and-qualifications/skills-jobs/european-skillscompetences-qualifications-and-occupations-esco_en>
