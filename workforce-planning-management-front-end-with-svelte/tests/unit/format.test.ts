@@ -1,5 +1,5 @@
 // Unit tests: WPM-T39's centralised null-not-zero ratio / percentage /
-// mean formatters (`$lib/format.ts`), extracted from the per-route
+// mean formatters (`#lib/format.ts`), extracted from the per-route
 // inline logic they replace.
 
 import { describe, expect, it } from "vitest";

@@ -96,7 +96,7 @@
     if (value.suppressed) return t("wb.pulseSuppressed");
     // `mean` guards the `undefined` case (should not happen once
     // disclosed, but a silent "undefined" in the label would be a worse
-    // failure than a "—" placeholder) — see $lib/format.ts (WPM-T39).
+    // failure than a "—" placeholder) — see #lib/format.ts (WPM-T39).
     return `${t("wb.pulseMean")} ${mean(value.mean) ?? "—"} · ${value.count} ${t("wb.pulseResponses")}`;
   }
 
