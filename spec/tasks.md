@@ -797,6 +797,17 @@ code + tests in one PR.
 
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
+> **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
+> and the full database-backed request suite passes — **32 of 32** against a
+> real PostgreSQL 18 (every migration applied) — using a scratch copy with
+> signature-only stubs of the two sibling crates (`entity-ref`,
+> `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
+> ABAC policy / PASETO verifier **not**). So auth behaviour
+> (`tests/enforcement.rs`) and the Keycloak test (`tests/keycloak.rs`) are
+> still unrun, and the "DB-gated … not run" remarks in individual task
+> entries above predate this run. `cargo clippy` is clean on every new
+> file.
+
 Design: [strategic-workforce-planning.md](strategic-workforce-planning.md).
 Order matters — each task's inputs come from the one before; pure core
 first in each, per the three-part rule.
