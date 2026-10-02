@@ -297,3 +297,9 @@ category + status and withhold the words, reads are audited, erasure
 scrubs, and **no aggregate reporting surface exists**: a
 per-department count would invite exactly the inference the schema
 refuses to store.
+
+## WPM-D26–D28 — Strategic workforce planning
+
+A plan is a draft world, forecasting is transparent rules, and gaps are
+aggregate with suggestions-only levers: see
+[strategic-workforce-planning.md](strategic-workforce-planning.md).

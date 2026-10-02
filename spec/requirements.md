@@ -518,3 +518,10 @@ as a manager/HR I can agree them and put them in place.*
 - OpenAPI + Swagger, `Accepts-version` negotiation, `/metrics.prom`,
   OTLP tracing, health routes, Podman build, `#![forbid(unsafe_code)]`,
   clippy-pedantic, input caps → `422`, unknown-pid → `404`.
+
+## WPM-R34–R38 — Strategic workforce planning
+
+Role profiles and required skills (R34), headcount snapshots (R35),
+workforce plans and demand lines (R36), forecast and gap analysis (R37),
+and strategic alignment (R38) are specified in
+[strategic-workforce-planning.md](strategic-workforce-planning.md).

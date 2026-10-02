@@ -795,6 +795,35 @@ code + tests in one PR.
       path-map test, strings in all 16 locales; svelte-check 0, vitest
       43/43, build green.
 
+## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
+
+Design: [strategic-workforce-planning.md](strategic-workforce-planning.md).
+Order matters — each task's inputs come from the one before; pure core
+first in each, per the three-part rule.
+
+- [ ] WPM-T45 **Headcount snapshot job.** Table + loco task recording
+      employed headcount, FTE, starters, leavers per organization ×
+      department × date via `rules::metrics::is_employed_on`; idempotent,
+      append-only; read endpoint for history. Start first — history
+      cannot be backfilled. (WPM-R35)
+- [ ] WPM-T46 **Role profiles + required skills.** Tables, CRUD, pure
+      validation (proficiency 1–5, importance token, catalogue-skill
+      reference); front-end editor. (WPM-R34)
+- [ ] WPM-T47 **Workforce plans + demand lines.** Draft/active/archived
+      machine in the pure core, at most one active per organization,
+      assumptions, demand lines; no access to worker rows. (WPM-R36,
+      WPM-D26)
+- [ ] WPM-T48 **Forecast + gap analysis.** Pure core: supply projection,
+      headcount gap, competency gap (depth bands reuse
+      `rules::capability`), `insufficient_history`; then the read
+      endpoint with assumptions and derivation echoed. (WPM-R37,
+      WPM-D27, WPM-D28)
+- [ ] WPM-T49 **Strategic alignment view.** Objectives, demand-line
+      links, unresourced/unaligned/uncovered-critical-role ratios.
+      (WPM-R38)
+- [ ] WPM-T50 **Front-end `/planning`.** Plan list + comparison, demand
+      editor, gap and alignment views; strings in all locales.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`
@@ -806,33 +835,38 @@ SuccessFactors, Visier, ChartHop, Gloat, Eightfold, Fuel50) to ground
 each definition, not guessed. Grouped by theme; cross-references note
 where WPM already has a partial foundation to build on.
 
-### Priority triage — CPD / upskilling / talent planning (2026-10-02)
+### Priority triage — strategic workforce planning, CPD, upskilling (re-ranked 2026-10-02)
 
-Ranked by value to continuing professional development (CPD), worker
-upskilling, and talent planning, weighted by dependency order and by how
-much of the foundation already exists. **Existing foundation:** declared
-skills + targets (WPM-T20), upskill/reskill development plans (WPM-T22),
-learning paths with honest progress (WPM-T20), succession and talent
-pipelines (WPM-T14, WPM-T22), cert-expiry counts (`training_enrollments.
-certificate_expires_on`), capability analysis (WPM-T41), shared metrics
-(WPM-T44). **Finding:** nothing in the repo models CPD itself — no hours or
-points, no required-per-period target, no professional registrations.
+**Focus (set 2026-10-02):** forecast future talent and skill needs;
+identify the gaps between current capabilities and future goals; align
+headcount and competencies with strategy. This pulls the draft-plan /
+future-state work forward from "design pass needed" to a scoped design —
+[strategic-workforce-planning.md](strategic-workforce-planning.md) — and
+Phase 10 above.
 
-| # | Area | Why this rank | Depends on | Size |
-|---|---|---|---|---|
-| 1 | **CPD ledger** (new — not in the backlog above): CPD hours/points per worker per period against a required target, with evidence and registration/certification expiry | The literal meaning of CPD, and entirely absent; self-contained over `training_enrollments` + plans | — | M |
-| 2 | **Role skill requirements** (job profile → required skills and minimum proficiency) | Unlocks four backlog items at once: skills gap vs any role, matching, internal mobility, reskill targets. Today a "target" is per worker, not per role | — | M |
-| 3 | **Skills gap identification** against a target role | Direct upskilling driver; first consumer of #2 | #2 | S |
-| 4 | **Skills matching + internal mobility** (employee-facing: roles that fit my skills; expressing interest) | Highest employee-visible talent value; reuse self-service conventions (WPM-T11, WPM-T29) | #2, #3 | L |
-| 5 | **Headcount snapshot job** (enables forecasting) | Cheap now, impossible to backfill later — each week not captured is lost history for **Workforce forecasting** | — | S |
-| 6 | **LMS completion sync** (xAPI / roster webhook through the WPM-T3 upstream seam) | Feeds #1 and skills evidence; replaces manual enrolment records | #1 | M |
-| 7 | **Support for AI-driven change** (role/skill impact tracker; reskilling) | Reuses reskill plans; meaningful only once #2 exists | #2 | M |
-| 8 | **Future-state / scenario modeling + transformation** (draft-plan primitive) | The biggest talent-planning step, but needs a design pass and new WPM-D/R ids first; do not start as code | design | XL |
-| — | Workforce forecasting (after #5 accrues data) · analytics narrative · financial-planning-led planning | Depend on #5, #8, or are open-ended | #5 / #8 | — |
+**Existing foundation:** declared skills + targets (WPM-T20),
+upskill/reskill development plans (WPM-T22), succession and talent
+pipelines (WPM-T14, WPM-T22), capability analysis (WPM-T41), shared
+metrics and one headcount definition (WPM-T44). **Gaps found:** no role
+requirements (a target is per worker), no headcount history, no plan or
+demand, and no CPD model (hours/points, required-per-period target,
+registrations).
 
-**Recommended order:** #5 immediately (small, and time-sensitive), then #1
-and #2 in parallel (independent), then #3, #4, #6, #7. Put #8 through the
-spec/design pass in the background.
+| Rank | Work | Serves | Tasks |
+|---|---|---|---|
+| 1 | Headcount snapshot job | Forecasting (history is unrecoverable) | WPM-T45 |
+| 2 | Role profiles + required skills | Gap vs future goals; unlocks matching, mobility, reskill targets | WPM-T46 |
+| 3 | Workforce plans + demand lines | Future-state / scenario modeling (the strategy side) | WPM-T47 |
+| 4 | Forecast + gap analysis | The core analytical process | WPM-T48 |
+| 5 | Strategic alignment view | Headcount and competencies vs strategy | WPM-T49 |
+| 6 | Front-end `/planning` | Surfaces 3–5 | WPM-T50 |
+| 7 | CPD ledger (hours/points vs requirement, registrations) | Upskilling; independent of 1–6, **not yet scoped** | — |
+| 8 | Skills matching + internal mobility | Consumes role profiles (T46) | backlog |
+| 9 | LMS completion sync | Feeds CPD ledger and skills evidence | backlog |
+| 10 | AI-driven change tracker | Reuses reskill plans + role profiles | backlog |
+
+Deferred: analytics narrative, financial-planning-led planning (both
+build on 3–5).
 
 ### Strategic planning, scenario modeling & forecasting
 
