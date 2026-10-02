@@ -1,7 +1,7 @@
 # Workforce Planning Management — SvelteKit front-end
 
 The browser client for the
-[Loco JSON API sibling](../workforce-planning-management-service-with-rust/):
+[Loco JSON API sibling](../workforce-planning-management-api-with-rust/):
 HR, manager, and employee self-service views over the full
 employment lifecycle — hiring boards, onboarding, time and leave,
 rotas with working-time and ergonomic-issue panels, the employee

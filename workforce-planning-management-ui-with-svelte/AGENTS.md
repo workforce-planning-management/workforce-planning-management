@@ -6,7 +6,7 @@ subproject. Read this **before** opening a PR.
 ## What this project is
 
 A **SvelteKit browser client** for the
-[Loco JSON API sibling](../workforce-planning-management-service-with-rust/):
+[Loco JSON API sibling](../workforce-planning-management-api-with-rust/):
 requisition and application boards, the onboarding tracker, the rota
 with working-time and ergonomic-issue panels, employee profiles and
 the org chart, review and training panels, `/wellbeing` (entitlement

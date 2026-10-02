@@ -13,7 +13,7 @@ issue reports, and feedback are welcome.
   `CHANGELOG.md` updated in the same pull request. See each
   subproject's `AGENTS.md` for the full working agreements.
 - **Green gate.** Before submitting, on any crate/package you touched:
-  - Service (`workforce-planning-management-service-with-rust`):
+  - Service (`workforce-planning-management-api-with-rust`):
     `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
     `cargo test` (DB-free unit tests), and `cargo test -- --ignored`
     where you have Postgres available.

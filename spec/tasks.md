@@ -13,7 +13,7 @@ code + tests in one PR.
 
 ## Phase 1 — service skeleton & employee core (WPM-R7, WPM-R17)
 
-- [x] WPM-T1 Scaffold `workforce-planning-management-service-with-rust`:
+- [x] WPM-T1 Scaffold `workforce-planning-management-api-with-rust`:
       loco app, config, migration crate, family fixtures (forbid-unsafe,
       tracing/OTLP, `/metrics.prom`, OpenAPI + Swagger, `Accepts-version`
       middleware, health routes). (WPM-D12)
@@ -91,7 +91,7 @@ code + tests in one PR.
       WPM-D12)
 
 > Phases 1–7 landed 2026-07-18 in one implementation round
-> (`workforce-planning-management-service-with-rust`, copy-adapted from
+> (`workforce-planning-management-api-with-rust`, copy-adapted from
 > patient-flow): 7 migrations (23 domain tables + audit + outbox),
 > pure `rules/` core (lifecycle tables, leave/time arithmetic,
 > org-cycle, payslip arithmetic incl. the net invariant + overflow

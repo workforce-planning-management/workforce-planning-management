@@ -48,7 +48,7 @@ The shipped default is **wide open** (family posture,
 config tweak:
 
 1. **Mount a policy.** Start from the shipped reference,
-   [`config/abac-policy.reference.json`](../workforce-planning-management-service-with-rust/config/abac-policy.reference.json)
+   [`config/abac-policy.reference.json`](../workforce-planning-management-api-with-rust/config/abac-policy.reference.json)
    — svc/admin do everything, `payroll=true` reads unmasked,
    `hr=true` writes and reads **masked** (salary stays payroll+self),
    `resource.person = $sub` reads the own record unmasked, and every
@@ -95,7 +95,7 @@ A second, independent integration point exists for a deployment that
 wants this service to skip the sibling authentication service
 entirely and verify a Keycloak-issued JWT itself: the `keycloak` Cargo
 feature (mutually exclusive with `paseto` — see
-`workforce-planning-management-service-with-rust/Cargo.toml`'s
+`workforce-planning-management-api-with-rust/Cargo.toml`'s
 `[features]` table and `src/auth/keycloak.rs`'s module docs for its
 own `WPM_KEYCLOAK_*` environment). It uses the *same* claim-mapping
 table below, so a deployment can switch which component talks to
@@ -131,7 +131,7 @@ Keycloak without re-deriving the realm-mapper configuration.
    | `svc` | realm role `wpm-svc` | role present ⇒ `attrs.svc = ["true"]` (granted only to a service-account client, never a human realm user) |
    | `access` | realm role `wpm-admin` | role present ⇒ `attrs.access = ["admin"]`; otherwise a plain authenticated human gets `attrs.access = ["write"]` (the self-service-write allow the engine limits above call for) |
    | `department` | group path, e.g. `/org/engineering` | group membership ⇒ the path's leaf segment, `attrs.department = ["engineering"]` (one row per department group the user is in) |
-   | `organization_ref` | a custom user/group attribute holding the org's URN (see [`memberships.rs`](../workforce-planning-management-service-with-rust/src/models/memberships.rs) for the multi-organization membership model this feeds) | attribute mapper ⇒ `attrs.organization_ref = ["organization:<uuid>", …]`, multi-valued for a person in several organizations |
+   | `organization_ref` | a custom user/group attribute holding the org's URN (see [`memberships.rs`](../workforce-planning-management-api-with-rust/src/models/memberships.rs) for the multi-organization membership model this feeds) | attribute mapper ⇒ `attrs.organization_ref = ["organization:<uuid>", …]`, multi-valued for a person in several organizations |
 
    `resource.person = $sub` self-rules need no mapper: `$sub` is
    Keycloak's own `sub` claim, relayed as-is.

@@ -2,14 +2,14 @@
 
 Neither subproject ships a performance benchmark suite yet (no
 `benches/`, no Criterion dependency in
-`workforce-planning-management-service-with-rust/Cargo.toml`). This
+`workforce-planning-management-api-with-rust/Cargo.toml`). This
 file exists as the place such results would live once measured.
 
 ## What exists today
 
 - Service: 139 DB-free unit tests + 19 request suites + the
   enforcement persona matrix, run with `cargo test`. See
-  [workforce-planning-management-service-with-rust/README.md](workforce-planning-management-service-with-rust/README.md)
+  [workforce-planning-management-api-with-rust/README.md](workforce-planning-management-api-with-rust/README.md)
   for current counts.
 - Front-end: 10 vitest + 9 Playwright specs, run with `pnpm test` /
   `pnpm exec playwright test`.

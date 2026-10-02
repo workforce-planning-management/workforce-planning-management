@@ -5,10 +5,10 @@ How to build and run both WPM subprojects from source.
 ## Prerequisites
 
 - **Rust** — MSRV is declared as `rust-version = "1.96"` in
-  `workforce-planning-management-service-with-rust/Cargo.toml`.
+  `workforce-planning-management-api-with-rust/Cargo.toml`.
 - **Podman** (not Docker) — for the service's test database.
 - **PostgreSQL 18** — provided by
-  `workforce-planning-management-service-with-rust/compose.test.yaml`;
+  `workforce-planning-management-api-with-rust/compose.test.yaml`;
   no host install needed for development.
 - **Node.js 26** and **pnpm** — for the SvelteKit front-end
   (`"engines": { "node": "=26" }` in its `package.json`).
@@ -16,7 +16,7 @@ How to build and run both WPM subprojects from source.
 ## Build and run the service
 
 ```sh
-cd workforce-planning-management-service-with-rust
+cd workforce-planning-management-api-with-rust
 cargo run -- db migrate    # apply migrations
 cargo run -- task seed     # synthetic org, ~40 employees
 cargo run -- start         # JSON API, default port 5150

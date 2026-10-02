@@ -20,7 +20,7 @@ each subproject's own README for its own test counts and gate status.
 
 | Subproject | Role | Stack |
 | --- | --- | --- |
-| [workforce-planning-management-service-with-rust](workforce-planning-management-service-with-rust/) | Back-end JSON API | Rust, Loco (Axum + SeaORM), PostgreSQL |
+| [workforce-planning-management-api-with-rust](workforce-planning-management-api-with-rust/) | Back-end JSON API | Rust, Loco (Axum + SeaORM), PostgreSQL |
 | [workforce-planning-management-ui-with-svelte](workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 2, Svelte 5 runes, TypeScript |
 
 Each subproject is self-contained: it owns its own `README.md`,
@@ -41,7 +41,7 @@ duplicating them. See [spec/scope.md](spec/scope.md) and
 
 ```sh
 # Back-end
-cd workforce-planning-management-service-with-rust
+cd workforce-planning-management-api-with-rust
 cargo run -- db migrate && cargo run -- task seed && cargo run -- start
 
 # Front-end (in another shell)
