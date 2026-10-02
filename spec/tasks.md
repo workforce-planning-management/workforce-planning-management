@@ -936,6 +936,31 @@ first in each, per the three-part rule.
       `lms_completions_update_enrollments_and_cpd_idempotently` not run.
       Not done: mapping a course to the skills it evidences.
 
+- [x] WPM-T55 (2026-10-02) **AI-driven change tracker.** Operational
+      support for an organization moving through automation or AI-driven
+      role change; it tracks *roles and skills*, never people (WPM-D28).
+      Migration `m20261002_000026_change_initiatives`
+      (`change_initiatives`, `initiative_role_impacts`,
+      `initiative_skill_shifts`). Pure `rules::change`: lifecycle
+      `draft → active → completed | cancelled` through the shared
+      `lifecycle::check`, role impacts `displaced` / `reshaped` /
+      `created` with a timeframe, skill shifts `rising` / `declining`,
+      `skill_readiness` tally (undeclared kept apart from below); 4 tests.
+      Audited CRUD in `controllers/change.rs`; an initiative is read-only
+      once closed. `GET /api/change-initiatives/{pid}/readiness` is
+      **aggregate only**: per affected role, employed workers and how many
+      have an active `reskill` development plan (WPM-T22), and per rising
+      skill how many workers in displaced/reshaped roles meet, fall below,
+      or have not declared it (bar defaults to 3) — no individual named or
+      ranked. `change_initiatives` joins the retention sweep list (now 47).
+      Front-end `/change` (initiative picker + create, lifecycle buttons,
+      roles and skills readiness tables, record role impact / skill shift)
+      and nav link in all 16 locales. Rust type-checks and 125 lib tests pass
+      against stubbed sibling crates, clippy-clean; DB-gated
+      `change_tracker_reports_aggregate_readiness` not run. svelte-check 0,
+      vitest 43/43, build green. Not done: linking an initiative's rising
+      skills to suggested CPD requirements or reskill plans (WPM-T48/T49).
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`
@@ -966,16 +991,16 @@ registrations).
 
 | Rank | Work | Serves | Tasks |
 |---|---|---|---|
-| 1 | Headcount snapshot job | Forecasting (history is unrecoverable) | WPM-T45 |
-| 2 | Role profiles + required skills | Gap vs future goals; unlocks matching, mobility, reskill targets | WPM-T46 |
+| 1 | Headcount snapshot job | Forecasting (history is unrecoverable) | WPM-T45 — **done** |
+| 2 | Role profiles + required skills | Gap vs future goals; unlocks matching, mobility, reskill targets | WPM-T46 — **done** (+ gap: WPM-T51) |
 | 3 | Workforce plans + demand lines | Future-state / scenario modeling (the strategy side) | WPM-T47 |
 | 4 | Forecast + gap analysis | The core analytical process | WPM-T48 |
 | 5 | Strategic alignment view | Headcount and competencies vs strategy | WPM-T49 |
 | 6 | Front-end `/planning` | Surfaces 3–5 | WPM-T50 |
-| 7 | CPD ledger (hours/points vs requirement, registrations) | Upskilling; independent of 1–6, **not yet scoped** | — |
-| 8 | Skills matching + internal mobility | Consumes role profiles (T46) | backlog |
-| 9 | LMS completion sync | Feeds CPD ledger and skills evidence | backlog |
-| 10 | AI-driven change tracker | Reuses reskill plans + role profiles | backlog |
+| 7 | CPD ledger (hours/points vs requirement, registrations) | Upskilling; independent of 1–6 | **done — WPM-T52** |
+| 8 | Skills matching + internal mobility | Consumes role profiles (T46) | **done — WPM-T53** |
+| 9 | LMS completion sync | Feeds CPD ledger and skills evidence | **done — WPM-T54** |
+| 10 | AI-driven change tracker | Reuses reskill plans + role profiles | **done — WPM-T55** |
 
 Deferred: analytics narrative, financial-planning-led planning (both
 build on 3–5).
@@ -1023,7 +1048,7 @@ build on 3–5).
 
 ### Skills, talent, and internal mobility
 
-- [ ] **Skills, intelligence, and talent matching.** The Gloat/
+- [x] **Skills, intelligence, and talent matching.** *(employee-facing role matching landed as WPM-T53; inferred skills remain out of scope.)* The Gloat/
       Eightfold/Fuel50 category: a continuously-updated skills graph
       matching people to roles, gigs, or projects, not just open
       requisitions. WPM already has a real (if simpler) skills
@@ -1034,7 +1059,7 @@ build on 3–5).
       self-declared, not inferred, and nothing matches a skill profile
       against an open requisition or pipeline (WPM-T5, WPM-T22)
       automatically.
-- [ ] **Internal mobility.** Employees moving laterally or upward
+- [x] **Internal mobility.** *(landed as WPM-T53.)* Employees moving laterally or upward
       inside the org rather than leaving — the core use case of the
       Gloat/Fuel50 "talent marketplace" category, distinct from
       `talent_pipelines`/succession (WPM-T22), which are
@@ -1045,7 +1070,7 @@ build on 3–5).
       interest in a move. Adjacent to — and should reuse the audience/
       visibility conventions of — the existing self-service surface
       (WPM-T11) and "My 360 requests" pattern (WPM-T29).
-- [ ] **Skills gap identification.** WPM already ships this at the
+- [x] **Skills gap identification.** *(against a target role: WPM-T51; against a *future* role waits on the plans in WPM-T47/T48.)* WPM already ships this at the
       department level — the skills-matrix gap report (WPM-T20,
       `below_target` counts) and the cognitive/psychometric assessment
       gap views (WPM-T21, WPM-T35). The vendor bar (Visier, ChartHop)
@@ -1102,7 +1127,7 @@ build on 3–5).
       view over that data, most naturally landing alongside the
       scenario-modeling / draft-plan work above rather than as its own
       silo.
-- [ ] **Support for AI-driven change.** Gartner and SHRM's 2026
+- [x] **Support for AI-driven change.** *(operational tracker: WPM-T55.)* Gartner and SHRM's 2026
       CHRO research frames this as two things: (1) HR tooling that
       itself uses AI (inference, matching, forecasting — several items
       above), and (2) HR *supporting* an organization through AI-driven
@@ -1112,7 +1137,7 @@ build on 3–5).
       (2) — an operational workflow for tracking role/skill impact
       from an automation initiative — is the better fit than adding a
       model-inference dependency for (1).
-- [ ] **Support for learning management system (LMS) users.** WPM's
+- [x] **Support for learning management system (LMS) users.** *(completion sync: WPM-T54.)* WPM's
       own `training_enrollments`/course-URN model (WPM-T13) already
       assumes an upstream course catalog; the vendor pattern (xAPI/
       SCORM/LTI, or a REST roster-sync integration) is a *real* LMS

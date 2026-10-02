@@ -92,6 +92,9 @@ describe("api path map", () => {
     await wpm.opportunities("w1");
     await wpm.listMobilityInterests("w1");
     await wpm.mobilityInterestSummary();
+    await wpm.listChangeInitiatives();
+    await wpm.getChangeInitiative("c1");
+    await wpm.changeReadiness("c1");
     await wpm.listRoleProfiles();
     await wpm.getRoleProfile("rp1");
     await wpm.roleGap("rp1");
@@ -137,6 +140,9 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/opportunities",
       "/api/proxy/workers/w1/mobility-interests",
       "/api/proxy/mobility/interest-summary",
+      "/api/proxy/change-initiatives",
+      "/api/proxy/change-initiatives/c1",
+      "/api/proxy/change-initiatives/c1/readiness",
       "/api/proxy/role-profiles",
       "/api/proxy/role-profiles/rp1",
       "/api/proxy/role-profiles/rp1/gap",

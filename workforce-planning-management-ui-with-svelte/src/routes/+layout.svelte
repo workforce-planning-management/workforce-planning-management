@@ -24,6 +24,7 @@
     ["/learning", "nav.learning"],
     ["/roles", "nav.roles"],
     ["/cpd", "nav.cpd"],
+    ["/change", "nav.change"],
     ["/mentorship", "nav.mentorship"],
     ["/wellbeing", "nav.wellbeing"],
     ["/privacy", "nav.privacy"],

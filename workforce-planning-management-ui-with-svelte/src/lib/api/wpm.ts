@@ -680,6 +680,157 @@ export function mobilityInterestSummary(init?: FetchLike): Promise<{
   return api("/mobility/interest-summary", init);
 }
 
+/** Change-initiative vocabularies (mirror `rules::change`). */
+export const CHANGE_KINDS = [
+  "automation",
+  "ai_assistance",
+  "process_redesign",
+  "restructure",
+  "other",
+] as const;
+export const CHANGE_IMPACTS = ["displaced", "reshaped", "created"] as const;
+export const CHANGE_TIMEFRAMES = [
+  "now",
+  "within_1y",
+  "one_to_three_years",
+  "beyond",
+] as const;
+export const CHANGE_STATUSES_NEXT: Record<string, string[]> = {
+  draft: ["active", "cancelled"],
+  active: ["completed", "cancelled"],
+  completed: [],
+  cancelled: [],
+};
+
+/** Change initiatives (AI / automation) with roles and skills touched. */
+export function listChangeInitiatives(init?: FetchLike): Promise<
+  Array<{
+    pid: string;
+    name: string;
+    kind: string;
+    status: string;
+    starts_on: string | null;
+    roles_affected: number;
+    skills_shifting: number;
+  }>
+> {
+  return api("/change-initiatives", init);
+}
+
+/** One initiative with its role impacts and skill shifts. */
+export function getChangeInitiative(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  pid: string;
+  name: string;
+  description: string | null;
+  kind: string;
+  status: string;
+  role_impacts: Array<{
+    role_profile_pid: string;
+    job_title: string | null;
+    impact: string;
+    timeframe: string;
+    note: string | null;
+  }>;
+  skill_shifts: Array<{
+    skill_pid: string;
+    skill: string | null;
+    direction: string;
+    note: string | null;
+  }>;
+}> {
+  return api(`/change-initiatives/${pid}`, init);
+}
+
+/** Open a draft change initiative. */
+export function createChangeInitiative(body: {
+  name: string;
+  kind: string;
+  description?: string;
+}): Promise<{ pid: string }> {
+  return api("/change-initiatives", { method: "POST", body });
+}
+
+/** Move an initiative through its lifecycle. */
+export function setChangeStatus(pid: string, to: string): Promise<unknown> {
+  return api(`/change-initiatives/${pid}/status`, {
+    method: "POST",
+    body: { to },
+  });
+}
+
+/** Record how a role is affected (upsert). */
+export function setRoleImpact(
+  pid: string,
+  body: {
+    role_profile_pid: string;
+    impact: string;
+    timeframe: string;
+    note?: string;
+  },
+): Promise<unknown> {
+  return api(`/change-initiatives/${pid}/role-impacts`, {
+    method: "PUT",
+    body,
+  });
+}
+
+/** Record a skill rising or declining (upsert). */
+export function setSkillShift(
+  pid: string,
+  body: { skill_pid: string; direction: string; note?: string },
+): Promise<unknown> {
+  return api(`/change-initiatives/${pid}/skill-shifts`, {
+    method: "PUT",
+    body,
+  });
+}
+
+/** Aggregate readiness of the affected workforce (never names anyone). */
+export function changeReadiness(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  initiative: { pid: string; name: string; status: string };
+  bar: number;
+  affected_workers: number;
+  with_active_reskill_plan: number;
+  reskill_plan_coverage: {
+    numerator: number;
+    denominator: number;
+    value: number;
+  } | null;
+  roles: Array<{
+    job_title: string;
+    impact: string;
+    timeframe: string;
+    employed_workers: number;
+    with_active_reskill_plan: number;
+    reskill_plan_coverage: {
+      numerator: number;
+      denominator: number;
+      value: number;
+    } | null;
+  }>;
+  rising_skills: Array<{
+    skill: string | null;
+    meeting: number;
+    below: number;
+    undeclared: number;
+    meeting_share: {
+      numerator: number;
+      denominator: number;
+      value: number;
+    } | null;
+  }>;
+  declining_skills: string[];
+}> {
+  return api(`/change-initiatives/${pid}/readiness`, init);
+}
+
 /** Terms-carrying ratio object (or null when there is nothing to divide). */
 type RatioOrNull = {
   numerator: number;

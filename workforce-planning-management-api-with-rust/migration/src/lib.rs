@@ -38,6 +38,7 @@ mod m20261002_000022_headcount_snapshots;
 mod m20261002_000023_role_profiles;
 mod m20261002_000024_cpd;
 mod m20261002_000025_mobility_interests;
+mod m20261002_000026_change_initiatives;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -75,6 +76,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261002_000023_role_profiles::Migration),
             Box::new(m20261002_000024_cpd::Migration),
             Box::new(m20261002_000025_mobility_interests::Migration),
+            Box::new(m20261002_000026_change_initiatives::Migration),
             // inject-above (do not remove this comment)
         ]
     }

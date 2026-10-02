@@ -784,3 +784,93 @@ async fn lms_completions_update_enrollments_and_cpd_idempotently() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn change_tracker_reports_aggregate_readiness() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        // Two employed "Engineer"s (the seed helper's job title); one declares the rising skill.
+        let a = seed_worker!(&request, &org, "E-1", None).await;
+        activate!(&request, &a).await;
+        let b = seed_worker!(&request, &org, "E-2", None).await;
+        activate!(&request, &b).await;
+
+        let skill: Value = request
+            .post("/api/skills")
+            .json(&json!({ "name": "Prompting", "category": "technical" }))
+            .await
+            .json();
+        let skill_pid = skill["pid"].as_str().unwrap().to_string();
+        request
+            .put(&format!("/api/workers/{a}/skills"))
+            .json(&json!({ "skill_pid": skill_pid, "proficiency": 4 }))
+            .await
+            .assert_status_ok();
+
+        let profile: Value = request
+            .post("/api/role-profiles")
+            .json(&json!({ "job_title": "Engineer" }))
+            .await
+            .json();
+        let role = profile["pid"].as_str().unwrap().to_string();
+
+        let initiative: Value = request
+            .post("/api/change-initiatives")
+            .json(&json!({ "name": "Code assistant rollout", "kind": "ai_assistance" }))
+            .await
+            .json();
+        let id = initiative["pid"].as_str().unwrap().to_string();
+        assert_eq!(
+            request
+                .post("/api/change-initiatives")
+                .json(&json!({ "name": "x", "kind": "magic" }))
+                .await
+                .status_code(),
+            422
+        );
+        request
+            .put(&format!("/api/change-initiatives/{id}/role-impacts"))
+            .json(&json!({ "role_profile_pid": role, "impact": "reshaped", "timeframe": "within_1y" }))
+            .await
+            .assert_status_ok();
+        request
+            .put(&format!("/api/change-initiatives/{id}/skill-shifts"))
+            .json(&json!({ "skill_pid": skill_pid, "direction": "rising" }))
+            .await
+            .assert_status_ok();
+
+        let view: Value = request
+            .get(&format!("/api/change-initiatives/{id}/readiness"))
+            .await
+            .json();
+        assert!(view["affected_workers"].as_u64().unwrap() >= 2);
+        let rising = &view["rising_skills"][0];
+        assert_eq!(rising["skill"], "Prompting");
+        assert!(rising["meeting"].as_u64().unwrap() >= 1);
+        assert!(rising["undeclared"].as_u64().unwrap() >= 1, "unknown is not below");
+        let text = view.to_string();
+        assert!(!text.contains(&a) && !text.contains(&b), "no worker is named");
+
+        // Lifecycle: draft -> completed is refused; closed initiatives are read-only.
+        let status = |to: &str| {
+            request
+                .post(&format!("/api/change-initiatives/{id}/status"))
+                .json(&json!({ "to": to }))
+        };
+        assert_eq!(status("completed").await.status_code(), 422);
+        status("active").await.assert_status_ok();
+        status("completed").await.assert_status_ok();
+        assert_eq!(
+            request
+                .put(&format!("/api/change-initiatives/{id}/skill-shifts"))
+                .json(&json!({ "skill_pid": skill_pid, "direction": "declining" }))
+                .await
+                .status_code(),
+            422,
+            "a closed initiative cannot be edited"
+        );
+    })
+    .await;
+}
