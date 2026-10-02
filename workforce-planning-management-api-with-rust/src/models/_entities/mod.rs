@@ -32,6 +32,7 @@ pub mod leave_entitlements;
 pub mod leave_requests;
 pub mod mentorship_sessions;
 pub mod mentorships;
+pub mod mobility_interests;
 pub mod notifications;
 pub mod onboarding_items;
 pub mod organization_confederations;

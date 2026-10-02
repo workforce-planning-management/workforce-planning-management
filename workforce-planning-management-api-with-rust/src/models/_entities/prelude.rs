@@ -28,6 +28,7 @@ pub use super::headcount_snapshots::Entity as HeadcountSnapshots;
 pub use super::interviews::Entity as Interviews;
 pub use super::leave_entitlements::Entity as LeaveEntitlements;
 pub use super::leave_requests::Entity as LeaveRequests;
+pub use super::mobility_interests::Entity as MobilityInterests;
 pub use super::notifications::Entity as Notifications;
 pub use super::onboarding_items::Entity as OnboardingItems;
 pub use super::payroll_runs::Entity as PayrollRuns;

@@ -10,6 +10,7 @@
     getRoleProfile,
     listRoleProfiles,
     listSkills,
+    mobilityInterestSummary,
     removeRoleRequirement,
     roleGap,
     setRoleRequirement,
@@ -21,6 +22,7 @@
   type Profile = Awaited<ReturnType<typeof getRoleProfile>>;
   type Skills = Awaited<ReturnType<typeof listSkills>>;
   type Coverage = Awaited<ReturnType<typeof roleGap>>;
+  type Interest = Awaited<ReturnType<typeof mobilityInterestSummary>>;
 
   const IMPORTANCES = ["critical", "important", "useful"] as const;
 
@@ -28,6 +30,7 @@
   let skills = $state<Skills>([]);
   let selected = $state("");
   let coverage = $state<Coverage | null>(null);
+  let interest = $state<Interest | null>(null);
   let profile = $state<Profile | null>(null);
   let error = $state<string | null>(null);
 
@@ -42,6 +45,7 @@
   async function loadProfiles() {
     try {
       profiles = await listRoleProfiles();
+      interest = await mobilityInterestSummary();
       if (!selected && profiles.length > 0) selected = profiles[0]?.pid ?? "";
       if (selected) {
         profile = await getRoleProfile(selected);
@@ -124,6 +128,19 @@
   A role profile says what a job title requires — not what a person has. Declared
   skills are compared against it for gap analysis.
 </p>
+
+{#if interest && interest.targets.length > 0}
+  <h2>Employee interest</h2>
+  <p class="muted">{interest.derivation}</p>
+  <table data-testid="mobility-summary">
+    <thead><tr><th>Target</th><th>Kind</th><th>Interested</th></tr></thead>
+    <tbody>
+      {#each interest.targets as row (row.target_pid)}
+        <tr><td>{row.title ?? row.target_pid}</td><td>{row.kind}</td><td>{row.interested}</td></tr>
+      {/each}
+    </tbody>
+  </table>
+{/if}
 
 <h2>Profiles</h2>
 <p>

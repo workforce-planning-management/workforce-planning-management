@@ -641,3 +641,83 @@ async fn cpd_ledger_tracks_progress_and_registrations() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let worker = seed_worker!(&request, &org, "E-1", None).await; // job title "Engineer"
+        activate!(&request, &worker).await;
+
+        let skill: Value = request
+            .post("/api/skills")
+            .json(&json!({ "name": "Mobility-Skill", "category": "technical" }))
+            .await
+            .json();
+        let skill_pid = skill["pid"].as_str().unwrap().to_string();
+        request
+            .put(&format!("/api/workers/{worker}/skills"))
+            .json(&json!({ "skill_pid": skill_pid, "proficiency": 4 }))
+            .await
+            .assert_status_ok();
+
+        let mut roles = Vec::new();
+        for (title, min) in [("Mobility Fit Role", 3), ("Mobility Stretch Role", 5)] {
+            let profile: Value = request
+                .post("/api/role-profiles")
+                .json(&json!({ "job_title": title }))
+                .await
+                .json();
+            let role = profile["pid"].as_str().unwrap().to_string();
+            request
+                .put(&format!("/api/role-profiles/{role}/requirements"))
+                .json(&json!({ "skill_pid": skill_pid, "min_proficiency": min, "importance": "critical" }))
+                .await
+                .assert_status_ok();
+            roles.push(role);
+        }
+
+        let matches: Value = request.get(&format!("/api/workers/{worker}/role-matches")).await.json();
+        let titles: Vec<&str> = matches["roles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["job_title"].as_str().unwrap())
+            .collect();
+        let fit = titles.iter().position(|t| *t == "Mobility Fit Role").unwrap();
+        let stretch = titles.iter().position(|t| *t == "Mobility Stretch Role").unwrap();
+        assert!(fit < stretch, "the better-fitting role is listed first");
+
+        // Express interest; a duplicate is refused; both-or-neither target is refused.
+        let interest = |body: Value| request.post(&format!("/api/workers/{worker}/mobility-interests")).json(&body);
+        let created: Value = interest(json!({ "role_profile_pid": roles[0], "note": "keen" })).await.json();
+        assert_eq!(interest(json!({ "role_profile_pid": roles[0] })).await.status_code(), 422);
+        assert_eq!(
+            interest(json!({ "role_profile_pid": roles[0], "requisition_pid": roles[1] })).await.status_code(),
+            422
+        );
+        assert_eq!(interest(json!({})).await.status_code(), 422);
+
+        // Others see counts, never who.
+        let summary: Value = request.get("/api/mobility/interest-summary").await.json();
+        let row = summary["targets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["target_pid"] == roles[0])
+            .unwrap();
+        assert!(row["interested"].as_u64().unwrap() >= 1);
+        assert!(row.get("worker_pid").is_none(), "no worker is named");
+
+        let mine: Value = request.get(&format!("/api/workers/{worker}/mobility-interests")).await.json();
+        assert_eq!(mine[0]["title"], "Mobility Fit Role");
+
+        let pid = created["pid"].as_str().unwrap();
+        request.delete(&format!("/api/mobility-interests/{pid}")).await.assert_status_ok();
+        let after: Value = request.get(&format!("/api/workers/{worker}/mobility-interests")).await.json();
+        assert!(after.as_array().unwrap().is_empty());
+    })
+    .await;
+}

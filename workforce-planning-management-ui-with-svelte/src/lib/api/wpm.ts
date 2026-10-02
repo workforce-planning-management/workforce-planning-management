@@ -596,6 +596,90 @@ export function cpdOverview(init?: FetchLike): Promise<{
   return api("/cpd/overview", init);
 }
 
+/** Terms-carrying ratio (or null when there is nothing to divide). */
+type Fit = {
+  critical_met: { numerator: number; denominator: number; value: number } | null;
+  all_met: { numerator: number; denominator: number; value: number } | null;
+};
+
+/** Roles ordered by this worker's own declared-skill fit (self-service). */
+export function roleMatches(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  roles: Array<{
+    role_profile_pid: string;
+    job_title: string;
+    requirements: number;
+    fit: Fit;
+  }>;
+}> {
+  return api(`/workers/${workerPid}/role-matches`, init);
+}
+
+/** Open requisitions in the worker's organization, with their fit. */
+export function opportunities(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  opportunities: Array<{
+    requisition_pid: string;
+    job_title: string;
+    department: string;
+    status: string;
+    fit: Fit | null;
+  }>;
+}> {
+  return api(`/workers/${workerPid}/opportunities`, init);
+}
+
+/** The worker's own expressed interests. */
+export function listMobilityInterests(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<
+  Array<{
+    pid: string;
+    kind: "role" | "requisition";
+    target_pid: string | null;
+    title: string | null;
+    note: string | null;
+  }>
+> {
+  return api(`/workers/${workerPid}/mobility-interests`, init);
+}
+
+/** Express interest in a role profile or an open requisition. */
+export function expressMobilityInterest(
+  workerPid: string,
+  body: { role_profile_pid?: string; requisition_pid?: string; note?: string },
+): Promise<{ pid: string }> {
+  return api(`/workers/${workerPid}/mobility-interests`, {
+    method: "POST",
+    body,
+  });
+}
+
+/** Withdraw an expressed interest. */
+export function withdrawMobilityInterest(pid: string): Promise<unknown> {
+  return api(`/mobility-interests/${pid}`, { method: "DELETE" });
+}
+
+/** Aggregate interest per target — never who. */
+export function mobilityInterestSummary(init?: FetchLike): Promise<{
+  derivation: string;
+  targets: Array<{
+    kind: "role" | "requisition";
+    target_pid: string;
+    title: string | null;
+    interested: number;
+  }>;
+}> {
+  return api("/mobility/interest-summary", init);
+}
+
 /** Terms-carrying ratio object (or null when there is nothing to divide). */
 type RatioOrNull = {
   numerator: number;

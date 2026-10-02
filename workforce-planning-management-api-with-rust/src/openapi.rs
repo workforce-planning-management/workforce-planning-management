@@ -194,6 +194,11 @@ pub fn spec() -> Value {
             "/api/cpd-entries/{pid}/verify": { "post": { "tags": ["cpd"], "summary": "Verify an entry's evidence", "responses": ok("CpdEntry") } },
             "/api/cpd-entries/{pid}": { "delete": { "tags": ["cpd"], "summary": "Withdraw an entry (soft-delete)", "responses": ok("Ok") } },
             "/api/cpd/overview": { "get": { "tags": ["cpd"], "summary": "Aggregate: employed workers meeting each requirement; registrations expiring or expired", "responses": ok("CpdOverview") } },
+            "/api/workers/{pid}/role-matches": { "get": { "tags": ["mobility"], "summary": "Roles ordered by this worker's own declared-skill fit (self-service; never ranks people)", "responses": ok("RoleMatches") } },
+            "/api/workers/{pid}/opportunities": { "get": { "tags": ["mobility"], "summary": "Open requisitions in the worker's organization, with the worker's fit where a profile exists", "responses": ok("Opportunities") } },
+            "/api/workers/{pid}/mobility-interests": { "get": { "tags": ["mobility"], "summary": "The worker's own expressed interests", "responses": ok("Interests") }, "post": { "tags": ["mobility"], "summary": "Express interest in a role profile or open requisition", "responses": ok("Pid") } },
+            "/api/mobility-interests/{pid}": { "delete": { "tags": ["mobility"], "summary": "Withdraw an interest", "responses": ok("Ok") } },
+            "/api/mobility/interest-summary": { "get": { "tags": ["mobility"], "summary": "Aggregate interest per target; never who", "responses": ok("InterestSummary") } },
             "/api/workforce-intelligence/succession": { "get": { "tags": ["intelligence"], "summary": "Bench strength + single points of failure (criticality × risk of loss)", "responses": ok("Succession") } },
             "/api/workforce-intelligence/pipelines": { "get": { "tags": ["intelligence"], "summary": "Pipeline funnel + early-career conversion rates", "responses": ok("Pipelines") } },
             "/api/wellbeing-entitlements": {

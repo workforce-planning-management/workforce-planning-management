@@ -88,6 +88,10 @@ describe("api path map", () => {
     await wpm.listCpdEntries("w1");
     await wpm.cpdProgress("w1");
     await wpm.cpdOverview();
+    await wpm.roleMatches("w1");
+    await wpm.opportunities("w1");
+    await wpm.listMobilityInterests("w1");
+    await wpm.mobilityInterestSummary();
     await wpm.listRoleProfiles();
     await wpm.getRoleProfile("rp1");
     await wpm.roleGap("rp1");
@@ -129,6 +133,10 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/cpd-entries",
       "/api/proxy/workers/w1/cpd-progress",
       "/api/proxy/cpd/overview",
+      "/api/proxy/workers/w1/role-matches",
+      "/api/proxy/workers/w1/opportunities",
+      "/api/proxy/workers/w1/mobility-interests",
+      "/api/proxy/mobility/interest-summary",
       "/api/proxy/role-profiles",
       "/api/proxy/role-profiles/rp1",
       "/api/proxy/role-profiles/rp1/gap",

@@ -890,6 +890,30 @@ first in each, per the three-part rule.
       0, vitest 43/43, build green. Not done: a CPD requirement derived from
       a gap or objective (WPM-T48/T49).
 
+- [x] WPM-T53 (2026-10-02) **Skills matching + internal mobility.**
+      Employee-facing by design (WPM-D28): the tool never ranks people or
+      selects anyone. Pure `rules::mobility` (`compare_fit` orders *roles*
+      for one worker by that worker's own fit — critical requirements
+      first, exact cross-multiplied fractions, no-requirement roles last;
+      `interest_target`, `same_title`; 4 tests). Migration
+      `m20261002_000025_mobility_interests` (exactly one of role profile /
+      requisition, one live interest per worker × target). `GET
+      /api/workers/{pid}/role-matches`, `…/opportunities` (open
+      requisitions in the worker's organization with the worker's fit, or
+      `null` fit when no profile exists), `POST`/`GET
+      …/mobility-interests`, `DELETE /api/mobility-interests/{pid}`
+      (withdraw), and `GET /api/mobility/interest-summary` — **aggregate
+      counts only, never who**. Privacy: interests join subject-access
+      export, erasure (note scrubbed, withdrawn) and the retention sweep
+      list (now 46). Front-end: a self-service `Mobility` panel on the
+      worker page and an "Employee interest" table on `/roles`. Rust
+      type-checks and 118 lib tests pass against stubbed sibling crates,
+      clippy-clean; DB-gated
+      `internal_mobility_matches_own_skills_and_keeps_interest_private` not
+      run. svelte-check 0, vitest 43/43, build green. Not done: a manager
+      view of *who* is interested (deliberately — would invite ranking);
+      notifying a hiring manager is a design question.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

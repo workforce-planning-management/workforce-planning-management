@@ -16,6 +16,7 @@ pub mod gap;
 pub mod leave;
 pub mod lifecycle;
 pub mod metrics;
+pub mod mobility;
 pub mod notify;
 pub mod org;
 pub mod org_access;

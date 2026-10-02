@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import RoleGap from "#lib/components/RoleGap.svelte";
+  import Mobility from "#lib/components/Mobility.svelte";
   import {
     ADJUSTMENT_CATEGORIES,
     acknowledgeWellbeing,
@@ -599,4 +600,5 @@
     </tbody>
   </table>
   <RoleGap workerPid={worker.pid} />
+  <Mobility workerPid={worker.pid} />
 {/if}
