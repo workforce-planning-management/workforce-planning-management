@@ -65,3 +65,12 @@ export function mean(value: number | null | undefined): string | null {
   if (value === null || value === undefined) return null;
   return value.toFixed(1);
 }
+
+/**
+ * A rate (a fraction, e.g. turnover) as a percentage to one decimal
+ * place, or `null` when absent — "no base to divide by" is not `0.0%`.
+ */
+export function rate(value: number | null | undefined): string | null {
+  if (value === null || value === undefined) return null;
+  return `${(value * 100).toFixed(1)}%`;
+}

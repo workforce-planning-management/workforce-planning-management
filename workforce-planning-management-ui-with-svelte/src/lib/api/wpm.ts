@@ -397,6 +397,31 @@ export function capabilityAnalysis(
   );
 }
 
+/** The shared workforce metrics (headcount, turnover, time-to-fill, …). */
+export function workforceMetrics(
+  period?: { from?: string; to?: string },
+  init?: FetchLike,
+): Promise<{
+  period: { from: string; to: string };
+  definitions: Record<string, string>;
+  headcount: { opening: number; closing: number; opening_date: string };
+  starters: number;
+  leavers: number;
+  turnover_rate: number | null;
+  span_of_control: { managers: number; mean: number; max: number } | null;
+  time_to_fill: {
+    requisitions: number;
+    mean_days: number;
+    median_days: number;
+  } | null;
+}> {
+  const query = new URLSearchParams();
+  if (period?.from) query.set("from", period.from);
+  if (period?.to) query.set("to", period.to);
+  const qs = query.toString();
+  return api(`/workforce-intelligence/metrics${qs ? `?${qs}` : ""}`, init);
+}
+
 /** The mentorship overview (active pairs, load, unmatched, stale). */
 export function mentorshipOverview(
   days?: number,

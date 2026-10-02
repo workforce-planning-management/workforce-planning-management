@@ -27,6 +27,7 @@
     ["/privacy", "nav.privacy"],
     ["/payroll", "nav.payroll"],
     ["/benchmarks", "nav.benchmarks"],
+    ["/metrics", "nav.metrics"],
   ] as const;
 
   function closeNav() {

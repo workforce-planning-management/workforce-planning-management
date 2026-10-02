@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { mean, percent, percentOf, percentWithWorkings, workings } from "../../src/lib/format";
+import { mean, rate, percent, percentOf, percentWithWorkings, workings } from "../../src/lib/format";
 
 describe("percent", () => {
   it("renders a present ratio as a rounded percentage", () => {
@@ -88,5 +88,17 @@ describe("mean", () => {
   it("renders null/undefined as null, never as the literal string \"undefined\"", () => {
     expect(mean(null)).toBeNull();
     expect(mean(undefined)).toBeNull();
+  });
+});
+
+describe("rate", () => {
+  it("formats a fraction as a one-decimal percentage", () => {
+    expect(rate(0.2)).toBe("20.0%");
+    expect(rate(0.1234)).toBe("12.3%");
+  });
+  it("keeps a real zero distinct from absent", () => {
+    expect(rate(0)).toBe("0.0%");
+    expect(rate(null)).toBeNull();
+    expect(rate(undefined)).toBeNull();
   });
 });

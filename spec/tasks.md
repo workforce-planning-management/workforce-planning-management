@@ -770,7 +770,7 @@ code + tests in one PR.
       network, so the image was fetched on the host from the registry API
       and `podman load`ed.
 
-- [~] WPM-T44 (2026-10-02) **Workforce metrics layer (API).**
+- [x] WPM-T44 (2026-10-02) **Workforce metrics layer.**
       `rules/metrics.rs` (pure; 5 tests run standalone): one `DEFINITIONS`
       vocabulary plus `headcount_on` (hire and termination dates both
       respected), `starters`, `leavers`, `turnover_rate` (leavers ÷ mean
@@ -789,7 +789,11 @@ code + tests in one PR.
       `/capability-analysis` and `/metrics` all count workers employed
       on the date (previously `/overview` counted every live record,
       terminated included). DB-gated tests pin `/overview` ==
-      `/metrics` closing headcount. Rust unbuilt (see WPM-T41). **Open:** a front-end view.
+      `/metrics` closing headcount. Rust unbuilt (see WPM-T41). **Front-end:** `/metrics` route
+      (period picker, each metric beside the service's definition,
+      `format.rate` null-not-zero), nav link, `workforceMetrics()` client +
+      path-map test, strings in all 16 locales; svelte-check 0, vitest
+      43/43, build green.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
@@ -886,7 +890,7 @@ where WPM already has a partial foundation to build on.
 
 ### Metrics, analytics, and visualization
 
-- [~] **Workforce metrics.** *(API landed as WPM-T44; front-end view, time-to-fill and the headcount reconciliation open.)* The base layer every item on this list
+- [x] **Workforce metrics.** *(landed as WPM-T44, including time-to-fill and the headcount reconciliation.)* The base layer every item on this list
       depends on — standard counts/rates (headcount, turnover, time-
       to-fill, span of control, tenure mix) as a shared, named
       vocabulary rather than one-off numbers computed per screen. WPM
