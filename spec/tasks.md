@@ -735,6 +735,15 @@ code + tests in one PR.
       per-skill depth table); path-map unit test extended; svelte-check
       0, vitest 35/35, build green.
 
+- [x] WPM-T42 (2026-10-02) **Org-chart view modes.** `/org-chart` gains
+      a view switch — by manager (the existing tree), by department, by
+      level — over the same service-derived manager forest; no API
+      change, so every view lists exactly the same people. Regrouping
+      lives in `src/lib/orgViews.ts` (pure, 4 unit tests); strings added
+      to all 16 locales. Tenure / location views need those fields on
+      the org-chart payload first (**open**). svelte-check 0, vitest
+      39/39, build green.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`
@@ -847,7 +856,7 @@ where WPM already has a partial foundation to build on.
       about it" rather than raw numbers on a dashboard. This is the
       most open-ended item on this list and the one most dependent on
       workforce metrics existing first as a well-defined foundation.
-- [ ] **Organizational visualization.** WPM already has a recursive
+- [~] **Organizational visualization.** *(manager / department / level views landed as WPM-T42; tenure and location views need API fields.)* WPM already has a recursive
       org-chart derivation (WPM-T2) but only ever renders one view of
       it. ChartHop's category is a *highly visual*, multi-mode org
       chart — by department, manager, location, job level, tenure —
