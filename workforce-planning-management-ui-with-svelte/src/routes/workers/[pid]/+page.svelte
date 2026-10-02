@@ -202,6 +202,7 @@
   <div class="panel" data-testid="facts">
     <p>
       {worker.job_title} · {worker.department} ·
+      {#if worker.location}{worker.location} ·{/if}
       <span class={`chip status-${worker.status}`}>{worker.status}</span>
       · FTE {worker.fte_percent}%
     </p>

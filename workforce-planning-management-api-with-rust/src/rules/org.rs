@@ -31,9 +31,40 @@ pub fn would_create_cycle<S: BuildHasher>(
     false
 }
 
+/// The longest accepted work location.
+pub const MAX_LOCATION_LEN: usize = 100;
+
+/// Normalise a work-location input: trimmed, blank ⇒ `None` (cleared /
+/// unknown), and no longer than [`MAX_LOCATION_LEN`] characters.
+///
+/// # Errors
+/// A message when the trimmed value is too long.
+pub fn normalize_location(input: Option<&str>) -> Result<Option<String>, String> {
+    let Some(raw) = input.map(str::trim) else {
+        return Ok(None);
+    };
+    if raw.is_empty() {
+        return Ok(None);
+    }
+    if raw.chars().count() > MAX_LOCATION_LEN {
+        return Err(format!("location is longer than {MAX_LOCATION_LEN} characters"));
+    }
+    Ok(Some(raw.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Locations are trimmed, blank means "unknown", over-long is refused.
+    #[test]
+    fn location_is_normalised() {
+        assert_eq!(normalize_location(None), Ok(None));
+        assert_eq!(normalize_location(Some("   ")), Ok(None));
+        assert_eq!(normalize_location(Some(" Cardiff ")), Ok(Some("Cardiff".to_string())));
+        assert!(normalize_location(Some(&"x".repeat(100))).is_ok());
+        assert!(normalize_location(Some(&"x".repeat(101))).is_err());
+    }
 
     fn u(n: u128) -> Uuid {
         Uuid::from_u128(n)

@@ -8,6 +8,7 @@
     ORG_VIEWS,
     byDepartment,
     byLevel,
+    byLocation,
     byTenure,
     tenureLabel,
     type OrgView,
@@ -83,6 +84,21 @@
         {#each byTenure(byOrganization[ref] ?? []) as group (group.band)}
           <h3>
             {tenureLabel(group.band)} {t("org.tenureYears")}
+            <span class="muted">({group.members.length})</span>
+          </h3>
+          <ul>
+            {#each group.members as member (member.pid)}
+              <li>
+                <a href={`/workers/${member.pid}`}>{member.display_name}</a>
+                <span class="muted">— {member.job_title} · {member.department}</span>
+              </li>
+            {/each}
+          </ul>
+        {/each}
+      {:else if view === "location"}
+        {#each byLocation(byOrganization[ref] ?? []) as group (group.location ?? "")}
+          <h3>
+            {group.location ?? t("org.noLocation")}
             <span class="muted">({group.members.length})</span>
           </h3>
           <ul>

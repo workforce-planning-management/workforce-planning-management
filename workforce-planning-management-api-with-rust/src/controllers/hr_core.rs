@@ -37,6 +37,8 @@ struct WorkerPayload {
     department: String,
     job_title: String,
     #[serde(default)]
+    location: Option<String>,
+    #[serde(default)]
     manager_pid: Option<Uuid>,
     #[serde(default)]
     salary_minor: Option<i64>,
@@ -54,6 +56,9 @@ struct WorkerUpdate {
     department: Option<String>,
     #[serde(default)]
     job_title: Option<String>,
+    /// A blank string clears the location.
+    #[serde(default)]
+    location: Option<String>,
     #[serde(default)]
     fte_percent: Option<i32>,
     #[serde(default)]
@@ -128,6 +133,9 @@ fn validate_worker(p: &WorkerPayload) -> Vec<String> {
     );
     problems.require_text("department", &p.department);
     problems.require_text("job_title", &p.job_title);
+    if let Err(message) = org::normalize_location(p.location.as_deref()) {
+        problems.push(message);
+    }
     if !(1..=100).contains(&p.fte_percent) {
         problems.push(format!("fte_percent {} out of range 1-100", p.fte_percent));
     }
@@ -178,6 +186,9 @@ async fn create_worker(
         fte_percent: ActiveValue::set(payload.fte_percent),
         department: ActiveValue::set(payload.department.clone()),
         job_title: ActiveValue::set(payload.job_title.clone()),
+        location: ActiveValue::set(
+            org::normalize_location(payload.location.as_deref()).unwrap_or(None),
+        ),
         manager_pid: ActiveValue::set(payload.manager_pid),
         salary_minor: ActiveValue::set(payload.salary_minor),
         salary_currency: ActiveValue::set(payload.salary_currency.clone()),
@@ -344,6 +355,9 @@ async fn update_worker(
     {
         problems.push(format!("fte_percent {fte} out of range 1-100"));
     }
+    if let Err(message) = org::normalize_location(payload.location.as_deref()) {
+        problems.push(message);
+    }
     if payload.salary_minor.is_some_and(|s| s < 0) {
         problems.push("salary_minor must be non-negative".to_string());
     }
@@ -370,6 +384,10 @@ async fn update_worker(
     }
     if let Some(v) = payload.job_title {
         active.job_title = ActiveValue::set(v);
+    }
+    if let Some(v) = payload.location.as_deref() {
+        // Validated above; a blank value clears the location.
+        active.location = ActiveValue::set(org::normalize_location(Some(v)).unwrap_or(None));
     }
     if let Some(v) = payload.fte_percent {
         active.fte_percent = ActiveValue::set(v);
@@ -546,6 +564,8 @@ struct OrgNode {
     /// Whole-month tenure band at the time of the request
     /// ([`talent::tenure_bucket`]); `not_started` for a future hire date.
     tenure: &'static str,
+    /// Free-text work location; `null` when not recorded.
+    location: Option<String>,
     reports: Vec<OrgNode>,
 }
 
@@ -575,6 +595,7 @@ fn build_org_node(
         job_title: node.job_title.clone(),
         department: node.department.clone(),
         tenure: talent::tenure_bucket(talent::months_of_service(node.hired_on, as_of)),
+        location: node.location.clone(),
         reports,
     }
 }

@@ -4,6 +4,7 @@ import type { OrgNode } from "../../src/lib/api/types";
 import {
   byDepartment,
   byLevel,
+  byLocation,
   byTenure,
   flatten,
   tenureLabel,
@@ -14,12 +15,14 @@ const node = (
   department: string,
   reports: OrgNode[] = [],
   tenure = "1_to_3y",
+  location: string | null = null,
 ): OrgNode => ({
   pid,
   display_name: pid,
   job_title: "x",
   department,
   tenure,
+  location,
   reports,
 });
 
@@ -77,10 +80,23 @@ describe("org views", () => {
     expect(tenureLabel("not_started")).toBe("—");
   });
 
+  it("byLocation sorts places and keeps unknown last", () => {
+    const placed = [
+      node("a", "x", [node("b", "x", [], "1_to_3y", "Cardiff")], "1_to_3y", "Bristol"),
+      node("c", "x"),
+      node("d", "x", [], "1_to_3y", "Cardiff"),
+    ];
+    const groups = byLocation(placed);
+    expect(groups.map((g) => g.location)).toEqual(["Bristol", "Cardiff", null]);
+    expect(groups[1]?.members.map((m) => m.pid)).toEqual(["b", "d"]);
+    expect(groups.flatMap((g) => g.members)).toHaveLength(4);
+  });
+
   it("an empty forest yields empty views", () => {
     expect(flatten([])).toEqual([]);
     expect(byDepartment([])).toEqual([]);
     expect(byLevel([])).toEqual([]);
     expect(byTenure([])).toEqual([]);
+    expect(byLocation([])).toEqual([]);
   });
 });

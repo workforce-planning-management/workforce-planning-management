@@ -40,6 +40,7 @@ Benchmark (job_title × currency)
 | `fte_percent` | int | 1–100 |
 | `department` | text | ABAC scoping attribute (`resource.department`) |
 | `job_title` | text | benchmarking key |
+| `location?` | text (≤ 100) | free-text work location; blank/absent = unknown, never a default place |
 | `manager_pid` | UUID? | another Employee — the org-chart edge |
 | `hire_date` | date | |
 | `termination_date` / `termination_reason` | date? / enum? | `resignation` \| `dismissal` \| `redundancy` \| `retirement` \| `end_of_contract` |

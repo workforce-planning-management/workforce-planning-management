@@ -14,6 +14,8 @@ export interface Worker {
   fte_percent: number;
   department: string;
   job_title: string;
+  /** Free-text work location; `null` when not recorded. */
+  location: string | null;
   manager_pid: string | null;
   salary_minor: number | null;
   salary_currency: string | null;
@@ -49,6 +51,8 @@ export interface OrgNode {
   /** Tenure band (whole months of service): `under_1y` … `over_10y`, or
    *  `not_started` for a future hire date. */
   tenure: string;
+  /** Free-text work location; `null` when not recorded. */
+  location: string | null;
   reports: OrgNode[];
 }
 

@@ -4,7 +4,7 @@
 
 import type { OrgNode } from "./api/types";
 
-export const ORG_VIEWS = ["manager", "department", "level", "tenure"] as const;
+export const ORG_VIEWS = ["manager", "department", "level", "tenure", "location"] as const;
 export type OrgView = (typeof ORG_VIEWS)[number];
 
 /** A node with its depth in the manager forest (a root is level 1). */
@@ -107,6 +107,35 @@ export function byTenure(
     .sort(([a], [b]) => rank(a) - rank(b))
     .map(([band, members]) => ({
       band,
+      members: members.sort((a, b) =>
+        a.display_name.localeCompare(b.display_name),
+      ),
+    }));
+}
+
+/**
+ * Nodes grouped by work location, locations sorted by name, with the
+ * people whose location is not recorded in a separate trailing group
+ * (`location: null`) — "unknown" is not a place.
+ */
+export function byLocation(
+  roots: OrgNode[],
+): Array<{ location: string | null; members: OrgNode[] }> {
+  const groups = new Map<string | null, OrgNode[]>();
+  for (const { node } of flatten(roots)) {
+    const key = node.location ?? null;
+    const members = groups.get(key) ?? [];
+    members.push(node);
+    groups.set(key, members);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => {
+      if (a === null) return b === null ? 0 : 1;
+      if (b === null) return -1;
+      return a.localeCompare(b);
+    })
+    .map(([location, members]) => ({
+      location,
       members: members.sort((a, b) =>
         a.display_name.localeCompare(b.display_name),
       ),
