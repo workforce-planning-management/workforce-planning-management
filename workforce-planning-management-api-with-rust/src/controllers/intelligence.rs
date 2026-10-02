@@ -28,15 +28,16 @@
 use loco_rs::prelude::*;
 use sea_orm::EntityTrait;
 use serde::Deserialize;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
 use crate::models::_entities::{
-    assessment_instruments, assessments, development_plans, early_career_programs, worker_skills,
-    workers, pipeline_members, program_placements, skills, succession_candidates,
-    succession_plans, talent_pipelines,
+    assessment_instruments, assessments, development_plans, early_career_programs,
+    pipeline_members, program_placements, skills, succession_candidates, succession_plans,
+    talent_pipelines, worker_skills, workers,
 };
 use crate::rules::assessment as assessment_rules;
+use crate::rules::capability as capability_rules;
 use crate::rules::talent as rules;
 
 /// Render a `(numerator, denominator, value)` triple as the family's
@@ -79,9 +80,7 @@ async fn overview(
     let mut span_of_control: BTreeMap<Uuid, usize> = BTreeMap::new();
 
     for worker in &staff {
-        *by_department
-            .entry(worker.department.clone())
-            .or_default() += 1;
+        *by_department.entry(worker.department.clone()).or_default() += 1;
         *by_status.entry(worker.status.clone()).or_default() += 1;
         *by_employment_type
             .entry(worker.employment_type.clone())
@@ -266,6 +265,120 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     }))
 }
 
+/// Query for the capability-analysis view.
+#[derive(Debug, Deserialize)]
+struct CapabilityAnalysisQuery {
+    /// Proficiency (1–5) at which a declaration counts as working
+    /// capability. Default 3.
+    min_proficiency: Option<i32>,
+    /// Workers at that proficiency a skill needs to not depend on one
+    /// person. Default 2.
+    min_depth: Option<usize>,
+}
+
+/// `GET /api/workforce-intelligence/capability-analysis?min_proficiency=&min_depth=`
+/// — the strategic read of declared skills: for every catalogue skill,
+/// how many workers hold it at working proficiency, in how many
+/// departments, and whether that depth is `adequate`, `thin`,
+/// `no_proficient`, or `undeclared`; rolled up by category.
+///
+/// Read-only and derived — no new stored state — over the same
+/// declarations as `/capability`. The thresholds are the caller's to
+/// set, and are echoed back so a figure is never read without them.
+#[debug_handler]
+#[allow(clippy::too_many_lines)] // one pass over skills and declarations
+async fn capability_analysis(
+    axum::extract::Query(query): axum::extract::Query<CapabilityAnalysisQuery>,
+    State(ctx): State<AppContext>,
+) -> Result<Response> {
+    let min_proficiency = query
+        .min_proficiency
+        .unwrap_or(capability_rules::DEFAULT_MIN_PROFICIENCY);
+    let min_depth = query
+        .min_depth
+        .unwrap_or(capability_rules::DEFAULT_MIN_DEPTH);
+    capability_rules::validate_thresholds(min_proficiency, min_depth).map_err(|e| match e {
+        capability_rules::ThresholdError::Proficiency => {
+            super::unprocessable("min_proficiency must be 1–5")
+        }
+        capability_rules::ThresholdError::Depth => {
+            super::unprocessable("min_depth must be at least 1")
+        }
+    })?;
+
+    let staff = live_workers(&ctx).await?;
+    let headcount = staff.len();
+    let department_of: BTreeMap<Uuid, &str> = staff
+        .iter()
+        .map(|e| (e.pid, e.department.as_str()))
+        .collect();
+    let skill_rows = skills::Entity::find()
+        .filter(skills::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?;
+    let declared = worker_skills::Entity::find()
+        .filter(worker_skills::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?;
+
+    // skill → (declared, proficient, departments of the proficient)
+    let mut per_skill: BTreeMap<Uuid, (usize, usize, BTreeSet<&str>)> = BTreeMap::new();
+    for row in &declared {
+        let Some(department) = department_of.get(&row.worker_pid) else {
+            continue; // a declaration from a departed worker
+        };
+        let entry = per_skill.entry(row.skill_pid).or_default();
+        entry.0 += 1;
+        if row.proficiency >= min_proficiency {
+            entry.1 += 1;
+            entry.2.insert(*department);
+        }
+    }
+
+    // category → status → count
+    let mut by_category: BTreeMap<String, BTreeMap<&str, usize>> = BTreeMap::new();
+    let mut skills_out = Vec::with_capacity(skill_rows.len());
+    for skill in &skill_rows {
+        let (declared_by, proficient, departments) = per_skill
+            .get(&skill.pid)
+            .map_or((0, 0, BTreeSet::new()), |(d, p, deps)| {
+                (*d, *p, deps.clone())
+            });
+        let status = capability_rules::depth_status(declared_by, proficient, min_depth);
+        *by_category
+            .entry(skill.category.clone())
+            .or_default()
+            .entry(status)
+            .or_default() += 1;
+        skills_out.push(serde_json::json!({
+            "skill": skill.name,
+            "category": skill.category,
+            "declared_by": declared_by,
+            "proficient": proficient,
+            "proficient_departments": departments.len(),
+            "proficient_share": ratio_json(rules::ratio(proficient, headcount)),
+            "status": status,
+        }));
+    }
+    let adequate = skills_out
+        .iter()
+        .filter(|s| s["status"] == "adequate")
+        .count();
+
+    format::json(serde_json::json!({
+        "derivation": "counts DECLARED proficiency at or above min_proficiency over live \
+                       headcount; `undeclared` means nobody declared the skill (unknown, not \
+                       absent), `no_proficient` means declared but nobody at the bar, `thin` \
+                       means fewer than min_depth proficient workers",
+        "thresholds": { "min_proficiency": min_proficiency, "min_depth": min_depth },
+        "headcount": headcount,
+        "skills_in_catalog": skills_out.len(),
+        "adequately_covered": ratio_json(rules::ratio(adequate, skills_out.len())),
+        "by_category": by_category,
+        "skills": skills_out,
+    }))
+}
+
 /// `GET /api/workforce-intelligence/succession` — bench strength across
 /// the succession plans, and the **single points of failure**: critical
 /// roles with nobody ready now (a high risk of loss lowers the
@@ -446,6 +559,7 @@ pub fn routes() -> Routes {
         .prefix("/api/workforce-intelligence")
         .add("/overview", get(overview))
         .add("/capability", get(capability))
+        .add("/capability-analysis", get(capability_analysis))
         .add("/succession", get(succession))
         .add("/pipelines", get(pipelines))
 }

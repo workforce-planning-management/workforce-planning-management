@@ -717,6 +717,21 @@ code + tests in one PR.
       a real Postgres (21 passed, including both new tests), `cargo fmt
       --check`.
 
+- [~] WPM-T41 (2026-10-02) **Workforce capability analysis (API).**
+      `rules/capability.rs` (pure): `depth_status` grades each skill
+      `undeclared` / `no_proficient` / `thin` / `adequate` from declared
+      proficiency, and `validate_thresholds` bounds the caller's
+      `min_proficiency` (1–5) and `min_depth` (≥ 1). New read-only
+      `GET /api/workforce-intelligence/capability-analysis` in
+      `controllers/intelligence.rs`: per-skill declared / proficient
+      counts, proficient departments, proficient share (terms-carrying
+      ratio), category rollup, and the thresholds echoed back; no new
+      stored state. Pure rules pinned (4 tests, run standalone); DB-gated
+      `capability_analysis_reports_skill_depth` added. **Not yet
+      verified:** `cargo build`/`clippy`/`test` — the sibling
+      `authentication-verifier` crate is absent on this machine. **Open:**
+      the front-end view.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`
@@ -800,7 +815,7 @@ where WPM already has a partial foundation to build on.
       goes further: gaps compared against a *future* role's
       requirements, not just today's declared target — which depends
       on the future-state modeling item above existing first.
-- [ ] **Workforce capability analysis.** Aggregate "do we have enough
+- [~] **Workforce capability analysis.** *(API landed as WPM-T41; front-end view open.)* Aggregate "do we have enough
       of the critical skills to compete" reporting across the whole
       org, as distinct from the per-employee/per-department gap
       reports above — a strategic rather than operational read of the

@@ -200,3 +200,88 @@ async fn learning_round_trip() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn capability_analysis_reports_skill_depth() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let a = seed_worker!(&request, &org, "E-1", None).await;
+        activate!(&request, &a).await;
+        let b = seed_worker!(&request, &org, "E-2", None).await;
+        activate!(&request, &b).await;
+
+        let mut pids = Vec::new();
+        for name in ["Rust", "Go", "Cobol"] {
+            let skill: Value = request
+                .post("/api/skills")
+                .json(&json!({ "name": name, "category": "technical" }))
+                .await
+                .json();
+            pids.push(skill["pid"].as_str().unwrap().to_string());
+        }
+        // Rust: two proficient (adequate). Go: one proficient (thin).
+        // Cobol: declared at 1 only (no_proficient). Nothing undeclared.
+        for (worker, skill, level) in [
+            (&a, &pids[0], 4),
+            (&b, &pids[0], 3),
+            (&a, &pids[1], 5),
+            (&b, &pids[2], 1),
+        ] {
+            request
+                .put(&format!("/api/workers/{worker}/skills"))
+                .json(&json!({ "skill_pid": skill, "proficiency": level }))
+                .await
+                .assert_status_ok();
+        }
+
+        let view: Value = request
+            .get("/api/workforce-intelligence/capability-analysis")
+            .await
+            .json();
+        assert_eq!(view["thresholds"]["min_proficiency"], 3);
+        assert_eq!(view["thresholds"]["min_depth"], 2);
+        let status_of = |name: &str| {
+            view["skills"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|s| s["skill"] == name)
+                .map(|s| s["status"].clone())
+        };
+        assert_eq!(status_of("Rust"), Some(json!("adequate")));
+        assert_eq!(status_of("Go"), Some(json!("thin")));
+        assert_eq!(status_of("Cobol"), Some(json!("no_proficient")));
+
+        // A stricter bar re-grades the same declarations.
+        let strict: Value = request
+            .get("/api/workforce-intelligence/capability-analysis?min_proficiency=4&min_depth=1")
+            .await
+            .json();
+        let rust = strict["skills"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|s| s["skill"] == "Rust")
+            .unwrap();
+        assert_eq!(rust["proficient"], 1, "only the level-4 declaration clears the bar");
+        assert_eq!(rust["status"], "adequate", "depth bar of one is met");
+
+        assert_eq!(
+            request
+                .get("/api/workforce-intelligence/capability-analysis?min_proficiency=9")
+                .await
+                .status_code(),
+            422
+        );
+        assert_eq!(
+            request
+                .get("/api/workforce-intelligence/capability-analysis?min_depth=0")
+                .await
+                .status_code(),
+            422
+        );
+    })
+    .await;
+}
