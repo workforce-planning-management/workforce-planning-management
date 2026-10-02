@@ -22,7 +22,7 @@ silently defeat the structural anonymity.
 ## Event kinds
 
 `requisition_opened` / `requisition_filled`, `application_staged`,
-`employee_hired` / `employee_activated` / `employee_terminated`,
+`worker_hired` / `worker_activated` / `worker_terminated`,
 `onboarding_item_completed`, `time_recorded`, `leave_requested` /
 `leave_approved` / `leave_rejected`, `shift_assigned`,
 `benefit_enrolled`, `review_submitted` / `review_shared`,

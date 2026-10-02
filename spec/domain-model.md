@@ -33,7 +33,7 @@ Benchmark (job_title × currency)
 | `person_ref` | EntityRef | `person:<pid>` — the human; never raw demographics |
 | `worker_ref` | EntityRef? | `worker:<pid>` professional identity, when registered |
 | `organization_ref` | EntityRef | the employer |
-| `employee_number` | text | employer-scoped, unique |
+| `worker_number` | text | employer-scoped, unique |
 | `display_name` | text | denormalised cache; refreshable; maskable |
 | `status` | enum | `onboarding` \| `active` \| `on_leave` \| `offboarding` \| `terminated` \| `retired` |
 | `employment_type` | enum | `full_time` \| `part_time` \| `contract` \| `intern` |
@@ -69,13 +69,13 @@ Benchmark (job_title × currency)
 
 ## Workforce management
 
-- **TimeEntry** — `employee_pid`, `date`, `minutes` (or clock
+- **TimeEntry** — `worker_pid`, `date`, `minutes` (or clock
   in/out pair), `kind` (`regular` \| `overtime` \| `remote` \|
   `on_call`), `note?`. Overtime = minutes beyond the contracted
   day, derived in the pure core.
-- **LeaveEntitlement** — `employee_pid`, `kind`, `year`,
+- **LeaveEntitlement** — `worker_pid`, `kind`, `year`,
   `minutes_total`; balance = total − approved-taken.
-- **LeaveRequest** — `employee_pid`, `kind` (`annual` \| `sick` \|
+- **LeaveRequest** — `worker_pid`, `kind` (`annual` \| `sick` \|
   `parental` \| `unpaid` \| `compassionate`), `from`/`to`,
   `status`: `requested → approved | rejected → cancelled`;
   approving decrements the balance (sick may go negative —
@@ -87,7 +87,7 @@ Benchmark (job_title × currency)
 ## HR core
 
 - **BenefitPlan** — `name`, `kind` (`health` \| `pension` \| `perk`),
-  `provider?`, `employee_cost_minor`/`employer_cost_minor` + currency.
+  `provider?`, `worker_cost_minor`/`employer_cost_minor` + currency.
 - **BenefitEnrollment** — employee × plan, `effective_from`,
   `effective_to?`, `status` (`enrolled` \| `ended`).
 - **Org chart** — derived: the `manager_pid` tree (cycle-refused at
@@ -248,7 +248,7 @@ record with salary, payslips, review content, 360 reports, adjustment
 words, unmasked assessment scores, succession) are audited too — with
 one designed exception: a **pulse submission's audit row carries no
 actor** (WPM-D20). Events follow the family envelope with kinds such
-as `employee_hired`, `leave_approved`, `payroll_run_calculated`,
+as `worker_hired`, `leave_approved`, `payroll_run_calculated`,
 `review_shared` — see [audit.md](audit.md).
 
 ## Subject rights & retention (WPM-R30 — WPM-D22)

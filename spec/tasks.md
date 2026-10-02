@@ -155,7 +155,7 @@ code + tests in one PR.
 
 - [x] WPM-T20 (2026-07-20) **Learning & development.** Migration
       `m20260720_000008_learning` (skills catalog + declared
-      `employee_skills`, `learning_paths` + steps + `path_enrollments`,
+      `worker_skills`, `learning_paths` + steps + `path_enrollments`,
       `mentorships` + `mentorship_sessions`). `controllers/learning.rs`:
       the skills framework (catalog; declared proficiency 1–5 + optional
       target, upsert), learning paths (ordered course steps; idempotent
@@ -709,7 +709,7 @@ code + tests in one PR.
       all three headers; the employee list's total reflects its
       `?department=`/`?status=` filters (counted before paging, via
       `Select::count`). New DB-gated tests
-      (`tests/requests/pagination.rs`): `employee_list_paginates_and_clamps`
+      (`tests/requests/pagination.rs`): `worker_list_paginates_and_clamps`
       (page size, true total, limit clamp, offset bound) and
       `benefit_plan_list_paginates` (page size + offset bound). Verified:
       `cargo build --lib`, `cargo clippy --all-targets -- -D warnings`,
@@ -775,7 +775,7 @@ where WPM already has a partial foundation to build on.
       Eightfold/Fuel50 category: a continuously-updated skills graph
       matching people to roles, gigs, or projects, not just open
       requisitions. WPM already has a real (if simpler) skills
-      foundation — `employee_skills` with declared 1–5 proficiency +
+      foundation — `worker_skills` with declared 1–5 proficiency +
       optional target (WPM-T20) — that a matching feature could
       extend, rather than reintroducing a duplicate model. The gap
       versus the vendor category: today's skills data is
@@ -805,7 +805,7 @@ where WPM already has a partial foundation to build on.
       org, as distinct from the per-employee/per-department gap
       reports above — a strategic rather than operational read of the
       same skills data. Likely a new read-only aggregate view over
-      `employee_skills` + `learning_paths` (WPM-T20) rather than new
+      `worker_skills` + `learning_paths` (WPM-T20) rather than new
       stored state, in the same spirit as the existing
       workforce-intelligence read views (WPM-T22,
       `/api/workforce-intelligence/*`).
