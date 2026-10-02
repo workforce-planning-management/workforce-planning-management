@@ -11,19 +11,23 @@
     listRoleProfiles,
     listSkills,
     removeRoleRequirement,
+    roleGap,
     setRoleRequirement,
   } from "#lib/api/wpm.js";
+  import { percentWithWorkings } from "#lib/format.js";
   import { t } from "#lib/i18n.svelte.js";
 
   type Profiles = Awaited<ReturnType<typeof listRoleProfiles>>;
   type Profile = Awaited<ReturnType<typeof getRoleProfile>>;
   type Skills = Awaited<ReturnType<typeof listSkills>>;
+  type Coverage = Awaited<ReturnType<typeof roleGap>>;
 
   const IMPORTANCES = ["critical", "important", "useful"] as const;
 
   let profiles = $state<Profiles>([]);
   let skills = $state<Skills>([]);
   let selected = $state("");
+  let coverage = $state<Coverage | null>(null);
   let profile = $state<Profile | null>(null);
   let error = $state<string | null>(null);
 
@@ -39,7 +43,10 @@
     try {
       profiles = await listRoleProfiles();
       if (!selected && profiles.length > 0) selected = profiles[0]?.pid ?? "";
-      if (selected) profile = await getRoleProfile(selected);
+      if (selected) {
+        profile = await getRoleProfile(selected);
+        coverage = await roleGap(selected);
+      }
     } catch (cause) {
       error = message(cause);
     }
@@ -59,9 +66,11 @@
   async function select(pid: string) {
     selected = pid;
     profile = null;
+    coverage = null;
     if (pid) {
       try {
         profile = await getRoleProfile(pid);
+        coverage = await roleGap(pid);
       } catch (cause) {
         error = message(cause);
       }
@@ -171,6 +180,28 @@
       {/each}
     </tbody>
   </table>
+
+  {#if coverage}
+    <h3>Can we staff this role today?</h3>
+    <p class="muted">{coverage.derivation}</p>
+    <table data-testid="role-coverage">
+      <thead>
+        <tr><th>Skill</th><th>Needs</th><th>Meeting</th><th>Below</th><th>Undeclared</th><th>Coverage</th></tr>
+      </thead>
+      <tbody>
+        {#each coverage.requirements as row (row.skill)}
+          <tr>
+            <td>{row.skill}</td>
+            <td>{row.min_proficiency}</td>
+            <td>{row.meeting}</td>
+            <td>{row.below}</td>
+            <td>{row.undeclared}</td>
+            <td>{percentWithWorkings(row.coverage)}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {/if}
 
   <h3>Require a skill</h3>
   <form

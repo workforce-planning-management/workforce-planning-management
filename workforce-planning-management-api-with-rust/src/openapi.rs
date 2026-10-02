@@ -185,6 +185,8 @@ pub fn spec() -> Value {
             "/api/role-profiles/{pid}": { "get": { "tags": ["roles"], "summary": "A profile with its required skills, critical first", "responses": ok("RoleProfile") } },
             "/api/role-profiles/{pid}/requirements": { "put": { "tags": ["roles"], "summary": "Require a skill at a minimum proficiency 1-5 with an importance (upsert)", "responses": ok("Ok") } },
             "/api/role-profiles/{pid}/requirements/{skill_pid}": { "delete": { "tags": ["roles"], "summary": "Drop a requirement", "responses": ok("Ok") } },
+            "/api/role-profiles/{pid}/gap": { "get": { "tags": ["roles"], "summary": "Can the workforce staff this role? Per-requirement met / below / undeclared counts over employed workers", "responses": ok("RoleGap") } },
+            "/api/workers/{pid}/role-gap": { "get": { "tags": ["roles"], "summary": "One worker's declared proficiency vs a role profile (?role_profile_pid=)", "responses": ok("WorkerRoleGap") } },
             "/api/workforce-intelligence/succession": { "get": { "tags": ["intelligence"], "summary": "Bench strength + single points of failure (criticality × risk of loss)", "responses": ok("Succession") } },
             "/api/workforce-intelligence/pipelines": { "get": { "tags": ["intelligence"], "summary": "Pipeline funnel + early-career conversion rates", "responses": ok("Pipelines") } },
             "/api/wellbeing-entitlements": {

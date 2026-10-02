@@ -466,6 +466,61 @@ export function removeRoleRequirement(
   });
 }
 
+/** Terms-carrying ratio object (or null when there is nothing to divide). */
+type RatioOrNull = {
+  numerator: number;
+  denominator: number;
+  value: number;
+} | null;
+
+/** One worker's declared proficiency against a role profile. */
+export function workerRoleGap(
+  workerPid: string,
+  roleProfilePid: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  worker_pid: string;
+  role: { pid: string; job_title: string };
+  requirements: Array<{
+    skill_pid: string;
+    skill: string | null;
+    importance: string;
+    min_proficiency: number;
+    declared: number | null;
+    grade: "met" | "below" | "undeclared";
+    shortfall: number | null;
+  }>;
+  critical_met: RatioOrNull;
+  all_met: RatioOrNull;
+}> {
+  return api(
+    `/workers/${workerPid}/role-gap?role_profile_pid=${roleProfilePid}`,
+    init,
+  );
+}
+
+/** Can the workforce staff a role? Aggregate per requirement. */
+export function roleGap(
+  roleProfilePid: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  role: { pid: string; job_title: string };
+  headcount: number;
+  requirements: Array<{
+    skill: string | null;
+    importance: string;
+    min_proficiency: number;
+    meeting: number;
+    below: number;
+    undeclared: number;
+    coverage: RatioOrNull;
+  }>;
+}> {
+  return api(`/role-profiles/${roleProfilePid}/gap`, init);
+}
+
 /** The shared workforce metrics (headcount, turnover, time-to-fill, …). */
 export function workforceMetrics(
   period?: { from?: string; to?: string },

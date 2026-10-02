@@ -11,6 +11,7 @@ pub mod benchmark;
 pub mod capability;
 pub mod ergonomics;
 pub mod learning;
+pub mod gap;
 pub mod leave;
 pub mod lifecycle;
 pub mod metrics;

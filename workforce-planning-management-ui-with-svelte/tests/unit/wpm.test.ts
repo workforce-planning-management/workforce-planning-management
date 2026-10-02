@@ -86,6 +86,8 @@ describe("api path map", () => {
     await wpm.capabilityAnalysis({ minProficiency: 4, minDepth: 1 });
     await wpm.listRoleProfiles();
     await wpm.getRoleProfile("rp1");
+    await wpm.roleGap("rp1");
+    await wpm.workerRoleGap("w1", "rp1");
     await wpm.workforceMetrics();
     await wpm.workforceMetrics({ from: "2026-01-01", to: "2026-06-30" });
     await wpm.listPaths();
@@ -121,6 +123,8 @@ describe("api path map", () => {
       "/api/proxy/workforce-intelligence/capability-analysis?min_proficiency=4&min_depth=1",
       "/api/proxy/role-profiles",
       "/api/proxy/role-profiles/rp1",
+      "/api/proxy/role-profiles/rp1/gap",
+      "/api/proxy/workers/w1/role-gap?role_profile_pid=rp1",
       "/api/proxy/workforce-intelligence/metrics",
       "/api/proxy/workforce-intelligence/metrics?from=2026-01-01&to=2026-06-30",
       "/api/proxy/learning-paths",

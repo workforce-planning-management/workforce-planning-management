@@ -852,6 +852,20 @@ first in each, per the three-part rule.
 - [ ] WPM-T50 **Front-end `/planning`.** Plan list + comparison, demand
       editor, gap and alignment views; strings in all locales.
 
+- [x] WPM-T51 (2026-10-02) **Skills gap against a target role.** Pure
+      `rules::gap` (`grade` met / below / undeclared, `shortfall` only when
+      known, `readiness` critical + overall; 3 tests). `GET
+      /api/workers/{pid}/role-gap?role_profile_pid=` (one worker's
+      declarations vs a profile, terms-carrying readiness ratios) and `GET
+      /api/role-profiles/{pid}/gap` (per requirement: employed workers
+      meeting / below / undeclared and coverage; aggregate, no one named).
+      Compares **declarations**; `undeclared` is unknown, never a numeric
+      shortfall. Front-end: a "Can we staff this role today?" table on
+      `/roles` and a "Compare to a role" panel (`RoleGap.svelte`) on the
+      worker page. Rust type-checks and lib tests pass against stubbed
+      sibling crates; DB-gated `role_gap_grades_declarations_against_a_role`
+      not run. svelte-check 0, vitest 43/43, build green.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

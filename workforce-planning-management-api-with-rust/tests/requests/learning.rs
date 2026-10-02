@@ -450,3 +450,77 @@ async fn role_profiles_hold_required_skills() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn role_gap_grades_declarations_against_a_role() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let worker = seed_worker!(&request, &org, "E-1", None).await;
+        activate!(&request, &worker).await;
+
+        let mut skill_pids = Vec::new();
+        for name in ["Gap-Met", "Gap-Below", "Gap-Undeclared"] {
+            let skill: Value = request
+                .post("/api/skills")
+                .json(&json!({ "name": name, "category": "technical" }))
+                .await
+                .json();
+            skill_pids.push(skill["pid"].as_str().unwrap().to_string());
+        }
+        let profile: Value = request
+            .post("/api/role-profiles")
+            .json(&json!({ "job_title": "Gap Test Role" }))
+            .await
+            .json();
+        let role = profile["pid"].as_str().unwrap().to_string();
+        for pid in &skill_pids {
+            request
+                .put(&format!("/api/role-profiles/{role}/requirements"))
+                .json(&json!({ "skill_pid": pid, "min_proficiency": 3, "importance": "critical" }))
+                .await
+                .assert_status_ok();
+        }
+        for (pid, level) in [(&skill_pids[0], 4), (&skill_pids[1], 2)] {
+            request
+                .put(&format!("/api/workers/{worker}/skills"))
+                .json(&json!({ "skill_pid": pid, "proficiency": level }))
+                .await
+                .assert_status_ok();
+        }
+
+        let gap: Value = request
+            .get(&format!("/api/workers/{worker}/role-gap?role_profile_pid={role}"))
+            .await
+            .json();
+        let grade_of = |name: &str| {
+            gap["requirements"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|r| r["skill"] == name)
+                .map(|r| (r["grade"].clone(), r["shortfall"].clone()))
+        };
+        assert_eq!(grade_of("Gap-Met"), Some((json!("met"), Value::Null)));
+        assert_eq!(grade_of("Gap-Below"), Some((json!("below"), json!(1))));
+        assert_eq!(
+            grade_of("Gap-Undeclared"),
+            Some((json!("undeclared"), Value::Null)),
+            "unknown is not a numeric shortfall"
+        );
+        assert_eq!(gap["critical_met"]["numerator"], 1);
+        assert_eq!(gap["critical_met"]["denominator"], 3);
+
+        let workforce: Value = request.get(&format!("/api/role-profiles/{role}/gap")).await.json();
+        let met_row = workforce["requirements"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["skill"] == "Gap-Met")
+            .unwrap();
+        assert!(met_row["meeting"].as_u64().unwrap() >= 1);
+        assert!(workforce["headcount"].as_u64().unwrap() >= 1);
+    })
+    .await;
+}
