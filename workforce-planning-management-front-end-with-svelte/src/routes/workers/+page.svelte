@@ -6,9 +6,9 @@
     Willow as FilterTheme,
     createArrayFilter,
   } from "@svar-ui/svelte-filter";
-  import { listWorkers, money } from "$lib/api/wpm";
-  import { i18n, t } from "$lib/i18n.svelte";
-  import type { Worker } from "$lib/api/types";
+  import { listWorkers, money } from "#lib/api/wpm.js";
+  import { i18n, t } from "#lib/i18n.svelte.js";
+  import type { Worker } from "#lib/api/types.js";
 
   let workers = $state<Worker[] | null>(null);
   let error = $state<string | null>(null);

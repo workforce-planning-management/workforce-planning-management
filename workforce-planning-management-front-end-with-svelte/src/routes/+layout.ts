@@ -5,7 +5,7 @@
 export const ssr = false;
 export const prerender = false;
 
-import { listMyOrganizations, listMyOrganizationScope } from "$lib/api/wpm";
+import { listMyOrganizations, listMyOrganizationScope } from "#lib/api/wpm.js";
 import type { LayoutLoad } from "./$types";
 
 // Multi-organization membership (no switcher): the caller's org set is

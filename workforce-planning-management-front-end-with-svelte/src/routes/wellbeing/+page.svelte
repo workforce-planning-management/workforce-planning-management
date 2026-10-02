@@ -11,9 +11,9 @@
     pulseResults,
     wellbeingUptake,
     type WellbeingEntitlement,
-  } from "$lib/api/wpm";
-  import { mean, percentWithWorkings } from "$lib/format";
-  import { t } from "$lib/i18n.svelte";
+  } from "#lib/api/wpm.js";
+  import { mean, percentWithWorkings } from "#lib/format.js";
+  import { t } from "#lib/i18n.svelte.js";
 
   type Uptake = Awaited<ReturnType<typeof wellbeingUptake>>;
   type PulseResult = Awaited<ReturnType<typeof pulseResults>>;

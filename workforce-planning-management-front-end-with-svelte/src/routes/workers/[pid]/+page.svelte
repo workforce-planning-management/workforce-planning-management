@@ -42,9 +42,9 @@
     type Notification,
     type PulseSurvey,
     type WellbeingPrompt,
-  } from "$lib/api/wpm";
-  import { mean } from "$lib/format";
-  import { i18n, t } from "$lib/i18n.svelte";
+  } from "#lib/api/wpm.js";
+  import { mean } from "#lib/format.js";
+  import { i18n, t } from "#lib/i18n.svelte.js";
   import type {
     Worker,
     LeaveEntitlement,
@@ -53,7 +53,7 @@
     Payslip,
     Review,
     TrainingEnrollment,
-  } from "$lib/api/types";
+  } from "#lib/api/types.js";
 
   let worker = $state<Worker | null>(null);
   let onboarding = $state<OnboardingItem[]>([]);

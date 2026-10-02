@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { getRun, money, runAction, runPayslips } from "$lib/api/wpm";
-  import { i18n, t } from "$lib/i18n.svelte";
-  import type { Payslip, PayrollRun } from "$lib/api/types";
+  import { getRun, money, runAction, runPayslips } from "#lib/api/wpm.js";
+  import { i18n, t } from "#lib/i18n.svelte.js";
+  import type { Payslip, PayrollRun } from "#lib/api/types.js";
 
   /** The action(s) each run status offers (WPM-D5: derive, approve, pay). */
   const ACTIONS: Record<string, ("calculate" | "approve" | "pay" | "reopen")[]> = {

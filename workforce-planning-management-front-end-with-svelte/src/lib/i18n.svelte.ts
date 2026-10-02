@@ -6,7 +6,7 @@
 // parity test pins this). The chosen locale persists to localStorage
 // and drives the UI strings and `<html dir>` (RTL for `ar` / `ur`).
 
-import { browser } from "$app/environment";
+import { browser } from "$app/env";
 
 /**
  * Locales the UI is translated into, sorted alphabetically by locale
@@ -66,6 +66,7 @@ export const RTL_LOCALES = ["ar", "ur"] as const satisfies readonly Locale[];
 /** Whether `locale` is written right-to-left. */
 export function isRtl(locale: string): boolean {
   const primary = normaliseLocale(locale);
+
   return (
     primary !== null && (RTL_LOCALES as readonly string[]).includes(primary)
   );
@@ -854,7 +855,8 @@ const STRINGS = {
     "home.hero.subhead":
       "Cynlluniwch recriwtio, rhedeg cyflogres, cefnogi llesiant, a helpu pobl i dyfu — un gweithle cysylltiedig i AD, rheolwyr, a phob gweithiwr.",
     "home.hero.cta": "Mewngofnodi",
-    "home.hero.ctaHint": "Am ddim i archwilio — dim ond eich e-bost, dim cyfrinair",
+    "home.hero.ctaHint":
+      "Am ddim i archwilio — dim ond eich e-bost, dim cyfrinair",
     "home.benefits.title": "Pam mae timau'n ei ddewis",
     "home.benefits.b1.title": "Un gweithle, nid deg tab",
     "home.benefits.b1.body":
@@ -930,7 +932,8 @@ const STRINGS = {
     "tour.payroll.title": "Cyflogres, wedi'i rhedeg yn hyderus",
     "tour.payroll.body":
       "Cyfrifwch gyflogres o gyflog, oriau, a goramser cymeradwy, adolygwch y dadansoddiad slip cyflog, yna cymeradwywch a thalwch — pob cam wedi'i archwilio, a chyflogres gymeradwy wedi'i chloi rhag newidiadau pellach. Mae meincnodi yn cymharu cyflog a niferoedd staff yn erbyn bandiau cyfeirio, gan nodi unrhyw un o dan neu dros yr ystod am ail olwg.",
-    "tour.privacy.title": "Preifatrwydd wedi'i adeiladu i mewn, nid wedi'i folltio ymlaen",
+    "tour.privacy.title":
+      "Preifatrwydd wedi'i adeiladu i mewn, nid wedi'i folltio ymlaen",
     "tour.privacy.body":
       "Mae cynnwys cyflog ac adolygiad yn ymddangos fel cyflwr cuddiedig gonest i unrhyw un nad yw wedi ennill mynediad — byth sero ffug, byth wall dawel. Gall pob gweithiwr lawrlwytho popeth mae'r system yn ei ddal amdanynt, gofyn iddo gael ei ddileu unwaith y bydd eu cyflogaeth yn dod i ben, a gweld yn union pa reol gadw sy'n berthnasol a phryd mae'n rhedeg.",
     "tour.multiorg.title": "Perthyn i fwy nag un sefydliad",
@@ -1070,7 +1073,8 @@ const STRINGS = {
     "home.hero.subhead":
       "Planifique la contratación, ejecute la nómina, apoye el bienestar y ayude a su gente a crecer: un espacio de trabajo conectado para RR. HH., mandos y cada trabajador.",
     "home.hero.cta": "Iniciar sesión",
-    "home.hero.ctaHint": "Gratis para explorar — solo su correo, sin contraseña",
+    "home.hero.ctaHint":
+      "Gratis para explorar — solo su correo, sin contraseña",
     "home.benefits.title": "Por qué los equipos lo eligen",
     "home.benefits.b1.title": "Un solo espacio, no diez pestañas",
     "home.benefits.b1.body":
@@ -1104,7 +1108,8 @@ const STRINGS = {
     "home.trust.body":
       "Cada trabajador puede descargar sus propios datos o pedir su borrado, y cada regla de conservación permanece visible.",
     "home.cta.title": "¿Listo para echar un vistazo?",
-    "home.cta.body": "Inicie sesión con un enlace mágico — sin contraseña que recordar.",
+    "home.cta.body":
+      "Inicie sesión con un enlace mágico — sin contraseña que recordar.",
     "home.cta.button": "Iniciar sesión para continuar",
     "home.demoNotice":
       "Software de demostración para evaluación — no es un sistema de RR. HH. de producción.",
@@ -1286,7 +1291,8 @@ const STRINGS = {
     "home.hero.subhead":
       "Planifiez le recrutement, exécutez la paie, soutenez le bien-être et accompagnez la progression de vos équipes — un espace de travail unique pour les RH, les managers et chaque travailleur.",
     "home.hero.cta": "Se connecter",
-    "home.hero.ctaHint": "Gratuit à découvrir — juste votre e-mail, pas de mot de passe",
+    "home.hero.ctaHint":
+      "Gratuit à découvrir — juste votre e-mail, pas de mot de passe",
     "home.benefits.title": "Pourquoi les équipes le choisissent",
     "home.benefits.b1.title": "Un seul espace, pas dix onglets",
     "home.benefits.b1.body":
@@ -1320,7 +1326,8 @@ const STRINGS = {
     "home.trust.body":
       "Chaque travailleur peut télécharger ses propres données ou en demander l'effacement, et chaque règle de conservation reste visible.",
     "home.cta.title": "Prêt à jeter un œil ?",
-    "home.cta.body": "Connectez-vous avec un lien magique — aucun mot de passe à retenir.",
+    "home.cta.body":
+      "Connectez-vous avec un lien magique — aucun mot de passe à retenir.",
     "home.cta.button": "Se connecter pour continuer",
     "home.demoNotice":
       "Logiciel de démonstration à des fins d'évaluation — pas un système RH de production.",
@@ -1502,7 +1509,8 @@ const STRINGS = {
     "home.hero.subhead":
       "Planen Sie die Einstellung, führen Sie die Gehaltsabrechnung durch, fördern Sie das Wohlbefinden und unterstützen Sie die Entwicklung Ihrer Arbeitskräfte — ein vernetzter Arbeitsbereich für HR, Führungskräfte und alle Arbeitskräfte.",
     "home.hero.cta": "Anmelden",
-    "home.hero.ctaHint": "Kostenlos testen — nur Ihre E-Mail-Adresse, kein Passwort",
+    "home.hero.ctaHint":
+      "Kostenlos testen — nur Ihre E-Mail-Adresse, kein Passwort",
     "home.benefits.title": "Warum Teams sich dafür entscheiden",
     "home.benefits.b1.title": "Ein Arbeitsbereich, nicht zehn Tabs",
     "home.benefits.b1.body":
@@ -1536,7 +1544,8 @@ const STRINGS = {
     "home.trust.body":
       "Arbeitskräfte können ihre eigenen Daten herunterladen oder deren Löschung beantragen, und jede Aufbewahrungsregel bleibt sichtbar.",
     "home.cta.title": "Bereit für einen Blick?",
-    "home.cta.body": "Melden Sie sich mit einem Magic Link an — kein Passwort nötig.",
+    "home.cta.body":
+      "Melden Sie sich mit einem Magic Link an — kein Passwort nötig.",
     "home.cta.button": "Anmelden und fortfahren",
     "home.demoNotice":
       "Demo-Software zu Testzwecken — kein Produktivsystem für die Personalverwaltung.",
@@ -1578,7 +1587,8 @@ const STRINGS = {
     "tour.payroll.title": "Gehaltsabrechnung, sicher durchgeführt",
     "tour.payroll.body":
       "Berechnen Sie eine Gehaltsabrechnung aus Gehalt, Stunden und genehmigten Überstunden, prüfen Sie die Aufschlüsselung, dann genehmigen und zahlen Sie — jeder Schritt protokolliert, und eine genehmigte Abrechnung gegen weitere Änderungen gesperrt. Benchmarking vergleicht Vergütung und Personalstärke mit Referenzbändern und markiert alle außerhalb des Bereichs für eine zweite Prüfung.",
-    "tour.privacy.title": "Datenschutz eingebaut, nicht nachträglich angeflanscht",
+    "tour.privacy.title":
+      "Datenschutz eingebaut, nicht nachträglich angeflanscht",
     "tour.privacy.body":
       "Gehalts- und Beurteilungsinhalte erscheinen als ehrlich verborgener Zustand für jeden, der sich keinen Zugriff verdient hat — nie eine falsche Null, nie ein stiller Fehler. Jede Arbeitskraft kann alles herunterladen, was das System über sie gespeichert hat, die Löschung nach Beendigung des Arbeitsverhältnisses beantragen und genau sehen, welche Aufbewahrungsregel gilt und wann sie ausgeführt wird.",
     "tour.multiorg.title": "Mehr als einer Organisation angehören",
@@ -1718,7 +1728,8 @@ const STRINGS = {
     "home.hero.subhead":
       "Planen Sie die Einstellung, führen Sie die Gehaltsabrechnung durch, fördern Sie das Wohlbefinden und unterstützen Sie die Entwicklung Ihrer Arbeitskräfte — ein vernetzter Arbeitsbereich für HR, Führungskräfte und alle Arbeitskräfte.",
     "home.hero.cta": "Anmelden",
-    "home.hero.ctaHint": "Kostenlos testen — nur Ihre E-Mail-Adresse, kein Passwort",
+    "home.hero.ctaHint":
+      "Kostenlos testen — nur Ihre E-Mail-Adresse, kein Passwort",
     "home.benefits.title": "Warum Teams sich dafür entscheiden",
     "home.benefits.b1.title": "Ein Arbeitsbereich, nicht zehn Tabs",
     "home.benefits.b1.body":
@@ -1752,7 +1763,8 @@ const STRINGS = {
     "home.trust.body":
       "Arbeitskräfte können ihre eigenen Daten herunterladen oder deren Löschung beantragen, und jede Aufbewahrungsregel bleibt sichtbar.",
     "home.cta.title": "Bereit für einen Blick?",
-    "home.cta.body": "Melden Sie sich mit einem Magic Link an — kein Passwort nötig.",
+    "home.cta.body":
+      "Melden Sie sich mit einem Magic Link an — kein Passwort nötig.",
     "home.cta.button": "Anmelden und fortfahren",
     "home.demoNotice":
       "Demo-Software zu Testzwecken — kein Produktivsystem für die Personalverwaltung.",
@@ -1794,7 +1806,8 @@ const STRINGS = {
     "tour.payroll.title": "Gehaltsabrechnung, sicher durchgeführt",
     "tour.payroll.body":
       "Berechnen Sie eine Gehaltsabrechnung aus Gehalt, Stunden und genehmigten Überstunden, prüfen Sie die Aufschlüsselung, dann genehmigen und zahlen Sie — jeder Schritt protokolliert, und eine genehmigte Abrechnung gegen weitere Änderungen gesperrt. Benchmarking vergleicht Vergütung und Personalstärke mit Referenzbändern und markiert alle außerhalb des Bereichs für eine zweite Prüfung.",
-    "tour.privacy.title": "Datenschutz eingebaut, nicht nachträglich angeflanscht",
+    "tour.privacy.title":
+      "Datenschutz eingebaut, nicht nachträglich angeflanscht",
     "tour.privacy.body":
       "Gehalts- und Beurteilungsinhalte erscheinen als ehrlich verborgener Zustand für jeden, der sich keinen Zugriff verdient hat — nie eine falsche Null, nie ein stiller Fehler. Jede Arbeitskraft kann alles herunterladen, was das System über sie gespeichert hat, die Löschung nach Beendigung des Arbeitsverhältnisses beantragen und genau sehen, welche Aufbewahrungsregel gilt und wann sie ausgeführt wird.",
     "tour.multiorg.title": "Mehr als einer Organisation angehören",
@@ -1933,7 +1946,8 @@ const STRINGS = {
     "home.hero.subhead":
       "خطط للتوظيف، وأدر الرواتب، وادعم العافية، وساعد فريقك على النمو — مساحة عمل واحدة متصلة للموارد البشرية والمديرين وكل عامل.",
     "home.hero.cta": "تسجيل الدخول",
-    "home.hero.ctaHint": "مجاني للاستكشاف — بريدك الإلكتروني فقط، بلا كلمة مرور",
+    "home.hero.ctaHint":
+      "مجاني للاستكشاف — بريدك الإلكتروني فقط، بلا كلمة مرور",
     "home.benefits.title": "لماذا تختاره الفرق",
     "home.benefits.b1.title": "مساحة عمل واحدة، لا عشر علامات تبويب",
     "home.benefits.b1.body":
@@ -2183,7 +2197,8 @@ const STRINGS = {
     "home.trust.body":
       "Работники могут скачать свои данные или запросить их удаление, а каждое правило хранения остаётся видимым.",
     "home.cta.title": "Готовы взглянуть?",
-    "home.cta.body": "Войдите по волшебной ссылке — пароль запоминать не нужно.",
+    "home.cta.body":
+      "Войдите по волшебной ссылке — пароль запоминать не нужно.",
     "home.cta.button": "Войти и продолжить",
     "home.demoNotice":
       "Демонстрационное ПО для оценки — не продуктивная HR-система.",
@@ -2398,7 +2413,8 @@ const STRINGS = {
     "home.trust.body":
       "कर्मी अपना डेटा डाउनलोड कर सकते हैं या उसे मिटाने का अनुरोध कर सकते हैं, और हर प्रतिधारण नियम दिखाई देता रहता है।",
     "home.cta.title": "एक नज़र डालने के लिए तैयार हैं?",
-    "home.cta.body": "मैजिक लिंक से साइन इन करें — याद रखने के लिए कोई पासवर्ड नहीं।",
+    "home.cta.body":
+      "मैजिक लिंक से साइन इन करें — याद रखने के लिए कोई पासवर्ड नहीं।",
     "home.cta.button": "जारी रखने के लिए साइन इन करें",
     "home.demoNotice":
       "मूल्यांकन के लिए डेमो सॉफ़्टवेयर — यह उत्पादन HR प्रणाली नहीं है।",
@@ -2604,8 +2620,7 @@ const STRINGS = {
     "home.features.f4.body":
       "开展绩效评估周期，跟踪培训与证书，并为导师与学员配对。",
     "home.features.f5.title": "健康福祉与脉搏调查",
-    "home.features.f5.body":
-      "健康与福利权益、匿名脉搏调查，以及合理调整申请。",
+    "home.features.f5.body": "健康与福利权益、匿名脉搏调查，以及合理调整申请。",
     "home.features.f6.title": "工资单与洞察",
     "home.features.f6.body":
       "计算并处理工资单，并在同一仪表盘上将薪酬和人员编制与基准进行比较。",
@@ -2615,8 +2630,7 @@ const STRINGS = {
     "home.cta.title": "准备好看看了吗？",
     "home.cta.body": "使用魔法链接登录——无需记住密码。",
     "home.cta.button": "登录以继续",
-    "home.demoNotice":
-      "用于评估的演示软件——并非生产环境的人力资源系统。",
+    "home.demoNotice": "用于评估的演示软件——并非生产环境的人力资源系统。",
     "nav.menu": "菜单",
     "nav.closeMenu": "关闭菜单",
     "home.benefits.b4.title": "支持您的语言",
@@ -2794,7 +2808,8 @@ const STRINGS = {
     "home.hero.subhead":
       "নিয়োগের পরিকল্পনা করুন, বেতন চালান, সুস্থতাকে সমর্থন করুন, এবং মানুষের উন্নতিতে সাহায্য করুন — HR, ব্যবস্থাপক এবং প্রতিটি কর্মীর জন্য একটি সংযুক্ত কর্মক্ষেত্র।",
     "home.hero.cta": "সাইন ইন করুন",
-    "home.hero.ctaHint": "বিনামূল্যে ঘুরে দেখুন — শুধু আপনার ইমেইল, কোনো পাসওয়ার্ড নয়",
+    "home.hero.ctaHint":
+      "বিনামূল্যে ঘুরে দেখুন — শুধু আপনার ইমেইল, কোনো পাসওয়ার্ড নয়",
     "home.benefits.title": "দলগুলো কেন এটি বেছে নেয়",
     "home.benefits.b1.title": "একটি কর্মক্ষেত্র, দশটি ট্যাব নয়",
     "home.benefits.b1.body":
@@ -2828,7 +2843,8 @@ const STRINGS = {
     "home.trust.body":
       "কর্মীরা নিজের ডেটা ডাউনলোড করতে বা মুছে ফেলার অনুরোধ করতে পারেন, এবং প্রতিটি সংরক্ষণ নিয়ম দৃশ্যমান থাকে।",
     "home.cta.title": "একনজর দেখতে প্রস্তুত?",
-    "home.cta.body": "ম্যাজিক লিঙ্ক দিয়ে সাইন ইন করুন — মনে রাখার কোনো পাসওয়ার্ড নেই।",
+    "home.cta.body":
+      "ম্যাজিক লিঙ্ক দিয়ে সাইন ইন করুন — মনে রাখার কোনো পাসওয়ার্ড নেই।",
     "home.cta.button": "চালিয়ে যেতে সাইন ইন করুন",
     "home.demoNotice":
       "মূল্যায়নের জন্য ডেমো সফটওয়্যার — এটি প্রোডাকশন HR সিস্টেম নয়।",
@@ -3225,7 +3241,8 @@ const STRINGS = {
     "home.hero.subhead":
       "Rencanakan perekrutan, jalankan penggajian, dukung kesejahteraan, dan bantu orang berkembang — satu ruang kerja terhubung untuk HR, manajer, dan setiap pekerja.",
     "home.hero.cta": "Masuk",
-    "home.hero.ctaHint": "Gratis untuk dijelajahi — cukup email Anda, tanpa kata sandi",
+    "home.hero.ctaHint":
+      "Gratis untuk dijelajahi — cukup email Anda, tanpa kata sandi",
     "home.benefits.title": "Mengapa tim memilihnya",
     "home.benefits.b1.title": "Satu ruang kerja, bukan sepuluh tab",
     "home.benefits.b1.body":
@@ -3259,7 +3276,8 @@ const STRINGS = {
     "home.trust.body":
       "Pekerja dapat mengunduh data mereka sendiri atau meminta penghapusannya, dan setiap aturan retensi tetap terlihat.",
     "home.cta.title": "Siap untuk melihat lebih dekat?",
-    "home.cta.body": "Masuk dengan tautan ajaib — tanpa kata sandi yang perlu diingat.",
+    "home.cta.body":
+      "Masuk dengan tautan ajaib — tanpa kata sandi yang perlu diingat.",
     "home.cta.button": "Masuk untuk melanjutkan",
     "home.demoNotice":
       "Perangkat lunak demo untuk evaluasi — bukan sistem HR produksi.",
@@ -3301,7 +3319,8 @@ const STRINGS = {
     "tour.payroll.title": "Penggajian, dijalankan dengan percaya diri",
     "tour.payroll.body":
       "Hitung penggajian dari gaji, jam kerja, dan lembur yang disetujui, tinjau rincian slip gaji, lalu setujui dan bayar — setiap langkah diaudit, dan penggajian yang disetujui dikunci dari perubahan lebih lanjut. Tolok ukur membandingkan gaji dan jumlah karyawan dengan rentang acuan, menandai siapa pun yang di bawah atau di atas rentang untuk ditinjau kembali.",
-    "tour.privacy.title": "Privasi dibangun sejak awal, bukan ditambahkan belakangan",
+    "tour.privacy.title":
+      "Privasi dibangun sejak awal, bukan ditambahkan belakangan",
     "tour.privacy.body":
       "Konten gaji dan penilaian ditampilkan sebagai keadaan tersembunyi yang jujur bagi siapa pun yang belum memperoleh akses — tidak pernah nol palsu, tidak pernah kesalahan diam-diam. Setiap pekerja dapat mengunduh semua yang disimpan sistem tentang mereka, meminta penghapusan setelah masa kerja mereka berakhir, dan melihat dengan tepat aturan retensi mana yang berlaku dan kapan dijalankan.",
     "tour.multiorg.title": "Menjadi bagian dari lebih dari satu organisasi",
@@ -3440,7 +3459,8 @@ const STRINGS = {
     "home.hero.subhead":
       "بھرتی کی منصوبہ بندی کریں، تنخواہ چلائیں، بہبود کی حمایت کریں، اور لوگوں کو ترقی میں مدد دیں — HR، مینیجرز، اور ہر کارکن کے لیے ایک جڑا ہوا ورک اسپیس۔",
     "home.hero.cta": "سائن ان کریں",
-    "home.hero.ctaHint": "دیکھنے کے لیے مفت — صرف آپ کا ای میل، کوئی پاس ورڈ نہیں",
+    "home.hero.ctaHint":
+      "دیکھنے کے لیے مفت — صرف آپ کا ای میل، کوئی پاس ورڈ نہیں",
     "home.benefits.title": "ٹیمیں اسے کیوں چنتی ہیں",
     "home.benefits.b1.title": "ایک ورک اسپیس، دس ٹیبز نہیں",
     "home.benefits.b1.body":
@@ -3474,7 +3494,8 @@ const STRINGS = {
     "home.trust.body":
       "کارکنان اپنا ڈیٹا ڈاؤن لوڈ کر سکتے ہیں یا اسے مٹانے کی درخواست دے سکتے ہیں، اور ہر برقراری کا اصول نظر آتا رہتا ہے۔",
     "home.cta.title": "ایک نظر ڈالنے کے لیے تیار ہیں؟",
-    "home.cta.body": "میجک لنک سے سائن ان کریں — یاد رکھنے کے لیے کوئی پاس ورڈ نہیں۔",
+    "home.cta.body":
+      "میجک لنک سے سائن ان کریں — یاد رکھنے کے لیے کوئی پاس ورڈ نہیں۔",
     "home.cta.button": "جاری رکھنے کے لیے سائن ان کریں",
     "home.demoNotice":
       "تشخیص کے لیے ڈیمو سافٹ ویئر — یہ پیداواری HR نظام نہیں ہے۔",
@@ -3562,6 +3583,7 @@ function normaliseLocale(raw: string | null | undefined): Locale | null {
   if (exact) return exact as Locale;
   // Otherwise take the primary subtag before any `-`/`_`, lowercased.
   const primary = trimmed.split(/[-_]/)[0]?.toLowerCase() ?? "";
+
   return (LOCALES as readonly string[]).includes(primary)
     ? (primary as Locale)
     : null;

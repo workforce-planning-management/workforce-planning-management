@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { decideLeave, ergonomicIssues, listWorkers, listLeaveRequests, listShifts, workingTime } from "$lib/api/wpm";
-  import { t } from "$lib/i18n.svelte";
-  import type { Worker, LeaveRequest } from "$lib/api/types";
+  import { decideLeave, ergonomicIssues, listWorkers, listLeaveRequests, listShifts, workingTime } from "#lib/api/wpm.js";
+  import { t } from "#lib/i18n.svelte.js";
+  import type { Worker, LeaveRequest } from "#lib/api/types.js";
 
   type ShiftRow = Awaited<ReturnType<typeof listShifts>>[number];
   type WorkingTimeSignals = Awaited<ReturnType<typeof workingTime>>;

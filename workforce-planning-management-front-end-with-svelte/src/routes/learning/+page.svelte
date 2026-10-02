@@ -11,9 +11,9 @@
     pathProgress,
     skillsMatrix,
     trainingAnalytics,
-  } from "$lib/api/wpm";
-  import { percentOf, percentWithWorkings } from "$lib/format";
-  import { t } from "$lib/i18n.svelte";
+  } from "#lib/api/wpm.js";
+  import { percentOf, percentWithWorkings } from "#lib/format.js";
+  import { t } from "#lib/i18n.svelte.js";
 
   type Matrix = Awaited<ReturnType<typeof skillsMatrix>>;
   type Analytics = Awaited<ReturnType<typeof trainingAnalytics>>;

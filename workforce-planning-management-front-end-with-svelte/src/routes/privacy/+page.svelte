@@ -3,8 +3,8 @@
   // next sweep would remove, per table, under the floored horizon —
   // and the sweep itself (destructive; admin-only under enforcement).
   // Erasure lives on the worker profile (it is per-person).
-  import { retentionReport, retentionSweep } from "$lib/api/wpm";
-  import { t } from "$lib/i18n.svelte";
+  import { retentionReport, retentionSweep } from "#lib/api/wpm.js";
+  import { t } from "#lib/i18n.svelte.js";
 
   type Report = Awaited<ReturnType<typeof retentionReport>>;
   type SweepResult = Awaited<ReturnType<typeof retentionSweep>>;

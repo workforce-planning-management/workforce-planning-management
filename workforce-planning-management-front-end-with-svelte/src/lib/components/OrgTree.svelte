@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OrgNode } from "$lib/api/types";
+  import type { OrgNode } from "#lib/api/types.js";
   import OrgTree from "./OrgTree.svelte";
 
   let { node }: { node: OrgNode } = $props();

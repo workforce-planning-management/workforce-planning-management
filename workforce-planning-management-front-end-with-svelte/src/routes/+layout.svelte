@@ -1,7 +1,7 @@
 <script lang="ts">
   import "../app.css";
   import { page } from "$app/state";
-  import { i18n, isRtl, t, LOCALES, LOCALE_LABELS } from "$lib/i18n.svelte";
+  import { i18n, isRtl, t, LOCALES, LOCALE_LABELS } from "#lib/i18n.svelte.js";
   import PickerBar from "@lilydesignsystem/svelte-picker-bar";
   import { Drawer } from "@lilydesignsystem/svelte-headless";
   import type { ShareTarget } from "@lilydesignsystem/svelte-share-picker";

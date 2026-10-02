@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { listRuns } from "$lib/api/wpm";
-  import { t } from "$lib/i18n.svelte";
-  import type { PayrollRun } from "$lib/api/types";
+  import { listRuns } from "#lib/api/wpm.js";
+  import { t } from "#lib/i18n.svelte.js";
+  import type { PayrollRun } from "#lib/api/types.js";
 
   let runs = $state<PayrollRun[] | null>(null);
   let error = $state<string | null>(null);

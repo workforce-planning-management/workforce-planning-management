@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { applicationStage, getRequisition, listApplications } from "$lib/api/wpm";
-  import { t } from "$lib/i18n.svelte";
-  import type { Application, Requisition } from "$lib/api/types";
+  import { applicationStage, getRequisition, listApplications } from "#lib/api/wpm.js";
+  import { t } from "#lib/i18n.svelte.js";
+  import type { Application, Requisition } from "#lib/api/types.js";
 
   /** The forward move an application offers per stage. */
   const NEXT: Record<string, string> = {

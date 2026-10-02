@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { benchmarkComparison, listBenchmarks, money } from "$lib/api/wpm";
-  import { i18n, t } from "$lib/i18n.svelte";
-  import type { Benchmark, ComparisonRow } from "$lib/api/types";
+  import { benchmarkComparison, listBenchmarks, money } from "#lib/api/wpm.js";
+  import { i18n, t } from "#lib/i18n.svelte.js";
+  import type { Benchmark, ComparisonRow } from "#lib/api/types.js";
 
   // No switcher: every organization this person can read gets its own
   // comparison section below, fetched in parallel — not a single

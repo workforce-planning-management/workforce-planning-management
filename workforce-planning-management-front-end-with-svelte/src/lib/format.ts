@@ -2,7 +2,7 @@
 //
 // Every function here turns a value the API already decided into
 // something readable — mirroring the content-management-system
-// front-end's `$lib/format.ts` (WPM-T39). The recurring rule across all
+// front-end's `#lib/format.ts` (WPM-T39). The recurring rule across all
 // of them: a value that is genuinely `0` and a value that is *absent*
 // are different claims, and only one of them is true — "no data" must
 // never render as "0%" or "0.0", and a real zero must never collapse

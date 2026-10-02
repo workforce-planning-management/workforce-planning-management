@@ -8,7 +8,7 @@
 
 import { redirect } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { ssoStartUrl } from "$lib/server/auth";
+import { ssoStartUrl } from "#lib/server/auth.js";
 
 export const GET: RequestHandler = ({ url }) => {
   redirect(303, ssoStartUrl(`${url.origin}/verify/sso`));

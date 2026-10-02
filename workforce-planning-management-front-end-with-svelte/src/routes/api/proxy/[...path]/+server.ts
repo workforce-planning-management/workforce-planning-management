@@ -8,8 +8,8 @@
 // unauthenticated forward is sufficient and the exchange is skipped.
 
 import type { RequestHandler } from "./$types";
-import { WPM_API_URL } from "$lib/server/config";
-import { exchangeToken } from "$lib/server/auth";
+import { WPM_API_URL } from "#lib/server/config.js";
+import { exchangeToken } from "#lib/server/auth.js";
 
 const proxy: RequestHandler = async ({
   request,

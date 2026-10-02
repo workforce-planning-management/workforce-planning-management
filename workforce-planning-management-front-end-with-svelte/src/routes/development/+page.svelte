@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { expiringTraining, listSuccession, successionGaps } from "$lib/api/wpm";
-  import { t } from "$lib/i18n.svelte";
-  import type { SuccessionEntry, TrainingEnrollment } from "$lib/api/types";
+  import { expiringTraining, listSuccession, successionGaps } from "#lib/api/wpm.js";
+  import { t } from "#lib/i18n.svelte.js";
+  import type { SuccessionEntry, TrainingEnrollment } from "#lib/api/types.js";
 
   let succession = $state<SuccessionEntry[] | null>(null);
   let gaps = $state<SuccessionEntry["plan"][]>([]);

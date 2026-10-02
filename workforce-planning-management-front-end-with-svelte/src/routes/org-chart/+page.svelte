@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { orgChart } from "$lib/api/wpm";
-  import { t } from "$lib/i18n.svelte";
-  import type { OrgNode } from "$lib/api/types";
-  import OrgTree from "$lib/components/OrgTree.svelte";
+  import { orgChart } from "#lib/api/wpm.js";
+  import { t } from "#lib/i18n.svelte.js";
+  import type { OrgNode } from "#lib/api/types.js";
+  import OrgTree from "#lib/components/OrgTree.svelte";
 
   // No switcher: every organization this person can read gets its own
   // section below, fetched in parallel — not a single guessed org.

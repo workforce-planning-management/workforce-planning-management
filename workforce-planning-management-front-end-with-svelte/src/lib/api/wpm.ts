@@ -2,7 +2,7 @@
 // formatter. Paths mirror the service routes one-to-one — the
 // Playwright suite stubs these exact paths, so drift fails loudly.
 
-import { api } from "$lib/api/client";
+import { api } from "#lib/api/client.js";
 import type {
   Application,
   Benchmark,
@@ -20,7 +20,7 @@ import type {
   Review,
   SuccessionEntry,
   TrainingEnrollment,
-} from "$lib/api/types";
+} from "#lib/api/types.js";
 
 type FetchLike = { fetch?: typeof fetch };
 
@@ -45,7 +45,9 @@ export function money(
  * The signed-in caller's own organization memberships — every org
  * they belong to, at once (no switcher). Empty when signed out.
  */
-export function listMyOrganizations(init?: FetchLike): Promise<MyOrganization[]> {
+export function listMyOrganizations(
+  init?: FetchLike,
+): Promise<MyOrganization[]> {
   return api("/me/organizations", init);
 }
 

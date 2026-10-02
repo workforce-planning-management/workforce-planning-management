@@ -141,7 +141,7 @@ export interface Benchmark {
  * the derived `value`, or `null` when the denominator was zero. A zero
  * denominator must render as "no data", never as `0%`: "we measured and
  * it was zero" and "we had nothing to measure" are different claims, and
- * only the service knows which one is true. See `$lib/format.ts`.
+ * only the service knows which one is true. See `#lib/format.ts`.
  */
 export interface Ratio {
   numerator: number;

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Kanban, Willow, getCardShape } from "@svar-ui/svelte-kanban";
   import type { KanbanInstanceApi } from "@svar-ui/svelte-kanban";
-  import { listRequisitions, money, requisitionStatus } from "$lib/api/wpm";
-  import { i18n, t } from "$lib/i18n.svelte";
-  import type { Requisition } from "$lib/api/types";
+  import { listRequisitions, money, requisitionStatus } from "#lib/api/wpm.js";
+  import { i18n, t } from "#lib/i18n.svelte.js";
+  import type { Requisition } from "#lib/api/types.js";
 
   /** Board columns: the live pipeline statuses (cancelled stays off
    * the board; the state machine still owns which drags are legal). */

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { listWorkers, listRequisitions, successionGaps } from "$lib/api/wpm";
-  import { t } from "$lib/i18n.svelte";
-  import type { Worker, Requisition, MyOrganization } from "$lib/api/types";
+  import { listWorkers, listRequisitions, successionGaps } from "#lib/api/wpm.js";
+  import { t } from "#lib/i18n.svelte.js";
+  import type { Worker, Requisition, MyOrganization } from "#lib/api/types.js";
 
   const signedIn = $derived(page.data.signedIn === true);
   // Fetched once in the root layout's server load and inherited here —

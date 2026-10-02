@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from "$lib/i18n.svelte";
+  import { t } from "#lib/i18n.svelte.js";
 
   // tourpage-* class prefix throughout: the active Lily theme styles a
   // real `.tour` component of its own (an onboarding card), plus

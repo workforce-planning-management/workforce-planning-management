@@ -5,8 +5,8 @@
   All server-derived.
 -->
 <script lang="ts">
-  import { mentorshipOverview } from "$lib/api/wpm";
-  import { t } from "$lib/i18n.svelte";
+  import { mentorshipOverview } from "#lib/api/wpm.js";
+  import { t } from "#lib/i18n.svelte.js";
 
   type Overview = Awaited<ReturnType<typeof mentorshipOverview>>;
   let overview = $state<Overview | null>(null);
