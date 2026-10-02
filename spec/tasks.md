@@ -866,6 +866,30 @@ first in each, per the three-part rule.
       sibling crates; DB-gated `role_gap_grades_declarations_against_a_role`
       not run. svelte-check 0, vitest 43/43, build green.
 
+- [x] WPM-T52 (2026-10-02) **CPD ledger.** Migration
+      `m20261002_000024_cpd` (`cpd_requirements`, `cpd_entries`,
+      `professional_registrations`; amounts stored as hundredths of a
+      unit). Pure `rules::cpd` (units hours/points, categories, entry and
+      requirement validation, `progress` recorded vs verified,
+      `registration_status` with a 90-day window; 6 tests). Controller
+      `controllers/cpd.rs`: requirements (create/list, optionally scoped to
+      a job title), worker entries (record with optional evidence note/link,
+      list, verify, withdraw), registrations with expiry status, per-worker
+      `cpd-progress`, and an aggregate `/api/cpd/overview` over employed
+      workers (met on recorded and on verified entries as terms-carrying
+      ratios; registrations expiring/expired). All audited. **Privacy:**
+      entries and registrations join subject-access export and erasure
+      (free text and links scrubbed, rows soft-deleted) and the retention
+      sweep list (now 45). `source`/`external_ref` + a unique index make the
+      table the landing place for LMS completions (WPM-T54).
+      Front-end `/cpd` (overview, define requirement, per-worker progress,
+      ledger with verify, record form) and nav link in all 16 locales.
+      Rust type-checks and 114 lib tests pass against stubbed sibling
+      crates, clippy-clean on the new files; DB-gated
+      `cpd_ledger_tracks_progress_and_registrations` not run. svelte-check
+      0, vitest 43/43, build green. Not done: a CPD requirement derived from
+      a gap or objective (WPM-T48/T49).
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

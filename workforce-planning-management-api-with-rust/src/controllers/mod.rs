@@ -10,6 +10,7 @@ pub mod adjustments;
 pub mod appraisals;
 pub mod assessments;
 pub mod audits;
+pub mod cpd;
 pub mod development;
 pub mod docs;
 pub mod ergonomics;

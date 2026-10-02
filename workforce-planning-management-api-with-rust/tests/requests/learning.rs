@@ -524,3 +524,120 @@ async fn role_gap_grades_declarations_against_a_role() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn cpd_ledger_tracks_progress_and_registrations() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let worker = seed_worker!(&request, &org, "E-1", None).await;
+        activate!(&request, &worker).await;
+
+        let requirement: Value = request
+            .post("/api/cpd-requirements")
+            .json(&json!({
+                "name": "Annual CPD", "unit": "hours", "required": 10,
+                "period_start": "2026-01-01", "period_end": "2026-12-31",
+            }))
+            .await
+            .json();
+        let requirement_pid = requirement["pid"].as_str().unwrap().to_string();
+        assert_eq!(
+            request
+                .post("/api/cpd-requirements")
+                .json(&json!({
+                    "name": "Bad", "unit": "hours", "required": 10,
+                    "period_start": "2026-12-31", "period_end": "2026-01-01",
+                }))
+                .await
+                .status_code(),
+            422,
+            "period must be ordered"
+        );
+
+        let entry = |amount: f64| {
+            json!({
+                "entry_date": "2026-03-01", "activity": "Safeguarding course",
+                "category": "course", "unit": "hours", "amount": amount,
+            })
+        };
+        let first: Value = request
+            .post(&format!("/api/workers/{worker}/cpd-entries"))
+            .json(&entry(6.5))
+            .await
+            .json();
+        request
+            .post(&format!("/api/workers/{worker}/cpd-entries"))
+            .json(&entry(2.0))
+            .await
+            .assert_status_ok();
+        assert_eq!(
+            request
+                .post(&format!("/api/workers/{worker}/cpd-entries"))
+                .json(&entry(0.0))
+                .await
+                .status_code(),
+            422,
+            "a zero amount is refused"
+        );
+        assert_eq!(
+            request
+                .post(&format!("/api/workers/{worker}/cpd-entries"))
+                .json(&json!({
+                    "entry_date": "2999-01-01", "activity": "x", "category": "course",
+                    "unit": "hours", "amount": 1,
+                }))
+                .await
+                .status_code(),
+            422,
+            "future-dated CPD is refused"
+        );
+
+        let progress = |view: &Value| {
+            view["requirements"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|r| r["requirement_pid"] == requirement_pid)
+                .cloned()
+                .unwrap()
+        };
+        let view: Value = request.get(&format!("/api/workers/{worker}/cpd-progress")).await.json();
+        let row = progress(&view);
+        assert_eq!(row["recorded"], 8.5);
+        assert_eq!(row["verified"], 0.0);
+        assert_eq!(row["remaining"], 1.5);
+        assert_eq!(row["met"], false);
+
+        // Verifying an entry moves the verified total; a second verify is refused.
+        let entry_pid = first["pid"].as_str().unwrap();
+        request
+            .post(&format!("/api/cpd-entries/{entry_pid}/verify"))
+            .await
+            .assert_status_ok();
+        assert_eq!(
+            request
+                .post(&format!("/api/cpd-entries/{entry_pid}/verify"))
+                .await
+                .status_code(),
+            422
+        );
+        let after: Value = request.get(&format!("/api/workers/{worker}/cpd-progress")).await.json();
+        assert_eq!(progress(&after)["verified"], 6.5);
+
+        // Registrations carry an expiry status.
+        request
+            .post(&format!("/api/workers/{worker}/registrations"))
+            .json(&json!({ "body": "Test Regulator", "expires_on": "2000-01-01" }))
+            .await
+            .assert_status_ok();
+        let regs: Value = request.get(&format!("/api/workers/{worker}/registrations")).await.json();
+        assert_eq!(regs[0]["status"], "expired");
+
+        let overview: Value = request.get("/api/cpd/overview").await.json();
+        assert!(overview["registrations"]["expired"].as_u64().unwrap() >= 1);
+        assert!(overview["requirements"].as_array().unwrap().iter().any(|r| r["requirement_pid"] == requirement_pid));
+    })
+    .await;
+}

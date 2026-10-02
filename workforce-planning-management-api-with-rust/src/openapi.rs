@@ -187,6 +187,13 @@ pub fn spec() -> Value {
             "/api/role-profiles/{pid}/requirements/{skill_pid}": { "delete": { "tags": ["roles"], "summary": "Drop a requirement", "responses": ok("Ok") } },
             "/api/role-profiles/{pid}/gap": { "get": { "tags": ["roles"], "summary": "Can the workforce staff this role? Per-requirement met / below / undeclared counts over employed workers", "responses": ok("RoleGap") } },
             "/api/workers/{pid}/role-gap": { "get": { "tags": ["roles"], "summary": "One worker's declared proficiency vs a role profile (?role_profile_pid=)", "responses": ok("WorkerRoleGap") } },
+            "/api/cpd-requirements": { "get": { "tags": ["cpd"], "summary": "CPD requirements (hours or points per period)", "responses": ok("CpdRequirements") }, "post": { "tags": ["cpd"], "summary": "Define a CPD requirement for a period (optionally one job title)", "responses": ok("Pid") } },
+            "/api/workers/{pid}/cpd-entries": { "get": { "tags": ["cpd"], "summary": "A worker's CPD ledger, newest first", "responses": ok("CpdEntries") }, "post": { "tags": ["cpd"], "summary": "Record a CPD activity (amount in units, evidence optional)", "responses": ok("Pid") } },
+            "/api/workers/{pid}/cpd-progress": { "get": { "tags": ["cpd"], "summary": "Recorded / verified vs each applicable requirement, plus registration expiry", "responses": ok("CpdProgress") } },
+            "/api/workers/{pid}/registrations": { "get": { "tags": ["cpd"], "summary": "Professional registrations with expiry status", "responses": ok("Registrations") }, "post": { "tags": ["cpd"], "summary": "Record a professional registration and its expiry", "responses": ok("Pid") } },
+            "/api/cpd-entries/{pid}/verify": { "post": { "tags": ["cpd"], "summary": "Verify an entry's evidence", "responses": ok("CpdEntry") } },
+            "/api/cpd-entries/{pid}": { "delete": { "tags": ["cpd"], "summary": "Withdraw an entry (soft-delete)", "responses": ok("Ok") } },
+            "/api/cpd/overview": { "get": { "tags": ["cpd"], "summary": "Aggregate: employed workers meeting each requirement; registrations expiring or expired", "responses": ok("CpdOverview") } },
             "/api/workforce-intelligence/succession": { "get": { "tags": ["intelligence"], "summary": "Bench strength + single points of failure (criticality × risk of loss)", "responses": ok("Succession") } },
             "/api/workforce-intelligence/pipelines": { "get": { "tags": ["intelligence"], "summary": "Pipeline funnel + early-career conversion rates", "responses": ok("Pipelines") } },
             "/api/wellbeing-entitlements": {

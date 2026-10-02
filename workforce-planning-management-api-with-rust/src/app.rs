@@ -90,6 +90,7 @@ impl Hooks for App {
             .add_route(controllers::development::routes())
             .add_route(controllers::learning::routes())
             .add_route(controllers::roles::routes())
+            .add_route(controllers::cpd::routes())
             .add_route(controllers::talent::routes())
             .add_route(controllers::intelligence::routes())
             .add_route(controllers::payroll::routes())

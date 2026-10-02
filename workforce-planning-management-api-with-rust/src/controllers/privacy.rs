@@ -13,7 +13,8 @@ use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, appraisal_nominations, appraisal_responses, appraisals, assessments,
-    benefit_enrollments, candidates, development_plans, worker_skills, workers,
+    benefit_enrollments, candidates, cpd_entries, development_plans, professional_registrations,
+    worker_skills, workers,
     entitlement_acknowledgements, ergonomic_assessments, leave_entitlements, leave_requests,
     mentorships, notifications, path_enrollments, payslips, pipeline_members, program_placements,
     reviews, shift_assignments, time_entries, training_enrollments,
@@ -107,6 +108,8 @@ async fn subject_access(
         "skills": rows_for!(db, worker_skills, WorkerPid, epid),
         "learning_path_enrollments": rows_for!(db, path_enrollments, WorkerPid, epid),
         "development_plans": rows_for!(db, development_plans, WorkerPid, epid),
+        "cpd_entries": rows_for!(db, cpd_entries, WorkerPid, epid),
+        "professional_registrations": rows_for!(db, professional_registrations, WorkerPid, epid),
         "program_placements": rows_for!(db, program_placements, WorkerPid, epid),
         "payslips": rows_for!(db, payslips, WorkerPid, epid),
         "wellbeing_acknowledgements":
@@ -205,6 +208,14 @@ async fn erase(
              adjustment = '{ERASED}', decision_note = NULL, deleted_at = now() \
              WHERE worker_pid = '{epid}' AND deleted_at IS NULL"
         ),
+        format!(
+            "UPDATE cpd_entries SET evidence_note = NULL, evidence_url = NULL, deleted_at = now() \
+             WHERE worker_pid = '{epid}' AND deleted_at IS NULL"
+        ),
+        format!(
+            "UPDATE professional_registrations SET reference = NULL, deleted_at = now() \
+             WHERE worker_pid = '{epid}' AND deleted_at IS NULL"
+        ),
     ];
     let mut affected = Vec::new();
     for statement in &statements {
@@ -227,6 +238,8 @@ async fn erase(
             "ergonomic_items_scrubbed": affected[6],
             "ergonomic_assessments_closed": affected[7],
             "adjustment_requests_scrubbed": affected[8],
+            "cpd_entries_scrubbed": affected[9],
+            "registrations_scrubbed": affected[10],
         })),
     )
     .await?;

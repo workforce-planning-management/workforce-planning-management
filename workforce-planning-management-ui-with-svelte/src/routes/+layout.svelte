@@ -23,6 +23,7 @@
     ["/development", "nav.development"],
     ["/learning", "nav.learning"],
     ["/roles", "nav.roles"],
+    ["/cpd", "nav.cpd"],
     ["/mentorship", "nav.mentorship"],
     ["/wellbeing", "nav.wellbeing"],
     ["/privacy", "nav.privacy"],

@@ -466,6 +466,136 @@ export function removeRoleRequirement(
   });
 }
 
+/** CPD requirement units / entry categories (mirror `rules::cpd`). */
+export const CPD_UNITS = ["hours", "points"] as const;
+export const CPD_CATEGORIES = [
+  "course",
+  "conference",
+  "reading",
+  "mentoring",
+  "on_the_job",
+  "self_study",
+  "other",
+] as const;
+
+/** CPD requirements (hours or points per period). */
+export function listCpdRequirements(init?: FetchLike): Promise<
+  Array<{
+    pid: string;
+    name: string;
+    unit: string;
+    required: number;
+    period_start: string;
+    period_end: string;
+    job_title: string | null;
+  }>
+> {
+  return api("/cpd-requirements", init);
+}
+
+/** Define a CPD requirement for a period. */
+export function createCpdRequirement(body: {
+  name: string;
+  unit: string;
+  required: number;
+  period_start: string;
+  period_end: string;
+  job_title?: string;
+}): Promise<{ pid: string }> {
+  return api("/cpd-requirements", { method: "POST", body });
+}
+
+/** A worker's CPD ledger. */
+export function listCpdEntries(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<
+  Array<{
+    pid: string;
+    entry_date: string;
+    activity: string;
+    category: string;
+    unit: string;
+    amount: number;
+    evidence_note: string | null;
+    evidence_url: string | null;
+    source: string;
+    verified_on: string | null;
+    verified_by: string | null;
+  }>
+> {
+  return api(`/workers/${workerPid}/cpd-entries`, init);
+}
+
+/** Record a CPD activity. */
+export function createCpdEntry(
+  workerPid: string,
+  body: {
+    entry_date: string;
+    activity: string;
+    category: string;
+    unit: string;
+    amount: number;
+    evidence_note?: string;
+    evidence_url?: string;
+  },
+): Promise<{ pid: string }> {
+  return api(`/workers/${workerPid}/cpd-entries`, { method: "POST", body });
+}
+
+/** Verify a CPD entry's evidence. */
+export function verifyCpdEntry(pid: string): Promise<unknown> {
+  return api(`/cpd-entries/${pid}/verify`, { method: "POST" });
+}
+
+/** Recorded / verified vs each applicable requirement + registrations. */
+export function cpdProgress(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  worker_pid: string;
+  requirements: Array<{
+    requirement_pid: string;
+    name: string;
+    unit: string;
+    period_start: string;
+    period_end: string;
+    required: number;
+    recorded: number;
+    verified: number;
+    remaining: number;
+    met: boolean;
+    met_verified: boolean;
+  }>;
+  registrations: Array<{
+    body: string;
+    expires_on: string | null;
+    status: "no_expiry" | "valid" | "expiring" | "expired";
+  }>;
+}> {
+  return api(`/workers/${workerPid}/cpd-progress`, init);
+}
+
+/** Aggregate CPD overview (no one named). */
+export function cpdOverview(init?: FetchLike): Promise<{
+  derivation: string;
+  headcount: number;
+  requirements: Array<{
+    requirement_pid: string;
+    name: string;
+    unit: string;
+    period_start: string;
+    period_end: string;
+    applicable_workers: number;
+    met_recorded: { numerator: number; denominator: number; value: number } | null;
+    met_verified: { numerator: number; denominator: number; value: number } | null;
+  }>;
+  registrations: { expiring: number; expired: number };
+}> {
+  return api("/cpd/overview", init);
+}
+
 /** Terms-carrying ratio object (or null when there is nothing to divide). */
 type RatioOrNull = {
   numerator: number;
