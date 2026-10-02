@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import {
+    capabilityAnalysis,
     listPaths,
     pathProgress,
     skillsMatrix,
@@ -17,11 +18,15 @@
 
   type Matrix = Awaited<ReturnType<typeof skillsMatrix>>;
   type Analytics = Awaited<ReturnType<typeof trainingAnalytics>>;
+  type Capability = Awaited<ReturnType<typeof capabilityAnalysis>>;
   type Paths = Awaited<ReturnType<typeof listPaths>>;
   type Progress = Awaited<ReturnType<typeof pathProgress>>;
 
   let matrix = $state<Matrix | null>(null);
   let analytics = $state<Analytics | null>(null);
+  let capability = $state<Capability | null>(null);
+  let minProficiency = $state(3);
+  let minDepth = $state(2);
   let paths = $state<Paths>([]);
   let selectedPath = $state("");
   let progress = $state<Progress | null>(null);
@@ -32,6 +37,7 @@
       try {
         matrix = await skillsMatrix();
         analytics = await trainingAnalytics();
+        await loadCapability();
         paths = await listPaths();
         if (!selectedPath && paths.length > 0) {
           selectedPath = paths[0]?.pid ?? "";
@@ -42,6 +48,14 @@
       }
     })();
   });
+
+  async function loadCapability() {
+    try {
+      capability = await capabilityAnalysis({ minProficiency, minDepth });
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : String(cause);
+    }
+  }
 
   async function loadProgress(pid: string) {
     selectedPath = pid;
@@ -109,6 +123,55 @@
         </tr>
       {:else}
         <tr><td colspan="3" class="muted">No training enrolments yet.</td></tr>
+      {/each}
+    </tbody>
+  </table>
+{/if}
+
+{#if capability}
+  <h2>Capability analysis</h2>
+  <p class="muted">{capability.derivation}</p>
+  <p>
+    <label>
+      Proficiency bar
+      <select
+        data-testid="capability-min-proficiency"
+        bind:value={minProficiency}
+        onchange={() => void loadCapability()}
+      >
+        {#each [1, 2, 3, 4, 5] as level (level)}<option value={level}>{level}</option>{/each}
+      </select>
+    </label>
+    <label>
+      Workers needed
+      <select
+        data-testid="capability-min-depth"
+        bind:value={minDepth}
+        onchange={() => void loadCapability()}
+      >
+        {#each [1, 2, 3, 4, 5] as depth (depth)}<option value={depth}>{depth}</option>{/each}
+      </select>
+    </label>
+  </p>
+  <p data-testid="capability-summary">
+    Adequately covered skills: {percentWithWorkings(capability.adequately_covered)}
+  </p>
+  <table data-testid="capability-analysis">
+    <thead>
+      <tr><th>Skill</th><th>Category</th><th>Declared</th><th>Proficient</th><th>Departments</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {#each capability.skills as row (row.skill + row.category)}
+        <tr>
+          <td>{row.skill}</td>
+          <td>{row.category}</td>
+          <td>{row.declared_by}</td>
+          <td>{row.proficient}</td>
+          <td>{row.proficient_departments}</td>
+          <td class:warn={row.status !== "adequate"}>{row.status.replace("_", " ")}</td>
+        </tr>
+      {:else}
+        <tr><td colspan="6" class="muted">No skills in the catalogue yet.</td></tr>
       {/each}
     </tbody>
   </table>

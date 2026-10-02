@@ -364,6 +364,39 @@ export function pathProgress(
   return api(`/learning-paths/${pathPid}/progress`, init);
 }
 
+/** Strategic skill depth: per skill and per category (capability analysis). */
+export function capabilityAnalysis(
+  thresholds?: { minProficiency?: number; minDepth?: number },
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  thresholds: { min_proficiency: number; min_depth: number };
+  headcount: number;
+  skills_in_catalog: number;
+  adequately_covered: Ratio | null;
+  by_category: Record<string, Record<string, number>>;
+  skills: Array<{
+    skill: string;
+    category: string;
+    declared_by: number;
+    proficient: number;
+    proficient_departments: number;
+    proficient_share: Ratio | null;
+    status: "undeclared" | "no_proficient" | "thin" | "adequate";
+  }>;
+}> {
+  const query = new URLSearchParams();
+  if (thresholds?.minProficiency) {
+    query.set("min_proficiency", String(thresholds.minProficiency));
+  }
+  if (thresholds?.minDepth) query.set("min_depth", String(thresholds.minDepth));
+  const qs = query.toString();
+  return api(
+    `/workforce-intelligence/capability-analysis${qs ? `?${qs}` : ""}`,
+    init,
+  );
+}
+
 /** The mentorship overview (active pairs, load, unmatched, stale). */
 export function mentorshipOverview(
   days?: number,

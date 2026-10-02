@@ -82,6 +82,8 @@ describe("api path map", () => {
     await wpm.listSkills();
     await wpm.skillsMatrix();
     await wpm.trainingAnalytics();
+    await wpm.capabilityAnalysis();
+    await wpm.capabilityAnalysis({ minProficiency: 4, minDepth: 1 });
     await wpm.listPaths();
     await wpm.pathProgress("path1");
     await wpm.mentorshipOverview(30);
@@ -111,6 +113,8 @@ describe("api path map", () => {
       "/api/proxy/skills",
       "/api/proxy/learning/skills-matrix",
       "/api/proxy/learning/training-analytics",
+      "/api/proxy/workforce-intelligence/capability-analysis",
+      "/api/proxy/workforce-intelligence/capability-analysis?min_proficiency=4&min_depth=1",
       "/api/proxy/learning-paths",
       "/api/proxy/learning-paths/path1/progress",
       "/api/proxy/learning/mentorship-overview?days=30",

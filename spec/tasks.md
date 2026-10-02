@@ -717,7 +717,7 @@ code + tests in one PR.
       a real Postgres (21 passed, including both new tests), `cargo fmt
       --check`.
 
-- [~] WPM-T41 (2026-10-02) **Workforce capability analysis (API).**
+- [x] WPM-T41 (2026-10-02) **Workforce capability analysis.**
       `rules/capability.rs` (pure): `depth_status` grades each skill
       `undeclared` / `no_proficient` / `thin` / `adequate` from declared
       proficiency, and `validate_thresholds` bounds the caller's
@@ -728,9 +728,12 @@ code + tests in one PR.
       ratio), category rollup, and the thresholds echoed back; no new
       stored state. Pure rules pinned (4 tests, run standalone); DB-gated
       `capability_analysis_reports_skill_depth` added. **Not yet
-      verified:** `cargo build`/`clippy`/`test` — the sibling
-      `authentication-verifier` crate is absent on this machine. **Open:**
-      the front-end view.
+      verified (API):** `cargo build`/`clippy`/`test` — the sibling
+      `authentication-verifier` crate is absent on this machine.
+      Front-end: `capabilityAnalysis()` client + a "Capability analysis"
+      section on `/learning` (proficiency-bar and depth selectors,
+      per-skill depth table); path-map unit test extended; svelte-check
+      0, vitest 35/35, build green.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
@@ -815,7 +818,7 @@ where WPM already has a partial foundation to build on.
       goes further: gaps compared against a *future* role's
       requirements, not just today's declared target — which depends
       on the future-state modeling item above existing first.
-- [~] **Workforce capability analysis.** *(API landed as WPM-T41; front-end view open.)* Aggregate "do we have enough
+- [x] **Workforce capability analysis.** *(landed as WPM-T41.)* Aggregate "do we have enough
       of the critical skills to compete" reporting across the whole
       org, as distinct from the per-employee/per-department gap
       reports above — a strategic rather than operational read of the
