@@ -914,6 +914,28 @@ first in each, per the three-part rule.
       view of *who* is interested (deliberately — would invite ranking);
       notifying a hiring manager is a design question.
 
+- [x] WPM-T54 (2026-10-02) **LMS completion sync.** The LMS owns courses
+      and learners (WPM-D10) and pushes completions; WPM is not the LMS.
+      Pure `rules::lms` (`validate_completion`, `cpd_credit` hours *or*
+      points, `enrollment_action` Create / Complete / Unchanged; 3 tests).
+      `POST /api/lms/completions` takes up to 500 events
+      `{person_ref, organization_ref?, course_ref, completed_on,
+      certificate_expires_on?, hours? | points?, external_ref}` and returns a
+      per-event `result` — `applied`, `unchanged`, `unmatched` (no such
+      worker), `ambiguous` (several organizations; send `organization_ref`),
+      or `invalid` — so one bad event never poisons the batch. Each applied
+      event creates or completes the worker's **training enrollment** (which
+      already feeds certificate-expiry reporting and learning-path progress)
+      and, when it carries credit, lands a **CPD entry** with `source =
+      "lms"`. Idempotent per event: `external_ref` is the key (a unique
+      index on worker + external_ref), so a redelivery changes nothing.
+      Intended caller is the LMS's service account (`svc` ABAC attribute);
+      transport (push vs. polling, xAPI translation) is the integration's
+      job. The CPD ledger marks LMS entries. Rust type-checks and 121 lib
+      tests pass against stubbed sibling crates, clippy-clean; DB-gated
+      `lms_completions_update_enrollments_and_cpd_idempotently` not run.
+      Not done: mapping a course to the skills it evidences.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

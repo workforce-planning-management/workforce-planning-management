@@ -14,6 +14,7 @@ pub mod ergonomics;
 pub mod learning;
 pub mod gap;
 pub mod leave;
+pub mod lms;
 pub mod lifecycle;
 pub mod metrics;
 pub mod mobility;

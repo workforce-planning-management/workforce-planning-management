@@ -235,7 +235,7 @@
       {#each entries as e (e.pid)}
         <tr>
           <td>{e.entry_date}</td>
-          <td>{e.activity}</td>
+          <td>{e.activity}{#if e.source === "lms"} <span class="chip">LMS</span>{/if}</td>
           <td>{e.category}</td>
           <td>{e.amount} {e.unit}</td>
           <td>

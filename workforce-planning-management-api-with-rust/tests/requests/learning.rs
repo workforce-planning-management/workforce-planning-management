@@ -721,3 +721,66 @@ async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn lms_completions_update_enrollments_and_cpd_idempotently() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let worker = seed_worker!(&request, &org, "E-1", None).await;
+        activate!(&request, &worker).await;
+        let detail: Value = request.get(&format!("/api/workers/{worker}")).await.json();
+        let person_ref = detail["person_ref"].as_str().unwrap().to_string();
+
+        let course = "course:33333333-3333-4333-8333-333333333333";
+        let event = |reference: &str| {
+            json!({
+                "person_ref": person_ref, "course_ref": course,
+                "completed_on": "2026-09-01", "certificate_expires_on": "2027-09-01",
+                "hours": 2.5, "external_ref": reference,
+            })
+        };
+        let post = |events: Vec<Value>| {
+            request
+                .post("/api/lms/completions")
+                .json(&json!({ "completions": events }))
+        };
+
+        let first: Value = post(vec![event("evt-1")]).await.json();
+        assert_eq!(first["summary"]["applied"], 1);
+        assert_eq!(first["results"][0]["enrollment"], "created");
+        assert_eq!(first["results"][0]["cpd"], "recorded");
+
+        // Redelivery of the same event changes nothing.
+        let again: Value = post(vec![event("evt-1")]).await.json();
+        assert_eq!(again["summary"]["unchanged"], 1);
+        assert_eq!(again["results"][0]["cpd"], "already_recorded");
+
+        // The enrollment is completed with its certificate expiry; the CPD
+        // ledger holds one LMS entry.
+        let training: Value = request.get(&format!("/api/workers/{worker}/training-enrollments")).await.json();
+        let row = training.as_array().unwrap().iter().find(|t| t["course_ref"] == course).unwrap();
+        assert_eq!(row["status"], "completed");
+        assert_eq!(row["certificate_expires_on"], "2027-09-01");
+        let ledger: Value = request.get(&format!("/api/workers/{worker}/cpd-entries")).await.json();
+        let lms: Vec<&Value> = ledger.as_array().unwrap().iter().filter(|e| e["source"] == "lms").collect();
+        assert_eq!(lms.len(), 1, "an event lands exactly one CPD entry");
+        assert_eq!(lms[0]["amount"], 2.5);
+
+        // Bad events are reported per item and do not poison the batch.
+        let mixed: Value = post(vec![
+            json!({ "person_ref": "person:99999999-9999-4999-8999-999999999999", "course_ref": course,
+                    "completed_on": "2026-09-01", "external_ref": "evt-x" }),
+            json!({ "person_ref": person_ref, "course_ref": "not-a-urn",
+                    "completed_on": "2026-09-01", "external_ref": "evt-y" }),
+            event("evt-2"),
+        ])
+        .await
+        .json();
+        assert_eq!(mixed["results"][0]["result"], "unmatched");
+        assert_eq!(mixed["results"][1]["result"], "invalid");
+        assert_eq!(mixed["results"][2]["result"], "applied");
+    })
+    .await;
+}

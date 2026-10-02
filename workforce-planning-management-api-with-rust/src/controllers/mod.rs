@@ -17,6 +17,7 @@ pub mod ergonomics;
 pub mod hr_core;
 pub mod intelligence;
 pub mod learning;
+pub mod lms;
 pub mod mobility;
 pub mod roles;
 pub mod metrics;
