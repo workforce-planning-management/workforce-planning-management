@@ -744,6 +744,19 @@ code + tests in one PR.
       the org-chart payload first (**open**). svelte-check 0, vitest
       39/39, build green.
 
+- [~] WPM-T43 (2026-10-02) **Testcontainers Keycloak integration test.**
+      `tests/keycloak.rs` (feature `keycloak`, `#[ignore]`) starts a real
+      Keycloak via `testcontainers` on Podman, imports
+      `tests/keycloak/realm-wpm.json`, mints tokens with the password
+      grant, and checks 401 / 403 / policy-authorised writes against the
+      booted app (see `spec/testcontainers-keycloak/index.md`).
+      **Not yet run:** the Podman VM had no outbound network in the
+      authoring session (the Keycloak image could not be pulled), and the
+      Rust crate cannot build here (missing sibling crates). The
+      container + realm-import half was compiled standalone against
+      `testcontainers` 0.28; the realm JSON is unproven against a live
+      Keycloak (the unmanaged `organization_ref` attribute in particular).
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

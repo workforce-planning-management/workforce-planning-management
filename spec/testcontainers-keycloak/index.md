@@ -18,3 +18,29 @@ This workspace uses Podman, not Docker (see `rust-loco-stack.md`). Testcontainer
 can drive Podman through its Docker-compatible socket; fully qualify the image
 name (for example `quay.io/keycloak/keycloak`) because Podman refuses short
 names.
+
+## Implementation in this workspace
+
+The Rust API's `keycloak` backend (`src/auth/keycloak.rs`) is tested against a
+real Keycloak, in `workforce-planning-management-api-with-rust/tests/keycloak.rs`:
+
+- Dependency: `testcontainers` (dev-dependency); the container is a
+  `GenericImage` for `quay.io/keycloak/keycloak:26.0` run as
+  `start-dev --import-realm`, so no extra Keycloak module crate is needed.
+- Realm: `tests/keycloak/realm-wpm.json` — realm `wpm`, public client
+  `wpm-api` (password grant enabled for tests only) with the audience,
+  realm-role, group, and `organization_ref` mappers from `spec/auth.md`;
+  users `hr-user` (`wpm-hr`, `wpm-payroll`, group `/org/engineering`) and
+  `plain-user` (no roles).
+- Wiring: the test fetches real access tokens, sets `WPM_KEYCLOAK_ISSUER`,
+  `WPM_KEYCLOAK_AUDIENCE`, and `WPM_KEYCLOAK_JWKS_URL` from the container's
+  mapped port, boots the app, and calls secured routes. It is its own test
+  binary because the auth `OnceLock`s are process-wide.
+- Run (Podman; rootless Podman cannot run the Ryuk reaper):
+
+```sh
+export DOCKER_HOST="unix://$(podman machine inspect \
+    --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
+export TESTCONTAINERS_RYUK_DISABLED=true
+cargo test --no-default-features --features keycloak --test keycloak -- --ignored
+```

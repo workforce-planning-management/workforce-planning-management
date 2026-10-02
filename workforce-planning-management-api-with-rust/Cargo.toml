@@ -112,3 +112,11 @@ ed25519-dalek = { version = "3.0.0" }
 rusty_paseto = { version = "0.10", default-features = false, features = ["v4_public", "serde_json"] }
 sha2 = { version = "0.10" }
 base64 = { version = "0.23" }
+# Real Keycloak in a container for `tests/keycloak.rs` (Podman via DOCKER_HOST).
+testcontainers = { version = "0.28" }
+
+# Needs the `keycloak` backend (mutually exclusive with the default `paseto`).
+[[test]]
+name = "keycloak"
+path = "tests/keycloak.rs"
+required-features = ["keycloak"]

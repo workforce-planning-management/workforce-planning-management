@@ -1,0 +1,95 @@
+{
+  "realm": "wpm",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "attributes": { "unmanagedAttributePolicy": "ENABLED" },
+  "roles": {
+    "realm": [
+      { "name": "wpm-hr" },
+      { "name": "wpm-payroll" },
+      { "name": "wpm-admin" }
+    ]
+  },
+  "groups": [
+    { "name": "org", "subGroups": [{ "name": "engineering" }, { "name": "sales" }] }
+  ],
+  "clients": [
+    {
+      "clientId": "wpm-api",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "wpm-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "realm_access.roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "true",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "organization_ref",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "organization_ref",
+            "claim.name": "organization_ref",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "hr-user",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "hr-user@example.com",
+      "firstName": "Hana",
+      "lastName": "Resources",
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["wpm-hr", "wpm-payroll"],
+      "groups": ["/org/engineering"],
+      "attributes": { "organization_ref": ["organization:00000000-0000-0000-0000-000000000001"] }
+    },
+    {
+      "username": "plain-user",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "plain-user@example.com",
+      "firstName": "Pat",
+      "lastName": "Plain",
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }]
+    }
+  ]
+}
