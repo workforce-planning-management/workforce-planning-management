@@ -770,6 +770,22 @@ code + tests in one PR.
       network, so the image was fetched on the host from the registry API
       and `podman load`ed.
 
+- [~] WPM-T44 (2026-10-02) **Workforce metrics layer (API).**
+      `rules/metrics.rs` (pure; 5 tests run standalone): one `DEFINITIONS`
+      vocabulary plus `headcount_on` (hire and termination dates both
+      respected), `starters`, `leavers`, `turnover_rate` (leavers ÷ mean
+      of opening and closing headcount; `None`, never 0, without a base)
+      and `span_of_control`. New read-only
+      `GET /api/workforce-intelligence/metrics?from=&to=` returns the
+      numbers beside their definitions. **time-to-fill is reported as
+      unavailable** — requisitions record `opened_on` but no fill date
+      (needs a column before it can be derived). **Known inconsistency,
+      not changed here:** `/overview`'s headcount counts every live
+      worker record including terminated ones, whereas `metrics`
+      counts workers employed on the date — reconcile before the UI shows
+      both. DB-gated `workforce_metrics_report_defined_numbers` added.
+      Rust unbuilt (see WPM-T41). **Open:** a front-end view.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`
@@ -865,7 +881,7 @@ where WPM already has a partial foundation to build on.
 
 ### Metrics, analytics, and visualization
 
-- [ ] **Workforce metrics.** The base layer every item on this list
+- [~] **Workforce metrics.** *(API landed as WPM-T44; front-end view, time-to-fill and the headcount reconciliation open.)* The base layer every item on this list
       depends on — standard counts/rates (headcount, turnover, time-
       to-fill, span of control, tenure mix) as a shared, named
       vocabulary rather than one-off numbers computed per screen. WPM

@@ -285,3 +285,38 @@ async fn capability_analysis_reports_skill_depth() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn workforce_metrics_report_defined_numbers() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        // Two workers hired 2026-01-05 (the helper's fixed date).
+        let a = seed_worker!(&request, &org, "E-1", None).await;
+        activate!(&request, &a).await;
+        let _b = seed_worker!(&request, &org, "E-2", None).await;
+
+        let view: Value = request
+            .get("/api/workforce-intelligence/metrics?from=2026-01-01&to=2026-12-31")
+            .await
+            .json();
+        assert_eq!(view["period"]["from"], "2026-01-01");
+        assert_eq!(view["headcount"]["opening"], 0, "nobody employed on 2025-12-31");
+        assert!(view["headcount"]["closing"].as_u64().unwrap() >= 2);
+        assert!(view["starters"].as_u64().unwrap() >= 2, "both hired in the period");
+        assert_eq!(view["leavers"], 0);
+        assert!(view["time_to_fill"].is_null(), "no fill date is recorded");
+        assert!(view["definitions"]["headcount"].is_string());
+
+        assert_eq!(
+            request
+                .get("/api/workforce-intelligence/metrics?from=2026-12-31&to=2026-01-01")
+                .await
+                .status_code(),
+            422,
+            "inverted period refused"
+        );
+    })
+    .await;
+}

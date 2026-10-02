@@ -13,6 +13,7 @@ pub mod ergonomics;
 pub mod learning;
 pub mod leave;
 pub mod lifecycle;
+pub mod metrics;
 pub mod notify;
 pub mod org;
 pub mod org_access;

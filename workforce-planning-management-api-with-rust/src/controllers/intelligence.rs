@@ -38,6 +38,7 @@ use crate::models::_entities::{
 };
 use crate::rules::assessment as assessment_rules;
 use crate::rules::capability as capability_rules;
+use crate::rules::metrics as metric_rules;
 use crate::rules::talent as rules;
 
 /// Render a `(numerator, denominator, value)` triple as the family's
@@ -379,6 +380,79 @@ async fn capability_analysis(
     }))
 }
 
+/// Query for the metrics view.
+#[derive(Debug, Deserialize)]
+struct MetricsQuery {
+    /// Period start (default: one year before `to`).
+    from: Option<chrono::NaiveDate>,
+    /// Period end, inclusive (default today).
+    to: Option<chrono::NaiveDate>,
+}
+
+/// `GET /api/workforce-intelligence/metrics?from=&to=` — the shared
+/// metric vocabulary: headcount (opening and closing), starters,
+/// leavers, turnover rate, and span of control, each defined once in
+/// [`metric_rules::DEFINITIONS`] and returned beside the numbers.
+///
+/// Headcount here counts workers *employed on the date* (hire and
+/// termination dates both respected); the `overview` view's headcount
+/// counts every live record regardless of status — see its derivation.
+#[debug_handler]
+async fn metrics(
+    axum::extract::Query(query): axum::extract::Query<MetricsQuery>,
+    State(ctx): State<AppContext>,
+) -> Result<Response> {
+    let to = query.to.unwrap_or_else(|| chrono::Utc::now().date_naive());
+    let from = query
+        .from
+        .unwrap_or_else(|| to.checked_sub_months(chrono::Months::new(12)).unwrap_or(to));
+    if from > to {
+        return Err(super::unprocessable("from must not be after to"));
+    }
+
+    let staff = live_workers(&ctx).await?;
+    let tenures: Vec<metric_rules::Tenure> = staff
+        .iter()
+        .map(|w| metric_rules::Tenure {
+            hired_on: w.hired_on,
+            terminated_on: w.terminated_on,
+        })
+        .collect();
+    // Opening headcount is the day before the period starts.
+    let opening_date = from.pred_opt().unwrap_or(from);
+    let opening = metric_rules::headcount_on(opening_date, &tenures);
+    let closing = metric_rules::headcount_on(to, &tenures);
+    let leavers = metric_rules::leavers(from, to, &tenures);
+
+    // Span of control over managers of workers employed on `to`.
+    let employed: Vec<&workers::Model> = staff
+        .iter()
+        .filter(|w| w.hired_on <= to && w.terminated_on.is_none_or(|t| t > to))
+        .collect();
+    let mut reports: BTreeMap<Uuid, usize> = BTreeMap::new();
+    for worker in &employed {
+        if let Some(manager) = worker.manager_pid {
+            *reports.entry(manager).or_default() += 1;
+        }
+    }
+    let counts: Vec<usize> = reports.values().copied().collect();
+    let span = metric_rules::span_of_control(&counts);
+
+    let definitions: BTreeMap<&str, &str> = metric_rules::DEFINITIONS.iter().copied().collect();
+    format::json(serde_json::json!({
+        "period": { "from": from, "to": to },
+        "definitions": definitions,
+        "headcount": { "opening": opening, "closing": closing, "opening_date": opening_date },
+        "starters": metric_rules::starters(from, to, &tenures),
+        "leavers": leavers,
+        "turnover_rate": metric_rules::turnover_rate(leavers, opening, closing),
+        "span_of_control": span.map(|s| serde_json::json!({
+            "managers": s.managers, "mean": s.mean, "max": s.max,
+        })),
+        "time_to_fill": null,
+    }))
+}
+
 /// `GET /api/workforce-intelligence/succession` — bench strength across
 /// the succession plans, and the **single points of failure**: critical
 /// roles with nobody ready now (a high risk of loss lowers the
@@ -560,6 +634,7 @@ pub fn routes() -> Routes {
         .add("/overview", get(overview))
         .add("/capability", get(capability))
         .add("/capability-analysis", get(capability_analysis))
+        .add("/metrics", get(metrics))
         .add("/succession", get(succession))
         .add("/pipelines", get(pipelines))
 }
