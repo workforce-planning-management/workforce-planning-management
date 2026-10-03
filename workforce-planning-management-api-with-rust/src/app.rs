@@ -95,6 +95,7 @@ impl Hooks for App {
             .add_route(controllers::lms::routes())
             .add_route(controllers::change::routes())
             .add_route(controllers::planning::routes())
+            .add_route(controllers::esco::routes())
             .add_route(controllers::talent::routes())
             .add_route(controllers::intelligence::routes())
             .add_route(controllers::payroll::routes())
@@ -132,6 +133,7 @@ impl Hooks for App {
         tasks.register(tasks::seed::Seed);
         tasks.register(tasks::snapshot::SnapshotHeadcount);
         tasks.register(tasks::import_framework::ImportFramework);
+        tasks.register(tasks::import_esco::ImportEsco);
         // tasks-inject (do not remove)
     }
 

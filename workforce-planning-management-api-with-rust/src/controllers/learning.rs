@@ -279,6 +279,24 @@ async fn add_skill_ref(
     problems.cap_text("ref", &payload.reference);
     ensure_valid(&problems.into_vec())?;
     let skill = find_live_skill(&ctx, &pid).await?;
+    // A reference into ESCO must name a concept in the pinned local copy
+    // (when one has been loaded).
+    if payload.framework_slug.trim() == "esco" {
+        let loaded = crate::models::_entities::esco_skills::Entity::find()
+            .one(&ctx.db)
+            .await?
+            .is_some();
+        let known = crate::models::_entities::esco_skills::Entity::find()
+            .filter(crate::models::_entities::esco_skills::Column::Uri.eq(&payload.reference))
+            .one(&ctx.db)
+            .await?
+            .is_some();
+        if loaded && !known {
+            return Err(unprocessable(
+                "that URI is not an ESCO skill in the pinned copy",
+            ));
+        }
+    }
     let clash = skill_external_refs::Entity::find()
         .filter(skill_external_refs::Column::FrameworkSlug.eq(&payload.framework_slug))
         .filter(

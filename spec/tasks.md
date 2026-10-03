@@ -798,7 +798,7 @@ code + tests in one PR.
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
 > **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
-> and the full database-backed request suite passes — **36 of 36** against a
+> and the full database-backed request suite passes — **37 of 37** against a
 > real PostgreSQL 18 (every migration applied) — using a scratch copy with
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
@@ -1106,6 +1106,33 @@ first in each, per the three-part rule.
       lib tests, database-backed suite **36/36** against PostgreSQL 18,
       clippy-clean on the new files; svelte-check 0, vitest 45/45, build
       green. Not done: deleting a skill; merging duplicates.
+
+- [x] WPM-T60 (2026-10-03) **ESCO import and seeding.** Migration
+      `m20261003_000032_esco` (`esco_skills`, `esco_occupations`,
+      `esco_occupation_skills`) — a pinned local reference copy, replaced
+      wholesale per import. Pure `rules::csv` (RFC 4180 parser, 4 tests) and
+      `rules::esco` (header-resolved parsers for skills, occupations and
+      relations; the draft category and importance mappings; exact label
+      normalisation; 5 tests). Loco task `import_esco dir:<csv dir>
+      [lang:en] [version:]` loads the files, writes the `esco` framework row
+      (attribution, pinned version, "no proficiency scale" note), and links
+      catalogue skills by **exact normalised label only** — ambiguous labels
+      are counted and left. API in `controllers/esco.rs`: occupation and
+      skill search, an occupation's skills, and `POST
+      /api/role-profiles/from-esco` which **requires the planner's starting
+      level** (ESCO states none), drafts essential skills as `important` and
+      optional as `useful`, matches or creates and links catalogue skills, and
+      allows one profile per occupation; manual links via the `/skills/{pid}/refs`
+      endpoint are checked against the pinned copy. Front-end: "Start from an
+      ESCO occupation" on `/roles` and "Link ESCO" on `/skills`. **Verified:**
+      Rust type-checks, 156 lib tests, database-backed suite **37/37** against
+      PostgreSQL 18 (including `esco_import_search_and_seeding` on a
+      synthetic fixture), clippy-clean on the new files; svelte-check 0,
+      vitest 45/45, build green. **Not verified against real ESCO files**
+      (the download is emailed): the importer is built from the published
+      structure and stops with a message naming any missing column. Not done:
+      qualifications / EQF; ESCO alternative labels for matching; other
+      languages beyond choosing `lang:`.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 

@@ -15,6 +15,9 @@
     removeRoleRequirement,
     roleGap,
     roleProgression,
+    searchEscoOccupations,
+    getEscoOccupation,
+    seedProfileFromEsco,
     setRoleRequirement,
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
@@ -27,6 +30,8 @@
   type Interest = Awaited<ReturnType<typeof mobilityInterestSummary>>;
   type Frameworks = Awaited<ReturnType<typeof listFrameworks>>;
   type Progression = Awaited<ReturnType<typeof roleProgression>>;
+  type EscoHits = Awaited<ReturnType<typeof searchEscoOccupations>>;
+  type EscoOccupation = Awaited<ReturnType<typeof getEscoOccupation>>;
 
   const IMPORTANCES = ["critical", "important", "useful"] as const;
 
@@ -38,6 +43,13 @@
   let frameworks = $state<Frameworks>([]);
   let framework = $state("");
   let progression = $state<Progression | null>(null);
+  let escoQuery = $state("");
+  let escoHits = $state<EscoHits>([]);
+  let escoPicked = $state<EscoOccupation | null>(null);
+  let escoLevel = $state(3);
+  let escoOptional = $state(false);
+  let escoTitle = $state("");
+  const escoLoaded = $derived(frameworks.some((f) => f.slug === "esco"));
   let profile = $state<Profile | null>(null);
   let error = $state<string | null>(null);
 
@@ -106,6 +118,46 @@
       } catch (cause) {
         error = message(cause);
       }
+    }
+  }
+
+  async function searchEsco() {
+    error = null;
+    escoPicked = null;
+    try {
+      escoHits = escoQuery.trim().length >= 2 ? await searchEscoOccupations(escoQuery.trim()) : [];
+    } catch (cause) {
+      error = message(cause);
+    }
+  }
+
+  async function pickEsco(uri: string) {
+    error = null;
+    try {
+      escoPicked = await getEscoOccupation(uri);
+      escoTitle = "";
+    } catch (cause) {
+      error = message(cause);
+    }
+  }
+
+  async function seedEsco() {
+    if (!escoPicked) return;
+    error = null;
+    try {
+      const created = await seedProfileFromEsco({
+        occupation_uri: escoPicked.uri,
+        default_min_proficiency: escoLevel,
+        include_optional: escoOptional,
+        ...(escoTitle.trim() ? { job_title: escoTitle.trim() } : {}),
+      });
+      escoPicked = null;
+      escoHits = [];
+      escoQuery = "";
+      selected = created.pid;
+      await loadProfiles();
+    } catch (cause) {
+      error = message(cause);
     }
   }
 
@@ -220,6 +272,60 @@
   </label>
   <button type="submit" data-testid="role-create">Create</button>
 </form>
+
+{#if escoLoaded}
+  <h3>Start from an ESCO occupation</h3>
+  <p class="muted">
+    ESCO says which skills an occupation needs, not how well — so you choose the starting level
+    below. The result is a draft for you to edit.
+  </p>
+  <form
+    onsubmit={(event) => {
+      event.preventDefault();
+      void searchEsco();
+    }}
+  >
+    <label>Occupation <input data-testid="esco-query" bind:value={escoQuery} minlength="2" /></label>
+    <button type="submit" data-testid="esco-search">Search</button>
+  </form>
+  {#if escoHits.length > 0 && !escoPicked}
+    <ul data-testid="esco-hits">
+      {#each escoHits as hit (hit.uri)}
+        <li>
+          <button type="button" onclick={() => void pickEsco(hit.uri)}>{hit.label}</button>
+          <span class="muted">ISCO {hit.isco_code ?? "—"} · {hit.essential_skills} essential, {hit.optional_skills} optional</span>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+  {#if escoPicked}
+    <p><strong>{escoPicked.label}</strong> <span class="muted">(ISCO {escoPicked.isco_code ?? "—"})</span></p>
+    {#if escoPicked.description}<p class="muted">{escoPicked.description}</p>{/if}
+    <ul>
+      {#each escoPicked.skills.slice(0, 12) as s (s.uri)}
+        <li>{s.label} <span class="muted">({s.relation}{s.catalogue_skill_pid ? ", in catalogue" : ""})</span></li>
+      {/each}
+    </ul>
+    {#if escoPicked.skills.length > 12}<p class="muted">… and {escoPicked.skills.length - 12} more.</p>{/if}
+    <form
+      onsubmit={(event) => {
+        event.preventDefault();
+        void seedEsco();
+      }}
+    >
+      <label>
+        Starting minimum level
+        <select data-testid="esco-level" bind:value={escoLevel}>
+          {#each [1, 2, 3, 4, 5] as level (level)}<option value={level}>{level}</option>{/each}
+        </select>
+      </label>
+      <label><input type="checkbox" bind:checked={escoOptional} /> Include optional skills (as "useful")</label>
+      <label>Job title (optional) <input bind:value={escoTitle} placeholder={escoPicked.label} /></label>
+      <button type="submit" data-testid="esco-create">Create draft profile</button>
+      <button type="button" onclick={() => (escoPicked = null)}>Back</button>
+    </form>
+  {/if}
+{/if}
 
 {#if profile}
   <h2>{profile.job_title}</h2>

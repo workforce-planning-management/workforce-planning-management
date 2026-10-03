@@ -1344,3 +1344,109 @@ async fn skills_can_be_edited_categorised_and_referenced() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn esco_import_search_and_seeding() {
+    use workforce_planning_management_service::tasks::import_esco::import_esco;
+
+    request::<App, _, _>(|request, ctx| async move {
+        // Catalogue skills that may or may not link to ESCO.
+        for name in ["Test software", "Work in teams", "Duplicate label"] {
+            request
+                .post("/api/skills")
+                .json(&json!({ "name": name, "category": "other" }))
+                .await
+                .assert_status_ok();
+        }
+        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/esco-mini");
+        let report = import_esco(&ctx.db, &fixture, "en", "v-test").await.expect("import");
+        assert_eq!((report.skills, report.occupations, report.relations), (5, 2, 4));
+        assert_eq!(report.relations_dangling, 1, "the relation to a skill not in the file");
+        assert_eq!(report.catalogue_linked, 2, "exact normalised labels, one match each");
+        assert_eq!(report.catalogue_ambiguous, 1, "two ESCO skills share the label: not guessed");
+        let again = import_esco(&ctx.db, &fixture, "en", "v-test").await.expect("re-import");
+        assert_eq!((again.skills, again.relations), (5, 4), "replaced, not duplicated");
+        assert_eq!(again.catalogue_linked, 0, "already linked");
+
+        // Attribution and the pinned version live on the framework row.
+        let frameworks: Value = request.get("/api/capability-frameworks").await.json();
+        let esco = frameworks.as_array().unwrap().iter().find(|f| f["slug"] == "esco").unwrap();
+        assert!(esco["attribution"].as_str().unwrap().contains("2011/833/EU"));
+        assert!(esco["note"].as_str().unwrap().contains("v-test"));
+        assert!(esco["note"].as_str().unwrap().contains("no proficiency scale"));
+
+        // Search: literal, case-insensitive, with a minimum length.
+        let found: Value = request.get("/api/esco/occupations?q=TEST%20DEV").await.json();
+        assert_eq!(found.as_array().unwrap().len(), 1);
+        assert_eq!(found[0]["essential_skills"], 2);
+        assert_eq!(found[0]["optional_skills"], 1);
+        assert_eq!(found[0]["isco_code"], "2512");
+        assert_eq!(request.get("/api/esco/occupations?q=a").await.status_code(), 422);
+        let none: Value = request.get("/api/esco/occupations?q=%25%25").await.json();
+        assert!(none.as_array().unwrap().is_empty(), "a % is matched literally, not as a wildcard");
+        let skills: Value = request.get("/api/esco/skills?q=work%20in").await.json();
+        assert!(skills[0]["catalogue_skill_pid"].is_string(), "linked to the catalogue skill");
+
+        // An occupation lists essential skills first.
+        let occupation: Value = request
+            .get("/api/esco/occupation?uri=http://data.europa.eu/esco/occupation/q1")
+            .await
+            .json();
+        let relations: Vec<&str> = occupation["skills"].as_array().unwrap().iter().map(|s| s["relation"].as_str().unwrap()).collect();
+        assert_eq!(relations, ["essential", "essential", "optional"]);
+        assert!(occupation["description"].as_str().unwrap().contains('\n'), "multi-line description preserved");
+
+        // Seeding needs the planner's level — ESCO states none.
+        let seed = |body: Value| request.post("/api/role-profiles/from-esco").json(&body);
+        let uri = "http://data.europa.eu/esco/occupation/q1";
+        assert_eq!(seed(json!({ "occupation_uri": uri, "default_min_proficiency": 0 })).await.status_code(), 422);
+        assert_eq!(seed(json!({ "occupation_uri": "http://nope", "default_min_proficiency": 3 })).await.status_code(), 404);
+        let first: Value = seed(json!({ "occupation_uri": uri, "default_min_proficiency": 3, "include_optional": true }))
+            .await
+            .json();
+        assert_eq!(first["requirements_created"], 3, "two essential and one optional skill");
+        assert_eq!(first["skills_created"], 1, "Python is new; the other two were already in the catalogue");
+        assert_eq!(
+            seed(json!({ "occupation_uri": uri, "default_min_proficiency": 3, "job_title": "Another title" })).await.status_code(),
+            422,
+            "one profile per ESCO occupation"
+        );
+
+        let profile: Value = request.get(&format!("/api/role-profiles/{}", first["pid"].as_str().unwrap())).await.json();
+        assert_eq!(profile["framework"]["slug"], "esco");
+        assert_eq!(profile["profession"], "ISCO-08 2512");
+        let reqs = profile["requirements"].as_array().unwrap();
+        assert!(reqs.iter().all(|r| r["min_proficiency"] == 3), "every level is the planner's choice");
+        assert!(reqs.iter().all(|r| r["source_level"].is_null()), "no framework level is invented");
+        let importance = |skill: &str| reqs.iter().find(|r| r["skill"] == skill).unwrap()["importance"].clone();
+        assert_eq!(importance("Test software"), json!("important"), "essential drafts `important`");
+        assert_eq!(importance("Work in teams"), json!("useful"), "optional drafts `useful`");
+        assert!(reqs.iter().any(|r| r["category"] == "domain"), "knowledge drafts the `domain` category");
+
+        // Without optional skills, a different occupation drafts only what is essential.
+        let second: Value = seed(json!({
+            "occupation_uri": "http://data.europa.eu/esco/occupation/q2", "default_min_proficiency": 2,
+        }))
+        .await
+        .json();
+        assert_eq!(second["requirements_created"], 1);
+        assert_eq!(second["skills_created"], 0, "the skill is already linked");
+
+        // A manual reference must name a real ESCO skill.
+        let catalogue: Value = request.get("/api/skills").await.json();
+        let dup = catalogue.as_array().unwrap().iter().find(|s| s["name"] == "Duplicate label").unwrap();
+        let dup_pid = dup["pid"].as_str().unwrap();
+        assert_eq!(
+            request.post(&format!("/api/skills/{dup_pid}/refs")).json(&json!({ "framework_slug": "esco", "ref": "http://not-esco/x" })).await.status_code(),
+            422
+        );
+        request
+            .post(&format!("/api/skills/{dup_pid}/refs"))
+            .json(&json!({ "framework_slug": "esco", "ref": "http://data.europa.eu/esco/skill/t4", "label": "duplicate label" }))
+            .await
+            .assert_status_ok();
+    })
+    .await;
+}

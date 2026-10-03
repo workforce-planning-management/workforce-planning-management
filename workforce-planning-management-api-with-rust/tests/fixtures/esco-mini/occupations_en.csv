@@ -1,0 +1,4 @@
+conceptType,conceptUri,iscoGroup,preferredLabel,altLabels,hiddenLabels,status,modifiedDate,regulatedProfessionNote,scopeNote,definition,inScheme,description,code
+Occupation,http://data.europa.eu/esco/occupation/q1,2512,esco test developer,,,released,2025-01-01,,,,,"Designs, builds
+and tests software",2512.1
+Occupation,http://data.europa.eu/esco/occupation/q2,2519,esco test tester,,,released,2025-01-01,,,,,,2519.1

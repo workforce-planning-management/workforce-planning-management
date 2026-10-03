@@ -712,6 +712,98 @@ export function cpdOverview(init?: FetchLike): Promise<{
   return api("/cpd/overview", init);
 }
 
+/** Search the pinned ESCO occupations (needs at least 2 characters). */
+export function searchEscoOccupations(
+  q: string,
+  limit = 25,
+  init?: FetchLike,
+): Promise<
+  Array<{
+    uri: string;
+    label: string;
+    isco_code: string | null;
+    essential_skills: number;
+    optional_skills: number;
+  }>
+> {
+  return api(
+    `/esco/occupations?q=${encodeURIComponent(q)}&limit=${limit}`,
+    init,
+  );
+}
+
+/** One ESCO occupation with its essential and optional skills. */
+export function getEscoOccupation(
+  uri: string,
+  init?: FetchLike,
+): Promise<{
+  uri: string;
+  label: string;
+  isco_code: string | null;
+  description: string | null;
+  skills: Array<{
+    uri: string;
+    label: string;
+    relation: "essential" | "optional";
+    skill_type: string | null;
+    reuse_level: string | null;
+    draft_category: string;
+    catalogue_skill_pid: string | null;
+  }>;
+}> {
+  return api(`/esco/occupation?uri=${encodeURIComponent(uri)}`, init);
+}
+
+/** Search the pinned ESCO skills, with the catalogue skill each links to. */
+export function searchEscoSkills(
+  q: string,
+  limit = 8,
+  init?: FetchLike,
+): Promise<
+  Array<{
+    uri: string;
+    label: string;
+    skill_type: string | null;
+    reuse_level: string | null;
+    catalogue_skill_pid: string | null;
+  }>
+> {
+  return api(`/esco/skills?q=${encodeURIComponent(q)}&limit=${limit}`, init);
+}
+
+/** Draft a role profile from an ESCO occupation at the planner's level. */
+export function seedProfileFromEsco(body: {
+  occupation_uri: string;
+  job_title?: string;
+  default_min_proficiency: number;
+  include_optional?: boolean;
+}): Promise<{
+  pid: string;
+  requirements_created: number;
+  skills_created: number;
+  skills_linked: number;
+}> {
+  return api("/role-profiles/from-esco", { method: "POST", body });
+}
+
+/** Record a skill's reference in an external framework (e.g. ESCO). */
+export function addSkillRef(
+  skillPid: string,
+  body: { framework_slug: string; ref: string; label?: string },
+): Promise<{ pid: string }> {
+  return api(`/skills/${skillPid}/refs`, { method: "POST", body });
+}
+
+/** Remove a skill's reference in a framework. */
+export function removeSkillRef(
+  skillPid: string,
+  framework: string,
+): Promise<unknown> {
+  return api(`/skills/${skillPid}/refs/${encodeURIComponent(framework)}`, {
+    method: "DELETE",
+  });
+}
+
 /** Terms-carrying ratio (or null when there is nothing to divide). */
 type Fit = {
   critical_met: { numerator: number; denominator: number; value: number } | null;

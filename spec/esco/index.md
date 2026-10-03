@@ -112,6 +112,56 @@ ESCO fits as an **optional external reference**, never a second skills model:
    best-effort rule as upstream display names (WPM-T3): never copied as
    truth, never required.
 
+## Implementation in WPM (WPM-T60)
+
+ESCO is a **pinned local reference copy plus links**, never a second skills
+model. Decided from the open questions below: a *table* (not a file read at
+request time), because seeding and search need the occupation–skill relations
+queryable.
+
+```sh
+cargo loco task import_esco dir:/path/to/esco-csv [lang:en] [version:v1.2.1]
+```
+
+- **Input:** the ESCO classification download in CSV — `skills_<lang>.csv`,
+  `occupations_<lang>.csv`, `occupationSkillRelations_<lang>.csv`. Columns are
+  resolved **by header name** (`conceptUri`, `preferredLabel`, `skillType`,
+  `reuseLevel`, `iscoGroup`, `description`, `occupationUri`, `relationType`,
+  `skillUri`), so a different column order between versions does not matter.
+  A small RFC 4180 parser handles ESCO's quoted commas and newlines.
+- **Replaced wholesale** on every import, so the local copy is exactly one
+  ESCO version; the version is recorded on the framework row beside the
+  attribution (*© European Union … Decision 2011/833/EU*).
+- **Linking never guesses.** A catalogue skill is linked to an ESCO skill
+  only when exactly one ESCO skill has the same *normalised* label (trimmed,
+  lower-cased, whitespace collapsed — never fuzzy), the ESCO skill is not
+  already linked elsewhere, and the skill has no ESCO reference yet.
+  Ambiguous labels are counted and left for a planner.
+- **API:** `GET /api/esco/occupations?q=` and `/esco/skills?q=` (literal,
+  case-insensitive search, at least 2 characters, at most 100 results),
+  `GET /api/esco/occupation?uri=` (essential then optional skills, each with
+  its draft category and catalogue link), and `POST /api/skills/{pid}/refs`
+  for a manual link — a URI must name a real ESCO skill in the pinned copy.
+- **Seeding a role profile:** `POST /api/role-profiles/from-esco`
+  `{occupation_uri, default_min_proficiency, include_optional?, job_title?}`.
+  **ESCO has no proficiency scale, so the planner supplies the starting
+  level** (1–5) — never invented. Essential skills draft importance
+  `important`, optional ones `useful` (never `critical`: ESCO does not say any
+  skill is). Skills are matched by ESCO reference, then exact label, else
+  created with a **draft category** (knowledge → `domain`; transversal →
+  `other`; otherwise `technical`) and linked. One profile per ESCO occupation;
+  the ISCO-08 code is kept in the profile's profession line. The result is a
+  draft for a human to edit.
+- **Front-end:** `/roles` "Start from an ESCO occupation" (search, preview the
+  skills, choose the level, create) and `/skills` "Link ESCO" per skill.
+
+**Not verified against real ESCO files.** The CSV download is delivered by an
+emailed link, so the importer was built from the published structure (three
+files; a 4-column relations file; `iscoGroup` on occupations) and tested on a
+small synthetic fixture of the same shape. Run it on a real download and check
+the report before relying on it; if a column is missing it stops with a message
+naming it. Qualifications (EQF) remain out of scope.
+
 ### Open decisions
 
 - Which languages to import (all 28 is large; start with the locales the UI

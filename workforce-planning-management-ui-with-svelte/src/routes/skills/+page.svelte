@@ -8,9 +8,12 @@
 <script lang="ts">
   import {
     SKILL_CATEGORIES,
+    addSkillRef,
     applyCategorySuggestions,
     categorySuggestions,
     listSkills,
+    removeSkillRef,
+    searchEscoSkills,
     updateSkill,
   } from "#lib/api/wpm.js";
   import { t } from "#lib/i18n.svelte.js";
@@ -25,6 +28,18 @@
   let editing = $state<string | null>(null);
   let draftName = $state("");
   let error = $state<string | null>(null);
+  let linking = $state<string | null>(null);
+  let linkQuery = $state("");
+  let linkHits = $state<Awaited<ReturnType<typeof searchEscoSkills>>>([]);
+
+  async function searchLink() {
+    error = null;
+    try {
+      linkHits = linkQuery.trim().length >= 2 ? await searchEscoSkills(linkQuery.trim()) : [];
+    } catch (cause) {
+      error = message(cause);
+    }
+  }
 
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
 
@@ -146,7 +161,46 @@
         <td class="muted">
           {#each s.external_refs as r (r.framework)}
             <span class="chip" title={r.ref}>{r.framework}{r.label ? `: ${r.label}` : ""}</span>
+            {#if r.framework === "esco"}
+              <button type="button" aria-label={`Unlink ESCO from ${s.name}`} onclick={() => void run(() => removeSkillRef(s.pid, "esco"))}>×</button>
+            {/if}
           {:else}—{/each}
+          {#if !s.external_refs.some((r) => r.framework === "esco")}
+            {#if linking === s.pid}
+              <form
+                onsubmit={(event) => {
+                  event.preventDefault();
+                  void searchLink();
+                }}
+              >
+                <input aria-label={`Search ESCO for ${s.name}`} bind:value={linkQuery} minlength="2" />
+                <button type="submit">Search</button>
+                <button type="button" onclick={() => { linking = null; linkHits = []; }}>Cancel</button>
+              </form>
+              <ul>
+                {#each linkHits as hit (hit.uri)}
+                  <li>
+                    {hit.label}
+                    {#if hit.catalogue_skill_pid}<span class="muted">(already linked)</span>{:else}
+                      <button
+                        type="button"
+                        onclick={() =>
+                          void run(async () => {
+                            await addSkillRef(s.pid, { framework_slug: "esco", ref: hit.uri, label: hit.label });
+                            linking = null;
+                            linkHits = [];
+                          })}
+                      >
+                        Link
+                      </button>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <button type="button" onclick={() => { linking = s.pid; linkQuery = s.name; linkHits = []; }}>Link ESCO</button>
+            {/if}
+          {/if}
         </td>
       </tr>
     {:else}

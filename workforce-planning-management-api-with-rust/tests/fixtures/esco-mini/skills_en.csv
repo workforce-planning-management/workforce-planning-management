@@ -1,0 +1,7 @@
+conceptType,conceptUri,skillType,reuseLevel,preferredLabel,altLabels,hiddenLabels,status,modifiedDate,scopeNote,description
+KnowledgeSkillCompetence,http://data.europa.eu/esco/skill/t1,knowledge,sector-specific,Python (computer programming),"python
+scripting",,released,2025-01-01,,A programming language
+KnowledgeSkillCompetence,http://data.europa.eu/esco/skill/t2,skill/competence,transversal,work in teams,,,released,2025-01-01,,Collaborate with others
+KnowledgeSkillCompetence,http://data.europa.eu/esco/skill/t3,skill/competence,occupation-specific,test software,,,released,2025-01-01,,"Run, check and report"
+KnowledgeSkillCompetence,http://data.europa.eu/esco/skill/t4,skill/competence,cross-sector,duplicate label,,,released,2025-01-01,,First
+KnowledgeSkillCompetence,http://data.europa.eu/esco/skill/t5,skill/competence,cross-sector,Duplicate  Label,,,released,2025-01-01,,Second
