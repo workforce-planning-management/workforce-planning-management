@@ -6,7 +6,15 @@
 -->
 <script lang="ts">
   import { createGroup, groupMembers, groupSkills, listGroups, GROUP_KINDS, type Group } from "#lib/api/wpm.js";
+  import { page } from "$app/state";
   import { t } from "#lib/i18n.svelte.js";
+
+  // The organizations the caller can read (confederation-expanded), as for the org chart.
+  const organizations = $derived((page.data.scope ?? []) as string[]);
+  let organization = $state<string>("");
+  $effect(() => {
+    if (!organization && organizations.length > 0) organization = organizations[0] ?? "";
+  });
 
   let groups = $state<Group[]>([]);
   let selected = $state<string | null>(null);
@@ -22,12 +30,14 @@
 
   async function load() {
     try {
-      groups = await listGroups();
+      groups = organization ? await listGroups(organization) : [];
     } catch (cause) {
       error = message(cause);
     }
   }
   $effect(() => {
+    void organization;
+    selected = null;
     void load();
   });
 
@@ -45,7 +55,7 @@
     event.preventDefault();
     error = null;
     try {
-      await createGroup({ name: name.trim(), kind, ...(description.trim() ? { description: description.trim() } : {}) });
+      await createGroup({ organization_ref: organization, name: name.trim(), kind, ...(description.trim() ? { description: description.trim() } : {}) });
       name = "";
       description = "";
       await load();
@@ -59,6 +69,17 @@
 
 <h1>{t("nav.groups")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if organizations.length === 0}
+  <p class="muted">{t("org.noOrganizations")}</p>
+{:else}
+  <p>
+    <label>
+      Organization
+      <select bind:value={organization} data-testid="group-organization">
+        {#each organizations as o (o)}<option value={o}>{o}</option>{/each}
+      </select>
+    </label>
+  </p>
 
 <table data-testid="group-list">
   <thead><tr><th>Group</th><th>Kind</th><th>Members</th></tr></thead>
@@ -108,4 +129,5 @@
     </table>
     {#if know.withheld_below_floor > 0}<p class="muted">{know.withheld_below_floor} skill(s) withheld: too few people to show without pointing at someone.</p>{/if}
   </section>
+{/if}
 {/if}

@@ -118,7 +118,11 @@ describe("TeamAspirations and GroupsPanel", () => {
 
   it("shows several groups at once", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string | URL) =>
-      String(url).includes("/workers/")
+      String(url).endsWith("/workers/w")
+        ? json({ pid: "w", organization_ref: "organization:acme" })
+        : String(url).includes("/groups?organization_ref=")
+        ? json([])
+        : String(url).includes("/workers/")
         ? json({ worker_pid: "w", groups: [
             { group_pid: "g1", name: "Rust guild", kind: "practice", role: "lead", joined_at: "2026-01-01T00:00:00Z", left_at: null, current: true, on_behalf: false },
             { group_pid: "g2", name: "Chess", kind: "interest", role: "member", joined_at: "2026-02-01T00:00:00Z", left_at: null, current: true, on_behalf: false },

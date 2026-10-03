@@ -117,6 +117,7 @@ describe("api path map", () => {
     await wpm.downlineAspirations("w1");
     await wpm.workerGroups("w1");
     await wpm.listGroups();
+    await wpm.listGroups("organization:abc");
     await wpm.groupSkills("g1");
     await wpm.groupMembers("g1");
     await wpm.dottedLine("w1");
@@ -194,6 +195,7 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/downline-aspirations",
       "/api/proxy/workers/w1/groups",
       "/api/proxy/groups",
+      "/api/proxy/groups?organization_ref=organization%3Aabc",
       "/api/proxy/groups/g1/skills",
       "/api/proxy/groups/g1/members",
       "/api/proxy/workers/w1/dotted-line",

@@ -19,12 +19,13 @@ use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{group_members, groups, skills, worker_skills, workers};
 use crate::models::audit_logs::Model as Audit;
-use crate::models::records;
+use crate::models::{memberships, records};
 use crate::rules::groups as rules;
 
 fn group_json(g: &groups::Model, members: usize) -> serde_json::Value {
     serde_json::json!({
         "pid": g.pid,
+        "organization_ref": g.organization_ref,
         "name": g.name,
         "kind": g.kind,
         "description": g.description,
@@ -32,13 +33,27 @@ fn group_json(g: &groups::Model, members: usize) -> serde_json::Value {
     })
 }
 
-async fn find_group(ctx: &AppContext, pid: &str) -> Result<groups::Model> {
-    groups::Entity::find()
+/// The organizations the caller may read (`None` = unrestricted).
+async fn scope(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<Option<Vec<String>>> {
+    memberships::scope_organization_refs(&ctx.db, caller.claims()).await
+}
+
+fn in_scope(scope: Option<&Vec<String>>, organization_ref: &str) -> bool {
+    scope.is_none_or(|refs| refs.iter().any(|r| r == organization_ref))
+}
+
+/// A live group in one of the caller's organizations; one elsewhere is `404`.
+async fn find_group(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Result<groups::Model> {
+    let group = groups::Entity::find()
         .filter(groups::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(groups::Column::DeletedAt.is_null())
         .one(&ctx.db)
         .await?
-        .ok_or(Error::NotFound)
+        .ok_or(Error::NotFound)?;
+    if !in_scope(scope(ctx, caller).await?.as_ref(), &group.organization_ref) {
+        return Err(Error::NotFound);
+    }
+    Ok(group)
 }
 
 /// Current member counts by group.
@@ -57,6 +72,10 @@ async fn member_counts(ctx: &AppContext) -> Result<BTreeMap<Uuid, usize>> {
 /// `POST /api/groups` and `PUT /api/groups/{pid}` body.
 #[derive(Debug, Deserialize)]
 struct GroupPayload {
+    /// The organization the group belongs to (required on create; a group
+    /// cannot move, so it is ignored on update).
+    #[serde(default)]
+    organization_ref: Option<String>,
     name: String,
     /// `practice` (community of practice), `interest` (community of
     /// interest), or `other`.
@@ -71,16 +90,24 @@ struct PidRef {
     pid: Uuid,
 }
 
-async fn ensure_name_free(ctx: &AppContext, name: &str, except: Option<Uuid>) -> Result<()> {
+async fn ensure_name_free(
+    ctx: &AppContext,
+    organization_ref: &str,
+    name: &str,
+    except: Option<Uuid>,
+) -> Result<()> {
     let wanted = name.trim().to_lowercase();
     let taken = groups::Entity::find()
         .filter(groups::Column::DeletedAt.is_null())
+        .filter(groups::Column::OrganizationRef.eq(organization_ref))
         .all(&ctx.db)
         .await?
         .into_iter()
         .any(|g| g.name.trim().to_lowercase() == wanted && Some(g.pid) != except);
     if taken {
-        return Err(unprocessable("a group with that name already exists"));
+        return Err(unprocessable(
+            "a group with that name already exists in this organization",
+        ));
     }
     Ok(())
 }
@@ -94,9 +121,20 @@ async fn create_group(
 ) -> Result<Response> {
     rules::validate_group(&payload.name, &payload.kind, payload.description.as_deref())
         .map_err(|e| unprocessable(&e))?;
-    ensure_name_free(&ctx, &payload.name, None).await?;
+    let organization_ref = payload
+        .organization_ref
+        .clone()
+        .filter(|o| !o.trim().is_empty())
+        .ok_or_else(|| unprocessable("organization_ref is required"))?;
+    if !in_scope(scope(&ctx, &caller).await?.as_ref(), &organization_ref) {
+        return Err(unprocessable(
+            "you cannot create groups in that organization",
+        ));
+    }
+    ensure_name_free(&ctx, &organization_ref, &payload.name, None).await?;
     let row = groups::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
+        organization_ref: ActiveValue::set(organization_ref),
         name: ActiveValue::set(payload.name.trim().to_string()),
         kind: ActiveValue::set(payload.kind),
         description: ActiveValue::set(payload.description),
@@ -109,14 +147,36 @@ async fn create_group(
     format::json(PidRef { pid: row.pid })
 }
 
-/// `GET /api/groups` — every group with its current member count.
+/// Query for the group list.
+#[derive(Debug, Deserialize)]
+struct ListQuery {
+    /// Only this organization's groups (must be one the caller can read).
+    organization_ref: Option<String>,
+}
+
+/// `GET /api/groups?organization_ref=` — the groups in the caller's
+/// organizations (or one of them) with their current member counts.
 #[debug_handler]
-async fn list_groups(State(ctx): State<AppContext>) -> Result<Response> {
-    let rows = groups::Entity::find()
+async fn list_groups(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+) -> Result<Response> {
+    let allowed = scope(&ctx, &caller).await?;
+    let rows: Vec<groups::Model> = groups::Entity::find()
         .filter(groups::Column::DeletedAt.is_null())
         .order_by_asc(groups::Column::Name)
         .all(&ctx.db)
-        .await?;
+        .await?
+        .into_iter()
+        .filter(|g| in_scope(allowed.as_ref(), &g.organization_ref))
+        .filter(|g| {
+            query
+                .organization_ref
+                .as_ref()
+                .is_none_or(|o| *o == g.organization_ref)
+        })
+        .collect();
     let counts = member_counts(&ctx).await?;
     format::json(
         rows.iter()
@@ -133,10 +193,10 @@ async fn update_group(
     Path(pid): Path<String>,
     Json(payload): Json<GroupPayload>,
 ) -> Result<Response> {
-    let row = find_group(&ctx, &pid).await?;
+    let row = find_group(&ctx, &caller, &pid).await?;
     rules::validate_group(&payload.name, &payload.kind, payload.description.as_deref())
         .map_err(|e| unprocessable(&e))?;
-    ensure_name_free(&ctx, &payload.name, Some(row.pid)).await?;
+    ensure_name_free(&ctx, &row.organization_ref, &payload.name, Some(row.pid)).await?;
     let mut active: groups::ActiveModel = row.into();
     active.name = ActiveValue::set(payload.name.trim().to_string());
     active.kind = ActiveValue::set(payload.kind);
@@ -162,7 +222,7 @@ async fn delete_group(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = find_group(&ctx, &pid).await?;
+    let row = find_group(&ctx, &caller, &pid).await?;
     let group_pid = row.pid;
     let mut active: groups::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
@@ -199,10 +259,11 @@ struct MembersQuery {
 #[debug_handler]
 async fn list_members(
     State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
     Path(pid): Path<String>,
     axum::extract::Query(query): axum::extract::Query<MembersQuery>,
 ) -> Result<Response> {
-    let group = find_group(&ctx, &pid).await?;
+    let group = find_group(&ctx, &caller, &pid).await?;
     let mut select =
         group_members::Entity::find().filter(group_members::Column::GroupPid.eq(group.pid));
     if !query.include_past {
@@ -260,10 +321,15 @@ async fn join_group(
     Path(pid): Path<String>,
     Json(payload): Json<JoinPayload>,
 ) -> Result<Response> {
-    let group = find_group(&ctx, &pid).await?;
+    let group = find_group(&ctx, &caller, &pid).await?;
     let role = payload.role.unwrap_or_else(|| "member".to_string());
     rules::validate_role(&role).map_err(|e| unprocessable(&e))?;
     let worker = writable_worker(&ctx, &caller, payload.worker_pid).await?;
+    if worker.organization_ref != group.organization_ref {
+        return Err(unprocessable(
+            "a worker can only join groups in their own organization",
+        ));
+    }
     let current = group_members::Entity::find()
         .filter(group_members::Column::GroupPid.eq(group.pid))
         .filter(group_members::Column::WorkerPid.eq(worker.pid))
@@ -309,7 +375,7 @@ async fn leave_group(
     caller: MaybeAuthUser,
     Path((pid, worker_pid)): Path<(String, String)>,
 ) -> Result<Response> {
-    let group = find_group(&ctx, &pid).await?;
+    let group = find_group(&ctx, &caller, &pid).await?;
     let worker = writable_worker(&ctx, &caller, records::parse_pid(&worker_pid)?).await?;
     let current = group_members::Entity::find()
         .filter(group_members::Column::GroupPid.eq(group.pid))
@@ -339,8 +405,12 @@ async fn leave_group(
 /// fewer than three members (or any skill, in a group of fewer than three) is
 /// withheld so a distribution cannot point at one person.
 #[debug_handler]
-async fn group_skills(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let group = find_group(&ctx, &pid).await?;
+async fn group_skills(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let group = find_group(&ctx, &caller, &pid).await?;
     let members: Vec<Uuid> = group_members::Entity::find()
         .filter(group_members::Column::GroupPid.eq(group.pid))
         .filter(group_members::Column::LeftAt.is_null())
@@ -404,6 +474,7 @@ async fn group_skills(State(ctx): State<AppContext>, Path(pid): Path<String>) ->
 #[debug_handler]
 async fn worker_groups(
     State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
     Path(pid): Path<String>,
     axum::extract::Query(query): axum::extract::Query<MembersQuery>,
 ) -> Result<Response> {
@@ -417,11 +488,13 @@ async fn worker_groups(
         .order_by_desc(group_members::Column::JoinedAt)
         .all(&ctx.db)
         .await?;
+    let allowed = scope(&ctx, &caller).await?;
     let by_pid: BTreeMap<Uuid, groups::Model> = groups::Entity::find()
         .filter(groups::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?
         .into_iter()
+        .filter(|g| in_scope(allowed.as_ref(), &g.organization_ref))
         .map(|g| (g.pid, g))
         .collect();
     let out: Vec<serde_json::Value> = memberships

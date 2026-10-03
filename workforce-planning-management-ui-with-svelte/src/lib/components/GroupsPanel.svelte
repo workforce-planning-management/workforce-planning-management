@@ -8,6 +8,7 @@
   import {
     GROUP_KINDS,
     createGroup,
+    getWorker,
     joinGroup,
     leaveGroup,
     listGroups,
@@ -20,6 +21,7 @@
   type Mine = Awaited<ReturnType<typeof workerGroups>>["groups"];
   let mine = $state<Mine>([]);
   let all = $state<Group[]>([]);
+  let organization = $state<string | null>(null);
   let error = $state<string | null>(null);
   let choice = $state("");
   let name = $state("");
@@ -31,7 +33,12 @@
 
   async function load() {
     try {
-      [mine, all] = await Promise.all([workerGroups(workerPid).then((r) => r.groups), listGroups()]);
+      const worker = await getWorker(workerPid);
+      organization = worker.organization_ref;
+      [mine, all] = await Promise.all([
+        workerGroups(workerPid).then((r) => r.groups),
+        listGroups(worker.organization_ref),
+      ]);
     } catch (cause) {
       error = message(cause);
     }
@@ -55,6 +62,7 @@
 
 <section class="panel" data-testid="groups">
   <h2>Groups</h2>
+  <p class="muted">Groups belong to an organization; you can join those in {organization ?? "your organization"}.</p>
   {#if error}<p class="error" data-testid="error">{error}</p>{/if}
   <ul data-testid="my-groups">
     {#each mine as g (g.group_pid)}
@@ -79,7 +87,7 @@
     onsubmit={(event) => {
       event.preventDefault();
       void run(async () => {
-        const made = await createGroup({ name: name.trim(), kind });
+        const made = await createGroup({ organization_ref: organization ?? "", name: name.trim(), kind });
         await joinGroup(made.pid, workerPid, "lead");
         name = "";
       });

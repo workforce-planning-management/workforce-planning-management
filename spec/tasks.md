@@ -1331,6 +1331,32 @@ first in each, per the three-part rule.
       groups remain global; a roll-up shows only the floor and distribution —
       no trend over time.
 
+- [x] WPM-T67 (2026-10-03) **Groups per organization.** Builds on WPM-T65/66.
+      Migration `…000038`: `groups.organization_ref` (required). **Backfill**
+      (verified by hand on synthetic rows): a group takes the organization
+      most of its members work in; a group with no members has nothing to say
+      where it belongs, so it is retired (soft-deleted, empty ref). Names are
+      now unique **within an organization** (the same name may exist in two).
+      - `POST /api/groups` requires `organization_ref`, which must be one the
+        caller can read; it cannot be changed later.
+      - Reads are scoped like the org chart: `GET /api/groups` lists only the
+        caller's organizations (`?organization_ref=` narrows to one); a group
+        in another organization is `404` for members, skills, join, leave,
+        update and retire; `GET /api/workers/{pid}/groups` hides groups outside
+        the caller's scope.
+      - **A worker can only join groups in their own organization** (`422`).
+      - UI: `/groups` has an organization selector (from the caller's scope);
+        the groups panel on `/me` and the worker page lists and creates groups
+        in that worker's organization.
+      **Verified:** Rust type-checks, 173 lib tests, database suite **41/41**
+      (required org, cross-organization join refused, same name in another
+      org, `?organization_ref=` filter), svelte-check 0, vitest 55/55, build.
+      **Not verified:** the `404` for a group outside the caller's scope
+      depends on the real membership scope (off in tests, where scope is
+      unrestricted). **Limits:** a group cannot move organization or span
+      several; a worker who changes organization keeps old memberships until
+      they leave.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

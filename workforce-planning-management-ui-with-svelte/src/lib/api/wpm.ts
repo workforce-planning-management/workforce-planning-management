@@ -1051,6 +1051,7 @@ export function downlineAspirations(
 /** A group: community of practice, community of interest, or other. */
 export type Group = {
   pid: string;
+  organization_ref: string;
   name: string;
   kind: "practice" | "interest" | "other";
   description: string | null;
@@ -1060,12 +1061,14 @@ export type Group = {
 export const GROUP_KINDS = ["practice", "interest", "other"] as const;
 
 /** Every group with its member count. */
-export function listGroups(init?: FetchLike): Promise<Group[]> {
-  return api("/groups", init);
+export function listGroups(organization?: string, init?: FetchLike): Promise<Group[]> {
+  const qs = organization ? `?organization_ref=${encodeURIComponent(organization)}` : "";
+  return api(`/groups${qs}`, init);
 }
 
 /** Start a group. */
 export function createGroup(body: {
+  organization_ref: string;
   name: string;
   kind: string;
   description?: string;

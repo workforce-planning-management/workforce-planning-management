@@ -1857,7 +1857,7 @@ async fn reporting_lines_downline_aspirations_and_groups() {
         assert!(!view.to_string().contains("private_hidden"), "the number of hidden items is not revealed");
 
         // ── Groups: a worker is in several at once; leaving closes the membership.
-        let make = |name: &str, kind: &str| request.post("/api/groups").json(&json!({ "name": name, "kind": kind, "description": "d" }));
+        let make = |name: &str, kind: &str| request.post("/api/groups").json(&json!({ "organization_ref": org, "name": name, "kind": kind, "description": "d" }));
         let rust: Value = make("Rust guild", "practice").await.json();
         let chess: Value = make("Chess club", "interest").await.json();
         assert_eq!(make("rust GUILD", "practice").await.status_code(), 422, "names are unique, ignoring case");
@@ -1883,6 +1883,17 @@ async fn reporting_lines_downline_aspirations_and_groups() {
         join(rust, dev, "member").await.assert_status_ok();
         let list: Value = request.get("/api/groups").await.json();
         assert_eq!(list.as_array().unwrap().iter().find(|g| g["name"] == "Rust guild").unwrap()["members"], 2);
+        // ── Per organization: a group is in one organization and only its workers can join.
+        assert_eq!(request.post("/api/groups").json(&json!({ "name": "No org", "kind": "other" })).await.status_code(), 422, "organization_ref is required");
+        let other_org = an_org();
+        let elsewhere = seed_worker!(&request, &other_org, "R-9", None).await;
+        assert_eq!(join(rust, &elsewhere, "member").await.status_code(), 422, "a worker joins only their own organization's groups");
+        let twin: Value = request.post("/api/groups").json(&json!({ "organization_ref": other_org, "name": "Rust guild", "kind": "practice" })).await.json();
+        assert!(twin["pid"].is_string(), "the same name is fine in another organization");
+        let mine_only: Value = request.get(&format!("/api/groups?organization_ref={org}")).await.json();
+        assert!(mine_only.as_array().unwrap().iter().all(|g| g["organization_ref"] == org));
+        assert_eq!(mine_only.as_array().unwrap().iter().filter(|g| g["name"] == "Rust guild").count(), 1);
+
         // ── Skill roll-up: aggregate, floored at three.
         let roll = request.get(&format!("/api/groups/{rust}/skills")).await.json::<Value>();
         assert_eq!(roll["skills"].as_array().unwrap().len(), 0, "two members: everything withheld");
