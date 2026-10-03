@@ -798,7 +798,7 @@ code + tests in one PR.
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
 > **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
-> and the full database-backed request suite passes — **32 of 32** against a
+> and the full database-backed request suite passes — **33 of 33** against a
 > real PostgreSQL 18 (every migration applied) — using a scratch copy with
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
@@ -848,20 +848,58 @@ first in each, per the three-part rule.
       clippy-clean on the new files; DB-gated
       `role_profiles_hold_required_skills` not run. svelte-check 0,
       vitest 43/43, build green.
-- [ ] WPM-T47 **Workforce plans + demand lines.** Draft/active/archived
-      machine in the pure core, at most one active per organization,
-      assumptions, demand lines; no access to worker rows. (WPM-R36,
-      WPM-D26)
-- [ ] WPM-T48 **Forecast + gap analysis.** Pure core: supply projection,
-      headcount gap, competency gap (depth bands reuse
-      `rules::capability`), `insufficient_history`; then the read
-      endpoint with assumptions and derivation echoed. (WPM-R37,
-      WPM-D27, WPM-D28)
-- [ ] WPM-T49 **Strategic alignment view.** Objectives, demand-line
-      links, unresourced/unaligned/uncovered-critical-role ratios.
-      (WPM-R38)
-- [ ] WPM-T50 **Front-end `/planning`.** Plan list + comparison, demand
-      editor, gap and alignment views; strings in all locales.
+- [x] WPM-T47 (2026-10-03) **Workforce plans + demand lines.** Migration
+      `m20261002_000027_workforce_plans` (`workforce_plans`, at most one
+      `active` per organization via a partial unique index;
+      `plan_demand_lines`, one per plan × department × role × date). Pure
+      `rules::planning`: `draft → active → archived` machine through the
+      shared `lifecycle::check`, `validate_plan` (ordered horizon, attrition
+      0–10000 bp), `validate_line` (date inside the horizon). Audited
+      endpoints: `POST`/`GET /api/workforce-plans`, `GET …/{pid}`, `POST
+      …/status`, `PUT`/`DELETE …/demand-lines`; an archived plan is
+      read-only; plans respect the caller's organization scope. A plan holds
+      **aggregate hypothetical headcount only and never references a worker
+      row** (WPM-D26). `workforce_plans` joins the retention sweep list
+      (now 48).
+- [x] WPM-T48 (2026-10-03) **Forecast + gap analysis.** Pure core in
+      `rules::planning`: `project_supply` (opening less expected leavers at
+      the stated attrition, rounded to a person, never negative, **no hires
+      assumed**), `headcount_gap` (demand − supply), `suggested_levers`
+      (suggestions, not decisions), `competency_shortfall`, and
+      `observed_attrition_bp` — annualised leavers over mean headcount from
+      snapshots, `None` (**insufficient history**) with fewer than 3
+      snapshots, a window under 60 days, or any missing leavers figure
+      (WPM-D27). 7 tests. `GET /api/workforce-plans/{pid}/forecast` returns
+      per department × date: opening, planned demand (lines add up),
+      projected supply, gap, levers, and **competency gaps** per demand line
+      with a role profile — employed workers in the department already
+      proficient in each required skill vs the headcount needed, plus the
+      reskill pool (declared below the bar). The attrition source
+      (`plan_assumption` / `observed_snapshots` / `insufficient_history`) and
+      `hires_assumed: 0` are echoed. Aggregate only.
+- [x] WPM-T49 (2026-10-03) **Strategic alignment view.** Migration
+      `m20261002_000028_plan_objectives` (`plan_objectives`,
+      `demand_line_objectives`). `POST …/objectives`, `PUT
+      …/demand-lines/{line}/objectives` (objectives must belong to the
+      plan). `GET …/alignment`: share of planned headcount whose line serves
+      an objective (terms-carrying, null-not-zero), objectives with no demand
+      (**unresourced**), demand lines serving no objective (**unaligned**),
+      and critical roles with no ready successor via the shared
+      single-point-of-failure rule (in the plan's departments and overall).
+- [x] WPM-T50 (2026-10-03) **Front-end `/planning`.** Plan table with
+      status, horizon, lines and total planned headcount (comparison), create
+      form (organization from the caller's scope, optional attrition %),
+      lifecycle buttons, the forecast table with the assumption and
+      "insufficient history" stated plainly, competency-gap sub-rows,
+      alignment panel, demand-line editor with objective checkboxes, add
+      demand and add objective forms; nav link `nav.planning` in all 16
+      locales (page copy English, as `/learning`). svelte-check 0, vitest
+      43/43, build green. **Verified:** Rust type-checks, 132 lib tests, and
+      the database-backed suite **33/33** against PostgreSQL 18 including
+      `workforce_plan_forecasts_gaps_and_alignment`; clippy-clean on the new
+      files. Not done: an observed per-department attrition rate (the
+      observed rate is organization-wide), and plan-to-plan diffing beyond
+      the totals table.
 
 - [x] WPM-T51 (2026-10-02) **Skills gap against a target role.** Pure
       `rules::gap` (`grade` met / below / undeclared, `shortfall` only when
@@ -1018,7 +1056,7 @@ build on 3–5).
 
 ### Strategic planning, scenario modeling & forecasting
 
-- [ ] **Workforce transformation.** The umbrella discipline —
+- [~] **Workforce transformation.** *(the plan / demand / gap / alignment machinery is WPM-T47–T50; a current-vs-target org-shape diff view is not built.)* The umbrella discipline —
       redesigning structure, headcount, and skills around a strategic
       shift (a restructure, an M&A, an automation programme) rather
       than incremental headcount changes. Orgvue frames it as
@@ -1028,7 +1066,7 @@ build on 3–5).
       `talent_pipelines` tables (WPM-T14, WPM-T22) as a
       higher-altitude "current structure vs. target structure" diff
       view, not a new data model of its own.
-- [ ] **Workforce scenario modeling.** "What-if" comparison of
+- [x] **Workforce scenario modeling.** *(plans as draft worlds with several coexisting scenarios: WPM-T47; compared in the `/planning` totals table.)* "What-if" comparison of
       multiple future headcount/cost/skills states before committing —
       e.g. Anaplan's strength is modelling flexibility tied to
       financial forecasts for restructuring, M&A workforce impact, or
@@ -1039,7 +1077,7 @@ build on 3–5).
       changes without touching live `employees` rows, plus a diff view
       against the live org chart (WPM-T2's cycle-safe derivation could
       likely be reused for a draft tree too).
-- [ ] **Workforce forecasting.** Projecting future headcount/attrition/
+- [x] **Workforce forecasting.** *(snapshots WPM-T45 + transparent supply projection WPM-T48; organization-wide observed attrition only.)* Projecting future headcount/attrition/
       cost from historical trend + planned change, distinct from
       scenario modeling (forecasting projects one likely path;
       scenario modeling compares several deliberate ones). Needs a
@@ -1048,7 +1086,7 @@ build on 3–5).
       `audit`/`outbox` rows) — a forecasting feature would first need a
       periodic headcount-snapshot job before any projection math is
       possible.
-- [ ] **Future-state modeling.** Closely related to transformation and
+- [x] **Future-state modeling.** *(the same draft-plan primitive: WPM-T47–T49.)* Closely related to transformation and
       scenario modeling above — SHRM/Orgvue describe workforce
       planning as three pillars (current state, desired future state,
       the path between them). WPM's "current state" pillar is already

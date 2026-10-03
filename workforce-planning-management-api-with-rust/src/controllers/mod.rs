@@ -20,6 +20,7 @@ pub mod intelligence;
 pub mod learning;
 pub mod lms;
 pub mod mobility;
+pub mod planning;
 pub mod roles;
 pub mod metrics;
 pub mod notifications;

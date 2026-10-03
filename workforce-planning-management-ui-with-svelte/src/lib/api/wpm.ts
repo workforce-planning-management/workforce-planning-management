@@ -831,6 +831,166 @@ export function changeReadiness(
   return api(`/change-initiatives/${pid}/readiness`, init);
 }
 
+/** Workforce plans (scenarios) in the caller's organizations. */
+export function listWorkforcePlans(init?: FetchLike): Promise<
+  Array<{
+    pid: string;
+    name: string;
+    organization_ref: string;
+    horizon_start: string;
+    horizon_end: string;
+    status: string;
+    attrition_bp: number | null;
+    demand_lines: number;
+  }>
+> {
+  return api("/workforce-plans", init);
+}
+
+/** A plan with its demand lines and objectives. */
+export function getWorkforcePlan(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  pid: string;
+  name: string;
+  organization_ref: string;
+  horizon_start: string;
+  horizon_end: string;
+  rationale: string | null;
+  attrition_bp: number | null;
+  status: string;
+  demand_lines: Array<{
+    pid: string;
+    department: string;
+    role_profile_pid: string | null;
+    job_title: string | null;
+    target_on: string;
+    target_headcount: number;
+    note: string | null;
+    objective_pids: string[];
+  }>;
+  objectives: Array<{ pid: string; title: string; owner: string | null }>;
+}> {
+  return api(`/workforce-plans/${pid}`, init);
+}
+
+/** Open a draft plan. */
+export function createWorkforcePlan(body: {
+  name: string;
+  organization_ref: string;
+  horizon_start: string;
+  horizon_end: string;
+  rationale?: string;
+  attrition_bp?: number;
+}): Promise<{ pid: string }> {
+  return api("/workforce-plans", { method: "POST", body });
+}
+
+/** draft → active → archived. */
+export function setPlanStatus(pid: string, to: string): Promise<unknown> {
+  return api(`/workforce-plans/${pid}/status`, { method: "POST", body: { to } });
+}
+
+/** Set planned headcount for a department (optionally a role) at a date. */
+export function setDemandLine(
+  pid: string,
+  body: {
+    department: string;
+    role_profile_pid?: string;
+    target_on: string;
+    target_headcount: number;
+  },
+): Promise<{ pid: string }> {
+  return api(`/workforce-plans/${pid}/demand-lines`, { method: "PUT", body });
+}
+
+/** Remove a demand line. */
+export function removeDemandLine(pid: string, linePid: string): Promise<unknown> {
+  return api(`/workforce-plans/${pid}/demand-lines/${linePid}`, {
+    method: "DELETE",
+  });
+}
+
+/** Add a strategic objective to a plan. */
+export function addPlanObjective(
+  pid: string,
+  body: { title: string; owner?: string },
+): Promise<{ pid: string }> {
+  return api(`/workforce-plans/${pid}/objectives`, { method: "POST", body });
+}
+
+/** Replace the objectives a demand line serves. */
+export function setLineObjectives(
+  pid: string,
+  linePid: string,
+  objectivePids: string[],
+): Promise<unknown> {
+  return api(`/workforce-plans/${pid}/demand-lines/${linePid}/objectives`, {
+    method: "PUT",
+    body: { objective_pids: objectivePids },
+  });
+}
+
+/** Supply projection, headcount gap and competency gaps. */
+export function planForecast(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  as_of: string;
+  assumptions: {
+    attrition_bp: number | null;
+    attrition_source: "plan_assumption" | "observed_snapshots" | "insufficient_history";
+    hires_assumed: number;
+  };
+  departments: Array<{
+    department: string;
+    target_on: string;
+    days_ahead: number;
+    opening_headcount: number;
+    planned_demand: number;
+    projected_supply: number | null;
+    headcount_gap: number | null;
+    levers: string[] | null;
+    competency_gaps: Array<{
+      job_title: string | null;
+      skill: string | null;
+      importance: string;
+      min_proficiency: number;
+      needed: number;
+      proficient_now: number;
+      shortfall: number;
+      reskill_pool: number;
+    }>;
+  }>;
+}> {
+  return api(`/workforce-plans/${pid}/forecast`, init);
+}
+
+/** Does the planned headcount serve the strategy? */
+export function planAlignment(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  planned_headcount: number;
+  aligned_share: { numerator: number; denominator: number; value: number } | null;
+  objectives: number;
+  unresourced_objectives: string[];
+  unaligned_demand_lines: Array<{
+    department: string;
+    target_on: string;
+    target_headcount: number;
+  }>;
+  critical_roles_without_bench: {
+    in_plan_departments: number;
+    all_departments: number;
+  };
+}> {
+  return api(`/workforce-plans/${pid}/alignment`, init);
+}
+
 /** Terms-carrying ratio object (or null when there is nothing to divide). */
 type RatioOrNull = {
   numerator: number;

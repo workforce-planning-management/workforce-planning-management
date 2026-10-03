@@ -94,6 +94,7 @@ impl Hooks for App {
             .add_route(controllers::mobility::routes())
             .add_route(controllers::lms::routes())
             .add_route(controllers::change::routes())
+            .add_route(controllers::planning::routes())
             .add_route(controllers::talent::routes())
             .add_route(controllers::intelligence::routes())
             .add_route(controllers::payroll::routes())

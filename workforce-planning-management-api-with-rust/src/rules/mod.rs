@@ -23,6 +23,7 @@ pub mod notify;
 pub mod org;
 pub mod org_access;
 pub mod payroll;
+pub mod planning;
 pub mod privacy;
 pub mod pulse;
 pub mod roles;

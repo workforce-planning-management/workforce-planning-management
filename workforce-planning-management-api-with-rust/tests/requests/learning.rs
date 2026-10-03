@@ -874,3 +874,170 @@ async fn change_tracker_reports_aggregate_readiness() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn workforce_plan_forecasts_gaps_and_alignment() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let a = seed_worker!(&request, &org, "E-1", None).await; // department "engineering"
+        activate!(&request, &a).await;
+        let b = seed_worker!(&request, &org, "E-2", None).await;
+        activate!(&request, &b).await;
+
+        // A role profile needing one skill; one worker is proficient.
+        let skill: Value = request
+            .post("/api/skills")
+            .json(&json!({ "name": "Planning-Skill", "category": "technical" }))
+            .await
+            .json();
+        let skill_pid = skill["pid"].as_str().unwrap().to_string();
+        request
+            .put(&format!("/api/workers/{a}/skills"))
+            .json(&json!({ "skill_pid": skill_pid, "proficiency": 4 }))
+            .await
+            .assert_status_ok();
+        request
+            .put(&format!("/api/workers/{b}/skills"))
+            .json(&json!({ "skill_pid": skill_pid, "proficiency": 2 }))
+            .await
+            .assert_status_ok();
+        let profile: Value = request
+            .post("/api/role-profiles")
+            .json(&json!({ "job_title": "Planning Engineer" }))
+            .await
+            .json();
+        let role = profile["pid"].as_str().unwrap().to_string();
+        request
+            .put(&format!("/api/role-profiles/{role}/requirements"))
+            .json(&json!({ "skill_pid": skill_pid, "min_proficiency": 3, "importance": "critical" }))
+            .await
+            .assert_status_ok();
+
+        // Validation: horizon order; a line outside the horizon is refused.
+        let plan_body = |name: &str, attrition: Option<i32>| {
+            json!({
+                "name": name, "organization_ref": org,
+                "horizon_start": "2026-01-01", "horizon_end": "2027-12-31",
+                "attrition_bp": attrition,
+            })
+        };
+        assert_eq!(
+            request
+                .post("/api/workforce-plans")
+                .json(&json!({ "name": "x", "organization_ref": org,
+                               "horizon_start": "2027-01-01", "horizon_end": "2026-01-01" }))
+                .await
+                .status_code(),
+            422
+        );
+        let plan: Value = request.post("/api/workforce-plans").json(&plan_body("FY27 growth", Some(1000))).await.json();
+        let plan_pid = plan["pid"].as_str().unwrap().to_string();
+        let set_line = |body: Value| request.put(&format!("/api/workforce-plans/{plan_pid}/demand-lines")).json(&body);
+        assert_eq!(
+            set_line(json!({ "department": "engineering", "target_on": "2030-01-01", "target_headcount": 5 }))
+                .await
+                .status_code(),
+            422,
+            "outside the horizon"
+        );
+        // Dept-level demand at one date, and a role-level line at another.
+        set_line(json!({ "department": "engineering", "target_on": "2027-06-30", "target_headcount": 5 }))
+            .await
+            .assert_status_ok();
+        let role_line: Value = set_line(json!({
+            "department": "engineering", "role_profile_pid": role,
+            "target_on": "2027-09-30", "target_headcount": 4,
+        }))
+        .await
+        .json();
+
+        let forecast: Value = request.get(&format!("/api/workforce-plans/{plan_pid}/forecast")).await.json();
+        assert_eq!(forecast["assumptions"]["attrition_source"], "plan_assumption");
+        assert_eq!(forecast["assumptions"]["hires_assumed"], 0);
+        let first = &forecast["departments"][0];
+        assert_eq!(first["department"], "engineering");
+        assert_eq!(first["planned_demand"], 5);
+        assert!(first["opening_headcount"].as_u64().unwrap() >= 2);
+        let gap = first["headcount_gap"].as_i64().unwrap();
+        assert_eq!(
+            gap,
+            5 - first["projected_supply"].as_i64().unwrap(),
+            "gap is demand minus projected supply"
+        );
+        if gap > 0 {
+            assert_eq!(first["levers"][0], "hire");
+        }
+        let competency = &forecast["departments"][1]["competency_gaps"][0];
+        assert_eq!(competency["skill"], "Planning-Skill");
+        assert_eq!(competency["needed"], 4);
+        assert!(competency["proficient_now"].as_u64().unwrap() >= 1);
+        assert!(competency["reskill_pool"].as_u64().unwrap() >= 1, "the worker declared below the bar");
+
+        // With no attrition assumption and no snapshots: insufficient history, not a guess.
+        let bare: Value = request.post("/api/workforce-plans").json(&plan_body("No assumption", None)).await.json();
+        let bare_pid = bare["pid"].as_str().unwrap().to_string();
+        request
+            .put(&format!("/api/workforce-plans/{bare_pid}/demand-lines"))
+            .json(&json!({ "department": "engineering", "target_on": "2027-06-30", "target_headcount": 3 }))
+            .await
+            .assert_status_ok();
+        let none: Value = request.get(&format!("/api/workforce-plans/{bare_pid}/forecast")).await.json();
+        assert_eq!(none["assumptions"]["attrition_source"], "insufficient_history");
+        assert!(none["departments"][0]["projected_supply"].is_null());
+        assert!(none["departments"][0]["headcount_gap"].is_null());
+
+        // Alignment: one objective serves the dept line; another has no demand.
+        let served: Value = request
+            .post(&format!("/api/workforce-plans/{plan_pid}/objectives"))
+            .json(&json!({ "title": "Launch the new service" }))
+            .await
+            .json();
+        request
+            .post(&format!("/api/workforce-plans/{plan_pid}/objectives"))
+            .json(&json!({ "title": "Enter a new market" }))
+            .await
+            .assert_status_ok();
+        let detail: Value = request.get(&format!("/api/workforce-plans/{plan_pid}")).await.json();
+        let dept_line = detail["demand_lines"][0]["pid"].as_str().unwrap();
+        request
+            .put(&format!("/api/workforce-plans/{plan_pid}/demand-lines/{dept_line}/objectives"))
+            .json(&json!({ "objective_pids": [served["pid"]] }))
+            .await
+            .assert_status_ok();
+        assert_eq!(
+            request
+                .put(&format!("/api/workforce-plans/{plan_pid}/demand-lines/{dept_line}/objectives"))
+                .json(&json!({ "objective_pids": [uuid::Uuid::new_v4()] }))
+                .await
+                .status_code(),
+            422,
+            "objectives must belong to the plan"
+        );
+        let view: Value = request.get(&format!("/api/workforce-plans/{plan_pid}/alignment")).await.json();
+        assert_eq!(view["planned_headcount"], 9);
+        assert_eq!(view["aligned_share"]["numerator"], 5);
+        assert_eq!(view["aligned_share"]["denominator"], 9);
+        assert_eq!(view["unresourced_objectives"][0], "Enter a new market");
+        assert_eq!(view["unaligned_demand_lines"].as_array().unwrap().len(), 1);
+        let _ = role_line;
+
+        // Lifecycle: one active plan per organization; archived plans are read-only.
+        let status = |pid: &str, to: &str| {
+            request.post(&format!("/api/workforce-plans/{pid}/status")).json(&json!({ "to": to }))
+        };
+        status(&plan_pid, "active").await.assert_status_ok();
+        assert_eq!(status(&bare_pid, "active").await.status_code(), 422, "one active plan per organization");
+        status(&plan_pid, "archived").await.assert_status_ok();
+        assert_eq!(
+            set_line(json!({ "department": "engineering", "target_on": "2027-06-30", "target_headcount": 9 }))
+                .await
+                .status_code(),
+            422,
+            "an archived plan is read-only"
+        );
+        status(&bare_pid, "active").await.assert_status_ok();
+    })
+    .await;
+}
