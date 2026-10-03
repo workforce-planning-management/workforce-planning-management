@@ -397,17 +397,66 @@ export function capabilityAnalysis(
   );
 }
 
-/** Role profiles (what a role requires): list. */
-export function listRoleProfiles(init?: FetchLike): Promise<
+/** Role profiles (what a role requires): list, optionally one framework's. */
+export function listRoleProfiles(
+  framework?: string,
+  init?: FetchLike,
+): Promise<
   Array<{
     pid: string;
     job_title: string;
     description: string | null;
     source_ref: string | null;
     requirement_count: number;
+    framework: string | null;
+    profession: string | null;
+    role_name: string | null;
+    level_name: string | null;
+    level_order: number | null;
+    management_track: boolean;
   }>
 > {
-  return api("/role-profiles", init);
+  const qs = framework ? `?framework=${encodeURIComponent(framework)}` : "";
+  return api(`/role-profiles${qs}`, init);
+}
+
+/** Frameworks role profiles were imported from, with attribution. */
+export function listFrameworks(init?: FetchLike): Promise<
+  Array<{
+    slug: string;
+    name: string;
+    source_url: string | null;
+    licence: string | null;
+    attribution: string | null;
+    scale_max: number;
+    scale_labels: string | null;
+    imported_on: string;
+    note: string | null;
+    profiles: number;
+    roles: number;
+  }>
+> {
+  return api("/capability-frameworks", init);
+}
+
+/** What changes going up a level in the same role of the same framework. */
+export function roleProgression(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  profile: { pid: string; job_title: string; level_order: number } | string;
+  next: Array<{
+    pid: string;
+    job_title: string;
+    level_order: number;
+    management_track: boolean;
+    added: Array<{ skill: string; min_proficiency: number }>;
+    raised: Array<{ skill: string; from: number; to: number }>;
+    unchanged: number;
+    dropped: string[];
+  }>;
+}> {
+  return api(`/role-profiles/${pid}/progression`, init);
 }
 
 /** A role profile with its required skills, critical first. */
@@ -419,6 +468,20 @@ export function getRoleProfile(
   job_title: string;
   description: string | null;
   source_ref: string | null;
+  framework: {
+    slug: string;
+    name: string;
+    licence: string | null;
+    attribution: string | null;
+    scale_max: number;
+    scale_labels: string | null;
+    note: string | null;
+  } | null;
+  profession: string | null;
+  role_name: string | null;
+  level_name: string | null;
+  level_order: number | null;
+  management_track: boolean;
   requirements: Array<{
     skill_pid: string;
     skill: string | null;
@@ -426,6 +489,8 @@ export function getRoleProfile(
     min_proficiency: number;
     importance: "critical" | "important" | "useful";
     note: string | null;
+    source_level: number | null;
+    source_scale_max: number | null;
   }>;
 }> {
   return api(`/role-profiles/${pid}`, init);

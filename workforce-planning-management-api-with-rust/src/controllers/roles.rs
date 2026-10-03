@@ -14,7 +14,7 @@ use uuid::Uuid;
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    role_profiles, role_skill_requirements, skills, worker_skills, workers,
+    capability_frameworks, role_profiles, role_skill_requirements, skills, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -103,11 +103,27 @@ async fn create_profile(
     })
 }
 
-/// `GET /api/role-profiles` — every live profile with its requirement count.
+/// Query for the profile list.
+#[derive(Debug, Deserialize)]
+struct ProfileListQuery {
+    /// Only profiles imported from this framework (e.g. `uk-gdad-pcf`).
+    framework: Option<String>,
+}
+
+/// `GET /api/role-profiles?framework=` — every live profile with its
+/// requirement count and, for an imported one, where it sits in its
+/// framework (profession → role → level).
 #[debug_handler]
-async fn list_profiles(State(ctx): State<AppContext>) -> Result<Response> {
-    let profiles = role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
+async fn list_profiles(
+    State(ctx): State<AppContext>,
+    axum::extract::Query(query): axum::extract::Query<ProfileListQuery>,
+) -> Result<Response> {
+    let mut select =
+        role_profiles::Entity::find().filter(role_profiles::Column::DeletedAt.is_null());
+    if let Some(framework) = &query.framework {
+        select = select.filter(role_profiles::Column::FrameworkSlug.eq(framework));
+    }
+    let profiles = select
         .order_by_asc(role_profiles::Column::JobTitle)
         .all(&ctx.db)
         .await?;
@@ -125,6 +141,55 @@ async fn list_profiles(State(ctx): State<AppContext>) -> Result<Response> {
                 "description": p.description,
                 "source_ref": p.source_ref,
                 "requirement_count": counts.get(&p.pid).copied().unwrap_or(0),
+                "framework": p.framework_slug,
+                "profession": p.profession,
+                "role_name": p.role_name,
+                "level_name": p.level_name,
+                "level_order": p.level_order,
+                "management_track": p.management_track,
+            })
+        })
+        .collect();
+    format::json(out)
+}
+
+/// `GET /api/capability-frameworks` — the frameworks role profiles were
+/// imported from, with their **attribution**, licence, proficiency scale,
+/// and how many profiles each supplied.
+#[debug_handler]
+async fn list_frameworks(State(ctx): State<AppContext>) -> Result<Response> {
+    let frameworks = capability_frameworks::Entity::find()
+        .order_by_asc(capability_frameworks::Column::Name)
+        .all(&ctx.db)
+        .await?;
+    let profiles = role_profiles::Entity::find()
+        .filter(role_profiles::Column::DeletedAt.is_null())
+        .filter(role_profiles::Column::FrameworkSlug.is_not_null())
+        .all(&ctx.db)
+        .await?;
+    let out: Vec<serde_json::Value> = frameworks
+        .iter()
+        .map(|f| {
+            let mine: Vec<&role_profiles::Model> = profiles
+                .iter()
+                .filter(|p| p.framework_slug.as_deref() == Some(f.slug.as_str()))
+                .collect();
+            let roles: std::collections::BTreeSet<(&str, &str)> = mine
+                .iter()
+                .filter_map(|p| Some((p.profession.as_deref()?, p.role_name.as_deref()?)))
+                .collect();
+            serde_json::json!({
+                "slug": f.slug,
+                "name": f.name,
+                "source_url": f.source_url,
+                "licence": f.licence,
+                "attribution": f.attribution,
+                "scale_max": f.scale_max,
+                "scale_labels": f.scale_labels,
+                "imported_on": f.imported_on,
+                "note": f.note,
+                "profiles": mine.len(),
+                "roles": roles.len(),
             })
         })
         .collect();
@@ -164,14 +229,35 @@ async fn get_profile(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
                 "min_proficiency": r.min_proficiency,
                 "importance": r.importance,
                 "note": r.note,
+                "source_level": r.source_level,
+                "source_scale_max": r.source_scale_max,
             })
         })
         .collect();
+    let framework = match &profile.framework_slug {
+        Some(slug) => {
+            capability_frameworks::Entity::find()
+                .filter(capability_frameworks::Column::Slug.eq(slug))
+                .one(&ctx.db)
+                .await?
+        }
+        None => None,
+    };
     format::json(serde_json::json!({
         "pid": profile.pid,
         "job_title": profile.job_title,
         "description": profile.description,
         "source_ref": profile.source_ref,
+        "framework": framework.map(|f| serde_json::json!({
+            "slug": f.slug, "name": f.name, "licence": f.licence,
+            "attribution": f.attribution, "scale_max": f.scale_max,
+            "scale_labels": f.scale_labels, "note": f.note,
+        })),
+        "profession": profile.profession,
+        "role_name": profile.role_name,
+        "level_name": profile.level_name,
+        "level_order": profile.level_order,
+        "management_track": profile.management_track,
         "requirements": out,
     }))
 }
@@ -430,6 +516,80 @@ async fn role_gap(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
     }))
 }
 
+/// The `(skill name, minimum)` requirements of a profile.
+fn requirement_pairs(
+    requirements: &[role_skill_requirements::Model],
+    profile_pid: Uuid,
+    names: &BTreeMap<Uuid, String>,
+) -> Vec<(String, i32)> {
+    requirements
+        .iter()
+        .filter(|r| r.role_profile_pid == profile_pid)
+        .filter_map(|r| Some((names.get(&r.skill_pid)?.clone(), r.min_proficiency)))
+        .collect()
+}
+
+/// `GET /api/role-profiles/{pid}/progression` — what changes going up a
+/// level in the same role of the same framework: skills newly required,
+/// skills required at a higher level, and skills unchanged. The next level
+/// can be more than one profile (a technical and a management track). Empty
+/// `next` at the top of a role, or for a profile not from a framework.
+#[debug_handler]
+async fn progression(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
+    let profile = find_profile(&ctx, &pid).await?;
+    let (Some(framework), Some(profession), Some(role), Some(order)) = (
+        profile.framework_slug.clone(),
+        profile.profession.clone(),
+        profile.role_name.clone(),
+        profile.level_order,
+    ) else {
+        return format::json(serde_json::json!({ "profile": profile.job_title, "next": [] }));
+    };
+    let siblings = role_profiles::Entity::find()
+        .filter(role_profiles::Column::DeletedAt.is_null())
+        .filter(role_profiles::Column::FrameworkSlug.eq(&framework))
+        .filter(role_profiles::Column::Profession.eq(&profession))
+        .filter(role_profiles::Column::RoleName.eq(&role))
+        .all(&ctx.db)
+        .await?;
+    let next_order = siblings
+        .iter()
+        .filter_map(|p| p.level_order)
+        .filter(|o| *o > order)
+        .min();
+    let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
+    let names: BTreeMap<Uuid, String> = skills::Entity::find()
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|s| (s.pid, s.name))
+        .collect();
+    let current = requirement_pairs(&requirements, profile.pid, &names);
+    let next: Vec<serde_json::Value> = siblings
+        .iter()
+        .filter(|p| next_order.is_some() && p.level_order == next_order)
+        .map(|p| {
+            let diff = rules::progression_diff(&current, &requirement_pairs(&requirements, p.pid, &names));
+            serde_json::json!({
+                "pid": p.pid,
+                "job_title": p.job_title,
+                "level_order": p.level_order,
+                "management_track": p.management_track,
+                "added": diff.added.iter().map(|(s, m)| serde_json::json!({ "skill": s, "min_proficiency": m })).collect::<Vec<_>>(),
+                "raised": diff.raised.iter().map(|(s, from, to)| serde_json::json!({ "skill": s, "from": from, "to": to })).collect::<Vec<_>>(),
+                "unchanged": diff.unchanged,
+                "dropped": diff.dropped,
+            })
+        })
+        .collect();
+    format::json(serde_json::json!({
+        "derivation": "compares required skills and minimum proficiency between this level and \
+                       the next level of the same role in the same framework",
+        "profile": { "pid": profile.pid, "job_title": profile.job_title, "level_order": order },
+        "next": next,
+    }))
+}
+
 /// Find a live profile by pid string.
 async fn find_profile(ctx: &AppContext, pid: &str) -> Result<role_profiles::Model> {
     role_profiles::Entity::find()
@@ -447,6 +607,8 @@ pub fn routes() -> Routes {
         .add("/role-profiles", post(create_profile))
         .add("/role-profiles", get(list_profiles))
         .add("/role-profiles/{pid}", get(get_profile))
+        .add("/capability-frameworks", get(list_frameworks))
+        .add("/role-profiles/{pid}/progression", get(progression))
         .add("/role-profiles/{pid}/gap", get(role_gap))
         .add("/workers/{pid}/role-gap", get(worker_role_gap))
         .add("/role-profiles/{pid}/requirements", put(set_requirement))

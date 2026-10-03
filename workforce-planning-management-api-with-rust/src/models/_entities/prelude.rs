@@ -13,6 +13,7 @@ pub use super::benchmarks::Entity as Benchmarks;
 pub use super::benefit_enrollments::Entity as BenefitEnrollments;
 pub use super::benefit_plans::Entity as BenefitPlans;
 pub use super::candidates::Entity as Candidates;
+pub use super::capability_frameworks::Entity as CapabilityFrameworks;
 pub use super::change_initiatives::Entity as ChangeInitiatives;
 pub use super::cpd_entries::Entity as CpdEntries;
 pub use super::cpd_requirements::Entity as CpdRequirements;

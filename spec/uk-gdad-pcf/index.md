@@ -113,7 +113,7 @@ repository's caution that it is not an official service.
 | CPD checklist items | CPD ledger activities (planned) | Items are `- [ ] Title: description` under `Role Level Focus` and per `Skill:` headings |
 | Skills gap form | Gap-analysis input | A model, not a data source |
 
-### The scale mismatch (decision needed)
+### The scale mismatch (decided: identity default, source kept)
 
 The PCF's role summaries describe each skill's behaviour at a *level of the
 role*, and its assessments rate on 1–4; WPM declares 1–5. Options:
@@ -145,6 +145,61 @@ edit**, exactly as for ESCO seeding (see [../esco/index.md](../esco/index.md)).
   unmatched skills rather than fail.
 - **Pin and attribute.** Record the commit or fetch date of the import; the
   framework changes upstream and the repository re-fetches periodically.
+
+## Implementation in WPM (WPM-T57)
+
+Role levels import as **role profiles** (`spec/strategic-workforce-planning.md`
+WPM-R34), so every role-based feature — gap against a role, matching,
+mobility, plans, change tracking — works on the framework's roles.
+
+```sh
+cargo loco task import_framework dir:/path/to/uk-gdad/uk-gdad \
+    [scale:identity|linear] [overwrite_levels:true]
+```
+
+- **Reads** `uk-gdad-pcf-role-summaries/roles/**` (structure and wording;
+  Crown copyright, OGL v3.0) and, for each skill's required level, the
+  `Baseline: N — Rating` line in
+  `uk-gdad-pcf-competency-assessments-by-assessor/roles/**`. Nothing from the
+  clone is copied into this repository.
+- **A skill with no baseline is skipped and counted** — never given an
+  invented level. Retired (`NOT IN USE`) levels are left out.
+- **Titles** are the level names exactly as the framework writes them
+  (`Senior developer - management` keeps its own suffix); a name shared by
+  two roles is qualified with the role. The management track is recognised
+  from the level *name*, not the slug (`Head of IT service management` is
+  not a track).
+- **Skills** are matched to the catalogue by **exact name** (qualified names
+  are distinct skills) and created with category `other` when new.
+- **Requirements** default to importance `important` — the framework does not
+  grade importance — and keep the framework's wording in `note` and the
+  **source level and scale** beside WPM's 1–5 `min_proficiency`.
+- **Level mapping — `scale:identity` (default):** PCF 1–4 become WPM 1–4
+  (Practitioner = 3). **`scale:linear`** rescales so the ends meet (1, 2, 4,
+  5), which leaves WPM 3 unused and makes a worker who declared 3 fall
+  *below* a Practitioner requirement — stricter and surprising, hence not the
+  default. The source level is always kept, so the choice is reversible:
+  `overwrite_levels:true` re-derives every minimum from it.
+- **Idempotent.** A re-import refreshes provenance, titles, wording and the
+  source level, but never overwrites a planner's `min_proficiency` or
+  `importance`, and never removes a requirement.
+- **Attribution** lives on the `capability_frameworks` row and is shown on
+  every imported profile in `/roles`: *Contains public sector information
+  licensed under the Open Government Licence v3.0. © Crown copyright.*
+  The framework row also notes that required levels come from the community
+  assessments (AI-assisted, human-reviewed) — **a draft for a human to
+  edit**, not an official statement.
+- **API:** `GET /api/capability-frameworks` (attribution, licence, scale,
+  counts), `GET /api/role-profiles?framework=`, and `GET
+  /api/role-profiles/{pid}/progression` — what changes going up a level in the
+  same role (skills added, raised, unchanged), the career-ladder view.
+
+First real import (2026-10-03, from the local clone): 205 levels read, 4
+retired skipped, **201 profiles**, **161 skills** created (the retired roles'
+skills are not imported), **1,654 requirements**, 21 skill lines skipped for
+lack of a baseline; a second run created nothing. The competency-assessment
+files are the only source of numeric levels, so the import is only as good as
+that AI-assisted data.
 
 ## Open decisions
 

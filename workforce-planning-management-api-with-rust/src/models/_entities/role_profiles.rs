@@ -17,6 +17,13 @@ pub struct Model {
     pub job_title: String,
     pub description: Option<String>,
     pub source_ref: Option<String>,
+    pub framework_slug: Option<String>,
+    pub external_ref: Option<String>,
+    pub profession: Option<String>,
+    pub role_name: Option<String>,
+    pub level_name: Option<String>,
+    pub level_order: Option<i32>,
+    pub management_track: bool,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

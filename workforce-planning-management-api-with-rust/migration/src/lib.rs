@@ -42,6 +42,7 @@ mod m20261002_000026_change_initiatives;
 mod m20261002_000027_workforce_plans;
 mod m20261002_000028_plan_objectives;
 mod m20261002_000029_plan_budget;
+mod m20261002_000030_capability_frameworks;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -83,6 +84,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261002_000027_workforce_plans::Migration),
             Box::new(m20261002_000028_plan_objectives::Migration),
             Box::new(m20261002_000029_plan_budget::Migration),
+            Box::new(m20261002_000030_capability_frameworks::Migration),
             // inject-above (do not remove this comment)
         ]
     }

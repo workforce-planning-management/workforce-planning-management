@@ -14,6 +14,7 @@ pub mod cost;
 pub mod cpd;
 pub mod ergonomics;
 pub mod learning;
+pub mod framework;
 pub mod gap;
 pub mod leave;
 pub mod lms;

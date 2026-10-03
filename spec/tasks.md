@@ -798,7 +798,7 @@ code + tests in one PR.
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
 > **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
-> and the full database-backed request suite passes — **34 of 34** against a
+> and the full database-backed request suite passes — **35 of 35** against a
 > real PostgreSQL 18 (every migration applied) — using a scratch copy with
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
@@ -1038,6 +1038,32 @@ first in each, per the three-part rule.
       recruitment/onboarding cost, multi-year phasing, per-department
       budgets, and exercising the masked path against the real policy
       engine (stubbed here).
+
+- [x] WPM-T57 (2026-10-03) **Job-capability frameworks: UK GDAD PCF import.**
+      Frameworks become first-class: migration
+      `m20261002_000030_capability_frameworks` (`capability_frameworks` with
+      attribution, licence, scale; provenance columns on `role_profiles` —
+      framework, external ref, profession, role, level, order, management
+      track; `source_level` / `source_scale_max` on requirements). Pure
+      `rules::framework` (role-summary and baseline parsers, slug parts,
+      `LevelMapping::{Identity, Linear}`, `job_title`, `is_management_track`;
+      6 tests) and `rules::roles::progression_diff` (1 test). Loco task
+      `import_framework dir:<clone> [scale:] [overwrite_levels:true]`
+      (`tasks/import_framework.rs`): idempotent, skips and counts skills with
+      no stated level, never overwrites a planner's level or importance. API:
+      `GET /api/capability-frameworks`, `GET /api/role-profiles?framework=`,
+      `GET /api/role-profiles/{pid}/progression`. Front-end `/roles`:
+      framework filter, profession › role › level grouping, attribution and
+      licence on every imported profile, the framework's wording per skill,
+      framework level beside WPM's, and a "Next level up" panel. **First real
+      import:** 201 profiles / 161 skills / 1,654 requirements from the local
+      clone; re-run created nothing. **Verified:** Rust type-checks, 145 lib
+      tests, database-backed suite **35/35** against PostgreSQL 18 (including
+      `capability_framework_import_and_progression` over a synthetic
+      fixture), clippy-clean on the new files; svelte-check 0, vitest 43/43,
+      build green. Details and the mapping decision: `spec/uk-gdad-pcf/`.
+      Not done: ESCO (see `spec/esco/`); other frameworks (SFIA, …); skill
+      categories (all `other`); editing a skill; per-level importance.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 

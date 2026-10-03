@@ -8,11 +8,13 @@
   import {
     createRoleProfile,
     getRoleProfile,
+    listFrameworks,
     listRoleProfiles,
     listSkills,
     mobilityInterestSummary,
     removeRoleRequirement,
     roleGap,
+    roleProgression,
     setRoleRequirement,
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
@@ -23,6 +25,8 @@
   type Skills = Awaited<ReturnType<typeof listSkills>>;
   type Coverage = Awaited<ReturnType<typeof roleGap>>;
   type Interest = Awaited<ReturnType<typeof mobilityInterestSummary>>;
+  type Frameworks = Awaited<ReturnType<typeof listFrameworks>>;
+  type Progression = Awaited<ReturnType<typeof roleProgression>>;
 
   const IMPORTANCES = ["critical", "important", "useful"] as const;
 
@@ -31,6 +35,9 @@
   let selected = $state("");
   let coverage = $state<Coverage | null>(null);
   let interest = $state<Interest | null>(null);
+  let frameworks = $state<Frameworks>([]);
+  let framework = $state("");
+  let progression = $state<Progression | null>(null);
   let profile = $state<Profile | null>(null);
   let error = $state<string | null>(null);
 
@@ -39,17 +46,36 @@
   let reqLevel = $state(3);
   let reqImportance = $state<string>("important");
 
+  /** Profiles grouped profession → role (levels in order); own profiles last. */
+  const groups = $derived.by(() => {
+    const byLabel = new Map<string, typeof profiles>();
+    for (const p of profiles) {
+      const label = p.profession && p.role_name ? `${p.profession} — ${p.role_name}` : "Other profiles";
+      byLabel.set(label, [...(byLabel.get(label) ?? []), p]);
+    }
+    return [...byLabel.entries()]
+      .sort(([a], [b]) => (a === "Other profiles" ? 1 : b === "Other profiles" ? -1 : a.localeCompare(b)))
+      .map(([label, items]) => ({
+        label,
+        items: items.sort(
+          (x, y) => (x.level_order ?? 0) - (y.level_order ?? 0) || x.job_title.localeCompare(y.job_title),
+        ),
+      }));
+  });
+
   const message = (cause: unknown) =>
     cause instanceof Error ? cause.message : String(cause);
 
   async function loadProfiles() {
     try {
-      profiles = await listRoleProfiles();
+      profiles = await listRoleProfiles(framework || undefined);
+      frameworks = await listFrameworks();
       interest = await mobilityInterestSummary();
       if (!selected && profiles.length > 0) selected = profiles[0]?.pid ?? "";
       if (selected) {
         profile = await getRoleProfile(selected);
         coverage = await roleGap(selected);
+        progression = await roleProgression(selected);
       }
     } catch (cause) {
       error = message(cause);
@@ -71,10 +97,12 @@
     selected = pid;
     profile = null;
     coverage = null;
+    progression = null;
     if (pid) {
       try {
         profile = await getRoleProfile(pid);
         coverage = await roleGap(pid);
+        progression = await roleProgression(pid);
       } catch (cause) {
         error = message(cause);
       }
@@ -143,6 +171,23 @@
 {/if}
 
 <h2>Profiles</h2>
+{#if frameworks.length > 0}
+  <p>
+    <label>
+      Framework
+      <select
+        data-testid="framework-filter"
+        bind:value={framework}
+        onchange={() => { selected = ""; void loadProfiles(); }}
+      >
+        <option value="">All profiles</option>
+        {#each frameworks as f (f.slug)}
+          <option value={f.slug}>{f.name} ({f.profiles})</option>
+        {/each}
+      </select>
+    </label>
+  </p>
+{/if}
 <p>
   <label>
     Profile
@@ -151,8 +196,12 @@
       value={selected}
       onchange={(event) => void select(event.currentTarget.value)}
     >
-      {#each profiles as p (p.pid)}
-        <option value={p.pid}>{p.job_title} ({p.requirement_count})</option>
+      {#each groups as g (g.label)}
+        <optgroup label={g.label}>
+          {#each g.items as p (p.pid)}
+            <option value={p.pid}>{p.job_title} ({p.requirement_count})</option>
+          {/each}
+        </optgroup>
       {:else}
         <option value="">No profiles yet</option>
       {/each}
@@ -174,17 +223,34 @@
 
 {#if profile}
   <h2>{profile.job_title}</h2>
-  {#if profile.source_ref}<p class="muted">Source: {profile.source_ref}</p>{/if}
+  {#if profile.framework}
+    <p class="muted" data-testid="framework-attribution">
+      {profile.profession} › {profile.role_name} › level {profile.level_order}
+      · {profile.framework.name} · {profile.framework.licence}
+    </p>
+    <p class="muted">{profile.framework.attribution}</p>
+    <p class="muted">
+      Required levels come from the framework's own scale ({profile.framework.scale_labels}); WPM
+      shows its 1–5 minimum alongside. {profile.framework.note}
+    </p>
+  {:else if profile.source_ref}<p class="muted">Source: {profile.source_ref}</p>{/if}
+  {#if profile.description}<p>{profile.description}</p>{/if}
   <table data-testid="role-requirements">
     <thead>
-      <tr><th>Skill</th><th>Category</th><th>Minimum</th><th>Importance</th><th></th></tr>
+      <tr><th>Skill</th><th>Category</th><th>Minimum</th><th>Framework level</th><th>Importance</th><th></th></tr>
     </thead>
     <tbody>
       {#each profile.requirements as req (req.skill_pid)}
         <tr>
-          <td>{req.skill ?? req.skill_pid}</td>
+          <td>
+            {req.skill ?? req.skill_pid}
+            {#if req.note}
+              <details><summary class="muted">What the framework says</summary><p>{req.note}</p></details>
+            {/if}
+          </td>
           <td>{req.category ?? "—"}</td>
           <td>{req.min_proficiency} / 5</td>
+          <td>{req.source_level !== null ? `${req.source_level} of ${req.source_scale_max}` : "—"}</td>
           <td class:warn={req.importance === "critical"}>{req.importance}</td>
           <td>
             <button type="button" onclick={() => void dropRequirement(req.skill_pid)}>
@@ -193,10 +259,26 @@
           </td>
         </tr>
       {:else}
-        <tr><td colspan="5" class="muted">No required skills yet.</td></tr>
+        <tr><td colspan="6" class="muted">No required skills yet.</td></tr>
       {/each}
     </tbody>
   </table>
+
+  {#if progression && typeof progression.profile !== "string"}
+    <h3>Next level up</h3>
+    {#each progression.next as step (step.pid)}
+      <p data-testid="role-progression">
+        <strong>{step.job_title}</strong>:
+        {step.added.length} new skill(s), {step.raised.length} raised, {step.unchanged} unchanged
+      </p>
+      <ul>
+        {#each step.added as a (a.skill)}<li>New: {a.skill} (needs {a.min_proficiency})</li>{/each}
+        {#each step.raised as r (r.skill)}<li>Raised: {r.skill} {r.from} → {r.to}</li>{/each}
+      </ul>
+    {:else}
+      <p class="muted">This is the top level of the role.</p>
+    {/each}
+  {/if}
 
   {#if coverage}
     <h3>Can we staff this role today?</h3>

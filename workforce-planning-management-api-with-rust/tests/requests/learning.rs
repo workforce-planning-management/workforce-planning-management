@@ -1134,3 +1134,131 @@ async fn workforce_plan_costs_hiring_against_a_budget() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn capability_framework_import_and_progression() {
+    use workforce_planning_management_service::rules::framework::LevelMapping;
+    use workforce_planning_management_service::tasks::import_framework::import_pcf;
+
+    request::<App, _, _>(|request, ctx| async move {
+        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pcf-mini");
+        let report = import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
+            .await
+            .expect("import");
+        assert_eq!(report.levels_read, 4);
+        assert_eq!(report.retired_skipped, 1);
+        assert_eq!(report.profiles_created, 3);
+        assert_eq!(report.requirements_created, 6, "2 + 3 + 1 baselined skill lines");
+        assert_eq!(report.requirements_skipped_no_baseline, 1, "no invented level");
+
+        // Idempotent: a second run creates nothing and refreshes everything.
+        let again = import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
+            .await
+            .expect("re-import");
+        assert_eq!(again.profiles_created, 0);
+        assert_eq!(again.profiles_updated, 3);
+        assert_eq!(again.requirements_created, 0);
+        assert_eq!(again.requirements_refreshed, 6);
+
+        // The framework carries its attribution and scale.
+        let frameworks: Value = request.get("/api/capability-frameworks").await.json();
+        let pcf = frameworks
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|f| f["slug"] == "uk-gdad-pcf")
+            .unwrap();
+        assert_eq!(pcf["scale_max"], 4);
+        assert!(pcf["attribution"].as_str().unwrap().contains("Open Government Licence"));
+        assert!(pcf["profiles"].as_u64().unwrap() >= 3);
+
+        // Profiles: titles as the framework writes them; the management track is flagged.
+        let listed: Value = request.get("/api/role-profiles?framework=uk-gdad-pcf").await.json();
+        let by_title = |title: &str| {
+            listed
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|p| p["job_title"] == title)
+                .cloned()
+                .unwrap_or_else(|| panic!("no profile titled {title}"))
+        };
+        let junior = by_title("Junior tester");
+        let tester = by_title("Tester");
+        let lead = by_title("Tester lead - management");
+        assert_eq!(junior["profession"], "Test profession");
+        assert_eq!(junior["level_order"], 1);
+        assert_eq!(lead["management_track"], true);
+        assert_eq!(junior["requirement_count"], 2);
+
+        // Requirements keep the source level beside WPM's; the identity mapping keeps the number.
+        let detail: Value = request
+            .get(&format!("/api/role-profiles/{}", tester["pid"].as_str().unwrap()))
+            .await
+            .json();
+        assert!(detail["framework"]["attribution"].is_string());
+        let skill_a = detail["requirements"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["skill"] == "Fixture skill A")
+            .unwrap();
+        assert_eq!(skill_a["source_level"], 3);
+        assert_eq!(skill_a["source_scale_max"], 4);
+        assert_eq!(skill_a["min_proficiency"], 3);
+        assert_eq!(skill_a["importance"], "important", "importance is a draft default for a human to edit");
+
+        // A planner's edit survives a re-import (unless overwrite_levels is asked for).
+        let skill_pid = skill_a["skill_pid"].as_str().unwrap();
+        request
+            .put(&format!("/api/role-profiles/{}/requirements", tester["pid"].as_str().unwrap()))
+            .json(&json!({ "skill_pid": skill_pid, "min_proficiency": 5, "importance": "critical" }))
+            .await
+            .assert_status_ok();
+        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false).await.expect("re-import");
+        let kept: Value = request
+            .get(&format!("/api/role-profiles/{}", tester["pid"].as_str().unwrap()))
+            .await
+            .json();
+        let kept_a = kept["requirements"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["skill"] == "Fixture skill A")
+            .unwrap();
+        assert_eq!(kept_a["min_proficiency"], 5, "the planner's level is not overwritten");
+        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, true).await.expect("overwrite");
+        let reset: Value = request
+            .get(&format!("/api/role-profiles/{}", tester["pid"].as_str().unwrap()))
+            .await
+            .json();
+        let reset_a = reset["requirements"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["skill"] == "Fixture skill A")
+            .unwrap();
+        assert_eq!(reset_a["min_proficiency"], 3, "overwrite_levels re-derives from the source level");
+
+        // Progression: junior → tester raises A (1→3), keeps B, adds C.
+        let step: Value = request
+            .get(&format!("/api/role-profiles/{}/progression", junior["pid"].as_str().unwrap()))
+            .await
+            .json();
+        let next = &step["next"][0];
+        assert_eq!(next["job_title"], "Tester");
+        assert_eq!(next["raised"][0]["skill"], "Fixture skill A");
+        assert_eq!(next["raised"][0]["from"], 1);
+        assert_eq!(next["raised"][0]["to"], 3);
+        assert_eq!(next["added"][0]["skill"], "Fixture skill C");
+        assert_eq!(next["unchanged"], 1);
+        let top: Value = request
+            .get(&format!("/api/role-profiles/{}/progression", lead["pid"].as_str().unwrap()))
+            .await
+            .json();
+        assert!(top["next"].as_array().unwrap().is_empty(), "nothing above the top level");
+    })
+    .await;
+}

@@ -13,6 +13,7 @@ pub mod benchmarks;
 pub mod benefit_enrollments;
 pub mod benefit_plans;
 pub mod candidates;
+pub mod capability_frameworks;
 pub mod change_initiatives;
 pub mod cpd_entries;
 pub mod cpd_requirements;

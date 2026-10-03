@@ -1,4 +1,5 @@
-//! `SeaORM` Entity — `role_skill_requirements`. A catalogue skill a role requires.
+//! `SeaORM` Entity — `capability_frameworks`. A framework role profiles were
+//! imported from, with its attribution and proficiency scale.
 
 #![allow(missing_docs)]
 
@@ -6,7 +7,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "role_skill_requirements")]
+#[sea_orm(table_name = "capability_frameworks")]
 pub struct Model {
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
@@ -14,13 +15,16 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub pid: Uuid,
-    pub role_profile_pid: Uuid,
-    pub skill_pid: Uuid,
-    pub min_proficiency: i32,
-    pub importance: String,
+    #[sea_orm(unique)]
+    pub slug: String,
+    pub name: String,
+    pub source_url: Option<String>,
+    pub licence: Option<String>,
+    pub attribution: Option<String>,
+    pub scale_max: i32,
+    pub scale_labels: Option<String>,
+    pub imported_on: Date,
     pub note: Option<String>,
-    pub source_level: Option<i32>,
-    pub source_scale_max: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
