@@ -6,19 +6,21 @@
 //! progress derivation counts only real course completions.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    learning_path_steps, learning_paths, mentorship_sessions, mentorships, path_enrollments,
+    development_plan_items, initiative_skill_shifts, learning_path_steps, learning_paths,
+    mentorship_sessions, mentorships, path_enrollments, role_skill_requirements,
     skill_external_refs, skills, training_enrollments, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::learning as rules;
+use crate::rules::skill_merge as merge_rules;
 use crate::validation::Problems;
 
 /// A `{pid}` reference response.
@@ -249,6 +251,270 @@ async fn apply_suggestions(
         }
     }
     format::json(serde_json::json!({ "applied": applied, "skipped": skipped }))
+}
+
+/// Count where a skill is used.
+async fn skill_usage<C: ConnectionTrait>(db: &C, skill_pid: Uuid) -> Result<merge_rules::Usage> {
+    let count = |n: u64| usize::try_from(n).unwrap_or(usize::MAX);
+    Ok(merge_rules::Usage {
+        declared_by: count(
+            worker_skills::Entity::find()
+                .filter(worker_skills::Column::SkillPid.eq(skill_pid))
+                .filter(worker_skills::Column::DeletedAt.is_null())
+                .count(db)
+                .await?,
+        ),
+        required_by_profiles: count(
+            role_skill_requirements::Entity::find()
+                .filter(role_skill_requirements::Column::SkillPid.eq(skill_pid))
+                .count(db)
+                .await?,
+        ),
+        in_development_plans: count(
+            development_plan_items::Entity::find()
+                .filter(development_plan_items::Column::SkillPid.eq(skill_pid))
+                .count(db)
+                .await?,
+        ),
+        in_initiatives: count(
+            initiative_skill_shifts::Entity::find()
+                .filter(initiative_skill_shifts::Column::SkillPid.eq(skill_pid))
+                .count(db)
+                .await?,
+        ),
+    })
+}
+
+fn usage_json(u: &merge_rules::Usage) -> serde_json::Value {
+    serde_json::json!({
+        "declared_by": u.declared_by,
+        "required_by_profiles": u.required_by_profiles,
+        "in_development_plans": u.in_development_plans,
+        "in_initiatives": u.in_initiatives,
+        "total": u.total(),
+        "deletable": u.deletable(),
+    })
+}
+
+/// `GET /api/skills/{pid}/usage` — where a skill is used, and whether it can
+/// be deleted (only when nothing uses it; otherwise merge it).
+#[debug_handler]
+async fn skill_usage_view(
+    State(ctx): State<AppContext>,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let skill = find_live_skill(&ctx, &pid).await?;
+    format::json(usage_json(&skill_usage(&ctx.db, skill.pid).await?))
+}
+
+/// `DELETE /api/skills/{pid}` — delete a skill **nothing uses** (soft-delete;
+/// its external references go with it). A skill in use is refused with `422`:
+/// merge it into another instead.
+#[debug_handler]
+async fn delete_skill(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let skill = find_live_skill(&ctx, &pid).await?;
+    let usage = skill_usage(&ctx.db, skill.pid).await?;
+    if !usage.deletable() {
+        return Err(unprocessable(&format!(
+            "the skill is in use ({} place(s)); merge it into another skill instead",
+            usage.total()
+        )));
+    }
+    let txn = ctx.db.begin().await?;
+    skill_external_refs::Entity::delete_many()
+        .filter(skill_external_refs::Column::SkillPid.eq(skill.pid))
+        .exec(&txn)
+        .await?;
+    let mut active: skills::ActiveModel = skill.into();
+    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
+    let row = active.update(&txn).await?;
+    Audit::record(&txn, "skill", row.pid, "deleted", caller.actor(), None).await?;
+    txn.commit().await?;
+    format::empty_json()
+}
+
+/// `POST /api/skills/{pid}/merge` body.
+#[derive(Debug, Deserialize)]
+struct MergePayload {
+    into_pid: Uuid,
+}
+
+/// `POST /api/skills/{pid}/merge` — fold this skill into another and retire
+/// it. Everything pointing at it is repointed at the target; where both
+/// already appear (a worker who declared both, a profile requiring both, a
+/// plan listing both) the stronger statement is kept. One transaction.
+#[debug_handler]
+#[allow(clippy::too_many_lines)] // one repointing pass per referencing table
+async fn merge_skill(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+    Json(payload): Json<MergePayload>,
+) -> Result<Response> {
+    let source = find_live_skill(&ctx, &pid).await?;
+    if source.pid == payload.into_pid {
+        return Err(unprocessable("a skill cannot be merged into itself"));
+    }
+    let target = find_live_skill(&ctx, &payload.into_pid.to_string()).await?;
+    let txn = ctx.db.begin().await?;
+    let (mut merged, mut moved) = (0usize, 0usize);
+
+    // Worker declarations.
+    for row in worker_skills::Entity::find()
+        .filter(worker_skills::Column::SkillPid.eq(source.pid))
+        .all(&txn)
+        .await?
+    {
+        let twin = worker_skills::Entity::find()
+            .filter(worker_skills::Column::WorkerPid.eq(row.worker_pid))
+            .filter(worker_skills::Column::SkillPid.eq(target.pid))
+            .one(&txn)
+            .await?;
+        if let Some(twin) = twin {
+            let mut active: worker_skills::ActiveModel = twin.clone().into();
+            active.proficiency =
+                ActiveValue::set(merge_rules::merge_level(twin.proficiency, row.proficiency));
+            active.target = ActiveValue::set(merge_rules::merge_target(twin.target, row.target));
+            active.assessed_on = ActiveValue::set(twin.assessed_on.max(row.assessed_on));
+            if row.deleted_at.is_none() {
+                active.deleted_at = ActiveValue::set(None);
+            }
+            active.update(&txn).await?;
+            row.delete(&txn).await?;
+            merged += 1;
+        } else {
+            let mut active: worker_skills::ActiveModel = row.into();
+            active.skill_pid = ActiveValue::set(target.pid);
+            active.update(&txn).await?;
+            moved += 1;
+        }
+    }
+    // Role requirements.
+    for row in role_skill_requirements::Entity::find()
+        .filter(role_skill_requirements::Column::SkillPid.eq(source.pid))
+        .all(&txn)
+        .await?
+    {
+        let twin = role_skill_requirements::Entity::find()
+            .filter(role_skill_requirements::Column::RoleProfilePid.eq(row.role_profile_pid))
+            .filter(role_skill_requirements::Column::SkillPid.eq(target.pid))
+            .one(&txn)
+            .await?;
+        if let Some(twin) = twin {
+            let mut active: role_skill_requirements::ActiveModel = twin.clone().into();
+            active.min_proficiency = ActiveValue::set(merge_rules::merge_level(
+                twin.min_proficiency,
+                row.min_proficiency,
+            ));
+            active.importance = ActiveValue::set(
+                merge_rules::stronger_importance(&twin.importance, &row.importance).to_string(),
+            );
+            if twin.note.is_none() {
+                active.note = ActiveValue::set(row.note.clone());
+            }
+            if twin.source_level.is_none() {
+                active.source_level = ActiveValue::set(row.source_level);
+                active.source_scale_max = ActiveValue::set(row.source_scale_max);
+            }
+            active.update(&txn).await?;
+            row.delete(&txn).await?;
+            merged += 1;
+        } else {
+            let mut active: role_skill_requirements::ActiveModel = row.into();
+            active.skill_pid = ActiveValue::set(target.pid);
+            active.update(&txn).await?;
+            moved += 1;
+        }
+    }
+    // Initiative skill shifts: the target's statement wins a conflict.
+    for row in initiative_skill_shifts::Entity::find()
+        .filter(initiative_skill_shifts::Column::SkillPid.eq(source.pid))
+        .all(&txn)
+        .await?
+    {
+        let twin_exists = initiative_skill_shifts::Entity::find()
+            .filter(initiative_skill_shifts::Column::InitiativePid.eq(row.initiative_pid))
+            .filter(initiative_skill_shifts::Column::SkillPid.eq(target.pid))
+            .one(&txn)
+            .await?
+            .is_some();
+        if twin_exists {
+            row.delete(&txn).await?;
+            merged += 1;
+        } else {
+            let mut active: initiative_skill_shifts::ActiveModel = row.into();
+            active.skill_pid = ActiveValue::set(target.pid);
+            active.update(&txn).await?;
+            moved += 1;
+        }
+    }
+    // Development-plan items: the target's item wins a conflict.
+    for row in development_plan_items::Entity::find()
+        .filter(development_plan_items::Column::SkillPid.eq(source.pid))
+        .all(&txn)
+        .await?
+    {
+        let twin_exists = development_plan_items::Entity::find()
+            .filter(development_plan_items::Column::PlanPid.eq(row.plan_pid))
+            .filter(development_plan_items::Column::SkillPid.eq(target.pid))
+            .one(&txn)
+            .await?
+            .is_some();
+        if twin_exists {
+            row.delete(&txn).await?;
+            merged += 1;
+        } else {
+            let mut active: development_plan_items::ActiveModel = row.into();
+            active.skill_pid = ActiveValue::set(target.pid);
+            active.update(&txn).await?;
+            moved += 1;
+        }
+    }
+    // External references: keep the target's per framework, move the rest.
+    for row in skill_external_refs::Entity::find()
+        .filter(skill_external_refs::Column::SkillPid.eq(source.pid))
+        .all(&txn)
+        .await?
+    {
+        let has = skill_external_refs::Entity::find()
+            .filter(skill_external_refs::Column::SkillPid.eq(target.pid))
+            .filter(skill_external_refs::Column::FrameworkSlug.eq(&row.framework_slug))
+            .one(&txn)
+            .await?
+            .is_some();
+        if has {
+            row.delete(&txn).await?;
+        } else {
+            let mut active: skill_external_refs::ActiveModel = row.into();
+            active.skill_pid = ActiveValue::set(target.pid);
+            active.update(&txn).await?;
+        }
+    }
+    let source_name = source.name.clone();
+    let mut retire: skills::ActiveModel = source.into();
+    retire.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
+    let retired = retire.update(&txn).await?;
+    Audit::record(
+        &txn,
+        "skill",
+        retired.pid,
+        "merged",
+        caller.actor(),
+        Some(serde_json::json!({
+            "into": target.pid, "from_name": source_name, "records_moved": moved, "records_merged": merged,
+        })),
+    )
+    .await?;
+    txn.commit().await?;
+    format::json(serde_json::json!({
+        "merged_into": target.pid,
+        "records_moved": moved,
+        "records_merged": merged,
+    }))
 }
 
 /// `POST /api/skills/{pid}/refs` body.
@@ -1083,6 +1349,9 @@ pub fn routes() -> Routes {
             post(apply_suggestions),
         )
         .add("/skills/{pid}", put(update_skill))
+        .add("/skills/{pid}", delete(delete_skill))
+        .add("/skills/{pid}/usage", get(skill_usage_view))
+        .add("/skills/{pid}/merge", post(merge_skill))
         .add("/skills/{pid}/refs", post(add_skill_ref))
         .add(
             "/skills/{pid}/refs/{framework_slug}",

@@ -81,6 +81,7 @@ describe("api path map", () => {
     await wpm.benchmarkComparison("organization:abc");
     await wpm.listSkills();
     await wpm.categorySuggestions();
+    await wpm.skillUsage("s1");
     await wpm.skillsMatrix();
     await wpm.trainingAnalytics();
     await wpm.capabilityAnalysis();
@@ -142,6 +143,7 @@ describe("api path map", () => {
       "/api/proxy/benchmarks/comparison?organization=organization%3Aabc",
       "/api/proxy/skills",
       "/api/proxy/skills/category-suggestions",
+      "/api/proxy/skills/s1/usage",
       "/api/proxy/learning/skills-matrix",
       "/api/proxy/learning/training-analytics",
       "/api/proxy/workforce-intelligence/capability-analysis",

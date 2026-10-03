@@ -31,6 +31,7 @@ pub mod planning;
 pub mod privacy;
 pub mod pulse;
 pub mod roles;
+pub mod skill_merge;
 pub mod talent;
 pub mod tokens;
 pub mod wellbeing;

@@ -798,7 +798,7 @@ code + tests in one PR.
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
 > **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
-> and the full database-backed request suite passes — **37 of 37** against a
+> and the full database-backed request suite passes — **38 of 38** against a
 > real PostgreSQL 18 (every migration applied) — using a scratch copy with
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
@@ -1133,6 +1133,28 @@ first in each, per the three-part rule.
       structure and stops with a message naming any missing column. Not done:
       qualifications / EQF; ESCO alternative labels for matching; other
       languages beyond choosing `lang:`.
+
+- [x] WPM-T61 (2026-10-03) **Skill delete and merge; build fix.** Closes the
+      WPM-T59 gap. Pure `rules::skill_merge` (higher level and target kept;
+      stronger importance kept; `Usage` and `deletable`; 3 tests). `GET
+      /api/skills/{pid}/usage` (declarations, profile requirements, plan
+      items, initiative shifts), `DELETE /api/skills/{pid}` — **only a skill
+      nothing uses**, else `422` telling the planner to merge — and `POST
+      /api/skills/{pid}/merge {into_pid}`: one transaction repoints every
+      table that references the skill and, where both skills already appear
+      (a worker who declared both, a profile requiring both, a plan listing
+      both), **keeps the stronger statement** (higher proficiency and
+      target, higher minimum, stronger importance, the target's reference per
+      framework), then retires the source; audited with the counts. Front-end
+      `/skills`: Merge… (choose a target, confirm) and Delete (confirm; the
+      server refuses a skill in use). **Also fixed:** `models/memberships.rs`
+      called `order_by_asc` without importing `QueryOrder`, so the crate did
+      not compile; the import is added (confirmed: the scratch build now
+      compiles with no patch). **Verified:** Rust type-checks, 159 lib tests,
+      database-backed suite **38/38** against PostgreSQL 18 (including
+      `skills_merge_keeps_the_stronger_statement_and_delete_refuses_use`),
+      clippy-clean on the new files; svelte-check 0, vitest 45/45, build
+      green. Not done: undoing a merge; merging more than two skills at once.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 

@@ -1450,3 +1450,95 @@ async fn esco_import_search_and_seeding() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn skills_merge_keeps_the_stronger_statement_and_delete_refuses_use() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let w1 = seed_worker!(&request, &org, "E-1", None).await;
+        let w2 = seed_worker!(&request, &org, "E-2", None).await;
+        let make = |name: &str| {
+            request.post("/api/skills").json(&json!({ "name": name, "category": "technical" }))
+        };
+        let a: Value = make("Merge source").await.json();
+        let b: Value = make("Merge target").await.json();
+        let c: Value = make("Merge unused").await.json();
+        let (a, b, c) = (
+            a["pid"].as_str().unwrap().to_string(),
+            b["pid"].as_str().unwrap().to_string(),
+            c["pid"].as_str().unwrap().to_string(),
+        );
+        let declare = |worker: &str, skill: &str, level: i32, target: Option<i32>| {
+            request
+                .put(&format!("/api/workers/{worker}/skills"))
+                .json(&json!({ "skill_pid": skill, "proficiency": level, "target": target }))
+        };
+        declare(&w1, &a, 4, Some(5)).await.assert_status_ok(); // both declared by w1
+        declare(&w1, &b, 3, None).await.assert_status_ok();
+        declare(&w2, &a, 2, None).await.assert_status_ok(); // only the source by w2
+
+        let profile = |title: &str| {
+            request.post("/api/role-profiles").json(&json!({ "job_title": title }))
+        };
+        let both: Value = profile("Merge both").await.json();
+        let only: Value = profile("Merge only source").await.json();
+        let (both, only) = (both["pid"].as_str().unwrap().to_string(), only["pid"].as_str().unwrap().to_string());
+        let require = |role: &str, skill: &str, min: i32, importance: &str| {
+            request
+                .put(&format!("/api/role-profiles/{role}/requirements"))
+                .json(&json!({ "skill_pid": skill, "min_proficiency": min, "importance": importance }))
+        };
+        require(&both, &a, 2, "critical").await.assert_status_ok();
+        require(&both, &b, 4, "useful").await.assert_status_ok();
+        require(&only, &a, 3, "important").await.assert_status_ok();
+
+        request
+            .post(&format!("/api/skills/{a}/refs"))
+            .json(&json!({ "framework_slug": "other-framework", "ref": "A-in-other" }))
+            .await
+            .assert_status_ok();
+
+        // In use ⇒ the delete is refused, and usage says why; unused ⇒ deletable.
+        assert_eq!(request.delete(&format!("/api/skills/{a}")).await.status_code(), 422);
+        let usage: Value = request.get(&format!("/api/skills/{a}/usage")).await.json();
+        assert_eq!(usage["declared_by"], 2);
+        assert_eq!(usage["required_by_profiles"], 2);
+        assert_eq!(usage["deletable"], false);
+        assert_eq!(request.get(&format!("/api/skills/{c}/usage")).await.json::<Value>()["deletable"], true);
+        request.delete(&format!("/api/skills/{c}")).await.assert_status_ok();
+
+        // Merge: refuse self; then fold A into B.
+        assert_eq!(request.post(&format!("/api/skills/{a}/merge")).json(&json!({ "into_pid": a })).await.status_code(), 422);
+        let result: Value = request.post(&format!("/api/skills/{a}/merge")).json(&json!({ "into_pid": b })).await.json();
+        assert_eq!(result["records_merged"], 2, "w1's two declarations and the profile requiring both");
+        assert!(result["records_moved"].as_u64().unwrap() >= 2, "w2's declaration and the other profile move over");
+
+        let catalogue: Value = request.get("/api/skills").await.json();
+        let names: Vec<&str> = catalogue.as_array().unwrap().iter().map(|s| s["name"].as_str().unwrap()).collect();
+        assert!(!names.contains(&"Merge source"), "the source is retired");
+        assert!(!names.contains(&"Merge unused"));
+        let target = catalogue.as_array().unwrap().iter().find(|s| s["name"] == "Merge target").unwrap();
+        assert_eq!(target["external_refs"][0]["ref"], "A-in-other", "the reference moved to the target");
+
+        // The stronger statement survives: w1 keeps proficiency 4 and target 5; w2 now declares the target.
+        let w1_skills: Value = request.get(&format!("/api/workers/{w1}/skills")).await.json();
+        let kept = w1_skills.as_array().unwrap().iter().find(|s| s["skill_pid"] == b).unwrap();
+        assert_eq!(kept["proficiency"], 4);
+        assert_eq!(kept["target"], 5);
+        assert_eq!(w1_skills.as_array().unwrap().len(), 1, "one declaration remains");
+        let w2_skills: Value = request.get(&format!("/api/workers/{w2}/skills")).await.json();
+        assert_eq!(w2_skills[0]["skill_pid"], b);
+
+        // The profile that required both keeps the higher minimum and the stronger importance.
+        let detail: Value = request.get(&format!("/api/role-profiles/{both}")).await.json();
+        let reqs = detail["requirements"].as_array().unwrap();
+        assert_eq!(reqs.len(), 1);
+        assert_eq!(reqs[0]["min_proficiency"], 4);
+        assert_eq!(reqs[0]["importance"], "critical");
+        let moved: Value = request.get(&format!("/api/role-profiles/{only}")).await.json();
+        assert_eq!(moved["requirements"][0]["skill"], "Merge target");
+    })
+    .await;
+}

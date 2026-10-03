@@ -318,6 +318,34 @@ export function updateSkill(
   return api(`/skills/${pid}`, { method: "PUT", body });
 }
 
+/** Where a skill is used, and whether it can be deleted. */
+export function skillUsage(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  declared_by: number;
+  required_by_profiles: number;
+  in_development_plans: number;
+  in_initiatives: number;
+  total: number;
+  deletable: boolean;
+}> {
+  return api(`/skills/${pid}/usage`, init);
+}
+
+/** Delete a skill nothing uses (the service refuses a skill in use). */
+export function deleteSkill(pid: string): Promise<unknown> {
+  return api(`/skills/${pid}`, { method: "DELETE" });
+}
+
+/** Fold a skill into another, keeping the stronger statement. */
+export function mergeSkill(
+  pid: string,
+  intoPid: string,
+): Promise<{ merged_into: string; records_moved: number; records_merged: number }> {
+  return api(`/skills/${pid}/merge`, { method: "POST", body: { into_pid: intoPid } });
+}
+
 /** Keyword-rule category suggestions for skills still `other`. */
 export function categorySuggestions(init?: FetchLike): Promise<{
   derivation: string;

@@ -11,7 +11,9 @@
     addSkillRef,
     applyCategorySuggestions,
     categorySuggestions,
+    deleteSkill,
     listSkills,
+    mergeSkill,
     removeSkillRef,
     searchEscoSkills,
     updateSkill,
@@ -28,6 +30,9 @@
   let editing = $state<string | null>(null);
   let draftName = $state("");
   let error = $state<string | null>(null);
+  let merging = $state<string | null>(null);
+  let mergeInto = $state("");
+  let notice = $state<string | null>(null);
   let linking = $state<string | null>(null);
   let linkQuery = $state("");
   let linkHits = $state<Awaited<ReturnType<typeof searchEscoSkills>>>([]);
@@ -81,6 +86,7 @@
 
 <h1>{t("nav.skills")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if notice}<p data-testid="notice">{notice}</p>{/if}
 
 <p class="muted" data-testid="skill-counts">
   {skills.length} skills ·
@@ -125,7 +131,7 @@
   </label>
 </p>
 <table data-testid="skill-table">
-  <thead><tr><th>Skill</th><th>Category</th><th>External references</th></tr></thead>
+  <thead><tr><th>Skill</th><th>Category</th><th>External references</th><th></th></tr></thead>
   <tbody>
     {#each shown.slice(0, 200) as s (s.pid)}
       <tr>
@@ -202,9 +208,47 @@
             {/if}
           {/if}
         </td>
+        <td>
+          {#if merging === s.pid}
+            <form
+              onsubmit={(event) => {
+                event.preventDefault();
+                const target = skills.find((x) => x.pid === mergeInto);
+                if (!target || !confirm(`Merge "${s.name}" into "${target.name}"? "${s.name}" is retired.`)) return;
+                void run(async () => {
+                  const r = await mergeSkill(s.pid, mergeInto);
+                  notice = `Merged "${s.name}" into "${target.name}": ${r.records_moved} moved, ${r.records_merged} combined.`;
+                  merging = null;
+                });
+              }}
+            >
+              <select aria-label={`Merge ${s.name} into`} bind:value={mergeInto} required>
+                <option value="" disabled>Merge into…</option>
+                {#each skills.filter((x) => x.pid !== s.pid) as other (other.pid)}<option value={other.pid}>{other.name}</option>{/each}
+              </select>
+              <button type="submit">Merge</button>
+              <button type="button" onclick={() => (merging = null)}>Cancel</button>
+            </form>
+          {:else}
+            <button type="button" onclick={() => { merging = s.pid; mergeInto = ""; notice = null; }}>Merge…</button>
+            <button
+              type="button"
+              onclick={() => {
+                if (confirm(`Delete "${s.name}"? Only possible when nothing uses it.`)) {
+                  void run(async () => {
+                    await deleteSkill(s.pid);
+                    notice = `Deleted "${s.name}".`;
+                  });
+                }
+              }}
+            >
+              Delete
+            </button>
+          {/if}
+        </td>
       </tr>
     {:else}
-      <tr><td colspan="3" class="muted">No skills match.</td></tr>
+      <tr><td colspan="4" class="muted">No skills match.</td></tr>
     {/each}
   </tbody>
 </table>
