@@ -27,7 +27,7 @@ use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 use crate::models::_entities::{
-    capability_frameworks, role_profiles, role_skill_requirements, skills,
+    capability_frameworks, role_profiles, role_skill_requirements, skill_external_refs, skills,
 };
 use crate::rules::framework as rules;
 
@@ -324,10 +324,27 @@ pub async fn import_pcf(
                 continue;
             };
             // The skill: reuse by exact name (undeleting if needed), else create.
-            let skill_row = skills::Entity::find()
-                .filter(skills::Column::Name.eq(&skill.name))
+            // Match by the framework reference first (so a planner's rename
+            // survives), then by exact name; record the reference.
+            let by_ref = skill_external_refs::Entity::find()
+                .filter(skill_external_refs::Column::FrameworkSlug.eq(PCF_SLUG))
+                .filter(skill_external_refs::Column::Reference.eq(&skill.name))
                 .one(&txn)
                 .await?;
+            let skill_row = match &by_ref {
+                Some(r) => {
+                    skills::Entity::find()
+                        .filter(skills::Column::Pid.eq(r.skill_pid))
+                        .one(&txn)
+                        .await?
+                }
+                None => {
+                    skills::Entity::find()
+                        .filter(skills::Column::Name.eq(&skill.name))
+                        .one(&txn)
+                        .await?
+                }
+            };
             let skill_pid = if let Some(row) = skill_row {
                 let pid = row.pid;
                 if row.deleted_at.is_some() {
@@ -350,6 +367,27 @@ pub async fn import_pcf(
                 report.skills_created += 1;
                 row.pid
             };
+            if by_ref.is_none() {
+                let has_other_ref = skill_external_refs::Entity::find()
+                    .filter(skill_external_refs::Column::SkillPid.eq(skill_pid))
+                    .filter(skill_external_refs::Column::FrameworkSlug.eq(PCF_SLUG))
+                    .one(&txn)
+                    .await?
+                    .is_some();
+                if !has_other_ref {
+                    skill_external_refs::ActiveModel {
+                        pid: ActiveValue::set(Uuid::new_v4()),
+                        skill_pid: ActiveValue::set(skill_pid),
+                        framework_slug: ActiveValue::set(PCF_SLUG.to_string()),
+                        reference: ActiveValue::set(skill.name.clone()),
+                        label: ActiveValue::set(Some(skill.name.clone())),
+                        version: ActiveValue::set(None),
+                        ..Default::default()
+                    }
+                    .insert(&txn)
+                    .await?;
+                }
+            }
             let wording = skill.statements.join("\n");
             let existing = role_skill_requirements::Entity::find()
                 .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile_pid))

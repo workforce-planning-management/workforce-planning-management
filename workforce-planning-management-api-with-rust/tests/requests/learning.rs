@@ -1242,6 +1242,18 @@ async fn capability_framework_import_and_progression() {
             .unwrap();
         assert_eq!(reset_a["min_proficiency"], 3, "overwrite_levels re-derives from the source level");
 
+        // A planner's rename survives a re-import: matched by reference, no duplicate.
+        request
+            .put(&format!("/api/skills/{skill_pid}"))
+            .json(&json!({ "name": "Renamed skill A" }))
+            .await
+            .assert_status_ok();
+        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false).await.expect("re-import after rename");
+        let catalogue: Value = request.get("/api/skills").await.json();
+        let names: Vec<&str> = catalogue.as_array().unwrap().iter().map(|s| s["name"].as_str().unwrap()).collect();
+        assert!(names.contains(&"Renamed skill A"));
+        assert!(!names.contains(&"Fixture skill A"), "no duplicate under the framework's name");
+
         // Progression: junior → tester raises A (1→3), keeps B, adds C.
         let step: Value = request
             .get(&format!("/api/role-profiles/{}/progression", junior["pid"].as_str().unwrap()))
@@ -1249,7 +1261,7 @@ async fn capability_framework_import_and_progression() {
             .json();
         let next = &step["next"][0];
         assert_eq!(next["job_title"], "Tester");
-        assert_eq!(next["raised"][0]["skill"], "Fixture skill A");
+        assert_eq!(next["raised"][0]["skill"], "Renamed skill A");
         assert_eq!(next["raised"][0]["from"], 1);
         assert_eq!(next["raised"][0]["to"], 3);
         assert_eq!(next["added"][0]["skill"], "Fixture skill C");
@@ -1259,6 +1271,76 @@ async fn capability_framework_import_and_progression() {
             .await
             .json();
         assert!(top["next"].as_array().unwrap().is_empty(), "nothing above the top level");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn skills_can_be_edited_categorised_and_referenced() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let make = |name: &str| {
+            request
+                .post("/api/skills")
+                .json(&json!({ "name": name, "category": "other" }))
+        };
+        let a: Value = make("Stakeholder wrangling").await.json();
+        let b: Value = make("Origami").await.json();
+        let a_pid = a["pid"].as_str().unwrap().to_string();
+        let b_pid = b["pid"].as_str().unwrap().to_string();
+
+        // Suggestions come with their keyword; a skill no rule matches gets none.
+        let suggestions: Value = request.get("/api/skills/category-suggestions").await.json();
+        let list = suggestions["suggestions"].as_array().unwrap();
+        let mine = list.iter().find(|s| s["pid"] == a_pid).unwrap();
+        assert_eq!(mine["suggested"], "leadership");
+        assert_eq!(mine["keyword"], "stakeholder");
+        assert!(list.iter().all(|s| s["pid"] != b_pid));
+        // Applying changes only what is asked, only skills still `other`.
+        let applied: Value = request
+            .post("/api/skills/category-suggestions/apply")
+            .json(&json!({ "skill_pids": [a_pid, b_pid] }))
+            .await
+            .json();
+        assert_eq!(applied["applied"], 1);
+        assert_eq!(applied["skipped"], 1, "no suggestion for Origami");
+        let again: Value = request
+            .post("/api/skills/category-suggestions/apply")
+            .json(&json!({ "skill_pids": [a_pid] }))
+            .await
+            .json();
+        assert_eq!(again["applied"], 0, "no longer `other`");
+
+        // Rename and recategorise; names are unique; categories are a closed set.
+        request
+            .put(&format!("/api/skills/{b_pid}"))
+            .json(&json!({ "name": "  Paper folding ", "category": "domain" }))
+            .await
+            .assert_status_ok();
+        assert_eq!(
+            request.put(&format!("/api/skills/{b_pid}")).json(&json!({ "name": "Stakeholder wrangling" })).await.status_code(),
+            422,
+            "a name that is taken"
+        );
+        assert_eq!(
+            request.put(&format!("/api/skills/{b_pid}")).json(&json!({ "category": "wizardry" })).await.status_code(),
+            422
+        );
+        let catalogue: Value = request.get("/api/skills").await.json();
+        let renamed = catalogue.as_array().unwrap().iter().find(|s| s["pid"] == b_pid).unwrap();
+        assert_eq!(renamed["name"], "Paper folding");
+        assert_eq!(renamed["category"], "domain");
+
+        // An external reference: one per skill per framework, and a reference names one skill.
+        let reference = json!({ "framework_slug": "esco", "ref": "http://data.europa.eu/esco/skill/test-1", "label": "paper folding", "version": "v1.2.1" });
+        request.post(&format!("/api/skills/{b_pid}/refs")).json(&reference).await.assert_status_ok();
+        assert_eq!(request.post(&format!("/api/skills/{b_pid}/refs")).json(&reference).await.status_code(), 422);
+        assert_eq!(request.post(&format!("/api/skills/{a_pid}/refs")).json(&reference).await.status_code(), 422, "the reference is taken by another skill");
+        let with_ref: Value = request.get("/api/skills").await.json();
+        let row = with_ref.as_array().unwrap().iter().find(|s| s["pid"] == b_pid).unwrap();
+        assert_eq!(row["external_refs"][0]["framework"], "esco");
+        request.delete(&format!("/api/skills/{b_pid}/refs/esco")).await.assert_status_ok();
     })
     .await;
 }

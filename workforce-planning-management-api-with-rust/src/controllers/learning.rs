@@ -13,8 +13,8 @@ use uuid::Uuid;
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    worker_skills, workers, learning_path_steps, learning_paths, mentorship_sessions,
-    mentorships, path_enrollments, skills, training_enrollments,
+    learning_path_steps, learning_paths, mentorship_sessions, mentorships, path_enrollments,
+    skill_external_refs, skills, training_enrollments, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -69,7 +69,8 @@ async fn create_skill(
     format::json(PidRef::of(row.pid))
 }
 
-/// `GET /api/skills` — the catalog.
+/// `GET /api/skills` — the catalog, each skill with the external-framework
+/// references it carries (PCF name, ESCO concept URI).
 #[debug_handler]
 async fn list_skills(State(ctx): State<AppContext>) -> Result<Response> {
     let rows = skills::Entity::find()
@@ -77,7 +78,270 @@ async fn list_skills(State(ctx): State<AppContext>) -> Result<Response> {
         .order_by_asc(skills::Column::Name)
         .all(&ctx.db)
         .await?;
-    format::json(rows)
+    let refs = skill_external_refs::Entity::find().all(&ctx.db).await?;
+    let out: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|s| {
+            let mine: Vec<serde_json::Value> = refs
+                .iter()
+                .filter(|r| r.skill_pid == s.pid)
+                .map(|r| {
+                    serde_json::json!({
+                        "framework": r.framework_slug,
+                        "ref": r.reference,
+                        "label": r.label,
+                        "version": r.version,
+                    })
+                })
+                .collect();
+            serde_json::json!({
+                "pid": s.pid,
+                "name": s.name,
+                "category": s.category,
+                "external_refs": mine,
+            })
+        })
+        .collect();
+    format::json(out)
+}
+
+/// `PUT /api/skills/{pid}` body — rename and/or recategorise.
+#[derive(Debug, Deserialize)]
+struct SkillUpdate {
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    category: Option<String>,
+}
+
+/// `PUT /api/skills/{pid}` — rename and/or recategorise a catalogue skill.
+/// Names are unique; a rename never breaks a framework import, which
+/// matches by reference first.
+#[debug_handler]
+async fn update_skill(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+    Json(payload): Json<SkillUpdate>,
+) -> Result<Response> {
+    let mut problems = Problems::new();
+    if let Some(category) = &payload.category {
+        problems.require_token("category", rules::SKILL_CATEGORIES, category);
+    }
+    ensure_valid(&problems.into_vec())?;
+    let row = find_live_skill(&ctx, &pid).await?;
+    let mut active: skills::ActiveModel = row.clone().into();
+    if let Some(name) = &payload.name {
+        let name = rules::normalize_skill_name(name).map_err(|e| unprocessable(&e))?;
+        if name != row.name {
+            let taken = skills::Entity::find()
+                .filter(skills::Column::Name.eq(&name))
+                .one(&ctx.db)
+                .await?
+                .is_some();
+            if taken {
+                return Err(unprocessable("a skill with that name already exists"));
+            }
+            active.name = ActiveValue::set(name);
+        }
+    }
+    if let Some(category) = &payload.category {
+        active.category = ActiveValue::set(category.clone());
+    }
+    let updated = active.update(&ctx.db).await?;
+    Audit::record(
+        &ctx.db,
+        "skill",
+        updated.pid,
+        "updated",
+        caller.actor(),
+        Some(serde_json::json!({ "name": updated.name, "category": updated.category })),
+    )
+    .await?;
+    format::json(PidRef::of(updated.pid))
+}
+
+async fn find_live_skill(ctx: &AppContext, pid: &str) -> Result<skills::Model> {
+    skills::Entity::find()
+        .filter(skills::Column::Pid.eq(records::parse_pid(pid)?))
+        .filter(skills::Column::DeletedAt.is_null())
+        .one(&ctx.db)
+        .await?
+        .ok_or(Error::NotFound)
+}
+
+/// `GET /api/skills/category-suggestions` — skills still `other` for which a
+/// keyword rule suggests a category, with the keyword that triggered it.
+/// Suggestions only: nothing changes until a planner applies them.
+#[debug_handler]
+async fn category_suggestions(State(ctx): State<AppContext>) -> Result<Response> {
+    let rows = skills::Entity::find()
+        .filter(skills::Column::DeletedAt.is_null())
+        .filter(skills::Column::Category.eq("other"))
+        .order_by_asc(skills::Column::Name)
+        .all(&ctx.db)
+        .await?;
+    let out: Vec<serde_json::Value> = rows
+        .iter()
+        .filter_map(|s| {
+            rules::suggest_category(&s.name).map(|(category, keyword)| {
+                serde_json::json!({
+                    "pid": s.pid,
+                    "name": s.name,
+                    "suggested": category,
+                    "keyword": keyword,
+                })
+            })
+        })
+        .collect();
+    format::json(serde_json::json!({
+        "derivation": "ordered keyword rules over the skill name (compliance, leadership, \
+                       technical, domain); a suggestion for a planner to accept or correct, \
+                       never applied automatically",
+        "suggestions": out,
+        "unsuggested": rows.len() - out.len(),
+    }))
+}
+
+/// `POST /api/skills/category-suggestions/apply` body.
+#[derive(Debug, Deserialize)]
+struct ApplySuggestions {
+    skill_pids: Vec<Uuid>,
+}
+
+/// `POST /api/skills/category-suggestions/apply` — apply the **current**
+/// suggestion to the chosen skills (still `other`); skills with no
+/// suggestion, or no longer `other`, are left alone and counted.
+#[debug_handler]
+async fn apply_suggestions(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(payload): Json<ApplySuggestions>,
+) -> Result<Response> {
+    let (mut applied, mut skipped) = (0usize, 0usize);
+    for pid in &payload.skill_pids {
+        let found = skills::Entity::find()
+            .filter(skills::Column::Pid.eq(*pid))
+            .filter(skills::Column::DeletedAt.is_null())
+            .one(&ctx.db)
+            .await?;
+        let suggestion = found
+            .as_ref()
+            .filter(|s| s.category == "other")
+            .and_then(|s| rules::suggest_category(&s.name));
+        match (found, suggestion) {
+            (Some(row), Some((category, _))) => {
+                let mut active: skills::ActiveModel = row.into();
+                active.category = ActiveValue::set(category.to_string());
+                let updated = active.update(&ctx.db).await?;
+                Audit::record(
+                    &ctx.db,
+                    "skill",
+                    updated.pid,
+                    "categorised",
+                    caller.actor(),
+                    Some(serde_json::json!({ "category": category })),
+                )
+                .await?;
+                applied += 1;
+            }
+            _ => skipped += 1,
+        }
+    }
+    format::json(serde_json::json!({ "applied": applied, "skipped": skipped }))
+}
+
+/// `POST /api/skills/{pid}/refs` body.
+#[derive(Debug, Deserialize)]
+struct SkillRefPayload {
+    framework_slug: String,
+    #[serde(rename = "ref")]
+    reference: String,
+    #[serde(default)]
+    label: Option<String>,
+    #[serde(default)]
+    version: Option<String>,
+}
+
+/// `POST /api/skills/{pid}/refs` — record how this skill is known in an
+/// external framework (e.g. an ESCO concept URI). One per skill per
+/// framework; a reference names one skill.
+#[debug_handler]
+async fn add_skill_ref(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+    Json(payload): Json<SkillRefPayload>,
+) -> Result<Response> {
+    let mut problems = Problems::new();
+    problems.require_text("framework_slug", &payload.framework_slug);
+    problems.require_text("ref", &payload.reference);
+    problems.cap_text("ref", &payload.reference);
+    ensure_valid(&problems.into_vec())?;
+    let skill = find_live_skill(&ctx, &pid).await?;
+    let clash = skill_external_refs::Entity::find()
+        .filter(skill_external_refs::Column::FrameworkSlug.eq(&payload.framework_slug))
+        .filter(
+            sea_orm::Condition::any()
+                .add(skill_external_refs::Column::SkillPid.eq(skill.pid))
+                .add(skill_external_refs::Column::Reference.eq(&payload.reference)),
+        )
+        .one(&ctx.db)
+        .await?
+        .is_some();
+    if clash {
+        return Err(unprocessable(
+            "this skill already has a reference in that framework, or the reference names another skill",
+        ));
+    }
+    let row = skill_external_refs::ActiveModel {
+        pid: ActiveValue::set(Uuid::new_v4()),
+        skill_pid: ActiveValue::set(skill.pid),
+        framework_slug: ActiveValue::set(payload.framework_slug.trim().to_string()),
+        reference: ActiveValue::set(payload.reference.clone()),
+        label: ActiveValue::set(payload.label.clone()),
+        version: ActiveValue::set(payload.version.clone()),
+        ..Default::default()
+    }
+    .insert(&ctx.db)
+    .await?;
+    Audit::record(
+        &ctx.db,
+        "skill",
+        skill.pid,
+        "reference_added",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    format::json(PidRef::of(row.pid))
+}
+
+/// `DELETE /api/skills/{pid}/refs/{framework_slug}`.
+#[debug_handler]
+async fn remove_skill_ref(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path((pid, framework)): Path<(String, String)>,
+) -> Result<Response> {
+    let skill = find_live_skill(&ctx, &pid).await?;
+    let row = skill_external_refs::Entity::find()
+        .filter(skill_external_refs::Column::SkillPid.eq(skill.pid))
+        .filter(skill_external_refs::Column::FrameworkSlug.eq(&framework))
+        .one(&ctx.db)
+        .await?
+        .ok_or(Error::NotFound)?;
+    row.delete(&ctx.db).await?;
+    Audit::record(
+        &ctx.db,
+        "skill",
+        skill.pid,
+        "reference_removed",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    format::empty_json()
 }
 
 /// `PUT /api/workers/{pid}/skills` body — declare (upsert) an
@@ -795,6 +1059,17 @@ pub fn routes() -> Routes {
         .prefix("/api")
         .add("/skills", post(create_skill))
         .add("/skills", get(list_skills))
+        .add("/skills/category-suggestions", get(category_suggestions))
+        .add(
+            "/skills/category-suggestions/apply",
+            post(apply_suggestions),
+        )
+        .add("/skills/{pid}", put(update_skill))
+        .add("/skills/{pid}/refs", post(add_skill_ref))
+        .add(
+            "/skills/{pid}/refs/{framework_slug}",
+            delete(remove_skill_ref),
+        )
         .add("/workers/{pid}/skills", put(declare_skill))
         .add("/workers/{pid}/skills", get(list_worker_skills))
         .add("/learning-paths", post(create_path))

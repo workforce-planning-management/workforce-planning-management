@@ -31,7 +31,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 // The hand-written OpenAPI document is one large nested `json!` literal.
-#![recursion_limit = "512"]
+#![recursion_limit = "1024"]
 
 pub mod app;
 pub mod auth;

@@ -23,6 +23,7 @@
     ["/development", "nav.development"],
     ["/learning", "nav.learning"],
     ["/roles", "nav.roles"],
+    ["/skills", "nav.skills"],
     ["/cpd", "nav.cpd"],
     ["/planning", "nav.planning"],
     ["/change", "nav.change"],

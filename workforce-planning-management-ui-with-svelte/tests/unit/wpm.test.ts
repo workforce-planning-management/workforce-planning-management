@@ -80,6 +80,7 @@ describe("api path map", () => {
     await wpm.runPayslips("r1");
     await wpm.benchmarkComparison("organization:abc");
     await wpm.listSkills();
+    await wpm.categorySuggestions();
     await wpm.skillsMatrix();
     await wpm.trainingAnalytics();
     await wpm.capabilityAnalysis();
@@ -137,6 +138,7 @@ describe("api path map", () => {
       "/api/proxy/payroll-runs/r1/payslips",
       "/api/proxy/benchmarks/comparison?organization=organization%3Aabc",
       "/api/proxy/skills",
+      "/api/proxy/skills/category-suggestions",
       "/api/proxy/learning/skills-matrix",
       "/api/proxy/learning/training-analytics",
       "/api/proxy/workforce-intelligence/capability-analysis",

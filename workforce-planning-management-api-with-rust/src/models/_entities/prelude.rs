@@ -52,6 +52,7 @@ pub use super::role_profiles::Entity as RoleProfiles;
 pub use super::role_skill_requirements::Entity as RoleSkillRequirements;
 pub use super::shift_assignments::Entity as ShiftAssignments;
 pub use super::shifts::Entity as Shifts;
+pub use super::skill_external_refs::Entity as SkillExternalRefs;
 pub use super::succession_candidates::Entity as SuccessionCandidates;
 pub use super::succession_plans::Entity as SuccessionPlans;
 pub use super::talent_pipelines::Entity as TalentPipelines;

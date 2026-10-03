@@ -285,10 +285,61 @@ export function benchmarkComparison(
 // ─── Learning & development ─────────────────────────────────────────
 
 /** The skills catalog. */
-export function listSkills(
-  init?: FetchLike,
-): Promise<Array<{ pid: string; name: string; category: string }>> {
+export function listSkills(init?: FetchLike): Promise<
+  Array<{
+    pid: string;
+    name: string;
+    category: string;
+    external_refs: Array<{
+      framework: string;
+      ref: string;
+      label: string | null;
+      version: string | null;
+    }>;
+  }>
+> {
   return api("/skills", init);
+}
+
+/** Skill categories (mirror `rules::learning::SKILL_CATEGORIES`). */
+export const SKILL_CATEGORIES = [
+  "technical",
+  "leadership",
+  "compliance",
+  "domain",
+  "other",
+] as const;
+
+/** Rename and/or recategorise a skill. */
+export function updateSkill(
+  pid: string,
+  body: { name?: string; category?: string },
+): Promise<unknown> {
+  return api(`/skills/${pid}`, { method: "PUT", body });
+}
+
+/** Keyword-rule category suggestions for skills still `other`. */
+export function categorySuggestions(init?: FetchLike): Promise<{
+  derivation: string;
+  suggestions: Array<{
+    pid: string;
+    name: string;
+    suggested: string;
+    keyword: string;
+  }>;
+  unsuggested: number;
+}> {
+  return api("/skills/category-suggestions", init);
+}
+
+/** Apply the current suggestion to the chosen skills. */
+export function applyCategorySuggestions(
+  skillPids: string[],
+): Promise<{ applied: number; skipped: number }> {
+  return api("/skills/category-suggestions/apply", {
+    method: "POST",
+    body: { skill_pids: skillPids },
+  });
 }
 
 /** Declare (upsert) a worker's proficiency in a skill (1-5). */

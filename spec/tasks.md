@@ -798,7 +798,7 @@ code + tests in one PR.
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
 > **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
-> and the full database-backed request suite passes — **35 of 35** against a
+> and the full database-backed request suite passes — **36 of 36** against a
 > real PostgreSQL 18 (every migration applied) — using a scratch copy with
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
@@ -1080,6 +1080,32 @@ first in each, per the three-part rule.
       line a milestone, no editing offered). The requisitions board keeps
       SVAR's kanban. English labels, like the other new pages. 2 render
       tests; svelte-check 0, vitest 45/45, build green.
+
+- [x] WPM-T59 (2026-10-03) **Skills: edit, categorise, external references.**
+      Migration `m20261003_000031_skill_external_refs` — how a catalogue
+      skill is known in an external framework (the PCF name, an ESCO concept
+      URI): one reference per skill per framework and one skill per
+      reference. WPM keeps its own catalogue; this is a reference, never a
+      second skills model. `PUT /api/skills/{pid}` renames (names are
+      unique) and recategorises (closed set); `GET /api/skills` now carries
+      each skill's `external_refs`; `POST`/`DELETE /api/skills/{pid}/refs…`.
+      **Categorising:** pure `rules::learning::suggest_category` — ordered
+      keyword rules (compliance, leadership, domain, technical) returning the
+      category *and the keyword that triggered it*; `GET
+      /api/skills/category-suggestions` lists suggestions for skills still
+      `other` and `POST …/apply` applies the current suggestion to chosen
+      skills — suggestions only, never automatic. **Measured on the real
+      PCF skills: 73 of 161 get a suggestion (about 45%)**; the other 88
+      stay `other` for a planner. The PCF import now matches skills by
+      reference first and records the PCF name, so **a planner's rename
+      survives a re-import with no duplicate** (pinned by test). Front-end
+      `/skills`: counts by category, search and filter, inline rename,
+      per-skill category select, suggestion table with Accept / Apply all,
+      reference chips; `nav.skills` in all 16 locales. OpenAPI literal
+      recursion limit raised (`lib.rs`). **Verified:** Rust type-checks, 147
+      lib tests, database-backed suite **36/36** against PostgreSQL 18,
+      clippy-clean on the new files; svelte-check 0, vitest 45/45, build
+      green. Not done: deleting a skill; merging duplicates.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
