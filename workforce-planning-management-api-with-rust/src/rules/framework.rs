@@ -145,8 +145,10 @@ pub fn parse_role_summary(text: &str) -> Result<ParsedLevel, String> {
 }
 
 /// Read each skill's **baseline level** from a competency assessment: the
-/// first integer after `Baseline:` under each `### Skill: <name>` heading,
-/// e.g. `Baseline: 3 — Practitioner. …`. A skill with no baseline line is
+/// first `Baseline: <integer>` under each `### Skill: <name>` heading, e.g.
+/// `Baseline: 3 — Practitioner. …`. The baseline may begin its own line or
+/// follow a bold heading on the same line (`**Baseline for this role level:**
+/// Baseline: 3 — …`), as some real files write it. A skill with no baseline is
 /// simply absent from the result.
 #[must_use]
 pub fn parse_baselines(text: &str) -> BTreeMap<String, i32> {
@@ -156,18 +158,23 @@ pub fn parse_baselines(text: &str) -> BTreeMap<String, i32> {
         let line = raw.trim();
         if let Some(name) = line.strip_prefix("### Skill:") {
             current = Some(name.trim().to_string());
-        } else if let Some(rest) = line.strip_prefix("Baseline:")
-            && let Some(name) = &current
-            && !out.contains_key(name)
-        {
-            let digits: String = rest
+            continue;
+        }
+        let Some(name) = &current else { continue };
+        if out.contains_key(name) {
+            continue;
+        }
+        // Every `Baseline:` on the line, in order; the first followed by an integer wins.
+        let level = line.match_indices("Baseline:").find_map(|(at, marker)| {
+            let digits: String = line[at + marker.len()..]
                 .trim_start()
                 .chars()
                 .take_while(char::is_ascii_digit)
                 .collect();
-            if let Ok(level) = digits.parse::<i32>() {
-                out.insert(name.clone(), level);
-            }
+            digits.parse::<i32>().ok()
+        });
+        if let Some(level) = level {
+            out.insert(name.clone(), level);
         }
     }
     out
@@ -367,6 +374,11 @@ Baseline: 2 — Working. Under guidance.
 Baseline: 4 — a second line is ignored.
 
 ### Skill: No baseline here
+
+### Skill: Inline variant
+
+**Baseline for this role level:** Baseline: 4 — Expert. Real files write it this way.
+The baseline for Inline variant at this level is 2 — prose, not the marker.
 ";
         let baselines = parse_baselines(text);
         assert_eq!(
