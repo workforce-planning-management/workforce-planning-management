@@ -1915,3 +1915,63 @@ async fn reporting_lines_downline_aspirations_and_groups() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn confederation_groups_and_transfers() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let (parent, child_a, child_b, outsider) = (an_org(), an_org(), an_org(), an_org());
+        for child in [&child_a, &child_b] {
+            request.post("/api/organization-confederations")
+                .json(&json!({ "parent_organization_ref": parent, "child_organization_ref": child, "starts_on": "2026-01-01" }))
+                .await.assert_status_ok();
+        }
+        let in_a = seed_worker!(&request, &child_a, "T-1", None).await;
+        let in_b = seed_worker!(&request, &child_b, "T-2", None).await;
+        let in_out = seed_worker!(&request, &outsider, "T-3", None).await;
+        let group = |org: &str, name: &str, scope: &str| request.post("/api/groups").json(&json!({ "organization_ref": org, "name": name, "kind": "practice", "scope": scope }));
+
+        // A confederation group needs member organizations beneath it.
+        assert_eq!(group(&child_a, "Leaf community", "confederation").await.status_code(), 422);
+        assert_eq!(group(&parent, "Odd", "galaxy").await.status_code(), 422);
+        let community: Value = group(&parent, "Federation guild", "confederation").await.json();
+        let own: Value = group(&child_a, "A-only club", "organization").await.json();
+        let (community, own) = (community["pid"].as_str().unwrap(), own["pid"].as_str().unwrap());
+
+        // Workers from different child organizations can join it; an outsider cannot.
+        let join = |g: &str, w: &str| request.post(&format!("/api/groups/{g}/members")).json(&json!({ "worker_pid": w }));
+        join(community, &in_a).await.assert_status_ok();
+        join(community, &in_b).await.assert_status_ok();
+        assert_eq!(join(community, &in_out).await.status_code(), 422);
+        join(own, &in_a).await.assert_status_ok();
+        assert_eq!(join(own, &in_b).await.status_code(), 422, "an organization group is just its own");
+
+        // "Open to my organization" lists the community and the org's own groups.
+        let open_a: Value = request.get(&format!("/api/groups?organization_ref={child_a}")).await.json();
+        let names: Vec<&str> = open_a.as_array().unwrap().iter().map(|g| g["name"].as_str().unwrap()).collect();
+        assert!(names.contains(&"Federation guild") && names.contains(&"A-only club"));
+        let open_b: Value = request.get(&format!("/api/groups?organization_ref={child_b}")).await.json();
+        let names_b: Vec<&str> = open_b.as_array().unwrap().iter().map(|g| g["name"].as_str().unwrap()).collect();
+        assert!(names_b.contains(&"Federation guild") && !names_b.contains(&"A-only club"));
+
+        // Transfer: A → B ends the A-only membership, keeps the community one.
+        let t: Value = request.post(&format!("/api/workers/{in_a}/transfer")).json(&json!({ "organization_ref": child_b })).await.json();
+        assert_eq!(t["to"], child_b.as_str());
+        assert_eq!(t["ended_group_memberships"], json!(["A-only club"]));
+        let now: Value = request.get(&format!("/api/workers/{in_a}/groups")).await.json();
+        let current: Vec<&str> = now["groups"].as_array().unwrap().iter().map(|g| g["name"].as_str().unwrap()).collect();
+        assert_eq!(current, ["Federation guild"]);
+        let past: Value = request.get(&format!("/api/workers/{in_a}/groups?include_past=true")).await.json();
+        assert_eq!(past["groups"].as_array().unwrap().len(), 2, "the ended membership is kept as history");
+        let w: Value = request.get(&format!("/api/workers/{in_a}")).await.json();
+        assert_eq!(w["organization_ref"], child_b.as_str());
+
+        // Moving somewhere the community does not cover ends it too; a no-op move is refused.
+        let t2: Value = request.post(&format!("/api/workers/{in_a}/transfer")).json(&json!({ "organization_ref": outsider })).await.json();
+        assert_eq!(t2["ended_group_memberships"], json!(["Federation guild"]));
+        assert_eq!(request.post(&format!("/api/workers/{in_a}/transfer")).json(&json!({ "organization_ref": outsider })).await.status_code(), 422);
+        assert_eq!(request.post(&format!("/api/workers/{in_a}/transfer")).json(&json!({ "organization_ref": "nonsense" })).await.status_code(), 422);
+    })
+    .await;
+}

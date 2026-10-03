@@ -1357,6 +1357,43 @@ first in each, per the three-part rule.
       several; a worker who changes organization keeps old memberships until
       they leave.
 
+- [x] WPM-T68 (2026-10-03) **Organization transfers; cross-organization
+      (confederation) groups.** Builds on WPM-T67.
+      - **Transfers.** A worker's organization was never editable (`PUT
+        /api/workers/{pid}` does not take it), so there was nothing to trigger
+        "end memberships when someone moves". `POST /api/workers/{pid}/transfer`
+        is that act: a write to the worker's record, to an organization the
+        caller can read. **Group memberships no longer open to the new
+        organization end** (closed with a stop time, kept as history); ones
+        that still fit stay. The response lists what ended and says whether the
+        solid-line manager is now in another organization — **it does not
+        change the manager** (a deliberate, separate decision). Audited.
+      - **Confederation groups** (migration `…000039`, `groups.scope`):
+        `organization` (default) or `confederation` — a community covering the
+        organization in `organization_ref` and **every organization beneath it**
+        in the confederation tree. Creating one needs an organization that has
+        member organizations. Members may come from any covered organization;
+        an outsider is refused. Readable by anyone who can read **any**
+        covered organization (so a member of a child org sees the community
+        its parent started). `GET /api/groups?organization_ref=` now means
+        "groups open to that organization": its own plus communities covering
+        it. Pure `rules::groups::{covered_orgs, is_open_to, visible_to,
+        memberships_to_end}` (3 new tests).
+      - UI: a "spans member organizations" option and chip on `/groups`; the
+        panel on `/me` lists what is open to the worker's organization;
+        `transferWorker` client (no transfer screen yet).
+      **Verified:** Rust type-checks, 176 lib tests, database suite **42/42**
+      (new `confederation_groups_and_transfers`: tree membership, outsider
+      refused, organization group stays its own, filter, transfer ends only
+      what no longer fits and keeps history, a covered move keeps the
+      community, no-op and malformed refs refused), clippy-clean on the new
+      code, svelte-check 0, vitest 55/55, build green. **Not verified:** the
+      caller-scope checks (read/create/transfer targets) need the real
+      membership scope — off in tests. **Limits:** no transfer UI; a
+      confederation edge ending later does not retroactively end memberships
+      (only a transfer does); a confederation group cannot be converted back
+      to one organization.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

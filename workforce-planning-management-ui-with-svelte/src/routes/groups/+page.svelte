@@ -24,6 +24,7 @@
   let name = $state("");
   let kind = $state<string>("practice");
   let description = $state("");
+  let spans = $state(false);
 
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
   const kindLabel = (k: string) => (k === "practice" ? "community of practice" : k === "interest" ? "community of interest" : "group");
@@ -55,7 +56,7 @@
     event.preventDefault();
     error = null;
     try {
-      await createGroup({ organization_ref: organization, name: name.trim(), kind, ...(description.trim() ? { description: description.trim() } : {}) });
+      await createGroup({ organization_ref: organization, scope: spans ? "confederation" : "organization", name: name.trim(), kind, ...(description.trim() ? { description: description.trim() } : {}) });
       name = "";
       description = "";
       await load();
@@ -74,7 +75,7 @@
 {:else}
   <p>
     <label>
-      Organization
+      Organization (shows its groups and communities spanning it)
       <select bind:value={organization} data-testid="group-organization">
         {#each organizations as o (o)}<option value={o}>{o}</option>{/each}
       </select>
@@ -87,7 +88,7 @@
     {#each groups as g (g.pid)}
       <tr>
         <td><button type="button" onclick={() => void open(g.pid)}>{g.name}</button>{#if g.description}<br /><span class="muted">{g.description}</span>{/if}</td>
-        <td>{kindLabel(g.kind)}</td><td>{g.members}</td>
+        <td>{kindLabel(g.kind)}{#if g.scope === "confederation"} <span class="chip">spans organizations</span>{/if}</td><td>{g.members}</td>
       </tr>
     {:else}
       <tr><td colspan="3" class="muted">No groups yet.</td></tr>
@@ -99,6 +100,7 @@
   <label>Start a group <input bind:value={name} required maxlength="120" /></label>
   <label>Kind <select bind:value={kind}>{#each GROUP_KINDS as k (k)}<option value={k}>{kindLabel(k)}</option>{/each}</select></label>
   <label>About <input bind:value={description} maxlength="1000" /></label>
+  <label><input type="checkbox" bind:checked={spans} /> Spans member organizations (a confederation community)</label>
   <button type="submit">Start</button>
 </form>
 

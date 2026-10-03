@@ -7,6 +7,78 @@
 /// What a group is for.
 pub const KINDS: &[&str] = &["practice", "interest", "other"];
 
+/// How far a group reaches: one organization, or a whole confederation tree.
+pub const SCOPES: &[&str] = &["organization", "confederation"];
+
+/// The organizations a group covers: just its own, or (for a confederation
+/// group) its own and every organization beneath it in `edges`
+/// (`(parent, child)` pairs).
+#[must_use]
+pub fn covered_orgs(scope: &str, group_org: &str, edges: &[(String, String)]) -> Vec<String> {
+    let mut covered = vec![group_org.to_string()];
+    if scope == "confederation" {
+        covered.extend(crate::rules::org_access::descendants_of(edges, group_org));
+    }
+    covered
+}
+
+/// Whether a worker in `worker_org` may belong to the group.
+#[must_use]
+pub fn is_open_to(
+    scope: &str,
+    group_org: &str,
+    worker_org: &str,
+    edges: &[(String, String)],
+) -> bool {
+    covered_orgs(scope, group_org, edges)
+        .iter()
+        .any(|o| o == worker_org)
+}
+
+/// Whether a caller with this organization scope (`None` = unrestricted) may
+/// read the group: any covered organization is one they can read.
+#[must_use]
+pub fn visible_to(
+    caller_scope: Option<&[String]>,
+    scope: &str,
+    group_org: &str,
+    edges: &[(String, String)],
+) -> bool {
+    caller_scope.is_none_or(|refs| {
+        covered_orgs(scope, group_org, edges)
+            .iter()
+            .any(|o| refs.iter().any(|r| r == o))
+    })
+}
+
+/// Which of a worker's current memberships must end when they move to
+/// `new_org`: those in groups no longer open to them. `groups` is
+/// `(membership id, group scope, group organization)`.
+#[must_use]
+pub fn memberships_to_end<T: Copy>(
+    new_org: &str,
+    groups: &[(T, &str, &str)],
+    edges: &[(String, String)],
+) -> Vec<T> {
+    groups
+        .iter()
+        .filter(|(_, scope, org)| !is_open_to(scope, org, new_org, edges))
+        .map(|(id, _, _)| *id)
+        .collect()
+}
+
+/// Validate a group scope token.
+///
+/// # Errors
+/// A message listing the choices.
+pub fn validate_scope(scope: &str) -> Result<(), String> {
+    if SCOPES.contains(&scope) {
+        Ok(())
+    } else {
+        Err(format!("scope must be one of {}", SCOPES.join(", ")))
+    }
+}
+
 /// A person's part in a group.
 pub const ROLES: &[&str] = &["member", "lead"];
 
@@ -137,6 +209,72 @@ mod tests {
             .coverage(),
             None
         );
+    }
+
+    fn edges() -> Vec<(String, String)> {
+        // group (parent) → a, b;  a → a2;  other is unrelated
+        [("group", "a"), ("group", "b"), ("a", "a2")]
+            .map(|(p, c)| (p.to_string(), c.to_string()))
+            .to_vec()
+    }
+
+    #[test]
+    fn confederation_groups_cover_the_tree() {
+        let e = edges();
+        assert_eq!(covered_orgs("organization", "group", &e), ["group"]);
+        let mut all = covered_orgs("confederation", "group", &e);
+        all.sort();
+        assert_eq!(all, ["a", "a2", "b", "group"]);
+        assert!(
+            is_open_to("confederation", "group", "a2", &e),
+            "a grandchild organization"
+        );
+        assert!(!is_open_to("confederation", "group", "other", &e));
+        assert!(
+            !is_open_to("organization", "group", "a", &e),
+            "an organization group is just its own"
+        );
+        let a_only = ["a".to_string()];
+        assert!(
+            visible_to(Some(&a_only), "confederation", "group", &e),
+            "a member of a child sees the community"
+        );
+        assert!(!visible_to(Some(&a_only), "organization", "group", &e));
+        assert!(
+            visible_to(None, "organization", "group", &e),
+            "unrestricted"
+        );
+        assert!(
+            !visible_to(Some(&[]), "confederation", "group", &e),
+            "no memberships, nothing"
+        );
+    }
+
+    #[test]
+    fn moving_organization_ends_only_the_memberships_that_no_longer_fit() {
+        let e = edges();
+        let groups = [
+            (1, "organization", "a"),
+            (2, "confederation", "group"),
+            (3, "organization", "b"),
+        ];
+        assert_eq!(
+            memberships_to_end("a", &groups, &e),
+            [3],
+            "a's own and the community stay"
+        );
+        assert_eq!(
+            memberships_to_end("other", &groups, &e),
+            [1, 2, 3],
+            "nothing fits"
+        );
+        assert_eq!(memberships_to_end("b", &groups, &e), [1]);
+    }
+
+    #[test]
+    fn scopes_are_validated() {
+        assert!(validate_scope("confederation").is_ok());
+        assert!(validate_scope("galaxy").is_err());
     }
 
     #[test]

@@ -1052,6 +1052,8 @@ export function downlineAspirations(
 export type Group = {
   pid: string;
   organization_ref: string;
+  /** `confederation`: a community spanning the organization and everything beneath it. */
+  scope: "organization" | "confederation";
   name: string;
   kind: "practice" | "interest" | "other";
   description: string | null;
@@ -1069,6 +1071,7 @@ export function listGroups(organization?: string, init?: FetchLike): Promise<Gro
 /** Start a group. */
 export function createGroup(body: {
   organization_ref: string;
+  scope?: "organization" | "confederation";
   name: string;
   kind: string;
   description?: string;
@@ -1170,6 +1173,23 @@ export function addDottedManager(
 /** End a dotted-line relationship; it is kept as history. */
 export function endDottedManager(workerPid: string, managerPid: string): Promise<unknown> {
   return api(`/workers/${workerPid}/dotted-line-managers/${managerPid}`, { method: "DELETE" });
+}
+
+/** Move a worker to another organization; groups that no longer fit end (kept as history). */
+export function transferWorker(
+  workerPid: string,
+  organizationRef: string,
+): Promise<{
+  worker_pid: string;
+  from: string;
+  to: string;
+  ended_group_memberships: Array<string | null>;
+  manager_in_other_organization: boolean;
+}> {
+  return api(`/workers/${workerPid}/transfer`, {
+    method: "POST",
+    body: { organization_ref: organizationRef },
+  });
 }
 
 /** A worker joins a group, or changes their role in it. */

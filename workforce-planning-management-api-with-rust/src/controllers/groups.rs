@@ -26,6 +26,7 @@ fn group_json(g: &groups::Model, members: usize) -> serde_json::Value {
     serde_json::json!({
         "pid": g.pid,
         "organization_ref": g.organization_ref,
+        "scope": g.scope,
         "name": g.name,
         "kind": g.kind,
         "description": g.description,
@@ -42,6 +43,21 @@ fn in_scope(scope: Option<&Vec<String>>, organization_ref: &str) -> bool {
     scope.is_none_or(|refs| refs.iter().any(|r| r == organization_ref))
 }
 
+/// Whether the caller may read this group: any organization it covers is one
+/// they can read (a confederation group is readable from any member org).
+fn can_read(allowed: Option<&Vec<String>>, g: &groups::Model, edges: &[(String, String)]) -> bool {
+    rules::visible_to(
+        allowed.map(Vec::as_slice),
+        &g.scope,
+        &g.organization_ref,
+        edges,
+    )
+}
+
+async fn edges(ctx: &AppContext) -> Result<Vec<(String, String)>> {
+    crate::models::confederations::live_edges(&ctx.db).await
+}
+
 /// A live group in one of the caller's organizations; one elsewhere is `404`.
 async fn find_group(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Result<groups::Model> {
     let group = groups::Entity::find()
@@ -50,7 +66,11 @@ async fn find_group(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Resu
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    if !in_scope(scope(ctx, caller).await?.as_ref(), &group.organization_ref) {
+    if !can_read(
+        scope(ctx, caller).await?.as_ref(),
+        &group,
+        &edges(ctx).await?,
+    ) {
         return Err(Error::NotFound);
     }
     Ok(group)
@@ -72,6 +92,10 @@ async fn member_counts(ctx: &AppContext) -> Result<BTreeMap<Uuid, usize>> {
 /// `POST /api/groups` and `PUT /api/groups/{pid}` body.
 #[derive(Debug, Deserialize)]
 struct GroupPayload {
+    /// `organization` (default) or `confederation`: a community spanning the
+    /// organization and every organization beneath it. Create only.
+    #[serde(default)]
+    scope: Option<String>,
     /// The organization the group belongs to (required on create; a group
     /// cannot move, so it is ignored on update).
     #[serde(default)]
@@ -126,15 +150,29 @@ async fn create_group(
         .clone()
         .filter(|o| !o.trim().is_empty())
         .ok_or_else(|| unprocessable("organization_ref is required"))?;
+    let group_scope = payload
+        .scope
+        .clone()
+        .unwrap_or_else(|| "organization".to_string());
+    rules::validate_scope(&group_scope).map_err(|e| unprocessable(&e))?;
     if !in_scope(scope(&ctx, &caller).await?.as_ref(), &organization_ref) {
         return Err(unprocessable(
             "you cannot create groups in that organization",
+        ));
+    }
+    if group_scope == "confederation"
+        && crate::rules::org_access::descendants_of(&edges(&ctx).await?, &organization_ref)
+            .is_empty()
+    {
+        return Err(unprocessable(
+            "a confederation group needs an organization with member organizations beneath it",
         ));
     }
     ensure_name_free(&ctx, &organization_ref, &payload.name, None).await?;
     let row = groups::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(organization_ref),
+        scope: ActiveValue::set(group_scope),
         name: ActiveValue::set(payload.name.trim().to_string()),
         kind: ActiveValue::set(payload.kind),
         description: ActiveValue::set(payload.description),
@@ -150,7 +188,8 @@ async fn create_group(
 /// Query for the group list.
 #[derive(Debug, Deserialize)]
 struct ListQuery {
-    /// Only this organization's groups (must be one the caller can read).
+    /// Only groups open to this organization: its own, and confederation
+    /// groups that cover it.
     organization_ref: Option<String>,
 }
 
@@ -163,18 +202,19 @@ async fn list_groups(
     axum::extract::Query(query): axum::extract::Query<ListQuery>,
 ) -> Result<Response> {
     let allowed = scope(&ctx, &caller).await?;
+    let graph = edges(&ctx).await?;
     let rows: Vec<groups::Model> = groups::Entity::find()
         .filter(groups::Column::DeletedAt.is_null())
         .order_by_asc(groups::Column::Name)
         .all(&ctx.db)
         .await?
         .into_iter()
-        .filter(|g| in_scope(allowed.as_ref(), &g.organization_ref))
+        .filter(|g| can_read(allowed.as_ref(), g, &graph))
         .filter(|g| {
             query
                 .organization_ref
                 .as_ref()
-                .is_none_or(|o| *o == g.organization_ref)
+                .is_none_or(|o| rules::is_open_to(&g.scope, &g.organization_ref, o, &graph))
         })
         .collect();
     let counts = member_counts(&ctx).await?;
@@ -325,9 +365,14 @@ async fn join_group(
     let role = payload.role.unwrap_or_else(|| "member".to_string());
     rules::validate_role(&role).map_err(|e| unprocessable(&e))?;
     let worker = writable_worker(&ctx, &caller, payload.worker_pid).await?;
-    if worker.organization_ref != group.organization_ref {
+    if !rules::is_open_to(
+        &group.scope,
+        &group.organization_ref,
+        &worker.organization_ref,
+        &edges(&ctx).await?,
+    ) {
         return Err(unprocessable(
-            "a worker can only join groups in their own organization",
+            "a worker can only join groups open to their organization",
         ));
     }
     let current = group_members::Entity::find()
@@ -489,12 +534,13 @@ async fn worker_groups(
         .all(&ctx.db)
         .await?;
     let allowed = scope(&ctx, &caller).await?;
+    let graph = edges(&ctx).await?;
     let by_pid: BTreeMap<Uuid, groups::Model> = groups::Entity::find()
         .filter(groups::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?
         .into_iter()
-        .filter(|g| in_scope(allowed.as_ref(), &g.organization_ref))
+        .filter(|g| can_read(allowed.as_ref(), g, &graph))
         .map(|g| (g.pid, g))
         .collect();
     let out: Vec<serde_json::Value> = memberships

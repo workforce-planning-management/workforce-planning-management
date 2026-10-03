@@ -62,7 +62,7 @@
 
 <section class="panel" data-testid="groups">
   <h2>Groups</h2>
-  <p class="muted">Groups belong to an organization; you can join those in {organization ?? "your organization"}.</p>
+  <p class="muted">You can join groups in {organization ?? "your organization"} and communities that span it.</p>
   {#if error}<p class="error" data-testid="error">{error}</p>{/if}
   <ul data-testid="my-groups">
     {#each mine as g (g.group_pid)}

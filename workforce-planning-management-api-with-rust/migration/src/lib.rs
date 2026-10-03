@@ -51,6 +51,7 @@ mod m20261003_000035_aspiration_visibility;
 mod m20261003_000036_groups;
 mod m20261003_000037_dotted_line_reports;
 mod m20261003_000038_group_organizations;
+mod m20261003_000039_group_scope;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -101,6 +102,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261003_000036_groups::Migration),
             Box::new(m20261003_000037_dotted_line_reports::Migration),
             Box::new(m20261003_000038_group_organizations::Migration),
+            Box::new(m20261003_000039_group_scope::Migration),
             // inject-above (do not remove this comment)
         ]
     }
