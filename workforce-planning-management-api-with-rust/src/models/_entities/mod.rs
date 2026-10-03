@@ -71,6 +71,7 @@ pub mod talent_pipelines;
 pub mod time_entries;
 pub mod training_enrollments;
 pub mod wellbeing_entitlements;
+pub mod worker_framework_roles;
 pub mod worker_skills;
 pub mod workers;
 pub mod workforce_plans;

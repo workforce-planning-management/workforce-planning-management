@@ -798,7 +798,7 @@ code + tests in one PR.
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
 > **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
-> and the full database-backed request suite passes — **38 of 38** against a
+> and the full database-backed request suite passes — **39 of 39** against a
 > real PostgreSQL 18 (every migration applied) — using a scratch copy with
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
@@ -1172,6 +1172,40 @@ first in each, per the three-part rule.
       all ESCO *knowledge* skills `domain` (crude — use ESCO's skills hierarchy
       next); the `test` environment recreates the database on boot. The CSVs
       are API-derived, not the official emailed package.
+
+- [x] WPM-T63 (2026-10-03) **My role and skills in the UK GDAD PCF and ESCO.**
+      Each person selects their **current role** in each framework — a PCF
+      role level (a role profile) or an ESCO occupation — and then the
+      **skills they have, at their own level**. Migration
+      `m20261003_000033_worker_framework_roles` (one per worker per framework;
+      worker-owned, so it joins subject-access export and erasure). Pure
+      `rules::framework_roles` (selectable frameworks; a bounded batch with
+      no blank or repeated refs and every level 1–5; 2 tests). API in
+      `controllers/framework_roles.rs`: `GET /api/frameworks/selectable`,
+      `GET`/`PUT`/`DELETE /api/workers/{pid}/framework-roles[/{framework}]`,
+      `GET …/{framework}/skills` (the role's skills with the person's declared
+      level — for the PCF each requirement with the framework's own level and
+      wording as a *prompt*; for ESCO the essential then optional skills) and
+      `PUT …/{framework}/skills` (all-or-nothing; `null` deselects). Selected
+      skills are **ordinary `worker_skills` declarations**, so gap analysis,
+      matching and capability pick them up; an ESCO skill is resolved to — or
+      created and linked as — a catalogue skill (the resolution logic is now
+      shared with role seeding). **The person chooses their own level**; the
+      framework's wording informs, it does not decide, and nothing here is an
+      assessment. Writes pass the worker-record authorization pass. Clearing a
+      role leaves the declared skills. Front-end `/me` ("My profile"): a
+      panel per framework (PCF role-level picker grouped profession › role;
+      ESCO occupation search), a skills table with "I have it" and level, only
+      the changes saved, add-another-ESCO-skill search; the person's worker
+      record comes from their organization memberships; `nav.me` in all 16
+      locales. **Verified:** Rust type-checks, 161 lib tests, database-backed
+      suite **39/39** against PostgreSQL 18 (including
+      `a_person_selects_their_pcf_and_esco_roles_and_skills`), clippy-clean on
+      the new files; svelte-check 0, vitest 47/47 (including a panel test that
+      pins "saves only what changed"), build green. Not done: choosing a role
+      for *another* person (HR on behalf of); history of past roles; a "why am
+      I not in this role yet" gap view from the selection (the existing
+      role-gap panel does that for the PCF).
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 

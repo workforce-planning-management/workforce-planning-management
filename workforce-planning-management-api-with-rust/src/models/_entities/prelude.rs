@@ -62,5 +62,6 @@ pub use super::talent_pipelines::Entity as TalentPipelines;
 pub use super::time_entries::Entity as TimeEntries;
 pub use super::training_enrollments::Entity as TrainingEnrollments;
 pub use super::wellbeing_entitlements::Entity as WellbeingEntitlements;
+pub use super::worker_framework_roles::Entity as WorkerFrameworkRoles;
 pub use super::workers::Entity as Workers;
 pub use super::workforce_plans::Entity as WorkforcePlans;

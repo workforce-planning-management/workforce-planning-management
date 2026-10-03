@@ -740,6 +740,98 @@ export function cpdOverview(init?: FetchLike): Promise<{
   return api("/cpd/overview", init);
 }
 
+/** The frameworks a person can choose a role in. */
+export function listSelectableFrameworks(init?: FetchLike): Promise<
+  Array<{ slug: string; name: string; roles: number; available: boolean }>
+> {
+  return api("/frameworks/selectable", init);
+}
+
+/** A person's current role in a framework. */
+export type FrameworkRole = {
+  framework: string;
+  role_label: string;
+  role_profile_pid: string | null;
+  occupation_uri: string | null;
+  selected_on: string;
+};
+
+/** The worker's current role in each framework they have chosen one in. */
+export function listFrameworkRoles(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<FrameworkRole[]> {
+  return api(`/workers/${workerPid}/framework-roles`, init);
+}
+
+/** Set my current role: a PCF role level or an ESCO occupation. */
+export function setFrameworkRole(
+  workerPid: string,
+  framework: string,
+  body: { role_profile_pid?: string; occupation_uri?: string },
+): Promise<FrameworkRole> {
+  return api(`/workers/${workerPid}/framework-roles/${framework}`, {
+    method: "PUT",
+    body,
+  });
+}
+
+/** Clear my role selection (declared skills stay). */
+export function clearFrameworkRole(
+  workerPid: string,
+  framework: string,
+): Promise<unknown> {
+  return api(`/workers/${workerPid}/framework-roles/${framework}`, {
+    method: "DELETE",
+  });
+}
+
+/** One skill of the selected role, with my declared level (WPM 1–5). */
+export type FrameworkRoleSkill = {
+  ref: string;
+  label: string | null;
+  declared: number | null;
+  /** PCF only: what the role level expects (WPM scale) and the framework's own. */
+  role_expects?: number;
+  framework_level?: number | null;
+  framework_scale_max?: number | null;
+  importance?: string;
+  wording?: string | null;
+  /** ESCO only. */
+  relation?: "essential" | "optional";
+  skill_type?: string | null;
+};
+
+/** The selected role's skills with what I have already declared. */
+export function frameworkRoleSkills(
+  workerPid: string,
+  framework: string,
+  init?: FetchLike,
+): Promise<{
+  framework: string;
+  role: FrameworkRole;
+  skills: FrameworkRoleSkill[];
+}> {
+  return api(`/workers/${workerPid}/framework-roles/${framework}/skills`, init);
+}
+
+/** Select the skills I have at my own 1–5 level (`null` deselects). */
+export function setFrameworkSkills(
+  workerPid: string,
+  framework: string,
+  selections: Array<{ ref: string; proficiency: number | null }>,
+): Promise<{
+  declared: number;
+  removed: number;
+  skills_created: number;
+  skills_linked: number;
+}> {
+  return api(`/workers/${workerPid}/framework-roles/${framework}/skills`, {
+    method: "PUT",
+    body: { selections },
+  });
+}
+
 /** Search the pinned ESCO occupations (needs at least 2 characters). */
 export function searchEscoOccupations(
   q: string,

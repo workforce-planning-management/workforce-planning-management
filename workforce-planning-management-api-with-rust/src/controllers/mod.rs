@@ -16,6 +16,7 @@ pub mod development;
 pub mod docs;
 pub mod ergonomics;
 pub mod esco;
+pub mod framework_roles;
 pub mod hr_core;
 pub mod intelligence;
 pub mod learning;

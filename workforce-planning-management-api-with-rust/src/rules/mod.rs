@@ -17,6 +17,7 @@ pub mod ergonomics;
 pub mod esco;
 pub mod learning;
 pub mod framework;
+pub mod framework_roles;
 pub mod gap;
 pub mod leave;
 pub mod lms;

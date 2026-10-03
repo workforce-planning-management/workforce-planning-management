@@ -1542,3 +1542,113 @@ async fn skills_merge_keeps_the_stronger_statement_and_delete_refuses_use() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
+    use workforce_planning_management_service::rules::framework::LevelMapping;
+    use workforce_planning_management_service::tasks::import_esco::import_esco;
+    use workforce_planning_management_service::tasks::import_framework::import_pcf;
+
+    request::<App, _, _>(|request, ctx| async move {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+        import_pcf(&ctx.db, &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
+        import_esco(&ctx.db, &root.join("esco-mini"), "en", "v-test").await.expect("esco");
+
+        let org = an_org();
+        let me = seed_worker!(&request, &org, "E-1", None).await;
+        activate!(&request, &me).await;
+        let base = format!("/api/workers/{me}/framework-roles");
+
+        // Both frameworks are selectable; nothing is chosen yet.
+        let selectable: Value = request.get("/api/frameworks/selectable").await.json();
+        assert!(selectable.as_array().unwrap().iter().all(|f| f["available"] == true));
+        assert!(request.get(&base).await.json::<Value>().as_array().unwrap().is_empty());
+        assert_eq!(request.get(&format!("{base}/uk-gdad-pcf/skills")).await.status_code(), 422, "no role yet");
+        assert_eq!(
+            request.put(&format!("{base}/uk-gdad-pcf/skills")).json(&json!({ "selections": [] })).await.status_code(),
+            422
+        );
+        assert_eq!(request.put(&format!("{base}/sfia")).json(&json!({})).await.status_code(), 422, "unknown framework");
+
+        // ── UK GDAD PCF: choose a role level; only a PCF role is accepted.
+        let profiles: Value = request.get("/api/role-profiles?framework=uk-gdad-pcf").await.json();
+        let tester = profiles.as_array().unwrap().iter().find(|p| p["job_title"] == "Tester").unwrap();
+        let tester_pid = tester["pid"].as_str().unwrap().to_string();
+        let own: Value = request.post("/api/role-profiles").json(&json!({ "job_title": "Not a framework role" })).await.json();
+        assert_eq!(
+            request.put(&format!("{base}/uk-gdad-pcf")).json(&json!({ "role_profile_pid": own["pid"] })).await.status_code(),
+            422,
+            "a profile that is not from the PCF"
+        );
+        assert_eq!(request.put(&format!("{base}/uk-gdad-pcf")).json(&json!({})).await.status_code(), 422);
+        let chosen: Value = request.put(&format!("{base}/uk-gdad-pcf")).json(&json!({ "role_profile_pid": tester_pid })).await.json();
+        assert_eq!(chosen["role_label"], "Tester");
+
+        let listed: Value = request.get(&format!("{base}/uk-gdad-pcf/skills")).await.json();
+        let skills = listed["skills"].as_array().unwrap();
+        assert_eq!(skills.len(), 3, "the Tester level names skills A, B and C");
+        let skill_a = skills.iter().find(|s| s["label"] == "Fixture skill A").unwrap();
+        assert_eq!(skill_a["framework_level"], 3, "the framework's own level is shown as a prompt");
+        assert!(skill_a["declared"].is_null());
+        let a_ref = skill_a["ref"].as_str().unwrap().to_string();
+        let b_ref = skills.iter().find(|s| s["label"] == "Fixture skill B").unwrap()["ref"].as_str().unwrap().to_string();
+
+        // Select skills at the person's own level; an out-of-scale level or a non-PCF skill is refused.
+        let put_skills = |framework: &str, body: Value| request.put(&format!("{base}/{framework}/skills")).json(&body);
+        assert_eq!(put_skills("uk-gdad-pcf", json!({ "selections": [{ "ref": a_ref, "proficiency": 9 }] })).await.status_code(), 422);
+        let not_pcf: Value = request.post("/api/skills").json(&json!({ "name": "Not in the PCF", "category": "other" })).await.json();
+        assert_eq!(
+            put_skills("uk-gdad-pcf", json!({ "selections": [{ "ref": not_pcf["pid"], "proficiency": 3 }] })).await.status_code(),
+            422
+        );
+        let done: Value = put_skills("uk-gdad-pcf", json!({ "selections": [
+            { "ref": a_ref, "proficiency": 3 }, { "ref": b_ref, "proficiency": 2 },
+        ] })).await.json();
+        assert_eq!(done["declared"], 2);
+        let mine: Value = request.get(&format!("/api/workers/{me}/skills")).await.json();
+        assert_eq!(mine.as_array().unwrap().len(), 2, "ordinary skill declarations");
+        // Deselect B: it is removed, A stays.
+        let cleared: Value = put_skills("uk-gdad-pcf", json!({ "selections": [{ "ref": b_ref, "proficiency": null }] })).await.json();
+        assert_eq!(cleared["removed"], 1);
+        let after: Value = request.get(&format!("{base}/uk-gdad-pcf/skills")).await.json();
+        let level_of = |label: &str| after["skills"].as_array().unwrap().iter().find(|s| s["label"] == label).unwrap()["declared"].clone();
+        assert_eq!(level_of("Fixture skill A"), json!(3));
+        assert!(level_of("Fixture skill B").is_null());
+
+        // ── ESCO: a different framework, a separate selection.
+        let occupation = "http://data.europa.eu/esco/occupation/q1";
+        assert_eq!(
+            request.put(&format!("{base}/esco")).json(&json!({ "occupation_uri": "http://nope" })).await.status_code(),
+            422
+        );
+        request.put(&format!("{base}/esco")).json(&json!({ "occupation_uri": occupation })).await.assert_status_ok();
+        let both: Value = request.get(&base).await.json();
+        assert_eq!(both.as_array().unwrap().len(), 2, "a role in each framework at once");
+
+        let esco_skills: Value = request.get(&format!("{base}/esco/skills")).await.json();
+        let relations: Vec<&str> = esco_skills["skills"].as_array().unwrap().iter().map(|s| s["relation"].as_str().unwrap()).collect();
+        assert_eq!(relations, ["essential", "essential", "optional"]);
+        let python = "http://data.europa.eu/esco/skill/t1";
+        assert_eq!(put_skills("esco", json!({ "selections": [{ "ref": "http://not-esco", "proficiency": 3 }] })).await.status_code(), 422);
+        let first: Value = put_skills("esco", json!({ "selections": [{ "ref": python, "proficiency": 4 }] })).await.json();
+        assert_eq!(first["declared"], 1);
+        assert_eq!(first["skills_created"], 1, "the ESCO skill becomes a linked catalogue skill");
+        let second: Value = put_skills("esco", json!({ "selections": [{ "ref": python, "proficiency": 5 }] })).await.json();
+        assert_eq!(second["skills_created"], 0, "found by its ESCO reference this time");
+        let esco_after: Value = request.get(&format!("{base}/esco/skills")).await.json();
+        let py = esco_after["skills"].as_array().unwrap().iter().find(|s| s["ref"] == python).unwrap();
+        assert_eq!(py["declared"], 5, "the person's own level, updated");
+        // Deselecting an ESCO skill that was never linked is a no-op, not an error.
+        let noop: Value = put_skills("esco", json!({ "selections": [{ "ref": "http://data.europa.eu/esco/skill/t2", "proficiency": null }] })).await.json();
+        assert_eq!((noop["declared"].as_u64(), noop["removed"].as_u64()), (Some(0), Some(0)));
+
+        // Clearing a role leaves the declared skills alone.
+        request.delete(&format!("{base}/esco")).await.assert_status_ok();
+        assert_eq!(request.get(&format!("{base}/esco/skills")).await.status_code(), 422);
+        let kept: Value = request.get(&format!("/api/workers/{me}/skills")).await.json();
+        assert_eq!(kept.as_array().unwrap().len(), 2, "A (PCF) and Python (ESCO) remain declared");
+    })
+    .await;
+}

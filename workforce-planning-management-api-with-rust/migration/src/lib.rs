@@ -45,6 +45,7 @@ mod m20261002_000029_plan_budget;
 mod m20261002_000030_capability_frameworks;
 mod m20261003_000031_skill_external_refs;
 mod m20261003_000032_esco;
+mod m20261003_000033_worker_framework_roles;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -89,6 +90,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261002_000030_capability_frameworks::Migration),
             Box::new(m20261003_000031_skill_external_refs::Migration),
             Box::new(m20261003_000032_esco::Migration),
+            Box::new(m20261003_000033_worker_framework_roles::Migration),
             // inject-above (do not remove this comment)
         ]
     }

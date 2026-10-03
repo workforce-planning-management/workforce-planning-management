@@ -22,6 +22,7 @@
     ["/workforce", "nav.workforce"],
     ["/development", "nav.development"],
     ["/learning", "nav.learning"],
+    ["/me", "nav.me"],
     ["/roles", "nav.roles"],
     ["/skills", "nav.skills"],
     ["/cpd", "nav.cpd"],

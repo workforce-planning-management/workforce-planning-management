@@ -13,11 +13,11 @@ use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, appraisal_nominations, appraisal_responses, appraisals, assessments,
-    benefit_enrollments, candidates, cpd_entries, development_plans, mobility_interests, professional_registrations,
-    worker_skills, workers,
-    entitlement_acknowledgements, ergonomic_assessments, leave_entitlements, leave_requests,
-    mentorships, notifications, path_enrollments, payslips, pipeline_members, program_placements,
-    reviews, shift_assignments, time_entries, training_enrollments,
+    benefit_enrollments, candidates, cpd_entries, development_plans, entitlement_acknowledgements,
+    ergonomic_assessments, leave_entitlements, leave_requests, mentorships, mobility_interests,
+    notifications, path_enrollments, payslips, pipeline_members, professional_registrations,
+    program_placements, reviews, shift_assignments, time_entries, training_enrollments,
+    worker_framework_roles, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -109,6 +109,7 @@ async fn subject_access(
         "learning_path_enrollments": rows_for!(db, path_enrollments, WorkerPid, epid),
         "development_plans": rows_for!(db, development_plans, WorkerPid, epid),
         "cpd_entries": rows_for!(db, cpd_entries, WorkerPid, epid),
+        "framework_roles": rows_for!(db, worker_framework_roles, WorkerPid, epid),
         "mobility_interests": rows_for!(db, mobility_interests, WorkerPid, epid),
         "professional_registrations": rows_for!(db, professional_registrations, WorkerPid, epid),
         "program_placements": rows_for!(db, program_placements, WorkerPid, epid),
@@ -152,6 +153,7 @@ async fn subject_access(
 /// a pid that no longer identifies anyone. Refused while employment is
 /// open. Destructive-classified; audited with counts.
 #[debug_handler]
+#[allow(clippy::too_many_lines)] // one scrub statement per worker-owned table
 async fn erase(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -221,6 +223,7 @@ async fn erase(
             "UPDATE mobility_interests SET note = NULL, deleted_at = now() \
              WHERE worker_pid = '{epid}' AND deleted_at IS NULL"
         ),
+        format!("DELETE FROM worker_framework_roles WHERE worker_pid = '{epid}'"),
     ];
     let mut affected = Vec::new();
     for statement in &statements {
@@ -246,6 +249,7 @@ async fn erase(
             "cpd_entries_scrubbed": affected[9],
             "registrations_scrubbed": affected[10],
             "mobility_interests_withdrawn": affected[11],
+            "framework_roles_deleted": affected[12],
         })),
     )
     .await?;

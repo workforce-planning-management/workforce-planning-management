@@ -143,7 +143,7 @@ struct UriQuery {
     uri: String,
 }
 
-async fn find_occupation(ctx: &AppContext, uri: &str) -> Result<esco_occupations::Model> {
+pub(crate) async fn find_occupation(ctx: &AppContext, uri: &str) -> Result<esco_occupations::Model> {
     esco_occupations::Entity::find()
         .filter(esco_occupations::Column::Uri.eq(uri))
         .one(&ctx.db)
@@ -152,7 +152,7 @@ async fn find_occupation(ctx: &AppContext, uri: &str) -> Result<esco_occupations
 }
 
 /// An occupation's skills, essential first.
-async fn occupation_skills(
+pub(crate) async fn occupation_skills(
     ctx: &AppContext,
     occupation_uri: &str,
 ) -> Result<Vec<(esco_occupation_skills::Model, esco_skills::Model)>> {
@@ -283,16 +283,7 @@ async fn from_esco(
             .into_iter()
             .filter(|(r, _)| payload.include_optional || r.relation == "essential")
             .collect();
-    let version = capability_frameworks::Entity::find()
-        .filter(capability_frameworks::Column::Slug.eq(ESCO_SLUG))
-        .one(&ctx.db)
-        .await?
-        .and_then(|f| f.note)
-        .and_then(|n| {
-            n.rsplit("Pinned version: ")
-                .next()
-                .map(|v| v.trim_end_matches('.').to_string())
-        });
+    let version = pinned_version(&ctx.db).await?;
 
     let txn = ctx.db.begin().await?;
     let profile = role_profiles::ActiveModel {
@@ -322,62 +313,13 @@ async fn from_esco(
         } else {
             rules::Relation::Optional
         };
-        // Match: ESCO reference, else exact label, else create.
-        let by_ref = skill_external_refs::Entity::find()
-            .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-            .filter(skill_external_refs::Column::Reference.eq(&esco_skill.uri))
-            .one(&txn)
-            .await?;
-        let skill_pid = if let Some(r) = by_ref {
-            r.skill_pid
-        } else {
-            let wanted_label = rules::normalise_label(&esco_skill.label);
-            let candidates: Vec<skills::Model> = skills::Entity::find()
-                .filter(skills::Column::DeletedAt.is_null())
-                .all(&txn)
-                .await?
-                .into_iter()
-                .filter(|s| rules::normalise_label(&s.name) == wanted_label)
-                .collect();
-            let (pid, is_new) = match candidates.as_slice() {
-                [one] if !has_esco_ref(&txn, one.pid).await? => (one.pid, false),
-                _ => {
-                    let row = skills::ActiveModel {
-                        pid: ActiveValue::set(Uuid::new_v4()),
-                        name: ActiveValue::set(unique_name(&txn, &esco_skill.label).await?),
-                        category: ActiveValue::set(
-                            rules::category_for(
-                                esco_skill.skill_type.as_deref(),
-                                esco_skill.reuse_level.as_deref(),
-                            )
-                            .to_string(),
-                        ),
-                        deleted_at: ActiveValue::set(None),
-                        ..Default::default()
-                    }
-                    .insert(&txn)
-                    .await?;
-                    (row.pid, true)
-                }
-            };
-            skill_external_refs::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                skill_pid: ActiveValue::set(pid),
-                framework_slug: ActiveValue::set(ESCO_SLUG.to_string()),
-                reference: ActiveValue::set(esco_skill.uri.clone()),
-                label: ActiveValue::set(Some(esco_skill.label.clone())),
-                version: ActiveValue::set(version.clone()),
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?;
-            if is_new {
-                created += 1;
-            } else {
-                linked += 1;
-            }
-            pid
-        };
+        let (skill_pid, how) =
+            resolve_catalogue_skill(&txn, esco_skill, version.as_deref()).await?;
+        match how {
+            Resolution::Created => created += 1,
+            Resolution::Linked => linked += 1,
+            Resolution::Existing => {}
+        }
         // One requirement per (profile, skill); two ESCO skills mapping to one
         // catalogue skill collapse to the first.
         let exists = role_skill_requirements::Entity::find()
@@ -417,6 +359,97 @@ async fn from_esco(
         "skills_created": created,
         "skills_linked": linked,
     }))
+}
+
+/// The ESCO version pinned by the last import, from the framework row's note.
+pub(crate) async fn pinned_version(db: &sea_orm::DatabaseConnection) -> Result<Option<String>> {
+    Ok(capability_frameworks::Entity::find()
+        .filter(capability_frameworks::Column::Slug.eq(ESCO_SLUG))
+        .one(db)
+        .await?
+        .and_then(|f| f.note)
+        .and_then(|n| {
+            n.rsplit("Pinned version: ")
+                .next()
+                .map(|v| v.trim_end_matches('.').to_string())
+        }))
+}
+
+/// How an ESCO skill was resolved to a catalogue skill.
+pub(crate) enum Resolution {
+    /// Already linked to this ESCO skill.
+    Existing,
+    /// An existing catalogue skill matched by exact label, now linked.
+    Linked,
+    /// A new catalogue skill was created (draft category) and linked.
+    Created,
+}
+
+/// Resolve an ESCO skill to a catalogue skill: by its ESCO reference, else by
+/// exact normalised label (when unambiguous and not already linked to another
+/// ESCO skill), else create one with a draft category — and link it. Shared by
+/// role seeding and by a user selecting their own ESCO skills.
+pub(crate) async fn resolve_catalogue_skill(
+    txn: &sea_orm::DatabaseTransaction,
+    esco_skill: &esco_skills::Model,
+    version: Option<&str>,
+) -> Result<(Uuid, Resolution)> {
+    let by_ref = skill_external_refs::Entity::find()
+        .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
+        .filter(skill_external_refs::Column::Reference.eq(&esco_skill.uri))
+        .one(txn)
+        .await?;
+    if let Some(r) = by_ref {
+        return Ok((r.skill_pid, Resolution::Existing));
+    }
+    let wanted_label = rules::normalise_label(&esco_skill.label);
+    let candidates: Vec<skills::Model> = skills::Entity::find()
+        .filter(skills::Column::DeletedAt.is_null())
+        .all(txn)
+        .await?
+        .into_iter()
+        .filter(|s| rules::normalise_label(&s.name) == wanted_label)
+        .collect();
+    let (pid, created) = match candidates.as_slice() {
+        [one] if !has_esco_ref(txn, one.pid).await? => (one.pid, false),
+        _ => {
+            let row = skills::ActiveModel {
+                pid: ActiveValue::set(Uuid::new_v4()),
+                name: ActiveValue::set(unique_name(txn, &esco_skill.label).await?),
+                category: ActiveValue::set(
+                    rules::category_for(
+                        esco_skill.skill_type.as_deref(),
+                        esco_skill.reuse_level.as_deref(),
+                    )
+                    .to_string(),
+                ),
+                deleted_at: ActiveValue::set(None),
+                ..Default::default()
+            }
+            .insert(txn)
+            .await?;
+            (row.pid, true)
+        }
+    };
+    skill_external_refs::ActiveModel {
+        pid: ActiveValue::set(Uuid::new_v4()),
+        skill_pid: ActiveValue::set(pid),
+        framework_slug: ActiveValue::set(ESCO_SLUG.to_string()),
+        reference: ActiveValue::set(esco_skill.uri.clone()),
+        label: ActiveValue::set(Some(esco_skill.label.clone())),
+        version: ActiveValue::set(version.map(ToString::to_string)),
+        ..Default::default()
+    }
+    .insert(txn)
+    .await?;
+    Ok((
+        pid,
+        if created {
+            Resolution::Created
+        } else {
+            Resolution::Linked
+        },
+    ))
 }
 
 /// Whether a catalogue skill already carries an ESCO reference.

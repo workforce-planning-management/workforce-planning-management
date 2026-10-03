@@ -106,6 +106,9 @@ describe("api path map", () => {
     await wpm.listRoleProfiles();
     await wpm.listRoleProfiles("uk-gdad-pcf");
     await wpm.listFrameworks();
+    await wpm.listSelectableFrameworks();
+    await wpm.listFrameworkRoles("w1");
+    await wpm.frameworkRoleSkills("w1", "esco");
     await wpm.searchEscoOccupations("dev");
     await wpm.getEscoOccupation("http://x/1");
     await wpm.searchEscoSkills("tea");
@@ -168,6 +171,9 @@ describe("api path map", () => {
       "/api/proxy/role-profiles",
       "/api/proxy/role-profiles?framework=uk-gdad-pcf",
       "/api/proxy/capability-frameworks",
+      "/api/proxy/frameworks/selectable",
+      "/api/proxy/workers/w1/framework-roles",
+      "/api/proxy/workers/w1/framework-roles/esco/skills",
       "/api/proxy/esco/occupations?q=dev&limit=25",
       "/api/proxy/esco/occupation?uri=http%3A%2F%2Fx%2F1",
       "/api/proxy/esco/skills?q=tea&limit=8",
