@@ -7,6 +7,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { listSelectableFrameworks } from "#lib/api/wpm.js";
+  import Aspirations from "#lib/components/Aspirations.svelte";
+  import CareerHistory from "#lib/components/CareerHistory.svelte";
   import FrameworkRolePanel from "#lib/components/FrameworkRolePanel.svelte";
   import { t } from "#lib/i18n.svelte.js";
 
@@ -60,6 +62,8 @@
   {#if available("esco")?.available}
     <FrameworkRolePanel {workerPid} framework="esco" title="ESCO — European Skills, Competences, Qualifications and Occupations" />
   {/if}
+  <CareerHistory {workerPid} />
+  <Aspirations {workerPid} />
   {#if frameworks.length > 0 && !frameworks.some((f) => f.available)}
     <p class="muted">No framework has been loaded yet; ask an administrator to import one.</p>
   {/if}

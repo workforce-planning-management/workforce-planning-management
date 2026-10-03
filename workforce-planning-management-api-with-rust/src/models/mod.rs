@@ -14,3 +14,4 @@ pub mod event_outbox;
 pub mod memberships;
 pub mod notifications;
 pub mod records;
+pub mod skill_history;

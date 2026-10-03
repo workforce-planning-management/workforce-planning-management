@@ -17,7 +17,7 @@ use crate::models::_entities::{
     ergonomic_assessments, leave_entitlements, leave_requests, mentorships, mobility_interests,
     notifications, path_enrollments, payslips, pipeline_members, professional_registrations,
     program_placements, reviews, shift_assignments, time_entries, training_enrollments,
-    worker_framework_roles, worker_skills, workers,
+    worker_aspirations, worker_framework_roles, worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -110,6 +110,8 @@ async fn subject_access(
         "development_plans": rows_for!(db, development_plans, WorkerPid, epid),
         "cpd_entries": rows_for!(db, cpd_entries, WorkerPid, epid),
         "framework_roles": rows_for!(db, worker_framework_roles, WorkerPid, epid),
+        "skill_history": rows_for!(db, worker_skill_history, WorkerPid, epid),
+        "aspirations": rows_for!(db, worker_aspirations, WorkerPid, epid),
         "mobility_interests": rows_for!(db, mobility_interests, WorkerPid, epid),
         "professional_registrations": rows_for!(db, professional_registrations, WorkerPid, epid),
         "program_placements": rows_for!(db, program_placements, WorkerPid, epid),
@@ -224,6 +226,8 @@ async fn erase(
              WHERE worker_pid = '{epid}' AND deleted_at IS NULL"
         ),
         format!("DELETE FROM worker_framework_roles WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM worker_skill_history WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM worker_aspirations WHERE worker_pid = '{epid}'"),
     ];
     let mut affected = Vec::new();
     for statement in &statements {
@@ -250,6 +254,8 @@ async fn erase(
             "registrations_scrubbed": affected[10],
             "mobility_interests_withdrawn": affected[11],
             "framework_roles_deleted": affected[12],
+            "skill_history_deleted": affected[13],
+            "aspirations_deleted": affected[14],
         })),
     )
     .await?;

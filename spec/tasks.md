@@ -798,7 +798,7 @@ code + tests in one PR.
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
 > **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
-> and the full database-backed request suite passes — **39 of 39** against a
+> and the full database-backed request suite passes — **40 of 40** against a
 > real PostgreSQL 18 (every migration applied) — using a scratch copy with
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
@@ -1206,6 +1206,60 @@ first in each, per the three-part rule.
       for *another* person (HR on behalf of); history of past roles; a "why am
       I not in this role yet" gap view from the selection (the existing
       role-gap panel does that for the PCF).
+
+- [x] WPM-T64 (2026-10-03) **HR on behalf; past roles and skills over time;
+      aspirations.** Builds on WPM-T63. Migration
+      `m20261003_000034_career_history`: **time becomes first-class.**
+      - **On behalf of.** HR (or anyone the policy lets write to a worker's
+        record) can set a role and select skills for someone else; the same
+        authorization pass applies. Every row records `recorded_by` and
+        `on_behalf` (`auth::acting_for_other` — the caller's `sub` is not the
+        person), the audit entry carries it, and the UI shows "on their
+        behalf" on history rows and a notice while HR edits another person's
+        role. `/workers/{pid}` now carries the role-and-skills panels.
+      - **Past roles.** `worker_framework_roles` gains `started_at` /
+        `ended_at`: changing a role *closes* the previous one and opens the
+        next (choosing the same role again changes nothing); clearing closes
+        it. Only one role per framework is current (a partial unique index).
+        `GET /api/workers/{pid}/role-history`, and `POST …/framework-roles/
+        {framework}/past` records a role held in the past with first and last
+        day — it may not overlap another role in the framework, must end after
+        it starts and not in the future.
+      - **Past skills and levels.** `worker_skill_history`: every declaration
+        change closes the old level's interval and opens a new one, through one
+        recorder (`models::skill_history::record`) called from the skill
+        declaration endpoint and the framework selection; declaring the same
+        level again is not a change. Existing declarations were **backfilled**
+        (start = the date last assessed) — verified by hand on synthetic rows,
+        soft-deleted ones ignored, re-run idempotent. `GET …/skill-history`,
+        `POST …/skill-history/past` (retrospective, no overlap per skill) and
+        `GET …/skills-as-of?at=` ("what did they have on this date": roles and
+        skills at the end of that day, from the history).
+      - **Future: aspirations, learning goals, growth ideas.**
+        `worker_aspirations`: a *skill* target (level 1–5) or a *role* (PCF
+        level or ESCO occupation), a horizon (`within_1y` … `someday`), a status
+        (`idea` → `achieved` / `dropped`) and a note in the person's own words.
+        **Private by default**: the person sees all of theirs, anyone else only
+        those they **share** (and is told how many are hidden). Each shows
+        progress against today's declared skills (a skill: current level and
+        gap; a PCF role: requirements met; an ESCO role: essential skills had).
+      Pure `rules::career` (half-open intervals, past-entry validation,
+      overlap, level-at, who-is-the-person, aspiration validation, who may
+      view; 6 tests). Privacy: history and aspirations join subject-access
+      export and erasure. Front-end: `CareerHistory`, `Aspirations`,
+      `RolePicker` on `/me` and `/workers/{pid}`. **Verified:** Rust
+      type-checks, 167 lib tests, database-backed suite **40/40** against
+      PostgreSQL 18 (including `career_history_and_aspirations`), clippy-clean
+      on the new files; svelte-check 0, vitest 52/52, build green.
+      **Not verified end to end:** the *on behalf* path and the hiding of
+      unshared aspirations from other viewers depend on the real access-control
+      engine (stubbed here; enforcement is off in tests, so everyone reads as
+      the person) — the deciding rules (`is_self`, `can_view`) are unit-tested,
+      and the UI messaging is component-tested. **Limits:** "shared" means
+      visible to anyone who can view the record (no manager-only tier);
+      retrospective dates are whole days in UTC; skills merged by `/skills`
+      merge are not re-recorded in the history; no edit/delete of a past
+      entry yet.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 

@@ -452,6 +452,17 @@ pub fn authorize_record(
     }
 }
 
+/// Whether the caller is acting **on someone else's behalf** for a worker's
+/// record — HR setting a role for a worker, say — as opposed to the person
+/// themselves. Always `false` when enforcement is off (no identity to compare).
+#[must_use]
+pub fn acting_for_other(caller: &MaybeAuthUser, person_ref: &str) -> bool {
+    require_auth()
+        && caller
+            .claims()
+            .is_some_and(|c| !crate::rules::career::is_self(&c.sub, person_ref))
+}
+
 /// Read env var `name`, treating unset/blank as absent and falling back
 /// to `default`. Used by both backends for issuer/audience-style
 /// config so a blank value doesn't override the sensible default. Goes

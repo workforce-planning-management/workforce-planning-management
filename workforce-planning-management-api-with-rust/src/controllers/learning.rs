@@ -11,7 +11,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
-use crate::auth::MaybeAuthUser;
+use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     development_plan_items, initiative_skill_shifts, learning_path_steps, learning_paths,
     mentorship_sessions, mentorships, path_enrollments, role_skill_requirements,
@@ -694,6 +694,16 @@ async fn declare_skill(
             .await?
         }
     };
+    crate::models::skill_history::record(
+        &ctx.db,
+        worker.pid,
+        skill.pid,
+        Some(payload.proficiency),
+        "declared",
+        caller.actor(),
+        auth::acting_for_other(&caller, &worker.person_ref),
+    )
+    .await?;
     Audit::record(
         &ctx.db,
         "worker_skill",

@@ -11,7 +11,7 @@
 //! a worker's own record.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, TransactionTrait};
+use sea_orm::{ActiveValue, ConnectionTrait, TransactionTrait};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -64,6 +64,10 @@ fn selection_json(row: &worker_framework_roles::Model) -> serde_json::Value {
         "role_profile_pid": row.role_profile_pid,
         "occupation_uri": row.esco_occupation_uri,
         "selected_on": row.selected_on,
+        "started_at": row.started_at,
+        "ended_at": row.ended_at,
+        "recorded_by": row.recorded_by,
+        "on_behalf": row.on_behalf,
     })
 }
 
@@ -75,6 +79,7 @@ async fn current_selection(
     Ok(worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.eq(worker_pid))
         .filter(worker_framework_roles::Column::FrameworkSlug.eq(framework))
+        .filter(worker_framework_roles::Column::EndedAt.is_null())
         .one(&ctx.db)
         .await?)
 }
@@ -89,6 +94,7 @@ async fn list_selections(
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let rows = worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
+        .filter(worker_framework_roles::Column::EndedAt.is_null())
         .all(&ctx.db)
         .await?;
     format::json(rows.iter().map(selection_json).collect::<Vec<_>>())
@@ -136,12 +142,18 @@ async fn set_selection(
             .map_err(|_| unprocessable("that is not an ESCO occupation in the pinned copy"))?;
         (None, Some(occupation.uri), occupation.label)
     };
+    let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
+    // Choosing the role they already hold changes nothing.
+    if let Some(current) = current_selection(&ctx, worker.pid, &framework).await?
+        && current.role_profile_pid == profile_pid
+        && current.esco_occupation_uri == occupation_uri
+    {
+        return format::json(selection_json(&current));
+    }
     let txn = ctx.db.begin().await?;
-    worker_framework_roles::Entity::delete_many()
-        .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_framework_roles::Column::FrameworkSlug.eq(&framework))
-        .exec(&txn)
-        .await?;
+    // The previous role ends now — that is what makes it a *past* role.
+    close_current(&txn, worker.pid, &framework).await?;
+    let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
     let row = worker_framework_roles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -150,6 +162,10 @@ async fn set_selection(
         esco_occupation_uri: ActiveValue::set(occupation_uri),
         role_label: ActiveValue::set(label),
         selected_on: ActiveValue::set(chrono::Utc::now().date_naive()),
+        started_at: ActiveValue::set(now),
+        ended_at: ActiveValue::set(None),
+        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
+        on_behalf: ActiveValue::set(on_behalf),
         ..Default::default()
     }
     .insert(&txn)
@@ -160,7 +176,7 @@ async fn set_selection(
         worker.pid,
         "framework_role_selected",
         caller.actor(),
-        Some(serde_json::json!({ "framework": framework, "role": row.role_label })),
+        Some(serde_json::json!({ "framework": framework, "role": row.role_label, "on_behalf": on_behalf })),
     )
     .await?;
     txn.commit().await?;
@@ -177,11 +193,7 @@ async fn clear_selection(
 ) -> Result<Response> {
     check_framework(&framework)?;
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    worker_framework_roles::Entity::delete_many()
-        .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_framework_roles::Column::FrameworkSlug.eq(&framework))
-        .exec(&ctx.db)
-        .await?;
+    close_current(&ctx.db, worker.pid, &framework).await?;
     Audit::record(
         &ctx.db,
         "worker",
@@ -192,6 +204,26 @@ async fn clear_selection(
     )
     .await?;
     format::empty_json()
+}
+
+/// End the worker's current role in a framework, if they have one.
+async fn close_current<C: ConnectionTrait>(
+    db: &C,
+    worker_pid: Uuid,
+    framework: &str,
+) -> Result<()> {
+    if let Some(current) = worker_framework_roles::Entity::find()
+        .filter(worker_framework_roles::Column::WorkerPid.eq(worker_pid))
+        .filter(worker_framework_roles::Column::FrameworkSlug.eq(framework))
+        .filter(worker_framework_roles::Column::EndedAt.is_null())
+        .one(db)
+        .await?
+    {
+        let mut active: worker_framework_roles::ActiveModel = current.into();
+        active.ended_at = ActiveValue::set(Some(chrono::Utc::now().into()));
+        active.update(db).await?;
+    }
+    Ok(())
 }
 
 /// The worker's live declarations by catalogue skill.
@@ -310,7 +342,19 @@ async fn apply_declaration(
     worker_pid: Uuid,
     skill_pid: Uuid,
     proficiency: Option<i32>,
+    actor: Option<&str>,
+    on_behalf: bool,
 ) -> Result<bool> {
+    crate::models::skill_history::record(
+        txn,
+        worker_pid,
+        skill_pid,
+        proficiency,
+        "framework",
+        actor,
+        on_behalf,
+    )
+    .await?;
     let today = chrono::Utc::now().date_naive();
     let existing = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(worker_pid))
@@ -357,6 +401,7 @@ async fn apply_declaration(
 /// ESCO refs are ESCO skill URIs, resolved to (or created and linked as)
 /// catalogue skills.
 #[debug_handler]
+#[allow(clippy::too_many_lines)] // validate → resolve → declare, per framework
 async fn set_skills(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -385,6 +430,7 @@ async fn set_skills(
             .iter()
             .all(|c| c.proficiency.is_none_or(valid_proficiency))
     );
+    let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
     let version = if framework == ESCO_SLUG {
         pinned_version(&ctx.db).await?
     } else {
@@ -434,7 +480,16 @@ async fn set_skills(
                 pid
             }
         };
-        if apply_declaration(&txn, worker.pid, skill_pid, choice.proficiency).await? {
+        if apply_declaration(
+            &txn,
+            worker.pid,
+            skill_pid,
+            choice.proficiency,
+            caller.actor(),
+            on_behalf,
+        )
+        .await?
+        {
             declared += 1;
         } else {
             removed += 1;

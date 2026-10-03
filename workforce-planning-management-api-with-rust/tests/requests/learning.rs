@@ -1652,3 +1652,118 @@ async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn career_history_and_aspirations() {
+    use workforce_planning_management_service::rules::framework::LevelMapping;
+    use workforce_planning_management_service::tasks::import_esco::import_esco;
+    use workforce_planning_management_service::tasks::import_framework::import_pcf;
+
+    request::<App, _, _>(|request, ctx| async move {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+        import_pcf(&ctx.db, &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
+        import_esco(&ctx.db, &root.join("esco-mini"), "en", "v-test").await.expect("esco");
+        let org = an_org();
+        let me = seed_worker!(&request, &org, "E-1", None).await;
+        activate!(&request, &me).await;
+        let profiles: Value = request.get("/api/role-profiles?framework=uk-gdad-pcf").await.json();
+        let profile = |title: &str| profiles.as_array().unwrap().iter().find(|p| p["job_title"] == title).unwrap()["pid"].as_str().unwrap().to_string();
+        let (junior, tester) = (profile("Junior tester"), profile("Tester"));
+        let role_url = format!("/api/workers/{me}/framework-roles/uk-gdad-pcf");
+
+        // ── Roles over time: changing a role closes the old one; choosing it again changes nothing.
+        request.put(&role_url).json(&json!({ "role_profile_pid": junior })).await.assert_status_ok();
+        request.put(&role_url).json(&json!({ "role_profile_pid": junior })).await.assert_status_ok();
+        request.put(&role_url).json(&json!({ "role_profile_pid": tester })).await.assert_status_ok();
+        let history: Value = request.get(&format!("/api/workers/{me}/role-history?framework=uk-gdad-pcf")).await.json();
+        let rows = history.as_array().unwrap();
+        assert_eq!(rows.len(), 2, "re-selecting the same role added no row");
+        assert_eq!(rows[0]["role_label"], "Tester");
+        assert_eq!(rows[0]["current"], true);
+        assert_eq!(rows[1]["role_label"], "Junior tester");
+        assert_eq!(rows[1]["current"], false);
+        assert!(rows[1]["ended_at"].is_string(), "the previous role has a stop time");
+
+        // ── A retrospective past role: dated, non-overlapping, and not in the future.
+        let past = |from: &str, to: &str| {
+            request.post(&format!("{role_url}/past")).json(&json!({ "role_profile_pid": junior, "started_on": from, "ended_on": to }))
+        };
+        past("2019-01-01", "2020-06-30").await.assert_status_ok();
+        assert_eq!(past("2020-01-01", "2020-12-31").await.status_code(), 422, "overlaps the role just added");
+        assert_eq!(past("2022-01-01", "2021-01-01").await.status_code(), 422, "ends before it starts");
+        assert_eq!(past("2025-01-01", "2999-01-01").await.status_code(), 422, "cannot end in the future");
+        let all: Value = request.get(&format!("/api/workers/{me}/role-history")).await.json();
+        assert_eq!(all.as_array().unwrap().len(), 3);
+
+        // ── Skills over time.
+        let skill: Value = request.post("/api/skills").json(&json!({ "name": "History skill", "category": "technical" })).await.json();
+        let skill_pid = skill["pid"].as_str().unwrap().to_string();
+        for level in [2, 4, 4, 3] {
+            request.put(&format!("/api/workers/{me}/skills")).json(&json!({ "skill_pid": skill_pid, "proficiency": level })).await.assert_status_ok();
+        }
+        let timeline: Value = request.get(&format!("/api/workers/{me}/skill-history?skill_pid={skill_pid}")).await.json();
+        let t = timeline.as_array().unwrap();
+        assert_eq!(t.len(), 3, "2 → 4 → 3; declaring 4 twice is not a change");
+        assert_eq!(t[0]["proficiency"], 3);
+        assert_eq!(t[0]["current"], true);
+        assert!(t[1]["ended_at"].is_string() && t[2]["ended_at"].is_string());
+        // Deselecting through the framework route closes the interval too.
+        // A retrospective level, then "as of" reads.
+        let retro = |from: &str, to: &str, level: i32| {
+            request.post(&format!("/api/workers/{me}/skill-history/past")).json(&json!({ "skill_pid": skill_pid, "proficiency": level, "started_on": from, "ended_on": to }))
+        };
+        retro("2020-01-01", "2021-12-31", 1).await.assert_status_ok();
+        assert_eq!(retro("2021-06-01", "2022-06-01", 2).await.status_code(), 422, "overlaps the interval just added");
+        assert_eq!(retro("2018-01-01", "2018-12-31", 9).await.status_code(), 422, "level is 1-5");
+        let then: Value = request.get(&format!("/api/workers/{me}/skills-as-of?at=2020-06-01")).await.json();
+        let held = then["skills"].as_array().unwrap();
+        assert_eq!(held.len(), 1);
+        assert_eq!(held[0]["proficiency"], 1);
+        let before: Value = request.get(&format!("/api/workers/{me}/skills-as-of?at=2010-01-01")).await.json();
+        assert!(before["skills"].as_array().unwrap().is_empty());
+        let today = chrono::Utc::now().date_naive().to_string();
+        let now: Value = request.get(&format!("/api/workers/{me}/skills-as-of?at={today}")).await.json();
+        assert_eq!(now["skills"][0]["proficiency"], 3, "the current level");
+        assert_eq!(now["roles"][0]["role_label"], "Tester");
+
+        // ── Aspirations: a skill target and a role, with progress; validated; private by default.
+        let aspire = |body: Value| request.post(&format!("/api/workers/{me}/aspirations")).json(&body);
+        assert_eq!(aspire(json!({ "kind": "skill", "skill_pid": skill_pid, "horizon": "within_1y" })).await.status_code(), 422, "needs a target");
+        assert_eq!(aspire(json!({ "kind": "skill", "skill_pid": skill_pid, "target_level": 6, "horizon": "within_1y" })).await.status_code(), 422);
+        assert_eq!(aspire(json!({ "kind": "role", "framework_slug": "uk-gdad-pcf", "role_profile_pid": tester, "horizon": "soon" })).await.status_code(), 422);
+        let goal: Value = aspire(json!({ "kind": "skill", "skill_pid": skill_pid, "target_level": 5, "horizon": "within_1y", "note": "pair with a senior" })).await.json();
+        let role_goal: Value = aspire(json!({
+            "kind": "role", "framework_slug": "esco", "occupation_uri": "http://data.europa.eu/esco/occupation/q1",
+            "horizon": "one_to_three_years", "status": "planned", "shared": true,
+        })).await.json();
+        let listed: Value = request.get(&format!("/api/workers/{me}/aspirations")).await.json();
+        assert_eq!(listed["viewer_is_the_person"], true);
+        let items = listed["aspirations"].as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        let skill_goal = items.iter().find(|a| a["kind"] == "skill").unwrap();
+        assert_eq!(skill_goal["shared"], false, "private unless the person shares it");
+        assert_eq!(skill_goal["progress"]["current_level"], 3);
+        assert_eq!(skill_goal["progress"]["gap"], 2);
+        assert_eq!(skill_goal["note"], "pair with a senior");
+        let role_item = items.iter().find(|a| a["kind"] == "role").unwrap();
+        assert_eq!(role_item["role_label"], "esco test developer");
+        assert_eq!(role_item["progress"]["essential_skills"], 2);
+        assert_eq!(role_item["shared"], true);
+
+        // Progress and status move; achieved is recorded, not assumed.
+        let goal_pid = goal["pid"].as_str().unwrap();
+        request.put(&format!("/api/aspirations/{goal_pid}")).json(&json!({ "status": "in_progress", "shared": true })).await.assert_status_ok();
+        assert_eq!(request.put(&format!("/api/aspirations/{goal_pid}")).json(&json!({ "status": "wishing" })).await.status_code(), 422);
+        request.put(&format!("/api/workers/{me}/skills")).json(&json!({ "skill_pid": skill_pid, "proficiency": 5 })).await.assert_status_ok();
+        let after: Value = request.get(&format!("/api/workers/{me}/aspirations")).await.json();
+        let done = after["aspirations"].as_array().unwrap().iter().find(|a| a["pid"] == goal_pid).unwrap();
+        assert_eq!(done["progress"]["achieved"], true);
+        assert_eq!(done["shared"], true);
+        request.delete(&format!("/api/aspirations/{}", role_goal["pid"].as_str().unwrap())).await.assert_status_ok();
+        let last: Value = request.get(&format!("/api/workers/{me}/aspirations")).await.json();
+        assert_eq!(last["aspirations"].as_array().unwrap().len(), 1);
+    })
+    .await;
+}

@@ -832,6 +832,175 @@ export function setFrameworkSkills(
   });
 }
 
+/** One role a person has held (or holds) in a framework. */
+export type RoleHistoryRow = FrameworkRole & {
+  pid: string;
+  started_at: string;
+  ended_at: string | null;
+  current: boolean;
+  recorded_by: string | null;
+  on_behalf: boolean;
+};
+
+/** Every role held in a framework (or all), newest first. */
+export function roleHistory(
+  workerPid: string,
+  framework?: string,
+  init?: FetchLike,
+): Promise<RoleHistoryRow[]> {
+  const qs = framework ? `?framework=${framework}` : "";
+  return api(`/workers/${workerPid}/role-history${qs}`, init);
+}
+
+/** Record a role held in the past, with its dates (inclusive days). */
+export function addPastRole(
+  workerPid: string,
+  framework: string,
+  body: {
+    role_profile_pid?: string;
+    occupation_uri?: string;
+    started_on: string;
+    ended_on: string;
+  },
+): Promise<unknown> {
+  return api(`/workers/${workerPid}/framework-roles/${framework}/past`, {
+    method: "POST",
+    body,
+  });
+}
+
+/** One interval a skill was held at a level. */
+export type SkillHistoryRow = {
+  pid: string;
+  skill_pid: string;
+  skill: string | null;
+  proficiency: number;
+  started_at: string;
+  ended_at: string | null;
+  current: boolean;
+  source: string;
+  recorded_by: string | null;
+  on_behalf: boolean;
+};
+
+/** The timeline of skill levels. */
+export function skillHistory(
+  workerPid: string,
+  skillPid?: string,
+  init?: FetchLike,
+): Promise<SkillHistoryRow[]> {
+  const qs = skillPid ? `?skill_pid=${skillPid}` : "";
+  return api(`/workers/${workerPid}/skill-history${qs}`, init);
+}
+
+/** Record a skill level held in the past, with its dates. */
+export function addPastSkill(
+  workerPid: string,
+  body: {
+    skill_pid: string;
+    proficiency: number;
+    started_on: string;
+    ended_on: string;
+  },
+): Promise<unknown> {
+  return api(`/workers/${workerPid}/skill-history/past`, { method: "POST", body });
+}
+
+/** Skills, levels and roles held at the end of a date. */
+export function skillsAsOf(
+  workerPid: string,
+  at: string,
+  init?: FetchLike,
+): Promise<{
+  at: string;
+  roles: Array<{ framework: string; role_label: string }>;
+  skills: Array<{ skill_pid: string; skill: string | null; proficiency: number }>;
+}> {
+  return api(`/workers/${workerPid}/skills-as-of?at=${at}`, init);
+}
+
+/** Aspiration vocabularies (mirror `rules::career`). */
+export const ASPIRATION_HORIZONS = [
+  "within_1y",
+  "one_to_three_years",
+  "beyond",
+  "someday",
+] as const;
+export const ASPIRATION_STATUSES = [
+  "idea",
+  "planned",
+  "in_progress",
+  "achieved",
+  "dropped",
+] as const;
+
+/** One aspiration, learning goal, or growth idea. */
+export type Aspiration = {
+  pid: string;
+  kind: "role" | "skill";
+  framework: string | null;
+  role_label: string | null;
+  skill: string | null;
+  target_level: number | null;
+  horizon: string;
+  status: string;
+  note: string | null;
+  shared: boolean;
+  recorded_by: string | null;
+  on_behalf: boolean;
+  progress: Record<string, unknown> | null;
+};
+
+/** Aspirations and growth ideas; private unless shared. */
+export function listAspirations(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{
+  viewer_is_the_person: boolean;
+  aspirations: Aspiration[];
+  private_hidden: number;
+}> {
+  return api(`/workers/${workerPid}/aspirations`, init);
+}
+
+/** Record a future role or skill target. */
+export function addAspiration(
+  workerPid: string,
+  body: {
+    kind: "role" | "skill";
+    framework_slug?: string;
+    role_profile_pid?: string;
+    occupation_uri?: string;
+    skill_pid?: string;
+    target_level?: number;
+    horizon: string;
+    status?: string;
+    note?: string;
+    shared?: boolean;
+  },
+): Promise<{ pid: string }> {
+  return api(`/workers/${workerPid}/aspirations`, { method: "POST", body });
+}
+
+/** Update status, horizon, target, note, or sharing. */
+export function updateAspiration(
+  pid: string,
+  body: {
+    status?: string;
+    horizon?: string;
+    target_level?: number;
+    note?: string;
+    shared?: boolean;
+  },
+): Promise<unknown> {
+  return api(`/aspirations/${pid}`, { method: "PUT", body });
+}
+
+/** Drop an aspiration. */
+export function deleteAspiration(pid: string): Promise<unknown> {
+  return api(`/aspirations/${pid}`, { method: "DELETE" });
+}
+
 /** Search the pinned ESCO occupations (needs at least 2 characters). */
 export function searchEscoOccupations(
   q: string,

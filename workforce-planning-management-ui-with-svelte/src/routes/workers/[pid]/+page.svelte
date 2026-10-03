@@ -2,6 +2,9 @@
   import { page } from "$app/state";
   import RoleGap from "#lib/components/RoleGap.svelte";
   import Mobility from "#lib/components/Mobility.svelte";
+  import Aspirations from "#lib/components/Aspirations.svelte";
+  import CareerHistory from "#lib/components/CareerHistory.svelte";
+  import FrameworkRolePanel from "#lib/components/FrameworkRolePanel.svelte";
   import {
     ADJUSTMENT_CATEGORIES,
     acknowledgeWellbeing,
@@ -601,4 +604,22 @@
   </table>
   <RoleGap workerPid={worker.pid} />
   <Mobility workerPid={worker.pid} />
+  {@const ownPid = worker.pid}
+  {@const mine = ((page.data.organizations ?? []) as Array<{ worker_pid: string | null }>).some(
+    (m) => m.worker_pid === ownPid,
+  )}
+  <FrameworkRolePanel
+    workerPid={worker.pid}
+    framework="uk-gdad-pcf"
+    title="Role and skills — UK GDAD PCF"
+    actingFor={mine ? undefined : worker.display_name}
+  />
+  <FrameworkRolePanel
+    workerPid={worker.pid}
+    framework="esco"
+    title="Role and skills — ESCO"
+    actingFor={mine ? undefined : worker.display_name}
+  />
+  <CareerHistory workerPid={worker.pid} />
+  <Aspirations workerPid={worker.pid} />
 {/if}

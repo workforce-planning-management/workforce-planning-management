@@ -108,6 +108,10 @@ describe("api path map", () => {
     await wpm.listFrameworks();
     await wpm.listSelectableFrameworks();
     await wpm.listFrameworkRoles("w1");
+    await wpm.roleHistory("w1", "esco");
+    await wpm.skillHistory("w1");
+    await wpm.skillsAsOf("w1", "2026-01-01");
+    await wpm.listAspirations("w1");
     await wpm.frameworkRoleSkills("w1", "esco");
     await wpm.searchEscoOccupations("dev");
     await wpm.getEscoOccupation("http://x/1");
@@ -173,6 +177,10 @@ describe("api path map", () => {
       "/api/proxy/capability-frameworks",
       "/api/proxy/frameworks/selectable",
       "/api/proxy/workers/w1/framework-roles",
+      "/api/proxy/workers/w1/role-history?framework=esco",
+      "/api/proxy/workers/w1/skill-history",
+      "/api/proxy/workers/w1/skills-as-of?at=2026-01-01",
+      "/api/proxy/workers/w1/aspirations",
       "/api/proxy/workers/w1/framework-roles/esco/skills",
       "/api/proxy/esco/occupations?q=dev&limit=25",
       "/api/proxy/esco/occupation?uri=http%3A%2F%2Fx%2F1",

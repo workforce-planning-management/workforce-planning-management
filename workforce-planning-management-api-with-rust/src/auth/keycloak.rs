@@ -124,7 +124,14 @@ fn attrs_from_keycloak_claims(claims: &KeycloakClaims) -> BTreeMap<String, Vec<S
     }
     attrs.insert(
         "access".to_string(),
-        vec![if has_role("wpm-admin") { "admin" } else { "write" }.to_string()],
+        vec![
+            if has_role("wpm-admin") {
+                "admin"
+            } else {
+                "write"
+            }
+            .to_string(),
+        ],
     );
     if let Some(groups) = &claims.groups {
         let departments: Vec<String> = groups
@@ -235,7 +242,11 @@ async fn fetch_jwks(url: &str) -> Option<JwkSet> {
     };
     match response.json::<JwkSet>().await {
         Ok(jwks) => {
-            tracing::info!(url, keys = jwks.keys.len(), "Keycloak JWKS fetched over HTTP");
+            tracing::info!(
+                url,
+                keys = jwks.keys.len(),
+                "Keycloak JWKS fetched over HTTP"
+            );
             Some(jwks)
         }
         Err(error) => {
@@ -467,8 +478,7 @@ mod tests {
             realm_access: Some(RealmAccess {
                 roles: roles.iter().map(ToString::to_string).collect(),
             }),
-            groups: (!groups.is_empty())
-                .then(|| groups.iter().map(ToString::to_string).collect()),
+            groups: (!groups.is_empty()).then(|| groups.iter().map(ToString::to_string).collect()),
             organization_ref: (!organization_ref.is_empty())
                 .then(|| organization_ref.iter().map(ToString::to_string).collect()),
         }
@@ -505,7 +515,10 @@ mod tests {
             attrs_from_keycloak_claims(&claims(&[], &["/org/engineering", "/org/finance"], &[]));
         let mut department = attrs["department"].clone();
         department.sort();
-        assert_eq!(department, vec!["engineering".to_string(), "finance".to_string()]);
+        assert_eq!(
+            department,
+            vec!["engineering".to_string(), "finance".to_string()]
+        );
     }
 
     #[test]
@@ -513,7 +526,10 @@ mod tests {
         let attrs = attrs_from_keycloak_claims(&claims(
             &[],
             &[],
-            &["organization:11111111-1111-1111-1111-111111111111", "organization:2"],
+            &[
+                "organization:11111111-1111-1111-1111-111111111111",
+                "organization:2",
+            ],
         ));
         assert_eq!(
             attrs["organization_ref"],
@@ -541,7 +557,11 @@ mod tests {
         )
         .expect("parse generated keypair");
         let public = key_pair.public_key().as_ref();
-        assert_eq!(public.len(), 65, "uncompressed P-256 point (0x04 || X || Y)");
+        assert_eq!(
+            public.len(),
+            65,
+            "uncompressed P-256 point (0x04 || X || Y)"
+        );
         let x = URL_SAFE_NO_PAD.encode(&public[1..33]);
         let y = URL_SAFE_NO_PAD.encode(&public[33..65]);
         (pkcs8.as_ref().to_vec(), x, y)
@@ -615,7 +635,10 @@ mod tests {
         let material = key_material("test-key", "", "", ISSUER, AUDIENCE);
         let mut h = HeaderMap::new();
         h.insert(AUTHORIZATION, "Basic abc123".parse().unwrap());
-        assert_eq!(bearer_claims(&h, &material).unwrap_err().0, StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            bearer_claims(&h, &material).unwrap_err().0,
+            StatusCode::UNAUTHORIZED
+        );
     }
 
     #[test]

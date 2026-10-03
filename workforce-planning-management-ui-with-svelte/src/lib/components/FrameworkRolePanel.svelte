@@ -22,7 +22,14 @@
     workerPid,
     framework,
     title,
-  }: { workerPid: string; framework: "uk-gdad-pcf" | "esco"; title: string } = $props();
+    actingFor,
+  }: {
+    workerPid: string;
+    framework: "uk-gdad-pcf" | "esco";
+    title: string;
+    /** Set when someone else is editing this person's record (HR). */
+    actingFor?: string;
+  } = $props();
 
   type Profiles = Awaited<ReturnType<typeof listRoleProfiles>>;
 
@@ -168,6 +175,11 @@
 
 <section class="panel" data-testid={`framework-${framework}`}>
   <h2>{title}</h2>
+  {#if actingFor}
+    <p class="muted" data-testid="acting-for">
+      You are setting this for {actingFor}, on their behalf. It is recorded as made by you.
+    </p>
+  {/if}
   {#if error}<p class="error" data-testid="error">{error}</p>{/if}
   {#if notice}<p data-testid="notice">{notice}</p>{/if}
 
