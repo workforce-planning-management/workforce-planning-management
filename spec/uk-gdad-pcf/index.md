@@ -194,12 +194,22 @@ cargo loco task import_framework dir:/path/to/uk-gdad/uk-gdad \
   /api/role-profiles/{pid}/progression` — what changes going up a level in the
   same role (skills added, raised, unchanged), the career-ladder view.
 
-First real import (2026-10-03, from the local clone): 205 levels read, 4
-retired skipped, **201 profiles**, **161 skills** created (the retired roles'
-skills are not imported), **1,654 requirements**, 21 skill lines skipped for
-lack of a baseline; a second run created nothing. The competency-assessment
-files are the only source of numeric levels, so the import is only as good as
-that AI-assisted data.
+**Real import (2026-10-03, from the local clone):** 205 levels read, 4 retired
+left out, **201 profiles**, **161 skills** (the other 22 of the framework's 183
+appear only in the retired roles), and **1,675 requirements** with none skipped
+and no profile left empty. A second run created nothing. Baseline levels on the
+framework's own scale: 317 at 1, 392 at 2, 555 at 3, 411 at 4. Real-data
+findings:
+
+- **The first import skipped 21 skill lines** (the three senior user-researcher
+  levels): those assessments write the baseline on the same line as a bold
+  heading (`**Baseline for this role level:** Baseline: 3 — …`). The parser now
+  handles both shapes (pinned by a test), and ignores prose that merely says
+  "the baseline … is 2".
+- Real progression works: Developer → Senior developer raises 9 skills and adds
+  none.
+- The competency-assessment files are the only source of numeric levels, so the
+  import is only as good as that AI-assisted data.
 
 ## Open decisions
 

@@ -1156,6 +1156,23 @@ first in each, per the three-part rule.
       clippy-clean on the new files; svelte-check 0, vitest 45/45, build
       green. Not done: undoing a merge; merging more than two skills at once.
 
+- [x] WPM-T62 (2026-10-03) **Real-data verification: ESCO v1.2.1 and the UK
+      GDAD PCF.** Both frameworks loaded from real data and exercised through
+      the running API. **PCF:** 201 profiles / 161 skills / 1,675
+      requirements; fixed a real-file baseline format that the first import
+      had skipped (21 lines → 0). **ESCO:** `scripts/esco-fetch.py` builds the
+      CSVs from ESCO's public API (taxonomy crawl closing over nested
+      occupations, skills-hierarchy crawl, bulk skill lookup, curl transport,
+      resumable cache); loaded **3,039 occupations (= ESCO's published
+      figure), 13,653 skills (portal states 13,939 / 13,890 — not
+      reconciled), 126,051 relations**, none dangling, in seconds; seeding the
+      real *software developer* occupation drafted 108 requirements in 0.37 s.
+      Honest findings recorded in `spec/esco/` and `spec/uk-gdad-pcf/`: only 2
+      of 161 PCF skills link by exact label; the draft category mapping labels
+      all ESCO *knowledge* skills `domain` (crude — use ESCO's skills hierarchy
+      next); the `test` environment recreates the database on boot. The CSVs
+      are API-derived, not the official emailed package.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

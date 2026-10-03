@@ -108,6 +108,29 @@ def crawl_occupations(client):
     return occupations
 
 
+def crawl_skills(client):
+    """Every skill URI, from the skills hierarchy: groups (narrowerConcept)
+    down to their skills (narrowerSkill). The `member-skills` list alone
+    misses some."""
+    scheme = client.get("resource/taxonomy", uri="http://data.europa.eu/esco/concept-scheme/skills-hierarchy")
+    frontier = [t["uri"] for t in scheme["_links"]["hasTopConcept"]]
+    groups, skills = set(), set()
+
+    def node(uri):
+        return client.get("resource/concept", uri=uri)["_links"]
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=client.threads) as pool:
+        while frontier:
+            batch = [u for u in dict.fromkeys(frontier) if u not in groups]
+            frontier = []
+            for uri, links in zip(batch, pool.map(node, batch)):
+                groups.add(uri)
+                frontier.extend(c["uri"] for c in links.get("narrowerConcept") or [])
+                skills.update(sk["uri"] for sk in links.get("narrowerSkill") or [])
+    print(f"  {len(groups)} skill groups, {len(skills)} skills in the hierarchy", file=sys.stderr)
+    return skills
+
+
 def bulk_skills(client, uris, size=25):
     """Skill resources, `size` per request (the API's bulk form)."""
     out = {}
@@ -145,24 +168,36 @@ def main():
 
     occupation_rows, relations = [], []
     skill_uris = set()
+    done, frontier = set(), list(occupation_uris)
+    # An occupation can have narrower occupations of its own, so close over
+    # `narrowerOccupation` until nothing new appears.
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.threads) as pool:
-        for i, d in enumerate(pool.map(detail, occupation_uris), 1):
-            if i % 200 == 0:
-                print(f"  occupation detail {i}/{len(occupation_uris)}", file=sys.stderr, flush=True)
-            links = d.get("_links", {})
-            isco = (links.get("broaderIscoGroup") or [{}])[0].get("code", "")
-            occupation_rows.append([
-                "Occupation", d["uri"], isco, d["title"], "", "", d.get("status", ""), "", "", "", "", "",
-                literal(d.get("description"), args.lang), d.get("code", ""),
-            ])
-            for kind, key in (("essential", "hasEssentialSkill"), ("optional", "hasOptionalSkill")):
-                for sk in links.get(key) or []:
-                    skill_uris.add(sk["uri"])
-                    relations.append([d["uri"], kind, SKILL_TYPE.get(sk.get("skillType", "").rsplit("/", 1)[-1], ""), sk["uri"]])
+        while frontier:
+            batch = [u for u in dict.fromkeys(frontier) if u not in done]
+            frontier = []
+            for d in pool.map(detail, batch):
+                done.add(d["uri"])
+                if len(done) % 200 == 0:
+                    print(f"  occupation detail {len(done)}", file=sys.stderr, flush=True)
+                links = d.get("_links", {})
+                frontier.extend(o["uri"] for o in links.get("narrowerOccupation") or [])
+                isco = (links.get("broaderIscoGroup") or [{}])[0].get("code", "")
+                if not isco and d.get("code", "")[:4].isdigit():
+                    # A narrower occupation has no ISCO link of its own; its ESCO
+                    # code ("2512.4.1") starts with the ISCO unit group.
+                    isco = d["code"][:4]
+                occupation_rows.append([
+                    "Occupation", d["uri"], isco, d["title"], "", "", d.get("status", ""), "", "", "", "", "",
+                    literal(d.get("description"), args.lang), d.get("code", ""),
+                ])
+                for kind, key in (("essential", "hasEssentialSkill"), ("optional", "hasOptionalSkill")):
+                    for sk in links.get(key) or []:
+                        skill_uris.add(sk["uri"])
+                        relations.append([d["uri"], kind, SKILL_TYPE.get(sk.get("skillType", "").rsplit("/", 1)[-1], ""), sk["uri"]])
+    print(f"  {len(occupation_rows)} occupations", file=sys.stderr)
 
     print("skills…", file=sys.stderr)
-    scheme = client.get("resource/taxonomy", uri="http://data.europa.eu/esco/concept-scheme/member-skills")
-    skill_uris.update(t["uri"] for t in scheme["_links"]["hasTopConcept"])
+    skill_uris.update(crawl_skills(client))
     resources = bulk_skills(client, sorted(skill_uris))
     # Close over skill → optional-skill links, in case some skills hang off others.
     extra = {l["uri"] for r in resources.values() for l in (r.get("_links", {}).get("hasOptionalSkill") or [])} - set(resources)

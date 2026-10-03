@@ -155,12 +155,48 @@ cargo loco task import_esco dir:/path/to/esco-csv [lang:en] [version:v1.2.1]
 - **Front-end:** `/roles` "Start from an ESCO occupation" (search, preview the
   skills, choose the level, create) and `/skills` "Link ESCO" per skill.
 
-**Not verified against real ESCO files.** The CSV download is delivered by an
-emailed link, so the importer was built from the published structure (three
-files; a 4-column relations file; `iscoGroup` on occupations) and tested on a
-small synthetic fixture of the same shape. Run it on a real download and check
-the report before relying on it; if a column is missing it stops with a message
-naming it. Qualifications (EQF) remain out of scope.
+**Verified against the real ESCO v1.2.1 (2026-10-03).** The emailed download
+could not be obtained here, so `workforce-planning-management-api-with-rust/scripts/esco-fetch.py`
+builds the same three CSVs from the public web-service API — it crawls the
+occupation taxonomy (ISCO groups → occupations, closing over nested
+occupations) and the skills hierarchy, bulk-fetches skills, and translates the
+API's vocabulary into the CSV's ("skill" → "skill/competence", "sector specific
+skills and competences" → "sector-specific"). It makes about 6,000 polite
+requests (a few threads, cached so it resumes) and uses `curl`, because this
+Python build could not complete the server's certificate chain. Real result:
+
+| | Loaded | Published by ESCO |
+|---|---:|---:|
+| Occupations | **3,039** | 3,039 ✓ |
+| Skills | 13,653 | 13,939 (what-is page) / 13,890 (skills page) — **not reconciled**; the skills hierarchy reaches 13,653 skills plus 640 skill groups |
+| Occupation–skill relations | 126,051 (0 dangling) | — |
+
+Import takes a few seconds; search answers in milliseconds. Seeding the real
+*software developer* occupation (ISCO 2512; 24 essential, 84 optional skills)
+took 0.37 s and drafted 108 requirements (24 `important`, 84 `useful`).
+
+What the real data showed:
+
+- **Only 2 of the 161 PCF skills link by exact label** (`Data engineering`,
+  `Financial management`): the PCF's names ("Information security") and ESCO's
+  labels differ, and exact matching is deliberately all that is done. Linking
+  the rest is a planner decision (`/skills` → *Link ESCO*).
+- **The draft category mapping is crude.** It makes every ESCO *knowledge*
+  skill `domain`: 79 of the 108 skills drafted for *software developer* —
+  including programming languages, which are really technical. ESCO's skills
+  hierarchy (not in the CSV) would classify them far better; until that is
+  used, treat the category as a draft and correct it in `/skills`.
+- **Nested occupations** (1,071 narrower occupations of other occupations) are
+  easy to miss and carry no ISCO link of their own; the script takes the ISCO
+  unit group from their ESCO code (`2512.4.1` → `2512`).
+- A search or crawl that stops at the API's 200-result paging cap silently
+  returns a fraction of ESCO; the loaded counts above are the check.
+- **Starting the app in the `test` environment recreates the database** on boot
+  (`dangerously_recreate`); load reference data into a development database.
+
+The CSVs here are API-derived, not the official package, so confirm against
+the official download if exact parity matters (e.g. `altLabels`, which the
+importer ignores). Qualifications (EQF) remain out of scope.
 
 ### Open decisions
 
