@@ -21,6 +21,7 @@
     setSkillShift,
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
+  import LilyKanban from "#lib/components/LilyKanban.svelte";
   import { t } from "#lib/i18n.svelte.js";
 
   type Initiatives = Awaited<ReturnType<typeof listChangeInitiatives>>;
@@ -42,6 +43,24 @@
   let timeframe = $state<string>("within_1y");
   let shiftSkill = $state("");
   let direction = $state<string>("rising");
+
+  const COLUMNS = ["draft", "active", "completed", "cancelled"].map((id) => ({ id, title: id }));
+  const cards = $derived(
+    initiatives.map((i) => ({
+      id: i.pid,
+      columnId: i.status,
+      title: `${i.name} · ${i.roles_affected} role(s), ${i.skills_shifting} skill(s)`,
+    })),
+  );
+
+  /** A card move is a lifecycle transition; the service refuses illegal ones
+   * (422) and the reload puts the card back where the truth says it is. */
+  async function moveInitiative(pid: string, to: string) {
+    const from = initiatives.find((i) => i.pid === pid)?.status;
+    if (from === to) return;
+    selected = pid;
+    await run(() => setChangeStatus(pid, to));
+  }
 
   const message = (cause: unknown) =>
     cause instanceof Error ? cause.message : String(cause);
@@ -100,6 +119,13 @@
   Track an automation or AI initiative's effect on roles and skills. Readiness is
   aggregate; no individual is named or ranked.
 </p>
+
+<LilyKanban
+  label="Change initiatives by status"
+  columns={COLUMNS}
+  {cards}
+  onMove={(pid, to) => void moveInitiative(pid, to)}
+/>
 
 <p>
   <label>

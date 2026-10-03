@@ -1065,6 +1065,22 @@ first in each, per the three-part rule.
       Not done: ESCO (see `spec/esco/`); other frameworks (SFIA, …); skill
       categories (all `other`); editing a skill; per-level importance.
 
+- [x] WPM-T58 (2026-10-03) **Lily Gantt chart and kanban board.** Added
+      `@lilydesignsystem/svelte-gantt-chart` and
+      `@lilydesignsystem/svelte-kanban-board` (0.1.0; there is no separate
+      "helpers" package — the helper components live in
+      `@lilydesignsystem/svelte-headless`, already a dependency). Both are
+      headless: no CSS and label-gated controls, so `LilyKanban.svelte` and
+      `LilyGantt.svelte` give them labels and minimal styling. The kanban
+      moves cards by pointer **or** a keyboard-accessible "Move to…" menu
+      (WCAG 2.5.7). Used on `/change` (initiative lifecycle board — a move is
+      a status transition; the service refuses illegal ones with 422 and the
+      reload puts the card back) and `/planning` (plan status board, and a
+      read-only **plan timeline**: each plan's horizon as a bar, each demand
+      line a milestone, no editing offered). The requisitions board keeps
+      SVAR's kanban. English labels, like the other new pages. 2 render
+      tests; svelte-check 0, vitest 45/45, build green.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

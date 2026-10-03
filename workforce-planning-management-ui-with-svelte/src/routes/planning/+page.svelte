@@ -24,6 +24,8 @@
     setPlanStatus,
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
+  import LilyGantt from "#lib/components/LilyGantt.svelte";
+  import LilyKanban from "#lib/components/LilyKanban.svelte";
   import { t } from "#lib/i18n.svelte.js";
 
   type Plans = Awaited<ReturnType<typeof listWorkforcePlans>>;
@@ -48,6 +50,7 @@
   let cost = $state<Cost | null>(null);
   let roles = $state<Awaited<ReturnType<typeof listRoleProfiles>>>([]);
   let totals = $state<Record<string, number>>({});
+  let details = $state<Plan[]>([]);
   let error = $state<string | null>(null);
 
   let name = $state("");
@@ -63,6 +66,39 @@
   let targetOn = $state("");
   let headcount = $state(1);
   let objectiveTitle = $state("");
+
+  /** The plans' horizons as bars, each demand line a milestone under its plan. */
+  const timeline = $derived.by(() => {
+    if (details.length === 0) return null;
+    const tasks = details.flatMap((p) => [
+      { id: p.pid, label: p.name, start: p.horizon_start, end: p.horizon_end },
+      ...p.demand_lines.map((l) => ({
+        id: l.pid,
+        label: `${l.department}${l.job_title ? ` (${l.job_title})` : ""} · ${l.target_headcount}`,
+        start: l.target_on,
+        end: l.target_on,
+        parentId: p.pid,
+      })),
+    ]);
+    const starts = tasks.map((x) => x.start).sort();
+    const ends = tasks.map((x) => x.end).sort();
+    return {
+      tasks,
+      range: { start: starts[0] ?? "", end: ends[ends.length - 1] ?? "" },
+    };
+  });
+  const today = new Date().toISOString().slice(0, 10);
+
+  const PLAN_COLUMNS = ["draft", "active", "archived"].map((id) => ({ id, title: id }));
+  const planCards = $derived(
+    plans.map((p) => ({ id: p.pid, columnId: p.status, title: `${p.name} · ${p.demand_lines} line(s)` })),
+  );
+
+  async function movePlan(pid: string, to: string) {
+    if (plans.find((p) => p.pid === pid)?.status === to) return;
+    selected = pid;
+    await run(() => setPlanStatus(pid, to));
+  }
 
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
   const editable = (p: Plan) => p.status !== "archived";
@@ -89,7 +125,7 @@
     try {
       plans = await listWorkforcePlans();
       if (!selected && plans.length > 0) selected = plans[0]?.pid ?? "";
-      const details = await Promise.all(plans.map((p) => getWorkforcePlan(p.pid)));
+      details = await Promise.all(plans.map((p) => getWorkforcePlan(p.pid)));
       totals = Object.fromEntries(
         details.map((d) => [d.pid, d.demand_lines.reduce((sum, l) => sum + l.target_headcount, 0)]),
       );
@@ -142,6 +178,22 @@
 </p>
 
 <h2>Plans</h2>
+<LilyKanban
+  label="Workforce plans by status"
+  columns={PLAN_COLUMNS}
+  cards={planCards}
+  onMove={(pid, to) => void movePlan(pid, to)}
+/>
+{#if timeline}
+  <LilyGantt
+    label="Plan timeline"
+    caption="Plan horizons and demand-line target dates"
+    range={timeline.range}
+    tasks={timeline.tasks}
+    {today}
+    timeUnit="month"
+  />
+{/if}
 <table data-testid="plan-compare">
   <thead><tr><th>Plan</th><th>Status</th><th>Horizon</th><th>Lines</th><th>Planned headcount</th></tr></thead>
   <tbody>

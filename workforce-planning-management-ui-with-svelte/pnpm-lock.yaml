@@ -8,9 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@lilydesignsystem/svelte-gantt-chart':
+        specifier: ^0.1.0
+        version: 0.1.0(svelte@5.57.1)
       '@lilydesignsystem/svelte-headless':
         specifier: ^0.2.0
         version: 0.2.0(svelte@5.57.1)
+      '@lilydesignsystem/svelte-kanban-board':
+        specifier: ^0.1.0
+        version: 0.1.0(svelte@5.57.1)
       '@lilydesignsystem/svelte-locale-picker':
         specifier: ^0.1.2
         version: 0.1.2(svelte@5.57.1)
@@ -178,8 +184,32 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
+  '@lilydesignsystem/svelte-date-time-picker@0.1.1':
+    resolution: {integrity: sha512-HlQ4FkZ7MSWedB66GF3x1w2XL85ns9q1K+TwFoyFEIK1GWM37FvuBucJ+B9HvekPfagiKuuEU9LTQQsBivZM6Q==}
+    engines: {node: '=26'}
+    peerDependencies:
+      svelte: ^5.0.0
+
+  '@lilydesignsystem/svelte-gantt-chart@0.1.0':
+    resolution: {integrity: sha512-531BLOo9EY4xZO/170c8EQCSFu/pebn5yWr6UWu35cnYnILQFusrgljedXhSYRCRn5xGjN26E2wn1KocWe2CMw==}
+    engines: {node: '=26'}
+    peerDependencies:
+      svelte: ^5.0.0
+
+  '@lilydesignsystem/svelte-headless@0.1.0':
+    resolution: {integrity: sha512-cB4/baunQqs/rrW7xY1jt3Nw3dJEbPD+JjQNsZY9kBlLALOSUoCnkfdo229RUj5Vamc099FvPsYXx4RKi0Siuw==}
+    engines: {node: '=26'}
+    peerDependencies:
+      svelte: ^5.0.0
+
   '@lilydesignsystem/svelte-headless@0.2.0':
     resolution: {integrity: sha512-xaCVY+qX2Aznb2wGtJhEIMCSeP04N/EZMZbjuOEllpMb3vow5yb/hH1pUybZwic/2HMCEp6zjuI9dSY7gKnRig==}
+    engines: {node: '=26'}
+    peerDependencies:
+      svelte: ^5.0.0
+
+  '@lilydesignsystem/svelte-kanban-board@0.1.0':
+    resolution: {integrity: sha512-ZKQFJ17rnHCsDIsM1r3iNKrOBQAhRCwnTr8clldZGfk2sllnd7m4zVOiZ72BtXJPURhUFoNLoajBMu6Qmu1wRw==}
     engines: {node: '=26'}
     peerDependencies:
       svelte: ^5.0.0
@@ -1201,9 +1231,30 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
+  '@lilydesignsystem/svelte-date-time-picker@0.1.1(svelte@5.57.1)':
+    dependencies:
+      '@lilydesignsystem/svelte-headless': 0.1.0(svelte@5.57.1)
+      svelte: 5.57.1
+
+  '@lilydesignsystem/svelte-gantt-chart@0.1.0(svelte@5.57.1)':
+    dependencies:
+      '@lilydesignsystem/svelte-date-time-picker': 0.1.1(svelte@5.57.1)
+      '@lilydesignsystem/svelte-headless': 0.2.0(svelte@5.57.1)
+      svelte: 5.57.1
+
+  '@lilydesignsystem/svelte-headless@0.1.0(svelte@5.57.1)':
+    dependencies:
+      aria-query: 5.3.2
+      svelte: 5.57.1
+
   '@lilydesignsystem/svelte-headless@0.2.0(svelte@5.57.1)':
     dependencies:
       aria-query: 5.3.2
+      svelte: 5.57.1
+
+  '@lilydesignsystem/svelte-kanban-board@0.1.0(svelte@5.57.1)':
+    dependencies:
+      '@lilydesignsystem/svelte-headless': 0.2.0(svelte@5.57.1)
       svelte: 5.57.1
 
   '@lilydesignsystem/svelte-locale-picker@0.1.2(svelte@5.57.1)':
