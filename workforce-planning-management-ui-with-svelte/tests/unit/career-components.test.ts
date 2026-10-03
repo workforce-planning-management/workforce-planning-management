@@ -56,18 +56,18 @@ describe("CareerHistory", () => {
 });
 
 describe("Aspirations", () => {
-  it("tells a viewer other than the person that private items are hidden", async () => {
+  it("shows a viewer other than the person only what is shared, without a hidden count", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string | URL) =>
         String(url).includes("aspirations")
-          ? json({ viewer_is_the_person: false, aspirations: [], private_hidden: 2 })
+          ? json({ viewer: "manager", viewer_is_the_person: false, aspirations: [] })
           : json([]),
       ),
     );
     render(Aspirations, { workerPid: "w1" });
     expect(await screen.findByText(/only what this person has chosen to share/)).toBeTruthy();
-    expect(screen.getByText(/2 private item\(s\) are not shown/)).toBeTruthy();
+    expect(screen.queryByText(/not shown/)).toBeNull();
   });
 
   it("adds a skill goal that is private unless shared", async () => {
@@ -80,7 +80,7 @@ describe("Aspirations", () => {
           posts.push(JSON.parse(String(init.body)));
           return json({ pid: "a1" });
         }
-        if (u.includes("aspirations")) return json({ viewer_is_the_person: true, aspirations: [], private_hidden: 0 });
+        if (u.includes("aspirations")) return json({ viewer: "person", viewer_is_the_person: true, aspirations: [] });
         if (u.endsWith("/skills")) {
           return json([{ pid: "s1", name: "Rust", category: "technical", external_refs: [] }]);
         }
@@ -93,6 +93,43 @@ describe("Aspirations", () => {
     await fireEvent.change(skill, { target: { value: "s1" } });
     await fireEvent.click(screen.getByTestId("aspiration-add"));
     await waitFor(() => expect(posts.length).toBe(1));
-    expect(posts[0]).toMatchObject({ kind: "skill", skill_pid: "s1", target_level: 4, horizon: "within_1y", shared: false });
+    expect(posts[0]).toMatchObject({ kind: "skill", skill_pid: "s1", target_level: 4, horizon: "within_1y", visibility: "private" });
+  });
+});
+
+describe("TeamAspirations and GroupsPanel", () => {
+  it("lists direct and indirect reports with only what they shared", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({
+      manager: { pid: "m", display_name: "M" }, viewer: "manager",
+      team: [
+        { worker_pid: "a", display_name: "Ann", job_title: "", department: "", depth: 1, direct_report: true,
+          aspirations: [{ pid: "x", kind: "skill", skill: "Rust", target_level: 4, horizon: "within_1y", status: "idea", note: null, visibility: "manager" }] },
+        { worker_pid: "b", display_name: "Bo", job_title: "", department: "", depth: 2, direct_report: false, aspirations: [] },
+      ],
+    })));
+    const { default: TeamAspirations } = await import("../../src/lib/components/TeamAspirations.svelte");
+    render(TeamAspirations, { workerPid: "m" });
+    const panel = await screen.findByTestId("team-aspirations");
+    expect(panel.textContent).toContain("1 direct report(s), 1 indirect");
+    expect(panel.textContent).toContain("Rust → level 4");
+    expect(panel.textContent).toContain("indirect report");
+    expect(panel.textContent).toContain("nothing shared");
+  });
+
+  it("shows several groups at once", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL) =>
+      String(url).includes("/workers/")
+        ? json({ worker_pid: "w", groups: [
+            { group_pid: "g1", name: "Rust guild", kind: "practice", role: "lead", joined_at: "2026-01-01T00:00:00Z", left_at: null, current: true, on_behalf: false },
+            { group_pid: "g2", name: "Chess", kind: "interest", role: "member", joined_at: "2026-02-01T00:00:00Z", left_at: null, current: true, on_behalf: false },
+          ] })
+        : json([])));
+    const { default: GroupsPanel } = await import("../../src/lib/components/GroupsPanel.svelte");
+    render(GroupsPanel, { workerPid: "w" });
+    const list = await screen.findByTestId("my-groups");
+    await waitFor(() => expect(list.textContent).toContain("Rust guild"));
+    expect(list.textContent).toContain("Chess");
+    expect(list.textContent).toContain("community of practice");
+    expect(list.textContent).toContain("community of interest");
   });
 });

@@ -1736,34 +1736,135 @@ async fn career_history_and_aspirations() {
         let goal: Value = aspire(json!({ "kind": "skill", "skill_pid": skill_pid, "target_level": 5, "horizon": "within_1y", "note": "pair with a senior" })).await.json();
         let role_goal: Value = aspire(json!({
             "kind": "role", "framework_slug": "esco", "occupation_uri": "http://data.europa.eu/esco/occupation/q1",
-            "horizon": "one_to_three_years", "status": "planned", "shared": true,
+            "horizon": "one_to_three_years", "status": "planned", "visibility": "everyone",
         })).await.json();
         let listed: Value = request.get(&format!("/api/workers/{me}/aspirations")).await.json();
         assert_eq!(listed["viewer_is_the_person"], true);
         let items = listed["aspirations"].as_array().unwrap();
         assert_eq!(items.len(), 2);
         let skill_goal = items.iter().find(|a| a["kind"] == "skill").unwrap();
-        assert_eq!(skill_goal["shared"], false, "private unless the person shares it");
+        assert_eq!(skill_goal["visibility"], "private", "private unless the person shares it");
         assert_eq!(skill_goal["progress"]["current_level"], 3);
         assert_eq!(skill_goal["progress"]["gap"], 2);
         assert_eq!(skill_goal["note"], "pair with a senior");
         let role_item = items.iter().find(|a| a["kind"] == "role").unwrap();
         assert_eq!(role_item["role_label"], "esco test developer");
         assert_eq!(role_item["progress"]["essential_skills"], 2);
-        assert_eq!(role_item["shared"], true);
+        assert_eq!(role_item["visibility"], "everyone");
 
         // Progress and status move; achieved is recorded, not assumed.
         let goal_pid = goal["pid"].as_str().unwrap();
-        request.put(&format!("/api/aspirations/{goal_pid}")).json(&json!({ "status": "in_progress", "shared": true })).await.assert_status_ok();
+        request.put(&format!("/api/aspirations/{goal_pid}")).json(&json!({ "status": "in_progress", "visibility": "manager" }))
+            .await.assert_status_ok();
+        assert_eq!(request.put(&format!("/api/aspirations/{goal_pid}")).json(&json!({ "visibility": "friends" })).await.status_code(), 422);
+        request.put(&format!("/api/aspirations/{goal_pid}")).json(&json!({ "visibility": "manager" })).await.assert_status_ok();
         assert_eq!(request.put(&format!("/api/aspirations/{goal_pid}")).json(&json!({ "status": "wishing" })).await.status_code(), 422);
         request.put(&format!("/api/workers/{me}/skills")).json(&json!({ "skill_pid": skill_pid, "proficiency": 5 })).await.assert_status_ok();
         let after: Value = request.get(&format!("/api/workers/{me}/aspirations")).await.json();
         let done = after["aspirations"].as_array().unwrap().iter().find(|a| a["pid"] == goal_pid).unwrap();
         assert_eq!(done["progress"]["achieved"], true);
-        assert_eq!(done["shared"], true);
+        assert_eq!(done["visibility"], "manager");
         request.delete(&format!("/api/aspirations/{}", role_goal["pid"].as_str().unwrap())).await.assert_status_ok();
         let last: Value = request.get(&format!("/api/workers/{me}/aspirations")).await.json();
         assert_eq!(last["aspirations"].as_array().unwrap().len(), 1);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn reporting_lines_downline_aspirations_and_groups() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        // ceo ← vp ← lead ← dev;  ceo ← peer
+        let mut pids = Vec::new();
+        for n in ["R-1", "R-2", "R-3", "R-4", "R-5"] {
+            pids.push(seed_worker!(&request, &org, n, None).await);
+        }
+        let (ceo, vp, lead, dev, peer) = (&pids[0], &pids[1], &pids[2], &pids[3], &pids[4]);
+        for (w, m) in [(vp, ceo), (lead, vp), (dev, lead), (peer, ceo)] {
+            request.put(&format!("/api/workers/{w}")).json(&json!({ "manager_pid": m })).await.assert_status_ok();
+        }
+
+        // ── Upline: nearest first, level 1 is the direct manager.
+        let up: Value = request.get(&format!("/api/workers/{dev}/upline")).await.json();
+        let chain = up["upline"].as_array().unwrap();
+        assert_eq!(chain.len(), 3);
+        assert_eq!(chain[0]["pid"], lead.as_str());
+        assert_eq!(chain[0]["direct_manager"], true);
+        assert_eq!(chain[2]["pid"], ceo.as_str());
+        assert_eq!(chain[2]["level"], 3);
+        let top: Value = request.get(&format!("/api/workers/{ceo}/upline")).await.json();
+        assert!(top["upline"].as_array().unwrap().is_empty());
+
+        // ── Downline: direct and indirect reports.
+        let down: Value = request.get(&format!("/api/workers/{vp}/downline")).await.json();
+        assert_eq!(down["summary"], json!({ "direct": 1, "indirect": 1, "total": 2 }));
+        let team = down["downline"].as_array().unwrap();
+        let kind_of = |pid: &str| team.iter().find(|w| w["pid"] == pid).map(|w| w["report_kind"].clone());
+        assert_eq!(kind_of(lead), Some(json!("direct")));
+        assert_eq!(kind_of(dev), Some(json!("indirect")));
+        assert_eq!(kind_of(peer), None, "a peer branch is not downline");
+        let all: Value = request.get(&format!("/api/workers/{ceo}/downline")).await.json();
+        assert_eq!(all["summary"]["total"], 4);
+        let indirect: Value = request.get(&format!("/api/workers/{ceo}/reports?kind=indirect")).await.json();
+        assert_eq!(indirect["reports"].as_array().unwrap().len(), 2);
+        let direct: Value = request.get(&format!("/api/workers/{ceo}/reports?kind=direct")).await.json();
+        assert_eq!(direct["reports"].as_array().unwrap().len(), 2);
+        assert_eq!(request.get(&format!("/api/workers/{ceo}/reports?kind=sideways")).await.status_code(), 422);
+
+        // ── A manager sees downline aspirations shared with managers or everyone — never private ones.
+        let skill: Value = request.post("/api/skills").json(&json!({ "name": "Downline skill", "category": "technical" })).await.json();
+        let skill_pid = skill["pid"].as_str().unwrap().to_string();
+        for (who, visibility) in [(dev, "private"), (dev, "manager"), (lead, "everyone"), (peer, "manager")] {
+            request.post(&format!("/api/workers/{who}/aspirations"))
+                .json(&json!({ "kind": "skill", "skill_pid": skill_pid, "target_level": 4, "horizon": "within_1y", "visibility": visibility }))
+                .await.assert_status_ok();
+        }
+        let view: Value = request.get(&format!("/api/workers/{vp}/downline-aspirations")).await.json();
+        assert_eq!(view["viewer"], "manager");
+        let people = view["team"].as_array().unwrap();
+        assert_eq!(people.len(), 2, "lead and dev only; the peer branch is not the vp's team");
+        let dev_view = people.iter().find(|p| p["worker_pid"] == dev.as_str()).unwrap();
+        assert_eq!(dev_view["direct_report"], false);
+        assert_eq!(dev_view["aspirations"].as_array().unwrap().len(), 1, "the private one is not shown");
+        assert_eq!(dev_view["aspirations"][0]["visibility"], "manager");
+        let lead_view = people.iter().find(|p| p["worker_pid"] == lead.as_str()).unwrap();
+        assert_eq!(lead_view["direct_report"], true);
+        assert_eq!(lead_view["aspirations"].as_array().unwrap().len(), 1);
+        assert!(!view.to_string().contains("private_hidden"), "the number of hidden items is not revealed");
+
+        // ── Groups: a worker is in several at once; leaving closes the membership.
+        let make = |name: &str, kind: &str| request.post("/api/groups").json(&json!({ "name": name, "kind": kind, "description": "d" }));
+        let rust: Value = make("Rust guild", "practice").await.json();
+        let chess: Value = make("Chess club", "interest").await.json();
+        assert_eq!(make("rust GUILD", "practice").await.status_code(), 422, "names are unique, ignoring case");
+        assert_eq!(make("Odd one", "club").await.status_code(), 422);
+        let (rust, chess) = (rust["pid"].as_str().unwrap(), chess["pid"].as_str().unwrap());
+        let join = |group: &str, who: &str, role: &str| request.post(&format!("/api/groups/{group}/members")).json(&json!({ "worker_pid": who, "role": role }));
+        join(rust, dev, "member").await.assert_status_ok();
+        join(chess, dev, "lead").await.assert_status_ok();
+        join(rust, lead, "lead").await.assert_status_ok();
+        join(rust, dev, "lead").await.assert_status_ok();
+        assert_eq!(join(rust, dev, "owner").await.status_code(), 422);
+        let mine: Value = request.get(&format!("/api/workers/{dev}/groups")).await.json();
+        assert_eq!(mine["groups"].as_array().unwrap().len(), 2, "two groups at once; rejoining added no row");
+        assert!(mine["groups"].as_array().unwrap().iter().any(|g| g["name"] == "Rust guild" && g["role"] == "lead"));
+        let members: Value = request.get(&format!("/api/groups/{rust}/members")).await.json();
+        assert_eq!(members["group"]["members"], 2);
+        request.delete(&format!("/api/groups/{rust}/members/{dev}")).await.assert_status_ok();
+        assert_eq!(request.delete(&format!("/api/groups/{rust}/members/{dev}")).await.status_code(), 404, "already left");
+        let now: Value = request.get(&format!("/api/workers/{dev}/groups")).await.json();
+        assert_eq!(now["groups"].as_array().unwrap().len(), 1);
+        let past: Value = request.get(&format!("/api/workers/{dev}/groups?include_past=true")).await.json();
+        assert_eq!(past["groups"].as_array().unwrap().len(), 2, "past membership is kept");
+        join(rust, dev, "member").await.assert_status_ok();
+        let list: Value = request.get("/api/groups").await.json();
+        assert_eq!(list.as_array().unwrap().iter().find(|g| g["name"] == "Rust guild").unwrap()["members"], 2);
+        request.delete(&format!("/api/groups/{chess}")).await.assert_status_ok();
+        let after: Value = request.get(&format!("/api/workers/{dev}/groups")).await.json();
+        assert_eq!(after["groups"].as_array().unwrap().len(), 1, "a retired group no longer lists");
     })
     .await;
 }

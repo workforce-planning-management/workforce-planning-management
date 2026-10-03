@@ -7,6 +7,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { listSelectableFrameworks } from "#lib/api/wpm.js";
+  import GroupsPanel from "#lib/components/GroupsPanel.svelte";
+  import TeamAspirations from "#lib/components/TeamAspirations.svelte";
   import Aspirations from "#lib/components/Aspirations.svelte";
   import CareerHistory from "#lib/components/CareerHistory.svelte";
   import FrameworkRolePanel from "#lib/components/FrameworkRolePanel.svelte";
@@ -64,6 +66,8 @@
   {/if}
   <CareerHistory {workerPid} />
   <Aspirations {workerPid} />
+  <GroupsPanel {workerPid} />
+  <TeamAspirations {workerPid} />
   {#if frameworks.length > 0 && !frameworks.some((f) => f.available)}
     <p class="muted">No framework has been loaded yet; ask an administrator to import one.</p>
   {/if}

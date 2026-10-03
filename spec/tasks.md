@@ -798,7 +798,7 @@ code + tests in one PR.
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
 > **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
-> and the full database-backed request suite passes — **40 of 40** against a
+> and the full database-backed request suite passes — **41 of 41** against a
 > real PostgreSQL 18 (every migration applied) — using a scratch copy with
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
@@ -1260,6 +1260,48 @@ first in each, per the three-part rule.
       retrospective dates are whole days in UTC; skills merged by `/skills`
       merge are not re-recorded in the history; no edit/delete of a past
       entry yet.
+
+- [x] WPM-T65 (2026-10-03) **Reporting lines, manager visibility of
+      aspirations, groups.** Builds on WPM-T64.
+      - **Upline / downline.** `GET /api/workers/{pid}/upline` (the chain
+        above, nearest first; `level` 1 is the direct manager),
+        `GET …/downline` (everyone below, with `depth`, `report_kind` and a
+        direct/indirect summary) and `GET …/reports?kind=direct|indirect`.
+        **Direct report** = depth 1; **indirect report** = reports of reports,
+        any depth. Pure `rules::org::{upline, downline, report_kind}`
+        (cycle-safe); employed workers in the caller's organizations only.
+      - **Managers see downline aspirations.** Aspiration `shared` (boolean)
+        became `visibility`: `private` (only the person), `manager` (everyone
+        above them in the chain — indirect managers included) or `everyone`
+        (migration `…000035`; existing shared rows became `everyone`).
+        `GET …/downline-aspirations` lists the manager's whole downline with
+        only what is visible to them. **Private items, and how many there are,
+        are never revealed** (the earlier "N private hidden" count was
+        removed). `rules::career::{Viewer, can_view}`.
+      - **Groups** (communities of practice / interest / other; migration
+        `…000036`): `groups` and `group_members`, CRUD plus
+        `POST/DELETE /api/groups/{pid}/members` and
+        `GET /api/workers/{pid}/groups`. **A worker can be in many groups at
+        once**; membership has `joined_at`/`left_at` (leaving closes it, past
+        membership is kept), is a worker-record write (a person manages their
+        own, HR on their behalf, recorded as such), and joins subject-access
+        export and erasure. A group is a label: it changes no manager, access
+        or pay. Names are unique ignoring case.
+      - **Multiple frameworks at once** already held from WPM-T63/64: one
+        *current* role per (worker, framework), so a PCF role and an ESCO role
+        are held together; both panels sit on `/me` and `/workers/{pid}`.
+      - UI: `GroupsPanel`, `TeamAspirations`, a visibility selector on
+        `Aspirations`. **Verified:** Rust type-checks, 171 lib tests,
+        database-backed suite **41/41** against PostgreSQL 18 (new
+        `reporting_lines_downline_aspirations_and_groups`), svelte-check 0,
+        vitest 54/54, build green. **Not verified:** the *manager* resolution
+        for a real caller (`viewer_of`: caller `sub` against `person_ref`s in
+        the upline) needs the real identity flow — with enforcement off every
+        caller reads as the person/manager, so only the rule, not the
+        enforcement path, is tested. **Limits:** no nav entry (panels live on
+        `/me` and the worker page); no group-level skill roll-up; groups are
+        global, not per organization; downline reports ignore workers outside
+        the caller's organizations.
 
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 

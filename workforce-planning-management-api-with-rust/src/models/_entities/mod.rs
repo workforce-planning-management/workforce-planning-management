@@ -30,6 +30,8 @@ pub mod esco_skills;
 pub mod event_outbox;
 pub mod feedback_entries;
 pub mod goals;
+pub mod group_members;
+pub mod groups;
 pub mod headcount_snapshots;
 pub mod initiative_role_impacts;
 pub mod initiative_skill_shifts;

@@ -13,6 +13,8 @@
     listAspirations,
     listSkills,
     updateAspiration,
+    VISIBILITIES,
+    type Visibility,
     type Aspiration,
   } from "#lib/api/wpm.js";
   import RolePicker from "#lib/components/RolePicker.svelte";
@@ -21,7 +23,6 @@
 
   let items = $state<Aspiration[]>([]);
   let isPerson = $state(true);
-  let hidden = $state(0);
   let catalogue = $state<Awaited<ReturnType<typeof listSkills>>>([]);
   let error = $state<string | null>(null);
 
@@ -32,7 +33,7 @@
   let picked = $state<{ role_profile_pid?: string; occupation_uri?: string; label: string } | null>(null);
   let horizon = $state<string>("within_1y");
   let note = $state("");
-  let shared = $state(false);
+  let visibility = $state<Visibility>("private");
 
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
 
@@ -41,7 +42,6 @@
       const [list, skills] = await Promise.all([listAspirations(workerPid), listSkills()]);
       items = list.aspirations;
       isPerson = list.viewer_is_the_person;
-      hidden = list.private_hidden;
       catalogue = skills;
     } catch (cause) {
       error = message(cause);
@@ -81,10 +81,10 @@
   <h2>Aspirations and growth ideas</h2>
   {#if error}<p class="error" data-testid="error">{error}</p>{/if}
   {#if !isPerson}
-    <p class="muted">You see only what this person has chosen to share.{hidden > 0 ? ` ${hidden} private item(s) are not shown.` : ""}</p>
+    <p class="muted">You see only what this person has chosen to share.</p>
   {/if}
   <table data-testid="aspiration-list">
-    <thead><tr><th>Goal</th><th>When</th><th>Status</th><th>Progress</th><th>Shared</th><th></th></tr></thead>
+    <thead><tr><th>Goal</th><th>When</th><th>Status</th><th>Progress</th><th>Who can see</th><th></th></tr></thead>
     <tbody>
       {#each items as a (a.pid)}
         <tr>
@@ -105,12 +105,17 @@
           </td>
           <td class="muted">{describe(a)}</td>
           <td>
-            <input
-              type="checkbox"
-              aria-label={`Share ${a.kind} goal with anyone who can view this record`}
-              checked={a.shared}
-              onchange={(event) => void run(() => updateAspiration(a.pid, { shared: event.currentTarget.checked }))}
-            />
+            {#if isPerson}
+              <select
+                aria-label="Who can see this"
+                value={a.visibility}
+                onchange={(event) => void run(() => updateAspiration(a.pid, { visibility: event.currentTarget.value as Visibility }))}
+              >
+                {#each VISIBILITIES as v (v)}<option value={v}>{v === "manager" ? "my managers" : v}</option>{/each}
+              </select>
+            {:else}
+              {a.visibility}
+            {/if}
           </td>
           <td><button type="button" onclick={() => void run(() => deleteAspiration(a.pid))}>Remove</button></td>
         </tr>
@@ -132,7 +137,7 @@
             : null;
       if (!body) return;
       void run(async () => {
-        await addAspiration(workerPid, { ...body, horizon, shared, ...(note.trim() ? { note: note.trim() } : {}) });
+        await addAspiration(workerPid, { ...body, horizon, visibility, ...(note.trim() ? { note: note.trim() } : {}) });
         note = "";
         picked = null;
       });
@@ -158,7 +163,7 @@
     {/if}
     <label>When <select bind:value={horizon}>{#each ASPIRATION_HORIZONS as h (h)}<option value={h}>{h.replaceAll("_", " ")}</option>{/each}</select></label>
     <label>In my own words <input bind:value={note} maxlength="1000" placeholder="a growth idea, a learning goal…" /></label>
-    <label><input type="checkbox" bind:checked={shared} /> Share (visible to anyone who can view my record)</label>
+    <label>Who can see it <select bind:value={visibility}>{#each VISIBILITIES as v (v)}<option value={v}>{v === "manager" ? "my managers (everyone above me)" : v === "everyone" ? "everyone who can view my record" : "only me"}</option>{/each}</select></label>
     <button type="submit" data-testid="aspiration-add">Add</button>
   </form>
 </section>

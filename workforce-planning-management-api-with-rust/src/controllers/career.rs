@@ -425,9 +425,10 @@ struct AspirationPayload {
     /// A growth idea or learning goal, in the person's own words.
     #[serde(default)]
     note: Option<String>,
-    /// Whether others (a manager, HR) may see it. Default: private.
+    /// Who may see it: `private` (default), `manager` (their management
+    /// chain), or `everyone` (anyone who can view the record).
     #[serde(default)]
-    shared: bool,
+    visibility: Option<String>,
 }
 
 /// `POST /api/workers/{pid}/aspirations` — record a future role or skill
@@ -441,6 +442,11 @@ async fn add_aspiration(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let status = payload.status.clone().unwrap_or_else(|| "idea".to_string());
+    let visibility = payload
+        .visibility
+        .clone()
+        .unwrap_or_else(|| "private".to_string());
+    rules::validate_visibility(&visibility).map_err(|e| unprocessable(&e))?;
     rules::validate_aspiration(
         &payload.kind,
         payload.target_level,
@@ -514,7 +520,7 @@ async fn add_aspiration(
         horizon: ActiveValue::set(payload.horizon.clone()),
         status: ActiveValue::set(status),
         note: ActiveValue::set(payload.note.clone()),
-        shared: ActiveValue::set(payload.shared),
+        visibility: ActiveValue::set(visibility),
         recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
         deleted_at: ActiveValue::set(None),
@@ -592,6 +598,43 @@ async fn progress_toward(
     Ok(serde_json::Value::Null)
 }
 
+/// How the caller relates to `worker`: the person themselves, someone above
+/// them in the management chain, or anyone else. With enforcement off there is
+/// no identity to compare, so the caller reads as the person (as in tests).
+async fn viewer_of(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    worker: &workers::Model,
+) -> Result<rules::Viewer> {
+    if !auth::acting_for_other(caller, &worker.person_ref) {
+        return Ok(rules::Viewer::Person);
+    }
+    let Some(claims) = caller.claims() else {
+        return Ok(rules::Viewer::Other);
+    };
+    let all = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?;
+    let manager_of: BTreeMap<Uuid, Uuid> = all
+        .iter()
+        .filter_map(|w| w.manager_pid.map(|m| (w.pid, m)))
+        .collect();
+    let by_pid: BTreeMap<Uuid, &workers::Model> = all.iter().map(|w| (w.pid, w)).collect();
+    let is_manager = crate::rules::org::upline(worker.pid, &manager_of)
+        .iter()
+        .any(|m| {
+            by_pid
+                .get(m)
+                .is_some_and(|boss| rules::is_self(&claims.sub, &boss.person_ref))
+        });
+    Ok(if is_manager {
+        rules::Viewer::Manager
+    } else {
+        rules::Viewer::Other
+    })
+}
+
 /// `GET /api/workers/{pid}/aspirations` — the person's aspirations and growth
 /// ideas, each with how they stand against it today. **Private by default:**
 /// the person sees all of theirs; anyone else sees only those shared.
@@ -602,7 +645,7 @@ async fn list_aspirations(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let is_self = !auth::acting_for_other(&caller, &worker.person_ref);
+    let viewer = viewer_of(&ctx, &caller, &worker).await?;
     let rows = worker_aspirations::Entity::find()
         .filter(worker_aspirations::Column::WorkerPid.eq(worker.pid))
         .filter(worker_aspirations::Column::DeletedAt.is_null())
@@ -619,10 +662,8 @@ async fn list_aspirations(
         .collect();
     let names = skill_names(&ctx).await?;
     let mut out = Vec::new();
-    let mut hidden = 0usize;
     for a in &rows {
-        if !rules::can_view(is_self, a.shared) {
-            hidden += 1;
+        if !rules::can_view(viewer, &a.visibility) {
             continue;
         }
         out.push(serde_json::json!({
@@ -638,16 +679,114 @@ async fn list_aspirations(
             "horizon": a.horizon,
             "status": a.status,
             "note": a.note,
-            "shared": a.shared,
+            "visibility": a.visibility,
             "recorded_by": a.recorded_by,
             "on_behalf": a.on_behalf,
             "progress": progress_toward(&ctx, worker.pid, a, &declared).await?,
         }));
     }
     format::json(serde_json::json!({
-        "viewer_is_the_person": is_self,
+        "viewer": match viewer {
+            rules::Viewer::Person => "person",
+            rules::Viewer::Manager => "manager",
+            rules::Viewer::Other => "other",
+        },
+        "viewer_is_the_person": viewer == rules::Viewer::Person,
         "aspirations": out,
-        "private_hidden": hidden,
+    }))
+}
+
+/// `GET /api/workers/{pid}/downline-aspirations` — for a manager: everyone below
+/// them (direct and indirect reports) and the aspirations each has shared with
+/// their managers or with everyone. **Private ones are never shown, and their
+/// number is not either.** Read as the manager `{pid}`; if the caller is
+/// someone else, only aspirations shared with everyone appear.
+#[debug_handler]
+async fn downline_aspirations(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let viewer = if auth::acting_for_other(&caller, &manager.person_ref) {
+        rules::Viewer::Other
+    } else {
+        rules::Viewer::Manager
+    };
+    let all = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?;
+    let mut reports_of: BTreeMap<Uuid, Vec<Uuid>> = BTreeMap::new();
+    for w in &all {
+        if let Some(boss) = w.manager_pid {
+            reports_of.entry(boss).or_default().push(w.pid);
+        }
+    }
+    let below = crate::rules::org::downline(manager.pid, &reports_of);
+    let by_pid: BTreeMap<Uuid, &workers::Model> = all.iter().map(|w| (w.pid, w)).collect();
+    let pids: Vec<Uuid> = below.iter().map(|(p, _)| *p).collect();
+    let rows = worker_aspirations::Entity::find()
+        .filter(worker_aspirations::Column::WorkerPid.is_in(pids))
+        .filter(worker_aspirations::Column::DeletedAt.is_null())
+        .order_by_desc(worker_aspirations::Column::Id)
+        .all(&ctx.db)
+        .await?;
+    let names = skill_names(&ctx).await?;
+    let declared: BTreeMap<(Uuid, Uuid), i32> = worker_skills::Entity::find()
+        .filter(worker_skills::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|d| ((d.worker_pid, d.skill_pid), d.proficiency))
+        .collect();
+    let mut people = Vec::new();
+    for (pid, depth) in &below {
+        let Some(person) = by_pid.get(pid) else {
+            continue;
+        };
+        let mine: Vec<&worker_aspirations::Model> = rows
+            .iter()
+            .filter(|a| a.worker_pid == *pid && rules::can_view(viewer, &a.visibility))
+            .collect();
+        let person_declared: BTreeMap<Uuid, i32> = declared
+            .iter()
+            .filter(|((w, _), _)| w == pid)
+            .map(|((_, s), l)| (*s, *l))
+            .collect();
+        let mut items = Vec::new();
+        for a in &mine {
+            items.push(serde_json::json!({
+                "pid": a.pid,
+                "kind": a.kind,
+                "framework": a.framework_slug,
+                "role_label": a.role_label,
+                "skill": a.skill_pid.and_then(|s| names.get(&s)),
+                "target_level": a.target_level,
+                "horizon": a.horizon,
+                "status": a.status,
+                "note": a.note,
+                "visibility": a.visibility,
+                "progress": progress_toward(&ctx, *pid, a, &person_declared).await?,
+            }));
+        }
+        people.push(serde_json::json!({
+            "worker_pid": pid,
+            "display_name": person.display_name,
+            "job_title": person.job_title,
+            "department": person.department,
+            "depth": depth,
+            "direct_report": *depth == 1,
+            "aspirations": items,
+        }));
+    }
+    format::json(serde_json::json!({
+        "manager": { "pid": manager.pid, "display_name": manager.display_name },
+        "viewer": if viewer == rules::Viewer::Manager { "manager" } else { "other" },
+        "derivation": "everyone below the manager in the management chain (direct and indirect \
+                       reports); only aspirations shared with managers or everyone are shown — \
+                       private ones, and how many there are, are never revealed",
+        "team": people,
     }))
 }
 
@@ -663,7 +802,7 @@ struct AspirationUpdate {
     #[serde(default)]
     note: Option<String>,
     #[serde(default)]
-    shared: Option<bool>,
+    visibility: Option<String>,
 }
 
 async fn find_aspiration(ctx: &AppContext, pid: &str) -> Result<worker_aspirations::Model> {
@@ -707,8 +846,9 @@ async fn update_aspiration(
     if payload.note.is_some() {
         active.note = ActiveValue::set(payload.note);
     }
-    if let Some(shared) = payload.shared {
-        active.shared = ActiveValue::set(shared);
+    if let Some(visibility) = payload.visibility {
+        rules::validate_visibility(&visibility).map_err(|e| unprocessable(&e))?;
+        active.visibility = ActiveValue::set(visibility);
     }
     let updated = active.update(&ctx.db).await?;
     Audit::record(
@@ -721,7 +861,7 @@ async fn update_aspiration(
     )
     .await?;
     format::json(
-        serde_json::json!({ "pid": updated.pid, "status": updated.status, "shared": updated.shared }),
+        serde_json::json!({ "pid": updated.pid, "status": updated.status, "visibility": updated.visibility }),
     )
 }
 
@@ -763,6 +903,10 @@ pub fn routes() -> Routes {
         .add("/workers/{pid}/skills-as-of", get(skills_as_of))
         .add("/workers/{pid}/aspirations", post(add_aspiration))
         .add("/workers/{pid}/aspirations", get(list_aspirations))
+        .add(
+            "/workers/{pid}/downline-aspirations",
+            get(downline_aspirations),
+        )
         .add("/aspirations/{pid}", put(update_aspiration))
         .add("/aspirations/{pid}", delete(delete_aspiration))
 }

@@ -98,6 +98,8 @@ impl Hooks for App {
             .add_route(controllers::esco::routes())
             .add_route(controllers::framework_roles::routes())
             .add_route(controllers::career::routes())
+            .add_route(controllers::reporting::routes())
+            .add_route(controllers::groups::routes())
             .add_route(controllers::talent::routes())
             .add_route(controllers::intelligence::routes())
             .add_route(controllers::payroll::routes())

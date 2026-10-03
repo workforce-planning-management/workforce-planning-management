@@ -20,6 +20,7 @@ pub mod learning;
 pub mod framework;
 pub mod framework_roles;
 pub mod gap;
+pub mod groups;
 pub mod leave;
 pub mod lms;
 pub mod lifecycle;

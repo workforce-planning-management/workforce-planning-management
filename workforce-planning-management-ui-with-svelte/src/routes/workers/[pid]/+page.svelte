@@ -2,6 +2,8 @@
   import { page } from "$app/state";
   import RoleGap from "#lib/components/RoleGap.svelte";
   import Mobility from "#lib/components/Mobility.svelte";
+  import GroupsPanel from "#lib/components/GroupsPanel.svelte";
+  import TeamAspirations from "#lib/components/TeamAspirations.svelte";
   import Aspirations from "#lib/components/Aspirations.svelte";
   import CareerHistory from "#lib/components/CareerHistory.svelte";
   import FrameworkRolePanel from "#lib/components/FrameworkRolePanel.svelte";
@@ -622,4 +624,6 @@
   />
   <CareerHistory workerPid={worker.pid} />
   <Aspirations workerPid={worker.pid} />
+  <GroupsPanel workerPid={worker.pid} />
+  <TeamAspirations workerPid={worker.pid} />
 {/if}

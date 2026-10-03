@@ -127,11 +127,48 @@ pub fn validate_aspiration(
     Ok(())
 }
 
-/// Whether `viewer_is_self` — or, for anyone else, a **shared** aspiration —
-/// may be seen: an aspiration is the person's own until they share it.
+/// Validate a visibility token.
+///
+/// # Errors
+/// A message listing the choices.
+pub fn validate_visibility(visibility: &str) -> Result<(), String> {
+    if VISIBILITIES.contains(&visibility) {
+        Ok(())
+    } else {
+        Err(format!(
+            "visibility must be one of {}",
+            VISIBILITIES.join(", ")
+        ))
+    }
+}
+
+/// Who may see an aspiration: just the person, their management chain, or
+/// anyone who can view the record.
+pub const VISIBILITIES: &[&str] = &["private", "manager", "everyone"];
+
+/// How a viewer relates to the person whose aspirations they are reading.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Viewer {
+    /// The person themselves.
+    Person,
+    /// Someone above the person in their management chain.
+    Manager,
+    /// Anyone else who can view the record.
+    Other,
+}
+
+/// Whether `viewer` may see an aspiration with this `visibility`: the person
+/// sees all of theirs; a manager sees those shared with managers (or
+/// everyone); anyone else only those shared with everyone. An unknown token is
+/// treated as private.
 #[must_use]
-pub fn can_view(viewer_is_self: bool, shared: bool) -> bool {
-    viewer_is_self || shared
+pub fn can_view(viewer: Viewer, visibility: &str) -> bool {
+    matches!(
+        (viewer, visibility),
+        (Viewer::Person, _)
+            | (Viewer::Manager, "manager" | "everyone")
+            | (Viewer::Other, "everyone")
+    )
 }
 
 #[cfg(test)]
@@ -261,8 +298,28 @@ mod tests {
 
     #[test]
     fn privacy_of_aspirations() {
-        assert!(can_view(true, false), "mine, even unshared");
-        assert!(!can_view(false, false), "someone else's, unshared");
-        assert!(can_view(false, true), "shared with others");
+        for v in VISIBILITIES {
+            assert!(
+                can_view(Viewer::Person, v),
+                "the person sees all of theirs ({v})"
+            );
+        }
+        assert!(
+            !can_view(Viewer::Manager, "private"),
+            "a manager never sees private"
+        );
+        assert!(can_view(Viewer::Manager, "manager") && can_view(Viewer::Manager, "everyone"));
+        assert!(!can_view(Viewer::Other, "private") && !can_view(Viewer::Other, "manager"));
+        assert!(can_view(Viewer::Other, "everyone"));
+        assert!(
+            !can_view(Viewer::Manager, "???") && !can_view(Viewer::Other, "???"),
+            "unknown is private"
+        );
+    }
+
+    #[test]
+    fn visibility_is_validated() {
+        assert!(validate_visibility("manager").is_ok());
+        assert!(validate_visibility("friends").is_err());
     }
 }

@@ -934,6 +934,10 @@ export const ASPIRATION_STATUSES = [
   "dropped",
 ] as const;
 
+/** Who may see an aspiration: just the person, their management chain, or anyone who can view the record. */
+export const VISIBILITIES = ["private", "manager", "everyone"] as const;
+export type Visibility = (typeof VISIBILITIES)[number];
+
 /** One aspiration, learning goal, or growth idea. */
 export type Aspiration = {
   pid: string;
@@ -945,7 +949,7 @@ export type Aspiration = {
   horizon: string;
   status: string;
   note: string | null;
-  shared: boolean;
+  visibility: Visibility;
   recorded_by: string | null;
   on_behalf: boolean;
   progress: Record<string, unknown> | null;
@@ -956,9 +960,9 @@ export function listAspirations(
   workerPid: string,
   init?: FetchLike,
 ): Promise<{
+  viewer: "person" | "manager" | "other";
   viewer_is_the_person: boolean;
   aspirations: Aspiration[];
-  private_hidden: number;
 }> {
   return api(`/workers/${workerPid}/aspirations`, init);
 }
@@ -976,7 +980,7 @@ export function addAspiration(
     horizon: string;
     status?: string;
     note?: string;
-    shared?: boolean;
+    visibility?: Visibility;
   },
 ): Promise<{ pid: string }> {
   return api(`/workers/${workerPid}/aspirations`, { method: "POST", body });
@@ -990,10 +994,121 @@ export function updateAspiration(
     horizon?: string;
     target_level?: number;
     note?: string;
-    shared?: boolean;
+    visibility?: Visibility;
   },
 ): Promise<unknown> {
   return api(`/aspirations/${pid}`, { method: "PUT", body });
+}
+
+/** One person in a reporting line. */
+export type OrgPerson = {
+  pid: string;
+  display_name: string;
+  job_title: string;
+  department: string;
+};
+
+/** The management chain above a worker, nearest first (level 1 = direct manager). */
+export function upline(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{ worker: OrgPerson; upline: Array<OrgPerson & { level: number; direct_manager: boolean }> }> {
+  return api(`/workers/${workerPid}/upline`, init);
+}
+
+/** Everyone below a manager: direct reports (depth 1) and indirect reports. */
+export function downline(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{
+  manager: OrgPerson;
+  summary: { direct: number; indirect: number; total: number };
+  downline: Array<OrgPerson & { depth: number; report_kind: "direct" | "indirect" }>;
+}> {
+  return api(`/workers/${workerPid}/downline`, init);
+}
+
+/** A manager's downline with the aspirations each person has shared with managers or everyone. */
+export function downlineAspirations(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{
+  manager: { pid: string; display_name: string };
+  viewer: "manager" | "other";
+  team: Array<{
+    worker_pid: string;
+    display_name: string;
+    job_title: string;
+    department: string;
+    depth: number;
+    direct_report: boolean;
+    aspirations: Aspiration[];
+  }>;
+}> {
+  return api(`/workers/${workerPid}/downline-aspirations`, init);
+}
+
+/** A group: community of practice, community of interest, or other. */
+export type Group = {
+  pid: string;
+  name: string;
+  kind: "practice" | "interest" | "other";
+  description: string | null;
+  members: number;
+};
+
+export const GROUP_KINDS = ["practice", "interest", "other"] as const;
+
+/** Every group with its member count. */
+export function listGroups(init?: FetchLike): Promise<Group[]> {
+  return api("/groups", init);
+}
+
+/** Start a group. */
+export function createGroup(body: {
+  name: string;
+  kind: string;
+  description?: string;
+}): Promise<{ pid: string }> {
+  return api("/groups", { method: "POST", body });
+}
+
+/** Every group a worker is in (several at once is normal). */
+export function workerGroups(
+  workerPid: string,
+  includePast = false,
+  init?: FetchLike,
+): Promise<{
+  worker_pid: string;
+  groups: Array<{
+    group_pid: string;
+    name: string;
+    kind: string;
+    role: string;
+    joined_at: string;
+    left_at: string | null;
+    current: boolean;
+    on_behalf: boolean;
+  }>;
+}> {
+  return api(`/workers/${workerPid}/groups${includePast ? "?include_past=true" : ""}`, init);
+}
+
+/** A worker joins a group, or changes their role in it. */
+export function joinGroup(
+  groupPid: string,
+  workerPid: string,
+  role: "member" | "lead" = "member",
+): Promise<unknown> {
+  return api(`/groups/${groupPid}/members`, {
+    method: "POST",
+    body: { worker_pid: workerPid, role },
+  });
+}
+
+/** A worker leaves a group; the membership is closed and kept as history. */
+export function leaveGroup(groupPid: string, workerPid: string): Promise<unknown> {
+  return api(`/groups/${groupPid}/members/${workerPid}`, { method: "DELETE" });
 }
 
 /** Drop an aspiration. */

@@ -112,6 +112,11 @@ describe("api path map", () => {
     await wpm.skillHistory("w1");
     await wpm.skillsAsOf("w1", "2026-01-01");
     await wpm.listAspirations("w1");
+    await wpm.upline("w1");
+    await wpm.downline("w1");
+    await wpm.downlineAspirations("w1");
+    await wpm.workerGroups("w1");
+    await wpm.listGroups();
     await wpm.frameworkRoleSkills("w1", "esco");
     await wpm.searchEscoOccupations("dev");
     await wpm.getEscoOccupation("http://x/1");
@@ -181,6 +186,11 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/skill-history",
       "/api/proxy/workers/w1/skills-as-of?at=2026-01-01",
       "/api/proxy/workers/w1/aspirations",
+      "/api/proxy/workers/w1/upline",
+      "/api/proxy/workers/w1/downline",
+      "/api/proxy/workers/w1/downline-aspirations",
+      "/api/proxy/workers/w1/groups",
+      "/api/proxy/groups",
       "/api/proxy/workers/w1/framework-roles/esco/skills",
       "/api/proxy/esco/occupations?q=dev&limit=25",
       "/api/proxy/esco/occupation?uri=http%3A%2F%2Fx%2F1",
