@@ -1041,3 +1041,96 @@ async fn workforce_plan_forecasts_gaps_and_alignment() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn workforce_plan_costs_hiring_against_a_budget() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        for n in 1..=2 {
+            let w = seed_worker!(&request, &org, &format!("E-{n}"), None).await; // "engineering"
+            activate!(&request, &w).await;
+        }
+        // A role with a salary benchmark.
+        let profile: Value = request
+            .post("/api/role-profiles")
+            .json(&json!({ "job_title": "Costed Engineer" }))
+            .await
+            .json();
+        let role = profile["pid"].as_str().unwrap().to_string();
+        request
+            .post("/api/benchmarks")
+            .json(&json!({
+                "job_title": "Costed Engineer", "currency": "GBP",
+                "min_minor": 3_000_000, "median_minor": 4_000_000, "max_minor": 5_000_000,
+                "source": "test", "as_of": "2026-01-01",
+            }))
+            .await
+            .assert_status_ok();
+
+        // Budget and currency must be given together; on-cost is bounded.
+        let plan_body = |extra: Value| {
+            let mut body = json!({
+                "name": "Costed plan", "organization_ref": org,
+                "horizon_start": "2026-01-01", "horizon_end": "2027-12-31",
+                "attrition_bp": 0, "on_cost_bp": 2500,
+            });
+            body.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
+            body
+        };
+        assert_eq!(
+            request.post("/api/workforce-plans").json(&plan_body(json!({ "budget_minor": 100 }))).await.status_code(),
+            422
+        );
+        assert_eq!(
+            request
+                .post("/api/workforce-plans")
+                .json(&plan_body(json!({ "budget_minor": 100, "budget_currency": "gbp" })))
+                .await
+                .status_code(),
+            422
+        );
+        let plan: Value = request
+            .post("/api/workforce-plans")
+            .json(&plan_body(json!({ "budget_minor": 20_000_000, "budget_currency": "GBP" })))
+            .await
+            .json();
+        let plan_pid = plan["pid"].as_str().unwrap().to_string();
+        // Demand 5 against 2 employed and no attrition ⇒ 3 hires at the benchmark.
+        request
+            .put(&format!("/api/workforce-plans/{plan_pid}/demand-lines"))
+            .json(&json!({ "department": "engineering", "role_profile_pid": role, "target_on": "2027-06-30", "target_headcount": 5 }))
+            .await
+            .assert_status_ok();
+        // A department with no benchmark and no cohort cannot be costed.
+        request
+            .put(&format!("/api/workforce-plans/{plan_pid}/demand-lines"))
+            .json(&json!({ "department": "nowhere", "target_on": "2027-06-30", "target_headcount": 2 }))
+            .await
+            .assert_status_ok();
+
+        let view: Value = request.get(&format!("/api/workforce-plans/{plan_pid}/cost")).await.json();
+        assert_eq!(view["currency"], "GBP");
+        assert_eq!(view["salary_visible"], true);
+        assert_eq!(view["assumptions"]["on_cost_bp"], 2500);
+        let eng = view["groups"].as_array().unwrap().iter().find(|g| g["department"] == "engineering").unwrap();
+        assert!(eng["hires_needed"].as_u64().unwrap() >= 3);
+        assert_eq!(eng["unit_cost_source"], "benchmark");
+        let hires = eng["hires_needed"].as_i64().unwrap();
+        assert_eq!(eng["annual_cost_minor"], hires * 5_000_000, "benchmark 4.0m + 25% on-cost");
+        let nowhere = view["groups"].as_array().unwrap().iter().find(|g| g["department"] == "nowhere").unwrap();
+        assert_eq!(nowhere["reason"], "no_unit_cost", "no benchmark and too small a cohort ⇒ not guessed");
+        assert!(view["uncosted_groups"].as_u64().unwrap() >= 1);
+        assert_eq!(view["total_annual_cost_minor"], eng["annual_cost_minor"]);
+        let fit = &view["affordability"];
+        assert_eq!(fit["budget_minor"], 20_000_000);
+        assert_eq!(fit["remaining_minor"].as_i64().unwrap(), 20_000_000 - eng["annual_cost_minor"].as_i64().unwrap());
+
+        assert_eq!(
+            request.get(&format!("/api/workforce-plans/{plan_pid}/cost?currency=pounds")).await.status_code(),
+            422
+        );
+    })
+    .await;
+}

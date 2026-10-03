@@ -14,7 +14,9 @@
     getWorkforcePlan,
     listRoleProfiles,
     listWorkforcePlans,
+    money,
     planAlignment,
+    planCost,
     planForecast,
     removeDemandLine,
     setDemandLine,
@@ -28,6 +30,7 @@
   type Plan = Awaited<ReturnType<typeof getWorkforcePlan>>;
   type Forecast = Awaited<ReturnType<typeof planForecast>>;
   type Alignment = Awaited<ReturnType<typeof planAlignment>>;
+  type Cost = Awaited<ReturnType<typeof planCost>>;
 
   const NEXT: Record<string, string[]> = {
     draft: ["active", "archived"],
@@ -42,6 +45,7 @@
   let plan = $state<Plan | null>(null);
   let forecast = $state<Forecast | null>(null);
   let alignment = $state<Alignment | null>(null);
+  let cost = $state<Cost | null>(null);
   let roles = $state<Awaited<ReturnType<typeof listRoleProfiles>>>([]);
   let totals = $state<Record<string, number>>({});
   let error = $state<string | null>(null);
@@ -51,6 +55,9 @@
   let start = $state("");
   let end = $state("");
   let attritionPct = $state<number | null>(null);
+  let budget = $state<number | null>(null);
+  let budgetCurrency = $state("GBP");
+  let onCostPct = $state<number | null>(null);
   let department = $state("");
   let lineRole = $state("");
   let targetOn = $state("");
@@ -64,12 +71,14 @@
     plan = null;
     forecast = null;
     alignment = null;
+    cost = null;
     if (!selected) return;
     try {
-      [plan, forecast, alignment] = await Promise.all([
+      [plan, forecast, alignment, cost] = await Promise.all([
         getWorkforcePlan(selected),
         planForecast(selected),
         planAlignment(selected),
+        planCost(selected),
       ]);
     } catch (cause) {
       error = message(cause);
@@ -160,6 +169,10 @@
         horizon_start: start,
         horizon_end: end,
         ...(attritionPct !== null ? { attrition_bp: Math.round(attritionPct * 100) } : {}),
+        ...(budget !== null
+          ? { budget_minor: Math.round(budget * 100), budget_currency: budgetCurrency }
+          : {}),
+        ...(onCostPct !== null ? { on_cost_bp: Math.round(onCostPct * 100) } : {}),
       });
       name = "";
       selected = created.pid;
@@ -176,6 +189,9 @@
   <label>From <input type="date" bind:value={start} required /></label>
   <label>To <input type="date" bind:value={end} required /></label>
   <label>Annual attrition % (blank = observed) <input type="number" min="0" max="100" step="0.1" bind:value={attritionPct} /></label>
+  <label>Annual hiring budget <input type="number" min="0" step="any" bind:value={budget} /></label>
+  <label>Currency <input maxlength="3" size="4" bind:value={budgetCurrency} /></label>
+  <label>Employer on-cost % <input type="number" min="0" max="100" step="0.1" bind:value={onCostPct} /></label>
   <button type="submit" data-testid="plan-create">Create plan</button>
 </form>
 
@@ -222,6 +238,40 @@
         {/each}
       </tbody>
     </table>
+  {/if}
+
+  {#if cost}
+    <h3>Cost of closing the gaps by hiring</h3>
+    <p class="muted">{cost.derivation}</p>
+    {#if !cost.salary_visible}
+      <p data-testid="plan-cost-hidden">Salary figures need payroll read access; hires needed are shown without money.</p>
+    {/if}
+    <table data-testid="plan-cost">
+      <thead><tr><th>Department</th><th>Date</th><th>Hires needed</th><th>Unit cost</th><th>Source</th><th>Annual cost</th></tr></thead>
+      <tbody>
+        {#each cost.groups as g (g.department + g.target_on)}
+          <tr>
+            <td>{g.department}</td><td>{g.target_on}</td><td>{g.hires_needed ?? "—"}</td>
+            <td>{money(g.unit_cost_minor, cost.currency)}</td>
+            <td>{g.unit_cost_source?.replace("_", " ") ?? g.reason?.replaceAll("_", " ") ?? "—"}</td>
+            <td>{money(g.annual_cost_minor, cost.currency)}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+    {#if cost.salary_visible}
+      <p data-testid="plan-cost-total">
+        Total (annual, incl. {(cost.assumptions.on_cost_bp / 100).toFixed(1)}% on-cost):
+        {money(cost.total_annual_cost_minor, cost.currency)}
+        {#if cost.uncosted_groups > 0}<span class="muted">· {cost.uncosted_groups} line group(s) could not be costed</span>{/if}
+        {#if cost.affordability}
+          · budget {money(cost.affordability.budget_minor, cost.currency)} ·
+          <span class:warn={!cost.affordability.within_budget}>
+            {cost.affordability.within_budget ? "within budget" : "over budget"} ({money(cost.affordability.remaining_minor, cost.currency)} remaining)
+          </span>
+        {/if}
+      </p>
+    {/if}
   {/if}
 
   {#if alignment}

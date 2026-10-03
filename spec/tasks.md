@@ -798,7 +798,7 @@ code + tests in one PR.
 ## Phase 10 — strategic workforce planning (WPM-R34–R38, WPM-D26–D28)
 
 > **Verification (2026-10-02, WPM-T41–T46, T51–T55):** the Rust compiles
-> and the full database-backed request suite passes — **33 of 33** against a
+> and the full database-backed request suite passes — **34 of 34** against a
 > real PostgreSQL 18 (every migration applied) — using a scratch copy with
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
@@ -1010,6 +1010,35 @@ first in each, per the three-part rule.
       vitest 43/43, build green. Not done: linking an initiative's rising
       skills to suggested CPD requirements or reskill plans (WPM-T48/T49).
 
+- [x] WPM-T56 (2026-10-03) **Financial-planning-led workforce planning.**
+      Answers "what can we afford to hire" over a plan's headcount gaps.
+      Migration `m20261002_000029_plan_budget` (plan `budget_minor` +
+      `budget_currency`, `on_cost_bp`; validated together / bounded). Pure
+      `rules::cost`: `cohort_average_minor` (**published only for a cohort
+      of at least 5 salaried workers** — an average of one or two people is
+      their salary), `with_on_cost`, `hires_to_close`, `pick_unit_cost`
+      (benchmark median beats department average beats nothing — never a
+      guess), `weighted_unit_cost`, `annual_cost`, `against_budget`,
+      `valid_currency`; 6 tests. `GET
+      /api/workforce-plans/{pid}/cost?currency=`: hires needed per
+      department × date (from the forecast gap), unit cost and its source,
+      annual cost with the plan's on-cost, a total that **never mixes
+      currencies**, uncosted groups with a reason (`insufficient_history` /
+      `no_unit_cost` / `salary_not_visible`), and affordability against the
+      budget. Each department is costed at its latest target date; annual
+      run-rate of salary only (no recruitment or onboarding). **Salary is
+      sensitive:** the money is withheld (`salary_visible: false`) from any
+      caller whose policy decision carries the `mask` obligation — the same
+      rule that masks a worker's salary. Front-end: budget, currency and
+      on-cost on the plan form and a "Cost of closing the gaps by hiring"
+      panel on `/planning`. **Verified:** Rust type-checks, 138 lib tests,
+      database-backed suite **34/34** against PostgreSQL 18 (including
+      `workforce_plan_costs_hiring_against_a_budget`), clippy-clean on the
+      new files; svelte-check 0, vitest 43/43, build green. Not done:
+      recruitment/onboarding cost, multi-year phasing, per-department
+      budgets, and exercising the masked path against the real policy
+      engine (stubbed here).
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`
@@ -1166,7 +1195,7 @@ build on 3–5).
 
 ### Cross-cutting
 
-- [ ] **Financial planning-led workforce planning.** FP&A-driven
+- [x] **Financial planning-led workforce planning.** *(landed as WPM-T56.)* FP&A-driven
       headcount planning — workforce cost is typically ~70% of opex,
       so Finance (not just HR) needs to model compensation strategy
       and headcount affordability directly, per BARC/Visier's framing

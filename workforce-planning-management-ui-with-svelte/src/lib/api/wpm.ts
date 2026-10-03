@@ -859,6 +859,9 @@ export function getWorkforcePlan(
   horizon_end: string;
   rationale: string | null;
   attrition_bp: number | null;
+  budget_minor: number | null;
+  budget_currency: string | null;
+  on_cost_bp: number | null;
   status: string;
   demand_lines: Array<{
     pid: string;
@@ -883,6 +886,9 @@ export function createWorkforcePlan(body: {
   horizon_end: string;
   rationale?: string;
   attrition_bp?: number;
+  budget_minor?: number;
+  budget_currency?: string;
+  on_cost_bp?: number;
 }): Promise<{ pid: string }> {
   return api("/workforce-plans", { method: "POST", body });
 }
@@ -966,6 +972,46 @@ export function planForecast(
   }>;
 }> {
   return api(`/workforce-plans/${pid}/forecast`, init);
+}
+
+/** Annual cost of hiring to close the gaps vs the plan budget. */
+export function planCost(
+  pid: string,
+  currency?: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  currency: string;
+  salary_visible: boolean;
+  assumptions: {
+    attrition_bp: number | null;
+    attrition_source: string;
+    on_cost_bp: number;
+    min_cohort: number;
+  };
+  groups: Array<{
+    department: string;
+    target_on: string;
+    hires_needed: number | null;
+    unit_cost_minor: number | null;
+    unit_cost_source: "benchmark" | "department_average" | null;
+    annual_cost_minor: number | null;
+    reason:
+      | "salary_not_visible"
+      | "insufficient_history"
+      | "no_unit_cost"
+      | null;
+  }>;
+  total_annual_cost_minor: number | null;
+  uncosted_groups: number;
+  affordability: {
+    budget_minor: number;
+    remaining_minor: number;
+    within_budget: boolean;
+  } | null;
+}> {
+  const qs = currency ? `?currency=${encodeURIComponent(currency)}` : "";
+  return api(`/workforce-plans/${pid}/cost${qs}`, init);
 }
 
 /** Does the planned headcount serve the strategy? */

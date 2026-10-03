@@ -216,6 +216,7 @@ pub fn spec() -> Value {
             "/api/workforce-plans/{pid}/demand-lines/{line_pid}/objectives": { "put": { "tags": ["planning"], "summary": "Replace the objectives a demand line serves", "responses": ok("Ok") } },
             "/api/workforce-plans/{pid}/objectives": { "post": { "tags": ["planning"], "summary": "Add a strategic objective", "responses": ok("Pid") } },
             "/api/workforce-plans/{pid}/forecast": { "get": { "tags": ["planning"], "summary": "Supply projection, headcount gap and competency gaps per department and date, with assumptions", "responses": ok("Forecast") } },
+            "/api/workforce-plans/{pid}/cost": { "get": { "tags": ["planning"], "summary": "Annual cost of hiring to close the gaps vs the plan budget (?currency=); salary-derived, withheld without unmasked read", "responses": ok("PlanCost") } },
             "/api/workforce-plans/{pid}/alignment": { "get": { "tags": ["planning"], "summary": "Share of planned headcount tied to objectives; unresourced objectives; unaligned lines", "responses": ok("Alignment") } },
             "/api/workforce-intelligence/succession": { "get": { "tags": ["intelligence"], "summary": "Bench strength + single points of failure (criticality × risk of loss)", "responses": ok("Succession") } },
             "/api/workforce-intelligence/pipelines": { "get": { "tags": ["intelligence"], "summary": "Pipeline funnel + early-career conversion rates", "responses": ok("Pipelines") } },

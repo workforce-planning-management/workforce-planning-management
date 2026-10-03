@@ -10,6 +10,7 @@ pub mod assessment;
 pub mod benchmark;
 pub mod capability;
 pub mod change;
+pub mod cost;
 pub mod cpd;
 pub mod ergonomics;
 pub mod learning;

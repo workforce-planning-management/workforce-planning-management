@@ -20,6 +20,9 @@ pub struct Model {
     pub horizon_end: Date,
     pub rationale: Option<String>,
     pub attrition_bp: Option<i32>,
+    pub budget_minor: Option<i64>,
+    pub budget_currency: Option<String>,
+    pub on_cost_bp: Option<i32>,
     pub status: String,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
