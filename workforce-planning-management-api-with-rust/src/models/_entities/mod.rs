@@ -20,6 +20,7 @@ pub mod cpd_requirements;
 pub mod demand_line_objectives;
 pub mod development_plan_items;
 pub mod development_plans;
+pub mod dotted_line_reports;
 pub mod early_career_programs;
 pub mod entitlement_acknowledgements;
 pub mod ergonomic_assessments;

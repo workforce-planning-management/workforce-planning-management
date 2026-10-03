@@ -117,6 +117,9 @@ describe("api path map", () => {
     await wpm.downlineAspirations("w1");
     await wpm.workerGroups("w1");
     await wpm.listGroups();
+    await wpm.groupSkills("g1");
+    await wpm.groupMembers("g1");
+    await wpm.dottedLine("w1");
     await wpm.frameworkRoleSkills("w1", "esco");
     await wpm.searchEscoOccupations("dev");
     await wpm.getEscoOccupation("http://x/1");
@@ -191,6 +194,9 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/downline-aspirations",
       "/api/proxy/workers/w1/groups",
       "/api/proxy/groups",
+      "/api/proxy/groups/g1/skills",
+      "/api/proxy/groups/g1/members",
+      "/api/proxy/workers/w1/dotted-line",
       "/api/proxy/workers/w1/framework-roles/esco/skills",
       "/api/proxy/esco/occupations?q=dev&limit=25",
       "/api/proxy/esco/occupation?uri=http%3A%2F%2Fx%2F1",

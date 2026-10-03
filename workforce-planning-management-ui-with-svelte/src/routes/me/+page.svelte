@@ -7,6 +7,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { listSelectableFrameworks } from "#lib/api/wpm.js";
+  import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
   import TeamAspirations from "#lib/components/TeamAspirations.svelte";
   import Aspirations from "#lib/components/Aspirations.svelte";
@@ -66,6 +67,7 @@
   {/if}
   <CareerHistory {workerPid} />
   <Aspirations {workerPid} />
+  <DottedLinePanel {workerPid} />
   <GroupsPanel {workerPid} />
   <TeamAspirations {workerPid} />
   {#if frameworks.length > 0 && !frameworks.some((f) => f.available)}

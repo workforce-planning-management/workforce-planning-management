@@ -1094,6 +1094,81 @@ export function workerGroups(
   return api(`/workers/${workerPid}/groups${includePast ? "?include_past=true" : ""}`, init);
 }
 
+/** What a group knows, in aggregate; skills under the floor are withheld. */
+export function groupSkills(
+  groupPid: string,
+  init?: FetchLike,
+): Promise<{
+  group: Group;
+  floor: number;
+  skills: Array<{
+    skill_pid: string;
+    skill: string | null;
+    declared: number;
+    coverage: number | null;
+    levels: Record<"1" | "2" | "3" | "4" | "5", number>;
+  }>;
+  withheld_below_floor: number;
+}> {
+  return api(`/groups/${groupPid}/skills`, init);
+}
+
+/** The members of a group (leads first). */
+export function groupMembers(
+  groupPid: string,
+  init?: FetchLike,
+): Promise<{
+  group: Group;
+  members: Array<{
+    worker_pid: string;
+    display_name: string | null;
+    job_title: string | null;
+    role: string;
+    joined_at: string;
+    on_behalf: boolean;
+  }>;
+}> {
+  return api(`/groups/${groupPid}/members`, init);
+}
+
+/** One end of a dotted-line relationship. */
+export type DottedLink = OrgPerson & {
+  note: string | null;
+  started_at: string;
+  ended_at: string | null;
+  current: boolean;
+  on_behalf: boolean;
+};
+
+/** A worker's dotted-line managers and dotted-line reports. */
+export function dottedLine(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{
+  worker: OrgPerson;
+  dotted_line_managers: DottedLink[];
+  dotted_line_reports: DottedLink[];
+}> {
+  return api(`/workers/${workerPid}/dotted-line`, init);
+}
+
+/** Give a worker a dotted-line manager (anyone; several allowed). */
+export function addDottedManager(
+  workerPid: string,
+  managerPid: string,
+  note?: string,
+): Promise<unknown> {
+  return api(`/workers/${workerPid}/dotted-line-managers`, {
+    method: "POST",
+    body: { manager_pid: managerPid, ...(note ? { note } : {}) },
+  });
+}
+
+/** End a dotted-line relationship; it is kept as history. */
+export function endDottedManager(workerPid: string, managerPid: string): Promise<unknown> {
+  return api(`/workers/${workerPid}/dotted-line-managers/${managerPid}`, { method: "DELETE" });
+}
+
 /** A worker joins a group, or changes their role in it. */
 export function joinGroup(
   groupPid: string,

@@ -133,3 +133,27 @@ describe("TeamAspirations and GroupsPanel", () => {
     expect(list.textContent).toContain("community of interest");
   });
 });
+
+describe("DottedLinePanel", () => {
+  it("lists dotted-line managers and reports separately", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL) =>
+      String(url).includes("dotted-line")
+        ? json({
+            worker: { pid: "w", display_name: "W", job_title: "", department: "" },
+            dotted_line_managers: [{ pid: "m", display_name: "Mia", job_title: "", department: "", note: "project X", started_at: "2026-01-01T00:00:00Z", ended_at: null, current: true, on_behalf: true }],
+            dotted_line_reports: [{ pid: "r", display_name: "Rae", job_title: "", department: "", note: null, started_at: "2026-01-01T00:00:00Z", ended_at: null, current: true, on_behalf: false }],
+          })
+        : json([{ pid: "w", display_name: "W" }, { pid: "m", display_name: "Mia" }, { pid: "z", display_name: "Zed" }])));
+    const { default: DottedLinePanel } = await import("../../src/lib/components/DottedLinePanel.svelte");
+    render(DottedLinePanel, { workerPid: "w" });
+    const managers = await screen.findByTestId("dotted-managers");
+    await waitFor(() => expect(managers.textContent).toContain("Mia"));
+    expect(managers.textContent).toContain("project X");
+    expect(managers.textContent).toContain("on their behalf");
+    expect(screen.getByTestId("dotted-reports").textContent).toContain("Rae");
+    const options = [...(screen.getByLabelText(/Add a dotted-line manager/) as HTMLSelectElement).options].map((o) => o.text);
+    expect(options).toContain("Zed");
+    expect(options).not.toContain("W");
+    expect(options).not.toContain("Mia");
+  });
+});

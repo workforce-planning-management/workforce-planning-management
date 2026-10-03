@@ -1303,6 +1303,34 @@ first in each, per the three-part rule.
         global, not per organization; downline reports ignore workers outside
         the caller's organizations.
 
+- [x] WPM-T66 (2026-10-03) **Groups page and skill roll-up; dotted-line
+      reports.** Builds on WPM-T65.
+      - **`/groups` page** with a nav entry (`nav.groups` in all 16 locales):
+        list, start a group, and per group its members and what it knows.
+      - **Group skill roll-up** `GET /api/groups/{pid}/skills`: per skill, how
+        many current members declare it, coverage (null for an empty group,
+        never zero) and the spread of levels 1–5. **Aggregate only and
+        floored:** a skill declared by fewer than three members — or any skill
+        in a group of fewer than three — is withheld (and counted), so a
+        distribution cannot point at one person; no member is named. Declared,
+        not inferred. Pure `rules::groups::rollup`.
+      - **Dotted-line reports** (migration `…000037`): a secondary reporting
+        line, **anyone** may be a dotted-line manager (not only the solid-line
+        chain), a worker may have several, dated like other history (ending one
+        keeps it). `GET /api/workers/{pid}/dotted-line` (managers and reports,
+        `?include_past=`), `POST …/dotted-line-managers`,
+        `DELETE …/dotted-line-managers/{manager_pid}`. A write to the report's
+        record (self, or HR on their behalf, recorded). Not a person
+        themselves; loops allowed (not a hierarchy). **A dotted line changes
+        no org chart, adds no direct/indirect report, and grants no access to
+        manager-visible aspirations.** Joins export and erasure.
+      **Verified:** Rust type-checks, 173 lib tests, database suite **41/41**
+      (roll-up floor and coverage, dotted lines incl. loop/self/ended-kept),
+      clippy-clean on the new code, svelte-check 0, vitest 55/55, build green.
+      **Limits:** the dotted-line manager must be a worker the caller can see;
+      groups remain global; a roll-up shows only the floor and distribution —
+      no trend over time.
+
 ## Phase 9 — strategic workforce-planning capabilities (research backlog, unscoped)
 
 Not tasks yet — each item below needs a design pass (a `spec/*.md`

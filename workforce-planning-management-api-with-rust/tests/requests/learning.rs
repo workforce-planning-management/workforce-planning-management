@@ -1814,6 +1814,27 @@ async fn reporting_lines_downline_aspirations_and_groups() {
         assert_eq!(direct["reports"].as_array().unwrap().len(), 2);
         assert_eq!(request.get(&format!("/api/workers/{ceo}/reports?kind=sideways")).await.status_code(), 422);
 
+        // ── Dotted-line reports: anyone, several, separate from the solid line.
+        let dot = |who: &str, mgr: &str| request.post(&format!("/api/workers/{who}/dotted-line-managers")).json(&json!({ "manager_pid": mgr, "note": "project X" }));
+        dot(dev, peer).await.assert_status_ok();
+        dot(dev, ceo).await.assert_status_ok();
+        dot(dev, peer).await.assert_status_ok();
+        assert_eq!(dot(dev, dev).await.status_code(), 422, "not their own manager");
+        dot(peer, dev).await.assert_status_ok();
+        let dl: Value = request.get(&format!("/api/workers/{dev}/dotted-line")).await.json();
+        assert_eq!(dl["dotted_line_managers"].as_array().unwrap().len(), 2, "two dotted-line managers; re-adding added none");
+        assert_eq!(dl["dotted_line_reports"].as_array().unwrap().len(), 1, "a loop is allowed");
+        let chart_up: Value = request.get(&format!("/api/workers/{dev}/upline")).await.json();
+        assert_eq!(chart_up["upline"].as_array().unwrap().len(), 3, "the solid line is unchanged");
+        let peers_down: Value = request.get(&format!("/api/workers/{peer}/downline")).await.json();
+        assert_eq!(peers_down["summary"]["total"], 0, "a dotted-line report is not a direct or indirect report");
+        request.delete(&format!("/api/workers/{dev}/dotted-line-managers/{peer}")).await.assert_status_ok();
+        assert_eq!(request.delete(&format!("/api/workers/{dev}/dotted-line-managers/{peer}")).await.status_code(), 404);
+        let now: Value = request.get(&format!("/api/workers/{dev}/dotted-line")).await.json();
+        assert_eq!(now["dotted_line_managers"].as_array().unwrap().len(), 1);
+        let past: Value = request.get(&format!("/api/workers/{dev}/dotted-line?include_past=true")).await.json();
+        assert_eq!(past["dotted_line_managers"].as_array().unwrap().len(), 2, "the ended line is kept");
+
         // ── A manager sees downline aspirations shared with managers or everyone — never private ones.
         let skill: Value = request.post("/api/skills").json(&json!({ "name": "Downline skill", "category": "technical" })).await.json();
         let skill_pid = skill["pid"].as_str().unwrap().to_string();
@@ -1862,6 +1883,21 @@ async fn reporting_lines_downline_aspirations_and_groups() {
         join(rust, dev, "member").await.assert_status_ok();
         let list: Value = request.get("/api/groups").await.json();
         assert_eq!(list.as_array().unwrap().iter().find(|g| g["name"] == "Rust guild").unwrap()["members"], 2);
+        // ── Skill roll-up: aggregate, floored at three.
+        let roll = request.get(&format!("/api/groups/{rust}/skills")).await.json::<Value>();
+        assert_eq!(roll["skills"].as_array().unwrap().len(), 0, "two members: everything withheld");
+        for (who, level) in [(dev, 2), (lead, 4), (peer, 4), (vp, 5)] {
+            join(rust, who, "member").await.assert_status_ok();
+            request.put(&format!("/api/workers/{who}/skills")).json(&json!({ "skill_pid": skill_pid, "proficiency": level })).await.assert_status_ok();
+        }
+        join(rust, ceo, "member").await.assert_status_ok(); // declares nothing
+        let roll = request.get(&format!("/api/groups/{rust}/skills")).await.json::<Value>();
+        let rows = roll["skills"].as_array().unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["declared"], 4);
+        assert_eq!(rows[0]["levels"], json!({ "1": 0, "2": 1, "3": 0, "4": 2, "5": 1 }));
+        assert_eq!(rows[0]["coverage"], 0.8, "four of five members");
+        assert!(!roll.to_string().contains(dev.as_str()), "no member is named");
         request.delete(&format!("/api/groups/{chess}")).await.assert_status_ok();
         let after: Value = request.get(&format!("/api/workers/{dev}/groups")).await.json();
         assert_eq!(after["groups"].as_array().unwrap().len(), 1, "a retired group no longer lists");

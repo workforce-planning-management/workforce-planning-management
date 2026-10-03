@@ -13,12 +13,12 @@ use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, appraisal_nominations, appraisal_responses, appraisals, assessments,
-    benefit_enrollments, candidates, cpd_entries, development_plans, entitlement_acknowledgements,
-    ergonomic_assessments, group_members, leave_entitlements, leave_requests, mentorships,
-    mobility_interests, notifications, path_enrollments, payslips, pipeline_members,
-    professional_registrations, program_placements, reviews, shift_assignments, time_entries,
-    training_enrollments, worker_aspirations, worker_framework_roles, worker_skill_history,
-    worker_skills, workers,
+    benefit_enrollments, candidates, cpd_entries, development_plans, dotted_line_reports,
+    entitlement_acknowledgements, ergonomic_assessments, group_members, leave_entitlements,
+    leave_requests, mentorships, mobility_interests, notifications, path_enrollments, payslips,
+    pipeline_members, professional_registrations, program_placements, reviews, shift_assignments,
+    time_entries, training_enrollments, worker_aspirations, worker_framework_roles,
+    worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -114,6 +114,8 @@ async fn subject_access(
         "skill_history": rows_for!(db, worker_skill_history, WorkerPid, epid),
         "aspirations": rows_for!(db, worker_aspirations, WorkerPid, epid),
         "group_memberships": rows_for!(db, group_members, WorkerPid, epid),
+        "dotted_line_as_report": rows_for!(db, dotted_line_reports, ReportPid, epid),
+        "dotted_line_as_manager": rows_for!(db, dotted_line_reports, ManagerPid, epid),
         "mobility_interests": rows_for!(db, mobility_interests, WorkerPid, epid),
         "professional_registrations": rows_for!(db, professional_registrations, WorkerPid, epid),
         "program_placements": rows_for!(db, program_placements, WorkerPid, epid),
@@ -231,6 +233,12 @@ async fn erase(
         format!("DELETE FROM worker_skill_history WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_aspirations WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM group_members WHERE worker_pid = '{epid}'"),
+        format!(
+            "DELETE FROM dotted_line_reports WHERE report_pid = '{epid}' OR manager_pid = '{epid}'"
+        ),
+        format!(
+            "DELETE FROM dotted_line_reports WHERE report_pid = '{epid}' OR manager_pid = '{epid}'"
+        ),
     ];
     let mut affected = Vec::new();
     for statement in &statements {
@@ -260,6 +268,8 @@ async fn erase(
             "skill_history_deleted": affected[13],
             "aspirations_deleted": affected[14],
             "group_memberships_deleted": affected[15],
+            "dotted_lines_deleted": affected[16],
+            "dotted_lines_deleted": affected[16],
         })),
     )
     .await?;

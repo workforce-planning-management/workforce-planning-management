@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{group_members, groups, workers};
+use crate::models::_entities::{group_members, groups, skills, worker_skills, workers};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::groups as rules;
@@ -333,6 +333,72 @@ async fn leave_group(
     format::empty_json()
 }
 
+/// `GET /api/groups/{pid}/skills` — what the group knows, **in aggregate**:
+/// per skill, how many current members declare it and how their levels are
+/// spread. Declared, not inferred; never names a member. A skill declared by
+/// fewer than three members (or any skill, in a group of fewer than three) is
+/// withheld so a distribution cannot point at one person.
+#[debug_handler]
+async fn group_skills(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
+    let group = find_group(&ctx, &pid).await?;
+    let members: Vec<Uuid> = group_members::Entity::find()
+        .filter(group_members::Column::GroupPid.eq(group.pid))
+        .filter(group_members::Column::LeftAt.is_null())
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|m| m.worker_pid)
+        .collect();
+    let declared = worker_skills::Entity::find()
+        .filter(worker_skills::Column::WorkerPid.is_in(members.clone()))
+        .filter(worker_skills::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?;
+    let mut by_skill: BTreeMap<Uuid, Vec<i32>> = BTreeMap::new();
+    for d in &declared {
+        by_skill.entry(d.skill_pid).or_default().push(d.proficiency);
+    }
+    let names: BTreeMap<Uuid, String> = skills::Entity::find()
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|s| (s.pid, s.name))
+        .collect();
+    let mut shown = Vec::new();
+    let mut withheld = 0usize;
+    for (skill, levels) in &by_skill {
+        match rules::rollup(members.len(), levels) {
+            Some(r) => shown.push(serde_json::json!({
+                "skill_pid": skill,
+                "skill": names.get(skill),
+                "declared": r.declared,
+                "coverage": r.coverage(),
+                "levels": { "1": r.levels[0], "2": r.levels[1], "3": r.levels[2], "4": r.levels[3], "5": r.levels[4] },
+            })),
+            None => withheld += 1,
+        }
+    }
+    shown.sort_by(|a, b| {
+        b["declared"]
+            .as_u64()
+            .cmp(&a["declared"].as_u64())
+            .then_with(|| {
+                a["skill"]
+                    .as_str()
+                    .map(str::to_lowercase)
+                    .cmp(&b["skill"].as_str().map(str::to_lowercase))
+            })
+    });
+    format::json(serde_json::json!({
+        "group": group_json(&group, members.len()),
+        "floor": rules::MIN_ROLLUP,
+        "derivation": "declared skills of current members, in aggregate; a skill declared by fewer \
+                       than the floor is withheld, and no member is named",
+        "skills": shown,
+        "withheld_below_floor": withheld,
+    }))
+}
+
 /// `GET /api/workers/{pid}/groups?include_past=` — every group a worker is in
 /// (several at once is normal); past memberships too when asked.
 #[debug_handler]
@@ -386,6 +452,7 @@ pub fn routes() -> Routes {
         .add("/groups", post(create_group))
         .add("/groups/{pid}", put(update_group))
         .add("/groups/{pid}", delete(delete_group))
+        .add("/groups/{pid}/skills", get(group_skills))
         .add("/groups/{pid}/members", get(list_members))
         .add("/groups/{pid}/members", post(join_group))
         .add("/groups/{pid}/members/{worker_pid}", delete(leave_group))

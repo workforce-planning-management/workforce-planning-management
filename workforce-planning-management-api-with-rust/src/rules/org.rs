@@ -99,6 +99,22 @@ pub fn report_kind(depth: usize) -> Option<ReportKind> {
     }
 }
 
+/// Validate a dotted-line relationship: a person cannot be their own
+/// dotted-line manager. Beyond that it can be **anyone** — the solid-line
+/// chain, a peer, someone in another department — and, unlike the solid
+/// line, dotted lines may form loops (A dotted to B and B dotted to A), since
+/// they are not a hierarchy.
+///
+/// # Errors
+/// A message naming the problem.
+pub fn validate_dotted_line<T: PartialEq>(report: &T, manager: &T) -> Result<(), String> {
+    if report == manager {
+        Err("a person cannot be their own dotted-line manager".to_string())
+    } else {
+        Ok(())
+    }
+}
+
 /// The longest accepted work location.
 pub const MAX_LOCATION_LEN: usize = 100;
 
@@ -159,6 +175,13 @@ mod tests {
         assert_eq!(upline(1, &cyclic), [2]);
         let cyc: BTreeMap<u8, Vec<u8>> = BTreeMap::from([(1, vec![2]), (2, vec![1])]);
         assert_eq!(downline(1, &cyc), [(2, 1)]);
+    }
+
+    #[test]
+    fn dotted_lines_can_be_anyone_but_not_self() {
+        assert!(validate_dotted_line(&1, &2).is_ok());
+        assert!(validate_dotted_line(&2, &1).is_ok(), "loops are allowed");
+        assert!(validate_dotted_line(&3, &3).is_err());
     }
 
     /// Locations are trimmed, blank means "unknown", over-long is refused.

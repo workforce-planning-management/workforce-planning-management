@@ -62,6 +62,7 @@ pub use super::talent_pipelines::Entity as TalentPipelines;
 pub use super::time_entries::Entity as TimeEntries;
 pub use super::training_enrollments::Entity as TrainingEnrollments;
 pub use super::wellbeing_entitlements::Entity as WellbeingEntitlements;
+pub use super::dotted_line_reports::Entity as DottedLineReports;
 pub use super::group_members::Entity as GroupMembers;
 pub use super::groups::Entity as Groups;
 pub use super::worker_aspirations::Entity as WorkerAspirations;

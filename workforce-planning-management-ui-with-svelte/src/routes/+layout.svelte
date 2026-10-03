@@ -18,6 +18,7 @@
   const NAV_LINKS = [
     ["/workers", "nav.workers"],
     ["/org-chart", "nav.orgChart"],
+    ["/groups", "nav.groups"],
     ["/requisitions", "nav.requisitions"],
     ["/workforce", "nav.workforce"],
     ["/development", "nav.development"],
