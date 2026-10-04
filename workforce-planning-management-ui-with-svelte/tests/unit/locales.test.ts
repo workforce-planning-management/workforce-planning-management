@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  CMS_UI_LANGUAGES,
+  CMS_UI_LOCALE,
   LOCALE_ALIASES,
   LOCALES,
   localePath,
@@ -67,5 +69,13 @@ describe("CMS config", () => {
     const { config } = await import("../../scripts/cms-config.mjs");
     const { readFileSync } = await import("node:fs");
     expect(readFileSync("static/admin/config.yml", "utf8")).toBe(config());
+  });
+});
+
+describe("CMS interface language", () => {
+  it("maps every content locale to a language Sveltia ships", () => {
+    for (const locale of LOCALES) {
+      expect(CMS_UI_LANGUAGES, locale).toContain(CMS_UI_LOCALE[locale]);
+    }
   });
 });

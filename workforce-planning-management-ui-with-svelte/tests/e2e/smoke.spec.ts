@@ -408,6 +408,24 @@ test.describe("signed-in smoke coverage", () => {
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   });
 
+  test("the CMS shell is served per locale, in that locale's CMS language", async ({
+    page,
+  }) => {
+    await page.route("https://unpkg.com/**", (route) =>
+      route.fulfill({ contentType: "text/javascript", body: "" }),
+    );
+    await page.goto("/de/admin/");
+    await expect(page).toHaveURL(/\/de-001\/admin\/?$/);
+    await expect(page.locator("html")).toHaveAttribute("lang", "de-001");
+    expect(
+      await page.evaluate(
+        () => JSON.parse(localStorage.getItem("sveltia-cms.prefs") ?? "{}").locale,
+      ),
+    ).toBe("de");
+    const config = await page.request.get("/admin/config.yml");
+    expect(config.status()).toBe(200);
+  });
+
   test("a bare language alias redirects to its -001 content route", async ({
     page,
   }) => {

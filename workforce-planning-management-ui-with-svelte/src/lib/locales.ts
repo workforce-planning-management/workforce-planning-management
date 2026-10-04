@@ -128,3 +128,62 @@ export function negotiateLocale(header: string | null | undefined): Locale {
   }
   return DEFAULT_LOCALE;
 }
+
+/** Interface languages Sveltia CMS ships (its own list, not ours). */
+export const CMS_UI_LANGUAGES = [
+  "ar",
+  "bg",
+  "ca",
+  "cs",
+  "da",
+  "de",
+  "el",
+  "en-CA",
+  "en-GB",
+  "en-US",
+  "es-CO",
+  "fa",
+  "fi",
+  "fr",
+  "hr",
+  "it",
+  "ja",
+  "ko",
+  "nl",
+  "pl",
+  "pt-BR",
+  "pt-PT",
+  "ru",
+  "sv",
+  "tr",
+  "uk",
+  "vi",
+  "zh-CN",
+  "zh-TW",
+] as const;
+
+/**
+ * The Sveltia CMS interface language for each content locale: the closest
+ * one the CMS ships. Bengali, Welsh, Hindi, Indonesian and Urdu have no
+ * CMS translation, so they get English (Welsh: British English).
+ */
+export const CMS_UI_LOCALE: Record<Locale, (typeof CMS_UI_LANGUAGES)[number]> =
+  {
+    "ar-001": "ar",
+    "bn-001": "en-US",
+    "cy-001": "en-GB",
+    "de-001": "de",
+    "de-de": "de",
+    "en-001": "en-US",
+    "en-gb": "en-GB",
+    "en-us": "en-US",
+    "es-001": "es-CO",
+    "es-es": "es-CO",
+    "fr-001": "fr",
+    "hi-001": "en-US",
+    "id-001": "en-US",
+    "pt-001": "pt-BR",
+    "ru-001": "ru",
+    "ur-001": "en-US",
+    "zh-001": "zh-CN",
+  };

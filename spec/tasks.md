@@ -1631,3 +1631,15 @@ build on 3–5).
       insights tests pass, clippy clean; the DB suite was not re-run after
       adding `params` (a response-field addition). Vitest 62/62,
       Playwright 19/19.
+
+- [x] WPM-T72 (2026-10-04) **Localized `/admin/`.** The Sveltia CMS shell is
+      now a per-locale route (`src/routes/admin/+server.ts`):
+      `/en-001/admin/`, `/cy-001/admin/`, `/en/admin/` (alias redirect);
+      an unprefixed `/admin/` redirects like any page. It sets `<html
+      lang dir>` and the CMS's own interface language, which Sveltia reads
+      from the `sveltia-cms.prefs` localStorage `locale` (it has no config
+      option; found in its source) — mapped by `CMS_UI_LOCALE` onto the 29
+      languages the CMS ships (bn, cy, hi, id, ur have none, so English /
+      British English). `/admin/config.yml` stays static. Replaces
+      `static/admin/index.html`. Vitest 63/63, Playwright 20/20 (CMS
+      script stubbed); the CMS itself still unexercised.

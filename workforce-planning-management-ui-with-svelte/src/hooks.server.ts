@@ -24,7 +24,6 @@ const UNPREFIXED = [
   "/api/",
   "/_app/",
   "/assets/",
-  "/admin/",
   "/signin/sso",
   "/signout",
 ];
@@ -40,9 +39,6 @@ export const handle: Handle = async ({ event, resolve }) => {
   event.locals.sessionId = event.cookies.get(SESSION_COOKIE) ?? null;
 
   const { pathname, search } = event.url;
-  if (pathname === "/admin" || pathname === "/admin/") {
-    redirect(302, "/admin/index.html");
-  }
   const { locale, alias, rest } = splitLocale(pathname);
   const pageRequest =
     event.request.method === "GET" || event.request.method === "HEAD";
