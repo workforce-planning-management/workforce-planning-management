@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn unknown_metrics_yield_nothing() {
-        assert!(derive(&Inputs::default()).is_empty());
+        assert_eq!(codes(&Inputs::default()), [] as [&str; 0]);
     }
 
     #[test]
@@ -192,7 +192,7 @@ mod tests {
             span_mean: Some(6.0),
             fill_median_days: Some(35.0),
         };
-        assert!(derive(&i).is_empty());
+        assert_eq!(codes(&i), [] as [&str; 0]);
     }
 
     #[test]
@@ -231,7 +231,7 @@ mod tests {
             closing: 5,
             ..Inputs::default()
         };
-        assert!(derive(&i).is_empty());
+        assert_eq!(codes(&i), [] as [&str; 0]);
     }
 
     #[test]
