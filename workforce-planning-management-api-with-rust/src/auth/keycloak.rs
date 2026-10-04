@@ -10,7 +10,7 @@
 //! This is a *different* Keycloak integration point from the one in
 //! `spec/auth.md`'s "Keycloak as the identity provider" runbook: that
 //! runbook covers pointing the *sibling authentication service* at
-//! Keycloak as its own upstream IdP (via that service's own
+//! Keycloak as its own upstream `IdP` (via that service's own
 //! `AUTH_OIDC_*` config), after which it keeps minting PASETO for this
 //! crate's `paseto` backend to verify, unchanged. This module instead
 //! lets this service skip that service entirely and verify a
@@ -61,7 +61,10 @@
 //! `resource.person = $sub` self-rules need no mapper: `$sub` is
 //! Keycloak's own `sub` claim, relayed as-is.
 
-use super::*;
+use super::{
+    BTreeMap, ENTITY, Claims, Method, OnceLock, Policy, StatusCode,
+    derive_action, env_or, is_public_path,
+};
 use axum::http::HeaderMap;
 use axum::http::header::AUTHORIZATION;
 use jsonwebtoken::jwk::JwkSet;
@@ -144,10 +147,10 @@ fn attrs_from_keycloak_claims(claims: &KeycloakClaims) -> BTreeMap<String, Vec<S
             attrs.insert("department".to_string(), departments);
         }
     }
-    if let Some(org_refs) = &claims.organization_ref {
-        if !org_refs.is_empty() {
-            attrs.insert("organization_ref".to_string(), org_refs.clone());
-        }
+    if let Some(org_refs) = &claims.organization_ref
+        && !org_refs.is_empty()
+    {
+        attrs.insert("organization_ref".to_string(), org_refs.clone());
     }
     attrs
 }
@@ -176,6 +179,10 @@ impl<T: Clone> Reloadable<T> {
     }
 
     /// A cheap clone of the current value.
+    ///
+    /// # Panics
+    ///
+    /// If the lock was poisoned by a panic while storing.
     #[must_use]
     pub fn current(&self) -> T {
         (**self.0.lock().expect("reloadable lock poisoned")).clone()
@@ -183,6 +190,10 @@ impl<T: Clone> Reloadable<T> {
 
     /// Swap in a new value; a caller already holding a snapshot from
     /// [`Reloadable::current`] keeps using theirs.
+    ///
+    /// # Panics
+    ///
+    /// If the lock was poisoned by a panic while reading.
     pub fn store(&self, value: T) {
         *self.0.lock().expect("reloadable lock poisoned") = std::sync::Arc::new(value);
     }

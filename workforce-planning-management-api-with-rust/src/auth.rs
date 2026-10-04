@@ -23,7 +23,7 @@
 //!   `attrs` mapping (also documented in `spec/auth.md`'s "Keycloak as
 //!   the identity provider" runbook, which additionally covers the
 //!   *other*, independent way Keycloak enters this family: as the
-//!   sibling authentication service's own upstream IdP via its
+//!   sibling authentication service's own upstream `IdP` via its
 //!   `AUTH_OIDC_*` config — a different integration point from this
 //!   one, and usable without ever enabling this crate's `keycloak`
 //!   feature).
@@ -487,6 +487,7 @@ pub struct AuthUser(pub Claims);
 impl<S: Send + Sync> FromRequestParts<S> for AuthUser {
     type Rejection = (StatusCode, String);
 
+    #[allow(clippy::unused_async_trait_impl)] // async per the trait; no await needed
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         // Snapshot the current (hot-reloadable) verifier for this request.
         let verifier = verifier().current();
@@ -521,6 +522,7 @@ impl MaybeAuthUser {
 impl<S: Send + Sync> FromRequestParts<S> for MaybeAuthUser {
     type Rejection = std::convert::Infallible;
 
+    #[allow(clippy::unused_async_trait_impl)] // async per the trait; no await needed
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let verifier = verifier().current();
         Ok(Self(bearer_claims(&parts.headers, &verifier).ok()))
@@ -744,7 +746,7 @@ mod tests {
             &worker_resource_attrs(&an_worker(me, "engineering", "active")),
         );
         assert!(self_read.allowed);
-        assert!(self_read.obligations.is_empty());
+        assert_eq!(self_read.obligations.len(), 0);
         // Department-scoped HR read.
         let hr = claims_with_attrs(&[("hr", &["true"])]);
         let dept_read = policy.evaluate_with_resource(
@@ -754,7 +756,7 @@ mod tests {
             &worker_resource_attrs(&an_worker(uuid::Uuid::new_v4(), "engineering", "active")),
         );
         assert!(dept_read.allowed);
-        assert!(dept_read.obligations.is_empty());
+        assert_eq!(dept_read.obligations.len(), 0);
         // Anyone else falls through to the masked-read rule.
         let other = claims_with_attrs(&[]);
         let masked_read = policy.evaluate_with_resource(

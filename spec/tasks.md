@@ -1653,6 +1653,6 @@ build on 3–5).
       borrowed after partial moves); (2) every token was refused
       `InvalidAlgorithm` because `Validation` listed RS256 and ES256
       together — it now validates the header's algorithm if it is on the
-      allow-list. Auth lib tests 26/26 under the feature. Clippy (pedantic) still
-      reports older warnings in `keycloak.rs` (doc markdown, wildcard
-      import, a collapsible `if`) — not part of this change.
+      allow-list. Auth lib tests 26/26 under the feature. Clippy (pedantic) is now
+      clean on `auth.rs` and `auth/keycloak.rs` in both backends (older
+      warnings cleared in a follow-up).
