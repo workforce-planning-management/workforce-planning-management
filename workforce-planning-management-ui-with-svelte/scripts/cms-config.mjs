@@ -9,7 +9,8 @@
 // `content/locales/<locale>/ui.json` nests on the dots —
 // `{"nav": {"workers": "…"}}` — and `i18n.svelte.ts` flattens it back
 // to dotted keys at build time. Every key in en-001 becomes a text
-// field; add a key there, rerun this, and the CMS offers it.
+// field (optional, so a regional locale can hold just its overrides);
+// add a key there, rerun this, and the CMS offers it.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -32,9 +33,9 @@ function fields(node, indent) {
   for (const [name, value] of Object.entries(node)) {
     if (typeof value === "string") {
       const widget = value.length > 80 ? "text" : "string";
-      out.push(`${pad}- { name: ${q(name)}, label: ${q(label(name))}, widget: ${widget}, i18n: true }`);
+      out.push(`${pad}- { name: ${q(name)}, label: ${q(label(name))}, widget: ${widget}, required: false, i18n: true }`);
     } else {
-      out.push(`${pad}- name: ${q(name)}`, `${pad}  label: ${q(label(name))}`, `${pad}  widget: object`, `${pad}  collapsed: true`, `${pad}  i18n: true`, `${pad}  fields:`, ...fields(value, indent + 4));
+      out.push(`${pad}- name: ${q(name)}`, `${pad}  label: ${q(label(name))}`, `${pad}  widget: object`, `${pad}  collapsed: true`, `${pad}  required: false`, `${pad}  i18n: true`, `${pad}  fields:`, ...fields(value, indent + 4));
     }
   }
   return out;

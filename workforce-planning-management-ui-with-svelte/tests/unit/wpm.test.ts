@@ -31,11 +31,18 @@ describe("i18n", () => {
   it("covers every key in every locale (parity)", () => {
     for (const locale of LOCALES) {
       const table = STRINGS_BY_LOCALE[locale];
-      for (const key of STRING_KEYS) {
-        expect(table[key], `${locale} missing ${key}`).toBeTruthy();
+      if (locale.endsWith("-001")) {
+        for (const key of STRING_KEYS) {
+          expect(table[key], `${locale} missing ${key}`).toBeTruthy();
+        }
+        expect(Object.keys(table).sort()).toEqual([...STRING_KEYS].sort());
+      } else {
+        // A regional locale (en-gb, es-es, …) holds only its overrides of
+        // the language's -001 base; it must not invent keys.
+        for (const key of Object.keys(table)) {
+          expect(STRING_KEYS, `${locale} has stray ${key}`).toContain(key);
+        }
       }
-      // No stray keys either.
-      expect(Object.keys(table).sort()).toEqual([...STRING_KEYS].sort());
     }
   });
 
@@ -46,6 +53,15 @@ describe("i18n", () => {
     expect(isRtl("ur")).toBe(true);
     expect(isRtl("en")).toBe(false);
     expect(isRtl("es-MX")).toBe(false);
+  });
+
+  it("regional locales override their -001 base and fall back to it", () => {
+    expect(translate("org.myOrganizations", "en-001")).toBe("My organizations");
+    expect(translate("org.myOrganizations", "en-gb")).toBe("My organisations");
+    expect(translate("org.myOrganizations", "en-us")).toBe("My organizations");
+    expect(translate("nav.workers", "es-es")).toBe(
+      translate("nav.workers", "es-001"),
+    );
   });
 
   it("normalises en_US and en-US to en-us rather than collapsing to en-001", () => {
