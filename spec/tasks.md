@@ -1533,7 +1533,7 @@ build on 3–5).
       module (WPM-T39) is the right precedent for how to centralise
       this kind of shared, tested derivation rather than reinventing
       it per route.
-- [ ] **Workforce analytics and insights.** The narrative/diagnostic
+- [x] **Workforce analytics and insights.** *(landed as WPM-T69; API only, no UI yet.)* The narrative/diagnostic
       layer on top of workforce metrics — Visier's own framing is
       turning the metrics above into "why" and "what should we do
       about it" rather than raw numbers on a dashboard. This is the
@@ -1579,3 +1579,15 @@ build on 3–5).
       upstream-client seam (`EntityRef`-keyed resolver, `http`/`stub`
       mode) than to a new subsystem — likely a new upstream client
       plus a webhook or polling endpoint for completion events.
+
+- [x] WPM-T69 (2026-10-04) **Workforce insights.** Builds on WPM-T44.
+      `rules/insights.rs` (pure; 7 tests pass standalone): `derive` turns
+      the shared metrics into findings (`turnover_high`,
+      `headcount_shrinking`/`growing`, `span_wide`/`narrow`,
+      `time_to_fill_slow`), each with an observation and a next step,
+      attention-level first; thresholds are published heuristics
+      (`THRESHOLDS`), and an unknown metric yields no finding. New
+      `GET /api/workforce-intelligence/insights?from=&to=`; the metrics
+      computation was extracted into `period_metrics` so both views share
+      it. **Not done:** the controller change is unbuilt (sibling crates
+      absent, see WPM-T41) and has no DB test; no front-end page yet.

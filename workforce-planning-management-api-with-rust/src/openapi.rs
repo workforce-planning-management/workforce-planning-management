@@ -180,6 +180,7 @@ pub fn spec() -> Value {
             "/api/workforce-intelligence/capability": { "get": { "tags": ["intelligence"], "summary": "Declared skill coverage + gaps, plans in flight, assessment coverage", "responses": ok("Capability") } },
             "/api/workforce-intelligence/capability-analysis": { "get": { "tags": ["intelligence"], "summary": "Strategic skill depth per skill and category (?min_proficiency=&min_depth=)", "responses": ok("CapabilityAnalysis") } },
             "/api/workforce-intelligence/metrics": { "get": { "tags": ["intelligence"], "summary": "Shared metric vocabulary: headcount, starters, leavers, turnover, span of control (?from=&to=)", "responses": ok("Metrics") } },
+            "/api/workforce-intelligence/insights": { "get": { "tags": ["intelligence"], "summary": "Findings derived from the shared metrics, with suggested next steps and the thresholds used (?from=&to=)", "responses": ok("Insights") } },
             "/api/workforce-intelligence/headcount-history": { "get": { "tags": ["intelligence"], "summary": "Recorded headcount snapshots per organization x department x date (?organization=&from=&to=)", "responses": ok("HeadcountHistory") } },
             "/api/esco/occupations": { "get": { "tags": ["esco"], "summary": "Search the pinned ESCO occupations (?q=&limit=)", "responses": ok("EscoOccupations") } },
             "/api/esco/occupation": { "get": { "tags": ["esco"], "summary": "One ESCO occupation with essential and optional skills (?uri=)", "responses": ok("EscoOccupation") } },

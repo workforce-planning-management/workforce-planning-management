@@ -40,6 +40,7 @@ use crate::models::_entities::{
 use crate::models::memberships;
 use crate::rules::assessment as assessment_rules;
 use crate::rules::capability as capability_rules;
+use crate::rules::insights as insight_rules;
 use crate::rules::metrics as metric_rules;
 use crate::rules::talent as rules;
 
@@ -393,19 +394,24 @@ struct MetricsQuery {
     to: Option<chrono::NaiveDate>,
 }
 
-/// `GET /api/workforce-intelligence/metrics?from=&to=` — the shared
-/// metric vocabulary: headcount (opening and closing), starters,
-/// leavers, turnover rate, and span of control, each defined once in
-/// [`metric_rules::DEFINITIONS`] and returned beside the numbers.
-///
-/// Headcount here counts workers *employed on the date* (hire and
-/// termination dates both respected); the `overview` view's headcount
-/// counts every live record regardless of status — see its derivation.
-#[debug_handler]
-async fn metrics(
-    axum::extract::Query(query): axum::extract::Query<MetricsQuery>,
-    State(ctx): State<AppContext>,
-) -> Result<Response> {
+/// The shared metrics for one period, computed once for both the
+/// `metrics` and `insights` views.
+struct PeriodMetrics {
+    from: chrono::NaiveDate,
+    to: chrono::NaiveDate,
+    opening_date: chrono::NaiveDate,
+    opening: usize,
+    closing: usize,
+    starters: usize,
+    leavers: usize,
+    turnover_rate: Option<f64>,
+    span: Option<metric_rules::Span>,
+    fill_time: Option<metric_rules::FillTime>,
+}
+
+/// Resolve the period (default: the year ending today) and compute the
+/// shared metrics over it.
+async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodMetrics> {
     let to = query.to.unwrap_or_else(|| chrono::Utc::now().date_naive());
     let from = query
         .from
@@ -414,7 +420,7 @@ async fn metrics(
         return Err(super::unprocessable("from must not be after to"));
     }
 
-    let staff = live_workers(&ctx).await?;
+    let staff = live_workers(ctx).await?;
     let tenures: Vec<metric_rules::Tenure> = staff
         .iter()
         .map(|w| metric_rules::Tenure {
@@ -440,7 +446,6 @@ async fn metrics(
         }
     }
     let counts: Vec<usize> = reports.values().copied().collect();
-    let span = metric_rules::span_of_control(&counts);
 
     // Time-to-fill over requisitions filled within the period.
     let filled_days: Vec<i64> = requisitions::Entity::find()
@@ -451,22 +456,79 @@ async fn metrics(
         .filter(|r| r.filled_on.is_some_and(|d| d >= from && d <= to))
         .filter_map(|r| metric_rules::time_to_fill_days(r.opened_on, r.filled_on))
         .collect();
-    let fill_time = metric_rules::fill_time_summary(&filled_days);
 
+    Ok(PeriodMetrics {
+        from,
+        to,
+        opening_date,
+        opening,
+        closing,
+        starters: metric_rules::starters(from, to, &tenures),
+        leavers,
+        turnover_rate: metric_rules::turnover_rate(leavers, opening, closing),
+        span: metric_rules::span_of_control(&counts),
+        fill_time: metric_rules::fill_time_summary(&filled_days),
+    })
+}
+
+/// `GET /api/workforce-intelligence/metrics?from=&to=` — the shared
+/// metric vocabulary: headcount (opening and closing), starters,
+/// leavers, turnover rate, and span of control, each defined once in
+/// [`metric_rules::DEFINITIONS`] and returned beside the numbers.
+///
+/// Headcount here counts workers *employed on the date* (hire and
+/// termination dates both respected); the `overview` view's headcount
+/// counts every live record regardless of status — see its derivation.
+#[debug_handler]
+async fn metrics(
+    axum::extract::Query(query): axum::extract::Query<MetricsQuery>,
+    State(ctx): State<AppContext>,
+) -> Result<Response> {
+    let m = period_metrics(query, &ctx).await?;
     let definitions: BTreeMap<&str, &str> = metric_rules::DEFINITIONS.iter().copied().collect();
     format::json(serde_json::json!({
-        "period": { "from": from, "to": to },
+        "period": { "from": m.from, "to": m.to },
         "definitions": definitions,
-        "headcount": { "opening": opening, "closing": closing, "opening_date": opening_date },
-        "starters": metric_rules::starters(from, to, &tenures),
-        "leavers": leavers,
-        "turnover_rate": metric_rules::turnover_rate(leavers, opening, closing),
-        "span_of_control": span.map(|s| serde_json::json!({
+        "headcount": { "opening": m.opening, "closing": m.closing, "opening_date": m.opening_date },
+        "starters": m.starters,
+        "leavers": m.leavers,
+        "turnover_rate": m.turnover_rate,
+        "span_of_control": m.span.map(|s| serde_json::json!({
             "managers": s.managers, "mean": s.mean, "max": s.max,
         })),
-        "time_to_fill": fill_time.map(|f| serde_json::json!({
+        "time_to_fill": m.fill_time.map(|f| serde_json::json!({
             "requisitions": f.count, "mean_days": f.mean, "median_days": f.median,
         })),
+    }))
+}
+
+/// `GET /api/workforce-intelligence/insights?from=&to=` — findings
+/// derived from the same metrics (WPM-T44) by
+/// [`insight_rules::derive`], each with an observation and a suggested
+/// next step, plus the heuristic thresholds that triggered them. An
+/// empty list means nothing crossed a threshold, not that nothing is
+/// known.
+#[debug_handler]
+async fn insights(
+    axum::extract::Query(query): axum::extract::Query<MetricsQuery>,
+    State(ctx): State<AppContext>,
+) -> Result<Response> {
+    let m = period_metrics(query, &ctx).await?;
+    let found = insight_rules::derive(&insight_rules::Inputs {
+        opening: m.opening,
+        closing: m.closing,
+        turnover_rate: m.turnover_rate,
+        span_mean: m.span.map(|s| s.mean),
+        fill_median_days: m.fill_time.map(|f| f.median),
+    });
+    let thresholds: BTreeMap<&str, serde_json::Value> = insight_rules::THRESHOLDS
+        .iter()
+        .map(|(n, v, d)| (*n, serde_json::json!({ "value": v, "meaning": d })))
+        .collect();
+    format::json(serde_json::json!({
+        "period": { "from": m.from, "to": m.to },
+        "insights": found,
+        "thresholds": thresholds,
     }))
 }
 
@@ -731,6 +793,7 @@ pub fn routes() -> Routes {
         .add("/capability", get(capability))
         .add("/capability-analysis", get(capability_analysis))
         .add("/metrics", get(metrics))
+        .add("/insights", get(insights))
         .add("/headcount-history", get(headcount_history))
         .add("/succession", get(succession))
         .add("/pipelines", get(pipelines))
