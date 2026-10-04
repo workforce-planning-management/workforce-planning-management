@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { benchmarkComparison, listBenchmarks, money } from "#lib/api/wpm.js";
-  import { i18n, t } from "#lib/i18n.svelte.js";
+  import { i18n, t, l } from "#lib/i18n.svelte.js";
   import type { Benchmark, ComparisonRow } from "#lib/api/types.js";
 
   // No switcher: every organization this person can read gets its own
@@ -73,7 +73,7 @@
           <tbody>
             {#each rowsByOrganization[ref] ?? [] as row (row.worker_pid)}
               <tr>
-                <td><a href={`/workers/${row.worker_pid}`}>{row.worker_pid.slice(0, 8)}</a></td>
+                <td><a href={l(`/workers/${row.worker_pid}`)}>{row.worker_pid.slice(0, 8)}</a></td>
                 <td>{row.job_title}</td>
                 <td>{row.department}</td>
                 <td>

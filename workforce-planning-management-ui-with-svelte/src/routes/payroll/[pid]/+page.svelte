@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { getRun, money, runAction, runPayslips } from "#lib/api/wpm.js";
-  import { i18n, t } from "#lib/i18n.svelte.js";
+  import { i18n, t, l } from "#lib/i18n.svelte.js";
   import type { Payslip, PayrollRun } from "#lib/api/types.js";
 
   /** The action(s) each run status offers (WPM-D5: derive, approve, pay). */
@@ -76,7 +76,7 @@
     <tbody>
       {#each payslips as slip (slip.pid)}
         <tr>
-          <td><a href={`/workers/${slip.worker_pid}`}>{slip.worker_pid.slice(0, 8)}</a></td>
+          <td><a href={l(`/workers/${slip.worker_pid}`)}>{slip.worker_pid.slice(0, 8)}</a></td>
           <td>{money(slip.gross_minor, slip.currency, i18n.locale)}</td>
           <td>
             {#each slip.deductions as deduction (deduction.label)}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { orgChart } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, l } from "#lib/i18n.svelte.js";
   import type { OrgNode } from "#lib/api/types.js";
   import OrgTree from "#lib/components/OrgTree.svelte";
   import {
@@ -74,7 +74,7 @@
           <ul>
             {#each group.members as member (member.pid)}
               <li>
-                <a href={`/workers/${member.pid}`}>{member.display_name}</a>
+                <a href={l(`/workers/${member.pid}`)}>{member.display_name}</a>
                 <span class="muted">— {member.job_title}</span>
               </li>
             {/each}
@@ -89,7 +89,7 @@
           <ul>
             {#each group.members as member (member.pid)}
               <li>
-                <a href={`/workers/${member.pid}`}>{member.display_name}</a>
+                <a href={l(`/workers/${member.pid}`)}>{member.display_name}</a>
                 <span class="muted">— {member.job_title} · {member.department}</span>
               </li>
             {/each}
@@ -104,7 +104,7 @@
           <ul>
             {#each group.members as member (member.pid)}
               <li>
-                <a href={`/workers/${member.pid}`}>{member.display_name}</a>
+                <a href={l(`/workers/${member.pid}`)}>{member.display_name}</a>
                 <span class="muted">— {member.job_title} · {member.department}</span>
               </li>
             {/each}
@@ -116,7 +116,7 @@
           <ul>
             {#each group.members as member (member.pid)}
               <li>
-                <a href={`/workers/${member.pid}`}>{member.display_name}</a>
+                <a href={l(`/workers/${member.pid}`)}>{member.display_name}</a>
                 <span class="muted">— {member.job_title} · {member.department}</span>
               </li>
             {/each}

@@ -1,0 +1,332 @@
+{
+  "nav": {
+    "wellbeing": "Wohlbefinden",
+    "privacy": "Datenschutz",
+    "learning": "Lernen",
+    "mentorship": "Mentoring",
+    "dashboard": "Übersicht",
+    "workers": "Arbeitskräfte",
+    "orgChart": "Organigramm",
+    "groups": "Gruppen",
+    "requisitions": "Offene Stellen",
+    "workforce": "Belegschaft",
+    "development": "Entwicklung",
+    "payroll": "Gehaltsabrechnung",
+    "benchmarks": "Benchmarks",
+    "signin": "Anmelden",
+    "share": "Teilen",
+    "text_size": "Textgröße",
+    "menu": "Menü",
+    "closeMenu": "Menü schließen",
+    "metrics": "Kennzahlen",
+    "roles": "Rollenprofile",
+    "skills": "Fähigkeiten",
+    "me": "Mein Profil",
+    "cpd": "Weiterbildung",
+    "change": "Wandel",
+    "planning": "Planung",
+    "tour": "Rundgang"
+  },
+  "pr": {
+    "retention": "Aufbewahrung",
+    "horizon": "Horizont (Tage)",
+    "pastHorizon": "Soft-Deletes über dem Horizont",
+    "candidates": "Kandidaten mit abgelaufener Einwilligung",
+    "sweep": "Bereinigung ausführen",
+    "swept": "Zeilen gelöscht"
+  },
+  "emp": {
+    "erase": "Löschen (anonymisieren)",
+    "subjectAccess": "Meine Daten herunterladen",
+    "notifications": "Benachrichtigungen",
+    "number": "Personalnr.",
+    "salary": "Gehalt",
+    "profile": "Profil",
+    "onboarding": "Onboarding",
+    "balances": "Urlaubskonten",
+    "payslips": "Gehaltsabrechnungen",
+    "reviews": "Beurteilungen",
+    "training": "Schulung"
+  },
+  "wb": {
+    "kind": {
+      "health": "Gesundheit",
+      "benefit": "Leistung"
+    },
+    "conversion": "Nach Hinweis angemeldet",
+    "pulse": "Pulsbefragung",
+    "pulseThanks": "Danke — Ihre anonyme Antwort wurde erfasst",
+    "pulseSuppressed": "Unter 5 Antworten verborgen",
+    "pulseMean": "Durchschnitt",
+    "pulseResponses": "Antworten",
+    "prompts": "Gesundheitsansprüche",
+    "reminder": "Erinnerung",
+    "noPrompts": "Derzeit keine Hinweise",
+    "info": "Mehr erfahren",
+    "booked": "Termin gebucht",
+    "done": "Erledigt",
+    "declined": "Nein danke",
+    "dismissed": "Ausblenden",
+    "rules": "Anspruchsregeln",
+    "uptake": "Inanspruchnahme"
+  },
+  "ap": {
+    "title": "360°-Beurteilungen",
+    "new": "Neue 360",
+    "nominate": "Nominieren",
+    "start": "Sammlung starten",
+    "share": "Bericht teilen",
+    "respond": "Antworten senden",
+    "report": "Bericht",
+    "withheld": "Unter 3 Antworten zurückgehalten",
+    "requests": "Meine 360-Anfragen"
+  },
+  "notif": {
+    "markRead": "Als gelesen markieren"
+  },
+  "erg": {
+    "title": "Ergonomie-Bewertungen",
+    "new": "Neue Bewertung",
+    "workstation": "Arbeitsplatz",
+    "ok": "OK",
+    "issue": "Problem",
+    "complete": "Abschließen",
+    "issues": "Ergonomie-Probleme"
+  },
+  "adj": {
+    "title": "Angemessene Anpassungen",
+    "note": "Praktischer Hinweis (optional)",
+    "new": "Änderung anfragen",
+    "hint": "Sie brauchen keine Diagnose, um zu fragen. Beschreiben Sie die Barriere, ihre Wirkung auf Ihre Arbeit und welche Änderung sie verringern würde.",
+    "barrier": "Welche Barriere besteht?",
+    "impact": "Wie wirkt sie sich auf Ihre Arbeit aus?",
+    "change": "Welche Änderung würde sie verringern?",
+    "agree": "Zustimmen",
+    "decline": "Ablehnen",
+    "inPlace": "Umgesetzt"
+  },
+  "brand": {
+    "name": "Personalplanung und -verwaltung"
+  },
+  "chrome": {
+    "language": "Sprache"
+  },
+  "share": {
+    "copy_link": "Link kopieren",
+    "copied": "Link kopiert",
+    "copy_failed": "Kopieren fehlgeschlagen — bitte aus der Adressleiste kopieren"
+  },
+  "common": {
+    "loading": "Wird geladen…",
+    "error": "Laden fehlgeschlagen",
+    "status": "Status",
+    "department": "Abteilung",
+    "jobTitle": "Stellenbezeichnung",
+    "name": "Name",
+    "actions": "Aktionen",
+    "days": "Tage",
+    "masked": "Verborgen"
+  },
+  "dash": {
+    "title": "HR-Übersicht",
+    "activeWorkers": "Aktive Arbeitskräfte",
+    "openRequisitions": "Offene Stellen",
+    "pendingLeave": "Ausstehender Urlaub",
+    "successionGaps": "Nachfolgelücken"
+  },
+  "req": {
+    "applications": "Bewerbungen",
+    "headcount": "Stellenanzahl"
+  },
+  "wf": {
+    "leaveRequests": "Urlaubsanträge",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "rota": "Dienstplan",
+    "workingTime": "Arbeitszeit",
+    "over48": "Über 48-h-Durchschnitt",
+    "restBreach": "Ruhezeit unter 11 h",
+    "allClear": "Keine Arbeitszeit-Hinweise"
+  },
+  "dev": {
+    "cycles": "Beurteilungszyklen",
+    "succession": "Nachfolgepläne",
+    "expiring": "Ablaufende Zertifikate"
+  },
+  "pay": {
+    "calculate": "Berechnen",
+    "pay": "Als bezahlt markieren",
+    "gross": "Brutto",
+    "net": "Netto",
+    "deductions": "Abzüge"
+  },
+  "bench": {
+    "flag": "Kennzeichen"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Personalplanung und -verwaltung",
+      "headline": "Personalarbeit, alles an einem Ort",
+      "subhead": "Planen Sie die Einstellung, führen Sie die Gehaltsabrechnung durch, fördern Sie das Wohlbefinden und unterstützen Sie die Entwicklung Ihrer Arbeitskräfte — ein vernetzter Arbeitsbereich für HR, Führungskräfte und alle Arbeitskräfte.",
+      "cta": "Anmelden",
+      "ctaHint": "Kostenlos testen — nur Ihre E-Mail-Adresse, kein Passwort"
+    },
+    "benefits": {
+      "title": "Warum Teams sich dafür entscheiden",
+      "b1": {
+        "title": "Ein Arbeitsbereich, nicht zehn Tabs",
+        "body": "Einstellung, Dienstplan, Gehaltsabrechnung, Beurteilungen und Wohlbefinden gehören zusammen, damit zwischen den Werkzeugen nichts verloren geht."
+      },
+      "b2": {
+        "title": "Auf Vertrauen aufgebaut",
+        "body": "Gehalts- und Beurteilungsdaten bleiben verborgen, bis der Zugriff verdient ist — nie geraten, nie eine falsche Null."
+      },
+      "b3": {
+        "title": "Self-Service für alle",
+        "body": "Arbeitskräfte sehen ihre eigenen Gehaltsabrechnungen, Urlaub und Beurteilungen und können Anpassungen oder ihre Daten anfragen, ohne ein Ticket zu eröffnen."
+      },
+      "b4": {
+        "title": "Spricht Ihre Sprache",
+        "body": "Vierzehn Sprachen mit endonymen Beschriftungen und vollständiger Rechts-nach-links-Unterstützung für Arabisch und Urdu, von Anfang an eingebaut."
+      },
+      "b5": {
+        "title": "Ein Theme und eine Textgröße für alle",
+        "body": "Fünfundvierzig Themes — darunter der britische NHS und GDS sowie das US Web Design System — plus sieben Textgrößen, damit die App zu dem passt, wie Menschen tatsächlich sehen und arbeiten."
+      },
+      "b6": {
+        "title": "Konform durch Konstruktion",
+        "body": "Aufbewahrungsregeln, Auskunftsexporte und das Recht auf Vergessenwerden sind fest im Produkt verankert, nicht nachträglich angeflanscht."
+      }
+    },
+    "features": {
+      "title": "Alles, was HR braucht, verbunden",
+      "f1": {
+        "title": "Einstellung & Onboarding",
+        "body": "Verfolgen Sie offene Stellen und Bewerbungen auf einem Live-Board und begleiten Sie neue Arbeitskräfte durch das Onboarding."
+      },
+      "f2": {
+        "title": "Arbeitskräfte & Organigramm",
+        "body": "Profil, Berichtslinie und Organigramm jeder Arbeitskraft — immer aktuell."
+      },
+      "f3": {
+        "title": "Dienstplan & Arbeitszeit",
+        "body": "Erstellen Sie den Dienstplan, kennzeichnen Sie lange Arbeitszeiten und kurze Ruhezeiten, und behalten Sie ergonomische Probleme im Blick."
+      },
+      "f4": {
+        "title": "Entwicklung & Lernen",
+        "body": "Führen Sie Beurteilungszyklen durch, verfolgen Sie Schulungen und Zertifikate, und ordnen Sie Mentoren ihren Mentees zu."
+      },
+      "f5": {
+        "title": "Wohlbefinden & Stimmungsbild",
+        "body": "Gesundheits- und Zusatzleistungen, anonyme Pulsbefragungen und Anträge auf angemessene Anpassungen."
+      },
+      "f6": {
+        "title": "Gehaltsabrechnung & Auswertung",
+        "body": "Berechnen und führen Sie die Gehaltsabrechnung durch und vergleichen Sie Vergütung und Personalstärke mit Benchmarks — auf einem Dashboard."
+      }
+    },
+    "trust": {
+      "title": "Datenschutz, richtig gemacht",
+      "body": "Arbeitskräfte können ihre eigenen Daten herunterladen oder deren Löschung beantragen, und jede Aufbewahrungsregel bleibt sichtbar."
+    },
+    "cta": {
+      "title": "Bereit für einen Blick?",
+      "body": "Melden Sie sich mit einem Magic Link an — kein Passwort nötig.",
+      "button": "Anmelden und fortfahren"
+    },
+    "demoNotice": "Demo-Software zu Testzwecken — kein Produktivsystem für die Personalverwaltung."
+  },
+  "org": {
+    "myOrganizations": "Meine Organisationen",
+    "noOrganizations": "Noch keine Organisationsmitgliedschaften",
+    "view": {
+      "label": "Ansicht",
+      "manager": "Nach Vorgesetzten",
+      "department": "Nach Abteilung",
+      "level": "Nach Ebene",
+      "tenure": "Nach Betriebszugehörigkeit",
+      "location": "Nach Standort"
+    },
+    "level": "Ebene",
+    "tenureYears": "Jahre",
+    "noLocation": "Standort nicht erfasst",
+    "employed": "Hier beschäftigt",
+    "staffOnly": "Personalzugang"
+  },
+  "metrics": {
+    "from": "Von",
+    "to": "Bis",
+    "apply": "Anwenden",
+    "metric": "Kennzahl",
+    "value": "Wert",
+    "definition": "Definition",
+    "headcount": "Personalbestand (Anfang → Ende)",
+    "openingOn": "Anfang am",
+    "starters": "Zugänge",
+    "leavers": "Abgänge",
+    "turnover": "Fluktuationsrate",
+    "span": "Führungsspanne",
+    "managers": "Führungskräfte",
+    "max": "max.",
+    "timeToFill": "Besetzungsdauer (Median)",
+    "insights": "Erkenntnisse",
+    "noInsights": "In diesem Zeitraum wird keine Schwelle überschritten.",
+    "days": "Tage",
+    "mean": "Mittelwert",
+    "requisitions": "Stellen"
+  },
+  "tour": {
+    "hero": {
+      "title": "Sehen Sie, wie alles zusammenpasst",
+      "subhead": "Ein geführter Rundgang durch das, was Workforce Planning Management tatsächlich tut, Abschnitt für Abschnitt — keine Anmeldung erforderlich."
+    },
+    "toc": {
+      "label": "Auf dieser Seite"
+    },
+    "hiring": {
+      "title": "Einstellung & Onboarding, von Anfang bis Ende",
+      "body": "Veröffentlichen Sie eine offene Stelle, und sie erscheint als Karte auf einem Live-Stellenboard. Bewerber durchlaufen Vorauswahl und Vorstellungsgespräche auf demselben Board, und die Einstellung erzeugt den Arbeitskraft-Datensatz in einem Schritt, nicht zwei. Vom ersten Tag an führt eine Checkliste neue Mitarbeiter durch das Onboarding, und niemand ist im Bestand aktiv, bis sie abgeschlossen ist."
+    },
+    "people": {
+      "title": "Jede Person, ein Profil, ein Organigramm",
+      "body": "Jede Arbeitskraft hat ein einziges Profil, das zugleich als Selbstbedienungs-Zentrale dient: Gehaltsabrechnungen, Urlaubskonten, Beurteilungen, Wohlbefinden-Hinweise und Benachrichtigungen, alles an einem Ort. Das Organigramm baut sich selbst danach auf, wer wem berichtet, ist also nie eine veraltete Folie — ordnen Sie ein Team um, und es passt sich einfach neu an."
+    },
+    "rota": {
+      "title": "Dienstplan, Zeit & Arbeitszeit-Sicherheit",
+      "body": "Erstellen Sie den Dienstplan, erfassen Sie geleistete Zeit und beantragen Sie Urlaub auf denselben Live-Salden, ohne am Monatsende etwas zwischen getrennten Systemen abgleichen zu müssen. Arbeitszeit-Schutzmechanismen kennzeichnen still jeden, der im Schnitt über 48 Stunden liegt oder weniger als 11 Stunden Ruhezeit zwischen Schichten erhält, und eine ergonomische Checkliste erkennt Arbeitsplatzprobleme, bevor sie zu einem Anspruch werden."
+    },
+    "growth": {
+      "title": "Beurteilungen, 360°, Schulung & Nachfolge",
+      "body": "Führen Sie einen Beurteilungszyklus mit Zielen und Feedback durch oder sammeln Sie eine vollständige 360°-Beurteilung von Führungskräften, Kollegen und Unterstellten — Inhalte bleiben privat, bis sie ausdrücklich geteilt werden, und kleine Gruppen sind so geschützt, dass kein einzelner Kommentar auf eine Person zurückverfolgt werden kann. Schulungsanmeldungen, eine Skill-Matrix, Lernpfade und Mentoring-Paare stehen neben Nachfolgeplänen, die anzeigen, wer bereit für den nächsten Schritt ist — und wer noch nicht."
+    },
+    "wellbeing": {
+      "title": "Wohlbefinden, das die Privatsphäre respektiert",
+      "body": "Gesundheits- und Zusatzleistungen erinnern die richtige Person zur richtigen Zeit, nur basierend auf Abteilung, Altersgruppe oder Stellenbezeichnung — nie auf einem gespeicherten Gesundheitsstatus. Pulsbefragungen sind von Natur aus anonym, mit unterdrückten Ergebnissen unter fünf Antworten, sodass die ehrliche Antwort keines kleinen Teams je auf eine Person zurückführbar ist."
+    },
+    "payroll": {
+      "title": "Gehaltsabrechnung, sicher durchgeführt",
+      "body": "Berechnen Sie eine Gehaltsabrechnung aus Gehalt, Stunden und genehmigten Überstunden, prüfen Sie die Aufschlüsselung, dann genehmigen und zahlen Sie — jeder Schritt protokolliert, und eine genehmigte Abrechnung gegen weitere Änderungen gesperrt. Benchmarking vergleicht Vergütung und Personalstärke mit Referenzbändern und markiert alle außerhalb des Bereichs für eine zweite Prüfung."
+    },
+    "privacy": {
+      "title": "Datenschutz eingebaut, nicht nachträglich angeflanscht",
+      "body": "Gehalts- und Beurteilungsinhalte erscheinen als ehrlich verborgener Zustand für jeden, der sich keinen Zugriff verdient hat — nie eine falsche Null, nie ein stiller Fehler. Jede Arbeitskraft kann alles herunterladen, was das System über sie gespeichert hat, die Löschung nach Beendigung des Arbeitsverhältnisses beantragen und genau sehen, welche Aufbewahrungsregel gilt und wann sie ausgeführt wird."
+    },
+    "multiorg": {
+      "title": "Mehr als einer Organisation angehören",
+      "body": "Melden Sie sich einmal an und sehen Sie jede Organisation, der Sie angehören, gleichzeitig — ein Unternehmen, eine Abteilung, eine Partnerorganisation, eine Arbeitsgruppe — ohne separaten Umschalter zum Durchklicken. Jede Mitgliedschaft trägt ihre eigene Rolle, sodass Personalpartner in einem Team und einfaches Mitglied in einem anderen eine Anmeldung ist, nicht zwei Konten."
+    },
+    "dashboard": {
+      "title": "Ein Dashboard, die Zahlen, die zählen",
+      "body": "Aktive Personalstärke, offene Stellen und Nachfolgelücken stehen sofort nach der Anmeldung auf einer HR-Übersicht, jede Kachel eine Abkürzung zum dahinterliegenden Detail. Es sind dieselben Live-Daten, die jede andere Seite liest, nie ein separater Bericht, der veraltet."
+    },
+    "yours": {
+      "title": "Machen Sie es optisch und sprachlich zu Ihrem",
+      "body": "Wählen Sie aus fünfundvierzig Themes, darunter barrierefreie Varianten des britischen NHS, GDS und des US Web Design System, wählen Sie aus sieben Textgrößen, und lesen Sie die gesamte App in einer von vierzehn Sprachen, mit korrekter Rechts-nach-links-Unterstützung für Arabisch und Urdu. Es ist dasselbe Produkt, angepasst daran, wie jede Person tatsächlich sieht und arbeitet."
+    },
+    "cta": {
+      "title": "Bereit, es selbst auszuprobieren?",
+      "body": "Melden Sie sich mit einem Magic Link an und erkunden Sie mit echten Daten — kein Passwort, keine Verpflichtung.",
+      "button": "Anmelden"
+    }
+  }
+}

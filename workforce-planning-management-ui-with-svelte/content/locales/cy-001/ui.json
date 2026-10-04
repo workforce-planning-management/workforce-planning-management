@@ -1,0 +1,332 @@
+{
+  "nav": {
+    "wellbeing": "Llesiant",
+    "privacy": "Preifatrwydd",
+    "learning": "Dysgu",
+    "mentorship": "Mentora",
+    "dashboard": "Dangosfwrdd",
+    "workers": "Gweithwyr",
+    "orgChart": "Siart trefniadaeth",
+    "groups": "Grwpiau",
+    "requisitions": "Swyddi gwag",
+    "workforce": "Gweithlu",
+    "development": "Datblygiad",
+    "payroll": "Cyflogres",
+    "benchmarks": "Meincnodau",
+    "signin": "Mewngofnodi",
+    "share": "Rhannu",
+    "text_size": "Maint testun",
+    "menu": "Dewislen",
+    "closeMenu": "Cau'r ddewislen",
+    "metrics": "Metrigau",
+    "roles": "Proffiliau swydd",
+    "skills": "Sgiliau",
+    "me": "Fy mhroffil",
+    "cpd": "DPP",
+    "change": "Newid",
+    "planning": "Cynllunio",
+    "tour": "Taith"
+  },
+  "pr": {
+    "retention": "Cadw data",
+    "horizon": "Gorwel (diwrnodau)",
+    "pastHorizon": "Wedi'u dileu'n feddal heibio'r gorwel",
+    "candidates": "Ymgeiswyr â chaniatâd wedi dod i ben",
+    "sweep": "Rhedeg ysgubiad",
+    "swept": "rhes wedi'u dileu"
+  },
+  "emp": {
+    "erase": "Dileu (dienwi)",
+    "subjectAccess": "Lawrlwytho fy nata",
+    "notifications": "Hysbysiadau",
+    "number": "Rhif gweithiwr",
+    "salary": "Cyflog",
+    "profile": "Proffil",
+    "onboarding": "Ymsefydlu",
+    "balances": "Balansau absenoldeb",
+    "payslips": "Slipiau cyflog",
+    "reviews": "Adolygiadau",
+    "training": "Hyfforddiant"
+  },
+  "wb": {
+    "kind": {
+      "health": "Iechyd",
+      "benefit": "Budd"
+    },
+    "conversion": "Wedi ymrestru ar ôl yr awgrym",
+    "pulse": "Arolwg pwls",
+    "pulseThanks": "Diolch — cofnodwyd eich ymateb dienw",
+    "pulseSuppressed": "Wedi'i guddio o dan 5 ymateb",
+    "pulseMean": "Cyfartaledd",
+    "pulseResponses": "ymatebion",
+    "prompts": "Hawliau iechyd",
+    "reminder": "Nodyn atgoffa",
+    "noPrompts": "Dim awgrymiadau ar hyn o bryd",
+    "info": "Mwy o wybodaeth",
+    "booked": "Wedi archebu",
+    "done": "Wedi'i wneud",
+    "declined": "Dim diolch",
+    "dismissed": "Diystyru",
+    "rules": "Rheolau hawliau",
+    "uptake": "Defnydd"
+  },
+  "ap": {
+    "title": "Arfarniadau 360°",
+    "new": "360 newydd",
+    "nominate": "Enwebu",
+    "start": "Dechrau casglu",
+    "share": "Rhannu'r adroddiad",
+    "respond": "Ymateb",
+    "report": "Adroddiad",
+    "withheld": "Wedi'i atal o dan 3 ymateb",
+    "requests": "Fy ngheisiadau 360"
+  },
+  "notif": {
+    "markRead": "Marcio fel darllenwyd"
+  },
+  "erg": {
+    "title": "Asesiadau ergonomig",
+    "new": "Asesiad newydd",
+    "workstation": "Gweithfan",
+    "ok": "Iawn",
+    "issue": "Problem",
+    "complete": "Cwblhau",
+    "issues": "Problemau ergonomig"
+  },
+  "adj": {
+    "title": "Addasiadau rhesymol",
+    "note": "Nodyn ymarferol (dewisol)",
+    "new": "Gofyn am newid",
+    "hint": "Nid oes angen diagnosis arnoch i ofyn. Esboniwch y rhwystr, sut mae'n effeithio ar eich gwaith, a pha newid fyddai'n ei leihau.",
+    "barrier": "Pa rwystr rydych yn ei wynebu?",
+    "impact": "Sut mae'n effeithio ar eich gwaith?",
+    "change": "Pa newid fyddai'n ei leihau?",
+    "agree": "Cytuno",
+    "decline": "Gwrthod",
+    "inPlace": "Ar waith"
+  },
+  "brand": {
+    "name": "Rheoli Cynllunio'r Gweithlu"
+  },
+  "chrome": {
+    "language": "Iaith"
+  },
+  "share": {
+    "copy_link": "Copïo dolen",
+    "copied": "Dolen wedi'i chopïo",
+    "copy_failed": "Methu copïo — copïwch o'r bar cyfeiriad"
+  },
+  "common": {
+    "loading": "Wrthi'n llwytho…",
+    "error": "Methwyd llwytho",
+    "status": "Statws",
+    "department": "Adran",
+    "jobTitle": "Teitl swydd",
+    "name": "Enw",
+    "actions": "Camau",
+    "days": "diwrnod",
+    "masked": "Cudd"
+  },
+  "dash": {
+    "title": "Dangosfwrdd AD",
+    "activeWorkers": "Gweithwyr gweithredol",
+    "openRequisitions": "Swyddi gwag agored",
+    "pendingLeave": "Absenoldeb yn yr arfaeth",
+    "successionGaps": "Bylchau olyniaeth"
+  },
+  "req": {
+    "applications": "Ceisiadau",
+    "headcount": "Nifer staff"
+  },
+  "wf": {
+    "leaveRequests": "Ceisiadau absenoldeb",
+    "approve": "Cymeradwyo",
+    "reject": "Gwrthod",
+    "rota": "Rota",
+    "workingTime": "Oriau gwaith",
+    "over48": "Dros gyfartaledd 48 awr",
+    "restBreach": "Bwlch gorffwys o dan 11 awr",
+    "allClear": "Dim rhybuddion oriau gwaith"
+  },
+  "dev": {
+    "cycles": "Cylchoedd adolygu",
+    "succession": "Cynlluniau olyniaeth",
+    "expiring": "Tystysgrifau'n dod i ben"
+  },
+  "pay": {
+    "calculate": "Cyfrifo",
+    "pay": "Nodi fel talwyd",
+    "gross": "Gros",
+    "net": "Net",
+    "deductions": "Didyniadau"
+  },
+  "bench": {
+    "flag": "Fflag"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Rheoli Cynllunio'r Gweithlu",
+      "headline": "Gweithrediadau pobl, i gyd mewn un lle",
+      "subhead": "Cynlluniwch recriwtio, rhedeg cyflogres, cefnogi llesiant, a helpu pobl i dyfu — un gweithle cysylltiedig i AD, rheolwyr, a phob gweithiwr.",
+      "cta": "Mewngofnodi",
+      "ctaHint": "Am ddim i archwilio — dim ond eich e-bost, dim cyfrinair"
+    },
+    "benefits": {
+      "title": "Pam mae timau'n ei ddewis",
+      "b1": {
+        "title": "Un gweithle, nid deg tab",
+        "body": "Mae recriwtio, rota, cyflogres, adolygiadau, a llesiant yn byw gyda'i gilydd, fel nad oes dim yn cael ei golli rhwng offer."
+      },
+      "b2": {
+        "title": "Wedi'i adeiladu ar ymddiriedaeth",
+        "body": "Mae data cyflog ac adolygiad yn aros wedi'u cuddio nes bod mynediad wedi'i ennill — byth yn ddyfaliad, byth yn sero ffug."
+      },
+      "b3": {
+        "title": "Hunanwasanaeth i bawb",
+        "body": "Mae gweithwyr yn gweld eu slipiau cyflog, absenoldeb, ac adolygiadau eu hunain, a gallant ofyn am addasiad neu eu data heb agor tocyn."
+      },
+      "b4": {
+        "title": "Yn siarad eich iaith",
+        "body": "Pedair iaith ar ddeg gydag enwau brodorol, a chefnogaeth lawn de-i-chwith i Arabeg ac Wrdw, wedi'u hadeiladu i mewn o'r cychwyn cyntaf."
+      },
+      "b5": {
+        "title": "Thema a maint testun i bawb",
+        "body": "Pedwar deg pump o themâu — gan gynnwys GIG y DU a GDS, a System Ddylunio Gwe UDA — ynghyd â saith maint testun, fel bod yr ap yn addas i sut mae pobl wir yn gweld ac yn gweithio."
+      },
+      "b6": {
+        "title": "Cydymffurfiol drwy adeiladwaith",
+        "body": "Mae rheolau cadw data, allforion mynediad-testun, a'r hawl i gael eich anghofio wedi'u hadeiladu i mewn i'r cynnyrch, nid wedi'u bolltio ymlaen wedyn."
+      }
+    },
+    "features": {
+      "title": "Popeth mae AD ei angen, wedi'i gysylltu",
+      "f1": {
+        "title": "Recriwtio ac ymsefydlu",
+        "body": "Olrhain swyddi gwag a cheisiadau ar fwrdd byw, yna arwain recriwtiaid newydd trwy ymsefydlu."
+      },
+      "f2": {
+        "title": "Pobl a siart trefniadaeth",
+        "body": "Proffil, llinell adrodd, a siart trefniadaeth pob gweithiwr, yn gyfredol bob amser."
+      },
+      "f3": {
+        "title": "Rota ac oriau gwaith",
+        "body": "Adeiladwch y rota, nodwch oriau hir a seibiau gorffwys byr, a byddwch ar y blaen gyda phroblemau ergonomig."
+      },
+      "f4": {
+        "title": "Datblygiad a dysgu",
+        "body": "Rhedeg cylchoedd adolygu, olrhain hyfforddiant a thystysgrifau, a phartneru mentoriaid â mentiaid."
+      },
+      "f5": {
+        "title": "Llesiant a phwls",
+        "body": "Hawliau iechyd a budd-daliadau, arolygon pwls dienw, a cheisiadau am addasiad rhesymol."
+      },
+      "f6": {
+        "title": "Cyflogres a mewnwelediad",
+        "body": "Cyfrifwch a rhedeg cyflogres, yna cymharwch gyflog a niferoedd staff yn erbyn meincnodau ar un dangosfwrdd."
+      }
+    },
+    "trust": {
+      "title": "Preifatrwydd, wedi'i wneud yn iawn",
+      "body": "Gall gweithwyr lawrlwytho eu data eu hunain neu ofyn iddo gael ei ddileu, ac mae pob rheol cadw data yn parhau'n weladwy."
+    },
+    "cta": {
+      "title": "Barod i gael golwg?",
+      "body": "Mewngofnodwch gyda dolen hud — dim cyfrinair i'w gofio.",
+      "button": "Mewngofnodi i barhau"
+    },
+    "demoNotice": "Meddalwedd arddangos at ddibenion gwerthuso — nid system AD gynhyrchu."
+  },
+  "org": {
+    "myOrganizations": "Fy sefydliadau",
+    "noOrganizations": "Dim aelodaeth sefydliad eto",
+    "view": {
+      "label": "Golwg",
+      "manager": "Yn ôl rheolwr",
+      "department": "Yn ôl adran",
+      "level": "Yn ôl lefel",
+      "tenure": "Yn ôl gwasanaeth",
+      "location": "Yn ôl lleoliad"
+    },
+    "level": "Lefel",
+    "tenureYears": "blynedd",
+    "noLocation": "Lleoliad heb ei gofnodi",
+    "employed": "Yn gyflogedig yma",
+    "staffOnly": "Mynediad staff"
+  },
+  "metrics": {
+    "from": "O",
+    "to": "I",
+    "apply": "Gosod",
+    "metric": "Metrig",
+    "value": "Gwerth",
+    "definition": "Diffiniad",
+    "headcount": "Penswm (agor → cau)",
+    "openingOn": "agor ar",
+    "starters": "Dechreuwyr",
+    "leavers": "Gadawyr",
+    "turnover": "Cyfradd trosiant",
+    "span": "Rhychwant rheolaeth",
+    "managers": "rheolwyr",
+    "max": "uchaf",
+    "timeToFill": "Amser i lenwi (canolrif)",
+    "insights": "Mewnwelediadau",
+    "noInsights": "Dim byd uwchlaw'r trothwy yn y cyfnod hwn.",
+    "days": "diwrnod",
+    "mean": "cymedr",
+    "requisitions": "swyddi gwag"
+  },
+  "tour": {
+    "hero": {
+      "title": "Gweld sut mae'n cydweddu",
+      "subhead": "Golwg wedi'i harwain ar yr hyn mae Rheoli Cynllunio'r Gweithlu yn ei wneud go iawn, adran wrth adran — dim angen mewngofnodi."
+    },
+    "toc": {
+      "label": "Ar y dudalen hon"
+    },
+    "hiring": {
+      "title": "Recriwtio ac ymsefydlu, o'r dechrau i'r diwedd",
+      "body": "Postiwch swydd wag ac fe ymddengys fel cerdyn ar fwrdd swyddi gwag byw. Mae ymgeiswyr yn symud trwy sgrinio a chyfweliadau ar yr un bwrdd, ac mae recriwtio rhywun yn creu eu cofnod gweithiwr mewn un cam, nid dau. O'r diwrnod cyntaf, mae rhestr wirio yn arwain recriwtiaid newydd trwy ymsefydlu, ac nid oes neb yn mynd yn fyw ar y rhestr nes ei bod yn gyflawn."
+    },
+    "people": {
+      "title": "Pob person, un proffil, un siart trefniadaeth",
+      "body": "Mae gan bob gweithiwr un proffil sydd hefyd yn ganolfan hunanwasanaeth iddynt: slipiau cyflog, balansau absenoldeb, adolygiadau, awgrymiadau llesiant, a hysbysiadau, i gyd mewn un lle. Mae'r siart trefniadaeth yn ei hadeiladu ei hun o bwy sy'n adrodd i bwy, felly nid yw byth yn set sleidiau hen — ad-drefnwch dîm ac mae'n ail-gynllunio'n syml."
+    },
+    "rota": {
+      "title": "Rota, amser a diogelwch oriau gwaith",
+      "body": "Adeiladwch y rota, cofnodwch amser a weithiwyd, a gofynnwch am absenoldeb yn erbyn yr un balansau byw, heb ddim i'w gysoni rhwng systemau ar wahân ddiwedd y mis. Mae mesurau diogelu oriau gwaith yn nodi'n dawel unrhyw un sy'n cyfartaleddu dros 48 awr neu'n cael llai na 11 awr o orffwys rhwng shifftiau, ac mae rhestr wirio asesu ergonomig yn dal problemau gweithfan cyn iddynt ddod yn hawliad."
+    },
+    "growth": {
+      "title": "Adolygiadau, 360au, hyfforddiant ac olyniaeth",
+      "body": "Rhedwch gylch adolygu gyda nodau ac adborth, neu gasglwch arfarniad 360° llawn gan reolwyr, cyfoedion, ac adroddwyr — mae cynnwys yn aros yn breifat nes ei fod yn cael ei rannu'n benodol, a chedwir grwpiau bach yn ddiogel fel na ellir olrhain unrhyw sylw sengl at un person. Mae cofrestriadau hyfforddiant, matrics sgiliau, llwybrau dysgu, a pharau mentora yn eistedd ochr yn ochr â chynlluniau olyniaeth sy'n nodi pwy sy'n barod i gamu i fyny, a phwy nad yw eto."
+    },
+    "wellbeing": {
+      "title": "Llesiant sy'n parchu preifatrwydd",
+      "body": "Mae hawliau iechyd a budd-daliadau yn awgrymu'r person iawn ar yr adeg iawn, yn seiliedig ar adran, band oedran, neu deitl swydd yn unig — byth ar statws iechyd wedi'i storio. Mae arolygon pwls yn ddienw yn ôl cynllun, gyda chanlyniadau wedi'u hatal o dan bum ymateb fel na ellir olrhain ateb gonest unrhyw dîm bach yn ôl at un person."
+    },
+    "payroll": {
+      "title": "Cyflogres, wedi'i rhedeg yn hyderus",
+      "body": "Cyfrifwch gyflogres o gyflog, oriau, a goramser cymeradwy, adolygwch y dadansoddiad slip cyflog, yna cymeradwywch a thalwch — pob cam wedi'i archwilio, a chyflogres gymeradwy wedi'i chloi rhag newidiadau pellach. Mae meincnodi yn cymharu cyflog a niferoedd staff yn erbyn bandiau cyfeirio, gan nodi unrhyw un o dan neu dros yr ystod am ail olwg."
+    },
+    "privacy": {
+      "title": "Preifatrwydd wedi'i adeiladu i mewn, nid wedi'i folltio ymlaen",
+      "body": "Mae cynnwys cyflog ac adolygiad yn ymddangos fel cyflwr cuddiedig gonest i unrhyw un nad yw wedi ennill mynediad — byth sero ffug, byth wall dawel. Gall pob gweithiwr lawrlwytho popeth mae'r system yn ei ddal amdanynt, gofyn iddo gael ei ddileu unwaith y bydd eu cyflogaeth yn dod i ben, a gweld yn union pa reol gadw sy'n berthnasol a phryd mae'n rhedeg."
+    },
+    "multiorg": {
+      "title": "Perthyn i fwy nag un sefydliad",
+      "body": "Mewngofnodwch unwaith a gweld pob sefydliad rydych yn perthyn iddo ar yr un pryd — cwmni, adran, sefydliad cyfatebol, grŵp gwaith — heb ddewisydd ar wahân i glicio drwyddo. Mae gan bob aelodaeth ei rôl ei hun, felly mae bod yn bartner staff mewn un tîm ac yn aelod cyffredin o un arall yn un mewngofnodiad, nid dau gyfrif."
+    },
+    "dashboard": {
+      "title": "Un dangosfwrdd, y niferoedd sy'n bwysig",
+      "body": "Mae niferoedd staff gweithredol, swyddi gwag agored, a bylchau olyniaeth yn eistedd ar un dangosfwrdd AD y foment y byddwch yn mewngofnodi, pob teilsen yn llwybr byr i'r manylion y tu ôl iddi. Yr un data byw ydyw ag y mae pob tudalen arall yn ei ddarllen, byth adroddiad ar wahân sy'n mynd yn hen."
+    },
+    "yours": {
+      "title": "Gwnewch iddo edrych a swnio fel eich un chi",
+      "body": "Dewiswch o ddeugain a phump o themâu, gan gynnwys amrywiadau hygyrch GIG y DU, GDS, a System Ddylunio Gwe UDA, dewiswch o saith maint testun, a darllenwch yr ap cyfan mewn unrhyw un o bedair iaith ar ddeg, gyda chefnogaeth de-i-chwith briodol i Arabeg ac Wrdw. Yr un cynnyrch ydyw, wedi'i siapio i sut mae pob person wir yn gweld ac yn gweithio."
+    },
+    "cta": {
+      "title": "Barod i'w drio eich hun?",
+      "body": "Mewngofnodwch gyda dolen hud ac archwiliwch gyda data go iawn — dim cyfrinair, dim ymrwymiad.",
+      "button": "Mewngofnodi"
+    }
+  }
+}

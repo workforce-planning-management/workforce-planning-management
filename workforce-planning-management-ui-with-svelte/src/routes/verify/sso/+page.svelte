@@ -5,6 +5,7 @@
   renders ONLY on a missing/invalid code. Mirrors `../+page.svelte`.
 -->
 <script lang="ts">
+  import { l } from "#lib/i18n.svelte.js";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
@@ -25,5 +26,5 @@
 <h1>Sign-in link</h1>
 <div class="panel">
   <p class="error" role="alert">{message}</p>
-  <p><a href="/signin">Request a new link</a></p>
+  <p><a href={l("/signin")}>Request a new link</a></p>
 </div>

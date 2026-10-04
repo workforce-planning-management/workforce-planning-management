@@ -99,7 +99,7 @@ test.describe("sign-in gate (WPM-T38)", () => {
   }) => {
     const response = await page.goto("/");
     expect(response?.status()).toBe(200);
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/en-001$/);
     await expect(page.getByTestId("splash")).toBeVisible();
     await expect(page.getByTestId("splash")).toContainText(
       "People operations, all in one place",
@@ -123,7 +123,7 @@ test.describe("sign-in gate (WPM-T38)", () => {
     await expect(page.locator("body")).toContainText(
       "Belong to more than one organization",
     );
-    await page.locator('nav.top a[href="/signin"]').click();
+    await page.locator('nav.top a[href="/en-001/signin"]').click();
     await expect(page).toHaveURL(/\/signin$/);
   });
 
@@ -397,11 +397,23 @@ test.describe("signed-in smoke coverage", () => {
     page,
   }) => {
     await page.goto("/workers");
+    // An unprefixed visit lands on the default locale's content route.
+    await expect(page).toHaveURL(/\/en-001\/workers$/);
     await expect(page.locator("h1")).toHaveText("Workers");
     await chooseLocale(page, "Deutsch");
+    await expect(page).toHaveURL(/\/de-001\/workers$/);
     await expect(page.locator("h1")).toHaveText("Arbeitskräfte");
     await chooseLocale(page, "العربية");
+    await expect(page).toHaveURL(/\/ar-001\/workers$/);
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  });
+
+  test("a bare language alias redirects to its -001 content route", async ({
+    page,
+  }) => {
+    await page.goto("/cy/workers");
+    await expect(page).toHaveURL(/\/cy-001\/workers$/);
+    await expect(page.locator("html")).toHaveAttribute("lang", "cy-001");
   });
 
   test("hamburger menu opens the left nav drawer with every section link", async ({

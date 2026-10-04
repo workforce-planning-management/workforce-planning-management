@@ -1,0 +1,332 @@
+{
+  "nav": {
+    "wellbeing": "Bem-estar",
+    "privacy": "Privacidade",
+    "learning": "Aprendizagem",
+    "mentorship": "Mentoria",
+    "dashboard": "Painel",
+    "workers": "Trabalhadores",
+    "orgChart": "Organograma",
+    "groups": "Grupos",
+    "requisitions": "Vagas",
+    "workforce": "Força de trabalho",
+    "development": "Desenvolvimento",
+    "payroll": "Folha de pagamento",
+    "benchmarks": "Benchmarks",
+    "signin": "Entrar",
+    "share": "Partilhar",
+    "text_size": "Tamanho do texto",
+    "menu": "Menu",
+    "closeMenu": "Fechar menu",
+    "metrics": "Métricas",
+    "roles": "Perfis de função",
+    "skills": "Competências",
+    "me": "O meu perfil",
+    "cpd": "DPC",
+    "change": "Mudança",
+    "planning": "Planeamento",
+    "tour": "Tour"
+  },
+  "pr": {
+    "retention": "Retenção",
+    "horizon": "Horizonte (dias)",
+    "pastHorizon": "Exclusões lógicas além do horizonte",
+    "candidates": "Candidatos com consentimento expirado",
+    "sweep": "Executar varredura",
+    "swept": "linhas excluídas"
+  },
+  "emp": {
+    "erase": "Apagar (anonimizar)",
+    "subjectAccess": "Baixar meus dados",
+    "notifications": "Notificações",
+    "number": "N.º do trabalhador",
+    "salary": "Salário",
+    "profile": "Perfil",
+    "onboarding": "Integração",
+    "balances": "Saldos de licença",
+    "payslips": "Contracheques",
+    "reviews": "Avaliações",
+    "training": "Treinamento"
+  },
+  "wb": {
+    "kind": {
+      "health": "Saúde",
+      "benefit": "Benefício"
+    },
+    "conversion": "Aderiram após o aviso",
+    "pulse": "Pesquisa de pulso",
+    "pulseThanks": "Obrigado — sua resposta anônima foi registrada",
+    "pulseSuppressed": "Oculto abaixo de 5 respostas",
+    "pulseMean": "Média",
+    "pulseResponses": "respostas",
+    "prompts": "Direitos de saúde",
+    "reminder": "Lembrete",
+    "noPrompts": "Sem avisos no momento",
+    "info": "Mais informações",
+    "booked": "Consulta marcada",
+    "done": "Concluído",
+    "declined": "Não, obrigado",
+    "dismissed": "Dispensar",
+    "rules": "Regras de direitos",
+    "uptake": "Adesão"
+  },
+  "ap": {
+    "title": "Avaliações 360°",
+    "new": "Nova 360",
+    "nominate": "Nomear",
+    "start": "Iniciar coleta",
+    "share": "Compartilhar relatório",
+    "respond": "Responder",
+    "report": "Relatório",
+    "withheld": "Retido abaixo de 3 respostas",
+    "requests": "Minhas solicitações 360"
+  },
+  "notif": {
+    "markRead": "Marcar como lida"
+  },
+  "erg": {
+    "title": "Avaliações ergonômicas",
+    "new": "Nova avaliação",
+    "workstation": "Posto de trabalho",
+    "ok": "OK",
+    "issue": "Problema",
+    "complete": "Concluir",
+    "issues": "Problemas ergonômicos"
+  },
+  "adj": {
+    "title": "Ajustes razoáveis",
+    "note": "Nota prática (opcional)",
+    "new": "Pedir uma mudança",
+    "hint": "Você não precisa de um diagnóstico para pedir. Explique a barreira, como ela afeta seu trabalho e que mudança a reduziria.",
+    "barrier": "Que barreira você enfrenta?",
+    "impact": "Como ela afeta seu trabalho?",
+    "change": "Que mudança a reduziria?",
+    "agree": "Aceitar",
+    "decline": "Recusar",
+    "inPlace": "Em vigor"
+  },
+  "brand": {
+    "name": "Gestão de planejamento de força de trabalho"
+  },
+  "chrome": {
+    "language": "Idioma"
+  },
+  "share": {
+    "copy_link": "Copiar link",
+    "copied": "Link copiado",
+    "copy_failed": "Não foi possível copiar — copie a partir da barra de endereço"
+  },
+  "common": {
+    "loading": "Carregando…",
+    "error": "Falha ao carregar",
+    "status": "Status",
+    "department": "Departamento",
+    "jobTitle": "Cargo",
+    "name": "Nome",
+    "actions": "Ações",
+    "days": "dias",
+    "masked": "Oculto"
+  },
+  "dash": {
+    "title": "Painel de RH",
+    "activeWorkers": "Trabalhadores ativos",
+    "openRequisitions": "Vagas abertas",
+    "pendingLeave": "Licenças pendentes",
+    "successionGaps": "Lacunas de sucessão"
+  },
+  "req": {
+    "applications": "Candidaturas",
+    "headcount": "Vagas"
+  },
+  "wf": {
+    "leaveRequests": "Pedidos de licença",
+    "approve": "Aprovar",
+    "reject": "Rejeitar",
+    "rota": "Escala",
+    "workingTime": "Tempo de trabalho",
+    "over48": "Média acima de 48 h",
+    "restBreach": "Descanso inferior a 11 h",
+    "allClear": "Sem alertas de tempo de trabalho"
+  },
+  "dev": {
+    "cycles": "Ciclos de avaliação",
+    "succession": "Planos de sucessão",
+    "expiring": "Certificados a expirar"
+  },
+  "pay": {
+    "calculate": "Calcular",
+    "pay": "Marcar como pago",
+    "gross": "Bruto",
+    "net": "Líquido",
+    "deductions": "Deduções"
+  },
+  "bench": {
+    "flag": "Indicador"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Gestão de planejamento de força de trabalho",
+      "headline": "Gestão de pessoas, tudo em um só lugar",
+      "subhead": "Planeje contratações, processe a folha de pagamento, apoie o bem-estar e ajude as pessoas a crescer — um espaço de trabalho conectado para RH, gestores e cada trabalhador.",
+      "cta": "Entrar",
+      "ctaHint": "Grátis para explorar — só o seu e-mail, sem senha"
+    },
+    "benefits": {
+      "title": "Por que as equipes escolhem",
+      "b1": {
+        "title": "Um espaço só, não dez abas",
+        "body": "Contratação, escala, folha de pagamento, avaliações e bem-estar vivem juntos, para que nada se perca entre ferramentas."
+      },
+      "b2": {
+        "title": "Construído sobre confiança",
+        "body": "Dados de salário e avaliação ficam ocultos até o acesso ser conquistado — nunca um palpite, nunca um zero falso."
+      },
+      "b3": {
+        "title": "Autoatendimento para todos",
+        "body": "Cada trabalhador vê seus próprios contracheques, licenças e avaliações, e pode solicitar um ajuste ou seus dados sem abrir chamado."
+      },
+      "b4": {
+        "title": "Fala o seu idioma",
+        "body": "Catorze idiomas com rótulos endonímicos, e suporte completo da direita para a esquerda para árabe e urdu, incorporado desde o primeiro dia."
+      },
+      "b5": {
+        "title": "Um tema e um tamanho de texto para todos",
+        "body": "Quarenta e cinco temas — incluindo o NHS e o GDS do Reino Unido, e o Web Design System dos EUA — além de sete tamanhos de texto, para que o aplicativo se adapte a como as pessoas realmente veem e trabalham."
+      },
+      "b6": {
+        "title": "Conforme por construção",
+        "body": "As regras de retenção, as exportações de acesso do titular e o direito ao esquecimento estão integrados ao produto, não adicionados depois."
+      }
+    },
+    "features": {
+      "title": "Tudo o que o RH precisa, conectado",
+      "f1": {
+        "title": "Contratação e integração",
+        "body": "Acompanhe vagas e candidaturas em um quadro ao vivo e guie cada novo contratado pela integração."
+      },
+      "f2": {
+        "title": "Pessoas e organograma",
+        "body": "Perfil, linha hierárquica e organograma de cada trabalhador, sempre atualizados."
+      },
+      "f3": {
+        "title": "Escala e jornada de trabalho",
+        "body": "Monte a escala, sinalize jornadas longas e descansos curtos, e antecipe problemas ergonômicos."
+      },
+      "f4": {
+        "title": "Desenvolvimento e aprendizagem",
+        "body": "Conduza ciclos de avaliação, acompanhe treinamentos e certificados, e combine mentores com mentorados."
+      },
+      "f5": {
+        "title": "Bem-estar e pulso",
+        "body": "Direitos de saúde e benefícios, pesquisas de pulso anônimas, e pedidos de ajuste razoável."
+      },
+      "f6": {
+        "title": "Folha de pagamento e insights",
+        "body": "Calcule e processe a folha de pagamento, e compare remuneração e quadro de pessoal com benchmarks em um só painel."
+      }
+    },
+    "trust": {
+      "title": "Privacidade, feita direito",
+      "body": "Cada trabalhador pode baixar seus próprios dados ou pedir que sejam apagados, e toda regra de retenção permanece visível."
+    },
+    "cta": {
+      "title": "Pronto para dar uma olhada?",
+      "body": "Entre com um link mágico — sem senha para lembrar.",
+      "button": "Entrar para continuar"
+    },
+    "demoNotice": "Software de demonstração para avaliação — não é um sistema de RH de produção."
+  },
+  "org": {
+    "myOrganizations": "Minhas organizações",
+    "noOrganizations": "Ainda sem associações a organizações",
+    "view": {
+      "label": "Vista",
+      "manager": "Por gestor",
+      "department": "Por departamento",
+      "level": "Por nível",
+      "tenure": "Por antiguidade",
+      "location": "Por localização"
+    },
+    "level": "Nível",
+    "tenureYears": "anos",
+    "noLocation": "Localização não registada",
+    "employed": "Empregado aqui",
+    "staffOnly": "Acesso da equipe"
+  },
+  "metrics": {
+    "from": "De",
+    "to": "Até",
+    "apply": "Aplicar",
+    "metric": "Métrica",
+    "value": "Valor",
+    "definition": "Definição",
+    "headcount": "Efetivo (inicial → final)",
+    "openingOn": "inicial em",
+    "starters": "Admissões",
+    "leavers": "Saídas",
+    "turnover": "Taxa de rotatividade",
+    "span": "Amplitude de controlo",
+    "managers": "gestores",
+    "max": "máx.",
+    "timeToFill": "Tempo de preenchimento (mediana)",
+    "insights": "Percepções",
+    "noInsights": "Nada ultrapassa um limite neste período.",
+    "days": "dias",
+    "mean": "média",
+    "requisitions": "vagas"
+  },
+  "tour": {
+    "hero": {
+      "title": "Veja como tudo se encaixa",
+      "subhead": "Um passeio guiado pelo que o Workforce Planning Management realmente faz, seção por seção — sem necessidade de login."
+    },
+    "toc": {
+      "label": "Nesta página"
+    },
+    "hiring": {
+      "title": "Contratação e integração, do início ao fim",
+      "body": "Publique uma vaga e ela aparece como um cartão em um quadro de vagas ao vivo. Os candidatos avançam pela triagem e entrevistas no mesmo quadro, e contratar alguém cria seu registro de trabalhador em uma única etapa, não duas. Desde o primeiro dia, uma lista de verificação orienta os novos contratados pela integração, e ninguém fica ativo no quadro de pessoal até que ela esteja concluída."
+    },
+    "people": {
+      "title": "Cada pessoa, um perfil, um organograma",
+      "body": "Cada trabalhador tem um único perfil que também funciona como seu centro de autoatendimento: contracheques, saldos de licença, avaliações, avisos de bem-estar e notificações, tudo em um só lugar. O organograma se constrói sozinho a partir de quem se reporta a quem, então nunca é um slide desatualizado — reorganize uma equipe e ele simplesmente se reorganiza."
+    },
+    "rota": {
+      "title": "Escala, tempo e segurança da jornada de trabalho",
+      "body": "Monte a escala, registre o tempo trabalhado e solicite licenças com os mesmos saldos ao vivo, sem nada para reconciliar entre sistemas separados no fim do mês. As salvaguardas de jornada de trabalho sinalizam discretamente quem tem média acima de 48 horas ou menos de 11 horas de descanso entre turnos, e uma lista de verificação ergonômica detecta problemas de posto de trabalho antes que se tornem uma reclamação."
+    },
+    "growth": {
+      "title": "Avaliações, 360°, treinamento e sucessão",
+      "body": "Conduza um ciclo de avaliação com metas e feedback, ou colete uma avaliação 360° completa de gestores, colegas e subordinados — o conteúdo permanece privado até ser explicitamente compartilhado, e pequenos grupos são protegidos para que nenhum comentário isolado seja rastreável até uma pessoa. Inscrições em treinamentos, uma matriz de habilidades, trilhas de aprendizagem e pares de mentoria convivem com planos de sucessão que indicam quem está pronto para avançar, e quem ainda não está."
+    },
+    "wellbeing": {
+      "title": "Bem-estar que respeita a privacidade",
+      "body": "Direitos de saúde e benefícios avisam a pessoa certa na hora certa, baseando-se apenas em departamento, faixa etária ou cargo — nunca em um status de saúde armazenado. As pesquisas de pulso são anônimas por design, com resultados ocultos abaixo de cinco respostas, para que a resposta honesta de nenhuma equipe pequena seja rastreável até uma pessoa."
+    },
+    "payroll": {
+      "title": "Folha de pagamento, executada com confiança",
+      "body": "Calcule uma folha de pagamento a partir do salário, horas e horas extras aprovadas, revise o detalhamento do contracheque, depois aprove e pague — cada etapa auditada, e uma folha aprovada bloqueada contra novas alterações. O benchmarking compara remuneração e quadro de pessoal com faixas de referência, sinalizando quem está abaixo ou acima da faixa para uma segunda análise."
+    },
+    "privacy": {
+      "title": "Privacidade embutida, não adicionada depois",
+      "body": "Conteúdo de salário e avaliação é exibido como um estado oculto honesto para quem não conquistou acesso — nunca um zero falso, nunca um erro silencioso. Cada trabalhador pode baixar tudo o que o sistema guarda sobre ele, pedir que seja apagado assim que seu vínculo terminar, e ver exatamente qual regra de retenção se aplica e quando ela é executada."
+    },
+    "multiorg": {
+      "title": "Pertença a mais de uma organização",
+      "body": "Entre uma vez e veja todas as organizações às quais você pertence ao mesmo tempo — uma empresa, um departamento, uma organização parceira, um grupo de trabalho — sem um seletor separado para navegar. Cada associação carrega seu próprio papel, então ser parceiro de RH em uma equipe e membro comum em outra é um único login, não duas contas."
+    },
+    "dashboard": {
+      "title": "Um painel, os números que importam",
+      "body": "Quadro de pessoal ativo, vagas abertas e lacunas de sucessão ficam em um painel de RH assim que você entra, cada bloco um atalho para o detalhe por trás dele. São os mesmos dados ao vivo que qualquer outra página lê, nunca um relatório separado que fica desatualizado."
+    },
+    "yours": {
+      "title": "Deixe com a sua cara e no seu idioma",
+      "body": "Escolha entre quarenta e cinco temas, incluindo variantes acessíveis do NHS e do GDS do Reino Unido e do Web Design System dos EUA, escolha entre sete tamanhos de texto, e leia todo o aplicativo em qualquer um de catorze idiomas, com suporte adequado da direita para a esquerda para árabe e urdu. É o mesmo produto, moldado para como cada pessoa realmente vê e trabalha."
+    },
+    "cta": {
+      "title": "Pronto para experimentar você mesmo?",
+      "body": "Entre com um link mágico e explore com dados reais — sem senha, sem compromisso.",
+      "button": "Entrar"
+    }
+  }
+}

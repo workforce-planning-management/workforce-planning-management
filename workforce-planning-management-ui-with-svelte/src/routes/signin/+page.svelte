@@ -5,6 +5,7 @@
   No token is held in the browser.
 -->
 <script lang="ts">
+  import { l } from "#lib/i18n.svelte.js";
   import type { ActionData } from "./$types";
   import { enhance } from "$app/forms";
 
@@ -35,7 +36,7 @@
       </p>
     {/if}
     <p class="divider">or</p>
-    <a class="btn" href="/signin/sso">Sign in with SSO</a>
+    <a class="btn" href={l("/signin/sso")}>Sign in with SSO</a>
   </div>
 {/if}
 

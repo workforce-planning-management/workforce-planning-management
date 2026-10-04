@@ -1,0 +1,332 @@
+{
+  "nav": {
+    "wellbeing": "Bienestar",
+    "privacy": "Privacidad",
+    "learning": "Aprendizaje",
+    "mentorship": "Mentoría",
+    "dashboard": "Panel",
+    "workers": "Trabajadores",
+    "orgChart": "Organigrama",
+    "groups": "Grupos",
+    "requisitions": "Vacantes",
+    "workforce": "Plantilla",
+    "development": "Desarrollo",
+    "payroll": "Nómina",
+    "benchmarks": "Referencias",
+    "signin": "Iniciar sesión",
+    "share": "Compartir",
+    "text_size": "Tamaño del texto",
+    "menu": "Menú",
+    "closeMenu": "Cerrar menú",
+    "metrics": "Métricas",
+    "roles": "Perfiles de puesto",
+    "skills": "Habilidades",
+    "me": "Mi perfil",
+    "cpd": "DPC",
+    "change": "Cambio",
+    "planning": "Planificación",
+    "tour": "Recorrido"
+  },
+  "pr": {
+    "retention": "Retención",
+    "horizon": "Horizonte (días)",
+    "pastHorizon": "Borrados lógicos más allá del horizonte",
+    "candidates": "Candidatos con consentimiento vencido",
+    "sweep": "Ejecutar barrido",
+    "swept": "filas eliminadas"
+  },
+  "emp": {
+    "erase": "Borrar (anonimizar)",
+    "subjectAccess": "Descargar mis datos",
+    "notifications": "Notificaciones",
+    "number": "N.º de trabajador",
+    "salary": "Salario",
+    "profile": "Perfil",
+    "onboarding": "Incorporación",
+    "balances": "Saldos de permisos",
+    "payslips": "Nóminas",
+    "reviews": "Evaluaciones",
+    "training": "Formación"
+  },
+  "wb": {
+    "kind": {
+      "health": "Salud",
+      "benefit": "Beneficio"
+    },
+    "conversion": "Inscritos tras el aviso",
+    "pulse": "Encuesta de pulso",
+    "pulseThanks": "Gracias — su respuesta anónima quedó registrada",
+    "pulseSuppressed": "Oculto por debajo de 5 respuestas",
+    "pulseMean": "Media",
+    "pulseResponses": "respuestas",
+    "prompts": "Derechos de salud",
+    "reminder": "Recordatorio",
+    "noPrompts": "No hay avisos por ahora",
+    "info": "Más información",
+    "booked": "Cita reservada",
+    "done": "Hecho",
+    "declined": "No, gracias",
+    "dismissed": "Descartar",
+    "rules": "Reglas de derechos",
+    "uptake": "Aceptación"
+  },
+  "ap": {
+    "title": "Evaluaciones 360°",
+    "new": "Nueva 360",
+    "nominate": "Nominar",
+    "start": "Iniciar recogida",
+    "share": "Compartir informe",
+    "respond": "Responder",
+    "report": "Informe",
+    "withheld": "Retenido por debajo de 3 respuestas",
+    "requests": "Mis solicitudes 360"
+  },
+  "notif": {
+    "markRead": "Marcar leída"
+  },
+  "erg": {
+    "title": "Evaluaciones ergonómicas",
+    "new": "Nueva evaluación",
+    "workstation": "Puesto de trabajo",
+    "ok": "Bien",
+    "issue": "Problema",
+    "complete": "Completar",
+    "issues": "Problemas ergonómicos"
+  },
+  "adj": {
+    "title": "Ajustes razonables",
+    "note": "Nota práctica (opcional)",
+    "new": "Pedir un cambio",
+    "hint": "No necesita un diagnóstico para pedir. Explique la barrera, cómo afecta a su trabajo y qué cambio la reduciría.",
+    "barrier": "¿Qué barrera enfrenta?",
+    "impact": "¿Cómo afecta a su trabajo?",
+    "change": "¿Qué cambio la reduciría?",
+    "agree": "Aceptar",
+    "decline": "Rechazar",
+    "inPlace": "En marcha"
+  },
+  "brand": {
+    "name": "Gestión de planificación de plantilla"
+  },
+  "chrome": {
+    "language": "Idioma"
+  },
+  "share": {
+    "copy_link": "Copiar enlace",
+    "copied": "Enlace copiado",
+    "copy_failed": "No se pudo copiar — cópielo desde la barra de direcciones"
+  },
+  "common": {
+    "loading": "Cargando…",
+    "error": "Error al cargar",
+    "status": "Estado",
+    "department": "Departamento",
+    "jobTitle": "Puesto",
+    "name": "Nombre",
+    "actions": "Acciones",
+    "days": "días",
+    "masked": "Oculto"
+  },
+  "dash": {
+    "title": "Panel de RR. HH.",
+    "activeWorkers": "Trabajadores activos",
+    "openRequisitions": "Vacantes abiertas",
+    "pendingLeave": "Permisos pendientes",
+    "successionGaps": "Brechas de sucesión"
+  },
+  "req": {
+    "applications": "Solicitudes",
+    "headcount": "Plazas"
+  },
+  "wf": {
+    "leaveRequests": "Solicitudes de permiso",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "rota": "Turnos",
+    "workingTime": "Tiempo de trabajo",
+    "over48": "Media superior a 48 h",
+    "restBreach": "Descanso inferior a 11 h",
+    "allClear": "Sin alertas de tiempo de trabajo"
+  },
+  "dev": {
+    "cycles": "Ciclos de evaluación",
+    "succession": "Planes de sucesión",
+    "expiring": "Certificados por vencer"
+  },
+  "pay": {
+    "calculate": "Calcular",
+    "pay": "Marcar pagado",
+    "gross": "Bruto",
+    "net": "Neto",
+    "deductions": "Deducciones"
+  },
+  "bench": {
+    "flag": "Indicador"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Gestión de planificación de plantilla",
+      "headline": "La gestión de personas, en un solo lugar",
+      "subhead": "Planifique la contratación, ejecute la nómina, apoye el bienestar y ayude a su gente a crecer: un espacio de trabajo conectado para RR. HH., mandos y cada trabajador.",
+      "cta": "Iniciar sesión",
+      "ctaHint": "Gratis para explorar — solo su correo, sin contraseña"
+    },
+    "benefits": {
+      "title": "Por qué los equipos lo eligen",
+      "b1": {
+        "title": "Un solo espacio, no diez pestañas",
+        "body": "Contratación, turnos, nómina, evaluaciones y bienestar conviven, para que nada se pierda entre herramientas."
+      },
+      "b2": {
+        "title": "Construido sobre la confianza",
+        "body": "Los datos de salario y evaluación permanecen ocultos hasta que el acceso se gana — nunca una suposición, nunca un cero falso."
+      },
+      "b3": {
+        "title": "Autoservicio para todos",
+        "body": "Cada trabajador ve sus propias nóminas, permisos y evaluaciones, y puede solicitar un ajuste o sus datos sin abrir un ticket."
+      },
+      "b4": {
+        "title": "Habla su idioma",
+        "body": "Catorce idiomas con etiquetas endonímicas, y compatibilidad completa de derecha a izquierda para árabe y urdu, integradas desde el primer día."
+      },
+      "b5": {
+        "title": "Un tema y un tamaño de texto para todos",
+        "body": "Cuarenta y cinco temas — incluidos el NHS y el GDS del Reino Unido, y el Sistema de Diseño Web de EE. UU. — además de siete tamaños de texto, para que la aplicación se adapte a cómo la gente realmente ve y trabaja."
+      },
+      "b6": {
+        "title": "Conforme por diseño",
+        "body": "Las reglas de conservación, las exportaciones de acceso del titular y el derecho al olvido están integrados en el producto, no añadidos después."
+      }
+    },
+    "features": {
+      "title": "Todo lo que RR. HH. necesita, conectado",
+      "f1": {
+        "title": "Contratación e incorporación",
+        "body": "Siga vacantes y solicitudes en un tablero en vivo, y guíe a cada nueva incorporación durante su proceso."
+      },
+      "f2": {
+        "title": "Personas y organigrama",
+        "body": "El perfil, la línea jerárquica y el organigrama de cada trabajador, siempre al día."
+      },
+      "f3": {
+        "title": "Turnos y tiempo de trabajo",
+        "body": "Cree el cuadrante, señale jornadas largas y descansos cortos, y anticipe problemas ergonómicos."
+      },
+      "f4": {
+        "title": "Desarrollo y aprendizaje",
+        "body": "Ejecute ciclos de evaluación, siga la formación y los certificados, y empareje mentores con sus mentorizados."
+      },
+      "f5": {
+        "title": "Bienestar y pulso",
+        "body": "Derechos de salud y beneficios, encuestas de pulso anónimas, y solicitudes de ajuste razonable."
+      },
+      "f6": {
+        "title": "Nómina y análisis",
+        "body": "Calcule y ejecute la nómina, y compare retribución y plantilla con referencias del sector, en un solo panel."
+      }
+    },
+    "trust": {
+      "title": "Privacidad, bien hecha",
+      "body": "Cada trabajador puede descargar sus propios datos o pedir su borrado, y cada regla de conservación permanece visible."
+    },
+    "cta": {
+      "title": "¿Listo para echar un vistazo?",
+      "body": "Inicie sesión con un enlace mágico — sin contraseña que recordar.",
+      "button": "Iniciar sesión para continuar"
+    },
+    "demoNotice": "Software de demostración para evaluación — no es un sistema de RR. HH. de producción."
+  },
+  "org": {
+    "myOrganizations": "Mis organizaciones",
+    "noOrganizations": "Aún no hay membresías de organización",
+    "view": {
+      "label": "Vista",
+      "manager": "Por responsable",
+      "department": "Por departamento",
+      "level": "Por nivel",
+      "tenure": "Por antigüedad",
+      "location": "Por ubicación"
+    },
+    "level": "Nivel",
+    "tenureYears": "años",
+    "noLocation": "Ubicación no registrada",
+    "employed": "Empleado aquí",
+    "staffOnly": "Acceso de personal"
+  },
+  "metrics": {
+    "from": "Desde",
+    "to": "Hasta",
+    "apply": "Aplicar",
+    "metric": "Métrica",
+    "value": "Valor",
+    "definition": "Definición",
+    "headcount": "Plantilla (inicial → final)",
+    "openingOn": "inicial el",
+    "starters": "Altas",
+    "leavers": "Bajas",
+    "turnover": "Tasa de rotación",
+    "span": "Alcance de control",
+    "managers": "responsables",
+    "max": "máx.",
+    "timeToFill": "Tiempo de cobertura (mediana)",
+    "insights": "Conclusiones",
+    "noInsights": "Nada supera un umbral en este periodo.",
+    "days": "días",
+    "mean": "media",
+    "requisitions": "vacantes"
+  },
+  "tour": {
+    "hero": {
+      "title": "Vea cómo encaja todo",
+      "subhead": "Un recorrido guiado por lo que realmente hace Workforce Planning Management, sección por sección — sin necesidad de iniciar sesión."
+    },
+    "toc": {
+      "label": "En esta página"
+    },
+    "hiring": {
+      "title": "Contratación e incorporación, de principio a fin",
+      "body": "Publique una vacante y aparecerá como una tarjeta en un tablero de vacantes en vivo. Los candidatos avanzan por la selección y las entrevistas en ese mismo tablero, y contratar a alguien crea su registro de trabajador en un solo paso, no en dos. Desde el primer día, una lista de verificación guía a los nuevos empleados durante la incorporación, y nadie queda activo en la plantilla hasta completarla."
+    },
+    "people": {
+      "title": "Cada persona, un perfil, un organigrama",
+      "body": "Cada trabajador tiene un único perfil que también funciona como su centro de autoservicio: nóminas, saldos de permisos, evaluaciones, avisos de bienestar y notificaciones, todo en un solo lugar. El organigrama se construye solo a partir de quién reporta a quién, así que nunca es una diapositiva desactualizada: reorganice un equipo y simplemente se reordena."
+    },
+    "rota": {
+      "title": "Turnos, tiempo y seguridad del tiempo de trabajo",
+      "body": "Cree el cuadrante de turnos, registre el tiempo trabajado y solicite permisos con los mismos saldos en vivo, sin nada que conciliar entre sistemas separados a fin de mes. Las salvaguardas de tiempo de trabajo señalan discretamente a quien promedie más de 48 horas o descanse menos de 11 horas entre turnos, y una lista de verificación ergonómica detecta problemas de puesto de trabajo antes de que se conviertan en una reclamación."
+    },
+    "growth": {
+      "title": "Evaluaciones, 360°, formación y sucesión",
+      "body": "Ejecute un ciclo de evaluación con objetivos y comentarios, o recopile una evaluación 360° completa de gerentes, compañeros y subordinados — el contenido permanece privado hasta que se comparte explícitamente, y los grupos pequeños están protegidos para que ningún comentario individual sea rastreable a una persona. Las inscripciones de formación, una matriz de habilidades, rutas de aprendizaje y emparejamientos de mentoría conviven con planes de sucesión que señalan quién está listo para ascender y quién aún no."
+    },
+    "wellbeing": {
+      "title": "Bienestar que respeta la privacidad",
+      "body": "Los derechos de salud y beneficios avisan a la persona adecuada en el momento adecuado, basándose solo en el departamento, el rango de edad o el puesto — nunca en un estado de salud almacenado. Las encuestas de pulso son anónimas por diseño, con resultados ocultos por debajo de cinco respuestas para que la respuesta honesta de ningún equipo pequeño sea rastreable hasta una persona."
+    },
+    "payroll": {
+      "title": "Nómina, ejecutada con confianza",
+      "body": "Calcule una nómina a partir del salario, las horas y las horas extra aprobadas, revise el desglose de la nómina y luego apruebe y pague — cada paso auditado, y una nómina aprobada bloqueada frente a más cambios. La comparación de referencias compara la retribución y la plantilla con bandas de referencia, señalando a quien esté por debajo o por encima del rango para una segunda revisión."
+    },
+    "privacy": {
+      "title": "Privacidad integrada, no añadida después",
+      "body": "El contenido de salario y evaluación se muestra como un estado oculto honesto para quien no haya obtenido acceso — nunca un cero falso, nunca un error silencioso. Cada trabajador puede descargar todo lo que el sistema guarda sobre él, pedir que se elimine una vez que termine su empleo, y ver exactamente qué regla de conservación aplica y cuándo se ejecuta."
+    },
+    "multiorg": {
+      "title": "Pertenezca a más de una organización",
+      "body": "Inicie sesión una vez y vea todas las organizaciones a las que pertenece al mismo tiempo — una empresa, un departamento, una organización asociada, un grupo de trabajo — sin un selector aparte que recorrer. Cada membresía tiene su propio rol, así que ser socio de personal en un equipo y miembro ordinario de otro es un solo inicio de sesión, no dos cuentas."
+    },
+    "dashboard": {
+      "title": "Un panel, los números que importan",
+      "body": "La plantilla activa, las vacantes abiertas y las brechas de sucesión aparecen en un panel de RR. HH. en cuanto inicia sesión, cada mosaico es un acceso directo al detalle que hay detrás. Son los mismos datos en vivo que lee cualquier otra página, nunca un informe aparte que queda desactualizado."
+    },
+    "yours": {
+      "title": "Hágalo suyo, en aspecto y en idioma",
+      "body": "Elija entre cuarenta y cinco temas, incluidas variantes accesibles del NHS y el GDS del Reino Unido y del Sistema de Diseño Web de EE. UU., elija entre siete tamaños de texto, y lea toda la aplicación en cualquiera de catorce idiomas, con compatibilidad adecuada de derecha a izquierda para árabe y urdu. Es el mismo producto, adaptado a cómo cada persona realmente ve y trabaja."
+    },
+    "cta": {
+      "title": "¿Listo para probarlo usted mismo?",
+      "body": "Inicie sesión con un enlace mágico y explore con datos reales — sin contraseña, sin compromiso.",
+      "button": "Iniciar sesión"
+    }
+  }
+}

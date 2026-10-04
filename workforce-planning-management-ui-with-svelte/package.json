@@ -23,6 +23,8 @@
     "format": "prettier --write src",
     "lint": "prettier --check src",
     "sync-themes": "node scripts/sync-themes.mjs",
+    "cms-config": "node scripts/cms-config.mjs",
+    "cms-config:check": "node scripts/cms-config.mjs --check",
     "postinstall": "node scripts/sync-themes.mjs"
   },
   "devDependencies": {

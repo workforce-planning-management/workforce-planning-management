@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, l } from "#lib/i18n.svelte.js";
 
   // tourpage-* class prefix throughout: the active Lily theme styles a
   // real `.tour` component of its own (an onboarding card), plus
@@ -49,7 +49,7 @@
   <section class="tourpage-cta panel">
     <h2>{t("tour.cta.title")}</h2>
     <p>{t("tour.cta.body")}</p>
-    <a class="btn primary" href="/signin">{t("tour.cta.button")}</a>
+    <a class="btn primary" href={l("/signin")}>{t("tour.cta.button")}</a>
   </section>
 </div>
 

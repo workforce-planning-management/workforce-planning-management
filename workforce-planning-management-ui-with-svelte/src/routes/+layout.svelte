@@ -1,7 +1,19 @@
 <script lang="ts">
   import "../app.css";
   import { page } from "$app/state";
-  import { i18n, isRtl, t, LOCALES, LOCALE_LABELS } from "#lib/i18n.svelte.js";
+  import { untrack } from "svelte";
+  import { goto } from "$app/navigation";
+  import {
+    i18n,
+    isRtl,
+    l,
+    t,
+    splitLocale,
+    localePath,
+    normaliseLocale,
+    LOCALES,
+    LOCALE_LABELS,
+  } from "#lib/i18n.svelte.js";
   import PickerBar from "@lilydesignsystem/svelte-picker-bar";
   import { Drawer } from "@lilydesignsystem/svelte-headless";
   import type { ShareTarget } from "@lilydesignsystem/svelte-share-picker";
@@ -125,8 +137,25 @@
     }
   }
 
+  // The URL's locale prefix is the source of truth: follow it, so a
+  // direct visit to `/cy-001/workers` (or back/forward between locales)
+  // retranslates the chrome.
   $effect(() => {
-    document.documentElement.lang = i18n.locale.replace("_", "-");
+    const { locale } = splitLocale(page.url.pathname);
+    if (locale && locale !== untrack(() => i18n.locale)) i18n.set(locale);
+  });
+
+  // Switching language navigates to the same page under the new prefix;
+  // the effect above then applies it, so the URL stays the source of truth.
+  function switchLocale(code: string) {
+    const next = normaliseLocale(code);
+    if (!next) return;
+    const { rest } = splitLocale(page.url.pathname);
+    void goto(`${localePath(next, rest)}${page.url.search}${page.url.hash}`);
+  }
+
+  $effect(() => {
+    document.documentElement.lang = i18n.locale;
     document.documentElement.dir = isRtl(i18n.locale) ? "rtl" : "ltr";
   });
 </script>
@@ -145,10 +174,10 @@
       <path d="M2 4h12M2 8h12M2 12h12" />
     </svg>
   </button>
-  <a class="brand" href="/">{t("brand.name")}</a>
+  <a class="brand" href={l("/")}>{t("brand.name")}</a>
   <span class="spacer"></span>
-  <a href="/tour">{t("nav.tour")}</a>
-  <a href="/signin">{t("nav.signin")}</a>
+  <a href={l("/tour")}>{t("nav.tour")}</a>
+  <a href={l("/signin")}>{t("nav.signin")}</a>
   <div class="chrome">
     <PickerBar
       labels={{
@@ -164,7 +193,7 @@
         value: i18n.locale,
         localeLabels: LOCALE_LABELS,
         applyDir: false,
-        onChange: (code: string) => i18n.set(code),
+        onChange: switchLocale,
       }}
       textSizeProps={{
         storageKey: "mxi.wpm.text-size",
@@ -200,7 +229,7 @@
   </div>
   <nav class="menu drawer-links" aria-label={t("nav.menu")} bind:this={drawerNav}>
     {#each NAV_LINKS as [href, key] (href)}
-      <a class="menu-item" {href} onclick={closeNav}>
+      <a class="menu-item" href={l(href)} onclick={closeNav}>
         {t(key)}
       </a>
     {/each}

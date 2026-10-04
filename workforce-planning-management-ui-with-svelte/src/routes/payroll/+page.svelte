@@ -1,6 +1,6 @@
 <script lang="ts">
   import { listRuns } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, l } from "#lib/i18n.svelte.js";
   import type { PayrollRun } from "#lib/api/types.js";
 
   let runs = $state<PayrollRun[] | null>(null);
@@ -31,7 +31,7 @@
     <tbody>
       {#each runs as run (run.pid)}
         <tr>
-          <td><a href={`/payroll/${run.pid}`}>{run.period_start} → {run.period_end}</a></td>
+          <td><a href={l(`/payroll/${run.pid}`)}>{run.period_start} → {run.period_end}</a></td>
           <td><span class="chip">{run.status}</span></td>
         </tr>
       {/each}

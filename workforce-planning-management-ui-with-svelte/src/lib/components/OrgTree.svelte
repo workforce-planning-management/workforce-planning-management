@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { l } from "#lib/i18n.svelte.js";
   import type { OrgNode } from "#lib/api/types.js";
   import OrgTree from "./OrgTree.svelte";
 
@@ -6,7 +7,7 @@
 </script>
 
 <div class="node">
-  <a href={`/workers/${node.pid}`}>{node.display_name}</a>
+  <a href={l(`/workers/${node.pid}`)}>{node.display_name}</a>
   <span class="muted">— {node.job_title} · {node.department}</span>
   {#if node.reports.length}
     <div class="reports">

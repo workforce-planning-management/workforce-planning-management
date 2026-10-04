@@ -1,0 +1,332 @@
+{
+  "nav": {
+    "wellbeing": "Bien-être",
+    "privacy": "Confidentialité",
+    "learning": "Apprentissage",
+    "mentorship": "Mentorat",
+    "dashboard": "Tableau de bord",
+    "workers": "Travailleurs",
+    "orgChart": "Organigramme",
+    "groups": "Groupes",
+    "requisitions": "Postes vacants",
+    "workforce": "Effectifs",
+    "development": "Développement",
+    "payroll": "Paie",
+    "benchmarks": "Références",
+    "signin": "Se connecter",
+    "share": "Partager",
+    "text_size": "Taille du texte",
+    "menu": "Menu",
+    "closeMenu": "Fermer le menu",
+    "metrics": "Indicateurs",
+    "roles": "Profils de poste",
+    "skills": "Compétences",
+    "me": "Mon profil",
+    "cpd": "DPC",
+    "change": "Changement",
+    "planning": "Planification",
+    "tour": "Visite"
+  },
+  "pr": {
+    "retention": "Conservation",
+    "horizon": "Horizon (jours)",
+    "pastHorizon": "Suppressions logiques au-delà de l'horizon",
+    "candidates": "Candidats au consentement expiré",
+    "sweep": "Lancer le balayage",
+    "swept": "lignes supprimées"
+  },
+  "emp": {
+    "erase": "Effacer (anonymiser)",
+    "subjectAccess": "Télécharger mes données",
+    "notifications": "Notifications",
+    "number": "N° de travailleur",
+    "salary": "Salaire",
+    "profile": "Profil",
+    "onboarding": "Intégration",
+    "balances": "Soldes de congés",
+    "payslips": "Bulletins de paie",
+    "reviews": "Évaluations",
+    "training": "Formation"
+  },
+  "wb": {
+    "kind": {
+      "health": "Santé",
+      "benefit": "Avantage"
+    },
+    "conversion": "Adhésions après l'invitation",
+    "pulse": "Sondage éclair",
+    "pulseThanks": "Merci — votre réponse anonyme a été enregistrée",
+    "pulseSuppressed": "Masqué sous 5 réponses",
+    "pulseMean": "Moyenne",
+    "pulseResponses": "réponses",
+    "prompts": "Droits de santé",
+    "reminder": "Rappel",
+    "noPrompts": "Aucune invitation pour le moment",
+    "info": "En savoir plus",
+    "booked": "Rendez-vous pris",
+    "done": "Fait",
+    "declined": "Non merci",
+    "dismissed": "Ignorer",
+    "rules": "Règles des droits",
+    "uptake": "Adhésion"
+  },
+  "ap": {
+    "title": "Évaluations 360°",
+    "new": "Nouvelle 360",
+    "nominate": "Nommer",
+    "start": "Lancer la collecte",
+    "share": "Partager le rapport",
+    "respond": "Répondre",
+    "report": "Rapport",
+    "withheld": "Masqué sous 3 réponses",
+    "requests": "Mes demandes 360"
+  },
+  "notif": {
+    "markRead": "Marquer comme lue"
+  },
+  "erg": {
+    "title": "Évaluations ergonomiques",
+    "new": "Nouvelle évaluation",
+    "workstation": "Poste de travail",
+    "ok": "OK",
+    "issue": "Problème",
+    "complete": "Terminer",
+    "issues": "Problèmes ergonomiques"
+  },
+  "adj": {
+    "title": "Aménagements raisonnables",
+    "note": "Note pratique (facultative)",
+    "new": "Demander un changement",
+    "hint": "Aucun diagnostic n'est requis pour demander. Expliquez l'obstacle, son effet sur votre travail et le changement qui le réduirait.",
+    "barrier": "Quel obstacle rencontrez-vous ?",
+    "impact": "Quel effet sur votre travail ?",
+    "change": "Quel changement le réduirait ?",
+    "agree": "Accepter",
+    "decline": "Refuser",
+    "inPlace": "En place"
+  },
+  "brand": {
+    "name": "Gestion de la planification des effectifs"
+  },
+  "chrome": {
+    "language": "Langue"
+  },
+  "share": {
+    "copy_link": "Copier le lien",
+    "copied": "Lien copié",
+    "copy_failed": "Impossible de copier — copiez-le depuis la barre d'adresse"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "error": "Échec du chargement",
+    "status": "Statut",
+    "department": "Service",
+    "jobTitle": "Intitulé du poste",
+    "name": "Nom",
+    "actions": "Actions",
+    "days": "jours",
+    "masked": "Masqué"
+  },
+  "dash": {
+    "title": "Tableau de bord RH",
+    "activeWorkers": "Travailleurs actifs",
+    "openRequisitions": "Postes ouverts",
+    "pendingLeave": "Congés en attente",
+    "successionGaps": "Lacunes de succession"
+  },
+  "req": {
+    "applications": "Candidatures",
+    "headcount": "Effectif"
+  },
+  "wf": {
+    "leaveRequests": "Demandes de congé",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "rota": "Planning",
+    "workingTime": "Temps de travail",
+    "over48": "Moyenne au-delà de 48 h",
+    "restBreach": "Repos inférieur à 11 h",
+    "allClear": "Aucun signal de temps de travail"
+  },
+  "dev": {
+    "cycles": "Cycles d'évaluation",
+    "succession": "Plans de succession",
+    "expiring": "Certificats expirant"
+  },
+  "pay": {
+    "calculate": "Calculer",
+    "pay": "Marquer payé",
+    "gross": "Brut",
+    "net": "Net",
+    "deductions": "Retenues"
+  },
+  "bench": {
+    "flag": "Indicateur"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Gestion de la planification des effectifs",
+      "headline": "La gestion RH, réunie au même endroit",
+      "subhead": "Planifiez le recrutement, exécutez la paie, soutenez le bien-être et accompagnez la progression de vos équipes — un espace de travail unique pour les RH, les managers et chaque travailleur.",
+      "cta": "Se connecter",
+      "ctaHint": "Gratuit à découvrir — juste votre e-mail, pas de mot de passe"
+    },
+    "benefits": {
+      "title": "Pourquoi les équipes le choisissent",
+      "b1": {
+        "title": "Un seul espace, pas dix onglets",
+        "body": "Recrutement, planning, paie, évaluations et bien-être cohabitent, pour que rien ne se perde entre les outils."
+      },
+      "b2": {
+        "title": "Construit sur la confiance",
+        "body": "Les données de salaire et d'évaluation restent masquées tant que l'accès n'est pas mérité — jamais une supposition, jamais un faux zéro."
+      },
+      "b3": {
+        "title": "Libre-service pour tous",
+        "body": "Chaque travailleur voit ses propres bulletins de paie, congés et évaluations, et peut demander un aménagement ou ses données sans ouvrir de ticket."
+      },
+      "b4": {
+        "title": "Parle votre langue",
+        "body": "Quatorze langues avec des libellés endonymes, et une prise en charge complète de droite à gauche pour l'arabe et l'ourdou, intégrées dès le premier jour."
+      },
+      "b5": {
+        "title": "Un thème et une taille de texte pour chacun",
+        "body": "Quarante-cinq thèmes — dont le NHS et le GDS britanniques, et le Web Design System américain — ainsi que sept tailles de texte, pour que l'application s'adapte à la façon dont chacun voit et travaille réellement."
+      },
+      "b6": {
+        "title": "Conforme par construction",
+        "body": "Les règles de conservation, les exports d'accès aux données et le droit à l'oubli sont intégrés au produit, pas ajoutés après coup."
+      }
+    },
+    "features": {
+      "title": "Tout ce dont les RH ont besoin, connecté",
+      "f1": {
+        "title": "Recrutement et intégration",
+        "body": "Suivez les postes vacants et les candidatures sur un tableau en direct, puis accompagnez les nouvelles recrues dans leur intégration."
+      },
+      "f2": {
+        "title": "Équipes et organigramme",
+        "body": "Le profil, la ligne hiérarchique et l'organigramme de chaque travailleur, toujours à jour."
+      },
+      "f3": {
+        "title": "Planning et temps de travail",
+        "body": "Construisez le planning, signalez les journées trop longues et les repos trop courts, et anticipez les problèmes ergonomiques."
+      },
+      "f4": {
+        "title": "Développement et apprentissage",
+        "body": "Menez les cycles d'évaluation, suivez les formations et certifications, et associez mentors et mentorés."
+      },
+      "f5": {
+        "title": "Bien-être et sondage éclair",
+        "body": "Droits santé et avantages, sondages éclair anonymes, et demandes d'aménagement raisonnable."
+      },
+      "f6": {
+        "title": "Paie et analyse",
+        "body": "Calculez et exécutez la paie, puis comparez rémunération et effectifs aux références du secteur, sur un même tableau de bord."
+      }
+    },
+    "trust": {
+      "title": "La confidentialité, bien faite",
+      "body": "Chaque travailleur peut télécharger ses propres données ou en demander l'effacement, et chaque règle de conservation reste visible."
+    },
+    "cta": {
+      "title": "Prêt à jeter un œil ?",
+      "body": "Connectez-vous avec un lien magique — aucun mot de passe à retenir.",
+      "button": "Se connecter pour continuer"
+    },
+    "demoNotice": "Logiciel de démonstration à des fins d'évaluation — pas un système RH de production."
+  },
+  "org": {
+    "myOrganizations": "Mes organisations",
+    "noOrganizations": "Aucune adhésion à une organisation pour le moment",
+    "view": {
+      "label": "Vue",
+      "manager": "Par responsable",
+      "department": "Par service",
+      "level": "Par niveau",
+      "tenure": "Par ancienneté",
+      "location": "Par site"
+    },
+    "level": "Niveau",
+    "tenureYears": "ans",
+    "noLocation": "Site non renseigné",
+    "employed": "Employé ici",
+    "staffOnly": "Accès du personnel"
+  },
+  "metrics": {
+    "from": "Du",
+    "to": "Au",
+    "apply": "Appliquer",
+    "metric": "Indicateur",
+    "value": "Valeur",
+    "definition": "Définition",
+    "headcount": "Effectif (début → fin)",
+    "openingOn": "début le",
+    "starters": "Entrées",
+    "leavers": "Sorties",
+    "turnover": "Taux de rotation",
+    "span": "Étendue de contrôle",
+    "managers": "responsables",
+    "max": "max.",
+    "timeToFill": "Délai de recrutement (médiane)",
+    "insights": "Constats",
+    "noInsights": "Aucun seuil n'est franchi sur cette période.",
+    "days": "jours",
+    "mean": "moyenne",
+    "requisitions": "postes"
+  },
+  "tour": {
+    "hero": {
+      "title": "Découvrez comment tout s'articule",
+      "subhead": "Une visite guidée de ce que fait réellement Workforce Planning Management, section par section — sans connexion nécessaire."
+    },
+    "toc": {
+      "label": "Sur cette page"
+    },
+    "hiring": {
+      "title": "Recrutement et intégration, de bout en bout",
+      "body": "Publiez un poste vacant et il apparaît sous forme de carte sur un tableau de postes vacants en direct. Les candidats avancent dans la présélection et les entretiens sur ce même tableau, et recruter quelqu'un crée sa fiche de travailleur en une seule étape, pas deux. Dès le premier jour, une liste de contrôle guide les nouvelles recrues dans leur intégration, et personne n'est actif dans l'effectif tant qu'elle n'est pas terminée."
+    },
+    "people": {
+      "title": "Chaque personne, un profil, un organigramme",
+      "body": "Chaque travailleur dispose d'un profil unique qui sert aussi de centre de libre-service : bulletins de paie, soldes de congés, évaluations, rappels de bien-être et notifications, tout au même endroit. L'organigramme se construit lui-même à partir de qui rapporte à qui, il n'est donc jamais une diapositive obsolète — réorganisez une équipe et il se réagence simplement."
+    },
+    "rota": {
+      "title": "Planning, temps et sécurité du temps de travail",
+      "body": "Construisez le planning, enregistrez le temps travaillé et demandez des congés sur les mêmes soldes en direct, sans rien à réconcilier entre systèmes séparés en fin de mois. Les garde-fous de temps de travail signalent discrètement toute personne dépassant en moyenne 48 heures ou bénéficiant de moins de 11 heures de repos entre deux postes, et une liste de contrôle ergonomique détecte les problèmes de poste de travail avant qu'ils ne deviennent une plainte."
+    },
+    "growth": {
+      "title": "Évaluations, 360°, formation et succession",
+      "body": "Menez un cycle d'évaluation avec objectifs et retours, ou recueillez une évaluation 360° complète auprès des managers, des pairs et des subordonnés — le contenu reste privé tant qu'il n'est pas explicitement partagé, et les petits groupes sont protégés pour qu'aucun commentaire isolé ne soit traçable jusqu'à une personne. Les inscriptions aux formations, une matrice de compétences, des parcours d'apprentissage et des binômes de mentorat côtoient des plans de succession qui indiquent qui est prêt à progresser, et qui ne l'est pas encore."
+    },
+    "wellbeing": {
+      "title": "Un bien-être qui respecte la vie privée",
+      "body": "Les droits à la santé et aux avantages alertent la bonne personne au bon moment, en se basant uniquement sur le service, la tranche d'âge ou le poste — jamais sur un état de santé enregistré. Les sondages éclair sont anonymes par conception, avec des résultats masqués en dessous de cinq réponses, afin que la réponse honnête d'aucune petite équipe ne soit jamais traçable jusqu'à une personne."
+    },
+    "payroll": {
+      "title": "Une paie exécutée en toute confiance",
+      "body": "Calculez une paie à partir du salaire, des heures et des heures supplémentaires approuvées, examinez le détail du bulletin, puis approuvez et payez — chaque étape est auditée, et une paie approuvée est verrouillée contre toute nouvelle modification. L'analyse comparative compare rémunération et effectifs à des fourchettes de référence, signalant quiconque est en dessous ou au-dessus pour un second regard."
+    },
+    "privacy": {
+      "title": "Confidentialité intégrée, pas ajoutée après coup",
+      "body": "Les données de salaire et d'évaluation s'affichent comme un état masqué honnête pour quiconque n'a pas obtenu l'accès — jamais un faux zéro, jamais une erreur silencieuse. Chaque travailleur peut télécharger tout ce que le système détient sur lui, demander son effacement une fois son emploi terminé, et voir exactement quelle règle de conservation s'applique et quand elle s'exécute."
+    },
+    "multiorg": {
+      "title": "Appartenir à plusieurs organisations",
+      "body": "Connectez-vous une fois et voyez toutes les organisations auxquelles vous appartenez en même temps — une entreprise, un service, une organisation partenaire, un groupe de travail — sans sélecteur séparé à parcourir. Chaque adhésion porte son propre rôle, si bien qu'être partenaire RH dans une équipe et simple membre dans une autre ne représente qu'une seule connexion, pas deux comptes."
+    },
+    "dashboard": {
+      "title": "Un tableau de bord, les chiffres qui comptent",
+      "body": "L'effectif actif, les postes vacants ouverts et les lacunes de succession figurent sur un tableau de bord RH dès la connexion, chaque tuile étant un raccourci vers le détail sous-jacent. Ce sont les mêmes données en direct que lit toute autre page, jamais un rapport séparé qui devient obsolète."
+    },
+    "yours": {
+      "title": "Faites-le vôtre, à l'œil et à l'oreille",
+      "body": "Choisissez parmi quarante-cinq thèmes, dont des variantes accessibles du NHS et du GDS britanniques et du Web Design System américain, sélectionnez parmi sept tailles de texte, et lisez toute l'application dans l'une des quatorze langues, avec une prise en charge correcte de droite à gauche pour l'arabe et l'ourdou. C'est le même produit, adapté à la façon dont chaque personne voit et travaille réellement."
+    },
+    "cta": {
+      "title": "Prêt à l'essayer vous-même ?",
+      "body": "Connectez-vous avec un lien magique et explorez avec de vraies données — sans mot de passe, sans engagement.",
+      "button": "Se connecter"
+    }
+  }
+}

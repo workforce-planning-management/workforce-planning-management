@@ -7,7 +7,7 @@
     createArrayFilter,
   } from "@svar-ui/svelte-filter";
   import { listWorkers, money } from "#lib/api/wpm.js";
-  import { i18n, t } from "#lib/i18n.svelte.js";
+  import { i18n, t, l } from "#lib/i18n.svelte.js";
   import type { Worker } from "#lib/api/types.js";
 
   let workers = $state<Worker[] | null>(null);
@@ -68,7 +68,7 @@
     on(action: string, cb: (ev: { id: string | number }) => void): void;
   }) {
     api.on("select-row", (ev) => {
-      void goto(`/workers/${ev.id}`);
+      void goto(l(`/workers/${ev.id}`));
     });
   }
 </script>

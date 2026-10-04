@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { listWorkers, listRequisitions, successionGaps } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, l } from "#lib/i18n.svelte.js";
   import type { Worker, Requisition, MyOrganization } from "#lib/api/types.js";
 
   const signedIn = $derived(page.data.signedIn === true);
@@ -64,15 +64,15 @@
     <p>{t("common.loading")}</p>
   {:else}
     <div class="tiles">
-      <a class="tile" href="/workers" data-testid="tile-active">
+      <a class="tile" href={l("/workers")} data-testid="tile-active">
         <strong>{active.length}</strong>
         <span>{t("dash.activeWorkers")}</span>
       </a>
-      <a class="tile" href="/requisitions" data-testid="tile-open">
+      <a class="tile" href={l("/requisitions")} data-testid="tile-open">
         <strong>{open?.length ?? 0}</strong>
         <span>{t("dash.openRequisitions")}</span>
       </a>
-      <a class="tile" href="/development" data-testid="tile-gaps">
+      <a class="tile" href={l("/development")} data-testid="tile-gaps">
         <strong>{gapCount ?? 0}</strong>
         <span>{t("dash.successionGaps")}</span>
       </a>
@@ -110,7 +110,7 @@
       <h1>{t("home.hero.headline")}</h1>
       <p class="home-subhead">{t("home.hero.subhead")}</p>
       <div class="home-hero-actions">
-        <a class="btn primary" href="/signin" data-testid="hero-cta">
+        <a class="btn primary" href={l("/signin")} data-testid="hero-cta">
           {t("home.hero.cta")}
         </a>
         <span class="home-hint">{t("home.hero.ctaHint")}</span>
@@ -149,7 +149,7 @@
     <section class="home-final-cta">
       <h2>{t("home.cta.title")}</h2>
       <p>{t("home.cta.body")}</p>
-      <a class="btn primary" href="/signin" data-testid="final-cta">
+      <a class="btn primary" href={l("/signin")} data-testid="final-cta">
         {t("home.cta.button")}
       </a>
     </section>

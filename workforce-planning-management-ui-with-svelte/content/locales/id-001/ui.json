@@ -1,0 +1,332 @@
+{
+  "nav": {
+    "wellbeing": "Kesejahteraan",
+    "privacy": "Privasi",
+    "learning": "Pembelajaran",
+    "mentorship": "Bimbingan",
+    "dashboard": "Dasbor",
+    "workers": "Pekerja",
+    "orgChart": "Struktur organisasi",
+    "groups": "Grup",
+    "requisitions": "Lowongan",
+    "workforce": "Tenaga kerja",
+    "development": "Pengembangan",
+    "payroll": "Penggajian",
+    "benchmarks": "Tolok ukur",
+    "signin": "Masuk",
+    "share": "Bagikan",
+    "text_size": "Ukuran teks",
+    "menu": "Menu",
+    "closeMenu": "Tutup menu",
+    "metrics": "Metrik",
+    "roles": "Profil peran",
+    "skills": "Keterampilan",
+    "me": "Profil saya",
+    "cpd": "Pengembangan profesional",
+    "change": "Perubahan",
+    "planning": "Perencanaan",
+    "tour": "Tur"
+  },
+  "pr": {
+    "retention": "Retensi",
+    "horizon": "Horizon (hari)",
+    "pastHorizon": "Soft-delete melewati horizon",
+    "candidates": "Kandidat dengan persetujuan kedaluwarsa",
+    "sweep": "Jalankan sapuan",
+    "swept": "baris dihapus"
+  },
+  "emp": {
+    "erase": "Hapus (anonimkan)",
+    "subjectAccess": "Unduh data saya",
+    "notifications": "Notifikasi",
+    "number": "No. pekerja",
+    "salary": "Gaji",
+    "profile": "Profil",
+    "onboarding": "Orientasi",
+    "balances": "Saldo cuti",
+    "payslips": "Slip gaji",
+    "reviews": "Penilaian",
+    "training": "Pelatihan"
+  },
+  "wb": {
+    "kind": {
+      "health": "Kesehatan",
+      "benefit": "Manfaat"
+    },
+    "conversion": "Terdaftar setelah pemberitahuan",
+    "pulse": "Survei denyut",
+    "pulseThanks": "Terima kasih — tanggapan anonim Anda tercatat",
+    "pulseSuppressed": "Disembunyikan di bawah 5 tanggapan",
+    "pulseMean": "Rata-rata",
+    "pulseResponses": "tanggapan",
+    "prompts": "Hak kesehatan",
+    "reminder": "Pengingat",
+    "noPrompts": "Tidak ada pemberitahuan saat ini",
+    "info": "Info lebih lanjut",
+    "booked": "Sudah dijadwalkan",
+    "done": "Selesai",
+    "declined": "Tidak, terima kasih",
+    "dismissed": "Abaikan",
+    "rules": "Aturan hak",
+    "uptake": "Partisipasi"
+  },
+  "ap": {
+    "title": "Penilaian 360°",
+    "new": "360 baru",
+    "nominate": "Nominasikan",
+    "start": "Mulai pengumpulan",
+    "share": "Bagikan laporan",
+    "respond": "Tanggapi",
+    "report": "Laporan",
+    "withheld": "Ditahan di bawah 3 tanggapan",
+    "requests": "Permintaan 360 saya"
+  },
+  "notif": {
+    "markRead": "Tandai dibaca"
+  },
+  "erg": {
+    "title": "Penilaian ergonomis",
+    "new": "Penilaian baru",
+    "workstation": "Stasiun kerja",
+    "ok": "OK",
+    "issue": "Masalah",
+    "complete": "Selesaikan",
+    "issues": "Masalah ergonomis"
+  },
+  "adj": {
+    "title": "Penyesuaian wajar",
+    "note": "Catatan praktis (opsional)",
+    "new": "Minta perubahan",
+    "hint": "Anda tidak perlu diagnosis untuk meminta. Jelaskan hambatannya, dampaknya pada pekerjaan, dan perubahan apa yang menguranginya.",
+    "barrier": "Hambatan apa yang Anda hadapi?",
+    "impact": "Bagaimana dampaknya pada pekerjaan Anda?",
+    "change": "Perubahan apa yang menguranginya?",
+    "agree": "Setujui",
+    "decline": "Tolak",
+    "inPlace": "Diterapkan"
+  },
+  "brand": {
+    "name": "Manajemen Perencanaan Tenaga Kerja"
+  },
+  "chrome": {
+    "language": "Bahasa"
+  },
+  "share": {
+    "copy_link": "Salin tautan",
+    "copied": "Tautan disalin",
+    "copy_failed": "Tidak dapat menyalin — salin dari bilah alamat"
+  },
+  "common": {
+    "loading": "Memuat…",
+    "error": "Gagal memuat",
+    "status": "Status",
+    "department": "Departemen",
+    "jobTitle": "Jabatan",
+    "name": "Nama",
+    "actions": "Tindakan",
+    "days": "hari",
+    "masked": "Disembunyikan"
+  },
+  "dash": {
+    "title": "Dasbor SDM",
+    "activeWorkers": "Pekerja aktif",
+    "openRequisitions": "Lowongan terbuka",
+    "pendingLeave": "Cuti tertunda",
+    "successionGaps": "Kesenjangan suksesi"
+  },
+  "req": {
+    "applications": "Lamaran",
+    "headcount": "Jumlah posisi"
+  },
+  "wf": {
+    "leaveRequests": "Permintaan cuti",
+    "approve": "Setujui",
+    "reject": "Tolak",
+    "rota": "Jadwal",
+    "workingTime": "Waktu kerja",
+    "over48": "Rata-rata di atas 48 jam",
+    "restBreach": "Istirahat kurang dari 11 jam",
+    "allClear": "Tidak ada tanda waktu kerja"
+  },
+  "dev": {
+    "cycles": "Siklus penilaian",
+    "succession": "Rencana suksesi",
+    "expiring": "Sertifikat kedaluwarsa"
+  },
+  "pay": {
+    "calculate": "Hitung",
+    "pay": "Tandai dibayar",
+    "gross": "Bruto",
+    "net": "Bersih",
+    "deductions": "Potongan"
+  },
+  "bench": {
+    "flag": "Penanda"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Manajemen Perencanaan Tenaga Kerja",
+      "headline": "Operasi kepegawaian, semua dalam satu tempat",
+      "subhead": "Rencanakan perekrutan, jalankan penggajian, dukung kesejahteraan, dan bantu orang berkembang — satu ruang kerja terhubung untuk HR, manajer, dan setiap pekerja.",
+      "cta": "Masuk",
+      "ctaHint": "Gratis untuk dijelajahi — cukup email Anda, tanpa kata sandi"
+    },
+    "benefits": {
+      "title": "Mengapa tim memilihnya",
+      "b1": {
+        "title": "Satu ruang kerja, bukan sepuluh tab",
+        "body": "Perekrutan, jadwal, penggajian, penilaian, dan kesejahteraan hidup bersama, sehingga tidak ada yang terlewat di antara alat."
+      },
+      "b2": {
+        "title": "Dibangun di atas kepercayaan",
+        "body": "Data gaji dan penilaian tetap disembunyikan sampai akses diperoleh — tidak pernah menebak, tidak pernah nol palsu."
+      },
+      "b3": {
+        "title": "Swalayan untuk semua orang",
+        "body": "Pekerja melihat slip gaji, cuti, dan penilaian mereka sendiri, serta dapat meminta penyesuaian atau data mereka tanpa membuka tiket."
+      },
+      "b4": {
+        "title": "Berbicara dalam bahasa Anda",
+        "body": "Empat belas bahasa dengan label endonim, dan dukungan penuh kanan-ke-kiri untuk bahasa Arab dan Urdu, dibangun sejak hari pertama."
+      },
+      "b5": {
+        "title": "Satu tema dan ukuran teks untuk semua orang",
+        "body": "Empat puluh lima tema — termasuk NHS dan GDS Inggris, serta Web Design System AS — ditambah tujuh ukuran teks, agar aplikasi sesuai dengan cara orang benar-benar melihat dan bekerja."
+      },
+      "b6": {
+        "title": "Patuh sejak dari desainnya",
+        "body": "Aturan retensi, ekspor akses subjek, dan hak untuk dilupakan dibangun langsung ke dalam produk, bukan ditambahkan belakangan."
+      }
+    },
+    "features": {
+      "title": "Semua yang dibutuhkan HR, terhubung",
+      "f1": {
+        "title": "Perekrutan & orientasi",
+        "body": "Lacak lowongan dan lamaran di papan langsung, lalu bimbing pekerja baru melalui orientasi."
+      },
+      "f2": {
+        "title": "Pekerja & struktur organisasi",
+        "body": "Profil, jalur pelaporan, dan struktur organisasi setiap pekerja, selalu terbaru."
+      },
+      "f3": {
+        "title": "Jadwal & waktu kerja",
+        "body": "Susun jadwal, tandai jam kerja panjang dan istirahat singkat, dan antisipasi masalah ergonomis."
+      },
+      "f4": {
+        "title": "Pengembangan & pembelajaran",
+        "body": "Jalankan siklus penilaian, lacak pelatihan dan sertifikat, serta pasangkan mentor dengan mentee."
+      },
+      "f5": {
+        "title": "Kesejahteraan & denyut",
+        "body": "Hak kesehatan dan manfaat, survei denyut anonim, dan permintaan penyesuaian wajar."
+      },
+      "f6": {
+        "title": "Penggajian & wawasan",
+        "body": "Hitung dan jalankan penggajian, lalu bandingkan gaji dan jumlah pekerja dengan tolok ukur di satu dasbor."
+      }
+    },
+    "trust": {
+      "title": "Privasi yang dilakukan dengan benar",
+      "body": "Pekerja dapat mengunduh data mereka sendiri atau meminta penghapusannya, dan setiap aturan retensi tetap terlihat."
+    },
+    "cta": {
+      "title": "Siap untuk melihat lebih dekat?",
+      "body": "Masuk dengan tautan ajaib — tanpa kata sandi yang perlu diingat.",
+      "button": "Masuk untuk melanjutkan"
+    },
+    "demoNotice": "Perangkat lunak demo untuk evaluasi — bukan sistem HR produksi."
+  },
+  "org": {
+    "myOrganizations": "Organisasi saya",
+    "noOrganizations": "Belum ada keanggotaan organisasi",
+    "view": {
+      "label": "Tampilan",
+      "manager": "Menurut manajer",
+      "department": "Menurut departemen",
+      "level": "Menurut tingkat",
+      "tenure": "Menurut masa kerja",
+      "location": "Menurut lokasi"
+    },
+    "level": "Tingkat",
+    "tenureYears": "tahun",
+    "noLocation": "Lokasi belum dicatat",
+    "employed": "Bekerja di sini",
+    "staffOnly": "Akses staf"
+  },
+  "metrics": {
+    "from": "Dari",
+    "to": "Sampai",
+    "apply": "Terapkan",
+    "metric": "Metrik",
+    "value": "Nilai",
+    "definition": "Definisi",
+    "headcount": "Jumlah karyawan (awal → akhir)",
+    "openingOn": "awal pada",
+    "starters": "Karyawan baru",
+    "leavers": "Karyawan keluar",
+    "turnover": "Tingkat perputaran",
+    "span": "Rentang kendali",
+    "managers": "manajer",
+    "max": "maks.",
+    "timeToFill": "Waktu pengisian (median)",
+    "insights": "Wawasan",
+    "noInsights": "Tidak ada yang melewati ambang batas pada periode ini.",
+    "days": "hari",
+    "mean": "rata-rata",
+    "requisitions": "lowongan"
+  },
+  "tour": {
+    "hero": {
+      "title": "Lihat bagaimana semuanya saling terkait",
+      "subhead": "Panduan tur tentang apa yang sebenarnya dilakukan Workforce Planning Management, bagian demi bagian — tanpa perlu masuk."
+    },
+    "toc": {
+      "label": "Di halaman ini"
+    },
+    "hiring": {
+      "title": "Perekrutan & orientasi, dari awal sampai akhir",
+      "body": "Pasang lowongan dan itu muncul sebagai kartu di papan lowongan langsung. Kandidat bergerak melalui penyaringan dan wawancara di papan yang sama, dan merekrut seseorang membuat data pekerjanya dalam satu langkah, bukan dua. Sejak hari pertama, daftar periksa memandu karyawan baru melalui orientasi, dan tidak ada yang aktif dalam daftar sampai selesai."
+    },
+    "people": {
+      "title": "Setiap orang, satu profil, satu struktur organisasi",
+      "body": "Setiap pekerja memiliki satu profil yang juga berfungsi sebagai pusat swalayan mereka: slip gaji, saldo cuti, penilaian, pengingat kesejahteraan, dan notifikasi, semua di satu tempat. Struktur organisasi terbentuk sendiri dari siapa melapor kepada siapa, jadi tidak pernah menjadi slide usang — susun ulang tim dan itu langsung menata ulang dirinya."
+    },
+    "rota": {
+      "title": "Jadwal, waktu & keselamatan waktu kerja",
+      "body": "Susun jadwal, catat waktu kerja, dan ajukan cuti terhadap saldo langsung yang sama, tanpa ada yang perlu direkonsiliasi antar sistem terpisah di akhir bulan. Pengaman waktu kerja secara diam-diam menandai siapa pun yang rata-rata bekerja lebih dari 48 jam atau mendapat istirahat kurang dari 11 jam antar shift, dan daftar periksa ergonomis menangkap masalah stasiun kerja sebelum menjadi klaim."
+    },
+    "growth": {
+      "title": "Penilaian, 360°, pelatihan & suksesi",
+      "body": "Jalankan siklus penilaian dengan sasaran dan umpan balik, atau kumpulkan penilaian 360° lengkap dari manajer, rekan kerja, dan bawahan — konten tetap privat sampai dibagikan secara eksplisit, dan kelompok kecil dilindungi sehingga tidak ada satu komentar pun yang dapat dilacak ke satu orang. Pendaftaran pelatihan, matriks keterampilan, jalur pembelajaran, dan pasangan mentor berdampingan dengan rencana suksesi yang menandai siapa yang siap naik jabatan, dan siapa yang belum."
+    },
+    "wellbeing": {
+      "title": "Kesejahteraan yang menghormati privasi",
+      "body": "Hak kesehatan dan manfaat memberi tahu orang yang tepat pada waktu yang tepat, hanya berdasarkan departemen, kelompok usia, atau jabatan — tidak pernah berdasarkan status kesehatan yang tersimpan. Survei denyut anonim secara desain, dengan hasil disembunyikan di bawah lima tanggapan sehingga jawaban jujur tim kecil mana pun tidak pernah dapat dilacak kembali ke satu orang."
+    },
+    "payroll": {
+      "title": "Penggajian, dijalankan dengan percaya diri",
+      "body": "Hitung penggajian dari gaji, jam kerja, dan lembur yang disetujui, tinjau rincian slip gaji, lalu setujui dan bayar — setiap langkah diaudit, dan penggajian yang disetujui dikunci dari perubahan lebih lanjut. Tolok ukur membandingkan gaji dan jumlah karyawan dengan rentang acuan, menandai siapa pun yang di bawah atau di atas rentang untuk ditinjau kembali."
+    },
+    "privacy": {
+      "title": "Privasi dibangun sejak awal, bukan ditambahkan belakangan",
+      "body": "Konten gaji dan penilaian ditampilkan sebagai keadaan tersembunyi yang jujur bagi siapa pun yang belum memperoleh akses — tidak pernah nol palsu, tidak pernah kesalahan diam-diam. Setiap pekerja dapat mengunduh semua yang disimpan sistem tentang mereka, meminta penghapusan setelah masa kerja mereka berakhir, dan melihat dengan tepat aturan retensi mana yang berlaku dan kapan dijalankan."
+    },
+    "multiorg": {
+      "title": "Menjadi bagian dari lebih dari satu organisasi",
+      "body": "Masuk sekali dan lihat setiap organisasi yang Anda ikuti secara bersamaan — sebuah perusahaan, departemen, organisasi mitra, kelompok kerja — tanpa pengalih terpisah yang perlu diklik. Setiap keanggotaan membawa perannya sendiri, jadi menjadi mitra staf di satu tim dan anggota biasa di tim lain adalah satu kali masuk, bukan dua akun."
+    },
+    "dashboard": {
+      "title": "Satu dasbor, angka-angka yang penting",
+      "body": "Jumlah pekerja aktif, lowongan terbuka, dan kesenjangan suksesi berada di satu dasbor SDM begitu Anda masuk, setiap ubin adalah pintasan ke detail di baliknya. Ini adalah data langsung yang sama yang dibaca setiap halaman lain, tidak pernah laporan terpisah yang menjadi usang."
+    },
+    "yours": {
+      "title": "Buat tampil dan terasa seperti milik Anda",
+      "body": "Pilih dari empat puluh lima tema, termasuk varian yang dapat diakses dari NHS Inggris, GDS, dan US Web Design System, pilih dari tujuh ukuran teks, dan baca seluruh aplikasi dalam salah satu dari empat belas bahasa, dengan dukungan kanan-ke-kiri yang tepat untuk bahasa Arab dan Urdu. Ini adalah produk yang sama, dibentuk sesuai cara setiap orang benar-benar melihat dan bekerja."
+    },
+    "cta": {
+      "title": "Siap mencobanya sendiri?",
+      "body": "Masuk dengan tautan ajaib dan jelajahi dengan data nyata — tanpa kata sandi, tanpa komitmen.",
+      "button": "Masuk"
+    }
+  }
+}

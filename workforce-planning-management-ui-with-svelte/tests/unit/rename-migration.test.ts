@@ -52,8 +52,8 @@ describe("locale key migration", () => {
 
     const { i18n } = await freshI18n();
 
-    expect(i18n.locale).toBe("fr");
-    expect(localStorage.getItem(CURRENT)).toBe("fr");
+    expect(i18n.locale).toBe("fr-001");
+    expect(localStorage.getItem(CURRENT)).toBe("fr-001");
     expect(localStorage.getItem(LEGACY)).toBeNull();
   });
 
@@ -63,7 +63,7 @@ describe("locale key migration", () => {
 
     const { i18n } = await freshI18n();
 
-    expect(i18n.locale).toBe("de");
+    expect(i18n.locale).toBe("de-001");
     // The stale key is left alone: the current one already answered.
     expect(localStorage.getItem(CURRENT)).toBe("de");
   });

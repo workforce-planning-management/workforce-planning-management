@@ -8,6 +8,8 @@ export default defineConfig({
   fullyParallel: true,
   use: {
     baseURL: "http://localhost:4173",
+    // Pin Accept-Language so an unprefixed visit lands on en-001, not en-us.
+    locale: "en",
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
