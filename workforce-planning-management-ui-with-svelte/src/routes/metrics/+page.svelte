@@ -5,13 +5,16 @@
   a missing figure renders "—", never 0.
 -->
 <script lang="ts">
-  import { workforceMetrics } from "#lib/api/wpm.js";
+  import { workforceInsights, workforceMetrics } from "#lib/api/wpm.js";
   import { mean, rate } from "#lib/format.js";
   import { t } from "#lib/i18n.svelte.js";
 
   type Metrics = Awaited<ReturnType<typeof workforceMetrics>>;
 
+  type Insights = Awaited<ReturnType<typeof workforceInsights>>["insights"];
+
   let metrics = $state<Metrics | null>(null);
+  let insights = $state<Insights | null>(null);
   let from = $state("");
   let to = $state("");
   let error = $state<string | null>(null);
@@ -19,7 +22,12 @@
   async function load() {
     error = null;
     try {
-      metrics = await workforceMetrics({ from, to });
+      const [m, i] = await Promise.all([
+        workforceMetrics({ from, to }),
+        workforceInsights({ from, to }),
+      ]);
+      metrics = m;
+      insights = i.insights;
       from = metrics.period.from;
       to = metrics.period.to;
     } catch (cause) {
@@ -113,4 +121,20 @@
   </table>
 {:else if !error}
   <p>{t("common.loading")}</p>
+{/if}
+
+{#if insights}
+  <h2>{t("metrics.insights")}</h2>
+  {#if insights.length === 0}
+    <p class="muted" data-testid="insights-none">{t("metrics.noInsights")}</p>
+  {:else}
+    <ul data-testid="insights-list">
+      {#each insights as insight (insight.code)}
+        <li data-severity={insight.severity}>
+          <strong>{insight.observation}</strong>
+          <span class="muted">{insight.suggestion}</span>
+        </li>
+      {/each}
+    </ul>
+  {/if}
 {/if}

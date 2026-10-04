@@ -1827,6 +1827,27 @@ export function workforceMetrics(
   return api(`/workforce-intelligence/metrics${qs ? `?${qs}` : ""}`, init);
 }
 
+/** Findings derived from the shared metrics, with the thresholds used. */
+export function workforceInsights(
+  period?: { from?: string; to?: string },
+  init?: FetchLike,
+): Promise<{
+  period: { from: string; to: string };
+  insights: Array<{
+    code: string;
+    severity: "info" | "attention";
+    observation: string;
+    suggestion: string;
+  }>;
+  thresholds: Record<string, { value: number; meaning: string }>;
+}> {
+  const query = new URLSearchParams();
+  if (period?.from) query.set("from", period.from);
+  if (period?.to) query.set("to", period.to);
+  const qs = query.toString();
+  return api(`/workforce-intelligence/insights${qs ? `?${qs}` : ""}`, init);
+}
+
 /** The mentorship overview (active pairs, load, unmatched, stale). */
 export function mentorshipOverview(
   days?: number,

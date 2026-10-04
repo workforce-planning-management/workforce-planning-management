@@ -1533,7 +1533,7 @@ build on 3–5).
       module (WPM-T39) is the right precedent for how to centralise
       this kind of shared, tested derivation rather than reinventing
       it per route.
-- [x] **Workforce analytics and insights.** *(landed as WPM-T69; API only, no UI yet.)* The narrative/diagnostic
+- [x] **Workforce analytics and insights.** *(landed as WPM-T69.)* The narrative/diagnostic
       layer on top of workforce metrics — Visier's own framing is
       turning the metrics above into "why" and "what should we do
       about it" rather than raw numbers on a dashboard. This is the
@@ -1589,5 +1589,11 @@ build on 3–5).
       (`THRESHOLDS`), and an unknown metric yields no finding. New
       `GET /api/workforce-intelligence/insights?from=&to=`; the metrics
       computation was extracted into `period_metrics` so both views share
-      it. **Not done:** the controller change is unbuilt (sibling crates
-      absent, see WPM-T41) and has no DB test; no front-end page yet.
+      it. **Verified (2026-10-04):** compiles against the real sibling
+      crates (`~/git/sixarm/main-x-service`); lib tests 183 pass; DB suite
+      **43/43** with the new `workforce_insights_flag_a_shrinking_headcount`
+      (3 → 1 headcount flagged, inverted period 422); clippy clean on the
+      new code. **Front-end:** insights list under the metrics table on
+      `/metrics`, `workforceInsights()` client + path-map test, strings in
+      all 16 locales (observation/suggestion text is server English);
+      svelte-check 0, vitest 55/55, build green.

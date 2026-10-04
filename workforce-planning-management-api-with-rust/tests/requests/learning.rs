@@ -341,6 +341,72 @@ async fn workforce_metrics_report_defined_numbers() {
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn workforce_insights_flag_a_shrinking_headcount() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let mut pids = Vec::new();
+        for n in ["E-1", "E-2", "E-3"] {
+            let pid = seed_worker!(&request, &org, n, None).await;
+            activate!(&request, &pid).await;
+            pids.push(pid);
+        }
+
+        // Shape: a 200 with an `insights` array and a `thresholds` object.
+        let before: Value = request
+            .get("/api/workforce-intelligence/insights?from=2026-01-01&to=2026-12-31")
+            .await
+            .json();
+        assert!(before["insights"].is_array());
+        assert!(before["thresholds"].is_object());
+        assert!(before["thresholds"]["headcount_change"]["value"].is_number());
+
+        // Terminate two of three today (termination stamps today's date).
+        for pid in &pids[..2] {
+            for to in ["offboarding", "terminated"] {
+                request
+                    .post(&format!("/api/workers/{pid}/status"))
+                    .json(&json!({ "to": to }))
+                    .await
+                    .assert_status_ok();
+            }
+        }
+
+        // Period of a single day: opening is yesterday (3), closing today (1).
+        let today = chrono::Utc::now().date_naive();
+        let response = request
+            .get(&format!(
+                "/api/workforce-intelligence/insights?from={today}&to={today}"
+            ))
+            .await;
+        assert_eq!(response.status_code(), 200);
+        let view: Value = response.json();
+        assert!(view["thresholds"].is_object());
+        let codes: Vec<&str> = view["insights"]
+            .as_array()
+            .expect("insights array")
+            .iter()
+            .filter_map(|i| i["code"].as_str())
+            .collect();
+        assert!(
+            codes.contains(&"headcount_shrinking"),
+            "3 -> 1 headcount must be flagged, got {codes:?}"
+        );
+
+        assert_eq!(
+            request
+                .get("/api/workforce-intelligence/insights?from=2026-12-31&to=2026-01-01")
+                .await
+                .status_code(),
+            422,
+            "inverted period refused"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn headcount_snapshots_are_recorded_idempotently() {
     use workforce_planning_management_service::tasks::snapshot::run_snapshot;
 

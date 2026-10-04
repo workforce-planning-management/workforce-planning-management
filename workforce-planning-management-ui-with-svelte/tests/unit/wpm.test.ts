@@ -132,6 +132,8 @@ describe("api path map", () => {
     await wpm.workerRoleGap("w1", "rp1");
     await wpm.workforceMetrics();
     await wpm.workforceMetrics({ from: "2026-01-01", to: "2026-06-30" });
+    await wpm.workforceInsights();
+    await wpm.workforceInsights({ from: "2026-01-01", to: "2026-06-30" });
     await wpm.listPaths();
     await wpm.pathProgress("path1");
     await wpm.mentorshipOverview(30);
@@ -211,6 +213,8 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/role-gap?role_profile_pid=rp1",
       "/api/proxy/workforce-intelligence/metrics",
       "/api/proxy/workforce-intelligence/metrics?from=2026-01-01&to=2026-06-30",
+      "/api/proxy/workforce-intelligence/insights",
+      "/api/proxy/workforce-intelligence/insights?from=2026-01-01&to=2026-06-30",
       "/api/proxy/learning-paths",
       "/api/proxy/learning-paths/path1/progress",
       "/api/proxy/learning/mentorship-overview?days=30",
