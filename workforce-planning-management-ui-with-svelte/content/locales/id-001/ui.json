@@ -328,5 +328,31 @@
       "body": "Masuk dengan tautan ajaib dan jelajahi dengan data nyata — tanpa kata sandi, tanpa komitmen.",
       "button": "Masuk"
     }
+  },
+  "insights": {
+    "turnover_high": {
+      "observation": "Tingkat perputaran karyawan adalah {pct}% selama periode ini.",
+      "suggestion": "Rincikan karyawan yang keluar berdasarkan departemen dan masa kerja, lalu bandingkan dengan survei pulse dan umpan balik keluar."
+    },
+    "headcount_shrinking": {
+      "observation": "Jumlah karyawan turun {pct}% ({opening} menjadi {closing}).",
+      "suggestion": "Periksa apakah pengurangan ini direncanakan; bandingkan dengan lowongan terbuka dan rencana draf."
+    },
+    "headcount_growing": {
+      "observation": "Jumlah karyawan naik {pct}% ({opening} menjadi {closing}).",
+      "suggestion": "Periksa pertumbuhan terhadap rencana anggaran dan kapasitas orientasi."
+    },
+    "span_wide": {
+      "observation": "Rata-rata manajer memiliki {mean} bawahan langsung.",
+      "suggestion": "Cari manajer dengan tim terbesar dan pertimbangkan menambah satu lapisan atau pemimpin tim."
+    },
+    "span_narrow": {
+      "observation": "Rata-rata manajer memiliki {mean} bawahan langsung.",
+      "suggestion": "Cari lapisan yang dapat digabung."
+    },
+    "time_to_fill_slow": {
+      "observation": "Median waktu pengisian adalah {days} hari.",
+      "suggestion": "Cari tahu di tahap rekrutmen mana lowongan menunggu."
+    }
   }
 }

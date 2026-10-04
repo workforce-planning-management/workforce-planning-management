@@ -1619,3 +1619,15 @@ build on 3–5).
       green. **Not verified:** the CMS itself (needs GitHub auth; the
       generated config follows the Sveltia docs but has not been loaded
       in a browser); en-gb/en-us/de-de are full copies, not overrides.
+
+- [x] WPM-T71 (2026-10-04) **Regional locale overrides; es-es; localized insights.**
+      Regional locales now hold only overrides of their `-001` base
+      (`en-gb`: the `-ise` spellings; `en-us`, `de-de`, `es-es`: empty);
+      `es-es` added (`/es-es/…`). Insights carry `params` (the figures)
+      beside their English text; `/metrics` renders each finding from its
+      `code` + `params` through `insights.<code>.observation|suggestion`
+      strings in the 13 `-001` locales (`tp()`), falling back to the
+      server's English for a code the client does not know. Rust: 8
+      insights tests pass, clippy clean; the DB suite was not re-run after
+      adding `params` (a response-field addition). Vitest 62/62,
+      Playwright 19/19.

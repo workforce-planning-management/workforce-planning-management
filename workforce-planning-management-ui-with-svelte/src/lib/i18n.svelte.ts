@@ -172,3 +172,21 @@ export function t(key: StringKey): string {
 export function l(path: string): string {
   return localePath(current, path);
 }
+
+/**
+ * Translate `key` and fill `{name}` placeholders from `params`; used for
+ * server-derived findings whose figures arrive as data. Returns null when
+ * the catalog has no such key (a newer server code than this client), so
+ * the caller can fall back to the server's own text.
+ */
+export function tp(
+  key: string,
+  params: Record<string, unknown> = {},
+  locale: Locale = current,
+): string | null {
+  if (!(key in STRINGS[DEFAULT_LOCALE])) return null;
+  return translate(key as StringKey, locale).replace(
+    /\{(\w+)\}/g,
+    (whole, name: string) => (name in params ? String(params[name]) : whole),
+  );
+}

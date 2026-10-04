@@ -7,7 +7,7 @@
 <script lang="ts">
   import { workforceInsights, workforceMetrics } from "#lib/api/wpm.js";
   import { mean, rate } from "#lib/format.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tp } from "#lib/i18n.svelte.js";
 
   type Metrics = Awaited<ReturnType<typeof workforceMetrics>>;
 
@@ -131,8 +131,17 @@
     <ul data-testid="insights-list">
       {#each insights as insight (insight.code)}
         <li data-severity={insight.severity}>
-          <strong>{insight.observation}</strong>
-          <span class="muted">{insight.suggestion}</span>
+          <!-- Rendered from the finding's code and figures in the UI
+               language; the server's English text is the fallback for a
+               code this client does not know. -->
+          <strong
+            >{tp(`insights.${insight.code}.observation`, insight.params) ??
+              insight.observation}</strong
+          >
+          <span class="muted"
+            >{tp(`insights.${insight.code}.suggestion`) ??
+              insight.suggestion}</span
+          >
         </li>
       {/each}
     </ul>

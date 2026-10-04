@@ -328,5 +328,31 @@
       "body": "Inicie sesión con un enlace mágico y explore con datos reales — sin contraseña, sin compromiso.",
       "button": "Iniciar sesión"
     }
+  },
+  "insights": {
+    "turnover_high": {
+      "observation": "La rotación fue del {pct}% en el periodo.",
+      "suggestion": "Desglose las salidas por departamento y antigüedad, y compárelas con las encuestas de clima y los comentarios de salida."
+    },
+    "headcount_shrinking": {
+      "observation": "La plantilla bajó un {pct}% (de {opening} a {closing}).",
+      "suggestion": "Compruebe si la reducción estaba prevista; compárela con las vacantes abiertas y el plan borrador."
+    },
+    "headcount_growing": {
+      "observation": "La plantilla creció un {pct}% (de {opening} a {closing}).",
+      "suggestion": "Compare el crecimiento con el plan presupuestado y la capacidad de incorporación."
+    },
+    "span_wide": {
+      "observation": "Los responsables tienen de media {mean} subordinados directos.",
+      "suggestion": "Busque a los responsables con más personas a cargo y considere añadir un nivel o un jefe de equipo."
+    },
+    "span_narrow": {
+      "observation": "Los responsables tienen de media {mean} subordinados directos.",
+      "suggestion": "Busque niveles que se puedan fusionar."
+    },
+    "time_to_fill_slow": {
+      "observation": "La mediana de tiempo de cobertura fue de {days} días.",
+      "suggestion": "Averigüe en qué fase del proceso esperan las vacantes."
+    }
   }
 }

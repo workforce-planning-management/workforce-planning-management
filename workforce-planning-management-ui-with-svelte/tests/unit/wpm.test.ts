@@ -10,6 +10,7 @@ import {
   STRING_KEYS,
   STRINGS_BY_LOCALE,
   i18n,
+  tp,
   isRtl,
   translate,
 } from "../../src/lib/i18n.svelte";
@@ -62,6 +63,24 @@ describe("i18n", () => {
     expect(translate("nav.workers", "es-es")).toBe(
       translate("nav.workers", "es-001"),
     );
+  });
+
+  it("fills server-derived finding text from a code and its figures", () => {
+    expect(
+      tp(
+        "insights.headcount_shrinking.observation",
+        {
+          pct: 15,
+          opening: 100,
+          closing: 85,
+        },
+        "en-001",
+      ),
+    ).toBe("Headcount fell 15% (100 to 85).");
+    expect(
+      tp("insights.turnover_high.observation", { pct: 25 }, "de-001"),
+    ).toBe("Die Fluktuation lag im Zeitraum bei 25 %.");
+    expect(tp("insights.unknown_code.observation", {}, "en-001")).toBeNull();
   });
 
   it("normalises en_US and en-US to en-us rather than collapsing to en-001", () => {

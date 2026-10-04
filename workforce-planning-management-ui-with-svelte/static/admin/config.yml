@@ -625,3 +625,64 @@ collections:
                   - { name: "title", label: "Title", widget: string, required: false, i18n: true }
                   - { name: "body", label: "Body", widget: text, required: false, i18n: true }
                   - { name: "button", label: "Button", widget: string, required: false, i18n: true }
+          - name: "insights"
+            label: "Insights"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - name: "turnover_high"
+                label: "Turnover_high"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "observation", label: "Observation", widget: string, required: false, i18n: true }
+                  - { name: "suggestion", label: "Suggestion", widget: text, required: false, i18n: true }
+              - name: "headcount_shrinking"
+                label: "Headcount_shrinking"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "observation", label: "Observation", widget: string, required: false, i18n: true }
+                  - { name: "suggestion", label: "Suggestion", widget: text, required: false, i18n: true }
+              - name: "headcount_growing"
+                label: "Headcount_growing"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "observation", label: "Observation", widget: string, required: false, i18n: true }
+                  - { name: "suggestion", label: "Suggestion", widget: string, required: false, i18n: true }
+              - name: "span_wide"
+                label: "Span_wide"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "observation", label: "Observation", widget: string, required: false, i18n: true }
+                  - { name: "suggestion", label: "Suggestion", widget: text, required: false, i18n: true }
+              - name: "span_narrow"
+                label: "Span_narrow"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "observation", label: "Observation", widget: string, required: false, i18n: true }
+                  - { name: "suggestion", label: "Suggestion", widget: string, required: false, i18n: true }
+              - name: "time_to_fill_slow"
+                label: "Time_to_fill_slow"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "observation", label: "Observation", widget: string, required: false, i18n: true }
+                  - { name: "suggestion", label: "Suggestion", widget: string, required: false, i18n: true }

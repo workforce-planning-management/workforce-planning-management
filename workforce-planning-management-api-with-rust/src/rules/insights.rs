@@ -69,8 +69,13 @@ pub struct Insight {
     pub code: &'static str,
     /// How much attention it deserves.
     pub severity: Severity,
-    /// What the numbers show.
+    /// What the numbers show (English).
     pub observation: String,
+    /// The figures the observation is built from, by name (`pct`,
+    /// `opening`, `closing`, `mean`, `days`), so a client can render the
+    /// finding in its own language from `code` instead of this English
+    /// `observation`/`suggestion`.
+    pub params: serde_json::Value,
     /// What to look at next.
     pub suggestion: &'static str,
 }
@@ -95,6 +100,7 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
             code: "turnover_high",
             severity: Severity::Attention,
             observation: format!("Turnover was {:.0}% over the period.", rate * 100.0),
+            params: serde_json::json!({ "pct": (rate * 100.0).round() }),
             suggestion: "Break leavers down by department and tenure, and compare with \
                          pulse-survey and exit feedback.",
         });
@@ -131,6 +137,11 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
                     inputs.opening,
                     inputs.closing
                 ),
+                params: serde_json::json!({
+                    "pct": (change.abs() * 100.0).round(),
+                    "opening": inputs.opening,
+                    "closing": inputs.closing,
+                }),
                 suggestion,
             });
         }
@@ -142,6 +153,7 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
                 code: "span_wide",
                 severity: Severity::Attention,
                 observation: format!("Managers average {mean:.1} direct reports."),
+                params: serde_json::json!({ "mean": (mean * 10.0).round() / 10.0 }),
                 suggestion: "Look for managers with the widest spans and consider adding a \
                              layer or a team lead.",
             });
@@ -150,6 +162,7 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
                 code: "span_narrow",
                 severity: Severity::Info,
                 observation: format!("Managers average {mean:.1} direct reports."),
+                params: serde_json::json!({ "mean": (mean * 10.0).round() / 10.0 }),
                 suggestion: "Look for layers that could be merged.",
             });
         }
@@ -162,6 +175,7 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
             code: "time_to_fill_slow",
             severity: Severity::Attention,
             observation: format!("Median time to fill was {median:.0} days."),
+            params: serde_json::json!({ "days": median.round() }),
             suggestion: "Find which stage of hiring the requisitions wait in.",
         });
     }
@@ -260,5 +274,23 @@ mod tests {
             ..Inputs::default()
         };
         assert_eq!(codes(&i), ["turnover_high", "headcount_growing"]);
+    }
+
+    #[test]
+    fn params_carry_the_figures_for_client_side_rendering() {
+        let i = Inputs {
+            opening: 100,
+            closing: 85,
+            turnover_rate: Some(0.254),
+            span_mean: None,
+            fill_median_days: Some(72.4),
+        };
+        let found = derive(&i);
+        let by = |code: &str| found.iter().find(|x| x.code == code).unwrap().params.clone();
+        assert_eq!(by("turnover_high")["pct"], 25.0);
+        assert_eq!(by("headcount_shrinking")["pct"], 15.0);
+        assert_eq!(by("headcount_shrinking")["opening"], 100);
+        assert_eq!(by("headcount_shrinking")["closing"], 85);
+        assert_eq!(by("time_to_fill_slow")["days"], 72.0);
     }
 }

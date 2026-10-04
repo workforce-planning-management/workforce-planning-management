@@ -328,5 +328,31 @@
       "body": "使用魔法链接登录，用真实数据进行探索——无需密码，无需承诺。",
       "button": "登录"
     }
+  },
+  "insights": {
+    "turnover_high": {
+      "observation": "本期间人员流失率为 {pct}%。",
+      "suggestion": "按部门和任职年限拆分离职人员，并与脉搏调查和离职反馈对比。"
+    },
+    "headcount_shrinking": {
+      "observation": "在编人数下降 {pct}%（{opening} 降至 {closing}）。",
+      "suggestion": "核实此次缩减是否在计划之内；对照未关闭的招聘需求和计划草案。"
+    },
+    "headcount_growing": {
+      "observation": "在编人数增长 {pct}%（{opening} 增至 {closing}）。",
+      "suggestion": "对照预算计划和入职承载能力检查此次增长。"
+    },
+    "span_wide": {
+      "observation": "经理平均有 {mean} 名直接下属。",
+      "suggestion": "找出管理幅度最大的经理，考虑增加一个层级或设立团队负责人。"
+    },
+    "span_narrow": {
+      "observation": "经理平均有 {mean} 名直接下属。",
+      "suggestion": "查看是否有可合并的层级。"
+    },
+    "time_to_fill_slow": {
+      "observation": "填补岗位的中位用时为 {days} 天。",
+      "suggestion": "找出招聘流程中岗位停留的环节。"
+    }
   }
 }

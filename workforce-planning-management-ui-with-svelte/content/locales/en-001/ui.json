@@ -328,5 +328,31 @@
       "body": "Sign in with a magic link and explore with real data — no password, no commitment.",
       "button": "Sign in"
     }
+  },
+  "insights": {
+    "turnover_high": {
+      "observation": "Turnover was {pct}% over the period.",
+      "suggestion": "Break leavers down by department and tenure, and compare with pulse-survey and exit feedback."
+    },
+    "headcount_shrinking": {
+      "observation": "Headcount fell {pct}% ({opening} to {closing}).",
+      "suggestion": "Check whether the reduction was planned; compare with open requisitions and the draft plan."
+    },
+    "headcount_growing": {
+      "observation": "Headcount grew {pct}% ({opening} to {closing}).",
+      "suggestion": "Check the growth against the budgeted plan and onboarding capacity."
+    },
+    "span_wide": {
+      "observation": "Managers average {mean} direct reports.",
+      "suggestion": "Look for managers with the widest spans and consider adding a layer or a team lead."
+    },
+    "span_narrow": {
+      "observation": "Managers average {mean} direct reports.",
+      "suggestion": "Look for layers that could be merged."
+    },
+    "time_to_fill_slow": {
+      "observation": "Median time to fill was {days} days.",
+      "suggestion": "Find which stage of hiring the requisitions wait in."
+    }
   }
 }

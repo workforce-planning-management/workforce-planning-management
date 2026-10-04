@@ -328,5 +328,31 @@
       "body": "Entre com um link mágico e explore com dados reais — sem senha, sem compromisso.",
       "button": "Entrar"
     }
+  },
+  "insights": {
+    "turnover_high": {
+      "observation": "A rotatividade foi de {pct}% no período.",
+      "suggestion": "Detalhe as saídas por departamento e tempo de casa, e compare com pesquisas de clima e feedback de desligamento."
+    },
+    "headcount_shrinking": {
+      "observation": "O efetivo caiu {pct}% (de {opening} para {closing}).",
+      "suggestion": "Verifique se a redução era planejada; compare com as vagas abertas e o plano preliminar."
+    },
+    "headcount_growing": {
+      "observation": "O efetivo cresceu {pct}% (de {opening} para {closing}).",
+      "suggestion": "Compare o crescimento com o plano orçado e a capacidade de integração."
+    },
+    "span_wide": {
+      "observation": "Os gestores têm em média {mean} subordinados diretos.",
+      "suggestion": "Procure os gestores com as maiores equipes e considere adicionar um nível ou um líder de equipe."
+    },
+    "span_narrow": {
+      "observation": "Os gestores têm em média {mean} subordinados diretos.",
+      "suggestion": "Procure níveis que possam ser unificados."
+    },
+    "time_to_fill_slow": {
+      "observation": "A mediana do tempo de preenchimento foi de {days} dias.",
+      "suggestion": "Descubra em que etapa da contratação as vagas ficam paradas."
+    }
   }
 }

@@ -1838,6 +1838,8 @@ export function workforceInsights(
     severity: "info" | "attention";
     observation: string;
     suggestion: string;
+    /** Figures behind the finding, for rendering it in the UI language. */
+    params: Record<string, number>;
   }>;
   thresholds: Record<string, { value: number; meaning: string }>;
 }> {

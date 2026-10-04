@@ -328,5 +328,31 @@
       "body": "Melden Sie sich mit einem Magic Link an und erkunden Sie mit echten Daten — kein Passwort, keine Verpflichtung.",
       "button": "Anmelden"
     }
+  },
+  "insights": {
+    "turnover_high": {
+      "observation": "Die Fluktuation lag im Zeitraum bei {pct} %.",
+      "suggestion": "Schlüsseln Sie die Abgänge nach Abteilung und Betriebszugehörigkeit auf und vergleichen Sie mit Pulsbefragungen und Austrittsfeedback."
+    },
+    "headcount_shrinking": {
+      "observation": "Die Mitarbeiterzahl sank um {pct} % (von {opening} auf {closing}).",
+      "suggestion": "Prüfen Sie, ob der Abbau geplant war; vergleichen Sie mit offenen Stellen und dem Planentwurf."
+    },
+    "headcount_growing": {
+      "observation": "Die Mitarbeiterzahl stieg um {pct} % (von {opening} auf {closing}).",
+      "suggestion": "Prüfen Sie das Wachstum anhand des Budgetplans und der Einarbeitungskapazität."
+    },
+    "span_wide": {
+      "observation": "Führungskräfte haben im Schnitt {mean} direkte Berichte.",
+      "suggestion": "Suchen Sie die Führungskräfte mit den größten Teams und erwägen Sie eine zusätzliche Ebene oder eine Teamleitung."
+    },
+    "span_narrow": {
+      "observation": "Führungskräfte haben im Schnitt {mean} direkte Berichte.",
+      "suggestion": "Suchen Sie nach Ebenen, die zusammengelegt werden könnten."
+    },
+    "time_to_fill_slow": {
+      "observation": "Die mediane Besetzungsdauer betrug {days} Tage.",
+      "suggestion": "Finden Sie heraus, in welcher Phase die Stellen warten."
+    }
   }
 }

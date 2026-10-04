@@ -328,5 +328,31 @@
       "body": "Connectez-vous avec un lien magique et explorez avec de vraies données — sans mot de passe, sans engagement.",
       "button": "Se connecter"
     }
+  },
+  "insights": {
+    "turnover_high": {
+      "observation": "Le taux de rotation était de {pct} % sur la période.",
+      "suggestion": "Ventilez les départs par service et ancienneté, et comparez avec les enquêtes flash et les retours de départ."
+    },
+    "headcount_shrinking": {
+      "observation": "L'effectif a baissé de {pct} % ({opening} à {closing}).",
+      "suggestion": "Vérifiez si la baisse était prévue ; comparez avec les postes ouverts et le plan provisoire."
+    },
+    "headcount_growing": {
+      "observation": "L'effectif a augmenté de {pct} % ({opening} à {closing}).",
+      "suggestion": "Comparez la croissance au plan budgété et à la capacité d'intégration."
+    },
+    "span_wide": {
+      "observation": "Les managers ont en moyenne {mean} collaborateurs directs.",
+      "suggestion": "Repérez les managers aux équipes les plus larges et envisagez d'ajouter un niveau ou un chef d'équipe."
+    },
+    "span_narrow": {
+      "observation": "Les managers ont en moyenne {mean} collaborateurs directs.",
+      "suggestion": "Cherchez des niveaux qui pourraient être fusionnés."
+    },
+    "time_to_fill_slow": {
+      "observation": "Le délai médian de recrutement était de {days} jours.",
+      "suggestion": "Identifiez l'étape du recrutement où les postes attendent."
+    }
   }
 }

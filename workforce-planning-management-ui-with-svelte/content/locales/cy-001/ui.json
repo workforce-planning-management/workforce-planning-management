@@ -328,5 +328,31 @@
       "body": "Mewngofnodwch gyda dolen hud ac archwiliwch gyda data go iawn — dim cyfrinair, dim ymrwymiad.",
       "button": "Mewngofnodi"
     }
+  },
+  "insights": {
+    "turnover_high": {
+      "observation": "Trosiant oedd {pct}% dros y cyfnod.",
+      "suggestion": "Dadansoddwch y rhai sy'n gadael yn ôl adran a gwasanaeth, a chymharu ag arolygon pwls ac adborth ymadael."
+    },
+    "headcount_shrinking": {
+      "observation": "Gostyngodd nifer y staff {pct}% ({opening} i {closing}).",
+      "suggestion": "Gwiriwch a oedd y gostyngiad wedi'i gynllunio; cymharwch â swyddi gwag agored a'r cynllun drafft."
+    },
+    "headcount_growing": {
+      "observation": "Cynyddodd nifer y staff {pct}% ({opening} i {closing}).",
+      "suggestion": "Gwiriwch y twf yn erbyn y cynllun cyllidebedig a'r capasiti i gynefino."
+    },
+    "span_wide": {
+      "observation": "Mae rheolwyr ar gyfartaledd â {mean} o adroddiadau uniongyrchol.",
+      "suggestion": "Chwiliwch am y rheolwyr â'r rhychwant ehangaf ac ystyriwch ychwanegu haen neu arweinydd tîm."
+    },
+    "span_narrow": {
+      "observation": "Mae rheolwyr ar gyfartaledd â {mean} o adroddiadau uniongyrchol.",
+      "suggestion": "Chwiliwch am haenau y gellid eu huno."
+    },
+    "time_to_fill_slow": {
+      "observation": "Canolrif yr amser i lenwi oedd {days} diwrnod.",
+      "suggestion": "Darganfyddwch ym mha gam recriwtio y mae'r swyddi gwag yn aros."
+    }
   }
 }
