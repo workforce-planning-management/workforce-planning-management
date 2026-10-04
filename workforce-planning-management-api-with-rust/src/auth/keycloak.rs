@@ -364,8 +364,14 @@ pub fn bearer_claims(
     // The algorithm allow-list is fixed here, independent of the
     // token's own (attacker-controlled) `alg` header, guarding against
     // an algorithm-confusion downgrade.
-    let mut validation = Validation::new(Algorithm::RS256);
-    validation.algorithms = vec![Algorithm::RS256, Algorithm::ES256];
+    // `jsonwebtoken` refuses a validation list that mixes key families
+    // (RS256 + ES256) with `InvalidAlgorithm`, so the single algorithm
+    // checked is the header's — but only if it is on the allow-list.
+    let algorithm = [Algorithm::RS256, Algorithm::ES256]
+        .into_iter()
+        .find(|allowed| *allowed == jwt_header.alg)
+        .ok_or_else(|| unauthorized("unsupported signing algorithm"))?;
+    let mut validation = Validation::new(algorithm);
     // `iss`/`aud` are checked explicitly below instead.
     validation.validate_aud = false;
     validation.validate_nbf = true;
@@ -388,6 +394,8 @@ pub fn bearer_claims(
         return Err(unauthorized("unexpected audience"));
     }
 
+    // Derived before the field moves below: it borrows the whole struct.
+    let attrs = attrs_from_keycloak_claims(&claims);
     Ok(Claims {
         sub: claims.sub,
         email: claims.email.unwrap_or_default(),
@@ -407,7 +415,7 @@ pub fn bearer_claims(
             .as_ref()
             .map(|r| r.roles.clone())
             .unwrap_or_default(),
-        attrs: attrs_from_keycloak_claims(&claims),
+        attrs,
     })
 }
 

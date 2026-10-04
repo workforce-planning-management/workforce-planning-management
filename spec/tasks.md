@@ -1643,3 +1643,15 @@ build on 3–5).
       British English). `/admin/config.yml` stays static. Replaces
       `static/admin/index.html`. Vitest 63/63, Playwright 20/20 (CMS
       script stubbed); the CMS itself still unexercised.
+
+- [x] WPM-T73 (2026-10-04) **Auth suites run; two Keycloak-backend bugs fixed.**
+      Against the real sibling crates (`~/git/sixarm/main-x-service`) and a
+      real Postgres: `tests/enforcement.rs` passes (1/1), and
+      `tests/keycloak.rs` (real Keycloak 26 via Testcontainers on Podman)
+      passes (1/1) after two fixes in `src/auth/keycloak.rs`: (1) the
+      `keycloak` feature did not compile (`attrs_from_keycloak_claims(&claims)`
+      borrowed after partial moves); (2) every token was refused
+      `InvalidAlgorithm` because `Validation` listed RS256 and ES256
+      together — it now validates the header's algorithm if it is on the
+      allow-list. Auth lib tests 26/26 under the feature; clippy clean on
+      the file.
