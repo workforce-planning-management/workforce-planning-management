@@ -40,6 +40,51 @@ pub fn validate(
     Ok(())
 }
 
+/// Most links one post can carry.
+pub const MAX_LINKS: usize = 3;
+
+/// Validate a post's link attachments: at most [`MAX_LINKS`], each with a
+/// label (1–100 characters) and an **https** address (up to 500 characters,
+/// no whitespace). Nothing else is accepted — no `javascript:`, `data:` or
+/// plain `http:` — so a link can never be a script or a downgrade.
+///
+/// # Errors
+///
+/// A message naming the first problem.
+pub fn validate_links(links: &[(String, String)]) -> Result<(), String> {
+    if links.len() > MAX_LINKS {
+        return Err(format!("at most {MAX_LINKS} links"));
+    }
+    for (label, url) in links {
+        if label.trim().is_empty() || label.chars().count() > 100 {
+            return Err("each link needs a label (up to 100 characters)".to_string());
+        }
+        let host_ok = url
+            .strip_prefix("https://")
+            .is_some_and(|rest| rest.split('/').next().is_some_and(|h| h.contains('.')));
+        if !host_ok || url.chars().count() > 500 || url.chars().any(char::is_whitespace) {
+            return Err("each link must be an https:// address with no spaces".to_string());
+        }
+    }
+    Ok(())
+}
+
+/// Whether a post aimed at `audience` (a department, or `None` for everyone)
+/// is for a reader in `reader_departments` — or for an editor, who sees all.
+/// Department names compare ignoring ASCII case.
+#[must_use]
+pub fn audience_includes(
+    audience: Option<&str>,
+    reader_departments: &[String],
+    is_editor: bool,
+) -> bool {
+    match audience {
+        None => true,
+        Some(_) if is_editor => true,
+        Some(dept) => reader_departments.iter().any(|d| d.eq_ignore_ascii_case(dept)),
+    }
+}
+
 /// Where a post stands on a given day.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
@@ -91,6 +136,38 @@ mod tests {
         assert!(validate("x", &"b".repeat(5001), d(5), None).is_err());
         assert!(validate("x", "y", d(5), Some(d(4))).is_err());
         assert!(validate("x", "y", d(5), Some(d(5))).is_ok(), "same day is fine");
+    }
+
+    #[test]
+    fn links_are_few_labelled_and_https_only() {
+        let ok = |l: &[(&str, &str)]| {
+            validate_links(&l.iter().map(|(a, b)| ((*a).to_string(), (*b).to_string())).collect::<Vec<_>>())
+        };
+        assert!(ok(&[("Handbook", "https://intranet.example.org/handbook")]).is_ok());
+        assert!(ok(&[]).is_ok());
+        assert!(ok(&[("a", "https://a.io"), ("b", "https://b.io"), ("c", "https://c.io"), ("d", "https://d.io")]).is_err());
+        for bad in [
+            "http://example.org",
+            "javascript:alert(1)",
+            "data:text/html,<script>",
+            "https://",
+            "https://nodot",
+            "https://exa mple.org",
+            "//example.org",
+        ] {
+            assert!(ok(&[("x", bad)]).is_err(), "{bad}");
+        }
+        assert!(ok(&[(" ", "https://example.org")]).is_err(), "blank label");
+    }
+
+    #[test]
+    fn a_department_post_is_for_that_department_and_editors() {
+        let mine = vec!["Finance".to_string()];
+        assert!(audience_includes(None, &[], false), "everyone");
+        assert!(audience_includes(Some("finance"), &mine, false), "case-insensitive");
+        assert!(!audience_includes(Some("Engineering"), &mine, false));
+        assert!(audience_includes(Some("Engineering"), &mine, true), "editors see all");
+        assert!(!audience_includes(Some("Engineering"), &[], false), "no known department");
     }
 
     #[test]

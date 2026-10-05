@@ -443,7 +443,14 @@
     "expired": "Wedi dod i ben",
     "latest": "Cyhoeddiadau diweddaraf",
     "seeAll": "Pob cyhoeddiad",
-    "organization": "Sefydliad"
+    "organization": "Sefydliad",
+    "department": "Ar gyfer un adran yn unig (dewisol)",
+    "links": "Dolenni (hyd at dair, https yn unig)",
+    "linkLabel": "Testun y ddolen",
+    "linkUrl": "Cyfeiriad y ddolen (https://…)",
+    "markRead": "Marcio fel wedi'i ddarllen",
+    "unread": "Heb ei ddarllen",
+    "readBy": "wedi darllen"
   },
   "ceo": {
     "trend": "Nifer y staff, chwe mis diwethaf",

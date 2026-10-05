@@ -443,7 +443,14 @@
     "expired": "Expirée",
     "latest": "Dernières annonces",
     "seeAll": "Toutes les annonces",
-    "organization": "Organisation"
+    "organization": "Organisation",
+    "department": "Pour un seul service (facultatif)",
+    "links": "Liens (trois au plus, https uniquement)",
+    "linkLabel": "Texte du lien",
+    "linkUrl": "Adresse du lien (https://…)",
+    "markRead": "Marquer comme lu",
+    "unread": "Non lu",
+    "readBy": "ont lu"
   },
   "ceo": {
     "trend": "Effectif, six derniers mois",

@@ -443,7 +443,14 @@
     "expired": "Caducado",
     "latest": "Últimos anuncios",
     "seeAll": "Todos los anuncios",
-    "organization": "Organización"
+    "organization": "Organización",
+    "department": "Solo para un departamento (opcional)",
+    "links": "Enlaces (hasta tres, solo https)",
+    "linkLabel": "Texto del enlace",
+    "linkUrl": "Dirección del enlace (https://…)",
+    "markRead": "Marcar como leído",
+    "unread": "Sin leer",
+    "readBy": "han leído"
   },
   "ceo": {
     "trend": "Plantilla, últimos seis meses",

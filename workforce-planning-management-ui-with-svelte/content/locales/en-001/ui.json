@@ -443,7 +443,14 @@
     "expired": "Expired",
     "latest": "Latest announcements",
     "seeAll": "All announcements",
-    "organization": "Organization"
+    "organization": "Organization",
+    "department": "For one department only (optional)",
+    "links": "Links (up to three, https only)",
+    "linkLabel": "Link text",
+    "linkUrl": "Link address (https://…)",
+    "markRead": "Mark as read",
+    "unread": "Unread",
+    "readBy": "read"
   },
   "ceo": {
     "trend": "Headcount, last six months",

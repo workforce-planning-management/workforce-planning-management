@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — announcement audiences, links and read receipts; CEO period control
+
+An announcement can be aimed at one department, carry up to three https
+links, and be marked read; editors see how many have read it, never who.
+On `/ceo`, a period control (30 days, 90 days, 12 months, year to date) and
+every tile links to the page behind it.
+
 ### Added — CEO dashboard
 
 `/ceo`: six tiles — headcount, turnover, vacancies, succession gaps, a

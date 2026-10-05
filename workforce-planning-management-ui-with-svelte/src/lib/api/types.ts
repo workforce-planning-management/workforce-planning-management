@@ -180,8 +180,14 @@ export interface Announcement {
   pinned: boolean;
   publish_on: string;
   expires_on: string | null;
+  /** The one department it is for; null = everyone. */
+  department: string | null;
+  /** Up to three https links. */
+  links: Array<{ label: string; url: string }>;
   status: "scheduled" | "live" | "expired";
   author: string | null;
+  /** How many have read it — present for editors only; never who. */
+  read_count?: number;
 }
 
 /** One funded job opening. */

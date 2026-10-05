@@ -443,7 +443,14 @@
     "expired": "Abgelaufen",
     "latest": "Neueste Ankündigungen",
     "seeAll": "Alle Ankündigungen",
-    "organization": "Organisation"
+    "organization": "Organisation",
+    "department": "Nur für eine Abteilung (optional)",
+    "links": "Links (bis zu drei, nur https)",
+    "linkLabel": "Linktext",
+    "linkUrl": "Link-Adresse (https://…)",
+    "markRead": "Als gelesen markieren",
+    "unread": "Ungelesen",
+    "readBy": "gelesen"
   },
   "ceo": {
     "trend": "Mitarbeiterzahl, letzte sechs Monate",

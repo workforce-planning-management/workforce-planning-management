@@ -443,7 +443,14 @@
     "expired": "已过期",
     "latest": "最新公告",
     "seeAll": "全部公告",
-    "organization": "组织"
+    "organization": "组织",
+    "department": "仅限一个部门（选填）",
+    "links": "链接（最多三个，仅限 https）",
+    "linkLabel": "链接文字",
+    "linkUrl": "链接地址（https://…）",
+    "markRead": "标记为已读",
+    "unread": "未读",
+    "readBy": "人已读"
   },
   "ceo": {
     "trend": "在编人数，近六个月",

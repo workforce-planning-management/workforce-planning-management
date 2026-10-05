@@ -801,6 +801,13 @@ collections:
               - { name: "latest", label: "Latest", widget: string, required: false, i18n: true }
               - { name: "seeAll", label: "See All", widget: string, required: false, i18n: true }
               - { name: "organization", label: "Organization", widget: string, required: false, i18n: true }
+              - { name: "department", label: "Department", widget: string, required: false, i18n: true }
+              - { name: "links", label: "Links", widget: string, required: false, i18n: true }
+              - { name: "linkLabel", label: "Link Label", widget: string, required: false, i18n: true }
+              - { name: "linkUrl", label: "Link Url", widget: string, required: false, i18n: true }
+              - { name: "markRead", label: "Mark Read", widget: string, required: false, i18n: true }
+              - { name: "unread", label: "Unread", widget: string, required: false, i18n: true }
+              - { name: "readBy", label: "Read By", widget: string, required: false, i18n: true }
           - name: "ceo"
             label: "Ceo"
             widget: object

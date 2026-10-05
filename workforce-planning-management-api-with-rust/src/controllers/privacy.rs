@@ -17,7 +17,7 @@ use crate::models::_entities::{
     entitlement_acknowledgements, ergonomic_assessments, group_members, leave_entitlements,
     leave_requests, mentorships, mobility_interests, notifications, path_enrollments, payslips,
     pipeline_members, professional_registrations, program_placements, reviews, shift_assignments,
-    time_entries, training_enrollments, worker_aspirations, worker_backups, emergency_contacts, rota_members, rota_overrides, rota_swap_requests, worker_framework_roles,
+    time_entries, training_enrollments, worker_aspirations, worker_backups, emergency_contacts, rota_members, rota_overrides, rota_swap_requests, announcement_reads, worker_framework_roles,
     worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
@@ -118,6 +118,7 @@ async fn subject_access(
         "named_as_backup_by": rows_for!(db, worker_backups, BackupPid, epid),
         "on_call_rota_memberships": rows_for!(db, rota_members, WorkerPid, epid),
         "on_call_swaps": rows_for!(db, rota_overrides, WorkerPid, epid),
+        "announcements_read": rows_for!(db, announcement_reads, WorkerPid, epid),
         "on_call_swap_requests_made": rows_for!(db, rota_swap_requests, RequesterPid, epid),
         "on_call_swap_requests_received": rows_for!(db, rota_swap_requests, TakerPid, epid),
         "group_memberships": rows_for!(db, group_members, WorkerPid, epid),
@@ -248,6 +249,7 @@ async fn erase(
         format!("DELETE FROM rota_members WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM rota_overrides WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM rota_swap_requests WHERE requester_pid = '{epid}' OR taker_pid = '{epid}'"),
+        format!("DELETE FROM announcement_reads WHERE worker_pid = '{epid}'"),
     ];
     let mut affected = Vec::new();
     for statement in &statements {
@@ -283,6 +285,7 @@ async fn erase(
             "rota_memberships_deleted": affected[19],
             "rota_swaps_deleted": affected[20],
             "rota_swap_requests_deleted": affected[21],
+            "announcement_reads_deleted": affected[22],
         })),
     )
     .await?;

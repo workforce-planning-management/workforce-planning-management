@@ -1274,11 +1274,17 @@ export function workerCover(
 
 /** The announcement feed: live posts, pinned first then newest. */
 export function listAnnouncements(
-  options?: { limit?: number; includeAll?: boolean; organization?: string },
+  options?: {
+    limit?: number;
+    includeAll?: boolean;
+    organization?: string;
+    department?: string;
+  },
   init?: FetchLike,
 ): Promise<Announcement[]> {
   const params = new URLSearchParams();
   if (options?.organization) params.set("organization", options.organization);
+  if (options?.department) params.set("department", options.department);
   if (options?.includeAll) params.set("include", "all");
   if (options?.limit) params.set("limit", String(options.limit));
   const qs = params.size ? `?${params}` : "";
@@ -1293,8 +1299,23 @@ export function postAnnouncement(post: {
   pinned?: boolean;
   publish_on?: string;
   expires_on?: string;
+  department?: string;
+  links?: Array<{ label: string; url: string }>;
 }): Promise<{ pid: string }> {
   return api("/announcements", { method: "POST", body: post });
+}
+
+/** Mark an announcement read for a worker (themself, or HR on their behalf). */
+export function markAnnouncementRead(pid: string, workerPid: string): Promise<unknown> {
+  return api(`/announcements/${pid}/read`, {
+    method: "POST",
+    body: { worker_pid: workerPid },
+  });
+}
+
+/** The announcements this person has read (ids); theirs alone. */
+export function myAnnouncementReads(workerPid: string, init?: FetchLike): Promise<string[]> {
+  return api(`/workers/${workerPid}/announcement-reads`, init);
 }
 
 /** Retire an announcement. */

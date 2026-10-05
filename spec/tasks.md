@@ -1834,8 +1834,9 @@ build on 3–5).
       (3 posts) on the signed-in home, nav link, 16 strings in 13 locales. DB
       suite 50/50 (validation, ordering, hidden scheduled/expired, paging,
       edit, retire), clippy clean, lib 278, svelte-check 0, vitest 63/63,
-      Playwright 24/24, build green. **Not done:** read receipts, comments or
-      reactions, per-department audiences, rich text, attachments.
+      Playwright 24/24, build green. The extras
+      (read receipts, department audiences, link attachments) landed as WPM-T86.
+      **Not done:** comments or reactions, rich text, file uploads.
 
 - [x] WPM-T83 (2026-10-05) **CEO dashboard.** `/ceo`: the whole picture on
       **one screen with no scrolling**, sized for an **iPad (9th gen), 2160 ×
@@ -1911,6 +1912,38 @@ build on 3–5).
       pressed by default, and that choosing 90 days puts `range=90d` in the
       URL and reloads metrics with `from` = 89 days back. svelte-check 0,
       vitest 68/68, Playwright 26/26, build green.
+
+- [x] WPM-T86 (2026-10-05) **Announcement extras.** Builds on WPM-T82. Migration
+      `m20261005_000044_announcement_extras` (`announcements.department`,
+      `announcements.links`, `announcement_reads`).
+      - **Department audience:** a post can be aimed at one department; only
+        that department (case-insensitive) and the organization's editors see
+        it. Enforced when auth is on, from the caller's *own* worker records
+        (their `sub` is the id in `person:<id>`); when it is off, or to
+        preview, the explicit `?department=` filter shows organization-wide
+        posts plus that department's. Edit can re-aim (`department`) or widen it
+        (`clear_department`). Pure `rules::announcements::audience_includes`.
+      - **Link attachments:** up to three `{label, url}`; **https only** (no
+        `http:`, `javascript:`, `data:`, protocol-relative or spaced
+        addresses), label ≤ 100, address ≤ 500
+        (`rules::announcements::validate_links`). The UI re-checks `https://`
+        before rendering and opens links with `rel="noopener noreferrer"`.
+        There is no file storage in the service, so this is links, not uploads.
+      - **Read receipts:** `POST /api/announcements/{pid}/read` (the person, or
+        HR on their behalf; idempotent; only for posts they can see — another
+        department's is a 404) and `GET /api/workers/{pid}/announcement-reads`
+        (their own). **Editors see only a count** (`read_count` on the feed),
+        never who. Reads are in the subject-access export and deleted on
+        erasure.
+      - **UI:** department chip, link list, an "Unread" chip and "Mark as
+        read" button for the reader, the read count for editors, and the
+        department and three link fields in the post form; 7 strings in 13
+        locales. DB suite 51/51 (links refused, department filter, edit,
+        idempotent read, wrong-department read 404, count without identities),
+        clippy clean on the changed files, lib 280, svelte-check 0, vitest
+        68/68, Playwright 26/26, build green. **Not done:** an audience list
+        for the count ("N of M"), per-person reminders for unread posts,
+        comments or reactions, rich text, file uploads.
 
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of

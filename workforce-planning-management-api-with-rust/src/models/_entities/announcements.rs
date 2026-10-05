@@ -20,6 +20,8 @@ pub struct Model {
     pub pinned: bool,
     pub publish_on: Date,
     pub expires_on: Option<Date>,
+    pub department: Option<String>,
+    pub links: Json,
     pub author: Option<String>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }

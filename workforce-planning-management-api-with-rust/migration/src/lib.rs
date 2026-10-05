@@ -56,6 +56,7 @@ mod m20261005_000040_emergency_contacts_and_backups;
 mod m20261005_000041_oncall_rotas;
 mod m20261005_000042_rota_swap_requests;
 mod m20261005_000043_announcements;
+mod m20261005_000044_announcement_extras;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -111,6 +112,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261005_000041_oncall_rotas::Migration),
             Box::new(m20261005_000042_rota_swap_requests::Migration),
             Box::new(m20261005_000043_announcements::Migration),
+            Box::new(m20261005_000044_announcement_extras::Migration),
             // inject-above (do not remove this comment)
         ]
     }

@@ -182,6 +182,9 @@ describe("api path map", () => {
     await wpm.listAnnouncements({ limit: 3, includeAll: true, organization: "organization:x" });
     await wpm.postAnnouncement({ organization_ref: "organization:x", title: "T", body: "B" });
     await wpm.retireAnnouncement("a1");
+    await wpm.markAnnouncementRead("a1", "w1");
+    await wpm.myAnnouncementReads("w1");
+    await wpm.listAnnouncements({ department: "Finance" });
     await wpm.listRotas();
     await wpm.getRota("r1");
     await wpm.getRota("r1", { from: "2026-10-05", to: "2026-11-01" });
@@ -291,6 +294,9 @@ describe("api path map", () => {
       "/api/proxy/announcements?organization=organization%3Ax&include=all&limit=3",
       "/api/proxy/announcements",
       "/api/proxy/announcements/a1",
+      "/api/proxy/announcements/a1/read",
+      "/api/proxy/workers/w1/announcement-reads",
+      "/api/proxy/announcements?department=Finance",
       "/api/proxy/rotas",
       "/api/proxy/rotas/r1",
       "/api/proxy/rotas/r1?from=2026-10-05&to=2026-11-01",

@@ -443,7 +443,14 @@
     "expired": "Kedaluwarsa",
     "latest": "Pengumuman terbaru",
     "seeAll": "Semua pengumuman",
-    "organization": "Organisasi"
+    "organization": "Organisasi",
+    "department": "Hanya untuk satu departemen (opsional)",
+    "links": "Tautan (maksimal tiga, hanya https)",
+    "linkLabel": "Teks tautan",
+    "linkUrl": "Alamat tautan (https://…)",
+    "markRead": "Tandai sudah dibaca",
+    "unread": "Belum dibaca",
+    "readBy": "sudah membaca"
   },
   "ceo": {
     "trend": "Jumlah karyawan, enam bulan terakhir",
