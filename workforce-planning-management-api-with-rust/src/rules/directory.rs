@@ -1,8 +1,8 @@
 //! Pure rules for the **employee directory**: a read-only, searchable
 //! listing of who works where, deliberately narrow — name, title,
 //! department, location, organization, manager. It carries nothing
-//! sensitive (no salary, no employment dates, no person reference), so it
-//! can be shown to anyone who can read the organization at all.
+//! sensitive (no salary, no employment dates, no person reference; being
+//! away is shown, never why), so it can be shown to anyone who can read the organization at all.
 //!
 //! DB-free and clock-free: the controller decides who is listed (employed
 //! workers in the caller's scope); this module only filters and orders.
@@ -27,6 +27,12 @@ pub struct Entry {
     pub organization_ref: String,
     /// The solid-line manager's display name, when there is one.
     pub manager_name: Option<String>,
+    /// Whether the worker is away today (on approved leave). Only *that*
+    /// — never the kind of leave or any reason, which can be health data.
+    pub away_today: bool,
+    /// While away: the display name of who is covering for them (their
+    /// best-ranked available backup), when someone is.
+    pub covered_by: Option<String>,
 }
 
 /// Whether `entry` matches `query`: every whitespace-separated term must
@@ -83,6 +89,8 @@ mod tests {
             location: loc.map(str::to_string),
             organization_ref: "organization:x".to_string(),
             manager_name: None,
+            away_today: false,
+            covered_by: None,
         }
     }
 

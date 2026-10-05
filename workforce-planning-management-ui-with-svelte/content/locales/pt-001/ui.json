@@ -361,7 +361,10 @@
     "allDepartments": "Todos os departamentos",
     "location": "Local",
     "manager": "Gestor",
-    "noMatches": "Ninguém corresponde à sua pesquisa."
+    "noMatches": "Ninguém corresponde à sua pesquisa.",
+    "away": "Ausente hoje",
+    "coveredBy": "Substituído por",
+    "noCover": "Ninguém a substituir"
   },
   "contacts": {
     "title": "Contactos de emergência",

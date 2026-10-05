@@ -65,6 +65,10 @@ export interface DirectoryEntry {
   location: string | null;
   organization_ref: string;
   manager_name: string | null;
+  /** On approved leave today (never says what kind). */
+  away_today: boolean;
+  /** While away: who is covering, when someone is. */
+  covered_by: string | null;
 }
 
 /** One emergency contact (visible only to the worker and HR). */

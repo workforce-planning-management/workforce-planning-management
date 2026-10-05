@@ -361,7 +361,10 @@
     "allDepartments": "Tous les services",
     "location": "Lieu",
     "manager": "Responsable",
-    "noMatches": "Aucune personne ne correspond à votre recherche."
+    "noMatches": "Aucune personne ne correspond à votre recherche.",
+    "away": "Absent aujourd'hui",
+    "coveredBy": "Remplacé par",
+    "noCover": "Personne ne remplace"
   },
   "contacts": {
     "title": "Contacts d'urgence",

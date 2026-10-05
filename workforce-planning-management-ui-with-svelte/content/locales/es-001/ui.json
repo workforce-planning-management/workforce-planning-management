@@ -361,7 +361,10 @@
     "allDepartments": "Todos los departamentos",
     "location": "Ubicación",
     "manager": "Responsable",
-    "noMatches": "Nadie coincide con su búsqueda."
+    "noMatches": "Nadie coincide con su búsqueda.",
+    "away": "Ausente hoy",
+    "coveredBy": "Cubre",
+    "noCover": "Nadie cubre"
   },
   "contacts": {
     "title": "Contactos de emergencia",

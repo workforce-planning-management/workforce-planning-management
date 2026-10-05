@@ -361,7 +361,10 @@
     "allDepartments": "كل الأقسام",
     "location": "الموقع",
     "manager": "المدير",
-    "noMatches": "لا يوجد من يطابق بحثك."
+    "noMatches": "لا يوجد من يطابق بحثك.",
+    "away": "غائب اليوم",
+    "coveredBy": "يغطي عنه",
+    "noCover": "لا أحد يغطي"
   },
   "contacts": {
     "title": "جهات الاتصال للطوارئ",

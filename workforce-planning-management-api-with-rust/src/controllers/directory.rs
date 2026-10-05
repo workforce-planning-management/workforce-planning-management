@@ -5,17 +5,24 @@
 //! definition of "employed") in the organizations the caller can read.
 //! A manager's name is shown only when the manager is in the same readable
 //! set, so the directory never names someone outside the caller's scope.
+//!
+//! A worker on **approved leave today** is shown as away — never the kind
+//! of leave — with whoever covers for them ([`cover_rules::resolve`]: their
+//! best-ranked backup who is employed and not away themselves). Backups
+//! outside the caller's readable set are not considered, so a cover is
+//! only ever someone the caller could find in the directory anyway.
 
 use loco_rs::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 use super::{Page, with_page_headers};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::workers;
+use crate::models::_entities::{leave_requests, worker_backups, workers};
 use crate::models::memberships;
+use crate::rules::cover::{self as cover_rules, Candidate};
 use crate::rules::directory as rules;
 use crate::rules::metrics as metric_rules;
 
@@ -66,6 +73,31 @@ async fn directory(
         .filter(|w| metric_rules::is_employed_on(today, w.hired_on, w.terminated_on))
         .collect();
 
+    // Who is away today: approved leave covering today, for this staff.
+    let staff_pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
+    let away: HashSet<Uuid> = leave_requests::Entity::find()
+        .filter(leave_requests::Column::WorkerPid.is_in(staff_pids.clone()))
+        .filter(leave_requests::Column::Status.eq("approved"))
+        .filter(leave_requests::Column::DeletedAt.is_null())
+        .filter(leave_requests::Column::StartOn.lte(today))
+        .filter(leave_requests::Column::EndOn.gte(today))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|l| l.worker_pid)
+        .collect();
+    let mut backups_by_worker: HashMap<Uuid, Vec<worker_backups::Model>> = HashMap::new();
+    if !away.is_empty() {
+        for b in worker_backups::Entity::find()
+            .filter(worker_backups::Column::WorkerPid.is_in(away.iter().copied().collect::<Vec<_>>()))
+            .filter(worker_backups::Column::DeletedAt.is_null())
+            .all(&ctx.db)
+            .await?
+        {
+            backups_by_worker.entry(b.worker_pid).or_default().push(b);
+        }
+    }
+
     let names: HashMap<Uuid, &str> = staff
         .iter()
         .map(|w| (w.pid, w.display_name.as_str()))
@@ -83,6 +115,28 @@ async fn directory(
                 .manager_pid
                 .and_then(|m| names.get(&m))
                 .map(|n| (*n).to_string()),
+            away_today: away.contains(&w.pid),
+            covered_by: if away.contains(&w.pid) {
+                // Only backups in the readable set (`names`) can cover here.
+                let candidates: Vec<Candidate> = backups_by_worker
+                    .get(&w.pid)
+                    .into_iter()
+                    .flatten()
+                    .map(|b| Candidate {
+                        backup: b.backup_pid,
+                        priority: b.priority,
+                        starts_on: b.starts_on,
+                        ends_on: b.ends_on,
+                        employed: names.contains_key(&b.backup_pid),
+                        on_leave: away.contains(&b.backup_pid),
+                    })
+                    .collect();
+                cover_rules::resolve(&candidates, today)
+                    .and_then(|id| names.get(&id))
+                    .map(|n| (*n).to_string())
+            } else {
+                None
+            },
         })
         .collect();
 

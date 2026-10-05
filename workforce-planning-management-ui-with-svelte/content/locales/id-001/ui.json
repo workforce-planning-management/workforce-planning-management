@@ -361,7 +361,10 @@
     "allDepartments": "Semua departemen",
     "location": "Lokasi",
     "manager": "Manajer",
-    "noMatches": "Tidak ada yang cocok dengan pencarian Anda."
+    "noMatches": "Tidak ada yang cocok dengan pencarian Anda.",
+    "away": "Tidak masuk hari ini",
+    "coveredBy": "Digantikan oleh",
+    "noCover": "Tidak ada pengganti"
   },
   "contacts": {
     "title": "Kontak darurat",

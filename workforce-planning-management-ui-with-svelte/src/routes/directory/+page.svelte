@@ -88,7 +88,15 @@
     <tbody>
       {#each entries as e (e.pid)}
         <tr>
-          <td><a href={l(`/workers/${e.pid}`)}>{e.display_name}</a></td>
+          <td>
+            <a href={l(`/workers/${e.pid}`)}>{e.display_name}</a>
+            {#if e.away_today}
+              <span class="chip" data-testid="away">{t("directory.away")}</span>
+              <span class="muted" data-testid="covered-by">
+                {#if e.covered_by}{t("directory.coveredBy")} {e.covered_by}{:else}{t("directory.noCover")}{/if}
+              </span>
+            {/if}
+          </td>
           <td>{e.job_title}</td>
           <td>{e.department}</td>
           <td>{e.location ?? t("org.noLocation")}</td>

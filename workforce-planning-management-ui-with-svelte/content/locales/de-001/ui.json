@@ -361,7 +361,10 @@
     "allDepartments": "Alle Abteilungen",
     "location": "Standort",
     "manager": "Führungskraft",
-    "noMatches": "Keine Person entspricht Ihrer Suche."
+    "noMatches": "Keine Person entspricht Ihrer Suche.",
+    "away": "Heute abwesend",
+    "coveredBy": "Vertreten durch",
+    "noCover": "Keine Vertretung"
   },
   "contacts": {
     "title": "Notfallkontakte",

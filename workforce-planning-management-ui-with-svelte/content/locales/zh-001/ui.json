@@ -361,7 +361,10 @@
     "allDepartments": "所有部门",
     "location": "地点",
     "manager": "经理",
-    "noMatches": "没有符合搜索条件的人员。"
+    "noMatches": "没有符合搜索条件的人员。",
+    "away": "今日不在",
+    "coveredBy": "代班人",
+    "noCover": "无人代班"
   },
   "contacts": {
     "title": "紧急联系人",

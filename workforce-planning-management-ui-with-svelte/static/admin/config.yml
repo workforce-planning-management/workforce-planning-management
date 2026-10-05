@@ -699,6 +699,9 @@ collections:
               - { name: "location", label: "Location", widget: string, required: false, i18n: true }
               - { name: "manager", label: "Manager", widget: string, required: false, i18n: true }
               - { name: "noMatches", label: "No Matches", widget: string, required: false, i18n: true }
+              - { name: "away", label: "Away", widget: string, required: false, i18n: true }
+              - { name: "coveredBy", label: "Covered By", widget: string, required: false, i18n: true }
+              - { name: "noCover", label: "No Cover", widget: string, required: false, i18n: true }
           - name: "contacts"
             label: "Contacts"
             widget: object

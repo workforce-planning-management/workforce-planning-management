@@ -375,12 +375,53 @@ async fn directory_lists_employed_workers_without_sensitive_fields() {
             );
         }
 
+        // Away today: approved leave shows as away (never the kind), with
+        // the best-ranked available backup covering.
+        let backup = seed_worker!(&request, &org, format!("DIR-{tag}-C"), None).await;
+        activate!(&request, &backup).await;
+        request
+            .post(&format!("/api/workers/{stay}/backups"))
+            .json(&json!({ "backup_pid": backup }))
+            .await
+            .assert_status_ok();
+        let today = chrono::Utc::now().date_naive();
+        request
+            .post(&format!("/api/workers/{stay}/leave-entitlements"))
+            .json(&json!({ "kind": "sick", "year": today.format("%Y").to_string().parse::<i32>().unwrap(),
+                           "entitled_days": 30 }))
+            .await
+            .assert_status_ok();
+        let leave: Value = request
+            .post(&format!("/api/workers/{stay}/leave-requests"))
+            .json(&json!({ "kind": "sick", "start_on": today.to_string(),
+                           "end_on": (today + chrono::Duration::days(6)).to_string() }))
+            .await
+            .json();
+        request
+            .post(&format!("/api/leave-requests/{}/approve", leave["pid"].as_str().unwrap()))
+            .await
+            .assert_status_ok();
+        let away: Vec<Value> = request
+            .get(&format!("/api/directory?q=dir-{tag}-a"))
+            .await
+            .json();
+        assert_eq!(away[0]["away_today"], true);
+        assert_eq!(away[0]["covered_by"], "Test Worker DIR-".to_string() + &tag + "-C");
+        assert!(away[0].get("kind").is_none(), "never the kind of leave");
+        let present: Vec<Value> = request
+            .get(&format!("/api/directory?q=dir-{tag}-c"))
+            .await
+            .json();
+        assert_eq!(present[0]["away_today"], false);
+        assert!(present[0]["covered_by"].is_null());
+
         // Department filter and a miss.
         let by_dept: Vec<Value> = request
             .get(&format!("/api/directory?q=dir-{tag}&department=ENGINEERING"))
             .await
             .json();
-        assert_eq!(by_dept.len(), 1);
+        // The backup added above shares the tag and department.
+        assert_eq!(by_dept.len(), 2);
         let none: Vec<Value> = request
             .get(&format!("/api/directory?q=dir-{tag}&department=finance"))
             .await

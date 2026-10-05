@@ -361,7 +361,10 @@
     "allDepartments": "All departments",
     "location": "Location",
     "manager": "Manager",
-    "noMatches": "No one matches your search."
+    "noMatches": "No one matches your search.",
+    "away": "Away today",
+    "coveredBy": "Covered by",
+    "noCover": "Nobody covering"
   },
   "contacts": {
     "title": "Emergency contacts",

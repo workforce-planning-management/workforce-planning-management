@@ -1702,8 +1702,20 @@ build on 3–5).
         `/workers/{pid}` (the contacts panel renders nothing for anyone who
         may not see it), client functions, 21 strings in 13 locales.
       DB suite 46/46 (two new tests), clippy clean on the new files, lib 260,
-      svelte-check 0, vitest 63/63, Playwright 22/22, build green. **Not done:**
-      the directory does not yet show "covered by" for someone on leave.
+      svelte-check 0, vitest 63/63, Playwright 22/22, build green. The
+      directory's "covered by" for someone on leave landed as WPM-T76.
+
+- [x] WPM-T76 (2026-10-05) **Directory shows who covers for someone on leave.**
+      Builds on WPM-T74/T75. A worker on **approved leave today** is listed as
+      `away_today` — never the kind of leave or any reason, which can be health
+      data — with `covered_by`: their best-ranked backup who is employed and
+      not away themselves (`rules::cover::resolve`), or null when nobody can
+      (the UI says "Nobody covering"). Only backups inside the caller's
+      readable set are considered, so a cover is always someone the caller
+      could find in the directory. UI: an "Away today" chip and "Covered
+      by …" under the name; 3 strings in 13 locales. DB suite 46/46 (the
+      directory test now covers away, covered, and not-away), clippy clean,
+      svelte-check 0, vitest 63/63, Playwright 22/22, build green.
 
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of

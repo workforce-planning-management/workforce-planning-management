@@ -361,7 +361,10 @@
     "allDepartments": "Pob adran",
     "location": "Lleoliad",
     "manager": "Rheolwr",
-    "noMatches": "Does neb yn cyfateb i'ch chwiliad."
+    "noMatches": "Does neb yn cyfateb i'ch chwiliad.",
+    "away": "I ffwrdd heddiw",
+    "coveredBy": "Yn cael ei gyflenwi gan",
+    "noCover": "Neb yn cyflenwi"
   },
   "contacts": {
     "title": "Cysylltiadau brys",
