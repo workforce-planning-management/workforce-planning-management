@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — announcement feed; rota swap requests
+
+`/announcements`: company and organization news, pinned first then newest,
+plain text only. Editors (`hr_admin`, `org_admin`) post, retire and see
+scheduled or expired posts; the latest three also show on the home page. On
+`/rota` and "My on-call": ask a colleague to take your on-call days, and
+accept, decline or cancel requests.
+
 ### Added — on-call rota
 
 `/rota`: a rotation of workers where the duty passes to the next member

@@ -27,7 +27,8 @@
     "planning": "规划",
     "tour": "导览",
     "directory": "通讯录",
-    "rota": "值班表"
+    "rota": "值班表",
+    "announcements": "公告"
   },
   "pr": {
     "retention": "保留",
@@ -425,5 +426,22 @@
     "cancel": "取消",
     "swapNone": "没有待处理的换班请求。",
     "asks": "请您接替其值班"
+  },
+  "announcements": {
+    "pinned": "已置顶",
+    "none": "暂无公告。",
+    "post": "发布公告",
+    "titleLabel": "标题",
+    "body": "内容",
+    "pin": "置顶",
+    "publishOn": "发布日期",
+    "expiresOn": "到期日（选填）",
+    "retire": "撤回",
+    "all": "显示待发布和已过期",
+    "scheduled": "待发布",
+    "expired": "已过期",
+    "latest": "最新公告",
+    "seeAll": "全部公告",
+    "organization": "组织"
   }
 }

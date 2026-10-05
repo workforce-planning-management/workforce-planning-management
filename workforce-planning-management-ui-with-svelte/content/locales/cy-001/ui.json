@@ -27,7 +27,8 @@
     "planning": "Cynllunio",
     "tour": "Taith",
     "directory": "Cyfeiriadur",
-    "rota": "Rota ar alwad"
+    "rota": "Rota ar alwad",
+    "announcements": "Cyhoeddiadau"
   },
   "pr": {
     "retention": "Cadw data",
@@ -425,5 +426,22 @@
     "cancel": "Canslo",
     "swapNone": "Dim ceisiadau cyfnewid agored.",
     "asks": "yn gofyn i chi gymryd ei alwad"
+  },
+  "announcements": {
+    "pinned": "Wedi'i binio",
+    "none": "Dim cyhoeddiadau.",
+    "post": "Postio cyhoeddiad",
+    "titleLabel": "Teitl",
+    "body": "Neges",
+    "pin": "Pinio i'r brig",
+    "publishOn": "Cyhoeddi ar",
+    "expiresOn": "Yn dod i ben ar (dewisol)",
+    "retire": "Tynnu'n ôl",
+    "all": "Dangos rhai wedi'u hamserlennu a rhai sydd wedi dod i ben",
+    "scheduled": "Wedi'i amserlennu",
+    "expired": "Wedi dod i ben",
+    "latest": "Cyhoeddiadau diweddaraf",
+    "seeAll": "Pob cyhoeddiad",
+    "organization": "Sefydliad"
   }
 }

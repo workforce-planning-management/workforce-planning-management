@@ -239,6 +239,52 @@ test.describe("signed-in smoke coverage", () => {
     await expect(section).toContainText("Staff access");
   });
 
+  test("announcements show pinned first as plain text, and editors post", async ({
+    page,
+  }) => {
+    const posts: Array<Record<string, unknown>> = [
+      {
+        pid: "n1",
+        organization_ref: WORKER.organization_ref,
+        title: "Office closed Monday",
+        body: "Line one\nLine two with <b>no markup</b>",
+        pinned: true,
+        publish_on: "2026-10-01",
+        expires_on: null,
+        status: "live",
+        author: null,
+      },
+    ];
+    await page.route("**/api/proxy/announcements**", (route) => {
+      if (route.request().method() === "POST") {
+        posts.push({
+          pid: `n${posts.length + 1}`,
+          expires_on: null,
+          status: "live",
+          author: null,
+          publish_on: "2026-10-05",
+          ...route.request().postDataJSON(),
+        });
+        return route.fulfill({ json: { pid: "n2" } });
+      }
+      return route.fulfill({ json: posts });
+    });
+
+    await page.goto("/announcements");
+    const list = page.getByTestId("announcement-list");
+    await expect(list).toContainText("Office closed Monday");
+    await expect(list).toContainText("Pinned");
+    // Markup in a post is shown as text, never interpreted.
+    await expect(list).toContainText("<b>no markup</b>");
+    await expect(list.locator("b")).toHaveCount(0);
+
+    await page.getByText("Post an announcement").first().click();
+    await page.getByTestId("announcement-title").fill("Town hall Friday");
+    await page.getByTestId("announcement-body").fill("All hands at 3pm.");
+    await page.getByTestId("announcement-post").click();
+    await expect(list).toContainText("Town hall Friday");
+  });
+
   test("on-call rota shows who is on call, why, and takes a swap", async ({
     page,
   }) => {

@@ -178,6 +178,10 @@ describe("api path map", () => {
     await wpm.removeBackup("b1");
     await wpm.workerCover("w1");
     await wpm.workerCover("w1", "2026-10-06");
+    await wpm.listAnnouncements();
+    await wpm.listAnnouncements({ limit: 3, includeAll: true, organization: "organization:x" });
+    await wpm.postAnnouncement({ organization_ref: "organization:x", title: "T", body: "B" });
+    await wpm.retireAnnouncement("a1");
     await wpm.listRotas();
     await wpm.getRota("r1");
     await wpm.getRota("r1", { from: "2026-10-05", to: "2026-11-01" });
@@ -283,6 +287,10 @@ describe("api path map", () => {
       "/api/proxy/backups/b1",
       "/api/proxy/workers/w1/cover",
       "/api/proxy/workers/w1/cover?on=2026-10-06",
+      "/api/proxy/announcements",
+      "/api/proxy/announcements?organization=organization%3Ax&include=all&limit=3",
+      "/api/proxy/announcements",
+      "/api/proxy/announcements/a1",
       "/api/proxy/rotas",
       "/api/proxy/rotas/r1",
       "/api/proxy/rotas/r1?from=2026-10-05&to=2026-11-01",

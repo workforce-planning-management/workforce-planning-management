@@ -27,7 +27,8 @@
     "planning": "Planung",
     "tour": "Rundgang",
     "directory": "Verzeichnis",
-    "rota": "Bereitschaftsplan"
+    "rota": "Bereitschaftsplan",
+    "announcements": "Ankündigungen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -425,5 +426,22 @@
     "cancel": "Abbrechen",
     "swapNone": "Keine offenen Tauschanfragen.",
     "asks": "bittet Sie, die Bereitschaft zu übernehmen"
+  },
+  "announcements": {
+    "pinned": "Angeheftet",
+    "none": "Keine Ankündigungen.",
+    "post": "Ankündigung veröffentlichen",
+    "titleLabel": "Titel",
+    "body": "Nachricht",
+    "pin": "Oben anheften",
+    "publishOn": "Veröffentlichen am",
+    "expiresOn": "Läuft ab am (optional)",
+    "retire": "Zurückziehen",
+    "all": "Geplante und abgelaufene anzeigen",
+    "scheduled": "Geplant",
+    "expired": "Abgelaufen",
+    "latest": "Neueste Ankündigungen",
+    "seeAll": "Alle Ankündigungen",
+    "organization": "Organisation"
   }
 }

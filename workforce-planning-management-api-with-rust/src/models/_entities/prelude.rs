@@ -76,3 +76,4 @@ pub use super::rota_members::Entity as RotaMembers;
 pub use super::rota_overrides::Entity as RotaOverrides;
 pub use super::rotas::Entity as Rotas;
 pub use super::rota_swap_requests::Entity as RotaSwapRequests;
+pub use super::announcements::Entity as Announcements;

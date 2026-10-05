@@ -6,6 +6,7 @@ import { api } from "#lib/api/client.js";
 import type {
   Application,
   Benchmark,
+  Announcement,
   Backup,
   ComparisonRow,
   Cover,
@@ -1269,6 +1270,36 @@ export function workerCover(
   init?: FetchLike,
 ): Promise<Cover> {
   return api(`/workers/${workerPid}/cover${on ? `?on=${on}` : ""}`, init);
+}
+
+/** The announcement feed: live posts, pinned first then newest. */
+export function listAnnouncements(
+  options?: { limit?: number; includeAll?: boolean; organization?: string },
+  init?: FetchLike,
+): Promise<Announcement[]> {
+  const params = new URLSearchParams();
+  if (options?.organization) params.set("organization", options.organization);
+  if (options?.includeAll) params.set("include", "all");
+  if (options?.limit) params.set("limit", String(options.limit));
+  const qs = params.size ? `?${params}` : "";
+  return api(`/announcements${qs}`, init);
+}
+
+/** Post an announcement (organization editors). */
+export function postAnnouncement(post: {
+  organization_ref: string;
+  title: string;
+  body: string;
+  pinned?: boolean;
+  publish_on?: string;
+  expires_on?: string;
+}): Promise<{ pid: string }> {
+  return api("/announcements", { method: "POST", body: post });
+}
+
+/** Retire an announcement. */
+export function retireAnnouncement(pid: string): Promise<unknown> {
+  return api(`/announcements/${pid}`, { method: "DELETE" });
 }
 
 /** On-call rotas in the caller's organizations, with who is on call today. */

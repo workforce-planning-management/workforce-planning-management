@@ -27,7 +27,8 @@
     "planning": "Perencanaan",
     "tour": "Tur",
     "directory": "Direktori",
-    "rota": "Jadwal siaga"
+    "rota": "Jadwal siaga",
+    "announcements": "Pengumuman"
   },
   "pr": {
     "retention": "Retensi",
@@ -425,5 +426,22 @@
     "cancel": "Batalkan",
     "swapNone": "Tidak ada permintaan tukar terbuka.",
     "asks": "meminta Anda mengambil jadwal siaganya"
+  },
+  "announcements": {
+    "pinned": "Disematkan",
+    "none": "Tidak ada pengumuman.",
+    "post": "Posting pengumuman",
+    "titleLabel": "Judul",
+    "body": "Pesan",
+    "pin": "Sematkan di atas",
+    "publishOn": "Terbit pada",
+    "expiresOn": "Kedaluwarsa pada (opsional)",
+    "retire": "Tarik",
+    "all": "Tampilkan yang terjadwal dan kedaluwarsa",
+    "scheduled": "Terjadwal",
+    "expired": "Kedaluwarsa",
+    "latest": "Pengumuman terbaru",
+    "seeAll": "Semua pengumuman",
+    "organization": "Organisasi"
   }
 }

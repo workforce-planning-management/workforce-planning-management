@@ -27,7 +27,8 @@
     "planning": "Planification",
     "tour": "Visite",
     "directory": "Annuaire",
-    "rota": "Astreintes"
+    "rota": "Astreintes",
+    "announcements": "Annonces"
   },
   "pr": {
     "retention": "Conservation",
@@ -425,5 +426,22 @@
     "cancel": "Annuler",
     "swapNone": "Aucune demande d'échange ouverte.",
     "asks": "vous demande de prendre son astreinte"
+  },
+  "announcements": {
+    "pinned": "Épinglé",
+    "none": "Aucune annonce.",
+    "post": "Publier une annonce",
+    "titleLabel": "Titre",
+    "body": "Message",
+    "pin": "Épingler en haut",
+    "publishOn": "Publier le",
+    "expiresOn": "Expire le (facultatif)",
+    "retire": "Retirer",
+    "all": "Afficher les annonces programmées et expirées",
+    "scheduled": "Programmée",
+    "expired": "Expirée",
+    "latest": "Dernières annonces",
+    "seeAll": "Toutes les annonces",
+    "organization": "Organisation"
   }
 }

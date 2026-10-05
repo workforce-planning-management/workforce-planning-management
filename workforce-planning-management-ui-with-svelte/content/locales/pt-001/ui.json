@@ -27,7 +27,8 @@
     "planning": "Planeamento",
     "tour": "Tour",
     "directory": "Diretório",
-    "rota": "Escala de prevenção"
+    "rota": "Escala de prevenção",
+    "announcements": "Anúncios"
   },
   "pr": {
     "retention": "Retenção",
@@ -425,5 +426,22 @@
     "cancel": "Cancelar",
     "swapNone": "Não há pedidos de troca abertos.",
     "asks": "pede-lhe que assuma a sua prevenção"
+  },
+  "announcements": {
+    "pinned": "Fixado",
+    "none": "Sem anúncios.",
+    "post": "Publicar um anúncio",
+    "titleLabel": "Título",
+    "body": "Mensagem",
+    "pin": "Fixar no topo",
+    "publishOn": "Publicar em",
+    "expiresOn": "Expira em (opcional)",
+    "retire": "Retirar",
+    "all": "Mostrar agendados e expirados",
+    "scheduled": "Agendado",
+    "expired": "Expirado",
+    "latest": "Últimos anúncios",
+    "seeAll": "Todos os anúncios",
+    "organization": "Organização"
   }
 }

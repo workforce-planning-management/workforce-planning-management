@@ -1815,6 +1815,28 @@ build on 3–5).
       cancel move nothing), clippy clean, lib 275, svelte-check 0, vitest
       63/63, Playwright 23/23, build green.
 
+- [x] WPM-T82 (2026-10-05) **Announcement feed.** From the SOTA scan (orangehrm
+      Buzz). Migration `m20261005_000043_announcements`; pure
+      `rules/announcements.rs` (3 tests): validation (title ≤ 200, body ≤ 5000,
+      expiry not before publish), `status` (scheduled / live / expired — live
+      from the publish day through the expiry day inclusive), `feed_order`
+      (pinned first, then newest published, then newest created). **Plain
+      text only** — the API stores a body verbatim and the UI shows it with
+      line breaks, escaped, so a post can never carry markup. Everyone who can
+      read an organization reads its *live* posts; **posting, editing,
+      retiring and seeing scheduled or expired posts belong to the
+      organization's `hr_admin` / `org_admin`** when auth is on (open when it
+      is off, as elsewhere). `POST|GET /api/announcements` (`?organization=`,
+      `include=all` for editors, paged with `x-total-count`),
+      `GET|PUT|DELETE /api/announcements/{pid}`; `announcements` joins the
+      retention sweep list (54). UI: `/announcements` (feed, editors' post form
+      and retire, show scheduled and expired), a "Latest announcements" panel
+      (3 posts) on the signed-in home, nav link, 16 strings in 13 locales. DB
+      suite 50/50 (validation, ordering, hidden scheduled/expired, paging,
+      edit, retire), clippy clean, lib 278, svelte-check 0, vitest 63/63,
+      Playwright 24/24, build green. **Not done:** read receipts, comments or
+      reactions, per-department audiences, rich text, attachments.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

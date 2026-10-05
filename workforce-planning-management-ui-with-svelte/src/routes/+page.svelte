@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AnnouncementsFeed from "#lib/components/AnnouncementsFeed.svelte";
   import { page } from "$app/state";
   import { listWorkers, listRequisitions, successionGaps } from "#lib/api/wpm.js";
   import { t, l } from "#lib/i18n.svelte.js";
@@ -77,6 +78,7 @@
         <span>{t("dash.successionGaps")}</span>
       </a>
     </div>
+    <AnnouncementsFeed limit={3} />
   {/if}
 
   <section class="my-organizations" data-testid="my-organizations">

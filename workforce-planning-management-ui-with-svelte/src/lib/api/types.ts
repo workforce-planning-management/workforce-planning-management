@@ -171,6 +171,19 @@ export interface SwapRequest {
   status: "requested" | "accepted" | "declined" | "cancelled";
 }
 
+/** One announcement in the feed (plain text). */
+export interface Announcement {
+  pid: string;
+  organization_ref: string;
+  title: string;
+  body: string;
+  pinned: boolean;
+  publish_on: string;
+  expires_on: string | null;
+  status: "scheduled" | "live" | "expired";
+  author: string | null;
+}
+
 /** One funded job opening. */
 export interface Requisition {
   pid: string;

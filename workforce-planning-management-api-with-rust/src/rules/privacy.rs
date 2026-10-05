@@ -31,6 +31,7 @@ pub fn retention_days(raw: Option<&str>) -> i64 {
 /// sweep test counts this list against the entity modules).
 pub const SOFT_DELETED_TABLES: &[&str] = &[
     "adjustment_requests",
+    "announcements",
     "applications",
     "appraisals",
     "assessment_instruments",
@@ -122,7 +123,7 @@ mod tests {
         sorted.sort_unstable();
         sorted.dedup();
         assert_eq!(sorted, SOFT_DELETED_TABLES, "sorted and unique");
-        assert_eq!(SOFT_DELETED_TABLES.len(), 53);
+        assert_eq!(SOFT_DELETED_TABLES.len(), 54);
         for table in ["workers", "payslips", "candidates", "appraisals"] {
             assert!(SOFT_DELETED_TABLES.contains(&table));
         }

@@ -6,6 +6,7 @@
 //! pipelines, early careers, workforce intelligence) in [`talent`].
 
 mod adjustments;
+mod announcements;
 mod appraisals;
 mod assessments;
 mod contacts;

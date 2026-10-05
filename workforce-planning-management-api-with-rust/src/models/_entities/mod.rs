@@ -2,6 +2,7 @@
 
 pub mod adjustment_requests;
 pub mod applications;
+pub mod announcements;
 pub mod appraisal_nominations;
 pub mod appraisal_responses;
 pub mod appraisals;

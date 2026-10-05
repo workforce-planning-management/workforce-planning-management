@@ -27,7 +27,8 @@
     "planning": "Planning",
     "tour": "Tour",
     "directory": "Directory",
-    "rota": "On-call rota"
+    "rota": "On-call rota",
+    "announcements": "Announcements"
   },
   "pr": {
     "retention": "Retention",
@@ -425,5 +426,22 @@
     "cancel": "Cancel",
     "swapNone": "No open swap requests.",
     "asks": "asks you to take their on-call"
+  },
+  "announcements": {
+    "pinned": "Pinned",
+    "none": "No announcements.",
+    "post": "Post an announcement",
+    "titleLabel": "Title",
+    "body": "Message",
+    "pin": "Pin to the top",
+    "publishOn": "Publish on",
+    "expiresOn": "Expires on (optional)",
+    "retire": "Retire",
+    "all": "Show scheduled and expired",
+    "scheduled": "Scheduled",
+    "expired": "Expired",
+    "latest": "Latest announcements",
+    "seeAll": "All announcements",
+    "organization": "Organization"
   }
 }

@@ -7,6 +7,7 @@ use loco_rs::prelude::*;
 
 pub mod acquisition;
 pub mod adjustments;
+pub mod announcements;
 pub mod appraisals;
 pub mod assessments;
 pub mod audits;

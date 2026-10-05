@@ -27,7 +27,8 @@
     "planning": "Planificación",
     "tour": "Recorrido",
     "directory": "Directorio",
-    "rota": "Turnos de guardia"
+    "rota": "Turnos de guardia",
+    "announcements": "Anuncios"
   },
   "pr": {
     "retention": "Retención",
@@ -425,5 +426,22 @@
     "cancel": "Cancelar",
     "swapNone": "No hay solicitudes de cambio abiertas.",
     "asks": "le pide que asuma su guardia"
+  },
+  "announcements": {
+    "pinned": "Fijado",
+    "none": "No hay anuncios.",
+    "post": "Publicar un anuncio",
+    "titleLabel": "Título",
+    "body": "Mensaje",
+    "pin": "Fijar arriba",
+    "publishOn": "Publicar el",
+    "expiresOn": "Caduca el (opcional)",
+    "retire": "Retirar",
+    "all": "Mostrar programados y caducados",
+    "scheduled": "Programado",
+    "expired": "Caducado",
+    "latest": "Últimos anuncios",
+    "seeAll": "Todos los anuncios",
+    "organization": "Organización"
   }
 }

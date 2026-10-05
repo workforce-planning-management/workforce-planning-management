@@ -5,6 +5,7 @@
 //! re-implement them.
 
 pub mod adjustments;
+pub mod announcements;
 pub mod appraisal;
 pub mod assessment;
 pub mod benchmark;

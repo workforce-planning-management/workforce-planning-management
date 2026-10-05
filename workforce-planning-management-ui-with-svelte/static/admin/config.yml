@@ -60,6 +60,7 @@ collections:
               - { name: "tour", label: "Tour", widget: string, required: false, i18n: true }
               - { name: "directory", label: "Directory", widget: string, required: false, i18n: true }
               - { name: "rota", label: "Rota", widget: string, required: false, i18n: true }
+              - { name: "announcements", label: "Announcements", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -777,3 +778,25 @@ collections:
               - { name: "cancel", label: "Cancel", widget: string, required: false, i18n: true }
               - { name: "swapNone", label: "Swap None", widget: string, required: false, i18n: true }
               - { name: "asks", label: "Asks", widget: string, required: false, i18n: true }
+          - name: "announcements"
+            label: "Announcements"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "pinned", label: "Pinned", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "post", label: "Post", widget: string, required: false, i18n: true }
+              - { name: "titleLabel", label: "Title Label", widget: string, required: false, i18n: true }
+              - { name: "body", label: "Body", widget: string, required: false, i18n: true }
+              - { name: "pin", label: "Pin", widget: string, required: false, i18n: true }
+              - { name: "publishOn", label: "Publish On", widget: string, required: false, i18n: true }
+              - { name: "expiresOn", label: "Expires On", widget: string, required: false, i18n: true }
+              - { name: "retire", label: "Retire", widget: string, required: false, i18n: true }
+              - { name: "all", label: "All", widget: string, required: false, i18n: true }
+              - { name: "scheduled", label: "Scheduled", widget: string, required: false, i18n: true }
+              - { name: "expired", label: "Expired", widget: string, required: false, i18n: true }
+              - { name: "latest", label: "Latest", widget: string, required: false, i18n: true }
+              - { name: "seeAll", label: "See All", widget: string, required: false, i18n: true }
+              - { name: "organization", label: "Organization", widget: string, required: false, i18n: true }
