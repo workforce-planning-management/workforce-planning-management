@@ -29,7 +29,8 @@
     "directory": "Cyfeiriadur",
     "rota": "Rota ar alwad",
     "announcements": "Cyhoeddiadau",
-    "ceo": "Dangosfwrdd y Prif Weithredwr"
+    "ceo": "Dangosfwrdd y Prif Weithredwr",
+    "skillGaps": "Bylchau sgiliau"
   },
   "pr": {
     "retention": "Cadw data",
@@ -464,5 +465,29 @@
     "range12m": "12 mis",
     "rangeYtd": "Y flwyddyn hyd yma",
     "vsStart": "o gymharu â dechrau'r cyfnod"
+  },
+  "skillgaps": {
+    "title": "Fy mylchau sgiliau",
+    "workforceTitle": "Bylchau sgiliau ar draws y gweithlu",
+    "required": "Angen",
+    "declared": "Datganwyd",
+    "short": "Lefelau'n brin",
+    "priority": "Blaenoriaeth",
+    "sources": "O",
+    "sourceRole": "Rôl",
+    "sourceTarget": "Eich targed",
+    "sourceAspiration": "Dyhead",
+    "below": "Islaw",
+    "undeclared": "Heb ddatgan",
+    "none": "Dim bylchau sgiliau.",
+    "unknownHint": "Heb ddatgan eto — ychwanegwch eich lefel i weld y bwlch.",
+    "needed": "Angen",
+    "score": "Sgôr",
+    "criticalBelow": "Critigol islaw",
+    "departments": "Adrannau",
+    "hint": "Cyfrif yn unig — ni enwir neb. Wedi'u trefnu yn ôl pwysigrwydd × lefelau'n brin.",
+    "impCritical": "Critigol",
+    "impImportant": "Pwysig",
+    "impUseful": "Defnyddiol"
   }
 }

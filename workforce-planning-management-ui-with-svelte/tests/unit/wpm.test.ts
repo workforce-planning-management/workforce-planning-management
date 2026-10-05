@@ -194,6 +194,9 @@ describe("api path map", () => {
     await wpm.addRotaSwap("r1", { worker_pid: "w2", starts_on: "2026-10-05", ends_on: "2026-10-06" });
     await wpm.removeRotaSwap("s1");
     await wpm.workerOnCall("w1");
+    await wpm.workerSkillGaps("w1");
+    await wpm.workforceSkillGaps();
+    await wpm.workforceSkillGaps({ department: "Finance", limit: 10 });
     await wpm.listSwapRequests("r1");
     await wpm.requestSwap("r1", { requester_pid: "w1", taker_pid: "w2", starts_on: "2026-10-05", ends_on: "2026-10-11" });
     await wpm.decideSwap("s1", "accept");
@@ -306,6 +309,9 @@ describe("api path map", () => {
       "/api/proxy/rotas/r1/overrides",
       "/api/proxy/rota-overrides/s1",
       "/api/proxy/workers/w1/on-call",
+      "/api/proxy/workers/w1/skill-gaps",
+      "/api/proxy/workforce-intelligence/skill-gaps",
+      "/api/proxy/workforce-intelligence/skill-gaps?department=Finance&limit=10",
       "/api/proxy/rotas/r1/swap-requests",
       "/api/proxy/rotas/r1/swap-requests",
       "/api/proxy/rota-swap-requests/s1/accept",

@@ -3,6 +3,7 @@
   import RoleGap from "#lib/components/RoleGap.svelte";
   import Mobility from "#lib/components/Mobility.svelte";
   import Backups from "#lib/components/Backups.svelte";
+  import SkillGaps from "#lib/components/SkillGaps.svelte";
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
@@ -627,6 +628,7 @@
   />
   <CareerHistory workerPid={worker.pid} />
   <Aspirations workerPid={worker.pid} />
+  <SkillGaps workerPid={worker.pid} />
   <EmergencyContacts workerPid={worker.pid} />
   <Backups workerPid={worker.pid} />
   <DottedLinePanel workerPid={worker.pid} />

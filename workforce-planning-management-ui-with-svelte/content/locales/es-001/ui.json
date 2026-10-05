@@ -29,7 +29,8 @@
     "directory": "Directorio",
     "rota": "Turnos de guardia",
     "announcements": "Anuncios",
-    "ceo": "Panel del director general"
+    "ceo": "Panel del director general",
+    "skillGaps": "Brechas de competencias"
   },
   "pr": {
     "retention": "Retención",
@@ -464,5 +465,29 @@
     "range12m": "12 meses",
     "rangeYtd": "Año en curso",
     "vsStart": "frente al inicio del periodo"
+  },
+  "skillgaps": {
+    "title": "Mis brechas de competencias",
+    "workforceTitle": "Brechas de competencias en toda la plantilla",
+    "required": "Necesario",
+    "declared": "Declarado",
+    "short": "Niveles que faltan",
+    "priority": "Prioridad",
+    "sources": "Origen",
+    "sourceRole": "Puesto",
+    "sourceTarget": "Su objetivo",
+    "sourceAspiration": "Aspiración",
+    "below": "Por debajo",
+    "undeclared": "Sin declarar",
+    "none": "No hay brechas de competencias.",
+    "unknownHint": "Aún sin declarar: añada su nivel para ver la brecha.",
+    "needed": "Lo necesitan",
+    "score": "Puntuación",
+    "criticalBelow": "Críticas por debajo",
+    "departments": "Departamentos",
+    "hint": "Solo recuentos: no se nombra a nadie. Ordenado por importancia × niveles que faltan.",
+    "impCritical": "Crítica",
+    "impImportant": "Importante",
+    "impUseful": "Útil"
   }
 }

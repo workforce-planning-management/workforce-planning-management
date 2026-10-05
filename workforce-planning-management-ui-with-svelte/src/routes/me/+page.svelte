@@ -9,6 +9,7 @@
   import { listSelectableFrameworks } from "#lib/api/wpm.js";
   import Backups from "#lib/components/Backups.svelte";
   import OnCall from "#lib/components/OnCall.svelte";
+  import SkillGaps from "#lib/components/SkillGaps.svelte";
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
@@ -70,6 +71,7 @@
   {/if}
   <CareerHistory {workerPid} />
   <Aspirations {workerPid} />
+  <SkillGaps {workerPid} />
   <EmergencyContacts {workerPid} />
   <Backups {workerPid} />
   <OnCall {workerPid} />

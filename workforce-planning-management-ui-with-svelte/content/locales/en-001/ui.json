@@ -29,7 +29,8 @@
     "directory": "Directory",
     "rota": "On-call rota",
     "announcements": "Announcements",
-    "ceo": "CEO dashboard"
+    "ceo": "CEO dashboard",
+    "skillGaps": "Skill gaps"
   },
   "pr": {
     "retention": "Retention",
@@ -464,5 +465,29 @@
     "range12m": "12 months",
     "rangeYtd": "Year to date",
     "vsStart": "vs start of period"
+  },
+  "skillgaps": {
+    "title": "My skill gaps",
+    "workforceTitle": "Skill gaps across the workforce",
+    "required": "Needed",
+    "declared": "Declared",
+    "short": "Levels short",
+    "priority": "Priority",
+    "sources": "From",
+    "sourceRole": "Role",
+    "sourceTarget": "Your target",
+    "sourceAspiration": "Aspiration",
+    "below": "Below",
+    "undeclared": "Not declared",
+    "none": "No skill gaps found.",
+    "unknownHint": "Not declared yet — add your level to see the gap.",
+    "needed": "Need it",
+    "score": "Score",
+    "criticalBelow": "Critical below",
+    "departments": "Departments",
+    "hint": "Counts only — nobody is named. Ranked by importance × levels short.",
+    "impCritical": "Critical",
+    "impImportant": "Important",
+    "impUseful": "Useful"
   }
 }

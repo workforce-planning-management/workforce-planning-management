@@ -62,6 +62,7 @@ collections:
               - { name: "rota", label: "Rota", widget: string, required: false, i18n: true }
               - { name: "announcements", label: "Announcements", widget: string, required: false, i18n: true }
               - { name: "ceo", label: "Ceo", widget: string, required: false, i18n: true }
+              - { name: "skillGaps", label: "Skill Gaps", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -826,3 +827,32 @@ collections:
               - { name: "range12m", label: "Range12m", widget: string, required: false, i18n: true }
               - { name: "rangeYtd", label: "Range Ytd", widget: string, required: false, i18n: true }
               - { name: "vsStart", label: "Vs Start", widget: string, required: false, i18n: true }
+          - name: "skillgaps"
+            label: "Skillgaps"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "workforceTitle", label: "Workforce Title", widget: string, required: false, i18n: true }
+              - { name: "required", label: "Required", widget: string, required: false, i18n: true }
+              - { name: "declared", label: "Declared", widget: string, required: false, i18n: true }
+              - { name: "short", label: "Short", widget: string, required: false, i18n: true }
+              - { name: "priority", label: "Priority", widget: string, required: false, i18n: true }
+              - { name: "sources", label: "Sources", widget: string, required: false, i18n: true }
+              - { name: "sourceRole", label: "Source Role", widget: string, required: false, i18n: true }
+              - { name: "sourceTarget", label: "Source Target", widget: string, required: false, i18n: true }
+              - { name: "sourceAspiration", label: "Source Aspiration", widget: string, required: false, i18n: true }
+              - { name: "below", label: "Below", widget: string, required: false, i18n: true }
+              - { name: "undeclared", label: "Undeclared", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "unknownHint", label: "Unknown Hint", widget: string, required: false, i18n: true }
+              - { name: "needed", label: "Needed", widget: string, required: false, i18n: true }
+              - { name: "score", label: "Score", widget: string, required: false, i18n: true }
+              - { name: "criticalBelow", label: "Critical Below", widget: string, required: false, i18n: true }
+              - { name: "departments", label: "Departments", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: string, required: false, i18n: true }
+              - { name: "impCritical", label: "Imp Critical", widget: string, required: false, i18n: true }
+              - { name: "impImportant", label: "Imp Important", widget: string, required: false, i18n: true }
+              - { name: "impUseful", label: "Imp Useful", widget: string, required: false, i18n: true }

@@ -40,6 +40,7 @@ pub mod privacy;
 pub mod pulse;
 pub mod rota;
 pub mod roles;
+pub mod skill_gap;
 pub mod skill_merge;
 pub mod talent;
 pub mod tokens;

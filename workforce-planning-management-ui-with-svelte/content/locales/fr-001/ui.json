@@ -29,7 +29,8 @@
     "directory": "Annuaire",
     "rota": "Astreintes",
     "announcements": "Annonces",
-    "ceo": "Tableau de bord du PDG"
+    "ceo": "Tableau de bord du PDG",
+    "skillGaps": "Écarts de compétences"
   },
   "pr": {
     "retention": "Conservation",
@@ -464,5 +465,29 @@
     "range12m": "12 mois",
     "rangeYtd": "Depuis le 1er janvier",
     "vsStart": "par rapport au début de la période"
+  },
+  "skillgaps": {
+    "title": "Mes écarts de compétences",
+    "workforceTitle": "Écarts de compétences dans l'effectif",
+    "required": "Requis",
+    "declared": "Déclaré",
+    "short": "Niveaux manquants",
+    "priority": "Priorité",
+    "sources": "Origine",
+    "sourceRole": "Poste",
+    "sourceTarget": "Votre objectif",
+    "sourceAspiration": "Aspiration",
+    "below": "En dessous",
+    "undeclared": "Non déclaré",
+    "none": "Aucun écart de compétences.",
+    "unknownHint": "Pas encore déclaré : indiquez votre niveau pour voir l'écart.",
+    "needed": "Concernés",
+    "score": "Score",
+    "criticalBelow": "Critiques en dessous",
+    "departments": "Services",
+    "hint": "Effectifs uniquement — personne n'est nommé. Classé par importance × niveaux manquants.",
+    "impCritical": "Critique",
+    "impImportant": "Importante",
+    "impUseful": "Utile"
   }
 }

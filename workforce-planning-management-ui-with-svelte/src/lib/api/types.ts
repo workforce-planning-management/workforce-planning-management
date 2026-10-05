@@ -190,6 +190,36 @@ export interface Announcement {
   read_count?: number;
 }
 
+/** One skill gap for a person (a need they have not met). */
+export interface SkillGap {
+  skill_pid: string;
+  skill: string | null;
+  category: string | null;
+  required: number;
+  importance: "critical" | "important" | "useful" | string;
+  sources: Array<"role" | "target" | "aspiration">;
+  declared: number | null;
+  status: "below" | "undeclared";
+  /** Levels short; null when not declared (unknown, not a number). */
+  shortfall: number | null;
+  priority: number;
+}
+
+/** One skill's roll-up across the workforce (counts only). */
+export interface WorkforceSkillGap {
+  skill_pid: string;
+  skill: string | null;
+  category: string | null;
+  needed_by: number;
+  met: number;
+  below: number;
+  undeclared: number;
+  total_shortfall: number;
+  critical_below: number;
+  score: number;
+  departments: Array<{ department: string; below: number }>;
+}
+
 /** One funded job opening. */
 export interface Requisition {
   pid: string;

@@ -12,7 +12,9 @@ import type {
   Cover,
   RotaSummary,
   RotaView,
+  SkillGap,
   SwapRequest,
+  WorkforceSkillGap,
   DirectoryEntry,
   EmergencyContact,
   Worker,
@@ -1383,6 +1385,37 @@ export function addRotaSwap(
 /** Undo a swap. */
 export function removeRotaSwap(pid: string): Promise<unknown> {
   return api(`/rota-overrides/${pid}`, { method: "DELETE" });
+}
+
+/** One person's skill gaps, ranked (their role, their targets, and — for them alone — aspirations). */
+export function workerSkillGaps(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{
+  worker_pid: string;
+  includes_aspirations: boolean;
+  counts: { met: number; below: number; undeclared: number };
+  gaps: SkillGap[];
+}> {
+  return api(`/workers/${workerPid}/skill-gaps`, init);
+}
+
+/** The workforce's skill gaps, ranked by importance × levels short (counts only). */
+export function workforceSkillGaps(
+  options?: { department?: string; limit?: number },
+  init?: FetchLike,
+): Promise<{
+  as_of: string;
+  workers_considered: number;
+  workers_with_needs: number;
+  skills_total: number;
+  skills: WorkforceSkillGap[];
+}> {
+  const params = new URLSearchParams();
+  if (options?.department) params.set("department", options.department);
+  if (options?.limit) params.set("limit", String(options.limit));
+  const qs = params.size ? `?${params}` : "";
+  return api(`/workforce-intelligence/skill-gaps${qs}`, init);
 }
 
 /** A rota's swap requests, newest first. */

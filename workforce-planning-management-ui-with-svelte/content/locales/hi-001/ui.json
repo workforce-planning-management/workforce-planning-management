@@ -29,7 +29,8 @@
     "directory": "निर्देशिका",
     "rota": "ऑन-कॉल रोटा",
     "announcements": "घोषणाएँ",
-    "ceo": "सीईओ डैशबोर्ड"
+    "ceo": "सीईओ डैशबोर्ड",
+    "skillGaps": "कौशल अंतर"
   },
   "pr": {
     "retention": "प्रतिधारण",
@@ -464,5 +465,29 @@
     "range12m": "12 महीने",
     "rangeYtd": "वर्ष अब तक",
     "vsStart": "अवधि की शुरुआत की तुलना में"
+  },
+  "skillgaps": {
+    "title": "मेरे कौशल अंतर",
+    "workforceTitle": "पूरे कार्यबल में कौशल अंतर",
+    "required": "आवश्यक",
+    "declared": "घोषित",
+    "short": "कम स्तर",
+    "priority": "प्राथमिकता",
+    "sources": "स्रोत",
+    "sourceRole": "भूमिका",
+    "sourceTarget": "आपका लक्ष्य",
+    "sourceAspiration": "आकांक्षा",
+    "below": "स्तर से नीचे",
+    "undeclared": "घोषित नहीं",
+    "none": "कोई कौशल अंतर नहीं मिला।",
+    "unknownHint": "अभी घोषित नहीं — अंतर देखने के लिए अपना स्तर जोड़ें।",
+    "needed": "जिन्हें आवश्यक",
+    "score": "अंक",
+    "criticalBelow": "गंभीर और नीचे",
+    "departments": "विभाग",
+    "hint": "केवल गिनती — किसी का नाम नहीं। महत्व × कम स्तर के अनुसार क्रमित।",
+    "impCritical": "गंभीर",
+    "impImportant": "महत्वपूर्ण",
+    "impUseful": "उपयोगी"
   }
 }

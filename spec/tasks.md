@@ -1945,6 +1945,34 @@ build on 3–5).
         for the count ("N of M"), per-person reminders for unread posts,
         comments or reactions, rich text, file uploads.
 
+- [x] WPM-T87 (2026-10-06) **Skills gap analysis.** Builds on WPM-T20/T41/T51.
+      Pure `rules/skill_gap.rs` (5 tests). A *need* has a level, an importance
+      (`critical` 3 · `important` 2 · `useful` 1) and a source: **role** (the
+      worker's current UK GDAD PCF role profile's requirements), **target**
+      (the person's own skill target) or **aspiration** (their private skill
+      aspirations). Needs merge per skill at the highest level and strongest
+      importance with all sources kept, and are graded `met` / `below` /
+      `undeclared`. **Priority = importance weight × levels short.**
+      `undeclared` is *unknown*: no shortfall, no priority, ranked after real
+      gaps — a prompt to assess, never a gap of some size.
+      - `GET /api/workers/{pid}/skill-gaps` — one person, ranked. Aspirations
+        are included **only when the caller may write the person's record
+        (themself, or HR)** (`includes_aspirations` says so).
+      - `GET /api/workforce-intelligence/skill-gaps?department=&limit=` — per
+        skill over employed workers in the caller's organizations: needed by,
+        met, below, undeclared, levels short, critical-below, score,
+        departments; ranked by score then critical-below. **Counts only —
+        nobody is named, and aspirations are never included** (tested).
+      - UI: a "My skill gaps" panel on `/me` and `/workers/{pid}` (sources
+        shown; unknown shown as "Not declared"), `/skill-gaps` (department
+        filter, ranked table), nav link, 23 strings in 13 locales. DB suite
+        52/52 (merge across sources, ranking, unknown, roll-up, no names, no
+        aspirations), clippy clean, lib 285, svelte-check 0, vitest 68/68,
+        Playwright 27/27, build green. **Not done:** ESCO-role requirements (only
+        the PCF role profile gives requirements); gaps against a *next* role
+        (promotion readiness); trends over time. Training time recommendations
+        follow as WPM-T88.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

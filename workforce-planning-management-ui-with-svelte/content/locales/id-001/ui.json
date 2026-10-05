@@ -29,7 +29,8 @@
     "directory": "Direktori",
     "rota": "Jadwal siaga",
     "announcements": "Pengumuman",
-    "ceo": "Dasbor CEO"
+    "ceo": "Dasbor CEO",
+    "skillGaps": "Kesenjangan keterampilan"
   },
   "pr": {
     "retention": "Retensi",
@@ -464,5 +465,29 @@
     "range12m": "12 bulan",
     "rangeYtd": "Tahun berjalan",
     "vsStart": "dibanding awal periode"
+  },
+  "skillgaps": {
+    "title": "Kesenjangan keterampilan saya",
+    "workforceTitle": "Kesenjangan keterampilan di seluruh tenaga kerja",
+    "required": "Dibutuhkan",
+    "declared": "Dinyatakan",
+    "short": "Level kurang",
+    "priority": "Prioritas",
+    "sources": "Sumber",
+    "sourceRole": "Peran",
+    "sourceTarget": "Target Anda",
+    "sourceAspiration": "Aspirasi",
+    "below": "Di bawah",
+    "undeclared": "Belum dinyatakan",
+    "none": "Tidak ada kesenjangan keterampilan.",
+    "unknownHint": "Belum dinyatakan — tambahkan level Anda untuk melihat kesenjangan.",
+    "needed": "Membutuhkan",
+    "score": "Skor",
+    "criticalBelow": "Kritis di bawah",
+    "departments": "Departemen",
+    "hint": "Hanya jumlah — tidak ada yang disebut namanya. Diurutkan menurut kepentingan × level kurang.",
+    "impCritical": "Kritis",
+    "impImportant": "Penting",
+    "impUseful": "Berguna"
   }
 }

@@ -362,6 +362,51 @@ test.describe("signed-in smoke coverage", () => {
     });
   }
 
+  test("skill gaps: a person's ranked gaps and the workforce roll-up (counts only)", async ({
+    page,
+  }) => {
+    await page.route(`**/api/proxy/workers/${WORKER.pid}/skill-gaps`, (route) =>
+      route.fulfill({
+        json: {
+          worker_pid: WORKER.pid,
+          includes_aspirations: true,
+          counts: { met: 1, below: 1, undeclared: 1 },
+          gaps: [
+            { skill_pid: "s1", skill: "Data modelling", category: "technical", required: 4, importance: "critical", sources: ["role", "target"], declared: 2, status: "below", shortfall: 2, priority: 6 },
+            { skill_pid: "s2", skill: "Stakeholder management", category: "leadership", required: 3, importance: "important", sources: ["role", "aspiration"], declared: null, status: "undeclared", shortfall: null, priority: 0 },
+          ],
+        },
+      }),
+    );
+    await page.goto("/me");
+    const mine = page.getByTestId("skill-gaps-table");
+    await expect(mine).toContainText("Data modelling");
+    await expect(mine).toContainText("Role, Your target");
+    // Unknown is shown as "Not declared" — never a number of levels short.
+    const unknownRow = mine.locator('tr[data-status="undeclared"]');
+    await expect(unknownRow).toContainText("Not declared");
+    await expect(unknownRow).toContainText("Role, Aspiration");
+
+    await page.route("**/api/proxy/workforce-intelligence/skill-gaps**", (route) =>
+      route.fulfill({
+        json: {
+          as_of: "2026-10-06",
+          workers_considered: 40,
+          workers_with_needs: 31,
+          skills_total: 1,
+          skills: [
+            { skill_pid: "s1", skill: "Data modelling", category: "technical", needed_by: 12, met: 5, below: 6, undeclared: 1, total_shortfall: 11, critical_below: 4, score: 31, departments: [{ department: "engineering", below: 4 }, { department: "finance", below: 2 }] },
+          ],
+        },
+      }),
+    );
+    await page.goto("/skill-gaps");
+    const table = page.getByTestId("workforce-gaps");
+    await expect(table).toContainText("Data modelling");
+    await expect(table).toContainText("engineering (4), finance (2)");
+    await expect(page.locator("body")).toContainText("nobody is named");
+  });
+
   test("announcements show pinned first as plain text, and editors post", async ({
     page,
   }) => {

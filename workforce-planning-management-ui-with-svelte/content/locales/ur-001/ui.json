@@ -29,7 +29,8 @@
     "directory": "ڈائریکٹری",
     "rota": "آن کال روٹا",
     "announcements": "اعلانات",
-    "ceo": "سی ای او ڈیش بورڈ"
+    "ceo": "سی ای او ڈیش بورڈ",
+    "skillGaps": "مہارتوں کے خلا"
   },
   "pr": {
     "retention": "ڈیٹا برقراری",
@@ -464,5 +465,29 @@
     "range12m": "12 ماہ",
     "rangeYtd": "سال کے آغاز سے اب تک",
     "vsStart": "مدت کے آغاز کے مقابلے میں"
+  },
+  "skillgaps": {
+    "title": "میری مہارتوں کے خلا",
+    "workforceTitle": "پوری افرادی قوت میں مہارتوں کے خلا",
+    "required": "درکار",
+    "declared": "اعلان شدہ",
+    "short": "کم درجے",
+    "priority": "ترجیح",
+    "sources": "ماخذ",
+    "sourceRole": "کردار",
+    "sourceTarget": "آپ کا ہدف",
+    "sourceAspiration": "خواہش",
+    "below": "کم",
+    "undeclared": "اعلان نہیں",
+    "none": "مہارتوں کا کوئی خلا نہیں ملا۔",
+    "unknownHint": "ابھی اعلان نہیں — خلا دیکھنے کے لیے اپنا درجہ شامل کریں۔",
+    "needed": "جنہیں ضرورت",
+    "score": "اسکور",
+    "criticalBelow": "اہم اور کم",
+    "departments": "شعبے",
+    "hint": "صرف گنتی — کسی کا نام نہیں۔ اہمیت × کم درجوں کے مطابق ترتیب۔",
+    "impCritical": "اہم",
+    "impImportant": "اہم تر",
+    "impUseful": "مفید"
   }
 }

@@ -18,6 +18,7 @@ mod pagination;
 mod payroll;
 mod privacy;
 mod rotas;
+mod skill_gaps;
 mod talent;
 mod wellbeing;
 mod workforce;

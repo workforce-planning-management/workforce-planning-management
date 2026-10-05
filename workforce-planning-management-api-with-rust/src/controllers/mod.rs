@@ -30,6 +30,7 @@ pub mod reporting;
 pub mod rota_swaps;
 pub mod rotas;
 pub mod roles;
+pub mod skill_gaps;
 pub mod metrics;
 pub mod notifications;
 pub mod organizations;

@@ -104,6 +104,7 @@ impl Hooks for App {
             .add_route(controllers::contacts::routes())
             .add_route(controllers::directory::routes())
             .add_route(controllers::rotas::routes())
+            .add_route(controllers::skill_gaps::routes())
             .add_route(controllers::rota_swaps::routes())
             .add_route(controllers::transfers::routes())
             .add_route(controllers::talent::routes())

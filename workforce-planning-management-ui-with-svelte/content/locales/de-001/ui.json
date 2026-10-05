@@ -29,7 +29,8 @@
     "directory": "Verzeichnis",
     "rota": "Bereitschaftsplan",
     "announcements": "Ankündigungen",
-    "ceo": "CEO-Dashboard"
+    "ceo": "CEO-Dashboard",
+    "skillGaps": "Kompetenzlücken"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -464,5 +465,29 @@
     "range12m": "12 Monate",
     "rangeYtd": "Seit Jahresbeginn",
     "vsStart": "ggü. Beginn des Zeitraums"
+  },
+  "skillgaps": {
+    "title": "Meine Kompetenzlücken",
+    "workforceTitle": "Kompetenzlücken in der Belegschaft",
+    "required": "Benötigt",
+    "declared": "Angegeben",
+    "short": "Fehlende Stufen",
+    "priority": "Priorität",
+    "sources": "Quelle",
+    "sourceRole": "Stelle",
+    "sourceTarget": "Ihr Ziel",
+    "sourceAspiration": "Wunsch",
+    "below": "Darunter",
+    "undeclared": "Nicht angegeben",
+    "none": "Keine Kompetenzlücken gefunden.",
+    "unknownHint": "Noch nicht angegeben – tragen Sie Ihr Niveau ein, um die Lücke zu sehen.",
+    "needed": "Benötigen es",
+    "score": "Wert",
+    "criticalBelow": "Kritisch darunter",
+    "departments": "Abteilungen",
+    "hint": "Nur Zahlen – niemand wird genannt. Sortiert nach Wichtigkeit × fehlenden Stufen.",
+    "impCritical": "Kritisch",
+    "impImportant": "Wichtig",
+    "impUseful": "Nützlich"
   }
 }

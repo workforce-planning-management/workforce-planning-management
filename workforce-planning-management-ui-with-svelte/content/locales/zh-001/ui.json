@@ -29,7 +29,8 @@
     "directory": "通讯录",
     "rota": "值班表",
     "announcements": "公告",
-    "ceo": "CEO 仪表板"
+    "ceo": "CEO 仪表板",
+    "skillGaps": "技能差距"
   },
   "pr": {
     "retention": "保留",
@@ -464,5 +465,29 @@
     "range12m": "12 个月",
     "rangeYtd": "年初至今",
     "vsStart": "较期初"
+  },
+  "skillgaps": {
+    "title": "我的技能差距",
+    "workforceTitle": "全员技能差距",
+    "required": "所需",
+    "declared": "已申报",
+    "short": "差距级数",
+    "priority": "优先级",
+    "sources": "来源",
+    "sourceRole": "岗位",
+    "sourceTarget": "您的目标",
+    "sourceAspiration": "志向",
+    "below": "低于要求",
+    "undeclared": "未申报",
+    "none": "未发现技能差距。",
+    "unknownHint": "尚未申报——添加您的水平即可查看差距。",
+    "needed": "需要人数",
+    "score": "得分",
+    "criticalBelow": "关键岗位低于要求",
+    "departments": "部门",
+    "hint": "仅统计数量，不点名。按重要性 × 差距级数排序。",
+    "impCritical": "关键",
+    "impImportant": "重要",
+    "impUseful": "有用"
   }
 }

@@ -42,6 +42,7 @@
     ["/me", "nav.me"],
     ["/roles", "nav.roles"],
     ["/skills", "nav.skills"],
+    ["/skill-gaps", "nav.skillGaps"],
     ["/cpd", "nav.cpd"],
     ["/planning", "nav.planning"],
     ["/change", "nav.change"],
