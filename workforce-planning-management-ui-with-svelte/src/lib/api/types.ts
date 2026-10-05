@@ -220,6 +220,63 @@ export interface WorkforceSkillGap {
   departments: Array<{ department: string; below: number }>;
 }
 
+/** A catalogue course that builds a skill. */
+export interface SkillCourse {
+  pid: string;
+  course_ref: string;
+  title: string;
+  hours: number;
+  levels: number;
+}
+
+/** The training that would close one gap, and what it rests on. */
+export interface TrainingRecommendation {
+  courses: Array<{ course_ref: string; title: string; hours: number; levels: number }>;
+  course_levels: number;
+  estimated_levels: number;
+  hours: number;
+  basis: "courses" | "mixed" | "estimate";
+}
+
+/** One scheduled item of a training plan. */
+export interface TrainingPlanItem {
+  skill_pid: string;
+  skill: string | null;
+  importance: string;
+  required: number;
+  declared: number;
+  shortfall: number;
+  priority: number;
+  recommendation: TrainingRecommendation;
+  starts_on: string | null;
+  ends_on: string | null;
+  weeks: number;
+  cumulative_hours: number;
+}
+
+/** A person's training plan. */
+export interface TrainingPlan {
+  worker_pid: string;
+  weekly_hours: number;
+  start: string;
+  total_hours: number;
+  total_weeks: number;
+  finish_on: string | null;
+  plan: TrainingPlanItem[];
+  assess_first: Array<{ skill_pid: string; skill: string | null; required: number; importance: string }>;
+}
+
+/** Training hours across the workforce (hours and counts only). */
+export interface TrainingDemand {
+  as_of: string;
+  workers_considered: number;
+  people_with_gaps: number;
+  total_hours: number;
+  average_hours_per_person: number | null;
+  skills: Array<{ skill_pid: string; skill: string | null; people: number; hours: number; people_on_estimate: number }>;
+  departments: Array<{ department: string; people: number; hours: number }>;
+}
+
 /** One funded job opening. */
 export interface Requisition {
   pid: string;

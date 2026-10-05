@@ -5,13 +5,15 @@
   Counts only: nobody is named, and private aspirations are never included.
 -->
 <script lang="ts">
-  import { workforceSkillGaps } from "#lib/api/wpm.js";
-  import type { WorkforceSkillGap } from "#lib/api/types.js";
+  import { trainingDemand, workforceSkillGaps } from "#lib/api/wpm.js";
+  import type { TrainingDemand, WorkforceSkillGap } from "#lib/api/types.js";
+  import SkillTrainingCatalogue from "#lib/components/SkillTrainingCatalogue.svelte";
   import { t } from "#lib/i18n.svelte.js";
 
   let department = $state("");
   let departments = $state<string[]>([]);
   let skills = $state<WorkforceSkillGap[] | null>(null);
+  let demand = $state<TrainingDemand | null>(null);
   let error = $state<string | null>(null);
 
   $effect(() => {
@@ -19,9 +21,13 @@
     let current = true;
     void (async () => {
       try {
-        const result = await workforceSkillGaps({ department: dept || undefined, limit: 50 });
+        const [result, hours] = await Promise.all([
+          workforceSkillGaps({ department: dept || undefined, limit: 50 }),
+          trainingDemand({ department: dept || undefined }).catch(() => null),
+        ]);
         if (!current) return;
         skills = result.skills;
+        demand = hours;
         error = null;
         departments = [
           ...new Set([...departments, ...result.skills.flatMap((s) => s.departments.map((d) => d.department))]),
@@ -83,3 +89,44 @@
     </tbody>
   </table>
 {/if}
+
+{#if demand}
+  <h2>{t("training.demandTitle")}</h2>
+  <p class="muted">{t("training.demandHint")}</p>
+  <p data-testid="demand-total">
+    <strong>{demand.total_hours}</strong> {t("training.hours")} ·
+    {demand.people_with_gaps} {t("training.people")}
+    {#if demand.average_hours_per_person !== null}
+      · {t("training.avg")}: {demand.average_hours_per_person.toFixed(1)}
+    {/if}
+  </p>
+  {#if demand.skills.length > 0}
+    <table data-testid="demand-skills">
+      <thead>
+        <tr>
+          <th>{t("nav.skills")}</th>
+          <th>{t("training.people")}</th>
+          <th>{t("training.hours")}</th>
+          <th>{t("training.basisEstimate")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each demand.skills as s (s.skill_pid)}
+          <tr>
+            <td>{s.skill ?? s.skill_pid}</td>
+            <td>{s.people}</td>
+            <td>{s.hours}</td>
+            <td class="muted">{s.people_on_estimate}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {/if}
+  {#if demand.departments.length > 0}
+    <p class="muted" data-testid="demand-departments">
+      {demand.departments.map((d) => `${d.department}: ${d.hours} (${d.people})`).join(" · ")}
+    </p>
+  {/if}
+{/if}
+
+<SkillTrainingCatalogue />

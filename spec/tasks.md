@@ -1971,7 +1971,43 @@ build on 3–5).
         Playwright 27/27, build green. **Not done:** ESCO-role requirements (only
         the PCF role profile gives requirements); gaps against a *next* role
         (promotion readiness); trends over time. Training time recommendations
-        follow as WPM-T88.
+        followed as WPM-T88.
+
+- [x] WPM-T88 (2026-10-06) **Training time recommendations.** Builds on WPM-T87.
+      Migration `m20261006_000045_training_time` (`skills.hours_per_level`,
+      `skill_courses`); pure `rules/training.rs` (7 tests).
+      - **What it recommends:** for each skill a person is **below**, in
+        priority order — catalogue courses they have *not* completed, cheapest
+        hours-per-level first until the gap is covered; for any levels the
+        courses leave, the skill's own `hours_per_level` (or the service
+        default, 30). Each recommendation says what it **rests on**: `courses`,
+        `mixed` or `estimate`. Planning estimates, not promises.
+      - **A skill the person has not declared gets no hours** — it is listed
+        under `assess_first`: unknown needs assessing, not training.
+      - **When:** items run one after another at a weekly pace, whole weeks
+        each, from a start day (default today); `weekly_hours` 1–40, default 4
+        scaled by the person's FTE (half-time → 2, at least 1).
+      - `GET /api/workers/{pid}/training-plan?weekly_hours=&start=` (hours,
+        weeks, per-item dates, total, finish date, `assess_first`).
+        `GET /api/workforce-intelligence/training-demand?department=` — total
+        hours, people with gaps, average per person, hours by skill (and how
+        many people are on the *estimate* basis) and by department; hours and
+        counts only, nobody named, no aspirations.
+      - **Catalogue:** `GET|POST /api/skills/{pid}/courses` (ref, title, hours
+        1–1000, levels added 1–4; a duplicate is refused),
+        `DELETE /api/skill-courses/{pid}`, `PUT /api/skills/{pid}/training-hours`
+        (1–500, null = default); `skill_courses` joins the retention sweep
+        list (55).
+      - **UI:** a "Training plan" section under "My skill gaps" (pace input,
+        hours, basis chip, courses, dates, totals, assess-first), on
+        `/skill-gaps` the workforce training time and a catalogue editor; 30
+        strings in 13 locales. DB suite 53/53 (cheapest-first, mixed/estimate,
+        completed course dropped, schedule dates, assess-first, bad pace
+        refused, demand without names), clippy clean, lib 292, svelte-check 0,
+        vitest 68/68, Playwright 27/27, build green. **Not done:** diminishing
+        returns per level, course prerequisites or availability, cost, linking
+        to the upstream course catalogue, booking a place, and the
+        joiner/leaver work queued next (WPM-T89).
 
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of

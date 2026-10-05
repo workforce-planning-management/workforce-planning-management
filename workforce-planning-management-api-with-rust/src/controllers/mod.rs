@@ -39,6 +39,7 @@ pub mod privacy;
 pub mod talent;
 pub mod contacts;
 pub mod directory;
+pub mod training_plan;
 pub mod transfers;
 pub mod wellbeing;
 pub mod workforce;

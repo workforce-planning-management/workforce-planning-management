@@ -73,6 +73,7 @@ pub mod role_profiles;
 pub mod role_skill_requirements;
 pub mod shift_assignments;
 pub mod shifts;
+pub mod skill_courses;
 pub mod skill_external_refs;
 pub mod skills;
 pub mod succession_candidates;

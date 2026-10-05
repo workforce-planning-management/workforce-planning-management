@@ -1,12 +1,12 @@
-//! `SeaORM` Entity — `skills`. Learning & development (declared/recorded data).
+//! `SeaORM` Entity — `skill_courses`. A catalogue course that builds a skill: its hours, and how many levels it typically adds.
 
 #![allow(missing_docs)]
 
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "skills")]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
+#[sea_orm(table_name = "skill_courses")]
 pub struct Model {
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
@@ -14,9 +14,11 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub pid: Uuid,
-    pub name: String,
-    pub category: String,
-    pub hours_per_level: Option<i32>,
+    pub skill_pid: Uuid,
+    pub course_ref: String,
+    pub title: String,
+    pub hours: i32,
+    pub levels: i32,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

@@ -44,6 +44,7 @@ pub mod skill_gap;
 pub mod skill_merge;
 pub mod talent;
 pub mod tokens;
+pub mod training;
 pub mod wellbeing;
 pub mod workforce;
 pub mod working_time;

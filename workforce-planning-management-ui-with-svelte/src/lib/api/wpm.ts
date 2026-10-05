@@ -12,7 +12,10 @@ import type {
   Cover,
   RotaSummary,
   RotaView,
+  SkillCourse,
   SkillGap,
+  TrainingDemand,
+  TrainingPlan,
   SwapRequest,
   WorkforceSkillGap,
   DirectoryEntry,
@@ -1416,6 +1419,65 @@ export function workforceSkillGaps(
   if (options?.limit) params.set("limit", String(options.limit));
   const qs = params.size ? `?${params}` : "";
   return api(`/workforce-intelligence/skill-gaps${qs}`, init);
+}
+
+/** One person's training plan from their skill gaps (default pace from their FTE). */
+export function workerTrainingPlan(
+  workerPid: string,
+  options?: { weeklyHours?: number; start?: string },
+  init?: FetchLike,
+): Promise<TrainingPlan> {
+  const params = new URLSearchParams();
+  if (options?.weeklyHours) params.set("weekly_hours", String(options.weeklyHours));
+  if (options?.start) params.set("start", options.start);
+  const qs = params.size ? `?${params}` : "";
+  return api(`/workers/${workerPid}/training-plan${qs}`, init);
+}
+
+/** Training hours the workforce's skill gaps would take (hours and counts only). */
+export function trainingDemand(
+  options?: { department?: string },
+  init?: FetchLike,
+): Promise<TrainingDemand> {
+  const qs = options?.department ? `?department=${encodeURIComponent(options.department)}` : "";
+  return api(`/workforce-intelligence/training-demand${qs}`, init);
+}
+
+/** The catalogue courses that build a skill, and its hours-per-level figure. */
+export function skillCourses(
+  skillPid: string,
+  init?: FetchLike,
+): Promise<{
+  skill_pid: string;
+  hours_per_level: number | null;
+  default_hours_per_level: number;
+  courses: SkillCourse[];
+}> {
+  return api(`/skills/${skillPid}/courses`, init);
+}
+
+/** Add a catalogue course for a skill. */
+export function addSkillCourse(
+  skillPid: string,
+  course: { course_ref: string; title: string; hours: number; levels?: number },
+): Promise<SkillCourse> {
+  return api(`/skills/${skillPid}/courses`, { method: "POST", body: course });
+}
+
+/** Take a course off a skill. */
+export function removeSkillCourse(pid: string): Promise<unknown> {
+  return api(`/skill-courses/${pid}`, { method: "DELETE" });
+}
+
+/** Set (or clear, with null) a skill's hours-per-level planning figure. */
+export function setSkillTrainingHours(
+  skillPid: string,
+  hoursPerLevel: number | null,
+): Promise<{ skill_pid: string; hours_per_level: number | null }> {
+  return api(`/skills/${skillPid}/training-hours`, {
+    method: "PUT",
+    body: { hours_per_level: hoursPerLevel },
+  });
 }
 
 /** A rota's swap requests, newest first. */

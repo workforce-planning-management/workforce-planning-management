@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — skill gaps and training time
+
+"My skill gaps" (on `/me` and a worker's page): what your role, your own
+targets and — for you alone — your aspirations ask for against what you have
+declared, ranked; a skill you have not declared shows as "Not declared", never
+as a gap of some size. Under it, a **training plan**: the courses and hours
+that would close each gap and when you would finish at a weekly pace. `/skill-gaps`
+shows the workforce's gaps (counts only), the training hours they add up to,
+and a catalogue editor for the courses behind each skill.
+
 ### Added — announcement audiences, links and read receipts; CEO period control
 
 An announcement can be aimed at one department, carry up to three https

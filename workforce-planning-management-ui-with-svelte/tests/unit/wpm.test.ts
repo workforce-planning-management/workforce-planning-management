@@ -197,6 +197,14 @@ describe("api path map", () => {
     await wpm.workerSkillGaps("w1");
     await wpm.workforceSkillGaps();
     await wpm.workforceSkillGaps({ department: "Finance", limit: 10 });
+    await wpm.workerTrainingPlan("w1");
+    await wpm.workerTrainingPlan("w1", { weeklyHours: 6, start: "2026-10-05" });
+    await wpm.trainingDemand();
+    await wpm.trainingDemand({ department: "Finance" });
+    await wpm.skillCourses("k1");
+    await wpm.addSkillCourse("k1", { course_ref: "course:x", title: "T", hours: 10 });
+    await wpm.removeSkillCourse("c1");
+    await wpm.setSkillTrainingHours("k1", 20);
     await wpm.listSwapRequests("r1");
     await wpm.requestSwap("r1", { requester_pid: "w1", taker_pid: "w2", starts_on: "2026-10-05", ends_on: "2026-10-11" });
     await wpm.decideSwap("s1", "accept");
@@ -312,6 +320,14 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/skill-gaps",
       "/api/proxy/workforce-intelligence/skill-gaps",
       "/api/proxy/workforce-intelligence/skill-gaps?department=Finance&limit=10",
+      "/api/proxy/workers/w1/training-plan",
+      "/api/proxy/workers/w1/training-plan?weekly_hours=6&start=2026-10-05",
+      "/api/proxy/workforce-intelligence/training-demand",
+      "/api/proxy/workforce-intelligence/training-demand?department=Finance",
+      "/api/proxy/skills/k1/courses",
+      "/api/proxy/skills/k1/courses",
+      "/api/proxy/skill-courses/c1",
+      "/api/proxy/skills/k1/training-hours",
       "/api/proxy/rotas/r1/swap-requests",
       "/api/proxy/rotas/r1/swap-requests",
       "/api/proxy/rota-swap-requests/s1/accept",

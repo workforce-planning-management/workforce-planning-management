@@ -6,14 +6,17 @@
   A development conversation starter, not a selection decision.
 -->
 <script lang="ts">
-  import { workerSkillGaps } from "#lib/api/wpm.js";
-  import type { SkillGap } from "#lib/api/types.js";
+  import { workerSkillGaps, workerTrainingPlan } from "#lib/api/wpm.js";
+  import type { SkillGap, TrainingPlan } from "#lib/api/types.js";
   import { t } from "#lib/i18n.svelte.js";
 
   let { workerPid }: { workerPid: string } = $props();
 
   let gaps = $state<SkillGap[] | null>(null);
   let error = $state<string | null>(null);
+  let plan = $state<TrainingPlan | null>(null);
+  // Blank = the service's default pace for this person's FTE.
+  let weekly = $state<number | null>(null);
 
   $effect(() => {
     void workerPid;
@@ -26,6 +29,31 @@
       }
     })();
   });
+
+  // The plan reloads when the pace changes; a late answer for an older pace is dropped.
+  $effect(() => {
+    void workerPid;
+    const pace = weekly;
+    let current = true;
+    void (async () => {
+      try {
+        const next = await workerTrainingPlan(workerPid, pace ? { weeklyHours: pace } : undefined);
+        if (current) plan = next;
+      } catch {
+        if (current) plan = null;
+      }
+    })();
+    return () => {
+      current = false;
+    };
+  });
+
+  const basis = (b: string) =>
+    b === "courses"
+      ? t("training.basisCourses")
+      : b === "mixed"
+        ? t("training.basisMixed")
+        : t("training.basisEstimate");
 
   const source = (s: SkillGap["sources"][number]) =>
     s === "role"
@@ -80,5 +108,62 @@
         {/each}
       </tbody>
     </table>
+  {/if}
+
+  {#if plan}
+    <h3>{t("training.title")}</h3>
+    <p class="muted">{t("training.hint")}</p>
+    <label>
+      {t("training.weekly")}
+      <input
+        type="number"
+        min="1"
+        max="40"
+        placeholder={String(plan.weekly_hours)}
+        bind:value={weekly}
+        data-testid="plan-weekly"
+      />
+    </label>
+    {#if plan.plan.length === 0}
+      <p class="muted" data-testid="plan-none">{t("training.noPlan")}</p>
+    {:else}
+      <table data-testid="training-plan">
+        <thead>
+          <tr>
+            <th>{t("nav.skills")}</th>
+            <th>{t("training.hours")}</th>
+            <th>{t("training.basis")}</th>
+            <th>{t("training.courses")}</th>
+            <th>{t("training.dates")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each plan.plan as item (item.skill_pid)}
+            <tr>
+              <td><strong>{item.skill ?? item.skill_pid}</strong></td>
+              <td>{item.recommendation.hours}</td>
+              <td><span class="chip">{basis(item.recommendation.basis)}</span></td>
+              <td>{item.recommendation.courses.map((c) => `${c.title} (${c.hours})`).join(", ") || "—"}</td>
+              <td>{item.starts_on} → {item.ends_on} <span class="muted">({item.weeks} {t("training.weeks")})</span></td>
+            </tr>
+          {/each}
+        </tbody>
+        <tfoot>
+          <tr data-testid="plan-total">
+            <th>{t("training.total")}</th>
+            <th>{plan.total_hours}</th>
+            <th></th>
+            <th></th>
+            <th>{t("training.finish")} {plan.finish_on} ({plan.total_weeks} {t("training.weeks")})</th>
+          </tr>
+        </tfoot>
+      </table>
+    {/if}
+    {#if plan.assess_first.length > 0}
+      <p data-testid="plan-assess">
+        <strong>{t("training.assessFirst")}:</strong>
+        {plan.assess_first.map((a) => a.skill ?? a.skill_pid).join(", ")}
+      </p>
+    {/if}
   {/if}
 </section>
