@@ -20,8 +20,10 @@ use super::{unprocessable, with_page_headers};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{leave_requests, rota_members, rota_overrides, rotas, workers};
 use crate::models::audit_logs::Model as Audit;
+use crate::models::notifications::Model as Notification;
 use crate::models::{memberships, records};
 use crate::rules::metrics as metric_rules;
+use crate::rules::notify;
 use crate::rules::rota::{self as rules, Assignment, Override, Rota};
 
 /// Days shown when the caller names no window.
@@ -223,6 +225,26 @@ async fn write_members(
     Ok(())
 }
 
+/// Tell newly named members they are in the rota (reference-only: the rota's
+/// name, nothing about anyone's availability or leave).
+async fn notify_added(
+    db: &impl ConnectionTrait,
+    rota: &rotas::Model,
+    recipients: &[Uuid],
+) -> Result<()> {
+    for worker in recipients {
+        Notification::push(
+            db,
+            *worker,
+            "rota_added",
+            &format!("You were added to the on-call rota {}.", rota.name),
+            serde_json::json!({ "rota_pid": rota.pid }),
+        )
+        .await?;
+    }
+    Ok(())
+}
+
 /// `POST /api/rotas` — create a rota.
 #[debug_handler]
 async fn create_rota(
@@ -260,6 +282,7 @@ async fn create_rota(
         }
     })?;
     write_members(&txn, row.pid, &payload.members).await?;
+    notify_added(&txn, &row, &notify::rota_added_recipients(&[], &payload.members)).await?;
     Audit::record(&txn, "rota", row.pid, "created", caller.actor(), None).await?;
     txn.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
@@ -417,7 +440,7 @@ async fn update_rota(
 ) -> Result<Response> {
     let rota = find_rota(&ctx, &caller, &pid).await?;
     let current = member_pids(&ctx, rota.pid).await?;
-    let members = payload.members.clone().unwrap_or(current);
+    let members = payload.members.clone().unwrap_or_else(|| current.clone());
     let period = payload.period_days.unwrap_or(rota.period_days);
     rules::validate_rota(i64::from(period), &members).map_err(|e| unprocessable(&e))?;
     if payload.members.is_some() {
@@ -442,6 +465,9 @@ async fn update_rota(
     active.update(&txn).await?;
     if payload.members.is_some() {
         write_members(&txn, rota.pid, &members).await?;
+        // `current` was read before the transaction opened: reading again here
+        // would wait on a second pooled connection while this one is held.
+        notify_added(&txn, &rota, &notify::rota_added_recipients(&current, &members)).await?;
     }
     Audit::record(&txn, "rota", rota.pid, "updated", caller.actor(), None).await?;
     txn.commit().await?;
@@ -513,6 +539,21 @@ async fn add_override(
         ..Default::default()
     }
     .insert(&ctx.db)
+    .await?;
+    Notification::push(
+        &ctx.db,
+        payload.worker_pid,
+        "on_call_swap",
+        &format!(
+            "You are on call for {} from {} to {}.",
+            rota.name, payload.starts_on, payload.ends_on
+        ),
+        serde_json::json!({
+            "rota_pid": rota.pid,
+            "from": payload.starts_on,
+            "to": payload.ends_on,
+        }),
+    )
     .await?;
     Audit::record(&ctx.db, "rota", rota.pid, "swap_added", caller.actor(), None).await?;
     format::json(serde_json::json!({ "pid": row.pid }))

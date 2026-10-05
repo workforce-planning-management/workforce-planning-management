@@ -1764,6 +1764,19 @@ build on 3–5).
       clippy clean, lib 269, svelte-check 0, vitest 63/63, Playwright 23/23,
       build green.
 
+- [x] WPM-T79 (2026-10-05) **Rota notifications.** Builds on WPM-T77. Two new
+      in-app notification kinds (reference-only, WPM-D23 — the rota's name and
+      dates, nothing about anyone's availability or leave): `rota_added` to
+      each person *newly named* in a rota's membership (on creation, and when
+      an update adds someone — re-ordering or removing tells nobody; pure
+      `notify::rota_added_recipients`), and `on_call_swap` to the person a swap
+      puts on call ("You are on call for <rota> from <date> to <date>").
+      Fixed on the way: reading the old members inside the update transaction
+      waited on a second pooled connection and returned 500 — they are read
+      before it opens. DB suite 47/47 (the rota test checks both kinds), lib
+      270. Not done: a *reminder* when a turn is about to start (needs a
+      scheduled task); the inbox shows these with the existing generic body.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

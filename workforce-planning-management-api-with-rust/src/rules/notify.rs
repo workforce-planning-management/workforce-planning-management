@@ -5,7 +5,13 @@
 use uuid::Uuid;
 
 /// The closed notification kinds.
-pub const KINDS: &[&str] = &["appraisal_request", "appraisal_shared", "adjustment_update"];
+pub const KINDS: &[&str] = &[
+    "appraisal_request",
+    "appraisal_shared",
+    "adjustment_update",
+    "rota_added",
+    "on_call_swap",
+];
 
 /// Recipients of an appraisal lifecycle move:
 /// - `collecting` ⇒ **every** rater (self included — the
@@ -27,6 +33,13 @@ pub fn appraisal_recipients(
         "shared" => vec![(subject_pid, "appraisal_shared")],
         _ => Vec::new(),
     }
+}
+
+/// Who is newly named in a rota's membership: in `new` but not in `old`,
+/// in the new order. Re-ordering or removing people tells nobody.
+#[must_use]
+pub fn rota_added_recipients(old: &[Uuid], new: &[Uuid]) -> Vec<Uuid> {
+    new.iter().filter(|w| !old.contains(w)).copied().collect()
 }
 
 #[cfg(test)]
@@ -60,7 +73,23 @@ mod tests {
     fn kinds_are_closed() {
         assert_eq!(
             KINDS,
-            &["appraisal_request", "appraisal_shared", "adjustment_update"]
+            &[
+                "appraisal_request",
+                "appraisal_shared",
+                "adjustment_update",
+                "rota_added",
+                "on_call_swap"
+            ]
         );
+    }
+
+    /// Only people newly named in the rota are told.
+    #[test]
+    fn rota_added_tells_only_the_new_members() {
+        let (a, b, c) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        assert_eq!(rota_added_recipients(&[], &[a, b]), vec![a, b]);
+        assert_eq!(rota_added_recipients(&[a, b], &[c, b, a]), vec![c]);
+        assert_eq!(rota_added_recipients(&[a, b], &[b, a]), Vec::<Uuid>::new(), "re-order");
+        assert_eq!(rota_added_recipients(&[a, b], &[a]), Vec::<Uuid>::new(), "removal");
     }
 }

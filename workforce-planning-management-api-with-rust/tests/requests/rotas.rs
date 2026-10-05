@@ -51,6 +51,19 @@ async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
             "the name is taken in this organization"
         );
 
+        // Everyone named is told, with the rota's name and nothing else.
+        for who in [a, b, c] {
+            let told: Value = request.get(&format!("/api/workers/{who}/notifications")).await.json();
+            let kinds: Vec<&str> = told
+                .as_array()
+                .expect("notifications")
+                .iter()
+                .filter(|n| n["kind"] == "rota_added")
+                .filter_map(|n| n["body"].as_str())
+                .collect();
+            assert_eq!(kinds, [format!("You were added to the on-call rota Platform {tag}.")]);
+        }
+
         // Week 1: A, week 2: B, week 3: C, week 4: A.
         let view: Value = request.get(&format!("/api/rotas/{rota_pid}")).await.json();
         assert_eq!(view["on_call_today"]["worker_pid"], a.as_str());
@@ -77,6 +90,12 @@ async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
         let now: Value = request.get(&format!("/api/rotas/{rota_pid}/on-call")).await.json();
         assert_eq!(now["worker_pid"], c.as_str());
         assert_eq!(now["source"], "override");
+        let told: Value = request.get(&format!("/api/workers/{c}/notifications")).await.json();
+        assert!(
+            told.as_array().unwrap().iter().any(|n| n["kind"] == "on_call_swap"
+                && n["body"].as_str().unwrap().starts_with(&format!("You are on call for Platform {tag} from"))),
+            "the swapped-in person is told"
+        );
         assert_eq!(
             request
                 .post(&format!("/api/rotas/{rota_pid}/overrides"))
