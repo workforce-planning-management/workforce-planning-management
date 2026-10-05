@@ -56,6 +56,17 @@ export interface OrgNode {
   reports: OrgNode[];
 }
 
+/** One employee-directory row: nothing sensitive (no pay, dates or person ref). */
+export interface DirectoryEntry {
+  pid: string;
+  display_name: string;
+  job_title: string;
+  department: string;
+  location: string | null;
+  organization_ref: string;
+  manager_name: string | null;
+}
+
 /** One funded job opening. */
 export interface Requisition {
   pid: string;

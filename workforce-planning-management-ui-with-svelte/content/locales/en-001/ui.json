@@ -25,7 +25,8 @@
     "cpd": "CPD",
     "change": "Change",
     "planning": "Planning",
-    "tour": "Tour"
+    "tour": "Tour",
+    "directory": "Directory"
   },
   "pr": {
     "retention": "Retention",
@@ -354,5 +355,12 @@
       "observation": "Median time to fill was {days} days.",
       "suggestion": "Find which stage of hiring the requisitions wait in."
     }
+  },
+  "directory": {
+    "search": "Search by name, title, department or location",
+    "allDepartments": "All departments",
+    "location": "Location",
+    "manager": "Manager",
+    "noMatches": "No one matches your search."
   }
 }

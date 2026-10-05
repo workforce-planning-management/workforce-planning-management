@@ -1656,3 +1656,21 @@ build on 3–5).
       allow-list. Auth lib tests 26/26 under the feature. Clippy (pedantic) is now
       clean on `auth.rs` and `auth/keycloak.rs` in both backends (older
       warnings cleared in a follow-up).
+
+- [x] WPM-T74 (2026-10-05) **Employee directory.** From the SOTA scan
+      (orangehrm `orangehrmCorporateDirectoryPlugin`). Pure
+      `rules/directory.rs` (5 tests): `search` — every whitespace term must
+      match name, title, department, location or manager name,
+      case-insensitively; optional exact department; stable order by name
+      then pid. `GET /api/directory?q=&department=&limit=&offset=`
+      (`controllers/directory.rs`): workers *employed today*
+      (`is_employed_on`) in the caller's organization scope, paged with
+      `x-total-count`; **nothing sensitive** (no salary, dates, person
+      ref), and a manager is named only if in the same readable set. UI
+      `/directory` (debounced search, department picker, table linking to
+      the worker), nav link, `employeeDirectory()` client, 6 strings in 13
+      locales (CMS config regenerated). DB suite 44/44 (the new test pins
+      the exclusion of a terminated worker and the absence of sensitive
+      fields); clippy clean on the new files; svelte-check 0, vitest 63/63,
+      Playwright 21/21, build green. The announcement feed half of the
+      comparator's capability is not done (`.sota` scores it partial).

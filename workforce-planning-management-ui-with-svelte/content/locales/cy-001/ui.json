@@ -25,7 +25,8 @@
     "cpd": "DPP",
     "change": "Newid",
     "planning": "Cynllunio",
-    "tour": "Taith"
+    "tour": "Taith",
+    "directory": "Cyfeiriadur"
   },
   "pr": {
     "retention": "Cadw data",
@@ -354,5 +355,12 @@
       "observation": "Canolrif yr amser i lenwi oedd {days} diwrnod.",
       "suggestion": "Darganfyddwch ym mha gam recriwtio y mae'r swyddi gwag yn aros."
     }
+  },
+  "directory": {
+    "search": "Chwilio yn ôl enw, teitl, adran neu leoliad",
+    "allDepartments": "Pob adran",
+    "location": "Lleoliad",
+    "manager": "Rheolwr",
+    "noMatches": "Does neb yn cyfateb i'ch chwiliad."
   }
 }

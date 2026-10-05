@@ -25,7 +25,8 @@
     "cpd": "持续专业发展",
     "change": "变革",
     "planning": "规划",
-    "tour": "导览"
+    "tour": "导览",
+    "directory": "通讯录"
   },
   "pr": {
     "retention": "保留",
@@ -354,5 +355,12 @@
       "observation": "填补岗位的中位用时为 {days} 天。",
       "suggestion": "找出招聘流程中岗位停留的环节。"
     }
+  },
+  "directory": {
+    "search": "按姓名、职位、部门或地点搜索",
+    "allDepartments": "所有部门",
+    "location": "地点",
+    "manager": "经理",
+    "noMatches": "没有符合搜索条件的人员。"
   }
 }

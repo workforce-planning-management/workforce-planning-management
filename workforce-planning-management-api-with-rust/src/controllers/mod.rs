@@ -33,6 +33,7 @@ pub mod organizations;
 pub mod payroll;
 pub mod privacy;
 pub mod talent;
+pub mod directory;
 pub mod transfers;
 pub mod wellbeing;
 pub mod workforce;

@@ -341,6 +341,58 @@ async fn workforce_metrics_report_defined_numbers() {
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn directory_lists_employed_workers_without_sensitive_fields() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let stay = seed_worker!(&request, &org, format!("DIR-{tag}-A"), Some(450_000)).await;
+        let leave = seed_worker!(&request, &org, format!("DIR-{tag}-B"), Some(500_000)).await;
+        activate!(&request, &stay).await;
+        activate!(&request, &leave).await;
+        // Terminated today ⇒ not employed ⇒ not listed.
+        for to in ["offboarding", "terminated"] {
+            request
+                .post(&format!("/api/workers/{leave}/status"))
+                .json(&json!({ "to": to }))
+                .await
+                .assert_status_ok();
+        }
+
+        let response = request
+            .get(&format!("/api/directory?q=dir-{tag}"))
+            .await;
+        assert_eq!(response.status_code(), 200);
+        assert_eq!(response.header("x-total-count"), "1");
+        let rows: Vec<Value> = response.json();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["pid"], stay.as_str());
+        assert_eq!(rows[0]["job_title"], "Engineer");
+        assert_eq!(rows[0]["department"], "engineering");
+        for sensitive in ["salary_minor", "salary_currency", "hired_on", "person_ref"] {
+            assert!(
+                rows[0].get(sensitive).is_none(),
+                "directory must not expose {sensitive}"
+            );
+        }
+
+        // Department filter and a miss.
+        let by_dept: Vec<Value> = request
+            .get(&format!("/api/directory?q=dir-{tag}&department=ENGINEERING"))
+            .await
+            .json();
+        assert_eq!(by_dept.len(), 1);
+        let none: Vec<Value> = request
+            .get(&format!("/api/directory?q=dir-{tag}&department=finance"))
+            .await
+            .json();
+        assert_eq!(none.len(), 0);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn workforce_insights_flag_a_shrinking_headcount() {
     request::<App, _, _>(|request, _ctx| async move {
         let org = an_org();

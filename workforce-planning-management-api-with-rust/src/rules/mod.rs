@@ -14,6 +14,7 @@ pub mod change;
 pub mod cost;
 pub mod cpd;
 pub mod csv;
+pub mod directory;
 pub mod ergonomics;
 pub mod esco;
 pub mod learning;

@@ -25,7 +25,8 @@
     "cpd": "DPC",
     "change": "Changement",
     "planning": "Planification",
-    "tour": "Visite"
+    "tour": "Visite",
+    "directory": "Annuaire"
   },
   "pr": {
     "retention": "Conservation",
@@ -354,5 +355,12 @@
       "observation": "Le délai médian de recrutement était de {days} jours.",
       "suggestion": "Identifiez l'étape du recrutement où les postes attendent."
     }
+  },
+  "directory": {
+    "search": "Rechercher par nom, poste, service ou lieu",
+    "allDepartments": "Tous les services",
+    "location": "Lieu",
+    "manager": "Responsable",
+    "noMatches": "Aucune personne ne correspond à votre recherche."
   }
 }

@@ -1,0 +1,18 @@
+{ "domain": "open-source-hr-platform", "version": 1, "capabilities": [
+  { "id": "employee-core",       "tier": "table-stakes", "test": "employee record with org chart / reporting lines" },
+  { "id": "leave",               "tier": "table-stakes", "test": "leave types, requests, approval, balances" },
+  { "id": "time-attendance",     "tier": "table-stakes", "test": "time entries / shifts with working-time rules" },
+  { "id": "payroll",             "tier": "table-stakes", "test": "pay runs and payslips" },
+  { "id": "recruitment",         "tier": "table-stakes", "test": "requisition, candidate, application, interview pipeline" },
+  { "id": "onboarding-offboarding", "tier": "table-stakes", "test": "onboarding checklist and an offboarding state" },
+  { "id": "performance",         "tier": "table-stakes", "test": "goals, reviews, multi-rater feedback" },
+  { "id": "learning",            "tier": "table-stakes", "test": "training enrollment / learning paths" },
+  { "id": "expense-claims",      "tier": "table-stakes", "test": "employee expense claim with approval and reimbursement" },
+  { "id": "headcount-planning",  "tier": "table-stakes", "test": "staffing / workforce plan against requisitions" },
+  { "id": "grievance-helpdesk",  "tier": "edge", "test": "employee grievance or helpdesk ticketing" },
+  { "id": "geo-biometric-checkin","tier": "edge", "test": "geofenced or biometric clock-in" },
+  { "id": "employee-directory-feed","tier": "edge", "test": "company directory or announcement feed" },
+  { "id": "job-offer-terms",     "tier": "edge", "test": "job offer document with terms" },
+  { "id": "employee-referral",   "tier": "edge", "test": "referral program for candidates" },
+  { "id": "mobile-pwa",          "tier": "edge", "test": "mobile app or PWA with push notifications" }
+] }

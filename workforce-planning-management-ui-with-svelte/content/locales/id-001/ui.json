@@ -25,7 +25,8 @@
     "cpd": "Pengembangan profesional",
     "change": "Perubahan",
     "planning": "Perencanaan",
-    "tour": "Tur"
+    "tour": "Tur",
+    "directory": "Direktori"
   },
   "pr": {
     "retention": "Retensi",
@@ -354,5 +355,12 @@
       "observation": "Median waktu pengisian adalah {days} hari.",
       "suggestion": "Cari tahu di tahap rekrutmen mana lowongan menunggu."
     }
+  },
+  "directory": {
+    "search": "Cari berdasarkan nama, jabatan, departemen, atau lokasi",
+    "allDepartments": "Semua departemen",
+    "location": "Lokasi",
+    "manager": "Manajer",
+    "noMatches": "Tidak ada yang cocok dengan pencarian Anda."
   }
 }

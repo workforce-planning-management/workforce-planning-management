@@ -25,7 +25,8 @@
     "cpd": "DPC",
     "change": "Cambio",
     "planning": "Planificación",
-    "tour": "Recorrido"
+    "tour": "Recorrido",
+    "directory": "Directorio"
   },
   "pr": {
     "retention": "Retención",
@@ -354,5 +355,12 @@
       "observation": "La mediana de tiempo de cobertura fue de {days} días.",
       "suggestion": "Averigüe en qué fase del proceso esperan las vacantes."
     }
+  },
+  "directory": {
+    "search": "Buscar por nombre, cargo, departamento o ubicación",
+    "allDepartments": "Todos los departamentos",
+    "location": "Ubicación",
+    "manager": "Responsable",
+    "noMatches": "Nadie coincide con su búsqueda."
   }
 }

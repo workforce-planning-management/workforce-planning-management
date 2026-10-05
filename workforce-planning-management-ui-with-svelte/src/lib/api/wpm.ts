@@ -7,6 +7,7 @@ import type {
   Application,
   Benchmark,
   ComparisonRow,
+  DirectoryEntry,
   Worker,
   LeaveEntitlement,
   LeaveRequest,
@@ -84,6 +85,22 @@ export function getWorker(pid: string, init?: FetchLike): Promise<Worker> {
 /** One worker lifecycle transition. */
 export function changeStatus(pid: string, to: string): Promise<Worker> {
   return api(`/workers/${pid}/status`, { method: "POST", body: { to } });
+}
+
+/**
+ * The employee directory: employed workers in the caller's organizations,
+ * by name. `q` searches name, title, department, location and manager.
+ */
+export function employeeDirectory(
+  filters?: { q?: string; department?: string; limit?: number },
+  init?: FetchLike,
+): Promise<DirectoryEntry[]> {
+  const params = new URLSearchParams();
+  if (filters?.q) params.set("q", filters.q);
+  if (filters?.department) params.set("department", filters.department);
+  if (filters?.limit) params.set("limit", String(filters.limit));
+  const qs = params.size ? `?${params}` : "";
+  return api(`/directory${qs}`, init);
 }
 
 /** The manager forest for one organization. */

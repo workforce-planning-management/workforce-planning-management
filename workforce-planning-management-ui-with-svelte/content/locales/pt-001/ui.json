@@ -25,7 +25,8 @@
     "cpd": "DPC",
     "change": "Mudança",
     "planning": "Planeamento",
-    "tour": "Tour"
+    "tour": "Tour",
+    "directory": "Diretório"
   },
   "pr": {
     "retention": "Retenção",
@@ -354,5 +355,12 @@
       "observation": "A mediana do tempo de preenchimento foi de {days} dias.",
       "suggestion": "Descubra em que etapa da contratação as vagas ficam paradas."
     }
+  },
+  "directory": {
+    "search": "Pesquisar por nome, cargo, departamento ou local",
+    "allDepartments": "Todos os departamentos",
+    "location": "Local",
+    "manager": "Gestor",
+    "noMatches": "Ninguém corresponde à sua pesquisa."
   }
 }

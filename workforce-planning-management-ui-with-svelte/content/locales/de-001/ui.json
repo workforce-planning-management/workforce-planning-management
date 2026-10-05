@@ -25,7 +25,8 @@
     "cpd": "Weiterbildung",
     "change": "Wandel",
     "planning": "Planung",
-    "tour": "Rundgang"
+    "tour": "Rundgang",
+    "directory": "Verzeichnis"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -354,5 +355,12 @@
       "observation": "Die mediane Besetzungsdauer betrug {days} Tage.",
       "suggestion": "Finden Sie heraus, in welcher Phase die Stellen warten."
     }
+  },
+  "directory": {
+    "search": "Nach Name, Titel, Abteilung oder Standort suchen",
+    "allDepartments": "Alle Abteilungen",
+    "location": "Standort",
+    "manager": "Führungskraft",
+    "noMatches": "Keine Person entspricht Ihrer Suche."
   }
 }

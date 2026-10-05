@@ -239,6 +239,40 @@ test.describe("signed-in smoke coverage", () => {
     await expect(section).toContainText("Staff access");
   });
 
+  test("directory searches employed workers and shows no pay", async ({
+    page,
+  }) => {
+    const rows = [
+      {
+        pid: WORKER.pid,
+        display_name: WORKER.display_name,
+        job_title: WORKER.job_title,
+        department: WORKER.department,
+        location: "Leeds",
+        organization_ref: WORKER.organization_ref,
+        manager_name: null,
+      },
+    ];
+    const seen: string[] = [];
+    await page.route(
+      (url) => url.pathname === "/api/proxy/directory",
+      (route) => {
+        seen.push(new URL(route.request().url()).searchParams.get("q") ?? "");
+        return route.fulfill({
+          json: seen.at(-1) === "nobody" ? [] : rows,
+        });
+      },
+    );
+    await page.goto("/directory");
+    const table = page.getByTestId("directory-table");
+    await expect(table).toContainText(WORKER.display_name);
+    await expect(table).toContainText("Leeds");
+    await expect(table).not.toContainText("£");
+    await page.getByTestId("directory-search").fill("nobody");
+    await expect(page.getByTestId("directory-none")).toBeVisible();
+    expect(seen).toContain("nobody");
+  });
+
   test("org chart renders one section per organization membership, no switcher", async ({
     page,
   }) => {
