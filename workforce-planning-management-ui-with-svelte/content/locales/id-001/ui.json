@@ -446,11 +446,16 @@
     "organization": "Organisasi"
   },
   "ceo": {
-    "vs12": "dibanding setahun lalu",
     "trend": "Jumlah karyawan, enam bulan terakhir",
     "noGaps": "Tidak ada kesenjangan",
     "attention": "Perhatian",
     "info": "Info",
-    "updated": "Diperbarui"
+    "updated": "Diperbarui",
+    "period": "Periode",
+    "range30d": "30 hari",
+    "range90d": "90 hari",
+    "range12m": "12 bulan",
+    "rangeYtd": "Tahun berjalan",
+    "vsStart": "dibanding awal periode"
   }
 }

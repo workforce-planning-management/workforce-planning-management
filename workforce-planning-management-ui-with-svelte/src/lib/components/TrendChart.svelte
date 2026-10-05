@@ -122,7 +122,7 @@
     stroke-width: 1;
   }
   .tick {
-    fill: var(--viz-muted);
+    fill: var(--viz-ink-2);
     font-size: 10px;
   }
   .value {

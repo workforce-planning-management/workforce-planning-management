@@ -446,11 +446,16 @@
     "organization": "Sefydliad"
   },
   "ceo": {
-    "vs12": "o gymharu â blwyddyn yn ôl",
     "trend": "Nifer y staff, chwe mis diwethaf",
     "noGaps": "Dim bylchau",
     "attention": "Sylw",
     "info": "Gwybodaeth",
-    "updated": "Diweddarwyd"
+    "updated": "Diweddarwyd",
+    "period": "Cyfnod",
+    "range30d": "30 diwrnod",
+    "range90d": "90 diwrnod",
+    "range12m": "12 mis",
+    "rangeYtd": "Y flwyddyn hyd yma",
+    "vsStart": "o gymharu â dechrau'r cyfnod"
   }
 }

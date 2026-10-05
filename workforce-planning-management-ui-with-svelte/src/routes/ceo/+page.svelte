@@ -13,15 +13,25 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { page } from "$app/state";
+  import { replaceState } from "$app/navigation";
   import {
     listRequisitions,
     successionGaps,
     workforceInsights,
     workforceMetrics,
   } from "#lib/api/wpm.js";
-  import { delta, trendDates, type TrendPoint } from "#lib/ceo.js";
+  import {
+    RANGES,
+    delta,
+    parseRange,
+    rangeDates,
+    trendDates,
+    type Range,
+    type TrendPoint,
+  } from "#lib/ceo.js";
   import { mean, rate } from "#lib/format.js";
-  import { t, tp } from "#lib/i18n.svelte.js";
+  import { l, t, tp } from "#lib/i18n.svelte.js";
   import TrendChart from "#lib/components/TrendChart.svelte";
 
   type Metrics = Awaited<ReturnType<typeof workforceMetrics>>;
@@ -45,21 +55,27 @@
     }
   }
 
+  // The period for turnover, time-to-fill, the year-on-year change and the
+  // insights. It is in the URL (`?range=90d`), so a view can be shared.
+  let range = $state<Range>(parseRange(page.url.searchParams.get("range")));
+
+  function choose(next: Range) {
+    range = next;
+    replaceState(`?range=${next}`, {});
+  }
+
+  // Everything that does not depend on the period: loaded once.
   onMount(() => {
     // The page owns the whole viewport: the layout's body gets a class that
     // turns off its page padding and scrolling (see the global rules below).
     document.body.classList.add("ceo-screen");
     void (async () => {
       const dates = trendDates(today);
-      const [m, ins, g, open, ...months] = await Promise.all([
-        settle(workforceMetrics()),
-        settle(workforceInsights()),
+      const [g, open, ...months] = await Promise.all([
         settle(successionGaps()),
         settle(listRequisitions("open")),
         ...dates.map((d) => settle(workforceMetrics({ from: d, to: d }))),
       ]);
-      metrics = m;
-      insights = ins?.insights ?? null;
       gaps = g ? g.gaps.length : null;
       openRoles = open ? open.length : null;
       trend = dates.flatMap((d, i) => {
@@ -68,6 +84,25 @@
       });
     })();
     return () => document.body.classList.remove("ceo-screen");
+  });
+
+  // The period-based figures reload when the period changes; a stale
+  // response (the user clicked on) is dropped.
+  $effect(() => {
+    const window = rangeDates(range, today);
+    let current = true;
+    void (async () => {
+      const [m, ins] = await Promise.all([
+        settle(workforceMetrics(window)),
+        settle(workforceInsights(window)),
+      ]);
+      if (!current) return;
+      metrics = m;
+      insights = ins?.insights ?? null;
+    })();
+    return () => {
+      current = false;
+    };
   });
 
   const change = $derived(metrics ? delta(metrics.headcount.closing, metrics.headcount.opening) : null);
@@ -79,7 +114,21 @@
 <div class="ceo" data-testid="ceo">
   <h1 class="cx-sr-only">{t("nav.ceo")}</h1>
 
-  <section class="cx-tile cx-kpi" data-testid="kpi-headcount">
+  <div class="cx-bar" role="group" aria-label={t("ceo.period")} data-testid="ceo-range">
+    {#each RANGES as r (r)}
+      <button
+        type="button"
+        class="cx-range"
+        aria-pressed={range === r}
+        data-testid={`range-${r}`}
+        onclick={() => choose(r)}
+      >
+        {t(`ceo.range${r === "ytd" ? "Ytd" : r}` as "ceo.range30d")}
+      </button>
+    {/each}
+  </div>
+
+  <a class="cx-tile cx-kpi" href={l("/metrics")} data-testid="kpi-headcount">
     <span class="cx-label">{t("metrics.headcount")}</span>
     <strong class="cx-hero">{metrics ? metrics.headcount.closing : dash}</strong>
     <span class="cx-sub">
@@ -88,18 +137,18 @@
           {arrow(change.direction)}
           {change.abs > 0 ? "+" : ""}{change.abs}{#if change.pct !== null}&nbsp;({change.pct.toFixed(1)}%){/if}
         </span>
-        {t("ceo.vs12")}
+        {t("ceo.vsStart")}
       {:else}{dash}{/if}
     </span>
-  </section>
+  </a>
 
-  <section class="cx-tile cx-kpi" data-testid="kpi-turnover">
+  <a class="cx-tile cx-kpi" href={l("/metrics")} data-testid="kpi-turnover">
     <span class="cx-label">{t("metrics.turnover")}</span>
     <strong class="cx-hero">{metrics ? (rate(metrics.turnover_rate) ?? dash) : dash}</strong>
     <span class="cx-sub">{metrics ? `${metrics.leavers} ${t("metrics.leavers")}` : dash}</span>
-  </section>
+  </a>
 
-  <section class="cx-tile cx-kpi" data-testid="kpi-open">
+  <a class="cx-tile cx-kpi" href={l("/requisitions")} data-testid="kpi-open">
     <span class="cx-label">{t("dash.openRequisitions")}</span>
     <strong class="cx-hero">{openRoles ?? dash}</strong>
     <span class="cx-sub">
@@ -107,9 +156,9 @@
         {mean(metrics.time_to_fill.median_days)} {t("metrics.days")} · {t("metrics.timeToFill")}
       {:else}{dash}{/if}
     </span>
-  </section>
+  </a>
 
-  <section class="cx-tile cx-kpi" data-testid="kpi-gaps">
+  <a class="cx-tile cx-kpi" href={l("/development")} data-testid="kpi-gaps">
     <span class="cx-label">{t("dash.successionGaps")}</span>
     <strong class="cx-hero">{gaps ?? dash}</strong>
     <span class="cx-sub">
@@ -117,18 +166,18 @@
       {:else if gaps === 0}<span class="cx-status cx-good">✓ {t("ceo.noGaps")}</span>
       {:else}<span class="cx-status cx-serious">▲ {t("ceo.attention")}</span>{/if}
     </span>
-  </section>
+  </a>
 
-  <section class="cx-tile cx-trend">
+  <a class="cx-tile cx-trend" href={l("/metrics")} data-testid="ceo-trend">
     <span class="cx-label">{t("ceo.trend")}</span>
     <div class="cx-chart">
       {#if trend.length > 0}
         <TrendChart points={trend} label={t("ceo.trend")} />
       {:else}<span class="cx-muted">{dash}</span>{/if}
     </div>
-  </section>
+  </a>
 
-  <section class="cx-tile cx-list cx-insights" data-testid="ceo-insights">
+  <a class="cx-tile cx-list cx-insights" href={l("/metrics")} data-testid="ceo-insights">
     <span class="cx-label">{t("metrics.insights")}</span>
     {#if insights === null}
       <span class="cx-muted">{dash}</span>
@@ -146,7 +195,7 @@
         {/each}
       </ul>
     {/if}
-  </section>
+  </a>
 
 </div>
 
@@ -187,7 +236,7 @@
     height: 100%;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 0.75fr) minmax(0, 1.25fr);
+    grid-template-rows: auto minmax(0, 0.75fr) minmax(0, 1.25fr);
     gap: 0.9em;
     color: var(--viz-ink);
   }
@@ -214,7 +263,32 @@
     --viz-good-text: #0ca30c;
   }
 
+  .cx-bar {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+  }
+  .cx-range {
+    font: inherit;
+    font-size: 0.95em;
+    padding: 0.4em 0.9em;
+    min-height: 2.4em;
+    border-radius: 999px;
+    border: 1px solid var(--viz-border);
+    background: var(--viz-surface);
+    color: var(--viz-ink-2);
+    cursor: pointer;
+  }
+  .cx-range[aria-pressed="true"] {
+    color: var(--viz-ink);
+    border-color: var(--viz-series-1);
+    box-shadow: inset 0 0 0 1px var(--viz-series-1);
+    font-weight: 600;
+  }
   .cx-tile {
+    color: inherit;
+    text-decoration: none;
     background: var(--viz-surface);
     border: 1px solid var(--viz-border);
     border-radius: 0.6em;
@@ -226,8 +300,20 @@
     flex-direction: column;
     gap: 0.25em;
   }
+  .cx-tile:hover {
+    text-decoration: none;
+    border-color: var(--viz-axis);
+  }
+  .cx-tile:focus-visible,
+  .cx-range:focus-visible {
+    outline: 2px solid var(--viz-series-1);
+    outline-offset: 2px;
+  }
+  /* Top-aligned (not centred) so the four figures share a baseline even
+     when one tile's subtitle wraps. */
   .cx-kpi {
-    justify-content: center;
+    justify-content: flex-start;
+    padding-top: 1.4em;
   }
   .cx-trend {
     grid-column: span 2;
@@ -280,7 +366,7 @@
     overflow: hidden;
   }
   .cx-muted {
-    color: var(--viz-muted);
+    color: var(--viz-ink-2);
   }
   .cx-sr-only {
     position: absolute;

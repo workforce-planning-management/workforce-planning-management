@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { delta, paddedRange, trendDates } from "../../src/lib/ceo";
+import {
+  DEFAULT_RANGE,
+  delta,
+  paddedRange,
+  parseRange,
+  rangeDates,
+  trendDates,
+} from "../../src/lib/ceo";
 
 describe("CEO dashboard helpers", () => {
   it("plots month-ends, then today, oldest first", () => {
@@ -34,5 +41,16 @@ describe("CEO dashboard helpers", () => {
     expect(hi).toBeGreaterThan(20);
     expect(paddedRange([7, 7])).toEqual([6, 8]);
     expect(paddedRange([])).toEqual([0, 1]);
+  });
+
+  it("turns a range into inclusive dates, and ignores a bad one", () => {
+    expect(rangeDates("30d", "2026-10-05")).toEqual({ from: "2026-09-06", to: "2026-10-05" });
+    expect(rangeDates("90d", "2026-10-05")).toEqual({ from: "2026-07-08", to: "2026-10-05" });
+    expect(rangeDates("ytd", "2026-10-05")).toEqual({ from: "2026-01-01", to: "2026-10-05" });
+    expect(rangeDates("12m", "2026-10-05")).toEqual({ from: "2025-10-05", to: "2026-10-05" });
+    expect(rangeDates("12m", "2024-02-29")).toEqual({ from: "2023-02-28", to: "2024-02-29" });
+    expect(parseRange("90d")).toBe("90d");
+    expect(parseRange("forever")).toBe(DEFAULT_RANGE);
+    expect(parseRange(null)).toBe(DEFAULT_RANGE);
   });
 });

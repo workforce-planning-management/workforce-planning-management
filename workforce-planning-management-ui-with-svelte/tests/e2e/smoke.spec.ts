@@ -265,8 +265,10 @@ test.describe("signed-in smoke coverage", () => {
         route.fulfill({ json: [] }),
       );
       let n = 0;
-      await page.route("**/api/proxy/workforce-intelligence/metrics**", (route) =>
-        route.fulfill({
+      const metricsFrom: string[] = [];
+      await page.route("**/api/proxy/workforce-intelligence/metrics**", (route) => {
+        metricsFrom.push(new URL(route.request().url()).searchParams.get("from") ?? "");
+        return route.fulfill({
           json: {
             period: { from: "2025-10-05", to: "2026-10-05" },
             definitions: {},
@@ -277,8 +279,9 @@ test.describe("signed-in smoke coverage", () => {
             span_of_control: { managers: 1234, mean: 12.34, max: 40 },
             time_to_fill: { requisitions: 99, mean_days: 61.2, median_days: 58.7 },
           },
-        }),
-      );
+        });
+      });
+
       const long =
         "Break leavers down by department and tenure, and compare with pulse-survey and exit feedback across every organization";
       await page.route("**/api/proxy/workforce-intelligence/insights**", (route) =>
@@ -341,6 +344,20 @@ test.describe("signed-in smoke coverage", () => {
       await page.screenshot({
         path: `test-results/ceo-${screen.width}x${screen.height}.png`,
       });
+
+      // Each tile drills down to the page behind it.
+      const hrefOf = (id: string) => page.getByTestId(id).getAttribute("href");
+      expect(await hrefOf("kpi-headcount")).toMatch(/\/en-001\/metrics$/);
+      expect(await hrefOf("kpi-open")).toMatch(/\/en-001\/requisitions$/);
+      expect(await hrefOf("kpi-gaps")).toMatch(/\/en-001\/development$/);
+
+      // The period control reloads the period-based figures (and is in the URL).
+      await expect(page.getByTestId("range-12m")).toHaveAttribute("aria-pressed", "true");
+      await page.getByTestId("range-90d").click();
+      await expect(page.getByTestId("range-90d")).toHaveAttribute("aria-pressed", "true");
+      await expect(page).toHaveURL(/range=90d/);
+      const ninetyDaysBack = new Date(Date.now() - 89 * 86_400_000).toISOString().slice(0, 10);
+      await expect.poll(() => metricsFrom.includes(ninetyDaysBack)).toBe(true);
       await context.close();
     });
   }

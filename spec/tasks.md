@@ -1883,6 +1883,35 @@ build on 3–5).
       tile inside the screen, no tile clipping) pass with 5 long insights as
       worst case. svelte-check 0, vitest 67/67, Playwright 26/26, build green.
 
+- [x] WPM-T85 (2026-10-05) **CEO dashboard follow-ups.** Builds on WPM-T83/T84.
+      - **Drill-down:** every tile is a link to the page behind it (headcount,
+        turnover, the trend and the insights → `/metrics`; vacancies →
+        `/requisitions`; succession gaps → `/development`), locale-prefixed,
+        with a visible focus ring.
+      - **Period control** (30 days · 90 days · 12 months · year to date;
+        default 12 months, the service's own default window): applies to
+        turnover, leavers, median time-to-fill, the change in headcount and
+        the insights; the trend (six months) and the current counts
+        (vacancies, gaps) do not depend on it. It is in the URL (`?range=90d`)
+        so a view can be shared; a stale or edited value falls back to the
+        default; a late response for a period the user has clicked past is
+        dropped. Pure `lib/ceo.ts` `RANGES`, `parseRange`, `rangeDates`
+        (inclusive dates; "12 months" goes back to the same date last year,
+        clamped to the month's end, as the service does). 6 strings in 13
+        locales (`ceo.vs12` replaced by `ceo.vsStart`).
+      - **Palette validator run** (it had been skipped): the series colour
+        passes all checks in light (`#2a78d6` on `#fcfcfb`) and dark
+        (`#3987e5` on `#1a1a19`) — one series, so the CVD checks are n/a. The
+        text colours were checked for WCAG contrast: all ≥ 4.5:1 except the
+        light-mode muted grey (3.5:1) used for axis labels and "—", which now
+        use the secondary ink (7.7:1).
+      - KPI tiles are top-aligned so the four figures share a baseline.
+      Fit still holds at 1080 × 810 @2× and 2160 × 1620 @1× with the control
+      bar; Playwright also checks the links, that the 12-month control is
+      pressed by default, and that choosing 90 days puts `range=90d` in the
+      URL and reloads metrics with `from` = 89 days back. svelte-check 0,
+      vitest 68/68, Playwright 26/26, build green.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

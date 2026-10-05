@@ -446,11 +446,16 @@
     "organization": "Organisation"
   },
   "ceo": {
-    "vs12": "ggü. Vorjahr",
     "trend": "Mitarbeiterzahl, letzte sechs Monate",
     "noGaps": "Keine Lücken",
     "attention": "Achtung",
     "info": "Info",
-    "updated": "Aktualisiert"
+    "updated": "Aktualisiert",
+    "period": "Zeitraum",
+    "range30d": "30 Tage",
+    "range90d": "90 Tage",
+    "range12m": "12 Monate",
+    "rangeYtd": "Seit Jahresbeginn",
+    "vsStart": "ggü. Beginn des Zeitraums"
   }
 }

@@ -446,11 +446,16 @@
     "organization": "Organização"
   },
   "ceo": {
-    "vs12": "face a há um ano",
     "trend": "Efetivo, últimos seis meses",
     "noGaps": "Sem lacunas",
     "attention": "Atenção",
     "info": "Informação",
-    "updated": "Atualizado"
+    "updated": "Atualizado",
+    "period": "Período",
+    "range30d": "30 dias",
+    "range90d": "90 dias",
+    "range12m": "12 meses",
+    "rangeYtd": "Ano até à data",
+    "vsStart": "face ao início do período"
   }
 }

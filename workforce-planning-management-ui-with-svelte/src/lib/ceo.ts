@@ -57,3 +57,39 @@ export function paddedRange(values: number[]): [number, number] {
   const pad = (hi - lo) * 0.15;
   return [lo - pad, hi + pad];
 }
+
+/** The periods the dashboard offers for turnover, time-to-fill and insights. */
+export const RANGES = ["30d", "90d", "12m", "ytd"] as const;
+export type Range = (typeof RANGES)[number];
+
+/** The default period: the last twelve months. */
+export const DEFAULT_RANGE: Range = "12m";
+
+/** `raw` as a known range, else the default (so a stale or edited URL is harmless). */
+export function parseRange(raw: string | null | undefined): Range {
+  return (RANGES as readonly string[]).includes(raw ?? "") ? (raw as Range) : DEFAULT_RANGE;
+}
+
+/**
+ * The `from`/`to` dates (inclusive, ISO) for `range` ending `today`: 30 or
+ * 90 days counting today, twelve months back (the same date last year,
+ * clamped to the month's end — the service's own default), or since 1 January.
+ */
+export function rangeDates(range: Range, today: string): { from: string; to: string } {
+  const t = new Date(`${today}T00:00:00Z`);
+  const day = (d: Date): string => d.toISOString().slice(0, 10);
+  switch (range) {
+    case "30d":
+      return { from: day(new Date(t.getTime() - 29 * 86_400_000)), to: today };
+    case "90d":
+      return { from: day(new Date(t.getTime() - 89 * 86_400_000)), to: today };
+    case "ytd":
+      return { from: `${t.getUTCFullYear()}-01-01`, to: today };
+    default: {
+      const year = t.getUTCFullYear() - 1;
+      const month = t.getUTCMonth();
+      const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+      return { from: day(new Date(Date.UTC(year, month, Math.min(t.getUTCDate(), lastDay)))), to: today };
+    }
+  }
+}

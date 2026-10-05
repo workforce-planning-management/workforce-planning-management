@@ -446,11 +446,16 @@
     "organization": "Organization"
   },
   "ceo": {
-    "vs12": "vs a year ago",
     "trend": "Headcount, last six months",
     "noGaps": "No gaps",
     "attention": "Attention",
     "info": "Info",
-    "updated": "Updated"
+    "updated": "Updated",
+    "period": "Period",
+    "range30d": "30 days",
+    "range90d": "90 days",
+    "range12m": "12 months",
+    "rangeYtd": "Year to date",
+    "vsStart": "vs start of period"
   }
 }

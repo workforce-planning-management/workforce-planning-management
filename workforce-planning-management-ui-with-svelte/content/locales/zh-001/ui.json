@@ -446,11 +446,16 @@
     "organization": "组织"
   },
   "ceo": {
-    "vs12": "较一年前",
     "trend": "在编人数，近六个月",
     "noGaps": "无缺口",
     "attention": "需关注",
     "info": "提示",
-    "updated": "更新于"
+    "updated": "更新于",
+    "period": "时间段",
+    "range30d": "30 天",
+    "range90d": "90 天",
+    "range12m": "12 个月",
+    "rangeYtd": "年初至今",
+    "vsStart": "较期初"
   }
 }
