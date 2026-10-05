@@ -178,6 +178,15 @@ describe("api path map", () => {
     await wpm.removeBackup("b1");
     await wpm.workerCover("w1");
     await wpm.workerCover("w1", "2026-10-06");
+    await wpm.listRotas();
+    await wpm.getRota("r1");
+    await wpm.getRota("r1", { from: "2026-10-05", to: "2026-11-01" });
+    await wpm.createRota({ organization_ref: "organization:x", name: "N", period_days: 7, starts_on: "2026-10-05", members: ["w1"] });
+    await wpm.updateRota("r1", { members: ["w2", "w1"] });
+    await wpm.retireRota("r1");
+    await wpm.addRotaSwap("r1", { worker_pid: "w2", starts_on: "2026-10-05", ends_on: "2026-10-06" });
+    await wpm.removeRotaSwap("s1");
+    await wpm.workerOnCall("w1");
     await wpm.employeeDirectory();
     await wpm.employeeDirectory({ q: "ann lee", department: "Finance", limit: 100 });
     await wpm.workforceInsights();
@@ -270,6 +279,15 @@ describe("api path map", () => {
       "/api/proxy/backups/b1",
       "/api/proxy/workers/w1/cover",
       "/api/proxy/workers/w1/cover?on=2026-10-06",
+      "/api/proxy/rotas",
+      "/api/proxy/rotas/r1",
+      "/api/proxy/rotas/r1?from=2026-10-05&to=2026-11-01",
+      "/api/proxy/rotas",
+      "/api/proxy/rotas/r1",
+      "/api/proxy/rotas/r1",
+      "/api/proxy/rotas/r1/overrides",
+      "/api/proxy/rota-overrides/s1",
+      "/api/proxy/workers/w1/on-call",
       "/api/proxy/directory",
       "/api/proxy/directory?q=ann+lee&department=Finance&limit=100",
       "/api/proxy/workforce-intelligence/insights",

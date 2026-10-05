@@ -26,7 +26,8 @@
     "change": "Mudança",
     "planning": "Planeamento",
     "tour": "Tour",
-    "directory": "Diretório"
+    "directory": "Diretório",
+    "rota": "Escala de prevenção"
   },
   "pr": {
     "retention": "Retenção",
@@ -390,5 +391,29 @@
     "remove": "Remover",
     "coverToday": "Substitui hoje:",
     "nobodyToday": "Ninguém disponível para substituir hoje."
+  },
+  "rota": {
+    "onCallNow": "De prevenção agora",
+    "nobody": "Ninguém disponível",
+    "who": "De prevenção",
+    "why": "Motivo",
+    "from": "De",
+    "to": "Até",
+    "sourceRotation": "Rotação",
+    "sourceSkipped": "Substitui alguém ausente",
+    "sourceOverride": "Troca",
+    "load": "Dias de prevenção",
+    "members": "Membros, por ordem",
+    "swaps": "Trocas",
+    "addSwap": "Adicionar uma troca",
+    "create": "Criar uma escala",
+    "period": "Dias por turno",
+    "startsOn": "Começa em",
+    "organization": "Organização",
+    "save": "Guardar",
+    "none": "Ainda não há escalas.",
+    "retire": "Retirar esta escala",
+    "mine": "As minhas prevenções",
+    "mineNone": "Não está de prevenção nas próximas quatro semanas."
   }
 }

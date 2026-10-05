@@ -26,7 +26,8 @@
     "change": "变革",
     "planning": "规划",
     "tour": "导览",
-    "directory": "通讯录"
+    "directory": "通讯录",
+    "rota": "值班表"
   },
   "pr": {
     "retention": "保留",
@@ -390,5 +391,29 @@
     "remove": "移除",
     "coverToday": "今日代班：",
     "nobodyToday": "今日没有可代班的人。"
+  },
+  "rota": {
+    "onCallNow": "当前值班",
+    "nobody": "无人可用",
+    "who": "值班",
+    "why": "原因",
+    "from": "自",
+    "to": "至",
+    "sourceRotation": "轮换",
+    "sourceSkipped": "替缺勤者值班",
+    "sourceOverride": "换班",
+    "load": "值班天数",
+    "members": "成员（按顺序）",
+    "swaps": "换班",
+    "addSwap": "添加换班",
+    "create": "创建值班表",
+    "period": "每轮天数",
+    "startsOn": "开始于",
+    "organization": "组织",
+    "save": "保存",
+    "none": "尚无值班表。",
+    "retire": "停用此值班表",
+    "mine": "我的值班",
+    "mineNone": "未来四周您没有值班。"
   }
 }

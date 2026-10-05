@@ -34,6 +34,7 @@
     ["/groups", "nav.groups"],
     ["/requisitions", "nav.requisitions"],
     ["/workforce", "nav.workforce"],
+    ["/rota", "nav.rota"],
     ["/development", "nav.development"],
     ["/learning", "nav.learning"],
     ["/me", "nav.me"],

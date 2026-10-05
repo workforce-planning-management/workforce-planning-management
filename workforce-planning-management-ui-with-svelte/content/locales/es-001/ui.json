@@ -26,7 +26,8 @@
     "change": "Cambio",
     "planning": "Planificación",
     "tour": "Recorrido",
-    "directory": "Directorio"
+    "directory": "Directorio",
+    "rota": "Turnos de guardia"
   },
   "pr": {
     "retention": "Retención",
@@ -390,5 +391,29 @@
     "remove": "Quitar",
     "coverToday": "Cubre hoy:",
     "nobodyToday": "Nadie disponible para cubrir hoy."
+  },
+  "rota": {
+    "onCallNow": "De guardia ahora",
+    "nobody": "Nadie disponible",
+    "who": "De guardia",
+    "why": "Motivo",
+    "from": "Desde",
+    "to": "Hasta",
+    "sourceRotation": "Rotación",
+    "sourceSkipped": "Cubre a alguien ausente",
+    "sourceOverride": "Cambio",
+    "load": "Días de guardia",
+    "members": "Miembros, en orden",
+    "swaps": "Cambios",
+    "addSwap": "Añadir un cambio",
+    "create": "Crear un turno de guardia",
+    "period": "Días por turno",
+    "startsOn": "Empieza el",
+    "organization": "Organización",
+    "save": "Guardar",
+    "none": "Aún no hay turnos de guardia.",
+    "retire": "Retirar este turno de guardia",
+    "mine": "Mis guardias",
+    "mineNone": "No está de guardia en las próximas cuatro semanas."
   }
 }

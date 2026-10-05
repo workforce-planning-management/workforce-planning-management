@@ -17,7 +17,7 @@ use crate::models::_entities::{
     entitlement_acknowledgements, ergonomic_assessments, group_members, leave_entitlements,
     leave_requests, mentorships, mobility_interests, notifications, path_enrollments, payslips,
     pipeline_members, professional_registrations, program_placements, reviews, shift_assignments,
-    time_entries, training_enrollments, worker_aspirations, worker_backups, emergency_contacts, worker_framework_roles,
+    time_entries, training_enrollments, worker_aspirations, worker_backups, emergency_contacts, rota_members, rota_overrides, worker_framework_roles,
     worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
@@ -116,6 +116,8 @@ async fn subject_access(
         "emergency_contacts": rows_for!(db, emergency_contacts, WorkerPid, epid),
         "backups": rows_for!(db, worker_backups, WorkerPid, epid),
         "named_as_backup_by": rows_for!(db, worker_backups, BackupPid, epid),
+        "on_call_rota_memberships": rows_for!(db, rota_members, WorkerPid, epid),
+        "on_call_swaps": rows_for!(db, rota_overrides, WorkerPid, epid),
         "group_memberships": rows_for!(db, group_members, WorkerPid, epid),
         "dotted_line_as_report": rows_for!(db, dotted_line_reports, ReportPid, epid),
         "dotted_line_as_manager": rows_for!(db, dotted_line_reports, ManagerPid, epid),
@@ -241,6 +243,8 @@ async fn erase(
         ),
         format!("DELETE FROM emergency_contacts WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_backups WHERE worker_pid = '{epid}' OR backup_pid = '{epid}'"),
+        format!("DELETE FROM rota_members WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM rota_overrides WHERE worker_pid = '{epid}'"),
     ];
     let mut affected = Vec::new();
     for statement in &statements {
@@ -273,6 +277,8 @@ async fn erase(
             "dotted_lines_deleted": affected[16],
             "emergency_contacts_deleted": affected[17],
             "backups_deleted": affected[18],
+            "rota_memberships_deleted": affected[19],
+            "rota_swaps_deleted": affected[20],
         })),
     )
     .await?;

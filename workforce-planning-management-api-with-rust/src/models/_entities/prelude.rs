@@ -72,3 +72,6 @@ pub use super::workers::Entity as Workers;
 pub use super::workforce_plans::Entity as WorkforcePlans;
 pub use super::emergency_contacts::Entity as EmergencyContacts;
 pub use super::worker_backups::Entity as WorkerBackups;
+pub use super::rota_members::Entity as RotaMembers;
+pub use super::rota_overrides::Entity as RotaOverrides;
+pub use super::rotas::Entity as Rotas;

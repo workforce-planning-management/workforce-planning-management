@@ -109,6 +109,51 @@ export interface Cover {
   backups_named: number;
 }
 
+/** An on-call rota in a list, with who is on call today. */
+export interface RotaSummary {
+  pid: string;
+  organization_ref: string;
+  name: string;
+  description: string | null;
+  period_days: number;
+  starts_on: string;
+  members: number;
+  on_call_today: { worker_pid: string; name: string | null } | null;
+}
+
+/** Why someone is on call: their turn, covering for someone away, or a swap. */
+export type OnCallSource = "rotation" | "skipped" | "override";
+
+/** A stretch of days with the same person on call (`worker_pid` null: nobody available). */
+export interface OnCallRun {
+  from: string;
+  to: string;
+  worker_pid: string | null;
+  worker_name: string | null;
+  source: OnCallSource | null;
+}
+
+/** One rota with its schedule, swaps and days-on-call per member. */
+export interface RotaView extends Omit<RotaSummary, "members"> {
+  members: Array<{
+    position: number;
+    worker_pid: string;
+    name: string | null;
+    job_title: string | null;
+  }>;
+  overrides: Array<{
+    pid: string;
+    worker_pid: string;
+    worker_name: string | null;
+    starts_on: string;
+    ends_on: string;
+    note: string | null;
+  }>;
+  window: { from: string; to: string };
+  runs: OnCallRun[];
+  load: Array<{ worker_pid: string; name: string | null; days: number }>;
+}
+
 /** One funded job opening. */
 export interface Requisition {
   pid: string;

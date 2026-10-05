@@ -26,7 +26,8 @@
     "change": "Changement",
     "planning": "Planification",
     "tour": "Visite",
-    "directory": "Annuaire"
+    "directory": "Annuaire",
+    "rota": "Astreintes"
   },
   "pr": {
     "retention": "Conservation",
@@ -390,5 +391,29 @@
     "remove": "Retirer",
     "coverToday": "Remplace aujourd'hui :",
     "nobodyToday": "Personne n'est disponible aujourd'hui."
+  },
+  "rota": {
+    "onCallNow": "D'astreinte maintenant",
+    "nobody": "Personne n'est disponible",
+    "who": "D'astreinte",
+    "why": "Pourquoi",
+    "from": "Du",
+    "to": "Au",
+    "sourceRotation": "Rotation",
+    "sourceSkipped": "Remplace une personne absente",
+    "sourceOverride": "Échange",
+    "load": "Jours d'astreinte",
+    "members": "Membres, dans l'ordre",
+    "swaps": "Échanges",
+    "addSwap": "Ajouter un échange",
+    "create": "Créer un tour d'astreinte",
+    "period": "Jours par tour",
+    "startsOn": "Commence le",
+    "organization": "Organisation",
+    "save": "Enregistrer",
+    "none": "Aucun tour d'astreinte pour l'instant.",
+    "retire": "Retirer ce tour d'astreinte",
+    "mine": "Mes astreintes",
+    "mineNone": "Vous n'êtes pas d'astreinte dans les quatre prochaines semaines."
   }
 }

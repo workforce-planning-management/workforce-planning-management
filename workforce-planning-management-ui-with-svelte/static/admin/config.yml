@@ -59,6 +59,7 @@ collections:
               - { name: "planning", label: "Planning", widget: string, required: false, i18n: true }
               - { name: "tour", label: "Tour", widget: string, required: false, i18n: true }
               - { name: "directory", label: "Directory", widget: string, required: false, i18n: true }
+              - { name: "rota", label: "Rota", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -737,3 +738,32 @@ collections:
               - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
               - { name: "coverToday", label: "Cover Today", widget: string, required: false, i18n: true }
               - { name: "nobodyToday", label: "Nobody Today", widget: string, required: false, i18n: true }
+          - name: "rota"
+            label: "Rota"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "onCallNow", label: "On Call Now", widget: string, required: false, i18n: true }
+              - { name: "nobody", label: "Nobody", widget: string, required: false, i18n: true }
+              - { name: "who", label: "Who", widget: string, required: false, i18n: true }
+              - { name: "why", label: "Why", widget: string, required: false, i18n: true }
+              - { name: "from", label: "From", widget: string, required: false, i18n: true }
+              - { name: "to", label: "To", widget: string, required: false, i18n: true }
+              - { name: "sourceRotation", label: "Source Rotation", widget: string, required: false, i18n: true }
+              - { name: "sourceSkipped", label: "Source Skipped", widget: string, required: false, i18n: true }
+              - { name: "sourceOverride", label: "Source Override", widget: string, required: false, i18n: true }
+              - { name: "load", label: "Load", widget: string, required: false, i18n: true }
+              - { name: "members", label: "Members", widget: string, required: false, i18n: true }
+              - { name: "swaps", label: "Swaps", widget: string, required: false, i18n: true }
+              - { name: "addSwap", label: "Add Swap", widget: string, required: false, i18n: true }
+              - { name: "create", label: "Create", widget: string, required: false, i18n: true }
+              - { name: "period", label: "Period", widget: string, required: false, i18n: true }
+              - { name: "startsOn", label: "Starts On", widget: string, required: false, i18n: true }
+              - { name: "organization", label: "Organization", widget: string, required: false, i18n: true }
+              - { name: "save", label: "Save", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "retire", label: "Retire", widget: string, required: false, i18n: true }
+              - { name: "mine", label: "Mine", widget: string, required: false, i18n: true }
+              - { name: "mineNone", label: "Mine None", widget: string, required: false, i18n: true }

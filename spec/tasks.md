@@ -1717,6 +1717,41 @@ build on 3–5).
       directory test now covers away, covered, and not-away), clippy clean,
       svelte-check 0, vitest 63/63, Playwright 22/22, build green.
 
+- [x] WPM-T77 (2026-10-05) **On-call rota.** Migration
+      `m20261005_000041_oncall_rotas` (`rotas`, `rota_members`,
+      `rota_overrides`). Not the shift day-view (`GET /api/shifts`, WPM-R6): a
+      *rotation* — a named rota in one organization where, every
+      `period_days` (1–31), the duty passes to the next member in order,
+      counting from `starts_on`. Pure `rules/rota.rs` (8 tests): `assign`,
+      `schedule`, `runs`, `load`, `validate_rota`.
+      - **Swaps** (overrides): a worker on call for a date window regardless
+        of the rotation; a later swap wins on shared days.
+      - **Leave-aware:** a scheduled member on approved leave (or no longer
+        employed) is **skipped** to the next available member in order and the
+        stretch says so (`source`: `rotation` / `skipped` / `override`); if
+        nobody can take a day it is unassigned — said plainly, never guessed.
+      - **API:** `POST|GET /api/rotas`; `GET|PUT|DELETE /api/rotas/{pid}`
+        (schedule as runs over `?from=&to=`, default 28 days, at most 92;
+        members in order; swaps; days-on-call per member; who is on call
+        today); `GET /api/rotas/{pid}/on-call?on=`; `POST /api/rotas/{pid}/
+        overrides`, `DELETE /api/rota-overrides/{pid}`;
+        `GET /api/workers/{pid}/on-call` (a person's own stretches). Members
+        must be employed workers of the rota's organization; rotas outside the
+        caller's organizations do not exist to them; who may change a rota is
+        the route-level policy's write gate, as for shifts.
+      - **Privacy:** membership and swaps are in the subject-access export and
+        removed on erasure; `rotas` joins the retention sweep list (53).
+      - **UI:** `/rota` (pick a rota, on call now, the next four weeks as
+        stretches with why, days-on-call, members, swaps, create form, retire),
+        a "My on-call" panel on `/me`, nav link, client functions, 23 strings
+        in 13 locales.
+      DB suite 47/47 (rotation, swap, leave-skip, re-order, list, retire, window
+      cap), clippy clean on the new files, lib 268, svelte-check 0, vitest
+      63/63, Playwright 23/23, build green. **Not done:** swapping *requests*
+      between people (a swap is recorded by whoever may write the rota), on-call
+      pay or time-off-in-lieu, notifying the person coming on call, and showing
+      "on call" in the directory.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

@@ -16,6 +16,7 @@ mod organizations;
 mod pagination;
 mod payroll;
 mod privacy;
+mod rotas;
 mod talent;
 mod wellbeing;
 mod workforce;

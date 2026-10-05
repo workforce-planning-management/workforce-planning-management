@@ -8,6 +8,7 @@
   import { page } from "$app/state";
   import { listSelectableFrameworks } from "#lib/api/wpm.js";
   import Backups from "#lib/components/Backups.svelte";
+  import OnCall from "#lib/components/OnCall.svelte";
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
@@ -71,6 +72,7 @@
   <Aspirations {workerPid} />
   <EmergencyContacts {workerPid} />
   <Backups {workerPid} />
+  <OnCall {workerPid} />
   <DottedLinePanel {workerPid} />
   <GroupsPanel {workerPid} />
   <TeamAspirations {workerPid} />

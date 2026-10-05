@@ -26,7 +26,8 @@
     "change": "Newid",
     "planning": "Cynllunio",
     "tour": "Taith",
-    "directory": "Cyfeiriadur"
+    "directory": "Cyfeiriadur",
+    "rota": "Rota ar alwad"
   },
   "pr": {
     "retention": "Cadw data",
@@ -390,5 +391,29 @@
     "remove": "Tynnu",
     "coverToday": "Yn cyflenwi heddiw:",
     "nobodyToday": "Does neb ar gael i gyflenwi heddiw."
+  },
+  "rota": {
+    "onCallNow": "Ar alwad nawr",
+    "nobody": "Does neb ar gael",
+    "who": "Ar alwad",
+    "why": "Pam",
+    "from": "O",
+    "to": "Tan",
+    "sourceRotation": "Cylchdro",
+    "sourceSkipped": "Yn cyflenwi dros rywun sydd i ffwrdd",
+    "sourceOverride": "Cyfnewid",
+    "load": "Diwrnodau ar alwad",
+    "members": "Aelodau, yn eu trefn",
+    "swaps": "Cyfnewidiadau",
+    "addSwap": "Ychwanegu cyfnewid",
+    "create": "Creu rota",
+    "period": "Diwrnodau fesul tro",
+    "startsOn": "Yn dechrau ar",
+    "organization": "Sefydliad",
+    "save": "Cadw",
+    "none": "Dim rotâu eto.",
+    "retire": "Terfynu'r rota hon",
+    "mine": "Fy ngalwad",
+    "mineNone": "Dydych chi ddim ar alwad yn y pedair wythnos nesaf."
   }
 }

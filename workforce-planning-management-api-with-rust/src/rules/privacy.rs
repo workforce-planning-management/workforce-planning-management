@@ -68,6 +68,7 @@ pub const SOFT_DELETED_TABLES: &[&str] = &[
     "review_cycles",
     "reviews",
     "role_profiles",
+    "rotas",
     "shift_assignments",
     "shifts",
     "skills",
@@ -121,7 +122,7 @@ mod tests {
         sorted.sort_unstable();
         sorted.dedup();
         assert_eq!(sorted, SOFT_DELETED_TABLES, "sorted and unique");
-        assert_eq!(SOFT_DELETED_TABLES.len(), 52);
+        assert_eq!(SOFT_DELETED_TABLES.len(), 53);
         for table in ["workers", "payslips", "candidates", "appraisals"] {
             assert!(SOFT_DELETED_TABLES.contains(&table));
         }

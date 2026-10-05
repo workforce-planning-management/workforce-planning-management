@@ -9,6 +9,8 @@ import type {
   Backup,
   ComparisonRow,
   Cover,
+  RotaSummary,
+  RotaView,
   DirectoryEntry,
   EmergencyContact,
   Worker,
@@ -1266,6 +1268,78 @@ export function workerCover(
   init?: FetchLike,
 ): Promise<Cover> {
   return api(`/workers/${workerPid}/cover${on ? `?on=${on}` : ""}`, init);
+}
+
+/** On-call rotas in the caller's organizations, with who is on call today. */
+export function listRotas(init?: FetchLike): Promise<RotaSummary[]> {
+  return api("/rotas", init);
+}
+
+/** One rota with its schedule (default 28 days from today), swaps and load. */
+export function getRota(
+  pid: string,
+  window?: { from?: string; to?: string },
+  init?: FetchLike,
+): Promise<RotaView> {
+  const params = new URLSearchParams();
+  if (window?.from) params.set("from", window.from);
+  if (window?.to) params.set("to", window.to);
+  const qs = params.size ? `?${params}` : "";
+  return api(`/rotas/${pid}${qs}`, init);
+}
+
+/** Create an on-call rota: members in rotation order. */
+export function createRota(rota: {
+  organization_ref: string;
+  name: string;
+  description?: string;
+  period_days: number;
+  starts_on: string;
+  members: string[];
+}): Promise<{ pid: string }> {
+  return api("/rotas", { method: "POST", body: rota });
+}
+
+/** Rename, re-time or re-order a rota (`members` replaces the order). */
+export function updateRota(
+  pid: string,
+  changes: {
+    name?: string;
+    description?: string;
+    period_days?: number;
+    starts_on?: string;
+    members?: string[];
+  },
+): Promise<{ pid: string }> {
+  return api(`/rotas/${pid}`, { method: "PUT", body: changes });
+}
+
+/** Retire a rota. */
+export function retireRota(pid: string): Promise<unknown> {
+  return api(`/rotas/${pid}`, { method: "DELETE" });
+}
+
+/** A swap: a worker on call for a date window regardless of the rotation. */
+export function addRotaSwap(
+  pid: string,
+  swap: { worker_pid: string; starts_on: string; ends_on: string; note?: string },
+): Promise<{ pid: string }> {
+  return api(`/rotas/${pid}/overrides`, { method: "POST", body: swap });
+}
+
+/** Undo a swap. */
+export function removeRotaSwap(pid: string): Promise<unknown> {
+  return api(`/rota-overrides/${pid}`, { method: "DELETE" });
+}
+
+/** A worker's on-call stretches across the rotas the caller can read. */
+export function workerOnCall(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<
+  Array<{ rota_pid: string; rota_name: string; from: string; to: string; source: string }>
+> {
+  return api(`/workers/${workerPid}/on-call`, init);
 }
 
 /** Move a worker to another organization; groups that no longer fit end (kept as history). */

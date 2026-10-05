@@ -26,7 +26,8 @@
     "change": "Change",
     "planning": "Planning",
     "tour": "Tour",
-    "directory": "Directory"
+    "directory": "Directory",
+    "rota": "On-call rota"
   },
   "pr": {
     "retention": "Retention",
@@ -390,5 +391,29 @@
     "remove": "Remove",
     "coverToday": "Covering today:",
     "nobodyToday": "Nobody is available to cover today."
+  },
+  "rota": {
+    "onCallNow": "On call now",
+    "nobody": "Nobody is available",
+    "who": "On call",
+    "why": "Why",
+    "from": "From",
+    "to": "To",
+    "sourceRotation": "Rotation",
+    "sourceSkipped": "Covering for someone away",
+    "sourceOverride": "Swap",
+    "load": "Days on call",
+    "members": "Members, in order",
+    "swaps": "Swaps",
+    "addSwap": "Add a swap",
+    "create": "Create a rota",
+    "period": "Days per turn",
+    "startsOn": "Starts on",
+    "organization": "Organization",
+    "save": "Save",
+    "none": "No rotas yet.",
+    "retire": "Retire this rota",
+    "mine": "My on-call",
+    "mineNone": "You are not on call in the next four weeks."
   }
 }

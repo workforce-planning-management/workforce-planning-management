@@ -26,7 +26,8 @@
     "change": "Wandel",
     "planning": "Planung",
     "tour": "Rundgang",
-    "directory": "Verzeichnis"
+    "directory": "Verzeichnis",
+    "rota": "Bereitschaftsplan"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -390,5 +391,29 @@
     "remove": "Entfernen",
     "coverToday": "Vertritt heute:",
     "nobodyToday": "Heute ist niemand zur Vertretung verfügbar."
+  },
+  "rota": {
+    "onCallNow": "Jetzt in Bereitschaft",
+    "nobody": "Niemand verfügbar",
+    "who": "In Bereitschaft",
+    "why": "Grund",
+    "from": "Von",
+    "to": "Bis",
+    "sourceRotation": "Rotation",
+    "sourceSkipped": "Vertritt eine abwesende Person",
+    "sourceOverride": "Tausch",
+    "load": "Bereitschaftstage",
+    "members": "Mitglieder, in Reihenfolge",
+    "swaps": "Tauschs",
+    "addSwap": "Tausch hinzufügen",
+    "create": "Bereitschaftsplan anlegen",
+    "period": "Tage pro Runde",
+    "startsOn": "Beginnt am",
+    "organization": "Organisation",
+    "save": "Speichern",
+    "none": "Noch keine Bereitschaftspläne.",
+    "retire": "Diesen Plan beenden",
+    "mine": "Meine Bereitschaft",
+    "mineNone": "Sie haben in den nächsten vier Wochen keine Bereitschaft."
   }
 }

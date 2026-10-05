@@ -26,7 +26,8 @@
     "change": "Perubahan",
     "planning": "Perencanaan",
     "tour": "Tur",
-    "directory": "Direktori"
+    "directory": "Direktori",
+    "rota": "Jadwal siaga"
   },
   "pr": {
     "retention": "Retensi",
@@ -390,5 +391,29 @@
     "remove": "Hapus",
     "coverToday": "Menggantikan hari ini:",
     "nobodyToday": "Tidak ada yang tersedia untuk menggantikan hari ini."
+  },
+  "rota": {
+    "onCallNow": "Sedang siaga",
+    "nobody": "Tidak ada yang tersedia",
+    "who": "Siaga",
+    "why": "Alasan",
+    "from": "Dari",
+    "to": "Sampai",
+    "sourceRotation": "Rotasi",
+    "sourceSkipped": "Menggantikan yang tidak masuk",
+    "sourceOverride": "Tukar",
+    "load": "Hari siaga",
+    "members": "Anggota, berurutan",
+    "swaps": "Pertukaran",
+    "addSwap": "Tambah pertukaran",
+    "create": "Buat jadwal siaga",
+    "period": "Hari per giliran",
+    "startsOn": "Mulai pada",
+    "organization": "Organisasi",
+    "save": "Simpan",
+    "none": "Belum ada jadwal siaga.",
+    "retire": "Hentikan jadwal ini",
+    "mine": "Siaga saya",
+    "mineNone": "Anda tidak siaga dalam empat minggu ke depan."
   }
 }

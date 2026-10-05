@@ -53,6 +53,7 @@ mod m20261003_000037_dotted_line_reports;
 mod m20261003_000038_group_organizations;
 mod m20261003_000039_group_scope;
 mod m20261005_000040_emergency_contacts_and_backups;
+mod m20261005_000041_oncall_rotas;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -105,6 +106,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261003_000038_group_organizations::Migration),
             Box::new(m20261003_000039_group_scope::Migration),
             Box::new(m20261005_000040_emergency_contacts_and_backups::Migration),
+            Box::new(m20261005_000041_oncall_rotas::Migration),
             // inject-above (do not remove this comment)
         ]
     }

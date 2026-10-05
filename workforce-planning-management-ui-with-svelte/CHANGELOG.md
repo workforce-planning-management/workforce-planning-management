@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — on-call rota
+
+`/rota`: a rotation of workers where the duty passes to the next member
+every few days. Shows who is on call now, the next four weeks with why
+(their turn, covering for someone away, or a swap) and days-on-call per
+member; a member on approved leave is skipped to the next available
+person. HR creates rotas and records swaps. `/me` shows your own on-call
+stretches.
+
 ### Added — employee directory; emergency contacts and backups
 
 `/directory`: a searchable list of who works where (employed workers in
