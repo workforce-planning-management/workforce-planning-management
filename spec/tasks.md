@@ -1752,6 +1752,18 @@ build on 3–5).
       pay or time-off-in-lieu, notifying the person coming on call, and showing
       "on call" in the directory.
 
+- [x] WPM-T78 (2026-10-05) **Directory shows who is on call.** Builds on
+      WPM-T74/T77. Each directory entry carries `on_call`: the names of the
+      on-call rotas the worker is on call for **today**
+      (`rotas::on_call_today` — the rotas in the caller's organizations, one
+      day each, leave-skipping applied), so a person on call because they
+      were skipped in for someone away shows too. The rota name is also
+      searchable (`q=platform on-call`). UI: an "On call: <rota>" chip beside
+      the name; reuses the existing "On call" string (no new translations).
+      DB suite 47/47 (the directory test now covers on-call and not),
+      clippy clean, lib 269, svelte-check 0, vitest 63/63, Playwright 23/23,
+      build green.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

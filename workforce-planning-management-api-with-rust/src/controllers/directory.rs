@@ -6,6 +6,9 @@
 //! A manager's name is shown only when the manager is in the same readable
 //! set, so the directory never names someone outside the caller's scope.
 //!
+//! Anyone **on call today** in a rota the caller can read is marked with the
+//! rota's name (`rotas::on_call_today`).
+//!
 //! A worker on **approved leave today** is shown as away — never the kind
 //! of leave — with whoever covers for them ([`cover_rules::resolve`]: their
 //! best-ranked backup who is employed and not away themselves). Backups
@@ -98,6 +101,8 @@ async fn directory(
         }
     }
 
+    let on_call = super::rotas::on_call_today(&ctx, &caller).await?;
+
     let names: HashMap<Uuid, &str> = staff
         .iter()
         .map(|w| (w.pid, w.display_name.as_str()))
@@ -115,6 +120,7 @@ async fn directory(
                 .manager_pid
                 .and_then(|m| names.get(&m))
                 .map(|n| (*n).to_string()),
+            on_call: on_call.get(&w.pid).cloned().unwrap_or_default(),
             away_today: away.contains(&w.pid),
             covered_by: if away.contains(&w.pid) {
                 // Only backups in the readable set (`names`) can cover here.

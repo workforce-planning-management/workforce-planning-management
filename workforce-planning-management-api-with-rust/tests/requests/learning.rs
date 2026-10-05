@@ -415,6 +415,25 @@ async fn directory_lists_employed_workers_without_sensitive_fields() {
         assert_eq!(present[0]["away_today"], false);
         assert!(present[0]["covered_by"].is_null());
 
+        // On call today: a rota with this worker first shows by name.
+        request
+            .post("/api/rotas")
+            .json(&json!({ "organization_ref": org, "name": format!("Dir rota {tag}"),
+                           "period_days": 7, "starts_on": today.to_string(),
+                           "members": [backup, stay] }))
+            .await
+            .assert_status_ok();
+        let on_call: Vec<Value> = request
+            .get(&format!("/api/directory?q=dir-{tag}-c"))
+            .await
+            .json();
+        assert_eq!(on_call[0]["on_call"], json!([format!("Dir rota {tag}")]));
+        let not_on_call: Vec<Value> = request
+            .get(&format!("/api/directory?q=dir-{tag}-a"))
+            .await
+            .json();
+        assert_eq!(not_on_call[0]["on_call"], json!([]));
+
         // Department filter and a miss.
         let by_dept: Vec<Value> = request
             .get(&format!("/api/directory?q=dir-{tag}&department=ENGINEERING"))

@@ -404,6 +404,7 @@ test.describe("signed-in smoke coverage", () => {
         manager_name: null,
         away_today: true,
         covered_by: "Kim Lee",
+        on_call: ["Platform on-call"],
       },
     ];
     const seen: string[] = [];
@@ -421,6 +422,9 @@ test.describe("signed-in smoke coverage", () => {
     await expect(table).toContainText(WORKER.display_name);
     await expect(table).toContainText("Leeds");
     await expect(table).not.toContainText("£");
+    await expect(page.getByTestId("on-call")).toHaveText(
+      "On call: Platform on-call",
+    );
     await expect(page.getByTestId("away")).toHaveText("Away today");
     await expect(page.getByTestId("covered-by")).toContainText("Covered by Kim Lee");
     await page.getByTestId("directory-search").fill("nobody");

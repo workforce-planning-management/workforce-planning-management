@@ -572,6 +572,32 @@ async fn worker_on_call(
     format::json(out.into_values().collect::<Vec<_>>())
 }
 
+/// Who is on call **today** in the rotas of the caller's organizations:
+/// worker pid → the names of the rotas they are on call for. One entry per
+/// rota-day, so the directory can show it without computing a schedule.
+///
+/// # Errors
+///
+/// Any query error.
+pub(super) async fn on_call_today(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+) -> Result<HashMap<Uuid, Vec<String>>> {
+    let mut query = rotas::Entity::find().filter(rotas::Column::DeletedAt.is_null());
+    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+        query = query.filter(rotas::Column::OrganizationRef.is_in(refs));
+    }
+    let today = Utc::now().date_naive();
+    let mut out: HashMap<Uuid, Vec<String>> = HashMap::new();
+    for rota in query.order_by_asc(rotas::Column::Name).all(&ctx.db).await? {
+        let (_, _, assignments, _) = compute(ctx, &rota, today, today).await?;
+        if let Some(worker) = assignments.first().and_then(|a| a.worker) {
+            out.entry(worker).or_default().push(rota.name.clone());
+        }
+    }
+    Ok(out)
+}
+
 /// The on-call rota routes.
 pub fn routes() -> Routes {
     Routes::new()

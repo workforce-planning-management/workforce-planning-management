@@ -33,11 +33,13 @@ pub struct Entry {
     /// While away: the display name of who is covering for them (their
     /// best-ranked available backup), when someone is.
     pub covered_by: Option<String>,
+    /// The on-call rotas the worker is on call for today (names), if any.
+    pub on_call: Vec<String>,
 }
 
 /// Whether `entry` matches `query`: every whitespace-separated term must
 /// appear (case-insensitively) in the name, title, department, location
-/// or manager's name. An empty or blank query matches everyone.
+/// manager's name, or the name of a rota they are on call for. An empty or blank query matches everyone.
 #[must_use]
 pub fn matches(entry: &Entry, query: &str) -> bool {
     let haystack = [
@@ -49,6 +51,7 @@ pub fn matches(entry: &Entry, query: &str) -> bool {
     ]
     .into_iter()
     .flatten()
+    .chain(entry.on_call.iter().map(String::as_str))
     .collect::<Vec<_>>()
     .join("\n")
     .to_lowercase();
@@ -91,6 +94,7 @@ mod tests {
             manager_name: None,
             away_today: false,
             covered_by: None,
+            on_call: Vec::new(),
         }
     }
 
@@ -132,6 +136,14 @@ mod tests {
         let all = vec![with_manager, entry(2, "Bob Clarke", "Dev", "Eng", None)];
         assert_eq!(names(&search(all.clone(), "leeds", None)), Vec::<&str>::new());
         assert_eq!(names(&search(all, "alice", None)), ["Dee Evans"]);
+    }
+
+    #[test]
+    fn the_rota_a_person_is_on_call_for_is_searchable() {
+        let mut on_call = entry(7, "Eve Park", "SRE", "Ops", None);
+        on_call.on_call = vec!["Platform on-call".to_string()];
+        let all = vec![on_call, entry(8, "Fay Quinn", "SRE", "Ops", None)];
+        assert_eq!(names(&search(all, "platform on-call", None)), ["Eve Park"]);
     }
 
     #[test]

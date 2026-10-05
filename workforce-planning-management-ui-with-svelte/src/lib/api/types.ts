@@ -69,6 +69,8 @@ export interface DirectoryEntry {
   away_today: boolean;
   /** While away: who is covering, when someone is. */
   covered_by: string | null;
+  /** Names of the on-call rotas this person is on call for today. */
+  on_call: string[];
 }
 
 /** One emergency contact (visible only to the worker and HR). */

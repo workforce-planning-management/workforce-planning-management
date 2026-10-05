@@ -90,6 +90,9 @@
         <tr>
           <td>
             <a href={l(`/workers/${e.pid}`)}>{e.display_name}</a>
+            {#each e.on_call as rota (rota)}
+              <span class="chip" data-testid="on-call" title={rota}>{t("rota.who")}: {rota}</span>
+            {/each}
             {#if e.away_today}
               <span class="chip" data-testid="away">{t("directory.away")}</span>
               <span class="muted" data-testid="covered-by">
