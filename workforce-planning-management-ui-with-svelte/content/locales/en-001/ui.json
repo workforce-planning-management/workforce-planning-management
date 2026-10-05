@@ -414,6 +414,16 @@
     "none": "No rotas yet.",
     "retire": "Retire this rota",
     "mine": "My on-call",
-    "mineNone": "You are not on call in the next four weeks."
+    "mineNone": "You are not on call in the next four weeks.",
+    "swapTitle": "Swap requests",
+    "swapRequest": "Ask for a swap",
+    "swapTaker": "Ask",
+    "swapIncoming": "Asked of you",
+    "swapOutgoing": "Asked by you",
+    "accept": "Accept",
+    "decline": "Decline",
+    "cancel": "Cancel",
+    "swapNone": "No open swap requests.",
+    "asks": "asks you to take their on-call"
   }
 }

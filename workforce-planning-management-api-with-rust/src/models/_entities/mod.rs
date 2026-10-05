@@ -64,6 +64,7 @@ pub mod requisitions;
 pub mod review_cycles;
 pub mod rota_members;
 pub mod rota_overrides;
+pub mod rota_swap_requests;
 pub mod rotas;
 pub mod reviews;
 pub mod role_profiles;

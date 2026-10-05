@@ -414,6 +414,16 @@
     "none": "Noch keine Bereitschaftspläne.",
     "retire": "Diesen Plan beenden",
     "mine": "Meine Bereitschaft",
-    "mineNone": "Sie haben in den nächsten vier Wochen keine Bereitschaft."
+    "mineNone": "Sie haben in den nächsten vier Wochen keine Bereitschaft.",
+    "swapTitle": "Tauschanfragen",
+    "swapRequest": "Tausch anfragen",
+    "swapTaker": "Anfragen bei",
+    "swapIncoming": "An Sie gerichtet",
+    "swapOutgoing": "Von Ihnen gestellt",
+    "accept": "Annehmen",
+    "decline": "Ablehnen",
+    "cancel": "Abbrechen",
+    "swapNone": "Keine offenen Tauschanfragen.",
+    "asks": "bittet Sie, die Bereitschaft zu übernehmen"
   }
 }

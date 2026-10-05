@@ -187,6 +187,10 @@ describe("api path map", () => {
     await wpm.addRotaSwap("r1", { worker_pid: "w2", starts_on: "2026-10-05", ends_on: "2026-10-06" });
     await wpm.removeRotaSwap("s1");
     await wpm.workerOnCall("w1");
+    await wpm.listSwapRequests("r1");
+    await wpm.requestSwap("r1", { requester_pid: "w1", taker_pid: "w2", starts_on: "2026-10-05", ends_on: "2026-10-11" });
+    await wpm.decideSwap("s1", "accept");
+    await wpm.workerSwapRequests("w1");
     await wpm.employeeDirectory();
     await wpm.employeeDirectory({ q: "ann lee", department: "Finance", limit: 100 });
     await wpm.workforceInsights();
@@ -288,6 +292,10 @@ describe("api path map", () => {
       "/api/proxy/rotas/r1/overrides",
       "/api/proxy/rota-overrides/s1",
       "/api/proxy/workers/w1/on-call",
+      "/api/proxy/rotas/r1/swap-requests",
+      "/api/proxy/rotas/r1/swap-requests",
+      "/api/proxy/rota-swap-requests/s1/accept",
+      "/api/proxy/workers/w1/swap-requests",
       "/api/proxy/directory",
       "/api/proxy/directory?q=ann+lee&department=Finance&limit=100",
       "/api/proxy/workforce-intelligence/insights",

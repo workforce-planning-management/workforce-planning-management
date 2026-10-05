@@ -11,6 +11,7 @@ import type {
   Cover,
   RotaSummary,
   RotaView,
+  SwapRequest,
   DirectoryEntry,
   EmergencyContact,
   Worker,
@@ -1330,6 +1331,41 @@ export function addRotaSwap(
 /** Undo a swap. */
 export function removeRotaSwap(pid: string): Promise<unknown> {
   return api(`/rota-overrides/${pid}`, { method: "DELETE" });
+}
+
+/** A rota's swap requests, newest first. */
+export function listSwapRequests(rotaPid: string, init?: FetchLike): Promise<SwapRequest[]> {
+  return api(`/rotas/${rotaPid}/swap-requests`, init);
+}
+
+/** Ask a colleague to take the requester's on-call days in a window. */
+export function requestSwap(
+  rotaPid: string,
+  swap: {
+    requester_pid: string;
+    taker_pid: string;
+    starts_on: string;
+    ends_on: string;
+    note?: string;
+  },
+): Promise<{ pid: string }> {
+  return api(`/rotas/${rotaPid}/swap-requests`, { method: "POST", body: swap });
+}
+
+/** Decide or withdraw a swap request. */
+export function decideSwap(
+  pid: string,
+  decision: "accept" | "decline" | "cancel",
+): Promise<{ status: string }> {
+  return api(`/rota-swap-requests/${pid}/${decision}`, { method: "POST" });
+}
+
+/** A person's open swap requests: asked of them, and asked by them. */
+export function workerSwapRequests(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{ incoming: SwapRequest[]; outgoing: SwapRequest[] }> {
+  return api(`/workers/${workerPid}/swap-requests`, init);
 }
 
 /** A worker's on-call stretches across the rotas the caller can read. */

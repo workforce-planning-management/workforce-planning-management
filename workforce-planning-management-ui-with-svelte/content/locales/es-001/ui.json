@@ -414,6 +414,16 @@
     "none": "Aún no hay turnos de guardia.",
     "retire": "Retirar este turno de guardia",
     "mine": "Mis guardias",
-    "mineNone": "No está de guardia en las próximas cuatro semanas."
+    "mineNone": "No está de guardia en las próximas cuatro semanas.",
+    "swapTitle": "Solicitudes de cambio",
+    "swapRequest": "Pedir un cambio",
+    "swapTaker": "Pedir a",
+    "swapIncoming": "Le piden a usted",
+    "swapOutgoing": "Pedido por usted",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "cancel": "Cancelar",
+    "swapNone": "No hay solicitudes de cambio abiertas.",
+    "asks": "le pide que asuma su guardia"
   }
 }

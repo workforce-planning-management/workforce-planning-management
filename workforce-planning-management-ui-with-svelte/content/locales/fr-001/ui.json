@@ -414,6 +414,16 @@
     "none": "Aucun tour d'astreinte pour l'instant.",
     "retire": "Retirer ce tour d'astreinte",
     "mine": "Mes astreintes",
-    "mineNone": "Vous n'êtes pas d'astreinte dans les quatre prochaines semaines."
+    "mineNone": "Vous n'êtes pas d'astreinte dans les quatre prochaines semaines.",
+    "swapTitle": "Demandes d'échange",
+    "swapRequest": "Demander un échange",
+    "swapTaker": "Demander à",
+    "swapIncoming": "Demandé à vous",
+    "swapOutgoing": "Demandé par vous",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "cancel": "Annuler",
+    "swapNone": "Aucune demande d'échange ouverte.",
+    "asks": "vous demande de prendre son astreinte"
   }
 }

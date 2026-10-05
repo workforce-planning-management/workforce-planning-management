@@ -767,3 +767,13 @@ collections:
               - { name: "retire", label: "Retire", widget: string, required: false, i18n: true }
               - { name: "mine", label: "Mine", widget: string, required: false, i18n: true }
               - { name: "mineNone", label: "Mine None", widget: string, required: false, i18n: true }
+              - { name: "swapTitle", label: "Swap Title", widget: string, required: false, i18n: true }
+              - { name: "swapRequest", label: "Swap Request", widget: string, required: false, i18n: true }
+              - { name: "swapTaker", label: "Swap Taker", widget: string, required: false, i18n: true }
+              - { name: "swapIncoming", label: "Swap Incoming", widget: string, required: false, i18n: true }
+              - { name: "swapOutgoing", label: "Swap Outgoing", widget: string, required: false, i18n: true }
+              - { name: "accept", label: "Accept", widget: string, required: false, i18n: true }
+              - { name: "decline", label: "Decline", widget: string, required: false, i18n: true }
+              - { name: "cancel", label: "Cancel", widget: string, required: false, i18n: true }
+              - { name: "swapNone", label: "Swap None", widget: string, required: false, i18n: true }
+              - { name: "asks", label: "Asks", widget: string, required: false, i18n: true }

@@ -414,6 +414,16 @@
     "none": "Dim rotâu eto.",
     "retire": "Terfynu'r rota hon",
     "mine": "Fy ngalwad",
-    "mineNone": "Dydych chi ddim ar alwad yn y pedair wythnos nesaf."
+    "mineNone": "Dydych chi ddim ar alwad yn y pedair wythnos nesaf.",
+    "swapTitle": "Ceisiadau cyfnewid",
+    "swapRequest": "Gofyn am gyfnewid",
+    "swapTaker": "Gofyn i",
+    "swapIncoming": "Wedi gofyn i chi",
+    "swapOutgoing": "Wedi gofyn gennych",
+    "accept": "Derbyn",
+    "decline": "Gwrthod",
+    "cancel": "Canslo",
+    "swapNone": "Dim ceisiadau cyfnewid agored.",
+    "asks": "yn gofyn i chi gymryd ei alwad"
   }
 }

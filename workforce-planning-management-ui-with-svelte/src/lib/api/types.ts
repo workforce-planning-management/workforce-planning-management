@@ -156,6 +156,21 @@ export interface RotaView extends Omit<RotaSummary, "members"> {
   load: Array<{ worker_pid: string; name: string | null; days: number }>;
 }
 
+/** A request that a colleague take the requester's on-call days in a window. */
+export interface SwapRequest {
+  pid: string;
+  rota_pid: string;
+  rota_name: string | null;
+  requester_pid: string;
+  requester_name: string | null;
+  taker_pid: string;
+  taker_name: string | null;
+  starts_on: string;
+  ends_on: string;
+  note: string | null;
+  status: "requested" | "accepted" | "declined" | "cancelled";
+}
+
 /** One funded job opening. */
 export interface Requisition {
   pid: string;

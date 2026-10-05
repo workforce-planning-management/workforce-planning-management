@@ -30,7 +30,7 @@ use crate::rules::rota::{self as rules, Assignment, Override, Rota};
 const DEFAULT_WINDOW_DAYS: i64 = 28;
 
 /// The rota, if it exists and its organization is one the caller can read.
-async fn find_rota(
+pub(super) async fn find_rota(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     pid: &str,
@@ -46,7 +46,7 @@ async fn find_rota(
 }
 
 /// A rota outside the caller's organizations does not exist, to them.
-async fn require_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
+pub(super) async fn require_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
     if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
         && !refs.iter().any(|r| r == org)
     {
@@ -75,7 +75,7 @@ async fn override_rows(ctx: &AppContext, rota: Uuid) -> Result<Vec<rota_override
 }
 
 /// Live workers by pid, for names and availability.
-async fn workers_by_pid(
+pub(super) async fn workers_by_pid(
     ctx: &AppContext,
     pids: Vec<Uuid>,
 ) -> Result<HashMap<Uuid, workers::Model>> {
@@ -91,7 +91,7 @@ async fn workers_by_pid(
 
 /// The day-by-day schedule for a rota over `from..=to`, with the workers
 /// named in it. Availability = employed that day and not on approved leave.
-async fn compute(
+pub(super) async fn compute(
     ctx: &AppContext,
     rota: &rotas::Model,
     from: NaiveDate,
@@ -137,7 +137,7 @@ async fn compute(
     Ok((members, overrides, assignments, people))
 }
 
-fn name_of(people: &HashMap<Uuid, workers::Model>, pid: Option<Uuid>) -> Option<String> {
+pub(super) fn name_of(people: &HashMap<Uuid, workers::Model>, pid: Option<Uuid>) -> Option<String> {
     pid.and_then(|p| people.get(&p)).map(|w| w.display_name.clone())
 }
 
@@ -186,7 +186,7 @@ struct RotaPayload {
 }
 
 /// Members must be employed workers of `org`, in the order given.
-async fn check_members(ctx: &AppContext, org: &str, members: &[Uuid]) -> Result<()> {
+pub(super) async fn check_members(ctx: &AppContext, org: &str, members: &[Uuid]) -> Result<()> {
     let people = workers_by_pid(ctx, members.to_vec()).await?;
     let today = Utc::now().date_naive();
     for m in members {

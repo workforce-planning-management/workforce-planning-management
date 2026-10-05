@@ -150,6 +150,56 @@ pub fn turn_starts(yesterday: &Assignment, today: &Assignment) -> Option<Uuid> {
     today.worker.filter(|w| yesterday.worker != Some(*w))
 }
 
+/// Swap-request statuses.
+pub const SWAP_STATUSES: &[&str] = &["requested", "accepted", "declined", "cancelled"];
+
+/// Whether a swap request may move from `from` to `to`: only a **requested**
+/// swap can be decided — accepted or declined by the taker, cancelled by the
+/// requester. Everything else is final.
+#[must_use]
+pub fn swap_can_move(from: &str, to: &str) -> bool {
+    from == "requested" && matches!(to, "accepted" | "declined" | "cancelled")
+}
+
+/// Validate a swap request's shape.
+///
+/// # Errors
+///
+/// A message when requester and taker are the same person, the window is
+/// inverted, or it ends before `today`.
+pub fn validate_swap(
+    requester: Uuid,
+    taker: Uuid,
+    starts_on: NaiveDate,
+    ends_on: NaiveDate,
+    today: NaiveDate,
+) -> Result<(), String> {
+    if requester == taker {
+        return Err("a person cannot swap with themself".to_string());
+    }
+    if ends_on < starts_on {
+        return Err("ends_on must not be before starts_on".to_string());
+    }
+    if ends_on < today {
+        return Err("a swap must include today or a later day".to_string());
+    }
+    if (ends_on - starts_on).num_days() + 1 > MAX_WINDOW_DAYS {
+        return Err(format!("a swap may cover at most {MAX_WINDOW_DAYS} days"));
+    }
+    Ok(())
+}
+
+/// The stretches `worker` is on call in `assignments` — what a swap request
+/// can hand over (only the requester's own on-call days move, never someone
+/// else's inside the same window).
+#[must_use]
+pub fn stretches_for(assignments: &[Assignment], worker: Uuid) -> Vec<Run> {
+    runs(assignments)
+        .into_iter()
+        .filter(|r| r.worker == Some(worker))
+        .collect()
+}
+
 /// The assignments for every day in `from..=to`.
 #[must_use]
 pub fn schedule(
@@ -327,6 +377,39 @@ mod tests {
         let everyone_away = |_: Uuid, _| true;
         let days = schedule(&rota, &[], &everyone_away, d(5), d(6));
         assert_eq!(turn_starts(&days[0], &days[1]), None);
+    }
+
+    #[test]
+    fn swaps_are_decided_once() {
+        for to in ["accepted", "declined", "cancelled"] {
+            assert!(swap_can_move("requested", to));
+            assert!(!swap_can_move(to, "accepted"), "{to} is final");
+        }
+        assert!(!swap_can_move("requested", "requested"));
+        assert!(!swap_can_move("requested", "bogus"));
+    }
+
+    #[test]
+    fn a_swap_needs_two_people_and_a_live_window() {
+        let (a, b) = (w(1), w(2));
+        assert!(validate_swap(a, b, d(6), d(8), d(5)).is_ok());
+        assert!(validate_swap(a, a, d(6), d(8), d(5)).is_err());
+        assert!(validate_swap(a, b, d(8), d(6), d(5)).is_err());
+        assert!(validate_swap(a, b, d(1), d(4), d(5)).is_err(), "all in the past");
+        assert!(validate_swap(a, b, d(4), d(6), d(5)).is_ok(), "spans today");
+        assert!(validate_swap(a, b, d(5), d(5) + Duration::days(92), d(5)).is_err());
+    }
+
+    #[test]
+    fn only_the_requesters_own_days_can_move() {
+        let rota = weekly(&[1, 2]);
+        let days = schedule(&rota, &[], NOBODY_AWAY, d(5), d(25));
+        // Weeks: 1 (5–11), 2 (12–18), 1 (19–25).
+        let mine = stretches_for(&days, w(1));
+        assert_eq!(mine.len(), 2);
+        assert_eq!((mine[0].from, mine[0].to), (d(5), d(11)));
+        assert_eq!((mine[1].from, mine[1].to), (d(19), d(25)));
+        assert_eq!(stretches_for(&days, w(9)), Vec::<Run>::new());
     }
 
     #[test]

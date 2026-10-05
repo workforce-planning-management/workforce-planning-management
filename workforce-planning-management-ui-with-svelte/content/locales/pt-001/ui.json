@@ -414,6 +414,16 @@
     "none": "Ainda não há escalas.",
     "retire": "Retirar esta escala",
     "mine": "As minhas prevenções",
-    "mineNone": "Não está de prevenção nas próximas quatro semanas."
+    "mineNone": "Não está de prevenção nas próximas quatro semanas.",
+    "swapTitle": "Pedidos de troca",
+    "swapRequest": "Pedir uma troca",
+    "swapTaker": "Pedir a",
+    "swapIncoming": "Pedido a si",
+    "swapOutgoing": "Pedido por si",
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "cancel": "Cancelar",
+    "swapNone": "Não há pedidos de troca abertos.",
+    "asks": "pede-lhe que assuma a sua prevenção"
   }
 }

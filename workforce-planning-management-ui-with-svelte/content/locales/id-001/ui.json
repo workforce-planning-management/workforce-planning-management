@@ -414,6 +414,16 @@
     "none": "Belum ada jadwal siaga.",
     "retire": "Hentikan jadwal ini",
     "mine": "Siaga saya",
-    "mineNone": "Anda tidak siaga dalam empat minggu ke depan."
+    "mineNone": "Anda tidak siaga dalam empat minggu ke depan.",
+    "swapTitle": "Permintaan tukar",
+    "swapRequest": "Minta tukar",
+    "swapTaker": "Minta kepada",
+    "swapIncoming": "Diminta kepada Anda",
+    "swapOutgoing": "Diminta oleh Anda",
+    "accept": "Terima",
+    "decline": "Tolak",
+    "cancel": "Batalkan",
+    "swapNone": "Tidak ada permintaan tukar terbuka.",
+    "asks": "meminta Anda mengambil jadwal siaganya"
   }
 }

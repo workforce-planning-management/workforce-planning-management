@@ -414,6 +414,16 @@
     "none": "尚无值班表。",
     "retire": "停用此值班表",
     "mine": "我的值班",
-    "mineNone": "未来四周您没有值班。"
+    "mineNone": "未来四周您没有值班。",
+    "swapTitle": "换班请求",
+    "swapRequest": "请求换班",
+    "swapTaker": "请求",
+    "swapIncoming": "向您提出的",
+    "swapOutgoing": "您提出的",
+    "accept": "接受",
+    "decline": "拒绝",
+    "cancel": "取消",
+    "swapNone": "没有待处理的换班请求。",
+    "asks": "请您接替其值班"
   }
 }

@@ -231,3 +231,134 @@ async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn swap_requests_move_only_the_requesters_days_when_accepted() {
+    request::<App, _, _>(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut pids = Vec::new();
+        for n in ["A", "B", "C"] {
+            let pid = seed_worker!(&request, &org, format!("SW-{tag}-{n}"), None).await;
+            activate!(&request, &pid).await;
+            pids.push(pid);
+        }
+        let (a, b, c) = (&pids[0], &pids[1], &pids[2]);
+        let today = Utc::now().date_naive();
+        let day = |n: i64| (today + Duration::days(n)).to_string();
+        let rota: Value = request
+            .post("/api/rotas")
+            .json(&json!({ "organization_ref": org, "name": format!("Swap {tag}"),
+                           "period_days": 7, "starts_on": today.to_string(),
+                           "members": [a, b, c] }))
+            .await
+            .json();
+        let rota = rota["pid"].as_str().unwrap().to_string();
+        let url = format!("/api/rotas/{rota}/swap-requests");
+
+        // A is on call this week; B is not, so B cannot hand over this week.
+        assert_eq!(
+            request
+                .post(&url)
+                .json(&json!({ "requester_pid": b, "taker_pid": c,
+                               "starts_on": day(0), "ends_on": day(6) }))
+                .await
+                .status_code(),
+            422,
+            "the requester is not on call in that window"
+        );
+        assert_eq!(
+            request
+                .post(&url)
+                .json(&json!({ "requester_pid": a, "taker_pid": a,
+                               "starts_on": day(0), "ends_on": day(6) }))
+                .await
+                .status_code(),
+            422
+        );
+
+        // A asks B for the whole fortnight window, which only covers A's week.
+        let asked: Value = request
+            .post(&url)
+            .json(&json!({ "requester_pid": a, "taker_pid": b,
+                           "starts_on": day(0), "ends_on": day(13), "note": "away" }))
+            .await
+            .json();
+        let first = asked["pid"].as_str().unwrap().to_string();
+        assert_eq!(
+            request
+                .post(&url)
+                .json(&json!({ "requester_pid": a, "taker_pid": b,
+                               "starts_on": day(0), "ends_on": day(13) }))
+                .await
+                .status_code(),
+            422,
+            "already asked"
+        );
+        let incoming: Value = request.get(&format!("/api/workers/{b}/swap-requests")).await.json();
+        assert_eq!(incoming["incoming"].as_array().unwrap().len(), 1);
+        assert_eq!(incoming["outgoing"].as_array().unwrap().len(), 0);
+        let told: Value = request.get(&format!("/api/workers/{b}/notifications")).await.json();
+        assert!(told.as_array().unwrap().iter().any(|n| n["kind"] == "swap_requested"));
+
+        // B accepts: only A's own days (week 1) move — B's own turn (week 2) is untouched.
+        let ok: Value = request
+            .post(&format!("/api/rota-swap-requests/{first}/accept"))
+            .await
+            .json();
+        assert_eq!(ok["status"], "accepted");
+        assert_eq!(ok["days_moved"], 1, "one stretch");
+        let now: Value = request.get(&format!("/api/rotas/{rota}/on-call")).await.json();
+        assert_eq!(now["worker_pid"], b.as_str());
+        assert_eq!(now["source"], "override");
+        let week2: Value = request
+            .get(&format!("/api/rotas/{rota}/on-call?on={}", day(8)))
+            .await
+            .json();
+        assert_eq!(week2["worker_pid"], b.as_str(), "B's own turn");
+        let told: Value = request.get(&format!("/api/workers/{a}/notifications")).await.json();
+        assert!(told.as_array().unwrap().iter().any(|n| n["kind"] == "swap_decided"));
+        // Decided once.
+        assert_eq!(
+            request
+                .post(&format!("/api/rota-swap-requests/{first}/decline"))
+                .await
+                .status_code(),
+            422
+        );
+
+        // Decline and cancel paths on the next stretch of A's (week 4 = day 21..27).
+        let second: Value = request
+            .post(&url)
+            .json(&json!({ "requester_pid": a, "taker_pid": c,
+                           "starts_on": day(21), "ends_on": day(27) }))
+            .await
+            .json();
+        let second = second["pid"].as_str().unwrap();
+        request
+            .post(&format!("/api/rota-swap-requests/{second}/decline"))
+            .await
+            .assert_status_ok();
+        let third: Value = request
+            .post(&url)
+            .json(&json!({ "requester_pid": a, "taker_pid": c,
+                           "starts_on": day(21), "ends_on": day(27) }))
+            .await
+            .json();
+        request
+            .post(&format!("/api/rota-swap-requests/{}/cancel", third["pid"].as_str().unwrap()))
+            .await
+            .assert_status_ok();
+        let all: Vec<Value> = request.get(&url).await.json();
+        let statuses: Vec<&str> = all.iter().map(|r| r["status"].as_str().unwrap()).collect();
+        assert_eq!(statuses, ["cancelled", "declined", "accepted"]);
+        let after: Value = request
+            .get(&format!("/api/rotas/{rota}/on-call?on={}", day(21)))
+            .await
+            .json();
+        assert_eq!(after["worker_pid"], a.as_str(), "declined and cancelled swaps move nothing");
+    })
+    .await;
+}

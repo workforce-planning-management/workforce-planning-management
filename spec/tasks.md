@@ -1791,6 +1791,30 @@ build on 3–5).
       none to the other, none on re-run, none mid-turn), lib 272, clippy clean
       on the new files.
 
+- [x] WPM-T81 (2026-10-05) **Rota swap requests.** Builds on WPM-T77/T79.
+      Migration `m20261005_000042_rota_swap_requests`. A person on call asks a
+      colleague to take their on-call days in a window; the colleague accepts
+      or declines, the requester can cancel while it is open (decided once —
+      `rota::swap_can_move`). **On acceptance only the requester's *own*
+      on-call stretches inside the window become overrides** for the colleague
+      (`rota::stretches_for`) — a swap never moves anyone else's days, so a
+      window wider than the requester's turn is fine. The requester must
+      actually be on call in the window; the colleague must be an employed
+      worker of the rota's organization; a duplicate open request is refused.
+      Each side acts for themself (or HR on their behalf): a request is a
+      write to the requester's record, a decision a write to the colleague's.
+      `POST|GET /api/rotas/{pid}/swap-requests`, `POST /api/rota-swap-requests/
+      {pid}/accept|decline|cancel`, `GET /api/workers/{pid}/swap-requests`
+      (incoming / outgoing). Notifications `swap_requested` (to the colleague)
+      and `swap_decided` (to the other party). Requests are in the
+      subject-access export and erased with either person. UI: a request form
+      and list on `/rota`; incoming (accept / decline) and outgoing (cancel)
+      on the "My on-call" panel; 10 strings in 13 locales. DB suite 49/49 (new
+      test: wrong-window and self refused, duplicate refused, accept moves one
+      stretch and leaves the taker's own turn alone, decide-once, decline and
+      cancel move nothing), clippy clean, lib 275, svelte-check 0, vitest
+      63/63, Playwright 23/23, build green.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

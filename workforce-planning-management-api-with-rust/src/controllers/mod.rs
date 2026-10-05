@@ -26,6 +26,7 @@ pub mod lms;
 pub mod mobility;
 pub mod planning;
 pub mod reporting;
+pub mod rota_swaps;
 pub mod rotas;
 pub mod roles;
 pub mod metrics;

@@ -12,6 +12,8 @@ pub const KINDS: &[&str] = &[
     "rota_added",
     "on_call_swap",
     "on_call_reminder",
+    "swap_requested",
+    "swap_decided",
 ];
 
 /// Recipients of an appraisal lifecycle move:
@@ -80,7 +82,9 @@ mod tests {
                 "adjustment_update",
                 "rota_added",
                 "on_call_swap",
-                "on_call_reminder"
+                "on_call_reminder",
+                "swap_requested",
+                "swap_decided"
             ]
         );
     }

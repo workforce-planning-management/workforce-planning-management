@@ -14,10 +14,13 @@
     getRota,
     listRotas,
     listWorkers,
+    decideSwap,
+    listSwapRequests,
     removeRotaSwap,
+    requestSwap,
     retireRota,
   } from "#lib/api/wpm.js";
-  import type { RotaSummary, RotaView } from "#lib/api/types.js";
+  import type { RotaSummary, RotaView, SwapRequest } from "#lib/api/types.js";
   import { t } from "#lib/i18n.svelte.js";
 
   const organizationRefs = $derived((page.data.scope ?? []) as string[]);
@@ -34,6 +37,13 @@
   let startsOn = $state(new Date().toISOString().slice(0, 10));
   let organization = $state("");
   let picked = $state<string[]>([]);
+  let requests = $state<SwapRequest[]>([]);
+  // New swap-request form.
+  let askRequester = $state("");
+  let askTaker = $state("");
+  let askFrom = $state("");
+  let askUntil = $state("");
+  let askNote = $state("");
   // New swap form.
   let swapWorker = $state("");
   let swapFrom = $state("");
@@ -43,6 +53,8 @@
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
   const org = $derived(organization || organizationRefs[0] || "");
   const orgWorkers = $derived(everyone.filter((w) => w.organization_ref === org));
+  // Colleagues of the rota being viewed (its own organization, not the create form's).
+  const viewWorkers = $derived(everyone.filter((w) => w.organization_ref === view?.organization_ref));
   const nameOf = (pid: string) => everyone.find((w) => w.pid === pid)?.display_name ?? pid;
 
   async function loadList() {
@@ -60,7 +72,7 @@
     view = null;
     if (!chosen) return;
     try {
-      view = await getRota(chosen);
+      [view, requests] = await Promise.all([getRota(chosen), listSwapRequests(chosen)]);
     } catch (cause) {
       error = message(cause);
     }
@@ -165,6 +177,7 @@
       {/each}
     </ul>
     <form
+      data-testid="swap-form"
       onsubmit={(event) => {
         event.preventDefault();
         const id = view?.pid;
@@ -191,6 +204,59 @@
       <label>{t("rota.to")} <input type="date" bind:value={swapUntil} required /></label>
       <label>{t("backups.note")} <input bind:value={swapNote} maxlength="500" /></label>
       <button type="submit" data-testid="swap-add">{t("rota.addSwap")}</button>
+    </form>
+    <h3>{t("rota.swapTitle")}</h3>
+    <ul data-testid="rota-requests">
+      {#each requests as r (r.pid)}
+        <li>
+          {r.requester_name ?? r.requester_pid} → {r.taker_name ?? r.taker_pid}
+          · {r.starts_on} → {r.ends_on} · <span class="chip">{r.status}</span>
+          {#if r.status === "requested"}
+            <button type="button" onclick={() => void run(() => decideSwap(r.pid, "accept"))}>{t("rota.accept")}</button>
+            <button type="button" onclick={() => void run(() => decideSwap(r.pid, "decline"))}>{t("rota.decline")}</button>
+            <button type="button" onclick={() => void run(() => decideSwap(r.pid, "cancel"))}>{t("rota.cancel")}</button>
+          {/if}
+        </li>
+      {:else}
+        <li class="muted">{t("rota.swapNone")}</li>
+      {/each}
+    </ul>
+    <form
+      data-testid="swap-request-form"
+      onsubmit={(event) => {
+        event.preventDefault();
+        const id = view?.pid;
+        if (!id) return;
+        void run(async () => {
+          await requestSwap(id, {
+            requester_pid: askRequester,
+            taker_pid: askTaker,
+            starts_on: askFrom,
+            ends_on: askUntil,
+            ...(askNote.trim() ? { note: askNote.trim() } : {}),
+          });
+          askRequester = askTaker = askFrom = askUntil = askNote = "";
+        });
+      }}
+    >
+      <label>
+        {t("rota.who")}
+        <select bind:value={askRequester} required data-testid="ask-requester">
+          <option value="" disabled>…</option>
+          {#each view.members as m (m.worker_pid)}<option value={m.worker_pid}>{m.name ?? m.worker_pid}</option>{/each}
+        </select>
+      </label>
+      <label>
+        {t("rota.swapTaker")}
+        <select bind:value={askTaker} required data-testid="ask-taker">
+          <option value="" disabled>…</option>
+          {#each viewWorkers.filter((w) => w.pid !== askRequester) as w (w.pid)}<option value={w.pid}>{w.display_name}</option>{/each}
+        </select>
+      </label>
+      <label>{t("rota.from")} <input type="date" bind:value={askFrom} required /></label>
+      <label>{t("rota.to")} <input type="date" bind:value={askUntil} required /></label>
+      <label>{t("backups.note")} <input bind:value={askNote} maxlength="500" /></label>
+      <button type="submit" data-testid="swap-request-add">{t("rota.swapRequest")}</button>
     </form>
     <p>
       <button
