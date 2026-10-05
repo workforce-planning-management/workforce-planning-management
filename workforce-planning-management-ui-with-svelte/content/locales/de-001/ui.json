@@ -362,5 +362,30 @@
     "location": "Standort",
     "manager": "Führungskraft",
     "noMatches": "Keine Person entspricht Ihrer Suche."
+  },
+  "contacts": {
+    "title": "Notfallkontakte",
+    "hint": "Personen, die im Notfall benachrichtigt werden. Nur Sie und die Personalabteilung sehen diese.",
+    "relationship": "Beziehung",
+    "phone": "Telefon",
+    "altPhone": "Weiteres Telefon (optional)",
+    "email": "E-Mail (optional)",
+    "note": "Notiz (optional)",
+    "add": "Kontakt hinzufügen",
+    "remove": "Entfernen",
+    "none": "Noch keine Notfallkontakte."
+  },
+  "backups": {
+    "title": "Vertretungen",
+    "hint": "Wer Sie bei Krankheit oder Urlaub vertritt. Kolleginnen und Kollegen können das sehen.",
+    "add": "Vertretung benennen",
+    "choose": "Kollegin oder Kollegen wählen…",
+    "from": "Von (optional)",
+    "until": "Bis (optional)",
+    "note": "Notiz (optional)",
+    "none": "Noch keine Vertretung benannt.",
+    "remove": "Entfernen",
+    "coverToday": "Vertritt heute:",
+    "nobodyToday": "Heute ist niemand zur Vertretung verfügbar."
   }
 }

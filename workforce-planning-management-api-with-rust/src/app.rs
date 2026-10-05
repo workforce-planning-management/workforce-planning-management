@@ -100,6 +100,7 @@ impl Hooks for App {
             .add_route(controllers::career::routes())
             .add_route(controllers::reporting::routes())
             .add_route(controllers::groups::routes())
+            .add_route(controllers::contacts::routes())
             .add_route(controllers::directory::routes())
             .add_route(controllers::transfers::routes())
             .add_route(controllers::talent::routes())

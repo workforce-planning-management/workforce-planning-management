@@ -6,8 +6,11 @@ import { api } from "#lib/api/client.js";
 import type {
   Application,
   Benchmark,
+  Backup,
   ComparisonRow,
+  Cover,
   DirectoryEntry,
+  EmergencyContact,
   Worker,
   LeaveEntitlement,
   LeaveRequest,
@@ -1190,6 +1193,79 @@ export function addDottedManager(
 /** End a dotted-line relationship; it is kept as history. */
 export function endDottedManager(workerPid: string, managerPid: string): Promise<unknown> {
   return api(`/workers/${workerPid}/dotted-line-managers/${managerPid}`, { method: "DELETE" });
+}
+
+/** A worker's emergency contacts, first-to-call first (worker and HR only). */
+export function listEmergencyContacts(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<EmergencyContact[]> {
+  return api(`/workers/${workerPid}/emergency-contacts`, init);
+}
+
+/** Add an emergency contact (up to five). */
+export function addEmergencyContact(
+  workerPid: string,
+  contact: {
+    name: string;
+    relationship: string;
+    phone: string;
+    alt_phone?: string;
+    email?: string;
+    note?: string;
+    priority?: number;
+  },
+): Promise<{ pid: string }> {
+  return api(`/workers/${workerPid}/emergency-contacts`, {
+    method: "POST",
+    body: contact,
+  });
+}
+
+/** Change an emergency contact. */
+export function updateEmergencyContact(
+  pid: string,
+  changes: Partial<Omit<EmergencyContact, "pid" | "on_behalf">>,
+): Promise<EmergencyContact> {
+  return api(`/emergency-contacts/${pid}`, { method: "PUT", body: changes });
+}
+
+/** Remove an emergency contact. */
+export function removeEmergencyContact(pid: string): Promise<unknown> {
+  return api(`/emergency-contacts/${pid}`, { method: "DELETE" });
+}
+
+/** Who covers for a worker when they are out, in the order to ask. */
+export function listBackups(workerPid: string, init?: FetchLike): Promise<Backup[]> {
+  return api(`/workers/${workerPid}/backups`, init);
+}
+
+/** Name a backup (up to three), optionally for a dated window. */
+export function addBackup(
+  workerPid: string,
+  backup: {
+    backup_pid: string;
+    priority?: number;
+    starts_on?: string;
+    ends_on?: string;
+    note?: string;
+  },
+): Promise<{ pid: string }> {
+  return api(`/workers/${workerPid}/backups`, { method: "POST", body: backup });
+}
+
+/** Stop naming a backup. */
+export function removeBackup(pid: string): Promise<unknown> {
+  return api(`/backups/${pid}`, { method: "DELETE" });
+}
+
+/** Who covers for a worker on a day (default today). */
+export function workerCover(
+  workerPid: string,
+  on?: string,
+  init?: FetchLike,
+): Promise<Cover> {
+  return api(`/workers/${workerPid}/cover${on ? `?on=${on}` : ""}`, init);
 }
 
 /** Move a worker to another organization; groups that no longer fit end (kept as history). */

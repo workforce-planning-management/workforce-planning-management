@@ -8,6 +8,7 @@
 mod adjustments;
 mod appraisals;
 mod assessments;
+mod contacts;
 mod ergonomics;
 mod hr;
 mod learning;

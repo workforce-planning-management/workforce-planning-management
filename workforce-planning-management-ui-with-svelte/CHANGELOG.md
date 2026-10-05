@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — employee directory; emergency contacts and backups
+
+`/directory`: a searchable list of who works where (employed workers in
+the organizations you can read; no pay, dates or person reference). On
+`/me` and `/workers/{pid}`: **Emergency contacts** (only you and HR can see
+them) and **Backups** — the colleagues who cover when you are out, with
+who is covering today.
+
 ### Added — locale content routes, `/en/` aliases, Sveltia CMS; metrics insights
 
 UI strings now live in `content/locales/<locale>/ui.json` (16 locales,

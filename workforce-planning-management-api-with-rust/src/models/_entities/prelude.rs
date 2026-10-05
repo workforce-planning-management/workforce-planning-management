@@ -70,3 +70,5 @@ pub use super::worker_framework_roles::Entity as WorkerFrameworkRoles;
 pub use super::worker_skill_history::Entity as WorkerSkillHistory;
 pub use super::workers::Entity as Workers;
 pub use super::workforce_plans::Entity as WorkforcePlans;
+pub use super::emergency_contacts::Entity as EmergencyContacts;
+pub use super::worker_backups::Entity as WorkerBackups;

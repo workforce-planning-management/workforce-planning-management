@@ -362,5 +362,30 @@
     "location": "Lokasi",
     "manager": "Manajer",
     "noMatches": "Tidak ada yang cocok dengan pencarian Anda."
+  },
+  "contacts": {
+    "title": "Kontak darurat",
+    "hint": "Orang yang dihubungi jika terjadi sesuatu pada Anda. Hanya Anda dan HR yang dapat melihatnya.",
+    "relationship": "Hubungan",
+    "phone": "Telepon",
+    "altPhone": "Telepon lain (opsional)",
+    "email": "Email (opsional)",
+    "note": "Catatan (opsional)",
+    "add": "Tambah kontak",
+    "remove": "Hapus",
+    "none": "Belum ada kontak darurat."
+  },
+  "backups": {
+    "title": "Pengganti",
+    "hint": "Siapa yang menggantikan Anda saat sakit atau cuti. Rekan kerja dapat melihatnya.",
+    "add": "Tunjuk pengganti",
+    "choose": "Pilih rekan kerja…",
+    "from": "Dari (opsional)",
+    "until": "Sampai (opsional)",
+    "note": "Catatan (opsional)",
+    "none": "Belum ada pengganti.",
+    "remove": "Hapus",
+    "coverToday": "Menggantikan hari ini:",
+    "nobodyToday": "Tidak ada yang tersedia untuk menggantikan hari ini."
   }
 }

@@ -44,6 +44,7 @@ pub const SOFT_DELETED_TABLES: &[&str] = &[
     "cpd_requirements",
     "development_plans",
     "early_career_programs",
+    "emergency_contacts",
     "ergonomic_assessments",
     "ergonomic_items",
     "feedback_entries",
@@ -77,6 +78,7 @@ pub const SOFT_DELETED_TABLES: &[&str] = &[
     "training_enrollments",
     "wellbeing_entitlements",
     "worker_aspirations",
+    "worker_backups",
     "worker_skills",
     "workers",
     "workforce_plans",
@@ -119,7 +121,7 @@ mod tests {
         sorted.sort_unstable();
         sorted.dedup();
         assert_eq!(sorted, SOFT_DELETED_TABLES, "sorted and unique");
-        assert_eq!(SOFT_DELETED_TABLES.len(), 50);
+        assert_eq!(SOFT_DELETED_TABLES.len(), 52);
         for table in ["workers", "payslips", "candidates", "appraisals"] {
             assert!(SOFT_DELETED_TABLES.contains(&table));
         }

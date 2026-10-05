@@ -1674,3 +1674,41 @@ build on 3–5).
       fields); clippy clean on the new files; svelte-check 0, vitest 63/63,
       Playwright 21/21, build green. The announcement feed half of the
       comparator's capability is not done (`.sota` scores it partial).
+
+- [x] WPM-T75 (2026-10-05) **Emergency contacts and backups.** Each person
+      provides both about themselves (HR can on their behalf, recorded as
+      such). Migration `m20261005_000040_emergency_contacts_and_backups`.
+      - **Emergency contacts** (`rules/emergency.rs`, 4 tests): name,
+        relationship, a dialable phone (5–15 digits), optional alternate
+        phone, email and note; ranked (1 = first to call), up to 5. **Third-
+        party personal data**: only the worker and whoever may write their
+        record (HR) can read or change them — a manager cannot — and audit
+        entries name no contact detail. `GET|POST /api/workers/{pid}/
+        emergency-contacts`, `PUT|DELETE /api/emergency-contacts/{pid}`.
+      - **Backups** (`rules/cover.rs`, 6 tests): the colleague(s) who cover
+        when the person is out sick or on leave — ranked, up to 3, optionally
+        for a dated window; must be someone else, currently employed, in an
+        organization the caller can read, not named twice. Visible to anyone
+        who can see the worker. `GET|POST /api/workers/{pid}/backups`,
+        `PUT|DELETE /api/backups/{pid}`, and `GET /api/workers/{pid}/cover?on=`
+        — the best-ranked backup in window who is employed and **not on
+        approved leave**; `covered_by` is null when nobody can (said plainly,
+        not guessed).
+      - **Privacy:** both are in the subject-access export (and backups
+        naming the person); erasure deletes them; both tables join the
+        retention sweep list (52). Also removed a duplicated dotted-line
+        statement/key in the erasure.
+      - **UI:** `EmergencyContacts` and `Backups` panels on `/me` and
+        `/workers/{pid}` (the contacts panel renders nothing for anyone who
+        may not see it), client functions, 21 strings in 13 locales.
+      DB suite 46/46 (two new tests), clippy clean on the new files, lib 260,
+      svelte-check 0, vitest 63/63, Playwright 22/22, build green. **Not done:**
+      the directory does not yet show "covered by" for someone on leave.
+
+- [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
+      table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
+      four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`
+      `orangehrmClaimPlugin`, `odoo` `hr_expense`). Not started; revisit when
+      expense reimbursement into payroll is wanted. Starting point: a
+      `rules/expenses.rs` state machine (draft → submitted → approved/
+      rejected → reimbursed) and a migration after `…000040`.

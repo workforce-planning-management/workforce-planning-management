@@ -2,7 +2,9 @@
   import { page } from "$app/state";
   import RoleGap from "#lib/components/RoleGap.svelte";
   import Mobility from "#lib/components/Mobility.svelte";
+  import Backups from "#lib/components/Backups.svelte";
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
+  import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
   import TeamAspirations from "#lib/components/TeamAspirations.svelte";
   import Aspirations from "#lib/components/Aspirations.svelte";
@@ -625,6 +627,8 @@
   />
   <CareerHistory workerPid={worker.pid} />
   <Aspirations workerPid={worker.pid} />
+  <EmergencyContacts workerPid={worker.pid} />
+  <Backups workerPid={worker.pid} />
   <DottedLinePanel workerPid={worker.pid} />
   <GroupsPanel workerPid={worker.pid} />
   <TeamAspirations workerPid={worker.pid} />

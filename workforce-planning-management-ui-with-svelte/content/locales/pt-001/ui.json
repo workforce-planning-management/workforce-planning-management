@@ -362,5 +362,30 @@
     "location": "Local",
     "manager": "Gestor",
     "noMatches": "Ninguém corresponde à sua pesquisa."
+  },
+  "contacts": {
+    "title": "Contactos de emergência",
+    "hint": "Pessoas a contactar se lhe acontecer alguma coisa. Só você e os RH podem vê-los.",
+    "relationship": "Relação",
+    "phone": "Telefone",
+    "altPhone": "Outro telefone (opcional)",
+    "email": "E-mail (opcional)",
+    "note": "Nota (opcional)",
+    "add": "Adicionar contacto",
+    "remove": "Remover",
+    "none": "Ainda não há contactos de emergência."
+  },
+  "backups": {
+    "title": "Substitutos",
+    "hint": "Quem o substitui quando está doente ou de licença. Os colegas podem ver.",
+    "add": "Indicar um substituto",
+    "choose": "Escolha um colega…",
+    "from": "De (opcional)",
+    "until": "Até (opcional)",
+    "note": "Nota (opcional)",
+    "none": "Ainda não há substituto indicado.",
+    "remove": "Remover",
+    "coverToday": "Substitui hoje:",
+    "nobodyToday": "Ninguém disponível para substituir hoje."
   }
 }

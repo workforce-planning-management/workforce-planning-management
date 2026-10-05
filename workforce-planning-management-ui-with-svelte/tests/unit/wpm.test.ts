@@ -169,6 +169,15 @@ describe("api path map", () => {
     await wpm.workerRoleGap("w1", "rp1");
     await wpm.workforceMetrics();
     await wpm.workforceMetrics({ from: "2026-01-01", to: "2026-06-30" });
+    await wpm.listEmergencyContacts("w1");
+    await wpm.addEmergencyContact("w1", { name: "Sam", relationship: "Partner", phone: "12345" });
+    await wpm.updateEmergencyContact("c1", { priority: 2 });
+    await wpm.removeEmergencyContact("c1");
+    await wpm.listBackups("w1");
+    await wpm.addBackup("w1", { backup_pid: "w2" });
+    await wpm.removeBackup("b1");
+    await wpm.workerCover("w1");
+    await wpm.workerCover("w1", "2026-10-06");
     await wpm.employeeDirectory();
     await wpm.employeeDirectory({ q: "ann lee", department: "Finance", limit: 100 });
     await wpm.workforceInsights();
@@ -252,6 +261,15 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/role-gap?role_profile_pid=rp1",
       "/api/proxy/workforce-intelligence/metrics",
       "/api/proxy/workforce-intelligence/metrics?from=2026-01-01&to=2026-06-30",
+      "/api/proxy/workers/w1/emergency-contacts",
+      "/api/proxy/workers/w1/emergency-contacts",
+      "/api/proxy/emergency-contacts/c1",
+      "/api/proxy/emergency-contacts/c1",
+      "/api/proxy/workers/w1/backups",
+      "/api/proxy/workers/w1/backups",
+      "/api/proxy/backups/b1",
+      "/api/proxy/workers/w1/cover",
+      "/api/proxy/workers/w1/cover?on=2026-10-06",
       "/api/proxy/directory",
       "/api/proxy/directory?q=ann+lee&department=Finance&limit=100",
       "/api/proxy/workforce-intelligence/insights",

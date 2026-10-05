@@ -7,7 +7,9 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { listSelectableFrameworks } from "#lib/api/wpm.js";
+  import Backups from "#lib/components/Backups.svelte";
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
+  import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
   import TeamAspirations from "#lib/components/TeamAspirations.svelte";
   import Aspirations from "#lib/components/Aspirations.svelte";
@@ -67,6 +69,8 @@
   {/if}
   <CareerHistory {workerPid} />
   <Aspirations {workerPid} />
+  <EmergencyContacts {workerPid} />
+  <Backups {workerPid} />
   <DottedLinePanel {workerPid} />
   <GroupsPanel {workerPid} />
   <TeamAspirations {workerPid} />

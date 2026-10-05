@@ -362,5 +362,30 @@
     "location": "Lleoliad",
     "manager": "Rheolwr",
     "noMatches": "Does neb yn cyfateb i'ch chwiliad."
+  },
+  "contacts": {
+    "title": "Cysylltiadau brys",
+    "hint": "Pobl i gysylltu â nhw os digwydd rhywbeth i chi. Dim ond chi a'r Adran AD all weld y rhain.",
+    "relationship": "Perthynas",
+    "phone": "Ffôn",
+    "altPhone": "Ffôn arall (dewisol)",
+    "email": "E-bost (dewisol)",
+    "note": "Nodyn (dewisol)",
+    "add": "Ychwanegu cyswllt",
+    "remove": "Tynnu",
+    "none": "Dim cysylltiadau brys eto."
+  },
+  "backups": {
+    "title": "Gwarchodwyr",
+    "hint": "Pwy sy'n cyflenwi ar eich rhan pan fyddwch yn sâl neu ar wyliau. Gall cydweithwyr weld hyn.",
+    "add": "Enwi gwarchodwr",
+    "choose": "Dewiswch gydweithiwr…",
+    "from": "O (dewisol)",
+    "until": "Tan (dewisol)",
+    "note": "Nodyn (dewisol)",
+    "none": "Dim gwarchodwr wedi'i enwi eto.",
+    "remove": "Tynnu",
+    "coverToday": "Yn cyflenwi heddiw:",
+    "nobodyToday": "Does neb ar gael i gyflenwi heddiw."
   }
 }

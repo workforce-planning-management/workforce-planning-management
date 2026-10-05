@@ -67,6 +67,44 @@ export interface DirectoryEntry {
   manager_name: string | null;
 }
 
+/** One emergency contact (visible only to the worker and HR). */
+export interface EmergencyContact {
+  pid: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  alt_phone: string | null;
+  email: string | null;
+  /** 1 is the first person to call. */
+  priority: number;
+  note: string | null;
+  on_behalf: boolean;
+}
+
+/** One backup: a colleague who covers when the worker is out. */
+export interface Backup {
+  pid: string;
+  backup_pid: string;
+  backup_name: string | null;
+  backup_title: string | null;
+  /** 1 is the first backup to ask. */
+  priority: number;
+  starts_on: string | null;
+  ends_on: string | null;
+  note: string | null;
+  on_behalf: boolean;
+}
+
+/** Who covers for a worker on a day; `covered_by` is null when nobody can. */
+export interface Cover {
+  on: string;
+  worker_pid: string;
+  covered_by: string | null;
+  covered_by_name: string | null;
+  covered_by_title: string | null;
+  backups_named: number;
+}
+
 /** One funded job opening. */
 export interface Requisition {
   pid: string;

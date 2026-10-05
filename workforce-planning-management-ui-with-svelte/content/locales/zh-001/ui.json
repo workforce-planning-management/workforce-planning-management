@@ -362,5 +362,30 @@
     "location": "地点",
     "manager": "经理",
     "noMatches": "没有符合搜索条件的人员。"
+  },
+  "contacts": {
+    "title": "紧急联系人",
+    "hint": "发生意外时需要联系的人。只有您本人和人力资源部可以查看。",
+    "relationship": "关系",
+    "phone": "电话",
+    "altPhone": "其他电话（选填）",
+    "email": "电子邮件（选填）",
+    "note": "备注（选填）",
+    "add": "添加联系人",
+    "remove": "移除",
+    "none": "尚无紧急联系人。"
+  },
+  "backups": {
+    "title": "代理人",
+    "hint": "您因病或休假不在时由谁代班。同事可以看到。",
+    "add": "指定代理人",
+    "choose": "选择一位同事…",
+    "from": "自（选填）",
+    "until": "至（选填）",
+    "note": "备注（选填）",
+    "none": "尚未指定代理人。",
+    "remove": "移除",
+    "coverToday": "今日代班：",
+    "nobodyToday": "今日没有可代班的人。"
   }
 }

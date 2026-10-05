@@ -362,5 +362,30 @@
     "location": "Ubicación",
     "manager": "Responsable",
     "noMatches": "Nadie coincide con su búsqueda."
+  },
+  "contacts": {
+    "title": "Contactos de emergencia",
+    "hint": "Personas a las que avisar si le ocurre algo. Solo usted y RR. HH. pueden verlos.",
+    "relationship": "Relación",
+    "phone": "Teléfono",
+    "altPhone": "Otro teléfono (opcional)",
+    "email": "Correo electrónico (opcional)",
+    "note": "Nota (opcional)",
+    "add": "Añadir contacto",
+    "remove": "Quitar",
+    "none": "Aún no hay contactos de emergencia."
+  },
+  "backups": {
+    "title": "Suplentes",
+    "hint": "Quién le cubre cuando está enfermo o de permiso. Sus compañeros pueden verlo.",
+    "add": "Nombrar un suplente",
+    "choose": "Elija a un compañero…",
+    "from": "Desde (opcional)",
+    "until": "Hasta (opcional)",
+    "note": "Nota (opcional)",
+    "none": "Aún no hay suplente.",
+    "remove": "Quitar",
+    "coverToday": "Cubre hoy:",
+    "nobodyToday": "Nadie disponible para cubrir hoy."
   }
 }

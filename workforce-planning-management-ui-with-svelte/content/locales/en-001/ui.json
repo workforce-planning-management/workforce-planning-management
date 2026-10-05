@@ -362,5 +362,30 @@
     "location": "Location",
     "manager": "Manager",
     "noMatches": "No one matches your search."
+  },
+  "contacts": {
+    "title": "Emergency contacts",
+    "hint": "People to reach if something happens to you. Only you and HR can see these.",
+    "relationship": "Relationship",
+    "phone": "Phone",
+    "altPhone": "Another phone (optional)",
+    "email": "Email (optional)",
+    "note": "Note (optional)",
+    "add": "Add contact",
+    "remove": "Remove",
+    "none": "No emergency contacts yet."
+  },
+  "backups": {
+    "title": "Backups",
+    "hint": "Who covers for you when you are out sick or on leave. Colleagues can see this.",
+    "add": "Name a backup",
+    "choose": "Choose a colleague…",
+    "from": "From (optional)",
+    "until": "Until (optional)",
+    "note": "Note (optional)",
+    "none": "No backup named yet.",
+    "remove": "Remove",
+    "coverToday": "Covering today:",
+    "nobodyToday": "Nobody is available to cover today."
   }
 }

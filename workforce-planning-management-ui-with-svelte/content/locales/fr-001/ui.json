@@ -362,5 +362,30 @@
     "location": "Lieu",
     "manager": "Responsable",
     "noMatches": "Aucune personne ne correspond à votre recherche."
+  },
+  "contacts": {
+    "title": "Contacts d'urgence",
+    "hint": "Personnes à prévenir s'il vous arrive quelque chose. Vous et les RH seuls pouvez les voir.",
+    "relationship": "Lien",
+    "phone": "Téléphone",
+    "altPhone": "Autre téléphone (facultatif)",
+    "email": "E-mail (facultatif)",
+    "note": "Note (facultatif)",
+    "add": "Ajouter un contact",
+    "remove": "Retirer",
+    "none": "Aucun contact d'urgence pour l'instant."
+  },
+  "backups": {
+    "title": "Suppléants",
+    "hint": "Qui vous remplace en cas de maladie ou de congé. Vos collègues peuvent le voir.",
+    "add": "Désigner un suppléant",
+    "choose": "Choisissez un collègue…",
+    "from": "Du (facultatif)",
+    "until": "Au (facultatif)",
+    "note": "Note (facultatif)",
+    "none": "Aucun suppléant désigné.",
+    "remove": "Retirer",
+    "coverToday": "Remplace aujourd'hui :",
+    "nobodyToday": "Personne n'est disponible aujourd'hui."
   }
 }

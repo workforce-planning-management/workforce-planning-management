@@ -699,3 +699,38 @@ collections:
               - { name: "location", label: "Location", widget: string, required: false, i18n: true }
               - { name: "manager", label: "Manager", widget: string, required: false, i18n: true }
               - { name: "noMatches", label: "No Matches", widget: string, required: false, i18n: true }
+          - name: "contacts"
+            label: "Contacts"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: string, required: false, i18n: true }
+              - { name: "relationship", label: "Relationship", widget: string, required: false, i18n: true }
+              - { name: "phone", label: "Phone", widget: string, required: false, i18n: true }
+              - { name: "altPhone", label: "Alt Phone", widget: string, required: false, i18n: true }
+              - { name: "email", label: "Email", widget: string, required: false, i18n: true }
+              - { name: "note", label: "Note", widget: string, required: false, i18n: true }
+              - { name: "add", label: "Add", widget: string, required: false, i18n: true }
+              - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+          - name: "backups"
+            label: "Backups"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: string, required: false, i18n: true }
+              - { name: "add", label: "Add", widget: string, required: false, i18n: true }
+              - { name: "choose", label: "Choose", widget: string, required: false, i18n: true }
+              - { name: "from", label: "From", widget: string, required: false, i18n: true }
+              - { name: "until", label: "Until", widget: string, required: false, i18n: true }
+              - { name: "note", label: "Note", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
+              - { name: "coverToday", label: "Cover Today", widget: string, required: false, i18n: true }
+              - { name: "nobodyToday", label: "Nobody Today", widget: string, required: false, i18n: true }
