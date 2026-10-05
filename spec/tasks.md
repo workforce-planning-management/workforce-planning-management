@@ -2059,9 +2059,10 @@ build on 3–5).
         54/54 (a full leaver journey: dated checklist, validations, twelve held
         items, refusals, one-by-one and bulk handover, trail, completion
         gating), clippy clean, lib 297, svelte-check 0, vitest 68/68,
-        Playwright 28/28, build green. **Not done:** group-lead handover and
-        appraisal/requisition ownership are not in the inventory (only what
-        the model holds today); handover *on the last day automatically* (it is
+        Playwright 28/28, build green. **Not done / not tested:** the group-lead handover is
+        implemented but **not covered by the DB test** (no group is set up in
+        it); requisition and appraisal ownership are not in the inventory (only
+        what the model holds today); handover *on the last day automatically* (it is
         done by a person; a scheduled reminder would be a follow-up); a leaver's
         pending leave approvals; returning to work.
 
