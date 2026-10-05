@@ -141,6 +141,15 @@ pub fn assign(
     Assignment { date, worker: None, source: None }
 }
 
+/// Who a turn **starts** for on `today`: the person on call today who was
+/// not on call the day before (a new turn, a swap beginning, a skip-in, or
+/// the rota's first day). `None` when nobody is on call today or the same
+/// person simply carries on.
+#[must_use]
+pub fn turn_starts(yesterday: &Assignment, today: &Assignment) -> Option<Uuid> {
+    today.worker.filter(|w| yesterday.worker != Some(*w))
+}
+
 /// The assignments for every day in `from..=to`.
 #[must_use]
 pub fn schedule(
@@ -297,6 +306,27 @@ mod tests {
         assert_eq!(r.len(), 3);
         assert_eq!(r[1].worker, Some(w(2)));
         assert_eq!(r[1].source, Some(Source::Skipped));
+    }
+
+    #[test]
+    fn a_turn_starts_when_the_person_on_call_changes() {
+        let rota = weekly(&[1, 2]);
+        let days = schedule(&rota, &[], NOBODY_AWAY, d(4), d(13));
+        let starts: Vec<Option<Uuid>> =
+            days.windows(2).map(|p| turn_starts(&p[0], &p[1])).collect();
+        // d(4) before the rota: nobody. d(5) starts member 1; d(12) starts 2.
+        assert_eq!(starts[0], Some(w(1)));
+        assert_eq!(starts[1..7], [None; 6]);
+        assert_eq!(starts[7], Some(w(2)));
+        assert_eq!(starts[8], None);
+    }
+
+    #[test]
+    fn nobody_on_call_means_no_turn_starts() {
+        let rota = weekly(&[1]);
+        let everyone_away = |_: Uuid, _| true;
+        let days = schedule(&rota, &[], &everyone_away, d(5), d(6));
+        assert_eq!(turn_starts(&days[0], &days[1]), None);
     }
 
     #[test]

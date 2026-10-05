@@ -1774,8 +1774,22 @@ build on 3–5).
       Fixed on the way: reading the old members inside the update transaction
       waited on a second pooled connection and returned 500 — they are read
       before it opens. DB suite 47/47 (the rota test checks both kinds), lib
-      270. Not done: a *reminder* when a turn is about to start (needs a
-      scheduled task); the inbox shows these with the existing generic body.
+      270. The *reminder* landed as WPM-T80; the inbox shows these with the
+      existing generic body.
+
+- [x] WPM-T80 (2026-10-05) **On-call reminders.** Builds on WPM-T77/T79. Loco
+      task `rota_reminders [days_ahead:0–14, default 1] [as_of:YYYY-MM-DD]`
+      (`tasks/rota_reminders.rs`): tells each person whose on-call turn
+      **starts** that day — on call then, and *not* the day before (a new
+      turn, a swap beginning, a skip-in, or the rota's first day; pure
+      `rota::turn_starts`, 3 tests) — "Your on-call turn for <rota> starts on
+      <date>" (`on_call_reminder`, reference-only). **Idempotent**: a person
+      already reminded for that rota and day is skipped, so a re-run or two
+      overlapping schedules send nothing twice; someone carrying on is not
+      reminded again. **Schedule it daily** in deployment — it sends nothing
+      by itself. DB suite 48/48 (new test: one reminder to the right person,
+      none to the other, none on re-run, none mid-turn), lib 272, clippy clean
+      on the new files.
 
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of

@@ -6,6 +6,7 @@ use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management_service::app::App;
+use workforce_planning_management_service::tasks::rota_reminders::send_reminders;
 
 use super::{activate, an_org, seed_worker};
 
@@ -180,6 +181,53 @@ async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
                 .status_code(),
             422
         );
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
+    request::<App, _, _>(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut pids = Vec::new();
+        for n in ["A", "B"] {
+            let pid = seed_worker!(&request, &org, format!("REM-{tag}-{n}"), None).await;
+            activate!(&request, &pid).await;
+            pids.push(pid);
+        }
+        let today = Utc::now().date_naive();
+        // A's week starts a week ago (so today is mid-turn); B's starts in 6 days.
+        request
+            .post("/api/rotas")
+            .json(&json!({ "organization_ref": org, "name": format!("Rem {tag}"),
+                           "period_days": 7, "starts_on": (today - Duration::days(1)).to_string(),
+                           "members": [pids[0], pids[1]] }))
+            .await
+            .assert_status_ok();
+        let reminders = |who: String| {
+            let request = &request;
+            async move {
+                let told: Value = request.get(&format!("/api/workers/{who}/notifications")).await.json();
+                told.as_array()
+                    .unwrap()
+                    .iter()
+                    .filter(|n| n["kind"] == "on_call_reminder")
+                    .count()
+            }
+        };
+        // B's turn starts in 6 days (the day after A's 7-day turn ends).
+        let starts = today + Duration::days(6);
+        assert_eq!(send_reminders(&ctx, starts).await.unwrap(), 1);
+        assert_eq!(reminders(pids[1].clone()).await, 1);
+        assert_eq!(reminders(pids[0].clone()).await, 0);
+        // Idempotent: a second run tells nobody again.
+        assert_eq!(send_reminders(&ctx, starts).await.unwrap(), 0);
+        assert_eq!(reminders(pids[1].clone()).await, 1);
+        // A day mid-turn starts nobody's turn.
+        assert_eq!(send_reminders(&ctx, today + Duration::days(3)).await.unwrap(), 0);
     })
     .await;
 }

@@ -639,6 +639,36 @@ pub(super) async fn on_call_today(
     Ok(out)
 }
 
+/// The on-call turns that **start** on `date` across every live rota (the
+/// reminder task's input): `(rota, worker)` where the worker is on call on
+/// `date` but was not the day before. Not scoped to a caller — the task runs
+/// as the system.
+///
+/// # Errors
+///
+/// Any query error.
+pub(crate) async fn turns_starting_on(
+    ctx: &AppContext,
+    date: NaiveDate,
+) -> Result<Vec<(rotas::Model, Uuid)>> {
+    let mut out = Vec::new();
+    let all = rotas::Entity::find()
+        .filter(rotas::Column::DeletedAt.is_null())
+        .order_by_asc(rotas::Column::Id)
+        .all(&ctx.db)
+        .await?;
+    for rota in all {
+        let (_, _, assignments, _) =
+            compute(ctx, &rota, date - Duration::days(1), date).await?;
+        if let [yesterday, today] = assignments.as_slice()
+            && let Some(worker) = rules::turn_starts(yesterday, today)
+        {
+            out.push((rota, worker));
+        }
+    }
+    Ok(out)
+}
+
 /// The on-call rota routes.
 pub fn routes() -> Routes {
     Routes::new()
