@@ -14,7 +14,7 @@
 
   // Fixed viewBox; the SVG scales to its box, so the chart fits any tile.
   const W = 400;
-  const H = 150;
+  const H = 250;
   const PAD = { l: 34, r: 54, t: 12, b: 22 };
 
   const range = $derived(paddedRange(points.map((p) => p.value)));
@@ -76,12 +76,16 @@
       </g>
     {/if}
   </svg>
-  <table class="sr-only">
-    <caption>{label}</caption>
-    <tbody>
-      {#each points as p (p.date)}<tr><th scope="row">{p.date}</th><td>{p.value}</td></tr>{/each}
-    </tbody>
-  </table>
+  <!-- The wrapper clips: a table ignores `overflow`, so its rows would spill past
+       a 1px box and stretch the page's scroll height. -->
+  <div class="sr-only">
+    <table>
+      <caption>{label}</caption>
+      <tbody>
+        {#each points as p (p.date)}<tr><th scope="row">{p.date}</th><td>{p.value}</td></tr>{/each}
+      </tbody>
+    </table>
+  </div>
 </figure>
 
 <style>
@@ -119,7 +123,7 @@
   }
   .tick {
     fill: var(--viz-muted);
-    font-size: 9px;
+    font-size: 10px;
   }
   .value {
     fill: var(--viz-ink);

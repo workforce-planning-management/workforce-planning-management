@@ -810,7 +810,6 @@ collections:
             fields:
               - { name: "vs12", label: "Vs12", widget: string, required: false, i18n: true }
               - { name: "trend", label: "Trend", widget: string, required: false, i18n: true }
-              - { name: "skills", label: "Skills", widget: string, required: false, i18n: true }
               - { name: "noGaps", label: "No Gaps", widget: string, required: false, i18n: true }
               - { name: "attention", label: "Attention", widget: string, required: false, i18n: true }
               - { name: "info", label: "Info", widget: string, required: false, i18n: true }

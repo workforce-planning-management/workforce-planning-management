@@ -1866,6 +1866,23 @@ build on 3–5).
       are used unchanged); drill-down from a tile; a time-range control; the
       app's own top bar is not shrunk on this screen.
 
+- [x] WPM-T84 (2026-10-05) **CEO dashboard: ten tiles → six.** By request. Kept:
+      headcount (with change vs a year ago), turnover, open vacancies (+ median
+      time-to-fill), succession gaps, the six-month headcount line, and the top
+      insights (now up to four). **Dropped** from the screen: skills coverage,
+      span of control, who is on call, and the latest announcement — with
+      their four fetches (capability analysis, rotas, announcements) and the
+      unused `ceo.skills` string; those views are still on their own pages.
+      Two rows now (four KPI tiles, then trend + insights), so the figures,
+      chart and text are larger; the chart's drawing box is taller so it fills
+      its tile instead of letterboxing. Fixed on the way: the hidden data table
+      under the chart was styled as the clipping element, but **a table
+      ignores `overflow`**, so its rows stretched the page's scroll height by
+      243 px — it now sits in a clipping wrapper (the fit test caught it).
+      Both fit checks (1080 × 810 @2×, 2160 × 1620 @1×: no page scroll, every
+      tile inside the screen, no tile clipping) pass with 5 long insights as
+      worst case. svelte-check 0, vitest 67/67, Playwright 26/26, build green.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

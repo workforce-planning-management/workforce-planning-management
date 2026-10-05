@@ -6,7 +6,7 @@
   one, and the grid rows share the height rather than stacking past it.
 
   All figures come from the existing views (metrics, insights, requisitions,
-  succession, capability, rotas, announcements); a figure that cannot be
+  succession); a figure that cannot be
   loaded shows "—", never 0. The headcount trend is month-end headcount
   computed from hire and termination dates (`/metrics`), so it needs no
   snapshot job.
@@ -14,17 +14,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import {
-    capabilityAnalysis,
-    listAnnouncements,
     listRequisitions,
-    listRotas,
     successionGaps,
     workforceInsights,
     workforceMetrics,
   } from "#lib/api/wpm.js";
-  import type { Announcement, RotaSummary } from "#lib/api/types.js";
   import { delta, trendDates, type TrendPoint } from "#lib/ceo.js";
-  import { mean, percent, rate } from "#lib/format.js";
+  import { mean, rate } from "#lib/format.js";
   import { t, tp } from "#lib/i18n.svelte.js";
   import TrendChart from "#lib/components/TrendChart.svelte";
 
@@ -36,9 +32,6 @@
   let trend = $state<TrendPoint[]>([]);
   let gaps = $state<number | null>(null);
   let openRoles = $state<number | null>(null);
-  let coverage = $state<Awaited<ReturnType<typeof capabilityAnalysis>>["adequately_covered"]>(null);
-  let rotas = $state<RotaSummary[] | null>(null);
-  let news = $state<Announcement[] | null>(null);
 
   const dash = "—";
   const today = new Date().toISOString().slice(0, 10);
@@ -58,23 +51,17 @@
     document.body.classList.add("ceo-screen");
     void (async () => {
       const dates = trendDates(today);
-      const [m, ins, g, open, cap, r, n, ...months] = await Promise.all([
+      const [m, ins, g, open, ...months] = await Promise.all([
         settle(workforceMetrics()),
         settle(workforceInsights()),
         settle(successionGaps()),
         settle(listRequisitions("open")),
-        settle(capabilityAnalysis()),
-        settle(listRotas()),
-        settle(listAnnouncements({ limit: 1 })),
         ...dates.map((d) => settle(workforceMetrics({ from: d, to: d }))),
       ]);
       metrics = m;
       insights = ins?.insights ?? null;
       gaps = g ? g.gaps.length : null;
       openRoles = open ? open.length : null;
-      coverage = cap?.adequately_covered ?? null;
-      rotas = r;
-      news = n;
       trend = dates.flatMap((d, i) => {
         const month = months[i];
         return month ? [{ date: d, value: month.headcount.closing }] : [];
@@ -141,25 +128,6 @@
     </div>
   </section>
 
-  <section class="cx-tile cx-kpi" data-testid="kpi-skills">
-    <span class="cx-label">{t("ceo.skills")}</span>
-    <strong class="cx-hero">{percent(coverage) ?? dash}</strong>
-    <span
-      class="cx-meter"
-      role="img"
-      aria-label={percent(coverage) ?? dash}
-    ><span style={`width:${Math.round((coverage?.value ?? 0) * 100)}%`}></span></span>
-    <span class="cx-sub">{coverage ? `${coverage.numerator} / ${coverage.denominator}` : dash}</span>
-  </section>
-
-  <section class="cx-tile cx-kpi" data-testid="kpi-span">
-    <span class="cx-label">{t("metrics.span")}</span>
-    <strong class="cx-hero">{mean(metrics?.span_of_control?.mean) ?? dash}</strong>
-    <span class="cx-sub">
-      {metrics?.span_of_control ? `${metrics.span_of_control.managers} ${t("metrics.managers")}` : dash}
-    </span>
-  </section>
-
   <section class="cx-tile cx-list cx-insights" data-testid="ceo-insights">
     <span class="cx-label">{t("metrics.insights")}</span>
     {#if insights === null}
@@ -168,7 +136,7 @@
       <span class="cx-muted">{t("metrics.noInsights")}</span>
     {:else}
       <ul>
-        {#each insights.slice(0, 3) as i (i.code)}
+        {#each insights.slice(0, 4) as i (i.code)}
           <li>
             <span class="cx-status" class:cx-serious={i.severity === "attention"}>
               {i.severity === "attention" ? `▲ ${t("ceo.attention")}` : `● ${t("ceo.info")}`}
@@ -180,36 +148,6 @@
     {/if}
   </section>
 
-  <section class="cx-tile cx-list" data-testid="ceo-oncall">
-    <span class="cx-label">{t("rota.onCallNow")}</span>
-    {#if rotas === null}
-      <span class="cx-muted">{dash}</span>
-    {:else if rotas.length === 0}
-      <span class="cx-muted">{t("rota.none")}</span>
-    {:else}
-      <ul>
-        {#each rotas.slice(0, 3) as r (r.pid)}
-          <li><strong>{r.name}</strong> — {r.on_call_today?.name ?? t("rota.nobody")}</li>
-        {/each}
-      </ul>
-    {/if}
-  </section>
-
-  <section class="cx-tile cx-list" data-testid="ceo-news">
-    <span class="cx-label">{t("announcements.latest")}</span>
-    {#if news === null}
-      <span class="cx-muted">{dash}</span>
-    {:else if news.length === 0}
-      <span class="cx-muted">{t("announcements.none")}</span>
-    {:else}
-      {#each news.slice(0, 1) as a (a.pid)}
-        <p class="cx-news">
-          <strong>{a.title}</strong>
-          <span class="cx-clip">{a.body}</span>
-        </p>
-      {/each}
-    {/if}
-  </section>
 </div>
 
 <style>
@@ -249,7 +187,7 @@
     height: 100%;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 0.8fr) minmax(0, 1.15fr) minmax(0, 1.05fr);
+    grid-template-rows: minmax(0, 0.75fr) minmax(0, 1.25fr);
     gap: 0.9em;
     color: var(--viz-ink);
   }
@@ -303,7 +241,7 @@
     font-weight: 600;
   }
   .cx-hero {
-    font-size: 3.6em;
+    font-size: 4.2em;
     line-height: 1.05;
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -331,43 +269,15 @@
     flex: 1;
     min-height: 0;
   }
-  .cx-meter {
-    display: block;
-    height: 0.6em;
-    border-radius: 0.3em;
-    background: var(--viz-grid);
-    overflow: hidden;
-  }
-  .cx-meter > span {
-    display: block;
-    height: 100%;
-    background: var(--viz-series-1);
-  }
   .cx-list ul {
     margin: 0;
     padding: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 0.45em;
-    font-size: 1em;
+    gap: 0.6em;
+    font-size: 1.2em;
     overflow: hidden;
-  }
-  .cx-news {
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25em;
-    min-height: 0;
-  }
-  .cx-clip {
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    color: var(--viz-ink-2);
-    white-space: pre-line;
   }
   .cx-muted {
     color: var(--viz-muted);

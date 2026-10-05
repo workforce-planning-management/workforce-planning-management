@@ -286,7 +286,7 @@ test.describe("signed-in smoke coverage", () => {
           json: {
             period: { from: "2025-10-05", to: "2026-10-05" },
             thresholds: {},
-            insights: ["a", "b", "c", "d"].map((c) => ({
+            insights: ["a", "b", "c", "d", "e"].map((c) => ({
               code: `unknown_${c}`,
               severity: "attention",
               observation: long,
@@ -302,49 +302,10 @@ test.describe("signed-in smoke coverage", () => {
       await page.route("**/api/proxy/requisitions?status=open", (route) =>
         route.fulfill({ json: [{}, {}, {}, {}, {}, {}] }),
       );
-      await page.route("**/api/proxy/workforce-intelligence/capability-analysis**", (route) =>
-        route.fulfill({
-          json: { adequately_covered: { numerator: 1234, denominator: 1999, value: 0.617 } },
-        }),
-      );
-      await page.route("**/api/proxy/rotas", (route) =>
-        route.fulfill({
-          json: ["Platform on-call", "Customer support weekend cover", "Payroll month-end duty"].map(
-            (name, i) => ({
-              pid: `r${i}`,
-              organization_ref: "organization:x",
-              name,
-              description: null,
-              period_days: 7,
-              starts_on: "2026-10-05",
-              members: 3,
-              on_call_today: { worker_pid: "w", name: "Alexandria Montgomery-Featherstonehaugh" },
-            }),
-          ),
-        }),
-      );
-      await page.route("**/api/proxy/announcements**", (route) =>
-        route.fulfill({
-          json: [
-            {
-              pid: "n1",
-              organization_ref: "organization:x",
-              title: "Quarterly all-hands moves to the main auditorium on the fourth floor",
-              body: "Please arrive early. ".repeat(40),
-              pinned: true,
-              publish_on: "2026-10-01",
-              expires_on: null,
-              status: "live",
-              author: null,
-            },
-          ],
-        }),
-      );
-
       await page.goto("/ceo");
       await expect(page.getByTestId("kpi-headcount")).toContainText("12345");
       await expect(page.getByTestId("trend-chart")).toBeVisible();
-      await expect(page.getByTestId("ceo-news")).toContainText("Quarterly all-hands");
+      await expect(page.getByTestId("ceo-insights")).toContainText("Attention");
 
       const fit = await page.evaluate(() => {
         const doc = document.documentElement;
@@ -369,7 +330,7 @@ test.describe("signed-in smoke coverage", () => {
       expect(fit.pageY, "page scrolls vertically").toBeLessThanOrEqual(0);
       expect(fit.pageX, "page scrolls horizontally").toBeLessThanOrEqual(0);
       expect(fit.bodyY, "body scrolls").toBeLessThanOrEqual(0);
-      expect(fit.tiles).toHaveLength(10);
+      expect(fit.tiles).toHaveLength(6);
       for (const tile of fit.tiles) {
         expect(tile.inView, `${tile.name} is inside the screen`).toBe(true);
         // Tiles clip silently; a tile whose content is taller or wider than
