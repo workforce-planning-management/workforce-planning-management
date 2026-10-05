@@ -63,6 +63,7 @@ collections:
               - { name: "announcements", label: "Announcements", widget: string, required: false, i18n: true }
               - { name: "ceo", label: "Ceo", widget: string, required: false, i18n: true }
               - { name: "skillGaps", label: "Skill Gaps", widget: string, required: false, i18n: true }
+              - { name: "movements", label: "Movements", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -893,3 +894,67 @@ collections:
               - { name: "removeCourse", label: "Remove Course", widget: string, required: false, i18n: true }
               - { name: "noCourses", label: "No Courses", widget: string, required: false, i18n: true }
               - { name: "saveHours", label: "Save Hours", widget: string, required: false, i18n: true }
+          - name: "movements"
+            label: "Movements"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "joiners", label: "Joiners", widget: string, required: false, i18n: true }
+              - { name: "leavers", label: "Leavers", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "effective", label: "Effective", widget: string, required: false, i18n: true }
+              - { name: "lastDay", label: "Last Day", widget: string, required: false, i18n: true }
+              - { name: "startDay", label: "Start Day", widget: string, required: false, i18n: true }
+              - { name: "progress", label: "Progress", widget: string, required: false, i18n: true }
+              - { name: "overdue", label: "Overdue", widget: string, required: false, i18n: true }
+              - { name: "start", label: "Start", widget: string, required: false, i18n: true }
+              - { name: "person", label: "Person", widget: string, required: false, i18n: true }
+              - { name: "reason", label: "Reason", widget: string, required: false, i18n: true }
+              - { name: "reasonResignation", label: "Reason Resignation", widget: string, required: false, i18n: true }
+              - { name: "reasonRedundancy", label: "Reason Redundancy", widget: string, required: false, i18n: true }
+              - { name: "reasonRetirement", label: "Reason Retirement", widget: string, required: false, i18n: true }
+              - { name: "reasonEndOfContract", label: "Reason End Of Contract", widget: string, required: false, i18n: true }
+              - { name: "reasonDismissal", label: "Reason Dismissal", widget: string, required: false, i18n: true }
+              - { name: "reasonOther", label: "Reason Other", widget: string, required: false, i18n: true }
+              - { name: "checklist", label: "Checklist", widget: string, required: false, i18n: true }
+              - { name: "stateDone", label: "State Done", widget: string, required: false, i18n: true }
+              - { name: "stateSkipped", label: "State Skipped", widget: string, required: false, i18n: true }
+              - { name: "stateOverdue", label: "State Overdue", widget: string, required: false, i18n: true }
+              - { name: "stateDueToday", label: "State Due Today", widget: string, required: false, i18n: true }
+              - { name: "stateUpcoming", label: "State Upcoming", widget: string, required: false, i18n: true }
+              - { name: "done", label: "Done", widget: string, required: false, i18n: true }
+              - { name: "skip", label: "Skip", widget: string, required: false, i18n: true }
+              - { name: "skipReason", label: "Skip Reason", widget: string, required: false, i18n: true }
+              - { name: "reopen", label: "Reopen", widget: string, required: false, i18n: true }
+              - { name: "assignee", label: "Assignee", widget: string, required: false, i18n: true }
+              - { name: "addItem", label: "Add Item", widget: string, required: false, i18n: true }
+              - { name: "itemTitle", label: "Item Title", widget: string, required: false, i18n: true }
+              - { name: "dueOn", label: "Due On", widget: string, required: false, i18n: true }
+              - { name: "handover", label: "Handover", widget: string, required: false, i18n: true }
+              - { name: "handoverHint", label: "Handover Hint", widget: text, required: false, i18n: true }
+              - { name: "nothingHeld", label: "Nothing Held", widget: string, required: false, i18n: true }
+              - { name: "kindDirectReport", label: "Kind Direct Report", widget: string, required: false, i18n: true }
+              - { name: "kindDottedLine", label: "Kind Dotted Line", widget: string, required: false, i18n: true }
+              - { name: "kindGroupLead", label: "Kind Group Lead", widget: string, required: false, i18n: true }
+              - { name: "kindRotaMembership", label: "Kind Rota Membership", widget: string, required: false, i18n: true }
+              - { name: "kindRotaSwap", label: "Kind Rota Swap", widget: string, required: false, i18n: true }
+              - { name: "kindBackup", label: "Kind Backup", widget: string, required: false, i18n: true }
+              - { name: "kindMentorship", label: "Kind Mentorship", widget: string, required: false, i18n: true }
+              - { name: "kindShift", label: "Kind Shift", widget: string, required: false, i18n: true }
+              - { name: "kindTask", label: "Kind Task", widget: string, required: false, i18n: true }
+              - { name: "kindAccess", label: "Kind Access", widget: string, required: false, i18n: true }
+              - { name: "assignTo", label: "Assign To", widget: string, required: false, i18n: true }
+              - { name: "reassign", label: "Reassign", widget: string, required: false, i18n: true }
+              - { name: "close", label: "Close", widget: string, required: false, i18n: true }
+              - { name: "revoke", label: "Revoke", widget: string, required: false, i18n: true }
+              - { name: "handAll", label: "Hand All", widget: string, required: false, i18n: true }
+              - { name: "trail", label: "Trail", widget: string, required: false, i18n: true }
+              - { name: "complete", label: "Complete", widget: string, required: false, i18n: true }
+              - { name: "cancel", label: "Cancel", widget: string, required: false, i18n: true }
+              - { name: "statusOpen", label: "Status Open", widget: string, required: false, i18n: true }
+              - { name: "statusCompleted", label: "Status Completed", widget: string, required: false, i18n: true }
+              - { name: "statusCancelled", label: "Status Cancelled", widget: string, required: false, i18n: true }
+              - { name: "kindJoiner", label: "Kind Joiner", widget: string, required: false, i18n: true }
+              - { name: "kindLeaver", label: "Kind Leaver", widget: string, required: false, i18n: true }

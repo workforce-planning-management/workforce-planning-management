@@ -29,6 +29,7 @@
 
   const NAV_LINKS = [
     ["/workers", "nav.workers"],
+    ["/movements", "nav.movements"],
     ["/ceo", "nav.ceo"],
     ["/announcements", "nav.announcements"],
     ["/directory", "nav.directory"],

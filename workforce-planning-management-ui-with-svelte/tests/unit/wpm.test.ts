@@ -205,6 +205,19 @@ describe("api path map", () => {
     await wpm.addSkillCourse("k1", { course_ref: "course:x", title: "T", hours: 10 });
     await wpm.removeSkillCourse("c1");
     await wpm.setSkillTrainingHours("k1", 20);
+    await wpm.listMovements();
+    await wpm.listMovements({ kind: "leaver", status: "completed" });
+    await wpm.getMovement("m1");
+    await wpm.openMovement("w1", { kind: "leaver", effective_on: "2026-11-30", reason: "resignation" });
+    await wpm.workerMovements("w1");
+    await wpm.movementItemAction("i1", "done");
+    await wpm.skipMovementItem("i1", "declined");
+    await wpm.addMovementItem("m1", { title: "T", due_on: "2026-11-01" });
+    await wpm.closeMovement("m1", "complete");
+    await wpm.leaverHandover("m1");
+    await wpm.reassignHeld("m1", { kind: "backup", subject_pid: "b1", to_worker_pid: "w2" });
+    await wpm.handOverAll("m1", "w2");
+    await wpm.handoverTrail("m1");
     await wpm.listSwapRequests("r1");
     await wpm.requestSwap("r1", { requester_pid: "w1", taker_pid: "w2", starts_on: "2026-10-05", ends_on: "2026-10-11" });
     await wpm.decideSwap("s1", "accept");
@@ -328,6 +341,19 @@ describe("api path map", () => {
       "/api/proxy/skills/k1/courses",
       "/api/proxy/skill-courses/c1",
       "/api/proxy/skills/k1/training-hours",
+      "/api/proxy/movements",
+      "/api/proxy/movements?kind=leaver&status=completed",
+      "/api/proxy/movements/m1",
+      "/api/proxy/workers/w1/movements",
+      "/api/proxy/workers/w1/movements",
+      "/api/proxy/movement-items/i1/done",
+      "/api/proxy/movement-items/i1/skip",
+      "/api/proxy/movements/m1/items",
+      "/api/proxy/movements/m1/complete",
+      "/api/proxy/movements/m1/handover",
+      "/api/proxy/movements/m1/handover",
+      "/api/proxy/movements/m1/handover/all",
+      "/api/proxy/movements/m1/handover/actions",
       "/api/proxy/rotas/r1/swap-requests",
       "/api/proxy/rotas/r1/swap-requests",
       "/api/proxy/rota-swap-requests/s1/accept",

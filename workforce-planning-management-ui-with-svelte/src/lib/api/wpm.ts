@@ -8,6 +8,10 @@ import type {
   Benchmark,
   Announcement,
   Backup,
+  HandoverAction,
+  HeldItem,
+  Movement,
+  MovementItem,
   ComparisonRow,
   Cover,
   RotaSummary,
@@ -1478,6 +1482,101 @@ export function setSkillTrainingHours(
     method: "PUT",
     body: { hours_per_level: hoursPerLevel },
   });
+}
+
+/** Joiner and leaver records (default open), soonest first. */
+export function listMovements(
+  options?: { kind?: "joiner" | "leaver"; status?: string },
+  init?: FetchLike,
+): Promise<Movement[]> {
+  const params = new URLSearchParams();
+  if (options?.kind) params.set("kind", options.kind);
+  if (options?.status) params.set("status", options.status);
+  const qs = params.size ? `?${params}` : "";
+  return api(`/movements${qs}`, init);
+}
+
+/** One movement with its dated checklist. */
+export function getMovement(
+  pid: string,
+  init?: FetchLike,
+): Promise<Movement & { items: MovementItem[] }> {
+  return api(`/movements/${pid}`, init);
+}
+
+/** Open a joiner or leaver record (a leaver needs a last day and a reason). */
+export function openMovement(
+  workerPid: string,
+  movement: { kind: "joiner" | "leaver"; effective_on?: string; reason?: string; notes?: string },
+): Promise<{ pid: string }> {
+  return api(`/workers/${workerPid}/movements`, { method: "POST", body: movement });
+}
+
+/** A person's own joiner / leaver records. */
+export function workerMovements(workerPid: string, init?: FetchLike): Promise<Movement[]> {
+  return api(`/workers/${workerPid}/movements`, init);
+}
+
+/** Tick, skip, reopen, or assign a checklist item. */
+export function movementItemAction(
+  pid: string,
+  action: "done" | "reopen",
+): Promise<unknown> {
+  return api(`/movement-items/${pid}/${action}`, { method: "POST" });
+}
+
+export function skipMovementItem(pid: string, reason: string): Promise<unknown> {
+  return api(`/movement-items/${pid}/skip`, { method: "POST", body: { reason } });
+}
+
+/** Add an ad-hoc dated item to a record. */
+export function addMovementItem(
+  movementPid: string,
+  item: { title: string; due_on: string; category?: string; assignee_pid?: string },
+): Promise<{ pid: string }> {
+  return api(`/movements/${movementPid}/items`, { method: "POST", body: item });
+}
+
+/** Complete or cancel a record (completion is refused while anything is open or held). */
+export function closeMovement(pid: string, action: "complete" | "cancel"): Promise<unknown> {
+  return api(`/movements/${pid}/${action}`, { method: "POST" });
+}
+
+/** Everything a leaver still holds, as of their last day. */
+export function leaverHandover(
+  movementPid: string,
+  init?: FetchLike,
+): Promise<{
+  last_day: string;
+  remaining: number;
+  counts: Record<string, number>;
+  items: HeldItem[];
+}> {
+  return api(`/movements/${movementPid}/handover`, init);
+}
+
+/** Reassign (or, with no new holder, close / revoke) one thing the leaver holds. */
+export function reassignHeld(
+  movementPid: string,
+  held: { kind: string; subject_pid: string; to_worker_pid?: string; note?: string },
+): Promise<{ action: string; remaining: number }> {
+  return api(`/movements/${movementPid}/handover`, { method: "POST", body: held });
+}
+
+/** Hand everything that can be handed over to one person; access is revoked. */
+export function handOverAll(
+  movementPid: string,
+  toWorkerPid: string,
+): Promise<{ handed_over: number; access_revoked: number; failed: unknown[]; remaining: number }> {
+  return api(`/movements/${movementPid}/handover/all`, {
+    method: "POST",
+    body: { to_worker_pid: toWorkerPid },
+  });
+}
+
+/** The audit trail of the handover, oldest first. */
+export function handoverTrail(movementPid: string, init?: FetchLike): Promise<HandoverAction[]> {
+  return api(`/movements/${movementPid}/handover/actions`, init);
 }
 
 /** A rota's swap requests, newest first. */

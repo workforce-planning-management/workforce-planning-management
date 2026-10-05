@@ -2007,7 +2007,63 @@ build on 3–5).
         vitest 68/68, Playwright 27/27, build green. **Not done:** diminishing
         returns per level, course prerequisites or availability, cost, linking
         to the upstream course catalogue, booking a place, and the
-        joiner/leaver work queued next (WPM-T89).
+        joiner/leaver work that followed (WPM-T89).
+
+- [x] WPM-T89 (2026-10-06) **People joining and leaving the organisation.**
+      Migration `m20261006_000046_movements` (`movements`, `movement_items`,
+      `handover_actions`); pure `rules/movements.rs` (5 tests).
+      - **Records:** `POST /api/workers/{pid}/movements` opens a *joiner* (start
+        day, default the hire date) or *leaver* (last day required; a reason:
+        resignation, redundancy, retirement, end of contract, dismissal, other;
+        the person must still be employed). At most one open record of each
+        kind per person. Written by whoever may write the worker's record
+        (the person, or HR).
+      - **Dated checklists:** built from a standard template with each item
+        dated relative to the effective day — a joiner's (−7 contract and
+        right-to-work, −5 equipment, −2 accounts, 0 welcome and buddy, +5
+        first-week check-in, +30 review) and a leaver's (−28 notice, −14
+        handover plan, −7 knowledge transfer, −3 exit interview, 0 equipment,
+        access and reassignment, +5 final pay). Each item is `done`, `skipped`
+        (with a reason), `overdue`, `due_today` or `upcoming`; the list shows
+        progress and the overdue count. People items go to the manager; any item
+        can be assigned, added, reopened. `GET /api/movements?kind=&status=`,
+        `GET /api/movements/{pid}`, `…/items`, `movement-items/{pid}/done|skip|
+        reopen|assign`, `…/complete|cancel`.
+      - **Last-day handover** (leavers): `GET /api/movements/{pid}/handover`
+        lists everything they still hold as of the last day — **ownerships**
+        (direct reports, dotted-line reports, groups they lead, their on-call
+        rota seat, mentorships they give), **bookings** (future shifts, on-call
+        swaps, being named as someone's backup), **tasks** (checklist items
+        assigned to them on others' records) and **access** (their organization
+        roles). `POST …/handover` reassigns or closes one item (a direct report
+        *needs* a new manager — the cycle check applies; access can only be
+        **revoked**, ended on the last day; the new holder must be an employed
+        worker of the same organization); `POST …/handover/all` hands
+        everything handable to one successor and revokes access, reporting
+        anything that could not move rather than skipping it silently.
+      - **Audit trail:** each action is one transaction — the change, a
+        `handover_actions` row (kind, thing, from, to, action, note, who, when),
+        an audit entry and a `handover_received` notification to the new
+        holder; `GET …/handover/actions` lists them oldest first.
+      - **Completion:** a record cannot be completed while checklist items are
+        open or a leaver still holds anything — the 422 names what is left; a
+        completed record takes no more changes.
+      - **Privacy:** records and handover actions are in the subject-access
+        export; erasure scrubs notes and unassigns the person's tasks but keeps
+        the audit rows.
+      - **UI:** `/movements` (leavers and joiners with progress and an overdue
+        chip, start form) and `/movements/{pid}` (checklist with icon + label
+        states, skip with a reason, add items; the handover table with
+        per-item reassign / close / revoke, hand-everything, the audit trail,
+        complete and cancel); nav link; 57 strings in 13 locales. DB suite
+        54/54 (a full leaver journey: dated checklist, validations, twelve held
+        items, refusals, one-by-one and bulk handover, trail, completion
+        gating), clippy clean, lib 297, svelte-check 0, vitest 68/68,
+        Playwright 28/28, build green. **Not done:** group-lead handover and
+        appraisal/requisition ownership are not in the inventory (only what
+        the model holds today); handover *on the last day automatically* (it is
+        done by a person; a scheduled reminder would be a follow-up); a leaver's
+        pending leave approvals; returning to work.
 
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of

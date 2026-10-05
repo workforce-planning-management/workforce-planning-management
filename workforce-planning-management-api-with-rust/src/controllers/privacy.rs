@@ -17,7 +17,7 @@ use crate::models::_entities::{
     entitlement_acknowledgements, ergonomic_assessments, group_members, leave_entitlements,
     leave_requests, mentorships, mobility_interests, notifications, path_enrollments, payslips,
     pipeline_members, professional_registrations, program_placements, reviews, shift_assignments,
-    time_entries, training_enrollments, worker_aspirations, worker_backups, emergency_contacts, rota_members, rota_overrides, rota_swap_requests, announcement_reads, worker_framework_roles,
+    time_entries, training_enrollments, worker_aspirations, worker_backups, emergency_contacts, rota_members, rota_overrides, rota_swap_requests, announcement_reads, movements, handover_actions, worker_framework_roles,
     worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
@@ -119,6 +119,9 @@ async fn subject_access(
         "on_call_rota_memberships": rows_for!(db, rota_members, WorkerPid, epid),
         "on_call_swaps": rows_for!(db, rota_overrides, WorkerPid, epid),
         "announcements_read": rows_for!(db, announcement_reads, WorkerPid, epid),
+        "joiner_leaver_records": rows_for!(db, movements, WorkerPid, epid),
+        "handover_actions_from": rows_for!(db, handover_actions, FromWorker, epid),
+        "handover_actions_to": rows_for!(db, handover_actions, ToWorker, epid),
         "on_call_swap_requests_made": rows_for!(db, rota_swap_requests, RequesterPid, epid),
         "on_call_swap_requests_received": rows_for!(db, rota_swap_requests, TakerPid, epid),
         "group_memberships": rows_for!(db, group_members, WorkerPid, epid),
@@ -250,6 +253,9 @@ async fn erase(
         format!("DELETE FROM rota_overrides WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM rota_swap_requests WHERE requester_pid = '{epid}' OR taker_pid = '{epid}'"),
         format!("DELETE FROM announcement_reads WHERE worker_pid = '{epid}'"),
+        format!("UPDATE movements SET notes = NULL WHERE worker_pid = '{epid}'"),
+        format!("UPDATE movement_items SET assignee_pid = NULL WHERE assignee_pid = '{epid}'"),
+        format!("UPDATE handover_actions SET note = NULL WHERE from_worker = '{epid}' OR to_worker = '{epid}'"),
     ];
     let mut affected = Vec::new();
     for statement in &statements {
@@ -286,6 +292,9 @@ async fn erase(
             "rota_swaps_deleted": affected[20],
             "rota_swap_requests_deleted": affected[21],
             "announcement_reads_deleted": affected[22],
+            "movement_notes_scrubbed": affected[23],
+            "movement_tasks_unassigned": affected[24],
+            "handover_notes_scrubbed": affected[25],
         })),
     )
     .await?;

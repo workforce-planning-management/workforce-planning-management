@@ -13,6 +13,7 @@ mod contacts;
 mod ergonomics;
 mod hr;
 mod learning;
+mod movements;
 mod organizations;
 mod pagination;
 mod payroll;

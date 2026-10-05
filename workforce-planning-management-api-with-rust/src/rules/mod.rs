@@ -31,6 +31,7 @@ pub mod lms;
 pub mod lifecycle;
 pub mod metrics;
 pub mod mobility;
+pub mod movements;
 pub mod notify;
 pub mod org;
 pub mod org_access;

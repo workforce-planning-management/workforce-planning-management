@@ -277,6 +277,60 @@ export interface TrainingDemand {
   departments: Array<{ department: string; people: number; hours: number }>;
 }
 
+/** A joiner or leaver record, with checklist progress. */
+export interface Movement {
+  pid: string;
+  kind: "joiner" | "leaver";
+  worker_pid: string;
+  worker_name: string;
+  department: string;
+  job_title: string;
+  organization_ref: string;
+  effective_on: string;
+  reason: string | null;
+  status: "open" | "completed" | "cancelled";
+  notes: string | null;
+  completed_at: string | null;
+  progress: { closed: number; total: number; overdue: number };
+}
+
+/** One dated checklist item. */
+export interface MovementItem {
+  pid: string;
+  position: number;
+  title: string;
+  category: string;
+  due_on: string;
+  assignee_pid: string | null;
+  assignee_name: string | null;
+  done_on: string | null;
+  done_by: string | null;
+  skipped_reason: string | null;
+  state: "done" | "skipped" | "overdue" | "due_today" | "upcoming";
+}
+
+/** One thing a leaver still holds. */
+export interface HeldItem {
+  kind: string;
+  subject_pid: string;
+  label: string;
+  can_reassign: boolean;
+  needs_new_holder: boolean;
+}
+
+/** One entry of the handover audit trail. */
+export interface HandoverAction {
+  kind: string;
+  subject_pid: string;
+  label: string | null;
+  action: "reassigned" | "closed" | "revoked";
+  to_worker_pid: string | null;
+  to_worker_name: string | null;
+  note: string | null;
+  performed_by: string | null;
+  performed_at: string;
+}
+
 /** One funded job opening. */
 export interface Requisition {
   pid: string;

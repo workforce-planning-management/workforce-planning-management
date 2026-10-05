@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — joiners and leavers
+
+`/movements`: who is joining and leaving, each with a dated checklist, how far
+along it is, and how many items are late. A leaver's record also lists
+everything they still hold on their last day — people they manage, groups,
+on-call seats, shifts, mentorships, tasks and access — to reassign one by one or
+all at once to a successor (access is revoked, not handed over), with an audit
+trail of what went where.
+
 ### Added — skill gaps and training time
 
 "My skill gaps" (on `/me` and a worker's page): what your role, your own

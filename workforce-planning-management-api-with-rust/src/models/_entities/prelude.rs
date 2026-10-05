@@ -79,3 +79,6 @@ pub use super::rota_swap_requests::Entity as RotaSwapRequests;
 pub use super::announcements::Entity as Announcements;
 pub use super::announcement_reads::Entity as AnnouncementReads;
 pub use super::skill_courses::Entity as SkillCourses;
+pub use super::handover_actions::Entity as HandoverActions;
+pub use super::movement_items::Entity as MovementItems;
+pub use super::movements::Entity as Movements;
