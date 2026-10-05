@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — CEO dashboard
+
+`/ceo`: headcount, turnover, vacancies, succession gaps, a six-month
+headcount line, skills coverage, span of control, top insights, who is on
+call, and the latest announcement — on one screen, no scrolling, sized for
+an iPad (9th gen) at 2160 × 1620 pixels.
+
 ### Added — announcement feed; rota swap requests
 
 `/announcements`: company and organization news, pinned first then newest,

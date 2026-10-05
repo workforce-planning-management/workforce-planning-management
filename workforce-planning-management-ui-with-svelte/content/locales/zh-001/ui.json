@@ -28,7 +28,8 @@
     "tour": "导览",
     "directory": "通讯录",
     "rota": "值班表",
-    "announcements": "公告"
+    "announcements": "公告",
+    "ceo": "CEO 仪表板"
   },
   "pr": {
     "retention": "保留",
@@ -443,5 +444,14 @@
     "latest": "最新公告",
     "seeAll": "全部公告",
     "organization": "组织"
+  },
+  "ceo": {
+    "vs12": "较一年前",
+    "trend": "在编人数，近六个月",
+    "skills": "技能充分覆盖",
+    "noGaps": "无缺口",
+    "attention": "需关注",
+    "info": "提示",
+    "updated": "更新于"
   }
 }

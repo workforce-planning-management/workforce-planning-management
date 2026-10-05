@@ -28,7 +28,8 @@
     "tour": "Recorrido",
     "directory": "Directorio",
     "rota": "Turnos de guardia",
-    "announcements": "Anuncios"
+    "announcements": "Anuncios",
+    "ceo": "Panel del director general"
   },
   "pr": {
     "retention": "Retención",
@@ -443,5 +444,14 @@
     "latest": "Últimos anuncios",
     "seeAll": "Todos los anuncios",
     "organization": "Organización"
+  },
+  "ceo": {
+    "vs12": "frente a hace un año",
+    "trend": "Plantilla, últimos seis meses",
+    "skills": "Competencias suficientemente cubiertas",
+    "noGaps": "Sin brechas",
+    "attention": "Atención",
+    "info": "Información",
+    "updated": "Actualizado"
   }
 }

@@ -28,7 +28,8 @@
     "tour": "Tur",
     "directory": "Direktori",
     "rota": "Jadwal siaga",
-    "announcements": "Pengumuman"
+    "announcements": "Pengumuman",
+    "ceo": "Dasbor CEO"
   },
   "pr": {
     "retention": "Retensi",
@@ -443,5 +444,14 @@
     "latest": "Pengumuman terbaru",
     "seeAll": "Semua pengumuman",
     "organization": "Organisasi"
+  },
+  "ceo": {
+    "vs12": "dibanding setahun lalu",
+    "trend": "Jumlah karyawan, enam bulan terakhir",
+    "skills": "Keterampilan tercakup memadai",
+    "noGaps": "Tidak ada kesenjangan",
+    "attention": "Perhatian",
+    "info": "Info",
+    "updated": "Diperbarui"
   }
 }

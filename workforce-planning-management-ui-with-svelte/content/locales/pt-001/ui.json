@@ -28,7 +28,8 @@
     "tour": "Tour",
     "directory": "Diretório",
     "rota": "Escala de prevenção",
-    "announcements": "Anúncios"
+    "announcements": "Anúncios",
+    "ceo": "Painel do CEO"
   },
   "pr": {
     "retention": "Retenção",
@@ -443,5 +444,14 @@
     "latest": "Últimos anúncios",
     "seeAll": "Todos os anúncios",
     "organization": "Organização"
+  },
+  "ceo": {
+    "vs12": "face a há um ano",
+    "trend": "Efetivo, últimos seis meses",
+    "skills": "Competências adequadamente cobertas",
+    "noGaps": "Sem lacunas",
+    "attention": "Atenção",
+    "info": "Informação",
+    "updated": "Atualizado"
   }
 }

@@ -28,7 +28,8 @@
     "tour": "Tour",
     "directory": "Directory",
     "rota": "On-call rota",
-    "announcements": "Announcements"
+    "announcements": "Announcements",
+    "ceo": "CEO dashboard"
   },
   "pr": {
     "retention": "Retention",
@@ -443,5 +444,14 @@
     "latest": "Latest announcements",
     "seeAll": "All announcements",
     "organization": "Organization"
+  },
+  "ceo": {
+    "vs12": "vs a year ago",
+    "trend": "Headcount, last six months",
+    "skills": "Skills adequately covered",
+    "noGaps": "No gaps",
+    "attention": "Attention",
+    "info": "Info",
+    "updated": "Updated"
   }
 }

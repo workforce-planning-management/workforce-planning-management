@@ -239,6 +239,151 @@ test.describe("signed-in smoke coverage", () => {
     await expect(section).toContainText("Staff access");
   });
 
+  // The CEO dashboard must fit an iPad (9th gen): 2160 × 1620 device pixels,
+  // i.e. 1080 × 810 CSS pixels at 2×, with no scrolling — and a literal
+  // 2160 × 1620 viewport too. Worst-case text is used so a tile that would
+  // overflow actually does; tiles clip silently (`overflow: hidden`), so the
+  // check is on each tile's own content, not just the page.
+  for (const screen of [
+    { name: "iPad 9th gen @2x (1080×810 CSS)", width: 1080, height: 810, scale: 2 },
+    { name: "2160×1620 @1x", width: 2160, height: 1620, scale: 1 },
+  ]) {
+    test(`CEO dashboard fits ${screen.name} without scrolling or clipping`, async ({
+      browser,
+    }) => {
+      const context = await browser.newContext({
+        viewport: { width: screen.width, height: screen.height },
+        deviceScaleFactor: screen.scale,
+        locale: "en",
+      });
+      const page = await context.newPage();
+      await signIn(page);
+      await page.route("**/api/proxy/**", (route) =>
+        route.fulfill({ status: 404, body: "unstubbed" }),
+      );
+      await page.route("**/api/proxy/me/organizations**", (route) =>
+        route.fulfill({ json: [] }),
+      );
+      let n = 0;
+      await page.route("**/api/proxy/workforce-intelligence/metrics**", (route) =>
+        route.fulfill({
+          json: {
+            period: { from: "2025-10-05", to: "2026-10-05" },
+            definitions: {},
+            headcount: { opening: 1180 + (n++ % 7) * 9, closing: 12345, opening_date: "2025-10-04" },
+            starters: 210,
+            leavers: 1234,
+            turnover_rate: 0.1234,
+            span_of_control: { managers: 1234, mean: 12.34, max: 40 },
+            time_to_fill: { requisitions: 99, mean_days: 61.2, median_days: 58.7 },
+          },
+        }),
+      );
+      const long =
+        "Break leavers down by department and tenure, and compare with pulse-survey and exit feedback across every organization";
+      await page.route("**/api/proxy/workforce-intelligence/insights**", (route) =>
+        route.fulfill({
+          json: {
+            period: { from: "2025-10-05", to: "2026-10-05" },
+            thresholds: {},
+            insights: ["a", "b", "c", "d"].map((c) => ({
+              code: `unknown_${c}`,
+              severity: "attention",
+              observation: long,
+              suggestion: long,
+              params: {},
+            })),
+          },
+        }),
+      );
+      await page.route("**/api/proxy/succession-plans/gaps", (route) =>
+        route.fulfill({ json: { gaps: [{}, {}, {}] } }),
+      );
+      await page.route("**/api/proxy/requisitions?status=open", (route) =>
+        route.fulfill({ json: [{}, {}, {}, {}, {}, {}] }),
+      );
+      await page.route("**/api/proxy/workforce-intelligence/capability-analysis**", (route) =>
+        route.fulfill({
+          json: { adequately_covered: { numerator: 1234, denominator: 1999, value: 0.617 } },
+        }),
+      );
+      await page.route("**/api/proxy/rotas", (route) =>
+        route.fulfill({
+          json: ["Platform on-call", "Customer support weekend cover", "Payroll month-end duty"].map(
+            (name, i) => ({
+              pid: `r${i}`,
+              organization_ref: "organization:x",
+              name,
+              description: null,
+              period_days: 7,
+              starts_on: "2026-10-05",
+              members: 3,
+              on_call_today: { worker_pid: "w", name: "Alexandria Montgomery-Featherstonehaugh" },
+            }),
+          ),
+        }),
+      );
+      await page.route("**/api/proxy/announcements**", (route) =>
+        route.fulfill({
+          json: [
+            {
+              pid: "n1",
+              organization_ref: "organization:x",
+              title: "Quarterly all-hands moves to the main auditorium on the fourth floor",
+              body: "Please arrive early. ".repeat(40),
+              pinned: true,
+              publish_on: "2026-10-01",
+              expires_on: null,
+              status: "live",
+              author: null,
+            },
+          ],
+        }),
+      );
+
+      await page.goto("/ceo");
+      await expect(page.getByTestId("kpi-headcount")).toContainText("12345");
+      await expect(page.getByTestId("trend-chart")).toBeVisible();
+      await expect(page.getByTestId("ceo-news")).toContainText("Quarterly all-hands");
+
+      const fit = await page.evaluate(() => {
+        const doc = document.documentElement;
+        const tiles = [...document.querySelectorAll<HTMLElement>(".ceo .cx-tile")].map((el) => {
+          const box = el.getBoundingClientRect();
+          return {
+            name: el.dataset.testid ?? el.className,
+            inView:
+              box.left >= 0 && box.top >= 0 &&
+              box.right <= window.innerWidth + 0.5 && box.bottom <= window.innerHeight + 0.5,
+            clipsY: el.scrollHeight - el.clientHeight,
+            clipsX: el.scrollWidth - el.clientWidth,
+          };
+        });
+        return {
+          pageY: doc.scrollHeight - window.innerHeight,
+          pageX: doc.scrollWidth - window.innerWidth,
+          bodyY: document.body.scrollHeight - window.innerHeight,
+          tiles,
+        };
+      });
+      expect(fit.pageY, "page scrolls vertically").toBeLessThanOrEqual(0);
+      expect(fit.pageX, "page scrolls horizontally").toBeLessThanOrEqual(0);
+      expect(fit.bodyY, "body scrolls").toBeLessThanOrEqual(0);
+      expect(fit.tiles).toHaveLength(10);
+      for (const tile of fit.tiles) {
+        expect(tile.inView, `${tile.name} is inside the screen`).toBe(true);
+        // Tiles clip silently; a tile whose content is taller or wider than
+        // its box is clipping something the CEO needs to read.
+        expect(tile.clipsY, `${tile.name} clips vertically`).toBeLessThanOrEqual(1);
+        expect(tile.clipsX, `${tile.name} clips horizontally`).toBeLessThanOrEqual(1);
+      }
+      await page.screenshot({
+        path: `test-results/ceo-${screen.width}x${screen.height}.png`,
+      });
+      await context.close();
+    });
+  }
+
   test("announcements show pinned first as plain text, and editors post", async ({
     page,
   }) => {

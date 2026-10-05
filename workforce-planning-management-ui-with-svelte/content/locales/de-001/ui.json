@@ -28,7 +28,8 @@
     "tour": "Rundgang",
     "directory": "Verzeichnis",
     "rota": "Bereitschaftsplan",
-    "announcements": "Ankündigungen"
+    "announcements": "Ankündigungen",
+    "ceo": "CEO-Dashboard"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -443,5 +444,14 @@
     "latest": "Neueste Ankündigungen",
     "seeAll": "Alle Ankündigungen",
     "organization": "Organisation"
+  },
+  "ceo": {
+    "vs12": "ggü. Vorjahr",
+    "trend": "Mitarbeiterzahl, letzte sechs Monate",
+    "skills": "Ausreichend abgedeckte Kompetenzen",
+    "noGaps": "Keine Lücken",
+    "attention": "Achtung",
+    "info": "Info",
+    "updated": "Aktualisiert"
   }
 }

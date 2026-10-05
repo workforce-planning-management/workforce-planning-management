@@ -1837,6 +1837,35 @@ build on 3–5).
       Playwright 24/24, build green. **Not done:** read receipts, comments or
       reactions, per-department audiences, rich text, attachments.
 
+- [x] WPM-T83 (2026-10-05) **CEO dashboard.** `/ceo`: the whole picture on
+      **one screen with no scrolling**, sized for an **iPad (9th gen), 2160 ×
+      1620 device pixels = 1080 × 810 CSS pixels at 2×** (the first brief said
+      iPad Pro 13", 2752 × 2064; corrected to the 9th gen). Everything is in
+      `em` off a size that follows the viewport's short side, with a three-row
+      grid sharing the height, so the same layout fits 1080 × 810 @2× and a
+      literal 2160 × 1620 @1×. Ten tiles from existing views: headcount (with
+      change vs a year ago), turnover, open vacancies (+ median time-to-fill),
+      succession gaps, a six-month headcount line, skills adequately covered,
+      span of control, top insights (rendered in the UI language from code +
+      figures), who is on call now per rota, and the latest announcement. A
+      figure that cannot be loaded shows "—", never 0; no new endpoint. The
+      trend is **month-end headcount computed from hire and termination
+      dates** via `/metrics?from=&to=` (no snapshot job needed). Charts follow
+      the dataviz method: a single-series 2px line with a direct end label and
+      no legend box, hairline grid, a 9px marker with a surface ring,
+      hover/touch crosshair + tooltip, a visually-hidden data table, the
+      reference palette's light and dark tokens, and status shown as icon +
+      label (▲ Attention, ✓ No gaps), never colour alone. Pure
+      `lib/ceo.ts` (`trendDates`, `delta` — never a % of zero, `paddedRange`,
+      4 tests). Playwright checks both viewports with worst-case long text:
+      the page and body do not scroll, every tile is inside the screen, **and
+      no tile clips its own content** (tiles are `overflow: hidden`, so the
+      page check alone would miss that). 8 strings in 13 locales. svelte-check
+      0, vitest 67/67, Playwright 26/26, build green. **Not done:** the
+      palette validator was not re-run (the reference palette's own values
+      are used unchanged); drill-down from a tile; a time-range control; the
+      app's own top bar is not shrunk on this screen.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`
