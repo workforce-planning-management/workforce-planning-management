@@ -1,0 +1,51 @@
+# Documentation and agent files
+
+## What exists
+
+| Kind | Files |
+| --- | --- |
+| Specification | `spec/*.md` (+ topic folders) — the source of truth |
+| Per-subproject | `README.md`, `index.md`, `AGENTS.md`, `CHANGELOG.md`, `spec/index.md` |
+| Repo special files | `README.md`, `INSTALL.md`, `NEWS.md`, `CHANGELOG.md`, `COMPARISONS.md`, `BENCHMARKS.md`, `CONTRIBUTING.md`, `RFC.md`, `GOVERNANCE.md`, `SECURITY.md`, `MAINTAINERS.md`, `AI_STATEMENT.md`, `CODEOWNERS`, `CITATION.cff`, `LICENSE.md` |
+| Agent files | `AGENTS.md` + `AGENTS/*.md` (this set), the two subproject `AGENTS.md`, `llms.txt`, `llms.json` |
+
+**Not present** (and not to be assumed): `CLAUDE.md`, `*-skill` folders, a
+`<repo>.github.io` site (specified in
+[`spec/monorepo-github-pages`](../spec/monorepo-github-pages/index.md) but not
+created).
+
+## Rules for editing documentation
+
+- **Numbers come from commands you ran** (test counts, migrations, locales, keys).
+  Re-derive them; do not copy an old figure forward. Date the statement
+  ("as of 2026-10-06").
+- **Do not claim what you did not verify.** Put limits in the text: "AI-written
+  and unreviewed", "needs a GitHub login and has not been exercised".
+- **Link check**: after editing, resolve every relative link. The only expected
+  unresolved links are references to sibling repositories outside this monorepo
+  (`../../person/…`, `../../agents/share/…`).
+- Keep one source of truth: the **spec** states behaviour; READMEs summarise and
+  link; do not restate a requirement in three places.
+- Style: Markdown with relative links, wrapped near 80 columns, serial comma
+  ([`spec/serial-comma`](../spec/serial-comma/index.md)), Oxford spelling in prose
+  ([`spec/oxford-spelling`](../spec/oxford-spelling/index.md)).
+- A new spec topic file is registered in `spec/index.md`, pointed at from
+  `requirements.md` and `design.md`, and listed in `llms.txt`/`llms.json`.
+
+## These agent files
+
+- `AGENTS.md` is the short entry point; `AGENTS/*.md` hold detail. **Each file
+  stays under 40 KB** (they are far below it today); split a file rather than let
+  it grow. Check with `wc -c AGENTS.md AGENTS/*.md */AGENTS.md`.
+- Put a rule where it is used: stack-level detail in the subproject `AGENTS.md`,
+  cross-cutting practice here. Do not duplicate a rule; link to it.
+- Record a lesson **when it cost something** (a bug, a wrong turn) — with the
+  symptom, so the next agent recognises it.
+- Update the "Updated …, through WPM-T##" line when you change a file.
+
+## `llms.txt` and `llms.json`
+
+`llms.txt` is the readable index (sections: Specification, Code, Operate,
+Conventions an agent must keep, Optional). `llms.json` carries the same entries
+as data (`sections`, `conventions`, `status`, `stack.tests`). Keep them in step by
+hand (there is no generator yet); every path must exist.

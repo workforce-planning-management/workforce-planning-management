@@ -27,7 +27,7 @@ Detailed history: each subproject's `CHANGELOG.md` and
 - The Keycloak backend verified against a real Keycloak 26; two defects fixed.
 - Spec: new topic files (`people-directory-and-cover`, `skills-and-training`,
   `joiners-and-leavers`, `communication-and-leadership`), requirements
-  WPM-R39–R50, design decisions WPM-D29–D37; `llms.txt` and `llms.json`.
+  WPM-R39–R50, design decisions WPM-D29–D37; `llms.txt` and `llms.json`; a root `AGENTS.md` with `AGENTS/*` topic files.
 
 ### Changed
 

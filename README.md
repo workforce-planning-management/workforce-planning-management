@@ -92,6 +92,9 @@ without the spec describing it.**
 - [INSTALL.md](INSTALL.md) — build, run, test, schedule the tasks, edit
   translations. [NEWS.md](NEWS.md), [CHANGELOG.md](CHANGELOG.md),
   [COMPARISONS.md](COMPARISONS.md), [BENCHMARKS.md](BENCHMARKS.md).
+- [AGENTS.md](AGENTS.md) and [AGENTS/](AGENTS/spec-driven-delivery.md) — working
+  agreements for humans and AI agents (spec-driven delivery, backend, frontend,
+  privacy and data rules, localization, testing, git, docs).
 - [llms.txt](llms.txt) and [llms.json](llms.json) — a map of this repository
   for AI agents.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — ground rules and how to

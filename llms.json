@@ -115,6 +115,63 @@
         "path": "SECURITY.md",
         "description": ""
       }
+    ],
+    "agents": [
+      {
+        "title": "AGENTS.md",
+        "path": "AGENTS.md",
+        "description": "Entry point: the five rules and a map"
+      },
+      {
+        "title": "spec-driven-delivery",
+        "path": "AGENTS/spec-driven-delivery.md",
+        "description": "The requirement, decision, task loop; task-entry shape; next free ids"
+      },
+      {
+        "title": "backend-rust",
+        "path": "AGENTS/backend-rust.md",
+        "description": "Order of work, controller patterns, gotchas"
+      },
+      {
+        "title": "frontend-svelte",
+        "path": "AGENTS/frontend-svelte.md",
+        "description": "Order of work, runes conventions, charts and the CEO dashboard, gotchas"
+      },
+      {
+        "title": "privacy-and-data-rules",
+        "path": "AGENTS/privacy-and-data-rules.md",
+        "description": "Unrepresentability, unknown is not zero, counts only; checklist for new personal data"
+      },
+      {
+        "title": "localization",
+        "path": "AGENTS/localization.md",
+        "description": "Adding strings and locales, routing, the CMS"
+      },
+      {
+        "title": "testing-and-verification",
+        "path": "AGENTS/testing-and-verification.md",
+        "description": "What to run, scratch workspace for the sibling crates, reporting"
+      },
+      {
+        "title": "git-and-releases",
+        "path": "AGENTS/git-and-releases.md",
+        "description": "Branching, commits, pushing, releases"
+      },
+      {
+        "title": "docs-and-agent-files",
+        "path": "AGENTS/docs-and-agent-files.md",
+        "description": "Editing documentation; these files; llms files"
+      },
+      {
+        "title": "API AGENTS.md",
+        "path": "workforce-planning-management-api-with-rust/AGENTS.md",
+        "description": "Service stack-level agreements"
+      },
+      {
+        "title": "UI AGENTS.md",
+        "path": "workforce-planning-management-ui-with-svelte/AGENTS.md",
+        "description": "Front-end stack-level agreements"
+      }
     ]
   },
   "conventions": [

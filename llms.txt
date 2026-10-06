@@ -30,7 +30,7 @@ lands without it. A change is a requirement (WPM-R*), a design decision
 
 - [workforce-planning-management-api-with-rust/](workforce-planning-management-api-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 46 migrations
 - [workforce-planning-management-ui-with-svelte/](workforce-planning-management-ui-with-svelte/index.md): the browser client; strings in `content/locales/<locale>/ui.json`
-- Working agreements for contributors and agents: [API AGENTS.md](workforce-planning-management-api-with-rust/AGENTS.md), [UI AGENTS.md](workforce-planning-management-ui-with-svelte/AGENTS.md)
+- Working agreements for contributors and agents: [AGENTS.md](AGENTS.md) (entry point) and [AGENTS/](AGENTS/spec-driven-delivery.md) (spec-driven delivery, backend, frontend, privacy and data rules, localization, testing and verification, git and releases, docs); stack-level: [API AGENTS.md](workforce-planning-management-api-with-rust/AGENTS.md), [UI AGENTS.md](workforce-planning-management-ui-with-svelte/AGENTS.md)
 
 ## Operate
 
