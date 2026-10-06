@@ -19,4 +19,4 @@ the Loco JSON API sibling.
 
 Live delivery checklist: [../spec/tasks.md](../spec/tasks.md)
 (this edition: WPM-T18/T19, the front-end halves of T20–T36, and the UI of
-every later task through WPM-T89 — all delivered).
+every later task through WPM-T97 — all delivered).

@@ -106,7 +106,7 @@ The queue is [../../spec/tasks.md](../../spec/tasks.md):
 WPM-T1–T19 **delivered 2026-07-18**; the wellbeing / 360 / privacy /
 ergonomics / adjustments rounds (WPM-T20–T36) **delivered
 2026-07-20 → 2026-07-25**; both production gates' code sides are
-done (WPM-G1/G2 `[~]` — operational/legal work remains); WPM-T37–T89
+done (WPM-G1/G2 `[~]` — operational/legal work remains); WPM-T37–T97
 (strategic planning, frameworks, reporting lines, the directory, cover and
 on-call, announcements, the CEO dashboard, skills gaps and training time,
 joiners and leavers, localization) **delivered 2026-09-28 → 2026-10-06**.

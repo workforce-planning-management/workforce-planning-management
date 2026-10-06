@@ -2,7 +2,7 @@
 
 A pocket guide for human and AI collaborators working in this
 subproject. Read this **before** opening a PR. (Updated 2026-10-06,
-through WPM-T89.)
+through WPM-T97.)
 
 ## What this project is
 

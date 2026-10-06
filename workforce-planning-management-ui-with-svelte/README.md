@@ -16,7 +16,7 @@ rota, announcements, skill gaps with a training plan, joiners and leavers, and a
 > ⚠️ **Demo software.** Not a production HR system; synthetic data
 > only. See [spec/regulatory](../spec/regulatory.md).
 
-**Status: implemented through WPM-T89 (2026-07-18 → 2026-10-06).**
+**Status: implemented through WPM-T97 (2026-07-18 → 2026-10-07).**
 svelte-check clean (0 errors, 0 warnings); **74 vitest + 37 Playwright specs**
 pass (`page.route`-stubbed — runs without the Rust service); the production
 build is green. Quick start: `pnpm install && pnpm dev` (expects the Loco

@@ -1,21 +1,22 @@
 # Testing
 
-State as of 2026-10-06 (WPM-T89).
+State as of 2026-10-07 (WPM-T97).
 
 ## Service edition (`workforce-planning-management-api-with-rust`)
 
-- **Pure-core unit tests** (DB-free, `cargo test --lib` — **297**): every
+- **Pure-core unit tests** (DB-free, `cargo test --lib` — **317**): every
   lifecycle's legal/illegal transition matrix; leave-balance, overtime, shift
   and payslip arithmetic; org-chart cycle refusal; working-time boundaries;
   wellbeing eligibility; the pulse k-floor and 360 group floor; assessment
   category↔scale exhaustiveness; erasure/retention pins (incl. the
-  retention-sweep table list, 55); notification kinds; and, for the newer
+  retention-sweep table list, 56); notification kinds; and, for the newer
   modules, `rules::{metrics, insights, directory, emergency, cover, rota,
-  announcements, skill_gap, training, movements}` — each pinning its edge cases
+  announcements, skill_gap, training, movements, pay_scale, pay_position, job_levels,
+  grade, expenses}` — each pinning its edge cases
   (dated windows, ties, "nobody available", "unknown is not zero", completion
   gating). Each new rule module is written and tested before its controller.
 - **Request tests** (Postgres, `#[ignore]`d, `cargo test -- --ignored` —
-  **54 tests in 19 files**): the hire journey; leave and shift conflicts;
+  **62 tests in 24 files**): the hire journey; leave and shift conflicts;
   payroll; L&D; assessments; talent; wellbeing; pulse; 360; ergonomics;
   adjustments; subject rights; and one journey per newer capability — directory
   (employed only, nothing sensitive, away / covered / on call), emergency
@@ -26,10 +27,21 @@ State as of 2026-10-06 (WPM-T89).
   plans (cheapest-first, estimate, completed course dropped, schedule dates,
   assess-first) and joiners/leavers (a full leaver journey: dated checklist,
   twelve held items, refusals, one-by-one and bulk handover, audit trail,
-  completion gating). Unknown-pid 404s pinned throughout.
+  completion gating), the Wales pay scale (placement, progression, refusals), job levels
+  (unknown left null, no pay), grades (a worker's level audited without the level and erased;
+  a role's level linked to a pay band by the editor), pay positions (dated eligibility,
+  reminders sent once and naming no pay) and expense claims (draft to reimbursed, duplicates
+  flagged, no amount in the audit or notification, erasure keeping amounts and dropping
+  words). Unknown-pid 404s pinned throughout.
 - **Enforcement binary** (`tests/enforcement.rs`, own process — the OnceLock
   lesson): the persona matrix on the shipped reference policy file —
   401/403 splits, masking, `$sub` self-reads, destructive gating.
+- **Expense enforcement binary** (`tests/enforcement_expenses.rs`, own process — the auth
+  flag is process-wide): with an open blanket policy so the *controller's* rule is what is
+  tested — the claimant and HR write a claim, the manager and HR decide it, a peer or
+  stranger gets 404/403, the claimant is absent from their own queue, and **HR cannot approve
+  their own claim**. **Mutation-checked:** with `may_decide` stripped of its not-the-claimant
+  clause the test fails at that assertion.
 - **Keycloak binary** (`tests/keycloak.rs`, feature `keycloak`): a **real
   Keycloak 26** started by Testcontainers (Podman), real access tokens, the
   app booted against its JWKS. It found and fixed two defects the unit tests
@@ -37,7 +49,7 @@ State as of 2026-10-06 (WPM-T89).
 - Clippy **pedantic** is on (`#![warn(clippy::pedantic)]`) and `cargo clippy
   --all-targets -- -D warnings` is **clean** (default and `--features keycloak`
   builds), as are `cargo fmt --check` and the front-end's `pnpm lint`
-  (2026-10-06).
+  (2026-10-07).
 
 ### Running the service tests without the sibling crates
 
@@ -68,6 +80,10 @@ tests share one database), and the two binaries above.
 
 ## Gotchas
 
+- Playwright reuses whatever is listening on its port: another project's preview server on 4173
+  made the specs (and the screenshots) run against the wrong app. Use `PW_PORT=<free port>`.
+- Playwright prefers the **last registered** route: register a generic `…/*` stub before the
+  specific ones, or it swallows them.
 - Playwright occasionally fails nearly everything when started straight after
   another build (the preview server races the build); re-run it.
 - `pnpm cms-config:check` (and a unit test) fail if `static/admin/config.yml`
