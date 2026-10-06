@@ -14,7 +14,7 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | Service | `cargo clippy --all-targets` | keep **new** files clean (pedantic) |
 | UI | `pnpm check` | svelte-check: 0 errors, 0 warnings |
 | UI | `pnpm test` | 74 vitest |
-| UI | `pnpm exec playwright test` | 33 specs, stubbed API |
+| UI | `pnpm exec playwright test` | 33 specs, stubbed API (`PW_PORT=<free port>` if 4173 is taken) |
 | UI | `pnpm build` | green |
 
 `CONTRIBUTING.md` also asks for `cargo fmt --check`, `cargo clippy --all-targets

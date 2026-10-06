@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — visual review of the new pages (2026-10-06)
+
+Looked at `/pay-scales`, `/job-levels`, `/roles` and `/me` in light and dark at desktop, iPad and
+phone widths. Fixed: band `8a` shown as `8A`; whole-pound pay shown as `£26,300.00` (now `£26,300`);
+the lookup and grade forms' unaligned labels; the job-levels table unreadable on a phone (now scrolls
+in its box); the level select overflowing the Grade panel on a phone. Added `PW_PORT` to the
+Playwright config.
+
 ### Added — grade panels
 
 `JobLevel` on `/me` and the worker page, `RoleGrade` on `/roles`; strings in the 12 `-001` locales.

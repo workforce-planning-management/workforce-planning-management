@@ -66,5 +66,17 @@ overflow). Keep it green when tiles change, and **look at the screenshots** in
   `getByLabel`; scope to a form (`getByTestId("…-form")`) or add a `data-testid`.
 - Do not run `prettier --write` over a whole existing file just to format a small
   edit — it produces a large unrelated diff.
+- **Playwright reuses whatever is already listening on its port** (4173), so a
+  preview server from another project makes the specs — and any screenshots —
+  run against the wrong app (it once showed a 404 page from an unrelated site).
+  Check with `lsof -nP -iTCP:4173 -sTCP:LISTEN`; do not kill a process you did
+  not start — set `PW_PORT=4181` (any free port) instead. Specs must not
+  hard-code the origin.
+- **Look at screenshots, in light *and* dark, at phone width.** The theme is the
+  Lily theme picker, not `prefers-color-scheme`: seed it with
+  `localStorage["mxi.wpm.theme"] = "dark"` (`addInitScript`). Global `th` styles
+  upper-case their text (a band code `8a` shows as `8A`: override per cell) and
+  tables wider than the screen need a `overflow-x: auto` wrapper, not squeezed
+  columns. Measure `scrollWidth - innerWidth` rather than trusting your eye.
 - Playwright can fail nearly everything if started straight after another build
   (its preview server races); re-run it.

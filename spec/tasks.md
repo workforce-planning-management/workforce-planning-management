@@ -2191,6 +2191,24 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       at in a browser; the manager-cannot-read rule is by default policy and was not
       exercised under enforcement.
 
+- [x] WPM-T95 (2026-10-06) **Visual review of the new pages.** *(hygiene; traces to
+      WPM-T92–T94)* The pay-scales, job-levels, roles-grade and `/me` job-level views
+      had only been checked through stubbed specs. Screenshotted each in light and dark
+      at 1080×810, 1080×810 (iPad 9th gen at 2×) and 390×844, against a stubbed API, and
+      read them. **Defects found and fixed:** band `8a` rendered `8A` (a global
+      upper-casing `th` style); whole-pound pay as `£26,300.00` where the circular prints
+      `£26,300` (new `moneyWhole`); form labels run together; the job-levels table
+      unreadable on a phone (words broken mid-word; now an `overflow-x` box); the level
+      select overflowing the Grade panel on a phone. Measured: no page scrolls sideways in
+      any of the 24 page/size/theme combinations. **Also found:** another project's preview
+      server on port 4173 made the first screenshots show an unrelated site, because
+      Playwright reuses whatever listens there — added `PW_PORT`, and the sitemap spec no
+      longer hard-codes the origin. Re-verified: svelte-check 0, vitest 74, Playwright 33
+      (on `PW_PORT=4181`), prettier. **Not done / seen but left:** the older `/roles`
+      requirement tables break header words on a phone ("SKI LL"); the **dark** theme was
+      checked, the NHS Wales and other themes were not; the CMS `/admin/` flow still needs a
+      GitHub login and was not opened.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

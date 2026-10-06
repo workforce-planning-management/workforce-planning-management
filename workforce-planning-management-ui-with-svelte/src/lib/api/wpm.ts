@@ -66,6 +66,23 @@ export function money(
 }
 
 /**
+ * Like [`money`], but a whole-pound amount drops its `.00` — the way a pay
+ * circular prints a scale (£26,300) — while an amount with pence keeps them.
+ */
+export function moneyWhole(
+  minor: number | null | undefined,
+  currency: string | null | undefined,
+  locale?: string,
+): string {
+  if (minor === null || minor === undefined || !currency) return "—";
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    maximumFractionDigits: minor % 100 === 0 ? 0 : 2,
+  }).format(minor / 100);
+}
+
+/**
  * The signed-in caller's own organization memberships — every org
  * they belong to, at once (no switcher). Empty when signed out.
  */

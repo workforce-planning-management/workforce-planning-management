@@ -19,7 +19,7 @@ Requirements and decisions live in `spec/requirements.md` / `spec/design.md`
 [joiners-and-leavers](../spec/joiners-and-leavers.md),
 [communication-and-leadership](../spec/communication-and-leadership.md),
 [locales](../spec/locales-for-global-sharing-with-svelte/index.md)). Next free
-ids: **WPM-R54**, **WPM-D41**, **WPM-T95**.
+ids: **WPM-R54**, **WPM-D41**, **WPM-T96**.
 
 ## Writing a task entry
 

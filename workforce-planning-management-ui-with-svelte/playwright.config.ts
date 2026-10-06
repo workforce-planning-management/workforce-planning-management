@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// The preview port is `PW_PORT` (default 4173). Playwright reuses *whatever* is
+// already listening there, so if another project's server holds 4173 the specs
+// would run against the wrong app: set `PW_PORT` to a free port.
+const PORT = process.env.PW_PORT ?? "4173";
+
 // Smoke tests run against the Vite dev server. The backend is stubbed
 // per-test via `page.route`, so no running Rust service is required.
 export default defineConfig({
@@ -7,7 +12,7 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: true,
   use: {
-    baseURL: "http://localhost:4173",
+    baseURL: `http://localhost:${PORT}`,
     // Pin Accept-Language so an unprefixed visit lands on en-001, not en-us.
     locale: "en",
     trace: "on-first-retry",
@@ -17,8 +22,8 @@ export default defineConfig({
   // correctly-typed ES modules, avoiding the `vite dev` cold-start
   // dependency-optimisation race that flakes module loading.
   webServer: {
-    command: "npm run build && npm run preview -- --port 4173 --strictPort",
-    url: "http://localhost:4173",
+    command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
+    url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

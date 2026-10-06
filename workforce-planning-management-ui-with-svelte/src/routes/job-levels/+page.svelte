@@ -40,10 +40,11 @@
   </p>
   <p class="muted">{t("jobLevels.noPay")}</p>
 
+  <div class="cx-scroll">
   <table data-testid="levels-table">
     <thead>
       <tr>
-        <th>{t("jobLevels.level")}</th>
+        <th class="cx-nowrap">{t("jobLevels.level")}</th>
         <th>{t("jobLevels.title")}</th>
         <th>{t("jobLevels.summary")}</th>
         <th>{t("jobLevels.experience")}</th>
@@ -53,7 +54,7 @@
     <tbody>
       {#each framework.levels as level (level.code)}
         <tr data-testid={`level-${level.code}`}>
-          <th scope="row">{level.code}</th>
+          <th scope="row" class="cx-nowrap">{level.code}</th>
           <td>{level.title}</td>
           <td>{level.summary}</td>
           <td>{level.experience ?? "—"}</td>
@@ -62,6 +63,20 @@
       {/each}
     </tbody>
   </table>
+  </div>
 {:else if !error}
   <p>{t("common.loading")}</p>
 {/if}
+
+<style>
+  /* A wide table scrolls inside its own box; the page never scrolls sideways. */
+  .cx-scroll {
+    overflow-x: auto;
+  }
+  .cx-scroll table {
+    min-width: 44rem;
+  }
+  .cx-nowrap {
+    white-space: nowrap;
+  }
+</style>

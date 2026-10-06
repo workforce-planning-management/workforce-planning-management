@@ -11,7 +11,7 @@
     getRoleGrade,
     listJobLevelFrameworks,
     listPayScales,
-    money,
+    moneyWhole,
     setRoleGrade,
   } from "#lib/api/wpm.js";
   import type { JobLevelFramework, PayScale, RoleGrade } from "#lib/api/types.js";
@@ -88,7 +88,7 @@
         {t("payScales.band")} <strong>{grade.pay_band.band}</strong>
         {#if grade.pay_band.entry_minor !== undefined && grade.pay_band.top_minor !== undefined}
           <span class="muted">
-            ({money(grade.pay_band.entry_minor, grade.pay_band.currency, i18n.locale)}–{money(
+            ({moneyWhole(grade.pay_band.entry_minor, grade.pay_band.currency, i18n.locale)}–{moneyWhole(
               grade.pay_band.top_minor,
               grade.pay_band.currency,
               i18n.locale,
@@ -101,7 +101,7 @@
   {:else}
     <p class="muted" data-testid="role-grade-none">{t("grades.noRoleGrade")}</p>
   {/if}
-  <form onsubmit={save} data-testid="role-grade-form">
+  <form class="cx-form" onsubmit={save} data-testid="role-grade-form">
     <label>
       {t("jobLevels.level")}
       <select data-testid="role-level-choice" bind:value={level}>
@@ -119,3 +119,23 @@
     <button type="submit" data-testid="role-grade-save">{t("grades.save")}</button>
   </form>
 </section>
+
+<style>
+  .cx-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: flex-end;
+    margin-top: 0.75rem;
+  }
+  .cx-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .cx-form select {
+    max-width: 100%;
+  }
+</style>

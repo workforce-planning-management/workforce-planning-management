@@ -89,7 +89,7 @@
       <p class="muted" data-testid="job-level-none">{t("grades.none")}</p>
     {/if}
     {#if ladder}
-      <form onsubmit={save} data-testid="job-level-form">
+      <form class="cx-form" onsubmit={save} data-testid="job-level-form">
         <label>
           {t("jobLevels.level")}
           <select data-testid="job-level-choice" bind:value={choice}>
@@ -108,3 +108,23 @@
     {/if}
   </section>
 {/if}
+
+<style>
+  .cx-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: flex-end;
+    margin-top: 0.75rem;
+  }
+  .cx-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .cx-form select {
+    max-width: 100%;
+  }
+</style>
