@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — job levels (WPM-T93)
+
+`rules::job_levels` (Google technical levels L3–L11) and `GET /api/job-levels`, `/{id}`,
+`/{id}/levels/{code}`. Reference data; no pay; unstated fields are null.
+
 ### Added — pay scales (WPM-T92)
 
 `rules::pay_scale` (the NHS Agenda for Change scale for Wales 2026/27 from pay letter

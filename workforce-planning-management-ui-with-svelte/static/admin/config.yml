@@ -65,6 +65,7 @@ collections:
               - { name: "skillGaps", label: "Skill Gaps", widget: string, required: false, i18n: true }
               - { name: "movements", label: "Movements", widget: string, required: false, i18n: true }
               - { name: "payScales", label: "Pay Scales", widget: string, required: false, i18n: true }
+              - { name: "jobLevels", label: "Job Levels", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -1005,3 +1006,17 @@ collections:
                   - { name: "at_top", label: "At_top", widget: string, required: false, i18n: true }
                   - { name: "due", label: "Due", widget: string, required: false, i18n: true }
                   - { name: "not_yet", label: "Not_yet", widget: string, required: false, i18n: true }
+          - name: "jobLevels"
+            label: "Job Levels"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "level", label: "Level", widget: string, required: false, i18n: true }
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "summary", label: "Summary", widget: string, required: false, i18n: true }
+              - { name: "experience", label: "Experience", widget: string, required: false, i18n: true }
+              - { name: "management", label: "Management", widget: string, required: false, i18n: true }
+              - { name: "source", label: "Source", widget: string, required: false, i18n: true }
+              - { name: "noPay", label: "No Pay", widget: string, required: false, i18n: true }

@@ -32,7 +32,8 @@
     "ceo": "Dangosfwrdd y Prif Weithredwr",
     "skillGaps": "Bylchau sgiliau",
     "movements": "Newydd-ddyfodiaid a gadawyr",
-    "payScales": "Graddfeydd cyflog"
+    "payScales": "Graddfeydd cyflog",
+    "jobLevels": "Lefelau swyddi"
   },
   "pr": {
     "retention": "Cadw data",
@@ -613,5 +614,14 @@
       "due": "Yn gymwys i symud i fyny nawr, i {amount}.",
       "not_yet": "Heb fod yn gymwys eto: {months} mis i fynd, yna {amount}."
     }
+  },
+  "jobLevels": {
+    "level": "Lefel",
+    "title": "Teitl",
+    "summary": "Beth ydyw",
+    "experience": "Profiad nodweddiadol",
+    "management": "Cyfwerth rheoli",
+    "source": "Ffynhonnell",
+    "noPay": "Nid cyflog yw lefel: ni ddangosir tâl. Mae llinell doriad yn golygu nad yw'r ffynhonnell yn dweud."
   }
 }

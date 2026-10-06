@@ -32,7 +32,8 @@
     "ceo": "CEO-Dashboard",
     "skillGaps": "Kompetenzlücken",
     "movements": "Ein- und Austritte",
-    "payScales": "Gehaltsskalen"
+    "payScales": "Gehaltsskalen",
+    "jobLevels": "Karrierestufen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -613,5 +614,14 @@
       "due": "Jetzt aufstiegsberechtigt, auf {amount}.",
       "not_yet": "Noch nicht berechtigt: noch {months} Monate, dann {amount}."
     }
+  },
+  "jobLevels": {
+    "level": "Stufe",
+    "title": "Titel",
+    "summary": "Was sie ist",
+    "experience": "Typische Erfahrung",
+    "management": "Entsprechung im Management",
+    "source": "Quelle",
+    "noPay": "Eine Stufe ist kein Gehalt: Es wird kein Entgelt gezeigt. Ein Strich bedeutet, dass die Quelle dazu nichts sagt."
   }
 }

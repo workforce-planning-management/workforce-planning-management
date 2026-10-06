@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Google technical job levels (WPM-T93)
+
+Reference ladder L3–L11 (`/api/job-levels`) and a `/job-levels` page; no pay, unstated
+fields are null; an unofficial source, said so. See `spec/job-levels.md`.
+
 ### Added — NHS Agenda for Change pay scale for Wales (WPM-T92)
 
 The 2026/27 Wales scale from pay letter AfC(W) 02/2026, with a salary-placement and

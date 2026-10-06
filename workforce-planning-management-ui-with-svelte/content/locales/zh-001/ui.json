@@ -32,7 +32,8 @@
     "ceo": "CEO 仪表板",
     "skillGaps": "技能差距",
     "movements": "入职与离职",
-    "payScales": "薪酬标准"
+    "payScales": "薪酬标准",
+    "jobLevels": "职级"
   },
   "pr": {
     "retention": "保留",
@@ -613,5 +614,14 @@
       "due": "现在可晋升至 {amount}。",
       "not_yet": "尚不符合条件：还需 {months} 个月，然后为 {amount}。"
     }
+  },
+  "jobLevels": {
+    "level": "级别",
+    "title": "职称",
+    "summary": "说明",
+    "experience": "典型经验",
+    "management": "管理序列对应",
+    "source": "来源",
+    "noPay": "职级不是薪资：此处不显示薪酬。破折号表示来源未说明。"
   }
 }

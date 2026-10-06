@@ -7,6 +7,7 @@
 | **Adjustment (reasonable)** | A barrier-based change request (barrier / impact / change); no diagnosis required or storable |
 | **Accrual**         | Leave entitlement earned over time; v1 grants annual entitlements, accrual schedules are roadmap |
 | **Agenda for Change (AfC)** | The NHS pay and grading system; Wales issues its own pay circular each year ([pay-scales.md](pay-scales.md)) |
+| **Job level** | A rung on a published career ladder (e.g. Google's L3–L11); not a salary ([job-levels.md](job-levels.md)) |
 | **Pay band / step** | A grade on a pay scale and one pay point within it (entry, intermediate, top), each with the years before eligibility to progress |
 | **Benchmark**       | Recorded market pay data (min/median/max) for a job title                                        |
 | **Calibration**     | HR moderation pass over submitted reviews before ratings are shared                              |

@@ -32,7 +32,8 @@
     "ceo": "Tableau de bord du PDG",
     "skillGaps": "Écarts de compétences",
     "movements": "Arrivées et départs",
-    "payScales": "Grilles salariales"
+    "payScales": "Grilles salariales",
+    "jobLevels": "Niveaux de poste"
   },
   "pr": {
     "retention": "Conservation",
@@ -613,5 +614,14 @@
       "due": "Peut monter dès maintenant, à {amount}.",
       "not_yet": "Pas encore éligible : encore {months} mois, puis {amount}."
     }
+  },
+  "jobLevels": {
+    "level": "Niveau",
+    "title": "Intitulé",
+    "summary": "Description",
+    "experience": "Expérience typique",
+    "management": "Équivalent en management",
+    "source": "Source",
+    "noPay": "Un niveau n'est pas un salaire : aucune rémunération n'est affichée. Un tiret signifie que la source ne le précise pas."
   }
 }

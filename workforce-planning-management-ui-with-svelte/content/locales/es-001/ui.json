@@ -32,7 +32,8 @@
     "ceo": "Panel del director general",
     "skillGaps": "Brechas de competencias",
     "movements": "Incorporaciones y salidas",
-    "payScales": "Escalas salariales"
+    "payScales": "Escalas salariales",
+    "jobLevels": "Niveles de puesto"
   },
   "pr": {
     "retention": "Retención",
@@ -613,5 +614,14 @@
       "due": "Puede ascender ya, a {amount}.",
       "not_yet": "Aún no puede ascender: faltan {months} meses, luego {amount}."
     }
+  },
+  "jobLevels": {
+    "level": "Nivel",
+    "title": "Título",
+    "summary": "Qué es",
+    "experience": "Experiencia típica",
+    "management": "Equivalente en gestión",
+    "source": "Fuente",
+    "noPay": "Un nivel no es un salario: no se muestra remuneración. Un guion significa que la fuente no lo indica."
   }
 }

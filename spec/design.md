@@ -308,6 +308,8 @@ aggregate with suggestions-only levers: see
 
 Recorded beside the requirements they shape:
 
+- **WPM-D39** a level is not a salary, and an unstated fact is unknown —
+  [job-levels.md](job-levels.md).
 - **WPM-D38** a pay scale is transcribed, dated and sourced, and its lookup
   stores nothing — [pay-scales.md](pay-scales.md).
 - **WPM-D29** the directory is deliberately narrow; **WPM-D30** emergency

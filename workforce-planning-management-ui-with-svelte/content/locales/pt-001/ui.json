@@ -32,7 +32,8 @@
     "ceo": "Painel do CEO",
     "skillGaps": "Lacunas de competências",
     "movements": "Entradas e saídas",
-    "payScales": "Escalas salariais"
+    "payScales": "Escalas salariais",
+    "jobLevels": "Níveis de cargo"
   },
   "pr": {
     "retention": "Retenção",
@@ -613,5 +614,14 @@
       "due": "Elegível para subir agora, para {amount}.",
       "not_yet": "Ainda não elegível: faltam {months} meses, depois {amount}."
     }
+  },
+  "jobLevels": {
+    "level": "Nível",
+    "title": "Título",
+    "summary": "O que é",
+    "experience": "Experiência típica",
+    "management": "Equivalente em gestão",
+    "source": "Fonte",
+    "noPay": "Um nível não é um salário: não se mostra remuneração. Um traço significa que a fonte não o indica."
   }
 }

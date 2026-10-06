@@ -5,6 +5,8 @@
 import { api } from "#lib/api/client.js";
 import type {
   Application,
+  JobLevelFramework,
+  JobLevelFrameworkSummary,
   PayLookup,
   PayScale,
   PayScaleSummary,
@@ -120,6 +122,21 @@ export function employeeDirectory(
   if (filters?.limit) params.set("limit", String(filters.limit));
   const qs = params.size ? `?${params}` : "";
   return api(`/directory${qs}`, init);
+}
+
+/** The job-level ladders the service knows (Google technical levels, …). */
+export function listJobLevelFrameworks(
+  init?: FetchLike,
+): Promise<JobLevelFrameworkSummary[]> {
+  return api("/job-levels", init);
+}
+
+/** One job-level ladder with every level. */
+export function getJobLevelFramework(
+  id: string,
+  init?: FetchLike,
+): Promise<JobLevelFramework> {
+  return api(`/job-levels/${id}`, init);
 }
 
 /** The pay scales the service knows (NHS Agenda for Change, Wales, …). */

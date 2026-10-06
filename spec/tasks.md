@@ -2146,6 +2146,26 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       hourly rates; applying the on-call allowance to the rota; **the page was not
       looked at in a browser** (only the stubbed Playwright spec).
 
+- [x] WPM-T93 (2026-10-06) **Google technical job levels (L3–L11).**
+      *(traces to WPM-R52, WPM-D39; [job-levels.md](job-levels.md))* From the
+      summary the maintainer pasted — a **secondary, unofficial** source, said so in
+      the payload and the page. Pure `rules/job_levels.rs` (the ladder: code, title,
+      summary, typical experience and management equivalent; `level` lookup by
+      `L5`/`l5`/`5`, `next_above`; 2 unit tests incl. every level present once,
+      codes matching numbers, and the fields the source omits left `None`),
+      `controllers/job_levels.rs` (`GET /api/job-levels`, `/{id}`,
+      `/{id}/levels/{code}`), 3 OpenAPI entries, 1 request test (the ladder,
+      nulls for unstated fields, no pay on any level, top has no next level,
+      4 × 404). UI: client functions (path-map test), types, `/job-levels`,
+      nav link, strings in the 12 `-001` locales (AI-written, unreviewed).
+      **No pay and no stored data (WPM-D39).** Verified: 304 unit, 56 request,
+      clippy `-D warnings` and `fmt` clean, vitest 74, Playwright 31 (the first run
+      after a build hit the known preview-server race with 3 failures; the re-run
+      was 31/31), svelte-check 0, build, prettier. **Not done:** assigning a level to
+      a worker or role; mapping role profiles or the UK capability framework to
+      levels; other tracks and companies; an official source; the page was not
+      looked at in a browser.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

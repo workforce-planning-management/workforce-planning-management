@@ -32,7 +32,8 @@
     "ceo": "CEO dashboard",
     "skillGaps": "Skill gaps",
     "movements": "Joiners and leavers",
-    "payScales": "Pay scales"
+    "payScales": "Pay scales",
+    "jobLevels": "Job levels"
   },
   "pr": {
     "retention": "Retention",
@@ -613,5 +614,14 @@
       "due": "Eligible to move up now, to {amount}.",
       "not_yet": "Not yet eligible: {months} months to go, then {amount}."
     }
+  },
+  "jobLevels": {
+    "level": "Level",
+    "title": "Title",
+    "summary": "What it is",
+    "experience": "Typical experience",
+    "management": "Management equivalent",
+    "source": "Source",
+    "noPay": "A level is not a salary: no pay is shown. A dash means the source does not say."
   }
 }

@@ -875,6 +875,56 @@ test.describe("signed-in smoke coverage", () => {
     expect(seen).toContain("nobody");
   });
 
+  test("job levels show Google's ladder, with unstated fields as a dash and no pay", async ({
+    page,
+  }) => {
+    const level = (
+      number: number,
+      title: string,
+      experience: string | null,
+      management_equivalent: string | null,
+    ) => ({
+      number,
+      code: `L${number}`,
+      title,
+      summary: `${title} summary`,
+      experience,
+      management_equivalent,
+    });
+    const framework = {
+      id: "google-levels",
+      name: "Google technical levels (L3–L11)",
+      organization: "Google",
+      track: "technical",
+      source: "A published summary. Not an official Google publication.",
+      levels: [
+        level(3, "Software Engineer I", "0–1 year", null),
+        level(7, "Senior Staff / Principal Software Engineer", null, "Engineering Manager"),
+        level(8, "Distinguished / Principal Engineer", "15+ years", "Director"),
+      ],
+    };
+    await page.route(
+      (url) => url.pathname === "/api/proxy/job-levels",
+      (route) =>
+        route.fulfill({ json: [{ ...framework, levels: ["L3", "L7", "L8"] }] }),
+    );
+    await page.route(
+      (url) => url.pathname === "/api/proxy/job-levels/google-levels",
+      (route) => route.fulfill({ json: framework }),
+    );
+    await page.goto("/job-levels");
+    await expect(page.getByTestId("levels-source")).toContainText(
+      "Not an official Google publication",
+    );
+    await expect(page.getByTestId("level-L3")).toContainText("0–1 year");
+    // L7 states no experience: a dash, not an invented figure.
+    await expect(page.getByTestId("level-L7")).toContainText("—");
+    await expect(page.getByTestId("level-L7")).toContainText("Engineering Manager");
+    await expect(page.getByTestId("level-L8")).toContainText("Director");
+    await expect(page.getByTestId("levels-table")).not.toContainText("£");
+    await expect(page.getByTestId("levels-table")).not.toContainText("$");
+  });
+
   test("pay scales show the Wales circular and place a salary on a band", async ({
     page,
   }) => {

@@ -12,6 +12,7 @@ mod assessments;
 mod contacts;
 mod ergonomics;
 mod hr;
+mod job_levels;
 mod learning;
 mod movements;
 mod organizations;

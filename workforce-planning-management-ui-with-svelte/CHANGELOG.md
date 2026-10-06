@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — job levels page
+
+`/job-levels`: the L3–L11 table with a dash for anything the source does not state, in
+the 12 `-001` locales (AI-written, unreviewed).
+
 ### Added — pay scales page
 
 `/pay-scales`: the Wales Agenda for Change table, allowances and a salary-placement

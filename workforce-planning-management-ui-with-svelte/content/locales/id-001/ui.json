@@ -32,7 +32,8 @@
     "ceo": "Dasbor CEO",
     "skillGaps": "Kesenjangan keterampilan",
     "movements": "Karyawan masuk dan keluar",
-    "payScales": "Skala gaji"
+    "payScales": "Skala gaji",
+    "jobLevels": "Level jabatan"
   },
   "pr": {
     "retention": "Retensi",
@@ -613,5 +614,14 @@
       "due": "Berhak naik sekarang, ke {amount}.",
       "not_yet": "Belum berhak: {months} bulan lagi, lalu {amount}."
     }
+  },
+  "jobLevels": {
+    "level": "Level",
+    "title": "Jabatan",
+    "summary": "Apa itu",
+    "experience": "Pengalaman umum",
+    "management": "Setara di manajemen",
+    "source": "Sumber",
+    "noPay": "Level bukan gaji: tidak ada gaji yang ditampilkan. Tanda strip berarti sumber tidak menyebutkannya."
   }
 }

@@ -34,6 +34,7 @@
     ["/announcements", "nav.announcements"],
     ["/directory", "nav.directory"],
     ["/pay-scales", "nav.payScales"],
+    ["/job-levels", "nav.jobLevels"],
     ["/org-chart", "nav.orgChart"],
     ["/groups", "nav.groups"],
     ["/requisitions", "nav.requisitions"],

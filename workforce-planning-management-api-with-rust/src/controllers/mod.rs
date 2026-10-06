@@ -25,6 +25,7 @@ pub mod groups;
 pub mod handover;
 pub mod hr_core;
 pub mod intelligence;
+pub mod job_levels;
 pub mod learning;
 pub mod lms;
 pub mod metrics;

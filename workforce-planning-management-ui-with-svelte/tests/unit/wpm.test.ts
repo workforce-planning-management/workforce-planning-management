@@ -261,6 +261,8 @@ describe("api path map", () => {
     });
     await wpm.decideSwap("s1", "accept");
     await wpm.workerSwapRequests("w1");
+    await wpm.listJobLevelFrameworks();
+    await wpm.getJobLevelFramework("google-levels");
     await wpm.listPayScales();
     await wpm.getPayScale("afc-wales-2026-27");
     await wpm.payPosition("afc-wales-2026-27", {
@@ -412,6 +414,8 @@ describe("api path map", () => {
       "/api/proxy/rotas/r1/swap-requests",
       "/api/proxy/rota-swap-requests/s1/accept",
       "/api/proxy/workers/w1/swap-requests",
+      "/api/proxy/job-levels",
+      "/api/proxy/job-levels/google-levels",
       "/api/proxy/pay-scales",
       "/api/proxy/pay-scales/afc-wales-2026-27",
       "/api/proxy/pay-scales/afc-wales-2026-27/position?band=5&salary_minor=3511400",

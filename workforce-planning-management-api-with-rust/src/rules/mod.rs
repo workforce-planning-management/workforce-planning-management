@@ -25,6 +25,7 @@ pub mod framework_roles;
 pub mod gap;
 pub mod groups;
 pub mod insights;
+pub mod job_levels;
 pub mod learning;
 pub mod leave;
 pub mod lifecycle;

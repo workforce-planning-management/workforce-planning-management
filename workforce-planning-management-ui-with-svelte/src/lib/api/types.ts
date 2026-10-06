@@ -56,6 +56,37 @@ export interface OrgNode {
   reports: OrgNode[];
 }
 
+/** One level on a published job-level ladder. */
+export interface JobLevel {
+  number: number;
+  code: string;
+  title: string;
+  summary: string;
+  /** As the source states it; null when it does not say (never a guess). */
+  experience: string | null;
+  management_equivalent: string | null;
+}
+
+/** A job-level ladder (e.g. Google's technical levels). Carries no pay. */
+export interface JobLevelFramework {
+  id: string;
+  name: string;
+  organization: string;
+  track: string;
+  source: string;
+  levels: JobLevel[];
+}
+
+/** A row of the framework list. */
+export interface JobLevelFrameworkSummary {
+  id: string;
+  name: string;
+  organization: string;
+  track: string;
+  source: string;
+  levels: string[];
+}
+
 /** One pay point: annual full-time pay in minor units. */
 export interface PayStep {
   annual_minor: number;
