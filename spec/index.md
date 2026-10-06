@@ -35,6 +35,15 @@ adds **strategic workforce optimization and talent development**:
 5. **Payroll & compensation** — payroll runs, payslips, salary
    benchmarking.
 
+Cross-cutting capabilities added since the five pillars were first
+delivered: **people & cover** (employee directory, emergency contacts,
+backups, the on-call rota), **skills gaps and training time**,
+**joiners and leavers** with a last-day handover, **announcements**, a
+**CEO dashboard** and workforce insights, strategic workforce planning
+(WPM-R34–R38), job-capability frameworks (UK GDAD PCF, ESCO), reporting
+lines and groups, organization memberships and transfers, and
+**16 content locales** served under `/<locale>/` routes.
+
 It is a **consumer application** (the case-folder / patient-flow /
 project-portfolio-management shape): it does not register identities
 itself. A human is a [person-service](../../person/person-service-with-loco/)
@@ -70,6 +79,11 @@ identities by `EntityRef` URN, never duplicating them.
 | [esco/index.md](esco/index.md) | ESCO: the EU occupations, skills, and qualifications classification — what it is, licence, how WPM relates |
 | [uk-gdad-pcf/index.md](uk-gdad-pcf/index.md) | UK Government Digital and Data Profession Capability Framework — shape, licence, mapping to WPM role profiles and CPD |
 | [payroll-compensation.md](payroll-compensation.md) | Pillar 5: payroll runs, payslips, benchmarking                                            |
+| [people-directory-and-cover.md](people-directory-and-cover.md) | Employee directory, emergency contacts, backups (cover), the on-call rota with swaps and reminders (WPM-R39–R42) |
+| [skills-and-training.md](skills-and-training.md)   | Skills gap analysis and training time recommendations (WPM-R43–R44)                       |
+| [joiners-and-leavers.md](joiners-and-leavers.md)   | Joiner / leaver records with dated checklists; a leaver's last-day handover and audit trail (WPM-R45–R46) |
+| [communication-and-leadership.md](communication-and-leadership.md) | Announcement feed, workforce insights, the CEO dashboard (WPM-R47–R49)         |
+| [locales-for-global-sharing-with-svelte/index.md](locales-for-global-sharing-with-svelte/index.md) | Locales end to end; **how WPM applies it** — content locales, `/en-001/` routes, `/en/` aliases, Sveltia CMS (WPM-R50) |
 | [integrations.md](integrations.md)                 | Upstream family services; EntityRef URNs; `employed_by` links                             |
 | [auth.md](auth.md)                                 | SSO, ABAC personas (employee / manager / HR / payroll), masking                           |
 | [audit.md](audit.md)                               | Audit trail, events, sensitive-read logging                                               |
@@ -93,13 +107,25 @@ A change starts in `requirements.md`, is shaped in `design.md`, is
 queued in `tasks.md`, and only then lands as code in a subproject.
 **No code lands without the spec describing it.**
 
-The load-bearing design thread (decisions WPM-D17–D25): **what must
+**Status (2026-10-06):** tasks WPM-T1–T89 delivered (one deliberate
+deferral: employee expense claims — see the last entry of
+[tasks.md](tasks.md)); requirements WPM-R1–R50, design decisions
+WPM-D1–D37. Current verification: 297 unit tests, 54 database-backed request
+tests, the auth enforcement and Keycloak suites, 68 front-end unit tests and
+28 Playwright specs — see [testing.md](testing.md).
+
+The load-bearing design thread (decisions WPM-D17–D25, extended by
+WPM-D29–D36): **what must
 not be stored gets no column** (no health cohort, no symptom, no
 diagnosis, no pulse author), **what must not be disclosed gets no
 endpoint** (no rater-level 360 content, no per-adjustment reporting),
 and **every limit is stated in the payload rather than hidden**
 (derivation strings, named exclusions, `null`-not-zero rates,
-k-floors that withhold their counts).
+k-floors that withhold their counts). Since WPM-T69 the same thread
+runs through the newer surfaces: an undeclared skill is *unknown*, not a
+shortfall (WPM-D32); a cover or on-call day with nobody available says so
+(WPM-D31); a training recommendation states what it rests on (WPM-D33);
+announcement read receipts are counts, never names (WPM-D35).
 
 ## References
 

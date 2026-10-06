@@ -525,3 +525,24 @@ Role profiles and required skills (R34), headcount snapshots (R35),
 workforce plans and demand lines (R36), forecast and gap analysis (R37),
 and strategic alignment (R38) are specified in
 [strategic-workforce-planning.md](strategic-workforce-planning.md).
+
+## WPM-R39–R50 — People, skills, joiners/leavers, communication, localization
+
+Specified in their topic files; each requirement there carries its
+acceptance criteria and traces to the tasks that delivered it:
+
+- **WPM-R39–R42** employee directory, emergency contacts, backups (cover),
+  the on-call rota (rotation, swaps, swap requests, reminders) —
+  [people-directory-and-cover.md](people-directory-and-cover.md)
+  (WPM-T74–T81).
+- **WPM-R43–R44** skills gap analysis, training time recommendations —
+  [skills-and-training.md](skills-and-training.md) (WPM-T87–T88).
+- **WPM-R45–R46** joiner and leaver records with dated checklists, the
+  last-day handover — [joiners-and-leavers.md](joiners-and-leavers.md)
+  (WPM-T89).
+- **WPM-R47–R49** announcement feed, the CEO dashboard, workforce insights —
+  [communication-and-leadership.md](communication-and-leadership.md)
+  (WPM-T69, T82–T86).
+- **WPM-R50** localization and content-as-data (locale routes, aliases,
+  Sveltia CMS) — [locales-for-global-sharing-with-svelte](locales-for-global-sharing-with-svelte/index.md)
+  § "How WPM applies this" (WPM-T70–T72).

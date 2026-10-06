@@ -303,3 +303,22 @@ refuses to store.
 A plan is a draft world, forecasting is transparent rules, and gaps are
 aggregate with suggestions-only levers: see
 [strategic-workforce-planning.md](strategic-workforce-planning.md).
+
+## WPM-D29–D37 — People, skills, joiners/leavers, communication, localization
+
+Recorded beside the requirements they shape:
+
+- **WPM-D29** the directory is deliberately narrow; **WPM-D30** emergency
+  contacts are other people's data; **WPM-D31** cover and on-call say
+  "nobody" rather than guess —
+  [people-directory-and-cover.md](people-directory-and-cover.md).
+- **WPM-D32** unknown is not a number, and aggregates name no one;
+  **WPM-D33** a recommendation states its basis —
+  [skills-and-training.md](skills-and-training.md).
+- **WPM-D34** a handover is a person's act, recorded; access is revoked, not
+  transferred — [joiners-and-leavers.md](joiners-and-leavers.md).
+- **WPM-D35** read receipts count, they do not watch; **WPM-D36** a dashboard
+  is a view of existing derivations, and it fits —
+  [communication-and-leadership.md](communication-and-leadership.md).
+- **WPM-D37** the URL carries the locale; strings are content —
+  [locales-for-global-sharing-with-svelte](locales-for-global-sharing-with-svelte/index.md).

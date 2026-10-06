@@ -9,6 +9,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — WPM-T37–T89 (2026-09-28 → 2026-10-06)
+
+Detailed history: each subproject's `CHANGELOG.md` and
+[spec/tasks.md](spec/tasks.md). Headlines:
+
+- Strategic workforce planning, the metrics layer and insights, role profiles
+  and capability frameworks (UK GDAD PCF, ESCO), career history and aspirations,
+  reporting lines, groups, organization memberships and transfers.
+- The employee directory, emergency contacts, backups (cover), the on-call rota
+  (swaps, swap requests, reminders), announcements, and a one-screen CEO
+  dashboard for an iPad (9th gen).
+- Skills gap analysis, training time recommendations, joiners and leavers with a
+  last-day handover.
+- 17 content locales under `/<locale>/` routes with aliases, strings edited
+  through Sveltia CMS.
+- The Keycloak backend verified against a real Keycloak 26; two defects fixed.
+- Spec: new topic files (`people-directory-and-cover`, `skills-and-training`,
+  `joiners-and-leavers`, `communication-and-leadership`), requirements
+  WPM-R39–R50, design decisions WPM-D29–D37; `llms.txt` and `llms.json`.
+
 ### Changed
 
 - `AI_STATEMENT.md` 1.1.0: authorizes AI to merge a pull request into

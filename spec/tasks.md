@@ -5,6 +5,17 @@ Every task traces to design (WPM-D*) and requirement (WPM-R*) ids.
 Three-part rule applies: a behavioural change lands as spec edit +
 code + tests in one PR.
 
+**Status (2026-10-06):** WPM-T0–T89 are done. The one open item is a
+**deliberate deferral** — *Employee expense claims* (last entry). Verification
+now: 297 service unit tests, 54 database-backed request tests (all passing
+against PostgreSQL 18), the auth enforcement and Keycloak suites (passing, the
+latter against a real Keycloak 26), 68 front-end unit tests and 28 Playwright
+specs; svelte-check 0 errors. Older entries' remarks such as "Rust unbuilt" or
+"DB-gated … not run" **predate** the verification runs recorded in the Phase 10
+note and WPM-T73 and no longer apply. Requirements WPM-R39–R50 and design
+decisions WPM-D29–D37 live in the topic files listed in
+[index.md](index.md).
+
 ## Phase 0 — specification
 
 - [x] WPM-T0 Cross-cutting spec round: topic files + SDD trio, both
@@ -803,10 +814,11 @@ code + tests in one PR.
 > signature-only stubs of the two sibling crates (`entity-ref`,
 > `authentication-verifier`; `EntityRef` parsing stubbed faithfully, the
 > ABAC policy / PASETO verifier **not**). So auth behaviour
-> (`tests/enforcement.rs`) and the Keycloak test (`tests/keycloak.rs`) are
-> still unrun, and the "DB-gated … not run" remarks in individual task
-> entries above predate this run. `cargo clippy` is clean on every new
-> file.
+> (`tests/enforcement.rs`) and the Keycloak test (`tests/keycloak.rs`) were
+> still unrun *at that time* — **both have since been run and pass (WPM-T73,
+> 2026-10-04, against the real sibling crates and a real Keycloak 26)**; the
+> "DB-gated … not run" remarks in individual task entries above predate these
+> runs. `cargo clippy` is clean on every new file.
 
 Design: [strategic-workforce-planning.md](strategic-workforce-planning.md).
 Order matters — each task's inputs come from the one before; pure core
@@ -1580,7 +1592,18 @@ build on 3–5).
       mode) than to a new subsystem — likely a new upstream client
       plus a webhook or polling endpoint for completion events.
 
-- [x] WPM-T69 (2026-10-04) **Workforce insights.** Builds on WPM-T44.
+## Phase 11 — insights, localization, people and cover, skills, joiners and leavers (WPM-R39–R50, WPM-D29–D37)
+
+Delivered 2026-10-04 → 2026-10-06, after the Phase 9 backlog above was
+triaged. Specified in the topic files
+[people-directory-and-cover.md](people-directory-and-cover.md),
+[skills-and-training.md](skills-and-training.md),
+[joiners-and-leavers.md](joiners-and-leavers.md),
+[communication-and-leadership.md](communication-and-leadership.md) and the
+[locales spec](locales-for-global-sharing-with-svelte/index.md). Several entries
+came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
+
+- [x] WPM-T69 (2026-10-04) **Workforce insights.** *(traces to WPM-R49)* Builds on WPM-T44.
       `rules/insights.rs` (pure; 7 tests pass standalone): `derive` turns
       the shared metrics into findings (`turnover_high`,
       `headcount_shrinking`/`growing`, `span_wide`/`narrow`,
@@ -1598,7 +1621,7 @@ build on 3–5).
       all 16 locales (observation/suggestion text is server English);
       svelte-check 0, vitest 55/55, build green.
 
-- [x] WPM-T70 (2026-10-04) **Locale content routes and Sveltia CMS.**
+- [x] WPM-T70 (2026-10-04) **Locale content routes and Sveltia CMS.** *(traces to WPM-R50, WPM-D37)*
       UI strings moved out of `i18n.svelte.ts` into content:
       `workforce-planning-management-ui-with-svelte/content/locales/<locale>/ui.json`
       for `ar-001 bn-001 cy-001 de-001 de-de en-001 en-gb en-us es-001
@@ -1620,7 +1643,7 @@ build on 3–5).
       generated config follows the Sveltia docs but has not been loaded
       in a browser); en-gb/en-us/de-de are full copies, not overrides.
 
-- [x] WPM-T71 (2026-10-04) **Regional locale overrides; es-es; localized insights.**
+- [x] WPM-T71 (2026-10-04) **Regional locale overrides; es-es; localized insights.** *(traces to WPM-R49, WPM-R50)*
       Regional locales now hold only overrides of their `-001` base
       (`en-gb`: the `-ise` spellings; `en-us`, `de-de`, `es-es`: empty);
       `es-es` added (`/es-es/…`). Insights carry `params` (the figures)
@@ -1632,7 +1655,7 @@ build on 3–5).
       adding `params` (a response-field addition). Vitest 62/62,
       Playwright 19/19.
 
-- [x] WPM-T72 (2026-10-04) **Localized `/admin/`.** The Sveltia CMS shell is
+- [x] WPM-T72 (2026-10-04) **Localized `/admin/`.** *(traces to WPM-R50)* The Sveltia CMS shell is
       now a per-locale route (`src/routes/admin/+server.ts`):
       `/en-001/admin/`, `/cy-001/admin/`, `/en/admin/` (alias redirect);
       an unprefixed `/admin/` redirects like any page. It sets `<html
@@ -1644,7 +1667,7 @@ build on 3–5).
       `static/admin/index.html`. Vitest 63/63, Playwright 20/20 (CMS
       script stubbed); the CMS itself still unexercised.
 
-- [x] WPM-T73 (2026-10-04) **Auth suites run; two Keycloak-backend bugs fixed.**
+- [x] WPM-T73 (2026-10-04) **Auth suites run; two Keycloak-backend bugs fixed.** *(traces to WPM-R15)*
       Against the real sibling crates (`~/git/sixarm/main-x-service`) and a
       real Postgres: `tests/enforcement.rs` passes (1/1), and
       `tests/keycloak.rs` (real Keycloak 26 via Testcontainers on Podman)
@@ -1657,7 +1680,7 @@ build on 3–5).
       clean on `auth.rs` and `auth/keycloak.rs` in both backends (older
       warnings cleared in a follow-up).
 
-- [x] WPM-T74 (2026-10-05) **Employee directory.** From the SOTA scan
+- [x] WPM-T74 (2026-10-05) **Employee directory.** *(traces to WPM-R39, WPM-D29)* From the SOTA scan
       (orangehrm `orangehrmCorporateDirectoryPlugin`). Pure
       `rules/directory.rs` (5 tests): `search` — every whitespace term must
       match name, title, department, location or manager name,
@@ -1675,7 +1698,7 @@ build on 3–5).
       Playwright 21/21, build green. The announcement feed half of the
       comparator's capability is not done (`.sota` scores it partial).
 
-- [x] WPM-T75 (2026-10-05) **Emergency contacts and backups.** Each person
+- [x] WPM-T75 (2026-10-05) **Emergency contacts and backups.** *(traces to WPM-R40, WPM-R41, WPM-D30, WPM-D31)* Each person
       provides both about themselves (HR can on their behalf, recorded as
       such). Migration `m20261005_000040_emergency_contacts_and_backups`.
       - **Emergency contacts** (`rules/emergency.rs`, 4 tests): name,
@@ -1705,7 +1728,7 @@ build on 3–5).
       svelte-check 0, vitest 63/63, Playwright 22/22, build green. The
       directory's "covered by" for someone on leave landed as WPM-T76.
 
-- [x] WPM-T76 (2026-10-05) **Directory shows who covers for someone on leave.**
+- [x] WPM-T76 (2026-10-05) **Directory shows who covers for someone on leave.** *(traces to WPM-R39, WPM-R41, WPM-D31)*
       Builds on WPM-T74/T75. A worker on **approved leave today** is listed as
       `away_today` — never the kind of leave or any reason, which can be health
       data — with `covered_by`: their best-ranked backup who is employed and
@@ -1717,7 +1740,7 @@ build on 3–5).
       directory test now covers away, covered, and not-away), clippy clean,
       svelte-check 0, vitest 63/63, Playwright 22/22, build green.
 
-- [x] WPM-T77 (2026-10-05) **On-call rota.** Migration
+- [x] WPM-T77 (2026-10-05) **On-call rota.** *(traces to WPM-R42, WPM-D31)* Migration
       `m20261005_000041_oncall_rotas` (`rotas`, `rota_members`,
       `rota_overrides`). Not the shift day-view (`GET /api/shifts`, WPM-R6): a
       *rotation* — a named rota in one organization where, every
@@ -1752,7 +1775,7 @@ build on 3–5).
       pay or time-off-in-lieu, notifying the person coming on call, and showing
       "on call" in the directory.
 
-- [x] WPM-T78 (2026-10-05) **Directory shows who is on call.** Builds on
+- [x] WPM-T78 (2026-10-05) **Directory shows who is on call.** *(traces to WPM-R39, WPM-R42)* Builds on
       WPM-T74/T77. Each directory entry carries `on_call`: the names of the
       on-call rotas the worker is on call for **today**
       (`rotas::on_call_today` — the rotas in the caller's organizations, one
@@ -1764,7 +1787,7 @@ build on 3–5).
       clippy clean, lib 269, svelte-check 0, vitest 63/63, Playwright 23/23,
       build green.
 
-- [x] WPM-T79 (2026-10-05) **Rota notifications.** Builds on WPM-T77. Two new
+- [x] WPM-T79 (2026-10-05) **Rota notifications.** *(traces to WPM-R42, WPM-D23)* Builds on WPM-T77. Two new
       in-app notification kinds (reference-only, WPM-D23 — the rota's name and
       dates, nothing about anyone's availability or leave): `rota_added` to
       each person *newly named* in a rota's membership (on creation, and when
@@ -1777,7 +1800,7 @@ build on 3–5).
       270. The *reminder* landed as WPM-T80; the inbox shows these with the
       existing generic body.
 
-- [x] WPM-T80 (2026-10-05) **On-call reminders.** Builds on WPM-T77/T79. Loco
+- [x] WPM-T80 (2026-10-05) **On-call reminders.** *(traces to WPM-R42)* Builds on WPM-T77/T79. Loco
       task `rota_reminders [days_ahead:0–14, default 1] [as_of:YYYY-MM-DD]`
       (`tasks/rota_reminders.rs`): tells each person whose on-call turn
       **starts** that day — on call then, and *not* the day before (a new
@@ -1791,7 +1814,7 @@ build on 3–5).
       none to the other, none on re-run, none mid-turn), lib 272, clippy clean
       on the new files.
 
-- [x] WPM-T81 (2026-10-05) **Rota swap requests.** Builds on WPM-T77/T79.
+- [x] WPM-T81 (2026-10-05) **Rota swap requests.** *(traces to WPM-R42)* Builds on WPM-T77/T79.
       Migration `m20261005_000042_rota_swap_requests`. A person on call asks a
       colleague to take their on-call days in a window; the colleague accepts
       or declines, the requester can cancel while it is open (decided once —
@@ -1815,7 +1838,7 @@ build on 3–5).
       cancel move nothing), clippy clean, lib 275, svelte-check 0, vitest
       63/63, Playwright 23/23, build green.
 
-- [x] WPM-T82 (2026-10-05) **Announcement feed.** From the SOTA scan (orangehrm
+- [x] WPM-T82 (2026-10-05) **Announcement feed.** *(traces to WPM-R47)* From the SOTA scan (orangehrm
       Buzz). Migration `m20261005_000043_announcements`; pure
       `rules/announcements.rs` (3 tests): validation (title ≤ 200, body ≤ 5000,
       expiry not before publish), `status` (scheduled / live / expired — live
@@ -1838,7 +1861,7 @@ build on 3–5).
       (read receipts, department audiences, link attachments) landed as WPM-T86.
       **Not done:** comments or reactions, rich text, file uploads.
 
-- [x] WPM-T83 (2026-10-05) **CEO dashboard.** `/ceo`: the whole picture on
+- [x] WPM-T83 (2026-10-05) **CEO dashboard.** *(traces to WPM-R48, WPM-D36)* `/ceo`: the whole picture on
       **one screen with no scrolling**, sized for an **iPad (9th gen), 2160 ×
       1620 device pixels = 1080 × 810 CSS pixels at 2×** (the first brief said
       iPad Pro 13", 2752 × 2064; corrected to the 9th gen). Everything is in
@@ -1867,7 +1890,7 @@ build on 3–5).
       are used unchanged); drill-down from a tile; a time-range control; the
       app's own top bar is not shrunk on this screen.
 
-- [x] WPM-T84 (2026-10-05) **CEO dashboard: ten tiles → six.** By request. Kept:
+- [x] WPM-T84 (2026-10-05) **CEO dashboard: ten tiles → six.** *(traces to WPM-R48)* By request. Kept:
       headcount (with change vs a year ago), turnover, open vacancies (+ median
       time-to-fill), succession gaps, the six-month headcount line, and the top
       insights (now up to four). **Dropped** from the screen: skills coverage,
@@ -1884,7 +1907,7 @@ build on 3–5).
       tile inside the screen, no tile clipping) pass with 5 long insights as
       worst case. svelte-check 0, vitest 67/67, Playwright 26/26, build green.
 
-- [x] WPM-T85 (2026-10-05) **CEO dashboard follow-ups.** Builds on WPM-T83/T84.
+- [x] WPM-T85 (2026-10-05) **CEO dashboard follow-ups.** *(traces to WPM-R48, WPM-D36)* Builds on WPM-T83/T84.
       - **Drill-down:** every tile is a link to the page behind it (headcount,
         turnover, the trend and the insights → `/metrics`; vacancies →
         `/requisitions`; succession gaps → `/development`), locale-prefixed,
@@ -1913,7 +1936,7 @@ build on 3–5).
       URL and reloads metrics with `from` = 89 days back. svelte-check 0,
       vitest 68/68, Playwright 26/26, build green.
 
-- [x] WPM-T86 (2026-10-05) **Announcement extras.** Builds on WPM-T82. Migration
+- [x] WPM-T86 (2026-10-05) **Announcement extras.** *(traces to WPM-R47, WPM-D35)* Builds on WPM-T82. Migration
       `m20261005_000044_announcement_extras` (`announcements.department`,
       `announcements.links`, `announcement_reads`).
       - **Department audience:** a post can be aimed at one department; only
@@ -1945,7 +1968,7 @@ build on 3–5).
         for the count ("N of M"), per-person reminders for unread posts,
         comments or reactions, rich text, file uploads.
 
-- [x] WPM-T87 (2026-10-06) **Skills gap analysis.** Builds on WPM-T20/T41/T51.
+- [x] WPM-T87 (2026-10-06) **Skills gap analysis.** *(traces to WPM-R43, WPM-D32)* Builds on WPM-T20/T41/T51.
       Pure `rules/skill_gap.rs` (5 tests). A *need* has a level, an importance
       (`critical` 3 · `important` 2 · `useful` 1) and a source: **role** (the
       worker's current UK GDAD PCF role profile's requirements), **target**
@@ -1973,7 +1996,7 @@ build on 3–5).
         (promotion readiness); trends over time. Training time recommendations
         followed as WPM-T88.
 
-- [x] WPM-T88 (2026-10-06) **Training time recommendations.** Builds on WPM-T87.
+- [x] WPM-T88 (2026-10-06) **Training time recommendations.** *(traces to WPM-R44, WPM-D33)* Builds on WPM-T87.
       Migration `m20261006_000045_training_time` (`skills.hours_per_level`,
       `skill_courses`); pure `rules/training.rs` (7 tests).
       - **What it recommends:** for each skill a person is **below**, in
@@ -2009,7 +2032,7 @@ build on 3–5).
         to the upstream course catalogue, booking a place, and the
         joiner/leaver work that followed (WPM-T89).
 
-- [x] WPM-T89 (2026-10-06) **People joining and leaving the organisation.**
+- [x] WPM-T89 (2026-10-06) **People joining and leaving the organisation.** *(traces to WPM-R45, WPM-R46, WPM-D34)*
       Migration `m20261006_000046_movements` (`movements`, `movement_items`,
       `handover_actions`); pure `rules/movements.rs` (5 tests).
       - **Records:** `POST /api/workers/{pid}/movements` opens a *joiner* (start

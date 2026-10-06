@@ -36,6 +36,25 @@ Later rounds added audit actions such as `acknowledged` (wellbeing),
 kinds (`appraisal_request` / `appraisal_shared` /
 `adjustment_update` — reference-only, WPM-D23).
 
+## Actions added since WPM-T36
+
+Each is recorded against the worker (or rota, announcement, movement) with the
+actor, and — where a detail would itself be sensitive — **without it**:
+
+- `emergency_contact_added|updated|removed` (never the contact's details),
+  `backup_added|updated|removed`;
+- `created|updated|retired` and `swap_added|swap_removed|swap_requested|
+  swap_accepted|swap_declined|swap_cancelled` on a rota;
+- `posted|edited|retired` on an announcement;
+- `joiner_opened|leaver_opened|…_completed|…_cancelled`,
+  `movement_item_added|done|skipped|reopened|assigned`, and per handover action
+  `handover_reassigned|handover_closed|handover_revoked` (kind, thing and new
+  holder in the snapshot) — duplicated in the `handover_actions` table, which
+  **survives erasure** (notes scrubbed, rows kept).
+
+Skill-gap and training-plan reads are derived views and are not audited
+individually; they expose no record the underlying reads do not.
+
 ## Integrity
 
 State transitions + audit + outbox share one transaction; approval

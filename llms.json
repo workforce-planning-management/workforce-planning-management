@@ -1,0 +1,136 @@
+{
+  "name": "Workforce Planning Management",
+  "slug": "workforce-planning-management",
+  "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Loco) and SvelteKit, in 17 locales. Demo software; synthetic data only.",
+  "status": {
+    "tasks_delivered": "WPM-T1–T89",
+    "deferred": [
+      "employee expense claims"
+    ],
+    "as_of": "2026-10-06"
+  },
+  "stack": {
+    "api": "Rust, Loco (Axum + SeaORM), PostgreSQL 18",
+    "ui": "SvelteKit 2, Svelte 5 runes, TypeScript",
+    "tests": {
+      "service_unit": 297,
+      "service_request": 54,
+      "ui_unit": 68,
+      "ui_e2e": 28
+    }
+  },
+  "sections": {
+    "specification": [
+      {
+        "title": "spec/index.md",
+        "path": "spec/index.md",
+        "description": "overview, topic map, status"
+      },
+      {
+        "title": "spec/tasks.md",
+        "path": "spec/tasks.md",
+        "description": "the live delivery checklist (WPM-T1–T89); each entry records what was verified and what was not"
+      },
+      {
+        "title": "spec/requirements.md",
+        "path": "spec/requirements.md",
+        "description": "requirements WPM-R1–R38 (R39–R50 are in the topic files below)"
+      },
+      {
+        "title": "spec/design.md",
+        "path": "spec/design.md",
+        "description": "design decisions WPM-D1–D28 (D29–D37 are in the topic files below)"
+      },
+      {
+        "title": "spec/domain-model.md",
+        "path": "spec/domain-model.md",
+        "description": "entities"
+      },
+      {
+        "title": "spec/auth.md",
+        "path": "spec/auth.md",
+        "description": "personas, ABAC, masking, the sensitivity map, the activation runbook"
+      },
+      {
+        "title": "spec/audit.md",
+        "path": "spec/audit.md",
+        "description": ""
+      },
+      {
+        "title": "spec/people-directory-and-cover.md",
+        "path": "spec/people-directory-and-cover.md",
+        "description": "directory, emergency contacts, backups, the on-call rota (WPM-R39–R42)"
+      },
+      {
+        "title": "spec/skills-and-training.md",
+        "path": "spec/skills-and-training.md",
+        "description": "skills gap analysis, training time (WPM-R43–R44)"
+      },
+      {
+        "title": "spec/joiners-and-leavers.md",
+        "path": "spec/joiners-and-leavers.md",
+        "description": "dated checklists, last-day handover (WPM-R45–R46)"
+      },
+      {
+        "title": "spec/communication-and-leadership.md",
+        "path": "spec/communication-and-leadership.md",
+        "description": "announcements, the CEO dashboard, insights (WPM-R47–R49)"
+      },
+      {
+        "title": "spec/locales-for-global-sharing-with-svelte/index.md",
+        "path": "spec/locales-for-global-sharing-with-svelte/index.md",
+        "description": "locales; \"How WPM applies this\" (WPM-R50)"
+      },
+      {
+        "title": "spec/strategic-workforce-planning.md",
+        "path": "spec/strategic-workforce-planning.md",
+        "description": "plans, forecast, gap analysis (WPM-R34–R38)"
+      }
+    ],
+    "code": [
+      {
+        "title": "workforce-planning-management-api-with-rust/",
+        "path": "workforce-planning-management-api-with-rust/index.md",
+        "description": "the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 46 migrations"
+      },
+      {
+        "title": "workforce-planning-management-ui-with-svelte/",
+        "path": "workforce-planning-management-ui-with-svelte/index.md",
+        "description": "the browser client; strings in `content/locales/<locale>/ui.json`"
+      }
+    ],
+    "operate": [
+      {
+        "title": "INSTALL.md",
+        "path": "INSTALL.md",
+        "description": "build, run, test, schedule `snapshot_headcount` and `rota_reminders` daily, edit translations"
+      },
+      {
+        "title": "README.md",
+        "path": "README.md",
+        "description": ""
+      },
+      {
+        "title": "SECURITY.md",
+        "path": "SECURITY.md",
+        "description": ""
+      }
+    ]
+  },
+  "conventions": [
+    "Pure, DB-free, clock-free rules first; controllers only wire them.",
+    "An unknown is never a zero; roll-ups return counts and name no one; a view that cannot answer says so.",
+    "What must not be stored gets no column; what must not be disclosed gets no endpoint.",
+    "A new table holding personal data joins the subject-access export, the erasure statements and (if soft-deleting) the retention sweep list.",
+    "Internal links in the UI use `l(\"/path\")` so the locale prefix is kept; every new UI string goes in every `-001` locale and `pnpm cms-config` is rerun.",
+    "Podman, not Docker; PostgreSQL, not SQLite."
+  ],
+  "optional": [
+    {
+      "title": "monorepo-github-pages spec",
+      "path": "spec/monorepo-github-pages/index.md",
+      "description": "Spec for a GitHub Pages sibling site (not yet created)"
+    }
+  ],
+  "see_also": "llms.txt"
+}

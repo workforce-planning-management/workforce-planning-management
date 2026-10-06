@@ -263,3 +263,63 @@ retention); the **retention sweep** hard-deletes soft-deleted rows
 past the floored horizon (`WPM_RETENTION_DAYS`, default 365, floor
 30) across the pinned 41-table list and scrubs expired-consent
 candidates.
+
+## Entities added since WPM-T36
+
+Every table below is plural, carries a public UUID `pid` (join tables use a
+composite natural key) and references identities by `EntityRef` URN or worker
+pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
+
+**Organizations and reporting lines**
+
+- **OrganizationMembership** (`organization_memberships`, migration 2026-09-28) — a
+  person's role (`member | hr_admin | payroll_admin | org_admin | viewer`) in an
+  organization, dated; the basis of "organizations the caller can read".
+  **OrganizationConfederation** — a parent/child edge: a membership in a parent
+  reads as membership in every descendant.
+- **Worker.location**, **Worker.manager_pid** (solid line), **DottedLineReport**
+  (`dotted_line_reports`) — a secondary, dated reporting line (WPM-T65/T66).
+- **Group**, **GroupMember** — communities of practice / interest, per
+  organization or confederation-wide, with `member | lead` and dated
+  membership (WPM-T66–T68). A transfer ends memberships that no longer fit.
+
+**Skills, roles and development**
+
+- **RoleProfile** + **RoleSkillRequirement** — a role and the skills it needs
+  (`min_proficiency` 1–5, `critical | important | useful`); **CapabilityFramework**
+  imports (UK GDAD PCF, ESCO: **EscoOccupation**, **EscoSkill**,
+  **EscoOccupationSkill**); **SkillExternalRef**; **WorkerFrameworkRole** — a
+  worker's current and past roles per framework (WPM-T57–T64).
+- **WorkerSkillHistory**, **WorkerAspiration** (visibility `private | manager |
+  everyone`) — skills and aspirations over time (WPM-T64/T65).
+- **CpdRequirement**, **CpdEntry**, **ProfessionalRegistration**,
+  **MobilityInterest**, **ChangeInitiative** (+ role impacts, skill shifts) —
+  WPM-T52–T55.
+- **SkillCourse** (`skill_courses`) and `skills.hours_per_level` — the training
+  catalogue behind WPM-R44.
+
+**Planning and metrics**
+
+- **WorkforcePlan**, **PlanDemandLine**, **PlanObjective**,
+  **DemandLineObjective** — draft worlds, demand and strategy (WPM-T47–T49,
+  [strategic-workforce-planning.md](strategic-workforce-planning.md));
+  **HeadcountSnapshot** — append-only aggregate headcount (WPM-T45);
+  `requisitions.filled_on` for time-to-fill (WPM-T44).
+
+**People and cover** ([people-directory-and-cover.md](people-directory-and-cover.md))
+
+- **EmergencyContact** (`emergency_contacts`) — ranked, ≤ 5 per person, soft-deleted.
+- **WorkerBackup** (`worker_backups`) — ranked cover, ≤ 3, optional dated window.
+- **Rota**, **RotaMember**, **RotaOverride**, **RotaSwapRequest** — the on-call
+  rotation, its order, swaps, and requests to swap.
+
+**Communication** ([communication-and-leadership.md](communication-and-leadership.md))
+
+- **Announcement** (`announcements`: title, plain-text body, pinned, publish and
+  expiry day, optional `department`, ≤ 3 https `links`) and **AnnouncementRead**.
+
+**Joiners and leavers** ([joiners-and-leavers.md](joiners-and-leavers.md))
+
+- **Movement** (`movements`: kind, effective day, reason, status) →
+  **MovementItem** (dated checklist item: assignee, done/skipped) and
+  **HandoverAction** (the audit trail of a leaver's handover).

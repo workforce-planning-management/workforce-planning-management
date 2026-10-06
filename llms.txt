@@ -1,0 +1,53 @@
+# Workforce Planning Management (WPM)
+
+> An open-source, spec-driven, all-in-one HR platform demo: hiring to retirement,
+> in Rust (Loco, Axum, SeaORM, PostgreSQL) and SvelteKit 2 (Svelte 5 runes), in 17
+> locales. **Demo software — not a production HR or payroll system; synthetic
+> data only.** WPM owns the employment relationship and references identities
+> (person, worker, organization, course services) by EntityRef URN.
+
+Start with the specification: it is the single source of truth, and no code
+lands without it. A change is a requirement (WPM-R*), a design decision
+(WPM-D*), a task (WPM-T*), code and tests.
+
+## Specification
+
+- [spec/index.md](spec/index.md): overview, topic map, status
+- [spec/tasks.md](spec/tasks.md): the live delivery checklist (WPM-T1–T89); each entry records what was verified and what was not
+- [spec/requirements.md](spec/requirements.md): requirements WPM-R1–R38 (R39–R50 are in the topic files below)
+- [spec/design.md](spec/design.md): design decisions WPM-D1–D28 (D29–D37 are in the topic files below)
+- [spec/domain-model.md](spec/domain-model.md): entities
+- [spec/auth.md](spec/auth.md): personas, ABAC, masking, the sensitivity map, the activation runbook
+- [spec/audit.md](spec/audit.md), [spec/testing.md](spec/testing.md), [spec/regulatory.md](spec/regulatory.md), [spec/roadmap.md](spec/roadmap.md), [spec/glossary.md](spec/glossary.md)
+- [spec/people-directory-and-cover.md](spec/people-directory-and-cover.md): directory, emergency contacts, backups, the on-call rota (WPM-R39–R42)
+- [spec/skills-and-training.md](spec/skills-and-training.md): skills gap analysis, training time (WPM-R43–R44)
+- [spec/joiners-and-leavers.md](spec/joiners-and-leavers.md): dated checklists, last-day handover (WPM-R45–R46)
+- [spec/communication-and-leadership.md](spec/communication-and-leadership.md): announcements, the CEO dashboard, insights (WPM-R47–R49)
+- [spec/locales-for-global-sharing-with-svelte/index.md](spec/locales-for-global-sharing-with-svelte/index.md): locales; "How WPM applies this" (WPM-R50)
+- [spec/strategic-workforce-planning.md](spec/strategic-workforce-planning.md): plans, forecast, gap analysis (WPM-R34–R38)
+
+## Code
+
+- [workforce-planning-management-api-with-rust/](workforce-planning-management-api-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 46 migrations
+- [workforce-planning-management-ui-with-svelte/](workforce-planning-management-ui-with-svelte/index.md): the browser client; strings in `content/locales/<locale>/ui.json`
+- Working agreements for contributors and agents: [API AGENTS.md](workforce-planning-management-api-with-rust/AGENTS.md), [UI AGENTS.md](workforce-planning-management-ui-with-svelte/AGENTS.md)
+
+## Operate
+
+- [INSTALL.md](INSTALL.md): build, run, test, schedule `snapshot_headcount` and `rota_reminders` daily, edit translations
+- [README.md](README.md), [NEWS.md](NEWS.md), [CHANGELOG.md](CHANGELOG.md), [COMPARISONS.md](COMPARISONS.md), [BENCHMARKS.md](BENCHMARKS.md)
+- [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), [AI_STATEMENT.md](AI_STATEMENT.md), [GOVERNANCE.md](GOVERNANCE.md)
+
+## Conventions an agent must keep
+
+- Pure, DB-free, clock-free rules first; controllers only wire them.
+- An unknown is never a zero; roll-ups return counts and name no one; a view that cannot answer says so.
+- What must not be stored gets no column; what must not be disclosed gets no endpoint.
+- A new table holding personal data joins the subject-access export, the erasure statements and (if soft-deleting) the retention sweep list.
+- Internal links in the UI use `l("/path")` so the locale prefix is kept; every new UI string goes in every `-001` locale and `pnpm cms-config` is rerun.
+- Podman, not Docker; PostgreSQL, not SQLite.
+
+## Optional
+
+- [spec/monorepo-github-pages/index.md](spec/monorepo-github-pages/index.md): the spec for a GitHub Pages sibling site (not yet created)
+- [spec/uk-gdad-pcf/index.md](spec/uk-gdad-pcf/index.md), [spec/esco/index.md](spec/esco/index.md): the capability frameworks WPM imports

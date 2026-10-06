@@ -8,16 +8,19 @@ rotas with working-time and ergonomic-issue panels, the employee
 record and org chart, wellbeing prompts and the anonymous pulse,
 reviews and 360° appraisals, notifications, reasonable adjustments,
 training and learning, succession, payroll runs, salary
-benchmarking, and the privacy/retention admin area.
+benchmarking, and the privacy/retention admin area — and, since the original
+delivery, workforce metrics and insights, an employee directory, an on-call
+rota, announcements, skill gaps with a training plan, joiners and leavers, and a
+**one-screen CEO dashboard** sized for an iPad.
 
 > ⚠️ **Demo software.** Not a production HR system; synthetic data
 > only. See [spec/regulatory](../spec/regulatory.md).
 
-**Status: implemented (WPM-T18–T36, 2026-07-18 → 2026-07-25).**
-svelte-check clean; 10 vitest + 9 Playwright specs pass
-(`page.route`-stubbed — runs without the Rust service). Quick
-start: `pnpm install && pnpm dev` (expects the Loco sibling on
-:5150; `pnpm test` / `pnpm exec playwright test`).
+**Status: implemented through WPM-T89 (2026-07-18 → 2026-10-06).**
+svelte-check clean (0 errors, 0 warnings); **68 vitest + 28 Playwright specs**
+pass (`page.route`-stubbed — runs without the Rust service); the production
+build is green. Quick start: `pnpm install && pnpm dev` (expects the Loco
+sibling on :5150; `pnpm test` / `pnpm exec playwright test`).
 
 ## Environment variables
 
@@ -38,8 +41,27 @@ auth service and this service side by side.
 
 SvelteKit 2 · Svelte 5 runes · TypeScript strict · SPA mode with a
 same-origin BFF proxy (session cookie → short-lived PASETO; no token
-in browser JS) · 13-locale i18n · Lily Design System (headless + ThemePicker + LocalePicker) · vitest + Playwright
-(`page.route`-stubbed).
+in browser JS) · **17 content locales under `/<locale>/` routes** (e.g.
+`/en-001/workers`, `/cy-001/workers`; `/en/…` redirects to `/en-001/…`) with
+strings as content in `content/locales/<locale>/ui.json` edited through
+**Sveltia CMS** at `/<locale>/admin/` · Lily Design System (headless +
+ThemePicker + LocalePicker) · inline-SVG charts following the data-viz method ·
+vitest + Playwright (`page.route`-stubbed).
+
+### Localization in practice
+
+```sh
+pnpm dev                         # then open /en-001/ , /cy-001/ , /de-001/ …
+pnpm cms-config                  # regenerate static/admin/config.yml from en-001
+pnpm cms-config:check            # fails if it is stale (a unit test does too)
+```
+
+A new UI string goes in `content/locales/en-001/ui.json` **and** every other
+`-001` locale (the parity test fails otherwise); regional locales (`en-gb`,
+`en-us`, `de-de`, `es-es`) hold only overrides. Use `t("key")` for text,
+`tp("key", { n })` for server-derived text with `{n}` placeholders, and
+`l("/path")` for every internal link so the locale prefix is kept. See the
+[locales spec](../spec/locales-for-global-sharing-with-svelte/index.md).
 
 ## Views
 
@@ -51,6 +73,10 @@ in browser JS) · 13-locale i18n · Lily Design System (headless + ThemePicker +
 | Wellbeing          | `/wellbeing`: entitlement rules + aggregate uptake & conversion + pulse results; `/privacy`: retention report + sweep |
 | Development        | review panel, `/learning` (skills matrix, analytics, paths), `/mentorship`, succession + gap report |
 | Payroll            | run screen (draft → calculated → approved), payslips, benchmarking table    |
+| People and cover   | `/directory` (search; away / covered by / on call), `/rota` (on-call rotation, swaps, swap requests), `/announcements` (feed, editors' post form), emergency contacts + backups + my on-call on the profile |
+| Skills and training | `/skill-gaps` (workforce gaps, training time, catalogue editor), "My skill gaps" + training plan on the profile, `/skills`, `/roles`, `/planning`, `/groups`, `/cpd` |
+| Joiners and leavers | `/movements` (open records with progress), `/movements/{pid}` (dated checklist, last-day handover, audit trail) |
+| Leadership         | `/ceo` (six tiles, one screen, no scrolling — 2160 × 1620 px, an iPad 9th gen), `/metrics` (shared metrics + insights, period picker) |
 | Self-service (profile) | my record + payslips + leave + reviews, wellbeing prompts, pulse card, notifications, my 360 requests, 360 panel, ergonomics checklist, reasonable adjustments, "Download my data", erase (terminated only) |
 
 The employee **profile page is the self-service hub** — most

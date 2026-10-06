@@ -37,6 +37,12 @@ applied to HR.
 | leave kinds (esp. sick/parental) | high — self + manager + HR |
 | employment facts (title, department, dates) | medium |
 | requisitions, shift plans | low |
+| emergency contacts (third-party personal data) | high — the person + HR only; a manager cannot read them |
+| skill aspirations | private unless shared (`manager` / `everyone`); never in workforce roll-ups |
+| directory, backups, on-call, announcements (live) | low — anyone who can read the organization; the directory shows *away*, never why |
+| scheduled / expired announcements; posting, editing | `hr_admin` / `org_admin` of that organization (when auth is on) |
+| announcement read receipts | the reader's own; editors see a count only |
+| joiner / leaver records, handover | HR and whoever may write the worker's record; scoped to organizations the caller can read |
 
 Every read of a highest/high-tier record is **audited** (see
 [audit.md](audit.md)).

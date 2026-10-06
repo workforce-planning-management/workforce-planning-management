@@ -14,6 +14,17 @@
 | **FTE**             | Full-Time Equivalent; `fte_percent` scales contracted hours and pay pro-rating                   |
 | **Group floor**     | 360 disclosure rule: peer/report cells need ≥ 3 responses; manager/self disclose at 1            |
 | **k-anonymity floor** | Pulse disclosure rule: any cell under k = 5 responses is suppressed, count withheld            |
+| **Backup (cover)**  | A colleague a person names to cover when they are out; ranked, optionally dated (WPM-R41)         |
+| **CEO dashboard**   | `/ceo`: six tiles on one screen, sized for an iPad (9th gen); no new numbers (WPM-R48)             |
+| **Directory**       | The searchable, deliberately narrow list of who works where (WPM-R39)                            |
+| <a id="employed"></a>**Employed (on a date)** | Hired on or before it and not terminated on or before it; `rules::metrics::is_employed_on` — the one definition every headcount uses |
+| **Handover**        | What a leaver still holds on their last day, reassigned or closed with an audit trail (WPM-R46)   |
+| <a id="metrics"></a>**Metrics layer** | The shared, named workforce counts and rates (headcount, starters, leavers, turnover, span of control, time-to-fill) — WPM-T44 |
+| **Movement**        | A joiner or leaver record with a dated checklist (WPM-R45)                                       |
+| **On-call rota**    | A rotation of workers where the duty passes every N days; swaps and leave-aware skipping (WPM-R42) |
+| **Priority (skill gap)** | Importance weight (critical 3, important 2, useful 1) × levels short (WPM-R43)              |
+| **Read receipt**    | That a person read an announcement; the reader sees theirs, editors see a count (WPM-D35)         |
+| **Unknown (skill)** | An undeclared skill: no shortfall, no priority — assess, do not train (WPM-D32)                   |
 | **WPM**             | Workforce Planning Management — strategic workforce optimization on top of core HR               |
 | **LMS**             | Learning Management System; here, enrollments over the family course registry                    |
 | **Minor units**     | Money as integer cents/pence + ISO-4217 code (family posture)                                    |

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — WPM-T41–T89 (2026-10-02 → 2026-10-06)
+
+A summary; the authoritative per-task record, with what was verified and what
+was not, is [../spec/tasks.md](../spec/tasks.md).
+
+- **Strategic planning and frameworks:** capability analysis, the shared
+  metrics layer, headcount snapshots (`snapshot_headcount` task), workforce
+  plans and forecast, role profiles, the UK GDAD PCF and ESCO imports, CPD,
+  mobility, change initiatives, career history, aspirations, reporting lines,
+  groups, organization memberships, confederations and transfers.
+- **People and cover:** `GET /api/directory`; emergency contacts and backups
+  (`/api/workers/{pid}/emergency-contacts|backups|cover`); the on-call rota
+  (`/api/rotas`, overrides, swap requests, notifications, the `rota_reminders`
+  task); announcements with department audiences, https links and read counts.
+- **Skills and training:** `/api/workers/{pid}/skill-gaps`,
+  `/api/workforce-intelligence/{skill-gaps,training-demand,insights}`,
+  `/api/workers/{pid}/training-plan`, and the skill course catalogue.
+- **Joiners and leavers:** `/api/movements` with dated checklists and the
+  last-day handover (`…/handover`, `…/handover/all`, `…/handover/actions`).
+- **Migrations 18–46** (explicit SQL); the retention sweep list now covers 55
+  tables; subject access and erasure cover every new person-keyed table.
+- **Auth:** the `keycloak` backend now compiles and verifies tokens (an
+  `attrs_from_keycloak_claims` borrow error and an `InvalidAlgorithm` on every
+  token were fixed, WPM-T73); the enforcement and Keycloak suites run and pass.
+- **Tests:** 297 unit tests and 54 database-backed request tests.
+
 ### Added — list pagination headers (WPM-T40)
 
 No controller emitted `X-Total-Count`/`X-Limit`/`X-Offset`, and the two

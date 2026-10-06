@@ -45,11 +45,13 @@ tracing + OTLP, Podman.
 ## Edition-specific implementation notes (as landed)
 
 - **Layout**: `src/{app,auth,clients,compat,metrics,openapi,
-streaming,validation,version}.rs`, `src/rules/` (pure core, one
-  module per subsystem), `src/models/` (+`_entities/`, the
-  notifications `push` helper), 18 controllers
-  (`src/controllers/`), `src/tasks/seed.rs`, crate-root
-  `migration/` (17 migration sets, explicit SQL);
+streaming,validation,version}.rs` (+ `auth/{paseto,keycloak}.rs`, the two
+  verification backends, exactly one per build), `src/rules/` (pure core, ~46
+  modules — one per subsystem), `src/models/` (+`_entities/`, ~90 entities, the
+  notifications `push` helper), ~40 controllers (`src/controllers/`),
+  `src/tasks/` (`seed`, `snapshot_headcount`, `rota_reminders`,
+  `import_framework`, `import_esco`), crate-root `migration/` (**46** migration
+  sets, explicit SQL, named `m<date>_<seq>_<name>`);
   `config/abac-policy.reference.json` is the shipped persona policy
   the enforcement matrix mounts (WPM-G1).
 - **Masking**: `mask_worker` clears `salary_minor`+currency;
@@ -70,11 +72,33 @@ streaming,validation,version}.rs`, `src/rules/` (pure core, one
 - **Privacy mechanics**: erasure = in-place scrub + tombstone
   `person:` URN + soft-delete (raw-SQL statements share one
   transaction, counts in the audit snapshot); the retention sweep
-  iterates the pinned `SOFT_DELETED_TABLES` list (41); pulse
+  iterates the pinned `SOFT_DELETED_TABLES` list (55); pulse
   submissions audit **without** an actor; subject access refuses
   masked callers (a full export cannot be "masked").
 - **Lifecycle gotcha**: `active → terminated` routes via
   `offboarding` (the erasure tests pin it).
+- **Auth backends**: the default `paseto` backend (offline PASETO v4.public
+  against the sibling authentication service's keys) and the `keycloak` Cargo
+  feature (a Keycloak-issued JWT verified against the realm's JWKS) produce the
+  same `Claims`, so ABAC and every controller are unaffected; the Keycloak
+  suite runs against a real Keycloak 26 via Testcontainers on Podman. The
+  algorithm is taken from the token header **only if it is RS256 or ES256**
+  (a mixed validation list is refused by `jsonwebtoken`).
+- **Where the newer areas live**: directory (`controllers/directory.rs`),
+  emergency contacts + backups (`contacts.rs`), on-call rota (`rotas.rs`,
+  `rota_swaps.rs`, `tasks/rota_reminders.rs`), announcements
+  (`announcements.rs`), skill gaps (`skill_gaps.rs`), training plans
+  (`training_plan.rs`), joiners/leavers (`movements.rs`, `handover.rs`),
+  insights and metrics (`intelligence.rs`, `rules/{metrics,insights}.rs`) — each
+  specified in the cross-cutting topic files linked from
+  [../../spec/index.md](../../spec/index.md).
+- **Personal-data wiring**: a person-keyed table joins the subject-access
+  export and the erasure statements in `controllers/privacy.rs` (new
+  statements go at the end — the audit snapshot indexes them by position); a
+  soft-deleting table joins `SOFT_DELETED_TABLES`.
+- **Test-pool gotcha**: do not read through `ctx.db` while a transaction is open
+  — the test pool is small and the read waits for the connection the transaction
+  holds, surfacing as a 500.
 
 ## Delivery
 
@@ -82,6 +106,10 @@ The queue is [../../spec/tasks.md](../../spec/tasks.md):
 WPM-T1–T19 **delivered 2026-07-18**; the wellbeing / 360 / privacy /
 ergonomics / adjustments rounds (WPM-T20–T36) **delivered
 2026-07-20 → 2026-07-25**; both production gates' code sides are
-done (WPM-G1/G2 `[~]` — operational/legal work remains). Tests per
-[../../spec/testing.md](../../spec/testing.md): 139 unit + 19
-request suites + the enforcement matrix.
+done (WPM-G1/G2 `[~]` — operational/legal work remains); WPM-T37–T89
+(strategic planning, frameworks, reporting lines, the directory, cover and
+on-call, announcements, the CEO dashboard, skills gaps and training time,
+joiners and leavers, localization) **delivered 2026-09-28 → 2026-10-06**.
+Tests per [../../spec/testing.md](../../spec/testing.md): 297 unit tests,
+54 database-backed request tests, the enforcement matrix and the Keycloak
+suite.

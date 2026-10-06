@@ -127,3 +127,46 @@ Fix: have `locales/[locale]/+layout.server.js` supply this locale's own title,
 which overrides the root layout's canonical one via SvelteKit's merged
 `page.data` on any route under `/locales/<locale>/` — the root picker and
 `/about/` (no locale in the URL) correctly keep the canonical English title.
+
+## How WPM applies this (WPM-R50, WPM-D37)
+
+The front-end (`workforce-planning-management-ui-with-svelte`) applies the
+guidance above to an **application**, not a book — the UI strings are the
+content.
+
+- **Content locales** (17): `ar-001 bn-001 cy-001 de-001 de-de en-001 en-gb
+  en-us es-001 es-es fr-001 hi-001 id-001 pt-001 ru-001 ur-001 zh-001`, one
+  directory each at `content/locales/<locale>/ui.json`. A `<language>-001`
+  file is complete (the parity test pins every key); a **regional** locale
+  (`en-gb`, `en-us`, `de-de`, `es-es`) holds only its **overrides** and falls
+  back to its `-001` base, then `en-001`. The files nest on the key dots
+  (`{"nav": {"workers": "…"}}`) because that is the shape the CMS edits;
+  the app flattens them at load.
+- **Routes:** every page is served under its locale — `/en-001/workers`,
+  `/cy-001/workers` — by a SvelteKit `reroute` hook (`src/hooks.ts`); the
+  route tree is unchanged. A bare language **alias** (`/en/…`, `/cy/…`)
+  **301-redirects** to its `-001` locale (one canonical address per locale);
+  an unprefixed URL **302-redirects** to the remembered
+  (`wpm-locale` cookie) or `Accept-Language` locale, else `en-001`. `/api`,
+  `/_app`, `/assets`, files with an extension, and the SSO and sign-out
+  endpoints are exempt. The **URL is the source of truth** for the UI
+  language; the picker navigates to the same page under the new prefix; the
+  server sets `<html lang dir>`.
+- **Sveltia CMS** at `/<locale>/admin/` (e.g. `/de-001/admin/`) edits the
+  strings in the repository. `static/admin/config.yml` is **generated** by
+  `pnpm cms-config` from `en-001` (i18n `multiple_folders`; every field
+  optional so a regional locale can hold just its overrides) and a unit test
+  fails if it is stale. Sveltia has no setting for its own interface
+  language, so the shell page writes the `sveltia-cms.prefs` value from the
+  URL's locale, mapped by `CMS_UI_LOCALE` onto the 29 languages Sveltia ships
+  (Bengali, Welsh, Hindi, Indonesian and Urdu have none: English).
+- **Dynamic text:** server-derived findings (insights, WPM-R49) arrive as a
+  `code` plus `params`; the UI renders them from
+  `insights.<code>.observation|suggestion` strings and falls back to the
+  server's English for a code it does not know.
+- **Verification:** `pnpm test` pins the parity of every `-001` locale,
+  the alias and prefix logic (`src/lib/locales.ts`) and the CMS config;
+  Playwright pins the redirect, the picker navigation and RTL direction.
+- **Known limits:** the strings were translated by an AI assistant and have
+  had no native-speaker review; `/admin/` needs a GitHub login and has not
+  been exercised end to end in a browser.

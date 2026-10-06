@@ -12,7 +12,13 @@ reskilling plans, talent pipelines, apprenticeships and internships,
 succession planning, workforce intelligence, ergonomic (DSE)
 workstation assessments, reasonable adjustments, subject rights
 (access / erasure / retention), payroll runs with payslips, and
-salary benchmarking.
+salary benchmarking — and, since the original delivery: strategic workforce
+planning and forecasting, job-capability frameworks (UK GDAD PCF, ESCO), reporting
+lines and groups, the **employee directory**, emergency contacts and **backups**,
+the **on-call rota** (swaps, swap requests, reminders), **announcements**, the
+data behind a **CEO dashboard**, workforce **metrics and insights**, **skills gap
+analysis** with **training time recommendations**, and **joiners and leavers**
+with a last-day handover.
 Implemented in Rust on [Loco](https://loco.rs) (Axum + SeaORM +
 PostgreSQL). No built-in UI — the
 [Svelte sibling](../workforce-planning-management-ui-with-svelte/)
@@ -22,13 +28,15 @@ provides the HR, manager, and worker self-service client.
 > statutory calculations are illustrative stubs; synthetic data
 > only. See [spec/regulatory](../spec/regulatory.md).
 
-**Status: implemented (WPM-T1–T36, 2026-07-18 → 2026-07-25).** 139
-DB-free unit tests + 19 request suites + the enforcement persona
-matrix (mounted on the shipped reference policy) pass against
-Postgres 18; clippy-pedantic clean. Both production gates' **code
-sides are done** (WPM-G1 reference policy + runbook; WPM-G2 subject
-rights + retention); what remains on them is operational and legal
-work — see [../spec/tasks.md](../spec/tasks.md).
+**Status: implemented through WPM-T89 (2026-07-18 → 2026-10-06).** 297
+DB-free unit tests, **54 database-backed request tests** (19 files), the
+enforcement persona matrix (mounted on the shipped reference policy) and a
+**Keycloak suite against a real Keycloak 26** pass against Postgres 18;
+clippy-pedantic is kept clean on new code. 46 migration sets, ~240 documented
+routes. Both production gates' **code sides are done** (WPM-G1 reference policy +
+runbook; WPM-G2 subject rights + retention); what remains on them is
+operational and legal work. One deliberate deferral: employee expense claims —
+see [../spec/tasks.md](../spec/tasks.md) and [../spec/roadmap.md](../spec/roadmap.md).
 
 ## What it answers
 
@@ -64,6 +72,15 @@ work — see [../spec/tasks.md](../spec/tasks.md).
   requests: barrier / impact / change, no diagnosis needed or storable
 - _What do we hold about this person, and can we forget them?_ — the
   subject-access export, erasure as anonymisation, the retention sweep
+- _Who works where, and who covers while they are out?_ — the directory, backups
+  resolved around approved leave, and the on-call rota that skips whoever is away
+- _Where are our skill gaps, and how long would closing them take?_ — gaps ranked
+  by importance × levels short (unknown is never a number), and a training plan
+  that says whether its hours come from courses or an estimate
+- _Who is leaving, and who has their things on the last day?_ — dated checklists,
+  and a handover that lists, reassigns and revokes with an audit trail
+- _Is turnover or time-to-fill drifting?_ — the shared metrics layer and the
+  insights derived from it
 
 ## Surface
 
@@ -81,7 +98,15 @@ pipelines · early-career programmes + placements · succession plans ·
 workforce intelligence · ergonomic assessments + items + issues ·
 adjustment requests + decisions · subject-access / erase / retention ·
 payroll runs + payslips · benchmarks · audits · `/events/recent` ·
-OpenAPI + Swagger · `/metrics.prom`.
+role profiles + capability frameworks (PCF, ESCO) · workforce plans + forecast ·
+metrics + insights + headcount snapshots · groups + reporting lines +
+organization memberships and transfers · **directory** · **emergency contacts +
+backups** · **on-call rotas + swaps + swap requests** · **announcements** ·
+**skill gaps + training plans + skill catalogue** · **joiner / leaver records +
+handover** · OpenAPI + Swagger · `/metrics.prom`.
+
+Loco tasks: `seed`, `snapshot_headcount` and `rota_reminders` (**schedule both
+daily — they do nothing by themselves**), `import_framework`, `import_esco`.
 
 Auth enforcement defaults **off** (`WPM_REQUIRE_AUTH` is the family
 activation gate); upstream lookups default to **stub mode**; events
@@ -190,6 +215,41 @@ curl -s localhost:5150/api/retention | jq '{horizon_days, expired_consent_candid
 curl -s "localhost:5150/api/workforce/working-time?department=engineering" \
   | jq '{workers_checked, flagged: [.flagged[].display_name]}'
 curl -s localhost:5150/api/ergonomics/issues | jq .by_department
+```
+
+*(Steps 6–8 assume `$OTHER` and `$SUCCESSOR` are the pids of two more workers hired as in step 1.)*
+
+**6. Who is on call, and who covers?** A rota rotates every N days, skips
+whoever is on approved leave, and says so when nobody can:
+
+```bash
+ROTA=$(curl -s localhost:5150/api/rotas -H 'content-type: application/json' -d '{
+  "organization_ref": "'$ORG'", "name": "Platform on-call", "period_days": 7,
+  "starts_on": "2026-10-05", "members": ["'$EMP'", "'$OTHER'"] }' | jq -r .pid)
+curl -s localhost:5150/api/rotas/$ROTA/on-call | jq '{name, source}'
+curl -s "localhost:5150/api/rotas/$ROTA" | jq '.runs[] | {from, to, worker_name, source}'
+curl -s "localhost:5150/api/workers/$EMP/cover" | jq .covered_by_name   # null = nobody
+```
+
+**7. Skill gaps and a training plan.** Unknown skills have no number, and the
+plan says what its hours rest on:
+
+```bash
+curl -s localhost:5150/api/workers/$EMP/skill-gaps | jq '.gaps[] | {skill, shortfall, priority, sources}'
+curl -s "localhost:5150/api/workers/$EMP/training-plan?weekly_hours=4" \
+  | jq '{total_hours, finish_on, assess_first: [.assess_first[].skill]}'
+curl -s localhost:5150/api/workforce-intelligence/skill-gaps | jq '.skills[0]'   # counts only
+```
+
+**8. A leaver's last day.** Open the record, see what they hold, hand it over:
+
+```bash
+MV=$(curl -s localhost:5150/api/workers/$EMP/movements -H 'content-type: application/json' -d '{
+  "kind": "leaver", "effective_on": "2026-11-30", "reason": "resignation" }' | jq -r .pid)
+curl -s localhost:5150/api/movements/$MV/handover | jq '{remaining, counts}'
+curl -s localhost:5150/api/movements/$MV/handover/all -H 'content-type: application/json' \
+  -d '{"to_worker_pid":"'$SUCCESSOR'"}' | jq .       # access is revoked, not handed over
+curl -s localhost:5150/api/movements/$MV/handover/actions | jq '.[] | {kind, action, to_worker_name}'
 ```
 
 ## Auth activation (production)
