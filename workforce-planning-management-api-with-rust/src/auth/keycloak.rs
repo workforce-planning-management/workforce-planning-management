@@ -62,8 +62,8 @@
 //! Keycloak's own `sub` claim, relayed as-is.
 
 use super::{
-    BTreeMap, ENTITY, Claims, Method, OnceLock, Policy, StatusCode,
-    derive_action, env_or, is_public_path,
+    BTreeMap, Claims, ENTITY, Method, OnceLock, Policy, StatusCode, derive_action, env_or,
+    is_public_path,
 };
 use axum::http::HeaderMap;
 use axum::http::header::AUTHORIZATION;

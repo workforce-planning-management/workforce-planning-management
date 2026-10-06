@@ -20,13 +20,7 @@ const LOCALE_COOKIE = "wpm-locale";
 
 /** Paths that are never locale-prefixed: the BFF proxy, build assets, the
  *  CMS, and the server-only endpoints the identity flow redirects through. */
-const UNPREFIXED = [
-  "/api/",
-  "/_app/",
-  "/assets/",
-  "/signin/sso",
-  "/signout",
-];
+const UNPREFIXED = ["/api/", "/_app/", "/assets/", "/signin/sso", "/signout"];
 
 function isUnprefixed(pathname: string): boolean {
   return (

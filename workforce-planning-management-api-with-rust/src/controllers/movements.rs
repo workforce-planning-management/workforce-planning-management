@@ -72,7 +72,12 @@ async fn items_of(ctx: &AppContext, movement: Uuid) -> Result<Vec<movement_items
 }
 
 fn state_of(i: &movement_items::Model, today: NaiveDate) -> ItemState {
-    rules::item_state(i.due_on, i.done_on.is_some(), i.skipped_reason.is_some(), today)
+    rules::item_state(
+        i.due_on,
+        i.done_on.is_some(),
+        i.skipped_reason.is_some(),
+        today,
+    )
 }
 
 fn item_json(
@@ -160,8 +165,13 @@ async fn open_movement(
         (_, Some(d)) => d,
         (_, None) => worker.hired_on,
     };
-    rules::validate(&payload.kind, payload.reason.as_deref(), effective, worker.hired_on)
-        .map_err(|e| unprocessable(&e))?;
+    rules::validate(
+        &payload.kind,
+        payload.reason.as_deref(),
+        effective,
+        worker.hired_on,
+    )
+    .map_err(|e| unprocessable(&e))?;
     if payload.kind == "leaver" && matches!(worker.status.as_str(), "terminated" | "retired") {
         return Err(unprocessable("that person has already left"));
     }
@@ -174,7 +184,10 @@ async fn open_movement(
         reason: ActiveValue::set(payload.reason.clone()),
         status: ActiveValue::set("open".to_string()),
         notes: ActiveValue::set(
-            payload.notes.map(|n| n.trim().to_string()).filter(|n| !n.is_empty()),
+            payload
+                .notes
+                .map(|n| n.trim().to_string())
+                .filter(|n| !n.is_empty()),
         ),
         created_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         completed_at: ActiveValue::set(None),
@@ -195,7 +208,11 @@ async fn open_movement(
             movement_pid: ActiveValue::set(movement.pid),
             position: ActiveValue::set(item.position),
             title: ActiveValue::set(item.title),
-            assignee_pid: ActiveValue::set(if item.category == "people" { worker.manager_pid } else { None }),
+            assignee_pid: ActiveValue::set(if item.category == "people" {
+                worker.manager_pid
+            } else {
+                None
+            }),
             category: ActiveValue::set(item.category),
             due_on: ActiveValue::set(item.due_on),
             ..Default::default()
@@ -251,11 +268,17 @@ async fn list_movements(
         let Ok(worker) = records::find_worker(&ctx.db, m.worker_pid).await else {
             continue;
         };
-        if scope.as_ref().is_some_and(|refs| !refs.contains(&worker.organization_ref)) {
+        if scope
+            .as_ref()
+            .is_some_and(|refs| !refs.contains(&worker.organization_ref))
+        {
             continue;
         }
-        let states: Vec<ItemState> =
-            items_of(&ctx, m.pid).await?.iter().map(|i| state_of(i, today)).collect();
+        let states: Vec<ItemState> = items_of(&ctx, m.pid)
+            .await?
+            .iter()
+            .map(|i| state_of(i, today))
+            .collect();
         out.push(movement_json(&m, &worker, rules::progress(&states)));
     }
     format::json(out)
@@ -274,7 +297,8 @@ async fn get_movement(
     let names = names_for(&ctx, items.iter().filter_map(|i| i.assignee_pid).collect()).await?;
     let states: Vec<ItemState> = items.iter().map(|i| state_of(i, today)).collect();
     let mut json = movement_json(&movement, &worker, rules::progress(&states));
-    json["items"] = serde_json::Value::Array(items.iter().map(|i| item_json(i, today, &names)).collect());
+    json["items"] =
+        serde_json::Value::Array(items.iter().map(|i| item_json(i, today, &names)).collect());
     format::json(json)
 }
 
@@ -299,8 +323,11 @@ async fn worker_movements(
         .await?;
     let mut out = Vec::new();
     for m in rows {
-        let states: Vec<ItemState> =
-            items_of(&ctx, m.pid).await?.iter().map(|i| state_of(i, today)).collect();
+        let states: Vec<ItemState> = items_of(&ctx, m.pid)
+            .await?
+            .iter()
+            .map(|i| state_of(i, today))
+            .collect();
         out.push(movement_json(&m, &worker, rules::progress(&states)));
     }
     format::json(out)
@@ -311,7 +338,10 @@ fn require_open(m: &movements::Model) -> Result<()> {
     if m.status == "open" {
         Ok(())
     } else {
-        Err(unprocessable(&format!("that record is already {}", m.status)))
+        Err(unprocessable(&format!(
+            "that record is already {}",
+            m.status
+        )))
     }
 }
 
@@ -346,7 +376,10 @@ async fn add_item(
         position: ActiveValue::set(next),
         title: ActiveValue::set(payload.title.trim().to_string()),
         category: ActiveValue::set(
-            payload.category.filter(|c| !c.trim().is_empty()).unwrap_or_else(|| "other".to_string()),
+            payload
+                .category
+                .filter(|c| !c.trim().is_empty())
+                .unwrap_or_else(|| "other".to_string()),
         ),
         due_on: ActiveValue::set(payload.due_on),
         assignee_pid: ActiveValue::set(payload.assignee_pid),
@@ -354,7 +387,15 @@ async fn add_item(
     }
     .insert(&ctx.db)
     .await?;
-    Audit::record(&ctx.db, "worker", worker.pid, "movement_item_added", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "worker",
+        worker.pid,
+        "movement_item_added",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(serde_json::json!({ "pid": item.pid }))
 }
 
@@ -386,7 +427,15 @@ async fn item_done(
     active.done_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.skipped_reason = ActiveValue::set(None);
     active.update(&ctx.db).await?;
-    Audit::record(&ctx.db, "worker", worker.pid, "movement_item_done", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "worker",
+        worker.pid,
+        "movement_item_done",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(serde_json::json!({ "state": "done" }))
 }
 
@@ -413,7 +462,15 @@ async fn item_skip(
     active.done_on = ActiveValue::set(None);
     active.done_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.update(&ctx.db).await?;
-    Audit::record(&ctx.db, "worker", worker.pid, "movement_item_skipped", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "worker",
+        worker.pid,
+        "movement_item_skipped",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(serde_json::json!({ "state": "skipped" }))
 }
 
@@ -430,7 +487,15 @@ async fn item_reopen(
     active.done_by = ActiveValue::set(None);
     active.skipped_reason = ActiveValue::set(None);
     active.update(&ctx.db).await?;
-    Audit::record(&ctx.db, "worker", worker.pid, "movement_item_reopened", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "worker",
+        worker.pid,
+        "movement_item_reopened",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(serde_json::json!({ "state": "reopened" }))
 }
 
@@ -458,7 +523,15 @@ async fn item_assign(
     let mut active: movement_items::ActiveModel = item.into();
     active.assignee_pid = ActiveValue::set(payload.assignee_pid);
     active.update(&ctx.db).await?;
-    Audit::record(&ctx.db, "worker", worker.pid, "movement_item_assigned", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "worker",
+        worker.pid,
+        "movement_item_assigned",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(serde_json::json!({ "assignee_pid": payload.assignee_pid }))
 }
 
@@ -482,8 +555,15 @@ async fn complete(
     .map_err(record_rejection)?;
     let today = Utc::now().date_naive();
     let items = items_of(&ctx, movement.pid).await?;
-    let open = items.iter().filter(|i| !matches!(state_of(i, today), ItemState::Done | ItemState::Skipped)).count();
-    let held = if movement.kind == "leaver" { unassigned_count(&ctx, &movement, &worker).await? } else { 0 };
+    let open = items
+        .iter()
+        .filter(|i| !matches!(state_of(i, today), ItemState::Done | ItemState::Skipped))
+        .count();
+    let held = if movement.kind == "leaver" {
+        unassigned_count(&ctx, &movement, &worker).await?
+    } else {
+        0
+    };
     rules::can_complete(open, held).map_err(|e| unprocessable(&e))?;
     let mut active: movements::ActiveModel = movement.clone().into();
     active.status = ActiveValue::set("completed".to_string());

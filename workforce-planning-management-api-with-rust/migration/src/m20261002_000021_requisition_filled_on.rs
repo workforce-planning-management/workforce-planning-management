@@ -18,7 +18,9 @@ impl MigrationTrait for Migration {
     /// Propagates any DDL error.
     async fn up(&self, m: &SchemaManager) -> Result<(), DbErr> {
         m.get_connection()
-            .execute_unprepared("ALTER TABLE requisitions ADD COLUMN IF NOT EXISTS filled_on DATE NULL")
+            .execute_unprepared(
+                "ALTER TABLE requisitions ADD COLUMN IF NOT EXISTS filled_on DATE NULL",
+            )
             .await?;
         Ok(())
     }

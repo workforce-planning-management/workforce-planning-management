@@ -51,11 +51,7 @@ async fn require_editor(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> 
 }
 
 /// An announcement, if it exists and its organization is readable by the caller.
-async fn find(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-    pid: &str,
-) -> Result<announcements::Model> {
+async fn find(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Result<announcements::Model> {
     let row = announcements::Entity::find()
         .filter(announcements::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(announcements::Column::DeletedAt.is_null())
@@ -169,10 +165,14 @@ async fn feed(
     caller: MaybeAuthUser,
     axum::extract::Query(params): axum::extract::Query<FeedParams>,
 ) -> Result<Response> {
-    let page = Page { limit: params.limit, offset: params.offset };
+    let page = Page {
+        limit: params.limit,
+        offset: params.offset,
+    };
     page.check_offset()?;
     let (limit, offset) = page.resolve(FEED_DEFAULT_LIMIT);
-    let mut query = announcements::Entity::find().filter(announcements::Column::DeletedAt.is_null());
+    let mut query =
+        announcements::Entity::find().filter(announcements::Column::DeletedAt.is_null());
     if let Some(org) = &params.organization {
         query = query.filter(announcements::Column::OrganizationRef.eq(org));
     }
@@ -180,7 +180,10 @@ async fn feed(
         query = query.filter(announcements::Column::OrganizationRef.is_in(refs));
     }
     let today = Utc::now().date_naive();
-    let mut rows = query.order_by_desc(announcements::Column::Id).all(&ctx.db).await?;
+    let mut rows = query
+        .order_by_desc(announcements::Column::Id)
+        .all(&ctx.db)
+        .await?;
     let all = params.include.as_deref() == Some("all");
     let readers = reader_departments(&ctx, &caller).await?;
     let mut allowed: HashMap<String, bool> = HashMap::new();
@@ -195,7 +198,11 @@ async fn feed(
         // caller's own worker records when auth is on, else only by the
         // explicit `?department=` filter.
         if let Some(wanted) = &params.department
-            && !rules::audience_includes(row.department.as_deref(), std::slice::from_ref(wanted), false)
+            && !rules::audience_includes(
+                row.department.as_deref(),
+                std::slice::from_ref(wanted),
+                false,
+            )
         {
             continue;
         }
@@ -210,7 +217,10 @@ async fn feed(
         }
     }
     kept.sort_by(|a, b| {
-        rules::feed_order((a.pinned, a.publish_on, a.id), (b.pinned, b.publish_on, b.id))
+        rules::feed_order(
+            (a.pinned, a.publish_on, a.id),
+            (b.pinned, b.publish_on, b.id),
+        )
     });
     let total = kept.len() as u64;
     let page_rows: Vec<&announcements::Model> = kept
@@ -238,7 +248,12 @@ async fn feed(
             json
         })
         .collect();
-    Ok(with_page_headers(format::json(slice)?, total, limit, offset))
+    Ok(with_page_headers(
+        format::json(slice)?,
+        total,
+        limit,
+        offset,
+    ))
 }
 
 /// `GET /api/announcements/{pid}` — one announcement (live ones to anyone
@@ -295,8 +310,13 @@ async fn create(
     require_editor(&ctx, &caller, &payload.organization_ref).await?;
     let today = Utc::now().date_naive();
     let publish_on = payload.publish_on.unwrap_or(today);
-    rules::validate(&payload.title, &payload.body, publish_on, payload.expires_on)
-        .map_err(|e| unprocessable(&e))?;
+    rules::validate(
+        &payload.title,
+        &payload.body,
+        publish_on,
+        payload.expires_on,
+    )
+    .map_err(|e| unprocessable(&e))?;
     validate_links_payload(&payload.links)?;
     let row = announcements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
@@ -307,7 +327,10 @@ async fn create(
         publish_on: ActiveValue::set(publish_on),
         expires_on: ActiveValue::set(payload.expires_on),
         department: ActiveValue::set(
-            payload.department.map(|d| d.trim().to_string()).filter(|d| !d.is_empty()),
+            payload
+                .department
+                .map(|d| d.trim().to_string())
+                .filter(|d| !d.is_empty()),
         ),
         links: ActiveValue::set(links_json(&payload.links)),
         author: ActiveValue::set(caller.actor().map(ToString::to_string)),
@@ -316,7 +339,15 @@ async fn create(
     }
     .insert(&ctx.db)
     .await?;
-    Audit::record(&ctx.db, "announcement", row.pid, "posted", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "announcement",
+        row.pid,
+        "posted",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 
@@ -391,7 +422,15 @@ async fn update(
     active.publish_on = ActiveValue::set(publish_on);
     active.expires_on = ActiveValue::set(expires_on);
     let updated = active.update(&ctx.db).await?;
-    Audit::record(&ctx.db, "announcement", updated.pid, "edited", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "announcement",
+        updated.pid,
+        "edited",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(row_json(&updated, Utc::now().date_naive()))
 }
 
@@ -408,7 +447,15 @@ async fn retire(
     let mut active: announcements::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
     active.update(&ctx.db).await?;
-    Audit::record(&ctx.db, "announcement", pid, "retired", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "announcement",
+        pid,
+        "retired",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::empty_json()
 }
 
@@ -420,11 +467,7 @@ struct ReadPayload {
 }
 
 /// A worker, authorized for a write to their record: themself, or HR.
-async fn own_worker(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-    pid: Uuid,
-) -> Result<workers::Model> {
+async fn own_worker(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<workers::Model> {
     let worker = records::find_worker(&ctx.db, pid).await?;
     auth::authorize_record(
         caller,

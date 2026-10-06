@@ -938,10 +938,7 @@ pub fn routes() -> Routes {
         .add("/reviews/{pid}/goals", post(create_goal))
         .add("/goals/{pid}", put(update_goal))
         .add("/reviews/{pid}/feedback", post(create_feedback))
-        .add(
-            "/workers/{pid}/training-enrollments",
-            post(create_training),
-        )
+        .add("/workers/{pid}/training-enrollments", post(create_training))
         .add("/workers/{pid}/training-enrollments", get(list_training))
         .add("/training-enrollments/{pid}", put(update_training))
         .add("/training/expiring", get(expiring_training))

@@ -91,7 +91,9 @@ async fn add_course(
     let skill = find_skill(&ctx, &pid).await?;
     let levels = payload.levels.unwrap_or(1);
     if payload.course_ref.trim().is_empty() || payload.course_ref.len() > 200 {
-        return Err(unprocessable("course_ref is required (up to 200 characters)"));
+        return Err(unprocessable(
+            "course_ref is required (up to 200 characters)",
+        ));
     }
     if payload.title.trim().is_empty() || payload.title.chars().count() > 200 {
         return Err(unprocessable("title is required (up to 200 characters)"));
@@ -110,7 +112,9 @@ async fn add_course(
         .await?
         .is_some();
     if taken {
-        return Err(unprocessable("that course is already listed for this skill"));
+        return Err(unprocessable(
+            "that course is already listed for this skill",
+        ));
     }
     let row = skill_courses::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
@@ -158,7 +162,10 @@ async fn set_hours(
     Json(payload): Json<HoursPayload>,
 ) -> Result<Response> {
     let skill = find_skill(&ctx, &pid).await?;
-    if payload.hours_per_level.is_some_and(|h| !(1..=500).contains(&h)) {
+    if payload
+        .hours_per_level
+        .is_some_and(|h| !(1..=500).contains(&h))
+    {
         return Err(unprocessable("hours_per_level must be between 1 and 500"));
     }
     let mut active: skills::ActiveModel = skill.into();
@@ -210,9 +217,17 @@ async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Result<Catalo
         .all(&ctx.db)
         .await?
     {
-        completed.entry(t.worker_pid).or_default().insert(t.course_ref);
+        completed
+            .entry(t.worker_pid)
+            .or_default()
+            .insert(t.course_ref);
     }
-    Ok(Catalogue { courses, hours_per_level, names, completed })
+    Ok(Catalogue {
+        courses,
+        hours_per_level,
+        names,
+        completed,
+    })
 }
 
 impl Catalogue {
@@ -223,7 +238,10 @@ impl Catalogue {
             u32::try_from(gap.shortfall.unwrap_or(0)).unwrap_or(0),
             self.courses.get(&gap.skill).map_or(&[][..], Vec::as_slice),
             self.completed.get(&worker).unwrap_or(&empty),
-            self.hours_per_level.get(&gap.skill).copied().unwrap_or(DEFAULT_HOURS_PER_LEVEL),
+            self.hours_per_level
+                .get(&gap.skill)
+                .copied()
+                .unwrap_or(DEFAULT_HOURS_PER_LEVEL),
         )
     }
 }
@@ -262,8 +280,8 @@ async fn worker_plan(
         &auth::worker_resource_attrs(&worker),
     )
     .is_ok();
-    let weekly = rules::weekly_hours(q.weekly_hours, worker.fte_percent)
-        .map_err(|e| unprocessable(&e))?;
+    let weekly =
+        rules::weekly_hours(q.weekly_hours, worker.fte_percent).map_err(|e| unprocessable(&e))?;
     let start = q.start.unwrap_or_else(|| Utc::now().date_naive());
 
     let evidence = load_evidence(&ctx, &[worker.pid], own_view).await?;
@@ -271,7 +289,10 @@ async fn worker_plan(
     gap_rules::rank(&mut gaps);
     let catalogue = load_catalogue(&ctx, &[worker.pid]).await?;
     let below: Vec<&Gap> = gaps.iter().filter(|g| g.status == Status::Below).collect();
-    let recs: Vec<Recommendation> = below.iter().map(|g| catalogue.recommend(worker.pid, g)).collect();
+    let recs: Vec<Recommendation> = below
+        .iter()
+        .map(|g| catalogue.recommend(worker.pid, g))
+        .collect();
     let hours: Vec<u32> = recs.iter().map(|r| r.hours).collect();
     let slots = rules::schedule(&hours, weekly, start);
 
@@ -355,7 +376,11 @@ async fn training_demand(
         .await?
         .into_iter()
         .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .filter(|w| q.department.as_deref().is_none_or(|d| w.department.eq_ignore_ascii_case(d)))
+        .filter(|w| {
+            q.department
+                .as_deref()
+                .is_none_or(|d| w.department.eq_ignore_ascii_case(d))
+        })
         .collect();
     let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
     let evidence: Evidence = load_evidence(&ctx, &pids, false).await?;
@@ -368,7 +393,11 @@ async fn training_demand(
     let mut total_hours = 0u32;
     for w in &staff {
         let mut person_hours = 0u32;
-        for g in evidence.gaps_for(w.pid).iter().filter(|g| g.status == Status::Below) {
+        for g in evidence
+            .gaps_for(w.pid)
+            .iter()
+            .filter(|g| g.status == Status::Below)
+        {
             let rec = catalogue.recommend(w.pid, g);
             let e = by_skill.entry(g.skill).or_default();
             e.0 += 1;
@@ -425,5 +454,8 @@ pub fn routes() -> Routes {
         .add("/skill-courses/{pid}", delete(remove_course))
         .add("/skills/{pid}/training-hours", put(set_hours))
         .add("/workers/{pid}/training-plan", get(worker_plan))
-        .add("/workforce-intelligence/training-demand", get(training_demand))
+        .add(
+            "/workforce-intelligence/training-demand",
+            get(training_demand),
+        )
 }

@@ -103,7 +103,8 @@ impl MigrationTrait for Migration {
     async fn down(&self, m: &SchemaManager) -> Result<(), DbErr> {
         let conn = m.get_connection();
         for table in ["handover_actions", "movement_items", "movements"] {
-            conn.execute_unprepared(&format!("DROP TABLE IF EXISTS {table}")).await?;
+            conn.execute_unprepared(&format!("DROP TABLE IF EXISTS {table}"))
+                .await?;
         }
         Ok(())
     }

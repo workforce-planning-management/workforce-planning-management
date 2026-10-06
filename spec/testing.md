@@ -34,8 +34,10 @@ State as of 2026-10-06 (WPM-T89).
   Keycloak 26** started by Testcontainers (Podman), real access tokens, the
   app booted against its JWKS. It found and fixed two defects the unit tests
   could not (a compile error and an `InvalidAlgorithm` on every token).
-- Clippy **pedantic** is on (`#![warn(clippy::pedantic)]`); new files are kept
-  clean.
+- Clippy **pedantic** is on (`#![warn(clippy::pedantic)]`) and `cargo clippy
+  --all-targets -- -D warnings` is **clean** (default and `--features keycloak`
+  builds), as are `cargo fmt --check` and the front-end's `pnpm lint`
+  (2026-10-06).
 
 ### Running the service tests without the sibling crates
 

@@ -444,7 +444,7 @@ mod tests {
             APTITUDE_SCALES.len()
         );
         // Nothing measured for an unknown category.
-        assert!(scales_not_assessed("astrology", &measured).is_empty());
+        assert_eq!(scales_not_assessed("astrology", &measured).len(), 0);
     }
 
     /// The cognitive (IQ-style) category: its own index scales are

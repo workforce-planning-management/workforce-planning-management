@@ -27,8 +27,8 @@
 //! `WPM_REQUIRE_AUTH` is off, matching every other authorization pass
 //! in this crate.
 
-use loco_rs::prelude::*;
 use axum::http::StatusCode;
+use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -65,8 +65,7 @@ async fn may_manage_membership(
         c.attrs
             .get("svc")
             .is_some_and(|v| v.iter().any(|s| s == "true"))
-            || c
-                .attrs
+            || c.attrs
                 .get("access")
                 .is_some_and(|v| v.iter().any(|s| s == "admin"))
     });
@@ -74,10 +73,10 @@ async fn may_manage_membership(
         return Ok(true);
     }
     let mine = memberships::caller_memberships(db, claims).await?;
-    Ok(mine
-        .iter()
-        .any(|m| m.organization_ref == organization_ref
-            && org_access::can_manage_membership(&m.role, target_role)))
+    Ok(mine.iter().any(|m| {
+        m.organization_ref == organization_ref
+            && org_access::can_manage_membership(&m.role, target_role)
+    }))
 }
 
 /// A `403` for [`may_manage_membership`] returning `false`.
@@ -114,8 +113,7 @@ async fn may_manage_confederation(
         c.attrs
             .get("svc")
             .is_some_and(|v| v.iter().any(|s| s == "true"))
-            || c
-                .attrs
+            || c.attrs
                 .get("access")
                 .is_some_and(|v| v.iter().any(|s| s == "admin"))
     });
@@ -448,8 +446,12 @@ async fn list_confederations(
     let mut find = organization_confederations::Entity::find()
         .filter(organization_confederations::Column::DeletedAt.is_null());
     match (
-        query.parent_organization_ref.filter(|v| !v.trim().is_empty()),
-        query.child_organization_ref.filter(|v| !v.trim().is_empty()),
+        query
+            .parent_organization_ref
+            .filter(|v| !v.trim().is_empty()),
+        query
+            .child_organization_ref
+            .filter(|v| !v.trim().is_empty()),
     ) {
         (None, None) => {
             return Err(unprocessable(
@@ -458,10 +460,12 @@ async fn list_confederations(
         }
         (parent, child) => {
             if let Some(parent) = parent {
-                find = find.filter(organization_confederations::Column::ParentOrganizationRef.eq(parent));
+                find = find
+                    .filter(organization_confederations::Column::ParentOrganizationRef.eq(parent));
             }
             if let Some(child) = child {
-                find = find.filter(organization_confederations::Column::ChildOrganizationRef.eq(child));
+                find = find
+                    .filter(organization_confederations::Column::ChildOrganizationRef.eq(child));
             }
         }
     }
@@ -469,7 +473,11 @@ async fn list_confederations(
         .order_by_asc(organization_confederations::Column::Id)
         .all(&ctx.db)
         .await?;
-    format::json(rows.into_iter().map(ConfederationView::from).collect::<Vec<_>>())
+    format::json(
+        rows.into_iter()
+            .map(ConfederationView::from)
+            .collect::<Vec<_>>(),
+    )
 }
 
 /// `POST /api/organization-confederations` body.

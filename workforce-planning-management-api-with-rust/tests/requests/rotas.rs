@@ -202,15 +202,20 @@ async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
         // A's week starts a week ago (so today is mid-turn); B's starts in 6 days.
         request
             .post("/api/rotas")
-            .json(&json!({ "organization_ref": org, "name": format!("Rem {tag}"),
+            .json(
+                &json!({ "organization_ref": org, "name": format!("Rem {tag}"),
                            "period_days": 7, "starts_on": (today - Duration::days(1)).to_string(),
-                           "members": [pids[0], pids[1]] }))
+                           "members": [pids[0], pids[1]] }),
+            )
             .await
             .assert_status_ok();
         let reminders = |who: String| {
             let request = &request;
             async move {
-                let told: Value = request.get(&format!("/api/workers/{who}/notifications")).await.json();
+                let told: Value = request
+                    .get(&format!("/api/workers/{who}/notifications"))
+                    .await
+                    .json();
                 told.as_array()
                     .unwrap()
                     .iter()
@@ -227,7 +232,12 @@ async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
         assert_eq!(send_reminders(&ctx, starts).await.unwrap(), 0);
         assert_eq!(reminders(pids[1].clone()).await, 1);
         // A day mid-turn starts nobody's turn.
-        assert_eq!(send_reminders(&ctx, today + Duration::days(3)).await.unwrap(), 0);
+        assert_eq!(
+            send_reminders(&ctx, today + Duration::days(3))
+                .await
+                .unwrap(),
+            0
+        );
     })
     .await;
 }
@@ -250,9 +260,11 @@ async fn swap_requests_move_only_the_requesters_days_when_accepted() {
         let day = |n: i64| (today + Duration::days(n)).to_string();
         let rota: Value = request
             .post("/api/rotas")
-            .json(&json!({ "organization_ref": org, "name": format!("Swap {tag}"),
+            .json(
+                &json!({ "organization_ref": org, "name": format!("Swap {tag}"),
                            "period_days": 7, "starts_on": today.to_string(),
-                           "members": [a, b, c] }))
+                           "members": [a, b, c] }),
+            )
             .await
             .json();
         let rota = rota["pid"].as_str().unwrap().to_string();
@@ -297,11 +309,22 @@ async fn swap_requests_move_only_the_requesters_days_when_accepted() {
             422,
             "already asked"
         );
-        let incoming: Value = request.get(&format!("/api/workers/{b}/swap-requests")).await.json();
+        let incoming: Value = request
+            .get(&format!("/api/workers/{b}/swap-requests"))
+            .await
+            .json();
         assert_eq!(incoming["incoming"].as_array().unwrap().len(), 1);
         assert_eq!(incoming["outgoing"].as_array().unwrap().len(), 0);
-        let told: Value = request.get(&format!("/api/workers/{b}/notifications")).await.json();
-        assert!(told.as_array().unwrap().iter().any(|n| n["kind"] == "swap_requested"));
+        let told: Value = request
+            .get(&format!("/api/workers/{b}/notifications"))
+            .await
+            .json();
+        assert!(
+            told.as_array()
+                .unwrap()
+                .iter()
+                .any(|n| n["kind"] == "swap_requested")
+        );
 
         // B accepts: only A's own days (week 1) move — B's own turn (week 2) is untouched.
         let ok: Value = request
@@ -310,7 +333,10 @@ async fn swap_requests_move_only_the_requesters_days_when_accepted() {
             .json();
         assert_eq!(ok["status"], "accepted");
         assert_eq!(ok["days_moved"], 1, "one stretch");
-        let now: Value = request.get(&format!("/api/rotas/{rota}/on-call")).await.json();
+        let now: Value = request
+            .get(&format!("/api/rotas/{rota}/on-call"))
+            .await
+            .json();
         assert_eq!(now["worker_pid"], b.as_str());
         assert_eq!(now["source"], "override");
         let week2: Value = request
@@ -318,8 +344,16 @@ async fn swap_requests_move_only_the_requesters_days_when_accepted() {
             .await
             .json();
         assert_eq!(week2["worker_pid"], b.as_str(), "B's own turn");
-        let told: Value = request.get(&format!("/api/workers/{a}/notifications")).await.json();
-        assert!(told.as_array().unwrap().iter().any(|n| n["kind"] == "swap_decided"));
+        let told: Value = request
+            .get(&format!("/api/workers/{a}/notifications"))
+            .await
+            .json();
+        assert!(
+            told.as_array()
+                .unwrap()
+                .iter()
+                .any(|n| n["kind"] == "swap_decided")
+        );
         // Decided once.
         assert_eq!(
             request
@@ -348,7 +382,10 @@ async fn swap_requests_move_only_the_requesters_days_when_accepted() {
             .await
             .json();
         request
-            .post(&format!("/api/rota-swap-requests/{}/cancel", third["pid"].as_str().unwrap()))
+            .post(&format!(
+                "/api/rota-swap-requests/{}/cancel",
+                third["pid"].as_str().unwrap()
+            ))
             .await
             .assert_status_ok();
         let all: Vec<Value> = request.get(&url).await.json();
@@ -358,7 +395,11 @@ async fn swap_requests_move_only_the_requesters_days_when_accepted() {
             .get(&format!("/api/rotas/{rota}/on-call?on={}", day(21)))
             .await
             .json();
-        assert_eq!(after["worker_pid"], a.as_str(), "declined and cancelled swaps move nothing");
+        assert_eq!(
+            after["worker_pid"],
+            a.as_str(),
+            "declined and cancelled swaps move nothing"
+        );
     })
     .await;
 }

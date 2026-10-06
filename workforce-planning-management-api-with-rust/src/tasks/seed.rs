@@ -9,7 +9,7 @@ use sea_orm::ActiveValue;
 use uuid::Uuid;
 
 use crate::models::_entities::{
-    benchmarks, benefit_plans, workers, leave_entitlements, requisitions,
+    benchmarks, benefit_plans, leave_entitlements, requisitions, workers,
 };
 
 /// The demo-organization seed task.
@@ -20,8 +20,9 @@ impl Task for Seed {
     fn task(&self) -> TaskInfo {
         TaskInfo {
             name: "seed".to_string(),
-            detail: "Seed a synthetic demo organization (~40 workers, requisitions, plans, benchmarks)"
-                .to_string(),
+            detail:
+                "Seed a synthetic demo organization (~40 workers, requisitions, plans, benchmarks)"
+                    .to_string(),
         }
     }
 

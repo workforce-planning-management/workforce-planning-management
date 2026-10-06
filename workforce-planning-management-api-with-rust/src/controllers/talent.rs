@@ -30,8 +30,8 @@ use uuid::Uuid;
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    candidates, development_plan_items, development_plans, early_career_programs, worker_skills,
-    workers, pipeline_members, program_placements, skills, talent_pipelines,
+    candidates, development_plan_items, development_plans, early_career_programs, pipeline_members,
+    program_placements, skills, talent_pipelines, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;

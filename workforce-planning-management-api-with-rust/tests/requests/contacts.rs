@@ -26,7 +26,11 @@ async fn emergency_contacts_are_validated_ranked_capped_and_exported() {
             json!({ "name": " ", "relationship": "Partner", "phone": "+44 7700 900123" }),
             json!({ "name": "Sam", "relationship": "Partner", "phone": "12345", "email": "nope" }),
         ] {
-            assert_eq!(request.post(&url).json(&bad).await.status_code(), 422, "{bad}");
+            assert_eq!(
+                request.post(&url).json(&bad).await.status_code(),
+                422,
+                "{bad}"
+            );
         }
 
         // Add two: the second is asked second by default; then reorder.
@@ -38,7 +42,9 @@ async fn emergency_contacts_are_validated_ranked_capped_and_exported() {
             .json();
         let second: Value = request
             .post(&url)
-            .json(&json!({ "name": "Kim Lee", "relationship": "Sibling", "phone": "020 7946 0018" }))
+            .json(
+                &json!({ "name": "Kim Lee", "relationship": "Sibling", "phone": "020 7946 0018" }),
+            )
             .await
             .json();
         let listed: Vec<Value> = request.get(&url).await.json();
@@ -69,13 +75,18 @@ async fn emergency_contacts_are_validated_ranked_capped_and_exported() {
             .get(&format!("/api/workers/{worker}/subject-access"))
             .await
             .json();
-        assert_eq!(export["emergency_contacts"].as_array().map(Vec::len), Some(2));
+        assert_eq!(
+            export["emergency_contacts"].as_array().map(Vec::len),
+            Some(2)
+        );
 
         // Capped at five.
         for n in 3..=5 {
             request
                 .post(&url)
-                .json(&json!({ "name": format!("C{n}"), "relationship": "Friend", "phone": "12345" }))
+                .json(
+                    &json!({ "name": format!("C{n}"), "relationship": "Friend", "phone": "12345" }),
+                )
                 .await
                 .assert_status_ok();
         }
@@ -117,7 +128,11 @@ async fn backups_cover_in_rank_order_and_skip_the_unavailable() {
 
         // Not yourself, not a stranger, not twice.
         assert_eq!(
-            request.post(&url).json(&json!({ "backup_pid": me })).await.status_code(),
+            request
+                .post(&url)
+                .json(&json!({ "backup_pid": me }))
+                .await
+                .status_code(),
             422
         );
         assert_eq!(
@@ -134,7 +149,11 @@ async fn backups_cover_in_rank_order_and_skip_the_unavailable() {
             .await
             .json();
         assert_eq!(
-            request.post(&url).json(&json!({ "backup_pid": first })).await.status_code(),
+            request
+                .post(&url)
+                .json(&json!({ "backup_pid": first }))
+                .await
+                .status_code(),
             422,
             "already named"
         );

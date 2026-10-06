@@ -39,9 +39,7 @@ async fn subject_rights_round_trip() {
             .await
             .json();
         request
-            .post(&format!(
-                "/api/workers/{worker}/wellbeing-acknowledgements"
-            ))
+            .post(&format!("/api/workers/{worker}/wellbeing-acknowledgements"))
             .json(&json!({ "entitlement_pid": rule["pid"], "response": "done" }))
             .await
             .assert_status_ok();

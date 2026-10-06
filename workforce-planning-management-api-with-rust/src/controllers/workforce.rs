@@ -12,7 +12,7 @@ use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::metrics::Metrics;
 use crate::models::_entities::{
-    workers, leave_entitlements, leave_requests, shift_assignments, shifts, time_entries,
+    leave_entitlements, leave_requests, shift_assignments, shifts, time_entries, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -744,8 +744,7 @@ async fn working_time(
         .as_of
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
     let window_start = as_of - chrono::Duration::weeks(working_time::REFERENCE_WEEKS);
-    let mut worker_find =
-        workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
+    let mut worker_find = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
     if let Some(department) = &query.department {
         worker_find = worker_find.filter(workers::Column::Department.eq(department.as_str()));
     }
@@ -851,14 +850,8 @@ pub fn routes() -> Routes {
             "/workers/{pid}/leave-entitlements",
             post(create_entitlement),
         )
-        .add(
-            "/workers/{pid}/leave-entitlements",
-            get(list_entitlements),
-        )
-        .add(
-            "/workers/{pid}/leave-requests",
-            post(create_leave_request),
-        )
+        .add("/workers/{pid}/leave-entitlements", get(list_entitlements))
+        .add("/workers/{pid}/leave-requests", post(create_leave_request))
         .add("/workers/{pid}/leave-requests", get(list_leave_requests))
         .add("/leave-requests/{pid}/approve", post(approve_leave))
         .add("/leave-requests/{pid}/reject", post(reject_leave))

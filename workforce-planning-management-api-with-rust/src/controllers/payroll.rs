@@ -13,7 +13,7 @@ use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::metrics::Metrics;
 use crate::models::_entities::{
-    benchmarks, benefit_enrollments, benefit_plans, workers, payroll_runs, payslips, time_entries,
+    benchmarks, benefit_enrollments, benefit_plans, payroll_runs, payslips, time_entries, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
@@ -109,8 +109,7 @@ async fn create_run(
 /// `GET /api/payroll-runs`.
 #[debug_handler]
 async fn list_runs(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let mut query =
-        payroll_runs::Entity::find().filter(payroll_runs::Column::DeletedAt.is_null());
+    let mut query = payroll_runs::Entity::find().filter(payroll_runs::Column::DeletedAt.is_null());
     if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
         query = query.filter(payroll_runs::Column::OrganizationRef.is_in(refs));
     }
@@ -214,9 +213,7 @@ async fn calculate_run(
             }
         }
         let slip = rules::compute_payslip(salary, worker.fte_percent, overtime, &benefit_costs)
-            .map_err(|e| {
-            unprocessable(&format!("payslip for {}: {e}", worker.worker_number))
-        })?;
+            .map_err(|e| unprocessable(&format!("payslip for {}: {e}", worker.worker_number)))?;
         // The persist gate re-checks the invariant (WPM-R13).
         rules::reconcile(&slip).map_err(|e| unprocessable(&e))?;
         payslips::ActiveModel {

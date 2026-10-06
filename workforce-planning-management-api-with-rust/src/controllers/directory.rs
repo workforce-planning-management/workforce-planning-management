@@ -52,6 +52,7 @@ struct DirectoryParams {
 /// `GET /api/directory?q=&department=&limit=&offset=` — directory entries
 /// ordered by name, with `x-total-count` of all matches.
 #[debug_handler]
+#[allow(clippy::too_many_lines)] // loads scope, leave, backups and rotas, then shapes one view
 async fn directory(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -92,7 +93,9 @@ async fn directory(
     let mut backups_by_worker: HashMap<Uuid, Vec<worker_backups::Model>> = HashMap::new();
     if !away.is_empty() {
         for b in worker_backups::Entity::find()
-            .filter(worker_backups::Column::WorkerPid.is_in(away.iter().copied().collect::<Vec<_>>()))
+            .filter(
+                worker_backups::Column::WorkerPid.is_in(away.iter().copied().collect::<Vec<_>>()),
+            )
             .filter(worker_backups::Column::DeletedAt.is_null())
             .all(&ctx.db)
             .await?
@@ -155,10 +158,17 @@ async fn directory(
     let start = usize::try_from(offset).unwrap_or(usize::MAX);
     let size = usize::try_from(limit).unwrap_or(usize::MAX);
     let slice: Vec<rules::Entry> = found.into_iter().skip(start).take(size).collect();
-    Ok(with_page_headers(format::json(slice)?, total, limit, offset))
+    Ok(with_page_headers(
+        format::json(slice)?,
+        total,
+        limit,
+        offset,
+    ))
 }
 
 /// The directory route.
 pub fn routes() -> Routes {
-    Routes::new().prefix("/api").add("/directory", get(directory))
+    Routes::new()
+        .prefix("/api")
+        .add("/directory", get(directory))
 }

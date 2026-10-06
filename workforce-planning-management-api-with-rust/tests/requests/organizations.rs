@@ -338,7 +338,10 @@ async fn organization_confederation_round_trip() {
         scope.sort();
         let mut expected = vec![parent.clone(), child.clone(), grandchild.clone()];
         expected.sort();
-        assert_eq!(scope, expected, "parent membership expands to every descendant");
+        assert_eq!(
+            scope, expected,
+            "parent membership expands to every descendant"
+        );
 
         // Revoking the parent -> child edge collapses the scope back
         // to just the parent (the grandchild, only reachable through
@@ -350,7 +353,11 @@ async fn organization_confederation_round_trip() {
         let scope_after = memberships::caller_scope_refs(&ctx.db, Some(&claims))
             .await
             .expect("scope shrinks");
-        assert_eq!(scope_after, vec![parent.clone()], "revoked edge drops descendants");
+        assert_eq!(
+            scope_after,
+            vec![parent.clone()],
+            "revoked edge drops descendants"
+        );
     })
     .await;
 }

@@ -286,7 +286,14 @@ mod tests {
             fill_median_days: Some(72.4),
         };
         let found = derive(&i);
-        let by = |code: &str| found.iter().find(|x| x.code == code).unwrap().params.clone();
+        let by = |code: &str| {
+            found
+                .iter()
+                .find(|x| x.code == code)
+                .unwrap()
+                .params
+                .clone()
+        };
         assert_eq!(by("turnover_high")["pct"], 25.0);
         assert_eq!(by("headcount_shrinking")["pct"], 15.0);
         assert_eq!(by("headcount_shrinking")["opening"], 100);

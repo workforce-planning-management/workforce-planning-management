@@ -143,7 +143,10 @@ struct UriQuery {
     uri: String,
 }
 
-pub(crate) async fn find_occupation(ctx: &AppContext, uri: &str) -> Result<esco_occupations::Model> {
+pub(crate) async fn find_occupation(
+    ctx: &AppContext,
+    uri: &str,
+) -> Result<esco_occupations::Model> {
     esco_occupations::Entity::find()
         .filter(esco_occupations::Column::Uri.eq(uri))
         .one(&ctx.db)

@@ -70,7 +70,7 @@ mod tests {
         );
         let on_share = appraisal_recipients("shared", subject, &raters);
         assert_eq!(on_share, vec![(subject, "appraisal_shared")]);
-        assert!(appraisal_recipients("draft", subject, &raters).is_empty());
+        assert_eq!(appraisal_recipients("draft", subject, &raters).len(), 0);
     }
 
     #[test]
@@ -97,7 +97,15 @@ mod tests {
         let (a, b, c) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
         assert_eq!(rota_added_recipients(&[], &[a, b]), vec![a, b]);
         assert_eq!(rota_added_recipients(&[a, b], &[c, b, a]), vec![c]);
-        assert_eq!(rota_added_recipients(&[a, b], &[b, a]), Vec::<Uuid>::new(), "re-order");
-        assert_eq!(rota_added_recipients(&[a, b], &[a]), Vec::<Uuid>::new(), "removal");
+        assert_eq!(
+            rota_added_recipients(&[a, b], &[b, a]),
+            Vec::<Uuid>::new(),
+            "re-order"
+        );
+        assert_eq!(
+            rota_added_recipients(&[a, b], &[a]),
+            Vec::<Uuid>::new(),
+            "removal"
+        );
     }
 }

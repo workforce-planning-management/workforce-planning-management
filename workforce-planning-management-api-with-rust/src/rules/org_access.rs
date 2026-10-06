@@ -79,8 +79,14 @@ mod tests {
     #[test]
     fn hr_admin_manages_only_plain_membership() {
         assert!(can_manage_membership("hr_admin", "member"));
-        assert!(!can_manage_membership("hr_admin", "hr_admin"), "no self-escalation");
-        assert!(!can_manage_membership("hr_admin", "org_admin"), "no escalation to org_admin");
+        assert!(
+            !can_manage_membership("hr_admin", "hr_admin"),
+            "no self-escalation"
+        );
+        assert!(
+            !can_manage_membership("hr_admin", "org_admin"),
+            "no escalation to org_admin"
+        );
         assert!(!can_manage_membership("hr_admin", "payroll_admin"));
     }
 
@@ -88,7 +94,10 @@ mod tests {
     fn other_roles_manage_nothing() {
         for acting in ["payroll_admin", "member", "viewer"] {
             for target in ["member", "hr_admin", "payroll_admin", "org_admin", "viewer"] {
-                assert!(!can_manage_membership(acting, target), "{acting} -> {target}");
+                assert!(
+                    !can_manage_membership(acting, target),
+                    "{acting} -> {target}"
+                );
             }
         }
     }
@@ -109,7 +118,7 @@ mod tests {
         descendants.sort();
         assert_eq!(descendants, vec!["b", "c", "d", "e"]);
         // A leaf has no descendants.
-        assert!(descendants_of(&edges, "e").is_empty());
+        assert_eq!(descendants_of(&edges, "e").len(), 0);
     }
 
     #[test]

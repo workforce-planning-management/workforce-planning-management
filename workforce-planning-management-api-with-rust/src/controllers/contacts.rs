@@ -128,7 +128,9 @@ async fn add_contact(
             rules::MAX_CONTACTS
         )));
     }
-    let next = i32::try_from(existing.len()).unwrap_or(i32::MAX).saturating_add(1);
+    let next = i32::try_from(existing.len())
+        .unwrap_or(i32::MAX)
+        .saturating_add(1);
     let priority = payload.priority.unwrap_or(next);
     let alt_phone = clean(payload.alt_phone);
     let email = clean(payload.email);
@@ -215,8 +217,12 @@ async fn update_contact(
         .relationship
         .unwrap_or_else(|| row.relationship.clone());
     let phone = payload.phone.unwrap_or_else(|| row.phone.clone());
-    let alt_phone = payload.alt_phone.map_or_else(|| row.alt_phone.clone(), |v| clean(Some(v)));
-    let email = payload.email.map_or_else(|| row.email.clone(), |v| clean(Some(v)));
+    let alt_phone = payload
+        .alt_phone
+        .map_or_else(|| row.alt_phone.clone(), |v| clean(Some(v)));
+    let email = payload
+        .email
+        .map_or_else(|| row.email.clone(), |v| clean(Some(v)));
     let priority = payload.priority.unwrap_or(row.priority);
     rules::validate_contact(
         name.trim(),
@@ -227,7 +233,9 @@ async fn update_contact(
         priority,
     )
     .map_err(|e| unprocessable(&e))?;
-    let note = payload.note.map_or_else(|| row.note.clone(), |v| clean(Some(v)));
+    let note = payload
+        .note
+        .map_or_else(|| row.note.clone(), |v| clean(Some(v)));
     let mut active: emergency_contacts::ActiveModel = row.into();
     active.name = ActiveValue::set(name.trim().to_string());
     active.relationship = ActiveValue::set(relationship.trim().to_string());
@@ -383,7 +391,9 @@ async fn add_backup(
     if existing.iter().any(|b| b.backup_pid == payload.backup_pid) {
         return Err(unprocessable("that person is already a backup"));
     }
-    let next = i32::try_from(existing.len()).unwrap_or(i32::MAX).saturating_add(1);
+    let next = i32::try_from(existing.len())
+        .unwrap_or(i32::MAX)
+        .saturating_add(1);
     let priority = payload.priority.unwrap_or(next);
     cover_rules::validate_backup(
         worker.pid,
@@ -467,7 +477,9 @@ async fn update_backup(
     let ends_on = payload.ends_on.or(row.ends_on);
     cover_rules::validate_backup(worker.pid, row.backup_pid, priority, starts_on, ends_on)
         .map_err(|e| unprocessable(&e))?;
-    let note = payload.note.map_or_else(|| row.note.clone(), |v| clean(Some(v)));
+    let note = payload
+        .note
+        .map_or_else(|| row.note.clone(), |v| clean(Some(v)));
     let mut active: worker_backups::ActiveModel = row.into();
     active.priority = ActiveValue::set(priority);
     active.starts_on = ActiveValue::set(starts_on);
@@ -554,9 +566,9 @@ async fn cover(
     let candidates: Vec<Candidate> = rows
         .iter()
         .map(|b| {
-            let employed = who.get(&b.backup_pid).is_some_and(|w| {
-                metric_rules::is_employed_on(on, w.hired_on, w.terminated_on)
-            });
+            let employed = who
+                .get(&b.backup_pid)
+                .is_some_and(|w| metric_rules::is_employed_on(on, w.hired_on, w.terminated_on));
             Candidate {
                 backup: b.backup_pid,
                 priority: b.priority,

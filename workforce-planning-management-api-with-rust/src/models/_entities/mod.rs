@@ -1,9 +1,9 @@
 //! `SeaORM` entity definitions, one module per table.
 
 pub mod adjustment_requests;
-pub mod applications;
 pub mod announcement_reads;
 pub mod announcements;
+pub mod applications;
 pub mod appraisal_nominations;
 pub mod appraisal_responses;
 pub mod appraisals;
@@ -24,8 +24,8 @@ pub mod development_plan_items;
 pub mod development_plans;
 pub mod dotted_line_reports;
 pub mod early_career_programs;
-pub mod entitlement_acknowledgements;
 pub mod emergency_contacts;
+pub mod entitlement_acknowledgements;
 pub mod ergonomic_assessments;
 pub mod ergonomic_items;
 pub mod esco_occupation_skills;
@@ -67,13 +67,13 @@ pub mod pulse_responses;
 pub mod pulse_surveys;
 pub mod requisitions;
 pub mod review_cycles;
+pub mod reviews;
+pub mod role_profiles;
+pub mod role_skill_requirements;
 pub mod rota_members;
 pub mod rota_overrides;
 pub mod rota_swap_requests;
 pub mod rotas;
-pub mod reviews;
-pub mod role_profiles;
-pub mod role_skill_requirements;
 pub mod shift_assignments;
 pub mod shifts;
 pub mod skill_courses;

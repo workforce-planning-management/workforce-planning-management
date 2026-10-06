@@ -105,7 +105,13 @@ pub fn recommend<S: std::hash::BuildHasher>(
     } else {
         Basis::Courses
     };
-    Recommendation { courses, course_levels, estimated_levels, hours, basis }
+    Recommendation {
+        courses,
+        course_levels,
+        estimated_levels,
+        hours,
+        basis,
+    }
 }
 
 /// The weekly hours a plan assumes: the request if given and within 1–40,
@@ -154,13 +160,23 @@ pub fn schedule(hours: &[u32], weekly_hours: u32, start: NaiveDate) -> Vec<Slot>
         .map(|h| {
             total += h;
             if *h == 0 {
-                return Slot { starts_on: None, ends_on: None, weeks: 0, cumulative_hours: total };
+                return Slot {
+                    starts_on: None,
+                    ends_on: None,
+                    weeks: 0,
+                    cumulative_hours: total,
+                };
             }
             let weeks = h.div_ceil(pace);
             let starts_on = cursor;
             let ends_on = cursor + Duration::days(i64::from(weeks) * 7 - 1);
             cursor = ends_on + Duration::days(1);
-            Slot { starts_on: Some(starts_on), ends_on: Some(ends_on), weeks, cumulative_hours: total }
+            Slot {
+                starts_on: Some(starts_on),
+                ends_on: Some(ends_on),
+                weeks,
+                cumulative_hours: total,
+            }
         })
         .collect()
 }
@@ -170,7 +186,12 @@ mod tests {
     use super::*;
 
     fn course(r: &str, hours: u32, levels: u32) -> Course {
-        Course { course_ref: r.to_string(), title: r.to_uppercase(), hours, levels }
+        Course {
+            course_ref: r.to_string(),
+            title: r.to_uppercase(),
+            hours,
+            levels,
+        }
     }
     fn none() -> HashSet<String> {
         HashSet::new()
@@ -179,13 +200,20 @@ mod tests {
     #[test]
     fn no_catalogue_means_the_per_level_estimate_and_says_so() {
         let r = recommend(3, &[], &none(), 30);
-        assert_eq!((r.hours, r.basis, r.estimated_levels), (90, Basis::Estimate, 3));
+        assert_eq!(
+            (r.hours, r.basis, r.estimated_levels),
+            (90, Basis::Estimate, 3)
+        );
         assert_eq!(r.courses, Vec::<Course>::new());
     }
 
     #[test]
     fn courses_are_taken_cheapest_per_level_first_until_the_gap_is_covered() {
-        let cat = [course("big", 60, 2), course("fast", 10, 1), course("slow", 40, 1)];
+        let cat = [
+            course("big", 60, 2),
+            course("fast", 10, 1),
+            course("slow", 40, 1),
+        ];
         // fast = 10/level, big = 30/level, slow = 40/level.
         let r = recommend(2, &cat, &none(), 99);
         let refs: Vec<&str> = r.courses.iter().map(|c| c.course_ref.as_str()).collect();
@@ -237,10 +265,23 @@ mod tests {
         // 10h at 4/week = 3 weeks: 5–25 Oct. Then a zero-hour item: not placed.
         assert_eq!(slots[0].weeks, 3);
         assert_eq!(slots[0].starts_on, Some(start));
-        assert_eq!(slots[0].ends_on, Some(NaiveDate::from_ymd_opt(2026, 10, 25).unwrap()));
-        assert_eq!((slots[1].starts_on, slots[1].weeks, slots[1].cumulative_hours), (None, 0, 10));
+        assert_eq!(
+            slots[0].ends_on,
+            Some(NaiveDate::from_ymd_opt(2026, 10, 25).unwrap())
+        );
+        assert_eq!(
+            (
+                slots[1].starts_on,
+                slots[1].weeks,
+                slots[1].cumulative_hours
+            ),
+            (None, 0, 10)
+        );
         // 3h = 1 week, starting the day after the first ended.
-        assert_eq!(slots[2].starts_on, Some(NaiveDate::from_ymd_opt(2026, 10, 26).unwrap()));
+        assert_eq!(
+            slots[2].starts_on,
+            Some(NaiveDate::from_ymd_opt(2026, 10, 26).unwrap())
+        );
         assert_eq!(slots[2].cumulative_hours, 13);
     }
 }

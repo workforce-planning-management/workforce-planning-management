@@ -4,7 +4,13 @@
 
 import type { OrgNode } from "./api/types";
 
-export const ORG_VIEWS = ["manager", "department", "level", "tenure", "location"] as const;
+export const ORG_VIEWS = [
+  "manager",
+  "department",
+  "level",
+  "tenure",
+  "location",
+] as const;
 export type OrgView = (typeof ORG_VIEWS)[number];
 
 /** A node with its depth in the manager forest (a root is level 1). */

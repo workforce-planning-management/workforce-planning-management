@@ -111,7 +111,15 @@ pub fn merge(needs: &[Need], declared: &BTreeMap<Uuid, i32>) -> Vec<Gap> {
                 Some(level) if level >= required => (Status::Met, None),
                 Some(level) => (Status::Below, Some(required - level)),
             };
-            Gap { skill, required, importance, sources, declared: have, status, shortfall }
+            Gap {
+                skill,
+                required,
+                importance,
+                sources,
+                declared: have,
+                status,
+                shortfall,
+            }
         })
         .collect()
 }
@@ -120,8 +128,9 @@ pub fn merge(needs: &[Need], declared: &BTreeMap<Uuid, i32>) -> Vec<Gap> {
 /// met or unknown — an unknown has no size.
 #[must_use]
 pub fn priority(gap: &Gap) -> u32 {
-    gap.shortfall
-        .map_or(0, |s| weight(&gap.importance) * u32::try_from(s).unwrap_or(0))
+    gap.shortfall.map_or(0, |s| {
+        weight(&gap.importance) * u32::try_from(s).unwrap_or(0)
+    })
 }
 
 /// Order for reading: real gaps by priority (highest first), then the
@@ -209,15 +218,22 @@ pub fn rollup(rows: &[Row]) -> Vec<SkillRollup> {
                 if r.importance == "critical" {
                     e.critical_below += 1;
                 }
-                *depts.entry(r.skill).or_default().entry(r.department.clone()).or_default() += 1;
+                *depts
+                    .entry(r.skill)
+                    .or_default()
+                    .entry(r.department.clone())
+                    .or_default() += 1;
             }
         }
     }
     let mut out: Vec<SkillRollup> = by_skill
         .into_values()
         .map(|mut e| {
-            let mut d: Vec<(String, usize)> =
-                depts.remove(&e.skill).unwrap_or_default().into_iter().collect();
+            let mut d: Vec<(String, usize)> = depts
+                .remove(&e.skill)
+                .unwrap_or_default()
+                .into_iter()
+                .collect();
             d.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
             e.departments = d;
             e
@@ -240,7 +256,12 @@ mod tests {
         Uuid::from_u128(n)
     }
     fn need(skill: u128, required: i32, importance: &str, source: Source) -> Need {
-        Need { skill: id(skill), required, importance: importance.to_string(), source }
+        Need {
+            skill: id(skill),
+            required,
+            importance: importance.to_string(),
+            source,
+        }
     }
     fn have(pairs: &[(u128, i32)]) -> BTreeMap<Uuid, i32> {
         pairs.iter().map(|(s, l)| (id(*s), *l)).collect()
@@ -266,7 +287,11 @@ mod tests {
     #[test]
     fn met_below_and_undeclared_are_distinct_and_unknown_has_no_number() {
         let gaps = merge(
-            &[need(1, 3, "critical", Source::Role), need(2, 3, "critical", Source::Role), need(3, 3, "critical", Source::Role)],
+            &[
+                need(1, 3, "critical", Source::Role),
+                need(2, 3, "critical", Source::Role),
+                need(3, 3, "critical", Source::Role),
+            ],
             &have(&[(1, 3), (2, 1)]),
         );
         let by = |s: u128| gaps.iter().find(|g| g.skill == id(s)).unwrap();
@@ -281,10 +306,10 @@ mod tests {
     fn ranking_puts_real_gaps_first_by_priority_then_unknowns_then_met() {
         let mut gaps = merge(
             &[
-                need(1, 3, "useful", Source::Role),    // below by 2 → 2
-                need(2, 3, "critical", Source::Role),  // below by 1 → 3
-                need(3, 3, "critical", Source::Role),  // undeclared
-                need(4, 3, "useful", Source::Role),    // met
+                need(1, 3, "useful", Source::Role),   // below by 2 → 2
+                need(2, 3, "critical", Source::Role), // below by 1 → 3
+                need(3, 3, "critical", Source::Role), // undeclared
+                need(4, 3, "useful", Source::Role),   // met
             ],
             &have(&[(1, 1), (2, 2), (4, 5)]),
         );
@@ -294,7 +319,13 @@ mod tests {
     }
 
     fn row(skill: u128, dept: &str, status: Status, shortfall: Option<i32>, imp: &str) -> Row {
-        Row { skill: id(skill), department: dept.to_string(), status, shortfall, importance: imp.to_string() }
+        Row {
+            skill: id(skill),
+            department: dept.to_string(),
+            status,
+            shortfall,
+            importance: imp.to_string(),
+        }
     }
 
     #[test]
@@ -311,11 +342,17 @@ mod tests {
         assert_eq!(out.len(), 2);
         let first = &out[0];
         assert_eq!(first.skill, id(1));
-        assert_eq!((first.needed_by, first.met, first.below, first.undeclared), (5, 1, 3, 1));
+        assert_eq!(
+            (first.needed_by, first.met, first.below, first.undeclared),
+            (5, 1, 3, 1)
+        );
         assert_eq!(first.total_shortfall, 4);
         assert_eq!(first.critical_below, 3);
         assert_eq!(first.score, 12, "3 × (2 + 1 + 1)");
-        assert_eq!(first.departments, [("eng".to_string(), 2), ("ops".to_string(), 1)]);
+        assert_eq!(
+            first.departments,
+            [("eng".to_string(), 2), ("ops".to_string(), 1)]
+        );
         assert_eq!(out[1].score, 3, "useful (1) × 3 levels");
     }
 

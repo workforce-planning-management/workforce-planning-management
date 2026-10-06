@@ -21,7 +21,9 @@ export function trendDates(today: string, months = 6): string[] {
   for (let back = months; back >= 1; back--) {
     // Day 0 of the month after `back` months ago = last day of that month.
     out.push(
-      iso(new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() - back + 1, 0))),
+      iso(
+        new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() - back + 1, 0)),
+      ),
     );
   }
   out.push(today);
@@ -67,7 +69,9 @@ export const DEFAULT_RANGE: Range = "12m";
 
 /** `raw` as a known range, else the default (so a stale or edited URL is harmless). */
 export function parseRange(raw: string | null | undefined): Range {
-  return (RANGES as readonly string[]).includes(raw ?? "") ? (raw as Range) : DEFAULT_RANGE;
+  return (RANGES as readonly string[]).includes(raw ?? "")
+    ? (raw as Range)
+    : DEFAULT_RANGE;
 }
 
 /**
@@ -75,7 +79,10 @@ export function parseRange(raw: string | null | undefined): Range {
  * 90 days counting today, twelve months back (the same date last year,
  * clamped to the month's end — the service's own default), or since 1 January.
  */
-export function rangeDates(range: Range, today: string): { from: string; to: string } {
+export function rangeDates(
+  range: Range,
+  today: string,
+): { from: string; to: string } {
   const t = new Date(`${today}T00:00:00Z`);
   const day = (d: Date): string => d.toISOString().slice(0, 10);
   switch (range) {
@@ -89,7 +96,12 @@ export function rangeDates(range: Range, today: string): { from: string; to: str
       const year = t.getUTCFullYear() - 1;
       const month = t.getUTCMonth();
       const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-      return { from: day(new Date(Date.UTC(year, month, Math.min(t.getUTCDate(), lastDay)))), to: today };
+      return {
+        from: day(
+          new Date(Date.UTC(year, month, Math.min(t.getUTCDate(), lastDay))),
+        ),
+        to: today,
+      };
     }
   }
 }

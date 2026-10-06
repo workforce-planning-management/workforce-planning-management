@@ -46,7 +46,11 @@ pub(super) async fn find_rota(
 }
 
 /// A rota outside the caller's organizations does not exist, to them.
-pub(super) async fn require_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
+pub(super) async fn require_scope(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    org: &str,
+) -> Result<()> {
     if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
         && !refs.iter().any(|r| r == org)
     {
@@ -96,8 +100,12 @@ pub(super) async fn compute(
     rota: &rotas::Model,
     from: NaiveDate,
     to: NaiveDate,
-) -> Result<(Vec<Uuid>, Vec<rota_overrides::Model>, Vec<Assignment>, HashMap<Uuid, workers::Model>)>
-{
+) -> Result<(
+    Vec<Uuid>,
+    Vec<rota_overrides::Model>,
+    Vec<Assignment>,
+    HashMap<Uuid, workers::Model>,
+)> {
     let members = member_pids(ctx, rota.pid).await?;
     let overrides = override_rows(ctx, rota.pid).await?;
     let mut ids = members.clone();
@@ -113,7 +121,9 @@ pub(super) async fn compute(
         .all(&ctx.db)
         .await?
     {
-        away.entry(l.worker_pid).or_default().push((l.start_on, l.end_on));
+        away.entry(l.worker_pid)
+            .or_default()
+            .push((l.start_on, l.end_on));
     }
     let unavailable = |worker: Uuid, day: NaiveDate| -> bool {
         let Some(w) = people.get(&worker) else {
@@ -131,14 +141,19 @@ pub(super) async fn compute(
     };
     let swaps: Vec<Override> = overrides
         .iter()
-        .map(|o| Override { worker: o.worker_pid, starts_on: o.starts_on, ends_on: o.ends_on })
+        .map(|o| Override {
+            worker: o.worker_pid,
+            starts_on: o.starts_on,
+            ends_on: o.ends_on,
+        })
         .collect();
     let assignments = rules::schedule(&model, &swaps, &unavailable, from, to);
     Ok((members, overrides, assignments, people))
 }
 
 pub(super) fn name_of(people: &HashMap<Uuid, workers::Model>, pid: Option<Uuid>) -> Option<String> {
-    pid.and_then(|p| people.get(&p)).map(|w| w.display_name.clone())
+    pid.and_then(|p| people.get(&p))
+        .map(|w| w.display_name.clone())
 }
 
 /// The `from..=to` window from a query, defaulting to 28 days from today.
@@ -157,10 +172,7 @@ fn window(from: Option<NaiveDate>, to: Option<NaiveDate>) -> Result<(NaiveDate, 
     Ok((from, to))
 }
 
-fn run_json(
-    r: &rules::Run,
-    people: &HashMap<Uuid, workers::Model>,
-) -> serde_json::Value {
+fn run_json(r: &rules::Run, people: &HashMap<Uuid, workers::Model>) -> serde_json::Value {
     serde_json::json!({
         "from": r.from,
         "to": r.to,
@@ -194,7 +206,9 @@ pub(super) async fn check_members(ctx: &AppContext, org: &str, members: &[Uuid])
             return Err(unprocessable("a member is not a worker here"));
         };
         if w.organization_ref != org {
-            return Err(unprocessable("members must belong to the rota's organization"));
+            return Err(unprocessable(
+                "members must belong to the rota's organization",
+            ));
         }
         if !metric_rules::is_employed_on(today, w.hired_on, w.terminated_on) {
             return Err(unprocessable("a member is not currently employed"));
@@ -203,11 +217,7 @@ pub(super) async fn check_members(ctx: &AppContext, org: &str, members: &[Uuid])
     Ok(())
 }
 
-async fn write_members(
-    txn: &impl ConnectionTrait,
-    rota: Uuid,
-    members: &[Uuid],
-) -> Result<()> {
+async fn write_members(txn: &impl ConnectionTrait, rota: Uuid, members: &[Uuid]) -> Result<()> {
     rota_members::Entity::delete_many()
         .filter(rota_members::Column::RotaPid.eq(rota))
         .exec(txn)
@@ -265,7 +275,10 @@ async fn create_rota(
         organization_ref: ActiveValue::set(payload.organization_ref.clone()),
         name: ActiveValue::set(payload.name.trim().to_string()),
         description: ActiveValue::set(
-            payload.description.map(|d| d.trim().to_string()).filter(|d| !d.is_empty()),
+            payload
+                .description
+                .map(|d| d.trim().to_string())
+                .filter(|d| !d.is_empty()),
         ),
         period_days: ActiveValue::set(payload.period_days),
         starts_on: ActiveValue::set(payload.starts_on),
@@ -282,7 +295,12 @@ async fn create_rota(
         }
     })?;
     write_members(&txn, row.pid, &payload.members).await?;
-    notify_added(&txn, &row, &notify::rota_added_recipients(&[], &payload.members)).await?;
+    notify_added(
+        &txn,
+        &row,
+        &notify::rota_added_recipients(&[], &payload.members),
+    )
+    .await?;
     Audit::record(&txn, "rota", row.pid, "created", caller.actor(), None).await?;
     txn.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
@@ -343,8 +361,10 @@ async fn get_rota(
     let rota = find_rota(&ctx, &caller, &pid).await?;
     let (from, to) = window(q.from, q.to)?;
     let (members, overrides, assignments, people) = compute(&ctx, &rota, from, to).await?;
-    let runs: Vec<serde_json::Value> =
-        rules::runs(&assignments).iter().map(|r| run_json(r, &people)).collect();
+    let runs: Vec<serde_json::Value> = rules::runs(&assignments)
+        .iter()
+        .map(|r| run_json(r, &people))
+        .collect();
     let load: Vec<serde_json::Value> = rules::load(&assignments)
         .into_iter()
         .map(|(w, days)| {
@@ -467,7 +487,12 @@ async fn update_rota(
         write_members(&txn, rota.pid, &members).await?;
         // `current` was read before the transaction opened: reading again here
         // would wait on a second pooled connection while this one is held.
-        notify_added(&txn, &rota, &notify::rota_added_recipients(&current, &members)).await?;
+        notify_added(
+            &txn,
+            &rota,
+            &notify::rota_added_recipients(&current, &members),
+        )
+        .await?;
     }
     Audit::record(&txn, "rota", rota.pid, "updated", caller.actor(), None).await?;
     txn.commit().await?;
@@ -533,7 +558,10 @@ async fn add_override(
         starts_on: ActiveValue::set(payload.starts_on),
         ends_on: ActiveValue::set(payload.ends_on),
         note: ActiveValue::set(
-            payload.note.map(|n| n.trim().to_string()).filter(|n| !n.is_empty()),
+            payload
+                .note
+                .map(|n| n.trim().to_string())
+                .filter(|n| !n.is_empty()),
         ),
         created_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         ..Default::default()
@@ -555,7 +583,15 @@ async fn add_override(
         }),
     )
     .await?;
-    Audit::record(&ctx.db, "rota", rota.pid, "swap_added", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "rota",
+        rota.pid,
+        "swap_added",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 
@@ -572,8 +608,18 @@ async fn delete_override(
         .await?
         .ok_or(Error::NotFound)?;
     let rota = find_rota(&ctx, &caller, &row.rota_pid.to_string()).await?;
-    rota_overrides::Entity::delete_by_id(row.id).exec(&ctx.db).await?;
-    Audit::record(&ctx.db, "rota", rota.pid, "swap_removed", caller.actor(), None).await?;
+    rota_overrides::Entity::delete_by_id(row.id)
+        .exec(&ctx.db)
+        .await?;
+    Audit::record(
+        &ctx.db,
+        "rota",
+        rota.pid,
+        "swap_removed",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::empty_json()
 }
 
@@ -658,8 +704,7 @@ pub(crate) async fn turns_starting_on(
         .all(&ctx.db)
         .await?;
     for rota in all {
-        let (_, _, assignments, _) =
-            compute(ctx, &rota, date - Duration::days(1), date).await?;
+        let (_, _, assignments, _) = compute(ctx, &rota, date - Duration::days(1), date).await?;
         if let [yesterday, today] = assignments.as_slice()
             && let Some(worker) = rules::turn_starts(yesterday, today)
         {

@@ -265,7 +265,10 @@ async fn capability_analysis_reports_skill_depth() {
             .iter()
             .find(|s| s["skill"] == "Rust")
             .unwrap();
-        assert_eq!(rust["proficient"], 1, "only the level-4 declaration clears the bar");
+        assert_eq!(
+            rust["proficient"], 1,
+            "only the level-4 declaration clears the bar"
+        );
         assert_eq!(rust["status"], "adequate", "depth bar of one is met");
 
         assert_eq!(
@@ -302,9 +305,15 @@ async fn workforce_metrics_report_defined_numbers() {
             .await
             .json();
         assert_eq!(view["period"]["from"], "2026-01-01");
-        assert_eq!(view["headcount"]["opening"], 0, "nobody employed on 2025-12-31");
+        assert_eq!(
+            view["headcount"]["opening"], 0,
+            "nobody employed on 2025-12-31"
+        );
         assert!(view["headcount"]["closing"].as_u64().unwrap() >= 2);
-        assert!(view["starters"].as_u64().unwrap() >= 2, "both hired in the period");
+        assert!(
+            view["starters"].as_u64().unwrap() >= 2,
+            "both hired in the period"
+        );
         assert_eq!(view["leavers"], 0);
         assert!(
             view["time_to_fill"].is_null() || view["time_to_fill"]["requisitions"].is_u64(),
@@ -528,7 +537,9 @@ async fn headcount_snapshots_are_recorded_idempotently() {
         activate!(&request, &a).await;
 
         let first_day = chrono::NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
-        let written = run_snapshot(&ctx.db, first_day).await.expect("first snapshot");
+        let written = run_snapshot(&ctx.db, first_day)
+            .await
+            .expect("first snapshot");
         assert!(written >= 1, "the seeded worker's department is recorded");
         assert_eq!(
             run_snapshot(&ctx.db, first_day).await.expect("re-run"),
@@ -543,15 +554,24 @@ async fn headcount_snapshots_are_recorded_idempotently() {
             .await
             .json();
         let rows = history["snapshots"].as_array().unwrap();
-        let row = rows.iter().find(|r| r["department"] == "engineering").unwrap();
+        let row = rows
+            .iter()
+            .find(|r| r["department"] == "engineering")
+            .unwrap();
         assert_eq!(row["as_of"], "2026-07-01");
         assert!(row["headcount"].as_u64().unwrap() >= 1);
-        assert!(row["starters"].is_null(), "the first snapshot has no window");
+        assert!(
+            row["starters"].is_null(),
+            "the first snapshot has no window"
+        );
 
         // A later snapshot measures starters/leavers from the earlier one.
-        run_snapshot(&ctx.db, chrono::NaiveDate::from_ymd_opt(2026, 8, 1).unwrap())
-            .await
-            .expect("second snapshot");
+        run_snapshot(
+            &ctx.db,
+            chrono::NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+        )
+        .await
+        .expect("second snapshot");
         let later: Value = request
             .get(&format!(
                 "/api/workforce-intelligence/headcount-history?organization={org}&from=2026-08-01"
@@ -560,7 +580,10 @@ async fn headcount_snapshots_are_recorded_idempotently() {
             .json();
         let later_row = &later["snapshots"].as_array().unwrap()[0];
         assert_eq!(later_row["as_of"], "2026-08-01");
-        assert!(later_row["starters"].is_u64(), "a known window reports a count");
+        assert!(
+            later_row["starters"].is_u64(),
+            "a known window reports a count"
+        );
     })
     .await;
 }
@@ -669,7 +692,9 @@ async fn role_gap_grades_declarations_against_a_role() {
         }
 
         let gap: Value = request
-            .get(&format!("/api/workers/{worker}/role-gap?role_profile_pid={role}"))
+            .get(&format!(
+                "/api/workers/{worker}/role-gap?role_profile_pid={role}"
+            ))
             .await
             .json();
         let grade_of = |name: &str| {
@@ -690,7 +715,10 @@ async fn role_gap_grades_declarations_against_a_role() {
         assert_eq!(gap["critical_met"]["numerator"], 1);
         assert_eq!(gap["critical_met"]["denominator"], 3);
 
-        let workforce: Value = request.get(&format!("/api/role-profiles/{role}/gap")).await.json();
+        let workforce: Value = request
+            .get(&format!("/api/role-profiles/{role}/gap"))
+            .await
+            .json();
         let met_row = workforce["requirements"]
             .as_array()
             .unwrap()
@@ -781,7 +809,10 @@ async fn cpd_ledger_tracks_progress_and_registrations() {
                 .cloned()
                 .unwrap()
         };
-        let view: Value = request.get(&format!("/api/workers/{worker}/cpd-progress")).await.json();
+        let view: Value = request
+            .get(&format!("/api/workers/{worker}/cpd-progress"))
+            .await
+            .json();
         let row = progress(&view);
         assert_eq!(row["recorded"], 8.5);
         assert_eq!(row["verified"], 0.0);
@@ -801,7 +832,10 @@ async fn cpd_ledger_tracks_progress_and_registrations() {
                 .status_code(),
             422
         );
-        let after: Value = request.get(&format!("/api/workers/{worker}/cpd-progress")).await.json();
+        let after: Value = request
+            .get(&format!("/api/workers/{worker}/cpd-progress"))
+            .await
+            .json();
         assert_eq!(progress(&after)["verified"], 6.5);
 
         // Registrations carry an expiry status.
@@ -810,12 +844,21 @@ async fn cpd_ledger_tracks_progress_and_registrations() {
             .json(&json!({ "body": "Test Regulator", "expires_on": "2000-01-01" }))
             .await
             .assert_status_ok();
-        let regs: Value = request.get(&format!("/api/workers/{worker}/registrations")).await.json();
+        let regs: Value = request
+            .get(&format!("/api/workers/{worker}/registrations"))
+            .await
+            .json();
         assert_eq!(regs[0]["status"], "expired");
 
         let overview: Value = request.get("/api/cpd/overview").await.json();
         assert!(overview["registrations"]["expired"].as_u64().unwrap() >= 1);
-        assert!(overview["requirements"].as_array().unwrap().iter().any(|r| r["requirement_pid"] == requirement_pid));
+        assert!(
+            overview["requirements"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|r| r["requirement_pid"] == requirement_pid)
+        );
     })
     .await;
 }
@@ -1321,15 +1364,22 @@ async fn capability_framework_import_and_progression() {
     use workforce_planning_management_service::tasks::import_framework::import_pcf;
 
     request::<App, _, _>(|request, ctx| async move {
-        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pcf-mini");
+        let fixture =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pcf-mini");
         let report = import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
             .await
             .expect("import");
         assert_eq!(report.levels_read, 4);
         assert_eq!(report.retired_skipped, 1);
         assert_eq!(report.profiles_created, 3);
-        assert_eq!(report.requirements_created, 6, "2 + 3 + 1 baselined skill lines");
-        assert_eq!(report.requirements_skipped_no_baseline, 1, "no invented level");
+        assert_eq!(
+            report.requirements_created, 6,
+            "2 + 3 + 1 baselined skill lines"
+        );
+        assert_eq!(
+            report.requirements_skipped_no_baseline, 1,
+            "no invented level"
+        );
 
         // Idempotent: a second run creates nothing and refreshes everything.
         let again = import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
@@ -1349,11 +1399,19 @@ async fn capability_framework_import_and_progression() {
             .find(|f| f["slug"] == "uk-gdad-pcf")
             .unwrap();
         assert_eq!(pcf["scale_max"], 4);
-        assert!(pcf["attribution"].as_str().unwrap().contains("Open Government Licence"));
+        assert!(
+            pcf["attribution"]
+                .as_str()
+                .unwrap()
+                .contains("Open Government Licence")
+        );
         assert!(pcf["profiles"].as_u64().unwrap() >= 3);
 
         // Profiles: titles as the framework writes them; the management track is flagged.
-        let listed: Value = request.get("/api/role-profiles?framework=uk-gdad-pcf").await.json();
+        let listed: Value = request
+            .get("/api/role-profiles?framework=uk-gdad-pcf")
+            .await
+            .json();
         let by_title = |title: &str| {
             listed
                 .as_array()
@@ -1373,7 +1431,10 @@ async fn capability_framework_import_and_progression() {
 
         // Requirements keep the source level beside WPM's; the identity mapping keeps the number.
         let detail: Value = request
-            .get(&format!("/api/role-profiles/{}", tester["pid"].as_str().unwrap()))
+            .get(&format!(
+                "/api/role-profiles/{}",
+                tester["pid"].as_str().unwrap()
+            ))
             .await
             .json();
         assert!(detail["framework"]["attribution"].is_string());
@@ -1386,18 +1447,31 @@ async fn capability_framework_import_and_progression() {
         assert_eq!(skill_a["source_level"], 3);
         assert_eq!(skill_a["source_scale_max"], 4);
         assert_eq!(skill_a["min_proficiency"], 3);
-        assert_eq!(skill_a["importance"], "important", "importance is a draft default for a human to edit");
+        assert_eq!(
+            skill_a["importance"], "important",
+            "importance is a draft default for a human to edit"
+        );
 
         // A planner's edit survives a re-import (unless overwrite_levels is asked for).
         let skill_pid = skill_a["skill_pid"].as_str().unwrap();
         request
-            .put(&format!("/api/role-profiles/{}/requirements", tester["pid"].as_str().unwrap()))
-            .json(&json!({ "skill_pid": skill_pid, "min_proficiency": 5, "importance": "critical" }))
+            .put(&format!(
+                "/api/role-profiles/{}/requirements",
+                tester["pid"].as_str().unwrap()
+            ))
+            .json(
+                &json!({ "skill_pid": skill_pid, "min_proficiency": 5, "importance": "critical" }),
+            )
             .await
             .assert_status_ok();
-        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false).await.expect("re-import");
+        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
+            .await
+            .expect("re-import");
         let kept: Value = request
-            .get(&format!("/api/role-profiles/{}", tester["pid"].as_str().unwrap()))
+            .get(&format!(
+                "/api/role-profiles/{}",
+                tester["pid"].as_str().unwrap()
+            ))
             .await
             .json();
         let kept_a = kept["requirements"]
@@ -1406,10 +1480,18 @@ async fn capability_framework_import_and_progression() {
             .iter()
             .find(|r| r["skill"] == "Fixture skill A")
             .unwrap();
-        assert_eq!(kept_a["min_proficiency"], 5, "the planner's level is not overwritten");
-        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, true).await.expect("overwrite");
+        assert_eq!(
+            kept_a["min_proficiency"], 5,
+            "the planner's level is not overwritten"
+        );
+        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, true)
+            .await
+            .expect("overwrite");
         let reset: Value = request
-            .get(&format!("/api/role-profiles/{}", tester["pid"].as_str().unwrap()))
+            .get(&format!(
+                "/api/role-profiles/{}",
+                tester["pid"].as_str().unwrap()
+            ))
             .await
             .json();
         let reset_a = reset["requirements"]
@@ -1418,7 +1500,10 @@ async fn capability_framework_import_and_progression() {
             .iter()
             .find(|r| r["skill"] == "Fixture skill A")
             .unwrap();
-        assert_eq!(reset_a["min_proficiency"], 3, "overwrite_levels re-derives from the source level");
+        assert_eq!(
+            reset_a["min_proficiency"], 3,
+            "overwrite_levels re-derives from the source level"
+        );
 
         // A planner's rename survives a re-import: matched by reference, no duplicate.
         request
@@ -1426,15 +1511,28 @@ async fn capability_framework_import_and_progression() {
             .json(&json!({ "name": "Renamed skill A" }))
             .await
             .assert_status_ok();
-        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false).await.expect("re-import after rename");
+        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
+            .await
+            .expect("re-import after rename");
         let catalogue: Value = request.get("/api/skills").await.json();
-        let names: Vec<&str> = catalogue.as_array().unwrap().iter().map(|s| s["name"].as_str().unwrap()).collect();
+        let names: Vec<&str> = catalogue
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["name"].as_str().unwrap())
+            .collect();
         assert!(names.contains(&"Renamed skill A"));
-        assert!(!names.contains(&"Fixture skill A"), "no duplicate under the framework's name");
+        assert!(
+            !names.contains(&"Fixture skill A"),
+            "no duplicate under the framework's name"
+        );
 
         // Progression: junior → tester raises A (1→3), keeps B, adds C.
         let step: Value = request
-            .get(&format!("/api/role-profiles/{}/progression", junior["pid"].as_str().unwrap()))
+            .get(&format!(
+                "/api/role-profiles/{}/progression",
+                junior["pid"].as_str().unwrap()
+            ))
             .await
             .json();
         let next = &step["next"][0];
@@ -1445,10 +1543,16 @@ async fn capability_framework_import_and_progression() {
         assert_eq!(next["added"][0]["skill"], "Fixture skill C");
         assert_eq!(next["unchanged"], 1);
         let top: Value = request
-            .get(&format!("/api/role-profiles/{}/progression", lead["pid"].as_str().unwrap()))
+            .get(&format!(
+                "/api/role-profiles/{}/progression",
+                lead["pid"].as_str().unwrap()
+            ))
             .await
             .json();
-        assert!(top["next"].as_array().unwrap().is_empty(), "nothing above the top level");
+        assert!(
+            top["next"].as_array().unwrap().is_empty(),
+            "nothing above the top level"
+        );
     })
     .await;
 }

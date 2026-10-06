@@ -110,7 +110,10 @@ pub fn validate(
     match (kind, reason) {
         ("leaver", Some(r)) if LEAVER_REASONS.contains(&r) => {}
         ("leaver", _) => {
-            return Err(format!("a leaver needs a reason: one of {}", LEAVER_REASONS.join(", ")));
+            return Err(format!(
+                "a leaver needs a reason: one of {}",
+                LEAVER_REASONS.join(", ")
+            ));
         }
         (_, Some(_)) => return Err("only a leaver has a reason".to_string()),
         _ => {}
@@ -139,12 +142,7 @@ pub enum ItemState {
 
 /// An item's state: done and skipped win; otherwise by its due date.
 #[must_use]
-pub fn item_state(
-    due_on: NaiveDate,
-    done: bool,
-    skipped: bool,
-    today: NaiveDate,
-) -> ItemState {
+pub fn item_state(due_on: NaiveDate, done: bool, skipped: bool, today: NaiveDate) -> ItemState {
     if done {
         ItemState::Done
     } else if skipped {
@@ -173,7 +171,10 @@ pub struct Progress {
 #[must_use]
 pub fn progress(states: &[ItemState]) -> Progress {
     Progress {
-        closed: states.iter().filter(|s| matches!(s, ItemState::Done | ItemState::Skipped)).count(),
+        closed: states
+            .iter()
+            .filter(|s| matches!(s, ItemState::Done | ItemState::Skipped))
+            .count(),
         total: states.len(),
         overdue: states.iter().filter(|s| **s == ItemState::Overdue).count(),
     }
@@ -191,9 +192,15 @@ pub fn can_complete(open_items: usize, unassigned_handover: usize) -> Result<(),
         problems.push(format!("{open_items} checklist item(s) still open"));
     }
     if unassigned_handover > 0 {
-        problems.push(format!("{unassigned_handover} thing(s) the leaver holds not yet reassigned"));
+        problems.push(format!(
+            "{unassigned_handover} thing(s) the leaver holds not yet reassigned"
+        ));
     }
-    if problems.is_empty() { Ok(()) } else { Err(problems.join("; ")) }
+    if problems.is_empty() {
+        Ok(())
+    } else {
+        Err(problems.join("; "))
+    }
 }
 
 /// What a leaver can hold that must be handed over.
@@ -282,11 +289,7 @@ impl HandoverKind {
 ///
 /// A message when the kind needs a new holder and none is given, when access
 /// is handed to someone, or when the leaver is named as their own successor.
-pub fn validate_handover(
-    kind: HandoverKind,
-    to: Option<Uuid>,
-    leaver: Uuid,
-) -> Result<(), String> {
+pub fn validate_handover(kind: HandoverKind, to: Option<Uuid>, leaver: Uuid) -> Result<(), String> {
     if to == Some(leaver) {
         return Err("the leaver cannot take their own items".to_string());
     }
@@ -311,41 +314,77 @@ mod tests {
     fn a_checklist_is_dated_around_the_effective_day() {
         let leaver = plan("leaver", d(30));
         assert_eq!(leaver.len(), 8);
-        assert_eq!(leaver[0].due_on, NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(), "28 days before");
-        assert!(leaver.iter().any(|p| p.title.contains("Access revoked") && p.due_on == d(30)));
-        assert_eq!(leaver.last().unwrap().due_on, NaiveDate::from_ymd_opt(2026, 12, 5).unwrap(), "5 days after");
+        assert_eq!(
+            leaver[0].due_on,
+            NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(),
+            "28 days before"
+        );
+        assert!(
+            leaver
+                .iter()
+                .any(|p| p.title.contains("Access revoked") && p.due_on == d(30))
+        );
+        assert_eq!(
+            leaver.last().unwrap().due_on,
+            NaiveDate::from_ymd_opt(2026, 12, 5).unwrap(),
+            "5 days after"
+        );
         let joiner = plan("joiner", d(3));
-        assert_eq!(joiner[0].due_on, NaiveDate::from_ymd_opt(2026, 10, 27).unwrap());
-        assert_eq!(joiner.iter().map(|p| p.position).collect::<Vec<_>>(), (0..7).collect::<Vec<_>>());
+        assert_eq!(
+            joiner[0].due_on,
+            NaiveDate::from_ymd_opt(2026, 10, 27).unwrap()
+        );
+        assert_eq!(
+            joiner.iter().map(|p| p.position).collect::<Vec<_>>(),
+            (0..7).collect::<Vec<_>>()
+        );
     }
 
     #[test]
     fn a_movement_is_validated() {
         assert!(validate("leaver", Some("resignation"), d(30), d(1)).is_ok());
         assert!(validate("joiner", None, d(3), d(3)).is_ok());
-        assert!(validate("leaver", None, d(30), d(1)).is_err(), "a leaver needs a reason");
+        assert!(
+            validate("leaver", None, d(30), d(1)).is_err(),
+            "a leaver needs a reason"
+        );
         assert!(validate("leaver", Some("bored"), d(30), d(1)).is_err());
         assert!(validate("joiner", Some("resignation"), d(3), d(3)).is_err());
         assert!(validate("transfer", None, d(3), d(3)).is_err());
-        assert!(validate("leaver", Some("other"), d(1), d(5)).is_err(), "before hire");
+        assert!(
+            validate("leaver", Some("other"), d(1), d(5)).is_err(),
+            "before hire"
+        );
     }
 
     #[test]
     fn items_are_done_skipped_overdue_due_today_or_upcoming() {
         let today = d(10);
-        assert_eq!(item_state(d(1), true, false, today), ItemState::Done, "done wins over late");
+        assert_eq!(
+            item_state(d(1), true, false, today),
+            ItemState::Done,
+            "done wins over late"
+        );
         assert_eq!(item_state(d(1), false, true, today), ItemState::Skipped);
         assert_eq!(item_state(d(9), false, false, today), ItemState::Overdue);
         assert_eq!(item_state(d(10), false, false, today), ItemState::DueToday);
         assert_eq!(item_state(d(11), false, false, today), ItemState::Upcoming);
-        let p = progress(&[ItemState::Done, ItemState::Skipped, ItemState::Overdue, ItemState::Upcoming]);
+        let p = progress(&[
+            ItemState::Done,
+            ItemState::Skipped,
+            ItemState::Overdue,
+            ItemState::Upcoming,
+        ]);
         assert_eq!((p.closed, p.total, p.overdue), (2, 4, 1));
     }
 
     #[test]
     fn completion_needs_a_closed_checklist_and_nothing_left_to_hand_over() {
         assert!(can_complete(0, 0).is_ok());
-        assert_eq!(can_complete(2, 0).unwrap_err(), "2 checklist item(s) still open");
+        assert_eq!(
+            can_complete(2, 0).unwrap_err(),
+            "2 checklist item(s) still open"
+        );
         let both = can_complete(1, 3).unwrap_err();
         assert!(both.contains("1 checklist") && both.contains("3 thing(s)"));
     }
@@ -358,10 +397,22 @@ mod tests {
         assert_eq!(HandoverKind::parse("nope"), None);
         let (leaver, other) = (Uuid::from_u128(1), Uuid::from_u128(2));
         assert!(validate_handover(HandoverKind::DirectReport, Some(other), leaver).is_ok());
-        assert!(validate_handover(HandoverKind::DirectReport, None, leaver).is_err(), "needs a manager");
-        assert!(validate_handover(HandoverKind::Backup, None, leaver).is_ok(), "can just be removed");
+        assert!(
+            validate_handover(HandoverKind::DirectReport, None, leaver).is_err(),
+            "needs a manager"
+        );
+        assert!(
+            validate_handover(HandoverKind::Backup, None, leaver).is_ok(),
+            "can just be removed"
+        );
         assert!(validate_handover(HandoverKind::Access, None, leaver).is_ok());
-        assert!(validate_handover(HandoverKind::Access, Some(other), leaver).is_err(), "revoked, not handed over");
-        assert!(validate_handover(HandoverKind::Task, Some(leaver), leaver).is_err(), "not to themself");
+        assert!(
+            validate_handover(HandoverKind::Access, Some(other), leaver).is_err(),
+            "revoked, not handed over"
+        );
+        assert!(
+            validate_handover(HandoverKind::Task, Some(leaver), leaver).is_err(),
+            "not to themself"
+        );
     }
 }

@@ -65,7 +65,11 @@ pub(super) async fn inventory(
         .await?
     {
         if is_employed_on(last_day, w.hired_on, w.terminated_on) {
-            out.push(Held { kind: HandoverKind::DirectReport, subject: w.pid, label: w.display_name });
+            out.push(Held {
+                kind: HandoverKind::DirectReport,
+                subject: w.pid,
+                label: w.display_name,
+            });
         }
     }
     // Dotted-line reports.
@@ -75,8 +79,15 @@ pub(super) async fn inventory(
         .all(db)
         .await?
     {
-        let name = records::find_worker(db, d.report_pid).await.map(|w| w.display_name).unwrap_or_default();
-        out.push(Held { kind: HandoverKind::DottedLine, subject: d.pid, label: name });
+        let name = records::find_worker(db, d.report_pid)
+            .await
+            .map(|w| w.display_name)
+            .unwrap_or_default();
+        out.push(Held {
+            kind: HandoverKind::DottedLine,
+            subject: d.pid,
+            label: name,
+        });
     }
     // Groups they lead.
     for g in group_members::Entity::find()
@@ -86,13 +97,35 @@ pub(super) async fn inventory(
         .all(db)
         .await?
     {
-        let name = groups::Entity::find().filter(groups::Column::Pid.eq(g.group_pid)).one(db).await?.map(|g| g.name).unwrap_or_default();
-        out.push(Held { kind: HandoverKind::GroupLead, subject: g.pid, label: name });
+        let name = groups::Entity::find()
+            .filter(groups::Column::Pid.eq(g.group_pid))
+            .one(db)
+            .await?
+            .map(|g| g.name)
+            .unwrap_or_default();
+        out.push(Held {
+            kind: HandoverKind::GroupLead,
+            subject: g.pid,
+            label: name,
+        });
     }
     // Their seat in on-call rotas.
-    for m in rota_members::Entity::find().filter(rota_members::Column::WorkerPid.eq(leaver.pid)).all(db).await? {
-        if let Some(r) = rotas::Entity::find().filter(rotas::Column::Pid.eq(m.rota_pid)).filter(rotas::Column::DeletedAt.is_null()).one(db).await? {
-            out.push(Held { kind: HandoverKind::RotaMembership, subject: r.pid, label: r.name });
+    for m in rota_members::Entity::find()
+        .filter(rota_members::Column::WorkerPid.eq(leaver.pid))
+        .all(db)
+        .await?
+    {
+        if let Some(r) = rotas::Entity::find()
+            .filter(rotas::Column::Pid.eq(m.rota_pid))
+            .filter(rotas::Column::DeletedAt.is_null())
+            .one(db)
+            .await?
+        {
+            out.push(Held {
+                kind: HandoverKind::RotaMembership,
+                subject: r.pid,
+                label: r.name,
+            });
         }
     }
     // On-call swaps still ahead.
@@ -102,8 +135,17 @@ pub(super) async fn inventory(
         .all(db)
         .await?
     {
-        let name = rotas::Entity::find().filter(rotas::Column::Pid.eq(o.rota_pid)).one(db).await?.map(|r| r.name).unwrap_or_default();
-        out.push(Held { kind: HandoverKind::RotaSwap, subject: o.pid, label: format!("{name} {}–{}", o.starts_on, o.ends_on) });
+        let name = rotas::Entity::find()
+            .filter(rotas::Column::Pid.eq(o.rota_pid))
+            .one(db)
+            .await?
+            .map(|r| r.name)
+            .unwrap_or_default();
+        out.push(Held {
+            kind: HandoverKind::RotaSwap,
+            subject: o.pid,
+            label: format!("{name} {}–{}", o.starts_on, o.ends_on),
+        });
     }
     // Named as someone's backup.
     for b in worker_backups::Entity::find()
@@ -112,8 +154,15 @@ pub(super) async fn inventory(
         .all(db)
         .await?
     {
-        let name = records::find_worker(db, b.worker_pid).await.map(|w| w.display_name).unwrap_or_default();
-        out.push(Held { kind: HandoverKind::Backup, subject: b.pid, label: name });
+        let name = records::find_worker(db, b.worker_pid)
+            .await
+            .map(|w| w.display_name)
+            .unwrap_or_default();
+        out.push(Held {
+            kind: HandoverKind::Backup,
+            subject: b.pid,
+            label: name,
+        });
     }
     // Mentorships they give.
     for m in mentorships::Entity::find()
@@ -123,8 +172,15 @@ pub(super) async fn inventory(
         .all(db)
         .await?
     {
-        let name = records::find_worker(db, m.mentee_pid).await.map(|w| w.display_name).unwrap_or_default();
-        out.push(Held { kind: HandoverKind::Mentorship, subject: m.pid, label: name });
+        let name = records::find_worker(db, m.mentee_pid)
+            .await
+            .map(|w| w.display_name)
+            .unwrap_or_default();
+        out.push(Held {
+            kind: HandoverKind::Mentorship,
+            subject: m.pid,
+            label: name,
+        });
     }
     // Future shifts.
     for a in shift_assignments::Entity::find()
@@ -133,10 +189,18 @@ pub(super) async fn inventory(
         .all(db)
         .await?
     {
-        if let Some(s) = shifts::Entity::find().filter(shifts::Column::Pid.eq(a.shift_pid)).filter(shifts::Column::DeletedAt.is_null()).one(db).await?
+        if let Some(s) = shifts::Entity::find()
+            .filter(shifts::Column::Pid.eq(a.shift_pid))
+            .filter(shifts::Column::DeletedAt.is_null())
+            .one(db)
+            .await?
             && s.starts_at.date_naive() >= last_day
         {
-            out.push(Held { kind: HandoverKind::Shift, subject: a.pid, label: format!("{} {}", s.department, s.starts_at.format("%Y-%m-%d %H:%M")) });
+            out.push(Held {
+                kind: HandoverKind::Shift,
+                subject: a.pid,
+                label: format!("{} {}", s.department, s.starts_at.format("%Y-%m-%d %H:%M")),
+            });
         }
     }
     // Checklist tasks assigned to them (not on their own record).
@@ -153,7 +217,11 @@ pub(super) async fn inventory(
             .await?
             .is_some_and(|m| m.status == "open" && m.worker_pid != leaver.pid);
         if theirs {
-            out.push(Held { kind: HandoverKind::Task, subject: i.pid, label: i.title });
+            out.push(Held {
+                kind: HandoverKind::Task,
+                subject: i.pid,
+                label: i.title,
+            });
         }
     }
     // Access: organization roles that run past the last day.
@@ -164,7 +232,11 @@ pub(super) async fn inventory(
         .await?
     {
         if m.ends_on.is_none_or(|e| e > last_day) {
-            out.push(Held { kind: HandoverKind::Access, subject: m.pid, label: format!("{} — {}", m.organization_ref, m.role) });
+            out.push(Held {
+                kind: HandoverKind::Access,
+                subject: m.pid,
+                label: format!("{} — {}", m.organization_ref, m.role),
+            });
         }
     }
     Ok(out)
@@ -240,7 +312,9 @@ async fn successor(
         .await
         .map_err(|_| unprocessable("the new holder is not a worker here"))?;
     if w.organization_ref != leaver.organization_ref {
-        return Err(unprocessable("the new holder must be in the leaver's organization"));
+        return Err(unprocessable(
+            "the new holder must be in the leaver's organization",
+        ));
     }
     if !is_employed_on(on, w.hired_on, w.terminated_on) {
         return Err(unprocessable("the new holder is not employed"));
@@ -262,7 +336,9 @@ async fn apply(
     let verb = match (held.kind, to) {
         (HandoverKind::DirectReport, Some(new)) => {
             if would_create_cycle(held.subject, new.pid, manager_of) {
-                return Err(unprocessable("that would put the new manager below their own report"));
+                return Err(unprocessable(
+                    "that would put the new manager below their own report",
+                ));
             }
             let w = records::find_worker(txn, held.subject).await?;
             let mut a: workers::ActiveModel = w.into();
@@ -319,7 +395,9 @@ async fn apply(
                     .filter(group_members::Column::LeftAt.is_null())
                     .one(txn)
                     .await?
-                    .ok_or_else(|| unprocessable("the new lead must already be a member of that group"))?;
+                    .ok_or_else(|| {
+                        unprocessable("the new lead must already be a member of that group")
+                    })?;
                 let mut a: group_members::ActiveModel = theirs.into();
                 a.role = ActiveValue::set("lead".to_string());
                 a.update(txn).await?;
@@ -350,7 +428,9 @@ async fn apply(
                 a.update(txn).await?;
                 "reassigned"
             } else {
-                rota_members::Entity::delete_by_id(mine.id).exec(txn).await?;
+                rota_members::Entity::delete_by_id(mine.id)
+                    .exec(txn)
+                    .await?;
                 "closed"
             }
         }
@@ -366,7 +446,9 @@ async fn apply(
                 a.update(txn).await?;
                 "reassigned"
             } else {
-                rota_overrides::Entity::delete_by_id(row.id).exec(txn).await?;
+                rota_overrides::Entity::delete_by_id(row.id)
+                    .exec(txn)
+                    .await?;
                 "closed"
             }
         }
@@ -539,7 +621,10 @@ async fn perform(
             &txn,
             new.pid,
             "handover_received",
-            &format!("{} has handed over to you: {}.", leaver.display_name, held.label),
+            &format!(
+                "{} has handed over to you: {}.",
+                leaver.display_name, held.label
+            ),
             serde_json::json!({ "movement_pid": movement.pid, "kind": held.kind.as_str() }),
         )
         .await?;
@@ -574,7 +659,10 @@ async fn reassign(
 ) -> Result<Response> {
     let (movement, leaver) = leaver_movement(&ctx, &caller, &pid).await?;
     if movement.status != "open" {
-        return Err(unprocessable(&format!("that record is already {}", movement.status)));
+        return Err(unprocessable(&format!(
+            "that record is already {}",
+            movement.status
+        )));
     }
     let kind = HandoverKind::parse(&payload.kind).ok_or_else(|| unprocessable("unknown kind"))?;
     validate_handover(kind, payload.to_worker_pid, leaver.pid).map_err(|e| unprocessable(&e))?;
@@ -595,7 +683,11 @@ async fn reassign(
         &leaver,
         &held,
         new.as_ref(),
-        payload.note.as_deref().map(str::trim).filter(|n| !n.is_empty()),
+        payload
+            .note
+            .as_deref()
+            .map(str::trim)
+            .filter(|n| !n.is_empty()),
         &managers,
     )
     .await?;
@@ -625,7 +717,10 @@ async fn reassign_all(
 ) -> Result<Response> {
     let (movement, leaver) = leaver_movement(&ctx, &caller, &pid).await?;
     if movement.status != "open" {
-        return Err(unprocessable(&format!("that record is already {}", movement.status)));
+        return Err(unprocessable(&format!(
+            "that record is already {}",
+            movement.status
+        )));
     }
     validate_handover(HandoverKind::Task, Some(payload.to_worker_pid), leaver.pid)
         .map_err(|e| unprocessable(&e))?;
@@ -634,10 +729,18 @@ async fn reassign_all(
     let mut revoked = 0usize;
     let mut failed: Vec<serde_json::Value> = Vec::new();
     for held in inventory(&ctx, &movement, &leaver).await? {
-        let target = if held.kind.can_reassign() { Some(&new) } else { None };
+        let target = if held.kind.can_reassign() {
+            Some(&new)
+        } else {
+            None
+        };
         // A direct report may have become the successor's manager meanwhile: rebuild each time.
         let managers = manager_map(&ctx).await?;
-        match perform(&ctx, &caller, &movement, &leaver, &held, target, None, &managers).await {
+        match perform(
+            &ctx, &caller, &movement, &leaver, &held, target, None, &managers,
+        )
+        .await
+        {
             Ok("revoked") => revoked += 1,
             Ok(_) => moved += 1,
             Err(e) => failed.push(serde_json::json!({

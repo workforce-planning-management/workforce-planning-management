@@ -128,7 +128,10 @@ async fn request_swap(
         starts_on: ActiveValue::set(payload.starts_on),
         ends_on: ActiveValue::set(payload.ends_on),
         note: ActiveValue::set(
-            payload.note.map(|n| n.trim().to_string()).filter(|n| !n.is_empty()),
+            payload
+                .note
+                .map(|n| n.trim().to_string())
+                .filter(|n| !n.is_empty()),
         ),
         status: ActiveValue::set("requested".to_string()),
         created_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
@@ -147,7 +150,15 @@ async fn request_swap(
         serde_json::json!({ "rota_pid": rota.pid, "swap_request_pid": row.pid }),
     )
     .await?;
-    Audit::record(&txn, "rota", rota.pid, "swap_requested", caller.actor(), None).await?;
+    Audit::record(
+        &txn,
+        "rota",
+        rota.pid,
+        "swap_requested",
+        caller.actor(),
+        None,
+    )
+    .await?;
     txn.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
@@ -201,14 +212,19 @@ async fn accept(
     let taker = writable_worker(&ctx, &caller, request.taker_pid).await?;
     let rota = find_rota(&ctx, &caller, &request.rota_pid.to_string()).await?;
     if !rules::swap_can_move(&request.status, "accepted") {
-        return Err(unprocessable(&format!("that request is already {}", request.status)));
+        return Err(unprocessable(&format!(
+            "that request is already {}",
+            request.status
+        )));
     }
     check_members(&ctx, &rota.organization_ref, &[taker.pid]).await?;
     let (_, _, assignments, people) =
         compute(&ctx, &rota, request.starts_on, request.ends_on).await?;
     let stretches = rules::stretches_for(&assignments, request.requester_pid);
     if stretches.is_empty() {
-        return Err(unprocessable("the requester is no longer on call in that window"));
+        return Err(unprocessable(
+            "the requester is no longer on call in that window",
+        ));
     }
     let txn = ctx.db.begin().await?;
     for run in &stretches {
@@ -237,10 +253,21 @@ async fn accept(
         request.requester_pid,
         &rota,
         request.pid,
-        format!("{} accepted your on-call swap for {}.", taker.display_name, rota.name),
+        format!(
+            "{} accepted your on-call swap for {}.",
+            taker.display_name, rota.name
+        ),
     )
     .await?;
-    Audit::record(&txn, "rota", rota.pid, "swap_accepted", caller.actor(), None).await?;
+    Audit::record(
+        &txn,
+        "rota",
+        rota.pid,
+        "swap_accepted",
+        caller.actor(),
+        None,
+    )
+    .await?;
     txn.commit().await?;
     format::json(serde_json::json!({ "status": "accepted", "days_moved": stretches.len() }))
 }
@@ -261,10 +288,21 @@ async fn decline(
         request.requester_pid,
         &rota,
         request.pid,
-        format!("{} declined your on-call swap for {}.", taker.display_name, rota.name),
+        format!(
+            "{} declined your on-call swap for {}.",
+            taker.display_name, rota.name
+        ),
     )
     .await?;
-    Audit::record(&ctx.db, "rota", rota.pid, "swap_declined", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "rota",
+        rota.pid,
+        "swap_declined",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(serde_json::json!({ "status": "declined" }))
 }
 
@@ -284,10 +322,21 @@ async fn cancel(
         request.taker_pid,
         &rota,
         request.pid,
-        format!("{} withdrew their on-call swap request for {}.", requester.display_name, rota.name),
+        format!(
+            "{} withdrew their on-call swap request for {}.",
+            requester.display_name, rota.name
+        ),
     )
     .await?;
-    Audit::record(&ctx.db, "rota", rota.pid, "swap_cancelled", caller.actor(), None).await?;
+    Audit::record(
+        &ctx.db,
+        "rota",
+        rota.pid,
+        "swap_cancelled",
+        caller.actor(),
+        None,
+    )
+    .await?;
     format::json(serde_json::json!({ "status": "cancelled" }))
 }
 
@@ -345,7 +394,9 @@ async fn list_for_worker(
                 .filter(rotas::Column::DeletedAt.is_null())
                 .one(&ctx.db)
                 .await?
-            && require_scope(&ctx, &caller, &rota.organization_ref).await.is_ok()
+            && require_scope(&ctx, &caller, &rota.organization_ref)
+                .await
+                .is_ok()
         {
             rota_names.insert(r.rota_pid, rota.name);
         }

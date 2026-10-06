@@ -15,11 +15,11 @@ use uuid::Uuid;
 use super::_entities::{
     applications, assessment_instruments, assessment_results, assessments, benchmarks,
     benefit_enrollments, benefit_plans, candidates, development_plan_items, development_plans,
-    early_career_programs, workers, feedback_entries, goals, interviews, leave_entitlements,
-    leave_requests, onboarding_items, organization_confederations, organization_memberships,
-    payroll_runs, payslips, pipeline_members, program_placements, requisitions, review_cycles,
-    reviews, shift_assignments, shifts, succession_candidates, succession_plans, talent_pipelines,
-    time_entries, training_enrollments,
+    early_career_programs, feedback_entries, goals, interviews, leave_entitlements, leave_requests,
+    onboarding_items, organization_confederations, organization_memberships, payroll_runs,
+    payslips, pipeline_members, program_placements, requisitions, review_cycles, reviews,
+    shift_assignments, shifts, succession_candidates, succession_plans, talent_pipelines,
+    time_entries, training_enrollments, workers,
 };
 
 impl ActiveModelBehavior for workers::ActiveModel {}

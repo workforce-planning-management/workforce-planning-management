@@ -369,16 +369,12 @@ async fn benefits_awareness_round_trip() {
         let second = seed_worker!(&request, &org, "B-2", None).await;
         activate!(&request, &second).await;
         request
-            .post(&format!(
-                "/api/workers/{worker}/wellbeing-acknowledgements"
-            ))
+            .post(&format!("/api/workers/{worker}/wellbeing-acknowledgements"))
             .json(&json!({ "entitlement_pid": rule_pid, "response": "done" }))
             .await
             .assert_status_ok();
         request
-            .post(&format!(
-                "/api/workers/{second}/wellbeing-acknowledgements"
-            ))
+            .post(&format!("/api/workers/{second}/wellbeing-acknowledgements"))
             .json(&json!({ "entitlement_pid": rule_pid, "response": "dismissed" }))
             .await
             .assert_status_ok();
@@ -538,10 +534,7 @@ async fn pulse_round_trip() {
         // links a response to a worker.
         let raw = serde_json::to_string(&results).unwrap();
         for worker in engineers.iter().chain([&accountant]) {
-            assert!(
-                !raw.contains(worker.as_str()),
-                "no worker pid in results"
-            );
+            assert!(!raw.contains(worker.as_str()), "no worker pid in results");
         }
         let audits: Value = request.get("/api/audits/recent").await.json();
         let submissions: Vec<&Value> = audits

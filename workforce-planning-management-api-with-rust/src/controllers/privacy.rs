@@ -12,13 +12,14 @@ use uuid::Uuid;
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    adjustment_requests, appraisal_nominations, appraisal_responses, appraisals, assessments,
-    benefit_enrollments, candidates, cpd_entries, development_plans, dotted_line_reports,
-    entitlement_acknowledgements, ergonomic_assessments, group_members, leave_entitlements,
-    leave_requests, mentorships, mobility_interests, notifications, path_enrollments, payslips,
-    pipeline_members, professional_registrations, program_placements, reviews, shift_assignments,
-    time_entries, training_enrollments, worker_aspirations, worker_backups, emergency_contacts, rota_members, rota_overrides, rota_swap_requests, announcement_reads, movements, handover_actions, worker_framework_roles,
-    worker_skill_history, worker_skills, workers,
+    adjustment_requests, announcement_reads, appraisal_nominations, appraisal_responses,
+    appraisals, assessments, benefit_enrollments, candidates, cpd_entries, development_plans,
+    dotted_line_reports, emergency_contacts, entitlement_acknowledgements, ergonomic_assessments,
+    group_members, handover_actions, leave_entitlements, leave_requests, mentorships,
+    mobility_interests, movements, notifications, path_enrollments, payslips, pipeline_members,
+    professional_registrations, program_placements, reviews, rota_members, rota_overrides,
+    rota_swap_requests, shift_assignments, time_entries, training_enrollments, worker_aspirations,
+    worker_backups, worker_framework_roles, worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -251,11 +252,15 @@ async fn erase(
         format!("DELETE FROM worker_backups WHERE worker_pid = '{epid}' OR backup_pid = '{epid}'"),
         format!("DELETE FROM rota_members WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM rota_overrides WHERE worker_pid = '{epid}'"),
-        format!("DELETE FROM rota_swap_requests WHERE requester_pid = '{epid}' OR taker_pid = '{epid}'"),
+        format!(
+            "DELETE FROM rota_swap_requests WHERE requester_pid = '{epid}' OR taker_pid = '{epid}'"
+        ),
         format!("DELETE FROM announcement_reads WHERE worker_pid = '{epid}'"),
         format!("UPDATE movements SET notes = NULL WHERE worker_pid = '{epid}'"),
         format!("UPDATE movement_items SET assignee_pid = NULL WHERE assignee_pid = '{epid}'"),
-        format!("UPDATE handover_actions SET note = NULL WHERE from_worker = '{epid}' OR to_worker = '{epid}'"),
+        format!(
+            "UPDATE handover_actions SET note = NULL WHERE from_worker = '{epid}' OR to_worker = '{epid}'"
+        ),
     ];
     let mut affected = Vec::new();
     for statement in &statements {

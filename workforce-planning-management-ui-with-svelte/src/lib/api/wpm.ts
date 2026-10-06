@@ -375,8 +375,15 @@ export function deleteSkill(pid: string): Promise<unknown> {
 export function mergeSkill(
   pid: string,
   intoPid: string,
-): Promise<{ merged_into: string; records_moved: number; records_merged: number }> {
-  return api(`/skills/${pid}/merge`, { method: "POST", body: { into_pid: intoPid } });
+): Promise<{
+  merged_into: string;
+  records_moved: number;
+  records_merged: number;
+}> {
+  return api(`/skills/${pid}/merge`, {
+    method: "POST",
+    body: { into_pid: intoPid },
+  });
 }
 
 /** Keyword-rule category suggestions for skills still `other`. */
@@ -765,8 +772,16 @@ export function cpdOverview(init?: FetchLike): Promise<{
     period_start: string;
     period_end: string;
     applicable_workers: number;
-    met_recorded: { numerator: number; denominator: number; value: number } | null;
-    met_verified: { numerator: number; denominator: number; value: number } | null;
+    met_recorded: {
+      numerator: number;
+      denominator: number;
+      value: number;
+    } | null;
+    met_verified: {
+      numerator: number;
+      denominator: number;
+      value: number;
+    } | null;
   }>;
   registrations: { expiring: number; expired: number };
 }> {
@@ -774,7 +789,9 @@ export function cpdOverview(init?: FetchLike): Promise<{
 }
 
 /** The frameworks a person can choose a role in. */
-export function listSelectableFrameworks(init?: FetchLike): Promise<
+export function listSelectableFrameworks(
+  init?: FetchLike,
+): Promise<
   Array<{ slug: string; name: string; roles: number; available: boolean }>
 > {
   return api("/frameworks/selectable", init);
@@ -936,7 +953,10 @@ export function addPastSkill(
     ended_on: string;
   },
 ): Promise<unknown> {
-  return api(`/workers/${workerPid}/skill-history/past`, { method: "POST", body });
+  return api(`/workers/${workerPid}/skill-history/past`, {
+    method: "POST",
+    body,
+  });
 }
 
 /** Skills, levels and roles held at the end of a date. */
@@ -947,7 +967,11 @@ export function skillsAsOf(
 ): Promise<{
   at: string;
   roles: Array<{ framework: string; role_label: string }>;
-  skills: Array<{ skill_pid: string; skill: string | null; proficiency: number }>;
+  skills: Array<{
+    skill_pid: string;
+    skill: string | null;
+    proficiency: number;
+  }>;
 }> {
   return api(`/workers/${workerPid}/skills-as-of?at=${at}`, init);
 }
@@ -1045,7 +1069,10 @@ export type OrgPerson = {
 export function upline(
   workerPid: string,
   init?: FetchLike,
-): Promise<{ worker: OrgPerson; upline: Array<OrgPerson & { level: number; direct_manager: boolean }> }> {
+): Promise<{
+  worker: OrgPerson;
+  upline: Array<OrgPerson & { level: number; direct_manager: boolean }>;
+}> {
   return api(`/workers/${workerPid}/upline`, init);
 }
 
@@ -1056,7 +1083,9 @@ export function downline(
 ): Promise<{
   manager: OrgPerson;
   summary: { direct: number; indirect: number; total: number };
-  downline: Array<OrgPerson & { depth: number; report_kind: "direct" | "indirect" }>;
+  downline: Array<
+    OrgPerson & { depth: number; report_kind: "direct" | "indirect" }
+  >;
 }> {
   return api(`/workers/${workerPid}/downline`, init);
 }
@@ -1096,8 +1125,13 @@ export type Group = {
 export const GROUP_KINDS = ["practice", "interest", "other"] as const;
 
 /** Every group with its member count. */
-export function listGroups(organization?: string, init?: FetchLike): Promise<Group[]> {
-  const qs = organization ? `?organization_ref=${encodeURIComponent(organization)}` : "";
+export function listGroups(
+  organization?: string,
+  init?: FetchLike,
+): Promise<Group[]> {
+  const qs = organization
+    ? `?organization_ref=${encodeURIComponent(organization)}`
+    : "";
   return api(`/groups${qs}`, init);
 }
 
@@ -1130,7 +1164,10 @@ export function workerGroups(
     on_behalf: boolean;
   }>;
 }> {
-  return api(`/workers/${workerPid}/groups${includePast ? "?include_past=true" : ""}`, init);
+  return api(
+    `/workers/${workerPid}/groups${includePast ? "?include_past=true" : ""}`,
+    init,
+  );
 }
 
 /** What a group knows, in aggregate; skills under the floor are withheld. */
@@ -1204,8 +1241,13 @@ export function addDottedManager(
 }
 
 /** End a dotted-line relationship; it is kept as history. */
-export function endDottedManager(workerPid: string, managerPid: string): Promise<unknown> {
-  return api(`/workers/${workerPid}/dotted-line-managers/${managerPid}`, { method: "DELETE" });
+export function endDottedManager(
+  workerPid: string,
+  managerPid: string,
+): Promise<unknown> {
+  return api(`/workers/${workerPid}/dotted-line-managers/${managerPid}`, {
+    method: "DELETE",
+  });
 }
 
 /** A worker's emergency contacts, first-to-call first (worker and HR only). */
@@ -1249,7 +1291,10 @@ export function removeEmergencyContact(pid: string): Promise<unknown> {
 }
 
 /** Who covers for a worker when they are out, in the order to ask. */
-export function listBackups(workerPid: string, init?: FetchLike): Promise<Backup[]> {
+export function listBackups(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<Backup[]> {
   return api(`/workers/${workerPid}/backups`, init);
 }
 
@@ -1315,7 +1360,10 @@ export function postAnnouncement(post: {
 }
 
 /** Mark an announcement read for a worker (themself, or HR on their behalf). */
-export function markAnnouncementRead(pid: string, workerPid: string): Promise<unknown> {
+export function markAnnouncementRead(
+  pid: string,
+  workerPid: string,
+): Promise<unknown> {
   return api(`/announcements/${pid}/read`, {
     method: "POST",
     body: { worker_pid: workerPid },
@@ -1323,7 +1371,10 @@ export function markAnnouncementRead(pid: string, workerPid: string): Promise<un
 }
 
 /** The announcements this person has read (ids); theirs alone. */
-export function myAnnouncementReads(workerPid: string, init?: FetchLike): Promise<string[]> {
+export function myAnnouncementReads(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<string[]> {
   return api(`/workers/${workerPid}/announcement-reads`, init);
 }
 
@@ -1384,7 +1435,12 @@ export function retireRota(pid: string): Promise<unknown> {
 /** A swap: a worker on call for a date window regardless of the rotation. */
 export function addRotaSwap(
   pid: string,
-  swap: { worker_pid: string; starts_on: string; ends_on: string; note?: string },
+  swap: {
+    worker_pid: string;
+    starts_on: string;
+    ends_on: string;
+    note?: string;
+  },
 ): Promise<{ pid: string }> {
   return api(`/rotas/${pid}/overrides`, { method: "POST", body: swap });
 }
@@ -1432,7 +1488,8 @@ export function workerTrainingPlan(
   init?: FetchLike,
 ): Promise<TrainingPlan> {
   const params = new URLSearchParams();
-  if (options?.weeklyHours) params.set("weekly_hours", String(options.weeklyHours));
+  if (options?.weeklyHours)
+    params.set("weekly_hours", String(options.weeklyHours));
   if (options?.start) params.set("start", options.start);
   const qs = params.size ? `?${params}` : "";
   return api(`/workers/${workerPid}/training-plan${qs}`, init);
@@ -1443,7 +1500,9 @@ export function trainingDemand(
   options?: { department?: string },
   init?: FetchLike,
 ): Promise<TrainingDemand> {
-  const qs = options?.department ? `?department=${encodeURIComponent(options.department)}` : "";
+  const qs = options?.department
+    ? `?department=${encodeURIComponent(options.department)}`
+    : "";
   return api(`/workforce-intelligence/training-demand${qs}`, init);
 }
 
@@ -1507,13 +1566,24 @@ export function getMovement(
 /** Open a joiner or leaver record (a leaver needs a last day and a reason). */
 export function openMovement(
   workerPid: string,
-  movement: { kind: "joiner" | "leaver"; effective_on?: string; reason?: string; notes?: string },
+  movement: {
+    kind: "joiner" | "leaver";
+    effective_on?: string;
+    reason?: string;
+    notes?: string;
+  },
 ): Promise<{ pid: string }> {
-  return api(`/workers/${workerPid}/movements`, { method: "POST", body: movement });
+  return api(`/workers/${workerPid}/movements`, {
+    method: "POST",
+    body: movement,
+  });
 }
 
 /** A person's own joiner / leaver records. */
-export function workerMovements(workerPid: string, init?: FetchLike): Promise<Movement[]> {
+export function workerMovements(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<Movement[]> {
   return api(`/workers/${workerPid}/movements`, init);
 }
 
@@ -1525,20 +1595,34 @@ export function movementItemAction(
   return api(`/movement-items/${pid}/${action}`, { method: "POST" });
 }
 
-export function skipMovementItem(pid: string, reason: string): Promise<unknown> {
-  return api(`/movement-items/${pid}/skip`, { method: "POST", body: { reason } });
+export function skipMovementItem(
+  pid: string,
+  reason: string,
+): Promise<unknown> {
+  return api(`/movement-items/${pid}/skip`, {
+    method: "POST",
+    body: { reason },
+  });
 }
 
 /** Add an ad-hoc dated item to a record. */
 export function addMovementItem(
   movementPid: string,
-  item: { title: string; due_on: string; category?: string; assignee_pid?: string },
+  item: {
+    title: string;
+    due_on: string;
+    category?: string;
+    assignee_pid?: string;
+  },
 ): Promise<{ pid: string }> {
   return api(`/movements/${movementPid}/items`, { method: "POST", body: item });
 }
 
 /** Complete or cancel a record (completion is refused while anything is open or held). */
-export function closeMovement(pid: string, action: "complete" | "cancel"): Promise<unknown> {
+export function closeMovement(
+  pid: string,
+  action: "complete" | "cancel",
+): Promise<unknown> {
   return api(`/movements/${pid}/${action}`, { method: "POST" });
 }
 
@@ -1558,16 +1642,29 @@ export function leaverHandover(
 /** Reassign (or, with no new holder, close / revoke) one thing the leaver holds. */
 export function reassignHeld(
   movementPid: string,
-  held: { kind: string; subject_pid: string; to_worker_pid?: string; note?: string },
+  held: {
+    kind: string;
+    subject_pid: string;
+    to_worker_pid?: string;
+    note?: string;
+  },
 ): Promise<{ action: string; remaining: number }> {
-  return api(`/movements/${movementPid}/handover`, { method: "POST", body: held });
+  return api(`/movements/${movementPid}/handover`, {
+    method: "POST",
+    body: held,
+  });
 }
 
 /** Hand everything that can be handed over to one person; access is revoked. */
 export function handOverAll(
   movementPid: string,
   toWorkerPid: string,
-): Promise<{ handed_over: number; access_revoked: number; failed: unknown[]; remaining: number }> {
+): Promise<{
+  handed_over: number;
+  access_revoked: number;
+  failed: unknown[];
+  remaining: number;
+}> {
   return api(`/movements/${movementPid}/handover/all`, {
     method: "POST",
     body: { to_worker_pid: toWorkerPid },
@@ -1575,12 +1672,18 @@ export function handOverAll(
 }
 
 /** The audit trail of the handover, oldest first. */
-export function handoverTrail(movementPid: string, init?: FetchLike): Promise<HandoverAction[]> {
+export function handoverTrail(
+  movementPid: string,
+  init?: FetchLike,
+): Promise<HandoverAction[]> {
   return api(`/movements/${movementPid}/handover/actions`, init);
 }
 
 /** A rota's swap requests, newest first. */
-export function listSwapRequests(rotaPid: string, init?: FetchLike): Promise<SwapRequest[]> {
+export function listSwapRequests(
+  rotaPid: string,
+  init?: FetchLike,
+): Promise<SwapRequest[]> {
   return api(`/rotas/${rotaPid}/swap-requests`, init);
 }
 
@@ -1619,7 +1722,13 @@ export function workerOnCall(
   workerPid: string,
   init?: FetchLike,
 ): Promise<
-  Array<{ rota_pid: string; rota_name: string; from: string; to: string; source: string }>
+  Array<{
+    rota_pid: string;
+    rota_name: string;
+    from: string;
+    to: string;
+    source: string;
+  }>
 > {
   return api(`/workers/${workerPid}/on-call`, init);
 }
@@ -1654,7 +1763,10 @@ export function joinGroup(
 }
 
 /** A worker leaves a group; the membership is closed and kept as history. */
-export function leaveGroup(groupPid: string, workerPid: string): Promise<unknown> {
+export function leaveGroup(
+  groupPid: string,
+  workerPid: string,
+): Promise<unknown> {
   return api(`/groups/${groupPid}/members/${workerPid}`, { method: "DELETE" });
 }
 
@@ -1757,7 +1869,11 @@ export function removeSkillRef(
 
 /** Terms-carrying ratio (or null when there is nothing to divide). */
 type Fit = {
-  critical_met: { numerator: number; denominator: number; value: number } | null;
+  critical_met: {
+    numerator: number;
+    denominator: number;
+    value: number;
+  } | null;
   all_met: { numerator: number; denominator: number; value: number } | null;
 };
 
@@ -2054,7 +2170,10 @@ export function createWorkforcePlan(body: {
 
 /** draft → active → archived. */
 export function setPlanStatus(pid: string, to: string): Promise<unknown> {
-  return api(`/workforce-plans/${pid}/status`, { method: "POST", body: { to } });
+  return api(`/workforce-plans/${pid}/status`, {
+    method: "POST",
+    body: { to },
+  });
 }
 
 /** Set planned headcount for a department (optionally a role) at a date. */
@@ -2071,7 +2190,10 @@ export function setDemandLine(
 }
 
 /** Remove a demand line. */
-export function removeDemandLine(pid: string, linePid: string): Promise<unknown> {
+export function removeDemandLine(
+  pid: string,
+  linePid: string,
+): Promise<unknown> {
   return api(`/workforce-plans/${pid}/demand-lines/${linePid}`, {
     method: "DELETE",
   });
@@ -2106,7 +2228,8 @@ export function planForecast(
   as_of: string;
   assumptions: {
     attrition_bp: number | null;
-    attrition_source: "plan_assumption" | "observed_snapshots" | "insufficient_history";
+    attrition_source:
+      "plan_assumption" | "observed_snapshots" | "insufficient_history";
     hires_assumed: number;
   };
   departments: Array<{
@@ -2156,10 +2279,7 @@ export function planCost(
     unit_cost_source: "benchmark" | "department_average" | null;
     annual_cost_minor: number | null;
     reason:
-      | "salary_not_visible"
-      | "insufficient_history"
-      | "no_unit_cost"
-      | null;
+      "salary_not_visible" | "insufficient_history" | "no_unit_cost" | null;
   }>;
   total_annual_cost_minor: number | null;
   uncosted_groups: number;
@@ -2180,7 +2300,11 @@ export function planAlignment(
 ): Promise<{
   derivation: string;
   planned_headcount: number;
-  aligned_share: { numerator: number; denominator: number; value: number } | null;
+  aligned_share: {
+    numerator: number;
+    denominator: number;
+    value: number;
+  } | null;
   objectives: number;
   unresourced_objectives: string[];
   unaligned_demand_lines: Array<{

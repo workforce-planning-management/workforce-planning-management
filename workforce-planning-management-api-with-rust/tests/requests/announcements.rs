@@ -34,7 +34,15 @@ async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
             json!({ "organization_ref": org, "title": "x", "body": "y",
                     "publish_on": day(2), "expires_on": day(1) }),
         ] {
-            assert_eq!(request.post("/api/announcements").json(&bad).await.status_code(), 422, "{bad}");
+            assert_eq!(
+                request
+                    .post("/api/announcements")
+                    .json(&bad)
+                    .await
+                    .status_code(),
+                422,
+                "{bad}"
+            );
         }
 
         let older: Value = request
@@ -49,7 +57,10 @@ async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
             .json();
         let pinned: Value = request
             .post("/api/announcements")
-            .json(&post("Pinned", json!({ "pinned": true, "publish_on": day(-10) })))
+            .json(&post(
+                "Pinned",
+                json!({ "pinned": true, "publish_on": day(-10) }),
+            ))
             .await
             .json();
         request
@@ -59,14 +70,21 @@ async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
             .assert_status_ok();
         request
             .post("/api/announcements")
-            .json(&post("Over", json!({ "publish_on": day(-9), "expires_on": day(-1) })))
+            .json(&post(
+                "Over",
+                json!({ "publish_on": day(-9), "expires_on": day(-1) }),
+            ))
             .await
             .assert_status_ok();
 
         let feed = |extra: &str| format!("/api/announcements?organization={org}{extra}");
         let live: Vec<Value> = request.get(&feed("")).await.json();
         let titles: Vec<&str> = live.iter().map(|a| a["title"].as_str().unwrap()).collect();
-        assert_eq!(titles, ["Pinned", "Newer", "Older"], "pinned first, then newest");
+        assert_eq!(
+            titles,
+            ["Pinned", "Newer", "Older"],
+            "pinned first, then newest"
+        );
         assert!(live.iter().all(|a| a["status"] == "live"));
         // The body is kept verbatim as text; the API does not interpret it.
         assert_eq!(
@@ -108,9 +126,15 @@ async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
 
         // Retire one: gone from the feed and from a direct read.
         let older_pid = older["pid"].as_str().unwrap();
-        request.delete(&format!("/api/announcements/{older_pid}")).await.assert_status_ok();
+        request
+            .delete(&format!("/api/announcements/{older_pid}"))
+            .await
+            .assert_status_ok();
         assert_eq!(
-            request.get(&format!("/api/announcements/{older_pid}")).await.status_code(),
+            request
+                .get(&format!("/api/announcements/{older_pid}"))
+                .await
+                .status_code(),
             404
         );
         let live: Vec<Value> = request.get(&feed("")).await.json();

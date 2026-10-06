@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{workers, ergonomic_assessments, ergonomic_items};
+use crate::models::_entities::{ergonomic_assessments, ergonomic_items, workers};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::ergonomics as rules;
@@ -251,15 +251,10 @@ async fn issues(State(ctx): State<AppContext>) -> Result<Response> {
         let Some(assessment) = assessments.iter().find(|a| a.pid == item.assessment_pid) else {
             continue;
         };
-        let Some(worker) = worker_rows
-            .iter()
-            .find(|e| e.pid == assessment.worker_pid)
-        else {
+        let Some(worker) = worker_rows.iter().find(|e| e.pid == assessment.worker_pid) else {
             continue;
         };
-        *by_department
-            .entry(worker.department.clone())
-            .or_default() += 1;
+        *by_department.entry(worker.department.clone()).or_default() += 1;
         listed.push(serde_json::json!({
             "department": worker.department,
             "worker_pid": worker.pid,

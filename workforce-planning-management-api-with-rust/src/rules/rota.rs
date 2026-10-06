@@ -118,27 +118,51 @@ pub fn assign(
     date: NaiveDate,
 ) -> Assignment {
     if date < rota.starts_on {
-        return Assignment { date, worker: None, source: None };
+        return Assignment {
+            date,
+            worker: None,
+            source: None,
+        };
     }
     if let Some(o) = overrides
         .iter()
         .rev()
         .find(|o| o.starts_on <= date && date <= o.ends_on)
     {
-        return Assignment { date, worker: Some(o.worker), source: Some(Source::Override) };
+        return Assignment {
+            date,
+            worker: Some(o.worker),
+            source: Some(Source::Override),
+        };
     }
     let Some(start) = turn_index(rota, date) else {
-        return Assignment { date, worker: None, source: None };
+        return Assignment {
+            date,
+            worker: None,
+            source: None,
+        };
     };
     let n = rota.members.len();
     for step in 0..n {
         let member = rota.members[(start + step) % n];
         if !unavailable(member, date) {
-            let source = if step == 0 { Source::Rotation } else { Source::Skipped };
-            return Assignment { date, worker: Some(member), source: Some(source) };
+            let source = if step == 0 {
+                Source::Rotation
+            } else {
+                Source::Skipped
+            };
+            return Assignment {
+                date,
+                worker: Some(member),
+                source: Some(source),
+            };
         }
     }
-    Assignment { date, worker: None, source: None }
+    Assignment {
+        date,
+        worker: None,
+        source: None,
+    }
 }
 
 /// Who a turn **starts** for on `today`: the person on call today who was
@@ -244,7 +268,12 @@ pub fn runs(assignments: &[Assignment]) -> Vec<Run> {
             {
                 last.to = a.date;
             }
-            _ => out.push(Run { from: a.date, to: a.date, worker: a.worker, source: a.source }),
+            _ => out.push(Run {
+                from: a.date,
+                to: a.date,
+                worker: a.worker,
+                source: a.source,
+            }),
         }
     }
     out
@@ -324,8 +353,16 @@ mod tests {
     #[test]
     fn an_override_wins_and_the_last_one_listed_wins_over_earlier() {
         let rota = weekly(&[1, 2]);
-        let swap = Override { worker: w(9), starts_on: d(7), ends_on: d(8) };
-        let later = Override { worker: w(8), starts_on: d(8), ends_on: d(8) };
+        let swap = Override {
+            worker: w(9),
+            starts_on: d(7),
+            ends_on: d(8),
+        };
+        let later = Override {
+            worker: w(8),
+            starts_on: d(8),
+            ends_on: d(8),
+        };
         let all = [swap, later];
         assert_eq!(assign(&rota, &all, NOBODY_AWAY, d(6)).worker, Some(w(1)));
         let a = assign(&rota, &all, NOBODY_AWAY, d(7));
@@ -341,7 +378,10 @@ mod tests {
         let r = runs(&days);
         assert_eq!(r.len(), 2);
         assert_eq!((r[0].from, r[0].to, r[0].worker), (d(5), d(11), Some(w(1))));
-        assert_eq!((r[1].from, r[1].to, r[1].worker), (d(12), d(18), Some(w(2))));
+        assert_eq!(
+            (r[1].from, r[1].to, r[1].worker),
+            (d(12), d(18), Some(w(2)))
+        );
         let counts = load(&days);
         assert_eq!(counts[&w(1)], 7);
         assert_eq!(counts[&w(2)], 7);
@@ -395,7 +435,10 @@ mod tests {
         assert!(validate_swap(a, b, d(6), d(8), d(5)).is_ok());
         assert!(validate_swap(a, a, d(6), d(8), d(5)).is_err());
         assert!(validate_swap(a, b, d(8), d(6), d(5)).is_err());
-        assert!(validate_swap(a, b, d(1), d(4), d(5)).is_err(), "all in the past");
+        assert!(
+            validate_swap(a, b, d(1), d(4), d(5)).is_err(),
+            "all in the past"
+        );
         assert!(validate_swap(a, b, d(4), d(6), d(5)).is_ok(), "spans today");
         assert!(validate_swap(a, b, d(5), d(5) + Duration::days(92), d(5)).is_err());
     }

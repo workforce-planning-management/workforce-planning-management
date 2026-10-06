@@ -46,8 +46,7 @@ impl Metrics {
             IntGauge::with_opts(Opts::new(name, help)).expect("static gauge opts are always valid")
         };
         let worker_hired_total = counter("worker_hired_total", "Total workers hired.");
-        let worker_activated_total =
-            counter("worker_activated_total", "Total workers activated.");
+        let worker_activated_total = counter("worker_activated_total", "Total workers activated.");
         let worker_terminated_total =
             counter("worker_terminated_total", "Total workers terminated.");
         let leave_decided_total = counter("leave_decided_total", "Total leave requests decided.");

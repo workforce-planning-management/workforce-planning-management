@@ -81,7 +81,9 @@ pub fn audience_includes(
     match audience {
         None => true,
         Some(_) if is_editor => true,
-        Some(dept) => reader_departments.iter().any(|d| d.eq_ignore_ascii_case(dept)),
+        Some(dept) => reader_departments
+            .iter()
+            .any(|d| d.eq_ignore_ascii_case(dept)),
     }
 }
 
@@ -112,10 +114,7 @@ pub fn status(publish_on: NaiveDate, expires_on: Option<NaiveDate>, today: Naive
 /// The order of the feed: pinned posts first, then newest published first,
 /// then newest created (higher `id`) first.
 #[must_use]
-pub fn feed_order(
-    a: (bool, NaiveDate, i32),
-    b: (bool, NaiveDate, i32),
-) -> Ordering {
+pub fn feed_order(a: (bool, NaiveDate, i32), b: (bool, NaiveDate, i32)) -> Ordering {
     b.0.cmp(&a.0).then(b.1.cmp(&a.1)).then(b.2.cmp(&a.2))
 }
 
@@ -135,17 +134,32 @@ mod tests {
         assert!(validate(&"t".repeat(201), "x", d(5), None).is_err());
         assert!(validate("x", &"b".repeat(5001), d(5), None).is_err());
         assert!(validate("x", "y", d(5), Some(d(4))).is_err());
-        assert!(validate("x", "y", d(5), Some(d(5))).is_ok(), "same day is fine");
+        assert!(
+            validate("x", "y", d(5), Some(d(5))).is_ok(),
+            "same day is fine"
+        );
     }
 
     #[test]
     fn links_are_few_labelled_and_https_only() {
         let ok = |l: &[(&str, &str)]| {
-            validate_links(&l.iter().map(|(a, b)| ((*a).to_string(), (*b).to_string())).collect::<Vec<_>>())
+            validate_links(
+                &l.iter()
+                    .map(|(a, b)| ((*a).to_string(), (*b).to_string()))
+                    .collect::<Vec<_>>(),
+            )
         };
         assert!(ok(&[("Handbook", "https://intranet.example.org/handbook")]).is_ok());
         assert!(ok(&[]).is_ok());
-        assert!(ok(&[("a", "https://a.io"), ("b", "https://b.io"), ("c", "https://c.io"), ("d", "https://d.io")]).is_err());
+        assert!(
+            ok(&[
+                ("a", "https://a.io"),
+                ("b", "https://b.io"),
+                ("c", "https://c.io"),
+                ("d", "https://d.io")
+            ])
+            .is_err()
+        );
         for bad in [
             "http://example.org",
             "javascript:alert(1)",
@@ -164,17 +178,30 @@ mod tests {
     fn a_department_post_is_for_that_department_and_editors() {
         let mine = vec!["Finance".to_string()];
         assert!(audience_includes(None, &[], false), "everyone");
-        assert!(audience_includes(Some("finance"), &mine, false), "case-insensitive");
+        assert!(
+            audience_includes(Some("finance"), &mine, false),
+            "case-insensitive"
+        );
         assert!(!audience_includes(Some("Engineering"), &mine, false));
-        assert!(audience_includes(Some("Engineering"), &mine, true), "editors see all");
-        assert!(!audience_includes(Some("Engineering"), &[], false), "no known department");
+        assert!(
+            audience_includes(Some("Engineering"), &mine, true),
+            "editors see all"
+        );
+        assert!(
+            !audience_includes(Some("Engineering"), &[], false),
+            "no known department"
+        );
     }
 
     #[test]
     fn a_post_is_live_from_publish_day_through_expiry_day() {
         assert_eq!(status(d(6), None, d(5)), Status::Scheduled);
         assert_eq!(status(d(5), None, d(5)), Status::Live);
-        assert_eq!(status(d(1), Some(d(5)), d(5)), Status::Live, "expiry day inclusive");
+        assert_eq!(
+            status(d(1), Some(d(5)), d(5)),
+            Status::Live,
+            "expiry day inclusive"
+        );
         assert_eq!(status(d(1), Some(d(4)), d(5)), Status::Expired);
         assert_eq!(status(d(1), None, d(30)), Status::Live, "no expiry");
     }

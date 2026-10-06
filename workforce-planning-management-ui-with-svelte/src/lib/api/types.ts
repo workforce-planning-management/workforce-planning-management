@@ -231,7 +231,12 @@ export interface SkillCourse {
 
 /** The training that would close one gap, and what it rests on. */
 export interface TrainingRecommendation {
-  courses: Array<{ course_ref: string; title: string; hours: number; levels: number }>;
+  courses: Array<{
+    course_ref: string;
+    title: string;
+    hours: number;
+    levels: number;
+  }>;
   course_levels: number;
   estimated_levels: number;
   hours: number;
@@ -263,7 +268,12 @@ export interface TrainingPlan {
   total_weeks: number;
   finish_on: string | null;
   plan: TrainingPlanItem[];
-  assess_first: Array<{ skill_pid: string; skill: string | null; required: number; importance: string }>;
+  assess_first: Array<{
+    skill_pid: string;
+    skill: string | null;
+    required: number;
+    importance: string;
+  }>;
 }
 
 /** Training hours across the workforce (hours and counts only). */
@@ -273,7 +283,13 @@ export interface TrainingDemand {
   people_with_gaps: number;
   total_hours: number;
   average_hours_per_person: number | null;
-  skills: Array<{ skill_pid: string; skill: string | null; people: number; hours: number; people_on_estimate: number }>;
+  skills: Array<{
+    skill_pid: string;
+    skill: string | null;
+    people: number;
+    hours: number;
+    people_on_estimate: number;
+  }>;
   departments: Array<{ department: string; people: number; hours: number }>;
 }
 

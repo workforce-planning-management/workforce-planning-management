@@ -23,8 +23,10 @@ impl MigrationTrait for Migration {
     /// Propagates any DDL error.
     async fn up(&self, m: &SchemaManager) -> Result<(), DbErr> {
         let conn = m.get_connection();
-        conn.execute_unprepared("ALTER TABLE announcements ADD COLUMN IF NOT EXISTS department VARCHAR NULL")
-            .await?;
+        conn.execute_unprepared(
+            "ALTER TABLE announcements ADD COLUMN IF NOT EXISTS department VARCHAR NULL",
+        )
+        .await?;
         conn.execute_unprepared(
             "ALTER TABLE announcements ADD COLUMN IF NOT EXISTS links JSONB NOT NULL DEFAULT '[]'::jsonb",
         )
@@ -53,9 +55,12 @@ impl MigrationTrait for Migration {
     /// Propagates any DDL error.
     async fn down(&self, m: &SchemaManager) -> Result<(), DbErr> {
         let conn = m.get_connection();
-        conn.execute_unprepared("DROP TABLE IF EXISTS announcement_reads").await?;
-        conn.execute_unprepared("ALTER TABLE announcements DROP COLUMN IF EXISTS links").await?;
-        conn.execute_unprepared("ALTER TABLE announcements DROP COLUMN IF EXISTS department").await?;
+        conn.execute_unprepared("DROP TABLE IF EXISTS announcement_reads")
+            .await?;
+        conn.execute_unprepared("ALTER TABLE announcements DROP COLUMN IF EXISTS links")
+            .await?;
+        conn.execute_unprepared("ALTER TABLE announcements DROP COLUMN IF EXISTS department")
+            .await?;
         Ok(())
     }
 }

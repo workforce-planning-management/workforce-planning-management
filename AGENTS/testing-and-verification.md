@@ -17,12 +17,12 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | UI | `pnpm exec playwright test` | 28 specs, stubbed API |
 | UI | `pnpm build` | green |
 
-`CONTRIBUTING.md` also asks for `cargo fmt --check`, `clippy -D warnings` over the
-whole crate and `pnpm lint`. As of 2026-10-06 whole-crate `-D warnings` has known
-**pre-existing** warnings (for example a wildcard import in `src/auth/paseto.rs`
-and an `assert!(….is_empty())` in `src/rules/notify.rs`) and `fmt`/`lint` have not
-been run across the repo; keep what you touch clean and **say so** rather than
-claiming a green gate you did not run.
+`CONTRIBUTING.md` also asks for `cargo fmt --check`, `cargo clippy --all-targets
+-- -D warnings` and `pnpm lint` (`prettier --check src`). **As of 2026-10-06 all
+three are clean across the repo** — the service under both auth backends
+(default and `--features keycloak`) — after the whole-repo pass recorded in the
+changelog. Keep them clean; if you cannot run one, say so rather than claiming a
+green gate. A justified `#[allow(clippy::…)]` carries a reason comment.
 
 ## Running the service tests without the sibling crates
 

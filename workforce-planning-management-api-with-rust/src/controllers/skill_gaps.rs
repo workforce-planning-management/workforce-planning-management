@@ -76,7 +76,10 @@ pub(crate) async fn load_evidence(
         .all(&ctx.db)
         .await?
     {
-        declared.entry(d.worker_pid).or_default().insert(d.skill_pid, (d.proficiency, d.target));
+        declared
+            .entry(d.worker_pid)
+            .or_default()
+            .insert(d.skill_pid, (d.proficiency, d.target));
     }
     let mut aspirations: HashMap<Uuid, Vec<worker_aspirations::Model>> = HashMap::new();
     if with_aspirations {
@@ -92,7 +95,12 @@ pub(crate) async fn load_evidence(
             }
         }
     }
-    Ok(Evidence { requirements, roles, declared, aspirations })
+    Ok(Evidence {
+        requirements,
+        roles,
+        declared,
+        aspirations,
+    })
 }
 
 impl Evidence {
@@ -177,7 +185,11 @@ async fn worker_gaps(
     rules::rank(&mut gaps);
     let index = skill_index(&ctx).await?;
     let count = |s: Status| gaps.iter().filter(|g| g.status == s).count();
-    let (met, below, undeclared) = (count(Status::Met), count(Status::Below), count(Status::Undeclared));
+    let (met, below, undeclared) = (
+        count(Status::Met),
+        count(Status::Below),
+        count(Status::Undeclared),
+    );
     let listed: Vec<serde_json::Value> = gaps
         .iter()
         .filter(|g| g.status != Status::Met)

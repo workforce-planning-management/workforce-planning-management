@@ -115,7 +115,7 @@ mod tests {
     fn text_rules() {
         let mut p = Problems::new();
         p.require_text("name", "Ward 7");
-        assert!(p.into_vec().is_empty());
+        assert_eq!(p.into_vec().len(), 0);
         let mut p = Problems::new();
         p.require_text("name", "   ");
         p.cap_text("note", &"x".repeat(MAX_TEXT_LEN + 1));
@@ -130,7 +130,7 @@ mod tests {
         let mut p = Problems::new();
         p.require_token("status", crate::rules::tokens::WORKER_STATUSES, "active");
         p.token_opt("kind", crate::rules::tokens::LEAVE_KINDS, None);
-        assert!(p.into_vec().is_empty());
+        assert_eq!(p.into_vec().len(), 0);
         let mut p = Problems::new();
         p.require_token("status", crate::rules::tokens::WORKER_STATUSES, "hired");
         assert_eq!(p.into_vec().len(), 1);
@@ -141,7 +141,7 @@ mod tests {
         let good = format!("person:{}", uuid::Uuid::new_v4());
         let mut p = Problems::new();
         p.require_ref("person_ref", EntityType::Person, &good);
-        assert!(p.into_vec().is_empty());
+        assert_eq!(p.into_vec().len(), 0);
         // Wrong type, malformed, and bad uuid each fail.
         let mut p = Problems::new();
         p.require_ref(
@@ -178,7 +178,7 @@ mod tests {
             EntityType::Worker,
             &format!("worker:{}", uuid::Uuid::new_v4()),
         );
-        assert!(p.into_vec().is_empty());
+        assert_eq!(p.into_vec().len(), 0);
 
         // Organization: same pattern.
         let mut p = Problems::new();
@@ -196,7 +196,7 @@ mod tests {
             EntityType::Organization,
             &format!("organization:{}", uuid::Uuid::new_v4()),
         );
-        assert!(p.into_vec().is_empty());
+        assert_eq!(p.into_vec().len(), 0);
 
         // Course: same pattern.
         let mut p = Problems::new();
@@ -214,14 +214,14 @@ mod tests {
             EntityType::Course,
             &format!("course:{}", uuid::Uuid::new_v4()),
         );
-        assert!(p.into_vec().is_empty());
+        assert_eq!(p.into_vec().len(), 0);
     }
 
     #[test]
     fn list_rules() {
         let mut p = Problems::new();
         p.cap_list("alerts", &["falls risk".to_string()]);
-        assert!(p.into_vec().is_empty());
+        assert_eq!(p.into_vec().len(), 0);
         let mut p = Problems::new();
         p.cap_list("alerts", &[String::new()]);
         assert_eq!(p.into_vec().len(), 1);

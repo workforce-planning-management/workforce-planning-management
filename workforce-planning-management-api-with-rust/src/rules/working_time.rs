@@ -114,7 +114,7 @@ mod tests {
         assert_eq!(breaches[0].gap_minutes, 600);
         // 22:00 → 09:00 = 11 h exactly ⇒ no breach (floor is inclusive).
         let ok = vec![(at(1, 14), at(1, 22)), (at(2, 9), at(2, 17))];
-        assert!(rest_breaches(&ok).is_empty());
+        assert_eq!(rest_breaches(&ok).len(), 0);
         // Unordered input sorts before pairing.
         let unordered = vec![(at(2, 8), at(2, 16)), (at(1, 14), at(1, 22))];
         assert_eq!(rest_breaches(&unordered).len(), 1);
@@ -123,6 +123,6 @@ mod tests {
         assert_eq!(rest_breaches(&overlap)[0].gap_minutes, 0);
         // A malformed (end <= start) interval is skipped, not trusted.
         let malformed = vec![(at(1, 22), at(1, 14)), (at(2, 8), at(2, 16))];
-        assert!(rest_breaches(&malformed).is_empty());
+        assert_eq!(rest_breaches(&malformed).len(), 0);
     }
 }

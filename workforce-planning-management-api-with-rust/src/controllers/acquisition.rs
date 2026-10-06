@@ -11,7 +11,7 @@ use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::metrics::Metrics;
 use crate::models::_entities::{
-    applications, candidates, workers, interviews, onboarding_items, requisitions,
+    applications, candidates, interviews, onboarding_items, requisitions, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};

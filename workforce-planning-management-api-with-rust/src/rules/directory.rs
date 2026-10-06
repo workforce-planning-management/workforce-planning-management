@@ -120,7 +120,10 @@ mod tests {
 
     #[test]
     fn every_term_must_match_somewhere_case_insensitively() {
-        assert_eq!(names(&search(sample(), "ENGINEER lon", None)), ["alice Brown"]);
+        assert_eq!(
+            names(&search(sample(), "ENGINEER lon", None)),
+            ["alice Brown"]
+        );
         // "engineering" is in two titles/departments; "manager" narrows.
         assert_eq!(
             names(&search(sample(), "engineering manager", None)),
@@ -134,7 +137,10 @@ mod tests {
         let mut with_manager = entry(4, "Dee Evans", "Designer", "Product", None);
         with_manager.manager_name = Some("Alice Brown".to_string());
         let all = vec![with_manager, entry(2, "Bob Clarke", "Dev", "Eng", None)];
-        assert_eq!(names(&search(all.clone(), "leeds", None)), Vec::<&str>::new());
+        assert_eq!(
+            names(&search(all.clone(), "leeds", None)),
+            Vec::<&str>::new()
+        );
         assert_eq!(names(&search(all, "alice", None)), ["Dee Evans"]);
     }
 

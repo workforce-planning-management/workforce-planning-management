@@ -17,7 +17,9 @@ impl MigrationTrait for Migration {
     /// Propagates any DDL error.
     async fn up(&self, m: &SchemaManager) -> Result<(), DbErr> {
         m.get_connection()
-            .execute_unprepared("ALTER TABLE workers ADD COLUMN IF NOT EXISTS location VARCHAR NULL")
+            .execute_unprepared(
+                "ALTER TABLE workers ADD COLUMN IF NOT EXISTS location VARCHAR NULL",
+            )
             .await?;
         Ok(())
     }

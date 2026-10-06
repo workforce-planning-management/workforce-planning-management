@@ -15,7 +15,7 @@ use uuid::Uuid;
 use super::{Page, ensure_valid, record_rejection, unprocessable, with_page_headers};
 use crate::auth::{self, MaybeAuthUser};
 use crate::metrics::Metrics;
-use crate::models::_entities::{benefit_enrollments, benefit_plans, workers, onboarding_items};
+use crate::models::_entities::{benefit_enrollments, benefit_plans, onboarding_items, workers};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::{lifecycle, org, talent, tokens};
@@ -451,13 +451,8 @@ async fn change_status(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    lifecycle::check(
-        "worker",
-        lifecycle::WORKER,
-        &worker.status,
-        &payload.to,
-    )
-    .map_err(|e| unprocessable(&e))?;
+    lifecycle::check("worker", lifecycle::WORKER, &worker.status, &payload.to)
+        .map_err(|e| unprocessable(&e))?;
     if worker.status == "onboarding" && payload.to == "active" {
         let open = onboarding_items::Entity::find()
             .filter(onboarding_items::Column::WorkerPid.eq(worker.pid))
@@ -856,9 +851,6 @@ pub fn routes() -> Routes {
         .add("/benefit-plans", post(create_plan))
         .add("/benefit-plans", get(list_plans))
         .add("/workers/{pid}/benefit-enrollments", post(enroll))
-        .add(
-            "/workers/{pid}/benefit-enrollments",
-            get(list_enrollments),
-        )
+        .add("/workers/{pid}/benefit-enrollments", get(list_enrollments))
         .add("/benefit-enrollments/{pid}", delete(unenroll))
 }

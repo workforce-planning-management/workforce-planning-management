@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — whole-repo lint pass (2026-10-06)
+
+`cargo fmt`, `cargo clippy --all-targets -- -D warnings` (both auth backends) and
+`pnpm lint` are now clean across the repository; previously only new files had been
+kept clean. Mechanical: formatting, twelve `assert!(….is_empty())` test assertions,
+a wildcard import in `auth/paseto.rs`, and one justified `#[allow]`. Full suites
+re-run afterwards (297 unit, 54 request, enforcement, 68 vitest, 28 Playwright).
+
 ### Added — WPM-T37–T89 (2026-09-28 → 2026-10-06)
 
 Detailed history: each subproject's `CHANGELOG.md` and
