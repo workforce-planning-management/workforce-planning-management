@@ -115,5 +115,6 @@ cargo clippy --all-targets          # pedantic; keep new files clean
 
 Loco tasks (`cargo run -- task <name>`): `seed`, `snapshot_headcount`
 (**schedule daily**), `rota_reminders [days_ahead:N]` (**schedule daily**),
+`pay_progression_reminders [days_ahead:N]` (**schedule daily**),
 `import_framework`, `import_esco`. See [testing](../spec/testing.md) for running
 the suite without the sibling crates.

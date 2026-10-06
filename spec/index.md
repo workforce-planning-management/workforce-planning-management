@@ -80,7 +80,7 @@ identities by `EntityRef` URN, never duplicating them.
 | [uk-gdad-pcf/index.md](uk-gdad-pcf/index.md) | UK Government Digital and Data Profession Capability Framework — shape, licence, mapping to WPM role profiles and CPD |
 | [payroll-compensation.md](payroll-compensation.md) | Pillar 5: payroll runs, payslips, benchmarking                                            |
 | [people-directory-and-cover.md](people-directory-and-cover.md) | Employee directory, emergency contacts, backups (cover), the on-call rota with swaps and reminders (WPM-R39–R42) |
-| [pay-scales.md](pay-scales.md) | NHS Agenda for Change pay scale for Wales (2026/27), salary placement and progression lookup (WPM-R51) |
+| [pay-scales.md](pay-scales.md) | NHS Agenda for Change pay scale for Wales (2026/27), salary placement and progression lookup, a worker's band and step with eligibility reminders (WPM-R51, R54) |
 | [job-levels.md](job-levels.md) | Google technical job levels L3–L11 as reference data; a worker's level and a role's level and pay band (WPM-R52–R53) |
 | [skills-and-training.md](skills-and-training.md)   | Skills gap analysis and training time recommendations (WPM-R43–R44)                       |
 | [joiners-and-leavers.md](joiners-and-leavers.md)   | Joiner / leaver records with dated checklists; a leaver's last-day handover and audit trail (WPM-R45–R46) |
@@ -112,9 +112,9 @@ queued in `tasks.md`, and only then lands as code in a subproject.
 **Status (2026-10-06):** tasks WPM-T1–T89 delivered (one deliberate
 deferral: employee expense claims — see the last entry of
 [tasks.md](tasks.md)); requirements WPM-R1–R50, design decisions
-WPM-D1–D40. Current verification: 307 unit tests, 58 database-backed request
+WPM-D1–D41. Current verification: 312 unit tests, 60 database-backed request
 tests, the auth enforcement and Keycloak suites, 74 front-end unit tests and
-33 Playwright specs — see [testing.md](testing.md).
+35 Playwright specs — see [testing.md](testing.md).
 
 The load-bearing design thread (decisions WPM-D17–D25, extended by
 WPM-D29–D36): **what must

@@ -635,5 +635,13 @@
     "roleHint": "Level dan pita gaji yang ditetapkan bersama di sini dihubungkan oleh pengubah peran; WPM tidak menurunkan salah satunya dari yang lain.",
     "noRoleGrade": "Belum ada tingkat untuk peran ini.",
     "pickOne": "Pilih level jabatan, pita gaji, atau keduanya."
+  },
+  "payPosition": {
+    "title": "Pita gaji dan tingkat",
+    "hint": "Hanya Anda dan HR yang dapat melihat ini: pita dan tingkat adalah gaji. Kelayakan berarti lamanya tahun di tingkat itu, bukan janji kenaikan.",
+    "none": "Belum ada pita gaji yang dicatat.",
+    "current": "Pita {band}, tingkat {step}: {amount} per tahun (penuh waktu), sejak {since}.",
+    "notYet": "Berhak naik pada {date} (dalam {days} hari), ke {amount}.",
+    "due": "Berhak naik sekarang (sejak {date}), ke {amount}."
   }
 }

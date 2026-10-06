@@ -308,6 +308,8 @@ aggregate with suggestions-only levers: see
 
 Recorded beside the requirements they shape:
 
+- **WPM-D41** a pay position is a salary and a reminder promises nothing —
+  [pay-scales.md](pay-scales.md).
 - **WPM-D39** a level is not a salary, and an unstated fact is unknown; **WPM-D40**
   a worker's level is high-sensitivity and a level–band link is the editor's
   statement, not a derivation —

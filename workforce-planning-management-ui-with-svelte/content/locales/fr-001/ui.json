@@ -635,5 +635,13 @@
     "roleHint": "Un niveau et une bande salariale définis ensemble ici sont reliés par la personne qui modifie le rôle ; WPM n'en déduit pas l'un de l'autre.",
     "noRoleGrade": "Aucune classification définie pour ce rôle.",
     "pickOne": "Choisissez un niveau, une bande salariale, ou les deux."
+  },
+  "payPosition": {
+    "title": "Bande salariale et échelon",
+    "hint": "Seuls vous et les RH pouvez le voir : une bande et un échelon constituent un salaire. L'éligibilité correspond aux années passées sur l'échelon, pas à une promesse de passage.",
+    "none": "Aucune bande salariale enregistrée.",
+    "current": "Bande {band}, échelon {step} : {amount} par an (temps plein), depuis le {since}.",
+    "notYet": "Éligible au passage le {date} (dans {days} jours), à {amount}.",
+    "due": "Éligible au passage dès maintenant (depuis le {date}), à {amount}."
   }
 }

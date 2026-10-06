@@ -120,6 +120,30 @@ export interface RoleGrade {
   pay_band: RolePayBand | null;
 }
 
+/** Where a worker stands on progression, with dates (eligibility, not a promise). */
+export type PayStanding =
+  | { kind: "at_top" }
+  | { kind: "due"; eligible_on: string; next_annual_minor: number }
+  | {
+      kind: "not_yet";
+      eligible_on: string;
+      days_remaining: number;
+      next_annual_minor: number;
+    };
+
+/** A worker's band and step on a pay scale; readable by the worker and HR only. */
+export interface WorkerPayPosition {
+  scale: string;
+  scale_name: string | null;
+  band: string;
+  step: number;
+  currency: string | null;
+  annual_minor: number | null;
+  step_since: string;
+  on_behalf: boolean;
+  progression: PayStanding | null;
+}
+
 /** One pay point: annual full-time pay in minor units. */
 export interface PayStep {
   annual_minor: number;

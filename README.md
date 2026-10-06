@@ -19,7 +19,7 @@ payroll & compensation — in **17 locales**. See
 deliberate deferral (employee expense claims — see
 [spec/roadmap.md](spec/roadmap.md)).** Verified: 297 service unit tests, 54
 database-backed request tests, the auth enforcement and Keycloak suites (real
-Keycloak 26), 74 front-end unit tests and 33 Playwright specs. See each
+Keycloak 26), 74 front-end unit tests and 35 Playwright specs. See each
 subproject's own README for its own gate status, and [spec/testing.md](spec/testing.md).
 
 ## Subprojects

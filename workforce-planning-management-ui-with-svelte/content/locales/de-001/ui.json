@@ -635,5 +635,13 @@
     "roleHint": "Eine hier gemeinsam gesetzte Stufe und Gehaltsband werden von der Person verknüpft, die die Rolle bearbeitet; WPM leitet das eine nicht aus dem anderen ab.",
     "noRoleGrade": "Für diese Rolle ist keine Einstufung gesetzt.",
     "pickOne": "Wählen Sie eine Stufe, ein Gehaltsband oder beides."
+  },
+  "payPosition": {
+    "title": "Gehaltsband und Stufe",
+    "hint": "Nur Sie und die Personalabteilung können dies sehen: Band und Stufe sind ein Gehalt. Berechtigung bedeutet die Jahre auf der Stufe, kein Versprechen eines Aufstiegs.",
+    "none": "Kein Gehaltsband erfasst.",
+    "current": "Band {band}, Stufe {step}: {amount} im Jahr (Vollzeit), seit {since}.",
+    "notYet": "Aufstiegsberechtigt am {date} (in {days} Tagen), auf {amount}.",
+    "due": "Jetzt aufstiegsberechtigt (seit {date}), auf {amount}."
   }
 }

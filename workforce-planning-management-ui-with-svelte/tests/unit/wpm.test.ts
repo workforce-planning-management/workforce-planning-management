@@ -269,6 +269,13 @@ describe("api path map", () => {
       level: "L5",
     });
     await wpm.clearWorkerJobLevel("w1");
+    await wpm.getWorkerPayPosition("w1");
+    await wpm.setWorkerPayPosition("w1", {
+      scale: "afc-wales-2026-27",
+      band: "6",
+      step: 1,
+    });
+    await wpm.clearWorkerPayPosition("w1");
     await wpm.getRoleGrade("p1");
     await wpm.setRoleGrade("p1", {
       job_level: { framework: "google-levels", level: "L5" },
@@ -430,6 +437,9 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/job-level",
       "/api/proxy/workers/w1/job-level",
       "/api/proxy/workers/w1/job-level",
+      "/api/proxy/workers/w1/pay-position",
+      "/api/proxy/workers/w1/pay-position",
+      "/api/proxy/workers/w1/pay-position",
       "/api/proxy/role-profiles/p1/grade",
       "/api/proxy/role-profiles/p1/grade",
       "/api/proxy/role-profiles/p1/grade",

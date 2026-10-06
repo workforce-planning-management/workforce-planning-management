@@ -80,6 +80,7 @@ pub use super::worker_aspirations::Entity as WorkerAspirations;
 pub use super::worker_backups::Entity as WorkerBackups;
 pub use super::worker_framework_roles::Entity as WorkerFrameworkRoles;
 pub use super::worker_job_levels::Entity as WorkerJobLevels;
+pub use super::worker_pay_positions::Entity as WorkerPayPositions;
 pub use super::worker_skill_history::Entity as WorkerSkillHistory;
 pub use super::workers::Entity as Workers;
 pub use super::workforce_plans::Entity as WorkforcePlans;

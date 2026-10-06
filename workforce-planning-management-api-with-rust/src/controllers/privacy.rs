@@ -19,8 +19,8 @@ use crate::models::_entities::{
     mobility_interests, movements, notifications, path_enrollments, payslips, pipeline_members,
     professional_registrations, program_placements, reviews, rota_members, rota_overrides,
     rota_swap_requests, shift_assignments, time_entries, training_enrollments, worker_aspirations,
-    worker_backups, worker_framework_roles, worker_job_levels, worker_skill_history, worker_skills,
-    workers,
+    worker_backups, worker_framework_roles, worker_job_levels, worker_pay_positions,
+    worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -117,6 +117,7 @@ async fn subject_access(
         "aspirations": rows_for!(db, worker_aspirations, WorkerPid, epid),
         "emergency_contacts": rows_for!(db, emergency_contacts, WorkerPid, epid),
         "job_level": rows_for!(db, worker_job_levels, WorkerPid, epid),
+        "pay_position": rows_for!(db, worker_pay_positions, WorkerPid, epid),
         "backups": rows_for!(db, worker_backups, WorkerPid, epid),
         "named_as_backup_by": rows_for!(db, worker_backups, BackupPid, epid),
         "on_call_rota_memberships": rows_for!(db, rota_members, WorkerPid, epid),
@@ -264,6 +265,7 @@ async fn erase(
             "UPDATE handover_actions SET note = NULL WHERE from_worker = '{epid}' OR to_worker = '{epid}'"
         ),
         format!("DELETE FROM worker_job_levels WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM worker_pay_positions WHERE worker_pid = '{epid}'"),
     ];
     let mut affected = Vec::new();
     for statement in &statements {
@@ -304,6 +306,7 @@ async fn erase(
             "movement_tasks_unassigned": affected[24],
             "handover_notes_scrubbed": affected[25],
             "job_levels_deleted": affected[26],
+            "pay_positions_deleted": affected[27],
         })),
     )
     .await?;

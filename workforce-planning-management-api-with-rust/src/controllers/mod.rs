@@ -34,6 +34,7 @@ pub mod mobility;
 pub mod movements;
 pub mod notifications;
 pub mod organizations;
+pub mod pay_positions;
 pub mod pay_scales;
 pub mod payroll;
 pub mod planning;

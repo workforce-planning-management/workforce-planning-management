@@ -29,7 +29,7 @@ provides the HR, manager, and worker self-service client.
 > only. See [spec/regulatory](../spec/regulatory.md).
 
 **Status: implemented through WPM-T89 (2026-07-18 → 2026-10-06).** 297
-DB-free unit tests, **58 database-backed request tests** (22 files), the
+DB-free unit tests, **60 database-backed request tests** (23 files), the
 enforcement persona matrix (mounted on the shipped reference policy) and a
 **Keycloak suite against a real Keycloak 26** pass against Postgres 18;
 clippy-pedantic is kept clean on new code. 46 migration sets, ~240 documented
@@ -105,8 +105,8 @@ backups** · **on-call rotas + swaps + swap requests** · **announcements** ·
 **skill gaps + training plans + skill catalogue** · **joiner / leaver records +
 handover** · OpenAPI + Swagger · `/metrics.prom`.
 
-Loco tasks: `seed`, `snapshot_headcount` and `rota_reminders` (**schedule both
-daily — they do nothing by themselves**), `import_framework`, `import_esco`.
+Loco tasks: `seed`, `snapshot_headcount`, `rota_reminders` and
+`pay_progression_reminders` (**schedule these daily — they do nothing by themselves**), `import_framework`, `import_esco`.
 
 Auth enforcement defaults **off** (`WPM_REQUIRE_AUTH` is the family
 activation gate); upstream lookups default to **stub mode**; events

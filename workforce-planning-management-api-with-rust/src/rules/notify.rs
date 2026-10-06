@@ -15,6 +15,7 @@ pub const KINDS: &[&str] = &[
     "swap_requested",
     "swap_decided",
     "handover_received",
+    "pay_step_due",
 ];
 
 /// Recipients of an appraisal lifecycle move:
@@ -86,7 +87,8 @@ mod tests {
                 "on_call_reminder",
                 "swap_requested",
                 "swap_decided",
-                "handover_received"
+                "handover_received",
+                "pay_step_due"
             ]
         );
     }

@@ -309,6 +309,8 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
 **People and cover** ([people-directory-and-cover.md](people-directory-and-cover.md))
 
 - **EmergencyContact** (`emergency_contacts`) — ranked, ≤ 5 per person, soft-deleted.
+- **WorkerPayPosition** (`worker_pay_positions`) — one band and step per worker on a
+  reference pay scale, and the date they reached the step (WPM-R54; erased with the person).
 - **WorkerJobLevel** (`worker_job_levels`) — one current level per worker on a
   reference ladder (not soft-deleted; erased with the person), and the
   `job_level_*` / `pay_*` columns on **RoleProfile** (WPM-R53).

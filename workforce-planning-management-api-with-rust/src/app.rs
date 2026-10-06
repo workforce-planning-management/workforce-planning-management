@@ -106,6 +106,7 @@ impl Hooks for App {
             .add_route(controllers::pay_scales::routes())
             .add_route(controllers::job_levels::routes())
             .add_route(controllers::grades::routes())
+            .add_route(controllers::pay_positions::routes())
             .add_route(controllers::rotas::routes())
             .add_route(controllers::handover::routes())
             .add_route(controllers::movements::routes())
@@ -149,6 +150,7 @@ impl Hooks for App {
     fn register_tasks(tasks: &mut Tasks) {
         tasks.register(tasks::seed::Seed);
         tasks.register(tasks::rota_reminders::RotaReminders);
+        tasks.register(tasks::pay_progression_reminders::PayProgressionReminders);
         tasks.register(tasks::snapshot::SnapshotHeadcount);
         tasks.register(tasks::import_framework::ImportFramework);
         tasks.register(tasks::import_esco::ImportEsco);

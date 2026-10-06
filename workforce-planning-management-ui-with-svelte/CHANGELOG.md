@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — pay-position panel
+
+`PayPosition` on `/me` and the worker page; strings in the 12 `-001` locales.
+
 ### Fixed — visual review of the new pages (2026-10-06)
 
 Looked at `/pay-scales`, `/job-levels`, `/roles` and `/me` in light and dark at desktop, iPad and

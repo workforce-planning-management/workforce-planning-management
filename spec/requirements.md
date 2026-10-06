@@ -538,8 +538,9 @@ acceptance criteria and traces to the tasks that delivered it:
 - **WPM-R52–R53** Google's technical job levels L3–L11 as reference data, a
   worker's level, and a role's level and pay band —
   [job-levels.md](job-levels.md) (WPM-T93–T94).
-- **WPM-R51** the NHS Agenda for Change pay scale for Wales and a
-  salary-placement lookup — [pay-scales.md](pay-scales.md) (WPM-T92).
+- **WPM-R51, R54** the NHS Agenda for Change pay scale for Wales, a
+  salary-placement lookup, and a worker's band and step with eligibility reminders —
+  [pay-scales.md](pay-scales.md) (WPM-T92, T96).
 - **WPM-R43–R44** skills gap analysis, training time recommendations —
   [skills-and-training.md](skills-and-training.md) (WPM-T87–T88).
 - **WPM-R45–R46** joiner and leaver records with dated checklists, the

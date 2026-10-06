@@ -37,6 +37,7 @@ applied to HR.
 | leave kinds (esp. sick/parental) | high — self + manager + HR |
 | employment facts (title, department, dates) | medium |
 | requisitions, shift plans | low |
+| a worker's pay band and step (is a salary) | high — the person + HR only; the audit entry and the reminder name no band, step or amount (WPM-D41) |
 | a worker's job level (seniority; tracks pay) | high — the person + HR only; the audit entry names no level (WPM-D40) |
 | emergency contacts (third-party personal data) | high — the person + HR only; a manager cannot read them |
 | skill aspirations | private unless shared (`manager` / `everyone`); never in workforce roll-ups |

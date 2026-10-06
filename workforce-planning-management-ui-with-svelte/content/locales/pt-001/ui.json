@@ -635,5 +635,13 @@
     "roleHint": "Um nível e uma banda salarial definidos em conjunto aqui são ligados por quem edita a função; o WPM não deduz um do outro.",
     "noRoleGrade": "Nenhum grau definido para esta função.",
     "pickOne": "Escolha um nível, uma banda salarial ou ambos."
+  },
+  "payPosition": {
+    "title": "Banda salarial e escalão",
+    "hint": "Só você e os RH podem ver isto: uma banda e um escalão são um salário. A elegibilidade são os anos no escalão, não uma promessa de subida.",
+    "none": "Nenhuma banda salarial registada.",
+    "current": "Banda {band}, escalão {step}: {amount} por ano (tempo inteiro), desde {since}.",
+    "notYet": "Elegível para subir em {date} (daqui a {days} dias), para {amount}.",
+    "due": "Elegível para subir agora (desde {date}), para {amount}."
   }
 }

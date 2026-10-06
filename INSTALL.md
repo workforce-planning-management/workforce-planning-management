@@ -36,6 +36,7 @@ Two loco tasks do nothing unless something runs them — schedule each **daily**
 ```sh
 cargo run -- task snapshot_headcount     # records aggregate headcount (cannot be backfilled)
 cargo run -- task rota_reminders         # tells whoever's on-call turn starts tomorrow (idempotent)
+cargo run -- task pay_progression_reminders  # tells who becomes eligible for a pay step within 30 days (idempotent)
 ```
 
 Optional imports: `cargo run -- task import_framework` (UK GDAD PCF) and
@@ -63,7 +64,7 @@ pnpm dev                   # expects the service running (stub mode is fine)
 ```sh
 pnpm check                 # svelte-kit sync && svelte-check
 pnpm test                  # vitest (74)
-pnpm exec playwright test  # 33 specs, page.route-stubbed — no running service needed
+pnpm exec playwright test  # 35 specs, page.route-stubbed — no running service needed
 pnpm build
 ```
 

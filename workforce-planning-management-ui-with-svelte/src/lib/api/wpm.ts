@@ -10,6 +10,7 @@ import type {
   WorkerJobLevel,
   JobLevelFrameworkSummary,
   PayLookup,
+  WorkerPayPosition,
   PayScale,
   PayScaleSummary,
   Benchmark,
@@ -177,6 +178,27 @@ export function setWorkerJobLevel(
 /** Clear a worker's job level. */
 export function clearWorkerJobLevel(workerPid: string): Promise<unknown> {
   return api(`/workers/${workerPid}/job-level`, { method: "DELETE" });
+}
+
+/** A worker's band and step (worker and HR only), or `pay_position: null`. */
+export function getWorkerPayPosition(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{ pay_position: WorkerPayPosition | null }> {
+  return api(`/workers/${workerPid}/pay-position`, init);
+}
+
+/** Set a worker's band and step; `step_since` defaults to today. */
+export function setWorkerPayPosition(
+  workerPid: string,
+  body: { scale: string; band: string; step: number; step_since?: string },
+): Promise<{ pay_position: WorkerPayPosition }> {
+  return api(`/workers/${workerPid}/pay-position`, { method: "PUT", body });
+}
+
+/** Clear a worker's pay position. */
+export function clearWorkerPayPosition(workerPid: string): Promise<unknown> {
+  return api(`/workers/${workerPid}/pay-position`, { method: "DELETE" });
 }
 
 /** A role profile's job level and pay band. */

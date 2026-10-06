@@ -2209,6 +2209,29 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       checked, the NHS Wales and other themes were not; the CMS `/admin/` flow still needs a
       GitHub login and was not opened.
 
+- [x] WPM-T96 (2026-10-06) **A worker's pay band and step, eligibility date and reminder.**
+      *(traces to WPM-R54, WPM-D41; [pay-scales.md](pay-scales.md))* Builds on WPM-T92.
+      Migration 48 (`worker_pay_positions`). Pure `rules/pay_position.rs` (`validate`,
+      `validate_step_since`, `eligible_on` = `step_since` + the step's whole years with a leap-day
+      clamp, `standing` at_top/due/not_yet with `days_remaining`, `annual_minor`; 5 unit tests),
+      `controllers/pay_positions.rs` (`/api/workers/{pid}/pay-position` GET/PUT/DELETE), OpenAPI,
+      the loco task `pay_progression_reminders [days_ahead:0–90] [as_of]` (idempotent per
+      eligibility date; employed-on-the-date only), notification kind `pay_step_due` (closed list
+      updated). **The worker and HR only; audit and reminder name no band, step or amount;
+      exported and erased with the person** (statement appended, `pay_positions_deleted` in the
+      audit snapshot). UI: `PayPosition` panel on `/me` and the worker page (hidden when 403),
+      client functions (path-map test), strings in the 12 `-001` locales (AI-written,
+      unreviewed). Also added the missing **hidden-on-403 spec** for the job-level and
+      pay-position panels. Verified: 312 unit, 60 request (2 new: validation, dates, top step,
+      audit without the position, export, clear/404, erasure by row count; reminders window,
+      idempotence, no pay in the message), enforcement test, clippy `-D warnings` and fmt clean,
+      svelte-check 0, vitest 74, Playwright 35 (twice, `PW_PORT`), build, prettier; the panel was
+      screenshotted on desktop (light) and phone (dark) and read. **Not done:** telling HR or a
+      manager (deliberate, D41); a team "who is due" view (a count of one names someone);
+      position history; comparing the position with the salary field (deliberate); the
+      `pay_progression_reminders` task is **not scheduled** — the operator must run it daily;
+      manager-cannot-read was not exercised under enforcement.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

@@ -635,5 +635,13 @@
     "roleHint": "A level and a pay band set together here are linked by whoever edits the role; WPM does not derive one from the other.",
     "noRoleGrade": "No grade set for this role.",
     "pickOne": "Choose a job level, a pay band, or both."
+  },
+  "payPosition": {
+    "title": "Pay band and step",
+    "hint": "Only you and HR can see this: a band and step is a salary. Eligibility is the years on the step, not a promise of a move.",
+    "none": "No pay band recorded.",
+    "current": "Band {band}, step {step}: {amount} a year (full-time), since {since}.",
+    "notYet": "Eligible to move up on {date} (in {days} days), to {amount}.",
+    "due": "Eligible to move up now (since {date}), to {amount}."
   }
 }

@@ -939,6 +939,108 @@ test.describe("signed-in smoke coverage", () => {
     await expect(panel.getByTestId("job-level-none")).toBeVisible();
   });
 
+  test("a person records their pay band and step, sees when they are eligible to move up", async ({
+    page,
+  }) => {
+    const step = (pounds: number, years: number | null) => ({
+      annual_minor: pounds * 100,
+      years_to_next: years,
+    });
+    const scale = {
+      id: "afc-wales-2026-27",
+      name: "NHS Wales Agenda for Change 2026/27",
+      framework: "agenda-for-change",
+      nation: "wales",
+      currency: "GBP",
+      effective_from: "2026-04-01",
+      uplift_tenths_percent: 33,
+      source: "AfC(W) 02/2026",
+      minutes_per_week: 2250,
+      bands: [
+        {
+          code: "6",
+          closed: false,
+          steps: [step(40559, 2), step(42805, 3), step(48841, null)],
+        },
+      ],
+      allowances: [],
+    };
+    let held: Record<string, unknown> | null = null;
+    const sent: Array<Record<string, unknown>> = [];
+    await page.route(
+      (url) => url.pathname === "/api/proxy/pay-scales",
+      (route) => route.fulfill({ json: [{ ...scale, bands: ["6"] }] }),
+    );
+    await page.route(
+      (url) => url.pathname === "/api/proxy/pay-scales/afc-wales-2026-27",
+      (route) => route.fulfill({ json: scale }),
+    );
+    await page.route(`**/api/proxy/workers/${WORKER.pid}/pay-position`, async (route) => {
+      const method = route.request().method();
+      if (method === "PUT") {
+        const body = route.request().postDataJSON();
+        sent.push(body);
+        held = {
+          scale: scale.id,
+          scale_name: scale.name,
+          band: body.band,
+          step: body.step,
+          currency: "GBP",
+          annual_minor: 4055900,
+          step_since: body.step_since ?? "2026-10-06",
+          on_behalf: false,
+          progression: {
+            kind: "not_yet",
+            eligible_on: "2026-12-01",
+            days_remaining: 56,
+            next_annual_minor: 4280500,
+          },
+        };
+        return route.fulfill({ json: { pay_position: held } });
+      }
+      if (method === "DELETE") {
+        held = null;
+        return route.fulfill({ status: 204, body: "" });
+      }
+      return route.fulfill({ json: { pay_position: held } });
+    });
+    await page.goto("/me");
+    const panel = page.getByTestId("pay-position");
+    await expect(panel.getByTestId("pay-position-none")).toBeVisible();
+    await panel.getByTestId("pay-position-band").selectOption("6");
+    await panel.getByTestId("pay-position-step").selectOption("1");
+    await panel.getByTestId("pay-position-since").fill("2024-12-01");
+    await panel.getByTestId("pay-position-save").click();
+    await expect(panel.getByTestId("pay-position-held")).toContainText("Band 6, step 1");
+    await expect(panel.getByTestId("pay-position-held")).toContainText("£40,559");
+    await expect(panel.getByTestId("pay-position-progression")).toContainText(
+      "Eligible to move up on 2026-12-01 (in 56 days), to £42,805",
+    );
+    expect(sent.at(-1)).toEqual({
+      scale: "afc-wales-2026-27",
+      band: "6",
+      step: 1,
+      step_since: "2024-12-01",
+    });
+    await panel.getByTestId("pay-position-clear").click();
+    await expect(panel.getByTestId("pay-position-none")).toBeVisible();
+  });
+
+  test("the job-level and pay-position panels disappear for anyone who may not see them", async ({
+    page,
+  }) => {
+    for (const path of ["job-level", "pay-position"]) {
+      await page.route(`**/api/proxy/workers/${WORKER.pid}/${path}`, (route) =>
+        route.fulfill({ status: 403, json: { error: "forbidden" } }),
+      );
+    }
+    await page.goto("/me");
+    // Wait until the page has settled on something that is not these panels.
+    await expect(page.getByTestId("emergency-contacts")).toBeVisible();
+    await expect(page.getByTestId("job-level")).toHaveCount(0);
+    await expect(page.getByTestId("pay-position")).toHaveCount(0);
+  });
+
   test("a role profile links a job level to a pay band, set by the editor", async ({
     page,
   }) => {

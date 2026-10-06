@@ -48,8 +48,9 @@ src/
 ├── validation.rs         caps + tokens + URN shapes → 422
 └── openapi.rs            OpenAPI 3 doc
 ├── tasks/                loco tasks: seed, snapshot_headcount,
-│                         rota_reminders, import_framework, import_esco
-migration/                sea-orm-migration (crate root, 46 sets)
+│                         rota_reminders, pay_progression_reminders,
+│                         import_framework, import_esco
+migration/                sea-orm-migration (crate root, 48 sets)
 config/abac-policy.reference.json   the shipped, matrix-verified
                                     persona policy (WPM-G1 runbook)
 ```

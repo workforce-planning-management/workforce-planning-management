@@ -41,6 +41,7 @@ kinds (`appraisal_request` / `appraisal_shared` /
 Each is recorded against the worker (or rota, announcement, movement) with the
 actor, and — where a detail would itself be sensitive — **without it**:
 
+- `pay_position_set|cleared` on a worker (never the band, step or amount),
 - `job_level_set|cleared` on a worker (never the level), `grade_set|cleared` on a
   role profile (the level and band named — a role is not a person),
 - `emergency_contact_added|updated|removed` (never the contact's details),

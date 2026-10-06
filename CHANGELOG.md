@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — pay position and eligibility reminders (WPM-T96)
+
+A worker's pay band and step (person and HR only; no figure in the audit entry or the
+reminder), the date they become eligible for the next step, and the daily task
+`pay_progression_reminders`. See `spec/pay-scales.md`.
+
 ### Added — grades (WPM-T94)
 
 A worker's job level (person and HR only; audited without the level; exported and erased

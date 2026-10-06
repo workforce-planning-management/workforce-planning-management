@@ -635,5 +635,13 @@
     "roleHint": "Un nivel y una banda salarial fijados juntos aquí los vincula quien edita el rol; WPM no deriva uno del otro.",
     "noRoleGrade": "No hay categoría fijada para este rol.",
     "pickOne": "Elija un nivel, una banda salarial o ambos."
+  },
+  "payPosition": {
+    "title": "Banda salarial y escalón",
+    "hint": "Solo usted y RR. HH. pueden verlo: una banda y un escalón son un salario. La elegibilidad son los años en el escalón, no una promesa de ascenso.",
+    "none": "Ninguna banda salarial registrada.",
+    "current": "Banda {band}, escalón {step}: {amount} al año (tiempo completo), desde {since}.",
+    "notYet": "Puede ascender el {date} (en {days} días), a {amount}.",
+    "due": "Puede ascender ya (desde {date}), a {amount}."
   }
 }

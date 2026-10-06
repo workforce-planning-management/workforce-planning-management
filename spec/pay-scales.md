@@ -3,7 +3,7 @@
 Wales runs the NHS **Agenda for Change** (AfC) pay and grading system, and
 issues its own pay circular each year. WPM carries the Wales scale as
 **reference data** and answers "where does this salary sit, and is a step up
-due?". Delivered as WPM-T92 (see [tasks.md](tasks.md)).
+due?". Delivered as WPM-T92 and WPM-T96 (see [tasks.md](tasks.md)).
 
 ## Research (2026-10-06)
 
@@ -82,12 +82,55 @@ salary sits on a band and whether a step up is due.*
   employer's own conditions for progression are met is not modelled, and the
   wording says "eligible", never "will be paid".
 
+## WPM-R54 — A worker's pay band and step, and when they can move up
+
+*As a person I can record which band and step of the scale I am on and since when,
+and see when I become eligible for the next step; I am told when that is near.*
+
+- `GET|PUT|DELETE /api/workers/{pid}/pay-position`. One current position per worker:
+  `{scale, band, step, step_since?}` (`step` is 1-based; `step_since` defaults to today
+  and cannot be in the future). The scale, band and step are validated against the
+  reference scale — an unknown scale or band, a step off the band (band 2 is a single
+  rate: only step 1) or a future date is **422**. `GET` returns `{"pay_position": null}`
+  until one is recorded; `DELETE` of none is **404**.
+- The response shows what the step pays (pence, currency) and the **progression
+  standing on today**: `at_top`; `due` (with the date they became eligible and the next
+  step's pay); or `not_yet` (the eligibility date, whole `days_remaining`, the next step's
+  pay). The eligibility date is `step_since` plus the circular's years on that step (a
+  leap day clamps to the end of February).
+- **The worker and HR only**, as for a job level; edits record who and whether on
+  the person's behalf; the audit entry (`pay_position_set`, `pay_position_cleared`) names
+  no band, step or amount.
+- **Reminder:** the loco task `pay_progression_reminders [days_ahead:0–90]
+  [as_of:YYYY-MM-DD]` (default 30 days; **schedule daily**) tells each person who
+  becomes eligible within the window, once (idempotent per eligibility date), if they are
+  still employed on that date. The in-app notification (`pay_step_due`) says only
+  "You become eligible to move up a pay step on <date>." — **no band, step or amount**.
+- UI: a **Pay band and step** panel on `/me` and the worker's page (hidden for anyone
+  who may not see it). Migration `m20261006_000048_pay_positions`; in the
+  subject-access export; deleted on erasure.
+
+## WPM-D41 — A pay position is a salary; a reminder promises nothing
+
+- A band and step **is** a salary, so it has the audience of the sensitive records
+  (WPM-D40): the person and HR only — stricter than the salary read, which a manager may
+  have unmasked. The audit entry, the notification and the logs never carry the band,
+  step or amount.
+- **Eligible, not "will move".** Eligibility is the years on the step the circular sets;
+  the employer's own conditions are not modelled. Every surface says "eligible".
+- It is **recorded, not reconciled**: WPM does not compare the position with the salary
+  field (a salary may be pro-rata or protected, and what the field means is the
+  employer's), nor change one when the other changes.
+- The reminder reaches **the person**, not their manager or HR: telling a third party
+  would disclose pay position to someone the record is not shared with.
+
 ## Not done
 
-- Assigning a band and step to a worker, with a progression date and a reminder
-  — it would store a pay position per person (masking, export, erasure) and is a
-  separate decision.
-- Linking roles or requisitions to a band; flagging a salary that is off-scale.
+- Telling HR or a manager that someone becomes eligible; a team view of who is due
+  (a count of one names someone); pay-position history.
+- Comparing a position with the recorded salary (see WPM-D41); flagging a salary that is
+  off-scale; linking requisitions to a band. (A role's band is WPM-R53, in
+  [job-levels.md](job-levels.md).)
 - England, Scotland and Northern Ireland scales (each has its own circular).
 - Bank-worker hourly rates; hourly rates from the annual figure (the divisor is a
   contractual choice).

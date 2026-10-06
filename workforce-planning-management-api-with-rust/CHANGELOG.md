@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — pay positions (WPM-T96)
+
+Migration 48 (`worker_pay_positions`), `rules::pay_position`, `/api/workers/{pid}/pay-position`, the
+`pay_progression_reminders` task and the `pay_step_due` notification kind; export and erasure wired.
+
 ### Added — grades (WPM-T94)
 
 Migration 47 (`worker_job_levels`; grade columns on `role_profiles`), `rules::grade`,

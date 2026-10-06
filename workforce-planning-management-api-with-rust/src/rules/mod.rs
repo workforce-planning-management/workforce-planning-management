@@ -37,6 +37,7 @@ pub mod movements;
 pub mod notify;
 pub mod org;
 pub mod org_access;
+pub mod pay_position;
 pub mod pay_scale;
 pub mod payroll;
 pub mod planning;

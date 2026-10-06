@@ -27,9 +27,9 @@ adjustments, notifications, subject rights), talent development
 ```bash
 cargo run -- db migrate && cargo run -- task seed && cargo run -- start
 cargo test                          # 297 DB-free unit tests
-cargo test -- --ignored             # 58 request tests in 22 files (Postgres; serial)
+cargo test -- --ignored             # 60 request tests in 23 files (Postgres; serial)
 cargo test --test enforcement -- --ignored   # persona matrix
-cargo run -- task rota_reminders    # schedule daily; also snapshot_headcount
+cargo run -- task rota_reminders    # schedule daily; also snapshot_headcount and pay_progression_reminders
 ```
 
 ## The task queue

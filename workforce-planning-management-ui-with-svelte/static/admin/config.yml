@@ -1037,3 +1037,16 @@ collections:
               - { name: "roleHint", label: "Role Hint", widget: text, required: false, i18n: true }
               - { name: "noRoleGrade", label: "No Role Grade", widget: string, required: false, i18n: true }
               - { name: "pickOne", label: "Pick One", widget: string, required: false, i18n: true }
+          - name: "payPosition"
+            label: "Pay Position"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "current", label: "Current", widget: string, required: false, i18n: true }
+              - { name: "notYet", label: "Not Yet", widget: string, required: false, i18n: true }
+              - { name: "due", label: "Due", widget: string, required: false, i18n: true }

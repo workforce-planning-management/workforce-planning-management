@@ -21,6 +21,9 @@
 - **Emergency contacts** are other people's personal data: readable only by the
   person and HR, audited without detail, in the subject-access export, deleted
   on erasure (WPM-D30).
+- A worker's **pay band and step** is a salary: the person and HR only, audited and
+  notified without any figure, in the subject-access export, deleted on erasure
+  (WPM-D41).
 - A worker's **job level** is high-sensitivity career data (it tracks pay): the
   person and HR only, audited without the level, in the subject-access export,
   deleted on erasure (WPM-D40).

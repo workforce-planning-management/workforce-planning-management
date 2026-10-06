@@ -18,6 +18,7 @@ mod learning;
 mod movements;
 mod organizations;
 mod pagination;
+mod pay_positions;
 mod pay_scales;
 mod payroll;
 mod privacy;
