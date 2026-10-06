@@ -875,6 +875,196 @@ test.describe("signed-in smoke coverage", () => {
     expect(seen).toContain("nobody");
   });
 
+  test("a person records their job level; it is cleared on request, and hidden when not theirs", async ({
+    page,
+  }) => {
+    const ladder = {
+      id: "google-levels",
+      name: "Google technical levels (L3–L11)",
+      organization: "Google",
+      track: "technical",
+      source: "A published summary. Not an official Google publication.",
+      levels: [5, 6].map((n) => ({
+        number: n,
+        code: `L${n}`,
+        title: n === 5 ? "Senior Software Engineer" : "Staff Software Engineer",
+        summary: "",
+        experience: null,
+        management_equivalent: null,
+      })),
+    };
+    let held: Record<string, unknown> | null = null;
+    const sent: Array<Record<string, unknown>> = [];
+    await page.route(
+      (url) => url.pathname === "/api/proxy/job-levels",
+      (route) => route.fulfill({ json: [{ ...ladder, levels: ["L5", "L6"] }] }),
+    );
+    await page.route(
+      (url) => url.pathname === "/api/proxy/job-levels/google-levels",
+      (route) => route.fulfill({ json: ladder }),
+    );
+    await page.route(`**/api/proxy/workers/${WORKER.pid}/job-level`, async (route) => {
+      const method = route.request().method();
+      if (method === "PUT") {
+        const body = route.request().postDataJSON();
+        sent.push(body);
+        const level = ladder.levels.find((l) => l.code === body.level)!;
+        held = {
+          framework: ladder.id,
+          framework_name: ladder.name,
+          level,
+          effective_on: body.effective_on ?? "2026-10-06",
+          on_behalf: false,
+        };
+        return route.fulfill({ json: { job_level: held } });
+      }
+      if (method === "DELETE") {
+        held = null;
+        return route.fulfill({ status: 204, body: "" });
+      }
+      return route.fulfill({ json: { job_level: held } });
+    });
+    await page.goto("/me");
+    const panel = page.getByTestId("job-level");
+    await expect(panel.getByTestId("job-level-none")).toBeVisible();
+    await panel.getByTestId("job-level-choice").selectOption("L5");
+    await panel.getByTestId("job-level-since").fill("2024-03-01");
+    await panel.getByTestId("job-level-save").click();
+    await expect(panel.getByTestId("job-level-held")).toContainText("L5");
+    await expect(panel.getByTestId("job-level-held")).toContainText("Senior Software Engineer");
+    await expect(panel.getByTestId("job-level-held")).toContainText("2024-03-01");
+    expect(sent.at(-1)).toMatchObject({ framework: "google-levels", level: "L5" });
+    await panel.getByTestId("job-level-clear").click();
+    await expect(panel.getByTestId("job-level-none")).toBeVisible();
+  });
+
+  test("a role profile links a job level to a pay band, set by the editor", async ({
+    page,
+  }) => {
+    const pid = "11111111-1111-4111-8111-111111111111";
+    const ladder = {
+      id: "google-levels",
+      name: "Google technical levels",
+      organization: "Google",
+      track: "technical",
+      source: "",
+      levels: [
+        {
+          number: 5,
+          code: "L5",
+          title: "Senior Software Engineer",
+          summary: "",
+          experience: null,
+          management_equivalent: null,
+        },
+      ],
+    };
+    const step = (pounds: number, years: number | null) => ({
+      annual_minor: pounds * 100,
+      years_to_next: years,
+    });
+    const scale = {
+      id: "afc-wales-2026-27",
+      name: "NHS Wales Agenda for Change 2026/27",
+      framework: "agenda-for-change",
+      nation: "wales",
+      currency: "GBP",
+      effective_from: "2026-04-01",
+      uplift_tenths_percent: 33,
+      source: "AfC(W) 02/2026",
+      minutes_per_week: 2250,
+      bands: [
+        {
+          code: "7",
+          closed: false,
+          steps: [step(50129, 2), step(52712, 3), step(57365, null)],
+        },
+      ],
+      allowances: [],
+    };
+    let grade: Record<string, unknown> = { role_profile: pid, job_level: null, pay_band: null };
+    const sent: Array<Record<string, unknown>> = [];
+    const stub = (path: string, json: unknown) =>
+      page.route((url) => url.pathname === `/api/proxy${path}`, (route) =>
+        route.fulfill({ json }),
+      );
+    await stub("/skills", []);
+    await stub("/role-profiles", [
+      { pid, job_title: "Platform Engineer", profession: null, role_name: null, level_order: null },
+    ]);
+    await stub("/capability-frameworks", []);
+    await stub("/mobility/interest-summary", { derivation: "", targets: [] });
+    await stub(`/role-profiles/${pid}`, {
+      pid,
+      job_title: "Platform Engineer",
+      description: null,
+      source_ref: null,
+      framework: null,
+      requirements: [],
+    });
+    await stub(`/role-profiles/${pid}/gap`, {
+      derivation: "",
+      role: { pid, job_title: "Platform Engineer" },
+      headcount: 0,
+      requirements: [],
+    });
+    await stub(`/role-profiles/${pid}/progression`, { profile: "none", next: [] });
+    await stub("/job-levels", [{ ...ladder, levels: ["L5"] }]);
+    await stub("/job-levels/google-levels", ladder);
+    await stub("/pay-scales", [{ ...scale, bands: ["7"] }]);
+    await stub("/pay-scales/afc-wales-2026-27", scale);
+    await page.route(`**/api/proxy/role-profiles/${pid}/grade`, async (route) => {
+      const method = route.request().method();
+      if (method === "PUT") {
+        const body = route.request().postDataJSON();
+        sent.push(body);
+        grade = {
+          role_profile: pid,
+          job_level: body.job_level
+            ? { framework: ladder.id, framework_name: ladder.name, level: ladder.levels[0] }
+            : null,
+          pay_band: body.pay_band
+            ? {
+                scale: scale.id,
+                scale_name: scale.name,
+                band: "7",
+                currency: "GBP",
+                entry_minor: 5012900,
+                top_minor: 5736500,
+              }
+            : null,
+        };
+        return route.fulfill({ json: grade });
+      }
+      if (method === "DELETE") {
+        grade = { role_profile: pid, job_level: null, pay_band: null };
+        return route.fulfill({ status: 204, body: "" });
+      }
+      return route.fulfill({ json: grade });
+    });
+    await page.goto("/roles");
+    const panel = page.getByTestId("role-grade");
+    await expect(panel.getByTestId("role-grade-none")).toBeVisible();
+    // Nothing chosen: refused client-side, nothing sent.
+    await panel.getByTestId("role-grade-save").click();
+    await expect(panel.getByTestId("error")).toBeVisible();
+    expect(sent).toHaveLength(0);
+    await panel.getByTestId("role-level-choice").selectOption("L5");
+    await panel.getByTestId("role-band-choice").selectOption("7");
+    await panel.getByTestId("role-grade-save").click();
+    const held = panel.getByTestId("role-grade-held");
+    await expect(held).toContainText("L5");
+    await expect(held).toContainText("Band 7");
+    await expect(held).toContainText("£50,129");
+    await expect(held).toContainText("£57,365");
+    expect(sent.at(-1)).toEqual({
+      job_level: { framework: "google-levels", level: "L5" },
+      pay_band: { scale: "afc-wales-2026-27", band: "7" },
+    });
+    await panel.getByTestId("role-grade-clear").click();
+    await expect(panel.getByTestId("role-grade-none")).toBeVisible();
+  });
+
   test("job levels show Google's ladder, with unstated fields as a dash and no pay", async ({
     page,
   }) => {

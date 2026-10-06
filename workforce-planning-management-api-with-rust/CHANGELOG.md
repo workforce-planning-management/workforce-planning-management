@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — grades (WPM-T94)
+
+Migration 47 (`worker_job_levels`; grade columns on `role_profiles`), `rules::grade`,
+`/api/workers/{pid}/job-level` and `/api/role-profiles/{pid}/grade`; privacy export and
+erasure wired.
+
 ### Added — job levels (WPM-T93)
 
 `rules::job_levels` (Google technical levels L3–L11) and `GET /api/job-levels`, `/{id}`,

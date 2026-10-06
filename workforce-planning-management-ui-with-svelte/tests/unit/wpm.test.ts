@@ -263,6 +263,17 @@ describe("api path map", () => {
     await wpm.workerSwapRequests("w1");
     await wpm.listJobLevelFrameworks();
     await wpm.getJobLevelFramework("google-levels");
+    await wpm.getWorkerJobLevel("w1");
+    await wpm.setWorkerJobLevel("w1", {
+      framework: "google-levels",
+      level: "L5",
+    });
+    await wpm.clearWorkerJobLevel("w1");
+    await wpm.getRoleGrade("p1");
+    await wpm.setRoleGrade("p1", {
+      job_level: { framework: "google-levels", level: "L5" },
+    });
+    await wpm.clearRoleGrade("p1");
     await wpm.listPayScales();
     await wpm.getPayScale("afc-wales-2026-27");
     await wpm.payPosition("afc-wales-2026-27", {
@@ -416,6 +427,12 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/swap-requests",
       "/api/proxy/job-levels",
       "/api/proxy/job-levels/google-levels",
+      "/api/proxy/workers/w1/job-level",
+      "/api/proxy/workers/w1/job-level",
+      "/api/proxy/workers/w1/job-level",
+      "/api/proxy/role-profiles/p1/grade",
+      "/api/proxy/role-profiles/p1/grade",
+      "/api/proxy/role-profiles/p1/grade",
       "/api/proxy/pay-scales",
       "/api/proxy/pay-scales/afc-wales-2026-27",
       "/api/proxy/pay-scales/afc-wales-2026-27/position?band=5&salary_minor=3511400",

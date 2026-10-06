@@ -6,6 +6,8 @@ import { api } from "#lib/api/client.js";
 import type {
   Application,
   JobLevelFramework,
+  RoleGrade,
+  WorkerJobLevel,
   JobLevelFrameworkSummary,
   PayLookup,
   PayScale,
@@ -137,6 +139,51 @@ export function getJobLevelFramework(
   init?: FetchLike,
 ): Promise<JobLevelFramework> {
   return api(`/job-levels/${id}`, init);
+}
+
+/** A worker's job level (worker and HR only), or `job_level: null`. */
+export function getWorkerJobLevel(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{ job_level: WorkerJobLevel | null }> {
+  return api(`/workers/${workerPid}/job-level`, init);
+}
+
+/** Set a worker's job level; `effective_on` defaults to today. */
+export function setWorkerJobLevel(
+  workerPid: string,
+  body: { framework: string; level: string; effective_on?: string },
+): Promise<{ job_level: WorkerJobLevel }> {
+  return api(`/workers/${workerPid}/job-level`, { method: "PUT", body });
+}
+
+/** Clear a worker's job level. */
+export function clearWorkerJobLevel(workerPid: string): Promise<unknown> {
+  return api(`/workers/${workerPid}/job-level`, { method: "DELETE" });
+}
+
+/** A role profile's job level and pay band. */
+export function getRoleGrade(
+  profilePid: string,
+  init?: FetchLike,
+): Promise<RoleGrade> {
+  return api(`/role-profiles/${profilePid}/grade`, init);
+}
+
+/** Set a role's grade: what is absent is cleared. */
+export function setRoleGrade(
+  profilePid: string,
+  body: {
+    job_level?: { framework: string; level: string };
+    pay_band?: { scale: string; band: string };
+  },
+): Promise<RoleGrade> {
+  return api(`/role-profiles/${profilePid}/grade`, { method: "PUT", body });
+}
+
+/** Clear a role's grade. */
+export function clearRoleGrade(profilePid: string): Promise<unknown> {
+  return api(`/role-profiles/${profilePid}/grade`, { method: "DELETE" });
 }
 
 /** The pay scales the service knows (NHS Agenda for Change, Wales, …). */

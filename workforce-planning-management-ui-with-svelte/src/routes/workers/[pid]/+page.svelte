@@ -5,6 +5,7 @@
   import Backups from "#lib/components/Backups.svelte";
   import SkillGaps from "#lib/components/SkillGaps.svelte";
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
+  import JobLevel from "#lib/components/JobLevel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
   import TeamAspirations from "#lib/components/TeamAspirations.svelte";
@@ -629,6 +630,7 @@
   <CareerHistory workerPid={worker.pid} />
   <Aspirations workerPid={worker.pid} />
   <SkillGaps workerPid={worker.pid} />
+  <JobLevel workerPid={worker.pid} />
   <EmergencyContacts workerPid={worker.pid} />
   <Backups workerPid={worker.pid} />
   <DottedLinePanel workerPid={worker.pid} />

@@ -110,6 +110,6 @@ done (WPM-G1/G2 `[~]` — operational/legal work remains); WPM-T37–T89
 (strategic planning, frameworks, reporting lines, the directory, cover and
 on-call, announcements, the CEO dashboard, skills gaps and training time,
 joiners and leavers, localization) **delivered 2026-09-28 → 2026-10-06**.
-Tests per [../../spec/testing.md](../../spec/testing.md): 304 unit tests,
-56 database-backed request tests, the enforcement matrix and the Keycloak
+Tests per [../../spec/testing.md](../../spec/testing.md): 307 unit tests,
+58 database-backed request tests, the enforcement matrix and the Keycloak
 suite.

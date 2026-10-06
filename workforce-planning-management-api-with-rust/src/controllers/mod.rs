@@ -21,6 +21,7 @@ pub mod docs;
 pub mod ergonomics;
 pub mod esco;
 pub mod framework_roles;
+pub mod grades;
 pub mod groups;
 pub mod handover;
 pub mod hr_core;

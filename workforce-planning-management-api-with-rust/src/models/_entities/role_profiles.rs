@@ -24,6 +24,10 @@ pub struct Model {
     pub level_name: Option<String>,
     pub level_order: Option<i32>,
     pub management_track: bool,
+    pub job_level_framework: Option<String>,
+    pub job_level: Option<i32>,
+    pub pay_scale_id: Option<String>,
+    pub pay_band: Option<String>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

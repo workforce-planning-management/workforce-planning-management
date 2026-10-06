@@ -1020,3 +1020,20 @@ collections:
               - { name: "management", label: "Management", widget: string, required: false, i18n: true }
               - { name: "source", label: "Source", widget: string, required: false, i18n: true }
               - { name: "noPay", label: "No Pay", widget: string, required: false, i18n: true }
+          - name: "grades"
+            label: "Grades"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "workerTitle", label: "Worker Title", widget: string, required: false, i18n: true }
+              - { name: "workerHint", label: "Worker Hint", widget: string, required: false, i18n: true }
+              - { name: "since", label: "Since", widget: string, required: false, i18n: true }
+              - { name: "clear", label: "Clear", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "save", label: "Save", widget: string, required: false, i18n: true }
+              - { name: "roleTitle", label: "Role Title", widget: string, required: false, i18n: true }
+              - { name: "roleHint", label: "Role Hint", widget: text, required: false, i18n: true }
+              - { name: "noRoleGrade", label: "No Role Grade", widget: string, required: false, i18n: true }
+              - { name: "pickOne", label: "Pick One", widget: string, required: false, i18n: true }

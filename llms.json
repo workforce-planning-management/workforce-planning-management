@@ -16,7 +16,7 @@
       "service_unit": 297,
       "service_request": 54,
       "ui_unit": 74,
-      "ui_e2e": 31
+      "ui_e2e": 33
     }
   },
   "sections": {
@@ -59,7 +59,7 @@
       {
         "title": "spec/job-levels.md",
         "path": "spec/job-levels.md",
-        "description": "Google technical job levels L3–L11 as reference data (WPM-R52)"
+        "description": "Google technical job levels L3–L11, a worker's level, a role's level and pay band (WPM-R52–R53)"
       },
       {
         "title": "spec/pay-scales.md",

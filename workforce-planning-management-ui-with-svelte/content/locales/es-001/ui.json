@@ -623,5 +623,17 @@
     "management": "Equivalente en gestión",
     "source": "Fuente",
     "noPay": "Un nivel no es un salario: no se muestra remuneración. Un guion significa que la fuente no lo indica."
+  },
+  "grades": {
+    "workerTitle": "Nivel de puesto",
+    "workerHint": "Solo usted y RR. HH. pueden verlo. Es lo que se registró, no un cálculo.",
+    "since": "Desde",
+    "clear": "Borrar",
+    "none": "Ningún nivel de puesto registrado.",
+    "save": "Guardar",
+    "roleTitle": "Categoría",
+    "roleHint": "Un nivel y una banda salarial fijados juntos aquí los vincula quien edita el rol; WPM no deriva uno del otro.",
+    "noRoleGrade": "No hay categoría fijada para este rol.",
+    "pickOne": "Elija un nivel, una banda salarial o ambos."
   }
 }

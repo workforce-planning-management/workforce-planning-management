@@ -23,6 +23,7 @@ pub mod esco;
 pub mod framework;
 pub mod framework_roles;
 pub mod gap;
+pub mod grade;
 pub mod groups;
 pub mod insights;
 pub mod job_levels;

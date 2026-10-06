@@ -2166,6 +2166,31 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       levels; other tracks and companies; an official source; the page was not
       looked at in a browser.
 
+- [x] WPM-T94 (2026-10-06) **Assign a job level to a worker or a role; link a level
+      to a pay band on a role.** *(traces to WPM-R53, WPM-D40;
+      [job-levels.md](job-levels.md))* Builds on WPM-T92–T93. Migration 47
+      (`worker_job_levels`; `job_level_framework`/`job_level`/`pay_scale_id`/`pay_band`
+      on `role_profiles`, with a CHECK that each pair travels together). Pure
+      `rules/grade.rs` (`resolve_level`, `resolve_band`, `validate_effective_on`; 3
+      unit tests), `controllers/grades.rs` (`/api/workers/{pid}/job-level`,
+      `/api/role-profiles/{pid}/grade`: GET/PUT/DELETE each), OpenAPI. **Worker level:
+      person and HR only; the audit entry names no level; exported and erased with the
+      person** (a statement appended at the end of the erasure list, `job_levels_deleted`
+      added to the audit snapshot). **Role grade:** a level and/or a pay band, validated
+      against the reference ladders; PUT replaces; the link is the editor's
+      statement — **no level↔band equivalence is shipped or derived**, because no source
+      gives one. UI: `JobLevel` panel on `/me` and the worker page (hidden when 403),
+      `RoleGrade` panel on `/roles`, client functions (path-map test), strings in the 12
+      `-001` locales (AI-written, unreviewed). Verified: 307 unit, 58 request (2 new: the
+      worker's level end to end incl. validation, audit without the level, export and
+      erasure by a direct row count; a role's level→band link, PUT-replaces, DELETE, 404),
+      enforcement test, clippy `-D warnings` and fmt clean, svelte-check 0, vitest 74,
+      Playwright 33 (twice; 2 new), build, prettier. **Not done:** level history and
+      promotion dates (deliberate, D40); a headcount-by-level roll-up (a count of one
+      would name someone); a level or band on a requisition; the page was not looked
+      at in a browser; the manager-cannot-read rule is by default policy and was not
+      exercised under enforcement.
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

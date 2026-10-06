@@ -59,6 +59,7 @@ mod m20261005_000043_announcements;
 mod m20261005_000044_announcement_extras;
 mod m20261006_000045_training_time;
 mod m20261006_000046_movements;
+mod m20261006_000047_grades;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -117,6 +118,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261005_000044_announcement_extras::Migration),
             Box::new(m20261006_000045_training_time::Migration),
             Box::new(m20261006_000046_movements::Migration),
+            Box::new(m20261006_000047_grades::Migration),
             // inject-above (do not remove this comment)
         ]
     }

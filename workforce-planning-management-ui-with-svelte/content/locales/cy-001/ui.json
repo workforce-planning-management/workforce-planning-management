@@ -623,5 +623,17 @@
     "management": "Cyfwerth rheoli",
     "source": "Ffynhonnell",
     "noPay": "Nid cyflog yw lefel: ni ddangosir tâl. Mae llinell doriad yn golygu nad yw'r ffynhonnell yn dweud."
+  },
+  "grades": {
+    "workerTitle": "Lefel swydd",
+    "workerHint": "Dim ond chi a'r Adran Adnoddau Dynol all weld hyn. Dyma'r hyn a gofnodwyd, nid rhywbeth a gyfrifwyd.",
+    "since": "Ers",
+    "clear": "Clirio",
+    "none": "Dim lefel swydd wedi'i chofnodi.",
+    "save": "Cadw",
+    "roleTitle": "Gradd",
+    "roleHint": "Caiff lefel a band cyflog a osodir gyda'i gilydd yma eu cysylltu gan bwy bynnag sy'n golygu'r rôl; nid yw WPM yn deillio'r naill o'r llall.",
+    "noRoleGrade": "Dim gradd wedi'i gosod ar gyfer y rôl hon.",
+    "pickOne": "Dewiswch lefel swydd, band cyflog, neu'r ddau."
   }
 }

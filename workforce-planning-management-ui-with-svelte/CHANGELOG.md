@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — grade panels
+
+`JobLevel` on `/me` and the worker page, `RoleGrade` on `/roles`; strings in the 12 `-001` locales.
+
 ### Added — job levels page
 
 `/job-levels`: the L3–L11 table with a dash for anything the source does not state, in

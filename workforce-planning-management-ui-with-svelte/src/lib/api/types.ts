@@ -87,6 +87,39 @@ export interface JobLevelFrameworkSummary {
   levels: string[];
 }
 
+/** A job level as held by a worker or assigned to a role. */
+export interface HeldLevel {
+  framework: string;
+  framework_name: string | null;
+  /** Null only if the ladder was retired from the service. */
+  level: JobLevel | null;
+}
+
+/** A worker's current level; readable by the worker and HR only. */
+export interface WorkerJobLevel extends HeldLevel {
+  effective_on: string;
+  on_behalf: boolean;
+}
+
+/** A pay band as attached to a role: entry and top pay and the steps. */
+export interface RolePayBand {
+  scale: string;
+  scale_name: string | null;
+  band: string;
+  closed?: boolean;
+  currency?: string;
+  entry_minor?: number;
+  top_minor?: number;
+  steps?: PayStep[];
+}
+
+/** A role's grade: a level and/or a pay band, linked by whoever edits the role. */
+export interface RoleGrade {
+  role_profile: string;
+  job_level: HeldLevel | null;
+  pay_band: RolePayBand | null;
+}
+
 /** One pay point: annual full-time pay in minor units. */
 export interface PayStep {
   annual_minor: number;

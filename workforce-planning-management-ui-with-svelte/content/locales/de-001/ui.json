@@ -623,5 +623,17 @@
     "management": "Entsprechung im Management",
     "source": "Quelle",
     "noPay": "Eine Stufe ist kein Gehalt: Es wird kein Entgelt gezeigt. Ein Strich bedeutet, dass die Quelle dazu nichts sagt."
+  },
+  "grades": {
+    "workerTitle": "Karrierestufe",
+    "workerHint": "Nur Sie und die Personalabteilung können dies sehen. Es ist erfasst, nicht berechnet.",
+    "since": "Seit",
+    "clear": "Löschen",
+    "none": "Keine Karrierestufe erfasst.",
+    "save": "Speichern",
+    "roleTitle": "Einstufung",
+    "roleHint": "Eine hier gemeinsam gesetzte Stufe und Gehaltsband werden von der Person verknüpft, die die Rolle bearbeitet; WPM leitet das eine nicht aus dem anderen ab.",
+    "noRoleGrade": "Für diese Rolle ist keine Einstufung gesetzt.",
+    "pickOne": "Wählen Sie eine Stufe, ein Gehaltsband oder beides."
   }
 }

@@ -20,6 +20,7 @@
     seedProfileFromEsco,
     setRoleRequirement,
   } from "#lib/api/wpm.js";
+  import RoleGrade from "#lib/components/RoleGrade.svelte";
   import { percentWithWorkings } from "#lib/format.js";
   import { t } from "#lib/i18n.svelte.js";
 
@@ -341,6 +342,7 @@
     </p>
   {:else if profile.source_ref}<p class="muted">Source: {profile.source_ref}</p>{/if}
   {#if profile.description}<p>{profile.description}</p>{/if}
+  <RoleGrade profilePid={profile.pid} />
   <table data-testid="role-requirements">
     <thead>
       <tr><th>Skill</th><th>Category</th><th>Minimum</th><th>Framework level</th><th>Importance</th><th></th></tr>

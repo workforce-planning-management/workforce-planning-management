@@ -623,5 +623,17 @@
     "management": "Équivalent en management",
     "source": "Source",
     "noPay": "Un niveau n'est pas un salaire : aucune rémunération n'est affichée. Un tiret signifie que la source ne le précise pas."
+  },
+  "grades": {
+    "workerTitle": "Niveau de poste",
+    "workerHint": "Seuls vous et les RH pouvez le voir. C'est ce qui a été enregistré, non calculé.",
+    "since": "Depuis",
+    "clear": "Effacer",
+    "none": "Aucun niveau de poste enregistré.",
+    "save": "Enregistrer",
+    "roleTitle": "Classification",
+    "roleHint": "Un niveau et une bande salariale définis ensemble ici sont reliés par la personne qui modifie le rôle ; WPM n'en déduit pas l'un de l'autre.",
+    "noRoleGrade": "Aucune classification définie pour ce rôle.",
+    "pickOne": "Choisissez un niveau, une bande salariale, ou les deux."
   }
 }

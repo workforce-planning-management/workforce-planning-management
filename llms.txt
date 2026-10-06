@@ -19,7 +19,7 @@ lands without it. A change is a requirement (WPM-R*), a design decision
 - [spec/domain-model.md](spec/domain-model.md): entities
 - [spec/auth.md](spec/auth.md): personas, ABAC, masking, the sensitivity map, the activation runbook
 - [spec/audit.md](spec/audit.md), [spec/testing.md](spec/testing.md), [spec/regulatory.md](spec/regulatory.md), [spec/roadmap.md](spec/roadmap.md), [spec/glossary.md](spec/glossary.md)
-- [spec/job-levels.md](spec/job-levels.md): Google technical job levels L3–L11 as reference data (WPM-R52)
+- [spec/job-levels.md](spec/job-levels.md): Google technical job levels L3–L11, a worker's level, a role's level and pay band (WPM-R52–R53)
 - [spec/pay-scales.md](spec/pay-scales.md): NHS Agenda for Change pay scale for Wales, salary placement and progression lookup (WPM-R51)
 - [spec/people-directory-and-cover.md](spec/people-directory-and-cover.md): directory, emergency contacts, backups, the on-call rota (WPM-R39–R42)
 - [spec/skills-and-training.md](spec/skills-and-training.md): skills gap analysis, training time (WPM-R43–R44)

@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — grades (WPM-T94)
+
+A worker's job level (person and HR only; audited without the level; exported and erased
+with the person) and a role's job level and pay band, with panels on `/me`, the worker
+page and `/roles`. No level-to-band equivalence is derived. See `spec/job-levels.md`.
+
 ### Added — Google technical job levels (WPM-T93)
 
 Reference ladder L3–L11 (`/api/job-levels`) and a `/job-levels` page; no pay, unstated

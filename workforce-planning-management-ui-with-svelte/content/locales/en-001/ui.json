@@ -623,5 +623,17 @@
     "management": "Management equivalent",
     "source": "Source",
     "noPay": "A level is not a salary: no pay is shown. A dash means the source does not say."
+  },
+  "grades": {
+    "workerTitle": "Job level",
+    "workerHint": "Only you and HR can see this. It is what was recorded, not worked out.",
+    "since": "Since",
+    "clear": "Clear",
+    "none": "No job level recorded.",
+    "save": "Save",
+    "roleTitle": "Grade",
+    "roleHint": "A level and a pay band set together here are linked by whoever edits the role; WPM does not derive one from the other.",
+    "noRoleGrade": "No grade set for this role.",
+    "pickOne": "Choose a job level, a pay band, or both."
   }
 }

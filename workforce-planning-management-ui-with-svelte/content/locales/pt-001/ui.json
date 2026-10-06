@@ -623,5 +623,17 @@
     "management": "Equivalente em gestão",
     "source": "Fonte",
     "noPay": "Um nível não é um salário: não se mostra remuneração. Um traço significa que a fonte não o indica."
+  },
+  "grades": {
+    "workerTitle": "Nível de cargo",
+    "workerHint": "Só você e os RH podem ver isto. É o que foi registado, não calculado.",
+    "since": "Desde",
+    "clear": "Limpar",
+    "none": "Nenhum nível de cargo registado.",
+    "save": "Guardar",
+    "roleTitle": "Grau",
+    "roleHint": "Um nível e uma banda salarial definidos em conjunto aqui são ligados por quem edita a função; o WPM não deduz um do outro.",
+    "noRoleGrade": "Nenhum grau definido para esta função.",
+    "pickOne": "Escolha um nível, uma banda salarial ou ambos."
   }
 }

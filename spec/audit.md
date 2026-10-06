@@ -41,6 +41,8 @@ kinds (`appraisal_request` / `appraisal_shared` /
 Each is recorded against the worker (or rota, announcement, movement) with the
 actor, and — where a detail would itself be sensitive — **without it**:
 
+- `job_level_set|cleared` on a worker (never the level), `grade_set|cleared` on a
+  role profile (the level and band named — a role is not a person),
 - `emergency_contact_added|updated|removed` (never the contact's details),
   `backup_added|updated|removed`;
 - `created|updated|retired` and `swap_added|swap_removed|swap_requested|

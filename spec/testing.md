@@ -56,7 +56,7 @@ tests share one database), and the two binaries above.
   every `-001` locale (and that regional locales hold only keys that exist), the
   alias / prefix / negotiation logic, the **CMS config is up to date**, the
   CEO dashboard helpers, and component tests.
-- **Playwright — 31 specs** over a `page.route`-stubbed API (contract-mirroring;
+- **Playwright — 33 specs** over a `page.route`-stubbed API (contract-mirroring;
   an unstubbed call is a 404 and loud): the signed-in smoke journeys, the
   locale redirect / picker / alias / `/admin/` shell, and one spec per newer
   area. The **CEO dashboard** is checked at **two viewports** — 1080 × 810 @2×

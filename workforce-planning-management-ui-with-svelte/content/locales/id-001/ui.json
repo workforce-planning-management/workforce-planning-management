@@ -623,5 +623,17 @@
     "management": "Setara di manajemen",
     "source": "Sumber",
     "noPay": "Level bukan gaji: tidak ada gaji yang ditampilkan. Tanda strip berarti sumber tidak menyebutkannya."
+  },
+  "grades": {
+    "workerTitle": "Level jabatan",
+    "workerHint": "Hanya Anda dan HR yang dapat melihat ini. Ini yang dicatat, bukan dihitung.",
+    "since": "Sejak",
+    "clear": "Hapus",
+    "none": "Belum ada level jabatan yang dicatat.",
+    "save": "Simpan",
+    "roleTitle": "Tingkat",
+    "roleHint": "Level dan pita gaji yang ditetapkan bersama di sini dihubungkan oleh pengubah peran; WPM tidak menurunkan salah satunya dari yang lain.",
+    "noRoleGrade": "Belum ada tingkat untuk peran ini.",
+    "pickOne": "Pilih level jabatan, pita gaji, atau keduanya."
   }
 }

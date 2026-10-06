@@ -535,8 +535,9 @@ acceptance criteria and traces to the tasks that delivered it:
   the on-call rota (rotation, swaps, swap requests, reminders) —
   [people-directory-and-cover.md](people-directory-and-cover.md)
   (WPM-T74–T81).
-- **WPM-R52** Google's technical job levels L3–L11 as reference data —
-  [job-levels.md](job-levels.md) (WPM-T93).
+- **WPM-R52–R53** Google's technical job levels L3–L11 as reference data, a
+  worker's level, and a role's level and pay band —
+  [job-levels.md](job-levels.md) (WPM-T93–T94).
 - **WPM-R51** the NHS Agenda for Change pay scale for Wales and a
   salary-placement lookup — [pay-scales.md](pay-scales.md) (WPM-T92).
 - **WPM-R43–R44** skills gap analysis, training time recommendations —

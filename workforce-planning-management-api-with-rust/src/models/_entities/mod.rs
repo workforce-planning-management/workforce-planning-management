@@ -88,6 +88,7 @@ pub mod wellbeing_entitlements;
 pub mod worker_aspirations;
 pub mod worker_backups;
 pub mod worker_framework_roles;
+pub mod worker_job_levels;
 pub mod worker_skill_history;
 pub mod worker_skills;
 pub mod workers;

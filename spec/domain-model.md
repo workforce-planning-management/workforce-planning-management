@@ -309,6 +309,9 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
 **People and cover** ([people-directory-and-cover.md](people-directory-and-cover.md))
 
 - **EmergencyContact** (`emergency_contacts`) — ranked, ≤ 5 per person, soft-deleted.
+- **WorkerJobLevel** (`worker_job_levels`) — one current level per worker on a
+  reference ladder (not soft-deleted; erased with the person), and the
+  `job_level_*` / `pay_*` columns on **RoleProfile** (WPM-R53).
 - **WorkerBackup** (`worker_backups`) — ranked cover, ≤ 3, optional dated window.
 - **Rota**, **RotaMember**, **RotaOverride**, **RotaSwapRequest** — the on-call
   rotation, its order, swaps, and requests to swap.

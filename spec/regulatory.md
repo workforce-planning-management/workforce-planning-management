@@ -21,6 +21,9 @@
 - **Emergency contacts** are other people's personal data: readable only by the
   person and HR, audited without detail, in the subject-access export, deleted
   on erasure (WPM-D30).
+- A worker's **job level** is high-sensitivity career data (it tracks pay): the
+  person and HR only, audited without the level, in the subject-access export,
+  deleted on erasure (WPM-D40).
 - **Directory** and **announcements** carry no sensitive field; being *away* is
   shown, never why (WPM-D29). **Read receipts** are the reader's data (exported,
   erased) and editors see only a count (WPM-D35).
