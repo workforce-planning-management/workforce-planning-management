@@ -308,6 +308,8 @@ aggregate with suggestions-only levers: see
 
 Recorded beside the requirements they shape:
 
+- **WPM-D38** a pay scale is transcribed, dated and sourced, and its lookup
+  stores nothing — [pay-scales.md](pay-scales.md).
 - **WPM-D29** the directory is deliberately narrow; **WPM-D30** emergency
   contacts are other people's data; **WPM-D31** cover and on-call say
   "nobody" rather than guess —

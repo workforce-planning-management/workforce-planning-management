@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — NHS Agenda for Change pay scale for Wales (WPM-T92)
+
+The 2026/27 Wales scale from pay letter AfC(W) 02/2026, with a salary-placement and
+progression lookup (`/api/pay-scales`) and a `/pay-scales` page. Stateless; see
+`spec/pay-scales.md`.
+
 ### Changed — whole-repo lint pass (2026-10-06)
 
 `cargo fmt`, `cargo clippy --all-targets -- -D warnings` (both auth backends) and

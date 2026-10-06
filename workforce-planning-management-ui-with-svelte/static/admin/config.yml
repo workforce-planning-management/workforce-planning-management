@@ -64,6 +64,7 @@ collections:
               - { name: "ceo", label: "Ceo", widget: string, required: false, i18n: true }
               - { name: "skillGaps", label: "Skill Gaps", widget: string, required: false, i18n: true }
               - { name: "movements", label: "Movements", widget: string, required: false, i18n: true }
+              - { name: "payScales", label: "Pay Scales", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -958,3 +959,49 @@ collections:
               - { name: "statusCancelled", label: "Status Cancelled", widget: string, required: false, i18n: true }
               - { name: "kindJoiner", label: "Kind Joiner", widget: string, required: false, i18n: true }
               - { name: "kindLeaver", label: "Kind Leaver", widget: string, required: false, i18n: true }
+          - name: "payScales"
+            label: "Pay Scales"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "from", label: "From", widget: string, required: false, i18n: true }
+              - { name: "source", label: "Source", widget: string, required: false, i18n: true }
+              - { name: "basis", label: "Basis", widget: text, required: false, i18n: true }
+              - { name: "band", label: "Band", widget: string, required: false, i18n: true }
+              - { name: "entry", label: "Entry", widget: string, required: false, i18n: true }
+              - { name: "intermediate", label: "Intermediate", widget: string, required: false, i18n: true }
+              - { name: "top", label: "Top", widget: string, required: false, i18n: true }
+              - { name: "closed", label: "Closed", widget: string, required: false, i18n: true }
+              - { name: "years", label: "Years", widget: string, required: false, i18n: true }
+              - { name: "allowances", label: "Allowances", widget: string, required: false, i18n: true }
+              - { name: "lookup", label: "Lookup", widget: string, required: false, i18n: true }
+              - { name: "lookupHelp", label: "Lookup Help", widget: string, required: false, i18n: true }
+              - { name: "salary", label: "Salary", widget: string, required: false, i18n: true }
+              - { name: "step", label: "Step", widget: string, required: false, i18n: true }
+              - { name: "monthsOnStep", label: "Months On Step", widget: string, required: false, i18n: true }
+              - { name: "ask", label: "Ask", widget: string, required: false, i18n: true }
+              - { name: "badSalary", label: "Bad Salary", widget: string, required: false, i18n: true }
+              - { name: "closedNote", label: "Closed Note", widget: string, required: false, i18n: true }
+              - name: "position"
+                label: "Position"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "on_step", label: "On_step", widget: string, required: false, i18n: true }
+                  - { name: "between_steps", label: "Between_steps", widget: string, required: false, i18n: true }
+                  - { name: "below_entry", label: "Below_entry", widget: string, required: false, i18n: true }
+                  - { name: "above_top", label: "Above_top", widget: string, required: false, i18n: true }
+              - name: "progression"
+                label: "Progression"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "at_top", label: "At_top", widget: string, required: false, i18n: true }
+                  - { name: "due", label: "Due", widget: string, required: false, i18n: true }
+                  - { name: "not_yet", label: "Not_yet", widget: string, required: false, i18n: true }

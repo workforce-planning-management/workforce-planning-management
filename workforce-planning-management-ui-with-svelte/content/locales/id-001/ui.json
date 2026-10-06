@@ -31,7 +31,8 @@
     "announcements": "Pengumuman",
     "ceo": "Dasbor CEO",
     "skillGaps": "Kesenjangan keterampilan",
-    "movements": "Karyawan masuk dan keluar"
+    "movements": "Karyawan masuk dan keluar",
+    "payScales": "Skala gaji"
   },
   "pr": {
     "retention": "Retensi",
@@ -581,5 +582,36 @@
     "statusCancelled": "Dibatalkan",
     "kindJoiner": "Karyawan baru",
     "kindLeaver": "Karyawan keluar"
+  },
+  "payScales": {
+    "from": "mulai",
+    "source": "Sumber",
+    "basis": "Gaji tahunan untuk satu minggu penuh 37,5 jam. Bandingkan gaji paruh waktu sebagai setara penuh waktunya.",
+    "band": "Pita",
+    "entry": "Awal",
+    "intermediate": "Menengah",
+    "top": "Tertinggi",
+    "closed": "Ditutup",
+    "years": "tahun",
+    "allowances": "Tunjangan",
+    "lookup": "Di mana posisi sebuah gaji?",
+    "lookupHelp": "Tidak ada yang disimpan. Masukkan gaji, atau tingkat dan bulan di tingkat itu, atau keduanya.",
+    "salary": "Gaji tahunan (setara penuh waktu)",
+    "step": "Tingkat (1 = awal)",
+    "monthsOnStep": "Bulan di tingkat",
+    "ask": "Periksa",
+    "badSalary": "Masukkan gaji sebagai angka.",
+    "closedNote": "Pita 1 ditutup untuk pendatang baru.",
+    "position": {
+      "on_step": "Di tingkat {step}.",
+      "between_steps": "Di antara tingkat: di atas tingkat {step}, di bawah berikutnya.",
+      "below_entry": "Di bawah tingkat awal sebesar {amount}.",
+      "above_top": "Di atas tingkat tertinggi sebesar {amount}."
+    },
+    "progression": {
+      "at_top": "Di tingkat tertinggi: tidak ada kenaikan lagi.",
+      "due": "Berhak naik sekarang, ke {amount}.",
+      "not_yet": "Belum berhak: {months} bulan lagi, lalu {amount}."
+    }
   }
 }

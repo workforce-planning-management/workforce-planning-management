@@ -103,6 +103,7 @@ impl Hooks for App {
             .add_route(controllers::announcements::routes())
             .add_route(controllers::contacts::routes())
             .add_route(controllers::directory::routes())
+            .add_route(controllers::pay_scales::routes())
             .add_route(controllers::rotas::routes())
             .add_route(controllers::handover::routes())
             .add_route(controllers::movements::routes())

@@ -56,6 +56,75 @@ export interface OrgNode {
   reports: OrgNode[];
 }
 
+/** One pay point: annual full-time pay in minor units. */
+export interface PayStep {
+  annual_minor: number;
+  /** Whole years on this step before eligible for the next; null on the top step. */
+  years_to_next: number | null;
+}
+
+export interface PayBand {
+  code: string;
+  closed: boolean;
+  steps: PayStep[];
+}
+
+export interface PayAllowance {
+  code: string;
+  name: string;
+  amount_minor: number;
+}
+
+/** A pay scale (e.g. NHS Agenda for Change, Wales), transcribed from its circular. */
+export interface PayScale {
+  id: string;
+  name: string;
+  framework: string;
+  nation: string;
+  currency: string;
+  effective_from: string;
+  uplift_tenths_percent: number;
+  source: string;
+  minutes_per_week: number;
+  bands: PayBand[];
+  allowances: PayAllowance[];
+}
+
+/** A row of the scale list. */
+export interface PayScaleSummary {
+  id: string;
+  name: string;
+  framework: string;
+  nation: string;
+  currency: string;
+  effective_from: string;
+  uplift_tenths_percent: number;
+  source: string;
+  bands: string[];
+}
+
+export type PayPosition =
+  | { kind: "below_entry"; shortfall_minor: number }
+  | { kind: "on_step"; step: number }
+  | { kind: "between_steps"; below_step: number }
+  | { kind: "above_top"; excess_minor: number };
+
+export type PayProgression =
+  | { kind: "at_top" }
+  | { kind: "due"; next_annual_minor: number }
+  | { kind: "not_yet"; months_remaining: number; next_annual_minor: number };
+
+/** The answer to "where does this salary sit?" — stateless, nothing stored. */
+export interface PayLookup {
+  scale: string;
+  band: string;
+  closed_to_new_entrants: boolean;
+  currency: string;
+  basis: string;
+  position: PayPosition | null;
+  progression: PayProgression | null;
+}
+
 /** One employee-directory row: nothing sensitive (no pay, dates or person ref). */
 export interface DirectoryEntry {
   pid: string;

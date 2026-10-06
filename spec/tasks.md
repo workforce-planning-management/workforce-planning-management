@@ -2122,6 +2122,30 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       request by the server); `noindex` on signed-in pages (they redirect to
       sign-in).
 
+- [x] WPM-T92 (2026-10-06) **NHS Agenda for Change pay scale, Wales.**
+      *(traces to WPM-R51, WPM-D38; research and the full table are in
+      [pay-scales.md](pay-scales.md))* Researched against the Welsh Government
+      pay letter AfC(W) 02/2026 (Annex 1, read from the circular itself): from
+      1 April 2026, +3.3%, **three steps with years-to-progression for bands 5–9,
+      two for bands 3–4, a single rate for band 2, band 1 closed**, plus the
+      sleeping-in and on-call allowances. This differs from the structure the
+      pay-calculator sites show, so the circular alone is the source. Pure
+      `rules/pay_scale.rs` (the transcribed scale; `locate`, `progression`; 5 unit
+      tests incl. well-formedness of every band, each position, the boundaries and
+      the progression months), `controllers/pay_scales.rs` (`GET /api/pay-scales`,
+      `/{id}`, `/{id}/position`), 3 OpenAPI entries, 1 request test (the served
+      scale, each position, progression, 8 refusals, 404s). UI: client functions
+      (path-map test), types, `/pay-scales` (table, allowances, lookup form), nav
+      link, strings in all 12 `-001` locales (AI-written, unreviewed). **Stateless
+      by design (WPM-D38):** no table, no worker field, so no masking, export or
+      erasure wiring. Verified: 302 unit, 55 request, clippy `-D warnings` and
+      `fmt` clean, vitest 74, Playwright 30 (twice), svelte-check 0, build,
+      prettier. **Not done:** a worker's band and step with a progression date and
+      reminder (would store a pay position per person — a separate decision);
+      linking roles to bands; England/Scotland/N. Ireland scales; bank-worker and
+      hourly rates; applying the on-call allowance to the rota; **the page was not
+      looked at in a browser** (only the stubbed Playwright spec).
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

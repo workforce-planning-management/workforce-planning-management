@@ -5,6 +5,9 @@
 import { api } from "#lib/api/client.js";
 import type {
   Application,
+  PayLookup,
+  PayScale,
+  PayScaleSummary,
   Benchmark,
   Announcement,
   Backup,
@@ -117,6 +120,39 @@ export function employeeDirectory(
   if (filters?.limit) params.set("limit", String(filters.limit));
   const qs = params.size ? `?${params}` : "";
   return api(`/directory${qs}`, init);
+}
+
+/** The pay scales the service knows (NHS Agenda for Change, Wales, …). */
+export function listPayScales(init?: FetchLike): Promise<PayScaleSummary[]> {
+  return api("/pay-scales", init);
+}
+
+/** One pay scale with every band, step and allowance. */
+export function getPayScale(id: string, init?: FetchLike): Promise<PayScale> {
+  return api(`/pay-scales/${id}`, init);
+}
+
+/**
+ * Where a full-time-equivalent salary sits on a band, and/or whether a step up
+ * is due. Stateless: the salary is sent, answered and forgotten.
+ */
+export function payPosition(
+  id: string,
+  query: {
+    band: string;
+    salary_minor?: number;
+    step?: number;
+    months_on_step?: number;
+  },
+  init?: FetchLike,
+): Promise<PayLookup> {
+  const params = new URLSearchParams({ band: query.band });
+  if (query.salary_minor !== undefined)
+    params.set("salary_minor", String(query.salary_minor));
+  if (query.step !== undefined) params.set("step", String(query.step));
+  if (query.months_on_step !== undefined)
+    params.set("months_on_step", String(query.months_on_step));
+  return api(`/pay-scales/${id}/position?${params}`, init);
 }
 
 /** The manager forest for one organization. */

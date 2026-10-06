@@ -7,14 +7,14 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 
 | Where | Command | Expect (2026-10-06) |
 | --- | --- | --- |
-| Service | `cargo test` (or `--lib`) | 297 unit tests |
-| Service | `cargo test -- --ignored --test-threads=1` | 54 request tests (need Postgres; **serial** — they share a database) |
+| Service | `cargo test` (or `--lib`) | 302 unit tests |
+| Service | `cargo test -- --ignored --test-threads=1` | 55 request tests (need Postgres; **serial** — they share a database) |
 | Service | `cargo test --test enforcement -- --ignored` | auth persona matrix |
 | Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers |
 | Service | `cargo clippy --all-targets` | keep **new** files clean (pedantic) |
 | UI | `pnpm check` | svelte-check: 0 errors, 0 warnings |
 | UI | `pnpm test` | 74 vitest |
-| UI | `pnpm exec playwright test` | 29 specs, stubbed API |
+| UI | `pnpm exec playwright test` | 30 specs, stubbed API |
 | UI | `pnpm build` | green |
 
 `CONTRIBUTING.md` also asks for `cargo fmt --check`, `cargo clippy --all-targets

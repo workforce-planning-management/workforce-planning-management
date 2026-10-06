@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — pay scales (WPM-T92)
+
+`rules::pay_scale` (the NHS Agenda for Change scale for Wales 2026/27 from pay letter
+AfC(W) 02/2026; `locate`, `progression`) and `GET /api/pay-scales`, `/{id}`,
+`/{id}/position`. Reference data, stateless, no migration.
+
 ### Added — WPM-T41–T89 (2026-10-02 → 2026-10-06)
 
 A summary; the authoritative per-task record, with what was verified and what

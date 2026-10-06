@@ -16,7 +16,7 @@
       "service_unit": 297,
       "service_request": 54,
       "ui_unit": 74,
-      "ui_e2e": 29
+      "ui_e2e": 30
     }
   },
   "sections": {
@@ -55,6 +55,11 @@
         "title": "spec/audit.md",
         "path": "spec/audit.md",
         "description": ""
+      },
+      {
+        "title": "spec/pay-scales.md",
+        "path": "spec/pay-scales.md",
+        "description": "NHS Agenda for Change pay scale for Wales, salary placement and progression lookup (WPM-R51)"
       },
       {
         "title": "spec/people-directory-and-cover.md",

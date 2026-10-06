@@ -29,7 +29,7 @@ provides the HR, manager, and worker self-service client.
 > only. See [spec/regulatory](../spec/regulatory.md).
 
 **Status: implemented through WPM-T89 (2026-07-18 → 2026-10-06).** 297
-DB-free unit tests, **54 database-backed request tests** (19 files), the
+DB-free unit tests, **55 database-backed request tests** (20 files), the
 enforcement persona matrix (mounted on the shipped reference policy) and a
 **Keycloak suite against a real Keycloak 26** pass against Postgres 18;
 clippy-pedantic is kept clean on new code. 46 migration sets, ~240 documented

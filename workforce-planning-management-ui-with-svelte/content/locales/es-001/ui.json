@@ -31,7 +31,8 @@
     "announcements": "Anuncios",
     "ceo": "Panel del director general",
     "skillGaps": "Brechas de competencias",
-    "movements": "Incorporaciones y salidas"
+    "movements": "Incorporaciones y salidas",
+    "payScales": "Escalas salariales"
   },
   "pr": {
     "retention": "Retención",
@@ -581,5 +582,36 @@
     "statusCancelled": "Cancelado",
     "kindJoiner": "Incorporación",
     "kindLeaver": "Salida"
+  },
+  "payScales": {
+    "from": "desde",
+    "source": "Fuente",
+    "basis": "Salario anual para una semana completa de 37,5 horas. Compare el salario a tiempo parcial como su equivalente a tiempo completo.",
+    "band": "Banda",
+    "entry": "Entrada",
+    "intermediate": "Intermedio",
+    "top": "Máximo",
+    "closed": "Cerrada",
+    "years": "años",
+    "allowances": "Complementos",
+    "lookup": "¿Dónde se sitúa un salario?",
+    "lookupHelp": "No se guarda nada. Indique un salario, o un escalón y los meses en él, o ambos.",
+    "salary": "Salario anual (equivalente a tiempo completo)",
+    "step": "Escalón (1 = entrada)",
+    "monthsOnStep": "Meses en el escalón",
+    "ask": "Comprobar",
+    "badSalary": "Introduzca el salario como número.",
+    "closedNote": "La banda 1 está cerrada a nuevas incorporaciones.",
+    "position": {
+      "on_step": "En el escalón {step}.",
+      "between_steps": "Entre escalones: por encima del {step}, por debajo del siguiente.",
+      "below_entry": "Por debajo del escalón de entrada en {amount}.",
+      "above_top": "Por encima del escalón máximo en {amount}."
+    },
+    "progression": {
+      "at_top": "En el escalón máximo: sin más progresión.",
+      "due": "Puede ascender ya, a {amount}.",
+      "not_yet": "Aún no puede ascender: faltan {months} meses, luego {amount}."
+    }
   }
 }

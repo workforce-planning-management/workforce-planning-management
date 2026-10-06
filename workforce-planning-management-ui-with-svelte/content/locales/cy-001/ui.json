@@ -31,7 +31,8 @@
     "announcements": "Cyhoeddiadau",
     "ceo": "Dangosfwrdd y Prif Weithredwr",
     "skillGaps": "Bylchau sgiliau",
-    "movements": "Newydd-ddyfodiaid a gadawyr"
+    "movements": "Newydd-ddyfodiaid a gadawyr",
+    "payScales": "Graddfeydd cyflog"
   },
   "pr": {
     "retention": "Cadw data",
@@ -581,5 +582,36 @@
     "statusCancelled": "Wedi'i ganslo",
     "kindJoiner": "Newydd-ddyfodiad",
     "kindLeaver": "Un sy'n gadael"
+  },
+  "payScales": {
+    "from": "o",
+    "source": "Ffynhonnell",
+    "basis": "Cyflog blynyddol ar gyfer wythnos lawn amser o 37.5 awr. Cymharwch gyflog rhan-amser fel ei gyfwerth llawn amser.",
+    "band": "Band",
+    "entry": "Cychwynnol",
+    "intermediate": "Canolradd",
+    "top": "Uchaf",
+    "closed": "Ar gau",
+    "years": "blynedd",
+    "allowances": "Lwfansau",
+    "lookup": "Ble mae cyflog yn eistedd?",
+    "lookupHelp": "Ni chaiff dim ei storio. Rhowch gyflog, neu gam a'r misoedd arno, neu'r ddau.",
+    "salary": "Cyflog blynyddol (cyfwerth llawn amser)",
+    "step": "Cam (1 = cychwynnol)",
+    "monthsOnStep": "Misoedd ar y cam",
+    "ask": "Gwirio",
+    "badSalary": "Rhowch y cyflog fel rhif.",
+    "closedNote": "Mae Band 1 ar gau i ymgeiswyr newydd.",
+    "position": {
+      "on_step": "Ar gam {step}.",
+      "between_steps": "Rhwng camau: uwchlaw cam {step}, islaw'r nesaf.",
+      "below_entry": "Islaw'r cam cychwynnol o {amount}.",
+      "above_top": "Uwchlaw'r cam uchaf o {amount}."
+    },
+    "progression": {
+      "at_top": "Ar y cam uchaf: dim rhagor o ddatblygiad.",
+      "due": "Yn gymwys i symud i fyny nawr, i {amount}.",
+      "not_yet": "Heb fod yn gymwys eto: {months} mis i fynd, yna {amount}."
+    }
   }
 }

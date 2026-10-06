@@ -80,6 +80,7 @@ identities by `EntityRef` URN, never duplicating them.
 | [uk-gdad-pcf/index.md](uk-gdad-pcf/index.md) | UK Government Digital and Data Profession Capability Framework — shape, licence, mapping to WPM role profiles and CPD |
 | [payroll-compensation.md](payroll-compensation.md) | Pillar 5: payroll runs, payslips, benchmarking                                            |
 | [people-directory-and-cover.md](people-directory-and-cover.md) | Employee directory, emergency contacts, backups (cover), the on-call rota with swaps and reminders (WPM-R39–R42) |
+| [pay-scales.md](pay-scales.md) | NHS Agenda for Change pay scale for Wales (2026/27), salary placement and progression lookup (WPM-R51) |
 | [skills-and-training.md](skills-and-training.md)   | Skills gap analysis and training time recommendations (WPM-R43–R44)                       |
 | [joiners-and-leavers.md](joiners-and-leavers.md)   | Joiner / leaver records with dated checklists; a leaver's last-day handover and audit trail (WPM-R45–R46) |
 | [communication-and-leadership.md](communication-and-leadership.md) | Announcement feed, workforce insights, the CEO dashboard (WPM-R47–R49)         |
@@ -110,9 +111,9 @@ queued in `tasks.md`, and only then lands as code in a subproject.
 **Status (2026-10-06):** tasks WPM-T1–T89 delivered (one deliberate
 deferral: employee expense claims — see the last entry of
 [tasks.md](tasks.md)); requirements WPM-R1–R50, design decisions
-WPM-D1–D37. Current verification: 297 unit tests, 54 database-backed request
+WPM-D1–D38. Current verification: 302 unit tests, 55 database-backed request
 tests, the auth enforcement and Keycloak suites, 74 front-end unit tests and
-29 Playwright specs — see [testing.md](testing.md).
+30 Playwright specs — see [testing.md](testing.md).
 
 The load-bearing design thread (decisions WPM-D17–D25, extended by
 WPM-D29–D36): **what must

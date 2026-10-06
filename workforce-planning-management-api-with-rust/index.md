@@ -27,7 +27,7 @@ adjustments, notifications, subject rights), talent development
 ```bash
 cargo run -- db migrate && cargo run -- task seed && cargo run -- start
 cargo test                          # 297 DB-free unit tests
-cargo test -- --ignored             # 54 request tests in 19 files (Postgres; serial)
+cargo test -- --ignored             # 55 request tests in 20 files (Postgres; serial)
 cargo test --test enforcement -- --ignored   # persona matrix
 cargo run -- task rota_reminders    # schedule daily; also snapshot_headcount
 ```

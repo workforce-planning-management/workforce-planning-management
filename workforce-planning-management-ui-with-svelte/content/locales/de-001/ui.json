@@ -31,7 +31,8 @@
     "announcements": "Ankündigungen",
     "ceo": "CEO-Dashboard",
     "skillGaps": "Kompetenzlücken",
-    "movements": "Ein- und Austritte"
+    "movements": "Ein- und Austritte",
+    "payScales": "Gehaltsskalen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -581,5 +582,36 @@
     "statusCancelled": "Abgebrochen",
     "kindJoiner": "Eintritt",
     "kindLeaver": "Austritt"
+  },
+  "payScales": {
+    "from": "ab",
+    "source": "Quelle",
+    "basis": "Jahresgehalt für eine Vollzeitwoche von 37,5 Stunden. Teilzeitgehälter als Vollzeitäquivalent vergleichen.",
+    "band": "Band",
+    "entry": "Einstieg",
+    "intermediate": "Zwischenstufe",
+    "top": "Oberste Stufe",
+    "closed": "Geschlossen",
+    "years": "Jahre",
+    "allowances": "Zulagen",
+    "lookup": "Wo liegt ein Gehalt?",
+    "lookupHelp": "Nichts wird gespeichert. Geben Sie ein Gehalt an, oder eine Stufe und die Monate darauf, oder beides.",
+    "salary": "Jahresgehalt (Vollzeitäquivalent)",
+    "step": "Stufe (1 = Einstieg)",
+    "monthsOnStep": "Monate auf der Stufe",
+    "ask": "Prüfen",
+    "badSalary": "Geben Sie das Gehalt als Zahl ein.",
+    "closedNote": "Band 1 ist für Neueinstellungen geschlossen.",
+    "position": {
+      "on_step": "Auf Stufe {step}.",
+      "between_steps": "Zwischen den Stufen: über Stufe {step}, unter der nächsten.",
+      "below_entry": "Unter der Einstiegsstufe um {amount}.",
+      "above_top": "Über der obersten Stufe um {amount}."
+    },
+    "progression": {
+      "at_top": "Auf der obersten Stufe: kein weiterer Aufstieg.",
+      "due": "Jetzt aufstiegsberechtigt, auf {amount}.",
+      "not_yet": "Noch nicht berechtigt: noch {months} Monate, dann {amount}."
+    }
   }
 }

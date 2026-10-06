@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — pay scales page
+
+`/pay-scales`: the Wales Agenda for Change table, allowances and a salary-placement
+lookup, in all 12 `-001` locales (AI-written, unreviewed).
+
 ### Added — sitemap generator
 
 `/sitemap.xml` (every public page in every locale with `hreflang` alternates and

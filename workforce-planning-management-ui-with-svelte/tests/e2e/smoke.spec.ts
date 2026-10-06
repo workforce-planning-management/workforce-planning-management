@@ -875,6 +875,97 @@ test.describe("signed-in smoke coverage", () => {
     expect(seen).toContain("nobody");
   });
 
+  test("pay scales show the Wales circular and place a salary on a band", async ({
+    page,
+  }) => {
+    const step = (pounds: number, years: number | null) => ({
+      annual_minor: pounds * 100,
+      years_to_next: years,
+    });
+    const scale = {
+      id: "afc-wales-2026-27",
+      name: "NHS Wales Agenda for Change 2026/27",
+      framework: "agenda-for-change",
+      nation: "wales",
+      currency: "GBP",
+      effective_from: "2026-04-01",
+      uplift_tenths_percent: 33,
+      source: "pay letter AfC(W) 02/2026",
+      minutes_per_week: 2250,
+      bands: [
+        { code: "1", closed: true, steps: [step(26300, null)] },
+        { code: "3", closed: false, steps: [step(26300, 2), step(27890, null)] },
+        {
+          code: "5",
+          closed: false,
+          steps: [step(32557, 2), step(35114, 2), step(39631, null)],
+        },
+      ],
+      allowances: [
+        { code: "on_call_weekday_weekend", name: "Wales on-call", amount_minor: 2605 },
+      ],
+    };
+    const asked: string[] = [];
+    await page.route(
+      (url) => url.pathname === "/api/proxy/pay-scales",
+      (route) =>
+        route.fulfill({ json: [{ ...scale, bands: ["1", "3", "5"] }] }),
+    );
+    await page.route(
+      (url) => url.pathname === "/api/proxy/pay-scales/afc-wales-2026-27",
+      (route) => route.fulfill({ json: scale }),
+    );
+    await page.route(
+      (url) => url.pathname.endsWith("/position"),
+      (route) => {
+        const q = new URL(route.request().url()).searchParams;
+        asked.push(q.toString());
+        return route.fulfill({
+          json: {
+            scale: scale.id,
+            band: q.get("band"),
+            closed_to_new_entrants: false,
+            currency: "GBP",
+            basis: "annual, full-time",
+            position: { kind: "on_step", step: 2 },
+            progression: {
+              kind: "not_yet",
+              months_remaining: 6,
+              next_annual_minor: 3963100,
+            },
+          },
+        });
+      },
+    );
+    await page.goto("/pay-scales");
+    await expect(page.getByTestId("pay-scale-source")).toContainText(
+      "AfC(W) 02/2026",
+    );
+    await expect(page.getByTestId("pay-scale-source")).toContainText("+3.3%");
+    // Band 5 has three steps with years; band 3 has two (no intermediate); band 1 is closed.
+    const band5 = page.getByTestId("band-5");
+    await expect(band5).toContainText("£32,557");
+    await expect(band5).toContainText("£35,114");
+    await expect(band5).toContainText("£39,631");
+    await expect(page.getByTestId("band-3")).toContainText("—");
+    await expect(page.getByTestId("band-1")).toContainText("Closed");
+    await expect(page.getByTestId("pay-allowances")).toContainText("£26.05");
+
+    await page.getByTestId("pay-band").selectOption("5");
+    await page.getByTestId("pay-salary").fill("35114");
+    await page.getByTestId("pay-step").fill("2");
+    await page.getByTestId("pay-months").fill("18");
+    await page.getByTestId("pay-ask").click();
+    await expect(page.getByTestId("pay-position")).toContainText("On step 2");
+    await expect(page.getByTestId("pay-progression")).toContainText(
+      "6 months to go",
+    );
+    await expect(page.getByTestId("pay-progression")).toContainText("£39,631");
+    // The salary is sent in pence; nothing is persisted client-side.
+    expect(asked.at(-1)).toContain("salary_minor=3511400");
+    expect(asked.at(-1)).toContain("months_on_step=18");
+  });
+
   test("org chart renders one section per organization membership, no switcher", async ({
     page,
   }) => {

@@ -170,7 +170,11 @@ describe("api path map", () => {
     await wpm.workforceMetrics();
     await wpm.workforceMetrics({ from: "2026-01-01", to: "2026-06-30" });
     await wpm.listEmergencyContacts("w1");
-    await wpm.addEmergencyContact("w1", { name: "Sam", relationship: "Partner", phone: "12345" });
+    await wpm.addEmergencyContact("w1", {
+      name: "Sam",
+      relationship: "Partner",
+      phone: "12345",
+    });
     await wpm.updateEmergencyContact("c1", { priority: 2 });
     await wpm.removeEmergencyContact("c1");
     await wpm.listBackups("w1");
@@ -179,8 +183,16 @@ describe("api path map", () => {
     await wpm.workerCover("w1");
     await wpm.workerCover("w1", "2026-10-06");
     await wpm.listAnnouncements();
-    await wpm.listAnnouncements({ limit: 3, includeAll: true, organization: "organization:x" });
-    await wpm.postAnnouncement({ organization_ref: "organization:x", title: "T", body: "B" });
+    await wpm.listAnnouncements({
+      limit: 3,
+      includeAll: true,
+      organization: "organization:x",
+    });
+    await wpm.postAnnouncement({
+      organization_ref: "organization:x",
+      title: "T",
+      body: "B",
+    });
     await wpm.retireAnnouncement("a1");
     await wpm.markAnnouncementRead("a1", "w1");
     await wpm.myAnnouncementReads("w1");
@@ -188,10 +200,20 @@ describe("api path map", () => {
     await wpm.listRotas();
     await wpm.getRota("r1");
     await wpm.getRota("r1", { from: "2026-10-05", to: "2026-11-01" });
-    await wpm.createRota({ organization_ref: "organization:x", name: "N", period_days: 7, starts_on: "2026-10-05", members: ["w1"] });
+    await wpm.createRota({
+      organization_ref: "organization:x",
+      name: "N",
+      period_days: 7,
+      starts_on: "2026-10-05",
+      members: ["w1"],
+    });
     await wpm.updateRota("r1", { members: ["w2", "w1"] });
     await wpm.retireRota("r1");
-    await wpm.addRotaSwap("r1", { worker_pid: "w2", starts_on: "2026-10-05", ends_on: "2026-10-06" });
+    await wpm.addRotaSwap("r1", {
+      worker_pid: "w2",
+      starts_on: "2026-10-05",
+      ends_on: "2026-10-06",
+    });
     await wpm.removeRotaSwap("s1");
     await wpm.workerOnCall("w1");
     await wpm.workerSkillGaps("w1");
@@ -202,28 +224,60 @@ describe("api path map", () => {
     await wpm.trainingDemand();
     await wpm.trainingDemand({ department: "Finance" });
     await wpm.skillCourses("k1");
-    await wpm.addSkillCourse("k1", { course_ref: "course:x", title: "T", hours: 10 });
+    await wpm.addSkillCourse("k1", {
+      course_ref: "course:x",
+      title: "T",
+      hours: 10,
+    });
     await wpm.removeSkillCourse("c1");
     await wpm.setSkillTrainingHours("k1", 20);
     await wpm.listMovements();
     await wpm.listMovements({ kind: "leaver", status: "completed" });
     await wpm.getMovement("m1");
-    await wpm.openMovement("w1", { kind: "leaver", effective_on: "2026-11-30", reason: "resignation" });
+    await wpm.openMovement("w1", {
+      kind: "leaver",
+      effective_on: "2026-11-30",
+      reason: "resignation",
+    });
     await wpm.workerMovements("w1");
     await wpm.movementItemAction("i1", "done");
     await wpm.skipMovementItem("i1", "declined");
     await wpm.addMovementItem("m1", { title: "T", due_on: "2026-11-01" });
     await wpm.closeMovement("m1", "complete");
     await wpm.leaverHandover("m1");
-    await wpm.reassignHeld("m1", { kind: "backup", subject_pid: "b1", to_worker_pid: "w2" });
+    await wpm.reassignHeld("m1", {
+      kind: "backup",
+      subject_pid: "b1",
+      to_worker_pid: "w2",
+    });
     await wpm.handOverAll("m1", "w2");
     await wpm.handoverTrail("m1");
     await wpm.listSwapRequests("r1");
-    await wpm.requestSwap("r1", { requester_pid: "w1", taker_pid: "w2", starts_on: "2026-10-05", ends_on: "2026-10-11" });
+    await wpm.requestSwap("r1", {
+      requester_pid: "w1",
+      taker_pid: "w2",
+      starts_on: "2026-10-05",
+      ends_on: "2026-10-11",
+    });
     await wpm.decideSwap("s1", "accept");
     await wpm.workerSwapRequests("w1");
+    await wpm.listPayScales();
+    await wpm.getPayScale("afc-wales-2026-27");
+    await wpm.payPosition("afc-wales-2026-27", {
+      band: "5",
+      salary_minor: 3511400,
+    });
+    await wpm.payPosition("afc-wales-2026-27", {
+      band: "6",
+      step: 1,
+      months_on_step: 24,
+    });
     await wpm.employeeDirectory();
-    await wpm.employeeDirectory({ q: "ann lee", department: "Finance", limit: 100 });
+    await wpm.employeeDirectory({
+      q: "ann lee",
+      department: "Finance",
+      limit: 100,
+    });
     await wpm.workforceInsights();
     await wpm.workforceInsights({ from: "2026-01-01", to: "2026-06-30" });
     await wpm.listPaths();
@@ -358,6 +412,10 @@ describe("api path map", () => {
       "/api/proxy/rotas/r1/swap-requests",
       "/api/proxy/rota-swap-requests/s1/accept",
       "/api/proxy/workers/w1/swap-requests",
+      "/api/proxy/pay-scales",
+      "/api/proxy/pay-scales/afc-wales-2026-27",
+      "/api/proxy/pay-scales/afc-wales-2026-27/position?band=5&salary_minor=3511400",
+      "/api/proxy/pay-scales/afc-wales-2026-27/position?band=6&step=1&months_on_step=24",
       "/api/proxy/directory",
       "/api/proxy/directory?q=ann+lee&department=Finance&limit=100",
       "/api/proxy/workforce-intelligence/insights",

@@ -31,7 +31,8 @@
     "announcements": "Annonces",
     "ceo": "Tableau de bord du PDG",
     "skillGaps": "Écarts de compétences",
-    "movements": "Arrivées et départs"
+    "movements": "Arrivées et départs",
+    "payScales": "Grilles salariales"
   },
   "pr": {
     "retention": "Conservation",
@@ -581,5 +582,36 @@
     "statusCancelled": "Annulé",
     "kindJoiner": "Arrivée",
     "kindLeaver": "Départ"
+  },
+  "payScales": {
+    "from": "à partir du",
+    "source": "Source",
+    "basis": "Salaire annuel pour une semaine à temps plein de 37,5 heures. Comparez un salaire à temps partiel par son équivalent temps plein.",
+    "band": "Bande",
+    "entry": "Entrée",
+    "intermediate": "Intermédiaire",
+    "top": "Sommet",
+    "closed": "Fermée",
+    "years": "ans",
+    "allowances": "Indemnités",
+    "lookup": "Où se situe un salaire ?",
+    "lookupHelp": "Rien n'est enregistré. Indiquez un salaire, ou un échelon et les mois passés dessus, ou les deux.",
+    "salary": "Salaire annuel (équivalent temps plein)",
+    "step": "Échelon (1 = entrée)",
+    "monthsOnStep": "Mois sur l'échelon",
+    "ask": "Vérifier",
+    "badSalary": "Saisissez le salaire sous forme de nombre.",
+    "closedNote": "La bande 1 est fermée aux nouveaux entrants.",
+    "position": {
+      "on_step": "À l'échelon {step}.",
+      "between_steps": "Entre deux échelons : au-dessus de l'échelon {step}, sous le suivant.",
+      "below_entry": "Sous l'échelon d'entrée de {amount}.",
+      "above_top": "Au-dessus de l'échelon maximal de {amount}."
+    },
+    "progression": {
+      "at_top": "À l'échelon maximal : plus de progression.",
+      "due": "Peut monter dès maintenant, à {amount}.",
+      "not_yet": "Pas encore éligible : encore {months} mois, puis {amount}."
+    }
   }
 }

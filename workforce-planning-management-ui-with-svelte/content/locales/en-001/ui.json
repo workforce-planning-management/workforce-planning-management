@@ -31,7 +31,8 @@
     "announcements": "Announcements",
     "ceo": "CEO dashboard",
     "skillGaps": "Skill gaps",
-    "movements": "Joiners and leavers"
+    "movements": "Joiners and leavers",
+    "payScales": "Pay scales"
   },
   "pr": {
     "retention": "Retention",
@@ -581,5 +582,36 @@
     "statusCancelled": "Cancelled",
     "kindJoiner": "Joiner",
     "kindLeaver": "Leaver"
+  },
+  "payScales": {
+    "from": "from",
+    "source": "Source",
+    "basis": "Annual pay for a full-time week of 37.5 hours. Compare part-time pay as its full-time equivalent.",
+    "band": "Band",
+    "entry": "Entry",
+    "intermediate": "Intermediate",
+    "top": "Top",
+    "closed": "Closed",
+    "years": "years",
+    "allowances": "Allowances",
+    "lookup": "Where does a salary sit?",
+    "lookupHelp": "Nothing is stored. Give a salary, or a step and the months spent on it, or both.",
+    "salary": "Annual salary (full-time equivalent)",
+    "step": "Step (1 = entry)",
+    "monthsOnStep": "Months on step",
+    "ask": "Check",
+    "badSalary": "Enter the salary as a number.",
+    "closedNote": "Band 1 is closed to new entrants.",
+    "position": {
+      "on_step": "On step {step}.",
+      "between_steps": "Between steps: above step {step}, below the next.",
+      "below_entry": "Below the entry step by {amount}.",
+      "above_top": "Above the top step by {amount}."
+    },
+    "progression": {
+      "at_top": "On the top step: no further progression.",
+      "due": "Eligible to move up now, to {amount}.",
+      "not_yet": "Not yet eligible: {months} months to go, then {amount}."
+    }
   }
 }

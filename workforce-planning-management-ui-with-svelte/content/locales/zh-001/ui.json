@@ -31,7 +31,8 @@
     "announcements": "公告",
     "ceo": "CEO 仪表板",
     "skillGaps": "技能差距",
-    "movements": "入职与离职"
+    "movements": "入职与离职",
+    "payScales": "薪酬标准"
   },
   "pr": {
     "retention": "保留",
@@ -581,5 +582,36 @@
     "statusCancelled": "已取消",
     "kindJoiner": "入职",
     "kindLeaver": "离职"
+  },
+  "payScales": {
+    "from": "自",
+    "source": "来源",
+    "basis": "按每周 37.5 小时的全职工作计算的年薪。非全职薪酬请换算为全职等效后再比较。",
+    "band": "档次",
+    "entry": "起点",
+    "intermediate": "中间",
+    "top": "最高",
+    "closed": "已关闭",
+    "years": "年",
+    "allowances": "津贴",
+    "lookup": "薪资处于何处？",
+    "lookupHelp": "不会保存任何内容。请输入薪资，或台阶及在该台阶的月数，或两者都输入。",
+    "salary": "年薪（全职等效）",
+    "step": "台阶（1 = 起点）",
+    "monthsOnStep": "在该台阶的月数",
+    "ask": "查询",
+    "badSalary": "请以数字输入薪资。",
+    "closedNote": "第 1 档不再接受新进人员。",
+    "position": {
+      "on_step": "处于第 {step} 台阶。",
+      "between_steps": "介于台阶之间：高于第 {step} 台阶，低于下一台阶。",
+      "below_entry": "低于起点台阶 {amount}。",
+      "above_top": "高于最高台阶 {amount}。"
+    },
+    "progression": {
+      "at_top": "已在最高台阶：无进一步晋级。",
+      "due": "现在可晋升至 {amount}。",
+      "not_yet": "尚不符合条件：还需 {months} 个月，然后为 {amount}。"
+    }
   }
 }
