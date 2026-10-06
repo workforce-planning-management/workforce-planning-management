@@ -33,7 +33,8 @@
     "skillGaps": "कौशल अंतर",
     "movements": "नए सदस्य और जाने वाले",
     "payScales": "वेतनमान",
-    "jobLevels": "नौकरी स्तर"
+    "jobLevels": "नौकरी स्तर",
+    "expenseQueue": "खर्च के निर्णय"
   },
   "pr": {
     "retention": "प्रतिधारण",
@@ -643,5 +644,58 @@
     "current": "बैंड {band}, चरण {step}: {amount} प्रति वर्ष (पूर्णकालिक), {since} से।",
     "notYet": "{date} को आगे बढ़ने के पात्र ({days} दिन में), {amount} तक।",
     "due": "अब आगे बढ़ने के पात्र ({date} से), {amount} तक।"
+  },
+  "expenses": {
+    "title": "खर्च के दावे",
+    "panelHint": "काम के लिए खर्च किया गया पैसा। आपके दावे केवल आप, आपके प्रबंधक और एचआर देख सकते हैं, और अपना दावा आप कभी स्वयं तय नहीं करते।",
+    "newClaim": "नया दावा",
+    "claimTitle": "यह किस लिए था?",
+    "currency": "मुद्रा",
+    "create": "दावा शुरू करें",
+    "none": "अभी कोई खर्च का दावा नहीं।",
+    "total": "कुल",
+    "itemsHeading": "मदें",
+    "noItems": "अभी कोई मद नहीं।",
+    "date": "तारीख",
+    "amount": "राशि",
+    "description": "विवरण",
+    "receipt": "रसीद संदर्भ",
+    "add": "मद जोड़ें",
+    "remove": "हटाएँ",
+    "submit": "जमा करें",
+    "withdraw": "वापस लें",
+    "cancel": "दावा रद्द करें",
+    "approve": "स्वीकृत करें",
+    "reject": "अस्वीकार करें",
+    "reimburse": "प्रतिपूर्ति हुई चिह्नित करें",
+    "note": "टिप्पणी",
+    "rejectNeedsNote": "अस्वीकार करने का कारण बताएँ।",
+    "reimbursedOn": "प्रतिपूर्ति की तारीख",
+    "decisionNote": "निर्णय की टिप्पणी",
+    "possibleDuplicate": "संभावित दोहराव",
+    "queueHint": "आपके अधीनस्थों के और, एचआर के लिए, आपके संगठन के दावे। अपना दावा आप कभी तय नहीं करते।",
+    "queueEmpty": "कुछ प्रतीक्षा में नहीं।",
+    "statusFilter": "दिखाएँ",
+    "open": "खोलें",
+    "close": "बंद करें",
+    "claimant": "दावेदार",
+    "categories": {
+      "travel": "यात्रा",
+      "accommodation": "आवास",
+      "meals": "भोजन",
+      "equipment": "उपकरण",
+      "training": "प्रशिक्षण",
+      "subscriptions": "सदस्यताएँ",
+      "other": "अन्य"
+    },
+    "category": "श्रेणी",
+    "statuses": {
+      "draft": "मसौदा",
+      "submitted": "जमा किया",
+      "approved": "स्वीकृत",
+      "rejected": "अस्वीकृत",
+      "reimbursed": "प्रतिपूर्ति हुई",
+      "cancelled": "रद्द"
+    }
   }
 }

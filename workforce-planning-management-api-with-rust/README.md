@@ -28,15 +28,15 @@ provides the HR, manager, and worker self-service client.
 > statutory calculations are illustrative stubs; synthetic data
 > only. See [spec/regulatory](../spec/regulatory.md).
 
-**Status: implemented through WPM-T89 (2026-07-18 → 2026-10-06).** 297
-DB-free unit tests, **60 database-backed request tests** (23 files), the
-enforcement persona matrix (mounted on the shipped reference policy) and a
+**Status: implemented through WPM-T97 (2026-07-18 → 2026-10-07).** 317
+DB-free unit tests, **62 database-backed request tests** (24 files), the
+enforcement persona matrix (mounted on the shipped reference policy), the
+expense-claim enforcement test and a
 **Keycloak suite against a real Keycloak 26** pass against Postgres 18;
-clippy-pedantic is kept clean on new code. 46 migration sets, ~240 documented
-routes. Both production gates' **code sides are done** (WPM-G1 reference policy +
+`cargo fmt`, `clippy -D warnings` (pedantic) are clean across the crate. 49 migration
+sets, ~300 documented paths. Both production gates' **code sides are done** (WPM-G1 reference policy +
 runbook; WPM-G2 subject rights + retention); what remains on them is
-operational and legal work. One deliberate deferral: employee expense claims —
-see [../spec/tasks.md](../spec/tasks.md) and [../spec/roadmap.md](../spec/roadmap.md).
+operational and legal work. No open deferral — see [../spec/tasks.md](../spec/tasks.md) and [../spec/roadmap.md](../spec/roadmap.md).
 
 ## What it answers
 

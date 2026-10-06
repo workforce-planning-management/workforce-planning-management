@@ -32,6 +32,8 @@ pub mod esco_occupation_skills;
 pub mod esco_occupations;
 pub mod esco_skills;
 pub mod event_outbox;
+pub mod expense_claims;
+pub mod expense_items;
 pub mod feedback_entries;
 pub mod goals;
 pub mod group_members;

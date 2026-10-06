@@ -19,7 +19,7 @@ Requirements and decisions live in `spec/requirements.md` / `spec/design.md`
 [joiners-and-leavers](../spec/joiners-and-leavers.md),
 [communication-and-leadership](../spec/communication-and-leadership.md),
 [locales](../spec/locales-for-global-sharing-with-svelte/index.md)). Next free
-ids: **WPM-R55**, **WPM-D42**, **WPM-T97**.
+ids: **WPM-R56**, **WPM-D43**, **WPM-T98**.
 
 ## Writing a task entry
 
@@ -38,7 +38,7 @@ ids: **WPM-R55**, **WPM-D42**, **WPM-T97**.
   expected; a claim you did not run is a defect (this repo has had to correct
   one: a handover kind that was implemented but untested).
 - Mark done only when it is done. A deliberate deferral stays `[ ]` with its
-  reason (employee expense claims is the current one).
+  reason (none is open today; expense claims was the last, delivered as WPM-T97).
 - A task entry for a ranked/aggregate view states its **derivation** and what
   it excludes.
 

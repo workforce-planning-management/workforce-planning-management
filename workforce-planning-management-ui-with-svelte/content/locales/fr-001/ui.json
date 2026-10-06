@@ -33,7 +33,8 @@
     "skillGaps": "Écarts de compétences",
     "movements": "Arrivées et départs",
     "payScales": "Grilles salariales",
-    "jobLevels": "Niveaux de poste"
+    "jobLevels": "Niveaux de poste",
+    "expenseQueue": "Décisions sur les frais"
   },
   "pr": {
     "retention": "Conservation",
@@ -643,5 +644,58 @@
     "current": "Bande {band}, échelon {step} : {amount} par an (temps plein), depuis le {since}.",
     "notYet": "Éligible au passage le {date} (dans {days} jours), à {amount}.",
     "due": "Éligible au passage dès maintenant (depuis le {date}), à {amount}."
+  },
+  "expenses": {
+    "title": "Notes de frais",
+    "panelHint": "Argent dépensé pour le travail. Seuls vous, votre manager et les RH voyez vos demandes, et vous ne décidez jamais de la vôtre.",
+    "newClaim": "Nouvelle demande",
+    "claimTitle": "Pour quel motif ?",
+    "currency": "Devise",
+    "create": "Créer la demande",
+    "none": "Aucune note de frais pour l'instant.",
+    "total": "Total",
+    "itemsHeading": "Lignes",
+    "noItems": "Aucune ligne pour l'instant.",
+    "date": "Date",
+    "amount": "Montant",
+    "description": "Description",
+    "receipt": "Référence du reçu",
+    "add": "Ajouter une ligne",
+    "remove": "Retirer",
+    "submit": "Soumettre",
+    "withdraw": "Retirer la demande",
+    "cancel": "Annuler la demande",
+    "approve": "Approuver",
+    "reject": "Refuser",
+    "reimburse": "Marquer comme remboursée",
+    "note": "Note",
+    "rejectNeedsNote": "Indiquez pourquoi vous refusez.",
+    "reimbursedOn": "Remboursée le",
+    "decisionNote": "Note de décision",
+    "possibleDuplicate": "Doublon possible",
+    "queueHint": "Demandes de vos collaborateurs et, pour les RH, de votre organisation. Vous ne décidez jamais de la vôtre.",
+    "queueEmpty": "Rien en attente.",
+    "statusFilter": "Afficher",
+    "open": "Ouvrir",
+    "close": "Fermer",
+    "claimant": "Demandeur",
+    "categories": {
+      "travel": "Déplacement",
+      "accommodation": "Hébergement",
+      "meals": "Repas",
+      "equipment": "Matériel",
+      "training": "Formation",
+      "subscriptions": "Abonnements",
+      "other": "Autre"
+    },
+    "category": "Catégorie",
+    "statuses": {
+      "draft": "Brouillon",
+      "submitted": "Soumise",
+      "approved": "Approuvée",
+      "rejected": "Refusée",
+      "reimbursed": "Remboursée",
+      "cancelled": "Annulée"
+    }
   }
 }

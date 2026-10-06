@@ -33,7 +33,8 @@
     "skillGaps": "Kesenjangan keterampilan",
     "movements": "Karyawan masuk dan keluar",
     "payScales": "Skala gaji",
-    "jobLevels": "Level jabatan"
+    "jobLevels": "Level jabatan",
+    "expenseQueue": "Keputusan klaim biaya"
   },
   "pr": {
     "retention": "Retensi",
@@ -643,5 +644,58 @@
     "current": "Pita {band}, tingkat {step}: {amount} per tahun (penuh waktu), sejak {since}.",
     "notYet": "Berhak naik pada {date} (dalam {days} hari), ke {amount}.",
     "due": "Berhak naik sekarang (sejak {date}), ke {amount}."
+  },
+  "expenses": {
+    "title": "Klaim biaya",
+    "panelHint": "Uang yang Anda keluarkan untuk pekerjaan. Hanya Anda, atasan Anda, dan HR yang dapat melihat klaim Anda, dan Anda tidak pernah memutuskan klaim Anda sendiri.",
+    "newClaim": "Klaim baru",
+    "claimTitle": "Untuk apa?",
+    "currency": "Mata uang",
+    "create": "Mulai klaim",
+    "none": "Belum ada klaim biaya.",
+    "total": "Total",
+    "itemsHeading": "Item",
+    "noItems": "Belum ada item.",
+    "date": "Tanggal",
+    "amount": "Jumlah",
+    "description": "Deskripsi",
+    "receipt": "Referensi kuitansi",
+    "add": "Tambah item",
+    "remove": "Hapus",
+    "submit": "Ajukan",
+    "withdraw": "Tarik kembali",
+    "cancel": "Batalkan klaim",
+    "approve": "Setujui",
+    "reject": "Tolak",
+    "reimburse": "Tandai sudah diganti",
+    "note": "Catatan",
+    "rejectNeedsNote": "Sebutkan alasan penolakan.",
+    "reimbursedOn": "Diganti pada",
+    "decisionNote": "Catatan keputusan",
+    "possibleDuplicate": "Kemungkinan duplikat",
+    "queueHint": "Klaim dari bawahan Anda dan, untuk HR, organisasi Anda. Anda tidak pernah memutuskan klaim Anda sendiri.",
+    "queueEmpty": "Tidak ada yang menunggu.",
+    "statusFilter": "Tampilkan",
+    "open": "Buka",
+    "close": "Tutup",
+    "claimant": "Pengklaim",
+    "categories": {
+      "travel": "Perjalanan",
+      "accommodation": "Akomodasi",
+      "meals": "Makan",
+      "equipment": "Peralatan",
+      "training": "Pelatihan",
+      "subscriptions": "Langganan",
+      "other": "Lainnya"
+    },
+    "category": "Kategori",
+    "statuses": {
+      "draft": "Draf",
+      "submitted": "Diajukan",
+      "approved": "Disetujui",
+      "rejected": "Ditolak",
+      "reimbursed": "Sudah diganti",
+      "cancelled": "Dibatalkan"
+    }
   }
 }

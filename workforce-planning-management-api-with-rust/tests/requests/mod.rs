@@ -11,6 +11,7 @@ mod appraisals;
 mod assessments;
 mod contacts;
 mod ergonomics;
+mod expenses;
 mod grades;
 mod hr;
 mod job_levels;

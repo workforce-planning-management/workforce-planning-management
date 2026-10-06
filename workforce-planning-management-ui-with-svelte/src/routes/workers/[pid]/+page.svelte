@@ -5,6 +5,7 @@
   import Backups from "#lib/components/Backups.svelte";
   import SkillGaps from "#lib/components/SkillGaps.svelte";
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
+  import ExpenseClaims from "#lib/components/ExpenseClaims.svelte";
   import PayPosition from "#lib/components/PayPosition.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
@@ -633,6 +634,7 @@
   <SkillGaps workerPid={worker.pid} />
   <JobLevel workerPid={worker.pid} />
   <PayPosition workerPid={worker.pid} />
+  <ExpenseClaims workerPid={worker.pid} />
   <EmergencyContacts workerPid={worker.pid} />
   <Backups workerPid={worker.pid} />
   <DottedLinePanel workerPid={worker.pid} />

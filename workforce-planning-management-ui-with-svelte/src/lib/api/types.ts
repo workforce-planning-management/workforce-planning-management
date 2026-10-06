@@ -87,6 +87,55 @@ export interface JobLevelFrameworkSummary {
   levels: string[];
 }
 
+/** The expense-claim statuses. */
+export type ExpenseStatus =
+  "draft" | "submitted" | "approved" | "rejected" | "reimbursed" | "cancelled";
+
+/** One expense claim in a list: totals, no items. */
+export interface ExpenseClaimSummary {
+  pid: string;
+  worker_pid: string;
+  title: string;
+  description: string | null;
+  currency: string;
+  status: ExpenseStatus;
+  total_minor: number;
+  item_count: number;
+  submitted_at: string | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  reimbursed_on: string | null;
+  on_behalf: boolean;
+  /** Present in the decision queue. */
+  worker_name?: string | null;
+}
+
+/** One line of a claim. */
+export interface ExpenseItem {
+  pid: string;
+  incurred_on: string;
+  category: string;
+  amount_minor: number;
+  description: string | null;
+  receipt_ref: string | null;
+  /** The same day, category and amount as another item: a flag, not a refusal. */
+  possible_duplicate: boolean;
+}
+
+/** A claim in full, with what the caller may do (decided by the service). */
+export interface ExpenseClaim extends ExpenseClaimSummary {
+  items: ExpenseItem[];
+  worker_name: string;
+  can: {
+    edit: boolean;
+    submit: boolean;
+    withdraw: boolean;
+    cancel: boolean;
+    decide: boolean;
+    reimburse: boolean;
+  };
+}
+
 /** A job level as held by a worker or assigned to a role. */
 export interface HeldLevel {
   framework: string;

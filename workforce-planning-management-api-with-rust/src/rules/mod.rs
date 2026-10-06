@@ -20,6 +20,7 @@ pub mod directory;
 pub mod emergency;
 pub mod ergonomics;
 pub mod esco;
+pub mod expenses;
 pub mod framework;
 pub mod framework_roles;
 pub mod gap;

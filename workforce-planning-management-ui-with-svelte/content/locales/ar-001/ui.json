@@ -33,7 +33,8 @@
     "skillGaps": "فجوات المهارات",
     "movements": "المنضمّون والمغادرون",
     "payScales": "سلالم الأجور",
-    "jobLevels": "مستويات الوظائف"
+    "jobLevels": "مستويات الوظائف",
+    "expenseQueue": "قرارات النفقات"
   },
   "pr": {
     "retention": "الاحتفاظ",
@@ -643,5 +644,58 @@
     "current": "الفئة {band}، الدرجة {step}: {amount} في السنة (دوام كامل)، منذ {since}.",
     "notYet": "مؤهل للترقية في {date} (خلال {days} يومًا) إلى {amount}.",
     "due": "مؤهل للترقية الآن (منذ {date}) إلى {amount}."
+  },
+  "expenses": {
+    "title": "مطالبات النفقات",
+    "panelHint": "مال أنفقته على العمل. أنت ومديرك والموارد البشرية فقط من يرى مطالباتك، ولا تقرر مطالبتك بنفسك أبدًا.",
+    "newClaim": "مطالبة جديدة",
+    "claimTitle": "لأي غرض؟",
+    "currency": "العملة",
+    "create": "بدء المطالبة",
+    "none": "لا توجد مطالبات نفقات بعد.",
+    "total": "الإجمالي",
+    "itemsHeading": "البنود",
+    "noItems": "لا توجد بنود بعد.",
+    "date": "التاريخ",
+    "amount": "المبلغ",
+    "description": "الوصف",
+    "receipt": "مرجع الإيصال",
+    "add": "إضافة بند",
+    "remove": "إزالة",
+    "submit": "إرسال",
+    "withdraw": "سحب",
+    "cancel": "إلغاء المطالبة",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "reimburse": "تحديد كمسدّدة",
+    "note": "ملاحظة",
+    "rejectNeedsNote": "اذكر سبب الرفض.",
+    "reimbursedOn": "سُدّدت في",
+    "decisionNote": "ملاحظة القرار",
+    "possibleDuplicate": "تكرار محتمل",
+    "queueHint": "مطالبات مرؤوسيك، وبالنسبة للموارد البشرية مؤسستك. لا تقرر مطالبتك بنفسك أبدًا.",
+    "queueEmpty": "لا شيء في الانتظار.",
+    "statusFilter": "عرض",
+    "open": "فتح",
+    "close": "إغلاق",
+    "claimant": "مقدّم المطالبة",
+    "categories": {
+      "travel": "سفر",
+      "accommodation": "إقامة",
+      "meals": "وجبات",
+      "equipment": "معدات",
+      "training": "تدريب",
+      "subscriptions": "اشتراكات",
+      "other": "أخرى"
+    },
+    "category": "الفئة",
+    "statuses": {
+      "draft": "مسودة",
+      "submitted": "مُرسلة",
+      "approved": "موافق عليها",
+      "rejected": "مرفوضة",
+      "reimbursed": "مسدّدة",
+      "cancelled": "ملغاة"
+    }
   }
 }

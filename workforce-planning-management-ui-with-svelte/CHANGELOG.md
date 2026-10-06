@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — expense claims
+
+`ExpenseClaims` panel on `/me` and the worker page, `/expenses` decision queue, `ExpenseClaimView`;
+strings in the 12 `-001` locales. Fixed while building: the queue stayed open on a claim after the
+filter changed; "Add item" wiped what was typed for the next item.
+
 ### Added — pay-position panel
 
 `PayPosition` on `/me` and the worker page; strings in the 12 `-001` locales.

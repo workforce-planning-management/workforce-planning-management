@@ -33,7 +33,8 @@
     "skillGaps": "Brechas de competencias",
     "movements": "Incorporaciones y salidas",
     "payScales": "Escalas salariales",
-    "jobLevels": "Niveles de puesto"
+    "jobLevels": "Niveles de puesto",
+    "expenseQueue": "Decisiones de gastos"
   },
   "pr": {
     "retention": "Retención",
@@ -643,5 +644,58 @@
     "current": "Banda {band}, escalón {step}: {amount} al año (tiempo completo), desde {since}.",
     "notYet": "Puede ascender el {date} (en {days} días), a {amount}.",
     "due": "Puede ascender ya (desde {date}), a {amount}."
+  },
+  "expenses": {
+    "title": "Gastos reclamados",
+    "panelHint": "Dinero que gastó por trabajo. Solo usted, su responsable y RR. HH. pueden ver sus reclamaciones, y usted nunca decide la suya.",
+    "newClaim": "Nueva reclamación",
+    "claimTitle": "¿Para qué fue?",
+    "currency": "Moneda",
+    "create": "Iniciar reclamación",
+    "none": "Aún no hay reclamaciones de gastos.",
+    "total": "Total",
+    "itemsHeading": "Conceptos",
+    "noItems": "Aún no hay conceptos.",
+    "date": "Fecha",
+    "amount": "Importe",
+    "description": "Descripción",
+    "receipt": "Referencia del recibo",
+    "add": "Añadir concepto",
+    "remove": "Quitar",
+    "submit": "Enviar",
+    "withdraw": "Retirar",
+    "cancel": "Cancelar reclamación",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "reimburse": "Marcar como reembolsado",
+    "note": "Nota",
+    "rejectNeedsNote": "Indique por qué la rechaza.",
+    "reimbursedOn": "Reembolsado el",
+    "decisionNote": "Nota de la decisión",
+    "possibleDuplicate": "Posible duplicado",
+    "queueHint": "Reclamaciones de sus subordinados y, para RR. HH., de su organización. Usted nunca decide la suya.",
+    "queueEmpty": "Nada pendiente.",
+    "statusFilter": "Mostrar",
+    "open": "Abrir",
+    "close": "Cerrar",
+    "claimant": "Solicitante",
+    "categories": {
+      "travel": "Viaje",
+      "accommodation": "Alojamiento",
+      "meals": "Comidas",
+      "equipment": "Equipo",
+      "training": "Formación",
+      "subscriptions": "Suscripciones",
+      "other": "Otro"
+    },
+    "category": "Categoría",
+    "statuses": {
+      "draft": "Borrador",
+      "submitted": "Enviada",
+      "approved": "Aprobada",
+      "rejected": "Rechazada",
+      "reimbursed": "Reembolsada",
+      "cancelled": "Cancelada"
+    }
   }
 }

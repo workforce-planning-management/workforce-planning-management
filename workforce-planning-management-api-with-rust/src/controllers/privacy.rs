@@ -15,12 +15,12 @@ use crate::models::_entities::{
     adjustment_requests, announcement_reads, appraisal_nominations, appraisal_responses,
     appraisals, assessments, benefit_enrollments, candidates, cpd_entries, development_plans,
     dotted_line_reports, emergency_contacts, entitlement_acknowledgements, ergonomic_assessments,
-    group_members, handover_actions, leave_entitlements, leave_requests, mentorships,
-    mobility_interests, movements, notifications, path_enrollments, payslips, pipeline_members,
-    professional_registrations, program_placements, reviews, rota_members, rota_overrides,
-    rota_swap_requests, shift_assignments, time_entries, training_enrollments, worker_aspirations,
-    worker_backups, worker_framework_roles, worker_job_levels, worker_pay_positions,
-    worker_skill_history, worker_skills, workers,
+    expense_claims, expense_items, group_members, handover_actions, leave_entitlements,
+    leave_requests, mentorships, mobility_interests, movements, notifications, path_enrollments,
+    payslips, pipeline_members, professional_registrations, program_placements, reviews,
+    rota_members, rota_overrides, rota_swap_requests, shift_assignments, time_entries,
+    training_enrollments, worker_aspirations, worker_backups, worker_framework_roles,
+    worker_job_levels, worker_pay_positions, worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -118,6 +118,8 @@ async fn subject_access(
         "emergency_contacts": rows_for!(db, emergency_contacts, WorkerPid, epid),
         "job_level": rows_for!(db, worker_job_levels, WorkerPid, epid),
         "pay_position": rows_for!(db, worker_pay_positions, WorkerPid, epid),
+        "expense_claims": rows_for!(db, expense_claims, WorkerPid, epid),
+        "expense_items": rows_for!(db, expense_items, WorkerPid, epid),
         "backups": rows_for!(db, worker_backups, WorkerPid, epid),
         "named_as_backup_by": rows_for!(db, worker_backups, BackupPid, epid),
         "on_call_rota_memberships": rows_for!(db, rota_members, WorkerPid, epid),
@@ -266,6 +268,19 @@ async fn erase(
         ),
         format!("DELETE FROM worker_job_levels WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_pay_positions WHERE worker_pid = '{epid}'"),
+        // Expense claims are financial records: draft and submitted ones are closed,
+        // the amounts stay (statutory retention), and the free text goes.
+        format!(
+            "UPDATE expense_claims SET status = 'cancelled', updated_at = now() \
+             WHERE worker_pid = '{epid}' AND status IN ('draft', 'submitted')"
+        ),
+        format!(
+            "UPDATE expense_claims SET title = 'erased', description = NULL, decision_note = NULL \
+             WHERE worker_pid = '{epid}'"
+        ),
+        format!(
+            "UPDATE expense_items SET description = NULL, receipt_ref = NULL WHERE worker_pid = '{epid}'"
+        ),
     ];
     let mut affected = Vec::new();
     for statement in &statements {
@@ -307,6 +322,9 @@ async fn erase(
             "handover_notes_scrubbed": affected[25],
             "job_levels_deleted": affected[26],
             "pay_positions_deleted": affected[27],
+            "expense_claims_closed": affected[28],
+            "expense_claim_texts_scrubbed": affected[29],
+            "expense_item_texts_scrubbed": affected[30],
         })),
     )
     .await?;

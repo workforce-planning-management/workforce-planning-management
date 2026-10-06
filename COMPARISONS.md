@@ -29,9 +29,11 @@ addons of [Odoo](https://github.com/odoo/odoo) (~55k).
   attendance, payroll, recruitment, onboarding and offboarding, performance,
   learning, and headcount/staffing plans (frappe's `staffing_plan` is the
   counterpart of WPM's workforce plans).
-- **One table-stakes gap, deliberately deferred:** employee **expense claims** —
-  shipped by frappe/hrms (`expense_claim`), OrangeHRM (`orangehrmClaimPlugin`) and
-  Odoo (`hr_expense`).
+- **The one table-stakes gap, now closed:** employee **expense claims** — shipped
+  by frappe/hrms (`expense_claim`), OrangeHRM (`orangehrmClaimPlugin`) and Odoo
+  (`hr_expense`); deferred when the scan was run (2026-10-05) and delivered on
+  2026-10-07 (WPM-T97). The scan record itself is unchanged; see its `since_scan`
+  note. Not yet matched: the comparators' payroll hand-off of approved claims.
 - **Edge features seen elsewhere:** grievances and helpdesk (frappe, Horilla),
   geofenced or biometric check-in (Horilla), a social feed and company directory
   (OrangeHRM `Buzz` / `CorporateDirectory` — WPM now has a directory and an

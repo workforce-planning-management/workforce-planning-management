@@ -35,6 +35,7 @@
     ["/directory", "nav.directory"],
     ["/pay-scales", "nav.payScales"],
     ["/job-levels", "nav.jobLevels"],
+    ["/expenses", "nav.expenseQueue"],
     ["/org-chart", "nav.orgChart"],
     ["/groups", "nav.groups"],
     ["/requisitions", "nav.requisitions"],

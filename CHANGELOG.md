@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — expense claims (WPM-T97)
+
+Claims of dated, categorised items, approved by someone other than the claimant (manager or HR),
+then reimbursed; the claimant's own claim is never in their decision queue; draft/submitted claims are
+cancelled and free text scrubbed on erasure. The last open deferral. See `spec/expense-claims.md`.
+
 ### Added — pay position and eligibility reminders (WPM-T96)
 
 A worker's pay band and step (person and HR only; no figure in the audit entry or the

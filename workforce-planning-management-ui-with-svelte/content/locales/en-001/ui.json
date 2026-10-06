@@ -33,7 +33,8 @@
     "skillGaps": "Skill gaps",
     "movements": "Joiners and leavers",
     "payScales": "Pay scales",
-    "jobLevels": "Job levels"
+    "jobLevels": "Job levels",
+    "expenseQueue": "Expense decisions"
   },
   "pr": {
     "retention": "Retention",
@@ -643,5 +644,58 @@
     "current": "Band {band}, step {step}: {amount} a year (full-time), since {since}.",
     "notYet": "Eligible to move up on {date} (in {days} days), to {amount}.",
     "due": "Eligible to move up now (since {date}), to {amount}."
+  },
+  "expenses": {
+    "title": "Expense claims",
+    "panelHint": "Money you spent for work. Only you, your manager and HR can see your claims, and you never decide your own.",
+    "newClaim": "New claim",
+    "claimTitle": "What was it for?",
+    "currency": "Currency",
+    "create": "Start claim",
+    "none": "No expense claims yet.",
+    "total": "Total",
+    "itemsHeading": "Items",
+    "noItems": "No items yet.",
+    "date": "Date",
+    "amount": "Amount",
+    "description": "Description",
+    "receipt": "Receipt reference",
+    "add": "Add item",
+    "remove": "Remove",
+    "submit": "Submit",
+    "withdraw": "Withdraw",
+    "cancel": "Cancel claim",
+    "approve": "Approve",
+    "reject": "Reject",
+    "reimburse": "Mark reimbursed",
+    "note": "Note",
+    "rejectNeedsNote": "Say why you are rejecting it.",
+    "reimbursedOn": "Reimbursed on",
+    "decisionNote": "Decision note",
+    "possibleDuplicate": "Possible duplicate",
+    "queueHint": "Claims from your reports and, for HR, your organization. You never decide your own.",
+    "queueEmpty": "Nothing waiting.",
+    "statusFilter": "Show",
+    "open": "Open",
+    "close": "Close",
+    "claimant": "Claimant",
+    "categories": {
+      "travel": "Travel",
+      "accommodation": "Accommodation",
+      "meals": "Meals",
+      "equipment": "Equipment",
+      "training": "Training",
+      "subscriptions": "Subscriptions",
+      "other": "Other"
+    },
+    "category": "Category",
+    "statuses": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "reimbursed": "Reimbursed",
+      "cancelled": "Cancelled"
+    }
   }
 }

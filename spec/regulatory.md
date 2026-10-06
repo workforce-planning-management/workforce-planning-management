@@ -21,6 +21,10 @@
 - **Emergency contacts** are other people's personal data: readable only by the
   person and HR, audited without detail, in the subject-access export, deleted
   on erasure (WPM-D30).
+- **Expense claims** are financial and personal: seen by the claimant, their manager and HR only; never
+  decided by the claimant; no amount or text in the audit or notifications; in the subject-access export;
+  on erasure draft/submitted claims are cancelled, approved/reimbursed ones keep their amounts (statutory
+  retention, WPM-D22) and every free-text field is scrubbed (WPM-D42).
 - A worker's **pay band and step** is a salary: the person and HR only, audited and
   notified without any figure, in the subject-access export, deleted on erasure
   (WPM-D41).

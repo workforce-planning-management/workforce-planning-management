@@ -27,7 +27,7 @@ adjustments, notifications, subject rights), talent development
 ```bash
 cargo run -- db migrate && cargo run -- task seed && cargo run -- start
 cargo test                          # 297 DB-free unit tests
-cargo test -- --ignored             # 60 request tests in 23 files (Postgres; serial)
+cargo test -- --ignored             # 62 request tests in 24 files (Postgres; serial)
 cargo test --test enforcement -- --ignored   # persona matrix
 cargo run -- task rota_reminders    # schedule daily; also snapshot_headcount and pay_progression_reminders
 ```
@@ -35,6 +35,6 @@ cargo run -- task rota_reminders    # schedule daily; also snapshot_headcount an
 ## The task queue
 
 Live delivery checklist: [../spec/tasks.md](../spec/tasks.md)
-(WPM-T1–T89 delivered, one deliberate deferral — employee expense claims;
+(WPM-T1–T97 delivered, no open deferral;
 production gates WPM-G1/G2 `[~]` — code complete, operational/legal work
 remains).

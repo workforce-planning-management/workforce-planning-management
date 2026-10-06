@@ -269,6 +269,19 @@ describe("api path map", () => {
       level: "L5",
     });
     await wpm.clearWorkerJobLevel("w1");
+    await wpm.listExpenseClaims("w1");
+    await wpm.createExpenseClaim("w1", { title: "Trip", currency: "GBP" });
+    await wpm.expenseQueue();
+    await wpm.expenseQueue("approved");
+    await wpm.getExpenseClaim("c1");
+    await wpm.addExpenseItem("c1", {
+      incurred_on: "2026-10-01",
+      category: "travel",
+      amount_minor: 100,
+    });
+    await wpm.removeExpenseItem("i1");
+    await wpm.moveExpenseClaim("c1", "submit");
+    await wpm.moveExpenseClaim("c1", "reject", { note: "no" });
     await wpm.getWorkerPayPosition("w1");
     await wpm.setWorkerPayPosition("w1", {
       scale: "afc-wales-2026-27",
@@ -437,6 +450,15 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/job-level",
       "/api/proxy/workers/w1/job-level",
       "/api/proxy/workers/w1/job-level",
+      "/api/proxy/workers/w1/expense-claims",
+      "/api/proxy/workers/w1/expense-claims",
+      "/api/proxy/expense-claims",
+      "/api/proxy/expense-claims?status=approved",
+      "/api/proxy/expense-claims/c1",
+      "/api/proxy/expense-claims/c1/items",
+      "/api/proxy/expense-items/i1",
+      "/api/proxy/expense-claims/c1/submit",
+      "/api/proxy/expense-claims/c1/reject",
       "/api/proxy/workers/w1/pay-position",
       "/api/proxy/workers/w1/pay-position",
       "/api/proxy/workers/w1/pay-position",

@@ -10,6 +10,9 @@ import type {
   WorkerJobLevel,
   JobLevelFrameworkSummary,
   PayLookup,
+  ExpenseClaim,
+  ExpenseClaimSummary,
+  ExpenseItem,
   WorkerPayPosition,
   PayScale,
   PayScaleSummary,
@@ -178,6 +181,70 @@ export function setWorkerJobLevel(
 /** Clear a worker's job level. */
 export function clearWorkerJobLevel(workerPid: string): Promise<unknown> {
   return api(`/workers/${workerPid}/job-level`, { method: "DELETE" });
+}
+
+/** A worker's expense claims (the claimant, their manager and HR see these). */
+export function listExpenseClaims(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<ExpenseClaimSummary[]> {
+  return api(`/workers/${workerPid}/expense-claims`, init);
+}
+
+/** Start a draft expense claim. */
+export function createExpenseClaim(
+  workerPid: string,
+  body: { title: string; currency: string; description?: string },
+): Promise<ExpenseClaimSummary> {
+  return api(`/workers/${workerPid}/expense-claims`, { method: "POST", body });
+}
+
+/** Claims the caller may decide, by status (default `submitted`). */
+export function expenseQueue(
+  status?: string,
+  init?: FetchLike,
+): Promise<ExpenseClaimSummary[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  return api(`/expense-claims${qs}`, init);
+}
+
+/** One claim in full, with what the caller may do. */
+export function getExpenseClaim(
+  pid: string,
+  init?: FetchLike,
+): Promise<ExpenseClaim> {
+  return api(`/expense-claims/${pid}`, init);
+}
+
+/** Add an item to a draft claim. */
+export function addExpenseItem(
+  pid: string,
+  body: {
+    incurred_on: string;
+    category: string;
+    amount_minor: number;
+    description?: string;
+    receipt_ref?: string;
+  },
+): Promise<Pick<ExpenseItem, "pid">> {
+  return api(`/expense-claims/${pid}/items`, { method: "POST", body });
+}
+
+/** Remove an item from a draft claim. */
+export function removeExpenseItem(itemPid: string): Promise<unknown> {
+  return api(`/expense-items/${itemPid}`, { method: "DELETE" });
+}
+
+/** A move on a claim. Deciders approve, reject (with a note) or reimburse. */
+export function moveExpenseClaim(
+  pid: string,
+  verb: "submit" | "withdraw" | "cancel" | "approve" | "reject" | "reimburse",
+  body?: { note?: string; reimbursed_on?: string },
+): Promise<ExpenseClaimSummary> {
+  return api(`/expense-claims/${pid}/${verb}`, {
+    method: "POST",
+    body: body ?? {},
+  });
 }
 
 /** A worker's band and step (worker and HR only), or `pay_position: null`. */

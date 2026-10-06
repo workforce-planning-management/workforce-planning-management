@@ -5,16 +5,16 @@ Every task traces to design (WPM-D*) and requirement (WPM-R*) ids.
 Three-part rule applies: a behavioural change lands as spec edit +
 code + tests in one PR.
 
-**Status (2026-10-06):** WPM-T0–T89 are done. The one open item is a
-**deliberate deferral** — *Employee expense claims* (last entry). Verification
-now: 297 service unit tests, 54 database-backed request tests (all passing
-against PostgreSQL 18), the auth enforcement and Keycloak suites (passing, the
-latter against a real Keycloak 26), 68 front-end unit tests and 28 Playwright
-specs; svelte-check 0 errors. Older entries' remarks such as "Rust unbuilt" or
-"DB-gated … not run" **predate** the verification runs recorded in the Phase 10
-note and WPM-T73 and no longer apply. Requirements WPM-R39–R50 and design
-decisions WPM-D29–D37 live in the topic files listed in
-[index.md](index.md).
+**Status (2026-10-07):** WPM-T0–T97 are done, with **no open deferral** (the one
+deliberate deferral, employee expense claims, was delivered as WPM-T97). Verification
+now: 317 service unit tests, 62 database-backed request tests (all passing against
+PostgreSQL 18), the auth enforcement matrix, the expense-claim enforcement test and the
+Keycloak suite (passing, the latter against a real Keycloak 26), 74 front-end unit tests
+and 37 Playwright specs; svelte-check 0 errors; `cargo fmt`, `cargo clippy -D warnings`
+and `prettier` clean across the repo. Older entries' remarks such as "Rust unbuilt" or
+"DB-gated … not run" **predate** the verification runs recorded in the Phase 10 note and
+WPM-T73 and no longer apply. Requirements WPM-R39–R55 and design decisions WPM-D29–D42
+live in the topic files listed in [index.md](index.md).
 
 ## Phase 0 — specification
 
@@ -2232,10 +2232,36 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       `pay_progression_reminders` task is **not scheduled** — the operator must run it daily;
       manager-cannot-read was not exercised under enforcement.
 
-- [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
-      table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
-      four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`
-      `orangehrmClaimPlugin`, `odoo` `hr_expense`). Not started; revisit when
-      expense reimbursement into payroll is wanted. Starting point: a
-      `rules/expenses.rs` state machine (draft → submitted → approved/
-      rejected → reimbursed) and a migration after `…000040`.
+- [x] WPM-T97 (2026-10-07) **Employee expense claims.** *(traces to WPM-R55, WPM-D42;
+      [expense-claims.md](expense-claims.md))* Delivers the one table-stakes gap from the SOTA
+      scan (`frappe/hrms` `expense_claim`, `orangehrm` `orangehrmClaimPlugin`, `odoo`
+      `hr_expense`), deferred 2026-10-05. Migration 49 (`expense_claims`, `expense_items`).
+      Pure `rules/expenses.rs` (the lifecycle, item validation, checked totals, duplicate flags,
+      and `may_view`/`may_edit`/`may_decide`; 5 unit tests), `controllers/expenses.rs` (12 routes:
+      claims, items, submit/withdraw/cancel, approve/reject/reimburse, and the decision queue),
+      OpenAPI, notification kinds `expense_submitted` and `expense_decided` (reference-only).
+      **The claimant never decides their own claim, even as HR; the queue omits their own;
+      a stranger gets a 404.** Audit entries and notifications carry no amount, title or
+      description. Privacy: `expense_claims` on the retention list (56 tables); in the
+      subject-access export; **erasure cancels draft/submitted claims, keeps the amounts of
+      approved/reimbursed ones, and scrubs every free-text field.** UI: `ExpenseClaimView`
+      (actions from the service's `can` flags), `ExpenseClaims` panel on `/me` and the worker
+      page (hidden on 403), `/expenses` decision queue, nav link, client functions (path-map
+      test), strings in the 12 `-001` locales (AI-written, unreviewed). Verified: 317 unit; 62
+      request (2 new: draft → submitted → approved → reimbursed with validation, duplicates
+      flagged, notifications and audit free of amounts, a rejection path and a cancelled draft;
+      export, and erasure checked by row); a **new enforcement binary**
+      (`tests/enforcement_expenses.rs`) for who may see, write and decide — **mutation-checked:
+      with the not-the-claimant rule removed it fails at "HR cannot approve their own claim"**;
+      the original enforcement test; clippy `-D warnings` and fmt clean; svelte-check 0, vitest
+      74, Playwright 37 (twice, `PW_PORT`), build, prettier. The screens were screenshotted (light
+      and dark, desktop and phone) and read: moved Amount beside Date so the key figure shows on
+      a phone, separated the new-claim form, stopped words wrapping mid-word. **Found by the
+      specs:** the queue stayed "open" on a claim after the filter changed (now reset), and
+      "Add item" cleared fields after the request returned, wiping what was typed for the next
+      item (now cleared at submit, restored on failure). **Not done:** payroll integration
+      (reimbursed is a date, not a payslip line); receipts as files; mileage and per-diem rates;
+      category limits or budgets; multi-level approval or delegation; a team spend view;
+      the manager path under the real `hr_admin`-less default policy was tested with an open
+      blanket policy, so the **deployment's own policy** still decides who may reach these
+      routes at all.

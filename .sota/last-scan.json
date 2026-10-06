@@ -126,5 +126,14 @@
       "decided": "2026-10-05",
       "reason": "deferred by decision"
     }
+  ],
+  "since_scan": [
+    {
+      "date": "2026-10-07",
+      "id": "expense-claims",
+      "us": "met",
+      "evidence": "WPM-T97: spec/expense-claims.md, src/rules/expenses.rs, src/controllers/expenses.rs, tests/requests/expenses.rs, tests/enforcement_expenses.rs",
+      "note": "The scan above is unchanged (it is a dated record). Re-run /sota-scan to refresh coverage and tier."
+    }
   ]
 }

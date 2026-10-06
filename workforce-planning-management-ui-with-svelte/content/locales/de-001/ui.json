@@ -33,7 +33,8 @@
     "skillGaps": "Kompetenzlücken",
     "movements": "Ein- und Austritte",
     "payScales": "Gehaltsskalen",
-    "jobLevels": "Karrierestufen"
+    "jobLevels": "Karrierestufen",
+    "expenseQueue": "Spesenentscheidungen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -643,5 +644,58 @@
     "current": "Band {band}, Stufe {step}: {amount} im Jahr (Vollzeit), seit {since}.",
     "notYet": "Aufstiegsberechtigt am {date} (in {days} Tagen), auf {amount}.",
     "due": "Jetzt aufstiegsberechtigt (seit {date}), auf {amount}."
+  },
+  "expenses": {
+    "title": "Spesenabrechnungen",
+    "panelHint": "Geld, das Sie für die Arbeit ausgegeben haben. Nur Sie, Ihre Führungskraft und die Personalabteilung sehen Ihre Abrechnungen, und Sie entscheiden nie über Ihre eigene.",
+    "newClaim": "Neue Abrechnung",
+    "claimTitle": "Wofür war es?",
+    "currency": "Währung",
+    "create": "Abrechnung beginnen",
+    "none": "Noch keine Spesenabrechnungen.",
+    "total": "Summe",
+    "itemsHeading": "Positionen",
+    "noItems": "Noch keine Positionen.",
+    "date": "Datum",
+    "amount": "Betrag",
+    "description": "Beschreibung",
+    "receipt": "Belegnummer",
+    "add": "Position hinzufügen",
+    "remove": "Entfernen",
+    "submit": "Einreichen",
+    "withdraw": "Zurückziehen",
+    "cancel": "Abrechnung stornieren",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "reimburse": "Als erstattet markieren",
+    "note": "Notiz",
+    "rejectNeedsNote": "Nennen Sie den Grund der Ablehnung.",
+    "reimbursedOn": "Erstattet am",
+    "decisionNote": "Entscheidungsnotiz",
+    "possibleDuplicate": "Mögliches Duplikat",
+    "queueHint": "Abrechnungen Ihrer Mitarbeitenden und, für die Personalabteilung, Ihrer Organisation. Über Ihre eigene entscheiden Sie nie.",
+    "queueEmpty": "Nichts wartet.",
+    "statusFilter": "Anzeigen",
+    "open": "Öffnen",
+    "close": "Schließen",
+    "claimant": "Antragsteller",
+    "categories": {
+      "travel": "Reise",
+      "accommodation": "Unterkunft",
+      "meals": "Verpflegung",
+      "equipment": "Ausrüstung",
+      "training": "Weiterbildung",
+      "subscriptions": "Abonnements",
+      "other": "Sonstiges"
+    },
+    "category": "Kategorie",
+    "statuses": {
+      "draft": "Entwurf",
+      "submitted": "Eingereicht",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt",
+      "reimbursed": "Erstattet",
+      "cancelled": "Storniert"
+    }
   }
 }

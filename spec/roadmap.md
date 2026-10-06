@@ -5,10 +5,11 @@ grouped by whether a decision, a dependency or just time stands in the way.
 
 ## Deferred by decision
 
-- **Employee expense claims** — the one table-stakes gap in the open-source HR
-  comparison (frappe/hrms, OrangeHRM and Odoo all ship it). Deferred
-  2026-10-05; a draft → submitted → approved/rejected → reimbursed state
-  machine in `rules/expenses.rs` plus a migration is the natural start.
+None open. *Employee expense claims* — the one table-stakes gap in the
+open-source HR comparison — was deferred on 2026-10-05 and **delivered on
+2026-10-07** ([expense-claims.md](expense-claims.md), WPM-T97). Its follow-ons
+(approved claims into a payroll run, receipt files, mileage and per-diem rates,
+category limits) are listed there under "Not done".
 
 ## Next candidates (from the benchmark scan, `.sota/last-scan.json`)
 

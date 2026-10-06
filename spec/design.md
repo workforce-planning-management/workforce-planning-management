@@ -308,6 +308,8 @@ aggregate with suggestions-only levers: see
 
 Recorded beside the requirements they shape:
 
+- **WPM-D42** a claim is financial and personal, and no one is their own approver —
+  [expense-claims.md](expense-claims.md).
 - **WPM-D41** a pay position is a salary and a reminder promises nothing —
   [pay-scales.md](pay-scales.md).
 - **WPM-D39** a level is not a salary, and an unstated fact is unknown; **WPM-D40**

@@ -33,7 +33,8 @@
     "skillGaps": "مہارتوں کے خلا",
     "movements": "آنے اور جانے والے",
     "payScales": "تنخواہ کے پیمانے",
-    "jobLevels": "ملازمت کے درجے"
+    "jobLevels": "ملازمت کے درجے",
+    "expenseQueue": "اخراجات کے فیصلے"
   },
   "pr": {
     "retention": "ڈیٹا برقراری",
@@ -643,5 +644,58 @@
     "current": "بینڈ {band}، درجہ {step}: {amount} سالانہ (کل وقتی)، {since} سے۔",
     "notYet": "{date} کو ترقی کا اہل ({days} دن میں)، {amount} تک۔",
     "due": "اب ترقی کا اہل ({date} سے)، {amount} تک۔"
+  },
+  "expenses": {
+    "title": "اخراجات کے دعوے",
+    "panelHint": "کام کے لیے خرچ کی گئی رقم۔ آپ کے دعوے صرف آپ، آپ کے مینیجر اور ایچ آر دیکھ سکتے ہیں، اور اپنا دعویٰ آپ کبھی خود طے نہیں کرتے۔",
+    "newClaim": "نیا دعویٰ",
+    "claimTitle": "کس لیے تھا؟",
+    "currency": "کرنسی",
+    "create": "دعویٰ شروع کریں",
+    "none": "ابھی تک کوئی اخراجات کا دعویٰ نہیں۔",
+    "total": "کل",
+    "itemsHeading": "مدّات",
+    "noItems": "ابھی کوئی مد نہیں۔",
+    "date": "تاریخ",
+    "amount": "رقم",
+    "description": "تفصیل",
+    "receipt": "رسید کا حوالہ",
+    "add": "مد شامل کریں",
+    "remove": "ہٹائیں",
+    "submit": "جمع کریں",
+    "withdraw": "واپس لیں",
+    "cancel": "دعویٰ منسوخ کریں",
+    "approve": "منظور کریں",
+    "reject": "مسترد کریں",
+    "reimburse": "ادا شدہ نشان زد کریں",
+    "note": "نوٹ",
+    "rejectNeedsNote": "مسترد کرنے کی وجہ بتائیں۔",
+    "reimbursedOn": "ادائیگی کی تاریخ",
+    "decisionNote": "فیصلے کا نوٹ",
+    "possibleDuplicate": "ممکنہ نقل",
+    "queueHint": "آپ کے ماتحتوں کے اور، ایچ آر کے لیے، آپ کے ادارے کے دعوے۔ اپنا دعویٰ آپ کبھی طے نہیں کرتے۔",
+    "queueEmpty": "کچھ منتظر نہیں۔",
+    "statusFilter": "دکھائیں",
+    "open": "کھولیں",
+    "close": "بند کریں",
+    "claimant": "دعویٰ کنندہ",
+    "categories": {
+      "travel": "سفر",
+      "accommodation": "رہائش",
+      "meals": "کھانا",
+      "equipment": "سامان",
+      "training": "تربیت",
+      "subscriptions": "رکنیتیں",
+      "other": "دیگر"
+    },
+    "category": "زمرہ",
+    "statuses": {
+      "draft": "مسودہ",
+      "submitted": "جمع شدہ",
+      "approved": "منظور شدہ",
+      "rejected": "مسترد",
+      "reimbursed": "ادا شدہ",
+      "cancelled": "منسوخ"
+    }
   }
 }

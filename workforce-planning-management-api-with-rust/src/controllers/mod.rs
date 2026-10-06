@@ -20,6 +20,7 @@ pub mod directory;
 pub mod docs;
 pub mod ergonomics;
 pub mod esco;
+pub mod expenses;
 pub mod framework_roles;
 pub mod grades;
 pub mod groups;

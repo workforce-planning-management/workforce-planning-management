@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — expense claims (WPM-T97)
+
+Migration 49 (`expense_claims`, `expense_items`), `rules::expenses`, 12 routes under
+`/api/expense-claims`, notification kinds `expense_submitted` and `expense_decided`, export and
+erasure wired, and the `tests/enforcement_expenses.rs` binary (the not-your-own-claim rule).
+
 ### Added — pay positions (WPM-T96)
 
 Migration 48 (`worker_pay_positions`), `rules::pay_position`, `/api/workers/{pid}/pay-position`, the

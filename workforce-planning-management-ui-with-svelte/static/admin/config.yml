@@ -66,6 +66,7 @@ collections:
               - { name: "movements", label: "Movements", widget: string, required: false, i18n: true }
               - { name: "payScales", label: "Pay Scales", widget: string, required: false, i18n: true }
               - { name: "jobLevels", label: "Job Levels", widget: string, required: false, i18n: true }
+              - { name: "expenseQueue", label: "Expense Queue", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -1050,3 +1051,71 @@ collections:
               - { name: "current", label: "Current", widget: string, required: false, i18n: true }
               - { name: "notYet", label: "Not Yet", widget: string, required: false, i18n: true }
               - { name: "due", label: "Due", widget: string, required: false, i18n: true }
+          - name: "expenses"
+            label: "Expenses"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "panelHint", label: "Panel Hint", widget: text, required: false, i18n: true }
+              - { name: "newClaim", label: "New Claim", widget: string, required: false, i18n: true }
+              - { name: "claimTitle", label: "Claim Title", widget: string, required: false, i18n: true }
+              - { name: "currency", label: "Currency", widget: string, required: false, i18n: true }
+              - { name: "create", label: "Create", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "total", label: "Total", widget: string, required: false, i18n: true }
+              - { name: "itemsHeading", label: "Items Heading", widget: string, required: false, i18n: true }
+              - { name: "noItems", label: "No Items", widget: string, required: false, i18n: true }
+              - { name: "date", label: "Date", widget: string, required: false, i18n: true }
+              - { name: "amount", label: "Amount", widget: string, required: false, i18n: true }
+              - { name: "description", label: "Description", widget: string, required: false, i18n: true }
+              - { name: "receipt", label: "Receipt", widget: string, required: false, i18n: true }
+              - { name: "add", label: "Add", widget: string, required: false, i18n: true }
+              - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
+              - { name: "submit", label: "Submit", widget: string, required: false, i18n: true }
+              - { name: "withdraw", label: "Withdraw", widget: string, required: false, i18n: true }
+              - { name: "cancel", label: "Cancel", widget: string, required: false, i18n: true }
+              - { name: "approve", label: "Approve", widget: string, required: false, i18n: true }
+              - { name: "reject", label: "Reject", widget: string, required: false, i18n: true }
+              - { name: "reimburse", label: "Reimburse", widget: string, required: false, i18n: true }
+              - { name: "note", label: "Note", widget: string, required: false, i18n: true }
+              - { name: "rejectNeedsNote", label: "Reject Needs Note", widget: string, required: false, i18n: true }
+              - { name: "reimbursedOn", label: "Reimbursed On", widget: string, required: false, i18n: true }
+              - { name: "decisionNote", label: "Decision Note", widget: string, required: false, i18n: true }
+              - { name: "possibleDuplicate", label: "Possible Duplicate", widget: string, required: false, i18n: true }
+              - { name: "queueHint", label: "Queue Hint", widget: text, required: false, i18n: true }
+              - { name: "queueEmpty", label: "Queue Empty", widget: string, required: false, i18n: true }
+              - { name: "statusFilter", label: "Status Filter", widget: string, required: false, i18n: true }
+              - { name: "open", label: "Open", widget: string, required: false, i18n: true }
+              - { name: "close", label: "Close", widget: string, required: false, i18n: true }
+              - { name: "claimant", label: "Claimant", widget: string, required: false, i18n: true }
+              - name: "categories"
+                label: "Categories"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "travel", label: "Travel", widget: string, required: false, i18n: true }
+                  - { name: "accommodation", label: "Accommodation", widget: string, required: false, i18n: true }
+                  - { name: "meals", label: "Meals", widget: string, required: false, i18n: true }
+                  - { name: "equipment", label: "Equipment", widget: string, required: false, i18n: true }
+                  - { name: "training", label: "Training", widget: string, required: false, i18n: true }
+                  - { name: "subscriptions", label: "Subscriptions", widget: string, required: false, i18n: true }
+                  - { name: "other", label: "Other", widget: string, required: false, i18n: true }
+              - { name: "category", label: "Category", widget: string, required: false, i18n: true }
+              - name: "statuses"
+                label: "Statuses"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "draft", label: "Draft", widget: string, required: false, i18n: true }
+                  - { name: "submitted", label: "Submitted", widget: string, required: false, i18n: true }
+                  - { name: "approved", label: "Approved", widget: string, required: false, i18n: true }
+                  - { name: "rejected", label: "Rejected", widget: string, required: false, i18n: true }
+                  - { name: "reimbursed", label: "Reimbursed", widget: string, required: false, i18n: true }
+                  - { name: "cancelled", label: "Cancelled", widget: string, required: false, i18n: true }

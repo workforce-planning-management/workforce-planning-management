@@ -32,6 +32,8 @@ pub use super::esco_occupation_skills::Entity as EscoOccupationSkills;
 pub use super::esco_occupations::Entity as EscoOccupations;
 pub use super::esco_skills::Entity as EscoSkills;
 pub use super::event_outbox::Entity as EventOutbox;
+pub use super::expense_claims::Entity as ExpenseClaims;
+pub use super::expense_items::Entity as ExpenseItems;
 pub use super::feedback_entries::Entity as FeedbackEntries;
 pub use super::goals::Entity as Goals;
 pub use super::group_members::Entity as GroupMembers;

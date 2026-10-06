@@ -33,7 +33,8 @@
     "skillGaps": "Lacunas de competências",
     "movements": "Entradas e saídas",
     "payScales": "Escalas salariais",
-    "jobLevels": "Níveis de cargo"
+    "jobLevels": "Níveis de cargo",
+    "expenseQueue": "Decisões de despesas"
   },
   "pr": {
     "retention": "Retenção",
@@ -643,5 +644,58 @@
     "current": "Banda {band}, escalão {step}: {amount} por ano (tempo inteiro), desde {since}.",
     "notYet": "Elegível para subir em {date} (daqui a {days} dias), para {amount}.",
     "due": "Elegível para subir agora (desde {date}), para {amount}."
+  },
+  "expenses": {
+    "title": "Pedidos de despesas",
+    "panelHint": "Dinheiro que gastou em trabalho. Só você, o seu responsável e os RH veem os seus pedidos, e você nunca decide o seu.",
+    "newClaim": "Novo pedido",
+    "claimTitle": "Para que foi?",
+    "currency": "Moeda",
+    "create": "Iniciar pedido",
+    "none": "Ainda não há pedidos de despesas.",
+    "total": "Total",
+    "itemsHeading": "Itens",
+    "noItems": "Ainda não há itens.",
+    "date": "Data",
+    "amount": "Valor",
+    "description": "Descrição",
+    "receipt": "Referência do recibo",
+    "add": "Adicionar item",
+    "remove": "Remover",
+    "submit": "Submeter",
+    "withdraw": "Retirar",
+    "cancel": "Cancelar pedido",
+    "approve": "Aprovar",
+    "reject": "Rejeitar",
+    "reimburse": "Marcar como reembolsado",
+    "note": "Nota",
+    "rejectNeedsNote": "Diga porque rejeita.",
+    "reimbursedOn": "Reembolsado em",
+    "decisionNote": "Nota da decisão",
+    "possibleDuplicate": "Possível duplicado",
+    "queueHint": "Pedidos dos seus subordinados e, para os RH, da sua organização. Você nunca decide o seu.",
+    "queueEmpty": "Nada à espera.",
+    "statusFilter": "Mostrar",
+    "open": "Abrir",
+    "close": "Fechar",
+    "claimant": "Requerente",
+    "categories": {
+      "travel": "Viagem",
+      "accommodation": "Alojamento",
+      "meals": "Refeições",
+      "equipment": "Equipamento",
+      "training": "Formação",
+      "subscriptions": "Subscrições",
+      "other": "Outro"
+    },
+    "category": "Categoria",
+    "statuses": {
+      "draft": "Rascunho",
+      "submitted": "Submetido",
+      "approved": "Aprovado",
+      "rejected": "Rejeitado",
+      "reimbursed": "Reembolsado",
+      "cancelled": "Cancelado"
+    }
   }
 }

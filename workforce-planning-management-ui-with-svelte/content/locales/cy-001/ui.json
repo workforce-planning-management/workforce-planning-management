@@ -33,7 +33,8 @@
     "skillGaps": "Bylchau sgiliau",
     "movements": "Newydd-ddyfodiaid a gadawyr",
     "payScales": "Graddfeydd cyflog",
-    "jobLevels": "Lefelau swyddi"
+    "jobLevels": "Lefelau swyddi",
+    "expenseQueue": "Penderfyniadau treuliau"
   },
   "pr": {
     "retention": "Cadw data",
@@ -643,5 +644,58 @@
     "current": "Band {band}, cam {step}: {amount} y flwyddyn (llawn amser), ers {since}.",
     "notYet": "Yn gymwys i symud i fyny ar {date} (ymhen {days} diwrnod), i {amount}.",
     "due": "Yn gymwys i symud i fyny nawr (ers {date}), i {amount}."
+  },
+  "expenses": {
+    "title": "Hawliadau treuliau",
+    "panelHint": "Arian a wariwyd gennych dros waith. Dim ond chi, eich rheolwr a'r Adran Adnoddau Dynol all weld eich hawliadau, ac nid chi sy'n penderfynu ar eich rhai chi.",
+    "newClaim": "Hawliad newydd",
+    "claimTitle": "Beth oedd y diben?",
+    "currency": "Arian cyfred",
+    "create": "Dechrau hawliad",
+    "none": "Dim hawliadau treuliau eto.",
+    "total": "Cyfanswm",
+    "itemsHeading": "Eitemau",
+    "noItems": "Dim eitemau eto.",
+    "date": "Dyddiad",
+    "amount": "Swm",
+    "description": "Disgrifiad",
+    "receipt": "Cyfeirnod derbynneb",
+    "add": "Ychwanegu eitem",
+    "remove": "Tynnu",
+    "submit": "Cyflwyno",
+    "withdraw": "Tynnu'n ôl",
+    "cancel": "Canslo'r hawliad",
+    "approve": "Cymeradwyo",
+    "reject": "Gwrthod",
+    "reimburse": "Nodi bod wedi talu'n ôl",
+    "note": "Nodyn",
+    "rejectNeedsNote": "Dywedwch pam rydych yn gwrthod.",
+    "reimbursedOn": "Talwyd yn ôl ar",
+    "decisionNote": "Nodyn y penderfyniad",
+    "possibleDuplicate": "Dyblyg posibl",
+    "queueHint": "Hawliadau gan eich adrodd i chi ac, i'r Adran Adnoddau Dynol, eich sefydliad. Nid chi sy'n penderfynu ar eich rhai chi.",
+    "queueEmpty": "Dim byd yn aros.",
+    "statusFilter": "Dangos",
+    "open": "Agor",
+    "close": "Cau",
+    "claimant": "Hawlydd",
+    "categories": {
+      "travel": "Teithio",
+      "accommodation": "Llety",
+      "meals": "Prydau",
+      "equipment": "Offer",
+      "training": "Hyfforddiant",
+      "subscriptions": "Tanysgrifiadau",
+      "other": "Arall"
+    },
+    "category": "Categori",
+    "statuses": {
+      "draft": "Drafft",
+      "submitted": "Cyflwynwyd",
+      "approved": "Cymeradwywyd",
+      "rejected": "Gwrthodwyd",
+      "reimbursed": "Talwyd yn ôl",
+      "cancelled": "Cafodd ei ganslo"
+    }
   }
 }

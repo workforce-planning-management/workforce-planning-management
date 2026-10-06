@@ -33,7 +33,8 @@
     "skillGaps": "技能差距",
     "movements": "入职与离职",
     "payScales": "薪酬标准",
-    "jobLevels": "职级"
+    "jobLevels": "职级",
+    "expenseQueue": "报销审批"
   },
   "pr": {
     "retention": "保留",
@@ -643,5 +644,58 @@
     "current": "第 {band} 档，第 {step} 台阶：每年 {amount}（全职），自 {since} 起。",
     "notYet": "将于 {date} 具备晋升资格（{days} 天后），晋至 {amount}。",
     "due": "现已具备晋升资格（自 {date} 起），晋至 {amount}。"
+  },
+  "expenses": {
+    "title": "报销申请",
+    "panelHint": "您为工作垫付的款项。只有您、您的经理和人力资源能看到您的申请，您永远不会自己审批自己的申请。",
+    "newClaim": "新申请",
+    "claimTitle": "用途是什么？",
+    "currency": "币种",
+    "create": "开始申请",
+    "none": "暂无报销申请。",
+    "total": "合计",
+    "itemsHeading": "明细",
+    "noItems": "暂无明细。",
+    "date": "日期",
+    "amount": "金额",
+    "description": "说明",
+    "receipt": "收据编号",
+    "add": "添加明细",
+    "remove": "移除",
+    "submit": "提交",
+    "withdraw": "撤回",
+    "cancel": "取消申请",
+    "approve": "批准",
+    "reject": "驳回",
+    "reimburse": "标记为已报销",
+    "note": "备注",
+    "rejectNeedsNote": "请说明驳回原因。",
+    "reimbursedOn": "报销日期",
+    "decisionNote": "审批备注",
+    "possibleDuplicate": "可能重复",
+    "queueHint": "您下属的申请，对人力资源而言是您所在组织的申请。您永远不会审批自己的申请。",
+    "queueEmpty": "没有待处理的申请。",
+    "statusFilter": "显示",
+    "open": "打开",
+    "close": "关闭",
+    "claimant": "申请人",
+    "categories": {
+      "travel": "差旅",
+      "accommodation": "住宿",
+      "meals": "餐饮",
+      "equipment": "设备",
+      "training": "培训",
+      "subscriptions": "订阅",
+      "other": "其他"
+    },
+    "category": "类别",
+    "statuses": {
+      "draft": "草稿",
+      "submitted": "已提交",
+      "approved": "已批准",
+      "rejected": "已驳回",
+      "reimbursed": "已报销",
+      "cancelled": "已取消"
+    }
   }
 }

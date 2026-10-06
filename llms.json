@@ -3,11 +3,9 @@
   "slug": "workforce-planning-management",
   "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Loco) and SvelteKit, in 17 locales. Demo software; synthetic data only.",
   "status": {
-    "tasks_delivered": "WPM-T1–T89",
-    "deferred": [
-      "employee expense claims"
-    ],
-    "as_of": "2026-10-06"
+    "tasks_delivered": "WPM-T1–T97",
+    "deferred": [],
+    "as_of": "2026-10-07"
   },
   "stack": {
     "api": "Rust, Loco (Axum + SeaORM), PostgreSQL 18",
@@ -16,7 +14,7 @@
       "service_unit": 297,
       "service_request": 54,
       "ui_unit": 74,
-      "ui_e2e": 35
+      "ui_e2e": 37
     }
   },
   "sections": {
@@ -29,7 +27,7 @@
       {
         "title": "spec/tasks.md",
         "path": "spec/tasks.md",
-        "description": "the live delivery checklist (WPM-T1–T89); each entry records what was verified and what was not"
+        "description": "the live delivery checklist (WPM-T1–T97); each entry records what was verified and what was not"
       },
       {
         "title": "spec/requirements.md",
@@ -55,6 +53,11 @@
         "title": "spec/audit.md",
         "path": "spec/audit.md",
         "description": ""
+      },
+      {
+        "title": "spec/expense-claims.md",
+        "path": "spec/expense-claims.md",
+        "description": "expense claims with approval by someone other than the claimant (WPM-R55)"
       },
       {
         "title": "spec/job-levels.md",

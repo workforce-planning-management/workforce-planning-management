@@ -17,7 +17,7 @@ rota, announcements, skill gaps with a training plan, joiners and leavers, and a
 > only. See [spec/regulatory](../spec/regulatory.md).
 
 **Status: implemented through WPM-T89 (2026-07-18 → 2026-10-06).**
-svelte-check clean (0 errors, 0 warnings); **74 vitest + 35 Playwright specs**
+svelte-check clean (0 errors, 0 warnings); **74 vitest + 37 Playwright specs**
 pass (`page.route`-stubbed — runs without the Rust service); the production
 build is green. Quick start: `pnpm install && pnpm dev` (expects the Loco
 sibling on :5150; `pnpm test` / `pnpm exec playwright test`).
