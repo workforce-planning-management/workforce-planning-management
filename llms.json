@@ -15,8 +15,8 @@
     "tests": {
       "service_unit": 297,
       "service_request": 54,
-      "ui_unit": 68,
-      "ui_e2e": 28
+      "ui_unit": 74,
+      "ui_e2e": 29
     }
   },
   "sections": {

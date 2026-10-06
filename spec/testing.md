@@ -51,12 +51,12 @@ tests share one database), and the two binaries above.
 
 ## Front-end edition (`workforce-planning-management-ui-with-svelte`)
 
-- **vitest — 68 tests / 11 files**: the API client **path map** (every
+- **vitest — 74 tests / 12 files**: the API client **path map** (every
   function's exact proxied path), `money()` honesty, the **locale parity** of
   every `-001` locale (and that regional locales hold only keys that exist), the
   alias / prefix / negotiation logic, the **CMS config is up to date**, the
   CEO dashboard helpers, and component tests.
-- **Playwright — 28 specs** over a `page.route`-stubbed API (contract-mirroring;
+- **Playwright — 29 specs** over a `page.route`-stubbed API (contract-mirroring;
   an unstubbed call is a 404 and loud): the signed-in smoke journeys, the
   locale redirect / picker / alias / `/admin/` shell, and one spec per newer
   area. The **CEO dashboard** is checked at **two viewports** — 1080 × 810 @2×

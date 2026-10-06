@@ -13,8 +13,8 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers |
 | Service | `cargo clippy --all-targets` | keep **new** files clean (pedantic) |
 | UI | `pnpm check` | svelte-check: 0 errors, 0 warnings |
-| UI | `pnpm test` | 68 vitest |
-| UI | `pnpm exec playwright test` | 28 specs, stubbed API |
+| UI | `pnpm test` | 74 vitest |
+| UI | `pnpm exec playwright test` | 29 specs, stubbed API |
 | UI | `pnpm build` | green |
 
 `CONTRIBUTING.md` also asks for `cargo fmt --check`, `cargo clippy --all-targets

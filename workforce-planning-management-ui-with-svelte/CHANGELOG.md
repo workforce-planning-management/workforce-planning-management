@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — sitemap generator
+
+`/sitemap.xml` (every public page in every locale with `hreflang` alternates and
+`x-default`) and `/robots.txt`, generated per request from the locale list and the
+public pages; optional `WPM_PUBLIC_URL` for a proxied deployment. The list of public
+pages is now shared with the sign-in gate (`src/lib/publicPages.ts`).
+
 ### Added — joiners and leavers
 
 `/movements`: who is joining and leaving, each with a dated checklist, how far

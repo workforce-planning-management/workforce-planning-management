@@ -17,7 +17,7 @@ rota, announcements, skill gaps with a training plan, joiners and leavers, and a
 > only. See [spec/regulatory](../spec/regulatory.md).
 
 **Status: implemented through WPM-T89 (2026-07-18 → 2026-10-06).**
-svelte-check clean (0 errors, 0 warnings); **68 vitest + 28 Playwright specs**
+svelte-check clean (0 errors, 0 warnings); **74 vitest + 29 Playwright specs**
 pass (`page.route`-stubbed — runs without the Rust service); the production
 build is green. Quick start: `pnpm install && pnpm dev` (expects the Loco
 sibling on :5150; `pnpm test` / `pnpm exec playwright test`).
@@ -32,6 +32,7 @@ See `.env.example`.
 | --- | --- | --- |
 | `WPM_API_URL` | `http://localhost:5150` | workforce-planning-management-service base URL the proxy forwards to |
 | `AUTH_API_URL` | `http://localhost:5150` | authentication-service base URL — magic-link login + session→PASETO exchange |
+| `WPM_PUBLIC_URL` | _(blank)_ | public address of this site for `/sitemap.xml` and `/robots.txt`; blank = the request origin (set it behind a proxy) |
 
 Both default to the same port because every family service defaults
 to `:5150`; point them at distinct ports/hosts when running the
@@ -47,6 +48,17 @@ strings as content in `content/locales/<locale>/ui.json` edited through
 **Sveltia CMS** at `/<locale>/admin/` · Lily Design System (headless +
 ThemePicker + LocalePicker) · inline-SVG charts following the data-viz method ·
 vitest + Playwright (`page.route`-stubbed).
+
+### Sitemap and robots.txt
+
+`/sitemap.xml` is generated per request: every public page (`/`, `/tour`,
+`/signin`) in every locale — 17 × 3 URLs — each with `hreflang` alternates for its
+sibling locales and `x-default` → `en-001` (a `<language>-001` locale is its bare
+language; `en-gb` is `en-GB`). `/robots.txt` names it and keeps crawlers off the
+API, the CMS and sign-out. Signed-in pages are never listed (they redirect to
+sign-in); the list of public pages is shared with the sign-in gate
+(`src/lib/publicPages.ts`), so the two cannot drift. Code: `src/lib/sitemap.ts`
+(pure, unit-tested) and the two `+server.ts` routes.
 
 ### Localization in practice
 

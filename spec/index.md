@@ -111,8 +111,8 @@ queued in `tasks.md`, and only then lands as code in a subproject.
 deferral: employee expense claims — see the last entry of
 [tasks.md](tasks.md)); requirements WPM-R1–R50, design decisions
 WPM-D1–D37. Current verification: 297 unit tests, 54 database-backed request
-tests, the auth enforcement and Keycloak suites, 68 front-end unit tests and
-28 Playwright specs — see [testing.md](testing.md).
+tests, the auth enforcement and Keycloak suites, 74 front-end unit tests and
+29 Playwright specs — see [testing.md](testing.md).
 
 The load-bearing design thread (decisions WPM-D17–D25, extended by
 WPM-D29–D36): **what must

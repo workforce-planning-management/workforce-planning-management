@@ -167,6 +167,16 @@ content.
 - **Verification:** `pnpm test` pins the parity of every `-001` locale,
   the alias and prefix logic (`src/lib/locales.ts`) and the CMS config;
   Playwright pins the redirect, the picker navigation and RTL direction.
+- **Sitemap:** `/sitemap.xml` is **generated** from the locale list and the
+  public pages (`src/lib/publicPages.ts`, shared with the sign-in gate): each of
+  `/`, `/tour` and `/signin` in every locale — 17 × 3 URLs — with
+  `xhtml:link rel="alternate"` for its sibling locales and `x-default` →
+  `en-001`. Search engines accept a language plus an optional alpha-2 region, not
+  the UN numeric `001`, so a `<language>-001` locale's `hreflang` is its bare
+  language (`cy-001` → `cy`) and a regional one is `en-GB`, `de-DE`, `es-ES`. A bare
+  alias (`/en/…`) is a redirect and is not listed. `/robots.txt` names the sitemap
+  and disallows `/api/`, `/admin`, `/*/admin` and `/signout`. `WPM_PUBLIC_URL`
+  overrides the origin behind a proxy.
 - **Known limits:** the strings were translated by an AI assistant and have
   had no native-speaker review; `/admin/` needs a GitHub login and has not
   been exercised end to end in a browser.

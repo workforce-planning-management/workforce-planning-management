@@ -2089,6 +2089,39 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
         done by a person; a scheduled reminder would be a follow-up); a leaver's
         pending leave approvals; returning to work.
 
+- [x] WPM-T90 (2026-10-06) **Whole-repo lint pass.** `cargo fmt`,
+      `cargo clippy --all-targets -- -D warnings` (default and `--features
+      keycloak`) and `pnpm lint` are clean across the repository; before, only
+      new files had been kept clean. Mechanical: formatting (53 files), twelve
+      `assert!(….is_empty())` test assertions, a wildcard import in
+      `auth/paseto.rs`, and one justified `#[allow(clippy::too_many_lines)]`
+      (`controllers/directory.rs`). Full suites re-run afterwards: 297 unit, 54
+      request, the enforcement test, 68 vitest, 28 Playwright, build green.
+
+- [x] WPM-T91 (2026-10-06) **Sitemap generator.** *(traces to WPM-R50)* A
+      generated `/sitemap.xml` and `/robots.txt` for the front-end. Pure
+      `src/lib/sitemap.ts` (unit-tested) + two `+server.ts` routes (no locale
+      redirect: files with an extension are exempt). Every **public** page —
+      `/`, `/tour`, `/signin` — in every locale (17 × 3 = 51 URLs), each with
+      `xhtml:link rel="alternate"` for its sibling locales and `x-default` →
+      `en-001`; the `hreflang` of a `<language>-001` locale is its bare language
+      (search engines do not accept the UN numeric region `001`), a regional one is
+      `en-GB`/`de-DE`/`es-ES`. XML-escaped; the aliases (`/en/…`, redirects) and
+      every signed-in page are absent by construction — the public page list is
+      **shared with the sign-in gate** (`src/lib/publicPages.ts`) and a test
+      pins every indexable page as public. `/robots.txt` names the sitemap and
+      disallows `/api/`, `/admin`, `/*/admin`, `/signout`. Optional
+      `WPM_PUBLIC_URL` (server-side) overrides the origin behind a proxy.
+      vitest 74 (6 new: URL count and uniqueness, the gate pin, hreflang mapping,
+      alternates and `x-default`, XML validity and escaping, robots), Playwright
+      29 (the new spec fetches both files), svelte-check 0, prettier clean, build
+      green; the rendered file was also parsed with a real XML parser (51 URLs,
+      18 alternates each). **Not done:** `<lastmod>` (the public pages are static
+      content with no modification date); submitting the sitemap to a search
+      console; a static `sitemap.xml` for a static host (it is generated per
+      request by the server); `noindex` on signed-in pages (they redirect to
+      sign-in).
+
 - [ ] **Employee expense claims — deferred (2026-10-05, by decision).** The one
       table-stakes gap from the SOTA scan (`.sota/last-scan.json`): three of
       four comparators ship it (`frappe/hrms` `expense_claim`, `orangehrm`

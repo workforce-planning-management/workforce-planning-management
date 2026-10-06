@@ -79,8 +79,8 @@ masked fields render as first-class masked states, never errors or fake zeros.
 pnpm install
 pnpm dev                    # expects the Loco sibling on :5150
 pnpm check                  # svelte-kit sync && svelte-check (0 errors)
-pnpm test                   # vitest (68)
-pnpm exec playwright test   # 28 specs, stubbed API — no service needed
+pnpm test                   # vitest (74)
+pnpm exec playwright test   # 29 specs, stubbed API — no service needed
 pnpm build
 pnpm cms-config             # regenerate static/admin/config.yml from en-001
 ```

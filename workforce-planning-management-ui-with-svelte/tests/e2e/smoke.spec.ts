@@ -94,6 +94,28 @@ test.describe("sign-in gate (WPM-T38)", () => {
     await expect(page).toHaveURL(/\/signin$/);
   });
 
+  test("the sitemap lists the public pages in every locale, and robots.txt points at it", async ({
+    request,
+  }) => {
+    const sitemap = await request.get("/sitemap.xml");
+    expect(sitemap.status()).toBe(200);
+    expect(sitemap.headers()["content-type"]).toContain("application/xml");
+    const xml = await sitemap.text();
+    // 17 locales × 3 public pages, each with hreflang alternates and x-default.
+    expect(xml.match(/<url>/g)).toHaveLength(51);
+    expect(xml).toContain("<loc>http://localhost:4173/cy-001/tour</loc>");
+    expect(xml).toContain('hreflang="x-default" href="http://localhost:4173/en-001"');
+    // Signed-in pages are never listed.
+    expect(xml).not.toContain("/workers");
+    expect(xml).not.toContain("/ceo");
+
+    const robots = await request.get("/robots.txt");
+    expect(robots.status()).toBe(200);
+    const text = await robots.text();
+    expect(text).toContain("Sitemap: http://localhost:4173/sitemap.xml");
+    expect(text).toContain("Disallow: /api/");
+  });
+
   test("a signed-out visitor sees the marketing splash at / instead of a redirect", async ({
     page,
   }) => {

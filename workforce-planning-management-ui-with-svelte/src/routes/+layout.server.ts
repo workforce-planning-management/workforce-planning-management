@@ -38,17 +38,14 @@
 
 import { redirect } from "@sveltejs/kit";
 import { localePath, splitLocale } from "#lib/locales.js";
+import { isPublicPath } from "#lib/publicPages.js";
 import type { LayoutServerLoad } from "./$types";
-
-/** Route prefixes reachable with no session. */
-const PUBLIC_PATHS = ["/signin", "/verify", "/tour"];
 
 export const load: LayoutServerLoad = ({ locals, url }) => {
   // The URL carries a locale prefix (`/cy-001/workers`); the gate is
   // keyed on the path beneath it.
   const { locale, rest } = splitLocale(url.pathname);
-  const isPublic =
-    rest === "/" || PUBLIC_PATHS.some((path) => rest.startsWith(path));
+  const isPublic = isPublicPath(rest);
   if (!isPublic && locals.sessionId === null) {
     redirect(303, localePath(locale ?? "en-001", "/signin"));
   }

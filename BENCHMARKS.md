@@ -12,7 +12,7 @@ file exists as the place such results would live once measured.
   against a real Keycloak 26, run with `cargo test` and `cargo test -- --ignored`.
   See [workforce-planning-management-api-with-rust/README.md](workforce-planning-management-api-with-rust/README.md)
   and [spec/testing.md](spec/testing.md).
-- Front-end: 68 vitest + 28 Playwright specs, run with `pnpm test` /
+- Front-end: 74 vitest + 29 Playwright specs, run with `pnpm test` /
   `pnpm exec playwright test`. The CEO dashboard is **fit-tested** (page scroll
   and per-tile clipping) at 1080 × 810 @2× and 2160 × 1620 @1× — a layout
   budget, not a speed benchmark.
