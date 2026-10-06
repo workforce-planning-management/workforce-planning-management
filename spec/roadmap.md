@@ -1,6 +1,6 @@
 # Roadmap
 
-Beyond the delivered queue ([tasks.md](tasks.md), WPM-T1–T89). Items are
+Beyond the delivered queue ([tasks.md](tasks.md), WPM-T1–T97). Items are
 grouped by whether a decision, a dependency or just time stands in the way.
 
 ## Deferred by decision

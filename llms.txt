@@ -13,7 +13,7 @@ lands without it. A change is a requirement (WPM-R*), a design decision
 ## Specification
 
 - [spec/index.md](spec/index.md): overview, topic map, status
-- [spec/tasks.md](spec/tasks.md): the live delivery checklist (WPM-T1–T89); each entry records what was verified and what was not
+- [spec/tasks.md](spec/tasks.md): the live delivery checklist (WPM-T1–T97); each entry records what was verified and what was not
 - [spec/requirements.md](spec/requirements.md): requirements WPM-R1–R38 (R39–R50 are in the topic files below)
 - [spec/design.md](spec/design.md): design decisions WPM-D1–D28 (D29–D37 are in the topic files below)
 - [spec/domain-model.md](spec/domain-model.md): entities
@@ -31,7 +31,7 @@ lands without it. A change is a requirement (WPM-R*), a design decision
 
 ## Code
 
-- [workforce-planning-management-api-with-rust/](workforce-planning-management-api-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 46 migrations
+- [workforce-planning-management-api-with-rust/](workforce-planning-management-api-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 49 migrations
 - [workforce-planning-management-ui-with-svelte/](workforce-planning-management-ui-with-svelte/index.md): the browser client; strings in `content/locales/<locale>/ui.json`
 - Working agreements for contributors and agents: [AGENTS.md](AGENTS.md) (entry point) and [AGENTS/](AGENTS/spec-driven-delivery.md) (spec-driven delivery, backend, frontend, privacy and data rules, localization, testing and verification, git and releases, docs); stack-level: [API AGENTS.md](workforce-planning-management-api-with-rust/AGENTS.md), [UI AGENTS.md](workforce-planning-management-ui-with-svelte/AGENTS.md)
 

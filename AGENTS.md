@@ -4,7 +4,7 @@ Working agreements for humans and AI agents on this repository. This file is
 the short entry point; the detail is in [`AGENTS/`](AGENTS/). Each subproject
 also has its own [API](workforce-planning-management-api-with-rust/AGENTS.md)
 and [UI](workforce-planning-management-ui-with-svelte/AGENTS.md) guide for
-stack-level detail. (Updated 2026-10-06, through WPM-T89.)
+stack-level detail. (Updated 2026-10-07, through WPM-T97.)
 
 > ⚠️ **Demo software.** Not a production HR or payroll system; synthetic data
 > only. See [spec/regulatory.md](spec/regulatory.md).
