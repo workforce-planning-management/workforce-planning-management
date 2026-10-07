@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — locale directory rule (WPM-T99)
+
+Spec and test: every `content/locales/` directory is `<language>-<region>`; a bare language is never a
+directory. (No two-letter directories existed, so none were deleted.)
+
 ### Added — bare `/` follows the browser's language (WPM-T98)
 
 `localeFromNavigator` and a root-layout redirect: with no remembered locale, `/` goes to the locale

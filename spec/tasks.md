@@ -2232,6 +2232,21 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       `pay_progression_reminders` task is **not scheduled** — the operator must run it daily;
       manager-cannot-read was not exercised under enforcement.
 
+- [x] WPM-T99 (2026-10-07) **Locale directories are `<language>-<region>`.** *(traces to WPM-R50;
+      [locales](locales-for-global-sharing-with-svelte/index.md))* Asked to delete two-letter locale
+      directories such as `locales/en/`: **there were none** — all 17 directories under
+      `content/locales/` were already `<language>-<region>` (`en-001`, `en-gb`, …), and no other
+      locale directory exists in the repo (the only two-letter directory is the `/me` route), so
+      nothing was deleted. Added the rule to the locales spec (a "Locale directory names" section:
+      lower-case ISO 639 language + ISO 3166-1 alpha-2 country *or* UN `001`; a bare language is only a
+      URL alias, a tag, or a row in `locales.tsv`) and to `AGENTS/localization.md`, and corrected the
+      spec's "locale code priority order" from bare codes (with `sp`, a slip for Spanish) to
+      `en-001`, `cy-001`, `zh-001`, `es-001`, `ar-001`. Enforced by 3 vitest tests (every directory
+      matches the shape; the directories are exactly the served `LOCALES`; the shape rejects `en`,
+      `en_GB`, `EN-GB`, `en-1`, `en-gbr`) — **mutation-checked**: a stray `content/locales/en/`
+      fails them. vitest 80. **Not done:** `locales.tsv` still lists bare languages by design (it is a
+      language table, not a directory list).
+
 - [x] WPM-T98 (2026-10-07) **A bare `/` follows the browser's language.** *(traces to WPM-R50,
       WPM-D43; [locales](locales-for-global-sharing-with-svelte/index.md))* Reads
       `navigator.languages` (else `navigator.language`) and redirects to the matching locale

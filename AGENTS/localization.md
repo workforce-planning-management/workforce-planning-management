@@ -11,6 +11,9 @@ The URL carries the locale, and the UI strings are content. Full description:
 `ar-001 bn-001 cy-001 de-001 de-de en-001 en-gb en-us es-001 es-es fr-001 hi-001
 id-001 pt-001 ru-001 ur-001 zh-001`.
 
+- **Every directory under `content/locales/` is `<language>-<region>`** — lower-case ISO 639
+  language, then an ISO 3166-1 alpha-2 country or the UN numeric `001`; never a bare
+  language (`en`, `cy`). A bare language is a URL alias only. A unit test enforces it.
 - A **`<language>-001`** file must contain **every key** (the parity test fails
   otherwise). `en-001` is the source.
 - A **regional** locale (`en-gb`, `en-us`, `de-de`, `es-es`) holds only its

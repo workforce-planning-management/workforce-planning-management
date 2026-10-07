@@ -18,7 +18,7 @@ payroll & compensation — in **17 locales**. See
 **Status: implemented through WPM-T97 (2026-07-18 → 2026-10-07), with no open
 deferral ([spec/roadmap.md](spec/roadmap.md)).** Verified: 317 service unit tests, 62
 database-backed request tests, the auth enforcement and Keycloak suites (real
-Keycloak 26), 77 front-end unit tests and 45 Playwright specs. See each
+Keycloak 26), 80 front-end unit tests and 45 Playwright specs. See each
 subproject's own README for its own gate status, and [spec/testing.md](spec/testing.md).
 
 ## Subprojects

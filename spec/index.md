@@ -113,7 +113,7 @@ queued in `tasks.md`, and only then lands as code in a subproject.
 **Status (2026-10-07):** tasks WPM-T1–T97 delivered (no open deferral;
 expense claims, the last, is WPM-T97 in [tasks.md](tasks.md)); requirements WPM-R1–R55,
 design decisions WPM-D1–D42. Current verification: 317 unit tests, 62 database-backed request
-tests, the auth enforcement and Keycloak suites, 77 front-end unit tests and
+tests, the auth enforcement and Keycloak suites, 80 front-end unit tests and
 45 Playwright specs — see [testing.md](testing.md).
 
 The load-bearing design thread (decisions WPM-D17–D25, extended by

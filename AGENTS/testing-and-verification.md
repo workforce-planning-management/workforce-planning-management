@@ -14,7 +14,7 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers |
 | Service | `cargo clippy --all-targets` | keep **new** files clean (pedantic) |
 | UI | `pnpm check` | svelte-check: 0 errors, 0 warnings |
-| UI | `pnpm test` | 77 vitest |
+| UI | `pnpm test` | 80 vitest |
 | UI | `pnpm exec playwright test` | 45 specs, stubbed API (`PW_PORT=<free port>` if 4173 is taken) |
 | UI | `pnpm build` | green |
 

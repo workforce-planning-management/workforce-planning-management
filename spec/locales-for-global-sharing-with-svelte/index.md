@@ -7,13 +7,26 @@ routing, UI chrome, and bugs.
 
 Read locales via file `locales.tsv`.
 
+## Locale directory names
+
+**Every locale directory is named `<language>-<region>`** — never a bare language.
+Lower-case, the language an ISO 639 code (`en`, `cy`, `zh`), the region an ISO 3166-1
+alpha-2 country (`gb`, `us`, `de`, `es`) **or** the UN M.49 numeric `001` ("world", used
+for a language's general-purpose locale: `en-001`, `cy-001`). So `locales/en-001/`,
+`locales/en-gb/`, `locales/cy-001/` — and there is no `locales/en/` or `locales/cy/`.
+A bare language is only ever a **URL alias** (`/en/` redirects to `/en-001/`), a
+`lang`-style tag, or a row in `locales.tsv` — it is never a directory. A regional
+directory (`en-gb`) holds overrides of its language's `-001` directory; see
+"How WPM applies this". In WPM, `content/locales/` is checked by a unit test
+(`tests/unit/locales.test.ts`) that fails on any directory not named this way.
+
 Locale code priority order:
 
-- en
-- cy
-- zh
-- sp
-- ar
+- en-001
+- cy-001
+- zh-001
+- es-001
+- ar-001
 
 ## .locale-peer.id file
 

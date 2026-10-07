@@ -13,7 +13,7 @@
     "tests": {
       "service_unit": 297,
       "service_request": 54,
-      "ui_unit": 77,
+      "ui_unit": 80,
       "ui_e2e": 45
     }
   },

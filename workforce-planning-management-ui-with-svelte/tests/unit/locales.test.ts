@@ -1,3 +1,5 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   CMS_UI_LANGUAGES,
@@ -114,5 +116,31 @@ describe("browser language to locale route", () => {
     expect(localeFromNavigator({ languages: [], language: "" })).toBeNull();
     expect(localeFromNavigator({})).toBeNull();
     expect(localeFromNavigator({ language: null, languages: null })).toBeNull();
+  });
+});
+
+describe("locale directory names", () => {
+  // `<language>-<region>`: ISO 639 language, then an ISO 3166-1 alpha-2 country or the
+  // UN M.49 numeric `001`; lower-case. A bare language is a URL alias, never a directory.
+  const SHAPE = /^[a-z]{2,3}-(?:[a-z]{2}|\d{3})$/;
+  const dirs = readdirSync(join(process.cwd(), "content/locales"), {
+    withFileTypes: true,
+  })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+
+  it("names every directory <language>-<region>, never a bare language", () => {
+    expect(dirs.length).toBeGreaterThan(0);
+    for (const name of dirs) expect(name, name).toMatch(SHAPE);
+  });
+
+  it("has exactly the directories the app serves", () => {
+    expect([...dirs].sort()).toEqual([...LOCALES].sort());
+  });
+
+  it("would reject the bare spellings", () => {
+    for (const bad of ["en", "cy", "en_GB", "EN-GB", "en-1", "en-gbr"]) {
+      expect(SHAPE.test(bad), bad).toBe(false);
+    }
   });
 });

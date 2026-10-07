@@ -63,7 +63,7 @@ tests share one database), and the two binaries above.
 
 ## Front-end edition (`workforce-planning-management-ui-with-svelte`)
 
-- **vitest — 77 tests / 12 files**: the API client **path map** (every
+- **vitest — 80 tests / 12 files**: the API client **path map** (every
   function's exact proxied path), `money()` honesty, the **locale parity** of
   every `-001` locale (and that regional locales hold only keys that exist), the
   alias / prefix / negotiation logic, the **CMS config is up to date**, the

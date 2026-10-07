@@ -63,7 +63,7 @@ pnpm dev                   # expects the service running (stub mode is fine)
 
 ```sh
 pnpm check                 # svelte-kit sync && svelte-check
-pnpm test                  # vitest (77)
+pnpm test                  # vitest (80)
 pnpm exec playwright test  # 45 specs, page.route-stubbed — no running service needed
 pnpm build
 ```
