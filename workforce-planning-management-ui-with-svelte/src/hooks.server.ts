@@ -41,10 +41,14 @@ export const handle: Handle = async ({ event, resolve }) => {
     // `/en/…` -> `/en-001/…`: one canonical address per locale.
     redirect(301, `${localePath(locale, rest)}${search}`);
   }
-  if (!locale && pageRequest && !isUnprefixed(pathname)) {
-    const preferred =
-      normaliseLocale(event.cookies.get(LOCALE_COOKIE)) ??
-      negotiateLocale(event.request.headers.get("accept-language"));
+  const remembered = normaliseLocale(event.cookies.get(LOCALE_COOKIE));
+  const acceptLanguage = event.request.headers.get("accept-language");
+  // A bare `/` with no remembered locale is left to the browser: the root
+  // layout redirects by `navigator.languages` (see `routes/+layout.ts`).
+  // Everything else unprefixed is sent to the remembered or negotiated locale.
+  const browserDecides = pathname === "/" && remembered === null;
+  if (!locale && pageRequest && !isUnprefixed(pathname) && !browserDecides) {
+    const preferred = remembered ?? negotiateLocale(acceptLanguage);
     redirect(302, `${localePath(preferred, pathname)}${search}`);
   }
   if (locale) {
@@ -62,6 +66,13 @@ export const handle: Handle = async ({ event, resolve }) => {
         ? html
             .replace('lang="en"', `lang="${locale}"`)
             .replace("%dir%", isRtl(locale) ? "rtl" : "ltr")
-        : html.replace("%dir%", "ltr"),
+        : html.replace("%dir%", "ltr").replace(
+            "</head>",
+            // Without JavaScript the browser cannot decide: the server's
+            // `Accept-Language` pick is the fallback.
+            browserDecides
+              ? `<noscript><meta http-equiv="refresh" content="0;url=${localePath(negotiateLocale(acceptLanguage), "/")}"></noscript></head>`
+              : "</head>",
+          ),
   });
 };

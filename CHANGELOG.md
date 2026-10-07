@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — browser language for `/` (WPM-T98)
+
+A bare `/` with no remembered locale redirects by `navigator.languages`; see
+`spec/locales-for-global-sharing-with-svelte/index.md`.
+
 ### Added — expense claims (WPM-T97)
 
 Claims of dated, categorised items, approved by someone other than the claimant (manager or HR),

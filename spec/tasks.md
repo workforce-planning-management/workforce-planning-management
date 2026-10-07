@@ -2232,6 +2232,29 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       `pay_progression_reminders` task is **not scheduled** — the operator must run it daily;
       manager-cannot-read was not exercised under enforcement.
 
+- [x] WPM-T98 (2026-10-07) **A bare `/` follows the browser's language.** *(traces to WPM-R50,
+      WPM-D43; [locales](locales-for-global-sharing-with-svelte/index.md))* Reads
+      `navigator.languages` (else `navigator.language`) and redirects to the matching locale
+      route: pure `localeFromNavigator` in `src/lib/locales.ts` (underscore tags accepted; an
+      exact regional locale beats the language's `-001`; the first served tag in preference
+      order wins; **`null` when none is served**, so the caller picks the fallback). The
+      example in the request, `cy_GB`, gives **`/cy-001/`** — there is no `cy-gb` locale — and
+      `en_GB` gives `/en-gb/`, `de-DE` `/de-de/`. Wiring: `hooks.server.ts` no longer redirects
+      a bare `/` that has **no remembered-locale cookie** (a remembered choice still wins and
+      is redirected server-side, as before) and instead puts a `<noscript>` meta refresh to the
+      `Accept-Language` pick in the page; `routes/+layout.server.ts` passes that pick as
+      `fallbackLocale`; `routes/+layout.ts` redirects (307) before the page renders. **Every other
+      unprefixed path keeps the server rule** (`/signin` → `Accept-Language`) — a deliberate
+      boundary. Verified: vitest 77 (3 new: regional vs language match, preference order, `null`
+      for unserved), Playwright 45 (8 new: four browser languages incl. `cy-GB`, the unserved
+      fallback, remembered cookie beating the browser, `/signin` unchanged, the no-JS refresh, and
+      **a spec that makes `navigator` and `Accept-Language` disagree** — mutation-checked: with the
+      client redirect reduced to the server's pick it fails, landing on `/fr-001`), svelte-check 0,
+      prettier, build. **Not done:** other unprefixed paths do not consult the browser (a deep link
+      such as `/workers` still uses `Accept-Language`); `navigator.language` is not re-read after the
+      first visit (the cookie then holds the choice, so a later change of browser language is
+      ignored until the cookie expires or the picker is used); no `cy-gb` content locale exists.
+
 - [x] WPM-T97 (2026-10-07) **Employee expense claims.** *(traces to WPM-R55, WPM-D42;
       [expense-claims.md](expense-claims.md))* Delivers the one table-stakes gap from the SOTA
       scan (`frappe/hrms` `expense_claim`, `orangehrm` `orangehrmClaimPlugin`, `odoo`

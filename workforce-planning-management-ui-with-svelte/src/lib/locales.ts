@@ -129,6 +129,27 @@ export function negotiateLocale(header: string | null | undefined): Locale {
   return DEFAULT_LOCALE;
 }
 
+/**
+ * Pick the best locale from the browser's own language settings
+ * (`navigator.languages`, most preferred first; else `navigator.language`), or
+ * `null` when none of them is one this app serves. Each tag is matched the way
+ * [`normaliseLocale`] does — underscore spellings and any region of a supported
+ * language count — so `cy_GB` gives the exact `cy-gb` locale if the app has one,
+ * else the language's `-001` locale (`cy-001`), and `de-DE` gives `de-de`.
+ * `null` (not the default) lets the caller choose its own fallback.
+ */
+export function localeFromNavigator(nav: {
+  language?: string | null;
+  languages?: readonly string[] | null;
+}): Locale | null {
+  const tags = nav.languages?.length ? nav.languages : [nav.language];
+  for (const tag of tags) {
+    const found = normaliseLocale(tag);
+    if (found) return found;
+  }
+  return null;
+}
+
 /** Interface languages Sveltia CMS ships (its own list, not ours). */
 export const CMS_UI_LANGUAGES = [
   "ar",

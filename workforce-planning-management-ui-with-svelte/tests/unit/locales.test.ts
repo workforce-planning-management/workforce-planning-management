@@ -4,6 +4,7 @@ import {
   CMS_UI_LOCALE,
   LOCALE_ALIASES,
   LOCALES,
+  localeFromNavigator,
   localePath,
   negotiateLocale,
   normaliseLocale,
@@ -77,5 +78,41 @@ describe("CMS interface language", () => {
     for (const locale of LOCALES) {
       expect(CMS_UI_LANGUAGES, locale).toContain(CMS_UI_LOCALE[locale]);
     }
+  });
+});
+
+describe("browser language to locale route", () => {
+  it("matches an underscore tag to the exact regional locale, else its language", () => {
+    // The app has no `cy-gb`, so Welsh in Great Britain gets the Welsh locale.
+    expect(localeFromNavigator({ language: "cy_GB" })).toBe("cy-001");
+    expect(localeFromNavigator({ language: "cy-GB" })).toBe("cy-001");
+    // Where a regional locale exists, it wins over the language's -001.
+    expect(localeFromNavigator({ language: "en_GB" })).toBe("en-gb");
+    expect(localeFromNavigator({ language: "en-US" })).toBe("en-us");
+    expect(localeFromNavigator({ language: "de-DE" })).toBe("de-de");
+    expect(localeFromNavigator({ language: "es-ES" })).toBe("es-es");
+    expect(localeFromNavigator({ language: "es-MX" })).toBe("es-001");
+    expect(localeFromNavigator({ language: "zh-Hant-TW" })).toBe("zh-001");
+  });
+
+  it("walks navigator.languages in order and skips what the app does not serve", () => {
+    expect(localeFromNavigator({ languages: ["ja-JP", "fr-CA", "en"] })).toBe(
+      "fr-001",
+    );
+    expect(
+      localeFromNavigator({ languages: ["en-GB", "cy"], language: "cy" }),
+    ).toBe("en-gb");
+    // `languages` wins over a differing `language`.
+    expect(localeFromNavigator({ languages: ["pt-BR"], language: "ru" })).toBe(
+      "pt-001",
+    );
+  });
+
+  it("says null — not the default — when nothing matches, so the caller chooses", () => {
+    expect(localeFromNavigator({ language: "ja-JP" })).toBeNull();
+    expect(localeFromNavigator({ languages: ["ja", "ko"] })).toBeNull();
+    expect(localeFromNavigator({ languages: [], language: "" })).toBeNull();
+    expect(localeFromNavigator({})).toBeNull();
+    expect(localeFromNavigator({ language: null, languages: null })).toBeNull();
   });
 });

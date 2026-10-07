@@ -13,8 +13,8 @@
     "tests": {
       "service_unit": 297,
       "service_request": 54,
-      "ui_unit": 74,
-      "ui_e2e": 37
+      "ui_unit": 77,
+      "ui_e2e": 45
     }
   },
   "sections": {

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — bare `/` follows the browser's language (WPM-T98)
+
+`localeFromNavigator` and a root-layout redirect: with no remembered locale, `/` goes to the locale
+route for `navigator.languages` (`cy_GB` → `/cy-001/`), falling back to the server's `Accept-Language`
+pick (and a `<noscript>` refresh). Other unprefixed paths are unchanged.
+
 ### Added — expense claims
 
 `ExpenseClaims` panel on `/me` and the worker page, `/expenses` decision queue, `ExpenseClaimView`;

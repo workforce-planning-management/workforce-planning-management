@@ -5,7 +5,10 @@
 export const ssr = false;
 export const prerender = false;
 
+import { browser } from "$app/env";
+import { redirect } from "@sveltejs/kit";
 import { listMyOrganizations, listMyOrganizationScope } from "#lib/api/wpm.js";
+import { localeFromNavigator, localePath } from "#lib/locales.js";
 import type { LayoutLoad } from "./$types";
 
 // Multi-organization membership (no switcher): the caller's org set is
@@ -27,7 +30,17 @@ import type { LayoutLoad } from "./$types";
 // the dashboard uses `organizations` (it shows literal grants); pages
 // that render one section per readable organization (`/org-chart`,
 // `/benchmarks`) use `scope`.
-export const load: LayoutLoad = async ({ data, fetch }) => {
+// A bare `/` (no locale prefix, and no remembered locale — the server hook
+// redirects those itself) is sent to the locale route for the browser's own
+// language: `navigator.languages`, so `cy_GB` goes to `/cy-001/` (or `/cy-gb/` if
+// the app had one). A browser language the app does not serve falls back to what
+// the server negotiated from `Accept-Language`. Here, in the load, so the page
+// never renders unprefixed.
+export const load: LayoutLoad = async ({ data, fetch, url }) => {
+  if (browser && url.pathname === "/") {
+    const target = localeFromNavigator(navigator) ?? data.fallbackLocale;
+    redirect(307, `${localePath(target, "/")}${url.search}`);
+  }
   if (!data.signedIn) return { ...data, organizations: [], scope: [] };
   try {
     const [organizations, scope] = await Promise.all([

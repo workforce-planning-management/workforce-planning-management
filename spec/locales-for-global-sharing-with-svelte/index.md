@@ -147,7 +147,16 @@ content.
   route tree is unchanged. A bare language **alias** (`/en/…`, `/cy/…`)
   **301-redirects** to its `-001` locale (one canonical address per locale);
   an unprefixed URL **302-redirects** to the remembered
-  (`wpm-locale` cookie) or `Accept-Language` locale, else `en-001`. `/api`,
+  (`wpm-locale` cookie) or `Accept-Language` locale, else `en-001` — **except a bare
+  `/`, which the browser decides** (WPM-D43): with no remembered locale the app loads and
+  the root layout redirects by **`navigator.languages`** (`localeFromNavigator`: a tag
+  such as `cy_GB` or `cy-GB` matches the exact regional locale if the app has one —
+  `en_GB` → `/en-gb/`, `de-DE` → `/de-de/` — else its language's `-001`, so `cy_GB` →
+  `/cy-001/`; the first tag in the browser's preference order that the app serves wins).
+  A browser language the app does not serve falls back to what the server negotiated
+  from `Accept-Language` (passed to the client as `fallbackLocale`); without
+  JavaScript a `<noscript>` meta refresh to that same pick is in the page. A remembered
+  locale always beats the browser's. `/api`,
   `/_app`, `/assets`, files with an extension, and the SSO and sign-out
   endpoints are exempt. The **URL is the source of truth** for the UI
   language; the picker navigates to the same page under the new prefix; the

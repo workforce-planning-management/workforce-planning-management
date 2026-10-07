@@ -131,6 +131,92 @@ test.describe("sign-in gate (WPM-T38)", () => {
     await expect(page).toHaveURL(/\/signin$/);
   });
 
+  // The browser's own language picks the locale for a bare `/` — not the server's
+  // `Accept-Language` guess — unless the visitor has already chosen one.
+  for (const [tag, expected] of [
+    ["cy-GB", "cy-001"],
+    ["en-GB", "en-gb"],
+    ["de-DE", "de-de"],
+    ["pt-BR", "pt-001"],
+  ] as const) {
+    test(`bare / follows navigator.language ${tag} to /${expected}/`, async ({
+      browser,
+    }) => {
+      const context = await browser.newContext({ locale: tag });
+      const page = await context.newPage();
+      await page.goto("/");
+      await expect(page).toHaveURL(new RegExp(`/${expected}$`));
+      expect(await page.evaluate(() => document.documentElement.lang)).toBe(expected);
+      await context.close();
+    });
+  }
+
+  test("the browser's language wins over a different Accept-Language header", async ({
+    browser,
+  }) => {
+    // The server would pick French from the header; the browser says Welsh.
+    const context = await browser.newContext({
+      locale: "cy-GB",
+      extraHTTPHeaders: { "accept-language": "fr" },
+    });
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/cy-001$/);
+    // …and an unserved browser language falls back to that header's pick.
+    const other = await browser.newContext({
+      locale: "ja-JP",
+      extraHTTPHeaders: { "accept-language": "fr" },
+    });
+    const p2 = await other.newPage();
+    await p2.goto("/");
+    await expect(p2).toHaveURL(/\/fr-001$/);
+    await context.close();
+    await other.close();
+  });
+
+  test("bare / with a browser language the app does not serve falls back to the server's pick", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ locale: "ja-JP" });
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/en-001$/);
+    await context.close();
+  });
+
+  test("a remembered locale beats the browser language, and /signin keeps its own rule", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ locale: "cy-GB" });
+    await context.addCookies([
+      { name: "wpm-locale", value: "de-001", domain: "localhost", path: "/" },
+    ]);
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/de-001$/);
+    await context.close();
+    // Other unprefixed paths are still redirected by the server (Accept-Language).
+    const other = await browser.newContext({ locale: "cy-GB" });
+    const p2 = await other.newPage();
+    await p2.goto("/signin");
+    await expect(p2).toHaveURL(/\/cy-001\/signin$/);
+    await other.close();
+  });
+
+  test("without JavaScript a bare / carries a noscript refresh to the server's pick", async ({
+    request,
+  }) => {
+    const html = await (
+      await request.get("/", { headers: { "accept-language": "cy-GB" } })
+    ).text();
+    expect(html).toContain(
+      '<noscript><meta http-equiv="refresh" content="0;url=/cy-001"></noscript>',
+    );
+    // A locale page carries no such refresh.
+    const localised = await (await request.get("/cy-001")).text();
+    expect(localised).not.toContain("http-equiv");
+  });
+
   test("/tour stays reachable with no session and covers the app in depth", async ({
     page,
   }) => {

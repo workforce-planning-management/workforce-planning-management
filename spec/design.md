@@ -308,6 +308,8 @@ aggregate with suggestions-only levers: see
 
 Recorded beside the requirements they shape:
 
+- **WPM-D43** a bare `/` is decided by the browser's language, everything else by the server
+  — [locales](locales-for-global-sharing-with-svelte/index.md).
 - **WPM-D42** a claim is financial and personal, and no one is their own approver —
   [expense-claims.md](expense-claims.md).
 - **WPM-D41** a pay position is a salary and a reminder promises nothing —

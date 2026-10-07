@@ -48,6 +48,12 @@ file with overrides), add the code to `LOCALES`, `LOCALE_LABELS` and (for the CM
   is unchanged). **Links and `goto` use `l("/path")`.**
 - `/en/…` (a bare language) **301s** to its `-001` locale; an unprefixed path
   **302s** to the `wpm-locale` cookie, else `Accept-Language`, else `en-001`.
+  **A bare `/` is the exception:** with no cookie the *browser* decides —
+  `routes/+layout.ts` redirects by `navigator.languages` (`localeFromNavigator`; `cy_GB`
+  → `cy-001`, or `cy-gb` if the app ever has one), falling back to the server's
+  `Accept-Language` pick (`fallbackLocale`, and a `<noscript>` refresh for no-JS). A
+  cookie still wins. A test must make `navigator` and `Accept-Language` *disagree* to prove
+  it, since Playwright sets both from `locale`.
   `/api`, `/_app`, `/assets`, files with an extension, `/signin/sso` and
   `/signout` are exempt (`src/hooks.server.ts`).
 - The URL drives `i18n.locale` (the layout's `$effect`); the picker navigates.

@@ -53,7 +53,7 @@ components/*,server/*}`, `content/locales/*/ui.json`, `scripts/cms-config.mjs`,
   carries the session→PASETO exchange seam.
 - **Masked money**: `money(null, …)` renders an em dash and the
   employee list/profile render `common.masked` — never a fake 0.
-- **Testing**: vitest (74: money honesty, locale parity and routing, the CMS
+- **Testing**: vitest (77: money honesty, locale parity and routing, the CMS
   config, the API path map — every client function — and the CEO helpers);
   Playwright (31) against `vite preview` with `page.route` stubs mirroring the
   service contract (unstubbed calls 404 loudly); the CEO dashboard is fit-tested
@@ -92,7 +92,7 @@ components/*,server/*}`, `content/locales/*/ui.json`, `scripts/cms-config.mjs`,
 WPM-T18/T19 **delivered 2026-07-18**; the front-end halves of
 WPM-T20–T36 **delivered 2026-07-20 → 2026-07-25**; every later task
 (WPM-T37–T97) lands its UI beside its API — see
-[../../spec/tasks.md](../../spec/tasks.md). Suites: 74 vitest, 37 Playwright.
+[../../spec/tasks.md](../../spec/tasks.md). Suites: 77 vitest, 45 Playwright.
 - [x] **WPM-T37: `/verify` crashed with a raw 500 when the authentication service was unreachable.** *(resolved 2026-09-06.)* `src/routes/verify/+page.server.ts` called `await verifyMagicLink(fetch, token)` with no `try`/`catch`. A network-level failure (the authentication service unreachable, timed out, connection reset) makes `fetch` throw rather than resolve — uncaught, that propagated out of `load` and SvelteKit rendered its generic 500 error page instead of this route's own friendly UI. The same bug class was found and fixed first in `place-front-end-with-svelte` (T-26) and `thing-front-end-with-svelte` (T-23); ported here.
   - **Resolved.** A `try`/`catch` around the call, a new `"serviceUnavailable"` error variant, and its message in `+page.svelte`.
   - **Acceptance:** `tests/unit/verify.test.ts` (new) unit-tests the `load` function directly — pinning `missingToken`, the new `serviceUnavailable` (fetch rejects), and `invalidToken` (non-ok response) branches — verified to fail with the `try`/`catch` reverted and pass with it restored. Three-part change: spec (here) + code + test.

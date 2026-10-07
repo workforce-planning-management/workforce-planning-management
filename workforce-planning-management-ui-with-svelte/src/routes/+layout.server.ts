@@ -37,11 +37,11 @@
 // existing at all.
 
 import { redirect } from "@sveltejs/kit";
-import { localePath, splitLocale } from "#lib/locales.js";
+import { localePath, negotiateLocale, splitLocale } from "#lib/locales.js";
 import { isPublicPath } from "#lib/publicPages.js";
 import type { LayoutServerLoad } from "./$types";
 
-export const load: LayoutServerLoad = ({ locals, url }) => {
+export const load: LayoutServerLoad = ({ locals, url, request }) => {
   // The URL carries a locale prefix (`/cy-001/workers`); the gate is
   // keyed on the path beneath it.
   const { locale, rest } = splitLocale(url.pathname);
@@ -49,5 +49,10 @@ export const load: LayoutServerLoad = ({ locals, url }) => {
   if (!isPublic && locals.sessionId === null) {
     redirect(303, localePath(locale ?? "en-001", "/signin"));
   }
-  return { signedIn: locals.sessionId !== null };
+  return {
+    signedIn: locals.sessionId !== null,
+    // What the server would pick from `Accept-Language`: the fallback for a
+    // bare `/` visit whose browser language this app does not serve.
+    fallbackLocale: negotiateLocale(request.headers.get("accept-language")),
+  };
 };
