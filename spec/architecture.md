@@ -67,7 +67,8 @@ pluralization gotcha is documented family knowledge).
 
 SvelteKit 2 + Svelte 5 runes SPA + same-origin BFF proxy
 (patient-flow/PPM pattern), dependency-light, **17 content locales
-served under `/<locale>/` routes** (a `reroute` hook; strings are
+served under `/<locale>/` routes** (one full-code address each; a bare
+`/` follows `navigator.languages`; a `reroute` hook; strings are
 content in `content/locales/<locale>/ui.json`, edited through Sveltia CMS —
 [locales spec](locales-for-global-sharing-with-svelte/index.md), WPM-R50). Views per
 pillar: requisition/application boards, onboarding tracker, team

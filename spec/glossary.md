@@ -5,6 +5,10 @@
 | **360° / multi-rater** | Feedback on one subject from manager, peers, reports, and self; reported as group aggregates only |
 | **ATS**             | Applicant Tracking System — the requisition/application pipeline                                 |
 | **Adjustment (reasonable)** | A barrier-based change request (barrier / impact / change); no diagnosis required or storable |
+| **Content locale** | A language-and-region the UI is written for, named `<language>-<region>` (`en-001`, `cy-001`, `en-gb`); its strings are content in `content/locales/<locale>/ui.json` ([locales](locales-for-global-sharing-with-svelte/index.md)) |
+| **`-001` locale**  | A language's general-purpose locale (UN M.49 "world"): holds every UI key; `cy-001` is Welsh, `en-001` English, the source |
+| **Regional locale** | A locale such as `en-gb` or `de-de` that holds only **overrides** of its language's `-001` locale and falls back to it |
+| **Locale address** | The one URL prefix a locale is served under, its full code (`/cy-001/…`); a bare language (`/cy/`) is not a route, only a tag that matches its `-001` locale |
 | **Accrual**         | Leave entitlement earned over time; v1 grants annual entitlements, accrual schedules are roadmap |
 | **Agenda for Change (AfC)** | The NHS pay and grading system; Wales issues its own pay circular each year ([pay-scales.md](pay-scales.md)) |
 | **Expense claim** | A worker's request to be repaid for money spent for work: dated, categorised items in one currency, decided by someone other than the claimant ([expense-claims.md](expense-claims.md)) |

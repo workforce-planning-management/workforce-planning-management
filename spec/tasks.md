@@ -2232,6 +2232,19 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       `pay_progression_reminders` task is **not scheduled** — the operator must run it daily;
       manager-cannot-read was not exercised under enforcement.
 
+- [x] WPM-T101 (2026-10-07) **Locales information brought up to date across `spec/`.** *(docs only;
+      traces to WPM-R50, WPM-D37, WPM-D43, WPM-D44)* Audited every `spec/` file that mentions locales
+      against the code. **Stale and fixed:** `spec/index.md` said 16 locales (17), `design.md` said
+      "13-locale i18n" (17). **Added** to the locales spec: a table of the 17 locales (picker label,
+      kind, what each holds — 13 languages at `-001` with all **541** keys, 4 regional of which only
+      `en-gb` has overrides, 5, and `de-de`, `en-us`, `es-es` are empty and fall back), a note that
+      there is no `cy-gb`, the picker-label rule, and an "Adding a locale" checklist; **glossary** terms
+      (content locale, `-001` locale, regional locale, locale address); `architecture.md` (one address,
+      bare `/` by browser language); `testing.md` (the directory-name check). Counts were computed from
+      `content/locales/`, not copied. **Not changed:** the generic "book side" guidance in the locales spec
+      (peer ids, slugs, `locales/<code>/` for a book repo) describes a different repository and was
+      left as written.
+
 - [x] WPM-T100 (2026-10-07) **No more `/<language>/` forwarding.** *(traces to WPM-R50, WPM-D44;
       amends WPM-D37; [locales](locales-for-global-sharing-with-svelte/index.md))* The request read
       "remove route forwarding `/<language>-001/` to `/<language>/`", but the app only ever

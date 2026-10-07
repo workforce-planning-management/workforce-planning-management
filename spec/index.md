@@ -42,7 +42,7 @@ backups, the on-call rota), **skills gaps and training time**,
 **CEO dashboard** and workforce insights, strategic workforce planning
 (WPM-R34–R38), job-capability frameworks (UK GDAD PCF, ESCO), reporting
 lines and groups, organization memberships and transfers, and
-**16 content locales** served under `/<locale>/` routes.
+**17 content locales** (13 languages at `-001`, 4 regional) served under `/<locale>/` routes.
 
 It is a **consumer application** (the case-folder / patient-flow /
 project-portfolio-management shape): it does not register identities

@@ -65,7 +65,8 @@ tests share one database), and the two binaries above.
 
 - **vitest — 80 tests / 12 files**: the API client **path map** (every
   function's exact proxied path), `money()` honesty, the **locale parity** of
-  every `-001` locale (and that regional locales hold only keys that exist), the
+  every `-001` locale (and that regional locales hold only keys that exist), that every
+  `content/locales/` directory is `<language>-<region>` and matches `LOCALES`, the
   prefix (full code only) / negotiation logic, the **CMS config is up to date**, the
   CEO dashboard helpers, and component tests.
 - **Playwright — 45 specs** over a `page.route`-stubbed API (contract-mirroring;

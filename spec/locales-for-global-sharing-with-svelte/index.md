@@ -204,6 +204,40 @@ content.
   language (`/en/…`) is not a route and is not listed. `/robots.txt` names the sitemap
   and disallows `/api/`, `/admin`, `/*/admin` and `/signout`. `WPM_PUBLIC_URL`
   overrides the origin behind a proxy.
+- **The 17 locales WPM serves** (as of 2026-10-07): 13 languages at their `-001` locale,
+  each holding **every one of the 541 UI keys**, and 4 regional locales that hold only
+  **overrides** and otherwise fall back to their language's `-001`, then `en-001`.
+
+  | Locale | Picker label | Kind | Holds |
+  | --- | --- | --- | --- |
+  | `ar-001` | العربية | language (right-to-left) | all keys |
+  | `bn-001` | বাংলা | language | all keys |
+  | `cy-001` | Cymraeg | language | all keys |
+  | `de-001` | Deutsch | language | all keys |
+  | `de-de` | Deutsch - Deutschland | regional | no overrides yet (falls back) |
+  | `en-001` | English | language — **the source** | all keys |
+  | `en-gb` | English - Great Britain | regional | 5 overrides (British spelling: *organisation*) |
+  | `en-us` | English - United States | regional | no overrides yet (falls back) |
+  | `es-001` | Español | language | all keys |
+  | `es-es` | Español - España | regional | no overrides yet (falls back) |
+  | `fr-001` | Français | language | all keys |
+  | `hi-001` | हिन्दी | language | all keys |
+  | `id-001` | Bahasa Indonesia | language | all keys |
+  | `pt-001` | Português | language | all keys |
+  | `ru-001` | Русский | language | all keys |
+  | `ur-001` | اردو | language (right-to-left) | all keys |
+  | `zh-001` | 中文 | language | all keys |
+
+  There is no `cy-gb` (the [Lily picker rules](../lily-design-system-svelte-with-picker-bar/index.md)
+  show `cy-001` and omit `cy-gb`). The picker sorts by code; a `-001` label is the language
+  alone, a regional one `<language> - <region>`, never in parentheses.
+- **Adding a locale:** create `content/locales/<language>-<region>/ui.json` (a `-001` file
+  complete, a regional one with overrides only — an empty `{}` is valid); add the code to
+  `LOCALES`, `LOCALE_LABELS` and `CMS_UI_LOCALE` in `src/lib/locales.ts`; run
+  `pnpm cms-config`. The unit tests then check the directory name, that the directories are
+  exactly `LOCALES`, key parity for every `-001` file, that a regional file holds only keys
+  that exist, and that the generated CMS config is current. Its URL, its `hreflang` and its
+  sitemap entries need no further step.
 - **Known limits:** the strings were translated by an AI assistant and have
   had no native-speaker review; `/admin/` needs a GitHub login and has not
   been exercised end to end in a browser.
