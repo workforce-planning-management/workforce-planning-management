@@ -5,9 +5,10 @@
 // Content locales follow the family convention (see
 // public-value-metrics): `<language>-001` is the language's "World"
 // variant, `<language>-<region>` a regional one. Each is served under
-// its own URL prefix — `/en-001/workers`, `/cy-001/workers` — and a bare
-// two-letter alias (`/en/…`, `/cy/…`) redirects to its `-001` locale, so
-// every locale has one canonical address.
+// its own URL prefix — `/en-001/workers`, `/cy-001/workers`. A bare language
+// (`/en/…`) is **not** a route: it is not forwarded, so every locale has exactly
+// one address. A bare language is used only to *match a tag* (a cookie,
+// `Accept-Language`, `navigator.language`) to the language's `-001` locale.
 
 /** Content locales, sorted by code (the Lily LocalePicker contract). */
 export const LOCALES = [
@@ -36,8 +37,11 @@ export type Locale = (typeof LOCALES)[number];
 /** Fallback locale for an unknown key, locale, or missing translation. */
 export const DEFAULT_LOCALE: Locale = "en-001";
 
-/** Bare language code -> its `-001` locale (`en` -> `en-001`). */
-export const LOCALE_ALIASES: Readonly<Record<string, Locale>> =
+/**
+ * Bare language code -> its `-001` locale (`en` -> `en-001`). For matching a
+ * language *tag* only (see [`normaliseLocale`]); never a URL — `/en/` is not a route.
+ */
+export const LANGUAGE_LOCALE: Readonly<Record<string, Locale>> =
   Object.fromEntries(
     LOCALES.filter((l) => l.endsWith("-001")).map((l) => [l.slice(0, -4), l]),
   );
@@ -74,7 +78,7 @@ export function isRtl(locale: string): boolean {
 
 /**
  * Normalise raw input to a content locale, or null if unsupported.
- * Accepts the content code (`en-001`), a bare alias (`en`), the legacy
+ * Accepts the content code (`en-001`), a bare language (`en`), the legacy
  * underscore spellings (`en_US`, `de_DE`) and any region subtag of a
  * supported language (`es-MX` -> `es-001`); case-insensitive.
  */
@@ -84,31 +88,30 @@ export function normaliseLocale(raw: string | null | undefined): Locale | null {
   const exact = LOCALES.find((l) => l === normalized);
   if (exact) return exact;
   const primary = normalized.split("-")[0] ?? "";
-  return LOCALE_ALIASES[primary] ?? null;
+  return LANGUAGE_LOCALE[primary] ?? null;
 }
 
 /** A URL path split into its locale prefix and the rest. */
 export interface SplitPath {
   /** Canonical locale named by the prefix, or null when there is none. */
   locale: Locale | null;
-  /** True when the prefix was a bare alias (`/en/…`) to redirect. */
-  alias: boolean;
   /** The path with the prefix removed; always starts with `/`. */
   rest: string;
 }
 
-/** Split `pathname` into its locale prefix (content code or alias) and the rest. */
+/**
+ * Split `pathname` into its locale prefix and the rest. Only a full content code
+ * (`/en-001/…`, `/en-gb/…`) is a prefix; a bare language (`/en/…`) is not.
+ */
 export function splitLocale(pathname: string): SplitPath {
   const match = /^\/([^/]+)(\/.*)?$/.exec(pathname);
   const head = match?.[1]?.toLowerCase();
   const rest = match?.[2] ?? "/";
   if (head) {
     const exact = LOCALES.find((l) => l === head);
-    if (exact) return { locale: exact, alias: false, rest };
-    const aliased = LOCALE_ALIASES[head];
-    if (aliased) return { locale: aliased, alias: true, rest };
+    if (exact) return { locale: exact, rest };
   }
-  return { locale: null, alias: false, rest: pathname };
+  return { locale: null, rest: pathname };
 }
 
 /** Prefix an app path with `locale`: `("cy-001", "/workers")` -> `/cy-001/workers`. */

@@ -6,7 +6,7 @@
 // Each public page appears once per locale, with `xhtml:link rel="alternate"`
 // entries pointing at its siblings in every other locale (and `x-default` at
 // `en-001`), so search engines serve the right language. A bare language
-// alias (`/en/…`) is a redirect and is deliberately not listed.
+// (`/en/…`) is not a route and is not listed.
 
 import { INDEXABLE_PAGES } from "./publicPages";
 import { LOCALES, localePath, type Locale } from "./locales";

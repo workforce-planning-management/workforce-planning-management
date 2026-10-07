@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed — bare-language forwarding (WPM-T100)
+
+`/en/…` is no longer 301-redirected to `/en-001/…`; only a full content code is a locale prefix.
+`LOCALE_ALIASES` is now `LANGUAGE_LOCALE` (tag matching only).
+
 ### Added — locale directory rule (WPM-T99)
 
 Spec and test: every `content/locales/` directory is `<language>-<region>`; a bare language is never a

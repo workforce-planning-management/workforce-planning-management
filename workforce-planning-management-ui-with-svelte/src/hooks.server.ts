@@ -33,14 +33,10 @@ export const handle: Handle = async ({ event, resolve }) => {
   event.locals.sessionId = event.cookies.get(SESSION_COOKIE) ?? null;
 
   const { pathname, search } = event.url;
-  const { locale, alias, rest } = splitLocale(pathname);
+  const { locale } = splitLocale(pathname);
   const pageRequest =
     event.request.method === "GET" || event.request.method === "HEAD";
 
-  if (locale && alias) {
-    // `/en/…` -> `/en-001/…`: one canonical address per locale.
-    redirect(301, `${localePath(locale, rest)}${search}`);
-  }
   const remembered = normaliseLocale(event.cookies.get(LOCALE_COOKIE));
   const acceptLanguage = event.request.headers.get("accept-language");
   // A bare `/` with no remembered locale is left to the browser: the root

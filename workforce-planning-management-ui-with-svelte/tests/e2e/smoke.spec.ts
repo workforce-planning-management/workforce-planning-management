@@ -1714,7 +1714,7 @@ test.describe("signed-in smoke coverage", () => {
     await page.route("https://unpkg.com/**", (route) =>
       route.fulfill({ contentType: "text/javascript", body: "" }),
     );
-    await page.goto("/de/admin/");
+    await page.goto("/de-001/admin/");
     await expect(page).toHaveURL(/\/de-001\/admin\/?$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "de-001");
     expect(
@@ -1726,10 +1726,16 @@ test.describe("signed-in smoke coverage", () => {
     expect(config.status()).toBe(200);
   });
 
-  test("a bare language alias redirects to its -001 content route", async ({
+  test("a bare language is not a route: /cy/workers is not forwarded to /cy-001/workers", async ({
     page,
   }) => {
     await page.goto("/cy/workers");
+    // Treated like any other unprefixed path: sent under the visitor's own locale
+    // (Playwright's `en`), with `/cy/workers` as the (unknown) page beneath it.
+    await expect(page).toHaveURL(/\/en-001\/cy\/workers$/);
+    await expect(page).not.toHaveURL(/\/cy-001\//);
+    // The full content code is the only address for a locale.
+    await page.goto("/cy-001/workers");
     await expect(page).toHaveURL(/\/cy-001\/workers$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "cy-001");
   });

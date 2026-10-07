@@ -13,7 +13,7 @@ id-001 pt-001 ru-001 ur-001 zh-001`.
 
 - **Every directory under `content/locales/` is `<language>-<region>`** — lower-case ISO 639
   language, then an ISO 3166-1 alpha-2 country or the UN numeric `001`; never a bare
-  language (`en`, `cy`). A bare language is a URL alias only. A unit test enforces it.
+  language (`en`, `cy`), and a bare language is not a URL either. A unit test enforces the directories.
 - A **`<language>-001`** file must contain **every key** (the parity test fails
   otherwise). `en-001` is the source.
 - A **regional** locale (`en-gb`, `en-us`, `de-de`, `es-es`) holds only its
@@ -49,7 +49,10 @@ file with overrides), add the code to `LOCALES`, `LOCALE_LABELS` and (for the CM
 
 - Every page: `/<locale>/…` (a `reroute` hook in `src/hooks.ts`; the route tree
   is unchanged). **Links and `goto` use `l("/path")`.**
-- `/en/…` (a bare language) **301s** to its `-001` locale; an unprefixed path
+- **A locale has one address: its full code.** A bare language (`/en/…`) is **not** a route
+  and is **not forwarded** (the old `/en/` → `/en-001/` 301 was removed, WPM-D44); a bare
+  language still *matches a tag* (cookie, `Accept-Language`, `navigator`) via `LANGUAGE_LOCALE`.
+  An unprefixed path
   **302s** to the `wpm-locale` cookie, else `Accept-Language`, else `en-001`.
   **A bare `/` is the exception:** with no cookie the *browser* decides —
   `routes/+layout.ts` redirects by `navigator.languages` (`localeFromNavigator`; `cy_GB`

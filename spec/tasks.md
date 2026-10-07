@@ -2232,6 +2232,25 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       `pay_progression_reminders` task is **not scheduled** — the operator must run it daily;
       manager-cannot-read was not exercised under enforcement.
 
+- [x] WPM-T100 (2026-10-07) **No more `/<language>/` forwarding.** *(traces to WPM-R50, WPM-D44;
+      amends WPM-D37; [locales](locales-for-global-sharing-with-svelte/index.md))* The request read
+      "remove route forwarding `/<language>-001/` to `/<language>/`", but the app only ever
+      forwarded the **other way**: a bare `/en/…` 301-redirected to `/en-001/…` (the alias asked for on
+      2026-10-04). **Interpreted as removing that alias forwarding**, in line with the rule that no
+      bare language is a directory; a one-commit revert restores it if the opposite was meant.
+      Now only a full content code (`/en-001/…`, `/en-gb/…`) is a locale prefix: `splitLocale` has no
+      `alias` result, the 301 block is gone from `hooks.server.ts`, and `/cy/workers` is an ordinary
+      unprefixed path — sent under the visitor's own locale (`/en-001/cy/workers`, an unknown page)
+      like any other. A bare language still **matches a tag** (cookie, `Accept-Language`,
+      `navigator.language`): `LOCALE_ALIASES` was renamed `LANGUAGE_LOCALE` so it no longer reads as a
+      URL alias. Comments and the locales spec, README, requirements, testing, UI spec and agent guide
+      updated. Verified: svelte-check 0, vitest 80 (the split tests now pin `/cy/workers/abc` →
+      no locale), the e2e spec replaced by one proving `/cy/workers` is **not** forwarded to
+      `/cy-001/` while `/cy-001/workers` still is, prettier, build. **Not done / seen:** old bookmarks
+      to `/en/…` now land on a 404 page under the visitor's locale rather than redirecting; the
+      machine was under heavy load from other projects while testing, so the Playwright result was
+      taken with two workers (see below).
+
 - [x] WPM-T99 (2026-10-07) **Locale directories are `<language>-<region>`.** *(traces to WPM-R50;
       [locales](locales-for-global-sharing-with-svelte/index.md))* Asked to delete two-letter locale
       directories such as `locales/en/`: **there were none** — all 17 directories under

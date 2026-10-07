@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   CMS_UI_LANGUAGES,
   CMS_UI_LOCALE,
-  LOCALE_ALIASES,
+  LANGUAGE_LOCALE,
   LOCALES,
   localeFromNavigator,
   localePath,
@@ -14,38 +14,37 @@ import {
 } from "../../src/lib/locales";
 
 describe("locale routes", () => {
-  it("aliases every bare language to its -001 locale", () => {
-    expect(LOCALE_ALIASES.en).toBe("en-001");
-    expect(LOCALE_ALIASES.cy).toBe("cy-001");
-    // Regional locales have no alias of their own.
-    expect(LOCALE_ALIASES["en-gb"]).toBeUndefined();
+  it("maps a bare language tag to its -001 locale, for matching only", () => {
+    expect(LANGUAGE_LOCALE.en).toBe("en-001");
+    expect(LANGUAGE_LOCALE.cy).toBe("cy-001");
+    // Regional locales are not languages: no entry of their own.
+    expect(LANGUAGE_LOCALE["en-gb"]).toBeUndefined();
     for (const locale of LOCALES.filter((l) => l.endsWith("-001"))) {
-      expect(LOCALE_ALIASES[locale.slice(0, -4)]).toBe(locale);
+      expect(LANGUAGE_LOCALE[locale.slice(0, -4)]).toBe(locale);
     }
+    // …so a *tag* still matches (cookie, Accept-Language, navigator),
+    expect(normaliseLocale("en")).toBe("en-001");
+    expect(negotiateLocale("cy,en;q=0.5")).toBe("cy-001");
   });
 
-  it("splits a canonical prefix, an alias prefix, and no prefix", () => {
+  it("splits a full content-code prefix; a bare language is not a prefix", () => {
     expect(splitLocale("/en-001/workers")).toEqual({
       locale: "en-001",
-      alias: false,
       rest: "/workers",
     });
+    expect(splitLocale("/en-gb/workers")).toEqual({
+      locale: "en-gb",
+      rest: "/workers",
+    });
+    expect(splitLocale("/cy-001")).toEqual({ locale: "cy-001", rest: "/" });
+    // …but `/en/…` and `/cy/…` are ordinary paths: no locale, not forwarded.
     expect(splitLocale("/cy/workers/abc")).toEqual({
-      locale: "cy-001",
-      alias: true,
-      rest: "/workers/abc",
-    });
-    expect(splitLocale("/cy-001")).toEqual({
-      locale: "cy-001",
-      alias: false,
-      rest: "/",
-    });
-    expect(splitLocale("/workers")).toEqual({
       locale: null,
-      alias: false,
-      rest: "/workers",
+      rest: "/cy/workers/abc",
     });
-    expect(splitLocale("/")).toEqual({ locale: null, alias: false, rest: "/" });
+    expect(splitLocale("/en")).toEqual({ locale: null, rest: "/en" });
+    expect(splitLocale("/workers")).toEqual({ locale: null, rest: "/workers" });
+    expect(splitLocale("/")).toEqual({ locale: null, rest: "/" });
   });
 
   it("prefixes app paths and leaves external links and anchors alone", () => {
@@ -121,7 +120,7 @@ describe("browser language to locale route", () => {
 
 describe("locale directory names", () => {
   // `<language>-<region>`: ISO 639 language, then an ISO 3166-1 alpha-2 country or the
-  // UN M.49 numeric `001`; lower-case. A bare language is a URL alias, never a directory.
+  // UN M.49 numeric `001`; lower-case. A bare language is never a directory (nor a URL).
   const SHAPE = /^[a-z]{2,3}-(?:[a-z]{2}|\d{3})$/;
   const dirs = readdirSync(join(process.cwd(), "content/locales"), {
     withFileTypes: true,

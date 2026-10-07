@@ -7,8 +7,8 @@
 // file per locale at `content/locales/<locale>/ui.json`, edited through
 // Sveltia CMS (`static/admin/config.yml`). `en-001` is the source of
 // truth; every locale must cover the same key set (the parity test pins
-// this). The locale is carried by the URL — `/cy-001/workers`, with bare
-// aliases like `/cy/` redirecting (see `locales.ts` and `hooks.ts`) — and
+// this). The locale is carried by the URL — `/cy-001/workers` (see
+// `locales.ts` and `hooks.ts`) — and
 // the root layout feeds it in with `i18n.set`. The last choice persists
 // to localStorage only to pick the locale for an unprefixed visit.
 
@@ -24,7 +24,6 @@ import {
 export {
   DEFAULT_LOCALE,
   LOCALES,
-  LOCALE_ALIASES,
   LOCALE_LABELS,
   isRtl,
   localePath,

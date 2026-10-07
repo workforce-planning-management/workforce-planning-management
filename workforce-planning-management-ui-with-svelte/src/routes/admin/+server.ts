@@ -1,5 +1,4 @@
-// The Sveltia CMS shell, one per locale: `/en-001/admin/`, `/cy-001/admin/`
-// (and the `/en/admin/` aliases, which the server hook redirects). The
+// The Sveltia CMS shell, one per locale: `/en-001/admin/`, `/cy-001/admin/`. The
 // rest is the same CMS and `/admin/config.yml`; what the locale changes
 // is the CMS's own interface language and the page's `lang`/`dir`.
 //

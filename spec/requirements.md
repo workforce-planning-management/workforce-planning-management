@@ -550,6 +550,6 @@ acceptance criteria and traces to the tasks that delivered it:
 - **WPM-R47–R49** announcement feed, the CEO dashboard, workforce insights —
   [communication-and-leadership.md](communication-and-leadership.md)
   (WPM-T69, T82–T86).
-- **WPM-R50** localization and content-as-data (locale routes, aliases,
+- **WPM-R50** localization and content-as-data (locale routes — one full-code address per locale —
   Sveltia CMS) — [locales-for-global-sharing-with-svelte](locales-for-global-sharing-with-svelte/index.md)
   § "How WPM applies this" (WPM-T70–T72).

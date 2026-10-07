@@ -66,11 +66,11 @@ tests share one database), and the two binaries above.
 - **vitest — 80 tests / 12 files**: the API client **path map** (every
   function's exact proxied path), `money()` honesty, the **locale parity** of
   every `-001` locale (and that regional locales hold only keys that exist), the
-  alias / prefix / negotiation logic, the **CMS config is up to date**, the
+  prefix (full code only) / negotiation logic, the **CMS config is up to date**, the
   CEO dashboard helpers, and component tests.
 - **Playwright — 45 specs** over a `page.route`-stubbed API (contract-mirroring;
   an unstubbed call is a 404 and loud): the signed-in smoke journeys, the
-  locale redirect / picker / alias / `/admin/` shell, and one spec per newer
+  locale redirect / picker / the unforwarded bare language / `/admin/` shell, and one spec per newer
   area. The **CEO dashboard** is checked at **two viewports** — 1080 × 810 @2×
   (an iPad, 9th generation) and a literal 2160 × 1620 @1× — for page scroll,
   every tile inside the screen, **and no tile clipping its own content**

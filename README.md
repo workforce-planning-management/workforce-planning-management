@@ -68,7 +68,7 @@ commands.
 | Joiners and leavers | dated checklists; a leaver's **last-day handover** with an audit trail |
 | Communication | **announcements** with audiences, links and read counts |
 | Rights and wellbeing | wellbeing prompts, the anonymous pulse, adjustments, subject access / erasure / retention |
-| Global | 17 content locales at `/en-001/`, `/cy-001/`, … with `/en/` aliases; strings edited through Sveltia CMS |
+| Global | 17 content locales at `/en-001/`, `/cy-001/`, … each at its one full-code address; strings edited through Sveltia CMS |
 
 Design stance (see [spec/index.md](spec/index.md)): what must not be stored gets
 no column; what must not be disclosed gets no endpoint; an unknown is never a

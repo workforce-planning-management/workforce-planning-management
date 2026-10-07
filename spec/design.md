@@ -308,6 +308,8 @@ aggregate with suggestions-only levers: see
 
 Recorded beside the requirements they shape:
 
+- **WPM-D44** a locale has one address, its full code; a bare language is a tag to match, never a
+  route or a directory — [locales](locales-for-global-sharing-with-svelte/index.md).
 - **WPM-D43** a bare `/` is decided by the browser's language, everything else by the server
   — [locales](locales-for-global-sharing-with-svelte/index.md).
 - **WPM-D42** a claim is financial and personal, and no one is their own approver —

@@ -86,7 +86,7 @@ identities by `EntityRef` URN, never duplicating them.
 | [skills-and-training.md](skills-and-training.md)   | Skills gap analysis and training time recommendations (WPM-R43–R44)                       |
 | [joiners-and-leavers.md](joiners-and-leavers.md)   | Joiner / leaver records with dated checklists; a leaver's last-day handover and audit trail (WPM-R45–R46) |
 | [communication-and-leadership.md](communication-and-leadership.md) | Announcement feed, workforce insights, the CEO dashboard (WPM-R47–R49)         |
-| [locales-for-global-sharing-with-svelte/index.md](locales-for-global-sharing-with-svelte/index.md) | Locales end to end; **how WPM applies it** — content locales, `/en-001/` routes, `/en/` aliases, Sveltia CMS (WPM-R50) |
+| [locales-for-global-sharing-with-svelte/index.md](locales-for-global-sharing-with-svelte/index.md) | Locales end to end; **how WPM applies it** — content locales, `/en-001/` routes (one address per locale), Sveltia CMS (WPM-R50) |
 | [integrations.md](integrations.md)                 | Upstream family services; EntityRef URNs; `employed_by` links                             |
 | [auth.md](auth.md)                                 | SSO, ABAC personas (employee / manager / HR / payroll), masking                           |
 | [audit.md](audit.md)                               | Audit trail, events, sensitive-read logging                                               |

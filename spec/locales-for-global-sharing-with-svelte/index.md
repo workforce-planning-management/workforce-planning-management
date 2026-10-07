@@ -14,8 +14,9 @@ Lower-case, the language an ISO 639 code (`en`, `cy`, `zh`), the region an ISO 3
 alpha-2 country (`gb`, `us`, `de`, `es`) **or** the UN M.49 numeric `001` ("world", used
 for a language's general-purpose locale: `en-001`, `cy-001`). So `locales/en-001/`,
 `locales/en-gb/`, `locales/cy-001/` — and there is no `locales/en/` or `locales/cy/`.
-A bare language is only ever a **URL alias** (`/en/` redirects to `/en-001/`), a
-`lang`-style tag, or a row in `locales.tsv` — it is never a directory. A regional
+A bare language is only ever a `lang`-style *tag* (matched to its `-001` locale, see below),
+or a row in `locales.tsv` — it is **never a directory and never a URL** (`/en/` is not a
+route and is not forwarded). A regional
 directory (`en-gb`) holds overrides of its language's `-001` directory; see
 "How WPM applies this". In WPM, `content/locales/` is checked by a unit test
 (`tests/unit/locales.test.ts`) that fails on any directory not named this way.
@@ -157,9 +158,13 @@ content.
   the app flattens them at load.
 - **Routes:** every page is served under its locale — `/en-001/workers`,
   `/cy-001/workers` — by a SvelteKit `reroute` hook (`src/hooks.ts`); the
-  route tree is unchanged. A bare language **alias** (`/en/…`, `/cy/…`)
-  **301-redirects** to its `-001` locale (one canonical address per locale);
-  an unprefixed URL **302-redirects** to the remembered
+  route tree is unchanged. **A locale has exactly one address, its full code**
+  (WPM-D44): `/en-001/`, `/en-gb/`, `/cy-001/` — a bare language (`/en/…`, `/cy/…`) is
+  **not** a locale prefix and is **not forwarded** (an earlier alias that 301-redirected
+  `/en/` to `/en-001/` was removed; `/cy/workers` is now an ordinary unprefixed path, sent
+  under the visitor's own locale like any other unknown path). A bare language is still used
+  to *match a tag* — a cookie, `Accept-Language` or `navigator.language` of `en` or `cy`
+  picks the `-001` locale (`LANGUAGE_LOCALE`). An unprefixed URL **302-redirects** to the remembered
   (`wpm-locale` cookie) or `Accept-Language` locale, else `en-001` — **except a bare
   `/`, which the browser decides** (WPM-D43): with no remembered locale the app loads and
   the root layout redirects by **`navigator.languages`** (`localeFromNavigator`: a tag
@@ -196,7 +201,7 @@ content.
   `en-001`. Search engines accept a language plus an optional alpha-2 region, not
   the UN numeric `001`, so a `<language>-001` locale's `hreflang` is its bare
   language (`cy-001` → `cy`) and a regional one is `en-GB`, `de-DE`, `es-ES`. A bare
-  alias (`/en/…`) is a redirect and is not listed. `/robots.txt` names the sitemap
+  language (`/en/…`) is not a route and is not listed. `/robots.txt` names the sitemap
   and disallows `/api/`, `/admin`, `/*/admin` and `/signout`. `WPM_PUBLIC_URL`
   overrides the origin behind a proxy.
 - **Known limits:** the strings were translated by an AI assistant and have
