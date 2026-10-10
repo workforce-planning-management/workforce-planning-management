@@ -1,7 +1,9 @@
 # Self-service, requests and workplace health requirements (WPM-R124–R130, proposed)
 
-Requested 2026-10-11 as six capabilities. **Proposed, not built**; the tasks are WPM-T204–T214 in
-[tasks.md](tasks.md) Phase 21. Generic by design: any legal right a deployer must honour (for example a
+Requested 2026-10-11 as six capabilities. **Built so far (2026-10-11): the `/api/me` surface and its write
+allow-list, contact details, emergency contacts by the worker, my time-off, self-service leave requests,
+resignations, flexible working requests, equality monitoring and workplace health requirements** (WPM-T205–T214,
+WPM-T216; API only, no screen). **All six requested capabilities exist at the API level; the screen (WPM-T215) is not built**; the tasks are in [tasks.md](tasks.md) Phase 21. Generic by design: any legal right a deployer must honour (for example a
 statutory right to request flexible working, a notice period, an occupational-health duty) is a
 **configuration they own**, never hard-coded, and the examples below are examples.
 
@@ -76,7 +78,7 @@ A worker asks for a different working arrangement; a person decides.
 
 A worker logs their intent to resign; a person accepts it.
 
-- `POST /api/me/resignation` records the date, the **proposed last day** and an optional reason from a
+- `POST /api/me/resignation` (built) records the date, the **proposed last day** and an optional reason from a
   closed list (never required; free text is not asked for). The earliest last day is computed from the
   notice rule the deployer configures. The worker can **withdraw** before it is accepted.
 - The manager and HR are told *that* it was logged, not the reason. HR **accepts** it, sets the agreed last

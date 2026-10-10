@@ -106,3 +106,17 @@ making the API ignore Entra's `roles` claim fails it.
   expires; WPM does not call back to Entra. Keep lifetimes short.
 - **National clouds** use different hosts (for example a different login host); use that
   cloud's discovery document.
+
+## Multi-factor authentication is required at the identity provider
+
+WPM has no passwords and no accounts of its own: it verifies tokens issued by the identity provider (WPM-D62), so
+**multi-factor authentication for every account type is a setting of the identity provider, and a deployment must
+require it there.** For Microsoft Entra ID, that is a Conditional Access policy requiring MFA for the WPM application
+for all users, with no exemption for HR, payroll, administrator or service accounts that can reach personal data. For
+Keycloak, it is a required authentication flow with a second factor, or federation to a provider that enforces one. A
+service peer (`svc`) presents a signed token and is not a person; protect its signing key instead.
+
+This repository cannot test that the identity provider enforces MFA: its tests start a local OIDC provider and prove
+the token verification and the persona mapping only. An assessor (for example question C3.5 of the NHS Digital
+Technology Assessment Criteria, see [the assessment](../../united-kingdom/national-health-service/digital-technology-assessment-criteria/2.0/index.md))
+will ask for the policy itself.

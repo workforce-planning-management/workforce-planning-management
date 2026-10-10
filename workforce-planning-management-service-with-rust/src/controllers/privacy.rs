@@ -15,12 +15,13 @@ use crate::models::_entities::{
     adjustment_requests, announcement_reads, appraisal_nominations, appraisal_responses,
     appraisals, assessments, benefit_enrollments, candidates, cpd_entries, development_plans,
     dotted_line_reports, emergency_contacts, engagement_extensions, engagement_status_assessments,
-    entitlement_acknowledgements, ergonomic_assessments, expense_claims, expense_items,
-    group_members, handover_actions, leave_entitlements, leave_requests, mentorships,
-    mobility_interests, movements, notifications, path_enrollments, payslips, pipeline_members,
-    professional_registrations, program_placements, reviews, rota_members, rota_overrides,
-    rota_swap_requests, shift_assignments, time_entries, training_enrollments, worker_aspirations,
-    worker_backups, worker_contractor_details, worker_framework_roles, worker_job_levels,
+    entitlement_acknowledgements, equality_declarations, ergonomic_assessments, expense_claims,
+    expense_items, flexible_working_requests, group_members, handover_actions, leave_entitlements,
+    leave_requests, mentorships, mobility_interests, movements, notifications, path_enrollments,
+    payslips, pipeline_members, professional_registrations, program_placements, resignations,
+    reviews, rota_members, rota_overrides, rota_swap_requests, shift_assignments, time_entries,
+    training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
+    worker_contractor_details, worker_framework_roles, worker_health_records, worker_job_levels,
     worker_pay_positions, worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
@@ -119,6 +120,23 @@ async fn subject_access(
         "emergency_contacts": rows_for!(db, emergency_contacts, WorkerPid, epid),
         "job_level": rows_for!(db, worker_job_levels, WorkerPid, epid),
         "pay_position": rows_for!(db, worker_pay_positions, WorkerPid, epid),
+        "contact_details": rows_for!(db, worker_contact_details, WorkerPid, epid),
+        "resignations": rows_for!(db, resignations, WorkerPid, epid),
+        // Health data readable by the worker and occupational health only (WPM-D75): anyone else
+        // running the export gets a note.
+        "workplace_health_records": if auth::acting_for_other(&caller, &worker.person_ref) {
+            serde_json::json!("withheld: only the worker can export their own workplace health records")
+        } else {
+            rows_for!(db, worker_health_records, WorkerPid, epid)
+        },
+        // Special-category data readable by the worker only (WPM-D74): anyone else running the
+        // export gets a note, not the answers.
+        "equality_monitoring": if auth::acting_for_other(&caller, &worker.person_ref) {
+            serde_json::json!("withheld: only the worker can export their own equality monitoring answers")
+        } else {
+            rows_for!(db, equality_declarations, WorkerPid, epid)
+        },
+        "flexible_working_requests": rows_for!(db, flexible_working_requests, WorkerPid, epid),
         "engagement_extensions": rows_for!(db, engagement_extensions, WorkerPid, epid),
         "contractor_details": rows_for!(db, worker_contractor_details, WorkerPid, epid),
         "employment_status_assessments": rows_for!(db, engagement_status_assessments, WorkerPid, epid),
@@ -238,6 +256,11 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         ),
         format!("DELETE FROM worker_job_levels WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_pay_positions WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM worker_contact_details WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM resignations WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM worker_health_records WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM equality_declarations WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM flexible_working_requests WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM engagement_extensions WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_contractor_details WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM engagement_status_assessments WHERE worker_pid = '{epid}'"),

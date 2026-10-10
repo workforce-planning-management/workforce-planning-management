@@ -18,6 +18,11 @@ pub const KINDS: &[&str] = &[
     "pay_step_due",
     "expense_submitted",
     "expense_decided",
+    "resignation_logged",
+    "resignation_decided",
+    "flexible_working_requested",
+    "flexible_working_decided",
+    "flexible_working_appeal",
 ];
 
 /// Recipients of an appraisal lifecycle move:
@@ -92,7 +97,12 @@ mod tests {
                 "handover_received",
                 "pay_step_due",
                 "expense_submitted",
-                "expense_decided"
+                "expense_decided",
+                "resignation_logged",
+                "resignation_decided",
+                "flexible_working_requested",
+                "flexible_working_decided",
+                "flexible_working_appeal"
             ]
         );
     }

@@ -80,6 +80,14 @@ async fn list_contacts(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
+    list_contacts_for(&ctx, &worker).await
+}
+
+/// The worker's contacts, first-to-call first. Shared by the HR route and `/api/me`.
+pub(crate) async fn list_contacts_for(
+    ctx: &AppContext,
+    worker: &workers::Model,
+) -> Result<Response> {
     let rows = emergency_contacts::Entity::find()
         .filter(emergency_contacts::Column::WorkerPid.eq(worker.pid))
         .filter(emergency_contacts::Column::DeletedAt.is_null())
@@ -92,7 +100,7 @@ async fn list_contacts(
 
 /// `POST` body.
 #[derive(Debug, Deserialize)]
-struct ContactPayload {
+pub(crate) struct ContactPayload {
     name: String,
     relationship: String,
     phone: String,
@@ -117,6 +125,16 @@ async fn add_contact(
     Json(payload): Json<ContactPayload>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
+    add_contact_for(&ctx, &caller, &worker, payload).await
+}
+
+/// Add a contact to this worker. Shared by the HR route and `/api/me`.
+pub(crate) async fn add_contact_for(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    worker: &workers::Model,
+    payload: ContactPayload,
+) -> Result<Response> {
     let existing = emergency_contacts::Entity::find()
         .filter(emergency_contacts::Column::WorkerPid.eq(worker.pid))
         .filter(emergency_contacts::Column::DeletedAt.is_null())
@@ -154,7 +172,7 @@ async fn add_contact(
         priority: ActiveValue::set(priority),
         note: ActiveValue::set(clean(payload.note)),
         recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
+        on_behalf: ActiveValue::set(auth::acting_for_other(caller, &worker.person_ref)),
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
@@ -176,7 +194,7 @@ async fn add_contact(
 
 /// `PUT` body — any of these may change.
 #[derive(Debug, Deserialize)]
-struct ContactUpdate {
+pub(crate) struct ContactUpdate {
     #[serde(default)]
     name: Option<String>,
     #[serde(default)]
@@ -193,7 +211,7 @@ struct ContactUpdate {
     note: Option<String>,
 }
 
-async fn find_contact(ctx: &AppContext, pid: &str) -> Result<emergency_contacts::Model> {
+pub(crate) async fn find_contact(ctx: &AppContext, pid: &str) -> Result<emergency_contacts::Model> {
     emergency_contacts::Entity::find()
         .filter(emergency_contacts::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(emergency_contacts::Column::DeletedAt.is_null())
@@ -212,6 +230,17 @@ async fn update_contact(
 ) -> Result<Response> {
     let row = find_contact(&ctx, &pid).await?;
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
+    update_contact_for(&ctx, &caller, &worker, row, payload).await
+}
+
+/// Change a contact of this worker. Shared by the HR route and `/api/me`.
+pub(crate) async fn update_contact_for(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    worker: &workers::Model,
+    row: emergency_contacts::Model,
+    payload: ContactUpdate,
+) -> Result<Response> {
     let name = payload.name.unwrap_or_else(|| row.name.clone());
     let relationship = payload
         .relationship
@@ -266,6 +295,16 @@ async fn delete_contact(
 ) -> Result<Response> {
     let row = find_contact(&ctx, &pid).await?;
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
+    delete_contact_for(&ctx, &caller, &worker, row).await
+}
+
+/// Remove a contact of this worker. Shared by the HR route and `/api/me`.
+pub(crate) async fn delete_contact_for(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    worker: &workers::Model,
+    row: emergency_contacts::Model,
+) -> Result<Response> {
     let mut active: emergency_contacts::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
     active.update(&ctx.db).await?;

@@ -78,6 +78,22 @@ off, which production refuses. **Limits:** the line-manager rule follows `manage
 that data; the guard does not mask fields inside an allowed response (a manager reading `leave-requests` sees
 the kind of leave; sick leave no longer carries a reason, WPM-T190); and it covers reads only.
 
+## Self-service writes under `/api/me` (WPM-R130, WPM-D76)
+
+The policy lets only HR, service and administrator callers write, and it cannot say "a worker may change *their own*
+record" because it sees an action and not the record. So a short list, `rules::self_service::WRITES`, names the
+routes under `/api/me` that skip the policy's action check (the caller must still hold a valid token), and each
+handler resolves the person from that token alone: there is no worker id in the path to change. Today the list is
+`PUT` and `DELETE /api/me/contact-details`, `POST`, `PUT`, `DELETE` on `/api/me/emergency-contacts`, `POST /api/me/leave-requests` with its `…/{pid}/cancel`, `POST /api/me/resignation` with its `…/withdraw`, and `POST /api/me/flexible-working` with its `…/withdraw`, `…/respond` and `…/appeal`. Deciding a flexible working request is an ordinary write: under the reference policy only HR can; a deployer gives line managers the power to decide with a policy rule, and the service then limits them to their own reports. A worker still cannot approve their own leave. A unit test
+scans the `/api/me` controller so a write route not on the list, or a list entry with no route, fails the build.
+A second short list, `rules::self_service::ATTRIBUTE_WRITES`, names routes whose write passes the policy's action check for
+a token carrying a stated attribute, where the policy cannot name the role; today only `PUT` and `DELETE
+/api/workers/{pid}/health-requirements/{req_pid}` for `occupational_health=true`. The handler checks the attribute again,
+so HR, the service and an administrator cannot record a health status (WPM-D75).
+
+Everything else a plain worker tries to write is still `403`. A person with several worker records gets the earliest
+one still employed.
+
 ## Activation runbook (WPM-G1)
 
 Before WPM-D52 the shipped default was wide open (the family posture).

@@ -24,6 +24,14 @@ the compose file are written but were not built where this was written; try them
 | --- | --- | --- | --- |
 | `DATABASE_URL` | yes | none | PostgreSQL 18 connection string. **In production it must require TLS across a network**: add `?sslmode=verify-full` (best: the server's certificate is checked) or `require` or `verify-ca`; boot refuses a plaintext connection to another host. A loopback address or a Unix socket needs no TLS |
 | `WPM_ALLOW_PLAINTEXT_DATABASE` | no | off | Set to `1` only if the network path to the database is protected another way (a private link, a tunnel) and you accept the risk; boot then logs a warning every start |
+| `WPM_RESIGNATION_NOTICE_CALENDAR_DAYS` | no | `28` | The notice a resignation must allow (0 to 366 calendar days); a worker's proposed last day cannot be earlier unless HR agrees one |
+| `WPM_FLEXIBLE_DECISION_MONTHS`, `WPM_FLEXIBLE_REQUESTS_PER_YEAR`, `WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS` | no | `2`, `2`, `14` | Flexible working: calendar months a decision may take (1 to 12), requests a worker may make in 12 calendar months (`0` for no limit), calendar days to appeal a refusal. A jurisdiction may fix these; **confirm them** |
+| `WPM_FLEXIBLE_REFUSAL_REASONS` | no | a built-in list of nine | Comma-separated lowercase tokens a refusal must choose from; replace to match the grounds your jurisdiction allows |
+| `WPM_EQUALITY_MONITORING_BASIS` | no | off | **Equality monitoring is off unless this is set** to the lawful basis you rely on, in your words (for example a reference to your assessment). It is special-category data: do your own impact assessment first. Boot logs a warning that it is enabled |
+| `WPM_EQUALITY_CATEGORIES` | with the basis | none | A JSON object of category to list of values, for example `{"sex":["female","male"]}`. **WPM ships no classification**: the categories and their values are yours to define, as lowercase tokens; `prefer_not_to_say` is always offered. Boot refuses a basis with no valid categories |
+| `WPM_EQUALITY_FLOOR` | no | `10` | The smallest group an aggregate may show (at least 5) |
+| `WPM_HEALTH_REQUIREMENTS_BASIS` | no | off | **Workplace health requirements are off unless this is set** to the lawful basis you rely on, in your words. It is health data: do your own impact assessment and agree the role with your occupational health provider first. Only a token with the attribute `occupational_health=true` can record a status |
+| `WPM_HEALTH_FLOOR` | no | `10` | The smallest group the compliance counts may show (at least 5) |
 | `WPM_REQUEST_TIMEOUT_MS` | no | `30000` | A request running longer is answered `408` |
 | `WPM_CORS_ORIGIN` | yes | none | The one browser origin allowed to call the API directly. Boot fails if unset |
 | `JWT_SECRET` | yes | none | Required by the framework's config; unused by WPM's own sign-in |

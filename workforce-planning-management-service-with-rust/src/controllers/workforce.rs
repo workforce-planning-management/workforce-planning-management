@@ -41,7 +41,7 @@ struct EntitlementPayload {
 
 /// `POST /api/workers/{pid}/leave-requests` body.
 #[derive(Debug, Deserialize)]
-struct LeaveRequestPayload {
+pub(crate) struct LeaveRequestPayload {
     kind: String,
     start_on: chrono::NaiveDate,
     end_on: chrono::NaiveDate,
@@ -311,6 +311,17 @@ async fn create_leave_request(
     Json(payload): Json<LeaveRequestPayload>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    create_leave_for(&ctx, &caller, &worker, payload).await
+}
+
+/// Request leave for this worker: validated, balance-checked, audited. Shared by the HR route
+/// and `/api/me/leave-requests`.
+pub(crate) async fn create_leave_for(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    worker: &crate::models::_entities::workers::Model,
+    payload: LeaveRequestPayload,
+) -> Result<Response> {
     let mut problems = Problems::new();
     problems.require_token("kind", tokens::LEAVE_KINDS, &payload.kind);
     problems.cap_opt("reason", payload.reason.as_deref());
@@ -318,7 +329,7 @@ async fn create_leave_request(
     leave::validate_reason(&payload.kind, payload.reason.as_deref())
         .map_err(|e| unprocessable(&e))?;
     let days = leave::day_span(payload.start_on, payload.end_on).map_err(|e| unprocessable(&e))?;
-    let check = balance_check(&ctx.db, &worker, &payload.kind, payload.start_on, days).await?;
+    let check = balance_check(&ctx.db, worker, &payload.kind, payload.start_on, days).await?;
     let negative = match check {
         leave::BalanceCheck::Ok { .. } => false,
         leave::BalanceCheck::NegativeFlagged { .. } => true,
@@ -412,7 +423,7 @@ async fn list_leave_requests(
 /// One leave decision (`approved` / `rejected` / `cancelled`),
 /// serialized on the locked request row; approval decrements the
 /// balance in the same transaction (WPM-R5, WPM-D9).
-async fn decide_leave(
+pub(crate) async fn decide_leave(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     pid: &str,

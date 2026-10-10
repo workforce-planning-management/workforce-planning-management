@@ -8,6 +8,11 @@ because the demo has none. A deployer must replace "not yet measurable" with the
 
 > ⚠️ Not legal advice. See the caveat in the template.
 
+> **Equality monitoring data (WPM-D74)** is not a score and no score may read it. It exists only to produce the
+> aggregates that feed the adverse-impact check of WPM-R100, as a grouping the deployer chooses. A test
+> (`rules::equality_monitoring::tests::no_other_code_reads_the_declarations`) fails if any other code names the
+> table.
+
 ## The register
 
 | Id | Score | Kind | Computed by | Informs | Sees it | Code |

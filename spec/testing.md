@@ -36,6 +36,24 @@ State as of 2026-10-07 (WPM-T97).
 - **Enforcement binary** (`tests/enforcement.rs`, own process — the OnceLock
   lesson): the persona matrix on the shipped reference policy file —
   401/403 splits, masking, `$sub` self-reads, destructive gating.
+- **Health requirements binary** (`tests/enforcement_health.rs`, own process): off until a lawful basis is recorded;
+  only an occupational-health token records a status (the worker, a manager, HR and the service are each refused);
+  a manager and HR get cleared or not cleared and never the status (checked key by key and by word); only
+  occupational health reads the detail, and each read is audited; the audit holds no status; the export gives the
+  records to the worker alone; erasure removes them. Unit tests scan the source so no other code names the table.
+- **Equality monitoring binary** (`tests/enforcement_equality.rs`, own process): the feature does not exist until a
+  lawful basis is recorded (categories alone switch nothing on); once on, each worker reads and changes only their
+  own answers; the only output is the aggregate, with cells below the floor withheld and the department breakdown
+  withheld unless every cell passes; the export gives the answers to the worker and a note to anyone else; the audit
+  holds no value; erasure removes them. A unit test scans the source so no other code names the table.
+- **Flexible working binary** (`tests/enforcement_flexible.rs`, own process; the reference policy plus one rule
+  that gives a line manager the power to write): the request limit and the decide-by date, who may decide (the
+  line manager up the chain or HR, never the requester, never a manager outside the chain), refusal reasons from a
+  deployer's list, an appeal decided by someone else, a counter-proposal, overdue, and that no contract changes.
+- **`/api/me` binary** (`tests/enforcement_me.rs`, own process): a plain worker changes their own contact details and
+  emergency contacts past a policy that lets only HR write; every other write stays refused; a neighbour, a person
+  with no worker record and an unsigned request get nothing of another person's; the time-off view, in fixed
+  past and future years.
 - **Need-to-know binary** (`tests/enforcement_need_to_know.rs`, own process): eleven kinds of caller against
   six classes of route (stranger, colleague, line manager, a manager higher up, the worker, HR by attribute,
   payroll, service, HR of the worker's organization, HR of another, an unknown token). A unit test scans the

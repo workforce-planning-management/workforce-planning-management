@@ -24,7 +24,7 @@ use loco_rs::{
 use migration::Migrator;
 use std::path::Path;
 
-use crate::{auth, controllers, models::_entities::prelude::*, tasks};
+use crate::{auth, controllers, models::_entities::prelude::*, rules, tasks};
 
 /// Blanket auth-enforcement middleware: reads `WPM_REQUIRE_AUTH` per
 /// request and delegates to the pure [`auth::enforce`] (public paths
@@ -38,6 +38,27 @@ async fn require_auth_mw(req: Request, next: Next) -> Response {
     let method = req.method().clone();
     let policy = auth::policy().current();
     let verifier = auth::verifier().current();
+    // A self-service write (WPM-R130, WPM-D76) skips the policy's action check, which lets only HR
+    // write; it still needs a valid token, and its handler resolves the person from that token.
+    if auth::require_auth() && rules::self_service::is_write(method.as_str(), &path) {
+        return match auth::bearer_claims(req.headers(), &verifier) {
+            Ok(_) => next.run(req).await,
+            Err((status, msg)) => (status, msg).into_response(),
+        };
+    }
+    // An attribute-scoped write (an occupational-health role recording a status): the policy cannot
+    // name that role, so the token's own attribute lets it past the action check. The handler
+    // checks the attribute again; a caller without it is judged by the ordinary policy.
+    if auth::require_auth()
+        && let Some(attribute) = rules::self_service::attribute_for_write(method.as_str(), &path)
+        && let Ok(claims) = auth::bearer_claims(req.headers(), &verifier)
+        && claims
+            .attrs
+            .get(attribute)
+            .is_some_and(|values| values.iter().any(|v| v == "true"))
+    {
+        return next.run(req).await;
+    }
     match auth::enforce(
         auth::require_auth(),
         &method,
@@ -104,6 +125,11 @@ impl Hooks for App {
             .add_route(controllers::planning::routes())
             .add_route(controllers::capacity::routes())
             .add_route(controllers::engagements::routes())
+            .add_route(controllers::me::routes())
+            .add_route(controllers::resignations::routes())
+            .add_route(controllers::flexible_working::routes())
+            .add_route(controllers::equality_monitoring::routes())
+            .add_route(controllers::health_requirements::routes())
             .add_route(controllers::esco::routes())
             .add_route(controllers::framework_roles::routes())
             .add_route(controllers::career::routes())
@@ -178,6 +204,32 @@ impl Hooks for App {
             Ok(None) => {}
             Err(message) => return Err(loco_rs::Error::string(&message)),
         }
+        // Equality monitoring is special-category data and off unless a lawful basis is recorded
+        // (WPM-R125, WPM-D74). A half-configured deployment does not start.
+        match controllers::equality_monitoring::gate_from_env() {
+            Ok(crate::rules::equality_monitoring::Gate::On {
+                basis,
+                config,
+                floor,
+            }) => {
+                tracing::warn!(
+                    categories = config.offered().len(),
+                    floor,
+                    "equality monitoring is ENABLED on the lawful basis recorded as: {basis}"
+                );
+            }
+            Ok(crate::rules::equality_monitoring::Gate::Off) => {}
+            Err(message) => return Err(loco_rs::Error::string(&message)),
+        }
+        // Workplace health requirements hold health data and are off unless the deployer records a
+        // lawful basis (WPM-R128, WPM-D75).
+        if let Some(basis) = rules::health_requirements::gate(
+            crate::compat::env_var("WPM_HEALTH_REQUIREMENTS_BASIS").as_deref(),
+        ) {
+            tracing::warn!(
+                "workplace health requirements are ENABLED on the lawful basis recorded as: {basis}"
+            );
+        }
         auth::init().await;
         auth::spawn_key_refresh();
         auth::spawn_policy_watcher();
@@ -217,6 +269,12 @@ impl Hooks for App {
 
     async fn truncate(ctx: &AppContext) -> Result<()> {
         truncate_table(&ctx.db, EventOutbox).await?;
+        truncate_table(&ctx.db, WorkerHealthRecords).await?;
+        truncate_table(&ctx.db, HealthRequirements).await?;
+        truncate_table(&ctx.db, EqualityDeclarations).await?;
+        truncate_table(&ctx.db, FlexibleWorkingRequests).await?;
+        truncate_table(&ctx.db, Resignations).await?;
+        truncate_table(&ctx.db, WorkerContactDetails).await?;
         truncate_table(&ctx.db, EngagementStatusAssessments).await?;
         truncate_table(&ctx.db, WorkerContractorDetails).await?;
         truncate_table(&ctx.db, EngagementExtensions).await?;

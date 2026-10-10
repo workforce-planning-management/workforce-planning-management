@@ -115,7 +115,11 @@ async fn is_line_manager(
 }
 
 /// What the caller is to this worker.
-async fn facts_for(ctx: &AppContext, claims: &Claims, worker: &workers::Model) -> Result<Facts> {
+pub(crate) async fn facts_for(
+    ctx: &AppContext,
+    claims: &Claims,
+    worker: &workers::Model,
+) -> Result<Facts> {
     let privileged = has_privileged_attrs(claims)
         || privileged_by_membership(ctx, claims, Some(&worker.organization_ref)).await?;
     if person_id(&worker.person_ref) == claims.sub {

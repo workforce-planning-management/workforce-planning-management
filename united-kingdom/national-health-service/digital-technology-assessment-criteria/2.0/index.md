@@ -1,123 +1,194 @@
-# UK NHS Digital Technology Assessment Criteria (DTAC) checklist
+# DTAC v2.0 assessment of Workforce Planning Management (WPM)
 
-Converted from the DTAC Form v2.0 (24 February 2026). From 6 April 2026, manufacturers must provide this form instead of v1.0 when health and care organisations request it.
+An assessment of this software against the questions in [checklist.md](checklist.md) (Digital Technology
+Assessment Criteria, form v2.0, 24 February 2026). It is the answers a manufacturer would give, written from the
+repository as it stood on **2026-10-11**, for **version 0.1.0** of the service and the web client.
 
-- Sections A and B are non-assessed context.
-- Sections C1–C4 are assessed. The product must meet them to pass.
-- Section D is scored for comparison only, not pass/fail.
-- The manufacturer of the digital health technology (DHT) completes the form. If the seller is not the manufacturer, they work together.
-- Answer for the specific product and version under assessment, not for the organisation in general.
+> ⚠️ **This is a self-assessment, written by the maintainer's AI coding assistant, and nobody independent has
+> reviewed it.** It is **not** a submitted DTAC form and does not say the product passes. Every answer cites the
+> file, requirement or test it rests on; where it cannot be answered from the repository, it says
+> **manufacturer to complete** rather than invent a company, a certificate or a date. Under this repository's own
+> rule ([WPM-D61](../../../../spec/operations-and-governance.md)), an answer without evidence is not "met".
+
+## How to read it
+
+| Assessment | Meaning |
+| --- | --- |
+| **Met** | The repository holds the evidence cited. |
+| **Partly met** | Some of it is evidenced; the gap is stated. |
+| **Not met** | The requirement is not satisfied, and this says so plainly. |
+| **Not applicable** | The question does not apply to the product as built, with the reason (a commissioner may challenge it). |
+| **Manufacturer to complete** | A fact about a company, a certificate or a date that only the manufacturer holds. |
+
+## The product in one paragraph
+
+WPM is a **workforce planning and HR management** service for an organization's own staff: employment
+records, leave and rota, recruitment, learning, performance, payroll (illustrative stubs), strategic workforce
+planning and delivery capacity. It holds **no patient data, takes no clinical input and gives no clinical
+output.** It is open-source software the buyer deploys and operates (a Rust JSON API and a SvelteKit web client
+over PostgreSQL); the maintainer does not host it, has no access to any deployment, and receives no telemetry.
+It is **demonstration software** ([regulatory.md](../../../../spec/regulatory.md)): not a production HR or payroll
+system, and its own [readiness assessment](../../../../spec/readiness-assessment.md) says it is **not ready**
+for production use in a large medical or governmental organization.
+
+## Where it stands
+
+| Section | Result |
+| --- | --- |
+| A. Company information | **Mostly manufacturer to complete.** There is no company: the maintainer is one individual. |
+| B. Value proposition | Described; the benefits are **not validated**. |
+| C1. Clinical safety | Answered **not in scope** (workforce records, no direct care). That answer can be challenged, and **no DCB0129 documentation exists**. |
+| C2. Data protection | The manufacturer holds and processes **no** deployed data. A DPIA template, data-flow diagram and record of processing are provided; **no ICO registration evidence, no privacy notice**; storage location is the deployer's. |
+| C3. Technical security | **Would not pass as it stands:** no Cyber Essentials certificate, the Cyber Security Charter is unsigned, and **no independent penetration test** has been done. Several controls are built and tested. |
+| C4. Interoperability | JSON/OpenAPI API; **no patient-identity exchange** (no NHS number, PDS or NHS login), so the identity questions fall away. |
+| D1. Usability and accessibility | Scored, not pass/fail: **no user testing, no WCAG audit**, no availability figure. |
 
 ## A. Company information (non-assessed)
 
-| Code | Question | Options |
-|---|---|---|
-| A1 | Name of your company. | Free text |
-| A2 | Name of your product. | Free text |
-| A3 | Version number of the product this form corresponds to. | Free text |
-| A4 | Type of product. | Standalone Software Application or Mobile Application \| Wearable \| Software as a Service (SaaS) \| Other (describe) |
-| A5 | Name and job title of the key contact. | Free text |
-| A6 | Key contact's email address. | Free text |
-| A7 | Key contact's phone number. | Free text |
-| A8 | Registered address of your company. | Free text |
-| A9 | Country where your organisation is registered. | Free text |
-| A10 | Companies House number, charity number, or other organisational reference. | Free text |
-| A11 | Date of your last CQC assessment, if you must register with the CQC. | Date \| Not applicable |
-| A12 | Latest CQC report, if applicable. | Provided \| Not applicable |
+| Code | Answer | Assessment | Evidence or gap |
+| --- | --- | --- | --- |
+| A1 | None. WPM is maintained by an individual, Joel Parker Henderson, as sole maintainer | Manufacturer to complete | [MAINTAINERS.md](../../../../MAINTAINERS.md). No company is named anywhere in the repository |
+| A2 | Workforce Planning Management (WPM): the service and its web client | Met | [README.md](../../../../README.md) |
+| A3 | 0.1.0 (both subprojects). Pre-release: the release workflow is written and has not run | Met | `Cargo.toml`, `package.json`, [production-readiness.md](../../../../spec/production-readiness.md) (WPM-R87) |
+| A4 | **Other:** open-source software that the buyer deploys and operates (API, web client, PostgreSQL). The maintainer does not offer it as software as a service | Met | [INSTALL.md](../../../../INSTALL.md), [deployment.md](../../../../spec/operations/deployment.md) |
+| A5 | Joel Parker Henderson, sole maintainer | Met | [MAINTAINERS.md](../../../../MAINTAINERS.md) |
+| A6 | joel@joelparkerhenderson.com | Met | [SECURITY.md](../../../../SECURITY.md) |
+| A7 | Not published | Manufacturer to complete | |
+| A8 | Not published | Manufacturer to complete | |
+| A9 | Not published | Manufacturer to complete | |
+| A10 | None known. No company or charity number is recorded | Manufacturer to complete | |
+| A11 | Not applicable: the maintainer provides no regulated care activity. **The manufacturer must confirm** | Not applicable | |
+| A12 | Not applicable | Not applicable | |
 
 ## B. Value proposition (non-assessed)
 
-| Code | Question | Options |
-|---|---|---|
-| B1 | Intended use of the product. | Patient Care or Support \| Diagnostics \| Clinical Support \| Workforce Support or Management \| Other |
-| B2 | Clear, high-level description of what the product does and how it is used. | Free text |
-| B3 | Intended users and the intended or proven benefits, and how the benefits were validated. Include any evaluation or clinical trial information. | Free text |
-| B4 | Data flow between the product and the Health IT system, and a user journey map where applicable. May be included in the DPIA, in which case attach it separately. | Provided \| Not available |
+| Code | Answer | Assessment | Evidence or gap |
+| --- | --- | --- | --- |
+| B1 | **Workforce Support or Management** | Met | [purpose.md](../../../../spec/purpose.md) |
+| B2 | A workforce planning and HR service for an organization's staff: the employee lifecycle from recruitment to leaving, leave and rota, performance and learning, strategic workforce planning, delivery capacity by skill pool, and illustrative payroll. People can also see and change their own details, ask for flexible working, log a resignation and see their time-off. Two optional features, equality monitoring and workplace health requirements, are **off unless the deployer records a lawful basis** | Met | [README.md](../../../../README.md), [self-service-and-worker-requests.md](../../../../spec/self-service-and-worker-requests.md) |
+| B3 | Intended users: HR, line managers, workforce planners, payroll and employees. **The benefits are not validated:** there has been no evaluation, trial or user study. The README describes what is built and tested, not outcomes | Not met | No evaluation exists |
+| B4 | A data-flow diagram and its table are provided. **A user-journey map is not provided** | Partly met | [data-flow.md](../../../../spec/governance/data-flow.md) |
 
 ## C1. Clinical safety (assessed)
 
-Provide responses and documentation for the specific version being assessed. If the product ships with hardware, the DCB0129 documentation covers the whole Health IT system, hardware included. If you consider C1 not applicable, submit your rationale.
-
-| Code | Question | Options | Notes |
-|---|---|---|---|
-| C1.1.1 | Does the product or any component qualify as Software or AI as a Medical Device under the UK Medical Devices Regulations 2002? | Yes \| No | Pass: if Yes, a completed [Pre-acquisition questionnaire (PAQ)](https://www.england.nhs.uk/publication/pre-acquisition-questionnaire/) is provided.<br>If No, skip to C1.2. |
-| C1.1.2 | Is the product classified as a standalone medical device? | Yes \| No | Read the [DCB0129 and DCB0160 applicability guidance](https://digital.nhs.uk/services/clinical-safety/applicability-of-dcb-0129-and-dcb-0160) first.<br>If Yes, go to C2. If No, go to C1.2. |
-| C1.2 | Is the product designed to provide electronic information that influences, supports or manages real-time or near-real-time direct care? | Yes \| No | If Yes, skip to C1.2.2. If No, answer C1.2.1 and then go to C2. |
-| C1.2.1 | If No to C1.2, justify why the product is not in scope of DCB0129. | Free Text | Commissioners can challenge the justification. |
-| C1.2.2 | Have you carried out clinical risk management activities that comply with DCB0129? | Yes \| No | Pass: the manufacturer confirms compliance. |
-| C1.2.3 | Detail your clinical risk management system. | Provided \| Not provided | Pass: a DCB0129-compliant system exists and was followed throughout development, with evidence that risks were identified, evaluated and mitigated across the lifecycle. |
-| C1.2.4 | Supply your Clinical Safety Case Report and Hazard Log. | Provided \| Not provided | Include:<br>- scope of the assessment<br>- summary of your clinical risk management approach and activities<br>- summary of the hazard assessment: risks, evaluation, and mitigations considered and implemented<br>- test summary showing functional and non-functional testing<br>- summary of test issues (defects)<br>- hazards that need user or commissioner action to reach acceptable mitigation (for example training or business process change)<br>- hazard log (can be appended)<br>- declaration of the risk scoring scheme you used<br>- residual clinical risks and related operational constraints<br>- hazards transferred to the deploying organisation, with declared risk controls<br>- outstanding test issues with a possible clinical safety impact<br>- hazards you could not mitigate as low as reasonably practicable<br><br>Pass: the report and log comply with DCB0129 and are proportionate to the product's scale and clinical functionality. |
-| C1.2.5 | Name, profession and registration details of your Clinical Safety Officer (CSO). | Free Text | The CSO must be a suitably qualified and experienced clinician, hold current registration with an appropriate professional body, know risk management as applied to clinical domains, and have enough responsibility to ensure DCB0129 processes are followed.<br>Pass: a named CSO, which may be outsourced.<br>The v1.0 requirement for NHS DTAC-specific CSO training no longer applies. Suitable training is still strongly recommended. |
+| Code | Answer | Assessment | Evidence or gap |
+| --- | --- | --- | --- |
+| C1.1.1 | **No.** No component has a medical purpose: it holds workforce records, takes no clinical input and produces no clinical output. This is the manufacturer's statement, not a regulator's view. An integrator who gives it a medical purpose changes it | Met (as a statement) | [regulatory.md](../../../../spec/regulatory.md); [assessment-checklist.md](../../../../spec/governance/assessment-checklist.md) rows 2.1 and 2.4 |
+| C1.1.2 | **No** | Met (as a statement) | As C1.1.1 |
+| C1.2 | **No**, with the caveat in C1.2.1 | Partly met | |
+| C1.2.1 | WPM holds staff records and plans workforce. It carries no patient information and does not influence, support or manage direct care. **The caveat a commissioner may press:** it produces staffing information, such as an on-call rota, who covers whom, and a delivery-capacity view, that a care organization could use to staff a clinical service. Those outputs are advisory (WPM-D19, WPM-D28, WPM-D50), nothing is assigned or alerted in real time, and a person decides. **An organization that uses them to staff a service in near real time should treat that use as in scope and ask for a hazard assessment, which does not exist.** | Partly met | [design.md](../../../../spec/design.md), [delivery-capacity.md](../../../../spec/delivery-capacity.md), assessment-checklist row 2.2 |
+| C1.2.2 to C1.2.5 | Not answered, because C1.2 is No. **For completeness: none of this exists.** There is no DCB0129 clinical risk management system, no Clinical Safety Case Report, no hazard log and no Clinical Safety Officer. **If a commissioner decides DCB0129 applies, C1 is Not met** | Not applicable (see C1.2.1) | [assessment-checklist.md](../../../../spec/governance/assessment-checklist.md) rows 2.2 and 2.3 |
 
 ## C2. Data protection (assessed)
 
-| Code | Question | Options | Notes |
-|---|---|---|---|
-| C2.1 | If you have direct or remote access to patient data or NHS systems, confirm your Data Security and Protection Toolkit ([DSPT](https://www.dsptoolkit.nhs.uk/)) status. | Confirmed \| Unable to Confirm \| No access to patient data or national NHS System | Pass: Standards Met or Exceeded for the current year, or the previous year if you have no current return yet. Assessors validate this against the DSPT database. |
-| C2.2 | Does the product or service process any personal data or data about deceased individuals, including data processed by a sub-processor? | Yes \| No | If No, skip to C3.<br>You may answer No if you have no role in operating or hosting the product and no means of accessing its data, including remote support access. |
-| C2.2.1 | Evidence of current ICO registration. | Provided \| Not provided | Pass: evidence with expiry date, such as a screenshot of the registration number. Assessors validate it against the ICO Register of Fee Payers. |
-| C2.2.2 | Data Protection Impact Assessment (DPIA) for the product. | Provided \| Not provided | Must cover:<br>- summary of the product and how it processes data<br>- list of data fields required<br>- how data flows into, within and out of the product<br>- end-user security controls: on/off-boarding and access limits<br>- technical and organisational measures for data in transit and at rest, proportionate to risk<br>- countries where data is stored or flows through<br>- whether the manufacturer's staff can access personal data, with proportionate access and an identified legal basis<br>- who is the controller for each element of processing<br>- retention and disposal arrangements<br>- processors and sub-processors, with confirmation of legally binding agreements<br>- confidentiality, availability and integrity risks and their mitigations<br>- how the product supports data subject rights |
-| C2.2.3 | Copy or link to the product's transparency information (privacy notice). | Provided \| Not provided | Pass: transparency materials are available to the buyer to help meet UK GDPR transparency requirements. |
-| C2.2.4 | Product terms and conditions on use of user data, end user licence agreement or equivalent. If this does not apply, state why. | Provided \| Not provided \| Not applicable | Pass: the terms are clear and fair on privacy and data use. |
-| C2.2.5 | Where does the product, including third-party components, store and process data? | UK only \| Outside of UK | If UK only, skip to C3. |
-| C2.2.6 | If outside the UK, name the country and explain how the arrangements comply with current legislation. | Free text | Pass: a statement that the arrangements comply, such as UK adequacy status, an IDTA, or binding corporate rules. Non-adequacy routes need a transfer risk assessment. |
+| Code | Answer | Assessment | Evidence or gap |
+| --- | --- | --- | --- |
+| C2.1 | **No access to patient data or national NHS System.** The maintainer has no access to any deployment: no hosting, no remote support, no telemetry. The software's only outbound requests are to URLs the deployer configures (token signing keys, and optional name look-ups against the deployer's own services, off by default) | Met | `src/clients.rs` (stub mode by default), `src/auth/keycloak.rs`. The importers were read for network use: they make none |
+| C2.2 | **Yes, the product processes personal data**, namely staff and applicants' data. The manufacturer does not operate or host it and has no means of access, so the deployer is the controller. (The form lets a manufacturer in that position answer No; this answers Yes so that nothing is understated) | Met | [record-of-processing.md](../../../../spec/governance/record-of-processing.md) |
+| C2.2.1 | **Not provided.** The maintainer is not a controller or processor of any deployment. Whether the maintainer pays an ICO fee is not recorded | Manufacturer to complete | |
+| C2.2.2 | **Provided as a template** completed for the demo. Coverage of the required content: see below | Partly met | [dpia.md](../../../../spec/governance/dpia.md) |
+| C2.2.3 | **Not provided.** A deployer writes their own from the record of processing | Not met | assessment-checklist row 3.10 |
+| C2.2.4 | Not applicable as a user-data agreement: the software is licensed under open-source licences and the manufacturer processes no user data. It is **not** a substitute for the buyer's own terms with their staff | Not applicable | [LICENSE.md](../../../../LICENSE.md) |
+| C2.2.5 | **The deployer's choice.** The software stores data only in the PostgreSQL database the deployer connects it to. One third-party component, the content manager at `/admin`, loads a script from a public CDN with no pinned version or integrity hash (a known gap, WPM-R73) | Manufacturer to complete | [production-readiness.md](../../../../spec/production-readiness.md) |
+| C2.2.6 | Not answerable by the manufacturer: depends on where the deployer hosts. The software makes no transfer of its own | Manufacturer to complete | [data-flow.md](../../../../spec/governance/data-flow.md) |
+
+### How the DPIA template covers what C2.2.2 requires
+
+| Required content | Covered? | Where |
+| --- | --- | --- |
+| Summary of the product and how it processes data | Yes | dpia.md sections 1 and 2 |
+| List of data fields required | Partly: by category, not field by field | [record-of-processing.md](../../../../spec/governance/record-of-processing.md), [domain-model.md](../../../../spec/domain-model.md) |
+| How data flows into, within and out of the product | Yes | [data-flow.md](../../../../spec/governance/data-flow.md) |
+| End-user security controls: on/off-boarding and access limits | Yes | [auth.md](../../../../spec/auth.md): sign-in enforced by default, need-to-know on every read (WPM-R114), self-service allow-list |
+| Measures for data in transit and at rest | Partly: TLS to the database is required in production (WPM-R116); backups are encrypted (WPM-R117); encryption of the database at rest is the deployer's | [production-readiness.md](../../../../spec/production-readiness.md), [backup-and-restore.md](../../../../spec/operations/backup-and-restore.md) |
+| Countries where data is stored or flows | The deployer's | |
+| Whether the manufacturer's staff can access personal data | Yes: they cannot | See C2.1 |
+| Who is controller for each element | The deployer for all of it | dpia.md section 2 |
+| Retention and disposal | Yes: a schedule per record kind, a sweep, an erasure ledger that survives a restore | [retention-schedule.md](../../../../spec/governance/retention-schedule.md), WPM-R89, WPM-R91 |
+| Processors and sub-processors, with binding agreements | The deployer's | |
+| Confidentiality, availability and integrity risks and mitigations | Yes | dpia.md section 5 (R1 to R14) |
+| How the product supports data subject rights | Yes: a subject-access export (with special-category data given to the worker alone) and erasure | `GET /api/workers/{pid}/subject-access`, [regulatory.md](../../../../spec/regulatory.md) |
 
 ## C3. Technical security (assessed)
 
-| Code | Question | Options | Notes |
-|---|---|---|---|
-| C3.1 | Attach your Cyber Essentials certificate. | Provided \| Not Provided | Pass: the certificate is valid and in date (12-month validity). Assessors check it against the IASME database. |
-| C3.2 | Have you signed the [Cyber Security Charter for Suppliers to the NHS](https://digital.nhs.uk/cyber-and-data-security/guidance-and-assurance/cyber-security-charter-for-suppliers-to-the-nhs)? | Yes \| No | If Yes, skip the rest of C3. If No, answer C3.3 to C3.6. |
-| C3.3 | For internet-based or internet-accessible products, provide the summary report of an external penetration test from the last 12 months that covered the OWASP Top 10. | Provided \| Not provided | Pass: a third-party test covering the OWASP Top 10, with no vulnerabilities scoring 7.0 or above on CVSS. |
-| C3.4 | Confirm the software was produced in line with the DSIT/NCSC [Software Security Code of Practice](https://www.gov.uk/government/publications/software-security-code-of-practice/software-security-code-of-practice), and that you commit to its principles: secure design and development, secure build environment, secure deployment and maintenance, and communication with customers. | Confirmed / Unable to Confirm | Pass: development aligns to the code and you commit to its principles. |
-| C3.5 | Confirm you have a plan to implement multi-factor authentication (MFA) for all account types, preferably through identity federation. | Yes \| No | Pass: a plan is in place. |
-| C3.5.1 | If applicable, confirm all supplier accounts with privileged access to the product have MFA, or equivalent MFA at the remote end. | Yes \| No \| Not applicable as supplier has no access to the product | Pass: MFA is enforced on all privileged and remote access connections. It need not be enforced on the product itself. |
-| C3.6 | Confirm logging and reporting requirements have been defined. | Yes \| No | To answer Yes, logging such as audit trails of all access must be in place.<br>Pass: requirements are defined. |
+| Code | Answer | Assessment | Evidence or gap |
+| --- | --- | --- | --- |
+| C3.1 | **No Cyber Essentials certificate.** The maintainer is an individual and has none | **Not met** | |
+| C3.2 | **No**, the Cyber Security Charter for Suppliers is not signed | Not met | So C3.3 to C3.6 are answered below |
+| C3.3 | **Not provided. No independent penetration test has been done**, and the external dynamic scan (OWASP ZAP baseline) is written in CI but has never run. The author's own [threat model](../../../../spec/governance/threat-model.md) is not a substitute | **Not met** | [readiness-assessment.md](../../../../spec/readiness-assessment.md) section 4; WPM-T201 is open |
+| C3.4 | **Unable to confirm.** Practices that map to the Code's four themes exist, and the gaps are named. *Secure design and development:* threat model, need-to-know on every read, pure-core rules tested, mutation-checked security tests, `cargo deny`. *Build environment:* CI is written and has **never run on a hosting platform**; actions are pinned by tag, not commit; no secret scanning. *Deployment and maintenance:* production refuses an unauthenticated or plaintext-database start, encrypted backups, a tested restore. *Communication with customers:* a security policy, a changelog, a bill of materials on release (not yet run). **Not independently assessed against the Code** | Partly met | [threat-model.md](../../../../spec/governance/threat-model.md), [production-readiness.md](../../../../spec/production-readiness.md), SECURITY.md; open: WPM-T194, T195 |
+| C3.5 | **Yes, by identity federation.** WPM implements no passwords or accounts of its own: it verifies tokens issued by the deployer's identity provider (Microsoft Entra ID or Keycloak), so MFA is enforced there for every account type. The plan is documented | Partly met | [entra-sign-in.md](../../../../spec/operations/entra-sign-in.md), [auth.md](../../../../spec/auth.md). MFA itself is the identity provider's and was **not exercised** by this repository's tests |
+| C3.5.1 | Not applicable: the supplier has no access to any deployment | Not applicable | See C2.1 |
+| C3.6 | **Yes.** Every mutation and every sensitive read writes an audit entry naming the actor; the trail is **append-only and hash-chained in the database**, verifiable by an endpoint and a task, and checked by every restore drill. Requirements for what is logged are written | Met | [audit.md](../../../../spec/audit.md), WPM-R115, `GET /api/audits/verify`, `tests/requests/audit_chain.rs` |
 
 ## C4. Interoperability (assessed)
 
-| Code | Question | Options | Notes |
-|---|---|---|---|
-| C4.1 | Does the product expose any APIs or integration channels for other products used in health or social care? | Yes \| No | If No, skip to C4.2. |
-| C4.1.1 | List the international or industry interoperability standards your APIs use and explain why they are appropriate. | Free text | Pass: relevant standards are listed and justified. |
-| C4.1.2 | Confirm the APIs follow GDS Open API best practice and are openly documented and freely available to third parties. | Confirm \| Cannot confirm | Pass: confirmed, or an approach is set out in C4.1.3. |
-| C4.1.3 | If you cannot confirm C4.1.2, set out the basis on which your APIs are documented and made available to third parties. | Free Text | Pass: you set out the basis on which third parties can build integrations. |
-| C4.2 | Is the product intended to share or receive data with national or local care or administrative systems where patient identity is relevant? | Yes \| No | If No, skip to C4.3. |
-| C4.2.1 | Can the product use the NHS number to identify patient data when exchanging data? | Yes \| No | Pass: Yes, or an alternative approach for data quality.<br>If No, go to C4.2.3. |
-| C4.2.2 | Does the product integrate with the NHS Personal Demographics Service, or other local record systems, to establish or validate the NHS number? | Yes \| No | Pass: Yes, or an alternative approach for data quality.<br>If onboarding to PDS is incomplete, describe it in C4.2.3.<br>If Yes, skip to C4.2.4. |
-| C4.2.3 | If you answered No to C4.2.1 or C4.2.2, describe how you identify patient records correctly and keep data quality. | Free Text | Pass: you set out how patients are correctly identified and how data accuracy is maintained when integrating with other systems. |
-| C4.2.4 | If the product is used directly by patients, do you use NHS login to verify and authenticate users? | Yes \| No \| Not Applicable – product is not used directly by patients. | Pass: Yes, or adequate data protection measures in C4.2.6.<br>If Yes, skip to Section D. If No, go to C4.2.5. |
-| C4.2.5 | If public health or adult social care organisations use the product to deliver care services, does it support compliance with the [DAPB3051](https://digital.nhs.uk/data-and-information/information-standards/governance/latest-activity/standards-and-collections/dapb3051-identity-verification-and-authentication-standard-for-digital-health-and-care-services) identity verification and authentication standard? | Yes \| No \| Not Applicable – product is not used by public health or adult social care services | Pass: Yes, if applicable.<br>If Yes, skip to Section D. If Not applicable, complete C4.2.6. |
-| C4.2.6 | If you do not use NHS login, describe how you authenticate users and what data protection measures are in place. | Free Text | Pass: the approach protects user privacy. |
+| Code | Answer | Assessment | Evidence or gap |
+| --- | --- | --- | --- |
+| C4.1 | **Yes:** a JSON REST API, for the buyer's own systems | Met | `/api-docs/openapi.json` |
+| C4.1.1 | HTTP and JSON; OpenAPI 3.0.3; bearer tokens (PASETO or OIDC JWT); ISO 8601 dates; ISO 4217 currencies; opaque entity references as URNs. **No health-care standard is used** (no HL7 FHIR, for example) because the product holds workforce, not clinical, records | Met | `src/openapi.rs`, `crates/entity-ref` |
+| C4.1.2 | **Cannot confirm** conformance with GDS Open API best practice; the API is openly documented and the code is public | Not met (cannot confirm) | The OpenAPI document is hand-written and its coverage is spot-checked by a test, not generated, so it can lag the routes |
+| C4.1.3 | The basis on which third parties can build integrations: the source and the OpenAPI document are public under open-source licences; there is no commercial gate or partner agreement | Met | [LICENSE.md](../../../../LICENSE.md), `/api-docs/openapi.json` |
+| C4.2 | **No.** WPM does not share or receive data with national or local care systems where patient identity is relevant: it holds no patient identity | Met | C2.1 |
+| C4.2.1 to C4.2.6 | Not asked, because C4.2 is No. For information: **WPM does not use the NHS number, does not integrate with the Personal Demographics Service and does not use NHS login.** People sign in through the deployer's identity provider | Not applicable | [entra-sign-in.md](../../../../spec/operations/entra-sign-in.md) |
 
 ## D1. Usability and accessibility (scored, not pass/fail)
 
-| Code | Question | Options | Notes |
-|---|---|---|---|
-| D1.1 | Explain how the product fits into existing systems or care pathways. For example, provide a user journey or instructions for use. | Provided \| Not provided | |
-| D1.2 | Do you test with intended users to validate usability? | Yes \| No | |
-| D1.3 | Confirm you have read the [Accessible Information Standard](https://www.england.nhs.uk/about/equality/equality-hub/patient-equalities-programme/equality-frameworks-and-information-standards/accessibleinfo/) and considered it in your design. | Confirm \| Cannot confirm | |
-| D1.4 | Is the product a web or mobile application? | Yes \| No | If No, Section D is complete. |
-| D1.4.1 | Does it comply with WCAG 2.2 level AA or higher? | Yes \| No, but a plan and timeline for achieving WCAG 2.2 AA or higher is in place \| No \| Not applicable as not a web of mobile application | If you have a plan, answer D1.4.2. Otherwise go to D1.4.3. |
-| D1.4.2 | If you have a plan, give the timescale for achieving WCAG 2.2 AA. | Free Text | |
-| D1.4.3 | Link to your published accessibility statement. | Free text | |
-| D1.5 | Average service availability over the past 12 months, as a percentage to two decimal places. | Free text | |
+| Code | Answer | Assessment | Evidence or gap |
+| --- | --- | --- | --- |
+| D1.1 | **Not provided** as a user journey. The specification describes personas and screens; no journey or instructions for use fit WPM into a care pathway | Not met | [purpose.md](../../../../spec/purpose.md) |
+| D1.2 | **No.** No testing with intended users has been done | Not met | |
+| D1.3 | **Cannot confirm** that the Accessible Information Standard has been read and considered. It concerns communications with patients, which WPM has none of | Not met (cannot confirm) | |
+| D1.4 | **Yes**, a web application | Met | `workforce-planning-management-ui-with-svelte` |
+| D1.4.1 | **No.** Compliance with WCAG 2.2 AA is **not verified**: there has been no audit, no assistive-technology testing and no automated accessibility test. There is a **plan** (an independent audit, WPM-T202) but no timeline | Not met | [accessibility-statement.md](../../../../spec/governance/accessibility-statement.md) |
+| D1.4.2 | **No timescale has been set** | Not met | WPM-T202 is open |
+| D1.4.3 | The statement is [accessibility-statement.md](../../../../spec/governance/accessibility-statement.md). It says plainly that the software has not been audited. It is a template for a deployer's own; **it is not published at a public address** | Partly met | |
+| D1.5 | **Not applicable and not measured:** the manufacturer operates no service, so there is no availability figure. A deployer measures their own | Not applicable | |
 
-## Supporting documentation
+## Supporting documents
 
-Label each document with your company name, the question number and the date of submission.
+| Code | Document | Status |
+| --- | --- | --- |
+| A12 | CQC report | Not applicable |
+| B4 | User journeys and data flows | Data flow: [data-flow.md](../../../../spec/governance/data-flow.md). **User journeys: not provided** |
+| C1.1.1 | Pre-acquisition questionnaire | Not applicable (C1.1.1 is No) |
+| C1.2.3, C1.2.4 | Clinical risk management system, Clinical Safety Case Report, Hazard Log | **Do not exist** |
+| C2.2.1 | ICO registration | **Not provided** |
+| C2.2.2 | DPIA | Template: [dpia.md](../../../../spec/governance/dpia.md) |
+| C2.2.3 | Transparency information | **Not provided** |
+| C2.2.4 | Terms on use of user data | Not applicable: [LICENSE.md](../../../../LICENSE.md) |
+| C3.1 | Cyber Essentials certificate | **Not provided** |
+| C3.3 | External penetration test summary | **Not provided** |
+| D1.1 | User journeys | **Not provided** |
 
-| Code | Document |
-|---|---|
-| A12 | CQC report |
-| B4 | User journeys and data flows |
-| C1.1.1 | Pre-acquisition questionnaire (PAQ) form |
-| C1.2.3, C1.2.4 | Clinical risk management system and Clinical Safety Case Report |
-| C1.2.4 | Hazard Log |
-| C2.2.1 | ICO registration |
-| C2.2.2 | Data Protection Impact Assessment (DPIA) |
-| C2.2.3 | Transparency information (privacy notice) |
-| C2.2.4 | Product terms and conditions on use of user data, end user licence agreement or equivalent |
-| C3.1 | Cyber Essentials certificate |
-| C3.3 | External penetration test summary report |
-| D1.1 | User journeys, or how the product fits into a user pathway |
+## What it would take to pass
+
+The assessed sections (C1 to C4) must all be met. As submitted, **C3 fails on three points the maintainer cannot
+close in code**, and C2 and C1 each depend on a decision for someone else.
+
+1. **C3.1 Cyber Essentials.** A certificate for the manufacturer (or the hosting supplier, if the buyer buys it
+   as a service). Needs an organization to certify.
+2. **C3.3 Independent penetration test** of a deployed instance covering the OWASP Top 10, with no finding at or above
+   CVSS 7.0. Open as [WPM-T201](../../../../spec/tasks.md). Alternatively **C3.2:** sign the Cyber Security Charter
+   for Suppliers to the NHS, which removes C3.3 to C3.6.
+3. **C2.2.1 and C2.2.3.** ICO registration evidence if the manufacturer is a controller or processor of any
+   deployment (not if only the deployer is), and a transparency notice the deployer completes from the record of
+   processing.
+4. **C1.** Settle with the commissioner whether any use of the rota or capacity view staffs a service in near real
+   time. If it does, DCB0129 applies and the clinical risk management system, safety case, hazard log and Clinical
+   Safety Officer must exist; none does.
+5. **D1.** An independent WCAG 2.2 AA audit ([WPM-T202](../../../../spec/tasks.md)) and user testing, for the score.
+6. **A.** A legal entity, address and phone number, or a statement that the buyer is contracting with an
+   individual.
+
+Separately, the product's own [readiness assessment](../../../../spec/readiness-assessment.md) records that it is not
+ready for production use in a large medical or governmental organization, whatever DTAC says.
+
+## Limits of this assessment
+
+- Written from the repository only. It did not see a deployment, a hosting arrangement, a certificate or a contract.
+- It rests on the maintainer's own tests and documents. No external party has reviewed either.
+- It follows the checklist as converted in [checklist.md](checklist.md). The original form, and its guidance on
+  evidence, were not available to the assessor; the pass criteria are as that file states them.
+- Where the checklist links to a published standard (DCB0129, the Software Security Code of Practice, DAPB3051,
+  the Accessible Information Standard), the standard itself was not read in full for this assessment.

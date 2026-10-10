@@ -3131,37 +3131,108 @@ deployer's lawful basis and impact assessment before they are switched on.
 - [x] WPM-T204 (2026-10-11) **Spec round.** *(traces to WPM-R124–R130, WPM-D74–D77)* The topic note, the plan section and these
       tasks; the two conflicts with earlier decisions named and bounded. **Not reviewed by a data protection
       officer, an occupational-health adviser or an employment lawyer.**
-- [ ] WPM-T205 **The `/api/me` write allow-list.** *(WPM-R130, WPM-D76)* A pure list of self-service write routes, the guard that
-      lets them past the write policy, the handler rule that the person is the verified `sub`, and a test that
-      enumerates every write route a plain signed-in caller can reach (it must equal the list). Enforcement
-      binary with a stranger, the worker and HR.
-- [ ] WPM-T206 **Contact details.** *(WPM-R124)* Table, API (`/api/me/contact-details`), HR and payroll read, audit without
-      values, no history kept, a payroll notice that the address changed, export and erasure, request tests,
-      mutation checks.
-- [ ] WPM-T207 **Emergency contacts by the worker.** *(WPM-R124)* Let the worker write their own emergency contacts through the
-      allow-list; existing rules (a limit of five, ranking) unchanged. Request and enforcement tests.
-- [ ] WPM-T208 **My time-off.** *(WPM-R129)* `GET /api/me/time-off`: allowances, taken, booked, requested, remaining and the
-      history by year, each figure stating calendar or business days; no reason for sick leave. Pure core for
-      the arithmetic, request tests, and a test that nothing is derived into a score.
-- [ ] WPM-T209 **Resignations: pure core.** *(WPM-R127, WPM-D77)* Notice-rule arithmetic, the earliest last day, the states and
-      transitions (logged, withdrawn, accepted, declined), and refusals. Unit tests at each boundary.
-- [ ] WPM-T210 **Resignations: records and API.** *(WPM-R127)* Table, `/api/me/resignation`, HR acceptance that opens the leaver
-      movement and sets the engagement end in one transaction, notifications without the reason, an
-      aggregate by reason with the floor. Request and enforcement tests.
-- [ ] WPM-T211 **Flexible working: pure core.** *(WPM-R126, WPM-D77)* The decide-by date from a configurable period, the request
-      limit per year, the states (requested, approved, approved with changes, accepted, refused, appealed,
-      withdrawn), and the proposal for a change of hours. Unit tests.
-- [ ] WPM-T212 **Flexible working: records, API and reminders.** *(WPM-R126)* Table, endpoints, the closed list of refusal
-      reasons as configuration, overdue flags to the manager and HR, the capacity suggestion. Request and
-      enforcement tests.
-- [ ] WPM-T213 **Equality monitoring.** *(WPM-R125, WPM-D74)* Off by default with a recorded lawful basis; configurable categories
-      that always offer prefer-not-to-say; the worker-only table and API; the aggregate and completeness
-      report with the small-group floor; the extended deny-list test that no score reads it; the equality
-      impact register entry; the DPIA and record of processing updated. Request, enforcement and mutation tests.
-- [ ] WPM-T214 **Workplace health requirements.** *(WPM-R128, WPM-D75)* Off by default with a recorded lawful basis; requirement
-      definitions; the occupational-health role; the status record with no clinical detail; cleared or not
-      cleared for managers and HR; reminders; aggregates with the floor; the deny-list test; documents updated.
+- [x] WPM-T205 (2026-10-11) **The `/api/me` write allow-list.** *(traces to WPM-R130, WPM-D76)* `rules::self_service::WRITES` and `is_write`; the sign-in
+      guard skips the policy's action check for those routes only and still requires a valid token; the `me`
+      controller resolves the person from the token alone. Unit tests, including a scan of the controller so a
+      write route not on the list, or an entry with no route, fails the build. New binary `enforcement_me`.
+      **Mutation-checked** three ways (no allow-list in the guard; any contact changeable through `/me`; the list
+      widened by a `POST`). Documented in [auth.md](auth.md). **Limit:** the unit scan reads source text; a route
+      added by a different mechanism than `.add(` would escape it.
+- [x] WPM-T206 (2026-10-11) **Contact details.** *(traces to WPM-R124)* Migration `000056`, `rules/contact_details.rs` (shape only: lengths,
+      telephone characters and 5 to 15 digits, an e-mail's outline, a two-capital-letter country), `GET`, `PUT`
+      and `DELETE /api/me/contact-details`, and `GET /api/workers/{pid}/contact-details` for HR and payroll (the
+      worker and privileged callers only; a read by anyone but the worker is audited). Replaced as a whole, no
+      history kept, audit without values, exported and erased with the worker. Verified in `enforcement_me`: bad
+      shapes refused naming the field; the audit holds the events and no value; a neighbour refused; the export
+      includes it. **Not done:** telling payroll that an address changed (the audit records it; no notification
+      is sent); a retention schedule for the table (it goes with the worker's erasure).
+- [x] WPM-T207 (2026-10-11) **Emergency contacts by the worker.** *(traces to WPM-R124)* `GET`, `POST`, `PUT`, `DELETE /api/me/emergency-contacts`, reusing the existing
+      rules (a limit of five, a ranking, an audit with no detail) by splitting the HR handlers into shared
+      functions. Verified: a worker writes their own; a neighbour sees none and cannot change or remove one (404);
+      the limit holds; HR still reads them through the existing route; the HR write route stays HR's.
+- [x] WPM-T208 (2026-10-11) **My time-off.** *(traces to WPM-R129)* `rules/time_off.rs` (balances per kind and year: allowed, subtracted, taken,
+      booked, requested, remaining, and what would remain if requests were approved; a kind with no allowance has
+      no remaining figure; past absence by year and kind) and `GET /api/me/time-off?year=`, in calendar days,
+      the caller's own, no reason for sick leave, no rate or score. Unit tests at each boundary and a request test
+      in fixed past and future years. **Found on the way (new task WPM-T216):** under the reference policy a
+      worker cannot request their own leave, because the request is a write only HR may make; this view shows
+      requests but cannot create one.
+- [x] WPM-T209 (2026-10-11) **Resignations: pure core.** *(traces to WPM-R127, WPM-D77)* `rules/resignation.rs`: the states (logged, withdrawn, accepted,
+      rescinded) and who may move them (a worker withdraws only while it is logged; only a person accepts or rescinds);
+      the earliest last day from the notice in calendar days (default 28, 0 to 366); a proposal must allow the notice;
+      an agreed day between the day logged and 366 calendar days on; a reason optional and from a closed list of eleven
+      (no health reasons, no free text); and a summary that withholds a department below the floor and its split by
+      reason unless every cell reaches the floor, so a hidden cell cannot be worked out. Seven unit tests.
+- [x] WPM-T210 (2026-10-11) **Resignations: records and API.** *(traces to WPM-R127)* Migration `000057` (`resignations`, one open per worker), the worker's side under
+      `/api/me/resignation` (log, withdraw, read), and `/api/resignations` (list, summary, accept, rescind) and
+      `GET /api/workers/{pid}/resignation`. **Accepting records the agreed last day and opens the leaver process
+      (the movement, with its dated checklist) and tells the worker in one transaction; it does not end employment**
+      (verified: the worker is still active afterwards). The manager is told it was logged and never the reason; the
+      reason is visible to the worker only and in aggregates; audit entries hold none. Exported and erased with the
+      worker. Verified in `enforcement_me` by a full scenario (notice and reason refused, one open at a time, manager
+      and HR see no reason, a stranger and a manager are refused the list, withdraw then log again, only a person
+      with authority accepts, the movement exists and is cancelled on rescind, the aggregate withholds a small group),
+      **mutation-checked** three ways (the manager sees the reason; no notice check; acceptance opens no record).
+      The movement logic was split into a shared function. **Differs from the plan:** "sets the engagement end" is not
+      done, because a permanent engagement has no end date and moving a contingent one earlier is a shortening, not an
+      extension; the leaver record carries the agreed day. HR who decides need the `hr` attribute **and** a membership
+      in the organization. **Not done:** a screen, a reminder before the agreed day, and the floor is the pulse
+      survey's fixed 5, not configurable.
+- [x] WPM-T211 (2026-10-11) **Flexible working: pure core.** *(traces to WPM-R126, WPM-D77)* `rules/flexible_working.rs`: nine states and exactly the moves between them (tested over every
+      state and action), the decide-by date in calendar months with a month-end clamp, overdue only for a request still
+      waiting, the request limit over 12 calendar months ignoring withdrawn ones (zero for none), the appeal window in
+      calendar days, request validation, and a closed list of refusal reasons a deployer can replace. Nine unit tests.
+- [x] WPM-T212 (2026-10-11) **Flexible working: records, API and reminders.** *(traces to WPM-R126)* Migration `000058`, the worker's side under `/api/me/flexible-working` (ask, list, withdraw, respond to a
+      counter-proposal, appeal) and `/api/flexible-working` (the queue, decide, decide an appeal) with `GET
+      /api/workers/{pid}/flexible-working`. Configurable by the deployer: decide-by months, requests per year, appeal
+      window, refusal reasons. The decider is the worker's line manager (anywhere up the chain) or a privileged
+      caller, **never the worker**; an appeal is decided by **someone other than who refused**; the manager is told of
+      a request and of an appeal, the worker of every decision; the audit names events and holds no text; exported
+      and erased with the worker. **An approved change of hours is a proposal (`hr_to_apply_fte_percent`, the
+      counter-proposal's hours after an acceptance); the contract is not changed** (verified). Verified in the new
+      `enforcement_flexible` binary (the reference policy plus the one rule a deployer would add to let managers
+      write), **mutation-checked** four ways (no decider check; the same person decides the appeal; the first ask's
+      hours applied after a counter-proposal; no request limit). **Differs from the plan:** "reminders" are the
+      `overdue` flag and `?overdue=true` list, not a scheduled task that notifies. **Not done:** that scheduled
+      reminder; a screen; the defaults (two calendar months, two requests a year, 14 calendar days) are starting
+      points modelled on common rules and are **not verified against any jurisdiction**.
+- [x] WPM-T213 (2026-10-11) **Equality monitoring.** *(traces to WPM-R125, WPM-D74)* `rules/equality_monitoring.rs` (the gate; the deployer's categories, validated; the
+      aggregate with a floor; completeness), migration `000059`, `controllers/equality_monitoring.rs`, the worker's
+      routes under `/api/me/equality-monitoring`, and `GET /api/equality-monitoring/summary` (privileged, audited).
+      **Off unless `WPM_EQUALITY_MONITORING_BASIS` records the lawful basis; categories alone switch nothing on; a basis
+      with no valid categories stops boot; WPM ships no classification.** Only the worker reads their own answers; the
+      subject-access export gives them to the worker and a note to anyone else; no audit entry carries a value; erased
+      with the worker; a unit test scans the source so no other code names the table. Verified in the new
+      `enforcement_equality` binary (off then on in one process; refusals and limits; the aggregate with cells under
+      the floor withheld and the department breakdown withheld unless every cell passes; the export; withdrawal; erasure),
+      **mutation-checked** (the gate; the floor, caught in both the integration test and the unit test; the export).
+      The DPIA (R13), the record of processing, the regulatory note, the equality impact register and the deployment
+      document say so. **Not verified:** the interface (none); the categories a real deployer defines; and the legal
+      basis, which is the deployer's. **Known limit:** a department breakdown is all-or-nothing, so a deployer with one
+      small department sees only organization-wide figures.
+- [x] WPM-T214 (2026-10-11) **Workplace health requirements.** *(traces to WPM-R128, WPM-D75)* `rules/health_requirements.rs` (the gate; standing against a due date and a reminder
+      window in calendar days; cleared as a yes or no; applicability by department; the re-check date; validation;
+      a compliance aggregate with a floor), migration `000060` (`health_requirements`, `worker_health_records`: a status token
+      and two dates, **no column for a diagnosis, product, batch or exemption reason**), `controllers/health_requirements.rs`, the
+      worker's view under `/api/me/health-requirements`. **Off unless `WPM_HEALTH_REQUIREMENTS_BASIS` records the lawful basis.**
+      **Written only by an occupational-health role:** a new, narrow mechanism, `rules::self_service::ATTRIBUTE_WRITES`, lets a token
+      carrying `occupational_health=true` past the HR-only write policy for exactly two routes, and the handler checks the attribute
+      again so HR, the service and an administrator are refused. A manager (their reports) and HR get **cleared or not cleared** and
+      never the status (checked key by key and by word); the detail is occupational health's and each read is audited; no audit
+      entry carries a status; exported to the worker alone; erased with the worker; two unit tests scan the source (nothing else
+      names the table; the attribute list matches the routes). Verified in the new `enforcement_health` binary, **mutation-checked**
+      five ways (anyone with write rights may record; the manager's list carries the status; no attribute-scoped write in the guard;
+      HR may read the detail; the gate ignored). The DPIA (R14), the record of processing, the regulatory note, the domain model, the
+      authorization document and the deployment document say so. **Differs from the plan:** "reminders to the worker" are the
+      `reminder` flag in their view, not a scheduled notification. **Not verified:** the interface (none); any real occupational
+      health arrangement; what a deployer's own rule does with "not cleared" (the software only reports it); and the legal basis,
+      which is the deployer's.
 - [ ] WPM-T215 **My details screen, translations and verification.** *(WPM-R124–R130)* One screen for the six, strings in the 13 locales
       under the catalogue rules (WPM-R94), screenshots read in light and dark at desktop and phone sizes, full
       suites, and what was not verified recorded.
-
+- [x] WPM-T216 (2026-10-11) **Self-service leave requests.** *(traces to WPM-R129, WPM-R130)* `POST /api/me/leave-requests` and `POST /api/me/leave-requests/{pid}/cancel` on
+      the allow-list, sharing the HR route's validation (the balance, a valid span, no reason on sick leave).
+      `rules::time_off::can_worker_cancel`: a request awaiting a decision can be cancelled at any time, an approved one
+      only before it starts (its days come back); started or finished leave, and one already refused or cancelled, is
+      HR's. A worker still cannot approve their own request. Verified in `enforcement_me`, **mutation-checked** twice
+      (no cancellation rule; a request of anyone's cancellable).

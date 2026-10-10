@@ -7,7 +7,7 @@ file exists as the place such results would live once measured.
 
 ## What exists today
 
-- Service (2026-10-11): 379 DB-free unit tests, 73 database-backed request tests
+- Service (2026-10-11): 427 DB-free unit tests, 73 database-backed request tests
   (serial), the auth enforcement persona matrix and a Keycloak suite
   against a real Keycloak 26, run with `cargo test` and `cargo test -- --ignored`.
   See [workforce-planning-management-service-with-rust/README.md](workforce-planning-management-service-with-rust/README.md)

@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — workplace health requirements, off by default (WPM-T214)
+
+Whether a worker meets a requirement their area sets, such as a required immunization (migration `000060`). **Off unless
+`WPM_HEALTH_REQUIREMENTS_BASIS` records the lawful basis you rely on.** A status and two dates, never a reason. Written only by a
+token carrying `occupational_health=true`; a manager and HR see only cleared or not cleared; the detail is occupational health's.
+Health data: do your own impact assessment first.
+
+### Added — equality and diversity monitoring, off by default (WPM-T213)
+
+Voluntary, self-declared monitoring answers (migration `000059`). **Off unless `WPM_EQUALITY_MONITORING_BASIS` records the
+lawful basis you rely on**, with `WPM_EQUALITY_CATEGORIES` defining the categories (WPM ships none). Only the worker reads
+their own answers; the only output is an aggregate with small groups withheld. Special-category data: do your own impact
+assessment first.
+
+### Added — flexible working requests (WPM-T211, T212)
+
+A worker asks for a different working arrangement (`POST /api/me/flexible-working`); the software computes the decide-by
+date (calendar months, default 2) and limits requests (default 2 in 12 calendar months); a line manager or HR decides
+(approve, refuse with a reason from the deployer's list, or counter-propose), never the worker themself; a refusal can be
+appealed once to someone else. An approved change of hours is a proposal for HR to apply; the contract is not changed.
+Migration `000058`. Defaults are starting points to confirm for your jurisdiction.
+
+### Added — resignations (WPM-T209, T210)
+
+A worker logs an intent to resign (`POST /api/me/resignation`: a proposed last day that allows the notice, in calendar
+days, default 28 and set with `WPM_RESIGNATION_NOTICE_CALENDAR_DAYS`; an optional reason from a closed list) and can
+withdraw it until a person accepts. The manager is told it was logged, never why. Accepting (`POST
+/api/resignations/{pid}/accept`) records the agreed last day, opens the leaver process and tells the worker; it does
+not end employment. Migration `000057`.
+
+### Added — `/api/me`: contact details, emergency contacts and time-off (WPM-T205–T208)
+
+A worker changes their own home address, telephone numbers, personal e-mail and emergency contacts, and reads their own
+allowances, days remaining and past absence. The writes are an explicit allow-list that skips the HR-only write policy
+for those routes only (a valid token is still required; the handler resolves the person from it). Migration `000056`
+adds `worker_contact_details`. HR and payroll read contact details at `GET /api/workers/{pid}/contact-details`
+(audited). A worker also requests and cancels their own leave (WPM-T216); approving it is still a decision for someone with authority.
+
 ### Security — backups are encrypted by default (WPM-T192)
 
 **Behaviour change.** `scripts/backup.sh` refuses to run without `WPM_BACKUP_KEY_FILE` (a file whose first line is

@@ -68,6 +68,11 @@ mod m20261011_000052_delivery_capacity;
 mod m20261011_000053_engagements;
 mod m20261011_000054_scrub_sick_leave_reasons;
 mod m20261011_000055_audit_chain;
+mod m20261011_000056_contact_details;
+mod m20261011_000057_resignations;
+mod m20261011_000058_flexible_working;
+mod m20261011_000059_equality_declarations;
+mod m20261011_000060_health_requirements;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -135,6 +140,11 @@ impl MigratorTrait for Migrator {
             Box::new(m20261011_000053_engagements::Migration),
             Box::new(m20261011_000054_scrub_sick_leave_reasons::Migration),
             Box::new(m20261011_000055_audit_chain::Migration),
+            Box::new(m20261011_000056_contact_details::Migration),
+            Box::new(m20261011_000057_resignations::Migration),
+            Box::new(m20261011_000058_flexible_working::Migration),
+            Box::new(m20261011_000059_equality_declarations::Migration),
+            Box::new(m20261011_000060_health_requirements::Migration),
             // inject-above (do not remove this comment)
         ]
     }

@@ -13,7 +13,7 @@
 
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
+use sea_orm::{ActiveValue, DatabaseTransaction, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -134,17 +134,17 @@ fn movement_json(
 
 /// `POST /api/workers/{pid}/movements` body.
 #[derive(Debug, Deserialize)]
-struct MovementPayload {
+pub(crate) struct MovementPayload {
     /// `joiner` or `leaver`.
-    kind: String,
+    pub(crate) kind: String,
     /// The start day (default: the hire date) or the leaver's last day (required).
     #[serde(default)]
-    effective_on: Option<NaiveDate>,
+    pub(crate) effective_on: Option<NaiveDate>,
     /// A leaver's reason.
     #[serde(default)]
-    reason: Option<String>,
+    pub(crate) reason: Option<String>,
     #[serde(default)]
-    notes: Option<String>,
+    pub(crate) notes: Option<String>,
 }
 
 /// `POST /api/workers/{pid}/movements` — open a joiner or leaver record with
@@ -160,6 +160,21 @@ async fn open_movement(
     Json(payload): Json<MovementPayload>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
+    let txn = ctx.db.begin().await?;
+    let movement = open_in(&txn, &caller, &worker, payload).await?;
+    txn.commit().await?;
+    format::json(serde_json::json!({ "pid": movement.pid }))
+}
+
+/// Open a movement inside the caller's transaction: validate, insert the record and its dated
+/// checklist, audit. Shared by the HR route and the acceptance of a resignation (WPM-R127), which
+/// opens the leaver process in the same transaction as the decision.
+pub(crate) async fn open_in(
+    txn: &DatabaseTransaction,
+    caller: &MaybeAuthUser,
+    worker: &workers::Model,
+    payload: MovementPayload,
+) -> Result<movements::Model> {
     let effective = match (payload.kind.as_str(), payload.effective_on) {
         ("leaver", None) => return Err(unprocessable("a leaver needs a last day (effective_on)")),
         (_, Some(d)) => d,
@@ -175,7 +190,6 @@ async fn open_movement(
     if payload.kind == "leaver" && matches!(worker.status.as_str(), "terminated" | "retired") {
         return Err(unprocessable("that person has already left"));
     }
-    let txn = ctx.db.begin().await?;
     let movement = movements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -193,7 +207,7 @@ async fn open_movement(
         completed_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&txn)
+    .insert(txn)
     .await
     .map_err(|e| {
         if e.to_string().contains("movements_one_open") {
@@ -217,11 +231,11 @@ async fn open_movement(
             due_on: ActiveValue::set(item.due_on),
             ..Default::default()
         }
-        .insert(&txn)
+        .insert(txn)
         .await?;
     }
     Audit::record(
-        &txn,
+        txn,
         "worker",
         worker.pid,
         &format!("{}_opened", payload.kind),
@@ -229,8 +243,7 @@ async fn open_movement(
         Some(serde_json::json!({ "movement_pid": movement.pid, "effective_on": effective })),
     )
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": movement.pid }))
+    Ok(movement)
 }
 
 /// Query for the list.

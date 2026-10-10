@@ -25,6 +25,21 @@
   decided by the claimant; no amount or text in the audit or notifications; in the subject-access export;
   on erasure draft/submitted claims are cancelled, approved/reimbursed ones keep their amounts (statutory
   retention, WPM-D22) and every free-text field is scrubbed (WPM-D42).
+- **Workplace health requirements** (WPM-D75) are health data. Off unless the deployer records a lawful basis. A record is a
+  status (`up_to_date`, `exempt_recorded`, `declined`) and two dates: there is no column for a diagnosis, a product, a batch or
+  the reason for an exemption. Written only by an occupational-health role (a token attribute), not by HR, a manager or the
+  worker; the worker sees their own; a manager and HR see only cleared or not cleared; the detail is for occupational health and
+  each read is audited; exported to the worker alone; erased with the worker; and never an input to a score (a test fails if
+  other code names the table).
+- **Equality monitoring answers** are special-category data (WPM-D74). Off unless the deployer records a lawful
+  basis; WPM ships no classification (the deployer defines the categories); voluntary, with `prefer not to say`
+  always available; readable by the worker only, never by a manager, HR, payroll or administrator; exported to the
+  worker alone; output only as an aggregate with small groups withheld; audited without values; erased with the
+  worker; and never an input to any score or decision (a test fails if other code names the table).
+- A worker's **home address, telephone numbers and personal e-mail** are kept by the worker themself
+  (WPM-R124): readable by the worker, HR and payroll only (a manager cannot), the previous value is not kept, the
+  audit says they changed and never what they were, an HR or payroll read is audited, and they are in the
+  subject-access export and deleted on erasure.
 - A worker's **pay band and step** is a salary: the person and HR only, audited and
   notified without any figure, in the subject-access export, deleted on erasure
   (WPM-D41).
