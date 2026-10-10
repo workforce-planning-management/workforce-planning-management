@@ -190,7 +190,7 @@ jobs:
           for i in $(seq 1 60); do curl -fs http://localhost:5150/_health && break; sleep 2; done
           curl -fs http://localhost:5150/_posture | grep -q '"auth_enforced":true'
       - name: ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.14.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           target: http://localhost:5150/api-docs/openapi.json
           rules_file_name: .zap/rules.tsv
