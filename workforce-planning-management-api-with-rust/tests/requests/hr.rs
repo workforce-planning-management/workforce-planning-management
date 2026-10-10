@@ -1,10 +1,8 @@
 //! The hire journey end-to-end (WPM-R1–R3, WPM-R7) plus the
 //! unknown-pid `404` contract and the org-chart cycle refusal.
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{a_person, a_worker, activate, an_org, seed_worker};
 
@@ -15,7 +13,7 @@ use super::{a_person, a_worker, activate, an_org, seed_worker};
 // (creates the worker in-tx) → onboarding gate blocks activation →
 // complete/waive → activate → requisition fills.
 async fn hire_journey_end_to_end() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         // Requisition: draft → open.
         let requisition: Value = request
@@ -186,7 +184,7 @@ async fn hire_journey_end_to_end() {
 // cycle check refuses a managerial loop, and the worker-number
 // uniqueness holds per organization.
 async fn contracts_404_cycle_and_uniqueness() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let ghost = uuid::Uuid::new_v4();
         for path in [
             format!("/api/workers/{ghost}"),

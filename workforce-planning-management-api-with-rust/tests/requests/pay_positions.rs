@@ -3,11 +3,9 @@
 //! exported and erased with the person, and a reminder that names no pay.
 
 use chrono::{Duration, Months, Utc};
-use loco_rs::testing::prelude::*;
 use sea_orm::{ConnectionTrait, Statement};
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 use workforce_planning_management_service::tasks::pay_progression_reminders::send_reminders;
 
 use super::{activate, an_org, seed_worker};
@@ -16,7 +14,7 @@ use super::{activate, an_org, seed_worker};
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "PP-1", None).await;
         activate!(&request, &worker).await;
@@ -29,12 +27,12 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
         // Unknown scale, band, a step off the band, a step on a single rate,
         // and a future date: all refused.
         for bad in [
-            json!({ "scale": "afc-england-2026-27", "band": "6", "step": 1 }),
-            json!({ "scale": "afc-wales-2026-27", "band": "14", "step": 1 }),
-            json!({ "scale": "afc-wales-2026-27", "band": "6", "step": 4 }),
-            json!({ "scale": "afc-wales-2026-27", "band": "6", "step": 0 }),
-            json!({ "scale": "afc-wales-2026-27", "band": "2", "step": 2 }),
-            json!({ "scale": "afc-wales-2026-27", "band": "6", "step": 1, "step_since": "2999-01-01" }),
+            json!({ "scale": "national-2025-26", "band": "6", "step": 1 }),
+            json!({ "scale": "national-2026-27", "band": "14", "step": 1 }),
+            json!({ "scale": "national-2026-27", "band": "6", "step": 4 }),
+            json!({ "scale": "national-2026-27", "band": "6", "step": 0 }),
+            json!({ "scale": "national-2026-27", "band": "2", "step": 2 }),
+            json!({ "scale": "national-2026-27", "band": "6", "step": 1, "step_since": "2999-01-01" }),
         ] {
             assert_eq!(request.put(&url).json(&bad).await.status_code(), 422, "{bad}");
         }
@@ -44,7 +42,7 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
         let since = today - Months::new(24) + Duration::days(10);
         let set: Value = request
             .put(&url)
-            .json(&json!({ "scale": "afc-wales-2026-27", "band": "6", "step": 1,
+            .json(&json!({ "scale": "national-2026-27", "band": "6", "step": 1,
                            "step_since": since.to_string() }))
             .await
             .json();
@@ -63,7 +61,7 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
         // Moving to the top step: nowhere to go.
         let top: Value = request
             .put(&url)
-            .json(&json!({ "scale": "afc-wales-2026-27", "band": "6", "step": 3 }))
+            .json(&json!({ "scale": "national-2026-27", "band": "6", "step": 3 }))
             .await
             .json();
         assert_eq!(top["pay_position"]["progression"]["kind"], "at_top");
@@ -75,7 +73,7 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
         )
         .unwrap();
         assert!(audit.contains("pay_position_set"), "{audit}");
-        assert!(!audit.contains("afc-wales") && !audit.contains("4884100"), "{audit}");
+        assert!(!audit.contains("national-2026") && !audit.contains("4884100"), "{audit}");
 
         // It travels with the person.
         let export: Value = request
@@ -91,7 +89,7 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
         // Set again, then erase with the person: the row is gone.
         request
             .put(&url)
-            .json(&json!({ "scale": "afc-wales-2026-27", "band": "5", "step": 2 }))
+            .json(&json!({ "scale": "national-2026-27", "band": "5", "step": 2 }))
             .await
             .assert_status_ok();
         for to in ["offboarding", "terminated"] {
@@ -123,7 +121,7 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn eligibility_reminders_name_no_pay_and_are_sent_once() {
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let soon = seed_worker!(&request, &org, "PP-2", None).await;
         let later = seed_worker!(&request, &org, "PP-3", None).await;
@@ -139,7 +137,7 @@ async fn eligibility_reminders_name_no_pay_and_are_sent_once() {
             request
                 .put(&format!("/api/workers/{who}/pay-position"))
                 .json(
-                    &json!({ "scale": "afc-wales-2026-27", "band": "6", "step": 1,
+                    &json!({ "scale": "national-2026-27", "band": "6", "step": 1,
                                "step_since": since.to_string() }),
                 )
                 .await
@@ -178,7 +176,7 @@ async fn eligibility_reminders_name_no_pay_and_are_sent_once() {
         let text = note["body"].as_str().unwrap();
         assert!(text.contains("eligible"), "{text}");
         let all = serde_json::to_string(note).unwrap();
-        for leak in ["afc-wales", "band", "40559", "42805", "£"] {
+        for leak in ["national-2026", "band", "40559", "42805", "£"] {
             assert!(!all.contains(leak), "{leak} leaked: {all}");
         }
         // A window that excludes the date tells nobody new.

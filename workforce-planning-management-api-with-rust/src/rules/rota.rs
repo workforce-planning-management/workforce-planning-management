@@ -208,7 +208,9 @@ pub fn validate_swap(
         return Err("a swap must include today or a later day".to_string());
     }
     if (ends_on - starts_on).num_days() + 1 > MAX_WINDOW_DAYS {
-        return Err(format!("a swap may cover at most {MAX_WINDOW_DAYS} days"));
+        return Err(format!(
+            "a swap may cover at most {MAX_WINDOW_DAYS} calendar days"
+        ));
     }
     Ok(())
 }

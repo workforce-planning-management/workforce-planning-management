@@ -284,7 +284,7 @@ describe("api path map", () => {
     await wpm.moveExpenseClaim("c1", "reject", { note: "no" });
     await wpm.getWorkerPayPosition("w1");
     await wpm.setWorkerPayPosition("w1", {
-      scale: "afc-wales-2026-27",
+      scale: "national-2026-27",
       band: "6",
       step: 1,
     });
@@ -295,12 +295,12 @@ describe("api path map", () => {
     });
     await wpm.clearRoleGrade("p1");
     await wpm.listPayScales();
-    await wpm.getPayScale("afc-wales-2026-27");
-    await wpm.payPosition("afc-wales-2026-27", {
+    await wpm.getPayScale("national-2026-27");
+    await wpm.payPosition("national-2026-27", {
       band: "5",
       salary_minor: 3511400,
     });
-    await wpm.payPosition("afc-wales-2026-27", {
+    await wpm.payPosition("national-2026-27", {
       band: "6",
       step: 1,
       months_on_step: 24,
@@ -466,9 +466,9 @@ describe("api path map", () => {
       "/api/proxy/role-profiles/p1/grade",
       "/api/proxy/role-profiles/p1/grade",
       "/api/proxy/pay-scales",
-      "/api/proxy/pay-scales/afc-wales-2026-27",
-      "/api/proxy/pay-scales/afc-wales-2026-27/position?band=5&salary_minor=3511400",
-      "/api/proxy/pay-scales/afc-wales-2026-27/position?band=6&step=1&months_on_step=24",
+      "/api/proxy/pay-scales/national-2026-27",
+      "/api/proxy/pay-scales/national-2026-27/position?band=5&salary_minor=3511400",
+      "/api/proxy/pay-scales/national-2026-27/position?band=6&step=1&months_on_step=24",
       "/api/proxy/directory",
       "/api/proxy/directory?q=ann+lee&department=Finance&limit=100",
       "/api/proxy/workforce-intelligence/insights",

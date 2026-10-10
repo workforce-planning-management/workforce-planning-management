@@ -46,12 +46,12 @@ lines and groups, organization memberships and transfers, and
 
 It is a **consumer application** (the case-folder / patient-flow /
 project-portfolio-management shape): it does not register identities
-itself. A human is a [person-service](../../person/person-service-with-loco/)
+itself. A human is a person-service
 record; their professional identity is a
-[worker-service](../../worker/worker-service-with-loco/) record; the
-employer is an [organization-service](../../organization/organization-service-with-loco/)
+worker-service record; the
+employer is an organization-service
 record; training courses live in the
-[course-service](../../course/course-service-with-loco/). WPM owns only
+course-service. WPM owns only
 the **employment relationship and its operational state**: employee
 records, requisitions, applications, time, leave, shifts, benefits,
 reviews, enrollments, succession, payroll — always referencing
@@ -81,7 +81,7 @@ identities by `EntityRef` URN, never duplicating them.
 | [payroll-compensation.md](payroll-compensation.md) | Pillar 5: payroll runs, payslips, benchmarking                                            |
 | [people-directory-and-cover.md](people-directory-and-cover.md) | Employee directory, emergency contacts, backups (cover), the on-call rota with swaps and reminders (WPM-R39–R42) |
 | [expense-claims.md](expense-claims.md) | Expense claims: items, approval by someone other than the claimant, reimbursement (WPM-R55) |
-| [pay-scales.md](pay-scales.md) | NHS Agenda for Change pay scale for Wales (2026/27), salary placement and progression lookup, a worker's band and step with eligibility reminders (WPM-R51, R54) |
+| [pay-scales.md](pay-scales.md) | A national public-sector pay scale (2026/27), salary placement and progression lookup, a worker's band and step with eligibility reminders (WPM-R51, R54) |
 | [job-levels.md](job-levels.md) | Google technical job levels L3–L11 as reference data; a worker's level and a role's level and pay band (WPM-R52–R53) |
 | [skills-and-training.md](skills-and-training.md)   | Skills gap analysis and training time recommendations (WPM-R43–R44)                       |
 | [joiners-and-leavers.md](joiners-and-leavers.md)   | Joiner / leaver records with dated checklists; a leaver's last-day handover and audit trail (WPM-R45–R46) |
@@ -92,6 +92,7 @@ identities by `EntityRef` URN, never duplicating them.
 | [audit.md](audit.md)                               | Audit trail, events, sensitive-read logging                                               |
 | [architecture.md](architecture.md)                 | Editions, layering, pure-core rules, persistence                                          |
 | [testing.md](testing.md)                           | Test strategy per edition                                                                 |
+| [production-readiness.md](production-readiness.md) | Sign-in on by default, security headers, rate limiting, standalone build and CI, license texts, releases, generated status (WPM-R72–R74, R77, R78, R87, R88) |
 | [regulatory.md](regulatory.md)                     | Demo status; UK GDPR / employment-records posture; subject rights (WPM-R30)               |
 | [roadmap.md](roadmap.md)                           | Beyond the v1 queue                                                                       |
 | [glossary.md](glossary.md)                         | ATS, FTE, LMS, requisition, accrual, …                                                    |
@@ -132,11 +133,11 @@ announcement read receipts are counts, never names (WPM-D35).
 ## References
 
 - Sibling consumer apps (the shape this follows):
-  [patient-flow](../../patient-flow/spec/index.md),
-  [case-folder](../../case-folder/spec/index.md),
-  [project-portfolio-management](../../project-portfolio-management/spec/index.md)
-- Family contracts: [cross-service-linking](../../agents/share/cross-service-linking.md)
+  patient-flow,
+  case-folder,
+  project-portfolio-management
+- Family contracts: cross-service-linking
   (the `employed_by` worker→organization edge is a registry v1 kind),
-  [authentication-sessions](../../agents/share/authentication-sessions.md),
-  [authorization-attributes](../../agents/share/authorization-attributes.md),
-  [security](../../agents/share/security.md)
+  authentication-sessions,
+  authorization-attributes,
+  security

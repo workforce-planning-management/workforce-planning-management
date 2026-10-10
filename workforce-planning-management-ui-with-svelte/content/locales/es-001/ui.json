@@ -38,7 +38,7 @@
   },
   "pr": {
     "retention": "Retención",
-    "horizon": "Horizonte (días)",
+    "horizon": "Horizonte (días naturales)",
     "pastHorizon": "Borrados lógicos más allá del horizonte",
     "candidates": "Candidatos con consentimiento vencido",
     "sweep": "Ejecutar barrido",
@@ -133,7 +133,7 @@
     "jobTitle": "Puesto",
     "name": "Nombre",
     "actions": "Acciones",
-    "days": "días",
+    "days": "días naturales",
     "masked": "Oculto"
   },
   "dash": {
@@ -280,7 +280,7 @@
     "timeToFill": "Tiempo de cobertura (mediana)",
     "insights": "Conclusiones",
     "noInsights": "Nada supera un umbral en este periodo.",
-    "days": "días",
+    "days": "días naturales",
     "mean": "media",
     "requisitions": "vacantes"
   },
@@ -360,7 +360,7 @@
       "suggestion": "Busque niveles que se puedan fusionar."
     },
     "time_to_fill_slow": {
-      "observation": "La mediana de tiempo de cobertura fue de {days} días.",
+      "observation": "La mediana de tiempo de cobertura fue de {days} días naturales.",
       "suggestion": "Averigüe en qué fase del proceso esperan las vacantes."
     }
   },
@@ -464,8 +464,8 @@
     "info": "Información",
     "updated": "Actualizado",
     "period": "Periodo",
-    "range30d": "30 días",
-    "range90d": "90 días",
+    "range30d": "30 días naturales",
+    "range90d": "90 días naturales",
     "range12m": "12 meses",
     "rangeYtd": "Año en curso",
     "vsStart": "frente al inicio del periodo"
@@ -642,7 +642,7 @@
     "hint": "Solo usted y RR. HH. pueden verlo: una banda y un escalón son un salario. La elegibilidad son los años en el escalón, no una promesa de ascenso.",
     "none": "Ninguna banda salarial registrada.",
     "current": "Banda {band}, escalón {step}: {amount} al año (tiempo completo), desde {since}.",
-    "notYet": "Puede ascender el {date} (en {days} días), a {amount}.",
+    "notYet": "Puede ascender el {date} (en {days} días naturales), a {amount}.",
     "due": "Puede ascender ya (desde {date}), a {amount}."
   },
   "expenses": {

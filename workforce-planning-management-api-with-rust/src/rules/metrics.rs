@@ -36,7 +36,7 @@ pub const DEFINITIONS: &[(&str, &str)] = &[
     ),
     (
         "time_to_fill",
-        "Whole days from a requisition's opened_on to its filled_on, over requisitions filled \
+        "Whole calendar days from a requisition's opened_on to its filled_on, over requisitions filled \
          within the period. Requisitions lacking either date are left out, not guessed.",
     ),
 ];

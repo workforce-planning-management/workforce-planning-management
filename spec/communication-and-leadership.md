@@ -36,8 +36,8 @@ scrolling, on an iPad.*
 
 - `/ceo`: **six tiles** — headcount (with change over the period), turnover,
   open vacancies (+ median time-to-fill), succession gaps, a six-month
-  headcount line, and the top insights. A **period** control (30 days · 90
-  days · 12 months · year to date; default 12 months) applies to turnover,
+  headcount line, and the top insights. A **period** control (30 calendar days · 90
+  calendar days · 12 months · year to date; default 12 months) applies to turnover,
   leavers, time-to-fill, the headcount change and the insights; it is in the
   URL (`?range=`). Every tile links to the page behind it.
 - **Fits one screen** (WPM-D36): sized for an **iPad (9th generation), 2160 ×
@@ -60,7 +60,7 @@ next.*
 - `GET /api/workforce-intelligence/insights?from=&to=` derives findings from
   the shared metrics ([`/metrics`](glossary.md#metrics), WPM-T44): high
   turnover (≥ 20%), headcount shrinking or growing (≥ 10%), spans of control
-  too wide (> 12) or narrow (< 3), slow time-to-fill (> 60 days). Thresholds
+  too wide (> 12) or narrow (< 3), slow time-to-fill (> 60 calendar days). Thresholds
   are published heuristics (`thresholds` in the payload), not benchmarks. A
   metric that is unknown yields no finding.
 - Each finding has a stable `code`, the English text, and **`params`** (the

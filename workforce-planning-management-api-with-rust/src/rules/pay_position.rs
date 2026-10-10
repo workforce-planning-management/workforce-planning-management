@@ -131,8 +131,8 @@ mod tests {
         NaiveDate::from_ymd_opt(y, m, day).unwrap()
     }
 
-    fn wales() -> PayScale {
-        pay_scale::afc_wales_2026_27()
+    fn national() -> PayScale {
+        pay_scale::national_2026_27()
     }
 
     /// A position must exist on the scale: unknown scale, band, or step is refused
@@ -140,28 +140,28 @@ mod tests {
     #[test]
     fn positions_are_validated_against_the_scale() {
         assert_eq!(
-            validate("afc-wales-2026-27", "6", 2),
-            Ok(("afc-wales-2026-27", "6", 2))
+            validate("national-2026-27", "6", 2),
+            Ok(("national-2026-27", "6", 2))
         );
         assert_eq!(
-            validate("afc-wales-2026-27", "8A", 1),
-            Ok(("afc-wales-2026-27", "8a", 1))
+            validate("national-2026-27", "8A", 1),
+            Ok(("national-2026-27", "8a", 1))
         );
-        assert!(validate("afc-england-2026-27", "6", 1).is_err());
-        assert!(validate("afc-wales-2026-27", "14", 1).is_err());
+        assert!(validate("national-2025-26", "6", 1).is_err());
+        assert!(validate("national-2026-27", "14", 1).is_err());
         assert!(
-            validate("afc-wales-2026-27", "6", 0)
+            validate("national-2026-27", "6", 0)
                 .unwrap_err()
                 .contains("1-based")
         );
         assert!(
-            validate("afc-wales-2026-27", "6", 4)
+            validate("national-2026-27", "6", 4)
                 .unwrap_err()
                 .contains("3 step")
         );
         // Band 2 is a single rate: only step 1.
-        assert!(validate("afc-wales-2026-27", "2", 1).is_ok());
-        assert!(validate("afc-wales-2026-27", "2", 2).is_err());
+        assert!(validate("national-2026-27", "2", 1).is_ok());
+        assert!(validate("national-2026-27", "2", 2).is_err());
     }
 
     #[test]
@@ -174,7 +174,7 @@ mod tests {
     /// a single rate and a step off the band have none.
     #[test]
     fn eligibility_dates() {
-        let scale = wales();
+        let scale = national();
         let b6 = scale.band("6").unwrap();
         // Entry: 2 years. Intermediate: 3 years.
         assert_eq!(eligible_on(b6, 1, d(2024, 4, 1)), Some(d(2026, 4, 1)));
@@ -194,7 +194,7 @@ mod tests {
     /// progression; a step off the band is `None`.
     #[test]
     fn standing_on_a_day() {
-        let scale = wales();
+        let scale = national();
         let b6 = scale.band("6").unwrap();
         let since = d(2024, 4, 1);
         assert_eq!(
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn a_steps_pay() {
-        let scale = wales();
+        let scale = national();
         assert_eq!(annual_minor(&scale, "5", 2), Some(3_511_400));
         assert_eq!(annual_minor(&scale, "5", 4), None);
         assert_eq!(annual_minor(&scale, "99", 1), None);

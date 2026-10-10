@@ -2,10 +2,8 @@
 //! proficiency + the matrix/gaps, learning paths + honest progress,
 //! training analytics, and the mentorship lifecycle + overview.
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -14,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded team, the whole L&D surface
 async fn learning_round_trip() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let mentor = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &mentor).await;
@@ -205,7 +203,7 @@ async fn learning_round_trip() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn capability_analysis_reports_skill_depth() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let a = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &a).await;
@@ -293,7 +291,7 @@ async fn capability_analysis_reports_skill_depth() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn workforce_metrics_report_defined_numbers() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         // Two workers hired 2026-01-05 (the helper's fixed date).
         let a = seed_worker!(&request, &org, "E-1", None).await;
@@ -351,7 +349,7 @@ async fn workforce_metrics_report_defined_numbers() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn directory_lists_employed_workers_without_sensitive_fields() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let stay = seed_worker!(&request, &org, format!("DIR-{tag}-A"), Some(450_000)).await;
@@ -463,7 +461,7 @@ async fn directory_lists_employed_workers_without_sensitive_fields() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn workforce_insights_flag_a_shrinking_headcount() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let mut pids = Vec::new();
         for n in ["E-1", "E-2", "E-3"] {
@@ -531,7 +529,7 @@ async fn workforce_insights_flag_a_shrinking_headcount() {
 async fn headcount_snapshots_are_recorded_idempotently() {
     use workforce_planning_management_service::tasks::snapshot::run_snapshot;
 
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let a = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &a).await;
@@ -592,7 +590,7 @@ async fn headcount_snapshots_are_recorded_idempotently() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn role_profiles_hold_required_skills() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let skill: Value = request
             .post("/api/skills")
             .json(&json!({ "name": "Triage", "category": "technical" }))
@@ -656,7 +654,7 @@ async fn role_profiles_hold_required_skills() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn role_gap_grades_declarations_against_a_role() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &worker).await;
@@ -735,7 +733,7 @@ async fn role_gap_grades_declarations_against_a_role() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn cpd_ledger_tracks_progress_and_registrations() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &worker).await;
@@ -867,7 +865,7 @@ async fn cpd_ledger_tracks_progress_and_registrations() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "E-1", None).await; // job title "Engineer"
         activate!(&request, &worker).await;
@@ -947,7 +945,7 @@ async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn lms_completions_update_enrollments_and_cpd_idempotently() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &worker).await;
@@ -1010,7 +1008,7 @@ async fn lms_completions_update_enrollments_and_cpd_idempotently() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn change_tracker_reports_aggregate_readiness() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         // Two employed "Engineer"s (the seed helper's job title); one declares the rising skill.
         let a = seed_worker!(&request, &org, "E-1", None).await;
@@ -1100,7 +1098,7 @@ async fn change_tracker_reports_aggregate_readiness() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn workforce_plan_forecasts_gaps_and_alignment() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let a = seed_worker!(&request, &org, "E-1", None).await; // department "engineering"
         activate!(&request, &a).await;
@@ -1267,7 +1265,7 @@ async fn workforce_plan_forecasts_gaps_and_alignment() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn workforce_plan_costs_hiring_against_a_budget() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         for n in 1..=2 {
             let w = seed_worker!(&request, &org, &format!("E-{n}"), None).await; // "engineering"
@@ -1363,7 +1361,7 @@ async fn capability_framework_import_and_progression() {
     use workforce_planning_management_service::rules::framework::LevelMapping;
     use workforce_planning_management_service::tasks::import_framework::import_pcf;
 
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let fixture =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pcf-mini");
         let report = import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
@@ -1561,7 +1559,7 @@ async fn capability_framework_import_and_progression() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn skills_can_be_edited_categorised_and_referenced() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let make = |name: &str| {
             request
                 .post("/api/skills")
@@ -1633,7 +1631,7 @@ async fn skills_can_be_edited_categorised_and_referenced() {
 async fn esco_import_search_and_seeding() {
     use workforce_planning_management_service::tasks::import_esco::import_esco;
 
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         // Catalogue skills that may or may not link to ESCO.
         for name in ["Test software", "Work in teams", "Duplicate label"] {
             request
@@ -1737,7 +1735,7 @@ async fn esco_import_search_and_seeding() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn skills_merge_keeps_the_stronger_statement_and_delete_refuses_use() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let w1 = seed_worker!(&request, &org, "E-1", None).await;
         let w2 = seed_worker!(&request, &org, "E-2", None).await;
@@ -1833,7 +1831,7 @@ async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
     use workforce_planning_management_service::tasks::import_esco::import_esco;
     use workforce_planning_management_service::tasks::import_framework::import_pcf;
 
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
         import_pcf(&ctx.db, &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
         import_esco(&ctx.db, &root.join("esco-mini"), "en", "v-test").await.expect("esco");
@@ -1943,7 +1941,7 @@ async fn career_history_and_aspirations() {
     use workforce_planning_management_service::tasks::import_esco::import_esco;
     use workforce_planning_management_service::tasks::import_framework::import_pcf;
 
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
         import_pcf(&ctx.db, &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
         import_esco(&ctx.db, &root.join("esco-mini"), "en", "v-test").await.expect("esco");
@@ -2057,7 +2055,7 @@ async fn career_history_and_aspirations() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn reporting_lines_downline_aspirations_and_groups() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         // ceo ← vp ← lead ← dev;  ceo ← peer
         let mut pids = Vec::new();
@@ -2202,7 +2200,7 @@ async fn reporting_lines_downline_aspirations_and_groups() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn confederation_groups_and_transfers() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let (parent, child_a, child_b, outsider) = (an_org(), an_org(), an_org(), an_org());
         for child in [&child_a, &child_b] {
             request.post("/api/organization-confederations")

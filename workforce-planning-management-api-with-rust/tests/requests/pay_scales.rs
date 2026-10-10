@@ -1,31 +1,31 @@
-//! Pay scales: the Agenda for Change (Wales) scale is served from the pay
+//! Pay scales: the national scale is served from the pay
 //! circular, and the lookup places a salary and answers progression — refusing
 //! what it cannot answer rather than guessing.
 
-use loco_rs::testing::prelude::*;
 use serde_json::Value;
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
-async fn the_wales_scale_is_served_and_salaries_are_placed_on_it() {
-    request::<App, _, _>(|request, _ctx| async move {
+async fn the_national_scale_is_served_and_salaries_are_placed_on_it() {
+    crate::requests::request_open(|request, _ctx| async move {
         // The list names the scale, its source and its bands.
         let list: Value = request.get("/api/pay-scales").await.json();
-        let wales = &list.as_array().unwrap()[0];
-        assert_eq!(wales["id"], "afc-wales-2026-27");
-        assert_eq!(wales["nation"], "wales");
-        assert_eq!(wales["effective_from"], "2026-04-01");
-        assert!(wales["source"].as_str().unwrap().contains("AfC(W) 02/2026"));
-        assert_eq!(wales["bands"].as_array().unwrap().len(), 12);
+        let scale0 = &list.as_array().unwrap()[0];
+        assert_eq!(scale0["id"], "national-2026-27");
+        assert_eq!(scale0["nation"], "national");
+        assert_eq!(scale0["effective_from"], "2026-04-01");
+        assert!(
+            scale0["source"]
+                .as_str()
+                .unwrap()
+                .contains("pay circular for 2026/27")
+        );
+        assert_eq!(scale0["bands"].as_array().unwrap().len(), 12);
 
         // The full scale: band 5 has three steps with years to progression.
-        let scale: Value = request
-            .get("/api/pay-scales/afc-wales-2026-27")
-            .await
-            .json();
+        let scale: Value = request.get("/api/pay-scales/national-2026-27").await.json();
         let band5 = scale["bands"]
             .as_array()
             .unwrap()
@@ -38,7 +38,7 @@ async fn the_wales_scale_is_served_and_salaries_are_placed_on_it() {
         assert_eq!(scale["allowances"].as_array().unwrap().len(), 3);
         assert_eq!(
             request
-                .get("/api/pay-scales/afc-england-2026-27")
+                .get("/api/pay-scales/national-2025-26")
                 .await
                 .status_code(),
             404
@@ -49,7 +49,7 @@ async fn the_wales_scale_is_served_and_salaries_are_placed_on_it() {
             let request = &request;
             async move {
                 let r = request
-                    .get(&format!("/api/pay-scales/afc-wales-2026-27/position?{q}"))
+                    .get(&format!("/api/pay-scales/national-2026-27/position?{q}"))
                     .await;
                 (r.status_code(), r.json::<Value>())
             }

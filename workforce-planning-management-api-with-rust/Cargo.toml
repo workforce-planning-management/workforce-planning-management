@@ -69,13 +69,13 @@ reqwest = { version = "0.12", default-features = false, features = [
 
 # Cross-service entity references (EntityRef URN + entity-type registry):
 # people/workers/organizations/courses are referenced, never duplicated.
-entity-ref = { path = "../../link/entity-ref-rust-crate" }
+entity-ref = { path = "crates/entity-ref" }
 
 # Offline PASETO v4.public verification + the shared ABAC engine. The
 # `Claims`/`Policy`/`Action` types here are backend-agnostic (see the
 # `keycloak` feature above) — only `Verifier` (PASETO signature
 # verification) is `paseto`-specific.
-authentication-verifier = { path = "../../authentication/authentication-verifier-rust-crate", features = ["fetch"] }
+authentication-verifier = { path = "crates/authentication-verifier", features = ["fetch"] }
 
 # `keycloak` feature only: direct verification of a Keycloak-issued JWT
 # against the realm's JWKS. `aws_lc_rs` is the ONLY crypto backend this

@@ -13,7 +13,7 @@ const iso = (d: Date): string => d.toISOString().slice(0, 10);
 /**
  * The dates the trend plots: the last day of each of the `months` months
  * before `today`'s month, then `today` itself — `months + 1` points,
- * oldest first. Month-ends, not "30 days apart", so each point is a month.
+ * oldest first. Month-ends, not "30 calendar days apart", so each point is a month.
  */
 export function trendDates(today: string, months = 6): string[] {
   const t = new Date(`${today}T00:00:00Z`);
@@ -76,7 +76,7 @@ export function parseRange(raw: string | null | undefined): Range {
 
 /**
  * The `from`/`to` dates (inclusive, ISO) for `range` ending `today`: 30 or
- * 90 days counting today, twelve months back (the same date last year,
+ * 90 calendar days counting today, twelve months back (the same date last year,
  * clamped to the month's end — the service's own default), or since 1 January.
  */
 export function rangeDates(

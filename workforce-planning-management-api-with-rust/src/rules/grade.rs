@@ -91,12 +91,12 @@ mod tests {
     #[test]
     fn bands_resolve_or_say_why_not() {
         assert_eq!(
-            resolve_band("afc-wales-2026-27", "8A"),
-            Ok(("afc-wales-2026-27", "8a"))
+            resolve_band("national-2026-27", "8A"),
+            Ok(("national-2026-27", "8a"))
         );
-        assert!(resolve_band("afc-england-2026-27", "5").is_err());
+        assert!(resolve_band("national-2025-26", "5").is_err());
         assert!(
-            resolve_band("afc-wales-2026-27", "10")
+            resolve_band("national-2026-27", "10")
                 .unwrap_err()
                 .contains("10")
         );

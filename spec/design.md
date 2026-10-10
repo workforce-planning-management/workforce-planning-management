@@ -236,7 +236,7 @@ active: the relationship is the lawful basis. **Retention** is the
 opposite mechanic: soft-deleted rows past the horizon are
 hard-deleted, and expired-consent candidates are scrubbed — the
 candidate pool's duty is to *lose* data. The horizon has a floor
-(30 days) precisely because a configurable horizon of zero would
+(30 calendar days) precisely because a configurable horizon of zero would
 silently turn every soft-delete into a hard-delete. And one thing is
 refused honestly: WPM cannot erase what the upstream identity
 services hold — the export and erasure cover WPM's own store, and
@@ -336,3 +336,50 @@ Recorded beside the requirements they shape:
   [communication-and-leadership.md](communication-and-leadership.md).
 - **WPM-D37** the URL carries the locale; strings are content —
   [locales-for-global-sharing-with-svelte](locales-for-global-sharing-with-svelte/index.md).
+
+## WPM-D55 — Scheduling lives in project-portfolio-management, not here
+
+Decided 2026-10-09.
+
+**Decision.** Critical chain capabilities, critical path capabilities and
+similar scheduling and project-control capabilities live in the sibling
+project-portfolio-management
+service, not in WPM. That covers:
+
+- critical chain project management: chains, project, feeding and capacity
+  buffers, drum schedules, buffer status and fever charts;
+- the critical path method: task networks, dependencies, float and the
+  critical path;
+- similar techniques: PERT estimates, resource-levelled schedules, Gantt
+  charts, schedule baselines and earned value.
+
+**What WPM keeps.** Workforce capacity: who is employed, FTE, leave, skills,
+skill pools, the operations reservation, partner commitments, and the capacity
+view with its constraint pool (proposed WPM-R56–R60 in [plan.md](plan.md)).
+WPM publishes capacity per pool per month for project-portfolio-management to
+schedule against, with programmes referenced by `EntityRef` URN. WPM stores no
+tasks, durations, dependencies, estimates, buffers or schedule progress.
+
+**Why.**
+
+- One owner per concept. WPM owns the employment relationship and its
+  operational state ([index.md](index.md), [scope.md](scope.md)); programmes
+  and their schedules belong to project-portfolio-management.
+- A schedule kept in two services drifts.
+- Task estimates and progress in an HR system invite their use as individual
+  performance data.
+
+**Consequences.**
+
+- Proposed WPM-R71, proposed WPM-D51 and tasks WPM-T120–T122 are withdrawn
+  from [plan.md](plan.md) and [tasks.md](tasks.md). Their ids are not reused.
+- The start check (proposed WPM-R60) answers "is there capacity?", never
+  "when does each task happen?".
+- The integration point is a capacity contract between the two services (the
+  roadmap's "WPM ↔ PPM bridge").
+
+## WPM-D52, WPM-D54 — Secure by default; rate limits keep no history
+
+Sign-in is enforced unless explicitly turned off, production refuses an open or
+keyless start, and the rate limiter names callers by network address and keeps
+nothing — [production-readiness.md](production-readiness.md).

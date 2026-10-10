@@ -94,6 +94,33 @@ test.describe("sign-in gate (WPM-T38)", () => {
     await expect(page).toHaveURL(/\/signin$/);
   });
 
+  test("pages send security headers and the policy blocks nothing the app needs", async ({
+    page,
+  }) => {
+    const violations: string[] = [];
+    page.on("console", (message) => {
+      if (/content security policy|refused to/i.test(message.text())) {
+        violations.push(message.text());
+      }
+    });
+    const response = await page.goto("/signin");
+    expect(response).not.toBeNull();
+    const headers = response!.headers();
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(headers["cross-origin-opener-policy"]).toBe("same-origin");
+    const csp = headers["content-security-policy"] ?? "";
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
+    // The app still hydrates under the policy: the page is interactive.
+    await expect(page.locator("body")).not.toBeEmpty();
+    // A second public page, to exercise client navigation.
+    await page.goto("/en-001/tour");
+    expect(violations).toEqual([]);
+  });
+
   test("the sitemap lists the public pages in every locale, and robots.txt points at it", async ({
     request,
   }) => {
@@ -1033,14 +1060,14 @@ test.describe("signed-in smoke coverage", () => {
       years_to_next: years,
     });
     const scale = {
-      id: "afc-wales-2026-27",
-      name: "NHS Wales Agenda for Change 2026/27",
-      framework: "agenda-for-change",
-      nation: "wales",
+      id: "national-2026-27",
+      name: "Public-sector pay scale 2026/27",
+      framework: "banded-pay",
+      nation: "national",
       currency: "GBP",
       effective_from: "2026-04-01",
       uplift_tenths_percent: 33,
-      source: "AfC(W) 02/2026",
+      source: "Government pay circular for 2026/27, Annex 1",
       minutes_per_week: 2250,
       bands: [
         {
@@ -1058,7 +1085,7 @@ test.describe("signed-in smoke coverage", () => {
       (route) => route.fulfill({ json: [{ ...scale, bands: ["6"] }] }),
     );
     await page.route(
-      (url) => url.pathname === "/api/proxy/pay-scales/afc-wales-2026-27",
+      (url) => url.pathname === "/api/proxy/pay-scales/national-2026-27",
       (route) => route.fulfill({ json: scale }),
     );
     await page.route(`**/api/proxy/workers/${WORKER.pid}/pay-position`, async (route) => {
@@ -1100,10 +1127,10 @@ test.describe("signed-in smoke coverage", () => {
     await expect(panel.getByTestId("pay-position-held")).toContainText("Band 6, step 1");
     await expect(panel.getByTestId("pay-position-held")).toContainText("£40,559");
     await expect(panel.getByTestId("pay-position-progression")).toContainText(
-      "Eligible to move up on 2026-12-01 (in 56 days), to £42,805",
+      "Eligible to move up on 2026-12-01 (in 56 calendar days), to £42,805",
     );
     expect(sent.at(-1)).toEqual({
-      scale: "afc-wales-2026-27",
+      scale: "national-2026-27",
       band: "6",
       step: 1,
       step_since: "2024-12-01",
@@ -1297,14 +1324,14 @@ test.describe("signed-in smoke coverage", () => {
       years_to_next: years,
     });
     const scale = {
-      id: "afc-wales-2026-27",
-      name: "NHS Wales Agenda for Change 2026/27",
-      framework: "agenda-for-change",
-      nation: "wales",
+      id: "national-2026-27",
+      name: "Public-sector pay scale 2026/27",
+      framework: "banded-pay",
+      nation: "national",
       currency: "GBP",
       effective_from: "2026-04-01",
       uplift_tenths_percent: 33,
-      source: "AfC(W) 02/2026",
+      source: "Government pay circular for 2026/27, Annex 1",
       minutes_per_week: 2250,
       bands: [
         {
@@ -1345,7 +1372,7 @@ test.describe("signed-in smoke coverage", () => {
     await stub("/job-levels", [{ ...ladder, levels: ["L5"] }]);
     await stub("/job-levels/google-levels", ladder);
     await stub("/pay-scales", [{ ...scale, bands: ["7"] }]);
-    await stub("/pay-scales/afc-wales-2026-27", scale);
+    await stub("/pay-scales/national-2026-27", scale);
     await page.route(`**/api/proxy/role-profiles/${pid}/grade`, async (route) => {
       const method = route.request().method();
       if (method === "PUT") {
@@ -1392,7 +1419,7 @@ test.describe("signed-in smoke coverage", () => {
     await expect(held).toContainText("£57,365");
     expect(sent.at(-1)).toEqual({
       job_level: { framework: "google-levels", level: "L5" },
-      pay_band: { scale: "afc-wales-2026-27", band: "7" },
+      pay_band: { scale: "national-2026-27", band: "7" },
     });
     await panel.getByTestId("role-grade-clear").click();
     await expect(panel.getByTestId("role-grade-none")).toBeVisible();
@@ -1448,7 +1475,7 @@ test.describe("signed-in smoke coverage", () => {
     await expect(page.getByTestId("levels-table")).not.toContainText("$");
   });
 
-  test("pay scales show the Wales circular and place a salary on a band", async ({
+  test("pay scales show the circular and place a salary on a band", async ({
     page,
   }) => {
     const step = (pounds: number, years: number | null) => ({
@@ -1456,14 +1483,14 @@ test.describe("signed-in smoke coverage", () => {
       years_to_next: years,
     });
     const scale = {
-      id: "afc-wales-2026-27",
-      name: "NHS Wales Agenda for Change 2026/27",
-      framework: "agenda-for-change",
-      nation: "wales",
+      id: "national-2026-27",
+      name: "Public-sector pay scale 2026/27",
+      framework: "banded-pay",
+      nation: "national",
       currency: "GBP",
       effective_from: "2026-04-01",
       uplift_tenths_percent: 33,
-      source: "pay letter AfC(W) 02/2026",
+      source: "Government pay circular for 2026/27, Annex 1",
       minutes_per_week: 2250,
       bands: [
         { code: "1", closed: true, steps: [step(26300, null)] },
@@ -1475,7 +1502,7 @@ test.describe("signed-in smoke coverage", () => {
         },
       ],
       allowances: [
-        { code: "on_call_weekday_weekend", name: "Wales on-call", amount_minor: 2605 },
+        { code: "on_call_weekday_weekend", name: "On-call", amount_minor: 2605 },
       ],
     };
     const asked: string[] = [];
@@ -1485,7 +1512,7 @@ test.describe("signed-in smoke coverage", () => {
         route.fulfill({ json: [{ ...scale, bands: ["1", "3", "5"] }] }),
     );
     await page.route(
-      (url) => url.pathname === "/api/proxy/pay-scales/afc-wales-2026-27",
+      (url) => url.pathname === "/api/proxy/pay-scales/national-2026-27",
       (route) => route.fulfill({ json: scale }),
     );
     await page.route(
@@ -1512,7 +1539,7 @@ test.describe("signed-in smoke coverage", () => {
     );
     await page.goto("/pay-scales");
     await expect(page.getByTestId("pay-scale-source")).toContainText(
-      "AfC(W) 02/2026",
+      "pay circular for 2026/27",
     );
     await expect(page.getByTestId("pay-scale-source")).toContainText("+3.3%");
     // Band 5 has three steps with years; band 3 has two (no intermediate); band 1 is closed.

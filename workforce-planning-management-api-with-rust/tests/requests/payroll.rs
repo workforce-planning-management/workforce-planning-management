@@ -2,10 +2,8 @@
 //! approve → paid with reconciled payslips, the approved-run
 //! immutability, and the benchmark comparison flags.
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 use workforce_planning_management_service::rules::payroll as rules;
 
 use super::{activate, an_org, seed_worker};
@@ -16,7 +14,7 @@ use super::{activate, an_org, seed_worker};
 // Two salaried workers (one with a pension enrolment and approved
 // overtime) get reconciled payslips; approve freezes the run.
 async fn payroll_run_derives_reconciled_payslips() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let plain = seed_worker!(&request, &org, "E-2001", Some(3_600_000)).await;
         let enrolled = seed_worker!(&request, &org, "E-2002", Some(4_800_000)).await;
@@ -157,7 +155,7 @@ async fn payroll_run_derives_reconciled_payslips() {
 // Benchmarks: band validation, and the comparison flags workers
 // below/within/above without echoing salary amounts.
 async fn benchmark_comparison_flags() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let low = seed_worker!(&request, &org, "E-3001", Some(2_000_000)).await;
         let high = seed_worker!(&request, &org, "E-3002", Some(9_900_000)).await;

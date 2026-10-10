@@ -1,5 +1,5 @@
 <!--
-  Pay scales (`/pay-scales`): the NHS Agenda for Change scale for Wales, as
+  Pay scales (`/pay-scales`): the national banded pay scale, as
   published in its pay circular, and a lookup for where a salary sits on a band.
   Reference data only: nothing is stored against a person, and a salary typed
   into the lookup is sent, answered and forgotten.

@@ -46,7 +46,8 @@ category limits) are listed there under "Not done".
   providers behind the onboarding/requisition checklists.
 - **Compensation reviews** — salary-change workflows with approval chains.
 - **Multi-org / group payroll** — consolidated reporting for a corporate group.
-- **WPM ↔ PPM bridge** — allocations in project-portfolio-management
+- **WPM ↔ PPM bridge** ([WPM-D55](design.md): scheduling lives in PPM) —
+  allocations in project-portfolio-management
   referencing WPM employees for capacity-vs-contract checks.
 - **Adjustment review cadence**, **DSE re-assessment scheduling**,
   **360 → development-plan linking**.

@@ -38,7 +38,7 @@
   },
   "pr": {
     "retention": "Retensi",
-    "horizon": "Horizon (hari)",
+    "horizon": "Horizon (hari kalender)",
     "pastHorizon": "Soft-delete melewati horizon",
     "candidates": "Kandidat dengan persetujuan kedaluwarsa",
     "sweep": "Jalankan sapuan",
@@ -133,7 +133,7 @@
     "jobTitle": "Jabatan",
     "name": "Nama",
     "actions": "Tindakan",
-    "days": "hari",
+    "days": "hari kalender",
     "masked": "Disembunyikan"
   },
   "dash": {
@@ -280,7 +280,7 @@
     "timeToFill": "Waktu pengisian (median)",
     "insights": "Wawasan",
     "noInsights": "Tidak ada yang melewati ambang batas pada periode ini.",
-    "days": "hari",
+    "days": "hari kalender",
     "mean": "rata-rata",
     "requisitions": "lowongan"
   },
@@ -360,7 +360,7 @@
       "suggestion": "Cari lapisan yang dapat digabung."
     },
     "time_to_fill_slow": {
-      "observation": "Median waktu pengisian adalah {days} hari.",
+      "observation": "Median waktu pengisian adalah {days} hari kalender.",
       "suggestion": "Cari tahu di tahap rekrutmen mana lowongan menunggu."
     }
   },
@@ -464,8 +464,8 @@
     "info": "Info",
     "updated": "Diperbarui",
     "period": "Periode",
-    "range30d": "30 hari",
-    "range90d": "90 hari",
+    "range30d": "30 hari kalender",
+    "range90d": "90 hari kalender",
     "range12m": "12 bulan",
     "rangeYtd": "Tahun berjalan",
     "vsStart": "dibanding awal periode"
@@ -642,7 +642,7 @@
     "hint": "Hanya Anda dan HR yang dapat melihat ini: pita dan tingkat adalah gaji. Kelayakan berarti lamanya tahun di tingkat itu, bukan janji kenaikan.",
     "none": "Belum ada pita gaji yang dicatat.",
     "current": "Pita {band}, tingkat {step}: {amount} per tahun (penuh waktu), sejak {since}.",
-    "notYet": "Berhak naik pada {date} (dalam {days} hari), ke {amount}.",
+    "notYet": "Berhak naik pada {date} (dalam {days} hari kalender), ke {amount}.",
     "due": "Berhak naik sekarang (sejak {date}), ke {amount}."
   },
   "expenses": {

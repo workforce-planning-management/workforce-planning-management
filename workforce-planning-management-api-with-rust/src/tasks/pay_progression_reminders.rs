@@ -1,6 +1,6 @@
 //! `cargo loco task pay_progression_reminders [days_ahead:N] [as_of:YYYY-MM-DD]`
 //! — tell each person who becomes eligible for their next pay step within
-//! `days_ahead` days of `as_of` (default 30 days from today).
+//! `days_ahead` calendar days of `as_of` (default 30 calendar days from today).
 //!
 //! Run it daily. Idempotent: someone already told for an eligibility date is left
 //! alone, so a re-run sends nothing twice. Only people employed on the eligibility
@@ -27,7 +27,7 @@ impl Task for PayProgressionReminders {
         TaskInfo {
             name: "pay_progression_reminders".to_string(),
             detail: "Tell people who become eligible for their next pay step soon (optional \
-                     days_ahead:N 0-90, as_of:YYYY-MM-DD; idempotent)"
+                     days_ahead:N calendar days 0-90, as_of:YYYY-MM-DD; idempotent)"
                 .to_string(),
         }
     }
@@ -44,7 +44,9 @@ impl Task for PayProgressionReminders {
                 .parse::<i64>()
                 .ok()
                 .filter(|n| (0..=90).contains(n))
-                .ok_or_else(|| Error::string("days_ahead must be a number from 0 to 90"))?,
+                .ok_or_else(|| {
+                    Error::string("days_ahead must be a number of calendar days from 0 to 90")
+                })?,
             Err(_) => 30,
         };
         let sent = send_reminders(ctx, as_of, as_of + chrono::Duration::days(days_ahead)).await?;

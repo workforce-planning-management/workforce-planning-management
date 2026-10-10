@@ -19,7 +19,7 @@ present. See [CONTRIBUTING.md](CONTRIBUTING.md#funding).
   benchmark is closed. A claim of dated, categorised items goes draft → submitted →
   approved or rejected → reimbursed, and **nobody decides their own** — a separate
   enforcement test pins it. Draft and submitted claims are cancelled on erasure; amounts
-  stay, words go. With it: the NHS Agenda for Change pay scale for Wales, Google's
+  stay, words go. With it: a national public-sector pay scale, Google's
   technical levels, grades on roles, a worker's pay band and step with eligibility
   reminders (WPM-T92–T96), a lint pass across the repo, and a visual review of the new
   pages (WPM-T90, T95). No open deferrals remain.

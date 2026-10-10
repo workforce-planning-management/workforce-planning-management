@@ -38,7 +38,7 @@
   },
   "pr": {
     "retention": "Conservation",
-    "horizon": "Horizon (jours)",
+    "horizon": "Horizon (jours calendaires)",
     "pastHorizon": "Suppressions logiques au-delà de l'horizon",
     "candidates": "Candidats au consentement expiré",
     "sweep": "Lancer le balayage",
@@ -133,7 +133,7 @@
     "jobTitle": "Intitulé du poste",
     "name": "Nom",
     "actions": "Actions",
-    "days": "jours",
+    "days": "jours calendaires",
     "masked": "Masqué"
   },
   "dash": {
@@ -280,7 +280,7 @@
     "timeToFill": "Délai de recrutement (médiane)",
     "insights": "Constats",
     "noInsights": "Aucun seuil n'est franchi sur cette période.",
-    "days": "jours",
+    "days": "jours calendaires",
     "mean": "moyenne",
     "requisitions": "postes"
   },
@@ -360,7 +360,7 @@
       "suggestion": "Cherchez des niveaux qui pourraient être fusionnés."
     },
     "time_to_fill_slow": {
-      "observation": "Le délai médian de recrutement était de {days} jours.",
+      "observation": "Le délai médian de recrutement était de {days} jours calendaires.",
       "suggestion": "Identifiez l'étape du recrutement où les postes attendent."
     }
   },
@@ -464,8 +464,8 @@
     "info": "Info",
     "updated": "Mis à jour",
     "period": "Période",
-    "range30d": "30 jours",
-    "range90d": "90 jours",
+    "range30d": "30 jours calendaires",
+    "range90d": "90 jours calendaires",
     "range12m": "12 mois",
     "rangeYtd": "Depuis le 1er janvier",
     "vsStart": "par rapport au début de la période"
@@ -642,7 +642,7 @@
     "hint": "Seuls vous et les RH pouvez le voir : une bande et un échelon constituent un salaire. L'éligibilité correspond aux années passées sur l'échelon, pas à une promesse de passage.",
     "none": "Aucune bande salariale enregistrée.",
     "current": "Bande {band}, échelon {step} : {amount} par an (temps plein), depuis le {since}.",
-    "notYet": "Éligible au passage le {date} (dans {days} jours), à {amount}.",
+    "notYet": "Éligible au passage le {date} (dans {days} jours calendaires), à {amount}.",
     "due": "Éligible au passage dès maintenant (depuis le {date}), à {amount}."
   },
   "expenses": {

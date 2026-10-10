@@ -212,7 +212,7 @@ export interface PayAllowance {
   amount_minor: number;
 }
 
-/** A pay scale (e.g. NHS Agenda for Change, Wales), transcribed from its circular. */
+/** A pay scale (e.g. the national pay scale), transcribed from its circular. */
 export interface PayScale {
   id: string;
   name: string;

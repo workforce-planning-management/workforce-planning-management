@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — security headers and a content security policy (WPM-T127)
+
+`src/lib/security-headers.ts` applied in `hooks.server.ts`, and `csp` in `vite.config.ts`.
+A Playwright spec checks the headers and that the policy blocks nothing on two public
+pages.
+
+### Changed — durations say "calendar days" (WPM-T119)
+
+`pr.horizon`, `common.days`, `metrics.days`, the time-to-fill insight, the CEO period
+buttons and the pay step eligibility line say "calendar days" in the 13 `-001` locales
+(AI-written, unreviewed).
+
+### Changed — generic pay scale (WPM-T102)
+
+Comments, test stubs and the pay-scales e2e spec use the generic scale id
+`national-2026-27` and its generic name and source.
+
 ### Removed — bare-language forwarding (WPM-T100)
 
 `/en/…` is no longer 301-redirected to `/en-001/…`; only a full content code is a locale prefix.
@@ -52,7 +69,7 @@ the 12 `-001` locales (AI-written, unreviewed).
 
 ### Added — pay scales page
 
-`/pay-scales`: the Wales Agenda for Change table, allowances and a salary-placement
+`/pay-scales`: the national pay scale table, allowances and a salary-placement
 lookup, in all 12 `-001` locales (AI-written, unreviewed).
 
 ### Added — sitemap generator
@@ -85,7 +102,7 @@ and a catalogue editor for the courses behind each skill.
 
 An announcement can be aimed at one department, carry up to three https
 links, and be marked read; editors see how many have read it, never who.
-On `/ceo`, a period control (30 days, 90 days, 12 months, year to date) and
+On `/ceo`, a period control (30 calendar days, 90 calendar days, 12 months, year to date) and
 every tile links to the page behind it.
 
 ### Added — CEO dashboard
@@ -105,7 +122,7 @@ accept, decline or cancel requests.
 ### Added — on-call rota
 
 `/rota`: a rotation of workers where the duty passes to the next member
-every few days. Shows who is on call now, the next four weeks with why
+every few calendar days. Shows who is on call now, the next four weeks with why
 (their turn, covering for someone away, or a swap) and days-on-call per
 member; a member on approved leave is skipped to the next available
 person. HR creates rotas and records swaps. `/me` shows your own on-call

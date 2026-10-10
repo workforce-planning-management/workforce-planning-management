@@ -174,7 +174,7 @@ merging it is the one merge action this section does not delegate.
 
 ## 8. Licensing and provenance of AI output
 
-The project is licensed (see [LICENSE.md](LICENSE.md)). The position
+The project is licensed (see [LICENSE/](LICENSE/index.md)). The position
 taken here follows the Apache Software Foundation's and LLVM's
 published reasoning: an AI tool's output does not launder anyone's
 copyright, the full provenance of generated text is generally not
@@ -288,7 +288,7 @@ answered on the tracker, and never silently absorbed.
 ## 15. References
 
 **Normative for this project** (the documents that bind the practice
-described here): [LICENSE.md](LICENSE.md); the cross-cutting
+described here): [LICENSE/](LICENSE/index.md); the cross-cutting
 specification ([spec/index.md](spec/index.md), in particular
 [spec/regulatory.md](spec/regulatory.md) and [spec/scope.md](spec/scope.md));
 each subproject's own `AGENTS.md`; [GOVERNANCE.md](GOVERNANCE.md),

@@ -55,7 +55,7 @@ URNs (`person:<uuid>`), never duplicated demographics
    `#![forbid(unsafe_code)]`, `#![warn(clippy::pedantic)]`, tracing + OTLP,
    OpenAPI/Swagger (`src/openapi.rs` — add every new route), header API
    versioning, **Podman not Docker**, **PostgreSQL not SQLite**, in-memory
-   cache. See [rust-loco-stack](../../agents/share/rust-loco-stack.md).
+   cache. See rust-loco-stack.
 3. **Pure core first.** Rules live in DB-free, clock-free `src/rules/<area>.rs`
    with exhaustive unit tests (dates and "today" are always supplied);
    controllers only load data, call the rule and write. Write and test the rule
@@ -104,10 +104,12 @@ URNs (`person:<uuid>`), never duplicated demographics
 ## Running
 
 ```bash
-cargo run -- db migrate && cargo run -- task seed && cargo run -- start
-cargo test                          # DB-free unit tests (297)
-cargo test -- --ignored             # request tests (Postgres; 54, run serially)
+cargo run -- db migrate && cargo run -- task seed
+WPM_REQUIRE_AUTH=0 cargo run -- start   # sign-in is enforced by default (WPM-D52)
+cargo test                          # DB-free unit tests
+cargo test --test mod -- --ignored --test-threads=1    # request tests (Postgres)
 cargo test --test enforcement -- --ignored             # auth persona matrix
+cargo test --test security -- --ignored                # headers and rate limits
 cargo test --no-default-features --features keycloak \
   --test keycloak -- --ignored      # real Keycloak via Testcontainers (Podman)
 cargo clippy --all-targets          # pedantic; keep new files clean
@@ -117,4 +119,4 @@ Loco tasks (`cargo run -- task <name>`): `seed`, `snapshot_headcount`
 (**schedule daily**), `rota_reminders [days_ahead:N]` (**schedule daily**),
 `pay_progression_reminders [days_ahead:N]` (**schedule daily**),
 `import_framework`, `import_esco`. See [testing](../spec/testing.md) for running
-the suite without the sibling crates.
+the suites (the shared crates are vendored in `crates/`).

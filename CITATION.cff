@@ -22,4 +22,4 @@ abstract: >-
   delivery, talent management and development, and payroll and
   compensation. A Rust/Loco (Axum + SeaORM + PostgreSQL) back-end JSON
   API and a SvelteKit 2 / Svelte 5 front-end.
-license: See LICENSE.md
+license: See LICENSE/index.md

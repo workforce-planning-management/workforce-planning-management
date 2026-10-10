@@ -101,7 +101,17 @@ async fn enforcement_personas_gate_and_mask() {
 
         // Public allow-list stays open without a token.
         assert_eq!(request.get("/_health").await.status_code(), 200);
-        assert_eq!(request.get("/metrics.prom").await.status_code(), 200);
+        assert_eq!(request.get("/_posture").await.status_code(), 200);
+        // Metrics are not public: no token ⇒ 401, a service token ⇒ 200.
+        assert_eq!(request.get("/metrics.prom").await.status_code(), 401);
+        assert_eq!(
+            request
+                .get("/metrics.prom")
+                .add_header("authorization", bearer(&machine))
+                .await
+                .status_code(),
+            200
+        );
 
         // Protected: no token ⇒ 401; junk token ⇒ 401.
         assert_eq!(request.get("/api/workers").await.status_code(), 401);

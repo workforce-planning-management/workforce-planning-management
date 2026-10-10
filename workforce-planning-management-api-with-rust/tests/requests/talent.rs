@@ -3,10 +3,8 @@
 //! and internships (including the off-the-job hours gate), succession
 //! risk, and the workforce-intelligence views.
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -15,7 +13,7 @@ use super::{activate, an_org, seed_worker};
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded team, the whole talent surface
 async fn development_plans_track_claimed_and_verified_progress() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "T-1", None).await;
         activate!(&request, &worker).await;
@@ -150,7 +148,7 @@ async fn development_plans_track_claimed_and_verified_progress() {
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // pipelines + early careers + intelligence in one flow
 async fn pipelines_apprenticeships_and_intelligence() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let apprentice = seed_worker!(&request, &org, "P-1", None).await;
         activate!(&request, &apprentice).await;

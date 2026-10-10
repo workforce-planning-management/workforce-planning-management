@@ -2,10 +2,8 @@
 //! category↔scale rule, a sitting's lifecycle, per-scale results, the
 //! derived profile, and the aggregate analytics.
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -14,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one worker, the whole assessment surface
 async fn assessment_round_trip() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "A-1", None).await;
         activate!(&request, &worker).await;

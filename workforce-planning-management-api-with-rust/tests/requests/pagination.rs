@@ -5,10 +5,8 @@
 //!
 //! `#[ignore]`d: needs PostgreSQL; run with `cargo test -- --ignored`.
 
-use loco_rs::testing::prelude::*;
 use serde_json::Value;
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{an_org, seed_worker};
 
@@ -26,7 +24,7 @@ macro_rules! header {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn worker_list_paginates_and_clamps() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         for i in 0..5 {
             seed_worker!(&request, org.clone(), format!("EMP-PAGE-{i}"), None).await;
@@ -73,7 +71,7 @@ async fn worker_list_paginates_and_clamps() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn benefit_plan_list_paginates() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         for i in 0..3 {
             let created = request
                 .post("/api/benefit-plans")

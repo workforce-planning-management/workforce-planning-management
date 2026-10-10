@@ -2,11 +2,9 @@
 //! targets and (for them alone) aspirations; and the workforce roll-up, which
 //! counts people and never names them.
 
-use loco_rs::testing::prelude::*;
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -14,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn skill_gaps_merge_sources_rank_by_priority_and_roll_up_without_names() {
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let a = seed_worker!(&request, &org, format!("SG-{tag}-A"), None).await;
@@ -143,7 +141,7 @@ async fn skill_gaps_merge_sources_rank_by_priority_and_roll_up_without_names() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_priority() {
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let w = seed_worker!(&request, &org, format!("TP-{tag}"), None).await;

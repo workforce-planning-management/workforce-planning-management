@@ -102,7 +102,7 @@ auth:
     # Secret key for token generation and verification
     secret: BHlNtxoOqYTs9tX8d2FW
     # Token expiration time in seconds
-    expiration: 604800 # 7 days
+    expiration: 604800 # 7 calendar days
 
 
 # Cache provider: in-memory (loco `cache_inmem`, enabled by default).

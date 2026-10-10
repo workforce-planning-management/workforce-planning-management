@@ -2,10 +2,8 @@
 //! exported and erased with the person) and a role's job level and pay band (a
 //! link made by the editor, validated against the reference ladders).
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -13,7 +11,7 @@ use super::{activate, an_org, seed_worker};
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn a_workers_level_is_validated_audited_without_the_level_and_erased() {
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "GR-1", None).await;
         activate!(&request, &worker).await;
@@ -108,7 +106,7 @@ async fn a_workers_level_is_validated_audited_without_the_level_and_erased() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn a_role_links_a_level_to_a_pay_band_by_the_editors_say_so() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let profile: Value = request
             .post("/api/role-profiles")
             .json(&json!({ "job_title": "Grade Test Engineer", "source_ref": "test:grade" }))
@@ -126,8 +124,8 @@ async fn a_role_links_a_level_to_a_pay_band_by_the_editors_say_so() {
         // Nothing, an unknown band, an unknown scale, an unknown level: refused.
         for bad in [
             json!({}),
-            json!({ "pay_band": { "scale": "afc-wales-2026-27", "band": "12" } }),
-            json!({ "pay_band": { "scale": "afc-england-2026-27", "band": "5" } }),
+            json!({ "pay_band": { "scale": "national-2026-27", "band": "12" } }),
+            json!({ "pay_band": { "scale": "national-2025-26", "band": "5" } }),
             json!({ "job_level": { "framework": "google-levels", "level": "L1" } }),
         ] {
             assert_eq!(
@@ -142,7 +140,7 @@ async fn a_role_links_a_level_to_a_pay_band_by_the_editors_say_so() {
             .put(&url)
             .json(
                 &json!({ "job_level": { "framework": "google-levels", "level": "L5" },
-                           "pay_band": { "scale": "afc-wales-2026-27", "band": "7" } }),
+                           "pay_band": { "scale": "national-2026-27", "band": "7" } }),
             )
             .await
             .json();

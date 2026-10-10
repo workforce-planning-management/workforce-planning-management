@@ -3,10 +3,8 @@
 //! report (WPM-D21: who responded is visible; what they said is only
 //! ever a group aggregate).
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -15,7 +13,7 @@ use super::{activate, an_org, seed_worker};
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded circle, the whole 360 surface
 async fn appraisal_round_trip() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let subject = seed_worker!(&request, &org, "A-0", None).await;
         activate!(&request, &subject).await;

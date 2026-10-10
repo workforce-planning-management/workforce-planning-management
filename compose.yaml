@@ -1,0 +1,45 @@
+# A demo of the service from a fresh clone, with no sibling repositories:
+#
+#   podman compose up --build        (or: docker compose up --build)
+#   curl http://localhost:5150/_health
+#   open http://localhost:5150/swagger-ui/
+#
+# DEMO ONLY. The demo has no identity service, so it turns sign-in enforcement
+# OFF with an explicit `WPM_REQUIRE_AUTH=0`: anyone who can reach the port can
+# read and write everything, with synthetic data only. The service logs a
+# warning every ten minutes while this is so, and the `production` environment
+# refuses to start this way. For anything else, set WPM_PASETO_KEYS_URL (or
+# WPM_KEYCLOAK_JWKS_URL), remove the override and use LOCO_ENV=production
+# (see spec/auth.md).
+#
+# This file runs the API only; the SvelteKit UI is not containerized yet
+# (WPM-T123 notes this).
+services:
+  postgres:
+    image: docker.io/library/postgres:18-alpine
+    environment:
+      POSTGRES_USER: loco
+      POSTGRES_PASSWORD: loco
+      POSTGRES_DB: workforce_planning_management_service_demo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loco -d workforce_planning_management_service_demo"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql
+
+  api:
+    build:
+      context: ./workforce-planning-management-api-with-rust
+      dockerfile: Containerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      LOCO_ENV: demo
+      DATABASE_URL: postgres://loco:loco@postgres:5432/workforce_planning_management_service_demo
+      WPM_REQUIRE_AUTH: "0"   # explicit, demo only: see the header of this file
+      WPM_CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "127.0.0.1:5150:5150"

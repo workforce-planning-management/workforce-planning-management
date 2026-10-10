@@ -43,6 +43,7 @@ pub mod metrics;
 pub mod models;
 pub mod openapi;
 pub mod rules;
+pub mod security;
 pub mod streaming;
 pub mod tasks;
 pub mod validation;

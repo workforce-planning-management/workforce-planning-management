@@ -1,12 +1,13 @@
 # Authentication & authorization
 
 The family stack unchanged
-([authentication-sessions](../../agents/share/authentication-sessions.md),
-[authorization-attributes](../../agents/share/authorization-attributes.md)):
+(authentication-sessions,
+authorization-attributes):
 cookie sessions + BFF for humans, offline PASETO v4.public for
-services, blanket guard `WPM_REQUIRE_AUTH` (default **off** — the
-family activation gate; any real deployment MUST activate before
-exposure, and HR data makes that non-negotiable), shared ABAC engine.
+services, blanket guard `WPM_REQUIRE_AUTH` (default **on** since WPM-D52:
+only an explicit `0`/`false`/`no`/`off` disables it, which is logged and
+refused in the `production` environment, as is starting with no token key
+source), shared ABAC engine.
 
 ## Personas as policy (not code)
 
@@ -52,9 +53,9 @@ Every read of a highest/high-tier record is **audited** (see
 
 ## Activation runbook (WPM-G1)
 
-The shipped default is **wide open** (family posture,
-`agents/share/security.md` §4). Activation is a release gate, not a
-config tweak:
+Before WPM-D52 the shipped default was wide open (the family posture).
+Enforcement is now **on by default**, so activation is giving the service
+what it enforces *with*, not flipping a flag:
 
 1. **Mount a policy.** Start from the shipped reference,
    [`config/abac-policy.reference.json`](../workforce-planning-management-api-with-rust/config/abac-policy.reference.json)
@@ -67,8 +68,11 @@ config tweak:
 2. **Point at the keys.** `WPM_PASETO_KEYS_URL` (boot-fetched +
    refreshed) or `WPM_PASETO_KEYS`; set `WPM_TOKEN_ISSUER` /
    `WPM_TOKEN_AUDIENCE` if they differ from the defaults.
-3. **Flip the flag.** `WPM_REQUIRE_AUTH=1` (read once at boot —
-   restart to change).
+3. **Leave the flag alone.** Enforcement is on by default; the flag
+   `WPM_REQUIRE_AUTH` is read once at boot (restart to change). Do not set it
+   to `0` outside local development: the service logs a warning every ten
+   minutes while it is off, `GET /_posture` reports `auth_enforced: false`, and
+   `LOCO_ENV=production` refuses to start.
 4. **Verify.** `cargo test --test enforcement -- --ignored` runs the
    persona matrix against the reference policy shape: public paths
    open; 401 without a token; masked vs self vs payroll reads;
@@ -92,7 +96,7 @@ By default WPM never talks to an identity provider itself — it
 verifies PASETO tokens (`WPM_PASETO_KEYS_URL`/`WPM_PASETO_KEYS` above,
 the `paseto` Cargo feature, on by default) minted by the sibling
 **authentication service**
-([authentication-sessions](../../agents/share/authentication-sessions.md)),
+(authentication-sessions),
 and every front-end (this one included) reaches that service only
 through its own BFF server, per `AGENTS.md` §3 — no OIDC/Keycloak
 library in this repo or the Rust service. Pointing that authentication

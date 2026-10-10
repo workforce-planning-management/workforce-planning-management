@@ -2,10 +2,11 @@
 //!
 //! Exposes the process-wide registry from [`crate::metrics`] at
 //! `GET /metrics.prom` (mounted at the **root**, not under `/api`) in
-//! Prometheus text-exposition format. The route is public even under
-//! blanket auth enforcement (see [`crate::auth::is_public_path`]) so that a
-//! scraper can poll it without a bearer token. Configure your scraper with
-//! `metrics_path: /metrics.prom`.
+//! Prometheus text-exposition format. The route is **not** public: under
+//! blanket auth enforcement (the default) a scraper presents a bearer token
+//! whose attributes the ABAC policy allows to read (the reference policy
+//! allows `svc`). Configure your scraper with `metrics_path: /metrics.prom`
+//! and `authorization` credentials.
 
 use axum::http::{HeaderValue, StatusCode, header::CONTENT_TYPE};
 use axum::response::{IntoResponse, Response};

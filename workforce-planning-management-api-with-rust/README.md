@@ -108,9 +108,11 @@ handover** · OpenAPI + Swagger · `/metrics.prom`.
 Loco tasks: `seed`, `snapshot_headcount`, `rota_reminders` and
 `pay_progression_reminders` (**schedule these daily — they do nothing by themselves**), `import_framework`, `import_esco`.
 
-Auth enforcement defaults **off** (`WPM_REQUIRE_AUTH` is the family
-activation gate); upstream lookups default to **stub mode**; events
-default to the in-memory transport.
+Sign-in enforcement is **on by default** (`WPM_REQUIRE_AUTH`; only an explicit
+`0`/`false`/`no`/`off` turns it off, and the `production` environment refuses to
+start that way); upstream lookups default to **stub mode**; events default to
+the in-memory transport. For local development without an identity service,
+run with `WPM_REQUIRE_AUTH=0` (the service warns while it is off).
 
 ## Upgrading across the 2026-07-23 rename
 
@@ -219,7 +221,7 @@ curl -s localhost:5150/api/ergonomics/issues | jq .by_department
 
 *(Steps 6–8 assume `$OTHER` and `$SUCCESSOR` are the pids of two more workers hired as in step 1.)*
 
-**6. Who is on call, and who covers?** A rota rotates every N days, skips
+**6. Who is on call, and who covers?** A rota rotates every N calendar days, skips
 whoever is on approved leave, and says so when nobody can:
 
 ```bash
@@ -254,9 +256,10 @@ curl -s localhost:5150/api/movements/$MV/handover/actions | jq '.[] | {kind, act
 
 ## Auth activation (production)
 
-The shipped default is **wide open** — activation is a release gate.
+Enforcement is on by default, so a deployment needs the keys, not a flag.
 Follow the runbook in [../spec/auth.md](../spec/auth.md): mount a
 policy (start from
 [`config/abac-policy.reference.json`](config/abac-policy.reference.json)),
-point at the PASETO keys, set `WPM_REQUIRE_AUTH=1`, and verify with
-`cargo test --test enforcement -- --ignored`.
+point at the PASETO keys, and verify with
+`cargo test --test enforcement -- --ignored`. `/metrics.prom` needs a bearer
+token too; give the scraper one.

@@ -164,7 +164,7 @@ data.*
 persona policies without code changes.*
 
 - Family stack: offline PASETO verify, blanket `WPM_REQUIRE_AUTH`
-  guard (default off), shared ABAC engine; record-level attrs
+  guard (default on, WPM-D52), shared ABAC engine; record-level attrs
   (`resource.person`, `resource.department`, `resource.status`);
   `mask` obligation redacts salary/payslip amounts/review content;
   the four personas of [auth.md](auth.md) expressible as policy.
@@ -428,7 +428,7 @@ pretending WPM can do things it cannot.*
   candidates; `POST /api/retention/sweep` (destructive-classified)
   hard-deletes those rows and scrubs expired candidates. The horizon
   is `WPM_RETENTION_DAYS` (default 365, floor 30 — a sweep that could
-  run at 0 days would turn soft-delete into hard-delete); the sweep
+  run at 0 calendar days would turn soft-delete into hard-delete); the sweep
   is audited with its counts.
 - Out of code scope, still gate WPM-G2: lawful-basis mapping,
   jurisdiction-correct payroll tables, equality-law review of scoring
@@ -539,7 +539,11 @@ acceptance criteria and traces to the tasks that delivered it:
 - **WPM-R52–R53** Google's technical job levels L3–L11 as reference data, a
   worker's level, and a role's level and pay band —
   [job-levels.md](job-levels.md) (WPM-T93–T94).
-- **WPM-R51, R54** the NHS Agenda for Change pay scale for Wales, a
+- **WPM-R72–R74, R77, R78, R87, R88** sign-in on by default, security headers and
+  CORS, rate limiting, a standalone build with CI, license texts, releases and
+  generated status — [production-readiness.md](production-readiness.md)
+  (WPM-T123–T128, T144, T145).
+- **WPM-R51, R54** a national public-sector pay scale, a
   salary-placement lookup, and a worker's band and step with eligibility reminders —
   [pay-scales.md](pay-scales.md) (WPM-T92, T96).
 - **WPM-R43–R44** skills gap analysis, training time recommendations —

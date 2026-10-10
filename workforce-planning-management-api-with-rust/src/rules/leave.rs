@@ -63,7 +63,9 @@ pub fn day_span(start: chrono::NaiveDate, end: chrono::NaiveDate) -> Result<i32,
     }
     let days = (end - start).num_days() + 1;
     if days > 366 {
-        return Err(format!("leave spans {days} days; the cap is 366"));
+        return Err(format!(
+            "leave spans {days} calendar days; the cap is 366 calendar days"
+        ));
     }
     i32::try_from(days).map_err(|_| "leave span overflows".to_string())
 }

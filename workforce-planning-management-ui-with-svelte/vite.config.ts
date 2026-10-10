@@ -11,7 +11,25 @@ export default defineConfig({
     plugins: [
         sveltekit({
             preprocess: vitePreprocess(),
-            adapter: adapter()
+            adapter: adapter(),
+            // Nonces and hashes for SvelteKit's own inline scripts are added
+            // automatically; nothing else may run (WPM-R73).
+            csp: {
+                mode: "auto",
+                directives: {
+                    "default-src": ["self"],
+                    "script-src": ["self"],
+                    // Svelte sets inline `style` attributes.
+                    "style-src": ["self", "unsafe-inline"],
+                    "img-src": ["self", "data:"],
+                    "font-src": ["self", "data:"],
+                    "connect-src": ["self"],
+                    "object-src": ["none"],
+                    "base-uri": ["self"],
+                    "form-action": ["self"],
+                    "frame-ancestors": ["none"]
+                }
+            }
         }),
         svelteTesting()
     ],

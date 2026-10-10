@@ -1,5 +1,5 @@
-//! **Pay scales** (WPM-R51): `GET /api/pay-scales` and friends — the NHS
-//! Agenda for Change scale for Wales, from the pay circular, and a stateless
+//! **Pay scales** (WPM-R51): `GET /api/pay-scales` and friends — the national
+//! banded pay scale, from the government pay circular, and a stateless
 //! "where does this salary sit?" lookup (see [`crate::rules::pay_scale`]).
 //!
 //! The scales are public reference data: no person is named and nothing is

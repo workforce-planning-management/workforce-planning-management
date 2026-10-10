@@ -5,11 +5,11 @@ URNs** and never duplicates upstream records.
 
 | Service | Used for | How |
 |---|---|---|
-| [person-service](../../person/person-service-with-loco/) | the human | `person:<pid>` on Employee and (optionally) Candidate; display names resolved best-effort |
-| [worker-service](../../worker/worker-service-with-loco/) | professional identity | `worker:<pid>` on Employee; interviewers |
-| [organization-service](../../organization/organization-service-with-loco/) | the employer | `organization:<pid>` on Employee, PayrollRun |
-| [course-service](../../course/course-service-with-loco/) | training | `course:` / `courseinstance:` URNs on TrainingEnrollment |
-| [authentication-service](../../authentication/authentication-service-with-loco/) | SSO + ABAC attrs | offline PASETO via `authentication-verifier`; persona attributes |
+| person-service | the human | `person:<pid>` on Employee and (optionally) Candidate; display names resolved best-effort |
+| worker-service | professional identity | `worker:<pid>` on Employee; interviewers |
+| organization-service | the employer | `organization:<pid>` on Employee, PayrollRun |
+| course-service | training | `course:` / `courseinstance:` URNs on TrainingEnrollment |
+| authentication-service | SSO + ABAC attrs | offline PASETO via `authentication-verifier`; persona attributes |
 
 Client modules follow the stub-first pattern (patient-flow
 `clients.rs`): display-name lookups are read-only, cached,

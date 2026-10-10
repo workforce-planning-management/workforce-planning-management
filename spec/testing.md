@@ -27,7 +27,7 @@ State as of 2026-10-07 (WPM-T97).
   plans (cheapest-first, estimate, completed course dropped, schedule dates,
   assess-first) and joiners/leavers (a full leaver journey: dated checklist,
   twelve held items, refusals, one-by-one and bulk handover, audit trail,
-  completion gating), the Wales pay scale (placement, progression, refusals), job levels
+  completion gating), the national pay scale (placement, progression, refusals), job levels
   (unknown left null, no pay), grades (a worker's level audited without the level and erased;
   a role's level linked to a pay band by the editor), pay positions (dated eligibility,
   reminders sent once and naming no pay) and expense claims (draft to reimbursed, duplicates
@@ -51,15 +51,19 @@ State as of 2026-10-07 (WPM-T97).
   builds), as are `cargo fmt --check` and the front-end's `pnpm lint`
   (2026-10-07).
 
-### Running the service tests without the sibling crates
+### Running the service tests
 
-The service depends on two sibling crates (`entity-ref`,
-`authentication-verifier`) that live outside this repository. In a checkout
-without them, build a scratch workspace that provides them beside a copy of
-the service, point `DATABASE_URL` at a throwaway Postgres 18 under **Podman**
-(`--tmpfs /var/lib/postgresql`), and run `cargo test --offline --lib`,
-`cargo test --offline --test mod -- --ignored --test-threads=1` (serial — the
-tests share one database), and the two binaries above.
+The two shared crates (`entity-ref`, `authentication-verifier`) are vendored in
+`workforce-planning-management-api-with-rust/crates/` (WPM-T123), so a fresh
+clone builds and tests with no scratch workspace. Start a throwaway Postgres 18
+under **Podman** (`podman compose -f compose.test.yaml up -d --wait`, which
+mounts `postgres-init/`), then run `cargo test --lib`,
+`cargo test --test mod -- --ignored --test-threads=1` (serial — the tests share
+one database), and the enforcement, `enforcement_expenses` and `security`
+binaries, each in its own process. Sign-in enforcement is **on by default**
+(WPM-D52): the request suite opts out explicitly through
+`tests/requests/mod.rs::request_open`, which also turns the rate limits off; the
+`security` binary runs with the defaults and low limits to prove them.
 
 ## Front-end edition (`workforce-planning-management-ui-with-svelte`)
 

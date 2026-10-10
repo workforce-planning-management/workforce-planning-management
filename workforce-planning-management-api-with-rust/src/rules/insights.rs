@@ -33,7 +33,7 @@ pub const THRESHOLDS: &[(&str, f64, &str)] = &[
     (
         "time_to_fill_slow_days",
         60.0,
-        "Median days to fill above this suggests a hiring bottleneck.",
+        "Median calendar days to fill above this suggests a hiring bottleneck.",
     ),
 ];
 
@@ -174,7 +174,7 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
         out.push(Insight {
             code: "time_to_fill_slow",
             severity: Severity::Attention,
-            observation: format!("Median time to fill was {median:.0} days."),
+            observation: format!("Median time to fill was {median:.0} calendar days."),
             params: serde_json::json!({ "days": median.round() }),
             suggestion: "Find which stage of hiring the requisitions wait in.",
         });

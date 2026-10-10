@@ -1,0 +1,26 @@
+[package]
+name = "entity-ref"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.96"
+authors = ["Joel Parker Henderson <joel@joelparkerhenderson.com>"]
+description = "EntityRef — the shared cross-service-linking value type (entity_type:uuid URN) + edge-kind registry for the Main X Index family"
+readme = "README.md"
+license = "MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only"
+repository = "https://github.com/sixarm/main-x-service/tree/main/link/entity-ref-rust-crate"
+keywords = ["identity", "graph", "linking", "urn"]
+categories = ["data-structures"]
+
+[lib]
+name = "entity_ref"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+uuid = { version = "1.26", features = ["v4"] }
+
+[dev-dependencies]
+criterion = { version = "0.8", features = ["html_reports"] }
+serde_json = { version = "1.0", features = ["float_roundtrip", "arbitrary_precision"] }
+

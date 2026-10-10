@@ -1,22 +1,20 @@
-# Pay scales: NHS Agenda for Change, Wales (WPM-R51)
+# Pay scales: a national public-sector pay scale (WPM-R51)
 
-Wales runs the NHS **Agenda for Change** (AfC) pay and grading system, and
-issues its own pay circular each year. WPM carries the Wales scale as
-**reference data** and answers "where does this salary sit, and is a step up
-due?". Delivered as WPM-T92 and WPM-T96 (see [tasks.md](tasks.md)).
+A banded public-sector pay and grading scale, issued by the government in a pay
+circular each year. WPM carries the scale as **reference data** and answers
+"where does this salary sit, and is a step up due?". Delivered as WPM-T92 and
+WPM-T96, and made generic in WPM-T102 (see [tasks.md](tasks.md)).
 
 ## Research (2026-10-06)
 
-Primary source: Welsh Government Health and Social Services Group, **pay letter
-AfC(W) 02/2026**, 12 February 2026 (copies on the NHS Wales Employers site;
-enquiries `HSSWorkforceOD@gov.wales`), Annex 1. It states:
+Primary source: the government's pay circular for 2026/27, Annex 1. It states:
 
 - the 2026/27 scales apply **from 1 April 2026** and are the previous year's
-  (AfC(W) 02/2025) **plus 3.3%**; the sleeping-in and on-call allowances rise 3.3%;
-- Wales is **not** England's scale: the structure differs (below), and the
-  separate advance payment in AfC(W) 01/2026 is excluded from the uplift;
-- **bank workers** engaged under the All-Wales Terms of Engagement are paid the
-  Welsh scales automatically (not modelled — WPM has no bank-worker concept).
+  **plus 3.3%**; the sleeping-in and on-call allowances rise 3.3%;
+- the structure is the one below, which differs from other published scales;
+  a separate advance payment is excluded from the uplift;
+- **bank workers** are paid the same scales (not modelled — WPM has no
+  bank-worker concept).
 
 | Band | Entry | years | Intermediate | years | Top |
 | --- | ---: | :-: | ---: | :-: | ---: |
@@ -35,7 +33,7 @@ enquiries `HSSWorkforceOD@gov.wales`), Annex 1. It states:
 
 "years" is the circular's *years until eligible for pay progression* from that
 step. Band 1 is closed to new entrants; band 2 is a single rate. Allowances:
-sleeping-in £44.82; Wales on-call £26.05 (weekday or weekend) and £52.08 (public
+sleeping-in £44.82; on-call £26.05 (weekday or weekend) and £52.08 (public
 holiday). Annual figures are **full-time, 37.5 hours a week**.
 
 Secondary sources (pay-calculator sites) were used only to find the circular;
@@ -44,13 +42,13 @@ omit the intermediate step), so the circular is the only source of the figures.
 
 ## WPM-R51 — Pay scales
 
-*As anyone signed in I can see the AfC scale for Wales, and check where a
+*As anyone signed in I can see the national pay scale, and check where a
 salary sits on a band and whether a step up is due.*
 
 - `GET /api/pay-scales` lists the scales (id, nation, effective date, uplift,
   source circular, band codes). `GET /api/pay-scales/{id}` returns the whole
   scale: every band, step (pence) and years-to-progression, and the allowances.
-  Id today: `afc-wales-2026-27`. An unknown id is **404**.
+  Id today: `national-2026-27`. An unknown id is **404**.
 - `GET /api/pay-scales/{id}/position?band=&salary_minor=[&step=&months_on_step=]`
   places a **full-time-equivalent annual** salary on a band: `on_step`,
   `between_steps`, `below_entry` (with the shortfall) or `above_top` (with the
@@ -102,12 +100,14 @@ and see when I become eligible for the next step; I am told when that is near.*
   the person's behalf; the audit entry (`pay_position_set`, `pay_position_cleared`) names
   no band, step or amount.
 - **Reminder:** the loco task `pay_progression_reminders [days_ahead:0–90]
-  [as_of:YYYY-MM-DD]` (default 30 days; **schedule daily**) tells each person who
+  [as_of:YYYY-MM-DD]` (default 30 calendar days; **schedule daily**) tells each person who
   becomes eligible within the window, once (idempotent per eligibility date), if they are
   still employed on that date. The in-app notification (`pay_step_due`) says only
   "You become eligible to move up a pay step on <date>." — **no band, step or amount**.
 - UI: a **Pay band and step** panel on `/me` and the worker's page (hidden for anyone
-  who may not see it). Migration `m20261006_000048_pay_positions`; in the
+  who may not see it). Migration `m20261006_000048_pay_positions` (and
+  `m20261009_000050_generic_pay_scale_id`, which moves stored ids to
+  `national-2026-27`); in the
   subject-access export; deleted on erasure.
 
 ## WPM-D41 — A pay position is a salary; a reminder promises nothing
@@ -131,7 +131,7 @@ and see when I become eligible for the next step; I am told when that is near.*
 - Comparing a position with the recorded salary (see WPM-D41); flagging a salary that is
   off-scale; linking requisitions to a band. (A role's band is WPM-R53, in
   [job-levels.md](job-levels.md).)
-- England, Scotland and Northern Ireland scales (each has its own circular).
+- Scales from other jurisdictions or other years (each has its own circular).
 - Bank-worker hourly rates; hourly rates from the annual figure (the divisor is a
   contractual choice).
 - Applying the on-call allowance to the rota ([people-directory-and-cover.md](people-directory-and-cover.md)).

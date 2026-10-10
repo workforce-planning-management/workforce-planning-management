@@ -38,7 +38,7 @@
   },
   "pr": {
     "retention": "Retenção",
-    "horizon": "Horizonte (dias)",
+    "horizon": "Horizonte (dias corridos)",
     "pastHorizon": "Exclusões lógicas além do horizonte",
     "candidates": "Candidatos com consentimento expirado",
     "sweep": "Executar varredura",
@@ -133,7 +133,7 @@
     "jobTitle": "Cargo",
     "name": "Nome",
     "actions": "Ações",
-    "days": "dias",
+    "days": "dias corridos",
     "masked": "Oculto"
   },
   "dash": {
@@ -280,7 +280,7 @@
     "timeToFill": "Tempo de preenchimento (mediana)",
     "insights": "Percepções",
     "noInsights": "Nada ultrapassa um limite neste período.",
-    "days": "dias",
+    "days": "dias corridos",
     "mean": "média",
     "requisitions": "vagas"
   },
@@ -360,7 +360,7 @@
       "suggestion": "Procure níveis que possam ser unificados."
     },
     "time_to_fill_slow": {
-      "observation": "A mediana do tempo de preenchimento foi de {days} dias.",
+      "observation": "A mediana do tempo de preenchimento foi de {days} dias corridos.",
       "suggestion": "Descubra em que etapa da contratação as vagas ficam paradas."
     }
   },
@@ -464,8 +464,8 @@
     "info": "Informação",
     "updated": "Atualizado",
     "period": "Período",
-    "range30d": "30 dias",
-    "range90d": "90 dias",
+    "range30d": "30 dias corridos",
+    "range90d": "90 dias corridos",
     "range12m": "12 meses",
     "rangeYtd": "Ano até à data",
     "vsStart": "face ao início do período"
@@ -642,7 +642,7 @@
     "hint": "Só você e os RH podem ver isto: uma banda e um escalão são um salário. A elegibilidade são os anos no escalão, não uma promessa de subida.",
     "none": "Nenhuma banda salarial registada.",
     "current": "Banda {band}, escalão {step}: {amount} por ano (tempo inteiro), desde {since}.",
-    "notYet": "Elegível para subir em {date} (daqui a {days} dias), para {amount}.",
+    "notYet": "Elegível para subir em {date} (daqui a {days} dias corridos), para {amount}.",
     "due": "Elegível para subir agora (desde {date}), para {amount}."
   },
   "expenses": {

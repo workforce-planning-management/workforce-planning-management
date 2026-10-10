@@ -38,7 +38,7 @@
   },
   "pr": {
     "retention": "Aufbewahrung",
-    "horizon": "Horizont (Tage)",
+    "horizon": "Horizont (Kalendertage)",
     "pastHorizon": "Soft-Deletes über dem Horizont",
     "candidates": "Kandidaten mit abgelaufener Einwilligung",
     "sweep": "Bereinigung ausführen",
@@ -133,7 +133,7 @@
     "jobTitle": "Stellenbezeichnung",
     "name": "Name",
     "actions": "Aktionen",
-    "days": "Tage",
+    "days": "Kalendertage",
     "masked": "Verborgen"
   },
   "dash": {
@@ -280,7 +280,7 @@
     "timeToFill": "Besetzungsdauer (Median)",
     "insights": "Erkenntnisse",
     "noInsights": "In diesem Zeitraum wird keine Schwelle überschritten.",
-    "days": "Tage",
+    "days": "Kalendertage",
     "mean": "Mittelwert",
     "requisitions": "Stellen"
   },
@@ -360,7 +360,7 @@
       "suggestion": "Suchen Sie nach Ebenen, die zusammengelegt werden könnten."
     },
     "time_to_fill_slow": {
-      "observation": "Die mediane Besetzungsdauer betrug {days} Tage.",
+      "observation": "Die mediane Besetzungsdauer betrug {days} Kalendertage.",
       "suggestion": "Finden Sie heraus, in welcher Phase die Stellen warten."
     }
   },
@@ -464,8 +464,8 @@
     "info": "Info",
     "updated": "Aktualisiert",
     "period": "Zeitraum",
-    "range30d": "30 Tage",
-    "range90d": "90 Tage",
+    "range30d": "30 Kalendertage",
+    "range90d": "90 Kalendertage",
     "range12m": "12 Monate",
     "rangeYtd": "Seit Jahresbeginn",
     "vsStart": "ggü. Beginn des Zeitraums"
@@ -642,7 +642,7 @@
     "hint": "Nur Sie und die Personalabteilung können dies sehen: Band und Stufe sind ein Gehalt. Berechtigung bedeutet die Jahre auf der Stufe, kein Versprechen eines Aufstiegs.",
     "none": "Kein Gehaltsband erfasst.",
     "current": "Band {band}, Stufe {step}: {amount} im Jahr (Vollzeit), seit {since}.",
-    "notYet": "Aufstiegsberechtigt am {date} (in {days} Tagen), auf {amount}.",
+    "notYet": "Aufstiegsberechtigt am {date} (in {days} Kalendertagen), auf {amount}.",
     "due": "Jetzt aufstiegsberechtigt (seit {date}), auf {amount}."
   },
   "expenses": {

@@ -325,7 +325,7 @@ async fn create_leave_request(
             requested,
         } => {
             return Err(unprocessable(&format!(
-                "requested {requested} days exceeds remaining balance {remaining}"
+                "requested {requested} calendar days exceeds remaining balance {remaining} calendar days"
             )));
         }
     };

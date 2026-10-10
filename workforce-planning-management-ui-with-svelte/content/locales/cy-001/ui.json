@@ -38,7 +38,7 @@
   },
   "pr": {
     "retention": "Cadw data",
-    "horizon": "Gorwel (diwrnodau)",
+    "horizon": "Gorwel (diwrnodau calendr)",
     "pastHorizon": "Wedi'u dileu'n feddal heibio'r gorwel",
     "candidates": "Ymgeiswyr â chaniatâd wedi dod i ben",
     "sweep": "Rhedeg ysgubiad",
@@ -133,7 +133,7 @@
     "jobTitle": "Teitl swydd",
     "name": "Enw",
     "actions": "Camau",
-    "days": "diwrnod",
+    "days": "diwrnod calendr",
     "masked": "Cudd"
   },
   "dash": {
@@ -280,7 +280,7 @@
     "timeToFill": "Amser i lenwi (canolrif)",
     "insights": "Mewnwelediadau",
     "noInsights": "Dim byd uwchlaw'r trothwy yn y cyfnod hwn.",
-    "days": "diwrnod",
+    "days": "diwrnod calendr",
     "mean": "cymedr",
     "requisitions": "swyddi gwag"
   },
@@ -360,7 +360,7 @@
       "suggestion": "Chwiliwch am haenau y gellid eu huno."
     },
     "time_to_fill_slow": {
-      "observation": "Canolrif yr amser i lenwi oedd {days} diwrnod.",
+      "observation": "Canolrif yr amser i lenwi oedd {days} diwrnod calendr.",
       "suggestion": "Darganfyddwch ym mha gam recriwtio y mae'r swyddi gwag yn aros."
     }
   },
@@ -464,8 +464,8 @@
     "info": "Gwybodaeth",
     "updated": "Diweddarwyd",
     "period": "Cyfnod",
-    "range30d": "30 diwrnod",
-    "range90d": "90 diwrnod",
+    "range30d": "30 diwrnod calendr",
+    "range90d": "90 diwrnod calendr",
     "range12m": "12 mis",
     "rangeYtd": "Y flwyddyn hyd yma",
     "vsStart": "o gymharu â dechrau'r cyfnod"
@@ -642,7 +642,7 @@
     "hint": "Dim ond chi a'r Adran Adnoddau Dynol all weld hyn: mae band a cham yn gyflog. Cymhwyster yw'r blynyddoedd ar y cam, nid addewid o symudiad.",
     "none": "Dim band cyflog wedi'i gofnodi.",
     "current": "Band {band}, cam {step}: {amount} y flwyddyn (llawn amser), ers {since}.",
-    "notYet": "Yn gymwys i symud i fyny ar {date} (ymhen {days} diwrnod), i {amount}.",
+    "notYet": "Yn gymwys i symud i fyny ar {date} (ymhen {days} diwrnod calendr), i {amount}.",
     "due": "Yn gymwys i symud i fyny nawr (ers {date}), i {amount}."
   },
   "expenses": {

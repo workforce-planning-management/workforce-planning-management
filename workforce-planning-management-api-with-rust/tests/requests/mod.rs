@@ -50,7 +50,7 @@ pub fn a_worker() -> String {
 ///
 /// A macro, not a function: the `request` handed to each test by
 /// loco's `request()` helper is a `loco_rs`-internal-pinned
-/// `axum_test::TestServer` — a type this crate cannot name directly
+/// `loco_rs::TestServer` — a type this crate cannot name directly
 /// without pulling in that exact same `axum-test` version as a direct
 /// dependency (defeating the point of tracking a newer one for the
 /// dev-dependency's own sake). Expanding inline sidesteps naming the
@@ -99,3 +99,32 @@ macro_rules! activate {
     };
 }
 pub(crate) use activate;
+
+/// Boot the app and run `callback` with sign-in enforcement and rate limits
+/// **explicitly off**. Enforcement is on by default (WPM-D52), so every suite that is not
+/// about authentication says so here. The flag is read once per process, so
+/// it is set before the first boot; the auth behaviour itself is covered by
+/// the `enforcement*` and `keycloak` test binaries, each in its own process.
+#[allow(clippy::future_not_send)]
+pub async fn request_open<F, Fut>(callback: F)
+where
+    F: FnOnce(loco_rs::TestServer, loco_rs::app::AppContext) -> Fut,
+    Fut: std::future::Future<Output = ()>,
+{
+    static OPEN: std::sync::Once = std::sync::Once::new();
+    OPEN.call_once(|| {
+        // `set_var` is `unsafe` in edition 2024; this runs once, before any
+        // boot reads the flag.
+        unsafe {
+            std::env::set_var("WPM_REQUIRE_AUTH", "0");
+            // The suites share one caller bucket; the limiter has its own
+            // test binary (`tests/security.rs`).
+            std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", "0");
+            std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
+        };
+    });
+    loco_rs::testing::prelude::request::<workforce_planning_management_service::app::App, _, _>(
+        callback,
+    )
+    .await;
+}

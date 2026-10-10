@@ -10,10 +10,8 @@
 //! suite does exercise), not by a request test.
 
 use authentication_verifier::Claims;
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 use workforce_planning_management_service::models::memberships;
 
 use super::{a_person, an_org, seed_worker};
@@ -48,7 +46,7 @@ fn claims_for(person_ref: &str) -> Claims {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn organization_membership_round_trip() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker_pid = seed_worker!(&request, &org, "OM-1", None).await;
         let worker: Value = request
@@ -226,7 +224,7 @@ async fn organization_membership_round_trip() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn organization_confederation_round_trip() {
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let parent = an_org();
         let child = an_org();
         let grandchild = an_org();

@@ -1,5 +1,5 @@
 <!--
-  A worker's band and step on a pay scale (NHS Agenda for Change, Wales today).
+  A worker's band and step on a pay scale (the national pay scale today).
   A band and step is a salary, so only the worker and HR can see or change it: the
   panel renders nothing for anyone else (the service refuses the read with 403).
   "Eligible" means the years on the step set by the circular — not that a move

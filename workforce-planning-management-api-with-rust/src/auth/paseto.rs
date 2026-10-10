@@ -433,14 +433,11 @@ mod tests {
         }
     }
 
-    /// SEC-G8 — the default-off **exposure pin**. With `WPM_REQUIRE_AUTH`
-    /// off (the shipped default), the most sensitive reads — the audit
-    /// trail, patient locate, and a single stay's PII — are **open without
-    /// a token**. This is by design
-    /// (see `agents/share/security.md` §4), but it means **activation is a
-    /// tracked release gate**: a deployment exposed to untrusted callers
-    /// MUST set the flag before it is reachable. This test documents that
-    /// exposure explicitly so flipping the default cannot happen silently.
+    /// SEC-G8 — the **exposure pin**. With enforcement off (now only by an
+    /// explicit `WPM_REQUIRE_AUTH=0`; the default is on, WPM-D52), the most
+    /// sensitive reads — the audit trail, patient locate, and a single
+    /// stay's PII — are **open without a token**. This test documents that
+    /// exposure explicitly, so the consequence of opting out stays visible.
     #[test]
     fn default_off_exposes_sensitive_reads_activation_is_a_release_gate() {
         let (keys, _) = test_keys_and_kid();
@@ -473,7 +470,7 @@ mod tests {
             "/api-docs/openapi.json",
             "/swagger-ui",
             "/swagger-ui/index.html",
-            "/metrics.prom",
+            "/_posture",
         ] {
             assert!(
                 enforce(

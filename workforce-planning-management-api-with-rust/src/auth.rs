@@ -36,22 +36,18 @@
 //!
 //! ## Blanket enforcement
 //!
-//! When `WPM_REQUIRE_AUTH` is truthy (`1`/`true`/`yes`/`on`,
-//! case-insensitive), the active backend's `enforce` decision — wired
-//! as an Axum middleware layer in `src/app.rs` — requires a valid
-//! bearer token on every route except the public health/ping,
-//! OpenAPI/Swagger, and Prometheus metrics paths (see
-//! [`is_public_path`]). It is **off by default**: unset/blank/junk ⇒
-//! today's behaviour, where the extractor is opt-in per handler and
-//! the extractor path proves end-to-end verification. Activation is an
-//! operations decision once the SSO token flow is live; see
-//! `agents/share/authentication-sessions.md` and
-//! `agents/share/jwt-enforcement.md` for the family-wide contract.
+//! Enforcement is **on by default** (WPM-D52). Unless `WPM_REQUIRE_AUTH`
+//! is explicitly falsy (`0`/`false`/`no`/`off`, case-insensitive), the
+//! active backend's `enforce` decision — wired as an Axum middleware
+//! layer in `src/app.rs` — requires a valid bearer token on every route
+//! except the public health/ping and OpenAPI/Swagger paths (see
+//! [`is_public_path`]). Unset, blank or junk values leave it **on**.
+//! Turning it off is an explicit, logged act that is refused outright in
+//! the production environment ([`startup_check`]); see `spec/auth.md`.
 //!
 //! ## Authorization (ABAC)
 //!
-//! Inside the same guard — so it applies only when `WPM_REQUIRE_AUTH`
-//! is on — a verified token is further checked against an
+//! Inside the same guard — so it applies only while enforcement is on — a verified token is further checked against an
 //! **attribute-based access control** policy per
 //! `agents/share/authorization-attributes.md`: the request's action is
 //! derived from the HTTP method plus this crate's destructive named
@@ -115,14 +111,63 @@ pub const DESTRUCTIVE_POST_SUFFIXES: [&str; 5] =
     ["/merge", "/deduplicate", "/import", "/erase", "/sweep"];
 
 /// Whether blanket `/api/*` enforcement is on, read once from
-/// `WPM_REQUIRE_AUTH` and cached. Off by default — see the
-/// module docs and `agents/share/jwt-enforcement.md`. Mirrors
-/// [`verifier`]: a process-wide `OnceLock` built from the environment.
+/// `WPM_REQUIRE_AUTH` and cached. **On by default** — see the module docs
+/// and [`parse_require_auth`]. Mirrors [`verifier`]: a process-wide
+/// `OnceLock` built from the environment.
 #[must_use]
 pub fn require_auth() -> bool {
     static REQUIRE_AUTH: OnceLock<bool> = OnceLock::new();
     *REQUIRE_AUTH
-        .get_or_init(|| parse_bool(&crate::compat::env_var("WPM_REQUIRE_AUTH").unwrap_or_default()))
+        .get_or_init(|| parse_require_auth(crate::compat::env_var("WPM_REQUIRE_AUTH").as_deref()))
+}
+
+/// Secure by default (WPM-D52): enforcement is on unless the value is an
+/// explicit `0`/`false`/`no`/`off` (case-insensitive, whitespace
+/// ignored). Unset, empty and unrecognized values — including a typo —
+/// keep it **on**, so a mistake can only make the service stricter.
+#[must_use]
+pub fn parse_require_auth(value: Option<&str>) -> bool {
+    !matches!(
+        value.map(|v| v.trim().to_ascii_lowercase()).as_deref(),
+        Some("0" | "false" | "no" | "off")
+    )
+}
+
+/// Whether any token key source is configured: PASETO keys (inline or by
+/// URL) or a Keycloak JWKS URL.
+#[must_use]
+pub fn key_source_configured() -> bool {
+    [
+        "WPM_PASETO_KEYS",
+        "WPM_PASETO_KEYS_URL",
+        "WPM_KEYCLOAK_JWKS_URL",
+    ]
+    .iter()
+    .any(|name| crate::compat::env_var(name).is_some_and(|value| !value.trim().is_empty()))
+}
+
+/// The boot-time posture check (WPM-D52), pure so it can be tested.
+///
+/// # Errors
+///
+/// A refusal to start: enforcement is off in production, or it is on in
+/// production with no key source (every request would be a `401`).
+pub fn startup_check(require_auth: bool, production: bool, key_source: bool) -> Result<(), String> {
+    if production && !require_auth {
+        return Err(
+            "WPM_REQUIRE_AUTH is off in the production environment; sign-in enforcement may \
+             not be disabled in production"
+                .to_string(),
+        );
+    }
+    if production && !key_source {
+        return Err(
+            "no token key source is configured in the production environment; set \
+             WPM_PASETO_KEYS, WPM_PASETO_KEYS_URL or WPM_KEYCLOAK_JWKS_URL"
+                .to_string(),
+        );
+    }
+    Ok(())
 }
 
 /// Lenient boolean parse: `1`/`true`/`yes`/`on` (case-insensitive,
@@ -137,15 +182,15 @@ pub fn parse_bool(value: &str) -> bool {
 }
 
 /// Paths that stay public even when enforcement is on: health/ping, the
-/// `OpenAPI` doc + Swagger UI, and the Prometheus metrics endpoint (so a
-/// scraper needs no bearer token). Everything else requires a valid bearer
-/// token.
+/// posture probe, and the `OpenAPI` doc + Swagger UI. Everything else,
+/// including `/metrics.prom` (a scraper presents a bearer token), requires a
+/// valid bearer token.
 pub(crate) fn is_public_path(path: &str) -> bool {
     path == "/_health"
         || path == "/_ping"
+        || path == "/_posture"
         || path == "/api-docs/openapi.json"
         || path.starts_with("/swagger-ui")
-        || path == "/metrics.prom"
 }
 
 /// Derive the request's ABAC action from its HTTP method and path (per
@@ -542,6 +587,45 @@ mod tests {
 
     /// `parse_bool` accepts the documented truthy set and rejects the
     /// rest (including empty, `0`, and junk).
+    #[test]
+    fn require_auth_is_on_unless_explicitly_off() {
+        for on in [
+            None,
+            Some(""),
+            Some(" "),
+            Some("1"),
+            Some("true"),
+            Some("junk"),
+            Some("2"),
+        ] {
+            assert!(parse_require_auth(on), "{on:?} must leave enforcement on");
+        }
+        for off in ["0", "false", "FALSE", "no", "Off", " off "] {
+            assert!(!parse_require_auth(Some(off)), "{off:?} turns it off");
+        }
+    }
+
+    #[test]
+    fn production_refuses_an_open_or_keyless_start() {
+        assert!(startup_check(true, true, true).is_ok());
+        assert!(
+            startup_check(false, true, true).is_err(),
+            "off in production"
+        );
+        assert!(
+            startup_check(true, true, false).is_err(),
+            "no key source in production"
+        );
+        assert!(
+            startup_check(false, false, false).is_ok(),
+            "development may opt out"
+        );
+        assert!(
+            startup_check(true, false, false).is_ok(),
+            "development may lack keys"
+        );
+    }
+
     #[test]
     fn parse_bool_truthy_and_falsy() {
         for t in ["1", "true", "TRUE", "Yes", "on", " on ", "ON"] {

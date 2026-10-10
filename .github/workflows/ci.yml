@@ -1,0 +1,197 @@
+name: CI
+
+# One workflow at the repository root, because GitHub only runs workflows from
+# `.github/workflows/` here. Every job is a from-scratch checkout; nothing needs
+# a sibling repository (the two shared crates are vendored under
+# `workforce-planning-management-api-with-rust/crates/`).
+#
+# Make the jobs below **required status checks** on `main` (Settings,
+# Branches, Branch protection rules) so that no merge lands without a green
+# build. The workflow cannot enforce that by itself.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
+
+jobs:
+  docs:
+    name: docs, links, days, licenses, status
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Markdown links resolve
+        run: python3 scripts/check-links.py
+      - name: durations say calendar days or business days
+        run: python3 scripts/check-days.py
+      - name: license fields match the LICENSE/ directory
+        run: python3 scripts/check-licenses.py
+      - name: implementation status is current
+        run: python3 scripts/status.py --check
+
+  api-lint:
+    name: api · fmt, clippy, unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workforce-planning-management-api-with-rust
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup component add rustfmt clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: workforce-planning-management-api-with-rust
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked --lib
+
+  api-db:
+    name: api · database, enforcement and security suites
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workforce-planning-management-api-with-rust
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: loco
+          POSTGRES_PASSWORD: loco
+          POSTGRES_DB: workforce_planning_management_service_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_service_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: workforce-planning-management-api-with-rust
+          key: db
+      # The request suite turns sign-in and rate limits off explicitly; each
+      # of the other binaries runs in its own process because the flags are
+      # read once.
+      - run: cargo test --locked --test mod -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_expenses -- --ignored --test-threads=1
+      - run: cargo test --locked --test security -- --ignored --test-threads=1
+
+  api-keycloak:
+    name: api · Keycloak suite (not yet required)
+    runs-on: ubuntu-latest
+    # Written but not yet observed green: it needs Testcontainers against the
+    # runner's Docker. Promote it to a required check once it has passed.
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: workforce-planning-management-api-with-rust
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: workforce-planning-management-api-with-rust
+          key: keycloak
+      - run: cargo test --locked --no-default-features --features keycloak --test keycloak -- --ignored --test-threads=1
+
+  deny:
+    name: api · supply chain (cargo deny)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workforce-planning-management-api-with-rust
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: workforce-planning-management-api-with-rust
+          key: deny
+      - run: cargo install cargo-deny --locked
+      - run: cargo deny check
+
+  ui:
+    name: ui · check, unit, build, lint, Playwright
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workforce-planning-management-ui-with-svelte
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.0.8
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: workforce-planning-management-ui-with-svelte/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - run: pnpm exec vitest run
+      - run: pnpm run build
+      - run: pnpm run lint
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright test
+      # Advisory, not blocking: a new advisory against a dependency must not
+      # stop unrelated merges. Dependabot opens the fixing pull request.
+      - run: pnpm audit --audit-level high
+        continue-on-error: true
+
+  zap:
+    name: api · OWASP ZAP baseline on the defaults
+    runs-on: ubuntu-latest
+    # Written but not yet observed green. ZAP reports warnings for things this
+    # service cannot fix as an API (for example a missing anti-CSRF token), so
+    # the rules file `.zap/rules.tsv` lists each accepted rule with its reason.
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: loco
+          POSTGRES_PASSWORD: loco
+          POSTGRES_DB: workforce_planning_management_service_demo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: workforce-planning-management-api-with-rust
+          key: zap
+      - name: start the service with its defaults (sign-in enforced)
+        working-directory: workforce-planning-management-api-with-rust
+        env:
+          LOCO_ENV: demo
+          DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_service_demo
+        run: |
+          cargo build --locked --release --bin workforce-planning-management-service
+          ./target/release/workforce-planning-management-service start > service.log 2>&1 &
+          for i in $(seq 1 60); do curl -fs http://localhost:5150/_health && break; sleep 2; done
+          curl -fs http://localhost:5150/_posture | grep -q '"auth_enforced":true'
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: http://localhost:5150/api-docs/openapi.json
+          rules_file_name: .zap/rules.tsv
+          fail_action: true

@@ -1,6 +1,6 @@
 <!--
   On-call rota (`/rota`): a rotation of workers where the duty passes to
-  the next member every few days. Shows who is on call now, the next four
+  the next member every few calendar days. Shows who is on call now, the next four
   weeks as stretches (with why: their turn, covering for someone away, or a
   swap), and how many days each member carries. A member on approved leave
   is skipped to the next available person; a day nobody can take is shown

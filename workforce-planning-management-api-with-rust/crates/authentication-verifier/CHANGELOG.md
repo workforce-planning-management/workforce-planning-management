@@ -1,0 +1,429 @@
+# Changelog
+
+All notable changes to this crate are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+> See also: spec/index.md — single source of truth;
+> [README.md](./README.md) — user-facing intro; AGENTS.md — agent guide.
+
+## [Unreleased]
+
+### Added — `keycloak` feature: verify Keycloak (OIDC) access tokens (KC-1)
+
+`authentication_verifier::keycloak` (off by default): `KeycloakVerifier`
+verifies a Keycloak-issued JWT and yields the same `Claims` a PASETO
+token does, so the ABAC engine and every service guard are unchanged.
+Built on `axum-keycloak-auth` directly — the engine `loco-keycloak-auth`
+wraps — because that wrapper is typed against loco 0.15 and cannot be
+used from a loco 1.x service. Fail-closed additions over the engine: the
+Keycloak URL must be `https` (loopback excepted), the token `iss` must
+equal `{url}/realms/{realm}` (the engine checks signature and audience
+but not issuer), at least one audience is mandatory, `email_verified`
+is required when an `email` is present, and Keycloak roles become ABAC
+attributes **only** through an explicit `role_map` (an unmapped role
+grants nothing). Covered by unit tests and `tests/keycloak_e2e.rs`,
+which verifies real RS256 JWTs against a local OIDC discovery + JWKS
+server (valid, expired, wrong audience, wrong issuer, unverified email,
+tampered signature, garbage, unreachable realm).
+
+### Changed — PASETO is now the `paseto` feature (default on) (KC-1)
+
+`rusty_paseto`, `Verifier` and `ReloadableVerifier` moved into
+`src/paseto.rs` behind `paseto`, which is on by default, so every
+existing consumer is unchanged. `--no-default-features` builds carry no
+PASETO code (`Claims` and the `abac` engine stay). `fetch` now implies
+`paseto`. The criterion bench requires `paseto`. Verify each shape:
+`cargo test`, `cargo test --no-default-features`,
+`cargo test --no-default-features --features keycloak`.
+
+### Fixed — the `fetch` feature is now exercised by CI (AV-1)
+
+`default = []` means the repo's plain `cargo test` never compiled, let
+alone ran, `from_paseto_keys_url` or its SEC-V1 HTTPS-only / timeout /
+no-redirect / body-cap tests. `scripts/ci-check.sh`'s `test` stage now
+appends `--features fetch` for this crate specifically (a new
+`extra_test_features_for()` lookup, empty/no-op for every other crate),
+so the repo's own CI actually compiles and runs the fetch-gated tests.
+`AGENTS.md`/`README.md` note this.
+
+### Changed
+- MSRV raised to Rust 1.96 (N-2 policy tightened from N-3; see spec/rust-msrv-n-minus-2/index.md).
+
+
+
+### Added — Criterion benchmarks
+
+- `benches/verify_and_authorize.rs`. This crate sits on the
+  **per-request** path of every service in the family — verify a PASETO
+  v4.public token offline, then evaluate an ABAC policy — so its cost is
+  a fixed tax on every request, and the kind of cost that goes unnoticed
+  until it is measured. The harness covers token verification (valid,
+  bad signature, malformed), the built-in default policy across all four
+  derived actions, record-level and environment-aware evaluation, and
+  evaluation against policies of 1 / 10 / 100 rules so the
+  first-match-wins O(rules) linearity is visible before a deployment
+  writes a hundred-rule policy.
+- One property worth reading off the results: a **bad signature costs
+  roughly what a good one does**, because the Ed25519 verify runs either
+  way. A much cheaper reject would mean something is short-circuiting
+  ahead of the cryptography.
+
+### Added — declared MSRV (Rust 1.96)
+
+- `Cargo.toml` declares `rust-version = "1.96"`, sourced from
+  `ci/msrv.txt` and enforced by `scripts/ci-check.sh msrv`, which
+  asserts the declared value matches that file and then compiles the
+  crate — `--all-targets`, so benches and tests count — against the
+  1.96 toolchain. Behaviour is unchanged; what changes is that the
+  floor is now a checked claim rather than an unstated assumption.
+  *(AV-3, 2026-09-06: corrected from a stale "1.95 /
+  `spec/rust-msrv-n-minus-3`" entry left over from before the
+  repo-wide MSRV policy tightened from **current stable minus three**
+  to **current stable minus two**
+  (`spec/rust-msrv-n-minus-2/index.md`) — `Cargo.toml` had already
+  moved to 1.96 with no accompanying changelog update.)*
+
+## [0.9.0] - 2026-08-05
+
+### Added — algorithm agility for the verifier
+
+- **`Verifier` dispatches on each key's *declared* algorithm** instead of
+  assuming Ed25519. Keys are held internally as an enum
+  (`VerificationKey::{Ed25519, Unsupported}`) specifically so
+  verification cannot fall through to a default: an unrecognised
+  algorithm can only ever land in `Unsupported`, which carries no key
+  material, and adding a future algorithm variant breaks the match until
+  it is handled deliberately.
+- **A key naming an algorithm this build doesn't implement is now kept,
+  not silently dropped.** Previously such a key was skipped at load, so
+  a token naming it failed as `UnknownKid` — a correct rejection with a
+  misleading diagnosis, since a refetch returns the same key and the
+  same failure forever. It now fails as the new
+  **`VerifyError::UnsupportedAlgorithm { kid, algorithm }`**, which says
+  "upgrade this binary" — the actual fix during a partial algorithm
+  rollout.
+- **`Verifier::key_count()` now counts only usable (Ed25519) keys.** New
+  **`Verifier::unsupported_key_count()`** and **`Verifier::algorithms()`**
+  make an in-progress rollout visible (e.g. as metrics) rather than
+  hidden inside a single opaque count.
+- **A duplicate `kid` in a key set is now a construction error**
+  (`VerifyError::Keys`), not a last-wins merge — a verifier whose answer
+  depended on JSON array order would fail intermittently after a
+  rotation and be close to undiagnosable.
+- This is the readiness step for the one Shor-vulnerable component in
+  the family's auth path (the Ed25519 signature on cross-service PASETO
+  tokens): nothing here switches algorithm, it only makes a future
+  switch a **key rotation** rather than a coordinated code migration.
+  See
+  authentication-sessions.md
+  §5.1 for the full rationale (why this is "be ready", not "act now";
+  the realistic next-algorithm paths; why `v4.local` and introspection
+  are excluded).
+- Source-compatible: every consuming service crate builds unchanged.
+- Test: `an_unsupported_key_can_never_produce_an_accept`,
+  `token_naming_an_unsupported_algorithm_reports_the_algorithm`,
+  `unselectable_unsupported_entry_is_skipped_not_fatal`,
+  `unknown_algorithm_in_the_key_set_does_not_break_ed25519`.
+
+### Added — cargo-fuzz harness (SEC-I2)
+
+- A `fuzz/` [`cargo-fuzz`](https://rust-fuzz.github.io/book/) crate with two
+  coverage-guided libFuzzer targets over the crate's two attacker-controlled
+  parse surfaces, pinning golden rule #5 (no panics; every failure is a
+  handled error): `verify` (`Verifier::verify` over an arbitrary token —
+  exercises the full `v4.public` structural parse: header, authenticated
+  footer base64url/JSON `kid` decode, key selection, Ed25519 signature check,
+  with the verifier built from a real key so the `kid`-found branch is
+  reachable) and `policy` (`Policy::from_json` over arbitrary UTF-8, then
+  `evaluate_with_context` for every action against a fixed subject / resource
+  / environment — exercises the policy parser plus rule matching, negation,
+  `$sub`/`$email` templates, and the `resource.`/`env.` namespaces). Run on
+  nightly: `cargo +nightly fuzz run <target>` (see `fuzz/README.md`). The
+  `fuzz/` crate is standalone (not a workspace member) and uses only default
+  offline features, so it never affects the crate's normal stable
+  build/test/clippy. Verified: `cargo +nightly fuzz build` compiles both, and
+  short campaigns run clean — `verify` 11.1M execs, `policy` 6.6M execs, no
+  panics/crashes.
+
+### Security
+
+- **SEC-V1: harden `from_paseto_keys_url` (the `fetch` path).** It used a
+  bare `reqwest::get` with no scheme check, timeout, redirect policy, or
+  body cap. It now (a) requires `https://` for any real host — a plaintext
+  or downgraded fetch lets a network attacker inject Ed25519 keys, i.e. full
+  token forgery — while permitting `http://` **only to a loopback host**
+  (`127.0.0.1` / `::1` / `localhost`, not MITM-able, where dev/CI key servers
+  run); (b) forbids redirects so an `https` URL can't be bounced to `http`;
+  (c) sets a 10 s request timeout so a hung endpoint can't stall boot; (d)
+  reads the body under a 64 KiB cap so a hostile response can't OOM the peer.
+  Tests `non_https_keys_url_is_refused` +
+  `url_scheme_policy_allows_https_and_loopback_http_only`.
+- **SEC-V2: no vacuous match for negated `resource.`/`env.` conditions.** A
+  `!`-negated `resource.`/`env.` condition matched *vacuously* when the
+  namespace was absent (e.g. the coarse guard path with no record/env), so
+  an `allow` rule like `{when:{"env.network":["!untrusted"]}}` silently
+  granted every authenticated caller. An absent namespaced attribute now
+  biases to the **safe** outcome by effect: an `allow` rule does **not**
+  match (no silent grant), a `deny` rule still matches (fail-closed). Subject-
+  attribute negation is unchanged. Test
+  `negated_allow_does_not_match_vacuously_when_namespace_absent`.
+
+### Security — tests (SEC-V4)
+
+- Added the previously-missing **cross-key forgery** test: a token validly
+  signed by an *attacker* key but stamped with the honest published `kid` is
+  rejected (`Paseto` error) — proving `kid` selection can't verify a token
+  the honest key never signed.
+- Added `token_missing_exp_is_rejected` (a payload without `exp` is refused,
+  not treated as never-expiring) and `malformed_tokens_never_panic` (the
+  verifier only ever returns `Err`, never panics, on arbitrary / truncated /
+  oversized input).
+
+### Fixed
+
+- Formatting drift in `src/lib.rs` (six spots not rustfmt-formatted);
+  `cargo fmt --check` is clean again. No behaviour change.
+
+## [0.8.0] - 2026-07-05
+
+> **Hot-reloadable verifier for key rotation (additive).** A new
+> `ReloadableVerifier` holder lets a service swap its published key set
+> at runtime — e.g. via a periodic re-fetch of `/.well-known/paseto-keys`
+> — so a **key rotation** is picked up without a restart. `Verifier`
+> itself is unchanged.
+
+### Added
+
+- **`ReloadableVerifier`** (crate root) — the `Verifier` analogue of
+  `ReloadablePolicy`: `new(verifier)`, `current() -> Arc<Verifier>`
+  (per-request snapshot), `store(verifier)` (runtime swap). Poison-safe;
+  no `Debug` (so key material never lands in a log). A refresh should
+  keep the current verifier on a fetch failure — never swap to an empty
+  key set — so a transient auth-service outage cannot lock callers out.
+- Test: a `store` swaps the key set (an empty set → the real set → a
+  token now verifies) while an in-flight `current()` snapshot keeps the
+  key set it captured.
+
+## [0.7.0] - 2026-07-05
+
+> **Hot-reloadable policy (additive).** A new `ReloadablePolicy` holder
+> lets a service swap the active policy at runtime — no restart — while
+> keeping the per-request read path lock-light. The engine and all
+> `evaluate*` methods are unchanged.
+
+### Added
+
+- **`ReloadablePolicy`** (re-exported at the crate root) — wraps an
+  `Arc<Policy>` behind an `RwLock`: `new(policy)`, `current() ->
+  Arc<Policy>` (a brief read-lock returning a cheap clone to evaluate
+  against), `store(policy)` (a brief write-lock swapping the value). A
+  request in flight during a `store` finishes against its snapshot, so a
+  swap is never seen mid-evaluation. Poison-safe (no panics in the API).
+  The reload **trigger** (file watch, signal, endpoint) is the service's
+  concern; this type only holds and swaps.
+- Test: a `store` swaps the active policy for new readers while an
+  earlier `current()` snapshot keeps the policy it captured.
+
+## [0.6.0] - 2026-07-05
+
+> **Obligations (additive).** Per
+> authorization-attributes.md
+> §11, an allow rule can attach **obligations** — advisory instructions
+> the enforcement point honours (e.g. `"mask"` ⇒ return the masked view,
+> `"audit"` ⇒ write an audit record). The engine carries them; it does
+> not interpret them. Additive: existing decisions gain an empty
+> `obligations` (serde default), and matching / allow-deny logic is
+> unchanged.
+
+### Added
+
+- **`Rule.obligations: Vec<String>`** (serde default) — obligations the
+  rule attaches on an allow; ignored on a deny.
+- **`Decision.obligations: Vec<String>`** (serde default) — the deciding
+  allow rule's obligations (empty on a deny or the default decision),
+  plus **`Decision::requires(&str)`** convenience.
+- Engine tests: an allow rule surfaces its obligations, a deny/default
+  carries none, first-match precedence over an obligation-bearing deny,
+  and the default policy's allows carry no obligations.
+
+## [0.5.0] - 2026-07-05
+
+> **Ownership templates + environment attributes (additive).** Per
+> authorization-attributes.md
+> §4/§10, a rule can now compare an attribute to the caller's own
+> identity, and decide on request-time / network context. Additive —
+> `evaluate` and `evaluate_with_resource` are unchanged in behaviour.
+
+### Added
+
+- **Value templates `$sub` / `$email`.** A `when` value of `$sub` or
+  `$email` resolves to the caller's `sub` / `email` before comparison,
+  so a rule expresses **ownership** — e.g.
+  `{ "resource.owner": ["$sub"] }` matches when the record's owner is
+  the caller. Any other value (including one merely containing `$`) is a
+  literal.
+- **`Policy::evaluate_with_context(claims, action, entity, resource, env)`**
+  and the **`env.<name>` `when` namespace** — a
+  `BTreeMap<String, Vec<String>>` of environment attributes
+  (request-time / network context, e.g. `env.after_hours`). The service
+  supplies the clock/network, so the engine stays deterministic and
+  pure. `evaluate_with_resource` delegates with an empty env; `evaluate`
+  with empty resource + env. `env.*` is disjoint from subject attributes
+  (no spoofing) and resolves empty when no context is supplied.
+- Engine tests: `$sub` ownership match/deny, literal-`$` non-template,
+  an `env.after_hours` time-window deny below an admin allow, and the
+  empty-env delegation identity.
+
+## [0.4.0] - 2026-07-05
+
+> **Record-level resource attributes (additive).** Per
+> authorization-attributes.md
+> §9, the engine can now feed **attributes of the specific target
+> record** into a decision, so a deployment can express e.g. "deny write
+> on a high-sensitivity record unless `access=admin`". Additive — the
+> existing `Policy::evaluate` is unchanged in behaviour and signature.
+
+### Added
+
+- **`Policy::evaluate_with_resource(claims, action, entity, resource)`**
+  — like `evaluate`, plus a `&BTreeMap<String, Vec<String>>` of
+  **resource attributes** describing the loaded record. `Policy::evaluate`
+  now delegates to it with an empty map.
+- **`resource.<name>` `when` namespace** — a rule condition keyed
+  `resource.sensitivity` matches the resource attribute `sensitivity`
+  (prefix stripped). The namespace is disjoint from subject attributes,
+  so a caller cannot spoof a resource attribute through its token; under
+  the plain `evaluate` (no record loaded) every `resource.*` key resolves
+  empty, keeping the coarse blanket-guard path sound.
+- Engine tests: record-sensitivity deny gated below an admin allow;
+  `resource.*` resolves empty without resource attrs (delegation
+  identity); negated resource values; namespace disjointness.
+
+## [0.3.0] - 2026-07-05
+
+> **ABAC — the crate becomes the family's shared authorization
+> foundation.** Per the canonical design
+> authorization-attributes.md,
+> the nine entity services move from planned per-crate roles/RBAC to
+> **attribute-based access control**: verified claims carry subject
+> attributes, and this crate ships the one shared, pure policy engine
+> their blanket `/api/*` guards call. Additive — no breaking changes;
+> pre-0.3 tokens verify unchanged.
+
+### Added
+
+- **`Claims.attrs`** — subject attributes for ABAC, a
+  `BTreeMap<String, Vec<String>>` minted by the auth-service (e.g.
+  `access: ["write"]`, `svc: ["true"]`). `#[serde(default)]`: absent on
+  old tokens ⇒ empty map, no re-issue needed; omitted from the wire
+  when empty.
+- **`abac` module** — the shared policy engine (re-exported at the
+  crate root): `Policy` / `Rule` / `Action` / `ActionPattern` /
+  `Effect` / `Decision`, with `Policy::from_json` (config loading),
+  `Policy::default_policy` (the built-in §5 default: `svc=true` ⇒
+  everything, `access=admin` ⇒ destructive+write, `access=write` ⇒
+  write), and `Policy::evaluate(claims, action, entity)` —
+  first-match-wins over ordered allow/deny rules, defaulting to
+  allow-read / deny-mutation. Pure data + pure evaluation: no I/O, no
+  clock, no panics on any input. Supports `!`-negated values, the `*`
+  action wildcard, delete-implies-destructive matching, and the
+  reserved pseudo-attributes `sub` / `email` / `entity` (not
+  shadowable by `attrs`).
+- Tests: engine unit suite (matching, negation, first-match, defaults,
+  unknown-field tolerance, malformed-policy errors) plus wire pins —
+  `attrs` round-trips mint→verify; a pre-0.3 token without `attrs`
+  verifies to an empty map.
+
+### Deprecated
+
+- **`Claims.scope` and `Claims.roles` for authorization.** Kept on the
+  wire for compatibility (removal is a future major); the ABAC guard
+  ignores both and decides from `attrs` — a role, where one is wanted,
+  is just another attribute (`role=editor`).
+
+## [0.2.0] - 2026-06-17
+
+> **BREAKING — the PASETO v4.public pivot (implemented).** Per the
+> canonical design
+> authentication-sessions.md
+> §5, JWT is removed from the federation's auth path: the human session
+> becomes a Postgres-backed cookie session, and the only cross-service
+> token is a short-lived **PASETO v4.public** (Ed25519). This crate keeps
+> its **role** (peer-side, offline, dependency-light verification) but
+> changes its **implementation** from RS256-JWT/JWKS to PASETO v4.public.
+> `src/lib.rs` is rewritten (`rusty_paseto` v4.public + `ed25519-dalek`);
+> the suite (14 unit + 3 doc tests) is green and clippy-clean under both
+> the default and `fetch` feature sets.
+
+### Changed
+
+- **Verification target: RS256 JWT → PASETO v4.public (Ed25519).** The
+  crate now verifies PASETO `v4.public` tokens against the
+  authentication-service's published Ed25519 public key(s) at
+  `/.well-known/paseto-keys` (replacing JWKS at `/.well-known/jwks.json`),
+  selecting the key by the token **footer `kid`** and enforcing `iss` /
+  `aud` / `exp` / `nbf` offline.
+- **API rename:** `Verifier::from_paseto_keys_value` /
+  `from_paseto_keys_url` (behind the `fetch` feature) replace
+  `from_jwks_value` / `from_jwks_url`. The `Verifier::verify` /
+  `key_count` signatures are unchanged.
+- **`Claims` shape:** keeps `sub` / `email` / `name` / `iss` / `aud` /
+  `iat` / `exp`; renames the JWT-era `jti` → `sid` (originating session,
+  for revocation correlation); adds `nbf` and `scope` / `roles` (both
+  defaulting to empty/absent). Must stay byte-identical to the service's
+  `auth::Claims`, pinned by the service's cross-crate contract test.
+- **`VerifyError` variants:** `Jwks` → `Keys`, `Jwt(..)` → `Paseto(..)`;
+  `MissingKid` / `UnknownKid` / `Fetch` retained.
+- **Dependencies:** a PASETO v4 library (e.g. `rusty_paseto`) replaces
+  the `jsonwebtoken` / RSA stack. `#![forbid(unsafe_code)]`,
+  dependency-light, crates.io-published all unchanged.
+
+### Migration (0.1.x → 0.2.0)
+
+- Point boot-time loading at `/.well-known/paseto-keys` (Ed25519) instead
+  of `/.well-known/jwks.json` (RSA), and call `from_paseto_keys_value` /
+  `from_paseto_keys_url`.
+- Tokens must now be PASETO `v4.public`; bearer JWTs no longer verify.
+- Update claim reads: use `sid` (not `jti`); `email` / `name` are gone.
+- Match on `VerifyError::Keys` / `Paseto` instead of `Jwks` / `Jwt`.
+- During the family rollover, peers may run JWT and PASETO side by side
+  (shared-doc §9 step 3) before JWT is decommissioned.
+
+### Superseded (RS256-JWT era, before the pivot)
+
+- Targeted unit tests for the FR4 malformed-JWKS paths and the `fetch`
+  feature's transport-error mapping, and the documentation-harmonization
+  pass, all from the RS256-JWT implementation. Retained as history; the
+  PASETO rewrite re-pins equivalent paths against Ed25519 (`spec/index.md`
+  §11).
+
+## [0.1.0] - 2026-06-13
+
+### Added
+
+- **Inaugural release.** Offline RS256 JWT verification for Main X
+  Index peer services, mirroring the auth-service's token contract.
+  - `Verifier::from_jwks_value(&jwks, issuer, audience)` — build a
+    verifier from an in-memory JWKS document. RSA keys only; non-RSA
+    entries are skipped; an empty key set is permitted (rejects every
+    token with `UnknownKid`).
+  - `Verifier::from_jwks_url(url, issuer, audience)` — fetch the JWKS
+    over HTTPS at boot, behind the optional `fetch` feature
+    (`reqwest` + rustls).
+  - `Verifier::verify(token)` — `kid`-selected RS256 signature check
+    plus `iss` / `aud` / `exp` enforcement, returning the verified
+    `Claims`.
+  - `Verifier::key_count()` — number of loaded RSA keys.
+  - `Claims` — byte-identical mirror of the auth-service claims:
+    `sub` (user pid), `email`, `name`, `iss`, `aud`, `exp`, `iat`,
+    `jti` (= `sessions.jid`).
+  - `VerifyError` — `Jwks`, `MissingKid`, `UnknownKid`, `Jwt`, and
+    (with `fetch`) `Fetch`.
+  - Offline unit tests with a throwaway RSA keypair: claim round-trip,
+    expiry / audience / unknown-`kid` / tampered-signature / garbage
+    rejection, empty-JWKS and malformed-JWKS handling, non-RSA-key
+    skipping.
+  - `#![forbid(unsafe_code)]`; dependency-light by design
+    (`jsonwebtoken`, `serde`, `serde_json`, `thiserror`).

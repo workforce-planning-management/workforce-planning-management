@@ -31,8 +31,8 @@ use crate::{auth, controllers, models::_entities::prelude::*, tasks};
 /// and the disabled flag pass through; otherwise a valid bearer token —
 /// PASETO or Keycloak JWT, per the `paseto`/`keycloak` Cargo feature —
 /// is required (`401`) and its `attrs` must satisfy the ABAC policy
-/// for the derived action (`403`)). Off by default — see `auth.rs` and
-/// `agents/share/security.md` §4.
+/// for the derived action (`403`)). On by default — see `auth.rs` and
+/// `spec/auth.md`.
 async fn require_auth_mw(req: Request, next: Next) -> Response {
     let path = req.uri().path().to_string();
     let method = req.method().clone();
@@ -49,6 +49,13 @@ async fn require_auth_mw(req: Request, next: Next) -> Response {
         Ok(()) => next.run(req).await,
         Err((status, msg)) => (status, msg).into_response(),
     }
+}
+
+/// The standing warning while sign-in is not enforced (WPM-D52).
+fn warn_auth_off() {
+    tracing::warn!(
+        "WPM_REQUIRE_AUTH is off: sign-in is NOT enforced. Development only; production refuses to start this way"
+    );
 }
 
 /// The loco.rs application hooks for `workforce-planning-management-service`.
@@ -128,19 +135,48 @@ impl Hooks for App {
             .add_route(controllers::audits::routes())
             .add_route(controllers::docs::routes())
             .add_route(controllers::metrics::routes())
+            .add_route(crate::security::routes())
     }
 
-    async fn after_routes(router: AxumRouter, _ctx: &AppContext) -> Result<AxumRouter> {
+    async fn after_routes(router: AxumRouter, ctx: &AppContext) -> Result<AxumRouter> {
         // Seed the active backend's verifier (boot-time key/JWKS fetch;
         // env fallback — the service always boots), then keep keys +
         // policy fresh.
+        let production = ctx.environment == Environment::Production;
+        auth::startup_check(
+            auth::require_auth(),
+            production,
+            auth::key_source_configured(),
+        )
+        .map_err(|message| loco_rs::Error::string(&message))?;
+        if auth::require_auth() {
+            if !auth::key_source_configured() {
+                tracing::warn!(
+                    "sign-in is enforced but no token key source is configured: every request will be refused"
+                );
+            }
+        } else {
+            warn_auth_off();
+            tokio::spawn(async {
+                loop {
+                    tokio::time::sleep(std::time::Duration::from_secs(600)).await;
+                    warn_auth_off();
+                }
+            });
+        }
         auth::init().await;
         auth::spawn_key_refresh();
         auth::spawn_policy_watcher();
+        // Later layers are outer: headers wrap everything (so a 401 or 429
+        // carries them), the rate limit runs before the token is checked.
         Ok(router
             .layer(axum::middleware::from_fn(require_auth_mw))
             .layer(axum::middleware::from_fn(
                 crate::version::require_version_mw,
+            ))
+            .layer(axum::middleware::from_fn(crate::security::rate_limit_mw))
+            .layer(axum::middleware::from_fn(
+                crate::security::security_headers_mw,
             )))
     }
 

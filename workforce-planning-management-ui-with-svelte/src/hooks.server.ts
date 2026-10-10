@@ -7,6 +7,7 @@ import type { Handle } from "@sveltejs/kit/hooks";
 // and only the server talks to the services (WPM-T18, per
 // `agents/share/authentication-sessions.md`).
 import { SESSION_COOKIE } from "#lib/server/session.js";
+import { securityHeaders } from "#lib/security-headers.js";
 import {
   isRtl,
   localePath,
@@ -56,7 +57,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     });
   }
 
-  return resolve(event, {
+  const response = await resolve(event, {
     transformPageChunk: ({ html }) =>
       locale
         ? html
@@ -71,4 +72,27 @@ export const handle: Handle = async ({ event, resolve }) => {
               : "</head>",
           ),
   });
+  return withSecurityHeaders(
+    response,
+    securityHeaders(event.url, event.request.headers.get("x-forwarded-proto")),
+  );
 };
+
+/** Add `headers` to `response`; a response whose headers are immutable (one
+ *  passed straight through from `fetch`) is copied first. */
+function withSecurityHeaders(
+  response: Response,
+  headers: Record<string, string>,
+): Response {
+  const apply = (target: Response) => {
+    for (const [name, value] of Object.entries(headers)) {
+      target.headers.set(name, value);
+    }
+    return target;
+  };
+  try {
+    return apply(response);
+  } catch {
+    return apply(new Response(response.body, response));
+  }
+}

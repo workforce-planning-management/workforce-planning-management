@@ -1,16 +1,14 @@
 //! Job levels: Google's L3–L11 ladder is served as reference data, with what the
 //! source does not state left null, and an unknown framework or level is a 404.
 
-use loco_rs::testing::prelude::*;
 use serde_json::Value;
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn google_levels_are_served_with_unknowns_left_null() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let list: Value = request.get("/api/job-levels").await.json();
         let google = &list.as_array().unwrap()[0];
         assert_eq!(google["id"], "google-levels");

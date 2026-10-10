@@ -38,7 +38,7 @@
   },
   "pr": {
     "retention": "保留",
-    "horizon": "期限（天）",
+    "horizon": "期限（自然日）",
     "pastHorizon": "超过期限的软删除",
     "candidates": "同意已过期的候选人",
     "sweep": "执行清理",
@@ -133,7 +133,7 @@
     "jobTitle": "职位",
     "name": "姓名",
     "actions": "操作",
-    "days": "天",
+    "days": "个自然日",
     "masked": "已隐藏"
   },
   "dash": {
@@ -280,7 +280,7 @@
     "timeToFill": "填补时长（中位数）",
     "insights": "洞察",
     "noInsights": "本期间没有指标越过阈值。",
-    "days": "天",
+    "days": "个自然日",
     "mean": "平均",
     "requisitions": "个职位"
   },
@@ -360,7 +360,7 @@
       "suggestion": "查看是否有可合并的层级。"
     },
     "time_to_fill_slow": {
-      "observation": "填补岗位的中位用时为 {days} 天。",
+      "observation": "填补岗位的中位用时为 {days} 个自然日。",
       "suggestion": "找出招聘流程中岗位停留的环节。"
     }
   },
@@ -464,8 +464,8 @@
     "info": "提示",
     "updated": "更新于",
     "period": "时间段",
-    "range30d": "30 天",
-    "range90d": "90 天",
+    "range30d": "30 个自然日",
+    "range90d": "90 个自然日",
     "range12m": "12 个月",
     "rangeYtd": "年初至今",
     "vsStart": "较期初"
@@ -642,7 +642,7 @@
     "hint": "仅您和人力资源可见：档次与台阶即薪资。资格指在该台阶的年数，并非晋级承诺。",
     "none": "尚未记录薪酬档次。",
     "current": "第 {band} 档，第 {step} 台阶：每年 {amount}（全职），自 {since} 起。",
-    "notYet": "将于 {date} 具备晋升资格（{days} 天后），晋至 {amount}。",
+    "notYet": "将于 {date} 具备晋升资格（{days} 个自然日后），晋至 {amount}。",
     "due": "现已具备晋升资格（自 {date} 起），晋至 {amount}。"
   },
   "expenses": {

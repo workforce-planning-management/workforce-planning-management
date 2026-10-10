@@ -1,10 +1,8 @@
 //! Workforce flows (WPM-R4–R6): time caps + overtime, the leave
 //! balance journey (+ the two-approver race), and shift conflicts.
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -14,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 // Time: >24h/day refused; overtime derives beyond the FTE-scaled
 // contracted day; approval flips status.
 async fn time_caps_and_overtime() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "E-1001", None).await;
         activate!(&request, &worker).await;
@@ -57,7 +55,7 @@ async fn time_caps_and_overtime() {
 // approval decrements the balance in-tx; the second approver loses;
 // cancelling an approved request restores the balance.
 async fn leave_balance_journey() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "E-1002", None).await;
         activate!(&request, &worker).await;
@@ -144,7 +142,7 @@ async fn leave_balance_journey() {
 // Shifts: double-booking refused; assignment over approved leave
 // refused; back-to-back shifts are fine.
 async fn shift_conflicts() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "E-1003", None).await;
         activate!(&request, &worker).await;
@@ -247,7 +245,7 @@ async fn shift_conflicts() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn working_time_guardrails() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let heavy = seed_worker!(&request, &org, "WT-1", None).await;
         activate!(&request, &heavy).await;

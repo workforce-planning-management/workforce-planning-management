@@ -16,11 +16,15 @@ client).
 
 ## What deployers must know
 
-**The shipped default is wide open.** Authentication and authorization
-in the service are gated by `WPM_REQUIRE_AUTH`, which defaults **off**
-(family convention). A deployment exposed to untrusted callers MUST
-set `WPM_REQUIRE_AUTH=1`, configure `WPM_PASETO_KEYS[_URL]`, and mount
-a real ABAC policy before it is reachable. See
+**Sign-in is enforced by default.** Authentication and authorization in
+the service are gated by `WPM_REQUIRE_AUTH`, which defaults **on**: only an
+explicit `0`/`false`/`no`/`off` turns it off. The service logs a warning
+while it is off, reports it at `GET /_posture`, and the `production`
+environment refuses to start with it off or with no token key source. A
+deployment exposed to untrusted callers MUST configure
+`WPM_PASETO_KEYS[_URL]` (or `WPM_KEYCLOAK_JWKS_URL`) and mount a real ABAC
+policy before it is reachable. The container demo in `compose.yaml` opts out
+on purpose and must never be exposed. See
 [spec/auth.md](spec/auth.md) for the activation steps and
 [spec/regulatory.md](spec/regulatory.md) for what production would
 additionally require (this is demo software; see that file's "Demo
@@ -32,6 +36,14 @@ demonstration. See [spec/regulatory.md](spec/regulatory.md).
 
 ## Hardening in place
 
+- Security headers on every response (CSP with `frame-ancestors 'none'`,
+  `nosniff`, referrer, permissions and cross-origin policies, HSTS over TLS,
+  and `no-store` on API responses), from both the API and the UI (WPM-R73).
+- Rate limiting per caller with a stricter class for erase, sweep, import,
+  merge and token routes: `429` with `Retry-After`; counters are in memory
+  and keep no address or subject (WPM-R74, WPM-D54).
+- CORS is an allow-list in production (`WPM_CORS_ORIGIN`), never `*`; the
+  metrics endpoint needs a bearer token.
 - No `unsafe` in the service crate (`#![forbid(unsafe_code)]`).
 - Salary, payslips, review content, 360 reports, assessment scores,
   adjustment words, and succession plans are masked under ABAC and

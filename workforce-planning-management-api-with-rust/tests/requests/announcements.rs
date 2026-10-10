@@ -3,10 +3,8 @@
 //! retire.
 
 use chrono::{Duration, Utc};
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -14,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let today = Utc::now().date_naive();
         let day = |n: i64| (today + Duration::days(n)).to_string();
@@ -148,7 +146,7 @@ async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn announcements_can_target_a_department_carry_links_and_count_reads() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let post = |extra: Value| {

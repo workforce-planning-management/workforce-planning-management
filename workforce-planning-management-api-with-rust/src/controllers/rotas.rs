@@ -165,7 +165,7 @@ fn window(from: Option<NaiveDate>, to: Option<NaiveDate>) -> Result<(NaiveDate, 
     }
     if (to - from).num_days() + 1 > rules::MAX_WINDOW_DAYS {
         return Err(unprocessable(&format!(
-            "the window may cover at most {} days",
+            "the window may cover at most {} calendar days",
             rules::MAX_WINDOW_DAYS
         )));
     }

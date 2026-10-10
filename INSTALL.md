@@ -19,7 +19,8 @@ How to build and run both WPM subprojects from source.
 cd workforce-planning-management-api-with-rust
 cargo run -- db migrate    # apply migrations
 cargo run -- task seed     # synthetic org, ~40 employees
-cargo run -- start         # JSON API, default port 5150
+WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 5150; sign-in enforcement is on by default,
+                                         # so local development without an identity service opts out
 ```
 
 ```sh
@@ -36,7 +37,7 @@ Two loco tasks do nothing unless something runs them — schedule each **daily**
 ```sh
 cargo run -- task snapshot_headcount     # records aggregate headcount (cannot be backfilled)
 cargo run -- task rota_reminders         # tells whoever's on-call turn starts tomorrow (idempotent)
-cargo run -- task pay_progression_reminders  # tells who becomes eligible for a pay step within 30 days (idempotent)
+cargo run -- task pay_progression_reminders  # tells who becomes eligible for a pay step within 30 calendar days (idempotent)
 ```
 
 Optional imports: `cargo run -- task import_framework` (UK GDAD PCF) and
@@ -86,18 +87,47 @@ every other `-001` locale and run `pnpm cms-config` to regenerate
 1080 × 810 CSS pixels at 2×. In Chrome DevTools use a custom device of 1080 × 810
 with a device pixel ratio of 2 to see it as intended.
 
-## Running the service tests without the sibling crates
+## Run the demo in containers
 
-The service depends on two crates that live outside this repository
-(`entity-ref`, `authentication-verifier`). See
-[spec/testing.md](spec/testing.md) for building a scratch workspace that
-provides them and running the database-backed tests against a throwaway
-Postgres under Podman.
+From a fresh clone, with no sibling repositories:
+
+```sh
+podman compose up --build      # or: docker compose up --build
+curl http://localhost:5150/_health
+```
+
+This starts PostgreSQL and the API only. **It turns sign-in enforcement off**
+(`WPM_REQUIRE_AUTH: "0"` in `compose.yaml`, with a warning in the log) because
+the demo has no identity service; use synthetic data only. The UI is not
+containerized. Not yet verified: the image build, because the maintainer's
+machine could not pull base images when this was written.
+
+## Running the service tests
+
+The two shared crates (`entity-ref`, `authentication-verifier`) are vendored in
+`workforce-planning-management-api-with-rust/crates/`, so a fresh clone builds
+and tests on its own. Start a throwaway database and run the suites (the request
+suite runs serially, and each of the other test binaries in its own process):
+
+```sh
+cd workforce-planning-management-api-with-rust
+podman compose -f compose.test.yaml up -d --wait
+cargo test                                   # unit tests, no database
+cargo test --test mod -- --ignored --test-threads=1
+cargo test --test enforcement -- --ignored --test-threads=1
+cargo test --test enforcement_expenses -- --ignored --test-threads=1
+cargo test --test security -- --ignored --test-threads=1
+podman compose -f compose.test.yaml down
+```
+
+CI (`.github/workflows/ci.yml`) runs the same commands, plus `cargo fmt`,
+`clippy -D warnings`, `cargo deny`, the front-end checks and Playwright.
 
 ## Auth
 
-Both subprojects run with authentication enforcement **off** by
-default. See [spec/auth.md](spec/auth.md) to activate
-`WPM_REQUIRE_AUTH` and mount a real ABAC policy, and
+The service enforces sign-in **by default** (`WPM_REQUIRE_AUTH`; only an
+explicit `0` disables it, and `production` refuses to start that way). See
+[spec/auth.md](spec/auth.md) to point it at your token keys and mount a real
+ABAC policy, and
 [SECURITY.md](SECURITY.md) before exposing either subproject to
 untrusted callers.

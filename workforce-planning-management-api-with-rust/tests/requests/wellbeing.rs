@@ -2,10 +2,8 @@
 //! prompts (department + age band) → acknowledgements → the one
 //! multi-dose reminder → aggregate-only uptake.
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -14,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded cohort, the whole wellbeing surface
 async fn wellbeing_round_trip() {
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let engineer = seed_worker!(&request, &org, "W-1", None).await;
         activate!(&request, &engineer).await;
@@ -230,7 +228,7 @@ async fn wellbeing_round_trip() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn benefits_awareness_round_trip() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "B-1", None).await;
         activate!(&request, &worker).await;
@@ -416,7 +414,7 @@ async fn benefits_awareness_round_trip() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn pulse_round_trip() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         // Five engineering workers (the k floor) + one in finance.
         let mut engineers = Vec::new();

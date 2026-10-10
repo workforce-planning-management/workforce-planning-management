@@ -103,5 +103,5 @@ without the spec describing it.**
 
 ## License
 
-See [LICENSE.md](LICENSE.md). Each subproject declares its own SPDX
+See [LICENSE/](LICENSE/index.md). Each subproject declares its own SPDX
 license expression in its manifest.

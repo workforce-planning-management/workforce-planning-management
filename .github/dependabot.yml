@@ -1,0 +1,31 @@
+# Dependabot version updates. One entry per ecosystem and directory, because the
+# two subprojects have their own manifests (there is no root Cargo.toml or
+# package.json).
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/workforce-planning-management-api-with-rust"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "rust"]
+    groups:
+      routine:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "npm"
+    directory: "/workforce-planning-management-ui-with-svelte"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "javascript"]
+    groups:
+      routine:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "ci"]

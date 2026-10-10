@@ -71,7 +71,7 @@ retire, organized as five pillars:
   reports, rater self-service, and in-app notifications;
   development-facing, never a pay input.
 - **Learning (LMS)** — training enrollments referencing the family's
-  [course-service](../../course/course-service-with-loco/) courses
+  course-service courses
   and instances (compliance courses, certifications with expiry).
 - **Assessments** — aptitude, personality, psychometric, selection,
   and cognitive (IQ-style index) tests with per-scale results, score

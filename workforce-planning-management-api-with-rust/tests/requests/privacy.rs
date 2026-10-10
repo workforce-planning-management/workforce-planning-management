@@ -3,10 +3,8 @@
 //! touching payroll rows and is refused on open employment, and the
 //! retention report/sweep honour the floored horizon.
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -15,7 +13,7 @@ use super::{activate, an_org, seed_worker};
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded life, the whole rights surface
 async fn subject_rights_round_trip() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "SR-1", Some(3_600_000)).await;
         activate!(&request, &worker).await;

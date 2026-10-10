@@ -41,7 +41,7 @@ const JOINER: &[Line] = &[
     (0, "Welcome and first-day schedule agreed", "people"),
     (0, "Buddy assigned", "people"),
     (5, "First-week check-in with the manager", "people"),
-    (30, "30-day review held", "people"),
+    (30, "30-calendar-day review held", "people"),
 ];
 
 const LEAVER: &[Line] = &[

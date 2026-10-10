@@ -16,6 +16,19 @@ and `prettier` clean across the repo. Older entries' remarks such as "Rust unbui
 WPM-T73 and no longer apply. Requirements WPM-R39–R55 and design decisions WPM-D29–D42
 live in the topic files listed in [index.md](index.md).
 
+**Since then (2026-10-09):** WPM-T102 (generic pay scale), WPM-T119 (durations say
+calendar days), WPM-T123, T125–T128 and T145 (production readiness) are done;
+WPM-T124 (CI) and WPM-T144 (release) are written but have **never run on GitHub**
+(see [production-readiness.md](production-readiness.md)). Counts are generated in
+[implementation-status.md](implementation-status.md).
+
+**Proposed (2026-10-09), not started:** Phase 12, delivery capacity and oversight
+readiness (WPM-T103–T118); the backup plan, restore drill, data protection impact
+assessment and gates in Phase 13 (WPM-T129–T132); and Phase 14, programme-linked
+planning and contingent workforce (WPM-T133–T143). See [plan.md](plan.md).
+Scheduling (critical chain, critical path and similar) lives in
+project-portfolio-management (WPM-D55).
+
 ## Phase 0 — specification
 
 - [x] WPM-T0 Cross-cutting spec round: topic files + SDD trio, both
@@ -299,7 +312,7 @@ live in the topic files listed in [index.md](index.md).
       + `GET /api/workforce/working-time?department=&as_of=` in the
       workforce controller: per-employee flags over **recorded** (not
       merely approved) minutes in the trailing 17 weeks and rest-gap
-      breaches across recent **and planned** assignments (±28 days).
+      breaches across recent **and planned** assignments (±28 calendar days).
       Advisory only — nothing is refused (new WPM-D19); visibility
       equals the rota's. Front-end: a Working-time panel on
       `/workforce` (flags + all-clear state), 4 i18n keys × 13
@@ -789,7 +802,7 @@ live in the topic files listed in [index.md](index.md).
       and `span_of_control`. New read-only
       `GET /api/workforce-intelligence/metrics?from=&to=` returns the
       numbers beside their definitions. **Time-to-fill** is `filled_on - opened_on` in
-      days over requisitions filled in the period (mean, median, count);
+      calendar days over requisitions filled in the period (mean, median, count);
       migration `m20261002_000021_requisition_filled_on` adds nullable
       `requisitions.filled_on`, set when a requisition moves to `filled`;
       requisitions with a missing or out-of-order date are left out, not
@@ -880,7 +893,7 @@ first in each, per the three-part rule.
       (suggestions, not decisions), `competency_shortfall`, and
       `observed_attrition_bp` — annualised leavers over mean headcount from
       snapshots, `None` (**insufficient history**) with fewer than 3
-      snapshots, a window under 60 days, or any missing leavers figure
+      snapshots, a window under 60 calendar days, or any missing leavers figure
       (WPM-D27). 7 tests. `GET /api/workforce-plans/{pid}/forecast` returns
       per department × date: opening, planned demand (lines add up),
       projected supply, gap, levers, and **competency gaps** per demand line
@@ -932,7 +945,7 @@ first in each, per the three-part rule.
       `professional_registrations`; amounts stored as hundredths of a
       unit). Pure `rules::cpd` (units hours/points, categories, entry and
       requirement validation, `progress` recorded vs verified,
-      `registration_status` with a 90-day window; 6 tests). Controller
+      `registration_status` with a 90-calendar-day window; 6 tests). Controller
       `controllers/cpd.rs`: requirements (create/list, optionally scoped to
       a job title), worker entries (record with optional evidence note/link,
       list, verify, withdraw), registrations with expiry status, per-worker
@@ -1269,7 +1282,7 @@ first in each, per the three-part rule.
       the person) — the deciding rules (`is_self`, `can_view`) are unit-tested,
       and the UI messaging is component-tested. **Limits:** "shared" means
       visible to anyone who can view the record (no manager-only tier);
-      retrospective dates are whole days in UTC; skills merged by `/skills`
+      retrospective dates are whole calendar days in UTC; skills merged by `/skills`
       merge are not re-recorded in the history; no edit/delete of a past
       entry yet.
 
@@ -1754,7 +1767,7 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
         stretch says so (`source`: `rotation` / `skipped` / `override`); if
         nobody can take a day it is unassigned — said plainly, never guessed.
       - **API:** `POST|GET /api/rotas`; `GET|PUT|DELETE /api/rotas/{pid}`
-        (schedule as runs over `?from=&to=`, default 28 days, at most 92;
+        (schedule as runs over `?from=&to=`, default 28 calendar days, at most 92;
         members in order; swaps; days-on-call per member; who is on call
         today); `GET /api/rotas/{pid}/on-call?on=`; `POST /api/rotas/{pid}/
         overrides`, `DELETE /api/rota-overrides/{pid}`;
@@ -1912,7 +1925,7 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
         turnover, the trend and the insights → `/metrics`; vacancies →
         `/requisitions`; succession gaps → `/development`), locale-prefixed,
         with a visible focus ring.
-      - **Period control** (30 days · 90 days · 12 months · year to date;
+      - **Period control** (30 calendar days · 90 calendar days · 12 months · year to date;
         default 12 months, the service's own default window): applies to
         turnover, leavers, median time-to-fill, the change in headcount and
         the insights; the trend (six months) and the current counts
@@ -1932,8 +1945,8 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       - KPI tiles are top-aligned so the four figures share a baseline.
       Fit still holds at 1080 × 810 @2× and 2160 × 1620 @1× with the control
       bar; Playwright also checks the links, that the 12-month control is
-      pressed by default, and that choosing 90 days puts `range=90d` in the
-      URL and reloads metrics with `from` = 89 days back. svelte-check 0,
+      pressed by default, and that choosing 90 calendar days puts `range=90d` in the
+      URL and reloads metrics with `from` = 89 calendar days back. svelte-check 0,
       vitest 68/68, Playwright 26/26, build green.
 
 - [x] WPM-T86 (2026-10-05) **Announcement extras.** *(traces to WPM-R47, WPM-D35)* Builds on WPM-T82. Migration
@@ -2122,10 +2135,10 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       request by the server); `noindex` on signed-in pages (they redirect to
       sign-in).
 
-- [x] WPM-T92 (2026-10-06) **NHS Agenda for Change pay scale, Wales.**
+- [x] WPM-T92 (2026-10-06) **Public-sector national pay scale.**
       *(traces to WPM-R51, WPM-D38; research and the full table are in
-      [pay-scales.md](pay-scales.md))* Researched against the Welsh Government
-      pay letter AfC(W) 02/2026 (Annex 1, read from the circular itself): from
+      [pay-scales.md](pay-scales.md))* Researched against the government's published
+      pay letter (Annex 1, read from the circular itself): from
       1 April 2026, +3.3%, **three steps with years-to-progression for bands 5–9,
       two for bands 3–4, a single rate for band 2, band 1 closed**, plus the
       sleeping-in and on-call allowances. This differs from the structure the
@@ -2206,7 +2219,7 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       longer hard-codes the origin. Re-verified: svelte-check 0, vitest 74, Playwright 33
       (on `PW_PORT=4181`), prettier. **Not done / seen but left:** the older `/roles`
       requirement tables break header words on a phone ("SKI LL"); the **dark** theme was
-      checked, the NHS Wales and other themes were not; the CMS `/admin/` flow still needs a
+      checked, the other themes were not; the CMS `/admin/` flow still needs a
       GitHub login and was not opened.
 
 - [x] WPM-T96 (2026-10-06) **A worker's pay band and step, eligibility date and reminder.**
@@ -2335,3 +2348,355 @@ came out of the 2026-10-05 benchmark scan (`.sota/last-scan.json`).
       the manager path under the real `hr_admin`-less default policy was tested with an open
       blanket policy, so the **deployment's own policy** still decides who may reach these
       routes at all.
+
+- [x] WPM-T102 (2026-10-09) **The pay scale is generic.** *(traces to WPM-R51, WPM-R54,
+      WPM-D38; [pay-scales.md](pay-scales.md))* Builds on WPM-T92 and WPM-T96. The pay
+      scale no longer names a specific health service, government or nation. The scale is
+      `rules::pay_scale::national_2026_27`: id `national-2026-27`, name "Public-sector pay
+      scale 2026/27", framework `banded-pay`, nation `national`, source "Government pay
+      circular for 2026/27, Annex 1", and the on-call allowances lose the place name.
+      **Figures, bands, steps, allowances and behaviour are unchanged.** Migration 50
+      (`m20261009_000050_generic_pay_scale_id`) moves every stored scale id in
+      `worker_pay_positions` and `role_profiles` to the new id. That is safe because the
+      service knew only one scale and validated every stored id against it. Its `down` is a
+      no-op. The spec, glossary, index, requirements, testing notes, `llms.txt`/`llms.json`,
+      NEWS and the three changelogs are reworded to match, and the earlier WPM-T92 and
+      WPM-T95 entries are redacted. Verified in a scratch workspace with the real sibling
+      crates: 317 unit tests; 62 request tests against PostgreSQL 18 (Podman), including
+      pay scales, pay positions and grades with the new id, and migration 50 applied; clippy
+      `--all-targets -D warnings` and fmt clean; svelte-check 0, vitest 80, Playwright 45
+      (`PW_PORT=4187`); prettier clean on `src`. The migration's update SQL was run by hand
+      on a real schema and moved an old-id pay position to the new id, keeping its band and
+      step. **Not tested:** migration 50 on a database that already holds old-id rows (the
+      suite's database starts empty), and the `role_profiles` update with a matching row.
+      The enforcement and Keycloak suites were not run (no auth code changed).
+      **Trade-off:** the source no longer names its circular, so a reader cannot trace the
+      figures to a document from the spec alone.
+
+- [x] WPM-T119 (2026-10-09) **Every duration in days says "calendar days".** *(traces to
+      [calendar-days-or-business-days](calendar-days-or-business-days/index.md))* Every count
+      of days in the service is a difference of dates, including leave spans and leave
+      balances, so every one is **calendar days**; none is business days. Relabelled:
+      - the spec, READMEs, INSTALL and changelogs;
+      - API messages: the leave span cap, the leave balance refusal, the rota and swap window
+        caps, the time-to-fill insight and its threshold note, the metrics derivation, two
+        OpenAPI summaries, the pay reminder task's help and error, and the "30-calendar-day
+        review held" joiner checklist item;
+      - UI strings in the 13 `-001` locales (`pr.horizon`, `common.days`, `metrics.days`,
+        the time-to-fill insight, the CEO period buttons, the pay step eligibility line),
+        AI-written and unreviewed;
+      - code comments that state a duration.
+
+      Verified: 317 unit tests; 62 request tests (PostgreSQL 18, Podman); clippy
+      `--all-targets -D warnings` and fmt clean; svelte-check 0, vitest 80, Playwright 45
+      (`PW_PORT=4188`), including the CEO dashboard fit-on-one-screen specs with the longer
+      period buttons; prettier clean on `src`. **Not done:** no screenshot was taken of the
+      longer labels (the fit specs passed, but nobody looked at the screens); the
+      translations are not reviewed by native speakers; API field names such as
+      `horizon_days`, `days_ahead` and `days` are unchanged (the rule covers new identifiers
+      only). **Finding:** leave entitlements and balances count calendar days, weekends
+      included, where employers usually count working days. That is now visible in every
+      label. Counting business days would be a behaviour change and is not made here.
+
+## Phase 12 — delivery capacity and oversight readiness (proposed WPM-R56–R70, WPM-D45–D50)
+
+Proposed 2026-10-09, not started. The plan, the proposed requirements and the
+decisions are in [plan.md](plan.md); they move into a topic file at WPM-T103.
+Generic by design: levels, criteria and measures are configuration, and no real
+organization, government, board or oversight framework appears in code, seed
+data or tests (WPM-D48).
+
+- [ ] WPM-T103 **Spec round.** *(traces to WPM-R56–R70, WPM-D45–D50)* Move the
+      requirements and decisions from [plan.md](plan.md) into
+      `delivery-capacity-and-oversight.md`; settle the three open questions in
+      plan.md section 6; update [domain-model.md](domain-model.md) (the tables in
+      plan.md section 4), [auth.md](auth.md) (the HR-only key-person list, the
+      `post_fundings` reads, a read-only partner role), [audit.md](audit.md),
+      [regulatory.md](regulatory.md) (`post_fundings`), [glossary.md](glossary.md)
+      (skill pool, operations reservation, constraint pool, single point of
+      failure, contingent share, funding horizon, oversight level, exit
+      criterion, sustain rule), [index.md](index.md), `llms.txt`, and the next
+      free ids in `AGENTS/spec-driven-delivery.md`. No code.
+- [ ] WPM-T104 **Pure core: pool supply and capacity.** *(WPM-R56, WPM-R59,
+      WPM-D45, WPM-D46)* `rules/capacity.rs`: pool membership from role profile
+      or skill at minimum proficiency; supply = employed FTE − operations
+      reservation − approved leave, per month; demand vs supply per pool-month
+      with partner rows; over-commitment and the constraint pool; `unknown`
+      propagates and is never treated as zero. Unit tests for each boundary,
+      including a pool with no members and a month with no partner commitment.
+- [ ] WPM-T105 **Pure core: start check and work-in-progress limit.**
+      *(WPM-R60, WPM-D50)* Which months fail, by how much, the earliest fitting
+      start, and the active-programme limit on the constraint pool. Output is a
+      suggestion with its derivation. Unit tests, including a programme that can
+      never fit within the horizon.
+- [ ] WPM-T106 **Skill pools, programme demand, partner commitments.**
+      *(WPM-R56–R58)* Migrations, models, controllers and OpenAPI. Programme and
+      partner by `EntityRef` URN only. HR `write` for pools; planner role for
+      demand and commitments. Audited. Request tests for validation, soft
+      delete and URN refusal.
+- [ ] WPM-T107 **Capacity view and start check endpoints.** *(WPM-R59, WPM-R60)*
+      `GET /api/capacity` (pool × month, horizon parameter, derivation string)
+      and `POST /api/capacity/start-check`; recording a start decision with its
+      reason. Request tests against a synthetic seed with one over-committed
+      pool and one unknown partner month.
+- [ ] WPM-T108 **Pure core and endpoint: key-person risk.** *(WPM-R61,
+      WPM-D47)* Count holders, backups and ready successors per critical skill;
+      flag single points of failure. Aggregate endpoint (counts only) and an
+      HR-only named endpoint that writes an audit entry on every read.
+      Enforcement test: a manager and a partner role get the aggregate and a
+      403 on the named list. Mutation-check the HR-only rule.
+- [ ] WPM-T109 **Contingent share and funding horizon.** *(WPM-R62)* Migration
+      for `post_fundings` (kind, end date; no money). Contingent share per pool
+      from `employment_type` `contractor` and `fixed_term` (shown separately), with
+      trend from headcount snapshots split by basis (WPM-T139)
+      (`insufficient_history` when too short, as WPM-D27). Funding horizon per
+      pool per month. Retention list, subject access export and erasure wiring,
+      each checked by a request test.
+- [ ] WPM-T110 **Conversion lever in workforce plans.** *(WPM-R63)* Add
+      "convert contingent to permanent" to the plan levers (WPM-R37), with its
+      evidence. Unit test that the lever is offered only where contract FTE
+      exists in the pool.
+- [ ] WPM-T111 **Governance load register.** *(WPM-R64, WPM-D45)* Per-role
+      commitments with frequency and hours; senior hours per month. No per-person
+      rows. Request test for the monthly total.
+- [ ] WPM-T112 **Pure core: oversight criteria and the sustain rule.**
+      *(WPM-R65, WPM-R66, WPM-D48, WPM-D49)* Evaluate each measure against its
+      threshold and direction per period; a criterion is met when every linked
+      measure meets the sustain rule for N consecutive periods; a `null` reading
+      breaks the run and says so. The rules never output a level change. Unit
+      tests for runs, gaps, threshold edges and mixed derived and reported
+      measures.
+- [ ] WPM-T113 **Oversight levels, positions, criteria, measures.** *(WPM-R65,
+      WPM-R66)* Migrations, controllers and OpenAPI. Position changes are
+      recorded by a person with the deciding body (free text), date and reason.
+      Reported readings require an evidence note and a source. A synthetic demo
+      scale in the seed, labelled synthetic. Request tests.
+- [ ] WPM-T114 **Derived workforce measures.** *(WPM-R67)* Compute the
+      existing and new measures from plan.md WPM-R67, each with its derivation,
+      exclusions and period, and `null` on missing data. Define the three
+      candidate measures in the topic file before computing them. Unit tests
+      per measure.
+- [ ] WPM-T115 **Early warning and time to report.** *(WPM-R68)* Record when an
+      over-commitment or breach first became true and when it was acknowledged;
+      a new notification kind (reference-only, no figures in the text, as the
+      expense notifications). Time to report as a measure. Request test.
+- [ ] WPM-T116 **Monthly pack and partner view.** *(WPM-R69)* Freeze the
+      position, criteria, measures and capacity view as of a date; the same
+      payload for every audience; a read-only partner role that sees aggregates
+      only. Enforcement test that no named list reaches the pack or the partner
+      role.
+- [ ] WPM-T117 **Cutover readiness.** *(WPM-R70)* Trained staff per required
+      role at a site, hypercare cover from the on-call rota, and key-person risk
+      in the pools the cutover depends on; `ready` / `at_risk` / `unknown` with
+      reasons. Pure core first, then an endpoint. Unit and request tests.
+- [ ] WPM-T118 **UI and verification.** *(WPM-R56–R70)* Capacity heatmap
+      (unknown cells distinct from zero, readable in light and dark and on a
+      phone), resilience panel, oversight position and criteria, the monthly
+      pack, cutover readiness; client functions with the path-map test; strings
+      in the 12 `-001` locales. Screenshots read in light and dark at desktop and
+      phone sizes. Full suites: unit, request, enforcement, clippy, fmt,
+      svelte-check, vitest, Playwright, build, prettier. Record what was not
+      verified.
+WPM-T120–T122 (critical chain buffers) were withdrawn on 2026-10-09 by
+[WPM-D55](design.md): critical chain, critical path and similar scheduling
+capabilities live in project-portfolio-management. The ids are not reused.
+
+## Phase 13 — production readiness (WPM-R72–R78, WPM-R87–R88, WPM-D52–D54)
+
+Specified in [production-readiness.md](production-readiness.md) (what is built)
+and [plan.md](plan.md) section F (what is still proposed: the backup plan and
+the data protection impact assessment). Started 2026-10-09 from a review of
+what stops a buyer deploying a named version.
+
+- [x] WPM-T123 (2026-10-09) **Standalone build.** *(traces to WPM-R77)* The two shared
+      crates, `entity-ref` and `authentication-verifier`, are **copied into**
+      `workforce-planning-management-api-with-rust/crates/` (benches, fuzz targets and
+      their own locks dropped), and `Cargo.toml` points at them: no `../../` path
+      remains. `compose.test.yaml` mounts an in-repo `postgres-init/` instead of the
+      missing `../../ci/postgres-init`, and its comments no longer name monorepo
+      scripts. Added `Containerfile` (multi-stage, non-root, `LOCO_ENV=production`),
+      `config/demo.yaml` and a root `compose.yaml` (PostgreSQL + API; sign-in off,
+      explicitly, with a warning). Verified: the service directory **alone** (no sibling
+      directories) passes `cargo check --all-targets`, clippy, 328 unit tests and the
+      database suites; the `demo` config booted against PostgreSQL 18, ran the migrations
+      and answered. **Not verified:** `Containerfile` and `compose.yaml` were never
+      built or run (the Podman VM has no outbound network, so base images and crates
+      cannot be fetched); a clone into a truly empty directory; the UI is **not
+      containerized** (it has only `adapter-auto`, and signing in needs the identity
+      service). **Found:** `config/production.yaml` could not parse with `SMTP_USER` and
+      `SMTP_PASSWORD` unset (empty values rendered as YAML null); now quoted. **Trade-off:**
+      the vendored crates will drift from their upstream; the choice was to copy rather
+      than publish to crates.io, which needs the owner's account.
+- [~] WPM-T124 (2026-10-09) **Automated checks.** *(WPM-R77, WPM-R88)* Written, **never run
+      on GitHub**: `.github/workflows/ci.yml` (documents checks; fmt, clippy `-D warnings`
+      and unit tests; the database, enforcement, `enforcement_expenses` and `security`
+      suites against a Postgres 18 service; `cargo deny check`; the UI with Playwright and
+      an advisory `pnpm audit`; a non-required Keycloak job and OWASP ZAP baseline) and
+      `.github/dependabot.yml` (cargo, npm, actions). Every command was run locally except
+      the Keycloak suite, the ZAP scan and `pnpm audit` (no network or container runtime
+      for them). `cargo deny check` passes against the cached advisory database, which may
+      be stale. **Not done:** requiring the jobs through branch protection (a repository
+      setting); the axe accessibility tests (none exist in this repo); `actions-rs` was not
+      carried over, so there is nothing to replace.
+- [x] WPM-T125 (2026-10-09) **License texts.** *(WPM-R78)* One full-text file per license in
+      `LICENSE/`: `LICENSE-MIT`, `LICENSE-APACHE`, `LICENSE-BSD-3-CLAUSE`,
+      `LICENSE-GPL-2.0`, `LICENSE-GPL-3.0`, taken from the SPDX license list (MIT and BSD
+      carry `Copyright (c) 2026 Joel Parker Henderson`); `LICENSE/index.md` (and its
+      `README.md` copy) links them and gives the reason for the options;
+      `scripts/check-licenses.py` checks the manifests' `license` fields against the files
+      and runs in CI. `LICENSE.md` moved to `LICENSE/index.md` and every link follows.
+      **Not verified:** that GitHub detects a license from this layout. It looks for a
+      license file at the repository root, so detection may fail until a root `LICENSE`
+      file is added; and the "why several options" wording is the assistant's, for the
+      owner to confirm. The workforce UI's `package.json` stays `MIT OR Apache-2.0`, as
+      its spec says.
+- [x] WPM-T126 (2026-10-09) **Sign-in enforcement on by default.** *(WPM-R72, WPM-D52)*
+      `auth::parse_require_auth`: on unless an explicit `0`/`false`/`no`/`off`.
+      `auth::startup_check` (pure) refuses to boot in `production` with enforcement off or
+      with no key source; a warning at boot and every ten minutes while it is off; public
+      `GET /_posture`. `/metrics.prom` is no longer public. Existing request suites opt out
+      through `tests/requests/mod.rs::request_open`. Verified: unit tests for the default
+      and the startup check; the enforcement persona matrix (now also: metrics 401 without
+      and 200 with a service token; `/_posture` open); the `security` binary running with
+      no variable set gets a `401`; **mutation-checked** (flipping the default to off fails
+      the unit test and the live test); run for real: the default boot answers `401`,
+      `LOCO_ENV=production` with `WPM_REQUIRE_AUTH=0` or with no key source exits with the
+      refusal message, and with a key source boots and answers `401`. **Not done:** the UI
+      banner "sign-in not enforced" (the UI would call `/_posture`; nothing reads it yet).
+- [x] WPM-T127 (2026-10-09) **Security headers and CORS.** *(WPM-R73)* `src/security.rs`
+      (`security_headers`, pure) as the outermost API layer: CSP, nosniff, referrer,
+      permissions, COOP, CORP, HSTS over TLS, `no-store` on `/api`. UI:
+      `src/lib/security-headers.ts` applied in `hooks.server.ts`, and `csp` in
+      `vite.config.ts`. `config/production.yaml` CORS is an allow-list from the required
+      `WPM_CORS_ORIGIN`. Verified: 5 unit tests in the API, 3 in the UI; the `security`
+      binary checks the headers on a `200`, a `401` and a `429`; a Playwright spec loads
+      `/signin` and `/en-001/tour`, checks the headers and that the policy blocked
+      nothing (46 specs pass); run for real in the production environment, an allowed
+      origin gets `access-control-allow-origin` and another origin does not.
+      **Not done:** the pages behind sign-in were not checked for policy violations (they
+      need the stubbed API; only two public pages were); `style-src` still allows
+      `'unsafe-inline'`; the Swagger UI policy allows inline scripts; HSTS is only sent
+      when the request is over TLS.
+- [x] WPM-T128 (2026-10-09) **Rate limiting.** *(WPM-R74, WPM-D54)* In-memory fixed-window
+      limiter in `src/security.rs`: 600 requests per minute, and 20 for erase, sweep, import,
+      merge, deduplicate, token and export routes; `429` with `Retry-After`; both
+      configurable, `0` disables. The caller is the network address, **not** the token:
+      the first design keyed on the bearer token or `X-Forwarded-For`, which a guesser
+      could vary to avoid every limit; it was changed before this landed.
+      `X-Forwarded-For` counts only with `WPM_TRUST_FORWARDED`. Verified: unit tests (trip,
+      window reset, callers and classes apart, zero disables, the key ignoring a token and an
+      untrusted header); the `security` binary (trips, `Retry-After`, headers on the `429`,
+      varying the token does not help, health exempt, the sensitive class is stricter).
+      **Not done:** limits are per instance, so several instances each count alone;
+      behind a proxy that does not overwrite `X-Forwarded-For`, spoofing is possible once
+      `WPM_TRUST_FORWARDED` is set; no `tower_governor`.
+- [ ] WPM-T129 **Backup plan.** *(WPM-R75)* Write `spec/backup-and-restore.md`:
+      RPO and RTO defaults, base backups with WAL archiving, a nightly logical dump,
+      encryption and off-host storage, retention in calendar days, the erasure ledger
+      and its replay, restore drills, and the runbook. Update regulatory.md and the
+      retention section.
+- [ ] WPM-T130 **Erasure ledger and restore drill.** *(WPM-R75, WPM-D53)* Migration
+      for `erasure_ledger` (pid, date); the erasure path writes it; a
+      `restore_replay_erasures` task re-applies every entry after a given date; a
+      scripted drill restores into a scratch database (Podman), replays erasures and
+      checks row counts and migrations. Request test: erase, restore an earlier dump,
+      replay, and the record is gone again.
+- [ ] WPM-T131 **Data protection impact assessment.** *(WPM-R76)* Write `spec/dpia.md`:
+      the processing, necessity and proportionality, risks to people and their
+      likelihood and severity, and the measures in the design, each linked to its
+      decision id. Mark it a template completed for the demo, with what a deployer
+      must add and who signs it off. Add a checklist line to spec-driven-delivery.md:
+      a requirement that adds personal data updates the DPIA.
+- [ ] WPM-T132 **Production gates refresh.** *(WPM-R72–R78)* Add gates WPM-G3
+      (security headers and rate limits verified on the deployment), WPM-G4 (a restore
+      drill passed within the last 90 calendar days) and WPM-G5 (the deployer's DPIA
+      signed off), and mark WPM-G1 as code-complete once WPM-T126 lands.
+
+- [~] WPM-T144 (2026-10-09) **A release people can pin.** *(WPM-R87)* Written, **never run**:
+      `.github/workflows/release.yml` on a `v*` tag that equals the crate version builds the
+      API image from `Containerfile`, pushes it to GHCR by version and commit, generates a
+      CycloneDX bill of materials (`cargo cyclonedx`, run locally: 535 components) and
+      creates a GitHub release with generated notes and the bill attached. The first tag is
+      its first test. **Not done:** a first tag and release; image signing; a UI image.
+- [x] WPM-T145 (2026-10-09) **Documents match the code.** *(WPM-R88)*
+      `scripts/status.py` generates `spec/implementation-status.md` from the files and
+      `--check` fails when it is stale (CI runs it). `scripts/check-links.py` found 56 dead
+      relative links; the 50 that pointed at sibling repositories or at files that were never
+      here are now plain text (the two example-heavy folders `spec/special-files-for-public-repos`
+      and `spec/oxford-spelling`, and `.sota`, are skipped), and the vendored crates' own
+      docs were cleaned; it now reports 0, and CI runs it. `scripts/check-days.py` enforces
+      `spec/calendar-days-or-business-days` in CI. `lychee` was not used: both scripts run
+      offline with no extra tools, but neither fetches external URLs. **Not done:** the
+      project-portfolio-management repository's roadmap corrections (another repository);
+      the roughly 20 dead links named in the review are in that repository too.
+
+## Phase 14 — programme-linked planning and contingent workforce (proposed WPM-R79–R86, WPM-D56–D59)
+
+Proposed 2026-10-09, not started, in response to a user complaint: "It plans
+headcount by department, with no link to programmes and minimal tracking of
+contractors and fixed-term staff." The research, requirements and decisions are
+in [plan.md](plan.md) section G. WPM-T134 and WPM-T136 fix a spec drift and a
+payroll defect and need nothing else; do them first.
+
+- [ ] WPM-T133 **Spec round.** *(traces to WPM-R79–R86, WPM-D56–D59)* Move section G
+      into `programmes-and-contingent-workforce.md`; update
+      [domain-model.md](domain-model.md), [auth.md](auth.md) (rate masking, HR-only
+      named lists), [audit.md](audit.md), [regulatory.md](regulatory.md) (new personal
+      data, the DPIA once WPM-T131 exists), [glossary.md](glossary.md) (engagement
+      basis, engagement end, extension, supplier, engagement route), the index and
+      `llms.txt`. No code.
+- [ ] WPM-T134 **Correct the employment type in the spec.** *(WPM-D56)*
+      [domain-model.md](domain-model.md) lists `full_time | part_time | contract |
+      intern`; the code enforces `permanent | fixed_term | contractor | intern`. Make
+      the spec match the code and say that working pattern is `fte_percent`. Check
+      every other spec, OpenAPI text and UI label for the old values.
+- [ ] WPM-T135 **Pure core: engagements and basis-aware supply.** *(WPM-R79, WPM-R85,
+      WPM-D57)* `rules/engagement.rs`: which bases need, allow or refuse an end date;
+      an extension must move the end later; end-of-engagement window; long-running
+      and much-extended flags. Extend `rules/planning.rs`: project each basis
+      separately (known end dates for fixed-term and contractor, attrition for
+      permanent only), in headcount and FTE, with the assumptions named. Unit tests,
+      including an engagement ending on the target date, an extension past it, and no
+      permanent history (`insufficient_history`).
+- [ ] WPM-T136 **Payroll excludes contractors.** *(WPM-R80, WPM-D58)* The payroll run
+      filters out `employment_type = contractor`. Request test: a run with a
+      permanent, a fixed-term and a contractor worker, all with salaries, produces two
+      payslips. Mutation-check the filter. Say in the payroll spec that contractors
+      are paid outside payroll.
+- [ ] WPM-T137 **Engagement fields, extensions and contractor details.** *(WPM-R79,
+      WPM-R80)* Migration: `workers.engagement_ends_on`, supplier URN, engagement
+      route, rate and rate basis; `engagement_extensions`;
+      `engagement_status_assessments`. Validation from WPM-T135 on create, update and
+      hire. Existing fixed-term and contractor workers get no invented end date: they
+      are listed as "end date missing" until HR records one. Rate masked like salary;
+      audit entries carry no rate; subject-access export and erasure wiring, each
+      checked by a request test. Enforcement test for who may read the rate.
+- [ ] WPM-T138 **End-of-engagement reminders.** *(WPM-R81)* Loco task
+      `engagement_end_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` (default 60
+      calendar days; schedule daily), idempotent per end date, to the manager and HR;
+      a recorded decision (extend, convert, end) with who and when. Notifications
+      carry no rate. Request test, including an engagement already past its end.
+- [ ] WPM-T139 **Snapshots by basis.** *(WPM-R84)* Migration adding per-basis
+      headcount and FTE to `headcount_snapshots`; the snapshot task fills them; older
+      rows report `unknown` for the split. Request test.
+- [ ] WPM-T140 **Programme, FTE and basis on demand lines and requisitions.**
+      *(WPM-R82)* Migration and API for `plan_demand_lines` (programme URN, FTE,
+      basis, expected end) and `requisitions` (programme URN, basis, expected
+      duration); hire carries the basis and end date onto the worker. The forecast
+      reports by department and by programme, in headcount and FTE, using WPM-T135.
+      Levers add fixed-term hire and engage a contractor. Request tests.
+- [ ] WPM-T141 **Programme roll-up.** *(WPM-R83, WPM-D59)* Extend `post_fundings`
+      (WPM-T109) with a programme URN; per programme and month: funded FTE, the
+      fixed-term and contractor share, engagements ending and funding ending.
+      Aggregate only. Request test.
+- [ ] WPM-T142 **Contingent workforce view.** *(WPM-R86)* Aggregates per department,
+      pool and programme; ending in the next 30, 60 and 90 calendar days; past end
+      with no decision; extended beyond the threshold; contractors over the
+      long-running threshold. HR-only named lists with audited reads. Enforcement test
+      that a manager sees aggregates only.
+- [ ] WPM-T143 **UI and verification.** *(WPM-R79–R86)* Engagement panel on the worker
+      page (basis, end date, extensions, contractor details with the rate masked),
+      plan lines and requisitions with programme, FTE and basis, the forecast by
+      programme, the programme roll-up, and the contingent workforce view; strings in
+      the 12 `-001` locales. Screenshots read in light and dark at desktop and phone
+      sizes. Full suites. Record what was not verified.

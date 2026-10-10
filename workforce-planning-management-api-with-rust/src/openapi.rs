@@ -79,7 +79,7 @@ pub fn spec() -> Value {
             },
             "/api/time-entries/{pid}/approve": { "post": { "tags": ["workforce"], "summary": "Approve (only approved time feeds payroll)", "responses": ok("Entry") } },
             "/api/workers/{pid}/leave-entitlements": {
-                "post": { "tags": ["workforce"], "summary": "Grant an entitlement (kind/year/days)", "responses": created },
+                "post": { "tags": ["workforce"], "summary": "Grant an entitlement (kind/year/calendar days)", "responses": created },
                 "get": { "tags": ["workforce"], "summary": "Balances", "responses": ok("Entitlements") }
             },
             "/api/workers/{pid}/leave-requests": {
@@ -185,7 +185,7 @@ pub fn spec() -> Value {
             "/api/backups/{pid}": { "put": { "tags": ["hr-core"], "summary": "Change a backup's rank, window or note", "responses": ok("Backup") }, "delete": { "tags": ["hr-core"], "summary": "Stop naming a backup", "responses": ok("Ok") } },
             "/api/workers/{pid}/cover": { "get": { "tags": ["hr-core"], "summary": "Who covers for a worker on a day (?on=): best-ranked backup in window, employed and not on approved leave", "responses": ok("Cover") } },
             "/api/rotas": { "get": { "tags": ["workforce"], "summary": "On-call rotas in the caller's organizations, with who is on call today", "responses": ok("Rotas") }, "post": { "tags": ["workforce"], "summary": "Create an on-call rota: members in order, a period in days, a start date", "responses": ok("Pid") } },
-            "/api/rotas/{pid}": { "get": { "tags": ["workforce"], "summary": "A rota with its schedule as runs, swaps and days-on-call per member (?from=&to=, up to 92 days)", "responses": ok("Rota") }, "put": { "tags": ["workforce"], "summary": "Rename, re-time or re-order a rota", "responses": ok("Pid") }, "delete": { "tags": ["workforce"], "summary": "Retire a rota", "responses": ok("Ok") } },
+            "/api/rotas/{pid}": { "get": { "tags": ["workforce"], "summary": "A rota with its schedule as runs, swaps and days-on-call per member (?from=&to=, up to 92 calendar days)", "responses": ok("Rota") }, "put": { "tags": ["workforce"], "summary": "Rename, re-time or re-order a rota", "responses": ok("Pid") }, "delete": { "tags": ["workforce"], "summary": "Retire a rota", "responses": ok("Ok") } },
             "/api/rotas/{pid}/on-call": { "get": { "tags": ["workforce"], "summary": "Who is on call on a day (?on=), skipping members on approved leave", "responses": ok("OnCall") } },
             "/api/rotas/{pid}/overrides": { "post": { "tags": ["workforce"], "summary": "A swap: a worker on call for a date window regardless of the rotation", "responses": ok("Pid") } },
             "/api/rota-overrides/{pid}": { "delete": { "tags": ["workforce"], "summary": "Undo a swap", "responses": ok("Ok") } },
@@ -237,7 +237,7 @@ pub fn spec() -> Value {
             "/api/job-levels": { "get": { "tags": ["hr-core"], "summary": "Job-level frameworks the service knows (Google technical levels L3–L11): id, organization, track, source", "responses": ok("Job-level frameworks") } },
             "/api/job-levels/{id}": { "get": { "tags": ["hr-core"], "summary": "One framework with every level: code, title, summary, typical experience and management equivalent where the source states them (no pay)", "responses": ok("LevelFramework") } },
             "/api/job-levels/{id}/levels/{code}": { "get": { "tags": ["hr-core"], "summary": "One level (L5, l5 or 5) with the next level up, or null at the top", "responses": ok("Level") } },
-            "/api/pay-scales": { "get": { "tags": ["hr-core"], "summary": "Pay scales the service knows (NHS Agenda for Change, Wales 2026/27): id, nation, effective date, source circular, band codes", "responses": ok("Pay scales") } },
+            "/api/pay-scales": { "get": { "tags": ["hr-core"], "summary": "Pay scales the service knows (the national pay scale 2026/27): id, nation, effective date, source circular, band codes", "responses": ok("Pay scales") } },
             "/api/pay-scales/{id}": { "get": { "tags": ["hr-core"], "summary": "One pay scale with every band, step (pence, years until eligible for progression) and allowance", "responses": ok("PayScale") } },
             "/api/pay-scales/{id}/position": { "get": { "tags": ["hr-core"], "summary": "Where a full-time-equivalent salary sits on a band (?band=&salary_minor=), and whether a step up is due (?step=&months_on_step=); stateless, nothing stored", "responses": ok("Position") } },
             "/api/workforce-intelligence/metrics": { "get": { "tags": ["intelligence"], "summary": "Shared metric vocabulary: headcount, starters, leavers, turnover, span of control (?from=&to=)", "responses": ok("Metrics") } },

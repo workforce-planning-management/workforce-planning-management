@@ -14,12 +14,12 @@ sensitive — reads are audited and ABAC-scoped (self + manager + HR).
 ## Learning (LMS via the course registry)
 
 WPM deliberately does **not** host courses — the family's
-[course-service](../../course/course-service-with-loco/) owns course
+course-service owns course
 identity and offerings. WPM owns **TrainingEnrollments**: employee ×
 `course:` / `courseinstance:` URN, status (`enrolled → completed |
 failed | withdrawn`), completion date, and an optional certification
 expiry. The compliance view lists employees with missing mandatory
-trainings or **expiring certifications** (next 90 days) — the
+trainings or **expiring certifications** (next 90 calendar days) — the
 strategic reason enrollments live here. Course names are resolved
 best-effort (the display-name client pattern), never copied as truth.
 

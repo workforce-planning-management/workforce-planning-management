@@ -4,11 +4,9 @@
 //! amounts stay. (Who may do what under enforcement is in `tests/enforcement.rs`.)
 
 use chrono::{Duration, Utc};
-use loco_rs::testing::prelude::*;
 use sea_orm::{ConnectionTrait, Statement};
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -16,7 +14,7 @@ use super::{activate, an_org, seed_worker};
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn a_claim_goes_from_draft_to_reimbursed() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let boss = seed_worker!(&request, &org, "EX-M", None).await;
         let worker = seed_worker!(&request, &org, "EX-1", None).await;
@@ -314,7 +312,7 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn a_claim_is_exported_and_erased_keeping_the_amounts() {
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "EX-2", None).await;
         activate!(&request, &worker).await;

@@ -3,10 +3,8 @@
 //! person; backups name colleagues who cover, and `cover` resolves who does
 //! on a day (skipping someone outside their window or no longer employed).
 
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 
 use super::{activate, an_org, seed_worker};
 
@@ -14,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn emergency_contacts_are_validated_ranked_capped_and_exported() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "EC-1", None).await;
         activate!(&request, &worker).await;
@@ -116,7 +114,7 @@ async fn emergency_contacts_are_validated_ranked_capped_and_exported() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn backups_cover_in_rank_order_and_skip_the_unavailable() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let me = seed_worker!(&request, &org, "BK-ME", None).await;
         let first = seed_worker!(&request, &org, "BK-1", None).await;

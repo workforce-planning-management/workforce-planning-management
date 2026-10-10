@@ -9,6 +9,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — production readiness (WPM-R72–R74, R77, R78, R87, R88)
+
+Sign-in is enforced by default; security headers on the API and UI; rate limiting; CORS
+allow-list; `/metrics.prom` needs a token. The two shared crates are vendored so the
+service builds from a fresh clone. CI (`.github/workflows/ci.yml`, written, not yet run),
+Dependabot, a release workflow, a container demo, and license texts in `LICENSE/`.
+Documents are checked: links, calendar days, license fields, and a generated
+`spec/implementation-status.md`. See `spec/production-readiness.md`.
+
+### Changed — BREAKING: sign-in enforcement is on by default
+
+`WPM_REQUIRE_AUTH` was off unless set; it is now on unless set to `0`/`false`/`no`/`off`.
+Run local development with `WPM_REQUIRE_AUTH=0`. `LOCO_ENV=production` refuses to start with
+it off or with no token key source.
+
+### Changed — licence files live in `LICENSE/`
+
+`LICENSE.md` moved to `LICENSE/index.md` (with a `README.md` copy); links in README,
+AI_STATEMENT, CITATION.cff and the agent files point there.
+
+### Added — scheduling belongs to project-portfolio-management (WPM-D55)
+
+Critical chain, critical path and similar scheduling capabilities live in
+project-portfolio-management; WPM supplies workforce capacity. The proposed critical
+chain work (WPM-R71, WPM-T120–T122) is withdrawn.
+
+### Changed — durations say "calendar days" (WPM-T119)
+
+Every duration in days in the spec, docs, API messages and UI strings now says "calendar
+days", following `spec/calendar-days-or-business-days`.
+
+### Changed — the pay scale is generic (WPM-T102)
+
+The pay scale no longer names a specific health service or government. Its id is now
+`national-2026-27`, and migration 50 moves stored ids to it. The figures are unchanged.
+See `spec/pay-scales.md`.
+
+### Added — calendar days or business days
+
+`spec/calendar-days-or-business-days`: every duration in days says which kind of day.
+
 ### Added — browser language for `/` (WPM-T98)
 
 A bare `/` with no remembered locale redirects by `navigator.languages`; see
@@ -37,9 +78,9 @@ page and `/roles`. No level-to-band equivalence is derived. See `spec/job-levels
 Reference ladder L3–L11 (`/api/job-levels`) and a `/job-levels` page; no pay, unstated
 fields are null; an unofficial source, said so. See `spec/job-levels.md`.
 
-### Added — NHS Agenda for Change pay scale for Wales (WPM-T92)
+### Added — national pay scale (WPM-T92)
 
-The 2026/27 Wales scale from pay letter AfC(W) 02/2026, with a salary-placement and
+The national 2026/27 pay scale from the government's pay circular, with a salary-placement and
 progression lookup (`/api/pay-scales`) and a `/pay-scales` page. Stateless; see
 `spec/pay-scales.md`.
 

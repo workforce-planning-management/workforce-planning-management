@@ -38,7 +38,7 @@
   },
   "pr": {
     "retention": "Retention",
-    "horizon": "Horizon (days)",
+    "horizon": "Horizon (calendar days)",
     "pastHorizon": "Soft-deleted past horizon",
     "candidates": "Expired-consent candidates",
     "sweep": "Run sweep",
@@ -133,7 +133,7 @@
     "jobTitle": "Job title",
     "name": "Name",
     "actions": "Actions",
-    "days": "days",
+    "days": "calendar days",
     "masked": "Hidden"
   },
   "dash": {
@@ -280,7 +280,7 @@
     "timeToFill": "Time to fill (median)",
     "insights": "Insights",
     "noInsights": "Nothing crosses a threshold in this period.",
-    "days": "days",
+    "days": "calendar days",
     "mean": "mean",
     "requisitions": "requisitions"
   },
@@ -360,7 +360,7 @@
       "suggestion": "Look for layers that could be merged."
     },
     "time_to_fill_slow": {
-      "observation": "Median time to fill was {days} days.",
+      "observation": "Median time to fill was {days} calendar days.",
       "suggestion": "Find which stage of hiring the requisitions wait in."
     }
   },
@@ -464,8 +464,8 @@
     "info": "Info",
     "updated": "Updated",
     "period": "Period",
-    "range30d": "30 days",
-    "range90d": "90 days",
+    "range30d": "30 calendar days",
+    "range90d": "90 calendar days",
     "range12m": "12 months",
     "rangeYtd": "Year to date",
     "vsStart": "vs start of period"
@@ -642,7 +642,7 @@
     "hint": "Only you and HR can see this: a band and step is a salary. Eligibility is the years on the step, not a promise of a move.",
     "none": "No pay band recorded.",
     "current": "Band {band}, step {step}: {amount} a year (full-time), since {since}.",
-    "notYet": "Eligible to move up on {date} (in {days} days), to {amount}.",
+    "notYet": "Eligible to move up on {date} (in {days} calendar days), to {amount}.",
     "due": "Eligible to move up now (since {date}), to {amount}."
   },
   "expenses": {

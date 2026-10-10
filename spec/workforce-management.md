@@ -37,7 +37,7 @@ Advisory Working Time Regulations signals derived entirely from data
 this pillar already holds (`GET /api/workforce/working-time`): the
 **17-week / 48-hour average** over *recorded* (not merely approved)
 minutes, with WPM-D16 terms, and **11-hour rest-gap** breaches across
-recent *and planned* shift assignments (±28 days). Flags only —
+recent *and planned* shift assignments (±28 calendar days). Flags only —
 nothing is refused; the regulations' opt-outs and compensatory-rest
 rules are a deployment's call. Visibility equals the rota's.
 

@@ -25,18 +25,15 @@ three are clean across the repo** — the service under both auth backends
 changelog. Keep them clean; if you cannot run one, say so rather than claiming a
 green gate. A justified `#[allow(clippy::…)]` carries a reason comment.
 
-## Running the service tests without the sibling crates
+## Running the service tests
 
-The service depends on two crates outside this repository (`entity-ref`,
-`authentication-verifier`, as `../../link/entity-ref-rust-crate` and
-`../../authentication/authentication-verifier-rust-crate`). To build and test:
+The two shared crates (`entity-ref`, `authentication-verifier`) are vendored in
+`workforce-planning-management-api-with-rust/crates/`, so the service builds and
+tests from a fresh clone; no scratch workspace is needed. To run the
+database-backed suites:
 
-1. Make a scratch workspace laid out as `<ws>/link/entity-ref-rust-crate`,
-   `<ws>/authentication/authentication-verifier-rust-crate` and
-   `<ws>/repo/api` (a copy of the service — `rsync -a --delete --exclude target
-   --exclude .git`). In the maintainer's checkout the real crates are in the
-   sibling "main-x-service" repository; without them, signature-only stubs
-   compile but **cannot** run the auth suites.
+1. (Only if you want to keep `target/` out of your checkout, copy the service —
+   `rsync -a --delete --exclude target --exclude .git` — and run there.)
 2. Start a throwaway Postgres 18 with **Podman** (never Docker) on a free port:
    `podman run -d --rm --name <unique> -e POSTGRES_USER=loco -e POSTGRES_PASSWORD=loco
    -e POSTGRES_DB=workforce_planning_management_service_test -p 55440:5432 --tmpfs

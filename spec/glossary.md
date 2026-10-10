@@ -10,7 +10,7 @@
 | **Regional locale** | A locale such as `en-gb` or `de-de` that holds only **overrides** of its language's `-001` locale and falls back to it |
 | **Locale address** | The one URL prefix a locale is served under, its full code (`/cy-001/…`); a bare language (`/cy/`) is not a route, only a tag that matches its `-001` locale |
 | **Accrual**         | Leave entitlement earned over time; v1 grants annual entitlements, accrual schedules are roadmap |
-| **Agenda for Change (AfC)** | The NHS pay and grading system; Wales issues its own pay circular each year ([pay-scales.md](pay-scales.md)) |
+| **Pay scale**       | A banded public-sector pay and grading scale, transcribed from the government's yearly pay circular ([pay-scales.md](pay-scales.md)) |
 | **Expense claim** | A worker's request to be repaid for money spent for work: dated, categorised items in one currency, decided by someone other than the claimant ([expense-claims.md](expense-claims.md)) |
 | **Job level** | A rung on a published career ladder (e.g. Google's L3–L11); not a salary ([job-levels.md](job-levels.md)) |
 | **Pay band / step** | A grade on a pay scale and one pay point within it (entry, intermediate, top), each with the years before eligibility to progress |
@@ -29,7 +29,7 @@
 | **Handover**        | What a leaver still holds on their last day, reassigned or closed with an audit trail (WPM-R46)   |
 | <a id="metrics"></a>**Metrics layer** | The shared, named workforce counts and rates (headcount, starters, leavers, turnover, span of control, time-to-fill) — WPM-T44 |
 | **Movement**        | A joiner or leaver record with a dated checklist (WPM-R45)                                       |
-| **On-call rota**    | A rotation of workers where the duty passes every N days; swaps and leave-aware skipping (WPM-R42) |
+| **On-call rota**    | A rotation of workers where the duty passes every N calendar days; swaps and leave-aware skipping (WPM-R42) |
 | **Priority (skill gap)** | Importance weight (critical 3, important 2, useful 1) × levels short (WPM-R43)              |
 | **Read receipt**    | That a person read an announcement; the reader sees theirs, editors see a count (WPM-D35)         |
 | **Unknown (skill)** | An undeclared skill: no shortfall, no priority — assess, do not train (WPM-D32)                   |

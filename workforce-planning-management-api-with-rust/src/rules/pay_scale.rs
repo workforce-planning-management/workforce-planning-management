@@ -1,16 +1,14 @@
-//! Public-sector **pay scales** (WPM-R51), DB-free: the NHS Agenda for Change
-//! (`AfC`) scales used in Wales, and the arithmetic of "where does this salary
-//! sit on the scale, and is a step up due?".
+//! Public-sector **pay scales** (WPM-R51), DB-free: a national banded pay scale,
+//! and the arithmetic of "where does this salary sit on the scale, and is a step
+//! up due?".
 //!
 //! The figures are **reference data transcribed from the pay circular** named
-//! in [`PayScale::source`], not computed: Wales issues its own circular each year
-//! (it does not follow England's), so a new year is a new scale added here with
-//! its source. Salaries are annual, full-time (37.5 hours a week), in minor units
+//! in [`PayScale::source`], not computed: the government issues a circular each
+//! year, so a new year is a new scale added here with its source. Salaries are annual, full-time (37.5 hours a week), in minor units
 //! (pence). Nothing here is stored against a person — a lookup takes a salary and
 //! returns a position, and forgets it.
 //!
-//! Wales differs from the England scales in structure: bands 2–4 have an entry and
-//! a top step, bands 5–9 have entry, intermediate and top, and each step carries the
+//! The structure: bands 2–4 have an entry and a top step, bands 5–9 have entry, intermediate and top, and each step carries the
 //! **years until eligible for progression**. Band 1 is closed to new entrants and
 //! band 2 is a single rate.
 
@@ -31,7 +29,7 @@ pub struct Step {
 pub struct Band {
     /// `"1"`, `"2"`, … `"8a"`–`"8d"`, `"9"`.
     pub code: &'static str,
-    /// Closed to new entrants (`AfC` band 1).
+    /// Closed to new entrants (band 1).
     pub closed: bool,
     /// Entry first, top last. Never empty.
     pub steps: Vec<Step>,
@@ -51,13 +49,13 @@ pub struct Allowance {
 /// A whole scale for one framework, nation and year.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PayScale {
-    /// Stable id, e.g. `afc-wales-2026-27`.
+    /// Stable id, e.g. `national-2026-27`.
     pub id: &'static str,
     /// Display name.
     pub name: &'static str,
-    /// The framework, e.g. `agenda-for-change`.
+    /// The framework, e.g. `banded-pay`.
     pub framework: &'static str,
-    /// The nation whose circular this is.
+    /// The jurisdiction whose circular this is (`national` for a national scale).
     pub nation: &'static str,
     /// ISO 4217 currency.
     pub currency: &'static str,
@@ -91,19 +89,19 @@ fn band(code: &'static str, closed: bool, steps: &[(i64, Option<u8>)]) -> Band {
     }
 }
 
-/// NHS Wales, Agenda for Change, from 1 April 2026 (pay letter AfC(W) 02/2026,
-/// 12 February 2026).
+/// The national banded pay scale, from 1 April 2026 (the government's pay
+/// circular for 2026/27, Annex 1).
 #[must_use]
-pub fn afc_wales_2026_27() -> PayScale {
+pub fn national_2026_27() -> PayScale {
     PayScale {
-        id: "afc-wales-2026-27",
-        name: "NHS Wales Agenda for Change 2026/27",
-        framework: "agenda-for-change",
-        nation: "wales",
+        id: "national-2026-27",
+        name: "Public-sector pay scale 2026/27",
+        framework: "banded-pay",
+        nation: "national",
         currency: "GBP",
         effective_from: "2026-04-01",
         uplift_tenths_percent: 33,
-        source: "Welsh Government Health and Social Services Group, pay letter AfC(W) 02/2026 (12 February 2026), Annex 1",
+        source: "Government pay circular for 2026/27, Annex 1",
         minutes_per_week: 2250,
         bands: vec![
             band("1", true, &[(26_300, None)]),
@@ -159,12 +157,12 @@ pub fn afc_wales_2026_27() -> PayScale {
             },
             Allowance {
                 code: "on_call_weekday_weekend",
-                name: "Wales on-call, weekday or weekend",
+                name: "On-call, weekday or weekend",
                 amount_minor: 2_605,
             },
             Allowance {
                 code: "on_call_public_holiday",
-                name: "Wales on-call, public holiday",
+                name: "On-call, public holiday",
                 amount_minor: 5_208,
             },
         ],
@@ -174,7 +172,7 @@ pub fn afc_wales_2026_27() -> PayScale {
 /// Every scale the service knows, newest first within a framework.
 #[must_use]
 pub fn all() -> Vec<PayScale> {
-    vec![afc_wales_2026_27()]
+    vec![national_2026_27()]
 }
 
 /// The scale with this id, if any.
@@ -207,7 +205,7 @@ pub enum Position {
         /// The step, 1-based.
         step: usize,
     },
-    /// Between two steps — not a valid `AfC` salary for full-time pay, but common
+    /// Between two steps — not a valid scale salary for full-time pay, but common
     /// for protected or pro-rata figures, so it is reported, not rejected.
     BetweenSteps {
         /// The step just below, 1-based.
@@ -296,15 +294,15 @@ pub fn progression(band: &Band, step: usize, months_on_step: u32) -> Option<Prog
 mod tests {
     use super::*;
 
-    fn wales() -> PayScale {
-        afc_wales_2026_27()
+    fn national() -> PayScale {
+        national_2026_27()
     }
 
     /// Every band is non-empty, strictly ascending, and only the top step has no
     /// progression period — the shape the circular's table has.
     #[test]
     fn the_scale_is_well_formed() {
-        let scale = wales();
+        let scale = national();
         assert_eq!(scale.bands.len(), 12);
         for b in &scale.bands {
             assert!(!b.steps.is_empty(), "{}", b.code);
@@ -344,17 +342,17 @@ mod tests {
 
     #[test]
     fn lookup_is_case_insensitive_and_unknowns_are_none() {
-        let scale = wales();
+        let scale = national();
         assert!(scale.band("8A").is_some());
         assert!(scale.band("10").is_none());
-        assert!(find("afc-wales-2026-27").is_some());
-        assert!(find("afc-england-2026-27").is_none());
+        assert!(find("national-2026-27").is_some());
+        assert!(find("national-2025-26").is_none());
     }
 
     /// Below, on each step, between, above — and the boundaries themselves.
     #[test]
     fn locate_covers_every_case() {
-        let scale = wales();
+        let scale = national();
         let b5 = scale.band("5").unwrap();
         assert_eq!(
             locate(b5, 3_255_600),
@@ -393,7 +391,7 @@ mod tests {
     /// band is `None`, not a guess.
     #[test]
     fn progression_rules() {
-        let scale = wales();
+        let scale = national();
         let b6 = scale.band("6").unwrap();
         // Entry step: 2 years.
         assert_eq!(
@@ -435,7 +433,7 @@ mod tests {
     /// The allowances are the circular's.
     #[test]
     fn allowances_are_the_circulars() {
-        let scale = wales();
+        let scale = national();
         let amount = |code: &str| {
             scale
                 .allowances

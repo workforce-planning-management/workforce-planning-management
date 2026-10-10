@@ -2,10 +2,8 @@
 //! approved leave, and a worker's own on-call stretches.
 
 use chrono::{Duration, Utc};
-use loco_rs::testing::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
 use workforce_planning_management_service::tasks::rota_reminders::send_reminders;
 
 use super::{activate, an_org, seed_worker};
@@ -14,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let mut pids = Vec::new();
@@ -189,7 +187,7 @@ async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
-    request::<App, _, _>(|request, ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let mut pids = Vec::new();
@@ -246,7 +244,7 @@ async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn swap_requests_move_only_the_requesters_days_when_accepted() {
-    request::<App, _, _>(|request, _ctx| async move {
+    crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let mut pids = Vec::new();

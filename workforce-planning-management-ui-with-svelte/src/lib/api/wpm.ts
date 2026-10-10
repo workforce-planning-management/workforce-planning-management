@@ -292,7 +292,7 @@ export function clearRoleGrade(profilePid: string): Promise<unknown> {
   return api(`/role-profiles/${profilePid}/grade`, { method: "DELETE" });
 }
 
-/** The pay scales the service knows (NHS Agenda for Change, Wales, …). */
+/** The pay scales the service knows (the national pay scale, …). */
 export function listPayScales(init?: FetchLike): Promise<PayScaleSummary[]> {
   return api("/pay-scales", init);
 }
@@ -1594,7 +1594,7 @@ export function listRotas(init?: FetchLike): Promise<RotaSummary[]> {
   return api("/rotas", init);
 }
 
-/** One rota with its schedule (default 28 days from today), swaps and load. */
+/** One rota with its schedule (default 28 calendar days from today), swaps and load. */
 export function getRota(
   pid: string,
   window?: { from?: string; to?: string },

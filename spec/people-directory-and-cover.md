@@ -61,7 +61,7 @@ or on leave.*
 turns, swap them, and be reminded.*
 
 - A **rota** is a named rotation in one organization: members in order, a
-  period of 1–31 days, a start date; the duty passes to the next member every
+  period of 1–31 calendar days, a start date; the duty passes to the next member every
   period, wrapping. Not the shift day-view (`GET /api/shifts`, WPM-R6).
 - **Overrides** (swaps): a worker on call for a date window regardless of the
   rotation; a later override wins on shared days.
@@ -82,7 +82,7 @@ turns, swap them, and be reminded.*
   the caller's organizations do not exist to them. Membership, swaps and swap
   requests are in the subject-access export and removed on erasure.
 - API: `POST|GET /api/rotas`, `GET|PUT|DELETE /api/rotas/{pid}`
-  (`?from=&to=`, at most 92 days), `GET …/on-call?on=`, `POST …/overrides`,
+  (`?from=&to=`, at most 92 calendar days), `GET …/on-call?on=`, `POST …/overrides`,
   `DELETE /api/rota-overrides/{pid}`, `POST|GET …/swap-requests`,
   `POST /api/rota-swap-requests/{pid}/accept|decline|cancel`,
   `GET /api/workers/{pid}/on-call`. UI: `/rota`, "My on-call" on `/me`.

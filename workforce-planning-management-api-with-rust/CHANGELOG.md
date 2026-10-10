@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — production readiness (WPM-T123–T128, T144)
+
+`src/security.rs` (security headers, per-address rate limiting with a stricter class,
+`GET /_posture`), `auth::startup_check` and `auth::parse_require_auth`, vendored
+`crates/entity-ref` and `crates/authentication-verifier`, `postgres-init/`, `deny.toml`,
+`Containerfile`, `config/demo.yaml`, a CORS allow-list in `config/production.yaml`
+(`WPM_CORS_ORIGIN` required), and a new `security` test binary. New environment:
+`WPM_RATE_LIMIT_PER_MINUTE`, `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE`, `WPM_TRUST_FORWARDED`,
+`WPM_HSTS`, `WPM_CORS_ORIGIN`.
+
+### Changed — BREAKING: enforcement on by default; metrics need a token
+
+`WPM_REQUIRE_AUTH` defaults on. `/metrics.prom` is no longer a public path. Request
+suites opt out through `tests/requests/mod.rs::request_open`.
+
+### Fixed — `config/production.yaml` could not parse with `SMTP_USER` and `SMTP_PASSWORD` unset
+
+The empty values rendered as YAML null; they are quoted now.
+
+### Changed — durations say "calendar days" (WPM-T119)
+
+Refusal messages (leave span, leave balance, rota and swap windows), the time-to-fill
+insight and threshold note, the metrics derivation, two OpenAPI summaries, the pay
+reminder task's help and error, and the joiner checklist's "30-calendar-day review held"
+item now say "calendar days". Field names are unchanged.
+
+### Changed — generic pay scale (WPM-T102)
+
+The scale is `rules::pay_scale::national_2026_27` with id `national-2026-27`, name
+"Public-sector pay scale 2026/27", framework `banded-pay`, nation `national`, and a
+generic source. Allowance names lose the place name. Migration 50
+(`m20261009_000050_generic_pay_scale_id`) moves every stored scale id in
+`worker_pay_positions` and `role_profiles` to the new id; its `down` is a no-op.
+Figures, bands, steps and behaviour are unchanged.
+
 ### Added — expense claims (WPM-T97)
 
 Migration 49 (`expense_claims`, `expense_items`), `rules::expenses`, 12 routes under
@@ -31,8 +66,8 @@ erasure wired.
 
 ### Added — pay scales (WPM-T92)
 
-`rules::pay_scale` (the NHS Agenda for Change scale for Wales 2026/27 from pay letter
-AfC(W) 02/2026; `locate`, `progression`) and `GET /api/pay-scales`, `/{id}`,
+`rules::pay_scale` (the national 2026/27 pay scale from the government's pay
+circular; `locate`, `progression`) and `GET /api/pay-scales`, `/{id}`,
 `/{id}/position`. Reference data, stateless, no migration.
 
 ### Added — WPM-T41–T89 (2026-10-02 → 2026-10-06)
@@ -255,7 +290,7 @@ the wrong-type rejection and the matching-type acceptance for `Worker`,
   already holds: the 17-week average of **recorded** (not merely
   approved) minutes with WPM-D16 terms and the 48-hour flag (integer
   boundary comparison), plus 11-hour rest-gap breaches across recent
-  and planned shift assignments (±28 days). Flags only — nothing is
+  and planned shift assignments (±28 calendar days). Flags only — nothing is
   refused (new WPM-D19); visibility equals the rota's.
 - `rules/working_time.rs` (pure): panic-free average/boundary/rest-gap
   arithmetic; overlaps clamp to 0, malformed intervals are skipped.
