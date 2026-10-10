@@ -41,6 +41,9 @@ file.
   `vite.config.ts` (nonces and hashes for its own inline scripts;
   `frame-ancestors 'none'`; `style-src` allows inline styles because Svelte sets
   them).
+- The one exception is the content manager's path (`/admin`): its sign-in uses a popup, so it gets
+  `Cross-Origin-Opener-Policy: same-origin-allow-popups`. It also loads a script from a public CDN
+  without a pinned version or an integrity hash, which is a known gap.
 - **CORS** in production is an allow-list from `WPM_CORS_ORIGIN`, required: boot
   fails when it is unset rather than falling back to `*`. Methods and headers are
   listed, credentials are off.
@@ -77,11 +80,12 @@ file.
 
 ## WPM-R78 — License files
 
+A root `LICENSE.md` states each subproject's SPDX expression and links the texts.
 Every license text is in `LICENSE/` (`LICENSE-MIT`, `LICENSE-APACHE`,
-`LICENSE-BSD-3-CLAUSE`, `LICENSE-GPL-2.0`, `LICENSE-GPL-3.0`), with the SPDX
-summary and the reason for the options in `LICENSE/index.md`.
-`scripts/check-licenses.py` checks that the `license` fields in `Cargo.toml` and
-`package.json` match.
+`LICENSE-BSD-3-CLAUSE`, `LICENSE-GPL-2.0`, `LICENSE-GPL-3.0`), with the reason for
+the options in `LICENSE/index.md`. `scripts/check-licenses.py` checks that the
+`license` fields in `Cargo.toml` and `package.json` match both `LICENSE.md` and
+`LICENSE/index.md`.
 
 ## WPM-R87 — A release people can pin
 

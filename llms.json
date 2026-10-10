@@ -65,6 +65,11 @@
         "description": "Google technical job levels L3–L11, a worker's level, a role's level and pay band (WPM-R52–R53)"
       },
       {
+        "title": "spec/operations-and-governance.md",
+        "path": "spec/operations-and-governance.md",
+        "description": "backup and restore, deployment, upgrade, runbook, information governance pack, retention per record kind, Entra ID sign-in, every page in every locale (WPM-R89–R94)"
+      },
+      {
         "title": "spec/production-readiness.md",
         "path": "spec/production-readiness.md",
         "description": "sign-in on by default, security headers, rate limiting, standalone build and CI, license texts, releases, generated status (WPM-R72–R74, R77, R78, R87, R88)"

@@ -167,6 +167,32 @@ export function t(key: StringKey): string {
   return translate(key, current);
 }
 
+/**
+ * Reactive translation with values: `tf("groups.since", { joined_at })` fills the
+ * `{joined_at}` placeholder in the catalogue string. A placeholder with no value is
+ * left as written, so a missing value is visible rather than blank.
+ */
+export function tf(
+  key: StringKey,
+  params: Record<string, unknown> = {},
+): string {
+  return translate(key, current).replace(/\{(\w+)\}/g, (whole, name: string) =>
+    name in params ? String(params[name]) : whole,
+  );
+}
+
+/**
+ * A closed-vocabulary value the server sends as a token (a status, a kind, a category:
+ * `on_leave`, `ai_assistance`) in the current language. The catalogue holds them under
+ * `values.<token>`. A token the catalogue does not know yet is shown humanized in the source
+ * language (underscores to spaces) rather than blank, and a test pins that every token the
+ * server's vocabularies define has an entry.
+ */
+export function tv(value: string | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  return tp(`values.${value}`) ?? value.replaceAll("_", " ");
+}
+
 /** Reactive locale-prefixed link for an app path: `l("/workers")`. */
 export function l(path: string): string {
   return localePath(current, path);

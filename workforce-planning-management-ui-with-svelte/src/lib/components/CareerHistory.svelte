@@ -6,6 +6,7 @@
   than the person are marked.
 -->
 <script lang="ts">
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
   import {
     addPastRole,
     addPastSkill,
@@ -83,28 +84,28 @@
 </script>
 
 <section class="panel" data-testid="career-history">
-  <h2>Career history</h2>
+  <h2>{t("comp.careerHistory.career_history")}</h2>
   {#if error}<p class="error" data-testid="error">{error}</p>{/if}
   {#if notice}<p data-testid="notice">{notice}</p>{/if}
 
-  <h3>Roles over time</h3>
+  <h3>{t("comp.careerHistory.roles_over_time")}</h3>
   <table data-testid="role-history">
-    <thead><tr><th>Framework</th><th>Role</th><th>From</th><th>To</th><th>Recorded by</th></tr></thead>
+    <thead><tr><th>{t("comp.careerHistory.framework")}</th><th>{t("comp.careerHistory.role")}</th><th>{t("comp.careerHistory.from")}</th><th>{t("comp.careerHistory.to")}</th><th>{t("comp.careerHistory.recorded_by")}</th></tr></thead>
     <tbody>
       {#each roles as r (r.pid)}
         <tr>
           <td>{r.framework === "esco" ? "ESCO" : "UK GDAD PCF"}</td>
-          <td>{r.role_label} {#if r.current}<span class="chip ok">current</span>{/if}</td>
+          <td>{r.role_label} {#if r.current}<span class="chip ok">{t("comp.careerHistory.current")}</span>{/if}</td>
           <td>{day(r.started_at)}</td><td>{day(r.ended_at)}</td>
-          <td class="muted">{r.recorded_by ?? "—"}{#if r.on_behalf} <span class="chip">on their behalf</span>{/if}</td>
+          <td class="muted">{r.recorded_by ?? "—"}{#if r.on_behalf} <span class="chip">{t("comp.careerHistory.on_their_behalf")}</span>{/if}</td>
         </tr>
       {:else}
-        <tr><td colspan="5" class="muted">No roles recorded yet.</td></tr>
+        <tr><td colspan="5" class="muted">{t("comp.careerHistory.no_roles_recorded_yet")}</td></tr>
       {/each}
     </tbody>
   </table>
 
-  <h4>Add a past role</h4>
+  <h4>{t("comp.careerHistory.add_a_past_role")}</h4>
   <form
     onsubmit={(event) => {
       event.preventDefault();
@@ -122,36 +123,36 @@
     }}
   >
     <label>
-      Framework
+      {t("comp.careerHistory.framework")}
       <select bind:value={roleFramework} onchange={() => (picked = null)}>
-        <option value="uk-gdad-pcf">UK GDAD PCF</option><option value="esco">ESCO</option>
+        <option value="uk-gdad-pcf">{t("comp.careerHistory.uk_gdad_pcf")}</option><option value="esco">{t("comp.careerHistory.esco")}</option>
       </select>
     </label>
     <RolePicker framework={roleFramework} onpick={(p) => (picked = p)} />
     {#if picked}<strong data-testid="picked-role">{picked.label}</strong>{/if}
-    <label>First day <input type="date" bind:value={roleFrom} required /></label>
-    <label>Last day <input type="date" bind:value={roleTo} required /></label>
-    <button type="submit" disabled={!picked}>Add</button>
+    <label>{t("comp.careerHistory.first_day")} <input type="date" bind:value={roleFrom} required /></label>
+    <label>{t("comp.careerHistory.last_day")} <input type="date" bind:value={roleTo} required /></label>
+    <button type="submit" disabled={!picked}>{t("comp.careerHistory.add")}</button>
   </form>
 
-  <h3>Skill levels over time</h3>
+  <h3>{t("comp.careerHistory.skill_levels_over_time")}</h3>
   <table data-testid="skill-history">
-    <thead><tr><th>Skill</th><th>Level</th><th>From</th><th>To</th><th>Recorded by</th></tr></thead>
+    <thead><tr><th>{t("comp.careerHistory.skill")}</th><th>{t("comp.careerHistory.level")}</th><th>{t("comp.careerHistory.from")}</th><th>{t("comp.careerHistory.to")}</th><th>{t("comp.careerHistory.recorded_by")}</th></tr></thead>
     <tbody>
       {#each history as h (h.pid)}
         <tr>
           <td>{h.skill}</td>
-          <td>{h.proficiency} {#if h.current}<span class="chip ok">current</span>{/if}</td>
+          <td>{h.proficiency} {#if h.current}<span class="chip ok">{t("comp.careerHistory.current")}</span>{/if}</td>
           <td>{day(h.started_at)}</td><td>{day(h.ended_at)}</td>
-          <td class="muted">{h.source}{#if h.on_behalf} <span class="chip">on their behalf</span>{/if}</td>
+          <td class="muted">{tv(h.source)}{#if h.on_behalf} <span class="chip">{t("comp.careerHistory.on_their_behalf")}</span>{/if}</td>
         </tr>
       {:else}
-        <tr><td colspan="5" class="muted">No skill levels recorded yet.</td></tr>
+        <tr><td colspan="5" class="muted">{t("comp.careerHistory.no_skill_levels_recorded_yet")}</td></tr>
       {/each}
     </tbody>
   </table>
 
-  <h4>Add a past skill level</h4>
+  <h4>{t("comp.careerHistory.add_a_past_skill_level")}</h4>
   <form
     onsubmit={(event) => {
       event.preventDefault();
@@ -162,27 +163,26 @@
     }}
   >
     <label>
-      Skill
+      {t("comp.careerHistory.skill")}
       <select bind:value={skillPid} required>
-        <option value="" disabled>Choose…</option>
+        <option value="" disabled>{t("comp.careerHistory.choose")}</option>
         {#each catalogue as s (s.pid)}<option value={s.pid}>{s.name}</option>{/each}
       </select>
     </label>
-    <label>Level <select bind:value={skillLevel}>{#each [1, 2, 3, 4, 5] as l (l)}<option value={l}>{l}</option>{/each}</select></label>
-    <label>First day <input type="date" bind:value={skillFrom} required /></label>
-    <label>Last day <input type="date" bind:value={skillTo} required /></label>
-    <button type="submit">Add</button>
+    <label>{t("comp.careerHistory.level")} <select bind:value={skillLevel}>{#each [1, 2, 3, 4, 5] as l (l)}<option value={l}>{l}</option>{/each}</select></label>
+    <label>{t("comp.careerHistory.first_day")} <input type="date" bind:value={skillFrom} required /></label>
+    <label>{t("comp.careerHistory.last_day")} <input type="date" bind:value={skillTo} required /></label>
+    <button type="submit">{t("comp.careerHistory.add")}</button>
   </form>
 
-  <h3>What did they have on…</h3>
+  <h3>{t("comp.careerHistory.what_did_they_have_on")}</h3>
   <p>
-    <label>Date <input type="date" data-testid="as-of" bind:value={asOf} /></label>
-    <button type="button" onclick={() => void lookup()}>Look up</button>
+    <label>{t("comp.careerHistory.date")} <input type="date" data-testid="as-of" bind:value={asOf} /></label>
+    <button type="button" onclick={() => void lookup()}>{t("comp.careerHistory.look_up")}</button>
   </p>
   {#if snapshot}
     <p data-testid="as-of-result">
-      Roles: {snapshot.roles.map((r) => r.role_label).join(", ") || "none"} ·
-      Skills: {snapshot.skills.map((s) => `${s.skill} ${s.proficiency}`).join(", ") || "none"}
+      {tf("comp.careerHistory.roles_skills", { role_label: snapshot.roles.map((r) => r.role_label).join(", ") || t("comp.careerHistory.none"), proficiency: snapshot.skills.map((s) => `${s.skill} ${s.proficiency}`).join(", ") || t("comp.careerHistory.none") })}
     </p>
   {/if}
 </section>

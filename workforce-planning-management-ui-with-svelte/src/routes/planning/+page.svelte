@@ -26,7 +26,7 @@
   import { percentWithWorkings } from "#lib/format.js";
   import LilyGantt from "#lib/components/LilyGantt.svelte";
   import LilyKanban from "#lib/components/LilyKanban.svelte";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
 
   type Plans = Awaited<ReturnType<typeof listWorkforcePlans>>;
   type Plan = Awaited<ReturnType<typeof getWorkforcePlan>>;
@@ -168,25 +168,24 @@
   }
 </script>
 
-<svelte:head><title>{t("nav.planning")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.planning.page_title", { planning: t("nav.planning") })}</title></svelte:head>
 
 <h1>{t("nav.planning")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 <p class="muted">
-  A plan is a draft world of aggregate headcount; it never touches live records. Gaps are
-  aggregate and levers are suggestions, not decisions.
+  {t("pages.planning.a_plan_is_a_draft_world_of")}
 </p>
 
-<h2>Plans</h2>
+<h2>{t("pages.planning.plans")}</h2>
 <LilyKanban
-  label="Workforce plans by status"
+  label={t("pages.planning.workforce_plans_by_status")}
   columns={PLAN_COLUMNS}
   cards={planCards}
   onMove={(pid, to) => void movePlan(pid, to)}
 />
 {#if timeline}
   <LilyGantt
-    label="Plan timeline"
+    label={t("pages.planning.plan_timeline")}
     caption="Plan horizons and demand-line target dates"
     range={timeline.range}
     tasks={timeline.tasks}
@@ -195,18 +194,18 @@
   />
 {/if}
 <table data-testid="plan-compare">
-  <thead><tr><th>Plan</th><th>Status</th><th>Horizon</th><th>Lines</th><th>Planned headcount</th></tr></thead>
+  <thead><tr><th>{t("pages.planning.plan")}</th><th>{t("pages.planning.status")}</th><th>{t("pages.planning.horizon")}</th><th>{t("pages.planning.lines")}</th><th>{t("pages.planning.planned_headcount")}</th></tr></thead>
   <tbody>
     {#each plans as p (p.pid)}
       <tr>
         <td><button type="button" onclick={() => { selected = p.pid; void loadDetail(); }}>{p.name}</button></td>
-        <td>{p.status}</td>
+        <td>{tv(p.status)}</td>
         <td>{p.horizon_start} → {p.horizon_end}</td>
         <td>{p.demand_lines}</td>
         <td>{totals[p.pid] ?? "—"}</td>
       </tr>
     {:else}
-      <tr><td colspan="5" class="muted">No plans yet.</td></tr>
+      <tr><td colspan="5" class="muted">{t("pages.planning.no_plans_yet")}</td></tr>
     {/each}
   </tbody>
 </table>
@@ -231,42 +230,42 @@
     });
   }}
 >
-  <label>Name <input data-testid="plan-name" bind:value={name} required /></label>
+  <label>{t("pages.planning.name")} <input data-testid="plan-name" bind:value={name} required /></label>
   <label>
-    Organization
+    {t("pages.planning.organization")}
     <select bind:value={org} required>
       {#each organizationRefs as ref (ref)}<option value={ref}>{ref}</option>{/each}
     </select>
   </label>
-  <label>From <input type="date" bind:value={start} required /></label>
-  <label>To <input type="date" bind:value={end} required /></label>
-  <label>Annual attrition % (blank = observed) <input type="number" min="0" max="100" step="0.1" bind:value={attritionPct} /></label>
-  <label>Annual hiring budget <input type="number" min="0" step="any" bind:value={budget} /></label>
-  <label>Currency <input maxlength="3" size="4" bind:value={budgetCurrency} /></label>
-  <label>Employer on-cost % <input type="number" min="0" max="100" step="0.1" bind:value={onCostPct} /></label>
-  <button type="submit" data-testid="plan-create">Create plan</button>
+  <label>{t("pages.planning.from")} <input type="date" bind:value={start} required /></label>
+  <label>{t("pages.planning.to")} <input type="date" bind:value={end} required /></label>
+  <label>{t("pages.planning.annual_attrition_blank_observed")} <input type="number" min="0" max="100" step="0.1" bind:value={attritionPct} /></label>
+  <label>{t("pages.planning.annual_hiring_budget")} <input type="number" min="0" step="any" bind:value={budget} /></label>
+  <label>{t("pages.planning.currency")} <input maxlength="3" size="4" bind:value={budgetCurrency} /></label>
+  <label>{t("pages.planning.employer_on_cost")} <input type="number" min="0" max="100" step="0.1" bind:value={onCostPct} /></label>
+  <button type="submit" data-testid="plan-create">{t("pages.planning.create_plan")}</button>
 </form>
 
 {#if plan}
-  <h2>{plan.name} <span class="chip">{plan.status}</span></h2>
+  <h2>{plan.name} <span class="chip">{tv(plan.status)}</span></h2>
   {#each NEXT[plan.status] ?? [] as next (next)}
-    <button type="button" onclick={() => void run(() => setPlanStatus(plan!.pid, next))}>Mark {next}</button>
+    <button type="button" onclick={() => void run(() => setPlanStatus(plan!.pid, next))}>{tf("pages.planning.mark", { next: tv(next) })}</button>
   {/each}
 
   {#if forecast}
     <p class="muted">{forecast.derivation}</p>
     <p data-testid="plan-assumptions">
-      Attrition assumption:
+      {t("pages.planning.attrition_assumption")}
       {#if forecast.assumptions.attrition_bp !== null}
-        {(forecast.assumptions.attrition_bp / 100).toFixed(1)}% a year ({forecast.assumptions.attrition_source.replace("_", " ")})
+        {tf("pages.planning.a_year", { attrition_bp: (forecast.assumptions.attrition_bp / 100).toFixed(1), attrition_source: tv(forecast.assumptions.attrition_source) })}
       {:else}
-        <strong>insufficient history</strong> — no projection until a plan assumption is set or enough snapshots exist
+        <strong>{t("pages.planning.insufficient_history")}</strong> {t("pages.planning.no_projection_until_a_plan")}
       {/if}
-      · hires assumed: {forecast.assumptions.hires_assumed}
+      {tf("pages.planning.hires_assumed", { hires_assumed: forecast.assumptions.hires_assumed })}
     </p>
     <table data-testid="plan-forecast">
       <thead>
-        <tr><th>Department</th><th>Date</th><th>Today</th><th>Planned</th><th>Projected supply</th><th>Gap</th><th>Suggested levers</th></tr>
+        <tr><th>{t("pages.planning.department")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.today")}</th><th>{t("pages.planning.planned")}</th><th>{t("pages.planning.projected_supply")}</th><th>{t("pages.planning.gap")}</th><th>{t("pages.planning.suggested_levers")}</th></tr>
       </thead>
       <tbody>
         {#each forecast.departments as row (row.department + row.target_on)}
@@ -279,33 +278,33 @@
           </tr>
           {#each row.competency_gaps as gap (gap.job_title + (gap.skill ?? ""))}
             <tr class="muted">
-              <td colspan="2">↳ {gap.job_title}: {gap.skill} ({gap.importance}, needs {gap.min_proficiency}+)</td>
+              <td colspan="2">{tf("pages.planning.needs", { job_title: gap.job_title, skill: gap.skill, importance: tv(gap.importance), min_proficiency: gap.min_proficiency })}</td>
               <td colspan="5">
-                need {gap.needed} · proficient now {gap.proficient_now} · shortfall {gap.shortfall} · reskill pool {gap.reskill_pool}
+                {tf("pages.planning.need_proficient_now_shortfall", { needed: gap.needed, proficient_now: gap.proficient_now, shortfall: gap.shortfall, reskill_pool: gap.reskill_pool })}
               </td>
             </tr>
           {/each}
         {:else}
-          <tr><td colspan="7" class="muted">No demand lines yet.</td></tr>
+          <tr><td colspan="7" class="muted">{t("pages.planning.no_demand_lines_yet")}</td></tr>
         {/each}
       </tbody>
     </table>
   {/if}
 
   {#if cost}
-    <h3>Cost of closing the gaps by hiring</h3>
+    <h3>{t("pages.planning.cost_of_closing_the_gaps_by_hiring")}</h3>
     <p class="muted">{cost.derivation}</p>
     {#if !cost.salary_visible}
-      <p data-testid="plan-cost-hidden">Salary figures need payroll read access; hires needed are shown without money.</p>
+      <p data-testid="plan-cost-hidden">{t("pages.planning.salary_figures_need_payroll_read")}</p>
     {/if}
     <table data-testid="plan-cost">
-      <thead><tr><th>Department</th><th>Date</th><th>Hires needed</th><th>Unit cost</th><th>Source</th><th>Annual cost</th></tr></thead>
+      <thead><tr><th>{t("pages.planning.department")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.hires_needed")}</th><th>{t("pages.planning.unit_cost")}</th><th>{t("pages.planning.source")}</th><th>{t("pages.planning.annual_cost")}</th></tr></thead>
       <tbody>
         {#each cost.groups as g (g.department + g.target_on)}
           <tr>
             <td>{g.department}</td><td>{g.target_on}</td><td>{g.hires_needed ?? "—"}</td>
             <td>{money(g.unit_cost_minor, cost.currency)}</td>
-            <td>{g.unit_cost_source?.replace("_", " ") ?? g.reason?.replaceAll("_", " ") ?? "—"}</td>
+            <td>{tv(g.unit_cost_source) || tv(g.reason) || "—"}</td>
             <td>{money(g.annual_cost_minor, cost.currency)}</td>
           </tr>
         {/each}
@@ -313,13 +312,12 @@
     </table>
     {#if cost.salary_visible}
       <p data-testid="plan-cost-total">
-        Total (annual, incl. {(cost.assumptions.on_cost_bp / 100).toFixed(1)}% on-cost):
-        {money(cost.total_annual_cost_minor, cost.currency)}
-        {#if cost.uncosted_groups > 0}<span class="muted">· {cost.uncosted_groups} line group(s) could not be costed</span>{/if}
+        {tf("pages.planning.total_annual_incl_on_cost", { on_cost_bp: (cost.assumptions.on_cost_bp / 100).toFixed(1), currency: money(cost.total_annual_cost_minor, cost.currency) })}
+        {#if cost.uncosted_groups > 0}<span class="muted">{tf("pages.planning.line_group_s_could_not_be_costed", { uncosted_groups: cost.uncosted_groups })}</span>{/if}
         {#if cost.affordability}
-          · budget {money(cost.affordability.budget_minor, cost.currency)} ·
+          {tf("pages.planning.budget", { currency: money(cost.affordability.budget_minor, cost.currency) })}
           <span class:warn={!cost.affordability.within_budget}>
-            {cost.affordability.within_budget ? "within budget" : "over budget"} ({money(cost.affordability.remaining_minor, cost.currency)} remaining)
+            {tf("pages.planning.remaining", { within_budget: cost.affordability.within_budget ? t("pages.planning.within_budget") : t("pages.planning.over_budget"), currency: money(cost.affordability.remaining_minor, cost.currency) })}
           </span>
         {/if}
       </p>
@@ -327,24 +325,22 @@
   {/if}
 
   {#if alignment}
-    <h3>Alignment with strategy</h3>
+    <h3>{t("pages.planning.alignment_with_strategy")}</h3>
     <p data-testid="plan-alignment">
-      Planned headcount tied to an objective: {percentWithWorkings(alignment.aligned_share)} ·
-      critical roles with no ready successor: {alignment.critical_roles_without_bench.in_plan_departments}
-      in these departments ({alignment.critical_roles_without_bench.all_departments} overall)
+      {tf("pages.planning.planned_headcount_tied_to_an", { aligned_share: percentWithWorkings(alignment.aligned_share), in_plan_departments: alignment.critical_roles_without_bench.in_plan_departments, all_departments: alignment.critical_roles_without_bench.all_departments })}
     </p>
     {#if alignment.unresourced_objectives.length > 0}
-      <p>Objectives with no demand behind them: {alignment.unresourced_objectives.join("; ")}</p>
+      <p>{tf("pages.planning.objectives_with_no_demand_behind", { unresourced_objectives: alignment.unresourced_objectives.join("; ") })}</p>
     {/if}
     {#if alignment.unaligned_demand_lines.length > 0}
-      <p class="muted">Demand serving no objective: {alignment.unaligned_demand_lines.map((l) => `${l.department} ${l.target_on} (${l.target_headcount})`).join("; ")}</p>
+      <p class="muted">{tf("pages.planning.demand_serving_no_objective", { target_headcount: alignment.unaligned_demand_lines.map((l) => `${l.department} ${l.target_on} (${l.target_headcount})`).join("; ") })}</p>
     {/if}
   {/if}
 
-  <h3>Demand lines</h3>
+  <h3>{t("pages.planning.demand_lines")}</h3>
   <table>
     <thead>
-      <tr><th>Department</th><th>Role</th><th>Date</th><th>Headcount</th>{#each plan.objectives as o (o.pid)}<th>{o.title}</th>{/each}<th></th></tr>
+      <tr><th>{t("pages.planning.department")}</th><th>{t("pages.planning.role")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.headcount")}</th>{#each plan.objectives as o (o.pid)}<th>{o.title}</th>{/each}<th></th></tr>
     </thead>
     <tbody>
       {#each plan.demand_lines as line (line.pid)}
@@ -362,7 +358,7 @@
             </td>
           {/each}
           <td>
-            {#if editable(plan)}<button type="button" onclick={() => void run(() => removeDemandLine(plan!.pid, line.pid))}>Remove</button>{/if}
+            {#if editable(plan)}<button type="button" onclick={() => void run(() => removeDemandLine(plan!.pid, line.pid))}>{t("pages.planning.remove")}</button>{/if}
           </td>
         </tr>
       {/each}
@@ -370,7 +366,7 @@
   </table>
 
   {#if editable(plan)}
-    <h3>Add demand</h3>
+    <h3>{t("pages.planning.add_demand")}</h3>
     <form
       onsubmit={(event) => {
         event.preventDefault();
@@ -384,19 +380,19 @@
         );
       }}
     >
-      <label>Department <input data-testid="line-department" bind:value={department} required /></label>
+      <label>{t("pages.planning.department")} <input data-testid="line-department" bind:value={department} required /></label>
       <label>
-        Role (optional)
+        {t("pages.planning.role_optional")}
         <select bind:value={lineRole}>
-          <option value="">Any</option>
+          <option value="">{t("pages.planning.any")}</option>
           {#each roles as r (r.pid)}<option value={r.pid}>{r.job_title}</option>{/each}
         </select>
       </label>
-      <label>Target date <input type="date" min={plan.horizon_start} max={plan.horizon_end} bind:value={targetOn} required /></label>
-      <label>Headcount <input type="number" min="0" bind:value={headcount} required /></label>
-      <button type="submit" data-testid="line-add">Add</button>
+      <label>{t("pages.planning.target_date")} <input type="date" min={plan.horizon_start} max={plan.horizon_end} bind:value={targetOn} required /></label>
+      <label>{t("pages.planning.headcount")} <input type="number" min="0" bind:value={headcount} required /></label>
+      <button type="submit" data-testid="line-add">{t("pages.planning.add")}</button>
     </form>
-    <h3>Add an objective</h3>
+    <h3>{t("pages.planning.add_an_objective")}</h3>
     <form
       onsubmit={(event) => {
         event.preventDefault();
@@ -406,8 +402,8 @@
         });
       }}
     >
-      <label>Objective <input data-testid="objective-title" bind:value={objectiveTitle} required /></label>
-      <button type="submit">Add</button>
+      <label>{t("pages.planning.objective")} <input data-testid="objective-title" bind:value={objectiveTitle} required /></label>
+      <button type="submit">{t("pages.planning.add")}</button>
     </form>
   {/if}
 {/if}

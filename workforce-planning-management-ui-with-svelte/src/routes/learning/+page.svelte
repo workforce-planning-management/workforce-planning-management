@@ -14,7 +14,7 @@
     trainingAnalytics,
   } from "#lib/api/wpm.js";
   import { percentOf, percentWithWorkings } from "#lib/format.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
 
   type Matrix = Awaited<ReturnType<typeof skillsMatrix>>;
   type Analytics = Awaited<ReturnType<typeof trainingAnalytics>>;
@@ -71,17 +71,17 @@
 
 </script>
 
-<svelte:head><title>{t("nav.learning")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.learning.page_title", { learning: t("nav.learning") })}</title></svelte:head>
 
 <h1>{t("nav.learning")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 
 {#if matrix}
-  <h2>Skills matrix</h2>
+  <h2>{t("pages.learning.skills_matrix")}</h2>
   <p class="muted">{matrix.note}</p>
   <table data-testid="skills-matrix">
     <thead>
-      <tr><th>Department</th><th>Skill</th><th>Workers</th><th>Avg proficiency</th><th>Below target</th></tr>
+      <tr><th>{t("pages.learning.department")}</th><th>{t("pages.learning.skill")}</th><th>{t("pages.learning.workers")}</th><th>{t("pages.learning.avg_proficiency")}</th><th>{t("pages.learning.below_target")}</th></tr>
     </thead>
     <tbody>
       {#each matrix.matrix as cell (cell.department + cell.skill)}
@@ -93,26 +93,26 @@
           <td class:warn={cell.below_target > 0}>{cell.below_target}</td>
         </tr>
       {:else}
-        <tr><td colspan="5" class="muted">No declared skills yet.</td></tr>
+        <tr><td colspan="5" class="muted">{t("pages.learning.no_declared_skills_yet")}</td></tr>
       {/each}
     </tbody>
   </table>
   {#if matrix.gaps.length > 0}
-    <h3>Skill gaps</h3>
+    <h3>{t("pages.learning.skill_gaps")}</h3>
     <ul data-testid="skills-gaps">
       {#each matrix.gaps as gap, index (index)}
-        <li>{gap.skill} in {gap.department}: {gap.proficiency} → target {gap.target}</li>
+        <li>{tf("pages.learning.in_target", { skill: gap.skill, department: gap.department, proficiency: gap.proficiency, target: gap.target })}</li>
       {/each}
     </ul>
   {/if}
 {/if}
 
 {#if analytics}
-  <h2>Training analytics</h2>
-  <p class="muted">{analytics.note} · certs expiring by {analytics.horizon}</p>
+  <h2>{t("pages.learning.training_analytics")}</h2>
+  <p class="muted">{tf("pages.learning.certs_expiring_by", { note: analytics.note, horizon: analytics.horizon })}</p>
   <table data-testid="training-analytics">
     <thead>
-      <tr><th>Department</th><th>Completion</th><th>Certs expiring</th></tr>
+      <tr><th>{t("pages.learning.department")}</th><th>{t("pages.learning.completion")}</th><th>{t("pages.learning.certs_expiring")}</th></tr>
     </thead>
     <tbody>
       {#each analytics.departments as dept (dept.department)}
@@ -122,18 +122,18 @@
           <td>{dept.certs_expiring}</td>
         </tr>
       {:else}
-        <tr><td colspan="3" class="muted">No training enrolments yet.</td></tr>
+        <tr><td colspan="3" class="muted">{t("pages.learning.no_training_enrolments_yet")}</td></tr>
       {/each}
     </tbody>
   </table>
 {/if}
 
 {#if capability}
-  <h2>Capability analysis</h2>
+  <h2>{t("pages.learning.capability_analysis")}</h2>
   <p class="muted">{capability.derivation}</p>
   <p>
     <label>
-      Proficiency bar
+      {t("pages.learning.proficiency_bar")}
       <select
         data-testid="capability-min-proficiency"
         bind:value={minProficiency}
@@ -143,7 +143,7 @@
       </select>
     </label>
     <label>
-      Workers needed
+      {t("pages.learning.workers_needed")}
       <select
         data-testid="capability-min-depth"
         bind:value={minDepth}
@@ -154,30 +154,30 @@
     </label>
   </p>
   <p data-testid="capability-summary">
-    Adequately covered skills: {percentWithWorkings(capability.adequately_covered)}
+    {tf("pages.learning.adequately_covered_skills", { adequately_covered: percentWithWorkings(capability.adequately_covered) })}
   </p>
   <table data-testid="capability-analysis">
     <thead>
-      <tr><th>Skill</th><th>Category</th><th>Declared</th><th>Proficient</th><th>Departments</th><th>Status</th></tr>
+      <tr><th>{t("pages.learning.skill")}</th><th>{t("pages.learning.category")}</th><th>{t("pages.learning.declared")}</th><th>{t("pages.learning.proficient")}</th><th>{t("pages.learning.departments")}</th><th>{t("pages.learning.status")}</th></tr>
     </thead>
     <tbody>
       {#each capability.skills as row (row.skill + row.category)}
         <tr>
           <td>{row.skill}</td>
-          <td>{row.category}</td>
+          <td>{tv(row.category)}</td>
           <td>{row.declared_by}</td>
           <td>{row.proficient}</td>
           <td>{row.proficient_departments}</td>
-          <td class:warn={row.status !== "adequate"}>{row.status.replace("_", " ")}</td>
+          <td class:warn={row.status !== "adequate"}>{tv(row.status)}</td>
         </tr>
       {:else}
-        <tr><td colspan="6" class="muted">No skills in the catalogue yet.</td></tr>
+        <tr><td colspan="6" class="muted">{t("pages.learning.no_skills_in_the_catalogue_yet")}</td></tr>
       {/each}
     </tbody>
   </table>
 {/if}
 
-<h2>Learning path progress</h2>
+<h2>{t("pages.learning.learning_path_progress")}</h2>
 {#if paths.length > 0}
   <p>
     <label>
@@ -187,19 +187,19 @@
         onchange={(event) => void loadProgress(event.currentTarget.value)}
       >
         {#each paths as path (path.pid)}
-          <option value={path.pid}>{path.name} ({path.steps} steps)</option>
+          <option value={path.pid}>{tf("pages.learning.steps", { name: path.name, steps: path.steps })}</option>
         {/each}
       </select>
     </label>
   </p>
 {:else}
-  <p class="muted">No learning paths defined.</p>
+  <p class="muted">{t("pages.learning.no_learning_paths_defined")}</p>
 {/if}
 
 {#if progress}
   <p class="muted">{progress.derivation}</p>
   <table data-testid="path-progress">
-    <thead><tr><th>Worker</th><th>Completed</th><th>Progress</th></tr></thead>
+    <thead><tr><th>{t("pages.learning.worker")}</th><th>{t("pages.learning.completed")}</th><th>{t("pages.learning.progress")}</th></tr></thead>
     <tbody>
       {#each progress.members as member (member.worker_pid)}
         <tr>
@@ -208,7 +208,7 @@
           <td>{percentOf(member.completed_steps, member.total_steps)}</td>
         </tr>
       {:else}
-        <tr><td colspan="3" class="muted">No one enrolled.</td></tr>
+        <tr><td colspan="3" class="muted">{t("pages.learning.no_one_enrolled")}</td></tr>
       {/each}
     </tbody>
   </table>

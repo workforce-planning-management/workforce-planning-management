@@ -22,7 +22,7 @@
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
   import LilyKanban from "#lib/components/LilyKanban.svelte";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
 
   type Initiatives = Awaited<ReturnType<typeof listChangeInitiatives>>;
   type Initiative = Awaited<ReturnType<typeof getChangeInitiative>>;
@@ -111,17 +111,16 @@
   }
 </script>
 
-<svelte:head><title>{t("nav.change")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.change.page_title", { change: t("nav.change") })}</title></svelte:head>
 
 <h1>{t("nav.change")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 <p class="muted">
-  Track an automation or AI initiative's effect on roles and skills. Readiness is
-  aggregate; no individual is named or ranked.
+  {t("pages.change.track_an_automation_or_ai")}
 </p>
 
 <LilyKanban
-  label="Change initiatives by status"
+  label={t("pages.change.change_initiatives_by_status")}
   columns={COLUMNS}
   {cards}
   onMove={(pid, to) => void moveInitiative(pid, to)}
@@ -129,16 +128,16 @@
 
 <p>
   <label>
-    Initiative
+    {t("pages.change.initiative")}
     <select
       data-testid="change-select"
       bind:value={selected}
       onchange={() => void loadDetail()}
     >
       {#each initiatives as i (i.pid)}
-        <option value={i.pid}>{i.name} ({i.status})</option>
+        <option value={i.pid}>{i.name} ({tv(i.status)})</option>
       {:else}
-        <option value="">None yet</option>
+        <option value="">{t("pages.change.none_yet")}</option>
       {/each}
     </select>
   </label>
@@ -153,61 +152,60 @@
     });
   }}
 >
-  <label>New initiative <input data-testid="change-new-name" bind:value={newName} required /></label>
+  <label>{t("pages.change.new_initiative")} <input data-testid="change-new-name" bind:value={newName} required /></label>
   <label>
-    Kind
-    <select bind:value={newKind}>{#each CHANGE_KINDS as k (k)}<option value={k}>{k}</option>{/each}</select>
+    {t("pages.change.kind")}
+    <select bind:value={newKind}>{#each CHANGE_KINDS as k (k)}<option value={k}>{tv(k)}</option>{/each}</select>
   </label>
-  <button type="submit" data-testid="change-create">Create</button>
+  <button type="submit" data-testid="change-create">{t("pages.change.create")}</button>
 </form>
 
 {#if initiative}
-  <h2>{initiative.name} <span class="chip">{initiative.status}</span></h2>
+  <h2>{initiative.name} <span class="chip">{tv(initiative.status)}</span></h2>
   {#each CHANGE_STATUSES_NEXT[initiative.status] ?? [] as next (next)}
     <button type="button" onclick={() => void run(() => setChangeStatus(initiative!.pid, next))}>
-      Mark {next}
+      {tf("pages.change.mark", { next: tv(next) })}
     </button>
   {/each}
 
   {#if readiness}
     <p class="muted">{readiness.derivation}</p>
     <p data-testid="change-summary">
-      Affected workers: {readiness.affected_workers} · with an active reskill plan:
-      {percentWithWorkings(readiness.reskill_plan_coverage)}
+      {tf("pages.change.affected_workers_with_an_active", { affected_workers: readiness.affected_workers, reskill_plan_coverage: percentWithWorkings(readiness.reskill_plan_coverage) })}
     </p>
-    <h3>Roles</h3>
+    <h3>{t("pages.change.roles")}</h3>
     <table data-testid="change-roles">
-      <thead><tr><th>Role</th><th>Impact</th><th>When</th><th>Employed</th><th>Reskill plans</th></tr></thead>
+      <thead><tr><th>{t("pages.change.role")}</th><th>{t("pages.change.impact")}</th><th>{t("pages.change.when")}</th><th>{t("pages.change.employed")}</th><th>{t("pages.change.reskill_plans")}</th></tr></thead>
       <tbody>
         {#each readiness.roles as row (row.job_title + row.impact)}
           <tr>
-            <td>{row.job_title}</td><td>{row.impact}</td><td>{row.timeframe}</td>
+            <td>{row.job_title}</td><td>{tv(row.impact)}</td><td>{tv(row.timeframe)}</td>
             <td>{row.employed_workers}</td>
             <td>{percentWithWorkings(row.reskill_plan_coverage)}</td>
           </tr>
         {:else}
-          <tr><td colspan="5" class="muted">No roles recorded yet.</td></tr>
+          <tr><td colspan="5" class="muted">{t("pages.change.no_roles_recorded_yet")}</td></tr>
         {/each}
       </tbody>
     </table>
-    <h3>Skills</h3>
+    <h3>{t("pages.change.skills")}</h3>
     <table data-testid="change-skills">
-      <thead><tr><th>Rising skill</th><th>Meeting {readiness.bar}+</th><th>Below</th><th>Undeclared</th></tr></thead>
+      <thead><tr><th>{t("pages.change.rising_skill")}</th><th>{tf("pages.change.meeting", { bar: readiness.bar })}</th><th>{t("pages.change.below")}</th><th>{t("pages.change.undeclared")}</th></tr></thead>
       <tbody>
         {#each readiness.rising_skills as row (row.skill)}
           <tr><td>{row.skill}</td><td>{row.meeting}</td><td>{row.below}</td><td>{row.undeclared}</td></tr>
         {:else}
-          <tr><td colspan="4" class="muted">No rising skills recorded.</td></tr>
+          <tr><td colspan="4" class="muted">{t("pages.change.no_rising_skills_recorded")}</td></tr>
         {/each}
       </tbody>
     </table>
     {#if readiness.declining_skills.length > 0}
-      <p class="muted">Declining: {readiness.declining_skills.join(", ")}</p>
+      <p class="muted">{tf("pages.change.declining", { declining_skills: readiness.declining_skills.join(", ") })}</p>
     {/if}
   {/if}
 
   {#if initiative.status !== "completed" && initiative.status !== "cancelled"}
-    <h3>Record a role impact</h3>
+    <h3>{t("pages.change.record_a_role_impact")}</h3>
     <form
       onsubmit={(event) => {
         event.preventDefault();
@@ -215,23 +213,23 @@
       }}
     >
       <label>
-        Role
+        {t("pages.change.role")}
         <select bind:value={impactRole} required>
-          <option value="" disabled>Choose…</option>
+          <option value="" disabled>{t("pages.change.choose")}</option>
           {#each roles as r (r.pid)}<option value={r.pid}>{r.job_title}</option>{/each}
         </select>
       </label>
       <label>
-        Impact
-        <select bind:value={impact}>{#each CHANGE_IMPACTS as i (i)}<option value={i}>{i}</option>{/each}</select>
+        {t("pages.change.impact")}
+        <select bind:value={impact}>{#each CHANGE_IMPACTS as i (i)}<option value={i}>{tv(i)}</option>{/each}</select>
       </label>
       <label>
-        When
-        <select bind:value={timeframe}>{#each CHANGE_TIMEFRAMES as f (f)}<option value={f}>{f}</option>{/each}</select>
+        {t("pages.change.when")}
+        <select bind:value={timeframe}>{#each CHANGE_TIMEFRAMES as f (f)}<option value={f}>{tv(f)}</option>{/each}</select>
       </label>
-      <button type="submit">Add</button>
+      <button type="submit">{t("pages.change.add")}</button>
     </form>
-    <h3>Record a skill shift</h3>
+    <h3>{t("pages.change.record_a_skill_shift")}</h3>
     <form
       onsubmit={(event) => {
         event.preventDefault();
@@ -239,17 +237,17 @@
       }}
     >
       <label>
-        Skill
+        {t("pages.change.skill")}
         <select bind:value={shiftSkill} required>
-          <option value="" disabled>Choose…</option>
+          <option value="" disabled>{t("pages.change.choose")}</option>
           {#each skills as s (s.pid)}<option value={s.pid}>{s.name}</option>{/each}
         </select>
       </label>
       <label>
-        Direction
-        <select bind:value={direction}><option value="rising">rising</option><option value="declining">declining</option></select>
+        {t("pages.change.direction")}
+        <select bind:value={direction}><option value="rising">{t("pages.change.rising")}</option><option value="declining">{t("pages.change.declining_2")}</option></select>
       </label>
-      <button type="submit">Add</button>
+      <button type="submit">{t("pages.change.add")}</button>
     </form>
   {/if}
 {/if}

@@ -58,7 +58,7 @@
     type WellbeingPrompt,
   } from "#lib/api/wpm.js";
   import { mean } from "#lib/format.js";
-  import { i18n, t } from "#lib/i18n.svelte.js";
+  import { i18n, t, tf, tv } from "#lib/i18n.svelte.js";
   import type {
     Worker,
     LeaveEntitlement,
@@ -217,8 +217,8 @@
     <p>
       {worker.job_title} · {worker.department} ·
       {#if worker.location}{worker.location} ·{/if}
-      <span class={`chip status-${worker.status}`}>{worker.status}</span>
-      · FTE {worker.fte_percent}%
+      <span class={`chip status-${worker.status}`}>{tv(worker.status)}</span>
+      {tf("pages.workersPid.fte", { fte_percent: worker.fte_percent })}
     </p>
     <p>
       {t("emp.salary")}:
@@ -229,7 +229,7 @@
       {/if}
     </p>
     {#if worker.status === "onboarding"}
-      <button onclick={() => void transition("active")}>{t("common.actions")}: → active</button>
+      <button onclick={() => void transition("active")}>{tf("pages.workersPid.active", { actions: t("common.actions") })}</button>
     {/if}
     {#if actionError}
       <p class="error" data-testid="action-error">{actionError}</p>
@@ -302,7 +302,7 @@
       {#each onboarding as item (item.pid)}
         <li>
           {item.name}
-          <span class="chip">{item.status}</span>
+          <span class="chip">{tv(item.status)}</span>
           {#if item.mandatory}<strong>·</strong>{/if}
           {#if item.status === "pending"}
             <button onclick={() => void complete(item.pid)}>✓</button>
@@ -317,7 +317,7 @@
     <tbody>
       {#each balances as balance (balance.pid)}
         <tr>
-          <td>{balance.kind} {balance.year}</td>
+          <td>{tv(balance.kind)} {balance.year}</td>
           <td>{balance.entitled_days - balance.used_days} / {balance.entitled_days} {t("common.days")}</td>
         </tr>
       {/each}
@@ -329,9 +329,9 @@
     <tbody>
       {#each leave as request (request.pid)}
         <tr>
-          <td>{request.kind}</td>
+          <td>{tv(request.kind)}</td>
           <td>{request.start_on} → {request.end_on} ({request.days} {t("common.days")})</td>
-          <td><span class="chip">{request.status}</span></td>
+          <td><span class="chip">{tv(request.status)}</span></td>
         </tr>
       {/each}
     </tbody>
@@ -414,7 +414,7 @@
     {#each appraisals as appraisal (appraisal.pid)}
       <div>
         <button onclick={() => void toggleAppraisal(appraisal.pid)}>
-          <span class="chip">{appraisal.status}</span>
+          <span class="chip">{tv(appraisal.status)}</span>
           {appraisal.competencies.join(" · ")}
           ({appraisal.responded}/{appraisal.nominated})
         </button>
@@ -441,9 +441,9 @@
               {/each}
             </select>
             <select bind:value={nomineeGroup}>
-              <option value="manager">manager</option>
-              <option value="peer">peer</option>
-              <option value="report">report</option>
+              <option value="manager">{t("pages.workersPid.manager")}</option>
+              <option value="peer">{t("pages.workersPid.peer")}</option>
+              <option value="report">{t("pages.workersPid.report")}</option>
             </select>
             <button
               disabled={!nomineePid}
@@ -501,7 +501,7 @@
     <p class="muted">{t("adj.hint")}</p>
     <select bind:value={adjCategory}>
       {#each ADJUSTMENT_CATEGORIES as category (category)}
-        <option value={category}>{category.replaceAll("_", " ")}</option>
+        <option value={category}>{tv(category)}</option>
       {/each}
     </select>
     <input placeholder={t("adj.barrier")} bind:value={adjBarrier} />
@@ -522,8 +522,8 @@
     <ul>
       {#each adjustments as request (request.pid)}
         <li>
-          <span class="chip">{request.category.replaceAll("_", " ")}</span>
-          <span class="chip">{request.status}</span>
+          <span class="chip">{tv(request.category)}</span>
+          <span class="chip">{tv(request.status)}</span>
           {#if !request.words_withheld}
             <br />{request.barrier} → {request.adjustment}
             {#if request.decision_note}<br /><span class="muted">{request.decision_note}</span>{/if}
@@ -557,7 +557,7 @@
     {#each ergonomics as assessment (assessment.pid)}
       <div>
         <strong>{assessment.workstation}</strong>
-        <span class="chip">{assessment.status}</span>
+        <span class="chip">{tv(assessment.status)}</span>
         {#if assessment.status === "open"}
           <button onclick={() => void act(() => completeErgonomicAssessment(assessment.pid))}>
             {t("erg.complete")}
@@ -591,7 +591,7 @@
     <tbody>
       {#each reviews as review (review.pid)}
         <tr>
-          <td><span class="chip">{review.status}</span></td>
+          <td><span class="chip">{tv(review.status)}</span></td>
           <td>{review.rating ?? "—"}</td>
           <td>{review.content ?? ""}</td>
         </tr>
@@ -605,7 +605,7 @@
       {#each training as enrollment (enrollment.pid)}
         <tr>
           <td>{enrollment.course_ref}</td>
-          <td><span class="chip">{enrollment.status}</span></td>
+          <td><span class="chip">{tv(enrollment.status)}</span></td>
           <td>{enrollment.certificate_expires_on ?? ""}</td>
         </tr>
       {/each}
@@ -620,13 +620,13 @@
   <FrameworkRolePanel
     workerPid={worker.pid}
     framework="uk-gdad-pcf"
-    title="Role and skills — UK GDAD PCF"
+    title={t("pages.workersPid.role_and_skills_uk_gdad_pcf")}
     actingFor={mine ? undefined : worker.display_name}
   />
   <FrameworkRolePanel
     workerPid={worker.pid}
     framework="esco"
-    title="Role and skills — ESCO"
+    title={t("pages.workersPid.role_and_skills_esco")}
     actingFor={mine ? undefined : worker.display_name}
   />
   <CareerHistory workerPid={worker.pid} />

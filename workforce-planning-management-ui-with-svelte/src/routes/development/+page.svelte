@@ -1,6 +1,6 @@
 <script lang="ts">
   import { expiringTraining, listSuccession, successionGaps } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
   import type { SuccessionEntry, TrainingEnrollment } from "#lib/api/types.js";
 
   let succession = $state<SuccessionEntry[] | null>(null);
@@ -36,7 +36,7 @@
   <h2>{t("dash.successionGaps")}</h2>
   <ul class="panel" data-testid="gaps">
     {#each gaps as gap (gap.pid)}
-      <li><strong>{gap.role_title}</strong> — {gap.department} (criticality {gap.criticality})</li>
+      <li><strong>{gap.role_title}</strong> {tf("pages.development.criticality", { department: gap.department, criticality: gap.criticality })}</li>
     {:else}
       <li class="muted">—</li>
     {/each}

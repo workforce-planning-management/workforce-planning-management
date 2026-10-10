@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — every page and component takes its text from the catalogue (WPM-T153, T154)
+
+710 new keys (`pages.*`, `comp.*`, `titles.*`, `values.*`) in all 13 languages; new helpers `tf()` (with
+values), `tv()` (a closed-vocabulary token) and `pageTitle()`; tests that fail on literal visible text,
+on a locale repeating English, and on a server token with no translation. The translations are
+AI-written and unreviewed (`content/locales/REVIEW.md`).
+
 ### Added — security headers and a content security policy (WPM-T127)
 
 `src/lib/security-headers.ts` applied in `hooks.server.ts`, and `csp` in `vite.config.ts`.

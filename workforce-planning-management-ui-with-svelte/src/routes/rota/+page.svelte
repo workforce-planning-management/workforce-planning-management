@@ -21,7 +21,7 @@
     retireRota,
   } from "#lib/api/wpm.js";
   import type { RotaSummary, RotaView, SwapRequest } from "#lib/api/types.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
 
   const organizationRefs = $derived((page.data.scope ?? []) as string[]);
 
@@ -107,7 +107,7 @@
           : "—";
 </script>
 
-<svelte:head><title>{t("nav.rota")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.rota.page_title", { rota: t("nav.rota") })}</title></svelte:head>
 
 <h1>{t("nav.rota")}</h1>
 {#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
@@ -210,7 +210,7 @@
       {#each requests as r (r.pid)}
         <li>
           {r.requester_name ?? r.requester_pid} → {r.taker_name ?? r.taker_pid}
-          · {r.starts_on} → {r.ends_on} · <span class="chip">{r.status}</span>
+          · {r.starts_on} → {r.ends_on} · <span class="chip">{tv(r.status)}</span>
           {#if r.status === "requested"}
             <button type="button" onclick={() => void run(() => decideSwap(r.pid, "accept"))}>{t("rota.accept")}</button>
             <button type="button" onclick={() => void run(() => decideSwap(r.pid, "decline"))}>{t("rota.decline")}</button>

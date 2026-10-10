@@ -3,7 +3,8 @@
 // without reading the DOM.
 
 import type { PageLoad } from "./$types";
+import { pageTitle } from "#lib/title.js";
 
-export const load: PageLoad = () => {
-  return { title: "Skill gaps — WPM" };
+export const load: PageLoad = ({ url }) => {
+  return { title: pageTitle("titles.skillGaps", url) };
 };

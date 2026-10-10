@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { mentorshipOverview } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
 
   type Overview = Awaited<ReturnType<typeof mentorshipOverview>>;
   let overview = $state<Overview | null>(null);
@@ -23,37 +23,37 @@
   });
 </script>
 
-<svelte:head><title>{t("nav.mentorship")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.mentorship.page_title", { mentorship: t("nav.mentorship") })}</title></svelte:head>
 
 <h1>{t("nav.mentorship")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 
 {#if overview}
   <section class="tiles" data-testid="mentorship-tiles">
-    <div class="tile"><strong>{overview.active_pairings}</strong><span>active pairings</span></div>
-    <div class="tile"><strong>{overview.unmatched_workers.length}</strong><span>unmatched</span></div>
+    <div class="tile"><strong>{overview.active_pairings}</strong><span>{t("pages.mentorship.active_pairings")}</span></div>
+    <div class="tile"><strong>{overview.unmatched_workers.length}</strong><span>{t("pages.mentorship.unmatched")}</span></div>
     <div class="tile">
       <strong>{overview.stale_mentorships.length}</strong>
-      <span>stale (over {overview.stale_days}d)</span>
+      <span>{tf("pages.mentorship.stale_over_d", { stale_days: overview.stale_days })}</span>
     </div>
   </section>
 
-  <h2>Mentor load</h2>
+  <h2>{t("pages.mentorship.mentor_load")}</h2>
   <table data-testid="mentor-load">
-    <thead><tr><th>Mentor</th><th>Active mentees</th></tr></thead>
+    <thead><tr><th>{t("pages.mentorship.mentor")}</th><th>{t("pages.mentorship.active_mentees")}</th></tr></thead>
     <tbody>
       {#each overview.mentor_load as row (row.mentor_pid)}
         <tr><td>{row.mentor ?? row.mentor_pid}</td><td>{row.active_mentees}</td></tr>
       {:else}
-        <tr><td colspan="2" class="muted">No active mentorships.</td></tr>
+        <tr><td colspan="2" class="muted">{t("pages.mentorship.no_active_mentorships")}</td></tr>
       {/each}
     </tbody>
   </table>
 
   {#if overview.stale_mentorships.length > 0}
-    <h2>Stale mentorships</h2>
+    <h2>{t("pages.mentorship.stale_mentorships")}</h2>
     <table data-testid="stale-mentorships">
-      <thead><tr><th>Mentor</th><th>Mentee</th><th>Last session</th></tr></thead>
+      <thead><tr><th>{t("pages.mentorship.mentor")}</th><th>{t("pages.mentorship.mentee")}</th><th>{t("pages.mentorship.last_session")}</th></tr></thead>
       <tbody>
         {#each overview.stale_mentorships as row (row.pid)}
           <tr>
@@ -66,12 +66,12 @@
     </table>
   {/if}
 
-  <h2>Unmatched workers</h2>
+  <h2>{t("pages.mentorship.unmatched_workers")}</h2>
   <ul data-testid="unmatched">
     {#each overview.unmatched_workers as worker (worker.pid)}
       <li>{worker.display_name} <span class="muted">({worker.department})</span></li>
     {:else}
-      <li class="muted">Everyone active is in a mentorship.</li>
+      <li class="muted">{t("pages.mentorship.everyone_active_is_in_a_mentorship")}</li>
     {/each}
   </ul>
 {/if}

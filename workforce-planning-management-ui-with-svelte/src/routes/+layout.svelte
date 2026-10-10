@@ -83,7 +83,9 @@
   const SHARE_TARGETS: ShareTarget[] = [
     {
       id: "email",
-      label: "Email",
+      get label() {
+        return t("pages.layout.share_email");
+      },
       href: (url, title) =>
         `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}`,
       newTab: false,

@@ -120,3 +120,10 @@ testcontainers = { version = "0.28" }
 name = "keycloak"
 path = "tests/keycloak.rs"
 required-features = ["keycloak"]
+
+# Sign in with Microsoft Entra ID, against an in-process Entra-compatible OIDC
+# provider (no container runtime needed).
+[[test]]
+name = "oidc_entra"
+path = "tests/oidc_entra.rs"
+required-features = ["keycloak"]

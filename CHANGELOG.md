@@ -9,6 +9,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — operations, information governance, OIDC sign-in and every page in every locale (WPM-R89–R94)
+
+Backup, restore and a CI-run restore drill with an erasure ledger; deployment, upgrade and runbook
+documents; a retention schedule per record kind; an information governance pack
+(`spec/governance/`); sign-in with Microsoft Entra ID, tested against an in-process Entra-compatible
+OIDC provider; and all page text in the catalogue in 13 languages (AI-written, unreviewed:
+`content/locales/REVIEW.md`). See `spec/operations-and-governance.md`.
+
+### Changed — `GET /api/retention` and the sweep return `horizons` per record kind
+
+`horizon_days` is gone from the report, the sweep response and its audit entry. Each record kind has
+its own horizon (`WPM_RETENTION_<KIND>_DAYS`); `WPM_RETENTION_DAYS` still applies to any kind without
+its own. New: `GET /api/retention/schedule`.
+
 ### Added — production readiness (WPM-R72–R74, R77, R78, R87, R88)
 
 Sign-in is enforced by default; security headers on the API and UI; rate limiting; CORS

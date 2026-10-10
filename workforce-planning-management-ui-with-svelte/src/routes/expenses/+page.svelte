@@ -7,7 +7,7 @@
   import { expenseQueue, money } from "#lib/api/wpm.js";
   import type { ExpenseClaimSummary } from "#lib/api/types.js";
   import ExpenseClaimView from "#lib/components/ExpenseClaimView.svelte";
-  import { t, tp, i18n } from "#lib/i18n.svelte.js";
+  import { t, tp, i18n, tf } from "#lib/i18n.svelte.js";
 
   let status = $state("submitted");
   let claims = $state<ExpenseClaimSummary[] | null>(null);
@@ -30,7 +30,7 @@
   });
 </script>
 
-<svelte:head><title>{t("nav.expenseQueue")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.expenses.page_title", { expenseQueue: t("nav.expenseQueue") })}</title></svelte:head>
 
 <h1>{t("nav.expenseQueue")}</h1>
 <p class="muted">{t("expenses.queueHint")}</p>

@@ -4,10 +4,10 @@
 -->
 <script lang="ts">
   import AnnouncementsFeed from "#lib/components/AnnouncementsFeed.svelte";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
 </script>
 
-<svelte:head><title>{t("nav.announcements")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.announcements.page_title", { announcements: t("nav.announcements") })}</title></svelte:head>
 
 <h1>{t("nav.announcements")}</h1>
 <AnnouncementsFeed manage />

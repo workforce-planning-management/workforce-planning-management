@@ -5,6 +5,7 @@
   else's record acts on their behalf.
 -->
 <script lang="ts">
+  import { t, tf } from "#lib/i18n.svelte.js";
   import {
     GROUP_KINDS,
     createGroup,
@@ -28,7 +29,7 @@
   let kind = $state<string>("practice");
 
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
-  const kindLabel = (k: string) => (k === "practice" ? "community of practice" : k === "interest" ? "community of interest" : "group");
+  const kindLabel = (k: string) => (k === "practice" ? t("comp.groupsPanel.kind_practice") : k === "interest" ? t("comp.groupsPanel.kind_interest") : t("comp.groupsPanel.kind_group"));
   const joinable = $derived(all.filter((g) => !mine.some((m) => m.group_pid === g.pid)));
 
   async function load() {
@@ -61,27 +62,27 @@
 </script>
 
 <section class="panel" data-testid="groups">
-  <h2>Groups</h2>
-  <p class="muted">You can join groups in {organization ?? "your organization"} and communities that span it.</p>
+  <h2>{t("comp.groupsPanel.groups")}</h2>
+  <p class="muted">{tf("comp.groupsPanel.you_can_join_groups_in_and", { organization: organization ?? t("comp.groupsPanel.your_organization") })}</p>
   {#if error}<p class="error" data-testid="error">{error}</p>{/if}
   <ul data-testid="my-groups">
     {#each mine as g (g.group_pid)}
       <li>
         {g.name} <span class="chip">{kindLabel(g.kind)}</span>
-        {#if g.role === "lead"}<span class="chip ok">lead</span>{/if}
-        <span class="muted">since {g.joined_at.slice(0, 10)}</span>
-        <button type="button" onclick={() => void run(() => leaveGroup(g.group_pid, workerPid))}>Leave</button>
+        {#if g.role === "lead"}<span class="chip ok">{t("comp.groupsPanel.lead")}</span>{/if}
+        <span class="muted">{tf("comp.groupsPanel.since", { joined_at: g.joined_at.slice(0, 10) })}</span>
+        <button type="button" onclick={() => void run(() => leaveGroup(g.group_pid, workerPid))}>{t("comp.groupsPanel.leave")}</button>
       </li>
     {:else}
-      <li class="muted">Not in any group yet.</li>
+      <li class="muted">{t("comp.groupsPanel.not_in_any_group_yet")}</li>
     {/each}
   </ul>
   <p>
-    <select aria-label="Group to join" bind:value={choice}>
-      <option value="">Join a group…</option>
+    <select aria-label={t("comp.groupsPanel.group_to_join")} bind:value={choice}>
+      <option value="">{t("comp.groupsPanel.join_a_group")}</option>
       {#each joinable as g (g.pid)}<option value={g.pid}>{g.name} ({g.members})</option>{/each}
     </select>
-    <button type="button" disabled={!choice} onclick={() => void run(async () => { await joinGroup(choice, workerPid); choice = ""; })}>Join</button>
+    <button type="button" disabled={!choice} onclick={() => void run(async () => { await joinGroup(choice, workerPid); choice = ""; })}>{t("comp.groupsPanel.join")}</button>
   </p>
   <form
     onsubmit={(event) => {
@@ -93,11 +94,11 @@
       });
     }}
   >
-    <label>Start a group <input bind:value={name} required maxlength="120" /></label>
+    <label>{t("comp.groupsPanel.start_a_group")} <input bind:value={name} required maxlength="120" /></label>
     <label>
-      Kind
+      {t("comp.groupsPanel.kind")}
       <select bind:value={kind}>{#each GROUP_KINDS as k (k)}<option value={k}>{kindLabel(k)}</option>{/each}</select>
     </label>
-    <button type="submit">Start</button>
+    <button type="submit">{t("comp.groupsPanel.start")}</button>
   </form>
 </section>

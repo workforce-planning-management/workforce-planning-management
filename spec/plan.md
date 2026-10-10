@@ -152,10 +152,11 @@ pool capacity and constraint pool (R59) that those schedules use.
 
 ### F. Production readiness
 
-**Status (2026-10-09):** WPM-R72, R73, R74, R77, R78, R87 and R88 are built and
-specified in [production-readiness.md](production-readiness.md); WPM-R75 (backup
-and restore) and WPM-R76 (data protection impact assessment) remain proposed
-here. Where the two differ, production-readiness.md is the built behaviour (for
+**Status (2026-10-10):** WPM-R72, R73, R74, R77, R78, R87 and R88 are built and
+specified in [production-readiness.md](production-readiness.md). WPM-R75 (backup
+and restore) and WPM-R76 (data protection impact assessment) are **superseded**
+by WPM-R89 and WPM-R92 in [operations-and-governance.md](operations-and-governance.md),
+which are built (WPM-D53 became WPM-D63). Where the two differ, production-readiness.md is the built behaviour (for
 example, the limiter names callers by network address, not by token or
 `X-Forwarded-For`).
 
@@ -224,8 +225,9 @@ the existing production gates WPM-G1 and WPM-G2 in [tasks.md](tasks.md).
   Playwright, prettier, a Markdown link check, a check that durations say
   calendar or business days, and dependency audits (`cargo deny` or
   `cargo audit`, and `pnpm audit`). A failing check blocks a merge.
-- **WPM-R78 Licence files.** Every licence file lives in the `LICENSE/`
-  directory: `LICENSE/index.md` (the SPDX summary, with a `README.md` copy)
+- **WPM-R78 Licence files.** A root `LICENSE.md` (the SPDX summary, linking
+  the texts) and a `LICENSE/` directory holding `LICENSE/index.md` (with a
+  `README.md` copy)
   and the full text of every licence the subprojects offer, one file each
   (MIT, Apache-2.0, BSD-3-Clause, GPL-2.0-only and GPL-3.0-only). The API
   offers all five; the UI offers MIT and Apache-2.0.

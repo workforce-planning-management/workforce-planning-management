@@ -7,7 +7,7 @@
 <script lang="ts">
   import { createGroup, groupMembers, groupSkills, listGroups, GROUP_KINDS, type Group } from "#lib/api/wpm.js";
   import { page } from "$app/state";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
 
   // The organizations the caller can read (confederation-expanded), as for the org chart.
   const organizations = $derived((page.data.scope ?? []) as string[]);
@@ -27,7 +27,7 @@
   let spans = $state(false);
 
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
-  const kindLabel = (k: string) => (k === "practice" ? "community of practice" : k === "interest" ? "community of interest" : "group");
+  const kindLabel = (k: string) => (k === "practice" ? t("pages.groups.kind_practice") : k === "interest" ? t("pages.groups.kind_interest") : t("pages.groups.kind_group"));
 
   async function load() {
     try {
@@ -66,7 +66,7 @@
   }
 </script>
 
-<svelte:head><title>Groups — WPM</title></svelte:head>
+<svelte:head><title>{t("pages.groups.page_title")}</title></svelte:head>
 
 <h1>{t("nav.groups")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
@@ -75,7 +75,7 @@
 {:else}
   <p>
     <label>
-      Organization (shows its groups and communities spanning it)
+      {t("pages.groups.organization_shows_its_groups_and")}
       <select bind:value={organization} data-testid="group-organization">
         {#each organizations as o (o)}<option value={o}>{o}</option>{/each}
       </select>
@@ -83,40 +83,40 @@
   </p>
 
 <table data-testid="group-list">
-  <thead><tr><th>Group</th><th>Kind</th><th>Members</th></tr></thead>
+  <thead><tr><th>{t("pages.groups.group")}</th><th>{t("pages.groups.kind")}</th><th>{t("pages.groups.members")}</th></tr></thead>
   <tbody>
     {#each groups as g (g.pid)}
       <tr>
         <td><button type="button" onclick={() => void open(g.pid)}>{g.name}</button>{#if g.description}<br /><span class="muted">{g.description}</span>{/if}</td>
-        <td>{kindLabel(g.kind)}{#if g.scope === "confederation"} <span class="chip">spans organizations</span>{/if}</td><td>{g.members}</td>
+        <td>{kindLabel(g.kind)}{#if g.scope === "confederation"} <span class="chip">{t("pages.groups.spans_organizations")}</span>{/if}</td><td>{g.members}</td>
       </tr>
     {:else}
-      <tr><td colspan="3" class="muted">No groups yet.</td></tr>
+      <tr><td colspan="3" class="muted">{t("pages.groups.no_groups_yet")}</td></tr>
     {/each}
   </tbody>
 </table>
 
 <form onsubmit={create}>
-  <label>Start a group <input bind:value={name} required maxlength="120" /></label>
-  <label>Kind <select bind:value={kind}>{#each GROUP_KINDS as k (k)}<option value={k}>{kindLabel(k)}</option>{/each}</select></label>
-  <label>About <input bind:value={description} maxlength="1000" /></label>
-  <label><input type="checkbox" bind:checked={spans} /> Spans member organizations (a confederation community)</label>
-  <button type="submit">Start</button>
+  <label>{t("pages.groups.start_a_group")} <input bind:value={name} required maxlength="120" /></label>
+  <label>{t("pages.groups.kind")} <select bind:value={kind}>{#each GROUP_KINDS as k (k)}<option value={k}>{kindLabel(k)}</option>{/each}</select></label>
+  <label>{t("pages.groups.about")} <input bind:value={description} maxlength="1000" /></label>
+  <label><input type="checkbox" bind:checked={spans} /> {t("pages.groups.spans_member_organizations_a")}</label>
+  <button type="submit">{t("pages.groups.start")}</button>
 </form>
 
 {#if selected && members && know}
   <section class="panel" data-testid="group-detail">
     <h2>{members.group.name}</h2>
-    <h3>Members</h3>
+    <h3>{t("pages.groups.members")}</h3>
     <ul>
       {#each members.members as m (m.worker_pid)}
-        <li>{m.display_name} {#if m.role === "lead"}<span class="chip ok">lead</span>{/if}<span class="muted"> since {m.joined_at.slice(0, 10)}</span></li>
+        <li>{m.display_name} {#if m.role === "lead"}<span class="chip ok">{t("pages.groups.lead")}</span>{/if}<span class="muted"> {tf("pages.groups.since", { joined_at: m.joined_at.slice(0, 10) })}</span></li>
       {/each}
     </ul>
-    <h3>What the group knows</h3>
-    <p class="muted">Declared skills of current members, in aggregate. Skills fewer than {know.floor} people declare are withheld.</p>
+    <h3>{t("pages.groups.what_the_group_knows")}</h3>
+    <p class="muted">{tf("pages.groups.declared_skills_of_current_members", { floor: know.floor })}</p>
     <table data-testid="group-skills">
-      <thead><tr><th>Skill</th><th>Declared by</th><th>Coverage</th><th>Level 1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
+      <thead><tr><th>{t("pages.groups.skill")}</th><th>{t("pages.groups.declared_by")}</th><th>{t("pages.groups.coverage")}</th><th>{t("pages.groups.level_1")}</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
       <tbody>
         {#each know.skills as s (s.skill_pid)}
           <tr>
@@ -125,11 +125,11 @@
             {#each ["1", "2", "3", "4", "5"] as l (l)}<td>{s.levels[l as "1"]}</td>{/each}
           </tr>
         {:else}
-          <tr><td colspan="8" class="muted">Nothing to show yet.</td></tr>
+          <tr><td colspan="8" class="muted">{t("pages.groups.nothing_to_show_yet")}</td></tr>
         {/each}
       </tbody>
     </table>
-    {#if know.withheld_below_floor > 0}<p class="muted">{know.withheld_below_floor} skill(s) withheld: too few people to show without pointing at someone.</p>{/if}
+    {#if know.withheld_below_floor > 0}<p class="muted">{tf("pages.groups.skill_s_withheld_too_few_people_to", { withheld_below_floor: know.withheld_below_floor })}</p>{/if}
   </section>
 {/if}
 {/if}

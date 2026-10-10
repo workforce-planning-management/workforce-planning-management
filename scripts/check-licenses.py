@@ -5,7 +5,7 @@ Run from anywhere: `python3 scripts/check-licenses.py`. Exits 1 on a mismatch.
 
 For each subproject manifest (`Cargo.toml`, `package.json`) it reads the SPDX
 `OR` expression, checks that every option has its full-text file in `LICENSE/`,
-and checks that `LICENSE/index.md` states the same expression.
+and checks that the root `LICENSE.md` and `LICENSE/index.md` state the same expression.
 """
 import json
 import os
@@ -37,11 +37,18 @@ def manifests():
 
 def main():
     problems = []
-    with open(os.path.join(ROOT, "LICENSE", "index.md"), encoding="utf-8") as handle:
-        index = handle.read()
+    summaries = {}
+    for name in ("LICENSE.md", os.path.join("LICENSE", "index.md")):
+        path = os.path.join(ROOT, name)
+        if not os.path.isfile(path):
+            problems.append(f"{name} is missing")
+            continue
+        with open(path, encoding="utf-8") as handle:
+            summaries[name] = handle.read()
     for manifest, expression in manifests().items():
-        if expression not in index:
-            problems.append(f"LICENSE/index.md does not state `{expression}` ({manifest})")
+        for name, text in summaries.items():
+            if expression not in text:
+                problems.append(f"{name} does not state `{expression}` ({manifest})")
         for option in (part.strip() for part in expression.split(" OR ")):
             name = TEXTS.get(option)
             if name is None:

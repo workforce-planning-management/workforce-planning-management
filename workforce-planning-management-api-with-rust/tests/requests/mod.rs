@@ -10,6 +10,7 @@ mod announcements;
 mod appraisals;
 mod assessments;
 mod contacts;
+mod erasure_replay;
 mod ergonomics;
 mod expenses;
 mod grades;

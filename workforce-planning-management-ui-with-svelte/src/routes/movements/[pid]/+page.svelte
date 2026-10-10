@@ -21,7 +21,7 @@
     skipMovementItem,
   } from "#lib/api/wpm.js";
   import type { HandoverAction, HeldItem, Movement, MovementItem } from "#lib/api/types.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
 
   const pid = $derived(page.params.pid ?? "");
 
@@ -100,7 +100,7 @@
     })[k] ?? k;
 </script>
 
-<svelte:head><title>{t("nav.movements")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.movementsPid.page_title", { movements: t("nav.movements") })}</title></svelte:head>
 
 {#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
 

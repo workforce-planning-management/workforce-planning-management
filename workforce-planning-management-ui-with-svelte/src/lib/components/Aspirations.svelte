@@ -5,6 +5,7 @@
   they have declared today.
 -->
 <script lang="ts">
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
   import {
     ASPIRATION_HORIZONS,
     ASPIRATION_STATUSES,
@@ -68,64 +69,64 @@
     if (!p) return "";
     if (a.kind === "skill") {
       return p.achieved
-        ? "reached"
-        : p.current_level === null ? "not declared yet" : `at ${p.current_level}, ${p.gap} to go`;
+        ? t("comp.aspirations.reached")
+        : p.current_level === null ? t("comp.aspirations.not_declared_yet") : tf("comp.aspirations.at_level_gap", { level: p.current_level, gap: p.gap });
     }
-    if ("requirements" in p) return `${p.met} of ${p.requirements} requirements met`;
-    if ("essential_skills" in p) return `${p.have} of ${p.essential_skills} essential skills`;
+    if ("requirements" in p) return tf("comp.aspirations.requirements_met", { met: p.met, requirements: p.requirements });
+    if ("essential_skills" in p) return tf("comp.aspirations.essential_skills_have", { have: p.have, essential: p.essential_skills });
     return "";
   }
 </script>
 
 <section class="panel" data-testid="aspirations">
-  <h2>Aspirations and growth ideas</h2>
+  <h2>{t("comp.aspirations.aspirations_and_growth_ideas")}</h2>
   {#if error}<p class="error" data-testid="error">{error}</p>{/if}
   {#if !isPerson}
-    <p class="muted">You see only what this person has chosen to share.</p>
+    <p class="muted">{t("comp.aspirations.you_see_only_what_this_person_has")}</p>
   {/if}
   <table data-testid="aspiration-list">
-    <thead><tr><th>Goal</th><th>When</th><th>Status</th><th>Progress</th><th>Who can see</th><th></th></tr></thead>
+    <thead><tr><th>{t("comp.aspirations.goal")}</th><th>{t("comp.aspirations.when")}</th><th>{t("comp.aspirations.status")}</th><th>{t("comp.aspirations.progress")}</th><th>{t("comp.aspirations.who_can_see")}</th><th></th></tr></thead>
     <tbody>
       {#each items as a (a.pid)}
         <tr>
           <td>
-            {a.kind === "skill" ? `${a.skill} → level ${a.target_level}` : `Role: ${a.role_label} (${a.framework === "esco" ? "ESCO" : "PCF"})`}
+            {a.kind === "skill" ? tf("comp.aspirations.skill_to_level", { skill: a.skill, level: a.target_level }) : tf("comp.aspirations.role_framework", { role: a.role_label, framework: a.framework === "esco" ? "ESCO" : "PCF" })}
             {#if a.note}<br /><span class="muted">{a.note}</span>{/if}
-            {#if a.on_behalf}<span class="chip">added on their behalf</span>{/if}
+            {#if a.on_behalf}<span class="chip">{t("comp.aspirations.added_on_their_behalf")}</span>{/if}
           </td>
-          <td>{a.horizon.replaceAll("_", " ")}</td>
+          <td>{tv(a.horizon)}</td>
           <td>
             <select
-              aria-label="Status"
+              aria-label={t("comp.aspirations.status")}
               value={a.status}
               onchange={(event) => void run(() => updateAspiration(a.pid, { status: event.currentTarget.value }))}
             >
-              {#each ASPIRATION_STATUSES as s (s)}<option value={s}>{s.replace("_", " ")}</option>{/each}
+              {#each ASPIRATION_STATUSES as s (s)}<option value={s}>{tv(s)}</option>{/each}
             </select>
           </td>
           <td class="muted">{describe(a)}</td>
           <td>
             {#if isPerson}
               <select
-                aria-label="Who can see this"
+                aria-label={t("comp.aspirations.who_can_see_this")}
                 value={a.visibility}
                 onchange={(event) => void run(() => updateAspiration(a.pid, { visibility: event.currentTarget.value as Visibility }))}
               >
-                {#each VISIBILITIES as v (v)}<option value={v}>{v === "manager" ? "my managers" : v}</option>{/each}
+                {#each VISIBILITIES as v (v)}<option value={v}>{v === "manager" ? t("comp.aspirations.visibility_manager") : tv(v)}</option>{/each}
               </select>
             {:else}
               {a.visibility}
             {/if}
           </td>
-          <td><button type="button" onclick={() => void run(() => deleteAspiration(a.pid))}>Remove</button></td>
+          <td><button type="button" onclick={() => void run(() => deleteAspiration(a.pid))}>{t("comp.aspirations.remove")}</button></td>
         </tr>
       {:else}
-        <tr><td colspan="6" class="muted">Nothing here yet.</td></tr>
+        <tr><td colspan="6" class="muted">{t("comp.aspirations.nothing_here_yet")}</td></tr>
       {/each}
     </tbody>
   </table>
 
-  <h3>Add one</h3>
+  <h3>{t("comp.aspirations.add_one")}</h3>
   <form
     onsubmit={(event) => {
       event.preventDefault();
@@ -144,26 +145,26 @@
     }}
   >
     <label>
-      I want to
-      <select bind:value={kind}><option value="skill">grow a skill</option><option value="role">move into a role</option></select>
+      {t("comp.aspirations.i_want_to")}
+      <select bind:value={kind}><option value="skill">{t("comp.aspirations.grow_a_skill")}</option><option value="role">{t("comp.aspirations.move_into_a_role")}</option></select>
     </label>
     {#if kind === "skill"}
       <label>
-        Skill
+        {t("comp.aspirations.skill")}
         <select bind:value={skillPid} required>
-          <option value="" disabled>Choose…</option>
+          <option value="" disabled>{t("comp.aspirations.choose")}</option>
           {#each catalogue as s (s.pid)}<option value={s.pid}>{s.name}</option>{/each}
         </select>
       </label>
-      <label>Level <select bind:value={target}>{#each [1, 2, 3, 4, 5] as l (l)}<option value={l}>{l}</option>{/each}</select></label>
+      <label>{t("comp.aspirations.level")} <select bind:value={target}>{#each [1, 2, 3, 4, 5] as l (l)}<option value={l}>{l}</option>{/each}</select></label>
     {:else}
-      <label>Framework <select bind:value={framework} onchange={() => (picked = null)}><option value="uk-gdad-pcf">UK GDAD PCF</option><option value="esco">ESCO</option></select></label>
+      <label>{t("comp.aspirations.framework")} <select bind:value={framework} onchange={() => (picked = null)}><option value="uk-gdad-pcf">{t("comp.aspirations.uk_gdad_pcf")}</option><option value="esco">{t("comp.aspirations.esco")}</option></select></label>
       <RolePicker {framework} onpick={(p) => (picked = p)} />
       {#if picked}<strong>{picked.label}</strong>{/if}
     {/if}
-    <label>When <select bind:value={horizon}>{#each ASPIRATION_HORIZONS as h (h)}<option value={h}>{h.replaceAll("_", " ")}</option>{/each}</select></label>
-    <label>In my own words <input bind:value={note} maxlength="1000" placeholder="a growth idea, a learning goal…" /></label>
-    <label>Who can see it <select bind:value={visibility}>{#each VISIBILITIES as v (v)}<option value={v}>{v === "manager" ? "my managers (everyone above me)" : v === "everyone" ? "everyone who can view my record" : "only me"}</option>{/each}</select></label>
-    <button type="submit" data-testid="aspiration-add">Add</button>
+    <label>{t("comp.aspirations.when")} <select bind:value={horizon}>{#each ASPIRATION_HORIZONS as h (h)}<option value={h}>{tv(h)}</option>{/each}</select></label>
+    <label>{t("comp.aspirations.in_my_own_words")} <input bind:value={note} maxlength="1000" placeholder={t("comp.aspirations.a_growth_idea_a_learning_goal")} /></label>
+    <label>{t("comp.aspirations.who_can_see_it")} <select bind:value={visibility}>{#each VISIBILITIES as v (v)}<option value={v}>{v === "manager" ? "my managers (everyone above me)" : v === "everyone" ? "everyone who can view my record" : "only me"}</option>{/each}</select></label>
+    <button type="submit" data-testid="aspiration-add">{t("comp.aspirations.add")}</button>
   </form>
 </section>

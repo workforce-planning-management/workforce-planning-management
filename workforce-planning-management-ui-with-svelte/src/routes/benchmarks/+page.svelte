@@ -48,7 +48,7 @@
 {:else}
   <table data-testid="bands">
     <thead>
-      <tr><th>{t("common.jobTitle")}</th><th>min</th><th>median</th><th>max</th></tr>
+      <tr><th>{t("common.jobTitle")}</th><th>{t("pages.benchmarks.min")}</th><th>{t("pages.benchmarks.median")}</th><th>{t("pages.benchmarks.max")}</th></tr>
     </thead>
     <tbody>
       {#each benchmarks as band (band.pid)}

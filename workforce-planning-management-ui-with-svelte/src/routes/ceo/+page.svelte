@@ -31,7 +31,7 @@
     type TrendPoint,
   } from "#lib/ceo.js";
   import { mean, rate } from "#lib/format.js";
-  import { l, t, tp } from "#lib/i18n.svelte.js";
+  import { l, t, tp, tf } from "#lib/i18n.svelte.js";
   import TrendChart from "#lib/components/TrendChart.svelte";
 
   type Metrics = Awaited<ReturnType<typeof workforceMetrics>>;
@@ -109,7 +109,7 @@
   const arrow = (d: "up" | "down" | "flat") => (d === "up" ? "▲" : d === "down" ? "▼" : "■");
 </script>
 
-<svelte:head><title>{t("nav.ceo")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.ceo.page_title", { ceo: t("nav.ceo") })}</title></svelte:head>
 
 <div class="ceo" data-testid="ceo">
   <h1 class="cx-sr-only">{t("nav.ceo")}</h1>

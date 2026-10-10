@@ -4,6 +4,7 @@
   Compares declarations; never ranks people. Others see only aggregate counts.
 -->
 <script lang="ts">
+  import { t, tv } from "#lib/i18n.svelte.js";
   import {
     expressMobilityInterest,
     listMobilityInterests,
@@ -68,11 +69,11 @@
 
 {#if matches && (matches.roles.length > 0 || (open?.opportunities.length ?? 0) > 0)}
   <div class="panel" data-testid="mobility">
-    <h3>Roles that fit my skills</h3>
+    <h3>{t("comp.mobility.roles_that_fit_my_skills")}</h3>
     <p class="muted">{matches.derivation}</p>
     {#if error}<p class="error">{error}</p>{/if}
     <table>
-      <thead><tr><th>Role</th><th>Critical met</th><th>All met</th><th></th></tr></thead>
+      <thead><tr><th>{t("comp.mobility.role")}</th><th>{t("comp.mobility.critical_met")}</th><th>{t("comp.mobility.all_met")}</th><th></th></tr></thead>
       <tbody>
         {#each matches.roles as role (role.role_profile_pid)}
           <tr>
@@ -81,10 +82,10 @@
             <td>{percentWithWorkings(role.fit.all_met)}</td>
             <td>
               {#if interested(role.role_profile_pid)}
-                <span class="muted">interested</span>
+                <span class="muted">{t("comp.mobility.interested")}</span>
               {:else}
                 <button type="button" onclick={() => void express({ role_profile_pid: role.role_profile_pid })}>
-                  I'm interested
+                  {t("comp.mobility.i_m_interested")}
                 </button>
               {/if}
             </td>
@@ -94,9 +95,9 @@
     </table>
 
     {#if open && open.opportunities.length > 0}
-      <h3>Open roles</h3>
+      <h3>{t("comp.mobility.open_roles")}</h3>
       <table>
-        <thead><tr><th>Role</th><th>Department</th><th>My fit (critical)</th><th></th></tr></thead>
+        <thead><tr><th>{t("comp.mobility.role")}</th><th>{t("comp.mobility.department")}</th><th>{t("comp.mobility.my_fit_critical")}</th><th></th></tr></thead>
         <tbody>
           {#each open.opportunities as opp (opp.requisition_pid)}
             <tr>
@@ -105,10 +106,10 @@
               <td>{opp.fit ? percentWithWorkings(opp.fit.critical_met) : "—"}</td>
               <td>
                 {#if interested(opp.requisition_pid)}
-                  <span class="muted">interested</span>
+                  <span class="muted">{t("comp.mobility.interested")}</span>
                 {:else}
                   <button type="button" onclick={() => void express({ requisition_pid: opp.requisition_pid })}>
-                    I'm interested
+                    {t("comp.mobility.i_m_interested")}
                   </button>
                 {/if}
               </td>
@@ -119,12 +120,12 @@
     {/if}
 
     {#if interests.length > 0}
-      <h3>My expressed interest</h3>
+      <h3>{t("comp.mobility.my_expressed_interest")}</h3>
       <ul data-testid="mobility-interests">
         {#each interests as i (i.pid)}
           <li>
-            {i.title ?? i.target_pid} <span class="muted">({i.kind})</span>
-            <button type="button" onclick={() => void withdraw(i.pid)}>Withdraw</button>
+            {i.title ?? i.target_pid} <span class="muted">({tv(i.kind)})</span>
+            <button type="button" onclick={() => void withdraw(i.pid)}>{t("comp.mobility.withdraw")}</button>
           </li>
         {/each}
       </ul>

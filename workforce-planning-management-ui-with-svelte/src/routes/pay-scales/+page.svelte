@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getPayScale, listPayScales, money, moneyWhole, payPosition } from "#lib/api/wpm.js";
-  import { t, tp, i18n } from "#lib/i18n.svelte.js";
+  import { t, tp, i18n, tf } from "#lib/i18n.svelte.js";
   import type { PayLookup, PayScale } from "#lib/api/types.js";
 
   let scale = $state<PayScale | null>(null);
@@ -63,7 +63,7 @@
   }
 </script>
 
-<svelte:head><title>{t("nav.payScales")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.payScales.page_title", { payScales: t("nav.payScales") })}</title></svelte:head>
 
 <h1>{t("nav.payScales")}</h1>
 {#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}

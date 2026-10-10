@@ -168,46 +168,12 @@ async fn subject_access(
     format::json(export)
 }
 
-/// `POST /api/workers/{pid}/erase` — anonymise (WPM-D22): scrub the
-/// worker's identity fields and soft-delete the row, scrub free text
-/// they authored (time-entry notes, 360 comments, mentorship session
-/// notes), close their appraisals-as-subject, and delete their
-/// wellbeing acknowledgements. Payroll/financial rows remain, keyed to
-/// a pid that no longer identifies anyone. Refused while employment is
-/// open. Destructive-classified; audited with counts.
-#[debug_handler]
-#[allow(clippy::too_many_lines)] // one scrub statement per worker-owned table
-async fn erase(
-    State(ctx): State<AppContext>,
-    caller: MaybeAuthUser,
-    Path(pid): Path<String>,
-) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    auth::authorize_record(
-        &caller,
-        authentication_verifier::Action::Destructive,
-        &auth::worker_resource_attrs(&worker),
-    )
-    .map_err(record_rejection)?;
-    if !rules::erasable(&worker.status) {
-        return Err(unprocessable(
-            "erasure requires a terminated or retired employment (the active \
-             relationship is the lawful basis for the data)",
-        ));
-    }
-    let epid = worker.pid;
-    let txn = ctx.db.begin().await?;
-    // Identity fields scrubbed in place; the row soft-deleted.
-    let mut scrubbed: workers::ActiveModel = worker.into();
-    scrubbed.display_name = ActiveValue::set(ERASED.to_string());
-    scrubbed.person_ref = ActiveValue::set(TOMBSTONE_PERSON.to_string());
-    scrubbed.upstream_worker_ref = ActiveValue::set(None);
-    scrubbed.salary_minor = ActiveValue::set(None);
-    scrubbed.salary_currency = ActiveValue::set(None);
-    scrubbed.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    scrubbed.update(&txn).await?;
-    // Free text they authored, and rows that are about them only.
-    let statements = [
+/// The statements that scrub everything a worker authored or owns, and the rows
+/// that are about them only (WPM-D22). One list, used by the live erasure and by
+/// the replay after a restore (WPM-D63), so the two cannot drift. The order is
+/// pinned: the audit snapshot indexes the row counts by position.
+fn erasure_statements(epid: Uuid) -> Vec<String> {
+    vec![
         format!("UPDATE time_entries SET notes = NULL WHERE worker_pid = '{epid}'"),
         format!(
             "UPDATE appraisal_responses SET comment = NULL WHERE nomination_pid IN \
@@ -281,12 +247,133 @@ async fn erase(
         format!(
             "UPDATE expense_items SET description = NULL, receipt_ref = NULL WHERE worker_pid = '{epid}'"
         ),
-    ];
+    ]
+}
+
+/// Record an erasure in the ledger (WPM-D63): the pid and the time, nothing else.
+async fn record_erasure<C: ConnectionTrait>(db: &C, epid: Uuid) -> Result<()> {
+    db.execute_unprepared(&format!(
+        "INSERT INTO erasure_ledger (worker_pid) VALUES ('{epid}') ON CONFLICT DO NOTHING"
+    ))
+    .await?;
+    Ok(())
+}
+
+/// What a replay did.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct ReplayReport {
+    /// Ledger entries considered.
+    pub considered: usize,
+    /// Workers found in the database and erased again.
+    pub reapplied: usize,
+    /// Entries whose worker is not in this database (the backup predates them).
+    pub missing: usize,
+}
+
+/// Replay the erasure ledger after a restore (WPM-D63): for every entry (erased
+/// on or after `since`, or all of them), scrub the worker again with the same
+/// statements as the live erasure. Idempotent, so running it twice changes
+/// nothing more. A worker the database does not hold is counted, not an error.
+///
+/// # Errors
+///
+/// A database error; nothing is applied for the entry that failed.
+pub async fn replay_erasures(
+    db: &sea_orm::DatabaseConnection,
+    since: Option<chrono::NaiveDate>,
+) -> Result<ReplayReport> {
+    use sea_orm::TransactionTrait;
+    let filter = since.map_or_else(String::new, |d| format!("WHERE erased_at >= '{d}'"));
+    let rows = db
+        .query_all_raw(sea_orm::Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            format!("SELECT worker_pid FROM erasure_ledger {filter} ORDER BY erased_at"),
+        ))
+        .await?;
+    let mut report = ReplayReport::default();
+    for row in rows {
+        let Ok(epid) = row.try_get::<Uuid>("", "worker_pid") else {
+            continue;
+        };
+        report.considered += 1;
+        let txn = db.begin().await?;
+        let found = txn
+            .execute_unprepared(&format!(
+                "UPDATE workers SET display_name = '{ERASED}', person_ref = '{TOMBSTONE_PERSON}', \
+                 upstream_worker_ref = NULL, salary_minor = NULL, salary_currency = NULL, \
+                 deleted_at = COALESCE(deleted_at, now()) WHERE pid = '{epid}'"
+            ))
+            .await?
+            .rows_affected();
+        if found == 0 {
+            report.missing += 1;
+            txn.commit().await?;
+            continue;
+        }
+        for statement in erasure_statements(epid) {
+            txn.execute_unprepared(&statement).await?;
+        }
+        Audit::record(
+            &txn,
+            "worker",
+            epid,
+            "erasure_replayed",
+            Some("task:replay_erasures"),
+            None,
+        )
+        .await?;
+        txn.commit().await?;
+        report.reapplied += 1;
+    }
+    Ok(report)
+}
+
+/// `POST /api/workers/{pid}/erase` — anonymise (WPM-D22): scrub the
+/// worker's identity fields and soft-delete the row, scrub free text
+/// they authored (time-entry notes, 360 comments, mentorship session
+/// notes), close their appraisals-as-subject, and delete their
+/// wellbeing acknowledgements. Payroll/financial rows remain, keyed to
+/// a pid that no longer identifies anyone. Refused while employment is
+/// open. Destructive-classified; audited with counts.
+#[debug_handler]
+#[allow(clippy::too_many_lines)] // one scrub statement per worker-owned table
+async fn erase(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    auth::authorize_record(
+        &caller,
+        authentication_verifier::Action::Destructive,
+        &auth::worker_resource_attrs(&worker),
+    )
+    .map_err(record_rejection)?;
+    if !rules::erasable(&worker.status) {
+        return Err(unprocessable(
+            "erasure requires a terminated or retired employment (the active \
+             relationship is the lawful basis for the data)",
+        ));
+    }
+    let epid = worker.pid;
+    let txn = ctx.db.begin().await?;
+    // Identity fields scrubbed in place; the row soft-deleted.
+    let mut scrubbed: workers::ActiveModel = worker.into();
+    scrubbed.display_name = ActiveValue::set(ERASED.to_string());
+    scrubbed.person_ref = ActiveValue::set(TOMBSTONE_PERSON.to_string());
+    scrubbed.upstream_worker_ref = ActiveValue::set(None);
+    scrubbed.salary_minor = ActiveValue::set(None);
+    scrubbed.salary_currency = ActiveValue::set(None);
+    scrubbed.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
+    scrubbed.update(&txn).await?;
+    // Free text they authored, and rows that are about them only.
+    let statements = erasure_statements(epid);
     let mut affected = Vec::new();
     for statement in &statements {
         let result = txn.execute_unprepared(statement).await?;
         affected.push(result.rows_affected());
     }
+    record_erasure(&txn, epid).await?;
     Audit::record(
         &txn,
         "worker",
@@ -337,20 +424,82 @@ async fn erase(
     }))
 }
 
-/// The retention horizon in days (`WPM_RETENTION_DAYS`, default 365,
-/// floor 30 — WPM-D22).
-fn horizon_days() -> i64 {
-    rules::retention_days(crate::compat::env_var("WPM_RETENTION_DAYS").as_deref())
+/// The horizon for every record kind, read from the environment: a kind's own
+/// `WPM_RETENTION_<KIND>_DAYS`, else the legacy `WPM_RETENTION_DAYS`, else the
+/// kind's default; floored at 30 calendar days (WPM-R91, WPM-D22, WPM-D60).
+fn horizons() -> Vec<(rules::RecordKind, rules::Horizon)> {
+    let legacy = crate::compat::env_var("WPM_RETENTION_DAYS");
+    rules::RecordKind::ALL
+        .iter()
+        .map(|&kind| {
+            let own = crate::compat::env_var(&kind.env_name());
+            (
+                kind,
+                rules::horizon_for(kind, own.as_deref(), legacy.as_deref()),
+            )
+        })
+        .collect()
+}
+
+/// The horizon in calendar days for one table.
+fn days_for(table: &str, all: &[(rules::RecordKind, rules::Horizon)]) -> i64 {
+    rules::kind_of(table)
+        .and_then(|kind| all.iter().find(|(k, _)| *k == kind))
+        .map_or(rules::RETENTION_DEFAULT_DAYS, |(_, horizon)| horizon.days)
+}
+
+/// The horizons as `{kind: days}`, for the report, the sweep and its audit row.
+fn horizon_map(all: &[(rules::RecordKind, rules::Horizon)]) -> serde_json::Value {
+    serde_json::Value::Object(
+        all.iter()
+            .map(|(kind, horizon)| (kind.key().to_string(), serde_json::json!(horizon.days)))
+            .collect(),
+    )
+}
+
+/// `GET /api/retention/schedule` — each record kind, its tables, and the
+/// horizon in force with where it came from. Configuration, not personal data.
+#[debug_handler]
+async fn retention_schedule() -> Result<Response> {
+    let kinds: Vec<serde_json::Value> = horizons()
+        .into_iter()
+        .map(|(kind, horizon)| {
+            let tables: Vec<&str> = rules::SOFT_DELETED_TABLES
+                .iter()
+                .copied()
+                .filter(|t| rules::kind_of(t) == Some(kind))
+                .collect();
+            serde_json::json!({
+                "kind": kind.key(),
+                "days": horizon.days,
+                "source": horizon.source.label(),
+                "default_days": kind.default_days(),
+                "override_variable": kind.env_name(),
+                "tables": tables,
+            })
+        })
+        .collect();
+    format::json(serde_json::json!({
+        "floor_days": rules::RETENTION_FLOOR_DAYS,
+        "kinds": kinds,
+        "derivation": "calendar days after a record is soft-deleted before the sweep \
+                       hard-deletes it; a kind's own WPM_RETENTION_<KIND>_DAYS wins, \
+                       then the legacy WPM_RETENTION_DAYS, then the default; every value \
+                       is floored (WPM-D22, WPM-D60). The defaults are starting points a \
+                       deployer replaces with their own legal basis, not legal advice.",
+    }))
 }
 
 /// `GET /api/retention` — the report: per table, soft-deleted rows
-/// older than the horizon, plus candidates whose consent expired
-/// before it. Read-only; the sweep is the separate destructive POST.
+/// older than that table's horizon, plus candidates whose consent expired
+/// before the recruitment horizon. Read-only; the sweep is the separate
+/// destructive POST.
 #[debug_handler]
 async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
-    let days = horizon_days();
+    let all = horizons();
     let mut tables = serde_json::Map::new();
     for table in rules::SOFT_DELETED_TABLES {
+        let days = days_for(table, &all);
         let count = ctx
             .db
             .query_one_raw(sea_orm::Statement::from_string(
@@ -367,23 +516,25 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
             tables.insert((*table).to_string(), serde_json::json!(count));
         }
     }
+    let recruitment_days = days_for("candidates", &all);
     let expired_candidates = candidates::Entity::find()
         .filter(candidates::Column::DeletedAt.is_null())
         .filter(
             candidates::Column::ConsentUntil
-                .lt(chrono::Utc::now().date_naive() - chrono::Duration::days(days)),
+                .lt(chrono::Utc::now().date_naive() - chrono::Duration::days(recruitment_days)),
         )
         .all(&ctx.db)
         .await?
         .len();
     format::json(serde_json::json!({
         "as_of": chrono::Utc::now(),
-        "horizon_days": days,
+        "horizons": horizon_map(&all),
         "soft_deleted_past_horizon": tables,
         "expired_consent_candidates": expired_candidates,
-        "derivation": "soft-deleted rows older than the horizon are hard-deleted by the \
-                       sweep; candidates whose consent expired before the horizon are \
-                       scrubbed; the horizon floors at 30 days (WPM-D22)",
+        "derivation": "soft-deleted rows older than their kind's horizon are hard-deleted \
+                       by the sweep; candidates whose consent expired before the \
+                       recruitment horizon are scrubbed; every horizon floors at 30 \
+                       calendar days (WPM-D22, WPM-D60); see /api/retention/schedule",
     }))
 }
 
@@ -394,11 +545,13 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
 /// audited with counts.
 #[debug_handler]
 async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let days = horizon_days();
+    let all = horizons();
+    let recruitment_days = days_for("candidates", &all);
     let txn = ctx.db.begin().await?;
     let mut deleted = serde_json::Map::new();
     let mut total: u64 = 0;
     for table in rules::SOFT_DELETED_TABLES {
+        let days = days_for(table, &all);
         let result = txn
             .execute_unprepared(&format!(
                 "DELETE FROM {table} WHERE deleted_at < now() - interval '{days} days'"
@@ -417,7 +570,7 @@ async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
             "UPDATE candidates SET display_name = '{ERASED}', email = '{ERASED}', \
              person_ref = NULL, deleted_at = now() \
              WHERE deleted_at IS NULL \
-             AND consent_until < CURRENT_DATE - interval '{days} days'"
+             AND consent_until < CURRENT_DATE - interval '{recruitment_days} days'"
         ))
         .await?
         .rows_affected();
@@ -428,7 +581,7 @@ async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
         "retention_swept",
         caller.actor(),
         Some(serde_json::json!({
-            "horizon_days": days,
+            "horizons": horizon_map(&all),
             "rows_deleted": total,
             "candidates_scrubbed": scrubbed,
         })),
@@ -436,7 +589,7 @@ async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
     .await?;
     txn.commit().await?;
     format::json(serde_json::json!({
-        "horizon_days": days,
+        "horizons": horizon_map(&all),
         "deleted": deleted,
         "rows_deleted": total,
         "candidates_scrubbed": scrubbed,
@@ -450,5 +603,6 @@ pub fn routes() -> Routes {
         .add("/workers/{pid}/subject-access", get(subject_access))
         .add("/workers/{pid}/erase", post(erase))
         .add("/retention", get(retention_report))
+        .add("/retention/schedule", get(retention_schedule))
         .add("/retention/sweep", post(retention_sweep))
 }

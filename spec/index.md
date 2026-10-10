@@ -92,6 +92,7 @@ identities by `EntityRef` URN, never duplicating them.
 | [audit.md](audit.md)                               | Audit trail, events, sensitive-read logging                                               |
 | [architecture.md](architecture.md)                 | Editions, layering, pure-core rules, persistence                                          |
 | [testing.md](testing.md)                           | Test strategy per edition                                                                 |
+| [operations-and-governance.md](operations-and-governance.md) | Operations pack (backup and restore, deployment, upgrade, runbook), information governance pack, retention per record kind, Entra ID sign-in, every page in every locale (WPM-R89–R94) |
 | [production-readiness.md](production-readiness.md) | Sign-in on by default, security headers, rate limiting, standalone build and CI, license texts, releases, generated status (WPM-R72–R74, R77, R78, R87, R88) |
 | [regulatory.md](regulatory.md)                     | Demo status; UK GDPR / employment-records posture; subject rights (WPM-R30)               |
 | [roadmap.md](roadmap.md)                           | Beyond the v1 queue                                                                       |

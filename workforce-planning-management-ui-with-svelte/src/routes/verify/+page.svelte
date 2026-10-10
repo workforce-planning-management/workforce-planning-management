@@ -5,26 +5,26 @@
   missing/invalid link.
 -->
 <script lang="ts">
-  import { l } from "#lib/i18n.svelte.js";
+  import { l, t } from "#lib/i18n.svelte.js";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
 
   const message = $derived(
     data.error === "missingToken"
-      ? "This sign-in link is missing its token."
+      ? t("pages.verify.missing")
       : data.error === "serviceUnavailable"
-        ? "We could not reach the sign-in service. Please try again in a moment."
-        : "This sign-in link is invalid or has expired.",
+        ? t("pages.verify.unavailable")
+        : t("pages.verify.invalid"),
   );
 </script>
 
 <svelte:head
-  ><title>Sign-in link — Workforce Planning Management</title></svelte:head
+  ><title>{t("pages.verify.page_title")}</title></svelte:head
 >
 
-<h1>Sign-in link</h1>
+<h1>{t("pages.verify.sign_in_link")}</h1>
 <div class="panel">
   <p class="error" role="alert">{message}</p>
-  <p><a href={l("/signin")}>Request a new link</a></p>
+  <p><a href={l("/signin")}>{t("pages.verify.request_a_new_link")}</a></p>
 </div>

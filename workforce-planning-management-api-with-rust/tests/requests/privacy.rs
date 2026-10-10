@@ -111,10 +111,10 @@ async fn subject_rights_round_trip() {
         // ── Retention: the report is readable; a fresh soft-delete is
         // inside the horizon, so nothing is listed or swept.
         let report: Value = request.get("/api/retention").await.json();
-        assert!(
-            report["horizon_days"].as_i64().unwrap() >= 30,
-            "floored horizon"
-        );
+        for (kind, days) in report["horizons"].as_object().unwrap() {
+            assert!(days.as_i64().unwrap() >= 30, "{kind}: floored horizon");
+        }
+        assert_eq!(report["horizons"].as_object().unwrap().len(), 8);
         assert!(
             report["soft_deleted_past_horizon"]
                 .as_object()

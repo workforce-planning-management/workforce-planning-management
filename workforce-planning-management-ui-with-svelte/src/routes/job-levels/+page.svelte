@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getJobLevelFramework, listJobLevelFrameworks } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
   import type { JobLevelFramework } from "#lib/api/types.js";
 
   let framework = $state<JobLevelFramework | null>(null);
@@ -29,7 +29,7 @@
   });
 </script>
 
-<svelte:head><title>{t("nav.jobLevels")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.jobLevels.page_title", { jobLevels: t("nav.jobLevels") })}</title></svelte:head>
 
 <h1>{t("nav.jobLevels")}</h1>
 {#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}

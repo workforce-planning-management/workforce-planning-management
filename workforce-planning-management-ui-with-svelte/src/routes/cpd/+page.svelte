@@ -18,7 +18,7 @@
     verifyCpdEntry,
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
   import type { Worker } from "#lib/api/types.js";
 
   type Overview = Awaited<ReturnType<typeof cpdOverview>>;
@@ -132,66 +132,66 @@
   }
 </script>
 
-<svelte:head><title>{t("nav.cpd")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.cpd.page_title", { cpd: t("nav.cpd") })}</title></svelte:head>
 
 <h1>{t("nav.cpd")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 
 {#if overview}
-  <h2>Across the workforce</h2>
+  <h2>{t("pages.cpd.across_the_workforce")}</h2>
   <p class="muted">{overview.derivation}</p>
   <p data-testid="cpd-registrations">
-    Registrations: {overview.registrations.expiring} expiring, {overview.registrations.expired} expired
+    {tf("pages.cpd.registrations_expiring_expired", { expiring: overview.registrations.expiring, expired: overview.registrations.expired })}
   </p>
   <table data-testid="cpd-overview">
     <thead>
-      <tr><th>Requirement</th><th>Period</th><th>Applies to</th><th>Met (recorded)</th><th>Met (verified)</th></tr>
+      <tr><th>{t("pages.cpd.requirement")}</th><th>{t("pages.cpd.period")}</th><th>{t("pages.cpd.applies_to")}</th><th>{t("pages.cpd.met_recorded")}</th><th>{t("pages.cpd.met_verified")}</th></tr>
     </thead>
     <tbody>
       {#each overview.requirements as row (row.requirement_pid)}
         <tr>
-          <td>{row.name} <span class="muted">({row.unit})</span></td>
+          <td>{row.name} <span class="muted">({tv(row.unit)})</span></td>
           <td>{row.period_start} → {row.period_end}</td>
           <td>{row.applicable_workers}</td>
           <td>{percentWithWorkings(row.met_recorded)}</td>
           <td>{percentWithWorkings(row.met_verified)}</td>
         </tr>
       {:else}
-        <tr><td colspan="5" class="muted">No CPD requirements defined yet.</td></tr>
+        <tr><td colspan="5" class="muted">{t("pages.cpd.no_cpd_requirements_defined_yet")}</td></tr>
       {/each}
     </tbody>
   </table>
 {/if}
 
-<h2>Define a requirement</h2>
+<h2>{t("pages.cpd.define_a_requirement")}</h2>
 <form
   onsubmit={(event) => {
     event.preventDefault();
     void addRequirement();
   }}
 >
-  <label>Name <input data-testid="cpd-req-name" bind:value={reqName} required /></label>
+  <label>{t("pages.cpd.name")} <input data-testid="cpd-req-name" bind:value={reqName} required /></label>
   <label>
-    Unit
-    <select bind:value={reqUnit}>{#each CPD_UNITS as u (u)}<option value={u}>{u}</option>{/each}</select>
+    {t("pages.cpd.unit")}
+    <select bind:value={reqUnit}>{#each CPD_UNITS as u (u)}<option value={u}>{tv(u)}</option>{/each}</select>
   </label>
-  <label>Required <input type="number" min="1" step="any" bind:value={reqAmount} required /></label>
-  <label>From <input type="date" bind:value={reqStart} required /></label>
-  <label>To <input type="date" bind:value={reqEnd} required /></label>
-  <button type="submit" data-testid="cpd-req-add">Add</button>
+  <label>{t("pages.cpd.required")} <input type="number" min="1" step="any" bind:value={reqAmount} required /></label>
+  <label>{t("pages.cpd.from")} <input type="date" bind:value={reqStart} required /></label>
+  <label>{t("pages.cpd.to")} <input type="date" bind:value={reqEnd} required /></label>
+  <button type="submit" data-testid="cpd-req-add">{t("pages.cpd.add")}</button>
 </form>
-<p class="muted">{requirements.length} requirement(s) defined.</p>
+<p class="muted">{tf("pages.cpd.requirement_s_defined", { requirements: requirements.length })}</p>
 
-<h2>A worker's CPD</h2>
+<h2>{t("pages.cpd.a_worker_s_cpd")}</h2>
 <p>
   <label>
-    Worker
+    {t("pages.cpd.worker")}
     <select
       data-testid="cpd-worker"
       bind:value={workerPid}
       onchange={() => void loadWorker()}
     >
-      <option value="">Choose…</option>
+      <option value="">{t("pages.cpd.choose")}</option>
       {#each workers as w (w.pid)}<option value={w.pid}>{w.display_name}</option>{/each}
     </select>
   </label>
@@ -201,78 +201,78 @@
   <p class="muted">{progress.derivation}</p>
   <table data-testid="cpd-progress">
     <thead>
-      <tr><th>Requirement</th><th>Required</th><th>Recorded</th><th>Verified</th><th>Remaining</th></tr>
+      <tr><th>{t("pages.cpd.requirement")}</th><th>{t("pages.cpd.required")}</th><th>{t("pages.cpd.recorded")}</th><th>{t("pages.cpd.verified")}</th><th>{t("pages.cpd.remaining")}</th></tr>
     </thead>
     <tbody>
       {#each progress.requirements as row (row.requirement_pid)}
         <tr>
           <td>{row.name} <span class="muted">({row.period_start} → {row.period_end})</span></td>
-          <td>{row.required} {row.unit}</td>
+          <td>{row.required} {tv(row.unit)}</td>
           <td>{row.recorded}</td>
           <td>{row.verified}</td>
           <td class:warn={!row.met}>{row.remaining}</td>
         </tr>
       {:else}
-        <tr><td colspan="5" class="muted">No requirement applies to this worker.</td></tr>
+        <tr><td colspan="5" class="muted">{t("pages.cpd.no_requirement_applies_to_this")}</td></tr>
       {/each}
     </tbody>
   </table>
   {#if progress.registrations.length > 0}
-    <h3>Registrations</h3>
+    <h3>{t("pages.cpd.registrations")}</h3>
     <ul>
       {#each progress.registrations as r, index (index)}
-        <li>{r.body} — {r.expires_on ?? "no expiry"} <span class="chip" class:warn={r.status === "expired" || r.status === "expiring"}>{r.status}</span></li>
+        <li>{r.body} — {r.expires_on ?? t("pages.cpd.no_expiry")} <span class="chip" class:warn={r.status === "expired" || r.status === "expiring"}>{tv(r.status)}</span></li>
       {/each}
     </ul>
   {/if}
 
-  <h3>Ledger</h3>
+  <h3>{t("pages.cpd.ledger")}</h3>
   <table data-testid="cpd-entries">
     <thead>
-      <tr><th>Date</th><th>Activity</th><th>Category</th><th>Amount</th><th>Evidence</th><th></th></tr>
+      <tr><th>{t("pages.cpd.date")}</th><th>{t("pages.cpd.activity")}</th><th>{t("pages.cpd.category")}</th><th>{t("pages.cpd.amount")}</th><th>{t("pages.cpd.evidence")}</th><th></th></tr>
     </thead>
     <tbody>
       {#each entries as e (e.pid)}
         <tr>
           <td>{e.entry_date}</td>
-          <td>{e.activity}{#if e.source === "lms"} <span class="chip">LMS</span>{/if}</td>
-          <td>{e.category}</td>
-          <td>{e.amount} {e.unit}</td>
+          <td>{e.activity}{#if e.source === "lms"} <span class="chip">{t("pages.cpd.lms")}</span>{/if}</td>
+          <td>{tv(e.category)}</td>
+          <td>{e.amount} {tv(e.unit)}</td>
           <td>
-            {#if e.evidence_url}<a href={e.evidence_url} rel="noopener noreferrer">link</a>{:else}—{/if}
+            {#if e.evidence_url}<a href={e.evidence_url} rel="noopener noreferrer">{t("pages.cpd.link")}</a>{:else}—{/if}
           </td>
           <td>
             {#if e.verified_on}✓ {e.verified_on}{:else}
-              <button type="button" onclick={() => void verify(e.pid)}>Verify</button>
+              <button type="button" onclick={() => void verify(e.pid)}>{t("pages.cpd.verify")}</button>
             {/if}
           </td>
         </tr>
       {:else}
-        <tr><td colspan="6" class="muted">Nothing recorded yet.</td></tr>
+        <tr><td colspan="6" class="muted">{t("pages.cpd.nothing_recorded_yet")}</td></tr>
       {/each}
     </tbody>
   </table>
 
-  <h3>Record an activity</h3>
+  <h3>{t("pages.cpd.record_an_activity")}</h3>
   <form
     onsubmit={(event) => {
       event.preventDefault();
       void addEntry();
     }}
   >
-    <label>Date <input type="date" bind:value={entryDate} required /></label>
-    <label>Activity <input data-testid="cpd-entry-activity" bind:value={entryActivity} required /></label>
+    <label>{t("pages.cpd.date")} <input type="date" bind:value={entryDate} required /></label>
+    <label>{t("pages.cpd.activity")} <input data-testid="cpd-entry-activity" bind:value={entryActivity} required /></label>
     <label>
-      Category
-      <select bind:value={entryCategory}>{#each CPD_CATEGORIES as c (c)}<option value={c}>{c}</option>{/each}</select>
+      {t("pages.cpd.category")}
+      <select bind:value={entryCategory}>{#each CPD_CATEGORIES as c (c)}<option value={c}>{tv(c)}</option>{/each}</select>
     </label>
     <label>
-      Unit
-      <select bind:value={entryUnit}>{#each CPD_UNITS as u (u)}<option value={u}>{u}</option>{/each}</select>
+      {t("pages.cpd.unit")}
+      <select bind:value={entryUnit}>{#each CPD_UNITS as u (u)}<option value={u}>{tv(u)}</option>{/each}</select>
     </label>
-    <label>Amount <input type="number" min="0.01" step="any" bind:value={entryAmount} required /></label>
-    <label>Evidence link <input type="url" bind:value={entryUrl} placeholder="https://…" /></label>
-    <button type="submit" data-testid="cpd-entry-add">Add</button>
+    <label>{t("pages.cpd.amount")} <input type="number" min="0.01" step="any" bind:value={entryAmount} required /></label>
+    <label>{t("pages.cpd.evidence_link")} <input type="url" bind:value={entryUrl} placeholder={t("pages.cpd.https")} /></label>
+    <button type="submit" data-testid="cpd-entry-add">{t("pages.cpd.add")}</button>
   </form>
 {/if}
 

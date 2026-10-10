@@ -60,6 +60,27 @@
 //!
 //! `resource.person = $sub` self-rules need no mapper: `$sub` is
 //! Keycloak's own `sub` claim, relayed as-is.
+//!
+//! ## Microsoft Entra ID (WPM-R93)
+//!
+//! The same backend verifies an **Entra ID v2 access token** (set
+//! `requestedAccessTokenVersion` to `2` in the application manifest):
+//!
+//! | Setting | Entra value |
+//! |---|---|
+//! | `WPM_KEYCLOAK_JWKS_URL` | `https://login.microsoftonline.com/<tenant>/discovery/v2.0/keys` |
+//! | `WPM_KEYCLOAK_ISSUER` | `https://login.microsoftonline.com/<tenant>/v2.0` |
+//! | `WPM_KEYCLOAK_AUDIENCE` | the application (client) id |
+//! | `WPM_OIDC_SUBJECT_CLAIM` | `oid` (see below) |
+//!
+//! Differences from Keycloak, all handled here: app roles arrive in a
+//! **top-level `roles`** claim (read as well as `realm_access.roles`, so the
+//! personas `wpm-hr`, `wpm-payroll`, `wpm-svc` and `wpm-admin` work the same);
+//! `sub` is **different for every application**, so `WPM_OIDC_SUBJECT_CLAIM=oid`
+//! takes the subject from the tenant-wide object id instead (a token with no
+//! `oid` is then refused); and `groups` holds group **object ids**, not names,
+//! so the `department` attribute is a GUID there (use app roles for personas).
+//! See `spec/operations/entra-sign-in.md`.
 
 use super::{
     BTreeMap, Claims, ENTITY, Method, OnceLock, Policy, StatusCode, derive_action, env_or,
@@ -95,6 +116,13 @@ struct KeycloakClaims {
     sid: Option<String>,
     #[serde(default)]
     realm_access: Option<RealmAccess>,
+    /// Entra ID app roles: a top-level array (Keycloak uses `realm_access`).
+    #[serde(default)]
+    roles: Option<Vec<String>>,
+    /// Entra object id: the user's id across the whole tenant (unlike `sub`,
+    /// which is different for every application).
+    #[serde(default)]
+    oid: Option<String>,
     #[serde(default)]
     groups: Option<Vec<String>>,
     #[serde(default)]
@@ -109,12 +137,38 @@ struct RealmAccess {
     roles: Vec<String>,
 }
 
+impl KeycloakClaims {
+    /// Every role the token carries: Keycloak's `realm_access.roles` and
+    /// Entra's top-level `roles`, once each.
+    fn all_roles(&self) -> Vec<String> {
+        let mut roles: Vec<String> = self
+            .realm_access
+            .as_ref()
+            .map_or_else(Vec::new, |r| r.roles.clone());
+        for role in self.roles.iter().flatten() {
+            if !roles.contains(role) {
+                roles.push(role.clone());
+            }
+        }
+        roles
+    }
+
+    /// The subject: `sub`, or the claim named by `selector` (`oid`).
+    /// `None` when the selected claim is missing.
+    fn subject(&self, selector: &str) -> Option<String> {
+        match selector {
+            "oid" => self.oid.clone().filter(|v| !v.is_empty()),
+            _ => Some(self.sub.clone()),
+        }
+    }
+}
+
 /// Map a verified Keycloak JWT's claims to the ABAC `attrs` this
 /// crate's policy engine already reads. See the module docs' claim
 /// mapping table for the realm-mapper configuration this expects.
 fn attrs_from_keycloak_claims(claims: &KeycloakClaims) -> BTreeMap<String, Vec<String>> {
     let mut attrs = BTreeMap::new();
-    let roles = claims.realm_access.as_ref().map_or(&[][..], |r| &r.roles);
+    let roles = claims.all_roles();
     let has_role = |role: &str| roles.iter().any(|r| r == role);
     if has_role("wpm-hr") {
         attrs.insert("hr".to_string(), vec!["true".to_string()]);
@@ -164,6 +218,8 @@ pub struct KeyMaterial {
     jwks: std::sync::Arc<JwkSet>,
     issuer: String,
     audience: String,
+    /// Which claim is the subject: `sub` (default) or `oid` (Entra ID).
+    subject_claim: String,
 }
 
 /// A minimal hot-swappable holder, mirroring
@@ -214,6 +270,7 @@ fn build_from_env() -> KeyMaterial {
         jwks: std::sync::Arc::new(empty_jwks()),
         issuer: env_or("WPM_KEYCLOAK_ISSUER", ""),
         audience: env_or("WPM_KEYCLOAK_AUDIENCE", ""),
+        subject_claim: env_or("WPM_OIDC_SUBJECT_CLAIM", "sub"),
     }
 }
 
@@ -405,10 +462,14 @@ pub fn bearer_claims(
         return Err(unauthorized("unexpected audience"));
     }
 
-    // Derived before the field moves below: it borrows the whole struct.
+    // Derived before the fields move below: they borrow the whole struct.
     let attrs = attrs_from_keycloak_claims(&claims);
+    let roles = claims.all_roles();
+    let sub = claims
+        .subject(&key_material.subject_claim)
+        .ok_or_else(|| unauthorized("token has no subject claim"))?;
     Ok(Claims {
-        sub: claims.sub,
+        sub,
         email: claims.email.unwrap_or_default(),
         name: claims
             .name
@@ -421,11 +482,7 @@ pub fn bearer_claims(
         nbf: claims.nbf,
         sid: claims.sid.unwrap_or_default(),
         scope: Vec::new(),
-        roles: claims
-            .realm_access
-            .as_ref()
-            .map(|r| r.roles.clone())
-            .unwrap_or_default(),
+        roles,
         attrs,
     })
 }
@@ -497,6 +554,8 @@ mod tests {
             realm_access: Some(RealmAccess {
                 roles: roles.iter().map(ToString::to_string).collect(),
             }),
+            roles: None,
+            oid: None,
             groups: (!groups.is_empty()).then(|| groups.iter().map(ToString::to_string).collect()),
             organization_ref: (!organization_ref.is_empty())
                 .then(|| organization_ref.iter().map(ToString::to_string).collect()),
@@ -596,6 +655,7 @@ mod tests {
             jwks: std::sync::Arc::new(serde_json::from_str(&jwks_json).expect("jwks parses")),
             issuer: issuer.to_string(),
             audience: audience.to_string(),
+            subject_claim: "sub".to_string(),
         }
     }
 
@@ -796,6 +856,88 @@ mod tests {
             )
             .is_ok()
         );
+    }
+
+    // ── Microsoft Entra ID (WPM-R93): app roles in a top-level `roles` claim, and a
+    // tenant-wide `oid` as the subject.
+
+    /// An Entra v2 access token's relevant claims.
+    fn entra_claims_json(roles: &[&str]) -> serde_json::Value {
+        serde_json::json!({
+            "sub": "pairwise-subject-for-this-application",
+            "oid": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+            "tid": "99999999-9999-4999-8999-999999999999",
+            "ver": "2.0",
+            "name": "Entra User",
+            "preferred_username": "entra.user@example.test",
+            "roles": roles,
+            "iss": ISSUER,
+            "aud": AUDIENCE,
+            "exp": 2_000_000_000,
+            "iat": 1_900_000_000,
+            "nbf": 1_700_000_000,
+        })
+    }
+
+    #[test]
+    fn entra_app_roles_map_to_the_same_personas_as_realm_roles() {
+        let (pkcs8, x, y) = generate_es256_test_key();
+        let material = key_material("entra-key", &x, &y, ISSUER, AUDIENCE);
+        let token = sign(
+            &pkcs8,
+            "entra-key",
+            &entra_claims_json(&["wpm-hr", "wpm-payroll"]),
+        );
+        let claims = bearer_claims(&bearer(&token), &material).expect("an Entra token verifies");
+        assert_eq!(claims.attrs["hr"], vec!["true".to_string()]);
+        assert_eq!(claims.attrs["payroll"], vec!["true".to_string()]);
+        assert_eq!(claims.attrs["access"], vec!["write".to_string()]);
+        assert_eq!(
+            claims.roles,
+            vec!["wpm-hr".to_string(), "wpm-payroll".to_string()]
+        );
+        assert_eq!(claims.name, "Entra User");
+        // No roles at all is an ordinary authenticated caller, never an elevated one.
+        let plain = sign(&pkcs8, "entra-key", &entra_claims_json(&[]));
+        let claims = bearer_claims(&bearer(&plain), &material).unwrap();
+        assert!(!claims.attrs.contains_key("hr") && !claims.attrs.contains_key("payroll"));
+        // An unknown role confers nothing.
+        let other = sign(
+            &pkcs8,
+            "entra-key",
+            &entra_claims_json(&["Reader", "wpm-hrx"]),
+        );
+        let claims = bearer_claims(&bearer(&other), &material).unwrap();
+        assert!(!claims.attrs.contains_key("hr"));
+    }
+
+    #[test]
+    fn roles_from_both_claims_are_combined_once() {
+        let mut c = claims(&["wpm-hr"], &[], &[]);
+        c.roles = Some(vec!["wpm-hr".to_string(), "wpm-admin".to_string()]);
+        assert_eq!(
+            c.all_roles(),
+            vec!["wpm-hr".to_string(), "wpm-admin".to_string()]
+        );
+        let attrs = attrs_from_keycloak_claims(&c);
+        assert_eq!(attrs["access"], vec!["admin".to_string()]);
+    }
+
+    #[test]
+    fn the_subject_is_sub_by_default_and_oid_when_selected() {
+        let (pkcs8, x, y) = generate_es256_test_key();
+        let mut material = key_material("entra-key", &x, &y, ISSUER, AUDIENCE);
+        let token = sign(&pkcs8, "entra-key", &entra_claims_json(&[]));
+        let by_sub = bearer_claims(&bearer(&token), &material).unwrap();
+        assert_eq!(by_sub.sub, "pairwise-subject-for-this-application");
+        material.subject_claim = "oid".to_string();
+        let by_oid = bearer_claims(&bearer(&token), &material).unwrap();
+        assert_eq!(by_oid.sub, "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+        // Asking for `oid` of a token that has none is a refusal, not a fallback to `sub`.
+        let no_oid = sign(&pkcs8, "entra-key", &default_claims_json());
+        let (status, message) = bearer_claims(&bearer(&no_oid), &material).unwrap_err();
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert!(message.contains("no subject"), "{message}");
     }
 
     #[test]

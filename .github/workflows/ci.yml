@@ -92,6 +92,81 @@ jobs:
       - run: cargo test --locked --test enforcement -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_expenses -- --ignored --test-threads=1
       - run: cargo test --locked --test security -- --ignored --test-threads=1
+      - run: cargo test --locked --test retention_schedule -- --ignored --test-threads=1
+
+  api-oidc:
+    name: api · sign in with an Entra-compatible OIDC provider
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workforce-planning-management-api-with-rust
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: loco
+          POSTGRES_PASSWORD: loco
+          POSTGRES_DB: workforce_planning_management_service_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_service_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: workforce-planning-management-api-with-rust
+          key: oidc
+      # The provider runs inside the test process; no container runtime is needed.
+      - run: cargo test --locked --no-default-features --features keycloak --test oidc_entra -- --ignored --test-threads=1
+      - run: cargo clippy --locked --no-default-features --features keycloak --all-targets -- -D warnings
+
+  restore-drill:
+    name: api · backup, restore and erasure replay (the drill)
+    runs-on: ubuntu-latest
+    # Restores a pg_dump into an empty database, checks every table's row
+    # checksum, replays an erasure made after the backup, and starts the real
+    # service on the restored copy (scripts/restore-drill.sh, WPM-R89). It is a
+    # smoke test of the restored data, not the request suite.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: loco
+          POSTGRES_PASSWORD: loco
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      # pg_dump must be at least the server's version (18).
+      - name: install the PostgreSQL 18 client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-18
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: workforce-planning-management-api-with-rust
+          key: drill
+      - name: build the service
+        working-directory: workforce-planning-management-api-with-rust
+        run: cargo build --locked --bin workforce-planning-management-service
+      - name: restore drill
+        env:
+          ADMIN_DATABASE_URL: postgres://loco:loco@localhost:5432/postgres
+        run: |
+          export WPM_BIN="$PWD/workforce-planning-management-api-with-rust/target/debug/workforce-planning-management-service"
+          scripts/restore-drill.sh
 
   api-keycloak:
     name: api · Keycloak suite (not yet required)

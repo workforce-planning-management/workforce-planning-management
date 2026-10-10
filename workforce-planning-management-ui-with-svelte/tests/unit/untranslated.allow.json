@@ -1,0 +1,134 @@
+{
+  "_why": {
+    "anyLocale": "Brand names, acronyms and a URL placeholder: the same in every language.",
+    "sameAsEnglish": "Per language: a word that is the same in that language (a cognate or an established loanword), or a string the AI translator left as is and a reviewer must confirm. Each entry is the English text. A professional review (content/locales/REVIEW.md) removes entries that a native speaker would not accept.",
+    "literalText": "Empty on purpose: no visible text outside the catalogue."
+  },
+  "literalText": [],
+  "anyLocale": [
+    "UK GDAD PCF",
+    "ESCO",
+    "LMS",
+    "https://…"
+  ],
+  "sameAsEnglish": {
+    "cy-001": [
+      "Band",
+      "Mentor",
+      "Net",
+      "Person",
+      "Rota",
+      "intern"
+    ],
+    "de-001": [
+      "Band",
+      "Benchmarks",
+      "Definition",
+      "Info",
+      "Initiative",
+      "Mentee",
+      "Mentor",
+      "Minimum",
+      "Name",
+      "Onboarding",
+      "Person",
+      "Plan",
+      "Rotation",
+      "Status"
+    ],
+    "es-001": [
+      "Mentor",
+      "Plan",
+      "Total",
+      "dental",
+      "idea",
+      "manual",
+      "parental",
+      "regular",
+      "web"
+    ],
+    "fr-001": [
+      "Actions",
+      "Aspiration",
+      "Attention",
+      "Catalogue",
+      "Date",
+      "Description",
+      "Direction",
+      "Doses",
+      "Horizon",
+      "Impact",
+      "Importance",
+      "Info",
+      "Initiative",
+      "Mentor",
+      "Menu",
+      "Message",
+      "Minimum",
+      "Net",
+      "Note",
+      "Notifications",
+      "Plan",
+      "Plans",
+      "Relation",
+      "Rotation",
+      "Score",
+      "Source",
+      "Total",
+      "aptitude",
+      "import",
+      "important",
+      "leadership",
+      "parental",
+      "points",
+      "web",
+      "· budget {currency} ·"
+    ],
+    "pt-001": [
+      "Benchmarks",
+      "Doses",
+      "Mentor",
+      "Menu",
+      "Status",
+      "Total",
+      "Tour",
+      "link",
+      "manual",
+      "parental",
+      "regular",
+      "web"
+    ],
+    "id-001": [
+      "Email",
+      "Info",
+      "Level",
+      "Mentee",
+      "Mentor",
+      "Menu",
+      "Minimum",
+      "Shift",
+      "Status",
+      "Target",
+      "Total",
+      "manual",
+      "median",
+      "mentoring",
+      "min",
+      "valid",
+      "web",
+      "· FTE {fte_percent}%"
+    ],
+    "zh-001": [
+      "· FTE {fte_percent}%"
+    ],
+    "bn-001": [
+      "· FTE {fte_percent}%"
+    ],
+    "hi-001": [
+      "· FTE {fte_percent}%"
+    ],
+    "ur-001": [
+      "· FTE {fte_percent}%"
+    ]
+  }
+}

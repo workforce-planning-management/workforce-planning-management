@@ -7,7 +7,7 @@
 <script lang="ts">
   import { workforceInsights, workforceMetrics } from "#lib/api/wpm.js";
   import { mean, rate } from "#lib/format.js";
-  import { t, tp } from "#lib/i18n.svelte.js";
+  import { t, tp, tf } from "#lib/i18n.svelte.js";
 
   type Metrics = Awaited<ReturnType<typeof workforceMetrics>>;
 
@@ -42,7 +42,7 @@
   const dash = "—";
 </script>
 
-<svelte:head><title>{t("nav.metrics")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.metrics.page_title", { metrics: t("nav.metrics") })}</title></svelte:head>
 
 <h1>{t("nav.metrics")}</h1>
 {#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}

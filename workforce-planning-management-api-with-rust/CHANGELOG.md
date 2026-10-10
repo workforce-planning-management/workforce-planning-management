@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — operations, governance and OIDC (WPM-T147–T152)
+
+Migration 51 `erasure_ledger` and the task `replay_erasures [since:] [file:]`; `RecordKind` and
+`horizon_for` in `rules::privacy` with `GET /api/retention/schedule`; the OIDC backend reads Entra's
+top-level `roles` claim and, with `WPM_OIDC_SUBJECT_CLAIM=oid`, the object id as the subject; test
+binaries `retention_schedule` and `oidc_entra`; `config/demo.yaml` now reads `PORT`.
+
+### Changed — retention is per record kind
+
+See the root changelog. The request and sweep payloads carry `horizons`, not `horizon_days`.
+
 ### Added — production readiness (WPM-T123–T128, T144)
 
 `src/security.rs` (security headers, per-address rate limiting with a stricter class,

@@ -63,6 +63,7 @@ mod m20261006_000047_grades;
 mod m20261006_000048_pay_positions;
 mod m20261006_000049_expense_claims;
 mod m20261009_000050_generic_pay_scale_id;
+mod m20261010_000051_erasure_ledger;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -125,6 +126,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261006_000048_pay_positions::Migration),
             Box::new(m20261006_000049_expense_claims::Migration),
             Box::new(m20261009_000050_generic_pay_scale_id::Migration),
+            Box::new(m20261010_000051_erasure_ledger::Migration),
             // inject-above (do not remove this comment)
         ]
     }

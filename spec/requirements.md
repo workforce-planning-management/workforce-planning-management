@@ -539,6 +539,10 @@ acceptance criteria and traces to the tasks that delivered it:
 - **WPM-R52–R53** Google's technical job levels L3–L11 as reference data, a
   worker's level, and a role's level and pay band —
   [job-levels.md](job-levels.md) (WPM-T93–T94).
+- **WPM-R89–R94** backup and restore, operations documents, retention per record
+  kind, the information governance pack, Entra ID sign-in, and every page in every
+  locale — [operations-and-governance.md](operations-and-governance.md)
+  (WPM-T146–T155).
 - **WPM-R72–R74, R77, R78, R87, R88** sign-in on by default, security headers and
   CORS, rate limiting, a standalone build with CI, license texts, releases and
   generated status — [production-readiness.md](production-readiness.md)

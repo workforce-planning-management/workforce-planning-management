@@ -20,7 +20,7 @@
   import Aspirations from "#lib/components/Aspirations.svelte";
   import CareerHistory from "#lib/components/CareerHistory.svelte";
   import FrameworkRolePanel from "#lib/components/FrameworkRolePanel.svelte";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
 
   type Org = { pid: string; organization_ref: string; worker_pid: string | null; employed: boolean };
   const memberships = $derived(((page.data.organizations ?? []) as Org[]).filter((m) => m.worker_pid));
@@ -42,20 +42,20 @@
   const available = (slug: string) => frameworks.find((f) => f.slug === slug);
 </script>
 
-<svelte:head><title>{t("nav.me")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.me.page_title", { me: t("nav.me") })}</title></svelte:head>
 
 <h1>{t("nav.me")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 
 {#if memberships.length === 0}
   <p class="muted" data-testid="no-worker">
-    You do not have a worker record in any organization, so there is no role to select.
+    {t("pages.me.you_do_not_have_a_worker_record_in")}
   </p>
 {:else}
   {#if memberships.length > 1}
     <p>
       <label>
-        Organization
+        {t("pages.me.organization")}
         <select bind:value={chosen}>
           {#each memberships as m (m.pid)}<option value={m.worker_pid}>{m.organization_ref}</option>{/each}
         </select>
@@ -63,14 +63,13 @@
     </p>
   {/if}
   <p class="muted">
-    Say what you do now in each framework, then pick the skills you have and your own level. This is your
-    own description, not an assessment.
+    {t("pages.me.say_what_you_do_now_in_each")}
   </p>
   {#if available("uk-gdad-pcf")?.available}
-    <FrameworkRolePanel {workerPid} framework="uk-gdad-pcf" title="UK Government Digital and Data Profession Capability Framework" />
+    <FrameworkRolePanel {workerPid} framework="uk-gdad-pcf" title={t("pages.me.uk_government_digital_and_data")} />
   {/if}
   {#if available("esco")?.available}
-    <FrameworkRolePanel {workerPid} framework="esco" title="ESCO — European Skills, Competences, Qualifications and Occupations" />
+    <FrameworkRolePanel {workerPid} framework="esco" title={t("pages.me.esco_european_skills_competences")} />
   {/if}
   <CareerHistory {workerPid} />
   <Aspirations {workerPid} />
@@ -85,6 +84,6 @@
   <GroupsPanel {workerPid} />
   <TeamAspirations {workerPid} />
   {#if frameworks.length > 0 && !frameworks.some((f) => f.available)}
-    <p class="muted">No framework has been loaded yet; ask an administrator to import one.</p>
+    <p class="muted">{t("pages.me.no_framework_has_been_loaded_yet")}</p>
   {/if}
 {/if}

@@ -22,7 +22,7 @@
   } from "#lib/api/wpm.js";
   import RoleGrade from "#lib/components/RoleGrade.svelte";
   import { percentWithWorkings } from "#lib/format.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
 
   type Profiles = Awaited<ReturnType<typeof listRoleProfiles>>;
   type Profile = Awaited<ReturnType<typeof getRoleProfile>>;
@@ -59,17 +59,20 @@
   let reqLevel = $state(3);
   let reqImportance = $state<string>("important");
 
+  /** The group key for profiles with no profession (shown translated, sorted last). */
+  const OTHER_PROFILES = "\u0000other";
+
   /** Profiles grouped profession → role (levels in order); own profiles last. */
   const groups = $derived.by(() => {
     const byLabel = new Map<string, typeof profiles>();
     for (const p of profiles) {
-      const label = p.profession && p.role_name ? `${p.profession} — ${p.role_name}` : "Other profiles";
+      const label = p.profession && p.role_name ? `${p.profession} — ${p.role_name}` : OTHER_PROFILES;
       byLabel.set(label, [...(byLabel.get(label) ?? []), p]);
     }
     return [...byLabel.entries()]
-      .sort(([a], [b]) => (a === "Other profiles" ? 1 : b === "Other profiles" ? -1 : a.localeCompare(b)))
+      .sort(([a], [b]) => (a === OTHER_PROFILES ? 1 : b === OTHER_PROFILES ? -1 : a.localeCompare(b)))
       .map(([label, items]) => ({
-        label,
+        label: label === OTHER_PROFILES ? t("pages.roles.other_profiles") : label,
         items: items.sort(
           (x, y) => (x.level_order ?? 0) - (y.level_order ?? 0) || x.job_title.localeCompare(y.job_title),
         ),
@@ -200,40 +203,39 @@
   }
 </script>
 
-<svelte:head><title>{t("nav.roles")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.roles.page_title", { roles: t("nav.roles") })}</title></svelte:head>
 
 <h1>{t("nav.roles")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 
 <p class="muted">
-  A role profile says what a job title requires — not what a person has. Declared
-  skills are compared against it for gap analysis.
+  {t("pages.roles.a_role_profile_says_what_a_job")}
 </p>
 
 {#if interest && interest.targets.length > 0}
-  <h2>Employee interest</h2>
+  <h2>{t("pages.roles.employee_interest")}</h2>
   <p class="muted">{interest.derivation}</p>
   <table data-testid="mobility-summary">
-    <thead><tr><th>Target</th><th>Kind</th><th>Interested</th></tr></thead>
+    <thead><tr><th>{t("pages.roles.target")}</th><th>{t("pages.roles.kind")}</th><th>{t("pages.roles.interested")}</th></tr></thead>
     <tbody>
       {#each interest.targets as row (row.target_pid)}
-        <tr><td>{row.title ?? row.target_pid}</td><td>{row.kind}</td><td>{row.interested}</td></tr>
+        <tr><td>{row.title ?? row.target_pid}</td><td>{tv(row.kind)}</td><td>{row.interested}</td></tr>
       {/each}
     </tbody>
   </table>
 {/if}
 
-<h2>Profiles</h2>
+<h2>{t("pages.roles.profiles")}</h2>
 {#if frameworks.length > 0}
   <p>
     <label>
-      Framework
+      {t("pages.roles.framework")}
       <select
         data-testid="framework-filter"
         bind:value={framework}
         onchange={() => { selected = ""; void loadProfiles(); }}
       >
-        <option value="">All profiles</option>
+        <option value="">{t("pages.roles.all_profiles")}</option>
         {#each frameworks as f (f.slug)}
           <option value={f.slug}>{f.name} ({f.profiles})</option>
         {/each}
@@ -243,7 +245,7 @@
 {/if}
 <p>
   <label>
-    Profile
+    {t("pages.roles.profile")}
     <select
       data-testid="role-select"
       value={selected}
@@ -256,7 +258,7 @@
           {/each}
         </optgroup>
       {:else}
-        <option value="">No profiles yet</option>
+        <option value="">{t("pages.roles.no_profiles_yet")}</option>
       {/each}
     </select>
   </label>
@@ -268,17 +270,16 @@
   }}
 >
   <label>
-    New profile (job title)
+    {t("pages.roles.new_profile_job_title")}
     <input data-testid="role-new-title" bind:value={newTitle} required />
   </label>
-  <button type="submit" data-testid="role-create">Create</button>
+  <button type="submit" data-testid="role-create">{t("pages.roles.create")}</button>
 </form>
 
 {#if escoLoaded}
-  <h3>Start from an ESCO occupation</h3>
+  <h3>{t("pages.roles.start_from_an_esco_occupation")}</h3>
   <p class="muted">
-    ESCO says which skills an occupation needs, not how well — so you choose the starting level
-    below. The result is a draft for you to edit.
+    {t("pages.roles.esco_says_which_skills_an")}
   </p>
   <form
     onsubmit={(event) => {
@@ -286,28 +287,28 @@
       void searchEsco();
     }}
   >
-    <label>Occupation <input data-testid="esco-query" bind:value={escoQuery} minlength="2" /></label>
-    <button type="submit" data-testid="esco-search">Search</button>
+    <label>{t("pages.roles.occupation")} <input data-testid="esco-query" bind:value={escoQuery} minlength="2" /></label>
+    <button type="submit" data-testid="esco-search">{t("pages.roles.search")}</button>
   </form>
   {#if escoHits.length > 0 && !escoPicked}
     <ul data-testid="esco-hits">
       {#each escoHits as hit (hit.uri)}
         <li>
           <button type="button" onclick={() => void pickEsco(hit.uri)}>{hit.label}</button>
-          <span class="muted">ISCO {hit.isco_code ?? "—"} · {hit.essential_skills} essential, {hit.optional_skills} optional</span>
+          <span class="muted">{tf("pages.roles.isco_essential_optional", { isco_code: hit.isco_code ?? "—", essential_skills: hit.essential_skills, optional_skills: hit.optional_skills })}</span>
         </li>
       {/each}
     </ul>
   {/if}
   {#if escoPicked}
-    <p><strong>{escoPicked.label}</strong> <span class="muted">(ISCO {escoPicked.isco_code ?? "—"})</span></p>
+    <p><strong>{escoPicked.label}</strong> <span class="muted">{tf("pages.roles.isco", { isco_code: escoPicked.isco_code ?? "—" })}</span></p>
     {#if escoPicked.description}<p class="muted">{escoPicked.description}</p>{/if}
     <ul>
       {#each escoPicked.skills.slice(0, 12) as s (s.uri)}
         <li>{s.label} <span class="muted">({s.relation}{s.catalogue_skill_pid ? ", in catalogue" : ""})</span></li>
       {/each}
     </ul>
-    {#if escoPicked.skills.length > 12}<p class="muted">… and {escoPicked.skills.length - 12} more.</p>{/if}
+    {#if escoPicked.skills.length > 12}<p class="muted">{tf("pages.roles.and_more", { skills: escoPicked.skills.length - 12 })}</p>{/if}
     <form
       onsubmit={(event) => {
         event.preventDefault();
@@ -315,15 +316,15 @@
       }}
     >
       <label>
-        Starting minimum level
+        {t("pages.roles.starting_minimum_level")}
         <select data-testid="esco-level" bind:value={escoLevel}>
           {#each [1, 2, 3, 4, 5] as level (level)}<option value={level}>{level}</option>{/each}
         </select>
       </label>
-      <label><input type="checkbox" bind:checked={escoOptional} /> Include optional skills (as "useful")</label>
-      <label>Job title (optional) <input bind:value={escoTitle} placeholder={escoPicked.label} /></label>
-      <button type="submit" data-testid="esco-create">Create draft profile</button>
-      <button type="button" onclick={() => (escoPicked = null)}>Back</button>
+      <label><input type="checkbox" bind:checked={escoOptional} /> {t("pages.roles.include_optional_skills_as_useful")}</label>
+      <label>{t("pages.roles.job_title_optional")} <input bind:value={escoTitle} placeholder={escoPicked.label} /></label>
+      <button type="submit" data-testid="esco-create">{t("pages.roles.create_draft_profile")}</button>
+      <button type="button" onclick={() => (escoPicked = null)}>{t("pages.roles.back")}</button>
     </form>
   {/if}
 {/if}
@@ -332,20 +333,18 @@
   <h2>{profile.job_title}</h2>
   {#if profile.framework}
     <p class="muted" data-testid="framework-attribution">
-      {profile.profession} › {profile.role_name} › level {profile.level_order}
-      · {profile.framework.name} · {profile.framework.licence}
+      {tf("pages.roles.level", { profession: profile.profession, role_name: profile.role_name, level_order: profile.level_order, name: profile.framework.name, licence: profile.framework.licence })}
     </p>
     <p class="muted">{profile.framework.attribution}</p>
     <p class="muted">
-      Required levels come from the framework's own scale ({profile.framework.scale_labels}); WPM
-      shows its 1–5 minimum alongside. {profile.framework.note}
+      {tf("pages.roles.required_levels_come_from_the", { scale_labels: profile.framework.scale_labels, note: profile.framework.note })}
     </p>
-  {:else if profile.source_ref}<p class="muted">Source: {profile.source_ref}</p>{/if}
+  {:else if profile.source_ref}<p class="muted">{tf("pages.roles.source", { source_ref: profile.source_ref })}</p>{/if}
   {#if profile.description}<p>{profile.description}</p>{/if}
   <RoleGrade profilePid={profile.pid} />
   <table data-testid="role-requirements">
     <thead>
-      <tr><th>Skill</th><th>Category</th><th>Minimum</th><th>Framework level</th><th>Importance</th><th></th></tr>
+      <tr><th>{t("pages.roles.skill")}</th><th>{t("pages.roles.category")}</th><th>{t("pages.roles.minimum")}</th><th>{t("pages.roles.framework_level")}</th><th>{t("pages.roles.importance")}</th><th></th></tr>
     </thead>
     <tbody>
       {#each profile.requirements as req (req.skill_pid)}
@@ -353,47 +352,46 @@
           <td>
             {req.skill ?? req.skill_pid}
             {#if req.note}
-              <details><summary class="muted">What the framework says</summary><p>{req.note}</p></details>
+              <details><summary class="muted">{t("pages.roles.what_the_framework_says")}</summary><p>{req.note}</p></details>
             {/if}
           </td>
           <td>{req.category ?? "—"}</td>
           <td>{req.min_proficiency} / 5</td>
           <td>{req.source_level !== null ? `${req.source_level} of ${req.source_scale_max}` : "—"}</td>
-          <td class:warn={req.importance === "critical"}>{req.importance}</td>
+          <td class:warn={req.importance === "critical"}>{tv(req.importance)}</td>
           <td>
             <button type="button" onclick={() => void dropRequirement(req.skill_pid)}>
-              Remove
+              {t("pages.roles.remove")}
             </button>
           </td>
         </tr>
       {:else}
-        <tr><td colspan="6" class="muted">No required skills yet.</td></tr>
+        <tr><td colspan="6" class="muted">{t("pages.roles.no_required_skills_yet")}</td></tr>
       {/each}
     </tbody>
   </table>
 
   {#if progression && typeof progression.profile !== "string"}
-    <h3>Next level up</h3>
+    <h3>{t("pages.roles.next_level_up")}</h3>
     {#each progression.next as step (step.pid)}
       <p data-testid="role-progression">
-        <strong>{step.job_title}</strong>:
-        {step.added.length} new skill(s), {step.raised.length} raised, {step.unchanged} unchanged
+        <strong>{step.job_title}</strong>{tf("pages.roles.new_skill_s_raised_unchanged", { added: step.added.length, raised: step.raised.length, unchanged: step.unchanged })}
       </p>
       <ul>
-        {#each step.added as a (a.skill)}<li>New: {a.skill} (needs {a.min_proficiency})</li>{/each}
-        {#each step.raised as r (r.skill)}<li>Raised: {r.skill} {r.from} → {r.to}</li>{/each}
+        {#each step.added as a (a.skill)}<li>{tf("pages.roles.new_needs", { skill: a.skill, min_proficiency: a.min_proficiency })}</li>{/each}
+        {#each step.raised as r (r.skill)}<li>{tf("pages.roles.raised", { skill: r.skill, from: r.from, to: r.to })}</li>{/each}
       </ul>
     {:else}
-      <p class="muted">This is the top level of the role.</p>
+      <p class="muted">{t("pages.roles.this_is_the_top_level_of_the_role")}</p>
     {/each}
   {/if}
 
   {#if coverage}
-    <h3>Can we staff this role today?</h3>
+    <h3>{t("pages.roles.can_we_staff_this_role_today")}</h3>
     <p class="muted">{coverage.derivation}</p>
     <table data-testid="role-coverage">
       <thead>
-        <tr><th>Skill</th><th>Needs</th><th>Meeting</th><th>Below</th><th>Undeclared</th><th>Coverage</th></tr>
+        <tr><th>{t("pages.roles.skill")}</th><th>{t("pages.roles.needs")}</th><th>{t("pages.roles.meeting")}</th><th>{t("pages.roles.below")}</th><th>{t("pages.roles.undeclared")}</th><th>{t("pages.roles.coverage")}</th></tr>
       </thead>
       <tbody>
         {#each coverage.requirements as row (row.skill)}
@@ -410,7 +408,7 @@
     </table>
   {/if}
 
-  <h3>Require a skill</h3>
+  <h3>{t("pages.roles.require_a_skill")}</h3>
   <form
     onsubmit={(event) => {
       event.preventDefault();
@@ -418,29 +416,29 @@
     }}
   >
     <label>
-      Skill
+      {t("pages.roles.skill")}
       <select data-testid="role-req-skill" bind:value={reqSkill} required>
-        <option value="" disabled>Choose…</option>
+        <option value="" disabled>{t("pages.roles.choose")}</option>
         {#each skills as skill (skill.pid)}
           <option value={skill.pid}>{skill.name}</option>
         {/each}
       </select>
     </label>
     <label>
-      Minimum proficiency
+      {t("pages.roles.minimum_proficiency")}
       <select data-testid="role-req-level" bind:value={reqLevel}>
         {#each [1, 2, 3, 4, 5] as level (level)}<option value={level}>{level}</option>{/each}
       </select>
     </label>
     <label>
-      Importance
+      {t("pages.roles.importance")}
       <select data-testid="role-req-importance" bind:value={reqImportance}>
         {#each IMPORTANCES as importance (importance)}
-          <option value={importance}>{importance}</option>
+          <option value={importance}>{tv(importance)}</option>
         {/each}
       </select>
     </label>
-    <button type="submit" data-testid="role-req-add">Add</button>
+    <button type="submit" data-testid="role-req-add">{t("pages.roles.add")}</button>
   </form>
 {/if}
 

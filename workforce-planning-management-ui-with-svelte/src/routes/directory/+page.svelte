@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { employeeDirectory } from "#lib/api/wpm.js";
-  import { t, l } from "#lib/i18n.svelte.js";
+  import { t, l, tf } from "#lib/i18n.svelte.js";
   import type { DirectoryEntry } from "#lib/api/types.js";
 
   /** Most rows asked for at once; the search narrows beyond that. */
@@ -45,7 +45,7 @@
   });
 </script>
 
-<svelte:head><title>{t("nav.directory")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.directory.page_title", { directory: t("nav.directory") })}</title></svelte:head>
 
 <h1>{t("nav.directory")}</h1>
 {#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}

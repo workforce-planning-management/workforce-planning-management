@@ -2538,18 +2538,20 @@ what stops a buyer deploying a named version.
       be stale. **Not done:** requiring the jobs through branch protection (a repository
       setting); the axe accessibility tests (none exist in this repo); `actions-rs` was not
       carried over, so there is nothing to replace.
-- [x] WPM-T125 (2026-10-09) **License texts.** *(WPM-R78)* One full-text file per license in
-      `LICENSE/`: `LICENSE-MIT`, `LICENSE-APACHE`, `LICENSE-BSD-3-CLAUSE`,
-      `LICENSE-GPL-2.0`, `LICENSE-GPL-3.0`, taken from the SPDX license list (MIT and BSD
-      carry `Copyright (c) 2026 Joel Parker Henderson`); `LICENSE/index.md` (and its
-      `README.md` copy) links them and gives the reason for the options;
-      `scripts/check-licenses.py` checks the manifests' `license` fields against the files
-      and runs in CI. `LICENSE.md` moved to `LICENSE/index.md` and every link follows.
-      **Not verified:** that GitHub detects a license from this layout. It looks for a
-      license file at the repository root, so detection may fail until a root `LICENSE`
-      file is added; and the "why several options" wording is the assistant's, for the
-      owner to confirm. The workforce UI's `package.json` stays `MIT OR Apache-2.0`, as
-      its spec says.
+- [x] WPM-T125 (2026-10-09, root `LICENSE.md` added 2026-10-10) **License files.**
+      *(WPM-R78)* One full-text file per license in `LICENSE/`: `LICENSE-MIT`,
+      `LICENSE-APACHE`, `LICENSE-BSD-3-CLAUSE`, `LICENSE-GPL-2.0`, `LICENSE-GPL-3.0`, taken
+      from the SPDX license list (MIT and BSD carry `Copyright (c) 2026 Joel Parker
+      Henderson`). `LICENSE/index.md` (and its `README.md` copy) gives the reason for the
+      options. A **root `LICENSE.md`** states each subproject's SPDX expression and links
+      the texts; README, CITATION.cff, AI_STATEMENT and the special-files spec point at
+      it. `scripts/check-licenses.py` checks the manifests' `license` fields against the
+      files and against both summaries, and runs in CI. **Not verified:** that GitHub
+      detects a license from `LICENSE.md` plus a `LICENSE/` directory (it recognises a
+      root file by name and content, and `LICENSE.md` holds an SPDX expression rather
+      than a license text, so detection may still fail); and the "why several options"
+      wording is the assistant's, for the owner to confirm. The workforce UI's
+      `package.json` stays `MIT OR Apache-2.0`, as its spec says.
 - [x] WPM-T126 (2026-10-09) **Sign-in enforcement on by default.** *(WPM-R72, WPM-D52)*
       `auth::parse_require_auth`: on unless an explicit `0`/`false`/`no`/`off`.
       `auth::startup_check` (pure) refuses to boot in `production` with enforcement off or
@@ -2590,18 +2592,18 @@ what stops a buyer deploying a named version.
       **Not done:** limits are per instance, so several instances each count alone;
       behind a proxy that does not overwrite `X-Forwarded-For`, spoofing is possible once
       `WPM_TRUST_FORWARDED` is set; no `tower_governor`.
-- [ ] WPM-T129 **Backup plan.** *(WPM-R75)* Write `spec/backup-and-restore.md`:
+- [ ] WPM-T129 *(superseded by WPM-T149–T150)* **Backup plan.** *(WPM-R75)* Write `spec/backup-and-restore.md`:
       RPO and RTO defaults, base backups with WAL archiving, a nightly logical dump,
       encryption and off-host storage, retention in calendar days, the erasure ledger
       and its replay, restore drills, and the runbook. Update regulatory.md and the
       retention section.
-- [ ] WPM-T130 **Erasure ledger and restore drill.** *(WPM-R75, WPM-D53)* Migration
+- [ ] WPM-T130 *(superseded by WPM-T148–T149)* **Erasure ledger and restore drill.** *(WPM-R75, WPM-D53)* Migration
       for `erasure_ledger` (pid, date); the erasure path writes it; a
       `restore_replay_erasures` task re-applies every entry after a given date; a
       scripted drill restores into a scratch database (Podman), replays erasures and
       checks row counts and migrations. Request test: erase, restore an earlier dump,
       replay, and the record is gone again.
-- [ ] WPM-T131 **Data protection impact assessment.** *(WPM-R76)* Write `spec/dpia.md`:
+- [ ] WPM-T131 *(superseded by WPM-T151)* **Data protection impact assessment.** *(WPM-R76)* Write `spec/dpia.md`:
       the processing, necessity and proportionality, risks to people and their
       likelihood and severity, and the measures in the design, each linked to its
       decision id. Mark it a template completed for the demo, with what a deployer
@@ -2700,3 +2702,140 @@ payroll defect and need nothing else; do them first.
       programme, the programme roll-up, and the contingent workforce view; strings in
       the 12 `-001` locales. Screenshots read in light and dark at desktop and phone
       sizes. Full suites. Record what was not verified.
+
+## Phase 15 — operations, information governance, OIDC and locales (WPM-R89–R94, WPM-D60–D64)
+
+Specified in [operations-and-governance.md](operations-and-governance.md), 2026-10-10.
+WPM-T146 supersedes the proposed WPM-T129–T131 (backup plan, erasure ledger, impact
+assessment), which stay listed in Phase 13 as superseded.
+
+- [x] WPM-T146 (2026-10-10) **Spec round.** *(traces to WPM-R89–R94, WPM-D60–D64)* The topic file
+      [operations-and-governance.md](operations-and-governance.md), this phase, the index,
+      `llms.txt`/`llms.json`, requirements and design pointers, next free ids (R95, D65, T156).
+      No code.
+- [x] WPM-T147 (2026-10-10) **Retention schedule per kind.** *(traces to WPM-R91, WPM-D60)* Pure
+      `rules::privacy`: `RecordKind` (eight kinds), `kind_of` (every one of the 56 swept tables in
+      exactly one kind, pinned), a default horizon per kind (180, 2190, 2190, 730, 730, 1095, 365,
+      365 calendar days), `horizon_for` (own override, then legacy `WPM_RETENTION_DAYS`, then default,
+      floored at 30, junk ignored). `GET /api/retention/schedule`; the report and the sweep use each
+      table's own horizon; candidates' expired consent uses the recruitment horizon.
+      **Changed contract:** `GET /api/retention` and the sweep return `horizons` per kind in place of
+      `horizon_days`. Verified: 5 new unit tests; a new binary `tests/retention_schedule.rs` (one
+      override set, one junk override ignored; rows deleted 150 and 200 calendar days ago are
+      swept for the 100-calendar-day kind and kept or swept correctly for the 180-calendar-day kind); the existing
+      privacy request test updated. **Not mutation-checked.** The default horizons are the
+      assistant's cautious guesses, to be replaced by the deployer (the schedule says so).
+- [x] WPM-T148 (2026-10-10) **Erasure ledger and replay.** *(traces to WPM-R89, WPM-D63)* Migration 51
+      `erasure_ledger` (pid, time). The erasure path writes it in the same transaction, and the
+      scrub statements moved into one function (`erasure_statements`) used by both the live
+      erasure and the replay, so they cannot drift. `replay_erasures` (library) and the loco task
+      `replay_erasures [since:YYYY-MM-DD] [file:PATH]`; `file:` imports an exported ledger, and
+      a malformed line stops the import (a skipped erasure would be silent). Verified: unit tests
+      for the file parser (including SQL in a field); a request test that erases, "restores" the
+      person and their note by raw SQL, replays, and checks they are gone again, that a second
+      replay is idempotent, that an unknown pid is counted not an error, that `since` limits it,
+      and that the replay is audited; and the restore drill (T149) end to end.
+      **Design flaw found and fixed on the way:** the ledger lives in the database a restore
+      replaces, so an erasure made after the last dump would be lost with it. Hence
+      `scripts/export-erasure-ledger.sh` and the `file:` option (WPM-D63). **Not done:**
+      point-in-time recovery with WAL, which would make the ledger complete without the file.
+- [x] WPM-T149 (2026-10-10) **Backup, restore and the drill.** *(traces to WPM-R89)* `scripts/backup.sh`
+      (custom-format `pg_dump`, owner-only, checksum, prune by `BACKUP_RETENTION_DAYS`),
+      `scripts/restore.sh` (checksum, refuses a non-empty target, refuses to start without
+      `WPM_BIN` unless `--skip-replay`, replays erasures), `scripts/export-erasure-ledger.sh`,
+      `scripts/restore-drill.sh`, and the `restore-drill` job in CI. Run locally against
+      PostgreSQL 18: migrate and seed, back up, erase a worker after the backup, export the
+      ledger, restore into an empty database, **97 tables match by row checksum**, **51
+      migrations recorded**, the erased person is back, the replay erases them again, the real
+      service on the restored database answers (39 workers, the erased one a 404): **passed**,
+      restore step under a second on the seeded demo. Safety paths checked by hand: a
+      non-empty target is refused (exit 3), a corrupted dump fails its checksum, a missing
+      `WPM_BIN` stops **before** anything is restored. **Not verified:** the CI job (never run
+      on the hosting platform; it installs the PostgreSQL 18 client from the vendor repository);
+      the drill on a database of real size; WAL archiving. It is a smoke test of restored data,
+      **not** the full request suite, which truncates its database on boot.
+- [x] WPM-T150 (2026-10-10) **Operations documents.** *(traces to WPM-R89, WPM-R90)* `spec/operations/`:
+      [backup-and-restore.md](operations/backup-and-restore.md) (RPO and RTO in two tiers: nightly
+      dump 24 hours, with WAL archiving 15 minutes; RTO 4 hours; what is and is not proven),
+      [deployment.md](operations/deployment.md) (every environment variable, probes, scheduled
+      tasks, proxy and TLS), [upgrade-and-migration.md](operations/upgrade-and-migration.md)
+      (forward-only, back up first, the way back is a restore) and
+      [runbook.md](operations/runbook.md). **Not done:** a Helm chart (the compose file and the
+      Containerfile are the deployment artifacts, and neither has been built where this was
+      written); the RTO is a target, not a measurement on real data.
+- [x] WPM-T151 (2026-10-10) **Information governance pack.** *(traces to WPM-R92, WPM-D61)*
+      `spec/governance/`: [dpia.md](governance/dpia.md) (template completed for the demo, twelve
+      risks with the evidence for each measure), [data-flow.md](governance/data-flow.md)
+      (a Mermaid diagram and the table behind it),
+      [record-of-processing.md](governance/record-of-processing.md),
+      [retention-schedule.md](governance/retention-schedule.md),
+      [assessment-checklist.md](governance/assessment-checklist.md) (46 questions in six sections;
+      the count of answers is generated into the status page), [accessibility-statement.md](governance/accessibility-statement.md)
+      (says plainly that the software has **not** been audited, with no skip link and no automated
+      accessibility test) and [official-language-statement.md](governance/official-language-statement.md).
+      **Not done:** a deployer cannot "complete" it from this alone: lawful bases, the data
+      protection officer, processors, the privacy notice and every sign-off are theirs, and
+      are marked so. No one outside the project has reviewed the pack.
+      **Found while writing it:** the content manager at `/admin` loads an unpinned script from
+      a public CDN with no integrity check (recorded as a gap), and the new
+      `Cross-Origin-Opener-Policy` would have broken its sign-in popup (fixed: the admin path
+      gets `same-origin-allow-popups`, tested).
+- [x] WPM-T152 (2026-10-10) **Sign-in with Entra ID.** *(traces to WPM-R93, WPM-D62)* The OIDC backend now
+      reads Entra's top-level `roles` claim as well as `realm_access.roles`, and takes the
+      subject from `oid` when `WPM_OIDC_SUBJECT_CLAIM=oid` (a token with no `oid` is refused,
+      not given its `sub`). [operations/entra-sign-in.md](operations/entra-sign-in.md) documents
+      direct and brokered sign-in, the app roles to personas, the settings, and the limits.
+      Verified: 3 new unit tests; **`tests/oidc_entra.rs`**, which runs an Entra-compatible OIDC
+      provider in the test process (discovery, keys, authorization endpoint, token endpoint with
+      PKCE and single-use codes), signs two users in by the authorization-code flow, boots the
+      service from the discovery document with sign-in left at its default, and checks a user
+      with no role reads but cannot write, `wpm-hr` can write, and a wrong audience, another
+      tenant, an expired token, a token signed by another key and an HS256 confusion token are
+      each a 401; **mutation-checked** (ignoring `roles` fails the live and the unit tests).
+      Clippy clean under the `keycloak` feature; a new CI job. **Not tested:** the interactive
+      browser redirect, consent and MFA (the broker's); a live Entra tenant (the provider
+      follows the documented token shape and was not captured from one); the Keycloak brokering
+      route; group claims. Two throwaway RSA keys are committed under `tests/fixtures/oidc/`
+      (a secret scanner may flag them; the README there says why it should not).
+- [x] WPM-T153 (2026-10-10) **Move all page text into the catalogue.** *(traces to WPM-R94)* A scanner-based
+      transformer (tokenizes the template, respecting tags, quoted attributes and `{expressions}`)
+      moved every literal heading, label, button, placeholder, title and message of **41 files** (the
+      pages and the components) into `pages.<route>.*` and `comp.<component>.*`, with `{name}`
+      placeholders filled by the new `tf()`; the 22 per-route `title` values in `+page.ts` and
+      `+page.server.ts` became `titles.*` read through `pageTitle()` (locale from the address, since a
+      `load` also runs on the server); about 45 places that printed a server token raw
+      (`on_leave`, `ai_assistance`, a status, a category) now go through `tv()` and **199 `values.*`
+      entries**; and a few strings in script blocks (notices, kind labels, "Other profiles", sign-in
+      link errors) were converted by hand. 710 new keys in all (1,251 in total). Verified: svelte-check
+      0 errors; the English output is unchanged (47 Playwright specs, the existing ones untouched
+      except for the pay-scale stub names). **Not done / limits:** the **server's own messages** (an
+      error the API returns) are shown as the server sends them, in English; **names, titles and
+      anything a person typed** are shown as entered; a **token the catalogue does not know** is
+      shown humanized in English (the test below pins that every token the server's vocabularies
+      define is known, but a status the server computes as a plain string outside those lists, such
+      as a registration's `valid`, was added by hand and others may exist); **dates and numbers**
+      are shown in ISO form, not localized; the **content manager** at `/admin` is a third-party
+      tool with its own languages; plural forms are written "skill(s)" because the catalogue has no
+      plural rules.
+- [x] WPM-T154 (2026-10-10) **Translate, and test for the untranslated.** *(traces to WPM-R94, WPM-D64)* The 611
+      unique new English strings were translated into the 12 other `-001` locales (Arabic, Bengali,
+      Welsh, German, Spanish, French, Hindi, Indonesian, Portuguese, Russian, Urdu, Chinese) by the
+      AI assistant, validated by a script (every index present once, placeholders identical to the
+      English, nothing empty, nothing identical to English unless allowed) and merged in the
+      catalogue's own order with only additions to each file. New tests
+      (`tests/unit/untranslated.test.ts`): **no literal visible text in any template** (zero found;
+      **mutation-checked**: a literal `<p>` added to a page fails it); **no locale repeats English**
+      except an allow-list with a stated reason (`tests/unit/untranslated.allow.json`: 4 brands or
+      acronyms for every locale, and 1 to 23 cognates or loanwords for ten languages; mutation-checked:
+      a repeated English value fails); **every token in the server's Rust vocabularies has a
+      `values.*` entry**. Locale parity (existing) passes; 101 unit tests in all. A new Playwright spec
+      loads `/cy-001/mentorship` and checks its headings are Welsh and none of the English survives.
+      **Not verified:** the quality of any translation (see T155); pages other than the Welsh
+      mentorship page were not opened in another language; right-to-left layout of the new strings
+      (Arabic, Urdu) was not looked at.
+- [ ] WPM-T155 **Professional review of the translations.** *(traces to WPM-R94)* Not done, and cannot be done by
+      the assistant. `workforce-planning-management-ui-with-svelte/content/locales/REVIEW.md` records every
+      locale as AI-written and not reviewed, with the steps for a reviewer. The allow-list is the first
+      place to look: each entry is a word the assistant left as English or a cognate a native speaker
+      should confirm. One weak spot seen while reading the older keys: German "Band"
+      (a pay band) is probably not what a native speaker would choose.

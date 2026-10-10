@@ -5,6 +5,7 @@
   your level. Selected skills become ordinary skill declarations.
 -->
 <script lang="ts">
+  import { t, tf } from "#lib/i18n.svelte.js";
   import {
     clearFrameworkRole,
     frameworkRoleSkills,
@@ -52,7 +53,7 @@
   const groups = $derived.by(() => {
     const byLabel = new Map<string, Profiles>();
     for (const p of profiles) {
-      const label = `${p.profession ?? "Other"} — ${p.role_name ?? ""}`;
+      const label = `${p.profession ?? t("comp.frameworkRolePanel.other")} — ${p.role_name ?? ""}`;
       byLabel.set(label, [...(byLabel.get(label) ?? []), p]);
     }
     return [...byLabel.entries()]
@@ -109,7 +110,7 @@
     error = null;
     try {
       await clearFrameworkRole(workerPid, framework);
-      notice = "Role cleared. The skills you declared are kept.";
+      notice = t("comp.frameworkRolePanel.role_cleared");
       await load();
     } catch (cause) {
       error = message(cause);
@@ -165,7 +166,7 @@
     notice = null;
     try {
       const result = await setFrameworkSkills(workerPid, framework, changes);
-      notice = `Saved: ${result.declared} declared, ${result.removed} removed.`;
+      notice = tf("comp.frameworkRolePanel.saved", { declared: result.declared, removed: result.removed });
       await load();
     } catch (cause) {
       error = message(cause);
@@ -177,7 +178,7 @@
   <h2>{title}</h2>
   {#if actingFor}
     <p class="muted" data-testid="acting-for">
-      You are setting this for {actingFor}, on their behalf. It is recorded as made by you.
+      {tf("comp.frameworkRolePanel.you_are_setting_this_for_on_their", { actingFor: actingFor })}
     </p>
   {/if}
   {#if error}<p class="error" data-testid="error">{error}</p>{/if}
@@ -185,15 +186,15 @@
 
   {#if role && !changing}
     <p data-testid="current-role">
-      Current role: <strong>{role.role_label}</strong>
-      <span class="muted">(chosen {role.selected_on})</span>
-      <button type="button" onclick={() => (changing = true)}>Change</button>
-      <button type="button" onclick={() => void clear()}>Clear</button>
+      {t("comp.frameworkRolePanel.current_role")} <strong>{role.role_label}</strong>
+      <span class="muted">{tf("comp.frameworkRolePanel.chosen", { selected_on: role.selected_on })}</span>
+      <button type="button" onclick={() => (changing = true)}>{t("comp.frameworkRolePanel.change")}</button>
+      <button type="button" onclick={() => void clear()}>{t("comp.frameworkRolePanel.clear")}</button>
     </p>
   {:else}
     <p class="muted">
-      {role ? "Choose a different role." : "Choose the role you hold now."}
-      {#if role}<button type="button" onclick={() => (changing = false)}>Cancel</button>{/if}
+      {role ? t("comp.frameworkRolePanel.choose_different") : t("comp.frameworkRolePanel.choose_current")}
+      {#if role}<button type="button" onclick={() => (changing = false)}>{t("comp.frameworkRolePanel.cancel")}</button>{/if}
     </p>
     {#if framework === "uk-gdad-pcf"}
       <form
@@ -203,9 +204,9 @@
         }}
       >
         <label>
-          Role level
+          {t("comp.frameworkRolePanel.role_level")}
           <select data-testid="pcf-role" bind:value={pickProfile} required>
-            <option value="" disabled>Choose…</option>
+            <option value="" disabled>{t("comp.frameworkRolePanel.choose")}</option>
             {#each groups as g (g.label)}
               <optgroup label={g.label}>
                 {#each g.items as p (p.pid)}<option value={p.pid}>{p.job_title}</option>{/each}
@@ -213,7 +214,7 @@
             {/each}
           </select>
         </label>
-        <button type="submit">Select</button>
+        <button type="submit">{t("comp.frameworkRolePanel.select")}</button>
       </form>
     {:else}
       <form
@@ -222,14 +223,14 @@
           void searchOccupations();
         }}
       >
-        <label>Occupation <input data-testid="esco-role-query" bind:value={occupationQuery} minlength="2" /></label>
-        <button type="submit">Search</button>
+        <label>{t("comp.frameworkRolePanel.occupation")} <input data-testid="esco-role-query" bind:value={occupationQuery} minlength="2" /></label>
+        <button type="submit">{t("comp.frameworkRolePanel.search")}</button>
       </form>
       <ul>
         {#each occupationHits as hit (hit.uri)}
           <li>
             <button type="button" onclick={() => void choose({ occupation_uri: hit.uri })}>{hit.label}</button>
-            <span class="muted">ISCO {hit.isco_code ?? "—"}</span>
+            <span class="muted">{tf("comp.frameworkRolePanel.isco", { isco_code: hit.isco_code ?? "—" })}</span>
           </li>
         {/each}
       </ul>
@@ -237,14 +238,13 @@
   {/if}
 
   {#if role && !changing}
-    <h3>My skills in this role</h3>
+    <h3>{t("comp.frameworkRolePanel.my_skills_in_this_role")}</h3>
     <p class="muted">
-      Tick the skills you have and set your own level (1 = aware … 5 = expert). The framework's
-      wording is a prompt; you decide your level.
+      {t("comp.frameworkRolePanel.tick_the_skills_you_have_and_set")}
     </p>
     <table data-testid={`skills-${framework}`}>
       <thead>
-        <tr><th>I have it</th><th>Skill</th><th>{framework === "esco" ? "Relation" : "Role expects"}</th><th>My level</th></tr>
+        <tr><th>{t("comp.frameworkRolePanel.i_have_it")}</th><th>{t("comp.frameworkRolePanel.skill")}</th><th>{framework === "esco" ? t("comp.frameworkRolePanel.relation") : t("comp.frameworkRolePanel.role_expects")}</th><th>{t("comp.frameworkRolePanel.my_level")}</th></tr>
       </thead>
       <tbody>
         {#each skills as s (s.ref)}
@@ -261,12 +261,12 @@
             </td>
             <td>
               {s.label}
-              {#if s.wording}<details><summary class="muted">What the framework says</summary><p>{s.wording}</p></details>{/if}
+              {#if s.wording}<details><summary class="muted">{t("comp.frameworkRolePanel.what_the_framework_says")}</summary><p>{s.wording}</p></details>{/if}
             </td>
             <td class="muted">
               {#if s.role_expects !== undefined}
                 {s.role_expects}{s.framework_level ? ` (framework ${s.framework_level} of ${s.framework_scale_max})` : ""}
-              {:else}{s.relation ?? "added by me"}{/if}
+              {:else}{s.relation ?? t("comp.frameworkRolePanel.added_by_me")}{/if}
             </td>
             <td>
               <select
@@ -282,7 +282,7 @@
             </td>
           </tr>
         {:else}
-          <tr><td colspan="4" class="muted">This role lists no skills.</td></tr>
+          <tr><td colspan="4" class="muted">{t("comp.frameworkRolePanel.this_role_lists_no_skills")}</td></tr>
         {/each}
       </tbody>
     </table>
@@ -293,8 +293,8 @@
           void searchExtra();
         }}
       >
-        <label>Add another ESCO skill <input bind:value={extraQuery} minlength="2" /></label>
-        <button type="submit">Search</button>
+        <label>{t("comp.frameworkRolePanel.add_another_esco_skill")} <input bind:value={extraQuery} minlength="2" /></label>
+        <button type="submit">{t("comp.frameworkRolePanel.search")}</button>
       </form>
       <ul>
         {#each extraHits as hit (hit.uri)}
@@ -304,7 +304,7 @@
     {/if}
     <p>
       <button type="button" data-testid={`save-${framework}`} disabled={changes.length === 0} onclick={() => void save()}>
-        Save my skills ({changes.length} change{changes.length === 1 ? "" : "s"})
+        {tf("comp.frameworkRolePanel.save_my_skills_change", { changes: changes.length, changes2: changes.length === 1 ? "" : "s" })}
       </button>
     </p>
   {/if}

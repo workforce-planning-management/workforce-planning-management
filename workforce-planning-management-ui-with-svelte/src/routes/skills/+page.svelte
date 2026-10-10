@@ -18,7 +18,7 @@
     searchEscoSkills,
     updateSkill,
   } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
 
   type Skills = Awaited<ReturnType<typeof listSkills>>;
   type Suggestions = Awaited<ReturnType<typeof categorySuggestions>>;
@@ -82,56 +82,56 @@
   }
 </script>
 
-<svelte:head><title>{t("nav.skills")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.skills.page_title", { skills: t("nav.skills") })}</title></svelte:head>
 
 <h1>{t("nav.skills")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 {#if notice}<p data-testid="notice">{notice}</p>{/if}
 
 <p class="muted" data-testid="skill-counts">
-  {skills.length} skills ·
+  {tf("pages.skills.skills", { skills: skills.length })}
   {#each SKILL_CATEGORIES as c, i (c)}{i > 0 ? " · " : ""}{c} {counts[c]}{/each}
 </p>
 
 {#if suggestions && suggestions.suggestions.length > 0}
-  <h2>Suggested categories</h2>
-  <p class="muted">{suggestions.derivation}. {suggestions.unsuggested} skill(s) have no suggestion.</p>
+  <h2>{t("pages.skills.suggested_categories")}</h2>
+  <p class="muted">{tf("pages.skills.skill_s_have_no_suggestion", { derivation: suggestions.derivation, unsuggested: suggestions.unsuggested })}</p>
   <p>
     <button
       type="button"
       data-testid="apply-all"
       onclick={() => void run(() => applyCategorySuggestions(suggestions!.suggestions.map((s) => s.pid)))}
     >
-      Apply all {suggestions.suggestions.length}
+      {tf("pages.skills.apply_all", { suggestions: suggestions.suggestions.length })}
     </button>
   </p>
   <table data-testid="suggestions">
-    <thead><tr><th>Skill</th><th>Suggested</th><th>Because</th><th></th></tr></thead>
+    <thead><tr><th>{t("pages.skills.skill")}</th><th>{t("pages.skills.suggested")}</th><th>{t("pages.skills.because")}</th><th></th></tr></thead>
     <tbody>
       {#each suggestions.suggestions.slice(0, 50) as s (s.pid)}
         <tr>
           <td>{s.name}</td><td>{s.suggested}</td><td class="muted">"{s.keyword}"</td>
-          <td><button type="button" onclick={() => void run(() => applyCategorySuggestions([s.pid]))}>Accept</button></td>
+          <td><button type="button" onclick={() => void run(() => applyCategorySuggestions([s.pid]))}>{t("pages.skills.accept")}</button></td>
         </tr>
       {/each}
     </tbody>
   </table>
-  {#if suggestions.suggestions.length > 50}<p class="muted">Showing 50 of {suggestions.suggestions.length}.</p>{/if}
+  {#if suggestions.suggestions.length > 50}<p class="muted">{tf("pages.skills.showing_50_of", { suggestions: suggestions.suggestions.length })}</p>{/if}
 {/if}
 
-<h2>Catalogue</h2>
+<h2>{t("pages.skills.catalogue")}</h2>
 <p>
-  <label>Search <input data-testid="skill-search" bind:value={query} /></label>
+  <label>{t("pages.skills.search")} <input data-testid="skill-search" bind:value={query} /></label>
   <label>
-    Category
+    {t("pages.skills.category")}
     <select bind:value={category}>
-      <option value="">All</option>
-      {#each SKILL_CATEGORIES as c (c)}<option value={c}>{c}</option>{/each}
+      <option value="">{t("pages.skills.all")}</option>
+      {#each SKILL_CATEGORIES as c (c)}<option value={c}>{tv(c)}</option>{/each}
     </select>
   </label>
 </p>
 <table data-testid="skill-table">
-  <thead><tr><th>Skill</th><th>Category</th><th>External references</th><th></th></tr></thead>
+  <thead><tr><th>{t("pages.skills.skill")}</th><th>{t("pages.skills.category")}</th><th>{t("pages.skills.external_references")}</th><th></th></tr></thead>
   <tbody>
     {#each shown.slice(0, 200) as s (s.pid)}
       <tr>
@@ -147,12 +147,12 @@
               }}
             >
               <input aria-label={`Rename ${s.name}`} bind:value={draftName} required />
-              <button type="submit">Save</button>
-              <button type="button" onclick={() => (editing = null)}>Cancel</button>
+              <button type="submit">{t("pages.skills.save")}</button>
+              <button type="button" onclick={() => (editing = null)}>{t("pages.skills.cancel")}</button>
             </form>
           {:else}
             {s.name}
-            <button type="button" onclick={() => { editing = s.pid; draftName = s.name; }}>Rename</button>
+            <button type="button" onclick={() => { editing = s.pid; draftName = s.name; }}>{t("pages.skills.rename")}</button>
           {/if}
         </td>
         <td>
@@ -161,7 +161,7 @@
             value={s.category}
             onchange={(event) => void run(() => updateSkill(s.pid, { category: event.currentTarget.value }))}
           >
-            {#each SKILL_CATEGORIES as c (c)}<option value={c}>{c}</option>{/each}
+            {#each SKILL_CATEGORIES as c (c)}<option value={c}>{tv(c)}</option>{/each}
           </select>
         </td>
         <td class="muted">
@@ -180,14 +180,14 @@
                 }}
               >
                 <input aria-label={`Search ESCO for ${s.name}`} bind:value={linkQuery} minlength="2" />
-                <button type="submit">Search</button>
-                <button type="button" onclick={() => { linking = null; linkHits = []; }}>Cancel</button>
+                <button type="submit">{t("pages.skills.search")}</button>
+                <button type="button" onclick={() => { linking = null; linkHits = []; }}>{t("pages.skills.cancel")}</button>
               </form>
               <ul>
                 {#each linkHits as hit (hit.uri)}
                   <li>
                     {hit.label}
-                    {#if hit.catalogue_skill_pid}<span class="muted">(already linked)</span>{:else}
+                    {#if hit.catalogue_skill_pid}<span class="muted">{t("pages.skills.already_linked")}</span>{:else}
                       <button
                         type="button"
                         onclick={() =>
@@ -197,14 +197,14 @@
                             linkHits = [];
                           })}
                       >
-                        Link
+                        {t("pages.skills.link")}
                       </button>
                     {/if}
                   </li>
                 {/each}
               </ul>
             {:else}
-              <button type="button" onclick={() => { linking = s.pid; linkQuery = s.name; linkHits = []; }}>Link ESCO</button>
+              <button type="button" onclick={() => { linking = s.pid; linkQuery = s.name; linkHits = []; }}>{t("pages.skills.link_esco")}</button>
             {/if}
           {/if}
         </td>
@@ -223,14 +223,14 @@
               }}
             >
               <select aria-label={`Merge ${s.name} into`} bind:value={mergeInto} required>
-                <option value="" disabled>Merge into…</option>
+                <option value="" disabled>{t("pages.skills.merge_into")}</option>
                 {#each skills.filter((x) => x.pid !== s.pid) as other (other.pid)}<option value={other.pid}>{other.name}</option>{/each}
               </select>
-              <button type="submit">Merge</button>
-              <button type="button" onclick={() => (merging = null)}>Cancel</button>
+              <button type="submit">{t("pages.skills.merge")}</button>
+              <button type="button" onclick={() => (merging = null)}>{t("pages.skills.cancel")}</button>
             </form>
           {:else}
-            <button type="button" onclick={() => { merging = s.pid; mergeInto = ""; notice = null; }}>Merge…</button>
+            <button type="button" onclick={() => { merging = s.pid; mergeInto = ""; notice = null; }}>{t("pages.skills.merge_2")}</button>
             <button
               type="button"
               onclick={() => {
@@ -242,14 +242,14 @@
                 }
               }}
             >
-              Delete
+              {t("pages.skills.delete")}
             </button>
           {/if}
         </td>
       </tr>
     {:else}
-      <tr><td colspan="4" class="muted">No skills match.</td></tr>
+      <tr><td colspan="4" class="muted">{t("pages.skills.no_skills_match")}</td></tr>
     {/each}
   </tbody>
 </table>
-{#if shown.length > 200}<p class="muted">Showing 200 of {shown.length}; narrow the search.</p>{/if}
+{#if shown.length > 200}<p class="muted">{tf("pages.skills.showing_200_of_narrow_the_search", { shown: shown.length })}</p>{/if}

@@ -135,12 +135,12 @@
       <option value="health">{t("wb.kind.health")}</option>
       <option value="benefit">{t("wb.kind.benefit")}</option>
     </select>
-    <input placeholder="Description" bind:value={description} required />
-    <input placeholder="Info URL" bind:value={infoUrl} />
-    <input placeholder="Min age" bind:value={minAge} inputmode="numeric" />
-    <input placeholder="Max age" bind:value={maxAge} inputmode="numeric" />
+    <input placeholder={t("pages.wellbeing.description")} bind:value={description} required />
+    <input placeholder={t("pages.wellbeing.info_url")} bind:value={infoUrl} />
+    <input placeholder={t("pages.wellbeing.min_age")} bind:value={minAge} inputmode="numeric" />
+    <input placeholder={t("pages.wellbeing.max_age")} bind:value={maxAge} inputmode="numeric" />
     <input placeholder="{t('common.department')} (a, b)" bind:value={departments} />
-    <input placeholder="Doses" bind:value={doses} inputmode="numeric" />
+    <input placeholder={t("pages.wellbeing.doses")} bind:value={doses} inputmode="numeric" />
     <button type="submit">+</button>
     {#if actionError}
       <p class="error" data-testid="action-error">{actionError}</p>

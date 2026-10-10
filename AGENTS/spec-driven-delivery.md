@@ -19,9 +19,10 @@ Requirements and decisions live in `spec/requirements.md` / `spec/design.md`
 [joiners-and-leavers](../spec/joiners-and-leavers.md),
 [communication-and-leadership](../spec/communication-and-leadership.md),
 [locales](../spec/locales-for-global-sharing-with-svelte/index.md)). Next free
-ids: **WPM-R89**, **WPM-D60**, **WPM-T146**. WPM-R56–R88, WPM-D45–D59 and
-WPM-T103–T145 are taken by [`spec/plan.md`](../spec/plan.md) and
-[`spec/production-readiness.md`](../spec/production-readiness.md), some built and
+ids: **WPM-R95**, **WPM-D65**, **WPM-T156**. WPM-R56–R94, WPM-D45–D64 and
+WPM-T103–T155 are taken by [`spec/plan.md`](../spec/plan.md) and
+[`spec/production-readiness.md`](../spec/production-readiness.md) and
+[`spec/operations-and-governance.md`](../spec/operations-and-governance.md), some built and
 some still proposed; WPM-R71, WPM-D51 and WPM-T120–T122 were withdrawn by WPM-D55
 and are not reused.
 

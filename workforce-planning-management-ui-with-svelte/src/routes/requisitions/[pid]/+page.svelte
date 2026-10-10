@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { applicationStage, getRequisition, listApplications } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tv } from "#lib/i18n.svelte.js";
   import type { Application, Requisition } from "#lib/api/types.js";
 
   /** The forward move an application offers per stage. */
@@ -51,7 +51,7 @@
 {:else if requisition === null}
   <p>{t("common.loading")}</p>
 {:else}
-  <h1>{requisition.job_title} <span class="chip">{requisition.status}</span></h1>
+  <h1>{requisition.job_title} <span class="chip">{tv(requisition.status)}</span></h1>
   <p class="muted">{requisition.department} · {t("req.headcount")} {requisition.headcount}</p>
 
   <h2>{t("req.applications")}</h2>
@@ -66,7 +66,7 @@
       {#each applications as application (application.pid)}
         <tr>
           <td>{application.candidate_pid.slice(0, 8)}</td>
-          <td><span class="chip">{application.stage}</span></td>
+          <td><span class="chip">{tv(application.stage)}</span></td>
           <td>
             {#if NEXT[application.stage]}
               {@const next = NEXT[application.stage] ?? ""}
@@ -76,7 +76,7 @@
             {/if}
             {#if application.stage === "offer"}
               <input placeholder="E-0000" bind:value={hireNumber} size="8" />
-              <button onclick={() => void move(application, "hired")}>→ hired</button>
+              <button onclick={() => void move(application, "hired")}>{t("pages.requisitionsPid.hired")}</button>
             {/if}
           </td>
         </tr>

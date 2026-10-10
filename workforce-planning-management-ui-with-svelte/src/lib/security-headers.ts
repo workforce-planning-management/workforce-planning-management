@@ -27,6 +27,12 @@ export function securityHeaders(
     headers["strict-transport-security"] =
       "max-age=63072000; includeSubDomains";
   }
+  // The content manager signs in through a popup, and `same-origin` severs the
+  // popup's link back to the opener; `same-origin-allow-popups` keeps that
+  // working while still isolating everything else.
+  if (/(^|\/)admin(\/|$)/.test(url.pathname)) {
+    headers["cross-origin-opener-policy"] = "same-origin-allow-popups";
+  }
   // The BFF proxy carries personal data; never let a cache keep it.
   if (url.pathname.startsWith("/api/")) {
     headers["cache-control"] = "no-store";

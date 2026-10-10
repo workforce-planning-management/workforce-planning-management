@@ -23,6 +23,27 @@ describe("securityHeaders", () => {
     expect(http["strict-transport-security"]).toBeUndefined();
   });
 
+  it("lets the content manager's sign-in popup talk to its opener", () => {
+    for (const path of [
+      "/admin",
+      "/admin/",
+      "/en-001/admin/",
+      "/cy-001/admin",
+    ]) {
+      expect(
+        securityHeaders(new URL(`http://localhost${path}`), null)[
+          "cross-origin-opener-policy"
+        ],
+      ).toBe("same-origin-allow-popups");
+    }
+    // Only the admin path: a page that merely contains the word is isolated.
+    expect(
+      securityHeaders(new URL("http://localhost/en-001/administrators"), null)[
+        "cross-origin-opener-policy"
+      ],
+    ).toBe("same-origin");
+  });
+
   it("never caches the BFF proxy, and leaves pages alone", () => {
     expect(
       securityHeaders(new URL("http://localhost/api/proxy/workers"), null)[

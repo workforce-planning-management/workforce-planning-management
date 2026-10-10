@@ -189,6 +189,7 @@ impl Hooks for App {
         tasks.register(tasks::rota_reminders::RotaReminders);
         tasks.register(tasks::pay_progression_reminders::PayProgressionReminders);
         tasks.register(tasks::snapshot::SnapshotHeadcount);
+        tasks.register(tasks::replay_erasures::ReplayErasures);
         tasks.register(tasks::import_framework::ImportFramework);
         tasks.register(tasks::import_esco::ImportEsco);
         // tasks-inject (do not remove)

@@ -5,6 +5,7 @@
   grants no extra access. Ending one keeps it as history.
 -->
 <script lang="ts">
+  import { t } from "#lib/i18n.svelte.js";
   import {
     addDottedManager,
     dottedLine,
@@ -55,19 +56,19 @@
 </script>
 
 <section class="panel" data-testid="dotted-line">
-  <h2>Dotted-line reporting</h2>
+  <h2>{t("comp.dottedLinePanel.dotted_line_reporting")}</h2>
   {#if error}<p class="error" data-testid="error">{error}</p>{/if}
-  <h3>Dotted-line managers</h3>
+  <h3>{t("comp.dottedLinePanel.dotted_line_managers")}</h3>
   <ul data-testid="dotted-managers">
     {#each managers as m (m.pid)}
       <li>
         {m.display_name}
         {#if m.note}<span class="muted">— {m.note}</span>{/if}
-        {#if m.on_behalf}<span class="chip">set on their behalf</span>{/if}
-        <button type="button" onclick={() => void run(() => endDottedManager(workerPid, m.pid))}>End</button>
+        {#if m.on_behalf}<span class="chip">{t("comp.dottedLinePanel.set_on_their_behalf")}</span>{/if}
+        <button type="button" onclick={() => void run(() => endDottedManager(workerPid, m.pid))}>{t("comp.dottedLinePanel.end")}</button>
       </li>
     {:else}
-      <li class="muted">None.</li>
+      <li class="muted">{t("comp.dottedLinePanel.none")}</li>
     {/each}
   </ul>
   <form
@@ -81,21 +82,21 @@
     }}
   >
     <label>
-      Add a dotted-line manager
+      {t("comp.dottedLinePanel.add_a_dotted_line_manager")}
       <select bind:value={choice} required>
-        <option value="" disabled>Anyone…</option>
+        <option value="" disabled>{t("comp.dottedLinePanel.anyone")}</option>
         {#each candidates as w (w.pid)}<option value={w.pid}>{w.display_name}</option>{/each}
       </select>
     </label>
-    <label>Why <input bind:value={note} maxlength="500" placeholder="project, function…" /></label>
-    <button type="submit">Add</button>
+    <label>{t("comp.dottedLinePanel.why")} <input bind:value={note} maxlength="500" placeholder={t("comp.dottedLinePanel.project_function")} /></label>
+    <button type="submit">{t("comp.dottedLinePanel.add")}</button>
   </form>
-  <h3>Dotted-line reports</h3>
+  <h3>{t("comp.dottedLinePanel.dotted_line_reports")}</h3>
   <ul data-testid="dotted-reports">
     {#each reports as r (r.pid)}
       <li>{r.display_name}{#if r.note} <span class="muted">— {r.note}</span>{/if}</li>
     {:else}
-      <li class="muted">None.</li>
+      <li class="muted">{t("comp.dottedLinePanel.none")}</li>
     {/each}
   </ul>
 </section>

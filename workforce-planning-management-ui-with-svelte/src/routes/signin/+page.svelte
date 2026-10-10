@@ -5,38 +5,38 @@
   No token is held in the browser.
 -->
 <script lang="ts">
-  import { l } from "#lib/i18n.svelte.js";
+  import { l, t } from "#lib/i18n.svelte.js";
   import type { ActionData } from "./$types";
   import { enhance } from "$app/forms";
 
   let { form }: { form: ActionData } = $props();
 </script>
 
-<svelte:head><title>Sign in — Workforce Planning Management</title></svelte:head
+<svelte:head><title>{t("pages.signin.page_title")}</title></svelte:head
 >
 
-<h1>Sign in</h1>
+<h1>{t("pages.signin.sign_in")}</h1>
 
 {#if form?.sent}
   <div class="panel">
-    <p>Check your email for a sign-in link.</p>
+    <p>{t("pages.signin.check_your_email_for_a_sign_in")}</p>
   </div>
 {:else}
   <div class="panel">
     <form class="row" method="POST" use:enhance>
       <label>
-        Email
+        {t("pages.signin.email")}
         <input type="email" name="email" required autocomplete="email" />
       </label>
-      <button class="primary" type="submit">Send magic link</button>
+      <button class="primary" type="submit">{t("pages.signin.send_magic_link")}</button>
     </form>
     {#if form?.error}
       <p class="error" role="alert">
-        Could not send the sign-in link. Please try again.
+        {t("pages.signin.could_not_send_the_sign_in_link")}
       </p>
     {/if}
-    <p class="divider">or</p>
-    <a class="btn" href={l("/signin/sso")}>Sign in with SSO</a>
+    <p class="divider">{t("pages.signin.or")}</p>
+    <a class="btn" href={l("/signin/sso")}>{t("pages.signin.sign_in_with_sso")}</a>
   </div>
 {/if}
 

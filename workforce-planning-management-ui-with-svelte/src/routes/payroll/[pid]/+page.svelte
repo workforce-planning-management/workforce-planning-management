@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { getRun, money, runAction, runPayslips } from "#lib/api/wpm.js";
-  import { i18n, t, l } from "#lib/i18n.svelte.js";
+  import { i18n, t, l, tv } from "#lib/i18n.svelte.js";
   import type { Payslip, PayrollRun } from "#lib/api/types.js";
 
   /** The action(s) each run status offers (WPM-D5: derive, approve, pay). */
@@ -50,7 +50,7 @@
 {:else}
   <h1>
     {run.period_start} → {run.period_end}
-    <span class="chip" data-testid="run-status">{run.status}</span>
+    <span class="chip" data-testid="run-status">{tv(run.status)}</span>
   </h1>
   <div class="panel">
     {#each ACTIONS[run.status] ?? [] as action (action)}

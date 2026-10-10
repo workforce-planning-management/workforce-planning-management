@@ -3,6 +3,7 @@
   an ESCO occupation by search. Reports the choice (and its label) to the caller.
 -->
 <script lang="ts">
+  import { t } from "#lib/i18n.svelte.js";
   import { listRoleProfiles, searchEscoOccupations } from "#lib/api/wpm.js";
 
   type Pick = { role_profile_pid?: string; occupation_uri?: string; label: string };
@@ -25,7 +26,7 @@
   const groups = $derived.by(() => {
     const byLabel = new Map<string, Profiles>();
     for (const p of profiles) {
-      const label = `${p.profession ?? "Other"} — ${p.role_name ?? ""}`;
+      const label = `${p.profession ?? t("comp.rolePicker.other")} — ${p.role_name ?? ""}`;
       byLabel.set(label, [...(byLabel.get(label) ?? []), p]);
     }
     return [...byLabel.entries()]
@@ -46,21 +47,21 @@
 {#if error}<p class="error">{error}</p>{/if}
 {#if framework === "uk-gdad-pcf"}
   <select
-    aria-label="Role level"
+    aria-label={t("comp.rolePicker.role_level")}
     onchange={(event) => {
       const p = profiles.find((x) => x.pid === event.currentTarget.value);
       if (p) onpick({ role_profile_pid: p.pid, label: p.job_title });
     }}
   >
-    <option value="">Choose a role level…</option>
+    <option value="">{t("comp.rolePicker.choose_a_role_level")}</option>
     {#each groups as g (g.label)}
       <optgroup label={g.label}>{#each g.items as p (p.pid)}<option value={p.pid}>{p.job_title}</option>{/each}</optgroup>
     {/each}
   </select>
 {:else}
   <span>
-    <input aria-label="Search occupations" bind:value={query} minlength="2" placeholder="Search ESCO occupations" />
-    <button type="button" onclick={() => void search()}>Search</button>
+    <input aria-label={t("comp.rolePicker.search_occupations")} bind:value={query} minlength="2" placeholder={t("comp.rolePicker.search_esco_occupations")} />
+    <button type="button" onclick={() => void search()}>{t("comp.rolePicker.search")}</button>
   </span>
   <ul>
     {#each hits as hit (hit.uri)}

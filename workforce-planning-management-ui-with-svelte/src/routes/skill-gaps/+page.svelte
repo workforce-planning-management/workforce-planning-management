@@ -8,7 +8,7 @@
   import { trainingDemand, workforceSkillGaps } from "#lib/api/wpm.js";
   import type { TrainingDemand, WorkforceSkillGap } from "#lib/api/types.js";
   import SkillTrainingCatalogue from "#lib/components/SkillTrainingCatalogue.svelte";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
 
   let department = $state("");
   let departments = $state<string[]>([]);
@@ -42,7 +42,7 @@
   });
 </script>
 
-<svelte:head><title>{t("nav.skillGaps")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.skillGaps.page_title", { skillGaps: t("nav.skillGaps") })}</title></svelte:head>
 
 <h1>{t("skillgaps.workforceTitle")}</h1>
 <p class="muted">{t("skillgaps.hint")}</p>

@@ -45,6 +45,22 @@ def tasks():
     return len(done), len(open_), max((int(n) for n in done), default=0)
 
 
+def checklist_answers():
+    """Count the assessment checklist's answers by kind, from its tables."""
+    text = read("spec", "governance", "assessment-checklist.md")
+    counts = {"Met": 0, "Partly met": 0, "Not met": 0, "Deployer to answer": 0}
+    for line in text.splitlines():
+        match = re.match(r"\| \d\.\d+ \| [^|]*\| ([^|]*) \|", line)
+        if not match:
+            continue
+        answer = match.group(1).strip()
+        for kind in counts:
+            if answer.startswith(kind):
+                counts[kind] += 1
+                break
+    return counts
+
+
 def build():
     done, pending, last_done = tasks()
     rows = [
@@ -79,6 +95,11 @@ def build():
             "Topic files in `spec/` (not counting this one)",
             len([p for p in paths("spec/*.md") if not p.endswith("implementation-status.md")]),
         ),
+    ]
+    answers = checklist_answers()
+    rows += [
+        (f"Assessment checklist answers: {kind.lower()}", count)
+        for kind, count in answers.items()
     ]
     lines = [
         "# Implementation status",

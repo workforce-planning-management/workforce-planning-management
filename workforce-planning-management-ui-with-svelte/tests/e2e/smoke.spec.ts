@@ -1936,6 +1936,51 @@ test.describe("signed-in smoke coverage", () => {
     ).toBeVisible();
   });
 
+  test("a converted page renders in Welsh, with no English left on it (WPM-R94)", async ({
+    page,
+  }) => {
+    await page.route("**/api/proxy/learning/mentorship-overview**", (route) =>
+      route.fulfill({
+        json: {
+          as_of: "2026-07-20",
+          active_pairings: 1,
+          mentor_load: [
+            { mentor_pid: "e1", mentor: "Ada Mentor", active_mentees: 1 },
+          ],
+          unmatched_workers: [],
+          stale_days: 30,
+          stale_mentorships: [
+            {
+              pid: "m1",
+              mentor: "Ada Mentor",
+              mentee: "Sam Mentee",
+              last_session: "2026-05-01",
+            },
+          ],
+        },
+      }),
+    );
+    await page.goto("/cy-001/mentorship");
+    const body = page.locator("body");
+    // The headings and labels of the page are in Welsh …
+    await expect(body).toContainText("Llwyth mentor");
+    await expect(body).toContainText("Mentora hen");
+    await expect(body).toContainText("Mentoreion gweithredol");
+    await expect(body).toContainText("Mae pawb gweithredol mewn mentora.");
+    // … and none of its English survives.
+    for (const english of [
+      "Mentor load",
+      "Stale mentorships",
+      "Active mentees",
+      "Last session",
+      "Unmatched workers",
+    ]) {
+      await expect(body).not.toContainText(english);
+    }
+    // The page title is translated too.
+    await expect(page).toHaveTitle(/WPM$/);
+  });
+
   test("wellbeing area renders rules and aggregate-only uptake", async ({
     page,
   }) => {

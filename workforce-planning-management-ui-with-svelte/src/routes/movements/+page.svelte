@@ -8,7 +8,7 @@
   import { goto } from "$app/navigation";
   import { listMovements, listWorkers, openMovement } from "#lib/api/wpm.js";
   import type { Movement } from "#lib/api/types.js";
-  import { t, l } from "#lib/i18n.svelte.js";
+  import { t, l, tf } from "#lib/i18n.svelte.js";
 
   const REASONS = [
     ["resignation", "movements.reasonResignation"],
@@ -58,7 +58,7 @@
   }
 </script>
 
-<svelte:head><title>{t("nav.movements")} — WPM</title></svelte:head>
+<svelte:head><title>{tf("pages.movements.page_title", { movements: t("nav.movements") })}</title></svelte:head>
 
 <h1>{t("nav.movements")}</h1>
 {#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}

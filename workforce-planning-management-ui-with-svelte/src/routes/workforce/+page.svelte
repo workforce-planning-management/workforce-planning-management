@@ -1,6 +1,6 @@
 <script lang="ts">
   import { decideLeave, ergonomicIssues, listWorkers, listLeaveRequests, listShifts, workingTime } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
   import type { Worker, LeaveRequest } from "#lib/api/types.js";
 
   type ShiftRow = Awaited<ReturnType<typeof listShifts>>[number];
@@ -63,7 +63,7 @@
       {#each pending as request (request.pid)}
         <tr>
           <td>{request.worker?.display_name ?? request.worker_pid.slice(0, 8)}</td>
-          <td>{request.kind}</td>
+          <td>{tv(request.kind)}</td>
           <td>{request.start_on} → {request.end_on} ({request.days} {t("common.days")})</td>
           <td>
             <button onclick={() => void decide(request, "approve")}>{t("wf.approve")}</button>
@@ -116,7 +116,7 @@
               <td>
                 {#if flag.over_48h}
                   <span class="chip">{t("wf.over48")}</span>
-                  {Math.round((flag.average_weekly.value_minutes_per_week ?? 0) / 60)}h/wk
+                  {tf("pages.workforce.h_wk", { value_minutes_per_week: Math.round((flag.average_weekly.value_minutes_per_week ?? 0) / 60) })}
                 {/if}
               </td>
               <td>
