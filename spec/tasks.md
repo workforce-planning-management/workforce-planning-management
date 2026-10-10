@@ -2706,11 +2706,25 @@ payroll defect and need nothing else; do them first.
       and the payroll test now supplies one. Described in [engagements.md](engagements.md).
       **Not verified:** any user interface (none), and the rate against a production policy other than the
       reference.
-- [ ] WPM-T138 **End-of-engagement reminders.** *(WPM-R81)* Loco task
-      `engagement_end_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` (default 60
-      calendar days; schedule daily), idempotent per end date, to the manager and HR;
-      a recorded decision (extend, convert, end) with who and when. Notifications
-      carry no rate. Request test, including an engagement already past its end.
+- [x] WPM-T138 (2026-10-12) **End-of-engagement reminders.** *(traces to WPM-R81)* The Loco task `engagement_end_reminders [days_ahead:N] [as_of:YYYY-MM-DD]`
+      (default 60 calendar days; schedule daily) tells the worker's manager and each `hr_admin` of their organization
+      about an engagement that **ends inside the window**, and once about one that **has ended with no recorded
+      decision**; migration `000061` records each (worker, end date, kind) so it is **idempotent**, and an extension gives a
+      new end date and so a new reminder. The notification names the worker and the date and **carries no rate, supplier
+      or reason** (verified). `POST /api/workers/{pid}/engagement/decision` records extend, convert or end against the end
+      date it settles, by the line manager or a privileged caller, never the worker; the engagement view shows the
+      decision and the standing becomes `past_end_decided`; a decision made for one end date settles nothing after an
+      extension, and the history is kept; the audit names the event, not the decision. Verified by a request test (manager
+      and HR told; a decided one and a permanent one and one outside the window not; a re-run tells no one twice; the
+      window moving; an extension; validation; the standing) and a unit test, **mutation-checked** four ways (no
+      idempotence, caught by the unique key; a decided engagement still asked about; the rate reaching the notification; no
+      past-end reminder). **Also found and fixed:** the OpenAPI entries for the WPM-T137 engagement routes had been lost
+      when files were synced from a scratch copy, and twelve learning routes were never documented; all are restored or added,
+      and a new unit test (`openapi::tests::every_registered_route_is_documented`, mutation-checked) fails when any route the
+      controllers register under `/api` has no path in the document. **Not done:** the task is not
+      scheduled by anything in this repository (a deployer's cron runs it, as for the others); HR is the `hr_admin` members
+      of the worker's own organization only, not of an organization above it; and a decision of *convert* records intent
+      only (conversion plans are WPM-T162 to T164).
 - [ ] WPM-T139 **Snapshots by basis.** *(WPM-R84)* Migration adding per-basis
       headcount and FTE to `headcount_snapshots`; the snapshot task fills them; older
       rows report `unknown` for the split. Request test.
@@ -2736,26 +2750,43 @@ payroll defect and need nothing else; do them first.
       the 12 `-001` locales. Screenshots read in light and dark at desktop and phone
       sizes. Full suites. Record what was not verified.
 
-- [ ] WPM-T161 **Funding source on the engagement.** *(traces to WPM-R98, WPM-R62, WPM-R83)* Show each fixed-term and
+- [ ] WPM-T161 **Funding source on the engagement.** *(blocked: the post funding record of WPM-T109 is not built)* *(traces to WPM-R98, WPM-R62, WPM-R83)* Show each fixed-term and
       contractor engagement's funding source (kind, programme, funding end) beside its contract end date in
       the worker's engagement panel and the contingent workforce view; flag a contract that outlasts its
       funding and a funding that outlasts its contract. Pure core rule and unit tests (equal, contract
       longer, funding longer, funding unknown). Depends on WPM-T109 and WPM-T137.
-- [ ] WPM-T162 **Pure core: conversion plans.** *(WPM-R98, WPM-D66)* `rules/conversion.rs`: the intents and statuses,
-      the transitions, "proposer is not approver", "a conversion needs a funded permanent post or a stated
-      reason", "decision date before the contract end", and the flags (past end with no approved plan, review
-      date due). Exhaustive unit tests for each rule and each refusal.
-- [ ] WPM-T163 **Conversion plans: table, API and audit.** *(WPM-R98)* Migration for `conversion_plans`
-      (worker, intent, target date, department, role profile, post funding kind and end, reason, proposer,
-      approver, status, review date; no pay figures); controllers and OpenAPI; HR-only reads; audited without
-      the reason text; in the subject-access export and erased with the worker (a plan is about a person).
-      Request tests including the refusals and the enforcement test for who may read and decide.
-- [ ] WPM-T164 **Conversion plans feed the planner and the reminders.** *(WPM-R98, WPM-R63, WPM-R81)* The workforce plan's
-      "convert contingent to permanent" lever lists agreed conversions apart from candidates; the
-      end-of-engagement reminder (WPM-T138) names the plan's status and review date, and records the
-      decision a manager takes; a done conversion closes the old engagement and starts the permanent record in
-      one transaction. Request tests; UI panel on the worker page and a conversion list in the contingent
-      workforce view; strings in the 13 locales (the catalogue rules of WPM-R94 apply: no literal text).
+- [x] WPM-T162 (2026-10-12) **Pure core: conversion plans.** *(WPM-R98, WPM-D66)* `rules/conversion.rs`: the intents
+      (`convert`, `extend`, `end`, `undecided`) and statuses (`proposed`, `approved`, `done`, `abandoned`); exactly four
+      transitions; "nobody approves their own plan" (two unknown actors count as the same person); "a conversion needs a
+      funded permanent post, or a stated reason"; "the decision date falls before the contract end" (not on it); no date
+      in the past; a post whose funding ends before the conversion is refused; a reason of at most 500 characters; an
+      undecided plan cannot be approved; only an approved conversion is marked done; and the flags
+      `past_end_without_approved_plan` and `review_due`. 16 unit tests, one for each rule and each refusal.
+- [x] WPM-T163 (2026-10-12) **Conversion plans: table, API and audit.** *(WPM-R98)* Migration `000062` creates
+      `conversion_plans` (worker, intent, target date, department, role profile reference, post funding kind and end,
+      reason, proposer, approver, status, review date, settled date; **no pay figure**; checks on intent, status, funding
+      kind and reason length; at most one open plan per worker, enforced by a partial unique index). Routes:
+      `GET/POST /api/workers/{pid}/conversion-plans`, `GET /api/conversion-plans` (open plans and contracts past their end
+      with no approved plan, with flags), and `POST /api/conversion-plans/{pid}/approve|abandon|done`; documented in
+      OpenAPI. **Reads are HR-only** (classified `Privileged` in `rules/access.rs`); the worker's line manager or a
+      privileged caller proposes, approves and carries out, never the worker, and nobody approves their own. **Approving
+      records the matching engagement decision** against the current end date in the same transaction. **Marking a
+      conversion done makes the worker permanent and clears the contract end in one transaction**; the plan, the extensions
+      and the decisions stay as history. Audited without the reason; in the subject-access export; erased with the worker.
+      Verified by a request test (refusals, one open plan, the reminder, abandon, approve, export, erase) and the new
+      `enforcement_conversion` binary (reference policy plus a `decider` rule: worker, stranger and manager outside the chain
+      refused; only HR reads; the proposer cannot approve; done changes the worker; the audit holds no reason).
+      **Mutation-checked** five ways (a proposer may approve; done keeps the end date; reads open to all; the reason in the
+      reminder; no erasure), each making a test fail. **Not verified:** a contractor converted to permanent keeps their
+      contractor details and is not added to payroll by this step (those belong to the processes that own them); an
+      organization above the worker's does not decide; no user interface.
+- [ ] WPM-T164 **Conversion plans feed the planner and the reminders.** *(WPM-R98, WPM-R63, WPM-R81)* **Done
+      (2026-10-12):** the end-of-engagement reminder (WPM-T138) names an open plan's status and review date, never its
+      reason (verified, mutation-checked); approving a plan records the decision a manager takes; a done conversion changes
+      the worker in one transaction; `GET /api/conversion-plans` lists open plans apart from the candidates. **Still to do:**
+      the workforce plan's "convert contingent to permanent" lever reading these plans (the lever itself is not yet in
+      code), the UI panel on the worker page and the conversion list in the contingent workforce view, and strings in the
+      13 locales (the catalogue rules of WPM-R94 apply: no literal text).
 
 ## Phase 15 — operations, information governance, OIDC and locales (WPM-R89–R94, WPM-D60–D64)
 

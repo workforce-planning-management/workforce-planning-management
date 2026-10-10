@@ -324,6 +324,9 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
   a rate that is masked like salary) and **EngagementStatusAssessment**
   (`engagement_status_assessments`); exported with the worker and erased with them
   (WPM-R79, WPM-R80; [engagements.md](engagements.md)).
+- **ConversionPlan** (`conversion_plans`) — a recorded intent for a contingent engagement (convert, extend, end, undecided),
+  proposed and approved by different people; no pay figure; HR-only; exported with the worker and erased with them
+  (WPM-R98; [engagements.md](engagements.md)).
 - **SkillPool** (`skill_pools`, soft-deleted), **SkillPoolMember** (`skill_pool_members`),
   **ProgrammeDemand** (`programme_demands`), **PartnerCommitment** (`partner_commitments`),
   **CapacitySettings** (`capacity_settings`) and **StartDecision** (`start_decisions`) — delivery

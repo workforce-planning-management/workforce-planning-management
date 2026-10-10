@@ -95,6 +95,7 @@ jobs:
       - run: cargo test --locked --test enforcement_need_to_know -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_me -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_flexible -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_conversion -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_equality -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_health -- --ignored --test-threads=1
       - run: cargo test --locked --test security -- --ignored --test-threads=1

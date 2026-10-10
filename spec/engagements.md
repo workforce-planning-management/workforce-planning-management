@@ -1,7 +1,7 @@
 # Engagements: end dates, extensions and contractor details (WPM-R79, WPM-R80)
 
 What is **built** of the contingent-workforce proposal in [plan.md](plan.md) section D: the pure rules
-(WPM-T135) and the records and endpoints (WPM-T137). The end-of-engagement reminders (WPM-T138), the
+(WPM-T135) and the records and endpoints (WPM-T137), the end-of-engagement reminders (WPM-T138) and conversion plans (WPM-T162, T163). The
 snapshot split, programme links, the contingent workforce view and the user interface are not built.
 
 ## The basis decides the end date
@@ -34,8 +34,30 @@ engagement shows the standing `missing_end_date`.
 
 `GET /api/workers/{pid}/engagement` reports where an engagement stands against the reminder window (default 60
 calendar days): `open_ended`, `missing_end_date`, `running`, `ending_soon`, `past_end_undecided` and
-`past_end_decided`. An engagement past its end is **never treated as continuing**. Recorded decisions arrive
-with the reminders (WPM-T138), so today a past end always reads `past_end_undecided`.
+`past_end_decided`. An engagement past its end is **never treated as continuing**. A person records a decision with
+`POST /api/workers/{pid}/engagement/decision` (extend, convert or end), against the end date it settles; it changes nothing
+else. The daily task `engagement_end_reminders` tells the manager and HR once about each end date (WPM-T138).
+
+## Conversion plans
+
+A plan records what a person intends for a fixed-term, contractor or intern engagement: `convert`, `extend`, `end` or
+`undecided`, with a decision date that falls **before** the contract ends, the permanent post it would become
+(department, role profile, and that post's funding kind and end), a reason, who proposed it, who approved it (never the
+same person), a status (`proposed`, `approved`, `done`, `abandoned`) and a review date. A conversion needs a funded
+post or a stated reason. No pay figure is held. One plan is open at a time; the others stay as history.
+
+- `POST /api/workers/{pid}/conversion-plans` proposes; the line manager or a privileged caller, never the worker.
+- `POST /api/conversion-plans/{pid}/approve` approves (never the proposer) and records the matching engagement decision
+  against the current end date, so the reminder stops asking.
+- `POST /api/conversion-plans/{pid}/done` carries out an approved conversion: the worker becomes `permanent` and the
+  contract end is cleared in one transaction. The plan, extensions and decisions are the history.
+- `GET /api/workers/{pid}/conversion-plans` and `GET /api/conversion-plans` are **HR-only** and audited; the list adds
+  contracts past their end that no approved plan covers (`past_end_without_approved_plan`) and plans whose review date has
+  arrived (`review_due`).
+
+The reminder names an open plan's status and review date and never its reason. Nothing converts, extends or ends an
+engagement by itself (WPM-D66). Employment-status rules, any agency conversion fee and notice duties are the deployer's
+to check.
 
 ## Contractor details
 
@@ -58,5 +80,6 @@ All of it is about one person: it is in the subject-access export and is erased 
   `worker_contractor_details` so no existing worker endpoint can return the rate.
 - **Retention.** The three new tables are not in the retention sweep (like the pay position); they go with the
   worker's erasure.
-- **Not built:** end-of-engagement reminders and recorded decisions (WPM-T138), the funding source beside the
-  end date (WPM-T161), conversion plans (WPM-T162–T164), and any user interface.
+- **Not built:** the funding source beside the
+  end date (WPM-T161, which needs the post funding record of WPM-T109), the planner lever, the contingent workforce view,
+  and any user interface. A conversion marked done does not touch payroll or the contractor details.

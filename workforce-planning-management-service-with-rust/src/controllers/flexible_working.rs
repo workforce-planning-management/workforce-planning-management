@@ -398,7 +398,7 @@ pub(crate) async fn appeal_for(
 
 /// May this caller decide on this worker's request? A line manager (anywhere up the chain) or a
 /// privileged caller, and never the worker themself.
-async fn ensure_decider(
+pub(crate) async fn ensure_decider(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     worker: &workers::Model,

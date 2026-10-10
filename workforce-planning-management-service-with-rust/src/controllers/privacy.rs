@@ -13,8 +13,9 @@ use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, announcement_reads, appraisal_nominations, appraisal_responses,
-    appraisals, assessments, benefit_enrollments, candidates, cpd_entries, development_plans,
-    dotted_line_reports, emergency_contacts, engagement_extensions, engagement_status_assessments,
+    appraisals, assessments, benefit_enrollments, candidates, conversion_plans, cpd_entries,
+    development_plans, dotted_line_reports, emergency_contacts, engagement_decisions,
+    engagement_extensions, engagement_reminders, engagement_status_assessments,
     entitlement_acknowledgements, equality_declarations, ergonomic_assessments, expense_claims,
     expense_items, flexible_working_requests, group_members, handover_actions, leave_entitlements,
     leave_requests, mentorships, mobility_interests, movements, notifications, path_enrollments,
@@ -122,6 +123,9 @@ async fn subject_access(
         "pay_position": rows_for!(db, worker_pay_positions, WorkerPid, epid),
         "contact_details": rows_for!(db, worker_contact_details, WorkerPid, epid),
         "resignations": rows_for!(db, resignations, WorkerPid, epid),
+        "conversion_plans": rows_for!(db, conversion_plans, WorkerPid, epid),
+        "engagement_decisions": rows_for!(db, engagement_decisions, WorkerPid, epid),
+        "engagement_reminders": rows_for!(db, engagement_reminders, WorkerPid, epid),
         // Health data readable by the worker and occupational health only (WPM-D75): anyone else
         // running the export gets a note.
         "workplace_health_records": if auth::acting_for_other(&caller, &worker.person_ref) {
@@ -258,6 +262,9 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM worker_pay_positions WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_contact_details WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM resignations WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM conversion_plans WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM engagement_decisions WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM engagement_reminders WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_health_records WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM equality_declarations WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM flexible_working_requests WHERE worker_pid = '{epid}'"),

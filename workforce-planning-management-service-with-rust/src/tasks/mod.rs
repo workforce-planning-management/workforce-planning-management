@@ -1,5 +1,6 @@
 //! loco CLI tasks.
 
+pub mod engagement_end_reminders;
 pub mod import_esco;
 pub mod import_framework;
 pub mod pay_progression_reminders;

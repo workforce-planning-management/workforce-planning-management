@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — conversion plans (WPM-T162, T163; part of T164)
+
+What a person intends for a fixed-term, contractor or intern engagement: convert, extend, end or undecided (migration `000062`,
+`/api/workers/{pid}/conversion-plans`, `/api/conversion-plans`). Proposed by the line manager or HR and approved by someone else;
+one open plan at a time; no pay figure; HR-only reads; audited without the reason; exported and erased with the worker. Approval
+records the engagement decision; marking a conversion done makes the worker permanent in one transaction. The end-of-engagement
+reminder names the plan's status and review date, never its reason.
+
+### Added — end-of-engagement reminders and decisions (WPM-T138)
+
+The task `engagement_end_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` (default 60 calendar days; run it daily) tells the manager
+and HR once about each engagement that is ending, and about one that has ended with no decision; no rate or supplier is in the
+notification. `POST /api/workers/{pid}/engagement/decision` records extend, convert or end against the end date it settles.
+Migration `000061`. The OpenAPI document again lists the engagement routes of WPM-T137, which a mis-sync had dropped.
+
 ### Added — workplace health requirements, off by default (WPM-T214)
 
 Whether a worker meets a requirement their area sets, such as a required immunization (migration `000060`). **Off unless

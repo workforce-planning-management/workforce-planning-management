@@ -16,7 +16,8 @@ use serde_json::json;
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    engagement_extensions, engagement_status_assessments, worker_contractor_details, workers,
+    engagement_decisions, engagement_extensions, engagement_status_assessments,
+    worker_contractor_details, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
@@ -71,13 +72,18 @@ async fn get_engagement(
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let today = Utc::now().date_naive();
     let extensions = extensions_of(&ctx, worker.pid).await?;
+    let decisions = decisions_of(&ctx, worker.pid).await?;
+    // A decision settles the end date it was made for; an extension gives a new date and so a new question.
+    let current = worker
+        .engagement_ends_on
+        .and_then(|end| decisions.iter().rev().find(|d| d.ends_on == end));
     let standing = rules::Basis::parse(&worker.employment_type).map(|basis| {
         rules::standing(
             basis,
             worker.engagement_ends_on,
             today,
             rules::DEFAULT_WINDOW_CALENDAR_DAYS,
-            false,
+            current.is_some(),
         )
         .as_str()
     });
@@ -89,7 +95,75 @@ async fn get_engagement(
         "window_calendar_days": rules::DEFAULT_WINDOW_CALENDAR_DAYS,
         "extension_count": extensions.len(),
         "extensions": extensions.iter().map(extension_json).collect::<Vec<_>>(),
+        "decision": current.map(|d| d.decision.clone()),
+        "decisions": decisions.iter().map(|d| json!({
+            "pid": d.pid, "ends_on": d.ends_on, "decision": d.decision,
+            "decided_by": d.decided_by, "decided_on": d.decided_on,
+        })).collect::<Vec<_>>(),
     }))
+}
+
+async fn decisions_of(
+    ctx: &AppContext,
+    worker_pid: uuid::Uuid,
+) -> Result<Vec<engagement_decisions::Model>> {
+    Ok(engagement_decisions::Entity::find()
+        .filter(engagement_decisions::Column::WorkerPid.eq(worker_pid))
+        .order_by_asc(engagement_decisions::Column::Id)
+        .all(&ctx.db)
+        .await?)
+}
+
+/// `POST …/engagement/decision` body.
+#[derive(Debug, Deserialize)]
+struct DecisionPayload {
+    /// `extend`, `convert` or `end`.
+    decision: String,
+}
+
+/// `POST /api/workers/{pid}/engagement/decision` — record what a person decides about an engagement
+/// that is ending, against the end date it settles (WPM-R81, WPM-D66). The worker's line manager or
+/// a privileged caller, never the worker. **It records a decision and changes nothing else:** to
+/// extend, record the extension; to convert or end, do it through the processes that exist. Silence
+/// is never read as continuing.
+#[debug_handler]
+async fn decide(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+    Json(payload): Json<DecisionPayload>,
+) -> Result<Response> {
+    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    super::flexible_working::ensure_decider(&ctx, &caller, &worker).await?;
+    rules::validate_decision(&payload.decision).map_err(|e| unprocessable(&e))?;
+    let ends_on = worker
+        .engagement_ends_on
+        .ok_or_else(|| unprocessable("the engagement has no end date to decide about"))?;
+    if worker.terminated_on.is_some() {
+        return Err(unprocessable("the worker's employment has ended"));
+    }
+    let row = engagement_decisions::ActiveModel {
+        pid: ActiveValue::set(uuid::Uuid::new_v4()),
+        worker_pid: ActiveValue::set(worker.pid),
+        ends_on: ActiveValue::set(ends_on),
+        decision: ActiveValue::set(payload.decision.clone()),
+        decided_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
+        decided_on: ActiveValue::set(Utc::now().date_naive()),
+        ..Default::default()
+    }
+    .insert(&ctx.db)
+    .await?;
+    // The audit entry names the event, not the decision.
+    Audit::record(
+        &ctx.db,
+        "worker",
+        worker.pid,
+        "engagement_decision_recorded",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    format::json(json!({ "pid": row.pid, "ends_on": row.ends_on, "decision": row.decision }))
 }
 
 /// `POST …/engagement/extensions` body.
@@ -441,6 +515,7 @@ pub fn routes() -> Routes {
         .prefix("/api")
         .add("/workers/{pid}/engagement", get(get_engagement))
         .add("/workers/{pid}/engagement/extensions", post(extend))
+        .add("/workers/{pid}/engagement/decision", post(decide))
         .add(
             "/workers/{pid}/engagement/status-assessments",
             post(record_assessment),

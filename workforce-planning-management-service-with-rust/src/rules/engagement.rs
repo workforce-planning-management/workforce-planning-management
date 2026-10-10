@@ -257,6 +257,61 @@ pub fn standing(
     }
 }
 
+/// What a person decides about an engagement that is ending (WPM-D66): nothing is decided by length
+/// of service or by the software.
+pub const DECISIONS: &[&str] = &["extend", "convert", "end"];
+
+/// Check a decision.
+///
+/// # Errors
+///
+/// A decision that is not on the list.
+pub fn validate_decision(decision: &str) -> Result<(), String> {
+    if DECISIONS.contains(&decision) {
+        Ok(())
+    } else {
+        Err(format!("decision must be one of {}", DECISIONS.join(", ")))
+    }
+}
+
+/// Which reminder, if any, an engagement needs on `as_of`: **ending** inside the window, or
+/// **ended undecided** once the end date has passed. Whether a decision is already recorded is the
+/// caller's to check.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Reminder {
+    /// Ends inside the window, on or after `as_of`.
+    Ending,
+    /// The end date has passed.
+    EndedUndecided,
+}
+
+impl Reminder {
+    /// The stored token.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Ending => "ending",
+            Self::EndedUndecided => "ended_undecided",
+        }
+    }
+}
+
+/// The reminder an engagement with this end date needs on `as_of`, if any.
+#[must_use]
+pub fn reminder_for(
+    ends_on: NaiveDate,
+    as_of: NaiveDate,
+    window_calendar_days: i64,
+) -> Option<Reminder> {
+    if ends_on < as_of {
+        Some(Reminder::EndedUndecided)
+    } else if in_end_window(ends_on, as_of, window_calendar_days) {
+        Some(Reminder::Ending)
+    } else {
+        None
+    }
+}
+
 /// Whether an engagement ends inside the window starting `as_of` (a reminder is due).
 #[must_use]
 pub fn in_end_window(ends_on: NaiveDate, as_of: NaiveDate, window_calendar_days: i64) -> bool {
@@ -318,6 +373,43 @@ mod tests {
         assert!(validate_contractor_details(None, Some(1), Some("gbp"), Some("day")).is_err());
         assert!(validate_contractor_details(None, Some(1), Some("GB"), Some("day")).is_err());
         assert!(validate_contractor_details(None, Some(1), Some("GBP"), Some("week")).is_err());
+    }
+
+    #[test]
+    fn a_reminder_is_due_inside_the_window_and_again_once_it_has_ended() {
+        let today = d(2026, 6, 1);
+        assert_eq!(
+            reminder_for(d(2026, 7, 31), today, 60),
+            Some(Reminder::Ending),
+            "the last day of the window"
+        );
+        assert_eq!(
+            reminder_for(today, today, 60),
+            Some(Reminder::Ending),
+            "ends today"
+        );
+        assert_eq!(
+            reminder_for(d(2026, 8, 1), today, 60),
+            None,
+            "one calendar day beyond the window"
+        );
+        assert_eq!(
+            reminder_for(d(2026, 5, 31), today, 60),
+            Some(Reminder::EndedUndecided),
+            "yesterday"
+        );
+        assert_eq!(Reminder::Ending.as_str(), "ending");
+        assert_eq!(Reminder::EndedUndecided.as_str(), "ended_undecided");
+    }
+
+    #[test]
+    fn a_decision_is_extend_convert_or_end() {
+        for d in DECISIONS {
+            assert!(validate_decision(d).is_ok());
+        }
+        for bad in ["renew", "", "Extend", "terminate"] {
+            assert!(validate_decision(bad).is_err(), "{bad}");
+        }
     }
 
     #[test]

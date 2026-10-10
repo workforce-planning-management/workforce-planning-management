@@ -46,6 +46,9 @@ State as of 2026-10-07 (WPM-T97).
   own answers; the only output is the aggregate, with cells below the floor withheld and the department breakdown
   withheld unless every cell passes; the export gives the answers to the worker and a note to anyone else; the audit
   holds no value; erasure removes them. A unit test scans the source so no other code names the table.
+- **Conversion plans binary** (`tests/enforcement_conversion.rs`, own process; the reference policy plus a `decider` rule): the
+  worker, a stranger and a manager outside the chain are refused; only HR reads; the proposer cannot approve; approval
+  records the engagement decision; done makes the worker permanent in one step; the audit holds no reason.
 - **Flexible working binary** (`tests/enforcement_flexible.rs`, own process; the reference policy plus one rule
   that gives a line manager the power to write): the request limit and the decide-by date, who may decide (the
   line manager up the chain or HR, never the requester, never a manager outside the chain), refusal reasons from a

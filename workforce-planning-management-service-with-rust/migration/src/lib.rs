@@ -73,6 +73,8 @@ mod m20261011_000057_resignations;
 mod m20261011_000058_flexible_working;
 mod m20261011_000059_equality_declarations;
 mod m20261011_000060_health_requirements;
+mod m20261012_000061_engagement_reminders;
+mod m20261012_000062_conversion_plans;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -145,6 +147,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20261011_000058_flexible_working::Migration),
             Box::new(m20261011_000059_equality_declarations::Migration),
             Box::new(m20261011_000060_health_requirements::Migration),
+            Box::new(m20261012_000061_engagement_reminders::Migration),
+            Box::new(m20261012_000062_conversion_plans::Migration),
             // inject-above (do not remove this comment)
         ]
     }

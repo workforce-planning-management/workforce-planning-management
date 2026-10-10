@@ -15,6 +15,7 @@ pub mod capacity;
 pub mod career;
 pub mod change;
 pub mod contacts;
+pub mod conversion_plans;
 pub mod cpd;
 pub mod development;
 pub mod directory;

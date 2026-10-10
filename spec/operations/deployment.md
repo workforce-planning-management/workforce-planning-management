@@ -79,6 +79,7 @@ Nothing runs these by itself; schedule each with cron, a timer or a Kubernetes C
 | Task | When | Why |
 | --- | --- | --- |
 | `task snapshot_headcount` | daily | Headcount history cannot be backfilled |
+| `task engagement_end_reminders` | daily | Tells the manager and HR about an engagement ending within 60 calendar days (`days_ahead:N`), or ended with no decision; once per end date |
 | `task rota_reminders` | daily | Tells whoever's on-call turn starts tomorrow |
 | `task pay_progression_reminders` | daily | Tells who becomes eligible for a pay step within 30 calendar days |
 | `POST /api/retention/sweep` | daily or weekly | Hard-deletes rows past their kind's retention horizon (an admin action) |

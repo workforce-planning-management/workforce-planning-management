@@ -272,6 +272,29 @@ pub fn spec() -> Value {
             "/api/health-requirements/compliance": { "get": { "tags": ["health-requirements"], "summary": "Per requirement and department, people it applies to and how many are cleared; small groups withheld; HR and occupational health", "responses": ok("Compliance") } },
             "/api/workers/{pid}/health-requirements/{req_pid}": { "put": { "tags": ["health-requirements"], "summary": "Record a worker's status against a requirement (status up_to_date, exempt_recorded or declined; recorded_on; next_due): occupational health only, past the HR-only write policy by the token's occupational_health attribute; no reason is asked for or held; the response says only whether the worker is cleared", "responses": ok("Cleared") }, "delete": { "tags": ["health-requirements"], "summary": "Remove an entry made by mistake (occupational health only)", "responses": ok("Removed") } },
             "/api/workers/{pid}/contact-details": { "get": { "tags": ["me"], "summary": "A worker's contact details for HR and payroll (and the worker); each read by someone else is audited without values", "responses": ok("ContactDetails") } },
+            "/api/workers/{pid}/engagement": { "get": { "tags": ["engagements"], "summary": "The worker's basis, engagement end date (the last day), where it stands (open_ended, missing_end_date, running, ending_soon, past_end_undecided, past_end_decided), the extensions and the decisions so far; the worker and HR only", "responses": ok("Engagement") } },
+            "/api/workers/{pid}/engagement/extensions": { "post": { "tags": ["engagements"], "summary": "Move the end date later (new_end, optional reason); kept as a dated entry; the audit entry carries no reason", "responses": ok("Extension") } },
+            "/api/workers/{pid}/engagement/decision": { "post": { "tags": ["engagements"], "summary": "Record what a person decides about an engagement that is ending (decision: extend, convert or end), against the end date it settles; the worker's line manager or a privileged caller, never the worker; it records a decision and changes nothing else; the audit entry does not carry the decision", "responses": ok("Decision") } },
+            "/api/workers/{pid}/engagement/status-assessments": { "get": { "tags": ["engagements"], "summary": "A contractor's employment-status assessments, newest first", "responses": ok("Assessments") }, "post": { "tags": ["engagements"], "summary": "Record an assessment (outcome contractor, employee or undetermined; assessed_on not in the future); the reviewer is the caller", "responses": ok("Pid") } },
+            "/api/workers/{pid}/contractor-details": { "get": { "tags": ["engagements"], "summary": "A contractor's supplier, route and rate, or null; the rate is masked like salary and an unmasked read is audited", "responses": ok("ContractorDetails") }, "put": { "tags": ["engagements"], "summary": "Set supplier_ref (organization URN), route (agency, own_company, statement_of_work, direct) and a rate (rate_minor, rate_currency, rate_basis day or hour, all together or none); contractors only; never echoes the rate", "responses": ok("ContractorDetails") }, "delete": { "tags": ["engagements"], "summary": "Clear the details", "responses": ok("Cleared") } },
+            "/api/workers/{pid}/conversion-plans": { "get": { "tags": ["engagements"], "summary": "A worker's conversion plans, oldest first, with flags (past_end_without_approved_plan, review_due); HR only; the read is audited", "responses": ok("ConversionPlans") }, "post": { "tags": ["engagements"], "summary": "Propose a plan (intent convert, extend, end or undecided; target_on before the contract end; a conversion needs post_funding_kind or a reason; no pay figure); the worker's line manager or a privileged caller, never the worker; one plan is open at a time; the audit entry carries no reason", "responses": ok("ConversionPlan") } },
+            "/api/conversion-plans": { "get": { "tags": ["engagements"], "summary": "Open plans and engagements past their end with no approved plan, with flags (?organization=); HR only; names workers", "responses": ok("ConversionPlans") } },
+            "/api/conversion-plans/{pid}/approve": { "post": { "tags": ["engagements"], "summary": "Approve a proposed plan; never the proposer; also records the matching engagement decision against the current end date in the same transaction", "responses": ok("ConversionPlan") } },
+            "/api/conversion-plans/{pid}/abandon": { "post": { "tags": ["engagements"], "summary": "Drop a proposed or approved plan; it stays as history", "responses": ok("ConversionPlan") } },
+            "/api/conversion-plans/{pid}/done": { "post": { "tags": ["engagements"], "summary": "Carry out an approved conversion: the worker becomes permanent and the contract end is cleared in one transaction; the plan, extensions and decisions are kept", "responses": ok("ConversionPlan") } },
+            "/api/engagements/missing-end-date": { "get": { "tags": ["engagements"], "summary": "Fixed-term and contractor workers with no end date recorded (?organization=); none is ever invented", "responses": ok("MissingEndDate") } },
+            "/api/skills": { "get": { "tags": ["learning"], "summary": "The skills catalogue", "responses": ok("Skills") }, "post": { "tags": ["learning"], "summary": "Add a skill (name, category)", "responses": ok("Skill") } },
+            "/api/workers/{pid}/skills": { "get": { "tags": ["learning"], "summary": "A worker's declared skills and proficiency; seen by the worker, their line managers and HR", "responses": ok("WorkerSkills") }, "put": { "tags": ["learning"], "summary": "Declare a skill and proficiency", "responses": ok("WorkerSkill") } },
+            "/api/learning-paths": { "get": { "tags": ["learning"], "summary": "Learning paths", "responses": ok("LearningPaths") }, "post": { "tags": ["learning"], "summary": "Create a learning path", "responses": ok("LearningPath") } },
+            "/api/learning-paths/{pid}/enrollments": { "post": { "tags": ["learning"], "summary": "Enrol a worker on a path", "responses": ok("Enrollment") } },
+            "/api/learning-paths/{pid}/progress": { "get": { "tags": ["learning"], "summary": "Progress on a path; privileged callers only", "responses": ok("PathProgress") } },
+            "/api/mentorships": { "post": { "tags": ["learning"], "summary": "Start a mentorship", "responses": ok("Mentorship") } },
+            "/api/mentorships/{pid}": { "get": { "tags": ["learning"], "summary": "One mentorship; privileged callers only", "responses": ok("Mentorship") } },
+            "/api/mentorships/{pid}/status": { "post": { "tags": ["learning"], "summary": "Move a mentorship to a new status", "responses": ok("Mentorship") } },
+            "/api/mentorships/{pid}/sessions": { "post": { "tags": ["learning"], "summary": "Log a mentoring session", "responses": ok("Session") } },
+            "/api/learning/skills-matrix": { "get": { "tags": ["learning"], "summary": "Coverage over declared proficiencies; aggregate", "responses": ok("SkillsMatrix") } },
+            "/api/learning/mentorship-overview": { "get": { "tags": ["learning"], "summary": "Mentorships in aggregate", "responses": ok("MentorshipOverview") } },
+            "/api/learning/training-analytics": { "get": { "tags": ["learning"], "summary": "Training in aggregate", "responses": ok("TrainingAnalytics") } },
             "/api/skill-pools": { "get": { "tags": ["capacity"], "summary": "Skill pools in the caller's organizations (?organization=) with their members; a pool groups role profiles and skills into a plannable unit", "responses": ok("SkillPools") }, "post": { "tags": ["capacity"], "summary": "Create a pool (organization_ref, name unique per organization, operations_reservation_bp 0-10000: the share of its FTE kept for running live services)", "responses": ok("Pid") } },
             "/api/skill-pools/{pid}": { "get": { "tags": ["capacity"], "summary": "One pool with its members", "responses": ok("SkillPool") }, "put": { "tags": ["capacity"], "summary": "Rename a pool or change its reservation", "responses": ok("Pid") }, "delete": { "tags": ["capacity"], "summary": "Soft-delete a pool; it leaves every view", "responses": ok("Pid") } },
             "/api/skill-pools/{pid}/members": { "post": { "tags": ["capacity"], "summary": "Add a member: a role_profile_pid, or a skill_pid with min_proficiency 1-5 (never both)", "responses": ok("Pid") } },
@@ -434,6 +457,59 @@ pub fn spec() -> Value {
 
 #[cfg(test)]
 mod tests {
+    /// Every route the controllers register under `/api` has a path in the document. This is what
+    /// stops the document drifting behind the routes, or silently losing entries.
+    #[test]
+    fn every_registered_route_is_documented() {
+        let spec = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/openapi.rs"),
+        )
+        .unwrap();
+        let mut missing = Vec::new();
+        for entry in std::fs::read_dir(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/controllers"),
+        )
+        .unwrap()
+        {
+            let path = entry.unwrap().path();
+            if path.extension().and_then(|e| e.to_str()) != Some("rs") {
+                continue;
+            }
+            let flat = std::fs::read_to_string(&path)
+                .unwrap()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ");
+            let Some((_, rest)) = flat.split_once(".prefix(\"") else {
+                continue;
+            };
+            let Some((prefix, body)) = rest.split_once('"') else {
+                continue;
+            };
+            if !prefix.starts_with("/api") {
+                continue;
+            }
+            for call in body.split(".add(").skip(1) {
+                let Some(call) = call.trim_start().strip_prefix('"') else {
+                    continue;
+                };
+                let Some((route, _)) = call.split_once('"') else {
+                    continue;
+                };
+                let full = format!("{prefix}{route}");
+                if !spec.contains(&format!("\"{full}\"")) {
+                    missing.push(full);
+                }
+            }
+        }
+        missing.sort();
+        missing.dedup();
+        assert!(
+            missing.is_empty(),
+            "routes with no OpenAPI path: {missing:?}"
+        );
+    }
+
     /// The document parses, declares `OpenAPI` 3, and covers the mounted
     /// API surface (spot-checked against the route table).
     #[test]
@@ -449,6 +525,9 @@ mod tests {
             "/api/payroll-runs/{pid}/calculate",
             "/api/benchmarks/comparison",
             "/api/capacity",
+            "/api/workers/{pid}/engagement",
+            "/api/workers/{pid}/contractor-details",
+            "/api/engagements/missing-end-date",
             "/api/me/contact-details",
             "/api/me/time-off",
             "/api/me/resignation",

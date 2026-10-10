@@ -491,3 +491,220 @@ async fn contractor_details_and_assessments() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[allow(clippy::too_many_lines)] // one scenario read top to bottom
+// The daily task tells the manager and HR once about each end date, including an engagement
+// already past its end with no decision; it names no rate; a decision settles the end date it was
+// made for, and an extension gives a new date and so a new question.
+async fn end_of_engagement_reminders_and_decisions() {
+    use sea_orm::ConnectionTrait;
+    use workforce_planning_management_service::tasks::engagement_end_reminders::send_reminders;
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = chrono::Utc::now().date_naive();
+        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let make = |number: String, basis: &'static str, ends: Option<String>, manager: Option<String>| {
+            let (request, org) = (&request, org.clone());
+            async move {
+                let mut body = json!({
+                    "person_ref": a_person(), "organization_ref": org, "worker_number": number,
+                    "display_name": format!("Test Worker {number}"), "employment_type": basis,
+                    "department": "engineering", "job_title": "Engineer", "hired_on": "2026-01-05",
+                });
+                if let Some(e) = ends { body["engagement_ends_on"] = json!(e); }
+                if let Some(m) = manager { body["manager_pid"] = json!(m); }
+                let r = request.post("/api/workers").json(&body).await;
+                assert_eq!(r.status_code(), 200);
+                r.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let manager = make(format!("RM-{tag}"), "permanent", None, None).await;
+        let hr = make(format!("RH-{tag}"), "permanent", None, None).await;
+        ctx.db.execute_unprepared(&format!(
+            "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
+             VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4(), uuid::Uuid::new_v4())).await.unwrap();
+        let ending = make(format!("RA-{tag}"), "contractor", Some(day(30)), Some(manager.clone())).await;
+        let _later = make(format!("RB-{tag}"), "fixed_term", Some(day(90)), Some(manager.clone())).await;
+        let past = make(format!("RC-{tag}"), "contractor", Some(day(-1)), Some(manager.clone())).await;
+        let settled = make(format!("RD-{tag}"), "contractor", Some(day(-1)), Some(manager.clone())).await;
+        let _permanent = make(format!("RE-{tag}"), "permanent", None, Some(manager.clone())).await;
+        // A rate and a supplier exist for the one ending soon; they must not reach a notification.
+        request.put(&format!("/api/workers/{ending}/contractor-details"))
+            .json(&json!({ "supplier_ref": an_org(), "route": "agency", "rate_minor": 45_000, "rate_currency": "GBP", "rate_basis": "day" }))
+            .await.assert_status_ok();
+        // A decision recorded first settles the engagement that already ended.
+        let decided = request.post(&format!("/api/workers/{settled}/engagement/decision")).json(&json!({ "decision": "end" })).await;
+        assert_eq!(decided.status_code(), 200);
+
+        // First run: one ending, one ended with no decision; the manager and HR are told of each.
+        let first = send_reminders(&ctx, today, 60).await.unwrap();
+        assert_eq!((first.ending, first.ended_undecided, first.told), (1, 1, 4));
+        let notes = |pid: &str| {
+            let request = &request;
+            let pid = pid.to_string();
+            async move { request.get(&format!("/api/workers/{pid}/notifications")).await.json::<Value>() }
+        };
+        for (who, pid) in [("manager", &manager), ("HR", &hr)] {
+            let got = notes(pid).await;
+            let text = serde_json::to_string(&got).unwrap();
+            assert!(text.contains("engagement_ending") && text.contains("engagement_ended_undecided"), "{who}: {text}");
+            assert!(text.contains(&format!("RA-{tag}")) || text.contains("Test Worker"), "{who} names the worker");
+            for secret in ["45000", "45_000", "agency", "rate", "supplier"] {
+                assert!(!text.contains(secret), "{who}'s notification must not mention `{secret}`: {text}");
+            }
+            assert!(text.contains(&day(30)) && text.contains(&day(-1)));
+        }
+        // Not the one ending outside the window, the permanent one, or the decided one.
+        let mgr_text = serde_json::to_string(&notes(&manager).await).unwrap();
+        assert!(!mgr_text.contains(&day(90)), "outside the window");
+        assert_eq!(mgr_text.matches("engagement_ending").count(), 1);
+        assert_eq!(mgr_text.matches("engagement_ended_undecided").count(), 1, "the decided one is not asked about");
+
+        // Idempotent: a re-run tells no one twice.
+        assert_eq!(send_reminders(&ctx, today, 60).await.unwrap(), Default::default());
+        // The window moves: the one 90 calendar days out is now inside it, once.
+        let later = send_reminders(&ctx, today + chrono::Duration::days(40), 60).await.unwrap();
+        // The 90-day one is now ending; and the first contractor's end date (30 days out) has itself
+        // passed with no decision, which is a different reminder for the same worker.
+        assert_eq!((later.ending, later.ended_undecided), (1, 1), "the 90-day one is ending; the 30-day one has ended");
+
+        // An extension gives a new end date and so a new reminder, once it is inside the window.
+        request.post(&format!("/api/workers/{ending}/engagement/extensions")).json(&json!({ "new_end": day(130) })).await.assert_status_ok();
+        assert_eq!(send_reminders(&ctx, today + chrono::Duration::days(41), 60).await.unwrap().ending, 0, "130 days out is still beyond 60");
+        let again = send_reminders(&ctx, today + chrono::Duration::days(75), 60).await.unwrap();
+        assert_eq!(again.ending, 1, "the new end date is a new question");
+
+        // Decisions: validated, against the end date they settle, and the standing follows.
+        let url = |pid: &str| format!("/api/workers/{pid}/engagement/decision");
+        assert_eq!(request.post(&url(&past)).json(&json!({ "decision": "renew" })).await.status_code(), 422);
+        assert_eq!(request.post(&url(&_permanent)).json(&json!({ "decision": "end" })).await.status_code(), 422, "a permanent engagement has no end to decide about");
+        let before: Value = request.get(&format!("/api/workers/{past}/engagement")).await.json();
+        assert_eq!(before["standing"], "past_end_undecided", "never treated as continuing");
+        assert_eq!(before["decision"], Value::Null);
+        request.post(&url(&past)).json(&json!({ "decision": "convert" })).await.assert_status_ok();
+        let after: Value = request.get(&format!("/api/workers/{past}/engagement")).await.json();
+        assert_eq!((after["standing"].as_str(), after["decision"].as_str()), (Some("past_end_decided"), Some("convert")));
+        // A decision belongs to its end date: after an extension it no longer settles anything.
+        request.post(&url(&ending)).json(&json!({ "decision": "extend" })).await.assert_status_ok();
+        let settled_view: Value = request.get(&format!("/api/workers/{ending}/engagement")).await.json();
+        assert_eq!(settled_view["decision"], "extend");
+        request.post(&format!("/api/workers/{ending}/engagement/extensions")).json(&json!({ "new_end": day(200) })).await.assert_status_ok();
+        let renewed: Value = request.get(&format!("/api/workers/{ending}/engagement")).await.json();
+        assert_eq!(renewed["decision"], Value::Null, "a new end date is a new question");
+        assert_eq!(renewed["decisions"].as_array().unwrap().len(), 1, "the history is kept");
+        // The audit names the event, not the decision.
+        let audits = serde_json::to_string(&request.get(&format!("/api/audits/{past}")).await.json::<Value>()).unwrap();
+        assert!(audits.contains("engagement_decision_recorded") && !audits.contains("convert"));
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[allow(clippy::too_many_lines)] // one scenario read top to bottom
+// A conversion plan (WPM-R98): its refusals, its flags, the reminder that names its status and
+// review date but never its reason, the one-open-plan rule, the export and the erasure.
+async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
+    use workforce_planning_management_service::tasks::engagement_end_reminders::send_reminders;
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = chrono::Utc::now().date_naive();
+        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let make = |number: String, basis: &'static str, ends: Option<String>, manager: Option<String>| {
+            let (request, org) = (&request, org.clone());
+            async move {
+                let mut body = json!({
+                    "person_ref": a_person(), "organization_ref": org, "worker_number": number,
+                    "display_name": format!("Test Worker {number}"), "employment_type": basis,
+                    "department": "engineering", "job_title": "Engineer", "hired_on": "2026-01-05",
+                });
+                if let Some(e) = ends { body["engagement_ends_on"] = json!(e); }
+                if let Some(m) = manager { body["manager_pid"] = json!(m); }
+                let r = request.post("/api/workers").json(&body).await;
+                assert_eq!(r.status_code(), 200);
+                r.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let manager = make(format!("CM-{tag}"), "permanent", None, None).await;
+        let w = make(format!("CW-{tag}"), "contractor", Some(day(30)), Some(manager.clone())).await;
+        let permanent = make(format!("CP-{tag}"), "permanent", None, None).await;
+        let plans = format!("/api/workers/{w}/conversion-plans");
+        let propose = |body: Value| {
+            let (request, plans) = (&request, plans.clone());
+            async move { request.post(&plans).json(&body).await }
+        };
+
+        // Refusals, each with the reason it is refused.
+        assert_eq!(propose(json!({ "intent": "convert", "target_on": day(10) })).await.status_code(), 422, "no post funding and no reason");
+        assert_eq!(propose(json!({ "intent": "convert", "target_on": day(30), "post_funding_kind": "core" })).await.status_code(), 422, "the decision date falls before the end");
+        assert_eq!(propose(json!({ "intent": "convert", "target_on": day(-1), "post_funding_kind": "core" })).await.status_code(), 422, "in the past");
+        assert_eq!(propose(json!({ "intent": "convert", "target_on": day(10), "post_funding_kind": "lottery" })).await.status_code(), 422);
+        assert_eq!(propose(json!({ "intent": "convert", "target_on": day(10), "post_funding_kind": "core", "reason": "x".repeat(501) })).await.status_code(), 422);
+        let on_permanent = request.post(&format!("/api/workers/{permanent}/conversion-plans")).json(&json!({ "intent": "end", "target_on": day(10) })).await;
+        assert_eq!(on_permanent.status_code(), 422, "a permanent worker has nothing to convert");
+
+        // Before any plan the contract is flagged only once it has ended.
+        let none: Vec<Value> = request.get(&plans).await.json();
+        assert!(none.is_empty());
+
+        // A plan with no funding, but a stated reason, is accepted; one open plan at a time.
+        let ok = propose(json!({ "intent": "convert", "target_on": day(10), "reason": "Funding bid pending", "review_on": day(5) })).await;
+        assert_eq!(ok.status_code(), 200);
+        let pid = ok.json::<Value>()["pid"].as_str().unwrap().to_string();
+        assert_eq!(propose(json!({ "intent": "extend", "target_on": day(10) })).await.status_code(), 422);
+
+        // The reminder names the plan's status and review date and never its reason.
+        let report = send_reminders(&ctx, today, 60).await.unwrap();
+        assert_eq!(report.ending, 1);
+        let notes = request.get(&format!("/api/workers/{manager}/notifications")).await.text();
+        assert!(notes.contains("A conversion plan is proposed, to be reviewed on"), "{notes}");
+        assert!(notes.contains(&day(5)));
+        assert!(!notes.contains("Funding bid pending"), "the reason stays in the plan");
+
+        // In the list of open plans.
+        let listed: Vec<Value> = request.get("/api/conversion-plans").await.json();
+        let mine = listed.iter().find(|e| e["worker_pid"] == w.as_str()).expect("listed");
+        assert_eq!(mine["plan"]["status"], "proposed");
+
+        // Abandoning keeps the plan as history and frees the slot.
+        assert_eq!(request.post(&format!("/api/conversion-plans/{pid}/done")).await.status_code(), 422, "not approved yet");
+        request.post(&format!("/api/conversion-plans/{pid}/abandon")).await.assert_status_ok();
+        assert_eq!(request.post(&format!("/api/conversion-plans/{pid}/approve")).await.status_code(), 422, "abandoned");
+        let second = propose(json!({ "intent": "extend", "target_on": day(10) })).await;
+        assert_eq!(second.status_code(), 200);
+        let history: Vec<Value> = request.get(&plans).await.json();
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0]["status"], "abandoned");
+
+        // An undecided plan cannot be approved; an approved extension settles the end date.
+        let second_pid = second.json::<Value>()["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/conversion-plans/{second_pid}/approve")).await.assert_status_ok();
+        let engagement: Value = request.get(&format!("/api/workers/{w}/engagement")).await.json();
+        assert_eq!(engagement["decision"], "extend");
+        // Reminders no longer ask about an end date a person has decided.
+        assert_eq!(send_reminders(&ctx, today + chrono::Duration::days(1), 60).await.unwrap().ending, 0);
+        // Only a plan to convert is carried out.
+        assert_eq!(request.post(&format!("/api/conversion-plans/{second_pid}/done")).await.status_code(), 422);
+
+        // The export names the plans; erasing the worker removes them.
+        let export: Value = request.get(&format!("/api/workers/{w}/subject-access")).await.json();
+        assert_eq!(export["conversion_plans"].as_array().unwrap().len(), 2);
+        for to in ["active", "offboarding", "terminated"] {
+            request.post(&format!("/api/workers/{w}/status")).json(&json!({ "to": to })).await.assert_status_ok();
+        }
+        request.post(&format!("/api/workers/{w}/erase")).await.assert_status_ok();
+        use sea_orm::{ConnectionTrait, Statement};
+        let left = ctx.db.query_one_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            format!("SELECT count(*) AS n FROM conversion_plans WHERE worker_pid = '{w}'"),
+        )).await.unwrap().unwrap().try_get::<i64>("", "n").unwrap();
+        assert_eq!(left, 0, "erased with the worker");
+    })
+    .await;
+}

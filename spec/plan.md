@@ -525,6 +525,7 @@ enabled only with a recorded lawful basis.
 | `workers` (new columns `engagement_ends_on`, supplier, route, rate) | End date, supplier URN, route, rate and basis | Yes (rate masked like salary; in export; erased) |
 | `engagement_extensions` | Worker, previous end, new end, reason, decided by | Yes (HR-only; in export; erased) |
 | `engagement_status_assessments` | Worker, outcome, date, reviewer | Yes (HR-only; in export; erased) |
+| `conversion_plans` | Worker, intent, dates, post funding kind, reason, proposer, approver, status | Yes (HR-only; in export; erased; no pay figure) |
 | `plan_demand_lines`, `requisitions` (new columns) | Programme URN, FTE, basis, expected duration | No |
 | `headcount_snapshots` (new columns) | Headcount and FTE per basis | No (aggregate) |
 
