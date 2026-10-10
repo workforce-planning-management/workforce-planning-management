@@ -43,7 +43,7 @@ jobs:
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY,,}-api"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: workforce-planning-management-service-with-rust
           file: workforce-planning-management-service-with-rust/Containerfile
