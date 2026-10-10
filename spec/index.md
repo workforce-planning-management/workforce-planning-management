@@ -81,6 +81,9 @@ identities by `EntityRef` URN, never duplicating them.
 | [payroll-compensation.md](payroll-compensation.md) | Pillar 5: payroll runs, payslips, benchmarking                                            |
 | [people-directory-and-cover.md](people-directory-and-cover.md) | Employee directory, emergency contacts, backups (cover), the on-call rota with swaps and reminders (WPM-R39–R42) |
 | [expense-claims.md](expense-claims.md) | Expense claims: items, approval by someone other than the claimant, reimbursement (WPM-R55) |
+| [self-service-and-worker-requests.md](self-service-and-worker-requests.md) | Proposed: self-service updates, equality monitoring (bounded, off by default), flexible working, resignations, workplace health requirements (bounded, off by default), my time-off (WPM-R124–R130) |
+| [readiness-assessment.md](readiness-assessment.md) | Assessment of readiness for large medical and governmental organizations: verdict, a blocker found by probing, thirteen gaps with evidence, the gates only people can close (WPM-R114–R123) |
+| [engagements.md](engagements.md) | Built: the end date by engagement basis, extensions with history, a contractor's supplier, route and masked rate, status assessments, and the list of engagements missing an end date (WPM-R79, R80) |
 | [delivery-capacity.md](delivery-capacity.md) | Built: skill pools, programme demand, partner commitments, the pool × month capacity view, the constraint pool, the start check and recorded start decisions (WPM-R56–R60) |
 | [pay-scales.md](pay-scales.md) | A national public-sector pay scale (2026/27), salary placement and progression lookup, a worker's band and step with eligibility reminders (WPM-R51, R54) |
 | [job-levels.md](job-levels.md) | Google technical job levels L3–L11 as reference data; a worker's level and a role's level and pay band (WPM-R52–R53) |

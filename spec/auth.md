@@ -51,6 +51,33 @@ applied to HR.
 Every read of a highest/high-tier record is **audited** (see
 [audit.md](audit.md)).
 
+## Need-to-know on reads (WPM-R114, WPM-D71)
+
+The policy engine decides by *action*, and the reference policy lets every signed-in caller read (masking
+only money). So a caller holding no attributes could read a colleague's sick-leave request with its
+reason, their time-entry notes, every applicant's e-mail address and the audit trail. A guard now sits inside
+the sign-in guard and decides each `GET` under `/api` from a table in code
+([`rules/access.rs`](../workforce-planning-management-service-with-rust/src/rules/access.rs)):
+
+| Audience | Who may read |
+| --- | --- |
+| **Open** | Any signed-in caller: reference data and aggregates (pay scales, job levels, role profiles, the directory, capacity views, workforce plans, …) |
+| **Controller decides** | The controller loads the record and applies its own rule (expense claims, appraisals, emergency contacts, pay position, subject access, …) |
+| **Privileged** | HR, payroll, service and administrator callers only: applicants, requisitions, payroll runs, the audit trail and event feed, succession and pipelines, the retention report, … |
+| **Worker, in scope** | The worker, their line managers, privileged callers, and anyone in an organization the worker is in (reports, cover, on-call, groups, the worker's employment record) |
+| **Worker, with managers** | The worker, their line managers **up the chain**, and privileged callers (leave, time, skills, training, development plans, reviews, onboarding, …) |
+| **Worker, self only** | The worker and privileged callers; not the manager (adjustment requests, benefit enrolments, payslips, wellbeing prompts, notifications, assessment profile, mobility interests, ergonomic assessments, contractor details) |
+
+**Privileged** means an attribute (`hr`, `payroll` or `svc` is `true`, or `access` is `admin`) **or** an
+`hr_admin` / `payroll_admin` membership: in the worker's organization (or one that contains it) for a route
+about a worker; in any organization for a route that is not about one (applicants have no organization). A
+test fails when a `GET` route is added without a classification, and when a table entry matches no route.
+
+Writes are unchanged: they need `hr`, `svc` or `admin` at the policy. The guard is a no-op while sign-in is
+off, which production refuses. **Limits:** the line-manager rule follows `manager_pid`, so it is only as good as
+that data; the guard does not mask fields inside an allowed response (a manager reading `leave-requests` sees
+the kind of leave; sick leave no longer carries a reason, WPM-T190); and it covers reads only.
+
 ## Activation runbook (WPM-G1)
 
 Before WPM-D52 the shipped default was wide open (the family posture).

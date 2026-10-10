@@ -105,6 +105,19 @@ sign-in enforcement explicitly off** (see its header).
 - `scripts/check-links.py` fails on any dead relative link. A reference to a
   sibling repository is plain text, never a link.
 
+## WPM-R116 — Production refuses insecure data paths (built 2026-10-11)
+
+- **Database TLS.** In the `production` environment, boot refuses a `DATABASE_URL` that reaches another host
+  without TLS (`sslmode` of `require`, `verify-ca` or `verify-full`). `disable`, `allow`, `prefer` (which falls
+  back to plaintext) and no `sslmode` all count as plaintext. A loopback address or a Unix socket is not on a
+  network and needs nothing. `WPM_ALLOW_PLAINTEXT_DATABASE=1` is the explicit, logged override. `require` and
+  `verify-ca` start with a warning to use `verify-full`, because they do not check the server's identity.
+- **Request timeout.** The production configuration answers a request that runs past
+  `WPM_REQUEST_TIMEOUT_MS` (default 30000 milliseconds) with `408`.
+- Pure checks in `src/hardening.rs`, unit-tested over nineteen URLs; verified by booting the real binary in
+  production against a non-loopback address (refused; started with the override and the warning; a loopback
+  address started without either). The request identifier is on every response (`x-request-id`).
+
 ## Decisions
 
 - **WPM-D52 Secure by default.** A fresh install enforces sign-in. Turning it

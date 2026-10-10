@@ -32,6 +32,11 @@ server:
     limit_payload:
       enable: true
       body_limit: 2mb
+    # A request that runs longer than this is answered `408` (WPM-R116), so a slow or stalled
+    # caller cannot hold a worker and a database connection indefinitely. Milliseconds.
+    timeout_request:
+      enable: true
+      timeout: {{ get_env(name="WPM_REQUEST_TIMEOUT_MS", default="30000") }}
     # CORS is an allow-list, never `*`. The UI calls this API through its own
     # server (same origin), so this lists only the browser origins that may
     # call the API directly. `WPM_CORS_ORIGIN` is required: boot fails when

@@ -392,6 +392,7 @@ pub fn spec() -> Value {
             "/api/organization-confederations/{pid}": { "delete": { "tags": ["organizations"], "summary": "Revoke one confederation edge (soft delete)", "responses": ok("Deleted") } },
             "/api/audits/recent": { "get": { "tags": ["audit"], "summary": "Recent audit entries", "responses": ok("Audit entries") } },
             "/api/audits": { "get": { "tags": ["audit"], "summary": "Department-scoped trail (?department=&since=)", "responses": ok("Audit entries") } },
+            "/api/audits/verify": { "get": { "tags": ["audit"], "summary": "Check the audit trail's hash chain: ok, the number of entries, the head hash (record it elsewhere) and the first entry that does not match; privileged callers only", "responses": ok("ChainReport") } },
             "/api/audits/{entity_pid}": { "get": { "tags": ["audit"], "summary": "One record's audit trail", "responses": ok("Audit entries") } },
             "/api/events/recent": { "get": { "tags": ["events"], "summary": "Recent events (memory ring or outbox)", "responses": ok("Events") } },
             "/metrics.prom": { "get": { "tags": ["ops"], "summary": "Prometheus metrics (public)", "responses": ok("Exposition text") } }

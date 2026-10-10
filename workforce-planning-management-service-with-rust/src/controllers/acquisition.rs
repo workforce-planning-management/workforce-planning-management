@@ -15,7 +15,7 @@ use crate::models::_entities::{
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
-use crate::rules::{lifecycle, tokens};
+use crate::rules::{engagement, lifecycle, tokens};
 use crate::streaming;
 use crate::validation::Problems;
 
@@ -76,6 +76,10 @@ struct StagePayload {
     salary_currency: Option<String>,
     #[serde(default)]
     hired_on: Option<chrono::NaiveDate>,
+    /// The last day of the engagement (WPM-R79): required for `fixed_term` and
+    /// `contractor`, refused for `permanent`.
+    #[serde(default)]
+    engagement_ends_on: Option<chrono::NaiveDate>,
 }
 
 /// `POST /api/applications/{pid}/interviews` body.
@@ -547,6 +551,18 @@ async fn application_stage(
             tokens::EMPLOYMENT_TYPES,
             &employment_type,
         );
+        let hired_on = payload
+            .hired_on
+            .unwrap_or_else(|| chrono::Utc::now().date_naive());
+        if engagement::Basis::parse(&employment_type).is_some()
+            && let Err(message) = engagement::validate_end_date(
+                &employment_type,
+                hired_on,
+                payload.engagement_ends_on,
+            )
+        {
+            problems.push(message);
+        }
         ensure_valid(&problems.into_vec())?;
         let worker = workers::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
@@ -563,12 +579,9 @@ async fn application_stage(
             manager_pid: ActiveValue::set(None),
             salary_minor: ActiveValue::set(payload.salary_minor),
             salary_currency: ActiveValue::set(payload.salary_currency.clone()),
-            hired_on: ActiveValue::set(
-                payload
-                    .hired_on
-                    .unwrap_or_else(|| chrono::Utc::now().date_naive()),
-            ),
+            hired_on: ActiveValue::set(hired_on),
             terminated_on: ActiveValue::set(None),
+            engagement_ends_on: ActiveValue::set(payload.engagement_ends_on),
             deleted_at: ActiveValue::set(None),
             ..Default::default()
         }

@@ -19,6 +19,7 @@ pub mod cpd;
 pub mod development;
 pub mod directory;
 pub mod docs;
+pub mod engagements;
 pub mod ergonomics;
 pub mod esco;
 pub mod expenses;

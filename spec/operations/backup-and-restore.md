@@ -3,6 +3,12 @@
 > ⚠️ **Demo software.** These are the backup arrangements the repository can prove.
 > A deployer sets their own targets, owns the storage, and rehearses the restore.
 
+## The audit chain across a backup (WPM-R115)
+
+Record the audit trail's head hash with each backup (`cargo loco task verify_audit_chain` prints it) and keep
+it with your records, not in the database. After a restore, run the task again: the chain must be intact and
+the head must match the one you recorded for that backup. The restore drill does this on every run.
+
 ## Targets
 
 | | What the scripts here achieve | What a deployer can reach by adding WAL archiving |
@@ -25,23 +31,36 @@ credentials are environment): keep them in the deployer's own secret store.
 ## The scripts
 
 ```sh
-# Nightly (cron or a timer). Output off the database host, encrypted at rest.
-DATABASE_URL=postgres://… scripts/backup.sh /path/to/backups
+# One time: a key, kept APART from the backups (a secrets manager, a second person's safe).
+( umask 077; openssl rand -base64 48 > backup.key )
+
+# Nightly (cron or a timer). Encrypted as it is written; output off the database host.
+WPM_BACKUP_KEY_FILE=/path/to/backup.key DATABASE_URL=postgres://… scripts/backup.sh /path/to/backups
 
 # Every few minutes: copy the erasure ledger out of the database.
 DATABASE_URL=postgres://… scripts/export-erasure-ledger.sh /path/off-host/erasure-ledger.csv
 
 # After a loss: restore into an EMPTY database, replay erasures, then start.
-WPM_BIN=/path/to/workforce-planning-management-service \
-  scripts/restore.sh /path/to/backups/wpm-…dump postgres://…/new_database \
+WPM_BACKUP_KEY_FILE=/path/to/backup.key WPM_BIN=/path/to/workforce-planning-management-service \
+  scripts/restore.sh /path/to/backups/wpm-…dump.enc postgres://…/new_database \
   /path/off-host/erasure-ledger.csv
 ```
 
-- `backup.sh`: custom-format `pg_dump` (no owners or grants, so it restores under any
+- `backup.sh`: **encrypted by default** (WPM-R117). It refuses to run without `WPM_BACKUP_KEY_FILE` unless
+  `WPM_BACKUP_ALLOW_PLAINTEXT=1` accepts an unencrypted backup (and then warns). The dump is piped straight into
+  AES-256-CBC with a PBKDF2 key from the key file's first line (at least 32 characters), so **the plaintext
+  never touches the disk**. Beside the `.dump.enc` it writes a `.sha256` and a `.hmac` (HMAC-SHA256 over the
+  ciphertext, with a separate key derived from the same passphrase). A backup without its key is unreadable, and
+  a key kept beside its backups protects nothing; losing the key loses the backup. The cipher is the `openssl`
+  in your path, chosen because every host has it and the dump is large; it is not authenticated encryption, which
+  is why the tag is checked first. Use your platform's encrypted storage or a key management service as well.
+- Also: custom-format `pg_dump` (no owners or grants, so it restores under any
   role), owner-only permissions, a `.sha256` file, and **backups older than
   `BACKUP_RETENTION_DAYS` (default 35 calendar days) are deleted**, so that a person's
   erased data does not live on in old backups indefinitely.
-- `restore.sh`: verifies the checksum, refuses a target that already has tables,
+- `restore.sh`: for a `.enc` file needs `WPM_BACKUP_KEY_FILE`, **checks the `.hmac` tag before decrypting** (a wrong
+  key, a damaged file or an altered one is refused with exit code 4 and named), decrypts into a private temporary
+  directory removed on exit, and then verifies the checksum, refuses a target that already has tables,
   restores, then **replays erasures** (it requires `WPM_BIN` for that, or an explicit
   `--skip-replay`, which prints a loud warning).
 - `restore-drill.sh`: the whole loop on scratch databases; see below.

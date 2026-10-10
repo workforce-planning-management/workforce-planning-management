@@ -27,6 +27,23 @@ pub enum BalanceCheck {
     },
 }
 
+/// A sick-leave request records that it is sick leave and its dates, never why (WPM-D73): a
+/// diagnosis is special-category health data the service has no need to hold. Other kinds may
+/// give a reason. A blank reason is no reason.
+///
+/// # Errors
+///
+/// A sick-leave request that carries a reason.
+pub fn validate_reason(kind: &str, reason: Option<&str>) -> Result<(), String> {
+    if kind == "sick" && reason.is_some_and(|r| !r.trim().is_empty()) {
+        return Err(
+            "sick leave records that it is sick leave and its dates, never why: leave the reason out"
+                .to_string(),
+        );
+    }
+    Ok(())
+}
+
 /// Check taking `requested` days of `kind` leave against
 /// `entitled - used`. `unpaid` leave always passes (no balance).
 #[must_use]
@@ -84,6 +101,19 @@ pub fn ranges_overlap(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_sick_leave_request_carries_no_reason() {
+        use super::validate_reason;
+        assert!(validate_reason("sick", None).is_ok());
+        assert!(validate_reason("sick", Some("")).is_ok(), "blank is none");
+        assert!(validate_reason("sick", Some("   ")).is_ok());
+        assert!(validate_reason("sick", Some("chemotherapy")).is_err());
+        assert!(validate_reason("sick", Some(" x ")).is_err());
+        for kind in ["annual", "parental", "unpaid", "other"] {
+            assert!(validate_reason(kind, Some("holiday")).is_ok(), "{kind}");
+        }
+    }
+
     use super::*;
     use chrono::NaiveDate;
 

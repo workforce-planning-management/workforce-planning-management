@@ -16,7 +16,8 @@
 #      made AFTER the backup), and export the erasure ledger as the cron job would;
 #   4. restore the backup into a second, empty database;
 #   5. check the restored tables match the fingerprints (row counts and a checksum
-#      of every row), that the migrations are all recorded, and that the erased
+#      of every row), that the audit hash chain is intact with the same head hash,
+#      that the migrations are all recorded, and that the erased
 #      person is back (the problem the replay exists to solve);
 #   6. replay the exported ledger, and check the person is erased again;
 #   7. start the real service on the restored database and check it answers with
@@ -86,10 +87,19 @@ DATABASE_URL="$SRC_URL" "$WPM_BIN" db migrate >/dev/null
 DATABASE_URL="$SRC_URL" "$WPM_BIN" task seed >/dev/null
 src_workers="$(psql "$SRC_URL" -Atc 'select count(*) from workers where deleted_at is null')"
 [ "$src_workers" -gt 0 ] || fail "the seed produced no workers"
+# The seed writes no audit entries; add a few through the database's own chain trigger, so the
+# audit check below has a chain to compare.
+psql "$SRC_URL" -qc "insert into audit_logs (entity, entity_pid, action, actor) select 'drill', gen_random_uuid(), 'seeded', 'drill' from generate_series(1, 5)" >/dev/null
 
 step "2. back up, and fingerprint every table at that moment"
+# The drill runs the real, encrypted path (WPM-R117) with a key made for the run.
+( umask 077; openssl rand -base64 48 > "$work/backup.key" )
+export WPM_BACKUP_KEY_FILE="$work/backup.key"
 dump="$(DATABASE_URL="$SRC_URL" BACKUP_RETENTION_DAYS=35 "$here/backup.sh" "$work/backups")"
 checksums "$SRC_URL" > "$work/before.sums"
+# The audit trail's hash chain (WPM-R115): record its head hash now, as an operator would
+# keep it elsewhere, and check the restored copy has the same chain.
+chain_before="$(DATABASE_URL="$SRC_URL" "$WPM_BIN" task verify_audit_chain 2>/dev/null | tail -1)"
 tables="$(wc -l < "$work/before.sums" | tr -d ' ')"
 echo "backed up $dump ($tables tables)" >&2
 
@@ -121,6 +131,10 @@ applied_src="$(psql "$SRC_URL" -Atc 'select count(*) from seaql_migrations')"
 applied_dst="$(psql "$DST_URL" -Atc 'select count(*) from seaql_migrations')"
 [ "$applied_src" = "$applied_dst" ] || fail "migrations differ: $applied_src vs $applied_dst"
 echo "$applied_dst migrations recorded" >&2
+chain_after="$(DATABASE_URL="$DST_URL" "$WPM_BIN" task verify_audit_chain 2>/dev/null | tail -1)" \
+  || fail "the restored audit chain is broken: $chain_after"
+[ "$chain_before" = "$chain_after" ] || fail "the audit chain differs after the restore: $chain_before vs $chain_after"
+echo "audit chain intact and identical after the restore: $chain_after" >&2
 back="$(psql "$DST_URL" -Atc "select count(*) from workers where pid = '$victim' and display_name <> '[erased]'")"
 [ "$back" = "1" ] || fail "expected the erased person to be back in the restored copy"
 echo "the person erased after the backup is back (as expected before the replay)" >&2

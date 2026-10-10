@@ -103,6 +103,7 @@ impl Hooks for App {
             .add_route(controllers::change::routes())
             .add_route(controllers::planning::routes())
             .add_route(controllers::capacity::routes())
+            .add_route(controllers::engagements::routes())
             .add_route(controllers::esco::routes())
             .add_route(controllers::framework_roles::routes())
             .add_route(controllers::career::routes())
@@ -165,12 +166,29 @@ impl Hooks for App {
                 }
             });
         }
+        // Production refuses a plaintext connection to the database (WPM-R116).
+        let allow_plaintext = crate::compat::env_var("WPM_ALLOW_PLAINTEXT_DATABASE")
+            .is_some_and(|v| auth::parse_bool(&v));
+        match crate::hardening::database_check(
+            production,
+            &ctx.config.database.uri,
+            allow_plaintext,
+        ) {
+            Ok(Some(warning)) => tracing::warn!("{warning}"),
+            Ok(None) => {}
+            Err(message) => return Err(loco_rs::Error::string(&message)),
+        }
         auth::init().await;
         auth::spawn_key_refresh();
         auth::spawn_policy_watcher();
         // Later layers are outer: headers wrap everything (so a 401 or 429
         // carries them), the rate limit runs before the token is checked.
+        // Need-to-know (WPM-R114) sits inside the sign-in guard: a token is verified first.
         Ok(router
+            .layer(axum::middleware::from_fn_with_state(
+                ctx.clone(),
+                crate::need_to_know::need_to_know_mw,
+            ))
             .layer(axum::middleware::from_fn(require_auth_mw))
             .layer(axum::middleware::from_fn(
                 crate::version::require_version_mw,
@@ -193,11 +211,15 @@ impl Hooks for App {
         tasks.register(tasks::replay_erasures::ReplayErasures);
         tasks.register(tasks::import_framework::ImportFramework);
         tasks.register(tasks::import_esco::ImportEsco);
+        tasks.register(tasks::verify_audit_chain::VerifyAuditChain);
         // tasks-inject (do not remove)
     }
 
     async fn truncate(ctx: &AppContext) -> Result<()> {
         truncate_table(&ctx.db, EventOutbox).await?;
+        truncate_table(&ctx.db, EngagementStatusAssessments).await?;
+        truncate_table(&ctx.db, WorkerContractorDetails).await?;
+        truncate_table(&ctx.db, EngagementExtensions).await?;
         truncate_table(&ctx.db, StartDecisions).await?;
         truncate_table(&ctx.db, CapacitySettings).await?;
         truncate_table(&ctx.db, PartnerCommitments).await?;

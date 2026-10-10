@@ -105,6 +105,12 @@ impl Task for Seed {
                         })?,
                     ),
                     terminated_on: ActiveValue::set(None),
+                    // A fixed-term engagement needs an end date (WPM-R79).
+                    engagement_ends_on: ActiveValue::set(
+                        (i % 4 == 3)
+                            .then(|| chrono::NaiveDate::from_ymd_opt(2028, 3, 1))
+                            .flatten(),
+                    ),
                     deleted_at: ActiveValue::set(None),
                     ..Default::default()
                 }

@@ -18,7 +18,7 @@ use crate::metrics::Metrics;
 use crate::models::_entities::{benefit_enrollments, benefit_plans, onboarding_items, workers};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
-use crate::rules::{lifecycle, org, talent, tokens};
+use crate::rules::{engagement, lifecycle, org, talent, tokens};
 use crate::streaming;
 use crate::validation::Problems;
 
@@ -45,6 +45,10 @@ struct WorkerPayload {
     #[serde(default)]
     salary_currency: Option<String>,
     hired_on: chrono::NaiveDate,
+    /// The last day of the engagement: required for `fixed_term` and `contractor`, optional
+    /// for `intern`, refused for `permanent` (WPM-R79).
+    #[serde(default)]
+    engagement_ends_on: Option<chrono::NaiveDate>,
 }
 
 /// `PUT /api/workers/{pid}` body — the mutable employment facts.
@@ -71,6 +75,10 @@ struct WorkerUpdate {
     salary_currency: Option<String>,
     #[serde(default)]
     upstream_worker_ref: Option<String>,
+    /// Record a missing end date. A date already set moves only by an extension
+    /// (`POST /api/workers/{pid}/engagement/extensions`), so the history is kept.
+    #[serde(default)]
+    engagement_ends_on: Option<chrono::NaiveDate>,
 }
 
 /// `POST /api/workers/{pid}/status` body.
@@ -133,6 +141,12 @@ fn validate_worker(p: &WorkerPayload) -> Vec<String> {
     );
     problems.require_text("department", &p.department);
     problems.require_text("job_title", &p.job_title);
+    if engagement::Basis::parse(&p.employment_type).is_some()
+        && let Err(message) =
+            engagement::validate_end_date(&p.employment_type, p.hired_on, p.engagement_ends_on)
+    {
+        problems.push(message);
+    }
     if let Err(message) = org::normalize_location(p.location.as_deref()) {
         problems.push(message);
     }
@@ -194,6 +208,7 @@ async fn create_worker(
         salary_currency: ActiveValue::set(payload.salary_currency.clone()),
         hired_on: ActiveValue::set(payload.hired_on),
         terminated_on: ActiveValue::set(None),
+        engagement_ends_on: ActiveValue::set(payload.engagement_ends_on),
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
@@ -327,6 +342,19 @@ async fn get_worker(
     })
 }
 
+/// What is wrong with recording `end` on an existing worker, if anything: a date already set
+/// moves only by an extension (so the history is kept), and a new one must fit the basis.
+fn end_date_problem(worker: &workers::Model, end: Option<chrono::NaiveDate>) -> Option<String> {
+    let end = end?;
+    if worker.engagement_ends_on.is_some() {
+        return Some(
+            "the engagement already has an end date; move it with an extension so the history is kept"
+                .to_string(),
+        );
+    }
+    engagement::validate_end_date(&worker.employment_type, worker.hired_on, Some(end)).err()
+}
+
 /// `PUT /api/workers/{pid}` — update mutable employment facts.
 /// A manager change runs the org-chart cycle check (WPM-R7).
 #[debug_handler]
@@ -366,6 +394,9 @@ async fn update_worker(
         entity_ref::EntityType::Worker,
         payload.upstream_worker_ref.as_deref(),
     );
+    if let Some(message) = end_date_problem(&worker, payload.engagement_ends_on) {
+        problems.push(message);
+    }
     ensure_valid(&problems.into_vec())?;
     if let Some(manager) = payload.manager_pid {
         records::find_worker(&ctx.db, manager).await?;
@@ -405,6 +436,9 @@ async fn update_worker(
     }
     if let Some(v) = payload.upstream_worker_ref {
         active.upstream_worker_ref = ActiveValue::set(Some(v));
+    }
+    if let Some(v) = payload.engagement_ends_on {
+        active.engagement_ends_on = ActiveValue::set(Some(v));
     }
     let row = active.update(&txn).await?;
     Audit::record(

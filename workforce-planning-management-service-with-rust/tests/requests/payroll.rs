@@ -207,10 +207,10 @@ async fn a_contractor_gets_no_payslip() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let mut pids = Vec::new();
-        for (number, kind) in [
-            ("E-3001", "permanent"),
-            ("E-3002", "fixed_term"),
-            ("E-3003", "contractor"),
+        for (number, kind, ends_on) in [
+            ("E-3001", "permanent", None),
+            ("E-3002", "fixed_term", Some("2027-12-31")),
+            ("E-3003", "contractor", Some("2027-12-31")),
         ] {
             let created: Value = request
                 .post("/api/workers")
@@ -225,6 +225,7 @@ async fn a_contractor_gets_no_payslip() {
                     "salary_minor": 3_600_000,
                     "salary_currency": "GBP",
                     "hired_on": "2026-01-05",
+                    "engagement_ends_on": ends_on,
                 }))
                 .await
                 .json();

@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security — backups are encrypted by default (WPM-T192)
+
+**Behaviour change.** `scripts/backup.sh` refuses to run without `WPM_BACKUP_KEY_FILE` (a file whose first line is
+a passphrase of at least 32 characters) unless `WPM_BACKUP_ALLOW_PLAINTEXT=1`. It writes `wpm-….dump.enc` with a
+`.hmac` tag; `scripts/restore.sh` needs the same key for a `.enc` file and checks the tag first. Backups made
+before this are plaintext `.dump` files and restore as before.
+
+### Security — production refuses a plaintext database connection and times requests out (WPM-T191)
+
+**Behaviour change in production.** Boot refuses a `DATABASE_URL` that reaches another host without
+`sslmode=require`, `verify-ca` or `verify-full` (a loopback address or a Unix socket is exempt); set
+`WPM_ALLOW_PLAINTEXT_DATABASE=1` to accept the risk explicitly. A request running longer than
+`WPM_REQUEST_TIMEOUT_MS` (default 30000) is answered `408`.
+
+### Security — the audit trail is append-only and hash-chained (WPM-T189)
+
+Migration `000055`: the database refuses `UPDATE` and `DELETE` on `audit_logs`, and each entry carries a hash of
+its content and the entry before it. New: `GET /api/audits/verify`, the `verify_audit_chain` task, and the entries
+now carry `chain_seq`, `prev_hash` and `entry_hash`. Existing entries are chained by the migration. Record the head
+hash outside the database. Audit writes now serialise on a lock until their transaction ends.
+
+### Changed — sick leave takes no reason (WPM-T190)
+
+**Behaviour change, and a one-way migration.** `POST /api/workers/{pid}/leave-requests` with `kind: sick` now refuses
+a `reason`: a diagnosis is health data the service has no need to hold. Migration `000054` removes the reason from
+sick-leave requests already stored; the text cannot be restored. Other kinds keep their reason.
+
+### Security — reads are need-to-know (WPM-T188)
+
+**Behaviour change.** With sign-in on, a signed-in caller could read a colleague's sick-leave request (with its
+reason), time-entry notes, every applicant's details and the audit trail. A guard now classifies every `GET`:
+reference data and aggregates stay open to any signed-in caller; applicants, payroll runs, the audit trail,
+succession and similar are HR, payroll, service and administrator only; a worker's personal records are for the
+worker, their line managers up the chain and privileged callers; the most personal (adjustment requests, benefit
+enrolments, payslips, wellbeing, notifications) for the worker and privileged callers only. The reference policy
+is unchanged. A deployment whose interface showed a person data outside their need will now see `403`.
+
+### Added — engagement end dates, extensions and contractor details (WPM-T137)
+
+`engagement_ends_on` (the last day; required for fixed-term and contractor, optional for an intern, refused for
+permanent), dated extensions, a contractor's supplier, route and rate (masked like salary) and employment-status
+assessments. Migration `000053`. **Behaviour change:** creating or hiring a fixed-term or contractor worker now
+needs `engagement_ends_on`, and a permanent worker is refused one. Existing rows keep no end date and are listed
+by `GET /api/engagements/missing-end-date`.
+
+### Added — engagement rules and basis-aware supply projection, not yet wired in (WPM-T135)
+
+`rules::engagement` (end-date rules per basis, extensions, the end-of-engagement window in calendar days,
+standing, flags) and `rules::planning::project_by_basis`. No endpoint uses them yet.
+
 ### Added — delivery capacity (WPM-T104–T107)
 
 Skill pools, programme demand and partner commitments (`/api/skill-pools`, `/api/programme-demands`,

@@ -148,6 +148,179 @@ pub fn project_supply(opening: usize, attrition_bp: i32, days: i64) -> i64 {
     i64::try_from((opening - leavers).max(0)).unwrap_or(i64::MAX)
 }
 
+/// One employed worker, as the basis-aware projection sees them (WPM-R85). No name and no
+/// reference to the person.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Person {
+    /// How they are engaged.
+    pub basis: crate::rules::engagement::Basis,
+    /// Contracted FTE as a percentage (`100` is full time).
+    pub fte_percent: i32,
+    /// The last day of the engagement; `None` where none is recorded. An extension moves
+    /// this date, so a recorded extension is already in it.
+    pub ends_on: Option<NaiveDate>,
+}
+
+/// Supply from one basis at the target date.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BasisSupply {
+    /// People engaged on the target date. `None` when it cannot be said (permanent staff
+    /// exist and there is not enough history for an attrition rate).
+    pub headcount: Option<i64>,
+    /// Their FTE in hundredths, under the same condition.
+    pub fte_centi: Option<i64>,
+    /// People of a basis that needs an end date, or an intern, with none recorded; they
+    /// are counted as continuing and named in the assumptions.
+    pub no_end_date: usize,
+    /// People whose recorded end falls before the target date, so are not counted.
+    pub leaving_before: usize,
+}
+
+/// The supply projection for every basis at one target date.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Projection {
+    /// Permanent staff, projected by attrition.
+    pub permanent: BasisSupply,
+    /// Fixed-term staff, projected by their known end dates.
+    pub fixed_term: BasisSupply,
+    /// Contractors, projected by their known end dates.
+    pub contractor: BasisSupply,
+    /// Interns, projected by their end dates where they have one.
+    pub intern: BasisSupply,
+    /// All bases together; `None` when any part cannot be said.
+    pub total_headcount: Option<i64>,
+    /// All bases together, in FTE hundredths.
+    pub total_fte_centi: Option<i64>,
+    /// Each assumption, named.
+    pub assumptions: Vec<String>,
+}
+
+/// Apply an annual attrition (basis points) over `days` calendar days to an amount,
+/// rounded to the nearest whole unit and never negative.
+fn attrit(opening: i64, attrition_bp: i32, days: i64) -> i64 {
+    let days = i128::from(days.max(0));
+    let bp = i128::from(attrition_bp.max(0));
+    let opening = i128::from(opening);
+    let denominator = 10_000 * 365;
+    let leavers = (opening * bp * days + denominator / 2) / denominator;
+    i64::try_from((opening - leavers).max(0)).unwrap_or(i64::MAX)
+}
+
+/// Project supply at `target`, each basis on its own terms (WPM-R85, WPM-D57):
+///
+/// - **fixed-term, contractor and intern** leave on their known end date: engaged on that
+///   day, gone the day after. Someone with no end date recorded is counted as continuing
+///   and the assumption says how many;
+/// - **permanent** staff leave at the observed or stated annual attrition, which applies to
+///   them **only**. With permanent staff and no rate (`insufficient_history`) their supply,
+///   and the totals, are `None`, never zero. With no permanent staff the permanent supply
+///   is a known zero.
+///
+/// No hires are assumed. Headcount and FTE are both given.
+#[must_use]
+pub fn project_by_basis(
+    people: &[Person],
+    as_of: NaiveDate,
+    target: NaiveDate,
+    permanent_attrition_bp: Option<i32>,
+    attrition_source: &str,
+) -> Projection {
+    use crate::rules::engagement::Basis;
+    let days = (target - as_of).num_days().max(0);
+    let supply_of = |basis: Basis| -> BasisSupply {
+        let group: Vec<&Person> = people.iter().filter(|p| p.basis == basis).collect();
+        let opening = i64::try_from(group.len()).unwrap_or(i64::MAX);
+        let opening_fte: i64 = group.iter().map(|p| i64::from(p.fte_percent.max(0))).sum();
+        if basis == Basis::Permanent {
+            return match (opening, permanent_attrition_bp) {
+                (0, _) => BasisSupply {
+                    headcount: Some(0),
+                    fte_centi: Some(0),
+                    no_end_date: 0,
+                    leaving_before: 0,
+                },
+                (_, Some(bp)) => BasisSupply {
+                    headcount: Some(attrit(opening, bp, days)),
+                    fte_centi: Some(attrit(opening_fte, bp, days)),
+                    no_end_date: 0,
+                    leaving_before: 0,
+                },
+                (_, None) => BasisSupply {
+                    headcount: None,
+                    fte_centi: None,
+                    no_end_date: 0,
+                    leaving_before: 0,
+                },
+            };
+        }
+        let mut headcount = 0;
+        let mut fte = 0;
+        let mut no_end = 0;
+        let mut leaving = 0;
+        for person in &group {
+            match person.ends_on {
+                None => {
+                    no_end += 1;
+                    headcount += 1;
+                    fte += i64::from(person.fte_percent.max(0));
+                }
+                Some(end) if end >= target => {
+                    headcount += 1;
+                    fte += i64::from(person.fte_percent.max(0));
+                }
+                Some(_) => leaving += 1,
+            }
+        }
+        BasisSupply {
+            headcount: Some(headcount),
+            fte_centi: Some(fte),
+            no_end_date: no_end,
+            leaving_before: leaving,
+        }
+    };
+    let permanent = supply_of(Basis::Permanent);
+    let fixed_term = supply_of(Basis::FixedTerm);
+    let contractor = supply_of(Basis::Contractor);
+    let intern = supply_of(Basis::Intern);
+    let parts = [permanent, fixed_term, contractor, intern];
+    let sum = |pick: fn(&BasisSupply) -> Option<i64>| -> Option<i64> {
+        parts.iter().map(pick).sum::<Option<i64>>()
+    };
+    let mut assumptions = vec!["No hires are assumed.".to_string()];
+    match permanent_attrition_bp {
+        Some(bp) => assumptions.push(format!(
+            "Permanent staff leave at {bp} basis points a year ({attrition_source}); the rate is applied to permanent staff only."
+        )),
+        None => assumptions.push(
+            "Permanent staff: insufficient history for an attrition rate, so their supply is not projected.".to_string(),
+        ),
+    }
+    assumptions.push(
+        "Fixed-term, contractor and intern engagements leave the day after their recorded end date; a recorded extension has already moved it.".to_string(),
+    );
+    for (label, part) in [
+        ("fixed-term", fixed_term),
+        ("contractor", contractor),
+        ("intern", intern),
+    ] {
+        if part.no_end_date > 0 {
+            assumptions.push(format!(
+                "{} {label} engagement(s) have no end date recorded and are counted as continuing.",
+                part.no_end_date
+            ));
+        }
+    }
+    Projection {
+        permanent,
+        fixed_term,
+        contractor,
+        intern,
+        total_headcount: sum(|p| p.headcount),
+        total_fte_centi: sum(|p| p.fte_centi),
+        assumptions,
+    }
+}
+
 /// Headcount gap: demand minus projected supply. Positive is a shortfall,
 /// negative a surplus.
 #[must_use]
@@ -176,6 +349,118 @@ pub fn competency_shortfall(needed: usize, proficient: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn person(basis: crate::rules::engagement::Basis, fte: i32, ends: Option<NaiveDate>) -> Person {
+        Person {
+            basis,
+            fte_percent: fte,
+            ends_on: ends,
+        }
+    }
+
+    #[test]
+    fn each_basis_is_projected_on_its_own_terms() {
+        use crate::rules::engagement::Basis::{Contractor, FixedTerm, Intern, Permanent};
+        let as_of = day(2026, 1, 1);
+        let target = day(2026, 7, 1);
+        let people = [
+            person(Permanent, 100, None),
+            person(Permanent, 50, None),
+            person(FixedTerm, 100, Some(day(2026, 7, 1))), // ends on the target date: still engaged
+            person(FixedTerm, 100, Some(day(2026, 6, 30))), // ends the day before: gone
+            person(Contractor, 100, Some(day(2026, 12, 31))), // an extension past the target
+            person(Contractor, 80, None),                  // no end date: counted, and named
+            person(Intern, 100, Some(day(2026, 3, 1))),
+        ];
+        let p = project_by_basis(&people, as_of, target, Some(0), "stated");
+        assert_eq!(p.fixed_term.headcount, Some(1));
+        assert_eq!(p.fixed_term.fte_centi, Some(100));
+        assert_eq!(p.fixed_term.leaving_before, 1);
+        assert_eq!(p.contractor.headcount, Some(2));
+        assert_eq!(p.contractor.fte_centi, Some(180));
+        assert_eq!(p.contractor.no_end_date, 1);
+        assert_eq!(p.intern.headcount, Some(0));
+        // With no attrition every permanent worker stays.
+        assert_eq!(p.permanent.headcount, Some(2));
+        assert_eq!(p.permanent.fte_centi, Some(150));
+        assert_eq!(p.total_headcount, Some(5));
+        assert_eq!(p.total_fte_centi, Some(100 + 150 + 180));
+        assert!(
+            p.assumptions
+                .iter()
+                .any(|a| a.contains("1 contractor engagement(s) have no end date"))
+        );
+    }
+
+    #[test]
+    fn attrition_applies_to_permanent_staff_only() {
+        use crate::rules::engagement::Basis::{Contractor, Permanent};
+        let as_of = day(2026, 1, 1);
+        let target = day(2027, 1, 1); // 365 calendar days
+        let mut people = vec![person(Contractor, 100, Some(day(2028, 1, 1))); 10];
+        people.extend(vec![person(Permanent, 100, None); 10]);
+        // 10% a year: one of ten permanent staff leaves; the ten contractors are untouched.
+        let p = project_by_basis(&people, as_of, target, Some(1_000), "observed");
+        assert_eq!(p.permanent.headcount, Some(9));
+        assert_eq!(p.permanent.fte_centi, Some(900));
+        assert_eq!(p.contractor.headcount, Some(10));
+        assert_eq!(p.total_headcount, Some(19));
+        assert!(
+            p.assumptions
+                .iter()
+                .any(|a| a.contains("permanent staff only"))
+        );
+    }
+
+    #[test]
+    fn permanent_without_a_rate_is_unknown_never_zero() {
+        use crate::rules::engagement::Basis::{Contractor, Permanent};
+        let people = [
+            person(Permanent, 100, None),
+            person(Contractor, 100, Some(day(2027, 1, 1))),
+        ];
+        let p = project_by_basis(&people, day(2026, 1, 1), day(2026, 7, 1), None, "none");
+        assert_eq!(p.permanent.headcount, None, "insufficient history");
+        assert_eq!(p.permanent.fte_centi, None);
+        assert_eq!(
+            p.contractor.headcount,
+            Some(1),
+            "known end dates need no history"
+        );
+        assert_eq!(
+            p.total_headcount, None,
+            "a total with an unknown part is unknown"
+        );
+        assert_eq!(p.total_fte_centi, None);
+        assert!(
+            p.assumptions
+                .iter()
+                .any(|a| a.contains("insufficient history"))
+        );
+    }
+
+    #[test]
+    fn no_permanent_staff_is_a_known_zero_even_without_a_rate() {
+        use crate::rules::engagement::Basis::Contractor;
+        let people = [person(Contractor, 100, Some(day(2027, 1, 1)))];
+        let p = project_by_basis(&people, day(2026, 1, 1), day(2026, 7, 1), None, "none");
+        assert_eq!(p.permanent.headcount, Some(0));
+        assert_eq!(p.total_headcount, Some(1));
+    }
+
+    #[test]
+    fn a_target_in_the_past_projects_no_attrition() {
+        use crate::rules::engagement::Basis::Permanent;
+        let people = [person(Permanent, 100, None)];
+        let p = project_by_basis(
+            &people,
+            day(2026, 6, 1),
+            day(2026, 1, 1),
+            Some(5_000),
+            "stated",
+        );
+        assert_eq!(p.permanent.headcount, Some(1));
+    }
 
     fn day(y: i32, m: u32, d: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(y, m, d).expect("valid date")

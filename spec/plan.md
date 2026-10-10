@@ -361,7 +361,8 @@ approved. What is proposed in code:
   supplies** (from equality data they hold elsewhere), computes favourable-outcome rates and the
   ratio to the best-treated group for a registered score, withholds small groups, and **stores
   nothing**. It produces the evidence for section 6 of the assessment. WPM holds no protected
-  characteristic (WPM-D17).
+  characteristic, unless a deployer enables the bounded, off-by-default monitoring data of WPM-D74
+  (section M), in which case the grouping can come from it as aggregates only.
 - **WPM-R101 Scores say what they are.** Every score payload and screen states its inputs,
   that it is advisory and a person decides, and which assessment covers it; rater-facing forms
   carry the guidance on what not to use (absence, leave, working pattern, adjustments).
@@ -402,6 +403,59 @@ corporate licence is for internal use and forbids distribution, so WPM ships no 
   attribution; nothing licensed on a public surface).
 - **WPM-D69 Licensed content is imported by the licensee, never shipped.** **WPM-D70 The
   framework's own scale is kept and the mapping to 1–5 is shown** (`linear`: 1, 2, 2, 3, 4, 4, 5).
+
+### L. Readiness for large medical and governmental organizations (assessed 2026-10-11)
+
+The assessment is in [readiness-assessment.md](readiness-assessment.md): the verdict is **not ready**, with one
+blocker found by probing the running service (any signed-in caller could read a colleague's sickness record,
+applicants' details and the audit trail) and a list of gaps with evidence.
+
+- **WPM-R114 Reads are need-to-know.** A table in code classifies every `GET` route as open to any signed-in
+  caller, or limited to privileged callers (HR, payroll, service, admin, or an `hr_admin` membership), or to the
+  worker's own record: the worker, their line managers up the chain, and privileged callers; the most sensitive
+  worker records (health-adjacent, wellbeing, notifications) the worker and privileged callers only. A route not
+  in the table fails a test, so a new route cannot be open by omission.
+- **WPM-R115 The audit trail is append-only and tamper-evident.** The database refuses `UPDATE` and `DELETE` on
+  `audit_logs`, and each entry carries a hash of its content and the previous entry's hash; a task verifies the
+  chain and reports the first break.
+- **WPM-R116 Production refuses insecure data paths.** Boot refuses when the database connection does not require
+  TLS (unless an explicit, logged override is set), and the server applies a request timeout.
+- **WPM-R117 Backups are encrypted.** `scripts/backup.sh` encrypts the dump with a key the operator supplies and
+  the restore script decrypts it; an unencrypted backup needs an explicit flag and says so.
+- **WPM-R118 Health detail is not stored.** A sick-leave request records that it is sick leave and its dates,
+  never a reason (WPM-D73).
+- **WPM-R119 Supply-chain integrity.** Actions pinned to commit SHAs, secret scanning, signed images with build
+  provenance, base images pinned by digest.
+- **WPM-R120 Evidence under load.** A repeatable load test, bounded work per request for views that load an
+  organization's records, and a recorded result.
+- **WPM-R121 Independent assurance.** A penetration test, an accessibility audit, a signed-off impact
+  assessment, a translation review: recorded as gates, not claimed.
+- **WPM-R122 Observability.** A request identifier on every response and in every log line; a test that logs hold
+  no query strings or personal data; an audit export for a security monitoring system.
+- **WPM-R123 Least-privilege database roles** and network guidance for the deployer.
+- **WPM-D71 Need-to-know is decided by a table in code, not by omission.** A route is classified or a test fails.
+- **WPM-D72 The audit trail is protected by the database, not only by convention.**
+- **WPM-D73 A diagnosis has no column.** Health detail is not asked for, and where free text could hold it the
+  field is refused or discouraged by design.
+
+### M. Self-service, requests and workplace health requirements (proposed 2026-10-11)
+
+Six capabilities requested together; the full text is in
+[self-service-and-worker-requests.md](self-service-and-worker-requests.md). Two cut across earlier design
+decisions (protected characteristics; health data) and are therefore **bounded exceptions, off by default**,
+enabled only with a recorded lawful basis.
+
+- **WPM-R124 Self-service updates** (home address, telephone numbers, personal e-mail, emergency contacts).
+  **WPM-R125 Equality and diversity monitoring** (voluntary, self-declared, readable only by the worker,
+  aggregate-only). **WPM-R126 Flexible working requests** (a person decides; the software computes the dates).
+  **WPM-R127 Resignations** (logged by the worker, accepted by HR; never an automatic termination).
+  **WPM-R128 Workplace health requirements** (immunizations as a cleared/not-cleared status, no clinical
+  detail). **WPM-R129 My time-off** (allowances, days remaining, history; no sick-leave reason).
+  **WPM-R130 The `/api/me` surface**, its self-service write allow-list, and one screen.
+- **WPM-D74** equality monitoring data is a bounded exception to "no demographics". **WPM-D75** a health
+  requirement records the status, never the reason. **WPM-D76** self-service writes are an explicit allow-list.
+  **WPM-D77** a worker's request is decided by a person; the software computes dates and never changes a
+  contract.
 
 ## 3. Design decisions (proposed)
 

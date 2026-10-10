@@ -16,6 +16,13 @@ async fn recent(State(ctx): State<AppContext>) -> Result<Response> {
     format::json(Audit::recent(&ctx.db, 100).await?)
 }
 
+/// `GET /api/audits/verify` — check the whole audit chain (WPM-R115). Reports the first break,
+/// the number of entries and the head hash. Privileged callers only.
+#[debug_handler]
+async fn verify(State(ctx): State<AppContext>) -> Result<Response> {
+    format::json(Audit::verify_chain(&ctx.db).await?)
+}
+
 /// `GET /api/audits/{entity_pid}` — one record's trail.
 #[debug_handler]
 async fn for_entity(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
@@ -54,6 +61,7 @@ pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
         .add("/audits/recent", get(recent))
+        .add("/audits/verify", get(verify))
         .add("/audits", get(department))
         .add("/audits/{entity_pid}", get(for_entity))
         .add("/events/recent", get(events_recent))

@@ -315,6 +315,8 @@ async fn create_leave_request(
     problems.require_token("kind", tokens::LEAVE_KINDS, &payload.kind);
     problems.cap_opt("reason", payload.reason.as_deref());
     ensure_valid(&problems.into_vec())?;
+    leave::validate_reason(&payload.kind, payload.reason.as_deref())
+        .map_err(|e| unprocessable(&e))?;
     let days = leave::day_span(payload.start_on, payload.end_on).map_err(|e| unprocessable(&e))?;
     let check = balance_check(&ctx.db, &worker, &payload.kind, payload.start_on, days).await?;
     let negative = match check {

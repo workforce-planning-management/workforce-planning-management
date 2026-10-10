@@ -36,6 +36,12 @@ State as of 2026-10-07 (WPM-T97).
 - **Enforcement binary** (`tests/enforcement.rs`, own process — the OnceLock
   lesson): the persona matrix on the shipped reference policy file —
   401/403 splits, masking, `$sub` self-reads, destructive gating.
+- **Need-to-know binary** (`tests/enforcement_need_to_know.rs`, own process): eleven kinds of caller against
+  six classes of route (stranger, colleague, line manager, a manager higher up, the worker, HR by attribute,
+  payroll, service, HR of the worker's organization, HR of another, an unknown token). A unit test scans the
+  controllers so a new `GET` route fails the build until it is classified.
+- **Engagement enforcement binary** (`tests/enforcement_engagements.rs`, own process): a contractor's rate
+  is masked like salary against the shipped reference policy.
 - **Expense enforcement binary** (`tests/enforcement_expenses.rs`, own process — the auth
   flag is process-wide): with an open blanket policy so the *controller's* rule is what is
   tested — the claimant and HR write a claim, the manager and HR decide it, a peer or

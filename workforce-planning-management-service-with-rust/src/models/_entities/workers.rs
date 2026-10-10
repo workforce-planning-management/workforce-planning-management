@@ -30,6 +30,7 @@ pub struct Model {
     pub salary_currency: Option<String>,
     pub hired_on: Date,
     pub terminated_on: Option<Date>,
+    pub engagement_ends_on: Option<Date>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

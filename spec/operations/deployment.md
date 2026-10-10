@@ -22,7 +22,9 @@ the compose file are written but were not built where this was written; try them
 
 | Variable | Required | Default | What it does |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | yes | none | PostgreSQL 18 connection string |
+| `DATABASE_URL` | yes | none | PostgreSQL 18 connection string. **In production it must require TLS across a network**: add `?sslmode=verify-full` (best: the server's certificate is checked) or `require` or `verify-ca`; boot refuses a plaintext connection to another host. A loopback address or a Unix socket needs no TLS |
+| `WPM_ALLOW_PLAINTEXT_DATABASE` | no | off | Set to `1` only if the network path to the database is protected another way (a private link, a tunnel) and you accept the risk; boot then logs a warning every start |
+| `WPM_REQUEST_TIMEOUT_MS` | no | `30000` | A request running longer is answered `408` |
 | `WPM_CORS_ORIGIN` | yes | none | The one browser origin allowed to call the API directly. Boot fails if unset |
 | `JWT_SECRET` | yes | none | Required by the framework's config; unused by WPM's own sign-in |
 | `WPM_PASETO_KEYS_URL` or `WPM_PASETO_KEYS` | one key source | none | The token keys (PASETO backend). Or `WPM_KEYCLOAK_JWKS_URL` (OIDC backend, see [entra-sign-in.md](entra-sign-in.md)) |

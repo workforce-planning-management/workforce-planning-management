@@ -7,3 +7,4 @@ pub mod replay_erasures;
 pub mod rota_reminders;
 pub mod seed;
 pub mod snapshot;
+pub mod verify_audit_chain;

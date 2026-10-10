@@ -105,6 +105,21 @@
         "description": "generated counts of migrations, controllers, declared tests, locales and tasks (scripts/status.py)"
       },
       {
+        "title": "spec/self-service-and-worker-requests.md",
+        "path": "spec/self-service-and-worker-requests.md",
+        "description": "proposed self-service updates, equality monitoring and workplace health requirements (both bounded, off by default), flexible working, resignations, my time-off (WPM-R124–R130)"
+      },
+      {
+        "title": "spec/readiness-assessment.md",
+        "path": "spec/readiness-assessment.md",
+        "description": "readiness for large medical and governmental organizations: verdict, blocker, gaps with evidence, human gates (WPM-R114–R123)"
+      },
+      {
+        "title": "spec/engagements.md",
+        "path": "spec/engagements.md",
+        "description": "the end date by engagement basis, extensions, a contractor's supplier, route and masked rate, status assessments (WPM-R79, R80)"
+      },
+      {
         "title": "spec/delivery-capacity.md",
         "path": "spec/delivery-capacity.md",
         "description": "skill pools, programme demand, partner commitments, the capacity view, the constraint pool, the start check and start decisions (WPM-R56–R60)"

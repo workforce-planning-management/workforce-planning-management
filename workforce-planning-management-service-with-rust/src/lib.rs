@@ -39,8 +39,10 @@ pub mod clients;
 /// Backward-compatibility shims for the 2026-07-23 `HCM` → `WPM` rename.
 pub mod compat;
 pub mod controllers;
+pub mod hardening;
 pub mod metrics;
 pub mod models;
+pub mod need_to_know;
 pub mod openapi;
 pub mod rules;
 pub mod security;

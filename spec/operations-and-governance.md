@@ -73,6 +73,8 @@ record is kept after it is deleted.*
 All under `spec/governance/`, written so a deployer's information governance lead
 can complete their own assessment from it:
 
+- [threat-model.md](governance/threat-model.md): a STRIDE threat model with the control that answers each threat as
+  built and the gap where there is none (added by the readiness work, WPM-T193).
 - [dpia.md](governance/dpia.md): a data protection impact assessment template,
   completed for the demo as an example of the depth expected, with the parts only
   the deployer can answer marked **deployer to complete**.

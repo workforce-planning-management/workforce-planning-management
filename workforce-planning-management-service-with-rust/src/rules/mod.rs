@@ -4,6 +4,7 @@
 //! exhaustively unit-tested. Controllers wire these; they never
 //! re-implement them.
 
+pub mod access;
 pub mod adjustments;
 pub mod announcements;
 pub mod appraisal;
@@ -19,6 +20,7 @@ pub mod cpd;
 pub mod csv;
 pub mod directory;
 pub mod emergency;
+pub mod engagement;
 pub mod ergonomics;
 pub mod esco;
 pub mod expenses;

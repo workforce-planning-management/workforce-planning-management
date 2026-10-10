@@ -312,6 +312,11 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
 - **ExpenseClaim** (`expense_claims`, soft-deleted) and **ExpenseItem** (`expense_items`) — a
   claim of dated, categorised items in one currency, decided by someone other than the claimant
   (WPM-R55; draft/submitted cancelled and free text scrubbed on erasure, amounts kept).
+- **Engagement** — `workers.engagement_ends_on` (the last day), **EngagementExtension**
+  (`engagement_extensions`), **WorkerContractorDetails** (`worker_contractor_details`: supplier, route and
+  a rate that is masked like salary) and **EngagementStatusAssessment**
+  (`engagement_status_assessments`); exported with the worker and erased with them
+  (WPM-R79, WPM-R80; [engagements.md](engagements.md)).
 - **SkillPool** (`skill_pools`, soft-deleted), **SkillPoolMember** (`skill_pool_members`),
   **ProgrammeDemand** (`programme_demands`), **PartnerCommitment** (`partner_commitments`),
   **CapacitySettings** (`capacity_settings`) and **StartDecision** (`start_decisions`) — delivery

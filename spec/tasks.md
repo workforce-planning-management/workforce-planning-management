@@ -2666,14 +2666,21 @@ payroll defect and need nothing else; do them first.
       contractor | intern`. The spec now matches the code and says the working pattern is `fte_percent`. A
       search of the other specs found no other use of the old values; the OpenAPI text and the UI labels
       were not re-read for them.
-- [ ] WPM-T135 **Pure core: engagements and basis-aware supply.** *(WPM-R79, WPM-R85,
-      WPM-D57)* `rules/engagement.rs`: which bases need, allow or refuse an end date;
-      an extension must move the end later; end-of-engagement window; long-running
-      and much-extended flags. Extend `rules/planning.rs`: project each basis
-      separately (known end dates for fixed-term and contractor, attrition for
-      permanent only), in headcount and FTE, with the assumptions named. Unit tests,
-      including an engagement ending on the target date, an extension past it, and no
-      permanent history (`insufficient_history`).
+- [x] WPM-T135 (2026-10-11) **Pure core: engagements and basis-aware supply.** *(traces to WPM-R79, WPM-R85, WPM-D57)*
+      `rules/engagement.rs`: the four bases; which need, allow or refuse an end date (permanent refuses,
+      fixed-term and contractor need one, an intern may have one); an end after the start; an extension
+      that moves the end later; the reminder window in calendar days (default 60, 1 to 366); the standing of
+      an engagement (open-ended, **missing end date**, running, ending soon, **past end undecided**, past end
+      decided); much-extended and long-running flags (strictly above the threshold; a month-end start does
+      not overflow). An end date is the **last day** of the engagement. `rules/planning.rs`:
+      `project_by_basis` projects each basis on its own terms, in headcount and FTE, naming each assumption:
+      known end dates for fixed-term, contractor and intern; attrition for **permanent staff only**; someone
+      with no end date counted as continuing and counted in the assumptions; permanent staff with no rate
+      (`insufficient_history`) give an unknown supply and an unknown total, never zero, while no permanent
+      staff is a known zero. Verified by 14 new unit tests (367 in all) including an engagement ending on the
+      target date, an extension past it, and no permanent history; clippy and fmt clean; a boundary mutation
+      (end on the target date no longer counted) fails a test. **Not done:** nothing calls these yet; the
+      forecast endpoint still uses the single attrition rate (WPM-T137, T140 wire them in).
 - [x] WPM-T136 (2026-10-10) **Payroll excludes contractors.** *(traces to WPM-R80, WPM-D58)* `rules::payroll::on_payroll` and
       `OFF_PAYROLL_TYPES` (`contractor`); the run's calculation filters them out, and
       `spec/payroll-compensation.md` says so. Verified: a unit test over every employment type (and an
@@ -2683,14 +2690,22 @@ payroll defect and need nothing else; do them first.
       **Behaviour change:** a contractor who was in a run before now gets no payslip. **Not done:** the
       benchmark comparison still includes every worker with a salary (it is not payroll); the contractor's
       rate fields (WPM-T137) do not exist yet.
-- [ ] WPM-T137 **Engagement fields, extensions and contractor details.** *(WPM-R79,
-      WPM-R80)* Migration: `workers.engagement_ends_on`, supplier URN, engagement
-      route, rate and rate basis; `engagement_extensions`;
-      `engagement_status_assessments`. Validation from WPM-T135 on create, update and
-      hire. Existing fixed-term and contractor workers get no invented end date: they
-      are listed as "end date missing" until HR records one. Rate masked like salary;
-      audit entries carry no rate; subject-access export and erasure wiring, each
-      checked by a request test. Enforcement test for who may read the rate.
+- [x] WPM-T137 (2026-10-11) **Engagement fields, extensions and contractor details.** *(traces to WPM-R79, WPM-R80)*
+      Migration `000053`: `workers.engagement_ends_on`, `engagement_extensions`, `worker_contractor_details`
+      and `engagement_status_assessments`. `controllers/engagements.rs` and eight operations in the OpenAPI
+      document; the end-date rule on create, on hire and on update (a set date moves only by extension).
+      Existing fixed-term and contractor rows get no invented date and are listed by
+      `GET /api/engagements/missing-end-date`. The rate is masked like salary; audit entries carry no rate,
+      reason or outcome; the three tables are in the subject-access export and the erasure. Verified by three
+      request tests (the rule per basis, including hire; the missing list; details, assessments, export and
+      erasure) and a new enforcement binary `enforcement_engagements` (payroll and the worker see the rate; HR
+      and a stranger see it masked; writing is HR's), **mutation-checked** three ways (the rate unmasked,
+      erasure forgetting the details, no end-date check on create). **Differs from the task:** supplier, route
+      and rate are in `worker_contractor_details`, not columns on `workers`, so no existing endpoint returns
+      the rate; the new tables are not in the retention sweep. The seed gives its fixed-term workers an end date
+      and the payroll test now supplies one. Described in [engagements.md](engagements.md).
+      **Not verified:** any user interface (none), and the rate against a production policy other than the
+      reference.
 - [ ] WPM-T138 **End-of-engagement reminders.** *(WPM-R81)* Loco task
       `engagement_end_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` (default 60
       calendar days; schedule daily), idempotent per end date, to the manager and HR;
@@ -3012,3 +3027,141 @@ content is ever added to this repository** (WPM-D69).
 - [ ] WPM-T186 **Equality, privacy and documents.** *(WPM-R111, WPM-R113)* Register the level and skill-level scores in the
       scoring register and complete their assessments (WPM-T166); update the DPIA, the record of processing
       and the assessment checklist (licensed content); record what was not verified.
+
+## Phase 20 — readiness for large medical and governmental organizations (WPM-R114–R123, WPM-D71–D73)
+
+Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [plan.md](plan.md) section L.
+
+- [x] WPM-T187 (2026-10-11) **Readiness assessment.** *(traces to WPM-R114–R123)* `spec/readiness-assessment.md`: the verdict
+      (not ready), what is in the repository's favour, a blocker found by probing the running service under
+      enforcement, thirteen gaps with evidence, the gates only people can close, and what was not checked.
+- [x] WPM-T188 (2026-10-11) **Need-to-know guard.** *(traces to WPM-R114, WPM-D71)* `rules/access.rs`: the table of every `GET` route
+      under `/api` (about 150) with its audience, the relations (stranger, in scope, manager, own) and the
+      decision, with unit tests and a test that scans the controllers so a new route must be classified and a
+      stale entry cannot linger. `need_to_know.rs`: the middleware, inside the sign-in guard, loading the worker
+      (or the review's worker) and the caller's relation, including the management chain up to 20 levels and HR
+      by membership of the worker's organization. New binary `enforcement_need_to_know` (eleven callers by six
+      classes), **mutation-checked** four ways (the level ignored, only a direct manager, HR of any organization,
+      no guard). Before and after the same probe: a stranger went from reading sick-leave reasons, time notes,
+      applicants and the audit trail to `403` on all of them. **Two older enforcement tests encoded the old
+      behaviour and were changed on purpose**: a stranger no longer gets a masked read of a colleague
+      (`enforcement.rs`, and the contractor rate in `enforcement_engagements.rs`). Full suites pass: 376 unit, 69
+      request, six enforcement binaries. Described in [auth.md](auth.md).
+      **Not verified:** the interface against a real policy and real users (it may now show an error where it
+      used to show data a person should not have seen), the Keycloak backend (the guard uses the same claims, but
+      that suite needs a container), and load (up to a handful of queries per worker-scoped read). **Limits:**
+      applicants are not organization-scoped, so HR of any organization reads them; the guard covers reads only.
+- [x] WPM-T189 (2026-10-11) **Append-only, hash-chained audit trail.** *(traces to WPM-R115, WPM-D72)* Migration `000055`: columns
+      `chain_seq`, `prev_hash`, `entry_hash`; one SQL function defining the hash; a back-fill of existing rows; an
+      insert trigger (under a transaction-scoped advisory lock) and a trigger refusing `UPDATE` and `DELETE`.
+      `Audit::verify_chain`, `GET /api/audits/verify` (privileged), the `verify_audit_chain` task (exits with an
+      error when broken), and a step in the restore drill that checks the restored chain is intact with the same
+      head hash. Verified by three request tests (gapless chain and refused `UPDATE`/`DELETE`; a rewritten row and
+      a removed row are found, a truncated tail is *not*, and the head hash differs; sixteen overlapping
+      transactions on a separate pool make one chain) and the restore drill passing against a seeded source.
+      **Mutation-checked** twice (the verifier ignoring the hash; the insert trigger without its lock, which fails
+      with a duplicate `chain_seq`). One test gap found and fixed on the way: the application's test pool holds a
+      single connection, so the concurrency test now opens its own pool. Documented in [audit.md](audit.md), the
+      runbook and the backup document. **Limits, stated:** a superuser can disable a trigger; cutting the tail
+      needs an outside record of the head hash; `TRUNCATE` is not blocked; audit writes serialise and can deadlock
+      with row locks in opposite order. **Not verified:** throughput under load (WPM-T196); a migration of a large
+      existing audit table (the back-fill is one loop in one transaction); the Keycloak suite.
+- [x] WPM-T190 (2026-10-11) **No diagnosis in leave.** *(traces to WPM-R118, WPM-D73)* `rules::leave::validate_reason`: a sick-leave
+      request with a reason is refused (a blank one is none); other kinds keep theirs. Migration `000054` scrubs
+      the reason from existing sick-leave rows and is **one-way** (the text cannot be restored; take a backup
+      first). Verified by a unit test, a request test (three wordings refused, blank accepted and stored empty,
+      an annual-leave reason kept), **mutation-checked** (removing the check fails the test), and the scrub
+      statement run against real rows in a scratch database (a sick row emptied, an annual row kept); the DPIA,
+      the record of processing and the checklist say so. **Not done:** time-entry notes and adjustment words are
+      free text that could still hold health detail; the service cannot tell, so they stay a deployer's
+      training and policy matter. The migration itself was not run on a database with data from an older release.
+- [x] WPM-T191 (2026-10-11) **Production refuses insecure data paths.** *(traces to WPM-R116)* `hardening.rs`: classify the connection
+      from its URL (verified and encrypted, encrypted, local, plaintext) and the boot decision; wired into the
+      boot after the sign-in check; `timeout_request` in `config/production.yaml`. Verified by two unit tests
+      (nineteen URLs, including an IPv6 loopback, a socket, a password that looks like a host, and the
+      production, override and non-production cases) and by **booting the real binary** in production against a
+      non-loopback address: refused with the instruction; started with the override and a warning; a loopback
+      address started with neither; the log shows `timeout_request` and `request_id` loaded and a response
+      carries `x-request-id`. Documented in [production-readiness.md](production-readiness.md) and the
+      deployment document. **Not verified:** a real TLS connection (the test server has no certificate), and a
+      request actually hitting the timeout. **Limit:** `require` encrypts but does not verify the server.
+- [x] WPM-T192 (2026-10-11) **Encrypted backups.** *(traces to WPM-R117)* `backup.sh` pipes the dump through AES-256-CBC with PBKDF2 (the
+      plaintext never touches the disk), writes a `.hmac` tag and a checksum, and refuses without a key unless
+      `WPM_BACKUP_ALLOW_PLAINTEXT=1`; `restore.sh` checks the tag before decrypting and cleans up its temporary
+      directory; the restore drill now runs the encrypted path with a key made for the run. Verified by hand on real
+      dumps: no key and no flag refuses (exit 2); a short key refuses; the ciphertext begins `Salted__` and holds no
+      table names while the plaintext dump holds 34; a right key restores 107 tables; a wrong key, a one-byte change
+      and a missing tag each refuse with exit 4 and leave the target empty; a plaintext restore still works with a
+      warning; no decrypted file is left behind; the drill passes. **One bug found and fixed on the way:** the
+      cleanup trap returned 1 when there was nothing to clean, which would have overridden the exit status of a
+      successful plaintext restore. **Not done:** these checks are a manual session, not an automated test in CI
+      (the drill covers the happy path every run); authenticated encryption and key rotation are left to the
+      platform or a key management service; the cipher is not authenticated, which the tag compensates for.
+- [x] WPM-T193 (2026-10-11) **Threat model.** *(traces to WPM-R121)* `spec/governance/threat-model.md`: assets, actors, trust boundaries,
+      and twenty-four threats by STRIDE category, each with the control as built and the gap where there is none;
+      every control named was exercised in this phase, and what was not checked is marked **not assessed** (the
+      interface's session handling, fuzzing, algorithm confusion, server-side request forgery beyond the short
+      timeout, a scanner baseline). **Written by the same assistant that wrote the software and reviewed by no
+      one else**; an independent team should redo it (WPM-T201).
+- [ ] WPM-T194 **CI hardening.** *(WPM-R119)* Pin each action to a commit SHA, add secret scanning, and fail a pull request that
+      adds an unpinned action. Needs network access to resolve the SHAs; **not done**.
+- [ ] WPM-T195 **Release integrity.** *(WPM-R119)* Sign the image, attach build provenance, pin base images by digest.
+      Needs the hosting platform; **not done**.
+- [ ] WPM-T196 **Load evidence and bounded views.** *(WPM-R120)* A repeatable load test at stated sizes, paging or caps on the views
+      that load an organization's records, the result recorded in `BENCHMARKS.md`. **Not done.**
+- [ ] WPM-T197 **Observability.** *(WPM-R122)* A request id on responses and in logs, a test that logs hold no query string or
+      personal data, and an export of the audit trail for a security monitoring system. **Not done.**
+- [ ] WPM-T198 **Rate limits across instances.** *(WPM-R74)* Document that limits are per instance and what a deployer must add
+      behind several. **Not done.**
+- [ ] WPM-T199 **Least-privilege database roles.** *(WPM-R123)* SQL for a migration role and a runtime role without DDL, verified
+      by running the service as the runtime role. **Not done.**
+- [ ] WPM-T200 **Token age and revocation.** *(WPM-R72)* Document what the identity provider must do and check a maximum token
+      lifetime in the verifier. **Not done.**
+- [ ] WPM-T201 **Independent penetration test.** *(WPM-R121)* A person's task, recorded here when done. **Not done.**
+- [ ] WPM-T202 **Independent accessibility audit.** *(WPM-R121)* A person's task. **Not done.**
+- [ ] WPM-T203 **Gates refresh.** *(WPM-R121)* Fold T201, T202 and the existing WPM-T132 gates into one list and keep the
+      assessment current when any of them closes. **Not done.**
+
+## Phase 21 — self-service, requests and workplace health requirements (proposed WPM-R124–R130, WPM-D74–D77)
+
+Specified in [self-service-and-worker-requests.md](self-service-and-worker-requests.md) and
+[plan.md](plan.md) section M. **Proposed, not built.** The two bounded exceptions (WPM-R125, WPM-R128) need the
+deployer's lawful basis and impact assessment before they are switched on.
+
+- [x] WPM-T204 (2026-10-11) **Spec round.** *(traces to WPM-R124–R130, WPM-D74–D77)* The topic note, the plan section and these
+      tasks; the two conflicts with earlier decisions named and bounded. **Not reviewed by a data protection
+      officer, an occupational-health adviser or an employment lawyer.**
+- [ ] WPM-T205 **The `/api/me` write allow-list.** *(WPM-R130, WPM-D76)* A pure list of self-service write routes, the guard that
+      lets them past the write policy, the handler rule that the person is the verified `sub`, and a test that
+      enumerates every write route a plain signed-in caller can reach (it must equal the list). Enforcement
+      binary with a stranger, the worker and HR.
+- [ ] WPM-T206 **Contact details.** *(WPM-R124)* Table, API (`/api/me/contact-details`), HR and payroll read, audit without
+      values, no history kept, a payroll notice that the address changed, export and erasure, request tests,
+      mutation checks.
+- [ ] WPM-T207 **Emergency contacts by the worker.** *(WPM-R124)* Let the worker write their own emergency contacts through the
+      allow-list; existing rules (a limit of five, ranking) unchanged. Request and enforcement tests.
+- [ ] WPM-T208 **My time-off.** *(WPM-R129)* `GET /api/me/time-off`: allowances, taken, booked, requested, remaining and the
+      history by year, each figure stating calendar or business days; no reason for sick leave. Pure core for
+      the arithmetic, request tests, and a test that nothing is derived into a score.
+- [ ] WPM-T209 **Resignations: pure core.** *(WPM-R127, WPM-D77)* Notice-rule arithmetic, the earliest last day, the states and
+      transitions (logged, withdrawn, accepted, declined), and refusals. Unit tests at each boundary.
+- [ ] WPM-T210 **Resignations: records and API.** *(WPM-R127)* Table, `/api/me/resignation`, HR acceptance that opens the leaver
+      movement and sets the engagement end in one transaction, notifications without the reason, an
+      aggregate by reason with the floor. Request and enforcement tests.
+- [ ] WPM-T211 **Flexible working: pure core.** *(WPM-R126, WPM-D77)* The decide-by date from a configurable period, the request
+      limit per year, the states (requested, approved, approved with changes, accepted, refused, appealed,
+      withdrawn), and the proposal for a change of hours. Unit tests.
+- [ ] WPM-T212 **Flexible working: records, API and reminders.** *(WPM-R126)* Table, endpoints, the closed list of refusal
+      reasons as configuration, overdue flags to the manager and HR, the capacity suggestion. Request and
+      enforcement tests.
+- [ ] WPM-T213 **Equality monitoring.** *(WPM-R125, WPM-D74)* Off by default with a recorded lawful basis; configurable categories
+      that always offer prefer-not-to-say; the worker-only table and API; the aggregate and completeness
+      report with the small-group floor; the extended deny-list test that no score reads it; the equality
+      impact register entry; the DPIA and record of processing updated. Request, enforcement and mutation tests.
+- [ ] WPM-T214 **Workplace health requirements.** *(WPM-R128, WPM-D75)* Off by default with a recorded lawful basis; requirement
+      definitions; the occupational-health role; the status record with no clinical detail; cleared or not
+      cleared for managers and HR; reminders; aggregates with the floor; the deny-list test; documents updated.
+- [ ] WPM-T215 **My details screen, translations and verification.** *(WPM-R124–R130)* One screen for the six, strings in the 13 locales
+      under the catalogue rules (WPM-R94), screenshots read in light and dark at desktop and phone sizes, full
+      suites, and what was not verified recorded.
+

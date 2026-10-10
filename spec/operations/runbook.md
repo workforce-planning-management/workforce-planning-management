@@ -54,7 +54,9 @@ is as of the backup time.
 
 1. Contain: take the service out of rotation; revoke the tokens' signing keys or disable
    the affected accounts at the identity provider.
-2. Preserve: keep the logs and the audit log (`GET /api/audits/recent`); take a backup of
+2. Preserve: keep the logs and the audit log (`GET /api/audits/recent`), run `verify_audit_chain` and compare its
+   head hash with the last one you recorded (a broken chain, or a head that has moved backwards, is itself a
+   finding); take a backup of
    the database as it is, before changing anything.
 3. Assess: what could the attacker read? The sensitivity map is in
    [auth.md](../auth.md); the reads of the highest tiers are audited.

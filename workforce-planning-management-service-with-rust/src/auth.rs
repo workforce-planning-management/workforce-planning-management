@@ -775,6 +775,7 @@ mod tests {
             salary_currency: Some("GBP".to_string()),
             hired_on: chrono::NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(),
             terminated_on: None,
+            engagement_ends_on: None,
             deleted_at: None,
         }
     }

@@ -14,13 +14,14 @@ use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, announcement_reads, appraisal_nominations, appraisal_responses,
     appraisals, assessments, benefit_enrollments, candidates, cpd_entries, development_plans,
-    dotted_line_reports, emergency_contacts, entitlement_acknowledgements, ergonomic_assessments,
-    expense_claims, expense_items, group_members, handover_actions, leave_entitlements,
-    leave_requests, mentorships, mobility_interests, movements, notifications, path_enrollments,
-    payslips, pipeline_members, professional_registrations, program_placements, reviews,
-    rota_members, rota_overrides, rota_swap_requests, shift_assignments, time_entries,
-    training_enrollments, worker_aspirations, worker_backups, worker_framework_roles,
-    worker_job_levels, worker_pay_positions, worker_skill_history, worker_skills, workers,
+    dotted_line_reports, emergency_contacts, engagement_extensions, engagement_status_assessments,
+    entitlement_acknowledgements, ergonomic_assessments, expense_claims, expense_items,
+    group_members, handover_actions, leave_entitlements, leave_requests, mentorships,
+    mobility_interests, movements, notifications, path_enrollments, payslips, pipeline_members,
+    professional_registrations, program_placements, reviews, rota_members, rota_overrides,
+    rota_swap_requests, shift_assignments, time_entries, training_enrollments, worker_aspirations,
+    worker_backups, worker_contractor_details, worker_framework_roles, worker_job_levels,
+    worker_pay_positions, worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -118,6 +119,9 @@ async fn subject_access(
         "emergency_contacts": rows_for!(db, emergency_contacts, WorkerPid, epid),
         "job_level": rows_for!(db, worker_job_levels, WorkerPid, epid),
         "pay_position": rows_for!(db, worker_pay_positions, WorkerPid, epid),
+        "engagement_extensions": rows_for!(db, engagement_extensions, WorkerPid, epid),
+        "contractor_details": rows_for!(db, worker_contractor_details, WorkerPid, epid),
+        "employment_status_assessments": rows_for!(db, engagement_status_assessments, WorkerPid, epid),
         "expense_claims": rows_for!(db, expense_claims, WorkerPid, epid),
         "expense_items": rows_for!(db, expense_items, WorkerPid, epid),
         "backups": rows_for!(db, worker_backups, WorkerPid, epid),
@@ -234,6 +238,9 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         ),
         format!("DELETE FROM worker_job_levels WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_pay_positions WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM engagement_extensions WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM worker_contractor_details WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM engagement_status_assessments WHERE worker_pid = '{epid}'"),
         // Expense claims are financial records: draft and submitted ones are closed,
         // the amounts stay (statutory retention), and the free text goes.
         format!(

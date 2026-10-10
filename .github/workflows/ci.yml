@@ -91,6 +91,8 @@ jobs:
       - run: cargo test --locked --test mod -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_expenses -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_engagements -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_need_to_know -- --ignored --test-threads=1
       - run: cargo test --locked --test security -- --ignored --test-threads=1
       - run: cargo test --locked --test retention_schedule -- --ignored --test-threads=1
 

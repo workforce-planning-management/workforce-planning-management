@@ -65,3 +65,33 @@ State transitions + audit + outbox share one transaction; approval
 races (two managers approving the same leave) are serialized with row
 locks (`FOR UPDATE`, the patient-flow bed pattern); payslip
 reconciliation (net = gross − deductions) is enforced before persist.
+
+### Append-only and hash-chained (WPM-R115, WPM-D72)
+
+The audit trail is protected by the database, not by convention. Two triggers on `audit_logs`:
+
+- **Append-only.** An `UPDATE` or `DELETE` on any row is refused, whoever asks, with a SQL error naming the
+  table. Only a database owner who first disables the trigger can change a row, and doing so leaves a trace
+  below.
+- **Hash-chained.** Each row has a `chain_seq` (its place, assigned under a transaction-scoped advisory lock so
+  the order is the order of insertion), a `prev_hash` (the previous row's `entry_hash`, or 64 zeros) and an
+  `entry_hash`: SHA-256 over the previous hash, the sequence, and the row's entity, record, action, actor,
+  snapshot and time (UTC), each text field length-prefixed. One SQL function, `audit_entry_hash`, defines it;
+  the trigger, the back-fill of rows that pre-date it, and the verifier all call it.
+
+`GET /api/audits/verify` (privileged callers) and `cargo loco task verify_audit_chain` re-compute the chain and
+report `ok`, the number of `entries`, the `head_hash` and the `first_break`. A rewritten row breaks at that row;
+a removed row breaks at the row after it; the task exits with an error when the chain is broken.
+
+**What it does not prove.** A chain proves rows were not changed or removed from the middle. Cutting rows off
+the end leaves a valid shorter chain, so the operator must **record the head hash somewhere the database cannot
+reach** (a log service, a ticket) on a schedule and compare. A database superuser can disable a trigger and
+re-chain everything after a rewritten row; only the outside record shows it. `TRUNCATE` is not a row change and
+is not blocked (a deployer revokes it from the application's role, WPM-T199). A restore from a dump keeps the
+hashes (the data loads before the triggers exist); the restore drill checks the chain is intact and the head
+hash identical.
+
+**Cost.** Audit inserts serialise on the lock until their transaction ends, so write throughput is bounded by
+the slowest transaction that writes an audit row, and two transactions that take row locks in opposite order
+around an audit write can deadlock (the database aborts one; the request fails and can be retried). Measured
+under load in WPM-T196, not yet.

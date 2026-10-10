@@ -20,6 +20,12 @@ pub struct Model {
     pub action: String,
     pub actor: Option<String>,
     pub snapshot: Option<Json>,
+    /// Place in the hash chain (WPM-R115); assigned by the database.
+    pub chain_seq: i64,
+    /// The previous entry's hash (64 zeros for the first).
+    pub prev_hash: String,
+    /// The hash of this entry's content and `prev_hash`.
+    pub entry_hash: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

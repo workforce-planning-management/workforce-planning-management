@@ -64,7 +64,8 @@ shown to anyone. A score with no approved assessment does not ship (WPM-D67).
 - **How disparity will be measured**: the rate at which each group is given a favourable outcome
   (rated ready, shortlisted, offered), compared with the best-treated group. A ratio below 0.8 is a
   conventional warning sign, not a legal test and not a safe harbour.
-- **Where the group data comes from.** WPM stores no protected characteristic (WPM-D17). The
+- **Where the group data comes from.** By default WPM stores no protected characteristic (WPM-D17); the
+  bounded, off-by-default monitoring data of WPM-D74 is the one exception and gives aggregates only. The
   deployer supplies a grouping at the time of the check from their own, voluntarily given equality
   data held elsewhere; small groups are withheld (a count that points at someone is not shown).
 - Results to date, with the date, the groups compared and the numbers. "Not yet measurable" is a

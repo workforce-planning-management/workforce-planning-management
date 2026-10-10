@@ -91,12 +91,13 @@ async fn enforcement_personas_gate_and_mask() {
     }
     let my_person = uuid::Uuid::new_v4();
     let me = sign_as(&kid, &my_person.to_string(), &[]);
-    let other = sign_as(&kid, &uuid::Uuid::new_v4().to_string(), &[]);
+    let other_person = uuid::Uuid::new_v4();
+    let other = sign_as(&kid, &other_person.to_string(), &[]);
     let writer = sign_as(&kid, "hr-user", &[("hr", &["true"])]);
     let payroll = sign_as(&kid, "payroll-user", &[("payroll", &["true"])]);
     let machine = sign_as(&kid, "svc-user", &[("svc", &["true"])]);
 
-    request::<App, _, _>(|request, _ctx| async move {
+    request::<App, _, _>(|request, ctx| async move {
         let bearer = |token: &str| format!("Bearer {token}");
 
         // Public allow-list stays open without a token.
@@ -172,8 +173,28 @@ async fn enforcement_personas_gate_and_mask() {
         };
         assert_eq!(mine["salary_minor"], 3_600_000, "self-read sees the salary");
 
-        // Another worker's read falls through to the mask rule:
-        // employment facts visible, salary redacted.
+        // A colleague in the same organization falls through to the mask rule:
+        // employment facts visible, salary redacted. (A stranger, in no organization of
+        // the worker's, is refused outright: need-to-know, WPM-R114.)
+        let stranger = {
+            let response = request
+                .get(&format!("/api/workers/{worker_pid}"))
+                .add_header("authorization", bearer(&other))
+                .await;
+            response.status_code()
+        };
+        assert_eq!(stranger, 403, "a stranger does not read a colleague's record");
+        {
+            use sea_orm::ConnectionTrait;
+            ctx.db
+                .execute_unprepared(&format!(
+                    "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
+                     VALUES ('{}', 'person:{other_person}', '{org}', '{worker_pid}', 'member', '2026-01-05')",
+                    uuid::Uuid::new_v4()
+                ))
+                .await
+                .unwrap();
+        }
         let theirs: Value = {
             let response = request
                 .get(&format!("/api/workers/{worker_pid}"))
@@ -225,7 +246,7 @@ async fn enforcement_personas_gate_and_mask() {
         let masked_slips: Value = {
             let response = request
                 .get(&format!("/api/payroll-runs/{run_pid}/payslips"))
-                .add_header("authorization", bearer(&other))
+                .add_header("authorization", bearer(&writer))
                 .await;
             assert_eq!(response.status_code(), 200);
             response.json()
