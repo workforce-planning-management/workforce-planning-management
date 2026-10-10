@@ -36,7 +36,7 @@ Benchmark (job_title × currency)
 | `worker_number` | text | employer-scoped, unique |
 | `display_name` | text | denormalised cache; refreshable; maskable |
 | `status` | enum | `onboarding` \| `active` \| `on_leave` \| `offboarding` \| `terminated` \| `retired` |
-| `employment_type` | enum | `full_time` \| `part_time` \| `contract` \| `intern` |
+| `employment_type` | enum | `permanent` \| `fixed_term` \| `contractor` \| `intern` (the engagement basis; the working pattern is `fte_percent`: WPM-D56) |
 | `fte_percent` | int | 1–100 |
 | `department` | text | ABAC scoping attribute (`resource.department`) |
 | `job_title` | text | benchmarking key |
@@ -312,6 +312,11 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
 - **ExpenseClaim** (`expense_claims`, soft-deleted) and **ExpenseItem** (`expense_items`) — a
   claim of dated, categorised items in one currency, decided by someone other than the claimant
   (WPM-R55; draft/submitted cancelled and free text scrubbed on erasure, amounts kept).
+- **SkillPool** (`skill_pools`, soft-deleted), **SkillPoolMember** (`skill_pool_members`),
+  **ProgrammeDemand** (`programme_demands`), **PartnerCommitment** (`partner_commitments`),
+  **CapacitySettings** (`capacity_settings`) and **StartDecision** (`start_decisions`) — delivery
+  capacity by pool; aggregate FTE in hundredths, programme and partner by URN, no personal data
+  (WPM-R56–R60; [delivery-capacity.md](delivery-capacity.md)).
 - **WorkerPayPosition** (`worker_pay_positions`) — one band and step per worker on a
   reference pay scale, and the date they reached the step (WPM-R54; erased with the person).
 - **WorkerJobLevel** (`worker_job_levels`) — one current level per worker on a

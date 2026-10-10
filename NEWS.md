@@ -15,6 +15,19 @@ present. See [CONTRIBUTING.md](CONTRIBUTING.md#funding).
 
 ## Milestones
 
+- **2026-10-11** — **Delivery capacity** (WPM-T104–T107): skill pools, programme demand and
+  partner commitments; a pool × month view that names the constraint pool and shows a partner's
+  silence as *unknown*, never zero; and a start check that is a suggestion with its evidence,
+  followed by a recorded decision with a reason (a person decides). API only: there is no
+  screen yet. Also: payroll no longer pays contractors (WPM-T136) and the spec's employment
+  types match the code (WPM-T134). Proposed, not built: an issues register and change requests,
+  contractor conversion plans, an equality impact template for any scoring, support for worker
+  unions that never stores membership, and SFIA imported from a deployer's own licence.
+- **2026-10-08 → 2026-10-10** — **Production readiness, operations and governance**
+  (WPM-T102, T119, T123–T128, T144–T155): sign-in enforced by default, security headers, rate
+  limiting, backup and restore with an erasure ledger, retention per record kind, sign-in with
+  Microsoft Entra ID, an operations pack and an information-governance pack, and every page in
+  all 13 shipped languages (machine-written and unreviewed).
 - **2026-10-07** — **Expense claims** (WPM-T97): the one table-stakes gap from the
   benchmark is closed. A claim of dated, categorised items goes draft → submitted →
   approved or rejected → reimbursed, and **nobody decides their own** — a separate

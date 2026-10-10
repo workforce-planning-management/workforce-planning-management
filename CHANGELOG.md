@@ -9,6 +9,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — delivery capacity API (WPM-T104–T107)
+
+Skill pools, programme demand, partner commitments, the capacity view, the start check and recorded
+start decisions. API only. See `spec/delivery-capacity.md`.
+
+### Changed — payroll runs exclude contractors (WPM-T136)
+
+A contractor gets no payslip; the spec's employment types now match the code (WPM-T134).
+
+### Proposed — not built (WPM-R95–R113)
+
+Issues register and change requests, contractor and fixed-term conversion plans, an equality impact
+template for any scoring, worker unions without individual membership, and SFIA/SFIAplus imported
+from the deployer's own licence.
 ### Added — operations, information governance, OIDC sign-in and every page in every locale (WPM-R89–R94)
 
 Backup, restore and a CI-run restore drill with an erasure ledger; deployment, upgrade and runbook

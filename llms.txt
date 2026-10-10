@@ -28,6 +28,7 @@ lands without it. A change is a requirement (WPM-R*), a design decision
 - [spec/operations-and-governance.md](spec/operations-and-governance.md): backup and restore, deployment, upgrade, runbook, information governance pack, retention per record kind, Entra ID sign-in, every page in every locale (WPM-R89–R94)
 - [spec/production-readiness.md](spec/production-readiness.md): sign-in on by default, security headers, rate limiting, standalone build and CI, license texts, releases, generated status (WPM-R72–R74, R77, R78, R87, R88)
 - [spec/implementation-status.md](spec/implementation-status.md): generated counts of migrations, controllers, declared tests, locales and tasks (scripts/status.py)
+- [spec/delivery-capacity.md](spec/delivery-capacity.md): skill pools, programme demand, partner commitments, the capacity view, the constraint pool, the start check and start decisions (WPM-R56–R60)
 - [spec/pay-scales.md](spec/pay-scales.md): A national public-sector pay scale, salary placement and progression lookup, a worker's band and step (WPM-R51, R54)
 - [spec/people-directory-and-cover.md](spec/people-directory-and-cover.md): directory, emergency contacts, backups, the on-call rota (WPM-R39–R42)
 - [spec/skills-and-training.md](spec/skills-and-training.md): skills gap analysis, training time (WPM-R43–R44)
@@ -38,9 +39,9 @@ lands without it. A change is a requirement (WPM-R*), a design decision
 
 ## Code
 
-- [workforce-planning-management-api-with-rust/](workforce-planning-management-api-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 49 migrations
+- [workforce-planning-management-service-with-rust/](workforce-planning-management-service-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 49 migrations
 - [workforce-planning-management-ui-with-svelte/](workforce-planning-management-ui-with-svelte/index.md): the browser client; strings in `content/locales/<locale>/ui.json`
-- Working agreements for contributors and agents: [AGENTS.md](AGENTS.md) (entry point) and [AGENTS/](AGENTS/spec-driven-delivery.md) (spec-driven delivery, backend, frontend, privacy and data rules, localization, testing and verification, git and releases, docs); stack-level: [API AGENTS.md](workforce-planning-management-api-with-rust/AGENTS.md), [UI AGENTS.md](workforce-planning-management-ui-with-svelte/AGENTS.md)
+- Working agreements for contributors and agents: [AGENTS.md](AGENTS.md) (entry point) and [AGENTS/](AGENTS/spec-driven-delivery.md) (spec-driven delivery, backend, frontend, privacy and data rules, localization, testing and verification, git and releases, docs); stack-level: [API AGENTS.md](workforce-planning-management-service-with-rust/AGENTS.md), [UI AGENTS.md](workforce-planning-management-ui-with-svelte/AGENTS.md)
 
 ## Operate
 

@@ -4,7 +4,7 @@
 version: 2
 updates:
   - package-ecosystem: "cargo"
-    directory: "/workforce-planning-management-api-with-rust"
+    directory: "/workforce-planning-management-service-with-rust"
     schedule:
       interval: "weekly"
       day: "monday"

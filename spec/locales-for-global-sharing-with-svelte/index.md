@@ -7,27 +7,16 @@ routing, UI chrome, and bugs.
 
 Read locales via file `locales.tsv`.
 
-## Locale directory names
-
-**Every locale directory is named `<language>-<region>`** — never a bare language.
-Lower-case, the language an ISO 639 code (`en`, `cy`, `zh`), the region an ISO 3166-1
-alpha-2 country (`gb`, `us`, `de`, `es`) **or** the UN M.49 numeric `001` ("world", used
-for a language's general-purpose locale: `en-001`, `cy-001`). So `locales/en-001/`,
-`locales/en-gb/`, `locales/cy-001/` — and there is no `locales/en/` or `locales/cy/`.
-A bare language is only ever a `lang`-style *tag* (matched to its `-001` locale, see below),
-or a row in `locales.tsv` — it is **never a directory and never a URL** (`/en/` is not a
-route and is not forwarded). A regional
-directory (`en-gb`) holds overrides of its language's `-001` directory; see
-"How WPM applies this". In WPM, `content/locales/` is checked by a unit test
-(`tests/unit/locales.test.ts`) that fails on any directory not named this way.
-
 Locale code priority order:
 
 - en-001
-- cy-001
-- zh-001
-- es-001
+- en-us
+- en-gb
+- en-gb-oxendict
+- cy-gb (then copy to cy-001)
+- zh-cn (then copy to zh-001)
 - ar-001
+- hi-in (then copy to hi-001)
 
 ## .locale-peer.id file
 
@@ -141,103 +130,3 @@ Fix: have `locales/[locale]/+layout.server.js` supply this locale's own title,
 which overrides the root layout's canonical one via SvelteKit's merged
 `page.data` on any route under `/locales/<locale>/` — the root picker and
 `/about/` (no locale in the URL) correctly keep the canonical English title.
-
-## How WPM applies this (WPM-R50, WPM-D37)
-
-The front-end (`workforce-planning-management-ui-with-svelte`) applies the
-guidance above to an **application**, not a book — the UI strings are the
-content.
-
-- **Content locales** (17): `ar-001 bn-001 cy-001 de-001 de-de en-001 en-gb
-  en-us es-001 es-es fr-001 hi-001 id-001 pt-001 ru-001 ur-001 zh-001`, one
-  directory each at `content/locales/<locale>/ui.json`. A `<language>-001`
-  file is complete (the parity test pins every key); a **regional** locale
-  (`en-gb`, `en-us`, `de-de`, `es-es`) holds only its **overrides** and falls
-  back to its `-001` base, then `en-001`. The files nest on the key dots
-  (`{"nav": {"workers": "…"}}`) because that is the shape the CMS edits;
-  the app flattens them at load.
-- **Routes:** every page is served under its locale — `/en-001/workers`,
-  `/cy-001/workers` — by a SvelteKit `reroute` hook (`src/hooks.ts`); the
-  route tree is unchanged. **A locale has exactly one address, its full code**
-  (WPM-D44): `/en-001/`, `/en-gb/`, `/cy-001/` — a bare language (`/en/…`, `/cy/…`) is
-  **not** a locale prefix and is **not forwarded** (an earlier alias that 301-redirected
-  `/en/` to `/en-001/` was removed; `/cy/workers` is now an ordinary unprefixed path, sent
-  under the visitor's own locale like any other unknown path). A bare language is still used
-  to *match a tag* — a cookie, `Accept-Language` or `navigator.language` of `en` or `cy`
-  picks the `-001` locale (`LANGUAGE_LOCALE`). An unprefixed URL **302-redirects** to the remembered
-  (`wpm-locale` cookie) or `Accept-Language` locale, else `en-001` — **except a bare
-  `/`, which the browser decides** (WPM-D43): with no remembered locale the app loads and
-  the root layout redirects by **`navigator.languages`** (`localeFromNavigator`: a tag
-  such as `cy_GB` or `cy-GB` matches the exact regional locale if the app has one —
-  `en_GB` → `/en-gb/`, `de-DE` → `/de-de/` — else its language's `-001`, so `cy_GB` →
-  `/cy-001/`; the first tag in the browser's preference order that the app serves wins).
-  A browser language the app does not serve falls back to what the server negotiated
-  from `Accept-Language` (passed to the client as `fallbackLocale`); without
-  JavaScript a `<noscript>` meta refresh to that same pick is in the page. A remembered
-  locale always beats the browser's. `/api`,
-  `/_app`, `/assets`, files with an extension, and the SSO and sign-out
-  endpoints are exempt. The **URL is the source of truth** for the UI
-  language; the picker navigates to the same page under the new prefix; the
-  server sets `<html lang dir>`.
-- **Sveltia CMS** at `/<locale>/admin/` (e.g. `/de-001/admin/`) edits the
-  strings in the repository. `static/admin/config.yml` is **generated** by
-  `pnpm cms-config` from `en-001` (i18n `multiple_folders`; every field
-  optional so a regional locale can hold just its overrides) and a unit test
-  fails if it is stale. Sveltia has no setting for its own interface
-  language, so the shell page writes the `sveltia-cms.prefs` value from the
-  URL's locale, mapped by `CMS_UI_LOCALE` onto the 29 languages Sveltia ships
-  (Bengali, Welsh, Hindi, Indonesian and Urdu have none: English).
-- **Dynamic text:** server-derived findings (insights, WPM-R49) arrive as a
-  `code` plus `params`; the UI renders them from
-  `insights.<code>.observation|suggestion` strings and falls back to the
-  server's English for a code it does not know.
-- **Verification:** `pnpm test` pins the parity of every `-001` locale,
-  the alias and prefix logic (`src/lib/locales.ts`) and the CMS config;
-  Playwright pins the redirect, the picker navigation and RTL direction.
-- **Sitemap:** `/sitemap.xml` is **generated** from the locale list and the
-  public pages (`src/lib/publicPages.ts`, shared with the sign-in gate): each of
-  `/`, `/tour` and `/signin` in every locale — 17 × 3 URLs — with
-  `xhtml:link rel="alternate"` for its sibling locales and `x-default` →
-  `en-001`. Search engines accept a language plus an optional alpha-2 region, not
-  the UN numeric `001`, so a `<language>-001` locale's `hreflang` is its bare
-  language (`cy-001` → `cy`) and a regional one is `en-GB`, `de-DE`, `es-ES`. A bare
-  language (`/en/…`) is not a route and is not listed. `/robots.txt` names the sitemap
-  and disallows `/api/`, `/admin`, `/*/admin` and `/signout`. `WPM_PUBLIC_URL`
-  overrides the origin behind a proxy.
-- **The 17 locales WPM serves** (as of 2026-10-07): 13 languages at their `-001` locale,
-  each holding **every one of the 541 UI keys**, and 4 regional locales that hold only
-  **overrides** and otherwise fall back to their language's `-001`, then `en-001`.
-
-  | Locale | Picker label | Kind | Holds |
-  | --- | --- | --- | --- |
-  | `ar-001` | العربية | language (right-to-left) | all keys |
-  | `bn-001` | বাংলা | language | all keys |
-  | `cy-001` | Cymraeg | language | all keys |
-  | `de-001` | Deutsch | language | all keys |
-  | `de-de` | Deutsch - Deutschland | regional | no overrides yet (falls back) |
-  | `en-001` | English | language — **the source** | all keys |
-  | `en-gb` | English - Great Britain | regional | 5 overrides (British spelling: *organisation*) |
-  | `en-us` | English - United States | regional | no overrides yet (falls back) |
-  | `es-001` | Español | language | all keys |
-  | `es-es` | Español - España | regional | no overrides yet (falls back) |
-  | `fr-001` | Français | language | all keys |
-  | `hi-001` | हिन्दी | language | all keys |
-  | `id-001` | Bahasa Indonesia | language | all keys |
-  | `pt-001` | Português | language | all keys |
-  | `ru-001` | Русский | language | all keys |
-  | `ur-001` | اردو | language (right-to-left) | all keys |
-  | `zh-001` | 中文 | language | all keys |
-
-  There is no `cy-gb` (the [Lily picker rules](../lily-design-system-svelte-with-picker-bar/index.md)
-  show `cy-001` and omit `cy-gb`). The picker sorts by code; a `-001` label is the language
-  alone, a regional one `<language> - <region>`, never in parentheses.
-- **Adding a locale:** create `content/locales/<language>-<region>/ui.json` (a `-001` file
-  complete, a regional one with overrides only — an empty `{}` is valid); add the code to
-  `LOCALES`, `LOCALE_LABELS` and `CMS_UI_LOCALE` in `src/lib/locales.ts`; run
-  `pnpm cms-config`. The unit tests then check the directory name, that the directories are
-  exactly `LOCALES`, key parity for every `-001` file, that a regional file holds only keys
-  that exist, and that the generated CMS config is current. Its URL, its `hreflang` and its
-  sitemap entries need no further step.
-- **Known limits:** the strings were translated by an AI assistant and have
-  had no native-speaker review; `/admin/` needs a GitHub login and has not
-  been exercised end to end in a browser.

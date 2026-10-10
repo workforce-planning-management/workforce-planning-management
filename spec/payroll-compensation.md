@@ -5,7 +5,10 @@
 A run covers one organization and period and is a strict state
 machine: `draft → calculated → approved → paid`, each transition
 audited with actor. **Calculate** produces one payslip per active
-employee from pure-core arithmetic:
+employee from pure-core arithmetic. **A contractor is never on payroll** (WPM-D58): they are paid
+against invoices through their supplier, so a run produces no payslip for an `employment_type` of
+`contractor` even when a rate is recorded in the salary field. A permanent, fixed-term or intern
+worker is paid as usual:
 
 - **Gross** — the salary pro-rated to the period (FTE-aware), plus
   overtime minutes × the derived rate.

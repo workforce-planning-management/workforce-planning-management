@@ -3,9 +3,7 @@
 Special files that use top-level markdown:
 
 - README.md
-- LICENSE.md with SPDX license information, linking the LICENSE/ directory, which
-  holds the full license texts (`LICENSE/index.md`, its `README.md` copy, and one
-  file per license)
+- LICENSE.md with SPDX license information
 - CITATION.cff with ORCID citation for Joel Parker Henderson (joel@joelparkerhenderson.com) (see ~/git/assertables/assertiables/CITATION.md for template)
 - NEWS.md with news, update information, press contacts, etc.
 - COMPARISONS.md comparisons to relevant projects, context, etc.

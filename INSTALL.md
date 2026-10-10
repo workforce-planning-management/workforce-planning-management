@@ -5,10 +5,10 @@ How to build and run both WPM subprojects from source.
 ## Prerequisites
 
 - **Rust** — MSRV is declared as `rust-version = "1.96"` in
-  `workforce-planning-management-api-with-rust/Cargo.toml`.
+  `workforce-planning-management-service-with-rust/Cargo.toml`.
 - **Podman** (not Docker) — for the service's test database.
 - **PostgreSQL 18** — provided by
-  `workforce-planning-management-api-with-rust/compose.test.yaml`;
+  `workforce-planning-management-service-with-rust/compose.test.yaml`;
   no host install needed for development.
 - **Node.js 26** and **pnpm** — for the SvelteKit front-end
   (`"engines": { "node": "=26" }` in its `package.json`).
@@ -16,7 +16,7 @@ How to build and run both WPM subprojects from source.
 ## Build and run the service
 
 ```sh
-cd workforce-planning-management-api-with-rust
+cd workforce-planning-management-service-with-rust
 cargo run -- db migrate    # apply migrations
 cargo run -- task seed     # synthetic org, ~40 employees
 WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 5150; sign-in enforcement is on by default,
@@ -24,8 +24,8 @@ WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 5150; sign-in enforceme
 ```
 
 ```sh
-cargo test                 # DB-free unit tests (297)
-cargo test -- --ignored    # request tests (54; needs Postgres — see below)
+cargo test                 # DB-free unit tests (353)
+cargo test -- --ignored    # request tests (66; needs Postgres — see below)
 cargo test --test enforcement -- --ignored   # auth persona matrix
 ```
 
@@ -105,12 +105,12 @@ machine could not pull base images when this was written.
 ## Running the service tests
 
 The two shared crates (`entity-ref`, `authentication-verifier`) are vendored in
-`workforce-planning-management-api-with-rust/crates/`, so a fresh clone builds
+`workforce-planning-management-service-with-rust/crates/`, so a fresh clone builds
 and tests on its own. Start a throwaway database and run the suites (the request
 suite runs serially, and each of the other test binaries in its own process):
 
 ```sh
-cd workforce-planning-management-api-with-rust
+cd workforce-planning-management-service-with-rust
 podman compose -f compose.test.yaml up -d --wait
 cargo test                                   # unit tests, no database
 cargo test --test mod -- --ignored --test-threads=1

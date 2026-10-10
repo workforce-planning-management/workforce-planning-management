@@ -23,7 +23,7 @@ TEXTS = {
     "GPL-2.0-only": "LICENSE-GPL-2.0",
     "GPL-3.0-only": "LICENSE-GPL-3.0",
 }
-API = "workforce-planning-management-api-with-rust"
+API = "workforce-planning-management-service-with-rust"
 UI = "workforce-planning-management-ui-with-svelte"
 
 

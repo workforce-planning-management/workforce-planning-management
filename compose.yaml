@@ -31,7 +31,7 @@ services:
 
   api:
     build:
-      context: ./workforce-planning-management-api-with-rust
+      context: ./workforce-planning-management-service-with-rust
       dockerfile: Containerfile
     depends_on:
       postgres:

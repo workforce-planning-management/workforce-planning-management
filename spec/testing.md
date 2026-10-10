@@ -2,7 +2,7 @@
 
 State as of 2026-10-07 (WPM-T97).
 
-## Service edition (`workforce-planning-management-api-with-rust`)
+## Service edition (`workforce-planning-management-service-with-rust`)
 
 - **Pure-core unit tests** (DB-free, `cargo test --lib` — **317**): every
   lifecycle's legal/illegal transition matrix; leave-balance, overtime, shift
@@ -54,7 +54,7 @@ State as of 2026-10-07 (WPM-T97).
 ### Running the service tests
 
 The two shared crates (`entity-ref`, `authentication-verifier`) are vendored in
-`workforce-planning-management-api-with-rust/crates/` (WPM-T123), so a fresh
+`workforce-planning-management-service-with-rust/crates/` (WPM-T123), so a fresh
 clone builds and tests with no scratch workspace. Start a throwaway Postgres 18
 under **Podman** (`podman compose -f compose.test.yaml up -d --wait`, which
 mounts `postgres-init/`), then run `cargo test --lib`,

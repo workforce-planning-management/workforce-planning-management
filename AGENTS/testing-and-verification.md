@@ -28,7 +28,7 @@ green gate. A justified `#[allow(clippy::…)]` carries a reason comment.
 ## Running the service tests
 
 The two shared crates (`entity-ref`, `authentication-verifier`) are vendored in
-`workforce-planning-management-api-with-rust/crates/`, so the service builds and
+`workforce-planning-management-service-with-rust/crates/`, so the service builds and
 tests from a fresh clone; no scratch workspace is needed. To run the
 database-backed suites:
 

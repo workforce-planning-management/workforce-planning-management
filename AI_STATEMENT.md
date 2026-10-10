@@ -22,7 +22,7 @@ defines them: requirement, recommendation, permission.
 
 This document covers the use of AI tools in developing everything in this
 repository: both subprojects
-(`workforce-planning-management-api-with-rust` and
+(`workforce-planning-management-service-with-rust` and
 `workforce-planning-management-ui-with-svelte`) and the
 cross-cutting specification under [spec/](spec/index.md).
 

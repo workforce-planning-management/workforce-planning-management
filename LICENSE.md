@@ -3,7 +3,7 @@
 Each subproject declares its own SPDX license expression in its manifest, and
 that declaration is authoritative for that subproject:
 
-- **workforce-planning-management-api-with-rust** (`Cargo.toml` `license`):
+- **workforce-planning-management-service-with-rust** (`Cargo.toml` `license`):
   `MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only`
 - **workforce-planning-management-ui-with-svelte** (`package.json` `license`):
   `MIT OR Apache-2.0`

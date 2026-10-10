@@ -1,8 +1,8 @@
 # Backend (Rust, Loco)
 
-`workforce-planning-management-api-with-rust` — Axum + SeaORM + PostgreSQL,
+`workforce-planning-management-service-with-rust` — Axum + SeaORM + PostgreSQL,
 `#![forbid(unsafe_code)]`, `#![warn(clippy::pedantic)]`. Stack-level agreements:
-[the service's AGENTS.md](../workforce-planning-management-api-with-rust/AGENTS.md).
+[the service's AGENTS.md](../workforce-planning-management-service-with-rust/AGENTS.md).
 
 ## Order of work for a new capability
 

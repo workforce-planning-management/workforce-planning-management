@@ -2,7 +2,7 @@
 
 Working agreements for humans and AI agents on this repository. This file is
 the short entry point; the detail is in [`AGENTS/`](AGENTS/). Each subproject
-also has its own [API](workforce-planning-management-api-with-rust/AGENTS.md)
+also has its own [API](workforce-planning-management-service-with-rust/AGENTS.md)
 and [UI](workforce-planning-management-ui-with-svelte/AGENTS.md) guide for
 stack-level detail. (Updated 2026-10-07, through WPM-T97.)
 
@@ -41,7 +41,7 @@ stack-level detail. (Updated 2026-10-07, through WPM-T97.)
 ## Where things are
 
 - `spec/` — requirements (`WPM-R*`), decisions (`WPM-D*`), tasks (`WPM-T*`), topic files.
-- `workforce-planning-management-api-with-rust/` — Loco JSON API (`src/rules/`, `src/controllers/`, `migration/`, `tests/`).
+- `workforce-planning-management-service-with-rust/` — Loco JSON API (`src/rules/`, `src/controllers/`, `migration/`, `tests/`).
 - `workforce-planning-management-ui-with-svelte/` — SvelteKit client (`src/routes/`, `src/lib/`, `content/locales/`, `tests/`).
 - `.sota/` — the 2026-10-05 benchmark scan record (`last-scan.json`, the rubric).
 - [`llms.txt`](llms.txt) / [`llms.json`](llms.json) — a map of the repo for agents.

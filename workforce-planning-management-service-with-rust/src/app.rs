@@ -102,6 +102,7 @@ impl Hooks for App {
             .add_route(controllers::lms::routes())
             .add_route(controllers::change::routes())
             .add_route(controllers::planning::routes())
+            .add_route(controllers::capacity::routes())
             .add_route(controllers::esco::routes())
             .add_route(controllers::framework_roles::routes())
             .add_route(controllers::career::routes())
@@ -197,6 +198,12 @@ impl Hooks for App {
 
     async fn truncate(ctx: &AppContext) -> Result<()> {
         truncate_table(&ctx.db, EventOutbox).await?;
+        truncate_table(&ctx.db, StartDecisions).await?;
+        truncate_table(&ctx.db, CapacitySettings).await?;
+        truncate_table(&ctx.db, PartnerCommitments).await?;
+        truncate_table(&ctx.db, ProgrammeDemands).await?;
+        truncate_table(&ctx.db, SkillPoolMembers).await?;
+        truncate_table(&ctx.db, SkillPools).await?;
         truncate_table(&ctx.db, AuditLogs).await?;
         truncate_table(&ctx.db, EntitlementAcknowledgements).await?;
         truncate_table(&ctx.db, WellbeingEntitlements).await?;

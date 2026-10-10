@@ -28,6 +28,17 @@ pub struct Payslip {
     pub net_minor: i64,
 }
 
+/// Employment types paid **outside** payroll (WPM-D58): a contractor is paid against an
+/// invoice through their supplier, so a payroll run produces no payslip for one even if a
+/// rate is recorded in the salary field.
+pub const OFF_PAYROLL_TYPES: &[&str] = &["contractor"];
+
+/// Whether a worker of this employment type is paid through payroll.
+#[must_use]
+pub fn on_payroll(employment_type: &str) -> bool {
+    !OFF_PAYROLL_TYPES.contains(&employment_type)
+}
+
 /// Stub flat tax rate (percent) above the allowance.
 pub const TAX_RATE_PERCENT: i64 = 20;
 /// Stub monthly tax-free allowance, minor units (£1,047.50 ≈ 12570/12).
@@ -162,6 +173,17 @@ pub fn reconcile(slip: &Payslip) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_contractor_is_not_on_payroll_and_everyone_else_is() {
+        use super::on_payroll;
+        assert!(!on_payroll("contractor"));
+        for kind in crate::rules::tokens::EMPLOYMENT_TYPES {
+            assert_eq!(on_payroll(kind), *kind != "contractor", "{kind}");
+        }
+        // An unknown type is not silently dropped from pay.
+        assert!(on_payroll("something_new"));
+    }
+
     use super::*;
 
     /// Base pay pro-rates by FTE and refuses junk inputs.

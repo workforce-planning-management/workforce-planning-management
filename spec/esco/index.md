@@ -156,7 +156,7 @@ cargo loco task import_esco dir:/path/to/esco-csv [lang:en] [version:v1.2.1]
   skills, choose the level, create) and `/skills` "Link ESCO" per skill.
 
 **Verified against the real ESCO v1.2.1 (2026-10-03).** The emailed download
-could not be obtained here, so `workforce-planning-management-api-with-rust/scripts/esco-fetch.py`
+could not be obtained here, so `workforce-planning-management-service-with-rust/scripts/esco-fetch.py`
 builds the same three CSVs from the public web-service API — it crawls the
 occupation taxonomy (ISCO groups → occupations, closing over nested
 occupations) and the skills hierarchy, bulk-fetches skills, and translates the

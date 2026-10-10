@@ -128,7 +128,7 @@ async fn get_run(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Resu
 }
 
 /// `POST /api/payroll-runs/{pid}/calculate` — derive one payslip per
-/// salaried in-scope worker from salary × FTE, **approved**
+/// salaried in-scope worker (never a contractor, WPM-D58) from salary × FTE, **approved**
 /// overtime in the period, and benefit worker-costs; stub tax
 /// (WPM-R13, WPM-D5). Re-calculation replaces the run's payslips
 /// (drafts only — the lifecycle gate enforces it).
@@ -147,6 +147,8 @@ async fn calculate_run(
         .filter(workers::Column::OrganizationRef.eq(&run.organization_ref))
         .filter(workers::Column::Status.is_in(["active", "on_leave"]))
         .filter(workers::Column::SalaryMinor.is_not_null())
+        // Contractors are paid against invoices, not through payroll (WPM-D58).
+        .filter(workers::Column::EmploymentType.is_not_in(rules::OFF_PAYROLL_TYPES.iter().copied()))
         .all(&ctx.db)
         .await?;
     let txn = ctx.db.begin().await?;

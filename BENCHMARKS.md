@@ -2,15 +2,15 @@
 
 Neither subproject ships a performance benchmark suite yet (no
 `benches/`, no Criterion dependency in
-`workforce-planning-management-api-with-rust/Cargo.toml`). This
+`workforce-planning-management-service-with-rust/Cargo.toml`). This
 file exists as the place such results would live once measured.
 
 ## What exists today
 
-- Service (2026-10-06): 317 DB-free unit tests, 62 database-backed request tests
-  (19 files, serial), the auth enforcement persona matrix and a Keycloak suite
+- Service (2026-10-11): 353 DB-free unit tests, 66 database-backed request tests
+  (serial), the auth enforcement persona matrix and a Keycloak suite
   against a real Keycloak 26, run with `cargo test` and `cargo test -- --ignored`.
-  See [workforce-planning-management-api-with-rust/README.md](workforce-planning-management-api-with-rust/README.md)
+  See [workforce-planning-management-service-with-rust/README.md](workforce-planning-management-service-with-rust/README.md)
   and [spec/testing.md](spec/testing.md).
 - Front-end: 80 vitest + 45 Playwright specs, run with `pnpm test` /
   `pnpm exec playwright test`. The CEO dashboard is **fit-tested** (page scroll

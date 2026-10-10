@@ -105,6 +105,11 @@
         "description": "generated counts of migrations, controllers, declared tests, locales and tasks (scripts/status.py)"
       },
       {
+        "title": "spec/delivery-capacity.md",
+        "path": "spec/delivery-capacity.md",
+        "description": "skill pools, programme demand, partner commitments, the capacity view, the constraint pool, the start check and start decisions (WPM-R56–R60)"
+      },
+      {
         "title": "spec/pay-scales.md",
         "path": "spec/pay-scales.md",
         "description": "A national public-sector pay scale, salary placement and progression lookup, a worker's band and step (WPM-R51, R54)"
@@ -142,8 +147,8 @@
     ],
     "code": [
       {
-        "title": "workforce-planning-management-api-with-rust/",
-        "path": "workforce-planning-management-api-with-rust/index.md",
+        "title": "workforce-planning-management-service-with-rust/",
+        "path": "workforce-planning-management-service-with-rust/index.md",
         "description": "the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 49 migrations"
       },
       {
@@ -217,7 +222,7 @@
       },
       {
         "title": "API AGENTS.md",
-        "path": "workforce-planning-management-api-with-rust/AGENTS.md",
+        "path": "workforce-planning-management-service-with-rust/AGENTS.md",
         "description": "Service stack-level agreements"
       },
       {

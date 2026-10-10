@@ -101,7 +101,7 @@ describe("no locale repeats English", () => {
 });
 
 describe("every server vocabulary token has a value entry", () => {
-  const rules = join(root, "..", "workforce-planning-management-api-with-rust", "src", "rules");
+  const rules = join(root, "..", "workforce-planning-management-service-with-rust", "src", "rules");
   const tables = new Set<string>();
   const tokens = new Set<string>();
 

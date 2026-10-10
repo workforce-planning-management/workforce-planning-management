@@ -65,7 +65,7 @@ file.
 ## WPM-R77 — Builds from its own repository, and CI checks it
 
 - The two shared crates are **vendored** in
-  `workforce-planning-management-api-with-rust/crates/` (`entity-ref`,
+  `workforce-planning-management-service-with-rust/crates/` (`entity-ref`,
   `authentication-verifier`); no `../../` path remains. The test database's init
   script is in `postgres-init/`.
 - `.github/workflows/ci.yml` runs on every push and pull request: the documents

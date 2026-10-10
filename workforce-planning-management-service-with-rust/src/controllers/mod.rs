@@ -11,6 +11,7 @@ pub mod announcements;
 pub mod appraisals;
 pub mod assessments;
 pub mod audits;
+pub mod capacity;
 pub mod career;
 pub mod change;
 pub mod contacts;

@@ -22,7 +22,7 @@ names.
 ## Implementation in this workspace
 
 The Rust API's `keycloak` backend (`src/auth/keycloak.rs`) is tested against a
-real Keycloak, in `workforce-planning-management-api-with-rust/tests/keycloak.rs`:
+real Keycloak, in `workforce-planning-management-service-with-rust/tests/keycloak.rs`:
 
 - Dependency: `testcontainers` (dev-dependency); the container is a
   `GenericImage` for `quay.io/keycloak/keycloak:26.0` run as

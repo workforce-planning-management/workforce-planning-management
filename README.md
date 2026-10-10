@@ -15,17 +15,22 @@ payroll & compensation — in **17 locales**. See
 > data anywhere in the repository. See
 > [spec/regulatory.md](spec/regulatory.md).
 
-**Status: implemented through WPM-T97 (2026-07-18 → 2026-10-07), with no open
-deferral ([spec/roadmap.md](spec/roadmap.md)).** Verified: 317 service unit tests, 62
-database-backed request tests, the auth enforcement and Keycloak suites (real
-Keycloak 26), 80 front-end unit tests and 45 Playwright specs. See each
+**Status: the demonstration is implemented through WPM-T97 (2026-07-18 → 2026-10-07). Since
+then: production-readiness, operations and information-governance work (WPM-T102, T119,
+T123–T128, T144–T155), the delivery-capacity API (WPM-T104–T107) and two corrections
+(WPM-T134, T136). Much more is proposed but not built: see
+[spec/tasks.md](spec/tasks.md) and [spec/implementation-status.md](spec/implementation-status.md).**
+Verified on 2026-10-11 for the service: 353 unit tests and 66 database-backed request tests,
+with the enforcement, security, retention-schedule and Entra suites. The Keycloak suite (real
+Keycloak 26) and the front-end counts (80 unit tests and 45 Playwright specs) were last
+measured on 2026-10-07 and were not rerun for this update. See each
 subproject's own README for its own gate status, and [spec/testing.md](spec/testing.md).
 
 ## Subprojects
 
 | Subproject | Role | Stack |
 | --- | --- | --- |
-| [workforce-planning-management-api-with-rust](workforce-planning-management-api-with-rust/) | Back-end JSON API | Rust, Loco (Axum + SeaORM), PostgreSQL |
+| [workforce-planning-management-service-with-rust](workforce-planning-management-service-with-rust/) | Back-end JSON API | Rust, Loco (Axum + SeaORM), PostgreSQL |
 | [workforce-planning-management-ui-with-svelte](workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 2, Svelte 5 runes, TypeScript |
 
 Each subproject is self-contained: it owns its own `README.md`,
@@ -46,7 +51,7 @@ duplicating them. See [spec/scope.md](spec/scope.md) and
 
 ```sh
 # Back-end
-cd workforce-planning-management-api-with-rust
+cd workforce-planning-management-service-with-rust
 cargo run -- db migrate && cargo run -- task seed && cargo run -- start
 
 # Front-end (in another shell)

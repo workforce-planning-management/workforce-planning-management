@@ -7,7 +7,7 @@ through WPM-T97.)
 ## What this project is
 
 A **SvelteKit browser client** for the
-[Loco JSON API sibling](../workforce-planning-management-api-with-rust/): hiring
+[Loco JSON API sibling](../workforce-planning-management-service-with-rust/): hiring
 boards, onboarding, time/leave/rotas, the employee record (the **self-service
 hub**) and org chart, reviews and 360°s, learning, skills, succession, payroll,
 benchmarking, wellbeing and privacy — and, since WPM-T69: `/metrics` (with

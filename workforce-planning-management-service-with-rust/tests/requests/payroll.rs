@@ -197,3 +197,71 @@ async fn benchmark_comparison_flags() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// A contractor is paid against an invoice, not through payroll (WPM-D58): with a rate recorded in
+// the salary field they still get no payslip, while a permanent and a fixed-term worker do.
+async fn a_contractor_gets_no_payslip() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let mut pids = Vec::new();
+        for (number, kind) in [
+            ("E-3001", "permanent"),
+            ("E-3002", "fixed_term"),
+            ("E-3003", "contractor"),
+        ] {
+            let created: Value = request
+                .post("/api/workers")
+                .json(&json!({
+                    "person_ref": crate::requests::a_person(),
+                    "organization_ref": org,
+                    "worker_number": number,
+                    "display_name": format!("Test Worker {number}"),
+                    "employment_type": kind,
+                    "department": "engineering",
+                    "job_title": "Engineer",
+                    "salary_minor": 3_600_000,
+                    "salary_currency": "GBP",
+                    "hired_on": "2026-01-05",
+                }))
+                .await
+                .json();
+            let pid = created["pid"].as_str().expect("worker pid").to_string();
+            activate!(&request, &pid).await;
+            pids.push(pid);
+        }
+        let run: Value = request
+            .post("/api/payroll-runs")
+            .json(&json!({
+                "organization_ref": org,
+                "period_start": "2026-07-01", "period_end": "2026-07-31",
+            }))
+            .await
+            .json();
+        let run_pid = run["pid"].as_str().unwrap().to_string();
+        let calculated: Value = request
+            .post(&format!("/api/payroll-runs/{run_pid}/calculate"))
+            .await
+            .json();
+        assert_eq!(
+            calculated["payslips"], 2,
+            "the contractor is not paid through payroll"
+        );
+        let slips: Value = request
+            .get(&format!("/api/payroll-runs/{run_pid}/payslips"))
+            .await
+            .json();
+        let paid: Vec<&str> = slips
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|slip| slip["worker_pid"].as_str().unwrap())
+            .collect();
+        assert!(paid.contains(&pids[0].as_str()), "permanent is paid");
+        assert!(paid.contains(&pids[1].as_str()), "fixed-term is paid");
+        assert!(!paid.contains(&pids[2].as_str()), "contractor is not");
+    })
+    .await;
+}

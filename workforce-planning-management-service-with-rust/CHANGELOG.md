@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — delivery capacity (WPM-T104–T107)
+
+Skill pools, programme demand and partner commitments (`/api/skill-pools`, `/api/programme-demands`,
+`/api/partner-commitments`), the pool × month `GET /api/capacity` view with a constraint pool, the
+`POST /api/capacity/start-check` suggestion and recorded `start-decisions`, and the organization's
+work-in-progress limit. A month in which a partner has made no commitment is unknown, never zero. Migration
+`000052` adds six tables, none holding personal data.
+
+### Changed — payroll runs exclude contractors (WPM-T136)
+
+A contractor is paid against invoices, not through payroll, so `POST /api/payroll-runs/{pid}/calculate`
+produces no payslip for an `employment_type` of `contractor`. Permanent, fixed-term and intern workers are
+unchanged. The spec's employment types now match the code.
+
 ### Added — operations, governance and OIDC (WPM-T147–T152)
 
 Migration 51 `erasure_ledger` and the task `replay_erasures [since:] [file:]`; `RecordKind` and

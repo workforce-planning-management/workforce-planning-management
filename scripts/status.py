@@ -16,7 +16,7 @@ import sys
 ROOT = subprocess.run(
     ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True
 ).stdout.strip()
-API = "workforce-planning-management-api-with-rust"
+API = "workforce-planning-management-service-with-rust"
 UI = "workforce-planning-management-ui-with-svelte"
 OUT = os.path.join(ROOT, "spec", "implementation-status.md")
 

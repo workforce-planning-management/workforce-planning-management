@@ -9,6 +9,7 @@ mod adjustments;
 mod announcements;
 mod appraisals;
 mod assessments;
+mod capacity;
 mod contacts;
 mod erasure_replay;
 mod ergonomics;

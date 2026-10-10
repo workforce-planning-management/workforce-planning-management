@@ -37,7 +37,7 @@ project-portfolio-management (WPM-D55).
 
 ## Phase 1 — service skeleton & employee core (WPM-R7, WPM-R17)
 
-- [x] WPM-T1 Scaffold `workforce-planning-management-api-with-rust`:
+- [x] WPM-T1 Scaffold `workforce-planning-management-service-with-rust`:
       loco app, config, migration crate, family fixtures (forbid-unsafe,
       tracing/OTLP, `/metrics.prom`, OpenAPI + Swagger, `Accepts-version`
       middleware, health routes). (WPM-D12)
@@ -115,7 +115,7 @@ project-portfolio-management (WPM-D55).
       WPM-D12)
 
 > Phases 1–7 landed 2026-07-18 in one implementation round
-> (`workforce-planning-management-api-with-rust`, copy-adapted from
+> (`workforce-planning-management-service-with-rust`, copy-adapted from
 > patient-flow): 7 migrations (23 domain tables + audit + outbox),
 > pure `rules/` core (lifecycle tables, leave/time arithmetic,
 > org-cycle, payslip arithmetic incl. the net invariant + overflow
@@ -2417,28 +2417,42 @@ data or tests (WPM-D48).
       failure, contingent share, funding horizon, oversight level, exit
       criterion, sustain rule), [index.md](index.md), `llms.txt`, and the next
       free ids in `AGENTS/spec-driven-delivery.md`. No code.
-- [ ] WPM-T104 **Pure core: pool supply and capacity.** *(WPM-R56, WPM-R59,
-      WPM-D45, WPM-D46)* `rules/capacity.rs`: pool membership from role profile
-      or skill at minimum proficiency; supply = employed FTE − operations
-      reservation − approved leave, per month; demand vs supply per pool-month
-      with partner rows; over-commitment and the constraint pool; `unknown`
-      propagates and is never treated as zero. Unit tests for each boundary,
-      including a pool with no members and a month with no partner commitment.
-- [ ] WPM-T105 **Pure core: start check and work-in-progress limit.**
-      *(WPM-R60, WPM-D50)* Which months fail, by how much, the earliest fitting
-      start, and the active-programme limit on the constraint pool. Output is a
-      suggestion with its derivation. Unit tests, including a programme that can
-      never fit within the horizon.
-- [ ] WPM-T106 **Skill pools, programme demand, partner commitments.**
-      *(WPM-R56–R58)* Migrations, models, controllers and OpenAPI. Programme and
-      partner by `EntityRef` URN only. HR `write` for pools; planner role for
-      demand and commitments. Audited. Request tests for validation, soft
-      delete and URN refusal.
-- [ ] WPM-T107 **Capacity view and start check endpoints.** *(WPM-R59, WPM-R60)*
-      `GET /api/capacity` (pool × month, horizon parameter, derivation string)
-      and `POST /api/capacity/start-check`; recording a start decision with its
-      reason. Request tests against a synthetic seed with one over-committed
-      pool and one unknown partner month.
+- [x] WPM-T104 (2026-10-11) **Pure core: pool supply and capacity.** *(traces to WPM-R56, WPM-R59, WPM-D45, WPM-D46)*
+      `rules/capacity.rs`: pool membership by role profile or skill at a minimum; supply as FTE weighted by
+      the days employed and not on approved leave, less the operations reservation, in whole hundredths of an
+      FTE; the pool × month grid with partner rows; four results (`fits`, `fits_with_partners`, `over`,
+      `unknown`); the constraint pool. An unanswered partner makes a short month `unknown`, never `over`.
+      Verified by unit tests at each boundary (a pool with no members, an exactly-met demand and one
+      hundredth over, a hire part-way through a month, overlapping leave ranges, a partner silent in one
+      month, a tie for the constraint pool). Described in [delivery-capacity.md](delivery-capacity.md).
+- [x] WPM-T105 (2026-10-11) **Pure core: start check and work-in-progress limit.** *(traces to WPM-R60, WPM-D50)*
+      In the same module: failing lines and by how much, the earliest delay in months at which every line is
+      known to fit, and the active-programme limit on the constraint pool (the candidate counted once). A
+      delay that pushes a line outside the horizon, or into a month that cannot be said, is not a fit.
+      Unit tests include a programme that can never fit and a shift past the horizon. **Limit:** proposed
+      claims of other programmes are not counted against the one being checked.
+- [x] WPM-T106 (2026-10-11) **Skill pools, programme demand, partner commitments.** *(traces to WPM-R56–R58)*
+      Migration `000052` (six tables: pools, members, demand, commitments, the work-in-progress limit, start
+      decisions; none holds personal data), entities, `controllers/capacity.rs`, nineteen operations in the
+      OpenAPI document. Programme by `thing:` URN, partner by `organization:` URN, a first-of-month, a bounded
+      positive FTE; a claim can be set `proposed` or `closed` but only becomes `active` through a start
+      decision; every write audited; pools, members, demand and commitments soft-deleted. Request tests for
+      validation, wrong-kind URNs, duplicates, upsert and soft delete. **Not as the task said:** "planner
+      role" is not enforced distinctly, because the policy has no such role; writes are HR writes.
+      **Decision to confirm:** a programme is a `thing:` URN because the entity-reference crate has no
+      programme type.
+- [x] WPM-T107 (2026-10-11) **Capacity view and start check endpoints.** *(traces to WPM-R59, WPM-R60)*
+      `GET /api/capacity` (pool × month, horizon, partners shown as unknown where silent, constraint pool,
+      derivation text), `POST /api/capacity/start-check` (stores nothing; optional what-if lines) and
+      `POST /api/capacity/start-decisions` (proceed or defer, a required reason, the check re-run on the
+      server, proceed makes the claims active; the audit entry omits the reason). Verified by a request test
+      on a synthetic seed: three full-time and one half-time worker, one on approved leave for a month,
+      another with only a *requested* leave (not counted), one pool over-committed in one month, a partner
+      silent in another, a failing check with the earliest fit, the limit exceeded, and a deferral then a
+      proceed. **Mutation-checked** twice (treating an unanswered partner as zero, and counting unapproved
+      leave): each fails the test. Full suites: 353 unit and 66 request tests, clippy and fmt clean.
+      **Not verified:** any user interface (none exists), enforcement tests for these routes with sign-in on,
+      and behaviour against a large organization (the view loads an organization's workers in memory).
 - [ ] WPM-T108 **Pure core and endpoint: key-person risk.** *(WPM-R61,
       WPM-D47)* Count holders, backups and ready successors per critical skill;
       flag single points of failure. Aggregate endpoint (counts only) and an
@@ -2510,7 +2524,7 @@ what stops a buyer deploying a named version.
 
 - [x] WPM-T123 (2026-10-09) **Standalone build.** *(traces to WPM-R77)* The two shared
       crates, `entity-ref` and `authentication-verifier`, are **copied into**
-      `workforce-planning-management-api-with-rust/crates/` (benches, fuzz targets and
+      `workforce-planning-management-service-with-rust/crates/` (benches, fuzz targets and
       their own locks dropped), and `Cargo.toml` points at them: no `../../` path
       remains. `compose.test.yaml` mounts an in-repo `postgres-init/` instead of the
       missing `../../ci/postgres-init`, and its comments no longer name monorepo
@@ -2647,11 +2661,11 @@ payroll defect and need nothing else; do them first.
       data, the DPIA once WPM-T131 exists), [glossary.md](glossary.md) (engagement
       basis, engagement end, extension, supplier, engagement route), the index and
       `llms.txt`. No code.
-- [ ] WPM-T134 **Correct the employment type in the spec.** *(WPM-D56)*
-      [domain-model.md](domain-model.md) lists `full_time | part_time | contract |
-      intern`; the code enforces `permanent | fixed_term | contractor | intern`. Make
-      the spec match the code and say that working pattern is `fte_percent`. Check
-      every other spec, OpenAPI text and UI label for the old values.
+- [x] WPM-T134 (2026-10-10) **Correct the employment type in the spec.** *(traces to WPM-D56)* `spec/domain-model.md`
+      listed `full_time | part_time | contract | intern`; the code enforces `permanent | fixed_term |
+      contractor | intern`. The spec now matches the code and says the working pattern is `fte_percent`. A
+      search of the other specs found no other use of the old values; the OpenAPI text and the UI labels
+      were not re-read for them.
 - [ ] WPM-T135 **Pure core: engagements and basis-aware supply.** *(WPM-R79, WPM-R85,
       WPM-D57)* `rules/engagement.rs`: which bases need, allow or refuse an end date;
       an extension must move the end later; end-of-engagement window; long-running
@@ -2660,11 +2674,15 @@ payroll defect and need nothing else; do them first.
       permanent only), in headcount and FTE, with the assumptions named. Unit tests,
       including an engagement ending on the target date, an extension past it, and no
       permanent history (`insufficient_history`).
-- [ ] WPM-T136 **Payroll excludes contractors.** *(WPM-R80, WPM-D58)* The payroll run
-      filters out `employment_type = contractor`. Request test: a run with a
-      permanent, a fixed-term and a contractor worker, all with salaries, produces two
-      payslips. Mutation-check the filter. Say in the payroll spec that contractors
-      are paid outside payroll.
+- [x] WPM-T136 (2026-10-10) **Payroll excludes contractors.** *(traces to WPM-R80, WPM-D58)* `rules::payroll::on_payroll` and
+      `OFF_PAYROLL_TYPES` (`contractor`); the run's calculation filters them out, and
+      `spec/payroll-compensation.md` says so. Verified: a unit test over every employment type (and an
+      unknown one stays paid); a request test with a permanent, a fixed-term and a contractor worker, all
+      with a salary, giving two payslips and none for the contractor; **mutation-checked** (removing the
+      filter fails it). Full suites unchanged: 334 unit and 64 request tests pass, clippy and fmt clean.
+      **Behaviour change:** a contractor who was in a run before now gets no payslip. **Not done:** the
+      benchmark comparison still includes every worker with a salary (it is not payroll); the contractor's
+      rate fields (WPM-T137) do not exist yet.
 - [ ] WPM-T137 **Engagement fields, extensions and contractor details.** *(WPM-R79,
       WPM-R80)* Migration: `workers.engagement_ends_on`, supplier URN, engagement
       route, rate and rate basis; `engagement_extensions`;

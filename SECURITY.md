@@ -9,7 +9,7 @@ acknowledgement within a few business days.
 
 ## Scope
 
-Both subprojects: `workforce-planning-management-api-with-rust`
+Both subprojects: `workforce-planning-management-service-with-rust`
 (the back-end JSON API) and
 `workforce-planning-management-ui-with-svelte` (the browser
 client).
