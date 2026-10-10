@@ -309,6 +309,100 @@ Improvements:
   calendar months (conversion or status-review candidates). Aggregates name no
   one. The named lists are HR-only and audited.
 
+**Added 2026-10-10 — track contractors and fixed-term staff properly.** The four things a
+planner needs on every contingent engagement are now each a named requirement: the **contract end
+date** (WPM-R79, with its extensions), the **supplier** (WPM-R80), the **funding source** with its
+own end (WPM-R62, tied to the engagement by WPM-R98) and a **conversion plan** (WPM-R98):
+
+- **WPM-R98 Funding source and conversion plan.** Every fixed-term or contractor engagement shows
+  its **funding source** (kind `core`, `time_limited`, `external` or `programme`, the programme URN
+  where there is one, and the funding's own end date) beside its contract end date, taken from the
+  post funding record (R62, R83). An engagement whose contract outlasts its funding, or whose
+  funding outlasts its contract, is flagged. A **conversion plan** records the intent for an
+  engagement (`convert`, `extend`, `end` or `undecided`), a target date, the **permanent post** it
+  would become (department and role profile, with that post's funding source), the reason, who
+  proposed it and who approved it (never the same person), a status (`proposed`, `approved`,
+  `done`, `abandoned`) and a review date. Rules in a pure core: a plan to convert needs a funded
+  permanent post, or states why it has none; the decision date falls before the contract end; an
+  engagement past its end with no approved plan is flagged (R81); a done conversion closes the old
+  engagement and starts the permanent record without losing the history. The workforce plan's
+  "convert contingent to permanent" lever (R63) reads these plans, so a planner sees which
+  conversions are already agreed and which are only a hope. Employment-status rules for
+  contractors, any agency conversion fee and notice duties are the deployer's to check; the
+  software records the decision and does not decide them.
+- **WPM-D66 A conversion is a decision someone makes and records, never an automatic outcome of
+  length of service.** The software lists candidates (R86) and keeps the plan; it never converts,
+  extends or ends an engagement by itself.
+
+### H. Issues register and change requests (proposed 2026-10-10)
+
+Requested alongside the project-control work: an **issues register** (the portfolio tool's FR-14) and
+**change requests**, each with their **people impact**. They are project-control records, so they
+belong to project-portfolio-management, not here (WPM-D55, WPM-D65); the requirement text is in
+[ppm-issues-and-changes.md](ppm-issues-and-changes.md) (WPM-R95 issues register, WPM-R96 change
+requests, WPM-R97 people impact). WPM's part is small: a **what-if capacity answer** for proposed
+demand changes (WPM-T158), which depends on the capacity model in section A.
+
+### I. Equality impact assessment for any scoring (proposed 2026-10-10)
+
+Requested: a template for any scoring, such as succession readiness or risk of loss. The template
+and the assessments completed for the scores WPM has today are written
+([equality-impact/template.md](equality-impact/template.md),
+[equality-impact/register.md](equality-impact/register.md)); they are first drafts that no one has
+approved. What is proposed in code:
+
+- **WPM-R99 Scoring register and assessment gate.** Every score derived about a person is listed
+  in a register in code (`rules::scoring`: id, kind, inputs, the decision it informs, the
+  assessment file, status). A test fails when a registered score has no assessment file with every
+  section, when its status is not approved (or approved with conditions), or when its review date has
+  passed. A lint test flags a new public function in `rules/` whose name says score, rank, rating,
+  band, readiness or risk and that is not in the register.
+- **WPM-R100 Adverse-impact check.** A run-time check that takes a **grouping the deployer
+  supplies** (from equality data they hold elsewhere), computes favourable-outcome rates and the
+  ratio to the best-treated group for a registered score, withholds small groups, and **stores
+  nothing**. It produces the evidence for section 6 of the assessment. WPM holds no protected
+  characteristic (WPM-D17).
+- **WPM-R101 Scores say what they are.** Every score payload and screen states its inputs,
+  that it is advisory and a person decides, and which assessment covers it; rater-facing forms
+  carry the guidance on what not to use (absence, leave, working pattern, adjustments).
+- **WPM-D67 A score without an approved equality impact assessment does not ship, and an
+  individual risk-of-loss score is not built.** Scores advise; a person decides (WPM-D28, D50).
+  Department-level attrition is offered instead.
+
+### J. Worker unions (proposed 2026-10-10)
+
+Researched in [worker-unions.md](worker-unions.md). The finding: a workforce plan is what triggers
+collective duties (consultation on redundancies and restructuring, bargaining over pay), so the tool
+should model **obligations, bodies, agreements and aggregate information**, and must **not**
+store who is a member or a representative (special category data, and a history of misuse).
+
+- **WPM-R102 Recognised bodies and bargaining units** (organization-level reference data; coverage
+  as a floored aggregate). **WPM-R103 Collective agreements** as reference data. **WPM-R104
+  Consultation obligations calendar** (configurable thresholds, a suggestion with its evidence).
+  **WPM-R105 Consultation register** (roles, not names). **WPM-R106 Information pack for
+  bargaining** (aggregates only, each disclosure logged). **WPM-R107 Facility time as an
+  aggregate.** **WPM-R108 Decision gates** (changes that need consultation, including new scoring).
+- **WPM-D68 Union membership and representative status are never stored, and nothing may reveal
+  them.** No column, flag, deduction label, time-off kind or attendee list. Check-off stays in the
+  deployer's payroll process.
+
+### K. SFIA and SFIAplus (proposed 2026-10-10)
+
+Researched in [sfia.md](sfia.md): SFIA (seven levels of responsibility, five generic attributes,
+147 skills in version 9) as a third capability framework beside the UK GDAD PCF and ESCO, and
+BCS's SFIAplus training and certification detail on top. **The licence is the design**: the free
+corporate licence is for internal use and forbids distribution, so WPM ships no SFIA content and
+**imports** the deployer's licensed download.
+
+- **WPM-R109 `import_sfia`** (a documented CSV contract, idempotent, versioned). **WPM-R110
+  Levels of responsibility** as an imported job-level framework. **WPM-R111 SFIA skills in role
+  profiles and declared skills with the native level kept.** **WPM-R112 SFIAplus development
+  resources** (optional import; pointers in training recommendations and development plans).
+  **WPM-R113 The licence guard and record** (version, redistribution status, holder, check date,
+  attribution; nothing licensed on a public surface).
+- **WPM-D69 Licensed content is imported by the licensee, never shipped.** **WPM-D70 The
+  framework's own scale is kept and the mapping to 1–5 is shown** (`linear`: 1, 2, 2, 3, 4, 4, 5).
+
 ## 3. Design decisions (proposed)
 
 - **WPM-D45 Capacity is planned by pool, not by person.** Supply comes from
@@ -330,6 +424,9 @@ Improvements:
   criterion's measures meet its sustain rule. A change of level is recorded by
   a person with the deciding body and date. Reported measures show their
   source, so derived and asserted evidence are never mixed silently.
+- **WPM-D65 Issues and change requests are PPM's; WPM answers "what does this do to our people?"**
+  See [ppm-issues-and-changes.md](ppm-issues-and-changes.md). WPM stores no issue, change request or
+  baseline.
 - **WPM-D50 Sequencing is a suggestion.** As with workforce plan levers
   (WPM-D28), the start check proposes; a person decides; the decision and its
   reason are kept.

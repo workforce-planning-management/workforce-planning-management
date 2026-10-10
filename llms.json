@@ -65,6 +65,31 @@
         "description": "Google technical job levels L3–L11, a worker's level, a role's level and pay band (WPM-R52–R53)"
       },
       {
+        "title": "spec/sfia.md",
+        "path": "spec/sfia.md",
+        "description": "proposed SFIA and SFIAplus support, imported from the deployer's licensed download, never shipped (WPM-R109–R113)"
+      },
+      {
+        "title": "spec/worker-unions.md",
+        "path": "spec/worker-unions.md",
+        "description": "research and proposal for recognised bodies, collective agreements, consultation obligations and aggregate information, never individual union membership (WPM-R102–R108)"
+      },
+      {
+        "title": "spec/equality-impact/template.md",
+        "path": "spec/equality-impact/template.md",
+        "description": "equality impact template for any scoring (WPM-R99–R101)"
+      },
+      {
+        "title": "spec/equality-impact/register.md",
+        "path": "spec/equality-impact/register.md",
+        "description": "scoring register and draft equality impact assessments for each score WPM has today"
+      },
+      {
+        "title": "spec/ppm-issues-and-changes.md",
+        "path": "spec/ppm-issues-and-changes.md",
+        "description": "proposed issues register (FR-14) and change requests for project-portfolio-management, with the people-impact answer from WPM (WPM-R95–R97)"
+      },
+      {
         "title": "spec/operations-and-governance.md",
         "path": "spec/operations-and-governance.md",
         "description": "backup and restore, deployment, upgrade, runbook, information governance pack, retention per record kind, Entra ID sign-in, every page in every locale (WPM-R89–R94)"

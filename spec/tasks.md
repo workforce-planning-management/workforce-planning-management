@@ -2632,7 +2632,7 @@ what stops a buyer deploying a named version.
       project-portfolio-management repository's roadmap corrections (another repository);
       the roughly 20 dead links named in the review are in that repository too.
 
-## Phase 14 — programme-linked planning and contingent workforce (proposed WPM-R79–R86, WPM-D56–D59)
+## Phase 14 — programme-linked planning and contingent workforce (proposed WPM-R79–R86, WPM-R98, WPM-D56–D59, WPM-D66)
 
 Proposed 2026-10-09, not started, in response to a user complaint: "It plans
 headcount by department, with no link to programmes and minimal tracking of
@@ -2702,6 +2702,27 @@ payroll defect and need nothing else; do them first.
       programme, the programme roll-up, and the contingent workforce view; strings in
       the 12 `-001` locales. Screenshots read in light and dark at desktop and phone
       sizes. Full suites. Record what was not verified.
+
+- [ ] WPM-T161 **Funding source on the engagement.** *(traces to WPM-R98, WPM-R62, WPM-R83)* Show each fixed-term and
+      contractor engagement's funding source (kind, programme, funding end) beside its contract end date in
+      the worker's engagement panel and the contingent workforce view; flag a contract that outlasts its
+      funding and a funding that outlasts its contract. Pure core rule and unit tests (equal, contract
+      longer, funding longer, funding unknown). Depends on WPM-T109 and WPM-T137.
+- [ ] WPM-T162 **Pure core: conversion plans.** *(WPM-R98, WPM-D66)* `rules/conversion.rs`: the intents and statuses,
+      the transitions, "proposer is not approver", "a conversion needs a funded permanent post or a stated
+      reason", "decision date before the contract end", and the flags (past end with no approved plan, review
+      date due). Exhaustive unit tests for each rule and each refusal.
+- [ ] WPM-T163 **Conversion plans: table, API and audit.** *(WPM-R98)* Migration for `conversion_plans`
+      (worker, intent, target date, department, role profile, post funding kind and end, reason, proposer,
+      approver, status, review date; no pay figures); controllers and OpenAPI; HR-only reads; audited without
+      the reason text; in the subject-access export and erased with the worker (a plan is about a person).
+      Request tests including the refusals and the enforcement test for who may read and decide.
+- [ ] WPM-T164 **Conversion plans feed the planner and the reminders.** *(WPM-R98, WPM-R63, WPM-R81)* The workforce plan's
+      "convert contingent to permanent" lever lists agreed conversions apart from candidates; the
+      end-of-engagement reminder (WPM-T138) names the plan's status and review date, and records the
+      decision a manager takes; a done conversion closes the old engagement and starts the permanent record in
+      one transaction. Request tests; UI panel on the worker page and a conversion list in the contingent
+      workforce view; strings in the 13 locales (the catalogue rules of WPM-R94 apply: no literal text).
 
 ## Phase 15 — operations, information governance, OIDC and locales (WPM-R89–R94, WPM-D60–D64)
 
@@ -2839,3 +2860,137 @@ assessment), which stay listed in Phase 13 as superseded.
       place to look: each entry is a word the assistant left as English or a cognate a native speaker
       should confirm. One weak spot seen while reading the older keys: German "Band"
       (a pay band) is probably not what a native speaker would choose.
+## Phase 16 — issues register and change requests (proposed WPM-R95–R97, WPM-D65)
+
+Proposed 2026-10-10, not started. They are owned by project-portfolio-management under WPM-D55 and
+WPM-D65; the requirement text is in [ppm-issues-and-changes.md](ppm-issues-and-changes.md). WPM's own
+tasks are the capacity answer and the contract, below.
+
+- [~] WPM-T156 **Spec round.** *(traces to WPM-R95–R97, WPM-D65)* This phase, the topic file, the index,
+      `llms.txt`/`llms.json`, requirements and design pointers, next free ids. Done as text on
+      2026-10-10 except the pointers in `index.md`, `llms.txt` and `llms.json` (tracked here).
+- [ ] WPM-T157 **Hand the requirements to project-portfolio-management.** *(WPM-R95, WPM-R96)* Copy
+      [ppm-issues-and-changes.md](ppm-issues-and-changes.md) into that repository as its FR-14 and the
+      change-request requirement, agree the call that WPM answers (programme URN plus proposed deltas),
+      and record the agreed contract here. **Outside this repository**: it is not done until that
+      repository holds them.
+- [ ] WPM-T158 **What-if capacity answer.** *(WPM-R97, WPM-D46, WPM-D50)* Pure `rules::capacity` addition: given
+      the current demand and a set of proposed FTE deltas per pool per month, return the pool-months
+      that become or stop being over-committed, the constraint pool before and after, and the
+      earliest fitting start; `unknown` where supply or partner commitments are unknown. A
+      `POST /api/capacity/what-if` that reads, computes and **stores nothing**. Depends on the
+      capacity model (WPM-T104–T107). Unit tests (a delta that fits, one that breaks a pool-month,
+      one in an unknown month) and a request test.
+- [ ] WPM-T159 **Contingent effect in the what-if answer.** *(WPM-R97)* Where a proposed change moves a
+      programme's end date, list the fixed-term and contractor engagements (counts per pool, no names)
+      that would end before it. Depends on WPM-T135 and WPM-T142.
+- [ ] WPM-T160 **Verification and documents.** *(WPM-R97)* Enforcement test that the what-if answer names no
+      one and that a manager sees counts only; update the DPIA (`spec/governance/dpia.md`), the record of
+      processing and the data-flow diagram if WPM stores anything new (it should not).
+
+## Phase 17 — equality impact for scoring (proposed WPM-R99–R101, WPM-D67)
+
+Specified in [plan.md](plan.md) section I. The template and the register of today's scores are in
+[equality-impact/](equality-impact/template.md).
+
+- [x] WPM-T165 (2026-10-10) **Template and register.** *(traces to WPM-R99, WPM-D67)* The template
+      (`spec/equality-impact/template.md`, thirteen sections) and the register with an assessment for each
+      score WPM has today: succession readiness, pipeline stage, assessment band, review rating and mean,
+      internal-mobility fit, skill-gap priority, change readiness and insight flags; and the recorded
+      decision **not** to build an individual risk-of-loss score. **They are first drafts by the AI
+      assistant; no one with equality or legal responsibility has reviewed or approved any of them**, and
+      the demo has no real data, so the evidence sections say "not yet measurable". A claim that the
+      software tells raters what not to use was found untrue while writing and corrected: that is T167.
+- [ ] WPM-T166 **Scoring register in code.** *(WPM-R99)* `rules::scoring::REGISTER` (id, kind, inputs, the
+      decision informed, assessment file, status, review date) and a test that every registered score has
+      an assessment with all thirteen sections, a status that is approved or conditional, and a review
+      date not yet passed; a lint test that names a new `pub fn` in `rules/` containing score, rank,
+      rating, band, readiness or risk that is not in the register.
+- [ ] WPM-T167 **Scores say what they are.** *(WPM-R101)* Add to every score payload and screen: its inputs, "advisory;
+      a person decides" and the assessment id; put the "do not use absence, leave, working pattern or
+      adjustments" guidance beside the succession rating, the pipeline stage, the review rating and the
+      assessment band; strings in the 13 locales under the catalogue rules (WPM-R94).
+- [ ] WPM-T168 **Adverse-impact check.** *(WPM-R100)* Pure core: favourable-outcome rate per group, ratio to
+      the best-treated group, small groups withheld, input missing treated as unknown; an endpoint taking
+      a deployer-supplied grouping and **storing nothing**, HR-only and audited without the grouping.
+      Unit tests (a clear gap, equal rates, a small group, an empty group) and a request test that
+      nothing is persisted.
+- [ ] WPM-T169 **Guards.** *(WPM-R99, WPM-D67, WPM-D68)* A test with a deny-list of fields that must never be inputs to
+      any registered score (protected characteristics, union membership or activity, sickness absence,
+      leave, adjustments, postcode); a test that no `risk_of_loss`, `flight_risk` or similar individual
+      measure exists in the code or API; both mutation-checked.
+
+## Phase 18 — worker unions (proposed WPM-R102–R108, WPM-D68)
+
+Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.md) section J.
+
+- [x] WPM-T170 (2026-10-10) **Concept note.** *(traces to WPM-R102–R108, WPM-D68)* `spec/worker-unions.md`: what unions, recognition,
+      collective agreements, works councils and representatives are; which planning acts trigger
+      collective duties (the Great Britain and EU consultation rules as examples, with sources); why
+      membership is special category data and how a blacklisting history shapes the design; seven
+      proposed capabilities and what is deliberately left out. **Researched from web sources with
+      the limits stated in the note, partly from the assistant's own knowledge marked unverified; no
+      employment lawyer or union has reviewed it.**
+- [ ] WPM-T171 **Guard first.** *(WPM-D68)* Tests that fail if any table, column, export, audit entry, label or time
+      kind could reveal membership or representative status; update the impact assessment, record of
+      processing and data-flow diagram to say WPM holds none and where a deployer's own check-off sits.
+- [ ] WPM-T172 **Pure core: consultation obligations.** *(WPM-R104)* Thresholds and periods as **configuration with a
+      named source** (a Great Britain profile and an EU-directive profile as examples, marked as the
+      deployer's to confirm); from a proposal (headcount reduction at an establishment, planned
+      termination date) say whether a duty may apply, the latest start for consultation, and the checklist of
+      notices; the period counted in calendar days. Unit tests at each threshold edge, the 90-calendar-day window,
+      and a proposal that crosses it.
+- [ ] WPM-T173 **Recognised bodies and bargaining units.** *(WPM-R102)* Tables and API for bodies and units (rules over
+      department, role profile, location, employment basis, grade); the coverage count as a floored
+      aggregate; contact is a role. Request tests and enforcement for who may edit.
+- [ ] WPM-T174 **Collective agreements as reference data.** *(WPM-R103)* Dated, sourced, versioned agreements linked to a
+      unit and to pay-scale and working-time references; "applies to a worker" derived, HR and payroll only,
+      never shown as membership. Tests.
+- [ ] WPM-T175 **Consultation register and timeline.** *(WPM-R105)* Per proposal: body, dates, topics, document references,
+      outcome; roles not names; audited without text; a timeline view that uses T172.
+- [ ] WPM-T176 **Information pack for bargaining.** *(WPM-R106)* On-request aggregates for a unit with the floor, no names, no
+      individual pay; each disclosure logged. Tests that a small group is withheld.
+- [ ] WPM-T177 **Facility time as an aggregate; decision gates.** *(WPM-R107, WPM-R108)* Hours per body per period (no per-person
+      record); a configurable list of changes that need consultation, shown when someone makes such a change,
+      including a new or changed score (link to the equality impact template, section 11).
+- [ ] WPM-T178 **Verification and documents.** *(WPM-R102–R108)* Full suites, screenshots of new screens, strings in the 13
+      locales, DPIA and record-of-processing updates; record what was not verified.
+
+## Phase 19 — SFIA and SFIAplus (proposed WPM-R109–R113, WPM-D69, WPM-D70)
+
+Researched in [sfia.md](sfia.md); specified in [plan.md](plan.md) section K. **No SFIA or SFIAplus
+content is ever added to this repository** (WPM-D69).
+
+- [x] WPM-T179 (2026-10-10) **Concept and licence note.** *(traces to WPM-R109–R113, WPM-D69, WPM-D70)* `spec/sfia.md`: what SFIA and SFIAplus are,
+      what the licences allow (internal use under the free corporate licence; no distribution or
+      publication; downloads need registration), how it fits the existing framework model, five
+      requirements and two decisions. **From web sources and the maintainer's summary; the current
+      licence text was not read in full and must be checked before any import.**
+- [ ] WPM-T180 **The licence guard and record.** *(WPM-R113)* Migration adding to `capability_frameworks` the version,
+      redistribution status (`open`, `internal_only`, `unknown`), licence holder, reference, last check
+      date and attribution; pure `rules::framework::publishable`; every surface that leaves the
+      signed-in organization uses it. Unit tests and an integration test that an unauthenticated request
+      and a public job post never carry imported wording of a non-publishable framework.
+- [ ] WPM-T181 **Pure core: the SFIA CSV contract.** *(WPM-R109, WPM-D70)* Parser and validator for the documented columns
+      (skill code, name, category, subcategory, description, level, level description, attributes):
+      levels 1 to 7 only, a skill defined at some levels only, no invented level or text, a clear
+      refusal naming the column; the `linear` mapping 1, 2, 2, 3, 4, 4, 5 pinned. A **synthetic fixture of
+      invented text**, labelled not SFIA.
+- [ ] WPM-T182 **`import_sfia` task.** *(WPM-R109, WPM-R113)* Idempotent, records the version, marks skills and levels that a
+      newer version drops as retired rather than deleting them, attaches the SFIA code as an external
+      reference on the WPM skill, and writes the framework row with `internal_only`. Request tests with
+      the fixture; refuses a file with no recorded licence check.
+- [ ] WPM-T183 **Levels of responsibility as a job-level framework.** *(WPM-R110)* Move job-level frameworks to the
+      database so an imported framework has the same shape as the coded one; import the seven levels and
+      five attributes; a worker's and a role's level can be an SFIA level. UI. Tests.
+- [ ] WPM-T184 **Native level on declared skills and role requirements.** *(WPM-R111, WPM-D70)* Store the framework's level and scale on a
+      declared skill (role requirements already do), show the native level, its description and the
+      mapping used; start a role from SFIA skills as ESCO does. Request tests and Playwright;
+      strings in the 13 locales (framework wording itself is not translated).
+- [ ] WPM-T185 **SFIAplus development resources.** *(WPM-R112)* A documented CSV contract and `import_sfiaplus`, resources
+      attached to a skill at a level with the source named and the BCS licence recorded; shown as pointers
+      in training recommendations, development plans and the skill-gap view; nothing is booked or
+      bought. The format is to be agreed with the licence holder before building.
+- [ ] WPM-T186 **Equality, privacy and documents.** *(WPM-R111, WPM-R113)* Register the level and skill-level scores in the
+      scoring register and complete their assessments (WPM-T166); update the DPIA, the record of processing
+      and the assessment checklist (licensed content); record what was not verified.

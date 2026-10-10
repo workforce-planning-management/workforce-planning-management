@@ -92,6 +92,10 @@ identities by `EntityRef` URN, never duplicating them.
 | [audit.md](audit.md)                               | Audit trail, events, sensitive-read logging                                               |
 | [architecture.md](architecture.md)                 | Editions, layering, pure-core rules, persistence                                          |
 | [testing.md](testing.md)                           | Test strategy per edition                                                                 |
+| [sfia.md](sfia.md) | Proposed: SFIA and SFIAplus as a capability framework, imported from the deployer's own licensed download and never shipped (WPM-R109–R113) |
+| [worker-unions.md](worker-unions.md) | Research and proposal: recognised bodies, collective agreements, consultation obligations and aggregate information, never individual membership (WPM-R102–R108) |
+| [equality-impact/template.md](equality-impact/template.md) | An equality impact template for any scoring, with the register of today's scores and a draft assessment for each ([register](equality-impact/register.md), WPM-R99–R101) |
+| [ppm-issues-and-changes.md](ppm-issues-and-changes.md) | Proposed: the issues register (FR-14) and change requests, owned by project-portfolio-management, with WPM answering the people impact (WPM-R95–R97) |
 | [operations-and-governance.md](operations-and-governance.md) | Operations pack (backup and restore, deployment, upgrade, runbook), information governance pack, retention per record kind, Entra ID sign-in, every page in every locale (WPM-R89–R94) |
 | [production-readiness.md](production-readiness.md) | Sign-in on by default, security headers, rate limiting, standalone build and CI, license texts, releases, generated status (WPM-R72–R74, R77, R78, R87, R88) |
 | [regulatory.md](regulatory.md)                     | Demo status; UK GDPR / employment-records posture; subject rights (WPM-R30)               |
