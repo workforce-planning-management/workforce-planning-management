@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added — an Idempotency-Key on every request that changes something (WPM-T221)
 
 `api()` sends `Idempotency-Key` (a UUID) with POST, PUT, PATCH and DELETE, new for each action, reusable through `idempotencyKey` when
-repeating one; the proxy forwards it only when it is a plain 16 to 64 character token. The API does not act on it yet (WPM-T222).
+repeating one; the proxy forwards it only when it is a plain 16 to 64 character token. The API acts on it from WPM-T222 (a repeat of the same request returns the first answer).
 
 ### Changed — every page and component takes its text from the catalogue (WPM-T153, T154)
 

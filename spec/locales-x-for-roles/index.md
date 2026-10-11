@@ -17,6 +17,7 @@ locale is `en-gb-oxendict` (British English with Oxford spelling): see
 | locales/<locale>/for/chief-strategy-officer/index.md     | Chief Strategy Officer     |
 | locales/<locale>/for/chief-security-officer/index.md     | Chief Security Officer     |
 | locales/<locale>/for/governance-risk-compliance/index.md | Governance, Risk, Compliance |
+| locales/<locale>/for/independent-security-testing/index.md | Independent security testing (a brief for commissioning it, not a role) |
 
 For each `index.md`, `README.md` is a symlink to it (the same convention as the rest of this repository).
 

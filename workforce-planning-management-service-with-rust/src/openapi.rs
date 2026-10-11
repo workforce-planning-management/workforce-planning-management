@@ -19,7 +19,7 @@ pub fn spec() -> Value {
         "200": { "description": "The updated record" },
         "422": { "description": "Illegal transition (names the current state)" }
     });
-    json!({
+    let mut document = json!({
         "openapi": "3.0.3",
         "info": {
             "title": "Workforce Planning Management Service API",
@@ -278,8 +278,8 @@ pub fn spec() -> Value {
             "/api/workers/{pid}/engagement/status-assessments": { "get": { "tags": ["engagements"], "summary": "A contractor's employment-status assessments, newest first", "responses": ok("Assessments") }, "post": { "tags": ["engagements"], "summary": "Record an assessment (outcome contractor, employee or undetermined; assessed_on not in the future); the reviewer is the caller", "responses": ok("Pid") } },
             "/api/workers/{pid}/contractor-details": { "get": { "tags": ["engagements"], "summary": "A contractor's supplier, route and rate, or null; the rate is masked like salary and an unmasked read is audited", "responses": ok("ContractorDetails") }, "put": { "tags": ["engagements"], "summary": "Set supplier_ref (organization URN), route (agency, own_company, statement_of_work, direct) and a rate (rate_minor, rate_currency, rate_basis day or hour, all together or none); contractors only; never echoes the rate", "responses": ok("ContractorDetails") }, "delete": { "tags": ["engagements"], "summary": "Clear the details", "responses": ok("Cleared") } },
             "/api/workers/{pid}/conversion-plans": { "get": { "tags": ["engagements"], "summary": "A worker's conversion plans, oldest first, with flags (past_end_without_approved_plan, review_due); HR only; the read is audited", "responses": ok("ConversionPlans") }, "post": { "tags": ["engagements"], "summary": "Propose a plan (intent convert, extend, end or undecided; target_on before the contract end; a conversion needs post_funding_kind or a reason; no pay figure); the worker's line manager or a privileged caller, never the worker; one plan is open at a time; the audit entry carries no reason", "responses": ok("ConversionPlan") } },
-            "/api/workforce-intelligence/contingent": { "get": { "tags": ["engagements"], "summary": "The share of FTE that is contractor and that is fixed-term (each apart) and the funding horizon for the next twelve months: people whose funding ends in each month, or already has. Aggregate only; groups below the floor withheld, no total given; HR only; the read is audited", "responses": ok("ContingentWorkforce") } },
-            "/api/workers/{pid}/funding": { "get": { "tags": ["engagements"], "summary": "Where the worker's post is funded from (kind, programme, end date; never an amount) beside the contract end, and how they compare (matched, contract_outlasts_funding, funding_outlasts_contract, funding_open_ended, unknown); HR only", "responses": ok("PostFunding") }, "put": { "tags": ["engagements"], "summary": "Set the funding (kind core, time_limited, external or programme; time_limited and external need ends_on; optional programme_ref thing: URN)", "responses": ok("PostFunding") }, "delete": { "tags": ["engagements"], "summary": "Clear it", "responses": ok("PostFunding") } },
+            "/api/workforce-intelligence/contingent": { "get": { "tags": ["engagements"], "summary": "The share of FTE that is contractor and that is fixed-term (each apart) and the funding horizon for the next twelve months: people whose funding ends in each month, or already has. Aggregate only; groups below the floor withheld, no total given; HR only; the read is audited", "responses": { "200": { "description": "The shares and the horizon", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContingentWorkforce" } } } } } } },
+            "/api/workers/{pid}/funding": { "get": { "tags": ["engagements"], "summary": "Where the worker's post is funded from (kind, programme, end date; never an amount) beside the contract end, and how they compare (matched, contract_outlasts_funding, funding_outlasts_contract, funding_open_ended, unknown); HR only", "responses": { "200": { "description": "The funding beside the contract end", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostFunding" } } } } } }, "put": { "tags": ["engagements"], "summary": "Set the funding (kind core, time_limited, external or programme; time_limited and external need ends_on; optional programme_ref thing: URN)", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostFundingPayload" } } } }, "responses": { "200": { "description": "The funding beside the contract end", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostFunding" } } } } } }, "delete": { "tags": ["engagements"], "summary": "Clear it", "responses": { "200": { "description": "The funding beside the contract end", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostFunding" } } } } } } },
             "/api/conversion-plans": { "get": { "tags": ["engagements"], "summary": "Open plans and engagements past their end with no approved plan, with flags (?organization=); HR only; names workers", "responses": ok("ConversionPlans") } },
             "/api/conversion-plans/{pid}/approve": { "post": { "tags": ["engagements"], "summary": "Approve a proposed plan; never the proposer; also records the matching engagement decision against the current end date in the same transaction", "responses": ok("ConversionPlan") } },
             "/api/conversion-plans/{pid}/abandon": { "post": { "tags": ["engagements"], "summary": "Drop a proposed or approved plan; it stays as history", "responses": ok("ConversionPlan") } },
@@ -454,11 +454,248 @@ pub fn spec() -> Value {
             "/api/events/recent": { "get": { "tags": ["events"], "summary": "Recent events (memory ring or outbox)", "responses": ok("Events") } },
             "/metrics.prom": { "get": { "tags": ["ops"], "summary": "Prometheus metrics (public)", "responses": ok("Exposition text") } }
         }
+    });
+    decorate(&mut document);
+    document
+}
+
+/// The methods that change something, and so take an `Idempotency-Key` (WPM-R132).
+const MUTATING: [&str; 4] = ["post", "put", "patch", "delete"];
+
+/// Add `components` and give every operation that changes something the `Idempotency-Key`
+/// parameter and the two answers a key can earn. Done in one place, by code, so that no operation
+/// can be missed and a new one gets it without being edited.
+fn decorate(document: &mut Value) {
+    document["components"] = components();
+    let Some(paths) = document["paths"].as_object_mut() else {
+        return;
+    };
+    for item in paths.values_mut() {
+        let Some(item) = item.as_object_mut() else {
+            continue;
+        };
+        for method in MUTATING {
+            let Some(operation) = item.get_mut(method).and_then(Value::as_object_mut) else {
+                continue;
+            };
+            let parameters = operation.entry("parameters").or_insert_with(|| json!([]));
+            if let Some(list) = parameters.as_array_mut() {
+                list.push(json!({ "$ref": "#/components/parameters/IdempotencyKey" }));
+            }
+            let responses = operation.entry("responses").or_insert_with(|| json!({}));
+            if let Some(map) = responses.as_object_mut() {
+                map.entry("409").or_insert_with(
+                    || json!({ "$ref": "#/components/responses/IdempotencyInProgress" }),
+                );
+                if !map.contains_key("422") {
+                    map.insert(
+                        "422".into(),
+                        json!({ "$ref": "#/components/responses/IdempotencyRefused" }),
+                    );
+                }
+                if let Some(success) = map.get_mut("200").and_then(Value::as_object_mut) {
+                    success.entry("headers").or_insert_with(|| {
+                        json!({ "Idempotent-Replayed": { "$ref": "#/components/headers/IdempotentReplayed" } })
+                    });
+                }
+            }
+        }
+    }
+}
+
+/// Reusable parts: the key, the replay header, the two answers a key can earn, and the shapes of
+/// the funding and contingent-workforce answers.
+#[allow(clippy::too_many_lines)] // one literal
+fn components() -> Value {
+    json!({
+        "parameters": {
+            "IdempotencyKey": {
+                "name": "Idempotency-Key", "in": "header", "required": false,
+                "description": "Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read.",
+                "schema": { "type": "string", "minLength": 16, "maxLength": 64, "pattern": "^[A-Za-z0-9_-]+$" }
+            }
+        },
+        "headers": {
+            "IdempotentReplayed": {
+                "description": "true when this response is the stored one for a repeated Idempotency-Key; absent otherwise",
+                "schema": { "type": "string", "enum": ["true"] }
+            }
+        },
+        "responses": {
+            "IdempotencyInProgress": {
+                "description": "A request with this Idempotency-Key is still running; try again after Retry-After seconds",
+                "headers": { "Retry-After": { "schema": { "type": "integer" } } },
+                "content": { "text/plain": { "schema": { "$ref": "#/components/schemas/PlainTextError" } } }
+            },
+            "IdempotencyRefused": {
+                "description": "Validation failure, or the Idempotency-Key is malformed or was used for a different request",
+                "content": { "text/plain": { "schema": { "$ref": "#/components/schemas/PlainTextError" } } }
+            }
+        },
+        "schemas": {
+            "PlainTextError": { "type": "string", "description": "A sentence saying what to change" },
+            "PostFundingKind": { "type": "string", "enum": ["core", "time_limited", "external", "programme"] },
+            "PostFundingPayload": {
+                "type": "object", "required": ["kind"],
+                "properties": {
+                    "kind": { "$ref": "#/components/schemas/PostFundingKind" },
+                    "programme_ref": { "type": "string", "nullable": true, "description": "A thing: URN", "example": "thing:7d0e2c7e-8f55-4e0a-b1a7-0c2b6a3a9d11" },
+                    "ends_on": { "type": "string", "format": "date", "nullable": true, "description": "Required for time_limited and external; not before the engagement started" }
+                }
+            },
+            "PostFunding": {
+                "type": "object", "required": ["funding", "contract_ends_on", "alignment", "needs_attention"],
+                "description": "Where a post is funded from beside the contract end. Never an amount of money.",
+                "properties": {
+                    "funding": { "type": "object", "nullable": true, "properties": {
+                        "kind": { "$ref": "#/components/schemas/PostFundingKind" },
+                        "programme_ref": { "type": "string", "nullable": true },
+                        "ends_on": { "type": "string", "format": "date", "nullable": true }
+                    } },
+                    "contract_ends_on": { "type": "string", "format": "date", "nullable": true },
+                    "alignment": { "type": "string", "enum": ["matched", "contract_outlasts_funding", "funding_outlasts_contract", "funding_open_ended", "unknown"], "description": "An unknown is never a match" },
+                    "needs_attention": { "type": "boolean", "description": "True for the two mismatches" }
+                }
+            },
+            "FundingMonth": {
+                "type": "object", "required": ["month", "people", "fte"],
+                "properties": {
+                    "month": { "type": "string", "description": "YYYY-MM, or already_ended", "example": "2026-12" },
+                    "people": { "type": "integer", "nullable": true, "description": "null when above zero and below the small-group floor" },
+                    "fte": { "type": "number", "nullable": true, "description": "null when people is null" }
+                }
+            },
+            "DepartmentContingent": {
+                "type": "object",
+                "properties": {
+                    "department": { "type": "string" },
+                    "headcount": { "type": "integer", "nullable": true },
+                    "contractor_percent_of_fte": { "type": "number", "nullable": true },
+                    "fixed_term_percent_of_fte": { "type": "number", "nullable": true }
+                }
+            },
+            "ContingentWorkforce": {
+                "type": "object", "description": "Aggregate only: no one is named. Groups below the floor are withheld and no total is given for the funding months.",
+                "properties": {
+                    "small_group_floor": { "type": "integer" },
+                    "headcount": { "type": "integer" },
+                    "fte": { "type": "number" },
+                    "contractor_percent_of_fte": { "type": "number", "nullable": true },
+                    "fixed_term_percent_of_fte": { "type": "number", "nullable": true },
+                    "departments_shown": { "type": "boolean" },
+                    "by_department": { "type": "array", "items": { "$ref": "#/components/schemas/DepartmentContingent" } },
+                    "funding_ends": { "type": "array", "items": { "$ref": "#/components/schemas/FundingMonth" } },
+                    "derivation": { "type": "string" }
+                }
+            }
+        }
     })
 }
 
 #[cfg(test)]
 mod tests {
+    use super::{MUTATING, spec};
+    use serde_json::Value;
+
+    /// Resolve a local `$ref` such as `#/components/schemas/X` in a document.
+    fn resolves(document: &Value, reference: &str) -> bool {
+        reference.strip_prefix("#/").is_some_and(|path| {
+            path.split('/')
+                .try_fold(document, |v, k| v.get(k))
+                .is_some()
+        })
+    }
+
+    fn refs(value: &Value, out: &mut Vec<String>) {
+        match value {
+            Value::Object(map) => {
+                for (k, v) in map {
+                    if k == "$ref" {
+                        if let Some(r) = v.as_str() {
+                            out.push(r.to_string());
+                        }
+                    } else {
+                        refs(v, out);
+                    }
+                }
+            }
+            Value::Array(items) => items.iter().for_each(|v| refs(v, out)),
+            _ => {}
+        }
+    }
+
+    /// Every `$ref` in the document points at something that exists.
+    #[test]
+    fn every_reference_resolves() {
+        let document = spec();
+        let mut found = Vec::new();
+        refs(&document, &mut found);
+        assert!(found.len() > 100, "{}", found.len());
+        for r in found {
+            assert!(resolves(&document, &r), "{r} does not resolve");
+        }
+    }
+
+    /// Every operation that changes something takes the key and documents what a key can earn; no read does.
+    #[test]
+    fn only_a_change_takes_an_idempotency_key() {
+        let document = spec();
+        let mut changes = 0;
+        for (path, item) in document["paths"].as_object().unwrap() {
+            for (method, operation) in item.as_object().unwrap() {
+                let takes_key = operation["parameters"].as_array().is_some_and(|list| {
+                    list.iter()
+                        .any(|p| p["$ref"] == "#/components/parameters/IdempotencyKey")
+                });
+                if MUTATING.contains(&method.as_str()) {
+                    changes += 1;
+                    assert!(takes_key, "{method} {path} takes no Idempotency-Key");
+                    assert!(
+                        operation["responses"]["409"].is_object(),
+                        "{method} {path}: 409"
+                    );
+                    assert!(
+                        operation["responses"]["422"].is_object(),
+                        "{method} {path}: 422"
+                    );
+                } else {
+                    assert!(!takes_key, "{method} {path} is a read");
+                }
+            }
+        }
+        assert!(changes > 100, "{changes}");
+    }
+
+    /// The parameter says what the middleware enforces.
+    #[test]
+    fn the_key_parameter_matches_the_rules() {
+        let schema = &spec()["components"]["parameters"]["IdempotencyKey"]["schema"];
+        assert_eq!(schema["minLength"], crate::rules::idempotency::KEY_MIN);
+        assert_eq!(schema["maxLength"], crate::rules::idempotency::KEY_MAX);
+        let pattern = schema["pattern"].as_str().unwrap();
+        assert_eq!(pattern, "^[A-Za-z0-9_-]+$");
+    }
+
+    /// The funding and contingent answers are described by schemas, not only by words.
+    #[test]
+    fn the_funding_and_contingent_answers_have_schemas() {
+        let document = spec();
+        for (path, method) in [
+            ("/api/workers/{pid}/funding", "get"),
+            ("/api/workers/{pid}/funding", "put"),
+            ("/api/workforce-intelligence/contingent", "get"),
+        ] {
+            let schema = &document["paths"][path][method]["responses"]["200"]["content"]["application/json"]
+                ["schema"];
+            assert!(schema["$ref"].is_string(), "{method} {path}");
+        }
+        let body = &document["paths"]["/api/workers/{pid}/funding"]["put"]["requestBody"];
+        assert_eq!(
+            body["content"]["application/json"]["schema"]["$ref"],
+            "#/components/schemas/PostFundingPayload"
+        );
+    }
+
     /// Every route the controllers register under `/api` has a path in the document. This is what
     /// stops the document drifting behind the routes, or silently losing entries.
     #[test]

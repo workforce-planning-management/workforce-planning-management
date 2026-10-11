@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — idempotency keys (WPM-T222)
+
+A request that changes something and carries an `Idempotency-Key` runs once per caller: the response of a success is kept for one calendar
+day and returned again (with `Idempotent-Replayed: true`) for the same request; the same key with a different request is `422`; a repeat
+while the first runs is `409`; a failure is not kept. Migration `000064`. The OpenAPI document gains `components` (the key parameter, the
+replay header, the `409` and `422` answers and schemas for the funding and contingent answers) and the key on every operation that changes something.
+
 ### Added — contingent share and funding horizon (WPM-T109, part)
 
 `GET /api/workforce-intelligence/contingent` (HR only, audited): the share of FTE that is contractor and that is fixed-term, each

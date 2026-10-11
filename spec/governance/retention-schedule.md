@@ -29,6 +29,10 @@ ignored.
 
 - **Covers** the 56 soft-deleting tables, and **candidates whose consent has expired**
   (scrubbed after the `recruitment` horizon, then removed by the next sweep).
+- **Does not cover** idempotency keys (`idempotency_keys`), which are not a record of a person: a key and the
+  response it earned are kept for **one calendar day** and deleted by the request that next arrives with any key
+  (WPM-R132). The stored response may repeat what the first response held, which is why it is kept so briefly.
+  It is not exported with a worker or erased with one; it is gone within a calendar day.
 - **Does not cover** the audit log (`audit_logs`), the headcount snapshots (aggregates, no
   names), the erasure ledger (a pid and a time, which no longer identifies anyone) or
   backups. Backups expire after `BACKUP_RETENTION_DAYS` (default 35 calendar days;

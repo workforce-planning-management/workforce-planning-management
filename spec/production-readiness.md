@@ -118,26 +118,35 @@ sign-in enforcement explicitly off** (see its header).
   production against a non-loopback address (refused; started with the override and the warning; a loopback
   address started without either). The request identifier is on every response (`x-request-id`).
 
-## WPM-R132 — The UI sends an Idempotency-Key (built 2026-10-11, client side only)
+## WPM-R132 — Idempotency keys (built 2026-10-11)
 
 - Every request the bundled UI makes that can change something (any method but GET, HEAD and OPTIONS) carries an
   `Idempotency-Key` header: a random UUID, or 128 random bits in hexadecimal where `crypto.randomUUID` is missing.
-  A read never carries one.
-- The key names one user action. The client function takes an optional `idempotencyKey`, so a retry of the same action
-  passes the original key back; two different actions never share one.
-- The same-origin proxy forwards the header to the API only when it is a plain token (letters, digits, hyphen and
-  underscore, 16 to 64 characters) and drops anything else.
-- **The API does not act on the key yet.** It ignores the header, so a repeated request is still processed twice. The key
-  is the half of the feature a server needs; recognising a repeat (storing the key with the first response and replaying it)
-  is a separate change, WPM-T222 in [tasks.md](tasks.md).
+  A read never carries one. The key names one user action, so a retry passes the original key back; two different
+  actions never share one. The same-origin proxy forwards the header only when it is a plain token.
+- The API acts on it (`src/idempotency.rs`, rules in `src/rules/idempotency.rs`, table `idempotency_keys`). A key is
+  16 to 64 letters, digits, hyphens or underscores, else `422`. The first request under a caller's key runs and, if it
+  succeeds, its response (at most 256 KiB) is kept for **one calendar day**. A repeat of the same method, path, query and
+  body from the same caller gets that response again with `Idempotent-Replayed: true` and runs nothing. The same key
+  with a different request is `422`. A repeat that arrives while the first is still running is `409` with
+  `Retry-After`; a claim never finished for 300 seconds is taken over. **A failure is not kept**, so the request can be
+  corrected and sent again under the same key. A request with no key, and every read, is untouched.
+- **A key belongs to the caller.** It is stored with the caller's identity (`anonymous` only while sign-in is off), and the
+  middleware runs after sign-in and need-to-know, so one caller can never be answered with another's stored response.
+- Every operation that changes something is documented with the key, the replay header and the `409` and `422`
+  answers in the OpenAPI document, added in one place so none can be missed.
+- Stored responses may repeat personal data the first response held, which is why they are kept for one calendar day and
+  no longer; see the [retention schedule](governance/retention-schedule.md).
+- Not done: a response over 256 KiB is returned but not kept (a repeat runs again); a request body over 1 MiB with a key
+  is refused (`413`); a key is not shared between instances except through the database, which is shared.
 
 ## Decisions
 
 - **WPM-D80 The client names the action; the server will decide what a repeat means.** The key is made where the user acts
   (one per action, not per HTTP attempt), so a retry after a lost response or a double click can be told from a new
   action. The proxy checks the key's shape only; it keeps no state, because deduplication belongs next to the data it
-  protects. Sending the header before the API honours it is harmless (an unknown header is ignored) and means the UI
-  needs no further change when the API does.
+  protects. Deduplication sits behind the sign-in and need-to-know checks, so a stored response is only ever returned to the
+  caller it was made for, and it holds a success only, so a correctable failure can be retried.
 - **WPM-D78 The shared cache holds non-personal lookups only, and fails open.** Loco's cache provider is Redis in
   production and the demo (so several instances share one) and in memory in development and tests. What may be cached is
   a closed list in `src/shared_cache.rs` (`Namespace`): the names of organizations and courses from the services that

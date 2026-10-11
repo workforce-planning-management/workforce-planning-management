@@ -3334,7 +3334,17 @@ deployer's lawful basis and impact assessment before they are switched on.
       forwarding anything), each failing a test. **Not verified:** the browser tests (Playwright) were not run; no real API was called; one
       unrelated unit test (`untranslated.test.ts`, server tokens for equality-monitoring categories with no translation) was already failing
       before this change and still fails. **Not done:** the API ignores the key (WPM-T222).
-- [ ] WPM-T222 **The API recognises a repeated Idempotency-Key.** *(traces to WPM-R132)* Store the key with the caller, the method and path, a hash of the
-      body and the response; replay the stored response for a repeat, answer `422` for the same key with a different body, expire keys after a stated
-      number of calendar days, hold no personal data in the stored response beyond what the first response held, and say so in the retention
-      schedule. Request tests for a repeat, a clash and an expiry; an enforcement test that one caller cannot replay another's key.
+- [x] WPM-T222 (2026-10-11) **The API recognises a repeated Idempotency-Key.** *(traces to WPM-R132, WPM-D80)* Migration `000064` `idempotency_keys` (caller, key,
+      fingerprint, status, content type, response; unique per caller and key); `src/rules/idempotency.rs` (key shape, a length-prefixed SHA-256
+      fingerprint of method, path with query and body, what is stored, and the decision: run, replay, clash, wait, take over; 10 unit tests);
+      `src/idempotency.rs`, a middleware inside sign-in and need-to-know. Replay, `422` for a different request or a malformed key, `409` while the
+      first is running, take-over of a claim older than 300 seconds, failures not kept, expiry after one calendar day, and nothing for a read or a
+      keyless request. **Verified** by a request test and by the conversion enforcement binary (the worker, a neighbour and a manager outside the
+      chain, sending the proposing manager's own key and request, get `403` and not the stored `200`; HR gets `422`, not a replay). **Mutation-checked**
+      five ways (key not tied to the caller; fingerprint ignored; failures stored; never purged; take-over disabled), each failing a test. Also
+      the OpenAPI document: a `components` section (the `Idempotency-Key` parameter, the replay header, the `409` and `422` answers, schemas for the
+      funding and contingent answers), the key added to every operation that changes something by code, and 4 tests (every `$ref` resolves, only a
+      change takes the key, the parameter matches the rules, the funding schemas exist), **mutation-checked** three ways. **Not verified:** behaviour with
+      several instances at once or two truly concurrent requests under one key (the claim is a single `INSERT ... ON CONFLICT`, reasoned and not
+      raced by a test); a response over 256 KiB is not kept; the UI was not run against this API; the OpenAPI schemas cover only the funding and
+      contingent answers, not every older endpoint.
