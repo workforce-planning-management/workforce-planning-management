@@ -34,7 +34,7 @@ jobs:
           cargo install cargo-cyclonedx --locked
           cargo cyclonedx --format json --spec-version 1.5
           mv workforce-planning-management-service.cdx.json "$GITHUB_WORKSPACE/sbom.cdx.json"
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
