@@ -7,6 +7,7 @@
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
   import ExpenseClaims from "#lib/components/ExpenseClaims.svelte";
   import PayPosition from "#lib/components/PayPosition.svelte";
+  import EngagementPanel from "#lib/components/EngagementPanel.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
@@ -632,6 +633,7 @@
   <CareerHistory workerPid={worker.pid} />
   <Aspirations workerPid={worker.pid} />
   <SkillGaps workerPid={worker.pid} />
+  <EngagementPanel workerPid={worker.pid} />
   <JobLevel workerPid={worker.pid} />
   <PayPosition workerPid={worker.pid} />
   <ExpenseClaims workerPid={worker.pid} />

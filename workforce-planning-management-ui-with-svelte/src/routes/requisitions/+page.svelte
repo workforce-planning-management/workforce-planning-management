@@ -2,7 +2,7 @@
   import { Kanban, Willow, getCardShape } from "@svar-ui/svelte-kanban";
   import type { KanbanInstanceApi } from "@svar-ui/svelte-kanban";
   import { listRequisitions, money, requisitionStatus } from "#lib/api/wpm.js";
-  import { i18n, t } from "#lib/i18n.svelte.js";
+  import { i18n, t, tf, tv } from "#lib/i18n.svelte.js";
   import type { Requisition } from "#lib/api/types.js";
 
   /** Board columns: the live pipeline statuses (cancelled stays off
@@ -37,6 +37,13 @@
         label: r.job_title,
         description:
           `${r.department} · ${t("req.headcount")} ${r.headcount}` +
+          (r.basis && r.basis !== "permanent"
+            ? ` · ${tv(r.basis)}` +
+              (r.expected_duration_months
+                ? ` ${tf("req.months", { months: r.expected_duration_months })}`
+                : "")
+            : "") +
+          (r.programme_ref ? ` · ${r.programme_ref}` : "") +
           (r.salary_min_minor !== null && r.salary_max_minor !== null
             ? ` · ${money(r.salary_min_minor, r.salary_currency, i18n.locale)}–${money(r.salary_max_minor, r.salary_currency, i18n.locale)}`
             : ""),

@@ -67,6 +67,7 @@ collections:
               - { name: "payScales", label: "Pay Scales", widget: string, required: false, i18n: true }
               - { name: "jobLevels", label: "Job Levels", widget: string, required: false, i18n: true }
               - { name: "expenseQueue", label: "Expense Queue", widget: string, required: false, i18n: true }
+              - { name: "contingent", label: "Contingent", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -248,6 +249,7 @@ collections:
             fields:
               - { name: "applications", label: "Applications", widget: string, required: false, i18n: true }
               - { name: "headcount", label: "Headcount", widget: string, required: false, i18n: true }
+              - { name: "months", label: "Months", widget: string, required: false, i18n: true }
           - name: "wf"
             label: "Wf"
             widget: object
@@ -1924,6 +1926,7 @@ collections:
               - { name: "skills", label: "Skills", widget: string, required: false, i18n: true }
               - { name: "verify", label: "Verify", widget: string, required: false, i18n: true }
               - { name: "verifySso", label: "Verify Sso", widget: string, required: false, i18n: true }
+              - { name: "contingent", label: "Contingent", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -2130,3 +2133,150 @@ collections:
               - { name: "worker", label: "Worker", widget: string, required: false, i18n: true }
               - { name: "working_memory", label: "Working_memory", widget: string, required: false, i18n: true }
               - { name: "written_instructions", label: "Written_instructions", widget: string, required: false, i18n: true }
+              - { name: "convert", label: "Convert", widget: string, required: false, i18n: true }
+              - { name: "extend", label: "Extend", widget: string, required: false, i18n: true }
+              - { name: "end", label: "End", widget: string, required: false, i18n: true }
+              - { name: "undecided", label: "Undecided", widget: string, required: false, i18n: true }
+              - { name: "core", label: "Core", widget: string, required: false, i18n: true }
+              - { name: "time_limited", label: "Time_limited", widget: string, required: false, i18n: true }
+              - { name: "external", label: "External", widget: string, required: false, i18n: true }
+              - { name: "programme", label: "Programme", widget: string, required: false, i18n: true }
+              - { name: "own_company", label: "Own_company", widget: string, required: false, i18n: true }
+              - { name: "statement_of_work", label: "Statement_of_work", widget: string, required: false, i18n: true }
+              - { name: "direct", label: "Direct", widget: string, required: false, i18n: true }
+              - { name: "day", label: "Day", widget: string, required: false, i18n: true }
+              - { name: "hour", label: "Hour", widget: string, required: false, i18n: true }
+              - { name: "employee", label: "Employee", widget: string, required: false, i18n: true }
+              - { name: "undetermined", label: "Undetermined", widget: string, required: false, i18n: true }
+              - { name: "ending_within_30", label: "Ending_within_30", widget: string, required: false, i18n: true }
+              - { name: "ending_31_to_60", label: "Ending_31_to_60", widget: string, required: false, i18n: true }
+              - { name: "ending_61_to_90", label: "Ending_61_to_90", widget: string, required: false, i18n: true }
+              - { name: "past_end_undecided", label: "Past_end_undecided", widget: string, required: false, i18n: true }
+              - { name: "much_extended", label: "Much_extended", widget: string, required: false, i18n: true }
+              - { name: "long_running_contractors", label: "Long_running_contractors", widget: string, required: false, i18n: true }
+              - { name: "times", label: "Times", widget: string, required: false, i18n: true }
+              - { name: "days", label: "Days", widget: string, required: false, i18n: true }
+              - { name: "place_of_work", label: "Place_of_work", widget: string, required: false, i18n: true }
+              - { name: "job_share", label: "Job_share", widget: string, required: false, i18n: true }
+              - { name: "compressed_hours", label: "Compressed_hours", widget: string, required: false, i18n: true }
+              - { name: "additional_cost", label: "Additional_cost", widget: string, required: false, i18n: true }
+              - { name: "cannot_meet_demand", label: "Cannot_meet_demand", widget: string, required: false, i18n: true }
+              - { name: "cannot_reorganise_work", label: "Cannot_reorganise_work", widget: string, required: false, i18n: true }
+              - { name: "cannot_recruit", label: "Cannot_recruit", widget: string, required: false, i18n: true }
+              - { name: "quality_impact", label: "Quality_impact", widget: string, required: false, i18n: true }
+              - { name: "performance_impact", label: "Performance_impact", widget: string, required: false, i18n: true }
+              - { name: "insufficient_work_in_periods", label: "Insufficient_work_in_periods", widget: string, required: false, i18n: true }
+              - { name: "planned_changes", label: "Planned_changes", widget: string, required: false, i18n: true }
+              - { name: "other_recorded", label: "Other_recorded", widget: string, required: false, i18n: true }
+              - { name: "up_to_date", label: "Up_to_date", widget: string, required: false, i18n: true }
+              - { name: "exempt_recorded", label: "Exempt_recorded", widget: string, required: false, i18n: true }
+              - { name: "new_role", label: "New_role", widget: string, required: false, i18n: true }
+              - { name: "career_change", label: "Career_change", widget: string, required: false, i18n: true }
+              - { name: "relocation", label: "Relocation", widget: string, required: false, i18n: true }
+              - { name: "study_or_travel", label: "Study_or_travel", widget: string, required: false, i18n: true }
+              - { name: "family_or_caring", label: "Family_or_caring", widget: string, required: false, i18n: true }
+              - { name: "working_pattern", label: "Working_pattern", widget: string, required: false, i18n: true }
+              - { name: "pay_or_benefits", label: "Pay_or_benefits", widget: string, required: false, i18n: true }
+              - { name: "management_or_culture", label: "Management_or_culture", widget: string, required: false, i18n: true }
+              - { name: "prefer_not_to_say", label: "Prefer_not_to_say", widget: string, required: false, i18n: true }
+              - { name: "open_ended", label: "Open_ended", widget: string, required: false, i18n: true }
+              - { name: "missing_end_date", label: "Missing_end_date", widget: string, required: false, i18n: true }
+              - { name: "running", label: "Running", widget: string, required: false, i18n: true }
+              - { name: "ending_soon", label: "Ending_soon", widget: string, required: false, i18n: true }
+              - { name: "past_end_decided", label: "Past_end_decided", widget: string, required: false, i18n: true }
+              - { name: "matched", label: "Matched", widget: string, required: false, i18n: true }
+              - { name: "contract_outlasts_funding", label: "Contract_outlasts_funding", widget: string, required: false, i18n: true }
+              - { name: "funding_outlasts_contract", label: "Funding_outlasts_contract", widget: string, required: false, i18n: true }
+              - { name: "funding_open_ended", label: "Funding_open_ended", widget: string, required: false, i18n: true }
+              - { name: "unknown", label: "Unknown", widget: string, required: false, i18n: true }
+              - { name: "hire", label: "Hire", widget: string, required: false, i18n: true }
+              - { name: "promote", label: "Promote", widget: string, required: false, i18n: true }
+              - { name: "redeploy", label: "Redeploy", widget: string, required: false, i18n: true }
+              - { name: "fixed_term_hire", label: "Fixed_term_hire", widget: string, required: false, i18n: true }
+              - { name: "engage_contractor", label: "Engage_contractor", widget: string, required: false, i18n: true }
+              - { name: "plan_assumption", label: "Plan_assumption", widget: string, required: false, i18n: true }
+              - { name: "observed_snapshots", label: "Observed_snapshots", widget: string, required: false, i18n: true }
+              - { name: "insufficient_history", label: "Insufficient_history", widget: string, required: false, i18n: true }
+          - name: "engagement"
+            label: "Engagement"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "basis", label: "Basis", widget: string, required: false, i18n: true }
+              - { name: "started", label: "Started", widget: string, required: false, i18n: true }
+              - { name: "ends", label: "Ends", widget: string, required: false, i18n: true }
+              - { name: "noEnd", label: "No End", widget: string, required: false, i18n: true }
+              - { name: "standing", label: "Standing", widget: string, required: false, i18n: true }
+              - { name: "decision", label: "Decision", widget: string, required: false, i18n: true }
+              - { name: "extensions", label: "Extensions", widget: string, required: false, i18n: true }
+              - { name: "noExtensions", label: "No Extensions", widget: string, required: false, i18n: true }
+              - { name: "funding", label: "Funding", widget: string, required: false, i18n: true }
+              - { name: "fundingEnds", label: "Funding Ends", widget: string, required: false, i18n: true }
+              - { name: "fundingNone", label: "Funding None", widget: string, required: false, i18n: true }
+              - { name: "contractor", label: "Contractor", widget: string, required: false, i18n: true }
+              - { name: "route", label: "Route", widget: string, required: false, i18n: true }
+              - { name: "supplier", label: "Supplier", widget: string, required: false, i18n: true }
+              - { name: "rate", label: "Rate", widget: string, required: false, i18n: true }
+              - { name: "rateMasked", label: "Rate Masked", widget: string, required: false, i18n: true }
+          - name: "contingent"
+            label: "Contingent"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "forbidden", label: "Forbidden", widget: string, required: false, i18n: true }
+              - { name: "share", label: "Share", widget: string, required: false, i18n: true }
+              - { name: "contractors", label: "Contractors", widget: string, required: false, i18n: true }
+              - { name: "fixedTerm", label: "Fixed Term", widget: string, required: false, i18n: true }
+              - { name: "people", label: "People", widget: string, required: false, i18n: true }
+              - { name: "employed", label: "Employed", widget: string, required: false, i18n: true }
+              - { name: "fte", label: "Fte", widget: string, required: false, i18n: true }
+              - { name: "departmentsWithheld", label: "Departments Withheld", widget: text, required: false, i18n: true }
+              - { name: "engagements", label: "Engagements", widget: string, required: false, i18n: true }
+              - { name: "ending30", label: "Ending30", widget: string, required: false, i18n: true }
+              - { name: "ending60", label: "Ending60", widget: string, required: false, i18n: true }
+              - { name: "ending90", label: "Ending90", widget: string, required: false, i18n: true }
+              - { name: "pastEnd", label: "Past End", widget: string, required: false, i18n: true }
+              - { name: "extended", label: "Extended", widget: string, required: false, i18n: true }
+              - { name: "longRunning", label: "Long Running", widget: string, required: false, i18n: true }
+              - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
+              - { name: "showWho", label: "Show Who", widget: string, required: false, i18n: true }
+              - { name: "hideWho", label: "Hide Who", widget: string, required: false, i18n: true }
+              - { name: "whoTitle", label: "Who Title", widget: string, required: false, i18n: true }
+              - { name: "nobody", label: "Nobody", widget: string, required: false, i18n: true }
+              - { name: "workerNumber", label: "Worker Number", widget: string, required: false, i18n: true }
+              - { name: "noTotal", label: "No Total", widget: string, required: false, i18n: true }
+              - { name: "fundingByMonth", label: "Funding By Month", widget: string, required: false, i18n: true }
+              - { name: "month", label: "Month", widget: string, required: false, i18n: true }
+              - { name: "alreadyEnded", label: "Already Ended", widget: string, required: false, i18n: true }
+              - { name: "trend", label: "Trend", widget: string, required: false, i18n: true }
+              - { name: "trendInsufficient", label: "Trend Insufficient", widget: text, required: false, i18n: true }
+              - { name: "date", label: "Date", widget: string, required: false, i18n: true }
+              - { name: "programmes", label: "Programmes", widget: string, required: false, i18n: true }
+              - { name: "programmesHint", label: "Programmes Hint", widget: string, required: false, i18n: true }
+              - { name: "programmesWithheld", label: "Programmes Withheld", widget: string, required: false, i18n: true }
+              - { name: "noProgrammes", label: "No Programmes", widget: string, required: false, i18n: true }
+              - { name: "fundedFte", label: "Funded Fte", widget: string, required: false, i18n: true }
+              - { name: "engagementsEnding", label: "Engagements Ending", widget: string, required: false, i18n: true }
+              - { name: "fundingEnding", label: "Funding Ending", widget: string, required: false, i18n: true }
+          - name: "plan"
+            label: "Plan"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "byBasis", label: "By Basis", widget: string, required: false, i18n: true }
+              - { name: "fteGap", label: "Fte Gap", widget: string, required: false, i18n: true }
+              - { name: "demandByProgramme", label: "Demand By Programme", widget: string, required: false, i18n: true }
+              - { name: "programme", label: "Programme", widget: string, required: false, i18n: true }
+              - { name: "noProgramme", label: "No Programme", widget: string, required: false, i18n: true }
+              - { name: "fteOptional", label: "Fte Optional", widget: string, required: false, i18n: true }
+              - { name: "expectedEnd", label: "Expected End", widget: string, required: false, i18n: true }
+              - { name: "programmeOptional", label: "Programme Optional", widget: string, required: false, i18n: true }

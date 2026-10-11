@@ -331,6 +331,12 @@ describe("api path map", () => {
     await wpm.listErgonomicAssessments("p1");
     await wpm.listAdjustmentRequests("p1");
     await wpm.ergonomicIssues();
+    await wpm.workerEngagement("w1");
+    await wpm.workerContractorDetails("w1");
+    await wpm.workerFunding("w1");
+    await wpm.contingentWorkforce();
+    await wpm.contingentList("ending_31_to_60");
+    await wpm.programmeRollup();
     expect(calls).toEqual([
       "/api/proxy/workers?department=engineering",
       "/api/proxy/workers/p1",
@@ -491,6 +497,12 @@ describe("api path map", () => {
       "/api/proxy/workers/p1/ergonomic-assessments",
       "/api/proxy/workers/p1/adjustment-requests",
       "/api/proxy/ergonomics/issues",
+      "/api/proxy/workers/w1/engagement",
+      "/api/proxy/workers/w1/contractor-details",
+      "/api/proxy/workers/w1/funding",
+      "/api/proxy/workforce-intelligence/contingent",
+      "/api/proxy/engagements/contingent-list?list=ending_31_to_60",
+      "/api/proxy/workforce-intelligence/programmes",
     ]);
     vi.unstubAllGlobals();
   });

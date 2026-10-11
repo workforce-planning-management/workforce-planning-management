@@ -2351,6 +2351,10 @@ export function getWorkforcePlan(
     job_title: string | null;
     target_on: string;
     target_headcount: number;
+    target_fte: number | null;
+    basis: string;
+    expected_ends_on: string | null;
+    programme_ref: string | null;
     note: string | null;
     objective_pids: string[];
   }>;
@@ -2390,6 +2394,11 @@ export function setDemandLine(
     role_profile_pid?: string;
     target_on: string;
     target_headcount: number;
+    /** FTE across the headcount in percent of one person; leave out when not known. */
+    target_fte_percent?: number;
+    basis?: string;
+    expected_ends_on?: string;
+    programme_ref?: string;
   },
 ): Promise<{ pid: string }> {
   return api(`/workforce-plans/${pid}/demand-lines`, { method: "PUT", body });
@@ -2438,14 +2447,43 @@ export function planForecast(
       "plan_assumption" | "observed_snapshots" | "insufficient_history";
     hires_assumed: number;
   };
+  programmes: Array<{
+    target_on: string;
+    programme_ref: string | null;
+    headcount: number;
+    fte: number | null;
+  }>;
   departments: Array<{
     department: string;
     target_on: string;
     days_ahead: number;
     opening_headcount: number;
     planned_demand: number;
+    planned_demand_fte: number | null;
+    demand_by_basis: Array<{
+      basis: string;
+      headcount: number;
+      fte: number | null;
+    }>;
+    demand_by_programme: Array<{
+      programme_ref: string | null;
+      headcount: number;
+      fte: number | null;
+    }>;
     projected_supply: number | null;
+    projected_supply_fte: number | null;
+    supply_by_basis: Record<
+      string,
+      {
+        headcount: number | null;
+        fte: number | null;
+        no_end_date_counted_as_continuing: number;
+        leaving_before_the_date: number;
+      }
+    >;
+    supply_assumptions: string[];
     headcount_gap: number | null;
+    fte_gap: number | null;
     levers: string[] | null;
     competency_gaps: Array<{
       job_title: string | null;
@@ -3155,4 +3193,206 @@ export function wellbeingUptake(init?: FetchLike): Promise<{
   }>;
 }> {
   return api("/wellbeing/uptake", init);
+}
+
+// ─── Contingent workforce (WPM-R79–R86, WPM-T143) ───────────────────────────
+
+/** Where an engagement stands today. */
+export type EngagementStanding =
+  | "open_ended"
+  | "missing_end_date"
+  | "running"
+  | "ending_soon"
+  | "past_end_undecided"
+  | "past_end_decided";
+
+/** A worker's basis, end date, extensions and decisions (the worker and HR). */
+export interface WorkerEngagement {
+  employment_type: string;
+  hired_on: string;
+  engagement_ends_on: string | null;
+  standing: EngagementStanding | null;
+  window_calendar_days: number;
+  extension_count: number;
+  extensions: Array<{
+    pid: string;
+    previous_end: string;
+    new_end: string;
+    reason: string | null;
+    decided_by: string | null;
+  }>;
+  decision: string | null;
+  decisions: Array<{
+    pid: string;
+    ends_on: string;
+    decision: string;
+    decided_by: string | null;
+    decided_on: string;
+  }>;
+}
+
+/** The worker's engagement. */
+export function workerEngagement(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<WorkerEngagement> {
+  return api(`/workers/${workerPid}/engagement`, init);
+}
+
+/** A contractor's details; the rate is masked unless the caller may see it. */
+export interface ContractorDetails {
+  supplier_ref: string | null;
+  route: string | null;
+  rate_minor: number | null;
+  rate_currency: string | null;
+  rate_basis: string | null;
+  rate_recorded: boolean;
+  rate_masked: boolean;
+}
+
+/** A contractor's details, or `null`. */
+export function workerContractorDetails(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{ contractor_details: ContractorDetails | null }> {
+  return api(`/workers/${workerPid}/contractor-details`, init);
+}
+
+/** How the funding compares with the contract end. */
+export type FundingAlignment =
+  | "matched"
+  | "contract_outlasts_funding"
+  | "funding_outlasts_contract"
+  | "funding_open_ended"
+  | "unknown";
+
+/** Where the post's money comes from, beside the contract end (HR only). */
+export interface WorkerFunding {
+  funding: {
+    kind: string;
+    programme_ref: string | null;
+    ends_on: string | null;
+  } | null;
+  contract_ends_on: string | null;
+  alignment: FundingAlignment;
+  needs_attention: boolean;
+}
+
+/** The worker's post funding. */
+export function workerFunding(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<WorkerFunding> {
+  return api(`/workers/${workerPid}/funding`, init);
+}
+
+/** A count that is `null` when withheld (one to nine people) and `0` when none. */
+export type Withheld = number | null;
+
+/** The contingent workforce in aggregate (HR only; names no one). */
+export interface ContingentWorkforce {
+  small_group_floor: number;
+  headcount: number;
+  fte: number;
+  contractor_percent_of_fte: number | null;
+  fixed_term_percent_of_fte: number | null;
+  departments_shown: boolean;
+  by_department: Array<{
+    department: string;
+    headcount: number | null;
+    contractor_percent_of_fte: number | null;
+    fixed_term_percent_of_fte: number | null;
+  }>;
+  funding_ends: Array<{
+    month: string;
+    people: Withheld;
+    fte: number | null;
+  }>;
+  trend: {
+    status: "ok" | "insufficient_history";
+    points: Array<{
+      as_of: string;
+      contractor_percent_of_fte: number | null;
+      fixed_term_percent_of_fte: number | null;
+    }>;
+    dates_left_out_without_split: number;
+    dates_left_out_below_floor: number;
+  };
+  engagements: {
+    ending_within_30_calendar_days: Withheld;
+    ending_31_to_60_calendar_days: Withheld;
+    ending_61_to_90_calendar_days: Withheld;
+    past_end_with_no_decision: Withheld;
+    extended_more_than: { times: number; people: Withheld };
+    contractors_engaged_longer_than: {
+      calendar_months: number;
+      people: Withheld;
+    };
+    note: string;
+  };
+  derivation: string;
+}
+
+/** The contingent share, funding horizon, trend and engagement figures. */
+export function contingentWorkforce(
+  init?: FetchLike,
+): Promise<ContingentWorkforce> {
+  return api("/workforce-intelligence/contingent", init);
+}
+
+/** The lists behind the engagement figures. */
+export const CONTINGENT_LISTS = [
+  "ending_within_30",
+  "ending_31_to_60",
+  "ending_61_to_90",
+  "past_end_undecided",
+  "much_extended",
+  "long_running_contractors",
+] as const;
+export type ContingentList = (typeof CONTINGENT_LISTS)[number];
+
+/** The people behind one figure, by worker number (HR only; the read is audited). */
+export function contingentList(
+  list: ContingentList,
+  init?: FetchLike,
+): Promise<{
+  list: ContingentList;
+  people: Array<{
+    worker_pid: string;
+    worker_number: string;
+    department: string;
+    employment_type: string;
+    hired_on: string;
+    engagement_ends_on: string | null;
+    extensions: number;
+    decision_recorded: boolean;
+  }>;
+}> {
+  return api(
+    `/engagements/contingent-list?list=${encodeURIComponent(list)}`,
+    init,
+  );
+}
+
+/** Per programme and month: funded FTE, contingent share, endings (HR only). */
+export interface ProgrammeRollup {
+  small_group_floor: number;
+  withheld_programmes: number;
+  programmes: Array<{
+    programme: string;
+    months: Array<{
+      month: string;
+      funded_fte: number | null;
+      contractor_percent_of_fte: number | null;
+      fixed_term_percent_of_fte: number | null;
+      engagements_ending: Withheld;
+      funding_ending: Withheld;
+    }>;
+  }>;
+  derivation: string;
+}
+
+/** The programme roll-up. */
+export function programmeRollup(init?: FetchLike): Promise<ProgrammeRollup> {
+  return api("/workforce-intelligence/programmes", init);
 }

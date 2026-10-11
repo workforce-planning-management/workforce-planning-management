@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — contingent workforce, engagement, and plans by basis and programme (WPM-T143)
+
+`/contingent` (HR): the share of FTE for contractors and fixed-term staff, engagements ending in 30, 60 and 90 calendar days, past their end,
+extended and long-running, with "Show who" (worker numbers; the read is audited), funding ending by month, the trend and the programme
+roll-up. A count of one to nine is shown as "withheld", never 0. A worker's page gains an engagement panel (basis, end, extensions,
+decision, funding beside the contract end with a flag, a contractor's masked rate). The plan line form takes basis, FTE and programme, and the
+forecast shows demand and supply by basis, the FTE gap, demand by programme and the levers in words (they were raw tokens). Requisition cards
+show basis, duration and programme. 62 strings and 64 vocabulary values in the 13 `-001` locales; the `untranslated` test, which was failing,
+passes. Phone layout: wide tables scroll inside their card.
+
 ### Added — an Idempotency-Key on every request that changes something (WPM-T221)
 
 `api()` sends `Idempotency-Key` (a UUID) with POST, PUT, PATCH and DELETE, new for each action, reusable through `idempotencyKey` when

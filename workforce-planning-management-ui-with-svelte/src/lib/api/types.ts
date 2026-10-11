@@ -21,6 +21,8 @@ export interface Worker {
   salary_currency: string | null;
   hired_on: string;
   terminated_on: string | null;
+  /** The last day of a fixed-term, contractor or intern engagement; `null` when none. */
+  engagement_ends_on?: string | null;
 }
 
 /**
@@ -565,6 +567,12 @@ export interface Requisition {
   salary_currency: string | null;
   status: string;
   opened_on: string | null;
+  /** The programme the post serves (`thing:` URN). */
+  programme_ref?: string | null;
+  /** `permanent`, `fixed_term`, `contractor` or `intern`. */
+  basis?: string;
+  /** Calendar months a basis that ends is expected to run. */
+  expected_duration_months?: number | null;
 }
 
 /** One application row. */

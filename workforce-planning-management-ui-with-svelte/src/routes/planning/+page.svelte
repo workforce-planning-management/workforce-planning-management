@@ -34,6 +34,7 @@
   type Alignment = Awaited<ReturnType<typeof planAlignment>>;
   type Cost = Awaited<ReturnType<typeof planCost>>;
 
+  const BASES = ["permanent", "fixed_term", "contractor", "intern"] as const;
   const NEXT: Record<string, string[]> = {
     draft: ["active", "archived"],
     active: ["archived"],
@@ -65,6 +66,11 @@
   let lineRole = $state("");
   let targetOn = $state("");
   let headcount = $state(1);
+  let lineBasis = $state("permanent");
+  let lineEnds = $state("");
+  let lineProgramme = $state("");
+  /** FTE across the headcount, in people (2.5); empty is unknown, never assumed. */
+  let lineFte = $state<number | null>(null);
   let objectiveTitle = $state("");
 
   /** The plans' horizons as bars, each demand line a milestone under its plan. */
@@ -274,8 +280,31 @@
             <td>{row.opening_headcount}</td><td>{row.planned_demand}</td>
             <td>{row.projected_supply ?? "—"}</td>
             <td class:warn={(row.headcount_gap ?? 0) > 0}>{row.headcount_gap ?? "—"}</td>
-            <td>{row.levers?.join(", ") ?? "—"}</td>
+            <td>{row.levers?.map((lever) => tv(lever)).join(", ") ?? "—"}</td>
           </tr>
+          <tr class="muted" data-testid="forecast-basis">
+            <td colspan="2">{t("plan.byBasis")}</td>
+            <td colspan="5">
+              {#each BASES as b (b)}
+                {@const supply = row.supply_by_basis[b]}
+                {@const demand = row.demand_by_basis.find((d) => d.basis === b)}
+                {#if supply?.headcount || demand}
+                  <span class="chip">
+                    {tv(b)}: {demand?.headcount ?? 0} → {supply?.headcount ?? "—"}
+                    {#if demand?.fte != null || supply?.fte != null}
+                      ({demand?.fte ?? "—"} → {supply?.fte ?? "—"} {t("contingent.fte")})
+                    {/if}
+                  </span>
+                {/if}
+              {/each}
+              {#if row.fte_gap !== null}
+                <span data-testid="forecast-fte-gap">· {t("plan.fteGap")}: {row.fte_gap}</span>
+              {/if}
+            </td>
+          </tr>
+          {#each row.supply_assumptions.slice(1) as note (note)}
+            <tr class="muted"><td colspan="7">{note}</td></tr>
+          {/each}
           {#each row.competency_gaps as gap (gap.job_title + (gap.skill ?? ""))}
             <tr class="muted">
               <td colspan="2">{tf("pages.planning.needs", { job_title: gap.job_title, skill: gap.skill, importance: tv(gap.importance), min_proficiency: gap.min_proficiency })}</td>
@@ -289,6 +318,17 @@
         {/each}
       </tbody>
     </table>
+    {#if forecast.programmes.some((p) => p.programme_ref)}
+      <h3>{t("plan.demandByProgramme")}</h3>
+      <table data-testid="plan-forecast-programmes">
+        <thead><tr><th>{t("plan.programme")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.headcount")}</th><th>{t("contingent.fte")}</th></tr></thead>
+        <tbody>
+          {#each forecast.programmes as p (p.target_on + (p.programme_ref ?? ""))}
+            <tr><td>{p.programme_ref ?? t("plan.noProgramme")}</td><td>{p.target_on}</td><td>{p.headcount}</td><td>{p.fte ?? "—"}</td></tr>
+          {/each}
+        </tbody>
+      </table>
+    {/if}
   {/if}
 
   {#if cost}
@@ -340,12 +380,15 @@
   <h3>{t("pages.planning.demand_lines")}</h3>
   <table>
     <thead>
-      <tr><th>{t("pages.planning.department")}</th><th>{t("pages.planning.role")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.headcount")}</th>{#each plan.objectives as o (o.pid)}<th>{o.title}</th>{/each}<th></th></tr>
+      <tr><th>{t("pages.planning.department")}</th><th>{t("pages.planning.role")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.headcount")}</th><th>{t("contingent.fte")}</th><th>{t("engagement.basis")}</th><th>{t("plan.programme")}</th>{#each plan.objectives as o (o.pid)}<th>{o.title}</th>{/each}<th></th></tr>
     </thead>
     <tbody>
       {#each plan.demand_lines as line (line.pid)}
         <tr>
           <td>{line.department}</td><td>{line.job_title ?? "any"}</td><td>{line.target_on}</td><td>{line.target_headcount}</td>
+          <td>{line.target_fte ?? "—"}</td>
+          <td>{tv(line.basis)}{#if line.expected_ends_on} <span class="muted">→ {line.expected_ends_on}</span>{/if}</td>
+          <td>{line.programme_ref ?? "—"}</td>
           {#each plan.objectives as o (o.pid)}
             <td>
               <input
@@ -375,7 +418,11 @@
             department,
             target_on: targetOn,
             target_headcount: headcount,
+            basis: lineBasis,
             ...(lineRole ? { role_profile_pid: lineRole } : {}),
+            ...(lineFte === null ? {} : { target_fte_percent: Math.round(lineFte * 100) }),
+            ...(lineBasis !== "permanent" && lineEnds ? { expected_ends_on: lineEnds } : {}),
+            ...(lineProgramme.trim() ? { programme_ref: lineProgramme.trim() } : {}),
           }),
         );
       }}
@@ -388,8 +435,19 @@
           {#each roles as r (r.pid)}<option value={r.pid}>{r.job_title}</option>{/each}
         </select>
       </label>
-      <label>{t("pages.planning.target_date")} <input type="date" min={plan.horizon_start} max={plan.horizon_end} bind:value={targetOn} required /></label>
+      <label>{t("pages.planning.target_date")} <input data-testid="line-target" type="date" min={plan.horizon_start} max={plan.horizon_end} bind:value={targetOn} required /></label>
       <label>{t("pages.planning.headcount")} <input type="number" min="0" bind:value={headcount} required /></label>
+      <label>{t("plan.fteOptional")} <input data-testid="line-fte" type="number" min="0" step="0.05" bind:value={lineFte} /></label>
+      <label>
+        {t("engagement.basis")}
+        <select data-testid="line-basis" bind:value={lineBasis}>
+          {#each BASES as b (b)}<option value={b}>{tv(b)}</option>{/each}
+        </select>
+      </label>
+      {#if lineBasis !== "permanent"}
+        <label>{t("plan.expectedEnd")} <input data-testid="line-ends" type="date" min={targetOn || plan.horizon_start} bind:value={lineEnds} required={lineBasis !== "intern"} /></label>
+      {/if}
+      <label>{t("plan.programmeOptional")} <input data-testid="line-programme" bind:value={lineProgramme} /></label>
       <button type="submit" data-testid="line-add">{t("pages.planning.add")}</button>
     </form>
     <h3>{t("pages.planning.add_an_objective")}</h3>
