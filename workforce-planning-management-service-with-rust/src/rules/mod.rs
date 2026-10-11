@@ -35,6 +35,7 @@ pub mod gap;
 pub mod grade;
 pub mod groups;
 pub mod health_requirements;
+pub mod idempotency;
 pub mod insights;
 pub mod job_levels;
 pub mod learning;

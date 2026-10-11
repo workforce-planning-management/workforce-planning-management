@@ -171,12 +171,37 @@ async fn a_conversion_is_proposed_by_a_manager_approved_by_someone_else_and_read
         ] {
             assert_eq!(post(plans.clone(), manager.clone(), body).await.status_code(), 422, "{why}");
         }
-        let proposed = post(plans.clone(), manager.clone(), convert.clone()).await;
+        let keyed = |token: String| {
+            let (request, plans, convert) = (&request, plans.clone(), convert.clone());
+            async move {
+                request.post(&plans).add_header("authorization", token)
+                    .add_header("idempotency-key", "conversion-proposal-key-0001").json(&convert).await
+            }
+        };
+        let proposed = keyed(manager.clone()).await;
         assert_eq!(proposed.status_code(), 200);
         let plan = proposed.json::<Value>();
         assert_eq!(plan["status"], "proposed");
         let pid = plan["pid"].as_str().unwrap().to_string();
         assert_eq!(post(plans.clone(), manager.clone(), convert.clone()).await.status_code(), 422, "one open plan at a time");
+
+        // A repeat under the same key is answered from the stored response, though the plan is now
+        // open; the same key from anyone else is not a replay of the manager's answer.
+        let repeat = keyed(manager.clone()).await;
+        assert_eq!(repeat.status_code(), 200);
+        assert_eq!(repeat.header("idempotent-replayed"), "true");
+        assert_eq!(repeat.json::<Value>()["pid"], pid.as_str(), "the same plan, not a second one");
+        for (name, token, expect) in [
+            ("the worker", &me, 403),
+            ("a neighbour", &neighbour, 403),
+            ("a manager outside the chain", &other_manager, 403),
+            ("HR, who may propose but finds a plan already open", &hr, 422),
+        ] {
+            let r = keyed(token.clone()).await;
+            assert_eq!(r.status_code(), expect, "{name} does not get the manager's stored response");
+            assert!(r.maybe_header("idempotent-replayed").is_none(), "{name}");
+            assert!(!r.text().contains(&pid), "{name} is told nothing of the manager's plan");
+        }
 
         // ── Reading: HR only ──────────────────────────────────────────────────────────
         for (name, token) in [("the worker", &me), ("the proposing manager", &manager), ("a neighbour", &neighbour)] {

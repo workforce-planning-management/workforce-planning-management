@@ -256,7 +256,13 @@ impl Hooks for App {
         // Later layers are outer: headers wrap everything (so a 401 or 429
         // carries them), the rate limit runs before the token is checked.
         // Need-to-know (WPM-R114) sits inside the sign-in guard: a token is verified first.
+        // The idempotency check (WPM-R132) is innermost: by then the caller is signed in and allowed
+        // past need-to-know, so a replay is only ever of the caller's own earlier success.
         Ok(router
+            .layer(axum::middleware::from_fn_with_state(
+                ctx.clone(),
+                crate::idempotency::idempotency_mw,
+            ))
             .layer(axum::middleware::from_fn_with_state(
                 ctx.clone(),
                 crate::need_to_know::need_to_know_mw,
@@ -289,6 +295,7 @@ impl Hooks for App {
     }
 
     async fn truncate(ctx: &AppContext) -> Result<()> {
+        truncate_table(&ctx.db, IdempotencyKeys).await?;
         truncate_table(&ctx.db, EventOutbox).await?;
         truncate_table(&ctx.db, PostFundings).await?;
         truncate_table(&ctx.db, ConversionPlans).await?;

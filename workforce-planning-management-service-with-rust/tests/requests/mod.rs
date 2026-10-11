@@ -19,6 +19,7 @@ mod expenses;
 mod grades;
 mod health_detail;
 mod hr;
+mod idempotency;
 mod job_levels;
 mod learning;
 mod movements;
