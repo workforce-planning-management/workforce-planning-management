@@ -812,8 +812,70 @@ async fn the_contingent_view_shows_shares_and_funding_months_and_withholds_small
         } else {
             assert!(lone["people"].as_u64().unwrap() >= 10);
         }
+        // The named list behind the figures: HR sees worker numbers, a stranger token is refused, the read is audited.
+        let listed = request.get("/api/engagements/contingent-list?list=past_end_undecided").await;
+        assert_eq!(listed.status_code(), 200);
+        let listed: Value = listed.json();
+        assert_eq!(listed["list"], "past_end_undecided");
+        assert!(listed["people"].is_array());
+        assert!(!listed.to_string().contains("Test Worker CT"), "worker numbers, not names");
+        assert_eq!(request.get("/api/engagements/contingent-list?list=everyone").await.status_code(), 422);
+        assert_eq!(request.get("/api/engagements/contingent-list").await.status_code(), 422);
+        let e = &v["engagements"];
+        for key in ["ending_within_30_calendar_days", "ending_31_to_60_calendar_days", "ending_61_to_90_calendar_days", "past_end_with_no_decision"] {
+            assert!(e[key].is_null() || e[key].is_u64(), "{key}: a count, or withheld, never a guess");
+        }
+        assert_eq!(e["extended_more_than"]["times"], 2);
+        assert_eq!(e["contractors_engaged_longer_than"]["calendar_months"], 24);
+        assert!(e.get("total").is_none(), "no total, so nothing withheld can be worked out");
         let text = v.to_string();
         assert!(!text.contains("Test Worker CT"), "no names");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// The contingent trend (WPM-R62, WPM-T139): snapshots carry the split by basis; too little history says so.
+async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
+    use workforce_planning_management_service::tasks::snapshot::run_snapshot;
+
+    crate::requests::request_open(|request, ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        for i in 0..12 {
+            let kind = if i < 3 { "contractor" } else if i < 5 { "fixed_term" } else { "permanent" };
+            let r = request.post("/api/workers").json(&json!({
+                "person_ref": a_person(), "organization_ref": an_org(), "worker_number": format!("TR-{tag}-{i}"),
+                "display_name": "Test Worker TR", "employment_type": kind, "department": format!("tr-{tag}"),
+                "job_title": "Engineer", "hired_on": "2019-01-05",
+                "engagement_ends_on": (kind != "permanent").then(|| "2030-01-01".to_string()),
+            })).await;
+            assert_eq!(r.status_code(), 200, "{}", r.text());
+        }
+        let date = |m, d| chrono::NaiveDate::from_ymd_opt(2025, m, d).unwrap();
+        run_snapshot(&ctx.db, date(1, 1)).await.unwrap();
+        let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
+        assert_eq!(v["trend"]["status"], "insufficient_history", "one date is not a trend");
+        assert!(v["trend"]["points"].as_array().unwrap().is_empty());
+        run_snapshot(&ctx.db, date(2, 15)).await.unwrap();
+        run_snapshot(&ctx.db, date(4, 1)).await.unwrap();
+        let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
+        assert_eq!(v["trend"]["status"], "ok");
+        let points = v["trend"]["points"].as_array().unwrap();
+        assert_eq!(points.len(), 3);
+        assert!(points[2]["contractor_percent_of_fte"].as_f64().unwrap() > 0.0);
+        assert!(points[2]["fixed_term_percent_of_fte"].as_f64().unwrap() > 0.0);
+        // A row recorded before the split is unknown, not zero: its whole date is left out.
+        use sea_orm::{ConnectionTrait, Statement};
+        ctx.db.execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            "UPDATE headcount_snapshots SET contractor_headcount = NULL, contractor_fte_percent_total = NULL, \
+             fixed_term_headcount = NULL, fixed_term_fte_percent_total = NULL WHERE as_of = '2025-02-15'".to_string(),
+        )).await.unwrap();
+        let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
+        assert_eq!(v["trend"]["status"], "insufficient_history", "two usable dates remain");
+        assert_eq!(v["trend"]["dates_left_out_without_split"], 1);
     })
     .await;
 }

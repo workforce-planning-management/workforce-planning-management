@@ -255,6 +255,95 @@ pub fn funding_horizon(
         .collect()
 }
 
+/// One department's snapshot on one date, with the split by basis when it is known.
+#[derive(Debug, Clone, Copy)]
+pub struct SplitRow {
+    /// The snapshot date.
+    pub as_of: NaiveDate,
+    /// People employed.
+    pub headcount: i64,
+    /// Their FTE, in hundredths of a person.
+    pub fte: i64,
+    /// Contractor FTE; `None` for a row recorded before the split existed.
+    pub contractor_fte: Option<i64>,
+    /// Fixed-term FTE; `None` likewise.
+    pub fixed_term_fte: Option<i64>,
+}
+
+/// The contingent share on one date.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TrendPoint {
+    /// The date.
+    pub as_of: NaiveDate,
+    /// Contractor share of FTE.
+    pub contractor_percent: Option<f64>,
+    /// Fixed-term share of FTE.
+    pub fixed_term_percent: Option<f64>,
+}
+
+/// The trend of the contingent share over the snapshots (WPM-R62, WPM-R84).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ContingentTrend {
+    /// `ok`, or `insufficient_history`, in which case no point is given and nothing is extrapolated.
+    pub status: &'static str,
+    /// The dates, oldest first.
+    pub points: Vec<TrendPoint>,
+    /// Dates left out because any department's row there predates the split (unknown, not zero).
+    pub dates_without_split: usize,
+    /// Dates left out because fewer people than the floor were employed.
+    pub dates_below_floor: usize,
+}
+
+/// The trend of the contingent share, organization wide, from the snapshots (WPM-D27: too little
+/// history is `insufficient_history`, not an extrapolation). A date counts only when **every** row on
+/// it has the split, so a mix of old and new rows is never read as a zero; a date with fewer people
+/// than the floor is left out. At least [`crate::rules::planning::MIN_SNAPSHOTS`] usable dates
+/// spanning at least [`crate::rules::planning::MIN_WINDOW_DAYS`] calendar days are needed.
+#[must_use]
+pub fn contingent_trend(rows: &[SplitRow], floor: usize) -> ContingentTrend {
+    use crate::rules::planning::{MIN_SNAPSHOTS, MIN_WINDOW_DAYS};
+    use std::collections::BTreeMap;
+    let mut by: BTreeMap<NaiveDate, Vec<&SplitRow>> = BTreeMap::new();
+    for r in rows {
+        by.entry(r.as_of).or_default().push(r);
+    }
+    let (mut without_split, mut below_floor) = (0, 0);
+    let mut points = Vec::new();
+    for (as_of, group) in by {
+        if group
+            .iter()
+            .any(|r| r.contractor_fte.is_none() || r.fixed_term_fte.is_none())
+        {
+            without_split += 1;
+            continue;
+        }
+        let people: i64 = group.iter().map(|r| r.headcount).sum();
+        if usize::try_from(people).unwrap_or(0) < floor {
+            below_floor += 1;
+            continue;
+        }
+        let fte: i64 = group.iter().map(|r| r.fte).sum();
+        let contractor: i64 = group.iter().filter_map(|r| r.contractor_fte).sum();
+        let fixed: i64 = group.iter().filter_map(|r| r.fixed_term_fte).sum();
+        points.push(TrendPoint {
+            as_of,
+            contractor_percent: percent(contractor, fte),
+            fixed_term_percent: percent(fixed, fte),
+        });
+    }
+    let span = match (points.first(), points.last()) {
+        (Some(a), Some(b)) => (b.as_of - a.as_of).num_days(),
+        _ => 0,
+    };
+    let enough = points.len() >= MIN_SNAPSHOTS && span >= MIN_WINDOW_DAYS;
+    ContingentTrend {
+        status: if enough { "ok" } else { "insufficient_history" },
+        points: if enough { points } else { Vec::new() },
+        dates_without_split: without_split,
+        dates_below_floor: below_floor,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -433,5 +522,73 @@ mod tests {
             funding_horizon(&[(d(2026, 12, 1), 100)], today, 1, 1)[1].people,
             Some(0)
         );
+    }
+
+    fn split(date: NaiveDate, people: i64, fte: i64, c: Option<i64>, f: Option<i64>) -> SplitRow {
+        SplitRow {
+            as_of: date,
+            headcount: people,
+            fte,
+            contractor_fte: c,
+            fixed_term_fte: f,
+        }
+    }
+
+    #[test]
+    fn the_trend_needs_enough_dates_and_enough_span() {
+        let a = d(2026, 1, 1);
+        let day = |n: i64| a + chrono::Duration::days(n);
+        let row = |n| split(day(n), 50, 5000, Some(500), Some(250));
+        assert_eq!(
+            contingent_trend(&[row(0), row(30)], 10).status,
+            "insufficient_history"
+        );
+        assert_eq!(
+            contingent_trend(&[row(0), row(10), row(20)], 10).status,
+            "insufficient_history",
+            "three dates but under 60 calendar days"
+        );
+        let ok = contingent_trend(&[row(0), row(30), row(60)], 10);
+        assert_eq!(ok.status, "ok");
+        assert_eq!(ok.points.len(), 3);
+        assert_eq!(ok.points[0].contractor_percent, Some(10.0));
+        assert_eq!(ok.points[0].fixed_term_percent, Some(5.0));
+        let short = contingent_trend(&[row(0), row(30)], 10);
+        assert!(
+            short.points.is_empty(),
+            "nothing is shown when history is short"
+        );
+    }
+
+    #[test]
+    fn a_date_with_any_unsplit_row_is_unknown_not_zero() {
+        let a = d(2026, 1, 1);
+        let day = |n: i64| a + chrono::Duration::days(n);
+        let rows = [
+            split(day(0), 50, 5000, None, None),
+            split(day(0), 50, 5000, Some(0), Some(0)),
+            split(day(30), 50, 5000, Some(0), Some(0)),
+            split(day(60), 50, 5000, Some(0), Some(0)),
+            split(day(90), 50, 5000, Some(0), Some(0)),
+        ];
+        let t = contingent_trend(&rows, 10);
+        assert_eq!(t.dates_without_split, 1);
+        assert_eq!(t.points.len(), 3, "the mixed date is left out");
+        assert_eq!(
+            t.points[0].contractor_percent,
+            Some(0.0),
+            "a known zero is shown"
+        );
+    }
+
+    #[test]
+    fn a_date_below_the_floor_is_left_out() {
+        let a = d(2026, 1, 1);
+        let day = |n: i64| a + chrono::Duration::days(n);
+        let small = split(day(30), 9, 900, Some(100), Some(0));
+        let big = |n| split(day(n), 10, 1000, Some(100), Some(0));
+        let t = contingent_trend(&[big(0), small, big(60), big(90)], 10);
+        assert_eq!(t.dates_below_floor, 1);
+        assert_eq!(t.points.len(), 3);
     }
 }

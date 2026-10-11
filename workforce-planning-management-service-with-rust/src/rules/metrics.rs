@@ -111,6 +111,8 @@ pub struct WorkerFacts {
     pub department: String,
     /// Declared FTE, in percent (100 = one full-time person).
     pub fte_percent: i32,
+    /// The engagement basis (`employment_type`).
+    pub employment_type: String,
     /// Hire date.
     pub hired_on: NaiveDate,
     /// Termination date, when there is one.
@@ -129,6 +131,14 @@ pub struct SnapshotRow {
     /// Sum of declared `fte_percent` over those workers (hundredths of a
     /// person), so no float rounds a headcount.
     pub fte_percent_total: i64,
+    /// Contractors among them (WPM-R84).
+    pub contractor_headcount: usize,
+    /// Their FTE, in hundredths of a person.
+    pub contractor_fte_percent_total: i64,
+    /// Fixed-term people among them.
+    pub fixed_term_headcount: usize,
+    /// Their FTE, in hundredths of a person.
+    pub fixed_term_fte_percent_total: i64,
     /// Hires in `(since, as_of]`; `None` when there is no previous
     /// snapshot to measure from (unknown, not zero).
     pub starters: Option<usize>,
@@ -156,12 +166,27 @@ pub fn snapshot_rows(
             department: w.department.clone(),
             headcount: 0,
             fte_percent_total: 0,
+            contractor_headcount: 0,
+            contractor_fte_percent_total: 0,
+            fixed_term_headcount: 0,
+            fixed_term_fte_percent_total: 0,
             starters: since.map(|_| 0),
             leavers: since.map(|_| 0),
         });
         if is_employed_on(as_of, w.hired_on, w.terminated_on) {
             row.headcount += 1;
             row.fte_percent_total += i64::from(w.fte_percent);
+            match w.employment_type.as_str() {
+                "contractor" => {
+                    row.contractor_headcount += 1;
+                    row.contractor_fte_percent_total += i64::from(w.fte_percent);
+                }
+                "fixed_term" => {
+                    row.fixed_term_headcount += 1;
+                    row.fixed_term_fte_percent_total += i64::from(w.fte_percent);
+                }
+                _ => {}
+            }
         }
         if in_window(w.hired_on) {
             row.starters = row.starters.map(|n| n + 1);
@@ -373,6 +398,7 @@ mod tests {
             organization_ref: org.into(),
             department: dept.into(),
             fte_percent: fte,
+            employment_type: "permanent".into(),
             hired_on: hired,
             terminated_on: left,
         }
@@ -430,6 +456,37 @@ mod tests {
         assert_eq!(rows[0].starters, None);
         assert_eq!(rows[0].leavers, None);
         assert_eq!(snapshot_rows(day(2026, 7, 1), None, &[]), vec![]);
+    }
+
+    /// The snapshot splits headcount and FTE by basis; a person not employed on the date is in neither.
+    #[test]
+    fn snapshot_rows_split_by_basis() {
+        let mut contractor = facts("o1", "eng", 50, day(2020, 1, 1), None);
+        contractor.employment_type = "contractor".into();
+        let mut fixed = facts("o1", "eng", 80, day(2020, 1, 1), None);
+        fixed.employment_type = "fixed_term".into();
+        let mut gone = facts("o1", "eng", 100, day(2020, 1, 1), Some(day(2026, 1, 1)));
+        gone.employment_type = "contractor".into();
+        let rows = snapshot_rows(
+            day(2026, 7, 1),
+            None,
+            &[
+                facts("o1", "eng", 100, day(2020, 1, 1), None),
+                contractor,
+                fixed,
+                gone,
+            ],
+        );
+        let r = &rows[0];
+        assert_eq!((r.headcount, r.fte_percent_total), (3, 230));
+        assert_eq!(
+            (r.contractor_headcount, r.contractor_fte_percent_total),
+            (1, 50)
+        );
+        assert_eq!(
+            (r.fixed_term_headcount, r.fixed_term_fte_percent_total),
+            (1, 80)
+        );
     }
 
     /// Every metric the endpoint reports has a definition.

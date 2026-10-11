@@ -75,6 +75,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("change-initiatives/{}", Open),
     ("change-initiatives/{}/readiness", Open),
     ("conversion-plans", Privileged),
+    ("engagements/contingent-list", Privileged),
     ("cpd-requirements", Open),
     ("cpd/overview", Privileged),
     ("directory", Open),

@@ -2459,14 +2459,21 @@ data or tests (WPM-D48).
       HR-only named endpoint that writes an audit entry on every read.
       Enforcement test: a manager and a partner role get the aggregate and a
       403 on the named list. Mutation-check the HR-only rule.
-- [ ] WPM-T109 **Contingent share and funding horizon.** *(WPM-R62)* **Part done (2026-10-12):** the post funding table
-      (WPM-T161), and `GET /api/workforce-intelligence/contingent`: contractor and fixed-term share of FTE, each apart, and the
-      twelve-month funding horizon (people and FTE per month, plus funding already ended). HR only and audited. The floor is the
-      equality-monitoring default of 10; the department breakdown shows only when every department reaches it, a month of one to nine
-      people is withheld, and no total is given. 9 unit tests, a request test and an HR-only assertion in the conversion enforcement
-      binary; **mutation-checked** three ways (floor ignored for months; floor ignored for departments; route open to all), each
-      failing a test. **Not done:** the trend from snapshots split by basis (WPM-T139), the "pool" being the department until plans
-      define pools, the retention sweep, and a user interface. Original scope: Migration
+- [x] WPM-T109 (2026-10-11) **Contingent share and funding horizon.** *(WPM-R62)* The post funding table (WPM-T161), and
+      `GET /api/workforce-intelligence/contingent`: contractor and fixed-term share of FTE, each apart, the twelve-month funding
+      horizon (people and FTE per month, plus funding already ended), and the **trend** of the share from the snapshots split by
+      basis (WPM-T139): `ok`, or `insufficient_history` with no points when fewer than three usable dates span under 60 calendar
+      days (WPM-D27). A date counts only if every row on it has the split (an older row is unknown, never a zero) and at least 10
+      people were employed. HR only and audited. The floor is the equality-monitoring default of 10; the department breakdown shows
+      only when every department reaches it, a month of one to nine people is withheld, and no total is given. Export and erasure
+      with the worker were done in WPM-T161. **Retention:** `post_fundings` is not soft-deleted (clearing it, or erasing the worker,
+      deletes the row), so there is no deleted state for the sweep to hold; the retention schedule says so, and says the snapshot
+      counts are kept. Unit tests for the share, the horizon and the trend, request tests, and an HR-only assertion in the
+      conversion enforcement binary; **mutation-checked** (floor ignored for months, for departments and for the trend; route open
+      to all; unsplit read as zero; span ignored; fixed-term counted as contractor), each failing a test. **Not done:** the "pool"
+      is the department until plans define pools; a user interface (WPM-T143). The split is not added to the per-department rows of
+      `headcount-history`, because a department of a few people would reveal who is contingent.
+      Original scope: Migration
       for `post_fundings` (kind, end date; no money). Contingent share per pool
       from `employment_type` `contractor` and `fixed_term` (shown separately), with
       trend from headcount snapshots split by basis (WPM-T139)
@@ -2732,7 +2739,7 @@ payroll defect and need nothing else; do them first.
       scheduled by anything in this repository (a deployer's cron runs it, as for the others); HR is the `hr_admin` members
       of the worker's own organization only, not of an organization above it; and a decision of *convert* records intent
       only (conversion plans are WPM-T162 to T164).
-- [ ] WPM-T139 **Snapshots by basis.** *(WPM-R84)* Migration adding per-basis
+- [x] WPM-T139 (2026-10-11) **Snapshots by basis.** *(WPM-R84)* Migration `000065` adds nullable contractor and fixed-term headcount and FTE to `headcount_snapshots`; `snapshot_headcount` fills them (`rules::metrics::snapshot_rows`, tested); older rows are NULL, which means unknown. Not exposed per department. Original scope: Migration adding per-basis
       headcount and FTE to `headcount_snapshots`; the snapshot task fills them; older
       rows report `unknown` for the split. Request test.
 - [ ] WPM-T140 **Programme, FTE and basis on demand lines and requisitions.**
@@ -2745,7 +2752,20 @@ payroll defect and need nothing else; do them first.
       (WPM-T109) with a programme URN; per programme and month: funded FTE, the
       fixed-term and contractor share, engagements ending and funding ending.
       Aggregate only. Request test.
-- [ ] WPM-T142 **Contingent workforce view.** *(WPM-R86)* Aggregates per department,
+- [x] WPM-T142 (2026-10-11) **Contingent workforce view.** *(WPM-R86)* The engagement figures in
+      `GET /api/workforce-intelligence/contingent` (HR only, audited): ending in 0–30, 31–60 and 61–90 calendar days as
+      **separate bands** (cumulative figures would let a withheld band be worked out by subtraction), past the end with no
+      decision recorded for the current end date, extended more than 2 times, and contractors engaged longer than 24 calendar
+      months. One to nine is withheld, zero is shown, no total. And the **named lists** behind each figure:
+      `GET /api/engagements/contingent-list?list=` (`ending_within_30`, `ending_31_to_60`, `ending_61_to_90`,
+      `past_end_undecided`, `much_extended`, `long_running_contractors`), HR only, **audited** (`contingent_list_read`), by worker
+      number, department, basis and dates; no pay, no name, no floor. One definition (`rules::engagement::on_list`) serves the count
+      and the list, with a test that they agree. Unit tests for each rule; request tests; the conversion enforcement binary shows the
+      worker, the manager and a neighbour refused both the aggregate and the list. **Mutation-checked** (floor ignored; a band made
+      cumulative; the decision ignored; a threshold made non-strict; the list route opened to all; a band edge moved), each failing a
+      test. **Not done:** headcount and FTE by basis per programme and pool (pools are the department until plans define them;
+      programme lines are WPM-T140); the thresholds being configurable (constants); the user interface (WPM-T143).
+      Original scope: Aggregates per department,
       pool and programme; ending in the next 30, 60 and 90 calendar days; past end
       with no decision; extended beyond the threshold; contractors over the
       long-running threshold. HR-only named lists with audited reads. Enforcement test

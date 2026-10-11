@@ -284,6 +284,7 @@ pub fn spec() -> Value {
             "/api/conversion-plans/{pid}/approve": { "post": { "tags": ["engagements"], "summary": "Approve a proposed plan; never the proposer; also records the matching engagement decision against the current end date in the same transaction", "responses": ok("ConversionPlan") } },
             "/api/conversion-plans/{pid}/abandon": { "post": { "tags": ["engagements"], "summary": "Drop a proposed or approved plan; it stays as history", "responses": ok("ConversionPlan") } },
             "/api/conversion-plans/{pid}/done": { "post": { "tags": ["engagements"], "summary": "Carry out an approved conversion: the worker becomes permanent and the contract end is cleared in one transaction; the plan, extensions and decisions are kept", "responses": ok("ConversionPlan") } },
+            "/api/engagements/contingent-list": { "get": { "tags": ["engagements"], "summary": "The people behind one figure of the contingent view, by worker number, department, basis and dates (?list=ending_within_30, ending_31_to_60, ending_61_to_90, past_end_undecided, much_extended or long_running_contractors); no pay, no floor; HR only; the read is audited", "responses": { "200": { "description": "The list and the people on it" } } } },
             "/api/engagements/missing-end-date": { "get": { "tags": ["engagements"], "summary": "Fixed-term and contractor workers with no end date recorded (?organization=); none is ever invented", "responses": ok("MissingEndDate") } },
             "/api/skills": { "get": { "tags": ["learning"], "summary": "The skills catalogue", "responses": ok("Skills") }, "post": { "tags": ["learning"], "summary": "Add a skill (name, category)", "responses": ok("Skill") } },
             "/api/workers/{pid}/skills": { "get": { "tags": ["learning"], "summary": "A worker's declared skills and proficiency; seen by the worker, their line managers and HR", "responses": ok("WorkerSkills") }, "put": { "tags": ["learning"], "summary": "Declare a skill and proficiency", "responses": ok("WorkerSkill") } },
@@ -585,6 +586,8 @@ fn components() -> Value {
                     "departments_shown": { "type": "boolean" },
                     "by_department": { "type": "array", "items": { "$ref": "#/components/schemas/DepartmentContingent" } },
                     "funding_ends": { "type": "array", "items": { "$ref": "#/components/schemas/FundingMonth" } },
+                    "trend": { "type": "object", "description": "The contingent share over the snapshots recorded with the split by basis: status ok, or insufficient_history (fewer than three usable dates over at least 60 calendar days) with no points. Older snapshots are unknown, not zero.", "additionalProperties": true },
+                    "engagements": { "type": "object", "description": "Engagements ending in separate 30-calendar-day bands, past their end with no decision, extended more than the threshold, and long-running contractors. A count of one to nine is null; no total is given.", "additionalProperties": true },
                     "derivation": { "type": "string" }
                 }
             }
@@ -766,6 +769,7 @@ mod tests {
             "/api/capacity",
             "/api/workers/{pid}/engagement",
             "/api/workers/{pid}/contractor-details",
+            "/api/engagements/contingent-list",
             "/api/engagements/missing-end-date",
             "/api/me/contact-details",
             "/api/me/time-off",

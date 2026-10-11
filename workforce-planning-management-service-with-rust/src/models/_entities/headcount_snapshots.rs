@@ -22,6 +22,11 @@ pub struct Model {
     pub fte_percent_total: i64,
     pub starters: Option<i32>,
     pub leavers: Option<i32>,
+    /// Contractors employed on the date; `None` for a row recorded before the split existed (unknown, not zero).
+    pub contractor_headcount: Option<i32>,
+    pub contractor_fte_percent_total: Option<i64>,
+    pub fixed_term_headcount: Option<i32>,
+    pub fixed_term_fte_percent_total: Option<i64>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

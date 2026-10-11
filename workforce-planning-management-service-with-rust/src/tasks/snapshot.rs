@@ -56,6 +56,7 @@ pub async fn run_snapshot(db: &DatabaseConnection, as_of: chrono::NaiveDate) -> 
             organization_ref: w.organization_ref,
             department: w.department,
             fte_percent: w.fte_percent,
+            employment_type: w.employment_type,
             hired_on: w.hired_on,
             terminated_on: w.terminated_on,
         })
@@ -89,6 +90,10 @@ pub async fn run_snapshot(db: &DatabaseConnection, as_of: chrono::NaiveDate) -> 
             as_of: ActiveValue::set(as_of),
             headcount: ActiveValue::set(i32::try_from(row.headcount).unwrap_or(i32::MAX)),
             fte_percent_total: ActiveValue::set(row.fte_percent_total),
+            contractor_headcount: ActiveValue::set(i32::try_from(row.contractor_headcount).ok()),
+            contractor_fte_percent_total: ActiveValue::set(Some(row.contractor_fte_percent_total)),
+            fixed_term_headcount: ActiveValue::set(i32::try_from(row.fixed_term_headcount).ok()),
+            fixed_term_fte_percent_total: ActiveValue::set(Some(row.fixed_term_fte_percent_total)),
             starters: ActiveValue::set(row.starters.and_then(|n| i32::try_from(n).ok())),
             leavers: ActiveValue::set(row.leavers.and_then(|n| i32::try_from(n).ok())),
             ..Default::default()

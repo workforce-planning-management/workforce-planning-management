@@ -342,6 +342,100 @@ pub fn is_engaged_on(date: NaiveDate, hired_on: NaiveDate, ends_on: Option<Naive
     hired_on <= date && ends_on.is_none_or(|end| date <= end)
 }
 
+/// Extensions beyond this many make an engagement "much extended" in the contingent view.
+pub const EXTENSION_THRESHOLD: usize = 2;
+/// A contractor engaged longer than this many calendar months is a conversion or review candidate.
+pub const LONG_RUNNING_MONTHS: u32 = 24;
+
+/// One contingent engagement as the aggregate sees it. No name, no pay.
+#[derive(Debug, Clone, Copy)]
+pub struct ContingentEngagement {
+    /// A contractor (rather than fixed-term).
+    pub contractor: bool,
+    /// The start.
+    pub hired_on: NaiveDate,
+    /// The end date; `None` is counted nowhere in the ending figures (the missing end is its own list).
+    pub ends_on: Option<NaiveDate>,
+    /// A decision is recorded for the current end date.
+    pub decided: bool,
+    /// How many times the end has been extended.
+    pub extensions: usize,
+}
+
+/// The contingent workforce in numbers (WPM-R86). A figure is `None` when it is above zero but below
+/// the floor; zero is shown. The ending figures are **disjoint bands**, never cumulative, and no total
+/// is given, so a withheld figure cannot be worked out by subtraction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContingentCounts {
+    /// Ending 0 to 30 calendar days from today.
+    pub ending_within_30: Option<usize>,
+    /// Ending 31 to 60 calendar days from today.
+    pub ending_31_to_60: Option<usize>,
+    /// Ending 61 to 90 calendar days from today.
+    pub ending_61_to_90: Option<usize>,
+    /// The end has passed and no decision is recorded.
+    pub past_end_undecided: Option<usize>,
+    /// Extended more than [`EXTENSION_THRESHOLD`] times.
+    pub much_extended: Option<usize>,
+    /// Contractors engaged longer than [`LONG_RUNNING_MONTHS`] calendar months.
+    pub long_running_contractors: Option<usize>,
+}
+
+/// The lists of WPM-R86, by token. Each is both a count in the aggregate and a named list for HR.
+pub const LISTS: &[&str] = &[
+    "ending_within_30",
+    "ending_31_to_60",
+    "ending_61_to_90",
+    "past_end_undecided",
+    "much_extended",
+    "long_running_contractors",
+];
+
+/// Whether an engagement belongs on the list `list`; `None` for a token that is not a list. The one
+/// definition behind both the count and the named list, so the two cannot disagree.
+#[must_use]
+pub fn on_list(list: &str, e: &ContingentEngagement, today: NaiveDate) -> Option<bool> {
+    let band = |from: i64, to: i64| {
+        e.ends_on
+            .is_some_and(|end| (from..=to).contains(&(end - today).num_days()))
+    };
+    Some(match list {
+        "ending_within_30" => band(0, 30),
+        "ending_31_to_60" => band(31, 60),
+        "ending_61_to_90" => band(61, 90),
+        "past_end_undecided" => e.ends_on.is_some_and(|end| end < today) && !e.decided,
+        "much_extended" => much_extended(e.extensions, EXTENSION_THRESHOLD),
+        "long_running_contractors" => {
+            e.contractor && long_running(e.hired_on, today, LONG_RUNNING_MONTHS)
+        }
+        _ => return None,
+    })
+}
+
+/// Count the contingent engagements by the questions of WPM-R86.
+#[must_use]
+pub fn contingent_counts(
+    rows: &[ContingentEngagement],
+    today: NaiveDate,
+    floor: usize,
+) -> ContingentCounts {
+    let count = |list: &str| {
+        let n = rows
+            .iter()
+            .filter(|r| on_list(list, r, today) == Some(true))
+            .count();
+        (n == 0 || n >= floor).then_some(n)
+    };
+    ContingentCounts {
+        ending_within_30: count("ending_within_30"),
+        ending_31_to_60: count("ending_31_to_60"),
+        ending_61_to_90: count("ending_61_to_90"),
+        past_end_undecided: count("past_end_undecided"),
+        much_extended: count("much_extended"),
+        long_running_contractors: count("long_running_contractors"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -547,5 +641,120 @@ mod tests {
         assert!(is_engaged_on(d(2026, 6, 30), start, end));
         assert!(!is_engaged_on(d(2026, 7, 1), start, end));
         assert!(is_engaged_on(d(2030, 1, 1), start, None));
+    }
+
+    fn row(ends: Option<NaiveDate>, decided: bool, extensions: usize) -> ContingentEngagement {
+        ContingentEngagement {
+            contractor: true,
+            hired_on: d(2020, 1, 1),
+            ends_on: ends,
+            decided,
+            extensions,
+        }
+    }
+
+    #[test]
+    fn the_ending_bands_are_disjoint_and_use_calendar_days() {
+        let today = d(2026, 6, 1);
+        let mut rows = Vec::new();
+        for days in [0, 30, 31, 60, 61, 90, 91] {
+            rows.push(row(Some(today + chrono::Duration::days(days)), false, 0));
+        }
+        let c = contingent_counts(&rows, today, 0);
+        assert_eq!(c.ending_within_30, Some(2), "day 0 and day 30");
+        assert_eq!(c.ending_31_to_60, Some(2));
+        assert_eq!(c.ending_61_to_90, Some(2), "day 91 is outside");
+    }
+
+    #[test]
+    fn past_end_counts_only_the_undecided_and_no_end_is_counted_nowhere() {
+        let today = d(2026, 6, 1);
+        let rows = [
+            row(Some(d(2026, 5, 31)), false, 0),
+            row(Some(d(2026, 5, 31)), true, 0),
+            row(Some(today), false, 0),
+            row(None, false, 0),
+        ];
+        let c = contingent_counts(&rows, today, 0);
+        assert_eq!(
+            c.past_end_undecided,
+            Some(1),
+            "ending today is not yet past"
+        );
+        assert_eq!(c.ending_within_30, Some(1));
+    }
+
+    #[test]
+    fn extension_and_length_thresholds_are_strict() {
+        let today = d(2026, 6, 1);
+        let mut at = row(None, false, EXTENSION_THRESHOLD);
+        let mut over = row(None, false, EXTENSION_THRESHOLD + 1);
+        at.hired_on = d(2024, 6, 1);
+        over.hired_on = d(2024, 5, 31);
+        let c = contingent_counts(&[at, over], today, 0);
+        assert_eq!(c.much_extended, Some(1));
+        assert_eq!(
+            c.long_running_contractors,
+            Some(1),
+            "24 months exactly is not over"
+        );
+        let mut fixed = over;
+        fixed.contractor = false;
+        assert_eq!(
+            contingent_counts(&[fixed], today, 0).long_running_contractors,
+            Some(0)
+        );
+    }
+
+    #[test]
+    fn a_small_count_is_withheld_and_zero_is_shown() {
+        let today = d(2026, 6, 1);
+        let rows: Vec<_> = (0..3).map(|_| row(Some(today), false, 0)).collect();
+        let c = contingent_counts(&rows, today, 10);
+        assert_eq!(c.ending_within_30, None);
+        assert_eq!(c.ending_31_to_60, Some(0));
+        let many: Vec<_> = (0..10).map(|_| row(Some(today), false, 0)).collect();
+        assert_eq!(
+            contingent_counts(&many, today, 10).ending_within_30,
+            Some(10)
+        );
+    }
+
+    #[test]
+    fn every_list_is_known_and_a_stranger_is_not() {
+        let today = d(2026, 6, 1);
+        let r = row(Some(today), false, 0);
+        for list in LISTS {
+            assert!(on_list(list, &r, today).is_some(), "{list}");
+        }
+        assert_eq!(on_list("everyone", &r, today), None);
+    }
+
+    #[test]
+    fn the_count_and_the_list_agree() {
+        let today = d(2026, 6, 1);
+        let day = |n: i64| today + chrono::Duration::days(n);
+        let mut rows = Vec::new();
+        for n in [-5, 0, 10, 31, 45, 61, 90, 200] {
+            for ext in [0, 3] {
+                rows.push(row(Some(day(n)), n == -5, ext));
+            }
+        }
+        let c = contingent_counts(&rows, today, 0);
+        let got = [
+            c.ending_within_30,
+            c.ending_31_to_60,
+            c.ending_61_to_90,
+            c.past_end_undecided,
+            c.much_extended,
+            c.long_running_contractors,
+        ];
+        for (list, count) in LISTS.iter().zip(got) {
+            let listed = rows
+                .iter()
+                .filter(|r| on_list(list, r, today) == Some(true))
+                .count();
+            assert_eq!(count, Some(listed), "{list}");
+        }
     }
 }

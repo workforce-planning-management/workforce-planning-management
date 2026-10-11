@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — snapshots by basis, the contingent trend and the named lists (WPM-T139, WPM-T109, WPM-T142)
+
+Migration `000065` adds contractor and fixed-term headcount and FTE to the headcount snapshots (older rows stay unknown). The contingent
+view gains a `trend` (insufficient_history until three usable dates span 60 calendar days) and `GET /api/engagements/contingent-list?list=`
+names the people behind each engagement figure by worker number (HR only, audited).
+
+### Added — contingent workforce view, engagement figures (WPM-T142)
+
+`GET /api/workforce-intelligence/contingent` gains an `engagements` object: engagements ending in 0–30, 31–60 and 61–90 calendar days
+(separate bands, never running totals), past their end with no decision, extended more than twice, and contractors engaged longer than
+24 calendar months. A count of one to nine is withheld, zero is shown, and no total is given. The two thresholds are constants.
+
 ### Added — idempotency keys (WPM-T222)
 
 A request that changes something and carries an `Idempotency-Key` runs once per caller: the response of a success is kept for one calendar

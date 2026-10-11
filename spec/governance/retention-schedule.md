@@ -33,8 +33,12 @@ ignored.
   response it earned are kept for **one calendar day** and deleted by the request that next arrives with any key
   (WPM-R132). The stored response may repeat what the first response held, which is why it is kept so briefly.
   It is not exported with a worker or erased with one; it is gone within a calendar day.
+- **Does not cover** post funding (`post_fundings`), which is not soft-deleted: clearing it deletes the row at once, and
+  erasing the worker deletes it with them, so there is no deleted state to hold and sweep (WPM-T109, WPM-T161). It holds a kind,
+  a programme reference and an end date, never an amount.
 - **Does not cover** the audit log (`audit_logs`), the headcount snapshots (aggregates, no
-  names), the erasure ledger (a pid and a time, which no longer identifies anyone) or
+  names; since WPM-T139 they also hold contractor and fixed-term headcount and FTE per department and date, which are counts, and
+  are kept as the history a trend needs), the erasure ledger (a pid and a time, which no longer identifies anyone) or
   backups. Backups expire after `BACKUP_RETENTION_DAYS` (default 35 calendar days;
   [backup-and-restore](../operations/backup-and-restore.md)). A deployer sets a retention
   for the audit log in their own policy: this repository does not delete it.

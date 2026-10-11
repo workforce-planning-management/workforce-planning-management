@@ -234,6 +234,11 @@ async fn a_conversion_is_proposed_by_a_manager_approved_by_someone_else_and_read
         for (name, token) in [("the worker", &me), ("the manager", &manager), ("a neighbour", &neighbour)] {
             assert_eq!(get(contingent.into(), token.clone()).await.status_code(), 403, "{name} does not read the contingent view");
         }
+        let named = "/api/engagements/contingent-list?list=ending_within_30";
+        for (name, token) in [("the worker", &me), ("the manager", &manager), ("a neighbour", &neighbour)] {
+            assert_eq!(get(named.into(), token.clone()).await.status_code(), 403, "{name} does not read the named list");
+        }
+        assert_eq!(get(named.into(), hr.clone()).await.status_code(), 200);
         let view = get(contingent.into(), hr.clone()).await;
         assert_eq!(view.status_code(), 200);
         assert!(!view.text().contains(&w), "the aggregate names no one");

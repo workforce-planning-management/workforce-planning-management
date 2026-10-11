@@ -12,10 +12,16 @@ use serde_json::json;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{post_fundings, workers};
+use crate::models::_entities::{
+    engagement_decisions, engagement_extensions, headcount_snapshots, post_fundings, workers,
+};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::need_to_know::facts_for;
+use crate::rules::engagement::{
+    ContingentCounts, ContingentEngagement, EXTENSION_THRESHOLD, LISTS, LONG_RUNNING_MONTHS,
+    contingent_counts, on_list,
+};
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::funding as rules;
 use crate::validation::Problems;
@@ -176,6 +182,156 @@ async fn clear_funding(
     format::json(view(&worker, None))
 }
 
+/// The people employed on `today` in the caller's scope (`None` is everyone).
+async fn employed_in_scope(
+    ctx: &AppContext,
+    scope: Option<&[String]>,
+    today: chrono::NaiveDate,
+) -> Result<Vec<workers::Model>> {
+    Ok(workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .filter(|w| crate::rules::metrics::is_employed_on(today, w.hired_on, w.terminated_on))
+        .filter(|w| scope.is_none_or(|refs| refs.iter().any(|r| r == &w.organization_ref)))
+        .collect())
+}
+
+/// Each contractor and fixed-term person among `staff`, as the engagement rules see them.
+async fn engagements_of<'a>(
+    ctx: &AppContext,
+    staff: &'a [workers::Model],
+) -> Result<Vec<(&'a workers::Model, ContingentEngagement)>> {
+    let contingent_staff: Vec<&workers::Model> = staff
+        .iter()
+        .filter(|w| matches!(w.employment_type.as_str(), "contractor" | "fixed_term"))
+        .collect();
+    let contingent_pids: Vec<uuid::Uuid> = contingent_staff.iter().map(|w| w.pid).collect();
+    let decisions = engagement_decisions::Entity::find()
+        .filter(engagement_decisions::Column::WorkerPid.is_in(contingent_pids.clone()))
+        .all(&ctx.db)
+        .await?;
+    let extensions = engagement_extensions::Entity::find()
+        .filter(engagement_extensions::Column::WorkerPid.is_in(contingent_pids))
+        .all(&ctx.db)
+        .await?;
+    Ok(contingent_staff
+        .into_iter()
+        .map(|w| {
+            let engagement = ContingentEngagement {
+                contractor: w.employment_type == "contractor",
+                hired_on: w.hired_on,
+                ends_on: w.engagement_ends_on,
+                decided: w.engagement_ends_on.is_some_and(|end| {
+                    decisions
+                        .iter()
+                        .any(|d| d.worker_pid == w.pid && d.ends_on == end)
+                }),
+                extensions: extensions.iter().filter(|x| x.worker_pid == w.pid).count(),
+            };
+            (w, engagement)
+        })
+        .collect())
+}
+
+/// The engagement figures of the contingent view (WPM-R86) for the people employed today.
+async fn engagement_counts(
+    ctx: &AppContext,
+    staff: &[workers::Model],
+    today: chrono::NaiveDate,
+    floor: usize,
+) -> Result<ContingentCounts> {
+    let engagements: Vec<ContingentEngagement> = engagements_of(ctx, staff)
+        .await?
+        .into_iter()
+        .map(|(_, e)| e)
+        .collect();
+    Ok(contingent_counts(&engagements, today, floor))
+}
+
+/// Query for the named list.
+#[derive(Debug, Deserialize)]
+struct ListQuery {
+    list: Option<String>,
+}
+
+/// `GET /api/engagements/contingent-list?list=` — the people behind one figure of the contingent
+/// view (WPM-R86), by worker number, for HR to act on. The tokens are `ending_within_30`,
+/// `ending_31_to_60`, `ending_61_to_90`, `past_end_undecided`, `much_extended` and
+/// `long_running_contractors`. HR only, **audited**, and no floor: HR is entitled to know who.
+/// Shows no pay and no name, only the worker number, department, basis and dates.
+#[debug_handler]
+async fn contingent_list(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+) -> Result<Response> {
+    let list = query.list.unwrap_or_default();
+    if !LISTS.contains(&list.as_str()) {
+        return Err(unprocessable(&format!(
+            "list must be one of {}",
+            LISTS.join(", ")
+        )));
+    }
+    let today = chrono::Utc::now().date_naive();
+    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let staff = employed_in_scope(&ctx, scope.as_deref(), today).await?;
+    let mut found: Vec<_> = engagements_of(&ctx, &staff)
+        .await?
+        .into_iter()
+        .filter(|(_, e)| on_list(&list, e, today) == Some(true))
+        .collect();
+    found.sort_by(|a, b| a.0.worker_number.cmp(&b.0.worker_number));
+    Audit::record(
+        &ctx.db,
+        "contingent_workforce",
+        uuid::Uuid::nil(),
+        "contingent_list_read",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    format::json(json!({
+        "list": list,
+        "people": found.iter().map(|(w, e)| json!({
+            "worker_pid": w.pid,
+            "worker_number": w.worker_number,
+            "department": w.department,
+            "employment_type": w.employment_type,
+            "hired_on": w.hired_on,
+            "engagement_ends_on": w.engagement_ends_on,
+            "extensions": e.extensions,
+            "decision_recorded": e.decided,
+        })).collect::<Vec<_>>(),
+    }))
+}
+
+/// The trend of the contingent share from the headcount snapshots in the caller's scope.
+async fn snapshot_trend(
+    ctx: &AppContext,
+    scope: Option<&[String]>,
+    floor: usize,
+) -> Result<rules::ContingentTrend> {
+    let mut select = headcount_snapshots::Entity::find();
+    if let Some(refs) = scope {
+        select = select.filter(headcount_snapshots::Column::OrganizationRef.is_in(refs.to_vec()));
+    }
+    let rows: Vec<rules::SplitRow> = select
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|r| rules::SplitRow {
+            as_of: r.as_of,
+            headcount: i64::from(r.headcount),
+            fte: r.fte_percent_total,
+            contractor_fte: r.contractor_fte_percent_total,
+            fixed_term_fte: r.fixed_term_fte_percent_total,
+        })
+        .collect();
+    Ok(rules::contingent_trend(&rows, floor))
+}
+
 /// `GET /api/workforce-intelligence/contingent` — the share of FTE that is contractor and that is
 /// fixed-term (each apart), and the funding horizon: who is left when each month's money runs out
 /// (WPM-R62). Aggregate only, names no one, small groups withheld. HR only.
@@ -183,18 +339,7 @@ async fn clear_funding(
 async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| crate::rules::metrics::is_employed_on(today, w.hired_on, w.terminated_on))
-        .filter(|w| {
-            scope
-                .as_ref()
-                .is_none_or(|refs| refs.iter().any(|r| r == &w.organization_ref))
-        })
-        .collect();
+    let staff = employed_in_scope(&ctx, scope.as_deref(), today).await?;
     let rows: Vec<(String, String, i32)> = staff
         .iter()
         .map(|w| {
@@ -219,6 +364,8 @@ async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
         .filter_map(|f| Some((f.ends_on?, *fte_of.get(&f.worker_pid)?)))
         .collect();
     let horizon = rules::funding_horizon(&ends, today, HORIZON_MONTHS, floor);
+    let counts = engagement_counts(&ctx, &staff, today, floor).await?;
+    let trend = snapshot_trend(&ctx, scope.as_deref(), floor).await?;
     Audit::record(
         &ctx.db,
         "contingent_workforce",
@@ -244,13 +391,38 @@ async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
         "funding_ends": horizon.iter().map(|m| json!({
             "month": m.month, "people": m.people, "fte": m.fte,
         })).collect::<Vec<_>>(),
+        "trend": {
+            "status": trend.status,
+            "points": trend.points.iter().map(|p| json!({
+                "as_of": p.as_of,
+                "contractor_percent_of_fte": p.contractor_percent,
+                "fixed_term_percent_of_fte": p.fixed_term_percent,
+            })).collect::<Vec<_>>(),
+            "dates_left_out_without_split": trend.dates_without_split,
+            "dates_left_out_below_floor": trend.dates_below_floor,
+        },
+        "engagements": {
+            "ending_within_30_calendar_days": counts.ending_within_30,
+            "ending_31_to_60_calendar_days": counts.ending_31_to_60,
+            "ending_61_to_90_calendar_days": counts.ending_61_to_90,
+            "past_end_with_no_decision": counts.past_end_undecided,
+            "extended_more_than": { "times": EXTENSION_THRESHOLD, "people": counts.much_extended },
+            "contractors_engaged_longer_than": {
+                "calendar_months": LONG_RUNNING_MONTHS,
+                "people": counts.long_running_contractors,
+            },
+            "note": "The ending figures are separate bands, not running totals, and no total is given, so a \
+                     withheld one cannot be worked out. A count of one to nine is withheld; zero is shown. \
+                     An engagement with no end date is in none of the ending figures. The two thresholds are \
+                     fixed in the code, not yet configurable.",
+        },
         "derivation": "Contractor and fixed-term are each a share of the FTE of the people employed today, so \
                        part-time work counts for what it is. The department breakdown shows only when every \
                        department reaches the floor, so a withheld one cannot be worked out from the others. \
                        Funding ends counts people employed today whose recorded funding ends in that month, \
                        or already has; a month with some but fewer than the floor is withheld, and no total is \
                        given, so it cannot be worked out. A worker with no funding recorded is not counted. \
-                       Trend over time needs the snapshots split by basis (WPM-T139), which are not built.",
+                       The trend uses only snapshots recorded with the split by basis; older snapshots are unknown, not zero, and with fewer than three usable dates over at least 60 calendar days it says insufficient_history.",
     }))
 }
 
@@ -262,4 +434,5 @@ pub fn routes() -> Routes {
         .add("/workers/{pid}/funding", put(set_funding))
         .add("/workers/{pid}/funding", delete(clear_funding))
         .add("/workforce-intelligence/contingent", get(contingent))
+        .add("/engagements/contingent-list", get(contingent_list))
 }
