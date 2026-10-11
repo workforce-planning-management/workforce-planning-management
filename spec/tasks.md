@@ -3327,3 +3327,14 @@ deployer's lawful basis and impact assessment before they are switched on.
       headings and table rows as the source and the same peer ids; the link and days checks pass. **Not verified:** no native speaker reviewed any
       translation (each page says an AI wrote it); the right-to-left pages (Arabic, Urdu) were not rendered, so their layout is unchecked; role
       names are translated by meaning and may differ from the titles a deployer's organization uses.
+- [x] WPM-T221 (2026-10-11) **The UI sends an Idempotency-Key.** *(traces to WPM-R132, WPM-D80)* `api()` in the UI's client adds the header to every
+      method but GET, HEAD and OPTIONS, new for each action and reusable on a retry (`idempotencyKey`); `newIdempotencyKey()` falls back to 128
+      random bits where `crypto.randomUUID` is missing; the proxy forwards only a plain 16 to 64 character token (`src/lib/idempotency.ts`). 11 unit
+      tests (`tests/unit/idempotency.test.ts`), **mutation-checked** four ways (no header; header on reads; a retry's key ignored; the proxy
+      forwarding anything), each failing a test. **Not verified:** the browser tests (Playwright) were not run; no real API was called; one
+      unrelated unit test (`untranslated.test.ts`, server tokens for equality-monitoring categories with no translation) was already failing
+      before this change and still fails. **Not done:** the API ignores the key (WPM-T222).
+- [ ] WPM-T222 **The API recognises a repeated Idempotency-Key.** *(traces to WPM-R132)* Store the key with the caller, the method and path, a hash of the
+      body and the response; replay the stored response for a repeat, answer `422` for the same key with a different body, expire keys after a stated
+      number of calendar days, hold no personal data in the stored response beyond what the first response held, and say so in the retention
+      schedule. Request tests for a repeat, a clash and an expiry; an enforcement test that one caller cannot replay another's key.

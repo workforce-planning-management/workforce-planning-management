@@ -118,8 +118,26 @@ sign-in enforcement explicitly off** (see its header).
   production against a non-loopback address (refused; started with the override and the warning; a loopback
   address started without either). The request identifier is on every response (`x-request-id`).
 
+## WPM-R132 — The UI sends an Idempotency-Key (built 2026-10-11, client side only)
+
+- Every request the bundled UI makes that can change something (any method but GET, HEAD and OPTIONS) carries an
+  `Idempotency-Key` header: a random UUID, or 128 random bits in hexadecimal where `crypto.randomUUID` is missing.
+  A read never carries one.
+- The key names one user action. The client function takes an optional `idempotencyKey`, so a retry of the same action
+  passes the original key back; two different actions never share one.
+- The same-origin proxy forwards the header to the API only when it is a plain token (letters, digits, hyphen and
+  underscore, 16 to 64 characters) and drops anything else.
+- **The API does not act on the key yet.** It ignores the header, so a repeated request is still processed twice. The key
+  is the half of the feature a server needs; recognising a repeat (storing the key with the first response and replaying it)
+  is a separate change, WPM-T222 in [tasks.md](tasks.md).
+
 ## Decisions
 
+- **WPM-D80 The client names the action; the server will decide what a repeat means.** The key is made where the user acts
+  (one per action, not per HTTP attempt), so a retry after a lost response or a double click can be told from a new
+  action. The proxy checks the key's shape only; it keeps no state, because deduplication belongs next to the data it
+  protects. Sending the header before the API honours it is harmless (an unknown header is ignored) and means the UI
+  needs no further change when the API does.
 - **WPM-D78 The shared cache holds non-personal lookups only, and fails open.** Loco's cache provider is Redis in
   production and the demo (so several instances share one) and in memory in development and tests. What may be cached is
   a closed list in `src/shared_cache.rs` (`Namespace`): the names of organizations and courses from the services that

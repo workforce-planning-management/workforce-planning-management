@@ -10,6 +10,7 @@
 import type { RequestHandler } from "./$types";
 import { WPM_API_URL } from "#lib/server/config.js";
 import { exchangeToken } from "#lib/server/auth.js";
+import { isIdempotencyKey } from "#lib/idempotency.js";
 
 const proxy: RequestHandler = async ({
   request,
@@ -28,6 +29,11 @@ const proxy: RequestHandler = async ({
   headers.delete("connection");
   headers.delete("content-length");
   headers.set("accepts-version", "1.0");
+
+  // Pass an idempotency key through only if it is a plain token (WPM-R132);
+  // anything else is dropped rather than forwarded.
+  const key = headers.get("idempotency-key");
+  if (key !== null && !isIdempotencyKey(key)) headers.delete("idempotency-key");
 
   // Session → short-lived PASETO, server-side only (WPM-T18).
   if (locals.sessionId) {
