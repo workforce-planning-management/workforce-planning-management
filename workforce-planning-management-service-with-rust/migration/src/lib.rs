@@ -78,6 +78,7 @@ mod m20261012_000062_conversion_plans;
 mod m20261012_000063_post_fundings;
 mod m20261012_000064_idempotency_keys;
 mod m20261012_000065_snapshots_by_basis;
+mod m20261012_000066_plan_basis_and_programme;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -155,6 +156,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261012_000063_post_fundings::Migration),
             Box::new(m20261012_000064_idempotency_keys::Migration),
             Box::new(m20261012_000065_snapshots_by_basis::Migration),
+            Box::new(m20261012_000066_plan_basis_and_programme::Migration),
             // inject-above (do not remove this comment)
         ]
     }

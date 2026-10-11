@@ -20,6 +20,14 @@ pub struct Model {
     pub target_on: Date,
     pub target_headcount: i32,
     pub note: Option<String>,
+    /// The programme the demand serves (`thing:` URN), if any.
+    pub programme_ref: Option<String>,
+    /// FTE target in percent of one person across the headcount; `None` is unknown, not zero.
+    pub target_fte_percent: Option<i32>,
+    /// The engagement basis of the demand.
+    pub basis: String,
+    /// The last day the demanded engagements run, for a basis that ends.
+    pub expected_ends_on: Option<Date>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

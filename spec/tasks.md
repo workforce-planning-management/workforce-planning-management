@@ -2742,12 +2742,25 @@ payroll defect and need nothing else; do them first.
 - [x] WPM-T139 (2026-10-11) **Snapshots by basis.** *(WPM-R84)* Migration `000065` adds nullable contractor and fixed-term headcount and FTE to `headcount_snapshots`; `snapshot_headcount` fills them (`rules::metrics::snapshot_rows`, tested); older rows are NULL, which means unknown. Not exposed per department. Original scope: Migration adding per-basis
       headcount and FTE to `headcount_snapshots`; the snapshot task fills them; older
       rows report `unknown` for the split. Request test.
-- [ ] WPM-T140 **Programme, FTE and basis on demand lines and requisitions.**
-      *(WPM-R82)* Migration and API for `plan_demand_lines` (programme URN, FTE,
-      basis, expected end) and `requisitions` (programme URN, basis, expected
-      duration); hire carries the basis and end date onto the worker. The forecast
-      reports by department and by programme, in headcount and FTE, using WPM-T135.
-      Levers add fixed-term hire and engage a contractor. Request tests.
+- [x] WPM-T140 (2026-10-11) **Programme, FTE and basis on demand lines and requisitions.** *(WPM-R82)* Migration `000066`:
+      `plan_demand_lines` gains `programme_ref` (a `thing:` URN), `target_fte_percent` (not stated is unknown, never assumed to be
+      the headcount), `basis` (default `permanent`) and `expected_ends_on`; `requisitions` gain `programme_ref`, `basis` and
+      `expected_duration_months`. Checks in the database and in `rules::planning`: an end date (or a duration in calendar months)
+      is required for `fixed_term` and `contractor`, allowed for `intern`, refused for `permanent`, after the target date, at most
+      120 months; an FTE target is between 0 and 100 for each head. The demand-line key now includes basis and programme, so a
+      permanent and a fixed-term line for one department, role and date can both exist (**found by a request test: the first
+      attempt failed with a 500 on the old unique index, and the migration now replaces it**). **The hire carries the
+      requisition's basis, and the end date it implies** (hire date plus the duration, to the day before), unless the hire states
+      its own. **The forecast** now projects each basis on its own terms through `project_by_basis` (WPM-T135): permanent staff by
+      the attrition rate, fixed-term, contractor and intern on their recorded end dates, so it also gives supply by basis, FTE,
+      the FTE gap (only when every line states an FTE), demand by basis and by programme, and a plan-wide list by programme and
+      date; the levers add `fixed_term_hire` and `engage_contractor` for a shortfall. 6 new unit tests; 2 request tests.
+      **Mutation-checked** six ways (an unknown FTE summed as zero; the duration off by one day; the FTE bound; an end date on the
+      target date; the hire ignoring the requisition's basis; supply ignoring end dates), each failing a test. **Not done:** the
+      hire does not create a post funding from the requisition's programme (funding stays HR's record, WPM-T161); the supply is
+      not split by programme (workers carry a programme only through their funding); a lever is a suggestion, not a plan action;
+      the user interface (WPM-T143). **Changed behaviour:** with no permanent staff in a department the supply is now known without
+      an attrition rate, where before it was withheld.
 - [x] WPM-T141 (2026-10-11) **Programme roll-up.** *(WPM-R83, WPM-D59)* `GET /api/workforce-intelligence/programmes` (HR only,
       audited as `programme_rollup_read`): per programme (the programme URN on a worker's post funding, WPM-T161) and month for twelve
       months from the current one: FTE funded (funding with no end, or ending on or after the first of the month), the contractor and

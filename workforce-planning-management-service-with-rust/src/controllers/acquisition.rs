@@ -15,7 +15,7 @@ use crate::models::_entities::{
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
-use crate::rules::{engagement, lifecycle, tokens};
+use crate::rules::{engagement, lifecycle, planning, tokens};
 use crate::streaming;
 use crate::validation::Problems;
 
@@ -33,6 +33,19 @@ struct RequisitionPayload {
     salary_max_minor: Option<i64>,
     #[serde(default)]
     salary_currency: Option<String>,
+    /// The programme the post serves (`thing:` URN).
+    #[serde(default)]
+    programme_ref: Option<String>,
+    /// `permanent` (default), `fixed_term`, `contractor` or `intern` (WPM-R82).
+    #[serde(default = "default_basis")]
+    basis: String,
+    /// How long a basis that ends is expected to run, in calendar months.
+    #[serde(default)]
+    expected_duration_months: Option<i32>,
+}
+
+fn default_basis() -> String {
+    "permanent".to_string()
 }
 
 /// `POST /api/candidates` body.
@@ -155,6 +168,16 @@ async fn create_requisition(
     {
         problems.push("salary_min_minor exceeds salary_max_minor".to_string());
     }
+    problems.ref_opt(
+        "programme_ref",
+        entity_ref::EntityType::Thing,
+        payload.programme_ref.as_deref(),
+    );
+    if let Err(message) =
+        planning::validate_requisition_basis(&payload.basis, payload.expected_duration_months)
+    {
+        problems.push(message);
+    }
     ensure_valid(&problems.into_vec())?;
     let txn = ctx.db.begin().await?;
     let row = requisitions::ActiveModel {
@@ -169,6 +192,9 @@ async fn create_requisition(
         status: ActiveValue::set("draft".to_string()),
         opened_on: ActiveValue::set(None),
         deleted_at: ActiveValue::set(None),
+        programme_ref: ActiveValue::set(payload.programme_ref.clone()),
+        basis: ActiveValue::set(payload.basis.clone()),
+        expected_duration_months: ActiveValue::set(payload.expected_duration_months),
         ..Default::default()
     }
     .insert(&txn)
@@ -542,10 +568,11 @@ async fn application_stage(
             .ok_or_else(|| unprocessable("hiring requires worker_number"))?;
         let mut problems = Problems::new();
         problems.require_ref("person_ref", entity_ref::EntityType::Person, &person_ref);
+        // The hire carries the requisition's basis, and the end it implies, unless told otherwise.
         let employment_type = payload
             .employment_type
             .clone()
-            .unwrap_or_else(|| "permanent".to_string());
+            .unwrap_or_else(|| requisition.basis.clone());
         problems.require_token(
             "employment_type",
             tokens::EMPLOYMENT_TYPES,
@@ -554,12 +581,15 @@ async fn application_stage(
         let hired_on = payload
             .hired_on
             .unwrap_or_else(|| chrono::Utc::now().date_naive());
+        let engagement_ends_on = payload.engagement_ends_on.or_else(|| {
+            (employment_type == requisition.basis)
+                .then_some(requisition.expected_duration_months)
+                .flatten()
+                .and_then(|months| planning::end_from_duration(hired_on, months))
+        });
         if engagement::Basis::parse(&employment_type).is_some()
-            && let Err(message) = engagement::validate_end_date(
-                &employment_type,
-                hired_on,
-                payload.engagement_ends_on,
-            )
+            && let Err(message) =
+                engagement::validate_end_date(&employment_type, hired_on, engagement_ends_on)
         {
             problems.push(message);
         }
@@ -581,7 +611,7 @@ async fn application_stage(
             salary_currency: ActiveValue::set(payload.salary_currency.clone()),
             hired_on: ActiveValue::set(hired_on),
             terminated_on: ActiveValue::set(None),
-            engagement_ends_on: ActiveValue::set(payload.engagement_ends_on),
+            engagement_ends_on: ActiveValue::set(engagement_ends_on),
             deleted_at: ActiveValue::set(None),
             ..Default::default()
         }

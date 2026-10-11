@@ -229,6 +229,10 @@ fn line_json(l: &plan_demand_lines::Model, titles: &BTreeMap<Uuid, String>) -> s
         "job_title": l.role_profile_pid.and_then(|r| titles.get(&r)),
         "target_on": l.target_on,
         "target_headcount": l.target_headcount,
+        "target_fte": l.target_fte_percent.map(|f| f64::from(f) / 100.0),
+        "basis": l.basis,
+        "expected_ends_on": l.expected_ends_on,
+        "programme_ref": l.programme_ref,
         "note": l.note,
     })
 }
@@ -363,8 +367,25 @@ struct LinePayload {
     role_profile_pid: Option<Uuid>,
     target_on: chrono::NaiveDate,
     target_headcount: i32,
+    /// FTE across the headcount, in percent of one person (`250` is two and a half people); not
+    /// stated is unknown, never assumed to be the headcount.
+    #[serde(default)]
+    target_fte_percent: Option<i32>,
+    /// `permanent` (default), `fixed_term`, `contractor` or `intern` (WPM-R82).
+    #[serde(default = "default_basis")]
+    basis: String,
+    /// The last day a basis that ends runs.
+    #[serde(default)]
+    expected_ends_on: Option<chrono::NaiveDate>,
+    /// The programme the demand serves (`thing:` URN).
+    #[serde(default)]
+    programme_ref: Option<String>,
     #[serde(default)]
     note: Option<String>,
+}
+
+fn default_basis() -> String {
+    "permanent".to_string()
 }
 
 /// `PUT /api/workforce-plans/{pid}/demand-lines` — set planned headcount
@@ -380,6 +401,11 @@ async fn set_line(
     ensure_editable(&plan)?;
     let mut problems = Problems::new();
     problems.cap_text("department", &payload.department);
+    problems.ref_opt(
+        "programme_ref",
+        entity_ref::EntityType::Thing,
+        payload.programme_ref.as_deref(),
+    );
     if let Some(note) = &payload.note {
         problems.cap_text("note", note);
     }
@@ -390,6 +416,14 @@ async fn set_line(
         plan.horizon_start,
         plan.horizon_end,
         payload.target_headcount,
+    )
+    .map_err(|e| unprocessable(&e))?;
+    rules::validate_line_basis(
+        &payload.basis,
+        payload.target_on,
+        payload.expected_ends_on,
+        payload.target_headcount,
+        payload.target_fte_percent,
     )
     .map_err(|e| unprocessable(&e))?;
     if let Some(role) = payload.role_profile_pid {
@@ -404,7 +438,12 @@ async fn set_line(
     let mut existing = plan_demand_lines::Entity::find()
         .filter(plan_demand_lines::Column::PlanPid.eq(plan.pid))
         .filter(plan_demand_lines::Column::Department.eq(&department))
-        .filter(plan_demand_lines::Column::TargetOn.eq(payload.target_on));
+        .filter(plan_demand_lines::Column::TargetOn.eq(payload.target_on))
+        .filter(plan_demand_lines::Column::Basis.eq(&payload.basis));
+    existing = match payload.programme_ref.as_deref() {
+        Some(programme) => existing.filter(plan_demand_lines::Column::ProgrammeRef.eq(programme)),
+        None => existing.filter(plan_demand_lines::Column::ProgrammeRef.is_null()),
+    };
     existing = match payload.role_profile_pid {
         Some(role) => existing.filter(plan_demand_lines::Column::RoleProfilePid.eq(role)),
         None => existing.filter(plan_demand_lines::Column::RoleProfilePid.is_null()),
@@ -413,6 +452,8 @@ async fn set_line(
         Some(row) => {
             let mut active: plan_demand_lines::ActiveModel = row.into();
             active.target_headcount = ActiveValue::set(payload.target_headcount);
+            active.target_fte_percent = ActiveValue::set(payload.target_fte_percent);
+            active.expected_ends_on = ActiveValue::set(payload.expected_ends_on);
             active.note = ActiveValue::set(payload.note.clone());
             active.update(&ctx.db).await?
         }
@@ -424,6 +465,10 @@ async fn set_line(
                 role_profile_pid: ActiveValue::set(payload.role_profile_pid),
                 target_on: ActiveValue::set(payload.target_on),
                 target_headcount: ActiveValue::set(payload.target_headcount),
+                target_fte_percent: ActiveValue::set(payload.target_fte_percent),
+                basis: ActiveValue::set(payload.basis.clone()),
+                expected_ends_on: ActiveValue::set(payload.expected_ends_on),
+                programme_ref: ActiveValue::set(payload.programme_ref.clone()),
                 note: ActiveValue::set(payload.note.clone()),
                 ..Default::default()
             }
@@ -640,6 +685,34 @@ async fn resolve_attrition(
     })
 }
 
+/// Hundredths of a person as a number of people.
+#[allow(clippy::cast_precision_loss)]
+fn centi(hundredths: i64) -> f64 {
+    hundredths as f64 / 100.0
+}
+
+fn supply_json(part: &rules::BasisSupply) -> serde_json::Value {
+    serde_json::json!({
+        "headcount": part.headcount,
+        "fte": part.fte_centi.map(centi),
+        "no_end_date_counted_as_continuing": part.no_end_date,
+        "leaving_before_the_date": part.leaving_before,
+    })
+}
+
+/// The demand lines of one group, as the rules see them.
+fn demand_lines_of(group: &[&plan_demand_lines::Model]) -> Vec<rules::DemandLine> {
+    group
+        .iter()
+        .map(|l| rules::DemandLine {
+            programme: l.programme_ref.clone(),
+            basis: l.basis.clone(),
+            headcount: i64::from(l.target_headcount),
+            fte_percent: l.target_fte_percent.map(i64::from),
+        })
+        .collect()
+}
+
 /// `GET /api/workforce-plans/{pid}/forecast` — supply projection and gaps
 /// per department per target date, with the assumptions and derivation.
 ///
@@ -693,10 +766,31 @@ async fn forecast(
                 .filter(|w| &w.department == department)
                 .collect();
             let opening = in_dept.len();
-            let demand: i64 = group.iter().map(|l| i64::from(l.target_headcount)).sum();
+            let demand_lines = demand_lines_of(group);
+            let rules::Breakdown {
+                total: demand_total,
+                by_basis,
+                by_programme,
+            } = rules::demand_breakdown(&demand_lines);
+            let demand = demand_total.headcount;
             let days = (*target_on - today).num_days().max(0);
-            let supply = attrition.map(|bp| rules::project_supply(opening, bp, days));
+            let people: Vec<rules::Person> = in_dept
+                .iter()
+                .map(|w| rules::Person {
+                    basis: crate::rules::engagement::Basis::parse(&w.employment_type)
+                        .unwrap_or(crate::rules::engagement::Basis::Permanent),
+                    fte_percent: w.fte_percent,
+                    ends_on: w.engagement_ends_on,
+                })
+                .collect();
+            let projection =
+                rules::project_by_basis(&people, today, *target_on, attrition, source);
+            let supply = projection.total_headcount;
             let gap = supply.map(|s| rules::headcount_gap(demand, s));
+            let gap_fte = demand_total
+                .fte_percent
+                .zip(projection.total_fte_centi)
+                .map(|(d, s)| rules::headcount_gap(d, s));
             let competency: Vec<serde_json::Value> = group
                 .iter()
                 .filter_map(|line| line.role_profile_pid.map(|role| (line, role)))
@@ -734,17 +828,52 @@ async fn forecast(
                 "days_ahead": days,
                 "opening_headcount": opening,
                 "planned_demand": demand,
+                "planned_demand_fte": demand_total.fte_percent.map(centi),
+                "demand_by_basis": by_basis.iter().map(|(basis, t)| serde_json::json!({
+                    "basis": basis, "headcount": t.headcount, "fte": t.fte_percent.map(centi),
+                })).collect::<Vec<_>>(),
+                "demand_by_programme": by_programme.iter().map(|(programme, t)| serde_json::json!({
+                    "programme_ref": programme, "headcount": t.headcount, "fte": t.fte_percent.map(centi),
+                })).collect::<Vec<_>>(),
                 "projected_supply": supply,
+                "projected_supply_fte": projection.total_fte_centi.map(centi),
+                "supply_by_basis": {
+                    "permanent": supply_json(&projection.permanent),
+                    "fixed_term": supply_json(&projection.fixed_term),
+                    "contractor": supply_json(&projection.contractor),
+                    "intern": supply_json(&projection.intern),
+                },
+                "supply_assumptions": projection.assumptions,
                 "headcount_gap": gap,
+                "fte_gap": gap_fte.map(centi),
                 "levers": gap.map(rules::suggested_levers),
                 "competency_gaps": competency,
             })
         })
         .collect();
 
+    // Demand by programme and date across the whole plan.
+    let mut dates: BTreeMap<chrono::NaiveDate, Vec<&plan_demand_lines::Model>> = BTreeMap::new();
+    for line in &lines {
+        dates.entry(line.target_on).or_default().push(line);
+    }
+    let programmes: Vec<serde_json::Value> = dates
+        .iter()
+        .flat_map(|(date, group)| {
+            let by_programme = rules::demand_breakdown(&demand_lines_of(group)).by_programme;
+            by_programme.into_iter().map(move |(programme, t)| {
+                serde_json::json!({
+                    "target_on": date, "programme_ref": programme,
+                    "headcount": t.headcount, "fte": t.fte_percent.map(centi),
+                })
+            })
+        })
+        .collect();
     format::json(serde_json::json!({
         "derivation": "opening = employed workers in the department today; projected supply = \
-                       opening less expected leavers at the stated attrition (no hires assumed); \
+                       each basis on its own terms: permanent staff leave at the stated attrition, \
+                       fixed-term, contractor and intern engagements on their recorded end dates \
+                       (no hires assumed); \
                        gap = planned demand − projected supply (positive = shortfall). Lines for \
                        the same department and date add up. Competency counts EMPLOYED workers in \
                        the department whose DECLARED proficiency meets the requirement; the \
@@ -758,6 +887,7 @@ async fn forecast(
             "hires_assumed": 0,
         },
         "departments": departments,
+        "programmes": programmes,
     }))
 }
 

@@ -921,3 +921,130 @@ async fn the_programme_rollup_shows_a_programme_at_the_floor_and_leaves_out_a_sm
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// A requisition carries programme, basis and duration (WPM-R82); the hire carries the basis and the end date.
+async fn a_requisition_carries_its_basis_and_programme_onto_the_hire() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let programme = format!("thing:{}", uuid::Uuid::new_v4());
+        let body = |extra: Value| {
+            let mut b = json!({ "organization_ref": org, "department": "engineering", "job_title": "Fixed Engineer", "headcount": 1 });
+            b.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
+            b
+        };
+        for (why, extra) in [
+            ("fixed-term needs a duration", json!({ "basis": "fixed_term" })),
+            ("permanent has no duration", json!({ "basis": "permanent", "expected_duration_months": 6 })),
+            ("a duration beyond ten years", json!({ "basis": "contractor", "expected_duration_months": 121 })),
+            ("a programme must be a thing URN", json!({ "programme_ref": "not-a-urn" })),
+            ("an unknown basis", json!({ "basis": "volunteer" })),
+        ] {
+            assert_eq!(request.post("/api/requisitions").json(&body(extra)).await.status_code(), 422, "{why}");
+        }
+        let made: Value = request
+            .post("/api/requisitions")
+            .json(&body(json!({ "basis": "fixed_term", "expected_duration_months": 6, "programme_ref": programme })))
+            .await
+            .json();
+        let req = made["pid"].as_str().unwrap().to_string();
+        let shown: Value = request.get(&format!("/api/requisitions/{req}")).await.json();
+        assert_eq!((shown["basis"].as_str(), shown["expected_duration_months"].as_i64()), (Some("fixed_term"), Some(6)));
+        assert_eq!(shown["programme_ref"], programme.as_str());
+        for to in ["open", "interviewing"] {
+            request.post(&format!("/api/requisitions/{req}/status")).json(&json!({ "to": to })).await.assert_status_ok();
+        }
+        let candidate: Value = request.post("/api/candidates")
+            .json(&json!({ "display_name": "Test Applicant 140", "email": "a140@example.com", "source": "referral", "person_ref": a_person() }))
+            .await.json();
+        let application: Value = request.post(&format!("/api/requisitions/{req}/applications"))
+            .json(&json!({ "candidate_pid": candidate["pid"] })).await.json();
+        let app = application["pid"].as_str().unwrap().to_string();
+        let stage = format!("/api/applications/{app}/stage");
+        for to in ["screened", "interviewing", "offer"] {
+            request.post(&stage).json(&json!({ "to": to })).await.assert_status_ok();
+        }
+        // No basis and no end date on the hire: both come from the requisition.
+        let hired: Value = request.post(&stage)
+            .json(&json!({ "to": "hired", "worker_number": format!("RQ-{tag}"), "hired_on": "2026-01-05" }))
+            .await.json();
+        let worker = hired["worker_pid"].as_str().expect("hired").to_string();
+        let w: Value = request.get(&format!("/api/workers/{worker}")).await.json();
+        assert_eq!(w["employment_type"], "fixed_term");
+        let e: Value = request.get(&format!("/api/workers/{worker}/engagement")).await.json();
+        assert_eq!(e["engagement_ends_on"], "2026-07-04", "six calendar months from 5 January, to the day before");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// Demand lines carry programme, FTE and basis (WPM-R82); the forecast reports them and projects each basis on its own terms.
+async fn demand_lines_by_basis_and_programme_reach_the_forecast() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let programme = format!("thing:{}", uuid::Uuid::new_v4());
+        let dept = format!("fc-{tag}");
+        // One permanent, one fixed-term ending before the target, one contractor ending after it.
+        for (i, (kind, ends)) in [("permanent", None), ("fixed_term", Some("2027-03-31")), ("contractor", Some("2028-01-31"))].into_iter().enumerate() {
+            let r = request.post("/api/workers").json(&json!({
+                "person_ref": a_person(), "organization_ref": org, "worker_number": format!("FC-{tag}-{i}"),
+                "display_name": "Test Worker FC", "employment_type": kind, "department": dept,
+                "job_title": "Engineer", "hired_on": "2026-01-05", "engagement_ends_on": ends,
+            })).await;
+            assert_eq!(r.status_code(), 200, "{}", r.text());
+        }
+        let plan: Value = request.post("/api/workforce-plans").json(&json!({
+            "name": "Basis plan", "organization_ref": org,
+            "horizon_start": "2026-01-01", "horizon_end": "2028-12-31", "attrition_bp": 0,
+        })).await.json();
+        let plan = plan["pid"].as_str().unwrap().to_string();
+        let line = |body: Value| request.put(&format!("/api/workforce-plans/{plan}/demand-lines")).json(&body);
+        for (why, body) in [
+            ("fixed-term needs an end", json!({ "basis": "fixed_term" })),
+            ("permanent has no end", json!({ "basis": "permanent", "expected_ends_on": "2027-12-31" })),
+            ("FTE beyond the heads", json!({ "target_fte_percent": 301 })),
+            ("a programme must be a thing URN", json!({ "programme_ref": "nope" })),
+        ] {
+            let mut b = json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 3 });
+            b.as_object_mut().unwrap().extend(body.as_object().unwrap().clone());
+            assert_eq!(line(b).await.status_code(), 422, "{why}");
+        }
+        line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 2, "target_fte_percent": 150, "programme_ref": programme })).await.assert_status_ok();
+        line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 1, "basis": "fixed_term", "expected_ends_on": "2027-12-31", "programme_ref": programme })).await.assert_status_ok();
+        line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 1, "basis": "contractor", "expected_ends_on": "2027-12-31" })).await.assert_status_ok();
+        let shown: Value = request.get(&format!("/api/workforce-plans/{plan}")).await.json();
+        assert_eq!(shown["demand_lines"].as_array().unwrap().len(), 3, "the same department and date can hold a line for each basis");
+        let f: Value = request.get(&format!("/api/workforce-plans/{plan}/forecast")).await.json();
+        let d = &f["departments"][0];
+        assert_eq!(d["planned_demand"], 4);
+        assert!(d["planned_demand_fte"].is_null(), "two lines state no FTE, so the total is unknown, not guessed");
+        let basis = |name: &str| d["demand_by_basis"].as_array().unwrap().iter().find(|b| b["basis"] == name).cloned().unwrap();
+        assert_eq!(basis("permanent")["fte"], 1.5);
+        assert!(basis("fixed_term")["fte"].is_null());
+        let by_prog = d["demand_by_programme"].as_array().unwrap();
+        assert_eq!(by_prog.iter().find(|p| p["programme_ref"] == programme.as_str()).unwrap()["headcount"], 3);
+        assert_eq!(by_prog.iter().find(|p| p["programme_ref"].is_null()).unwrap()["headcount"], 1);
+        // Supply on 30 June 2027: the permanent stays (no attrition), the fixed-term left on 31 March, the contractor remains.
+        let sb = &d["supply_by_basis"];
+        assert_eq!(sb["permanent"]["headcount"], 1);
+        assert_eq!(sb["fixed_term"]["headcount"], 0);
+        assert_eq!(sb["fixed_term"]["leaving_before_the_date"], 1);
+        assert_eq!(sb["contractor"]["headcount"], 1);
+        assert_eq!(d["projected_supply"], 2);
+        assert_eq!(d["headcount_gap"], 2);
+        let levers: Vec<_> = d["levers"].as_array().unwrap().iter().map(|l| l.as_str().unwrap()).collect();
+        assert!(levers.contains(&"fixed_term_hire") && levers.contains(&"engage_contractor"));
+        assert!(f["programmes"].as_array().unwrap().iter().any(|p| p["programme_ref"] == programme.as_str() && p["headcount"] == 3));
+        // The same key again updates the line instead of adding one.
+        line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 2, "target_fte_percent": 200, "programme_ref": programme })).await.assert_status_ok();
+        let again: Value = request.get(&format!("/api/workforce-plans/{plan}")).await.json();
+        assert_eq!(again["demand_lines"].as_array().unwrap().len(), 3);
+    })
+    .await;
+}

@@ -25,6 +25,12 @@ pub struct Model {
     pub opened_on: Option<Date>,
     pub filled_on: Option<Date>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
+    /// The programme the post serves (`thing:` URN), if any.
+    pub programme_ref: Option<String>,
+    /// The engagement basis of the post.
+    pub basis: String,
+    /// How long a basis that ends is expected to last, in calendar months.
+    pub expected_duration_months: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

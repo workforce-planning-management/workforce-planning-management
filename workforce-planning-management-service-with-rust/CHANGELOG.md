@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — programme, FTE and basis on demand lines and requisitions (WPM-T140)
+
+Migration `000066`. A demand line carries a programme, an FTE target (unknown when not stated) and a basis with an end date; a
+requisition carries a programme, a basis and an expected duration; a hire carries the basis and the end date onto the worker. The forecast
+projects each basis on its own terms and reports demand and supply by basis, FTE, and demand by programme; shortfall levers add a
+fixed-term hire and a contractor. With no permanent staff, supply no longer waits for an attrition rate.
+
 ### Added — programme roll-up (WPM-T141)
 
 `GET /api/workforce-intelligence/programmes` (HR only, audited): per programme and month, FTE funded, the contractor and fixed-term share,

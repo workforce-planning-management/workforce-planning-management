@@ -48,7 +48,7 @@ pub fn spec() -> Value {
             },
             "/api/benefit-enrollments/{pid}": { "delete": { "tags": ["benefits"], "summary": "Unenrol (soft delete)", "responses": ok("Deleted") } },
             "/api/requisitions": {
-                "post": { "tags": ["acquisition"], "summary": "Open a requisition (draft; headcount; salary band)", "responses": created },
+                "post": { "tags": ["acquisition"], "summary": "Open a requisition (draft; headcount; salary band; optional programme thing: URN; basis permanent, fixed_term, contractor or intern with expected_duration_months in calendar months, required for the first two ending bases). A hire carries the basis, and the end date it implies, onto the worker unless told otherwise", "responses": created },
                 "get": { "tags": ["acquisition"], "summary": "List requisitions (?status=)", "responses": ok("Requisitions") }
             },
             "/api/requisitions/{pid}": { "get": { "tags": ["acquisition"], "summary": "Fetch a requisition", "responses": ok("Requisition") } },
@@ -382,11 +382,11 @@ pub fn spec() -> Value {
             "/api/workforce-plans": { "get": { "tags": ["planning"], "summary": "Workforce plans (scenarios) in the caller's organizations (?organization=)", "responses": ok("Plans") }, "post": { "tags": ["planning"], "summary": "Open a draft workforce plan: horizon, rationale, optional attrition assumption (basis points)", "responses": ok("Pid") } },
             "/api/workforce-plans/{pid}": { "get": { "tags": ["planning"], "summary": "A plan with demand lines and objectives", "responses": ok("Plan") } },
             "/api/workforce-plans/{pid}/status": { "post": { "tags": ["planning"], "summary": "draft -> active -> archived (one active plan per organization)", "responses": ok("Pid") } },
-            "/api/workforce-plans/{pid}/demand-lines": { "put": { "tags": ["planning"], "summary": "Set planned headcount for a department (optionally a role) at a date (upsert)", "responses": ok("Pid") } },
+            "/api/workforce-plans/{pid}/demand-lines": { "put": { "tags": ["planning"], "summary": "Set planned headcount for a department (optionally a role) at a date, with an optional FTE target (target_fte_percent; not stated is unknown), basis (permanent, fixed_term, contractor or intern; expected_ends_on required for the first two) and programme (a thing: URN). Upsert on department, role, date, basis and programme", "responses": ok("Pid") } },
             "/api/workforce-plans/{pid}/demand-lines/{line_pid}": { "delete": { "tags": ["planning"], "summary": "Remove a demand line", "responses": ok("Ok") } },
             "/api/workforce-plans/{pid}/demand-lines/{line_pid}/objectives": { "put": { "tags": ["planning"], "summary": "Replace the objectives a demand line serves", "responses": ok("Ok") } },
             "/api/workforce-plans/{pid}/objectives": { "post": { "tags": ["planning"], "summary": "Add a strategic objective", "responses": ok("Pid") } },
-            "/api/workforce-plans/{pid}/forecast": { "get": { "tags": ["planning"], "summary": "Supply projection, headcount gap and competency gaps per department and date, with assumptions", "responses": ok("Forecast") } },
+            "/api/workforce-plans/{pid}/forecast": { "get": { "tags": ["planning"], "summary": "Supply projection (each basis on its own terms), headcount and FTE gap, demand by basis and by programme, and competency gaps per department and date, with assumptions", "responses": ok("Forecast") } },
             "/api/workforce-plans/{pid}/cost": { "get": { "tags": ["planning"], "summary": "Annual cost of hiring to close the gaps vs the plan budget (?currency=); salary-derived, withheld without unmasked read", "responses": ok("PlanCost") } },
             "/api/workforce-plans/{pid}/alignment": { "get": { "tags": ["planning"], "summary": "Share of planned headcount tied to objectives; unresourced objectives; unaligned lines", "responses": ok("Alignment") } },
             "/api/workforce-intelligence/succession": { "get": { "tags": ["intelligence"], "summary": "Bench strength + single points of failure (criticality × risk of loss)", "responses": ok("Succession") } },

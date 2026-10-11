@@ -88,6 +88,158 @@ pub fn validate_line(
     Ok(())
 }
 
+/// The most calendar months a requisition is expected to run.
+pub const MAX_DURATION_MONTHS: i32 = 120;
+
+/// Check the basis of a demand line (WPM-R82): a known basis; an end date required for
+/// `fixed_term` and `contractor`, allowed for `intern`, refused for `permanent`, and after the
+/// target date; and an FTE target that is not negative and does not exceed one full-time person
+/// per head.
+///
+/// # Errors
+/// A message naming the offending field.
+pub fn validate_line_basis(
+    basis: &str,
+    target_on: NaiveDate,
+    expected_ends_on: Option<NaiveDate>,
+    target_headcount: i32,
+    target_fte_percent: Option<i32>,
+) -> Result<(), String> {
+    use crate::rules::engagement::{Basis, EndDate, end_date_rule};
+    let parsed = Basis::parse(basis)
+        .ok_or_else(|| "basis must be permanent, fixed_term, contractor or intern".to_string())?;
+    match (end_date_rule(parsed), expected_ends_on) {
+        (EndDate::Required, None) => {
+            return Err(format!("expected_ends_on is required for a {basis} line"));
+        }
+        (EndDate::Refused, Some(_)) => {
+            return Err("expected_ends_on is not allowed for a permanent line".to_string());
+        }
+        _ => {}
+    }
+    if expected_ends_on.is_some_and(|end| end <= target_on) {
+        return Err("expected_ends_on must be after target_on".to_string());
+    }
+    if let Some(fte) = target_fte_percent
+        && !(0..=target_headcount.saturating_mul(100)).contains(&fte)
+    {
+        return Err(
+            "target_fte_percent must be between 0 and 100 for each person of target_headcount"
+                .to_string(),
+        );
+    }
+    Ok(())
+}
+
+/// Check the basis of a requisition (WPM-R82): a known basis, and an expected duration in calendar
+/// months required for `fixed_term` and `contractor`, allowed for `intern`, refused for `permanent`.
+///
+/// # Errors
+/// A message naming the offending field.
+pub fn validate_requisition_basis(basis: &str, duration_months: Option<i32>) -> Result<(), String> {
+    use crate::rules::engagement::{Basis, EndDate, end_date_rule};
+    let parsed = Basis::parse(basis)
+        .ok_or_else(|| "basis must be permanent, fixed_term, contractor or intern".to_string())?;
+    match (end_date_rule(parsed), duration_months) {
+        (EndDate::Required, None) => {
+            return Err(format!(
+                "expected_duration_months is required for a {basis} requisition"
+            ));
+        }
+        (EndDate::Refused, Some(_)) => {
+            return Err(
+                "expected_duration_months is not allowed for a permanent requisition".to_string(),
+            );
+        }
+        _ => {}
+    }
+    if duration_months.is_some_and(|m| !(1..=MAX_DURATION_MONTHS).contains(&m)) {
+        return Err(format!(
+            "expected_duration_months must be between 1 and {MAX_DURATION_MONTHS}"
+        ));
+    }
+    Ok(())
+}
+
+/// The last day of an engagement that starts on `hired_on` and runs `months` calendar months: the
+/// day before the same day `months` later. `None` for a start that cannot take the duration.
+#[must_use]
+pub fn end_from_duration(hired_on: NaiveDate, months: i32) -> Option<NaiveDate> {
+    let months = u32::try_from(months).ok()?;
+    hired_on
+        .checked_add_months(chrono::Months::new(months))?
+        .pred_opt()
+}
+
+/// One demand line as the forecast sees it.
+#[derive(Debug, Clone)]
+pub struct DemandLine {
+    /// The programme, if any.
+    pub programme: Option<String>,
+    /// The basis token.
+    pub basis: String,
+    /// Planned headcount.
+    pub headcount: i64,
+    /// FTE target in percent; `None` when not stated.
+    pub fte_percent: Option<i64>,
+}
+
+/// Planned demand for one group of lines: headcount, and FTE only when **every** line states one
+/// (a line without an FTE target makes the total unknown, never a guess).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DemandTotal {
+    /// People.
+    pub headcount: i64,
+    /// FTE in percent; `None` when any line gives none.
+    pub fte_percent: Option<i64>,
+}
+
+fn total(lines: &[&DemandLine]) -> DemandTotal {
+    DemandTotal {
+        headcount: lines.iter().map(|l| l.headcount).sum(),
+        fte_percent: lines.iter().map(|l| l.fte_percent).sum::<Option<i64>>(),
+    }
+}
+
+/// Demand for the lines, in total, by basis and by programme (WPM-R82). A line with no programme is
+/// under `None`. Bases and programmes appear in order.
+#[must_use]
+pub fn demand_breakdown(lines: &[DemandLine]) -> Breakdown {
+    use std::collections::BTreeMap;
+    let all: Vec<&DemandLine> = lines.iter().collect();
+    let mut by_basis: BTreeMap<&str, Vec<&DemandLine>> = BTreeMap::new();
+    let mut by_programme: BTreeMap<Option<&str>, Vec<&DemandLine>> = BTreeMap::new();
+    for l in lines {
+        by_basis.entry(&l.basis).or_default().push(l);
+        by_programme
+            .entry(l.programme.as_deref())
+            .or_default()
+            .push(l);
+    }
+    Breakdown {
+        total: total(&all),
+        by_basis: by_basis
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), total(&v)))
+            .collect(),
+        by_programme: by_programme
+            .into_iter()
+            .map(|(k, v)| (k.map(str::to_string), total(&v)))
+            .collect(),
+    }
+}
+
+/// Demand in total, by basis and by programme.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Breakdown {
+    /// All the lines.
+    pub total: DemandTotal,
+    /// By basis token.
+    pub by_basis: Vec<(String, DemandTotal)>,
+    /// By programme; `None` is the lines with no programme.
+    pub by_programme: Vec<(Option<String>, DemandTotal)>,
+}
+
 /// One recorded headcount snapshot, aggregated over the series being rated.
 #[derive(Debug, Clone, Copy)]
 pub struct Snap {
@@ -333,7 +485,13 @@ pub fn headcount_gap(demand: i64, supply: i64) -> i64 {
 #[must_use]
 pub fn suggested_levers(gap: i64) -> Vec<&'static str> {
     match gap.cmp(&0) {
-        std::cmp::Ordering::Greater => vec!["hire", "reskill", "promote"],
+        std::cmp::Ordering::Greater => vec![
+            "hire",
+            "fixed_term_hire",
+            "engage_contractor",
+            "reskill",
+            "promote",
+        ],
         std::cmp::Ordering::Less => vec!["redeploy"],
         std::cmp::Ordering::Equal => Vec::new(),
     }
@@ -605,10 +763,139 @@ mod tests {
     fn gap_and_levers() {
         assert_eq!(headcount_gap(12, 9), 3);
         assert_eq!(headcount_gap(8, 9), -1);
-        assert_eq!(suggested_levers(3), ["hire", "reskill", "promote"]);
+        assert_eq!(
+            suggested_levers(3),
+            [
+                "hire",
+                "fixed_term_hire",
+                "engage_contractor",
+                "reskill",
+                "promote"
+            ]
+        );
         assert_eq!(suggested_levers(-1), ["redeploy"]);
         assert_eq!(suggested_levers(0), Vec::<&str>::new());
         assert_eq!(competency_shortfall(10, 4), 6);
         assert_eq!(competency_shortfall(3, 8), 0);
+    }
+
+    #[test]
+    fn a_line_basis_needs_an_end_date_only_where_the_basis_ends() {
+        let on = day(2026, 6, 1);
+        let end = Some(day(2027, 6, 1));
+        assert!(validate_line_basis("permanent", on, None, 2, None).is_ok());
+        assert!(validate_line_basis("permanent", on, end, 2, None).is_err());
+        assert!(validate_line_basis("fixed_term", on, None, 2, None).is_err());
+        assert!(validate_line_basis("fixed_term", on, end, 2, None).is_ok());
+        assert!(validate_line_basis("contractor", on, end, 2, None).is_ok());
+        assert!(validate_line_basis("intern", on, None, 2, None).is_ok());
+        assert!(validate_line_basis("intern", on, end, 2, None).is_ok());
+        assert!(validate_line_basis("volunteer", on, None, 2, None).is_err());
+        assert!(
+            validate_line_basis("fixed_term", on, Some(on), 2, None).is_err(),
+            "the end is after the target date, not on it"
+        );
+    }
+
+    #[test]
+    fn an_fte_target_is_bounded_by_the_heads() {
+        let on = day(2026, 6, 1);
+        assert!(validate_line_basis("permanent", on, None, 3, Some(300)).is_ok());
+        assert!(validate_line_basis("permanent", on, None, 3, Some(301)).is_err());
+        assert!(validate_line_basis("permanent", on, None, 3, Some(-1)).is_err());
+        assert!(validate_line_basis("permanent", on, None, 3, Some(0)).is_ok());
+    }
+
+    #[test]
+    fn a_requisition_duration_follows_the_basis() {
+        assert!(validate_requisition_basis("permanent", None).is_ok());
+        assert!(validate_requisition_basis("permanent", Some(6)).is_err());
+        assert!(validate_requisition_basis("contractor", None).is_err());
+        assert!(validate_requisition_basis("contractor", Some(6)).is_ok());
+        assert!(validate_requisition_basis("fixed_term", Some(0)).is_err());
+        assert!(validate_requisition_basis("fixed_term", Some(120)).is_ok());
+        assert!(validate_requisition_basis("fixed_term", Some(121)).is_err());
+        assert!(validate_requisition_basis("intern", None).is_ok());
+    }
+
+    #[test]
+    fn a_duration_ends_the_day_before_the_same_day_later() {
+        assert_eq!(end_from_duration(day(2026, 1, 5), 6), Some(day(2026, 7, 4)));
+        assert_eq!(
+            end_from_duration(day(2026, 1, 31), 1),
+            Some(day(2026, 2, 27))
+        );
+        assert_eq!(
+            end_from_duration(day(2026, 1, 1), 12),
+            Some(day(2026, 12, 31))
+        );
+        assert_eq!(end_from_duration(day(2026, 1, 1), -1), None);
+    }
+
+    #[test]
+    fn demand_fte_is_unknown_when_any_line_gives_none() {
+        let line = |p: Option<&str>, basis: &str, h: i64, f: Option<i64>| DemandLine {
+            programme: p.map(str::to_string),
+            basis: basis.into(),
+            headcount: h,
+            fte_percent: f,
+        };
+        let Breakdown {
+            total: all,
+            by_basis,
+            by_programme,
+        } = demand_breakdown(&[
+            line(Some("thing:a"), "permanent", 2, Some(200)),
+            line(Some("thing:a"), "fixed_term", 1, Some(50)),
+            line(None, "permanent", 3, None),
+        ]);
+        assert_eq!(
+            (all.headcount, all.fte_percent),
+            (6, None),
+            "one unknown makes the total unknown"
+        );
+        let basis = |name: &str| {
+            by_basis
+                .iter()
+                .find(|(k, _)| k == name)
+                .map(|(_, t)| t.clone())
+        };
+        assert_eq!(
+            basis("fixed_term").unwrap(),
+            DemandTotal {
+                headcount: 1,
+                fte_percent: Some(50)
+            }
+        );
+        assert_eq!(
+            basis("permanent").unwrap(),
+            DemandTotal {
+                headcount: 5,
+                fte_percent: None
+            }
+        );
+        let prog = by_programme
+            .iter()
+            .find(|(k, _)| k.as_deref() == Some("thing:a"))
+            .unwrap();
+        assert_eq!(
+            prog.1,
+            DemandTotal {
+                headcount: 3,
+                fte_percent: Some(250)
+            }
+        );
+        assert!(
+            by_programme.iter().any(|(k, _)| k.is_none()),
+            "lines with no programme stay apart"
+        );
+    }
+
+    #[test]
+    fn a_shortfall_offers_the_contingent_levers_too() {
+        let levers = suggested_levers(2);
+        assert!(levers.contains(&"fixed_term_hire") && levers.contains(&"engage_contractor"));
+        assert_eq!(levers[0], "hire");
+        assert!(!suggested_levers(-1).contains(&"engage_contractor"));
     }
 }
