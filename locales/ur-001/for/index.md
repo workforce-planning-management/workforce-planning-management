@@ -4,17 +4,17 @@
 
 | کردار | صفحہ |
 | --- | --- |
-| چیف ایگزیکٹو آفیسر (CEO) | [chief-executive-officer](chief-executive-officer/index.md) |
-| چیف آپریٹنگ آفیسر (COO) | [chief-operating-officer](chief-operating-officer/index.md) |
-| چیف ٹیکنالوجی آفیسر (CTO) | [chief-technology-officer](chief-technology-officer/index.md) |
-| چیف انفارمیشن آفیسر (CIO) | [chief-information-officer](chief-information-officer/index.md) |
-| چیف رسک آفیسر (CRO) | [chief-risk-officer](chief-risk-officer/index.md) |
-| چیف لیگل آفیسر (CLO) | [chief-legal-officer](chief-legal-officer/index.md) |
-| چیف پیپل آفیسر (CPO) | [chief-people-officer](chief-people-officer/index.md) |
-| چیف اسٹریٹجی آفیسر | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| چیف سیکیورٹی آفیسر | [chief-security-officer](chief-security-officer/index.md) |
-| گورننس، رسک، تعمیل | [governance-risk-compliance](governance-risk-compliance/index.md) |
-| آزاد سیکیورٹی ٹیسٹنگ (اسے منگوانے کے لیے مختصر بیان) | [independent-security-tester](independent-security-tester/index.md) |
+| چیف ایگزیکٹو آفیسر (CEO) | [چیف-ایگزیکٹو-آفیسر](چیف-ایگزیکٹو-آفیسر/index.md) |
+| چیف آپریٹنگ آفیسر (COO) | [چیف-آپریٹنگ-آفیسر](چیف-آپریٹنگ-آفیسر/index.md) |
+| چیف ٹیکنالوجی آفیسر (CTO) | [چیف-ٹیکنالوجی-آفیسر](چیف-ٹیکنالوجی-آفیسر/index.md) |
+| چیف انفارمیشن آفیسر (CIO) | [چیف-انفارمیشن-آفیسر](چیف-انفارمیشن-آفیسر/index.md) |
+| چیف رسک آفیسر (CRO) | [چیف-رسک-آفیسر](چیف-رسک-آفیسر/index.md) |
+| چیف لیگل آفیسر (CLO) | [چیف-لیگل-آفیسر](چیف-لیگل-آفیسر/index.md) |
+| چیف پیپل آفیسر (CPO) | [چیف-پیپل-آفیسر](چیف-پیپل-آفیسر/index.md) |
+| چیف اسٹریٹجی آفیسر | [چیف-اسٹریٹجی-آفیسر](چیف-اسٹریٹجی-آفیسر/index.md) |
+| چیف سیکیورٹی آفیسر | [چیف-سیکیورٹی-آفیسر](چیف-سیکیورٹی-آفیسر/index.md) |
+| گورننس، رسک، تعمیل | [گورننس-رسک-تعمیل](گورننس-رسک-تعمیل/index.md) |
+| آزاد سیکیورٹی ٹیسٹنگ (اسے منگوانے کے لیے مختصر بیان) | [آزاد-سیکیورٹی-ٹیسٹر](آزاد-سیکیورٹی-ٹیسٹر/index.md) |
 
 [تیاری کے جائزے](../../../spec/readiness-assessment.md) سے شروع کریں: فیصلہ یہ ہے کہ یہ ڈیمو سافٹ ویئر ہے اور اعلیٰ یقین دہانی والے ادارے میں پیداواری استعمال کے لیے تیار نہیں۔
 

@@ -17,7 +17,7 @@ locale is `en-gb-oxendict` (British English with Oxford spelling): see
 | locales/<locale>/for/chief-strategy-officer/index.md     | Chief Strategy Officer     |
 | locales/<locale>/for/chief-security-officer/index.md     | Chief Security Officer     |
 | locales/<locale>/for/governance-risk-compliance/index.md | Governance, Risk, Compliance |
-| locales/<locale>/for/independent-security-testing/index.md | Independent security testing (a brief for commissioning it, not a role) |
+| locales/<locale>/for/independent-security-tester/index.md | Independent security testing (a brief for commissioning it, not a role) |
 
 For each `index.md`, `README.md` is a symlink to it (the same convention as the rest of this repository).
 
@@ -52,9 +52,12 @@ For each `index.md`, `README.md` is a symlink to it (the same convention as the 
 
 Each folder under `for/` (and `for/` itself) holds `index.md`, a `README.md` symlink to it, and a `.locale-peer-id` file:
 32 lowercase hexadecimal characters and a newline, **byte-identical in every locale** for the same page. Folder names
-(slugs) are the same in every locale, as the table above requires; the guidance of
-[locales-for-global-sharing-with-svelte](../locales-for-global-sharing-with-svelte/index.md) to use native-script slugs
-for translated locales was not followed here, so that every path matches this file.
+(slugs) are **per locale**, following [locales-for-global-sharing-with-svelte](../locales-for-global-sharing-with-svelte/index.md):
+the English locales (`en-gb-oxendict`, `en-001`, `en-us`, `en-gb`) keep the English names in the table above, and every
+translated locale names each page folder in its own language and script (for example `首席执行官`, `geschäftsführung`,
+`الرئيس-التنفيذي`), lowercase, joined by hyphens, with no spaces. The `<role>` names in the table are therefore the English
+ones and the key of the page; the same page in another locale is found by its `.locale-peer-id`, not by its name. The folder
+`for/` is not translated. A copy locale (`zh-001`, `hi-001`, `cy-001`, `de-001`, `es-001`) has the same slugs as its source.
 
 Each translated page keeps every link target, table row and heading of the source, and ends with a note that an AI wrote
 the translation and no native speaker has reviewed it. Code, paths, requirement ids and API routes are not translated.

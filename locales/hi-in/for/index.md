@@ -4,17 +4,17 @@
 
 | भूमिका | पृष्ठ |
 | --- | --- |
-| मुख्य कार्यकारी अधिकारी | [chief-executive-officer](chief-executive-officer/index.md) |
-| मुख्य परिचालन अधिकारी | [chief-operating-officer](chief-operating-officer/index.md) |
-| मुख्य प्रौद्योगिकी अधिकारी | [chief-technology-officer](chief-technology-officer/index.md) |
-| मुख्य सूचना अधिकारी | [chief-information-officer](chief-information-officer/index.md) |
-| मुख्य जोखिम अधिकारी | [chief-risk-officer](chief-risk-officer/index.md) |
-| मुख्य विधि अधिकारी | [chief-legal-officer](chief-legal-officer/index.md) |
-| मुख्य जन (मानव संसाधन) अधिकारी | [chief-people-officer](chief-people-officer/index.md) |
-| मुख्य रणनीति अधिकारी | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| मुख्य सुरक्षा अधिकारी | [chief-security-officer](chief-security-officer/index.md) |
-| शासन, जोखिम, अनुपालन | [governance-risk-compliance](governance-risk-compliance/index.md) |
-| स्वतंत्र सुरक्षा परीक्षण (इसे करवाने के लिए संक्षिप्त विवरण) | [independent-security-tester](independent-security-tester/index.md) |
+| मुख्य कार्यकारी अधिकारी | [मुख्य-कार्यकारी-अधिकारी](मुख्य-कार्यकारी-अधिकारी/index.md) |
+| मुख्य परिचालन अधिकारी | [मुख्य-परिचालन-अधिकारी](मुख्य-परिचालन-अधिकारी/index.md) |
+| मुख्य प्रौद्योगिकी अधिकारी | [मुख्य-प्रौद्योगिकी-अधिकारी](मुख्य-प्रौद्योगिकी-अधिकारी/index.md) |
+| मुख्य सूचना अधिकारी | [मुख्य-सूचना-अधिकारी](मुख्य-सूचना-अधिकारी/index.md) |
+| मुख्य जोखिम अधिकारी | [मुख्य-जोखिम-अधिकारी](मुख्य-जोखिम-अधिकारी/index.md) |
+| मुख्य विधि अधिकारी | [मुख्य-विधि-अधिकारी](मुख्य-विधि-अधिकारी/index.md) |
+| मुख्य जन (मानव संसाधन) अधिकारी | [मुख्य-जन-अधिकारी](मुख्य-जन-अधिकारी/index.md) |
+| मुख्य रणनीति अधिकारी | [मुख्य-रणनीति-अधिकारी](मुख्य-रणनीति-अधिकारी/index.md) |
+| मुख्य सुरक्षा अधिकारी | [मुख्य-सुरक्षा-अधिकारी](मुख्य-सुरक्षा-अधिकारी/index.md) |
+| शासन, जोखिम, अनुपालन | [शासन-जोखिम-अनुपालन](शासन-जोखिम-अनुपालन/index.md) |
+| स्वतंत्र सुरक्षा परीक्षण (इसे करवाने के लिए संक्षिप्त विवरण) | [स्वतंत्र-सुरक्षा-परीक्षक](स्वतंत्र-सुरक्षा-परीक्षक/index.md) |
 
 पहले [तत्परता मूल्यांकन](../../../spec/readiness-assessment.md) पढ़ें: निष्कर्ष यह है कि यह डेमो सॉफ़्टवेयर है और उच्च-आश्वासन वाले संगठन में उत्पादन के उपयोग के लिए तैयार नहीं है।
 

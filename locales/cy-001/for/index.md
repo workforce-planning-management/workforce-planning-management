@@ -4,17 +4,17 @@ Un dudalen ar gyfer pob rôl arwain, sy'n dweud beth mae Workforce Planning Mana
 
 | Rôl | Tudalen |
 | --- | --- |
-| Prif Swyddog Gweithredol | [chief-executive-officer](chief-executive-officer/index.md) |
-| Prif Swyddog Gweithrediadau | [chief-operating-officer](chief-operating-officer/index.md) |
-| Prif Swyddog Technoleg | [chief-technology-officer](chief-technology-officer/index.md) |
-| Prif Swyddog Gwybodaeth | [chief-information-officer](chief-information-officer/index.md) |
-| Prif Swyddog Risg | [chief-risk-officer](chief-risk-officer/index.md) |
-| Prif Swyddog Cyfreithiol | [chief-legal-officer](chief-legal-officer/index.md) |
-| Prif Swyddog Pobl | [chief-people-officer](chief-people-officer/index.md) |
-| Prif Swyddog Strategaeth | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| Prif Swyddog Diogelwch | [chief-security-officer](chief-security-officer/index.md) |
-| Llywodraethu, Risg, Cydymffurfio | [governance-risk-compliance](governance-risk-compliance/index.md) |
-| Profi diogelwch annibynnol (briff ar gyfer ei gomisiynu) | [independent-security-tester](independent-security-tester/index.md) |
+| Prif Swyddog Gweithredol | [prif-swyddog-gweithredol](prif-swyddog-gweithredol/index.md) |
+| Prif Swyddog Gweithrediadau | [prif-swyddog-gweithrediadau](prif-swyddog-gweithrediadau/index.md) |
+| Prif Swyddog Technoleg | [prif-swyddog-technoleg](prif-swyddog-technoleg/index.md) |
+| Prif Swyddog Gwybodaeth | [prif-swyddog-gwybodaeth](prif-swyddog-gwybodaeth/index.md) |
+| Prif Swyddog Risg | [prif-swyddog-risg](prif-swyddog-risg/index.md) |
+| Prif Swyddog Cyfreithiol | [prif-swyddog-cyfreithiol](prif-swyddog-cyfreithiol/index.md) |
+| Prif Swyddog Pobl | [prif-swyddog-pobl](prif-swyddog-pobl/index.md) |
+| Prif Swyddog Strategaeth | [prif-swyddog-strategaeth](prif-swyddog-strategaeth/index.md) |
+| Prif Swyddog Diogelwch | [prif-swyddog-diogelwch](prif-swyddog-diogelwch/index.md) |
+| Llywodraethu, Risg, Cydymffurfio | [llywodraethu-risg-cydymffurfio](llywodraethu-risg-cydymffurfio/index.md) |
+| Profi diogelwch annibynnol (briff ar gyfer ei gomisiynu) | [profwr-diogelwch-annibynnol](profwr-diogelwch-annibynnol/index.md) |
 
 Dechreuwch gyda'r [asesiad parodrwydd](../../../spec/readiness-assessment.md): y dyfarniad yw mai meddalwedd arddangos yw hwn ac nad yw'n barod i'w ddefnyddio'n gynhyrchiol mewn sefydliad sydd angen sicrwydd uchel.
 

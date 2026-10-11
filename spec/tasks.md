@@ -3348,3 +3348,12 @@ deployer's lawful basis and impact assessment before they are switched on.
       several instances at once or two truly concurrent requests under one key (the claim is a single `INSERT ... ON CONFLICT`, reasoned and not
       raced by a test); a response over 256 KiB is not kept; the UI was not run against this API; the OpenAPI schemas cover only the funding and
       contingent answers, not every older endpoint.
+- [x] WPM-T223 (2026-10-11) **The security-testing brief in every locale, and translated slugs.** *(traces to WPM-R131, WPM-D79)* The page
+      `for/independent-security-tester/` (a brief for commissioning an independent test; WPM-T201 stays open) added to every locale: copied or respelled for
+      `en-001`, `en-us` and `en-gb`, translated one language at a time for the rest, with the five copy locales recopied. **Slugs are now per locale:** in
+      the twelve translated languages (seventeen folders) all eleven page folders are renamed to native-script names and every link between pages, and in
+      each locale's index, is rewritten. Verified by a script: every locale has exactly its eleven folders, each with `index.md`, a `README.md` symlink and
+      the shared `.locale-peer-id`; link targets, headings and table rows match the source once the slugs are mapped back; the copies equal their sources; the
+      link and days checks pass. **Not verified:** no native speaker reviewed any translation or slug (the right-to-left pages were not rendered); non-ASCII
+      folder names were created on macOS and have not been checked out on another platform or served over a web path; the French slug avoids an apostrophe
+      (`dinformation`) on purpose; the English `Independent security tester` slug names a role while the page is a brief, which the user chose.

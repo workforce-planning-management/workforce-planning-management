@@ -4,17 +4,17 @@
 
 | Роль | Страница |
 | --- | --- |
-| Генеральный директор (CEO) | [chief-executive-officer](chief-executive-officer/index.md) |
-| Операционный директор (COO) | [chief-operating-officer](chief-operating-officer/index.md) |
-| Технический директор (CTO) | [chief-technology-officer](chief-technology-officer/index.md) |
-| Директор по информации (CIO) | [chief-information-officer](chief-information-officer/index.md) |
-| Директор по рискам (CRO) | [chief-risk-officer](chief-risk-officer/index.md) |
-| Директор по правовым вопросам (CLO) | [chief-legal-officer](chief-legal-officer/index.md) |
-| Директор по персоналу (CPO) | [chief-people-officer](chief-people-officer/index.md) |
-| Директор по стратегии | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| Директор по безопасности | [chief-security-officer](chief-security-officer/index.md) |
-| Управление, риски, соответствие | [governance-risk-compliance](governance-risk-compliance/index.md) |
-| Независимое тестирование безопасности (записка для его заказа) | [independent-security-tester](independent-security-tester/index.md) |
+| Генеральный директор (CEO) | [генеральный-директор](генеральный-директор/index.md) |
+| Операционный директор (COO) | [операционный-директор](операционный-директор/index.md) |
+| Технический директор (CTO) | [технический-директор](технический-директор/index.md) |
+| Директор по информации (CIO) | [директор-по-информации](директор-по-информации/index.md) |
+| Директор по рискам (CRO) | [директор-по-рискам](директор-по-рискам/index.md) |
+| Директор по правовым вопросам (CLO) | [директор-по-правовым-вопросам](директор-по-правовым-вопросам/index.md) |
+| Директор по персоналу (CPO) | [директор-по-персоналу](директор-по-персоналу/index.md) |
+| Директор по стратегии | [директор-по-стратегии](директор-по-стратегии/index.md) |
+| Директор по безопасности | [директор-по-безопасности](директор-по-безопасности/index.md) |
+| Управление, риски, соответствие | [управление-риски-соответствие](управление-риски-соответствие/index.md) |
+| Независимое тестирование безопасности (записка для его заказа) | [независимый-тестировщик-безопасности](независимый-тестировщик-безопасности/index.md) |
 
 Начните с [оценки готовности](../../../spec/readiness-assessment.md): вывод таков, что это демонстрационное программное обеспечение, не готовое к промышленной эксплуатации в организации с высокими требованиями к надёжности.
 

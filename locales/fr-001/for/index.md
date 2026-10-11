@@ -4,17 +4,17 @@ Une page pour chaque rôle de direction, qui dit ce que Workforce Planning Manag
 
 | Rôle | Page |
 | --- | --- |
-| Direction générale (CEO) | [chief-executive-officer](chief-executive-officer/index.md) |
-| Direction des opérations (COO) | [chief-operating-officer](chief-operating-officer/index.md) |
-| Direction technique (CTO) | [chief-technology-officer](chief-technology-officer/index.md) |
-| Direction des systèmes d’information (CIO) | [chief-information-officer](chief-information-officer/index.md) |
-| Direction des risques (CRO) | [chief-risk-officer](chief-risk-officer/index.md) |
-| Direction juridique (CLO) | [chief-legal-officer](chief-legal-officer/index.md) |
-| Direction des ressources humaines (CPO) | [chief-people-officer](chief-people-officer/index.md) |
-| Direction de la stratégie | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| Direction de la sécurité | [chief-security-officer](chief-security-officer/index.md) |
-| Gouvernance, risques, conformité | [governance-risk-compliance](governance-risk-compliance/index.md) |
-| Test de sécurité indépendant (note de cadrage pour le commander) | [independent-security-tester](independent-security-tester/index.md) |
+| Direction générale (CEO) | [direction-générale](direction-générale/index.md) |
+| Direction des opérations (COO) | [direction-des-opérations](direction-des-opérations/index.md) |
+| Direction technique (CTO) | [direction-technique](direction-technique/index.md) |
+| Direction des systèmes d’information (CIO) | [direction-des-systèmes-dinformation](direction-des-systèmes-dinformation/index.md) |
+| Direction des risques (CRO) | [direction-des-risques](direction-des-risques/index.md) |
+| Direction juridique (CLO) | [direction-juridique](direction-juridique/index.md) |
+| Direction des ressources humaines (CPO) | [direction-des-ressources-humaines](direction-des-ressources-humaines/index.md) |
+| Direction de la stratégie | [direction-de-la-stratégie](direction-de-la-stratégie/index.md) |
+| Direction de la sécurité | [direction-de-la-sécurité](direction-de-la-sécurité/index.md) |
+| Gouvernance, risques, conformité | [gouvernance-risques-conformité](gouvernance-risques-conformité/index.md) |
+| Test de sécurité indépendant (note de cadrage pour le commander) | [testeur-de-sécurité-indépendant](testeur-de-sécurité-indépendant/index.md) |
 
 Commencez par l’[évaluation de préparation](../../../spec/readiness-assessment.md) : le verdict est qu’il s’agit d’un logiciel de démonstration, qui n’est pas prêt pour un usage en production dans une organisation exigeant un haut niveau de garantie.
 

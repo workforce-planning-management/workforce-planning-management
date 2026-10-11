@@ -4,17 +4,17 @@ Una página para cada rol directivo, que dice qué ofrece Workforce Planning Man
 
 | Rol | Página |
 | --- | --- |
-| Dirección general (CEO) | [chief-executive-officer](chief-executive-officer/index.md) |
-| Dirección de operaciones (COO) | [chief-operating-officer](chief-operating-officer/index.md) |
-| Dirección de tecnología (CTO) | [chief-technology-officer](chief-technology-officer/index.md) |
-| Dirección de sistemas de información (CIO) | [chief-information-officer](chief-information-officer/index.md) |
-| Dirección de riesgos (CRO) | [chief-risk-officer](chief-risk-officer/index.md) |
-| Dirección jurídica (CLO) | [chief-legal-officer](chief-legal-officer/index.md) |
-| Dirección de personas (CPO) | [chief-people-officer](chief-people-officer/index.md) |
-| Dirección de estrategia | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| Dirección de seguridad | [chief-security-officer](chief-security-officer/index.md) |
-| Gobernanza, riesgo y cumplimiento | [governance-risk-compliance](governance-risk-compliance/index.md) |
-| Pruebas de seguridad independientes (un informe para encargarlas) | [independent-security-tester](independent-security-tester/index.md) |
+| Dirección general (CEO) | [dirección-general](dirección-general/index.md) |
+| Dirección de operaciones (COO) | [dirección-de-operaciones](dirección-de-operaciones/index.md) |
+| Dirección de tecnología (CTO) | [dirección-de-tecnología](dirección-de-tecnología/index.md) |
+| Dirección de sistemas de información (CIO) | [dirección-de-sistemas-de-información](dirección-de-sistemas-de-información/index.md) |
+| Dirección de riesgos (CRO) | [dirección-de-riesgos](dirección-de-riesgos/index.md) |
+| Dirección jurídica (CLO) | [dirección-jurídica](dirección-jurídica/index.md) |
+| Dirección de personas (CPO) | [dirección-de-personas](dirección-de-personas/index.md) |
+| Dirección de estrategia | [dirección-de-estrategia](dirección-de-estrategia/index.md) |
+| Dirección de seguridad | [dirección-de-seguridad](dirección-de-seguridad/index.md) |
+| Gobernanza, riesgo y cumplimiento | [gobernanza-riesgo-cumplimiento](gobernanza-riesgo-cumplimiento/index.md) |
+| Pruebas de seguridad independientes (un informe para encargarlas) | [probador-de-seguridad-independiente](probador-de-seguridad-independiente/index.md) |
 
 Empiece por la [evaluación de preparación](../../../spec/readiness-assessment.md): la conclusión es que este es software de demostración y no está listo para uso en producción en una organización de alta garantía.
 

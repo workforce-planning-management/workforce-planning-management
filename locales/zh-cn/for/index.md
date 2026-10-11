@@ -4,17 +4,17 @@
 
 | 角色 | 页面 |
 | --- | --- |
-| 首席执行官 | [chief-executive-officer](chief-executive-officer/index.md) |
-| 首席运营官 | [chief-operating-officer](chief-operating-officer/index.md) |
-| 首席技术官 | [chief-technology-officer](chief-technology-officer/index.md) |
-| 首席信息官 | [chief-information-officer](chief-information-officer/index.md) |
-| 首席风险官 | [chief-risk-officer](chief-risk-officer/index.md) |
-| 首席法务官 | [chief-legal-officer](chief-legal-officer/index.md) |
-| 首席人力资源官 | [chief-people-officer](chief-people-officer/index.md) |
-| 首席战略官 | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| 首席安全官 | [chief-security-officer](chief-security-officer/index.md) |
-| 治理、风险与合规 | [governance-risk-compliance](governance-risk-compliance/index.md) |
-| 独立安全测试（委托此类测试的简报） | [independent-security-tester](independent-security-tester/index.md) |
+| 首席执行官 | [首席执行官](首席执行官/index.md) |
+| 首席运营官 | [首席运营官](首席运营官/index.md) |
+| 首席技术官 | [首席技术官](首席技术官/index.md) |
+| 首席信息官 | [首席信息官](首席信息官/index.md) |
+| 首席风险官 | [首席风险官](首席风险官/index.md) |
+| 首席法务官 | [首席法务官](首席法务官/index.md) |
+| 首席人力资源官 | [首席人力资源官](首席人力资源官/index.md) |
+| 首席战略官 | [首席战略官](首席战略官/index.md) |
+| 首席安全官 | [首席安全官](首席安全官/index.md) |
+| 治理、风险与合规 | [治理-风险-合规](治理-风险-合规/index.md) |
+| 独立安全测试（委托此类测试的简报） | [独立安全测试人员](独立安全测试人员/index.md) |
 
 请先阅读[就绪度评估](../../../spec/readiness-assessment.md)：结论是，这是演示软件，尚不能用于高保障要求组织的生产环境。
 

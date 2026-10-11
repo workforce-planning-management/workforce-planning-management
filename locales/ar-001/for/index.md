@@ -4,17 +4,17 @@
 
 | الدور | الصفحة |
 | --- | --- |
-| الرئيس التنفيذي (CEO) | [chief-executive-officer](chief-executive-officer/index.md) |
-| رئيس العمليات (COO) | [chief-operating-officer](chief-operating-officer/index.md) |
-| رئيس التقنية (CTO) | [chief-technology-officer](chief-technology-officer/index.md) |
-| رئيس المعلومات (CIO) | [chief-information-officer](chief-information-officer/index.md) |
-| رئيس المخاطر (CRO) | [chief-risk-officer](chief-risk-officer/index.md) |
-| رئيس الشؤون القانونية (CLO) | [chief-legal-officer](chief-legal-officer/index.md) |
-| رئيس شؤون الموظفين (CPO) | [chief-people-officer](chief-people-officer/index.md) |
-| رئيس الاستراتيجية | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| رئيس الأمن | [chief-security-officer](chief-security-officer/index.md) |
-| الحوكمة والمخاطر والامتثال | [governance-risk-compliance](governance-risk-compliance/index.md) |
-| اختبار الأمن المستقل (موجز لتكليف إجرائه) | [independent-security-tester](independent-security-tester/index.md) |
+| الرئيس التنفيذي (CEO) | [الرئيس-التنفيذي](الرئيس-التنفيذي/index.md) |
+| رئيس العمليات (COO) | [رئيس-العمليات](رئيس-العمليات/index.md) |
+| رئيس التقنية (CTO) | [رئيس-التقنية](رئيس-التقنية/index.md) |
+| رئيس المعلومات (CIO) | [رئيس-المعلومات](رئيس-المعلومات/index.md) |
+| رئيس المخاطر (CRO) | [رئيس-المخاطر](رئيس-المخاطر/index.md) |
+| رئيس الشؤون القانونية (CLO) | [رئيس-الشؤون-القانونية](رئيس-الشؤون-القانونية/index.md) |
+| رئيس شؤون الموظفين (CPO) | [رئيس-شؤون-الموظفين](رئيس-شؤون-الموظفين/index.md) |
+| رئيس الاستراتيجية | [رئيس-الاستراتيجية](رئيس-الاستراتيجية/index.md) |
+| رئيس الأمن | [رئيس-الأمن](رئيس-الأمن/index.md) |
+| الحوكمة والمخاطر والامتثال | [الحوكمة-والمخاطر-والامتثال](الحوكمة-والمخاطر-والامتثال/index.md) |
+| اختبار الأمن المستقل (موجز لتكليف إجرائه) | [مختبر-الأمن-المستقل](مختبر-الأمن-المستقل/index.md) |
 
 ابدأ بـ[تقييم الجاهزية](../../../spec/readiness-assessment.md): الحكم أن هذا برنامج للعرض التوضيحي وليس جاهزًا للاستخدام الإنتاجي في مؤسسة تتطلب ضمانًا عاليًا.
 

@@ -4,17 +4,17 @@ Satu halaman untuk setiap peran kepemimpinan, yang menyatakan apa yang diberikan
 
 | Peran | Halaman |
 | --- | --- |
-| Direktur Utama (CEO) | [chief-executive-officer](chief-executive-officer/index.md) |
-| Direktur Operasional (COO) | [chief-operating-officer](chief-operating-officer/index.md) |
-| Direktur Teknologi (CTO) | [chief-technology-officer](chief-technology-officer/index.md) |
-| Direktur Informasi (CIO) | [chief-information-officer](chief-information-officer/index.md) |
-| Direktur Risiko (CRO) | [chief-risk-officer](chief-risk-officer/index.md) |
-| Direktur Hukum (CLO) | [chief-legal-officer](chief-legal-officer/index.md) |
-| Direktur SDM (CPO) | [chief-people-officer](chief-people-officer/index.md) |
-| Direktur Strategi | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| Direktur Keamanan | [chief-security-officer](chief-security-officer/index.md) |
-| Tata kelola, risiko, kepatuhan | [governance-risk-compliance](governance-risk-compliance/index.md) |
-| Pengujian keamanan independen (ringkasan untuk memesannya) | [independent-security-tester](independent-security-tester/index.md) |
+| Direktur Utama (CEO) | [direktur-utama](direktur-utama/index.md) |
+| Direktur Operasional (COO) | [direktur-operasional](direktur-operasional/index.md) |
+| Direktur Teknologi (CTO) | [direktur-teknologi](direktur-teknologi/index.md) |
+| Direktur Informasi (CIO) | [direktur-informasi](direktur-informasi/index.md) |
+| Direktur Risiko (CRO) | [direktur-risiko](direktur-risiko/index.md) |
+| Direktur Hukum (CLO) | [direktur-hukum](direktur-hukum/index.md) |
+| Direktur SDM (CPO) | [direktur-sdm](direktur-sdm/index.md) |
+| Direktur Strategi | [direktur-strategi](direktur-strategi/index.md) |
+| Direktur Keamanan | [direktur-keamanan](direktur-keamanan/index.md) |
+| Tata kelola, risiko, kepatuhan | [tata-kelola-risiko-kepatuhan](tata-kelola-risiko-kepatuhan/index.md) |
+| Pengujian keamanan independen (ringkasan untuk memesannya) | [penguji-keamanan-independen](penguji-keamanan-independen/index.md) |
 
 Mulailah dengan [penilaian kesiapan](../../../spec/readiness-assessment.md): putusannya adalah bahwa ini perangkat lunak demonstrasi dan belum siap untuk penggunaan produksi di organisasi dengan jaminan tinggi.
 
