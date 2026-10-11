@@ -452,6 +452,8 @@ enabled only with a recorded lawful basis.
   **WPM-R128 Workplace health requirements** (immunizations as a cleared/not-cleared status, no clinical
   detail). **WPM-R129 My time-off** (allowances, days remaining, history; no sick-leave reason).
   **WPM-R130 The `/api/me` surface**, its self-service write allow-list, and one screen.
+- **WPM-R131 A page for each role, per locale** — [locales-x-for-roles/index.md](locales-x-for-roles/index.md). **WPM-D79** the
+  pages link to the specification and copy no changing figure.
 - **WPM-D74** equality monitoring data is a bounded exception to "no demographics". **WPM-D75** a health
   requirement records the status, never the reason. **WPM-D76** self-service writes are an explicit allow-list.
   **WPM-D77** a worker's request is decided by a person; the software computes dates and never changes a
@@ -525,6 +527,7 @@ enabled only with a recorded lawful basis.
 | `workers` (new columns `engagement_ends_on`, supplier, route, rate) | End date, supplier URN, route, rate and basis | Yes (rate masked like salary; in export; erased) |
 | `engagement_extensions` | Worker, previous end, new end, reason, decided by | Yes (HR-only; in export; erased) |
 | `engagement_status_assessments` | Worker, outcome, date, reviewer | Yes (HR-only; in export; erased) |
+| `post_fundings` | Worker, funding kind, programme URN, end date; no amount | Yes (HR-only; in export; erased) |
 | `conversion_plans` | Worker, intent, dates, post funding kind, reason, proposer, approver, status | Yes (HR-only; in export; erased; no pay figure) |
 | `plan_demand_lines`, `requisitions` (new columns) | Programme URN, FTE, basis, expected duration | No |
 | `headcount_snapshots` (new columns) | Headcount and FTE per basis | No (aggregate) |

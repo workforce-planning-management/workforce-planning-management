@@ -38,6 +38,13 @@ calendar days): `open_ended`, `missing_end_date`, `running`, `ending_soon`, `pas
 `POST /api/workers/{pid}/engagement/decision` (extend, convert or end), against the end date it settles; it changes nothing
 else. The daily task `engagement_end_reminders` tells the manager and HR once about each end date (WPM-T138).
 
+## Funding beside the contract end
+
+`PUT /api/workers/{pid}/funding` records where the post is funded from (`core`, `time_limited`, `external`, `programme`), an
+optional programme URN and the date the funding ends; `GET` shows it beside the contract end with an alignment:
+`matched`, `contract_outlasts_funding`, `funding_outlasts_contract`, `funding_open_ended` or `unknown`. A kind and a date,
+never an amount. HR only, and the handler checks that itself.
+
 ## Conversion plans
 
 A plan records what a person intends for a fixed-term, contractor or intern engagement: `convert`, `extend`, `end` or
@@ -81,5 +88,5 @@ All of it is about one person: it is in the subject-access export and is erased 
 - **Retention.** The three new tables are not in the retention sweep (like the pay position); they go with the
   worker's erasure.
 - **Not built:** the funding source beside the
-  end date (WPM-T161, which needs the post funding record of WPM-T109), the planner lever, the contingent workforce view,
+  end date as a list view (WPM-T142), the contingent trend and retention sweep (the rest of WPM-T109; the share and funding horizon exist), the planner lever, the contingent workforce view,
   and any user interface. A conversion marked done does not touch payroll or the contractor details.

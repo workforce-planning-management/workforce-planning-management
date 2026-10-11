@@ -327,6 +327,8 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
 - **ConversionPlan** (`conversion_plans`) — a recorded intent for a contingent engagement (convert, extend, end, undecided),
   proposed and approved by different people; no pay figure; HR-only; exported with the worker and erased with them
   (WPM-R98; [engagements.md](engagements.md)).
+- **PostFunding** (`post_fundings`) — where a worker's post is funded from (kind, programme, end date; never an amount); HR-only;
+  exported with the worker and erased with them (WPM-R62, WPM-R98).
 - **SkillPool** (`skill_pools`, soft-deleted), **SkillPoolMember** (`skill_pool_members`),
   **ProgrammeDemand** (`programme_demands`), **PartnerCommitment** (`partner_commitments`),
   **CapacitySettings** (`capacity_settings`) and **StartDecision** (`start_decisions`) — delivery

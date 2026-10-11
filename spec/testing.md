@@ -46,6 +46,11 @@ State as of 2026-10-07 (WPM-T97).
   own answers; the only output is the aggregate, with cells below the floor withheld and the department breakdown
   withheld unless every cell passes; the export gives the answers to the worker and a note to anyone else; the audit
   holds no value; erasure removes them. A unit test scans the source so no other code names the table.
+- **Shared cache** (`tests/requests/shared_cache.rs`, `tests/shared_cache_upstream.rs`): ESCO searches cached until invalidated;
+  namespaces separate; against a real Redis (`WPM_TEST_REDIS_URL`) shared between two handles and failing open when down; with a
+  password (`WPM_TEST_REDIS_AUTH_URL`, `..._WRONG_PASSWORD_URL`, `..._NO_PASSWORD_URL`); over TLS (`WPM_TEST_REDIS_TLS_URL` plus
+  `SSL_CERT_FILE` naming the server's CA, then the same server refused with an empty trust store); and name lookups through a stub
+  sibling service (organization names shared, a person's never).
 - **Conversion plans binary** (`tests/enforcement_conversion.rs`, own process; the reference policy plus a `decider` rule): the
   worker, a stranger and a manager outside the chain are refused; only HR reads; the proposer cannot approve; approval
   records the engagement decision; done makes the worker permanent in one step; the audit holds no reason.

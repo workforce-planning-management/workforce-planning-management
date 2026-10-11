@@ -110,6 +110,11 @@
         "description": "proposed self-service updates, equality monitoring and workplace health requirements (both bounded, off by default), flexible working, resignations, my time-off (WPM-R124–R130)"
       },
       {
+        "title": "spec/locales-x-for-roles/index.md",
+        "path": "spec/locales-x-for-roles/index.md",
+        "description": "a page for each role per locale in locales/en-gb-oxendict/for/ (WPM-R131, D79)"
+      },
+      {
         "title": "spec/readiness-assessment.md",
         "path": "spec/readiness-assessment.md",
         "description": "readiness for large medical and governmental organizations: verdict, blocker, gaps with evidence, human gates (WPM-R114–R123)"

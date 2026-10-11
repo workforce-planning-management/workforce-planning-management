@@ -120,6 +120,17 @@ sign-in enforcement explicitly off** (see its header).
 
 ## Decisions
 
+- **WPM-D78 The shared cache holds non-personal lookups only, and fails open.** Loco's cache provider is Redis in
+  production and the demo (so several instances share one) and in memory in development and tests. What may be cached is
+  a closed list in `src/shared_cache.rs` (`Namespace`): the names of organizations and courses from the services that
+  own them, and searches of the public ESCO catalogue. There is no variant for a person, a worker, a score or any
+  report, so a cached answer can never be one that a permission check should have decided; a unit test pins the list
+  and another that a person's or worker's name never takes the shared route. Every call is bounded to 250 milliseconds and a
+  failure is a miss, so a Redis that is down slows nothing and breaks nothing. Keys are versioned and generational
+  (`wpm:v1:{namespace}:{generation}:{key}`); the ESCO import bumps its namespace's generation. `REDIS_URL` is optional: unset, the cache is in
+  memory per instance and boot logs a warning. In production, a plaintext `redis://` link to another host refuses to
+  start unless `WPM_ALLOW_PLAINTEXT_REDIS=1`; `rediss://` works (rustls, `ring`).
+
 - **WPM-D52 Secure by default.** A fresh install enforces sign-in. Turning it
   off is explicit, logged, visible at `/_posture`, and refused in production; a
   missing key source stops a production service instead of opening it.

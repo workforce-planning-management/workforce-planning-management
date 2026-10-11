@@ -2459,7 +2459,14 @@ data or tests (WPM-D48).
       HR-only named endpoint that writes an audit entry on every read.
       Enforcement test: a manager and a partner role get the aggregate and a
       403 on the named list. Mutation-check the HR-only rule.
-- [ ] WPM-T109 **Contingent share and funding horizon.** *(WPM-R62)* Migration
+- [ ] WPM-T109 **Contingent share and funding horizon.** *(WPM-R62)* **Part done (2026-10-12):** the post funding table
+      (WPM-T161), and `GET /api/workforce-intelligence/contingent`: contractor and fixed-term share of FTE, each apart, and the
+      twelve-month funding horizon (people and FTE per month, plus funding already ended). HR only and audited. The floor is the
+      equality-monitoring default of 10; the department breakdown shows only when every department reaches it, a month of one to nine
+      people is withheld, and no total is given. 9 unit tests, a request test and an HR-only assertion in the conversion enforcement
+      binary; **mutation-checked** three ways (floor ignored for months; floor ignored for departments; route open to all), each
+      failing a test. **Not done:** the trend from snapshots split by basis (WPM-T139), the "pool" being the department until plans
+      define pools, the retention sweep, and a user interface. Original scope: Migration
       for `post_fundings` (kind, end date; no money). Contingent share per pool
       from `employment_type` `contractor` and `fixed_term` (shown separately), with
       trend from headcount snapshots split by basis (WPM-T139)
@@ -2750,7 +2757,16 @@ payroll defect and need nothing else; do them first.
       the 12 `-001` locales. Screenshots read in light and dark at desktop and phone
       sizes. Full suites. Record what was not verified.
 
-- [ ] WPM-T161 **Funding source on the engagement.** *(blocked: the post funding record of WPM-T109 is not built)* *(traces to WPM-R98, WPM-R62, WPM-R83)* Show each fixed-term and
+- [x] WPM-T161 (2026-10-12) **Funding source on the engagement.** *(traces to WPM-R98, WPM-R62, WPM-R83)* The part of WPM-T109
+      this needs: migration `000063` `post_fundings` (one record per worker: kind `core`, `time_limited`, `external` or
+      `programme`, optional programme thing: URN, optional end date; **no amount**); `GET/PUT/DELETE /api/workers/{pid}/funding`.
+      The read shows the funding **beside the contract end** and how they compare (`matched`, `contract_outlasts_funding`,
+      `funding_outlasts_contract`, `funding_open_ended`, `unknown`; an unknown is never a match) with `needs_attention` for the two
+      mismatches. Time-limited and external funding need an end; no end before the engagement started. HR reads and writes: the
+      handler itself requires HR, because the policy decides by action only (a manager given write access was **found able to
+      write it and fixed**, with the enforcement test now covering it). In the subject-access export, erased with the worker, audited
+      without values. 10 unit tests, a request test and the conversion enforcement binary; **mutation-checked** (handler not
+      requiring HR; comparison swapped; no erasure). **Not done:** the trend and retention sweep of WPM-T109 (the share and the funding horizon now exist); the contingent workforce view (WPM-T142); a user interface. *(traces to WPM-R98, WPM-R62, WPM-R83)* Show each fixed-term and
       contractor engagement's funding source (kind, programme, funding end) beside its contract end date in
       the worker's engagement panel and the contingent workforce view; flag a contract that outlasts its
       funding and a funding that outlasts its contract. Pure core rule and unit tests (equal, contract
@@ -2773,7 +2789,7 @@ payroll defect and need nothing else; do them first.
       records the matching engagement decision** against the current end date in the same transaction. **Marking a
       conversion done makes the worker permanent and clears the contract end in one transaction**; the plan, the extensions
       and the decisions stay as history. Audited without the reason; in the subject-access export; erased with the worker.
-      Verified by a request test (refusals, one open plan, the reminder, abandon, approve, export, erase) and the new
+      **Hardened (2026-10-12):** approve, abandon and done re-read the plan and the worker under a row lock inside the transaction, so two callers acting at once are taken one after the other (the lock is reasoned about, not proven by a test: the test pool has one connection); a second open plan is refused by the database as well as the handler, and a lost race answers 422, not 500. Verified by a request test (refusals, one open plan, the database rule, the reminder, abandon, approve, export, erase) and the new
       `enforcement_conversion` binary (reference policy plus a `decider` rule: worker, stranger and manager outside the chain
       refused; only HR reads; the proposer cannot approve; done changes the worker; the audit holds no reason).
       **Mutation-checked** five ways (a proposer may approve; done keeps the end date; reads open to all; the reason in the
@@ -3267,3 +3283,47 @@ deployer's lawful basis and impact assessment before they are switched on.
       only before it starts (its days come back); started or finished leave, and one already refused or cancelled, is
       HR's. A worker still cannot approve their own request. Verified in `enforcement_me`, **mutation-checked** twice
       (no cancellation rule; a request of anyone's cancellable).
+- [x] WPM-T217 (2026-10-12) **Redis cache, non-personal lookups only.** *(traces to WPM-D78)* Loco's cache provider is now Redis
+      in production (`REDIS_URL`) and the demo compose file, and stays in memory in development and test; the `cache_redis`
+      feature is on. `src/shared_cache.rs` is a closed list of what may be cached (`Namespace`: organization names, course
+      names, ESCO occupation searches), bounded to 250 milliseconds a call and **failing open** (a down Redis is a miss),
+      with versioned, generational keys; the ESCO import bumps its generation. Person and worker names never take this
+      route. Boot refuses a plaintext `redis://` to another host in production (`WPM_ALLOW_PLAINTEXT_REDIS` overrides).
+      **A flaw found and fixed on the way:** the database transport check treated any host starting `127.` or equal to
+      `localhost` prefixes as local, so `127.0.0.1.example.com` skipped the TLS requirement; both checks now parse a
+      loopback address. Verified against a real Redis 7 in Podman (`WPM_TEST_REDIS_URL`): a value shared between two
+      handles, invalidation reaching both, an unreachable Redis a quick miss; the running service writing
+      `wpm:v1:esco_occupations:0:…` to Redis and answering a repeat search from it; unit tests for the list, keys,
+      the person/worker rule, and the URL checks. **Mutation-checked** three ways (ESCO never stored; the generation ignored;
+      person names shared), each making a test fail. CI runs a Redis service. **Four gaps found by checking, then closed:** (1) *TLS did not work*: Loco's
+      Redis client is built with no TLS, so the documented `rediss://` could not connect; `redis` is now a direct dependency with
+      rustls, and (2) because two rustls crypto providers are in the build and none is chosen, a TLS connection **panicked**;
+      `shared_cache::install_tls_provider` now chooses `ring` before Loco opens the cache. Verified against a Redis 7 with
+      a password and a certificate from a throwaway CA: the password works, a wrong or missing one is a quick miss, `rediss://`
+      connects, and the same server is refused when its CA is not trusted; the production configuration was booted for real with a
+      password Redis and a TLS Redis (healthy), with a plaintext remote Redis (refused) and with no `REDIS_URL`. (3) *The stale
+      `Cargo.lock`* is regenerated (it now passes `cargo metadata --locked` in the repository itself). (4) *`REDIS_URL` is optional*
+      in production: unset, the cache is in memory per instance and the boot logs a warning. (5) The name-lookup path is covered by
+      `tests/shared_cache_upstream.rs`, which runs a stub sibling service over real HTTP: an organization name is fetched once and
+      shared, one cached elsewhere needs no call, a person's name is found in no shared namespace, and a sibling that is down is a
+      miss; **mutation-checked** three more ways (person names shared; never stored; never read). **Not verified:** a managed
+      Redis service (cluster, sentinel, ACL users) was not tried; the password and TLS tests need `WPM_TEST_REDIS_*` variables and
+      a certificate authority, so CI runs the plain Redis tests only; nothing else is cached yet.
+- [x] WPM-T218 (2026-10-11) **Pages for the roles.** *(traces to WPM-R131, WPM-D79)* `locales/en-gb-oxendict/for/<role>/index.md` for ten roles
+      (seven chief roles, strategy, security, and governance, risk, compliance), each with a `README.md` symlink, and
+      `locales/en-gb-oxendict/for/index.md`; the spec topic is `spec/locales-x-for-roles/`. Each page was written from the specification and
+      limited to what is built (key-person risk, the contingent trend and the conversion interface are said to be planned). Verified: the link, days
+      and status checks pass. **Not verified:** no person in any of these roles reviewed a page; the facts were read from the spec, not
+      re-proven by running the software; only one locale exists.
+- [x] WPM-T219 (2026-10-11) **Role pages in the other locales.** *(traces to WPM-R131, WPM-D79)* The ten pages and the index in `en-001`, `en-us`,
+      `en-gb` (spelling only), `zh-cn`, `hi-in` and `cy-gb` (translated, one at a time), with `zh-001`, `hi-001` and `cy-001` copied from them. Each
+      folder has `index.md`, a `README.md` symlink and a `.locale-peer-id` identical across locales. Verified by a script: every locale has every file,
+      the same link targets, headings and table rows as the source, and the same peer ids; the link and days checks pass. **Not verified:** no native
+      speaker reviewed the Chinese, Hindi or Welsh text, which was written by an AI and says so on each page; slugs are the same in every locale, not
+      native-script; the spelling conversions were checked by search, not by a reader.
+- [x] WPM-T220 (2026-10-11) **Role pages in the remaining content locales.** *(traces to WPM-R131, WPM-D79)* The ten pages and the index translated, one
+      language at a time, into `de-de` (copied to `de-001`), `es-es` (copied to `es-001`), `fr-001`, `pt-001`, `id-001`, `ru-001`, `ar-001`, `bn-001`
+      and `ur-001`, with the same files, peer ids and note as T219. Verified by a script: every folder has every file, the same link targets,
+      headings and table rows as the source and the same peer ids; the link and days checks pass. **Not verified:** no native speaker reviewed any
+      translation (each page says an AI wrote it); the right-to-left pages (Arabic, Urdu) were not rendered, so their layout is unchecked; role
+      names are translated by meaning and may differ from the titles a deployer's organization uses.

@@ -33,6 +33,31 @@ For each `index.md`, `README.md` is a symlink to it (the same convention as the 
 - No organization is named. No legal advice is given.
 - A further locale is a translation of these pages under its own `locales/<locale>/for/`, with the same folder names.
 
+## Locales
+
+| Locale | How it was made |
+| --- | --- |
+| `en-gb-oxendict` | The source: British English with Oxford `-ize` spelling |
+| `en-001` | A copy of the source (international English; no change was needed) |
+| `en-us` | The source with American spelling (`license`, `program`) outside code, links and identifiers |
+| `en-gb` | The source with the `-ise` family (`organisation`, `recognised`) outside code, links and identifiers |
+| `zh-cn`, `zh-001` | Translated into Simplified Chinese; `zh-001` is a copy of `zh-cn` |
+| `hi-in`, `hi-001` | Translated into Hindi; `hi-001` is a copy of `hi-in` |
+| `cy-gb`, `cy-001` | Translated into Welsh; `cy-001` is a copy of `cy-gb` |
+| `de-de`, `de-001` | Translated into German; `de-001` is a copy of `de-de` |
+| `es-es`, `es-001` | Translated into Spanish; `es-001` is a copy of `es-es` |
+| `fr-001`, `pt-001`, `id-001`, `ru-001` | Translated into French, Portuguese, Indonesian and Russian |
+| `ar-001`, `bn-001`, `ur-001` | Translated into Arabic, Bengali and Urdu (the Arabic and Urdu pages are right-to-left and were not rendered or checked on screen) |
+
+Each folder under `for/` (and `for/` itself) holds `index.md`, a `README.md` symlink to it, and a `.locale-peer-id` file:
+32 lowercase hexadecimal characters and a newline, **byte-identical in every locale** for the same page. Folder names
+(slugs) are the same in every locale, as the table above requires; the guidance of
+[locales-for-global-sharing-with-svelte](../locales-for-global-sharing-with-svelte/index.md) to use native-script slugs
+for translated locales was not followed here, so that every path matches this file.
+
+Each translated page keeps every link target, table row and heading of the source, and ends with a note that an AI wrote
+the translation and no native speaker has reviewed it. Code, paths, requirement ids and API routes are not translated.
+
 ## WPM-D79 — The pages link to the specification and copy no figures
 
 The specification stays the single source of truth (rule 1 of [AGENTS.md](../../AGENTS.md)). A role page summarizes
@@ -40,5 +65,5 @@ and links; it does not restate a requirement or copy a count that changes, so it
 live in [implementation-status.md](../implementation-status.md), which a script generates. The `locales/` folder holds
 reader-facing pages, one folder per locale; the `spec/` folder holds the requirement.
 
-**Not verified:** the pages were written from the specification and were not reviewed by a person in any of these
+**Not verified:** the translations (Chinese, Hindi, Welsh) were not reviewed by a native speaker, and the English pages were written from the specification and were not reviewed by a person in any of these
 roles. A claim in one that the specification no longer supports is a defect to fix there and here.
