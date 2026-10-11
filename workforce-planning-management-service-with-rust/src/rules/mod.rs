@@ -53,6 +53,7 @@ pub mod pay_scale;
 pub mod payroll;
 pub mod planning;
 pub mod privacy;
+pub mod programmes;
 pub mod pulse;
 pub mod resignation;
 pub mod roles;

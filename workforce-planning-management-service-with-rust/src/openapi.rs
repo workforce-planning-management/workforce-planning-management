@@ -279,6 +279,7 @@ pub fn spec() -> Value {
             "/api/workers/{pid}/contractor-details": { "get": { "tags": ["engagements"], "summary": "A contractor's supplier, route and rate, or null; the rate is masked like salary and an unmasked read is audited", "responses": ok("ContractorDetails") }, "put": { "tags": ["engagements"], "summary": "Set supplier_ref (organization URN), route (agency, own_company, statement_of_work, direct) and a rate (rate_minor, rate_currency, rate_basis day or hour, all together or none); contractors only; never echoes the rate", "responses": ok("ContractorDetails") }, "delete": { "tags": ["engagements"], "summary": "Clear the details", "responses": ok("Cleared") } },
             "/api/workers/{pid}/conversion-plans": { "get": { "tags": ["engagements"], "summary": "A worker's conversion plans, oldest first, with flags (past_end_without_approved_plan, review_due); HR only; the read is audited", "responses": ok("ConversionPlans") }, "post": { "tags": ["engagements"], "summary": "Propose a plan (intent convert, extend, end or undecided; target_on before the contract end; a conversion needs post_funding_kind or a reason; no pay figure); the worker's line manager or a privileged caller, never the worker; one plan is open at a time; the audit entry carries no reason", "responses": ok("ConversionPlan") } },
             "/api/workforce-intelligence/contingent": { "get": { "tags": ["engagements"], "summary": "The share of FTE that is contractor and that is fixed-term (each apart) and the funding horizon for the next twelve months: people whose funding ends in each month, or already has. Aggregate only; groups below the floor withheld, no total given; HR only; the read is audited", "responses": { "200": { "description": "The shares and the horizon", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContingentWorkforce" } } } } } } },
+            "/api/workforce-intelligence/programmes": { "get": { "tags": ["engagements"], "summary": "Per programme and month for twelve months: FTE funded, the contractor and fixed-term share of it, engagements ending and funding ending. Aggregate only; a programme with fewer people than the floor is left out, a figure for one to nine is withheld, no total across programmes; HR only; the read is audited", "responses": { "200": { "description": "The programmes and months", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProgrammeRollup" } } } } } } },
             "/api/workers/{pid}/funding": { "get": { "tags": ["engagements"], "summary": "Where the worker's post is funded from (kind, programme, end date; never an amount) beside the contract end, and how they compare (matched, contract_outlasts_funding, funding_outlasts_contract, funding_open_ended, unknown); HR only", "responses": { "200": { "description": "The funding beside the contract end", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostFunding" } } } } } }, "put": { "tags": ["engagements"], "summary": "Set the funding (kind core, time_limited, external or programme; time_limited and external need ends_on; optional programme_ref thing: URN)", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostFundingPayload" } } } }, "responses": { "200": { "description": "The funding beside the contract end", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostFunding" } } } } } }, "delete": { "tags": ["engagements"], "summary": "Clear it", "responses": { "200": { "description": "The funding beside the contract end", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostFunding" } } } } } } },
             "/api/conversion-plans": { "get": { "tags": ["engagements"], "summary": "Open plans and engagements past their end with no approved plan, with flags (?organization=); HR only; names workers", "responses": ok("ConversionPlans") } },
             "/api/conversion-plans/{pid}/approve": { "post": { "tags": ["engagements"], "summary": "Approve a proposed plan; never the proposer; also records the matching engagement decision against the current end date in the same transaction", "responses": ok("ConversionPlan") } },
@@ -575,6 +576,25 @@ fn components() -> Value {
                     "fixed_term_percent_of_fte": { "type": "number", "nullable": true }
                 }
             },
+            "ProgrammeRollup": {
+                "type": "object", "description": "Aggregate only. A programme below the floor is left out and counted in withheld_programmes; a figure for one to nine people is null; no total across programmes.",
+                "properties": {
+                    "small_group_floor": { "type": "integer" },
+                    "withheld_programmes": { "type": "integer" },
+                    "programmes": { "type": "array", "items": { "type": "object", "properties": {
+                        "programme": { "type": "string" },
+                        "months": { "type": "array", "items": { "type": "object", "properties": {
+                            "month": { "type": "string" },
+                            "funded_fte": { "type": "number", "nullable": true },
+                            "contractor_percent_of_fte": { "type": "number", "nullable": true },
+                            "fixed_term_percent_of_fte": { "type": "number", "nullable": true },
+                            "engagements_ending": { "type": "integer", "nullable": true },
+                            "funding_ending": { "type": "integer", "nullable": true }
+                        } } }
+                    } } },
+                    "derivation": { "type": "string" }
+                }
+            },
             "ContingentWorkforce": {
                 "type": "object", "description": "Aggregate only: no one is named. Groups below the floor are withheld and no total is given for the funding months.",
                 "properties": {
@@ -687,6 +707,7 @@ mod tests {
             ("/api/workers/{pid}/funding", "get"),
             ("/api/workers/{pid}/funding", "put"),
             ("/api/workforce-intelligence/contingent", "get"),
+            ("/api/workforce-intelligence/programmes", "get"),
         ] {
             let schema = &document["paths"][path][method]["responses"]["200"]["content"]["application/json"]
                 ["schema"];
@@ -770,6 +791,7 @@ mod tests {
             "/api/workers/{pid}/engagement",
             "/api/workers/{pid}/contractor-details",
             "/api/engagements/contingent-list",
+            "/api/workforce-intelligence/programmes",
             "/api/engagements/missing-end-date",
             "/api/me/contact-details",
             "/api/me/time-off",

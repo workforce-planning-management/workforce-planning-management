@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — programme roll-up (WPM-T141)
+
+`GET /api/workforce-intelligence/programmes` (HR only, audited): per programme and month, FTE funded, the contractor and fixed-term share,
+engagements ending and funding ending. A programme under the floor is left out, a figure for one to nine people is withheld, and no total
+across programmes is given.
+
 ### Added — snapshots by basis, the contingent trend and the named lists (WPM-T139, WPM-T109, WPM-T142)
 
 Migration `000065` adds contractor and fixed-term headcount and FTE to the headcount snapshots (older rows stay unknown). The contingent

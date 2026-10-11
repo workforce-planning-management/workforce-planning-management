@@ -879,3 +879,45 @@ async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// The programme roll-up (WPM-R83): a programme at the floor shows by month; a smaller one is left out and counted.
+async fn the_programme_rollup_shows_a_programme_at_the_floor_and_leaves_out_a_small_one() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = chrono::Utc::now().date_naive();
+        let big = format!("thing:{}", uuid::Uuid::new_v4());
+        let small = format!("thing:{}", uuid::Uuid::new_v4());
+        for i in 0..12 {
+            let programme = if i < 10 { &big } else { &small };
+            let kind = if i < 2 { "contractor" } else if i < 4 { "fixed_term" } else { "permanent" };
+            let r = request.post("/api/workers").json(&json!({
+                "person_ref": a_person(), "organization_ref": an_org(), "worker_number": format!("PG-{tag}-{i}"),
+                "display_name": "Test Worker PG", "employment_type": kind, "department": format!("pg-{tag}"),
+                "job_title": "Engineer", "hired_on": "2026-01-05",
+                "engagement_ends_on": (kind != "permanent").then(|| (today + chrono::Duration::days(300)).to_string()),
+            })).await;
+            assert_eq!(r.status_code(), 200, "{}", r.text());
+            let w = r.json::<Value>()["pid"].as_str().unwrap().to_string();
+            request.put(&format!("/api/workers/{w}/funding")).json(&json!({
+                "kind": "programme", "programme_ref": programme, "ends_on": (today + chrono::Duration::days(400)).to_string(),
+            })).await.assert_status_ok();
+        }
+        let v: Value = request.get("/api/workforce-intelligence/programmes").await.json();
+        assert_eq!(v["small_group_floor"], 10);
+        let programmes = v["programmes"].as_array().unwrap();
+        let shown = programmes.iter().find(|p| p["programme"] == big.as_str()).expect("ten people reach the floor");
+        assert!(programmes.iter().all(|p| p["programme"] != small.as_str()), "two people are left out");
+        assert!(v["withheld_programmes"].as_u64().unwrap() >= 1);
+        let months = shown["months"].as_array().unwrap();
+        assert_eq!(months.len(), 12);
+        assert_eq!(months[0]["funded_fte"], 10.0);
+        assert_eq!(months[0]["contractor_percent_of_fte"], 20.0);
+        assert_eq!(months[0]["fixed_term_percent_of_fte"], 20.0);
+        assert!(v.get("total").is_none(), "no total across programmes");
+        assert!(!v.to_string().contains("Test Worker PG"), "no names");
+    })
+    .await;
+}

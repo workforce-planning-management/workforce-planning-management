@@ -2748,10 +2748,16 @@ payroll defect and need nothing else; do them first.
       duration); hire carries the basis and end date onto the worker. The forecast
       reports by department and by programme, in headcount and FTE, using WPM-T135.
       Levers add fixed-term hire and engage a contractor. Request tests.
-- [ ] WPM-T141 **Programme roll-up.** *(WPM-R83, WPM-D59)* Extend `post_fundings`
-      (WPM-T109) with a programme URN; per programme and month: funded FTE, the
-      fixed-term and contractor share, engagements ending and funding ending.
-      Aggregate only. Request test.
+- [x] WPM-T141 (2026-10-11) **Programme roll-up.** *(WPM-R83, WPM-D59)* `GET /api/workforce-intelligence/programmes` (HR only,
+      audited as `programme_rollup_read`): per programme (the programme URN on a worker's post funding, WPM-T161) and month for twelve
+      months from the current one: FTE funded (funding with no end, or ending on or after the first of the month), the contractor and
+      fixed-term share of that FTE, engagements ending and funding ending. Programmes are linked through posts, not time recorded.
+      Aggregate only: a programme with fewer than 10 people is left out and counted in `withheld_programmes`, a month figure for one to
+      nine people is withheld (zero is shown), and no total across programmes is given. `rules::programmes`: 6 unit tests; a request
+      test and an HR-only assertion in the conversion enforcement binary. **Mutation-checked** (programme floor ignored; month floor
+      ignored; funded figure always shown; the funding end boundary, which a first run did not catch and a test now does), each failing a
+      test. **Not done:** plan demand lines by programme (WPM-T140), the user interface (WPM-T143), and programmes owned by
+      project-portfolio-management are only references here (the URN is not looked up).
 - [x] WPM-T142 (2026-10-11) **Contingent workforce view.** *(WPM-R86)* The engagement figures in
       `GET /api/workforce-intelligence/contingent` (HR only, audited): ending in 0–30, 31–60 and 61–90 calendar days as
       **separate bands** (cumulative figures would let a withheld band be worked out by subtraction), past the end with no

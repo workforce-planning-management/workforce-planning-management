@@ -128,6 +128,7 @@ impl Hooks for App {
             .add_route(controllers::capacity::routes())
             .add_route(controllers::conversion_plans::routes())
             .add_route(controllers::funding::routes())
+            .add_route(controllers::programmes::routes())
             .add_route(controllers::engagements::routes())
             .add_route(controllers::me::routes())
             .add_route(controllers::resignations::routes())

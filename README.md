@@ -20,7 +20,7 @@ then: production-readiness, operations and information-governance work (WPM-T102
 T123–T128, T144–T155), the delivery-capacity API (WPM-T104–T107) and two corrections
 (WPM-T134, T136). Much more is proposed but not built: see
 [spec/tasks.md](spec/tasks.md) and [spec/implementation-status.md](spec/implementation-status.md).**
-Verified on 2026-10-11 for the service: 493 unit tests and 84 database-backed request tests,
+Verified on 2026-10-11 for the service: 499 unit tests and 85 database-backed request tests,
 with eleven enforcement binaries (need-to-know reads, contractor rates, expenses, self-service, flexible working, conversion plans, equality monitoring and health requirements), security, retention-schedule and Entra suites. The Keycloak suite (real
 Keycloak 26) and the front-end counts (80 unit tests and 45 Playwright specs) were last
 measured on 2026-10-07 and were not rerun for this update. See each
