@@ -14,6 +14,7 @@ Une page pour chaque rôle de direction, qui dit ce que Workforce Planning Manag
 | Direction de la stratégie | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | Direction de la sécurité | [chief-security-officer](chief-security-officer/index.md) |
 | Gouvernance, risques, conformité | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| Test de sécurité indépendant (note de cadrage pour le commander) | [independent-security-tester](independent-security-tester/index.md) |
 
 Commencez par l’[évaluation de préparation](../../../spec/readiness-assessment.md) : le verdict est qu’il s’agit d’un logiciel de démonstration, qui n’est pas prêt pour un usage en production dans une organisation exigeant un haut niveau de garantie.
 

@@ -43,7 +43,7 @@ The author could not check these. Each row names the threat model's own entry, s
 
 Fill these in with your own security and legal teams. None is decided here.
 
-- **Authority:** who signs that the test is authorised, and for which systems and addresses.
+- **Authority:** who signs that the test is authorized, and for which systems and addresses.
 - **Window:** the dates and hours, counted in calendar days, and who to call to stop it.
 - **Scope:** what is in (the API, the interface, the sign-in flow, the backup script) and what is out (the identity
   provider's own service, your network, anything shared with other systems).

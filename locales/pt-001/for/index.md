@@ -14,6 +14,7 @@ Uma página para cada função de liderança, que diz o que o Workforce Planning
 | Direção de estratégia | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | Direção de segurança | [chief-security-officer](chief-security-officer/index.md) |
 | Governança, riscos e conformidade | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| Teste de segurança independente (um enquadramento para o encomendar) | [independent-security-tester](independent-security-tester/index.md) |
 
 Comece pela [avaliação de prontidão](../../../spec/readiness-assessment.md): o veredicto é que este é um software de demonstração e não está pronto para uso em produção numa organização de alta garantia.
 

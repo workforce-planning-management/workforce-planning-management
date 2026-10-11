@@ -14,6 +14,7 @@
 | मुख्य रणनीति अधिकारी | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | मुख्य सुरक्षा अधिकारी | [chief-security-officer](chief-security-officer/index.md) |
 | शासन, जोखिम, अनुपालन | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| स्वतंत्र सुरक्षा परीक्षण (इसे करवाने के लिए संक्षिप्त विवरण) | [independent-security-tester](independent-security-tester/index.md) |
 
 पहले [तत्परता मूल्यांकन](../../../spec/readiness-assessment.md) पढ़ें: निष्कर्ष यह है कि यह डेमो सॉफ़्टवेयर है और उच्च-आश्वासन वाले संगठन में उत्पादन के उपयोग के लिए तैयार नहीं है।
 

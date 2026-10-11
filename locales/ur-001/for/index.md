@@ -14,6 +14,7 @@
 | چیف اسٹریٹجی آفیسر | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | چیف سیکیورٹی آفیسر | [chief-security-officer](chief-security-officer/index.md) |
 | گورننس، رسک، تعمیل | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| آزاد سیکیورٹی ٹیسٹنگ (اسے منگوانے کے لیے مختصر بیان) | [independent-security-tester](independent-security-tester/index.md) |
 
 [تیاری کے جائزے](../../../spec/readiness-assessment.md) سے شروع کریں: فیصلہ یہ ہے کہ یہ ڈیمو سافٹ ویئر ہے اور اعلیٰ یقین دہانی والے ادارے میں پیداواری استعمال کے لیے تیار نہیں۔
 

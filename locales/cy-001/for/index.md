@@ -14,6 +14,7 @@ Un dudalen ar gyfer pob rôl arwain, sy'n dweud beth mae Workforce Planning Mana
 | Prif Swyddog Strategaeth | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | Prif Swyddog Diogelwch | [chief-security-officer](chief-security-officer/index.md) |
 | Llywodraethu, Risg, Cydymffurfio | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| Profi diogelwch annibynnol (briff ar gyfer ei gomisiynu) | [independent-security-tester](independent-security-tester/index.md) |
 
 Dechreuwch gyda'r [asesiad parodrwydd](../../../spec/readiness-assessment.md): y dyfarniad yw mai meddalwedd arddangos yw hwn ac nad yw'n barod i'w ddefnyddio'n gynhyrchiol mewn sefydliad sydd angen sicrwydd uchel.
 

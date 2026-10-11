@@ -14,6 +14,7 @@ Satu halaman untuk setiap peran kepemimpinan, yang menyatakan apa yang diberikan
 | Direktur Strategi | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | Direktur Keamanan | [chief-security-officer](chief-security-officer/index.md) |
 | Tata kelola, risiko, kepatuhan | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| Pengujian keamanan independen (ringkasan untuk memesannya) | [independent-security-tester](independent-security-tester/index.md) |
 
 Mulailah dengan [penilaian kesiapan](../../../spec/readiness-assessment.md): putusannya adalah bahwa ini perangkat lunak demonstrasi dan belum siap untuk penggunaan produksi di organisasi dengan jaminan tinggi.
 

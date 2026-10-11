@@ -14,6 +14,7 @@
 | প্রধান কৌশল কর্মকর্তা | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | প্রধান নিরাপত্তা কর্মকর্তা | [chief-security-officer](chief-security-officer/index.md) |
 | শাসন, ঝুঁকি, সম্মতি | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| স্বাধীন নিরাপত্তা পরীক্ষণ (এটি কমিশন করার সংক্ষিপ্ত বিবরণ) | [independent-security-tester](independent-security-tester/index.md) |
 
 শুরু করুন [প্রস্তুতি মূল্যায়ন](../../../spec/readiness-assessment.md) দিয়ে: রায় হলো এটি ডেমো সফটওয়্যার এবং উচ্চ-নিশ্চয়তার প্রতিষ্ঠানে উৎপাদনে ব্যবহারের জন্য প্রস্তুত নয়।
 

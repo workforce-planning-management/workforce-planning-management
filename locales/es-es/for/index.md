@@ -14,6 +14,7 @@ Una página para cada rol directivo, que dice qué ofrece Workforce Planning Man
 | Dirección de estrategia | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | Dirección de seguridad | [chief-security-officer](chief-security-officer/index.md) |
 | Gobernanza, riesgo y cumplimiento | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| Pruebas de seguridad independientes (un informe para encargarlas) | [independent-security-tester](independent-security-tester/index.md) |
 
 Empiece por la [evaluación de preparación](../../../spec/readiness-assessment.md): la conclusión es que este es software de demostración y no está listo para uso en producción en una organización de alta garantía.
 

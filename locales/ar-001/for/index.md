@@ -14,6 +14,7 @@
 | رئيس الاستراتيجية | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | رئيس الأمن | [chief-security-officer](chief-security-officer/index.md) |
 | الحوكمة والمخاطر والامتثال | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| اختبار الأمن المستقل (موجز لتكليف إجرائه) | [independent-security-tester](independent-security-tester/index.md) |
 
 ابدأ بـ[تقييم الجاهزية](../../../spec/readiness-assessment.md): الحكم أن هذا برنامج للعرض التوضيحي وليس جاهزًا للاستخدام الإنتاجي في مؤسسة تتطلب ضمانًا عاليًا.
 

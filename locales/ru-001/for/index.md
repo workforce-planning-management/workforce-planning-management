@@ -14,6 +14,7 @@
 | Директор по стратегии | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | Директор по безопасности | [chief-security-officer](chief-security-officer/index.md) |
 | Управление, риски, соответствие | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| Независимое тестирование безопасности (записка для его заказа) | [independent-security-tester](independent-security-tester/index.md) |
 
 Начните с [оценки готовности](../../../spec/readiness-assessment.md): вывод таков, что это демонстрационное программное обеспечение, не готовое к промышленной эксплуатации в организации с высокими требованиями к надёжности.
 

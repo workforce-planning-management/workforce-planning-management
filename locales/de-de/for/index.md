@@ -14,6 +14,7 @@ Eine Seite für jede Führungsrolle: Sie sagt, was Workforce Planning Management
 | Strategieleitung | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | Sicherheitsleitung | [chief-security-officer](chief-security-officer/index.md) |
 | Governance, Risiko, Compliance | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| Unabhängige Sicherheitsprüfung (ein Briefing zur Beauftragung) | [independent-security-tester](independent-security-tester/index.md) |
 
 Beginnen Sie mit der [Reifegradbewertung](../../../spec/readiness-assessment.md): Das Ergebnis lautet, dass dies Demonstrationssoftware ist und für den Produktivbetrieb in einer Organisation mit hohem Sicherheitsanspruch nicht bereit ist.
 

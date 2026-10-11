@@ -14,6 +14,7 @@
 | 首席战略官 | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | 首席安全官 | [chief-security-officer](chief-security-officer/index.md) |
 | 治理、风险与合规 | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| 独立安全测试（委托此类测试的简报） | [independent-security-tester](independent-security-tester/index.md) |
 
 请先阅读[就绪度评估](../../../spec/readiness-assessment.md)：结论是，这是演示软件，尚不能用于高保障要求组织的生产环境。
 

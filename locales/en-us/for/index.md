@@ -16,6 +16,7 @@ rather than restating it.
 | Chief Strategy Officer | [chief-strategy-officer](chief-strategy-officer/index.md) |
 | Chief Security Officer | [chief-security-officer](chief-security-officer/index.md) |
 | Governance, Risk, Compliance | [governance-risk-compliance](governance-risk-compliance/index.md) |
+| Independent security testing (a brief for commissioning it) | [independent-security-tester](independent-security-tester/index.md) |
 
 Start with the [readiness assessment](../../../spec/readiness-assessment.md): the verdict is that this is
 demonstration software and not ready for production use in a high-assurance organization.
