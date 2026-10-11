@@ -30,6 +30,7 @@ pub mod expenses;
 pub mod flexible_working;
 pub mod framework;
 pub mod framework_roles;
+pub mod funding;
 pub mod gap;
 pub mod grade;
 pub mod groups;

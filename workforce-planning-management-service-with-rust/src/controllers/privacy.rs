@@ -19,9 +19,9 @@ use crate::models::_entities::{
     entitlement_acknowledgements, equality_declarations, ergonomic_assessments, expense_claims,
     expense_items, flexible_working_requests, group_members, handover_actions, leave_entitlements,
     leave_requests, mentorships, mobility_interests, movements, notifications, path_enrollments,
-    payslips, pipeline_members, professional_registrations, program_placements, resignations,
-    reviews, rota_members, rota_overrides, rota_swap_requests, shift_assignments, time_entries,
-    training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
+    payslips, pipeline_members, post_fundings, professional_registrations, program_placements,
+    resignations, reviews, rota_members, rota_overrides, rota_swap_requests, shift_assignments,
+    time_entries, training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
     worker_contractor_details, worker_framework_roles, worker_health_records, worker_job_levels,
     worker_pay_positions, worker_skill_history, worker_skills, workers,
 };
@@ -124,6 +124,7 @@ async fn subject_access(
         "contact_details": rows_for!(db, worker_contact_details, WorkerPid, epid),
         "resignations": rows_for!(db, resignations, WorkerPid, epid),
         "conversion_plans": rows_for!(db, conversion_plans, WorkerPid, epid),
+        "post_funding": rows_for!(db, post_fundings, WorkerPid, epid),
         "engagement_decisions": rows_for!(db, engagement_decisions, WorkerPid, epid),
         "engagement_reminders": rows_for!(db, engagement_reminders, WorkerPid, epid),
         // Health data readable by the worker and occupational health only (WPM-D75): anyone else
@@ -263,6 +264,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM worker_contact_details WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM resignations WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM conversion_plans WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM post_fundings WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM engagement_decisions WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM engagement_reminders WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_health_records WHERE worker_pid = '{epid}'"),

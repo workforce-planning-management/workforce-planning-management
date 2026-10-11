@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — contingent share and funding horizon (WPM-T109, part)
+
+`GET /api/workforce-intelligence/contingent` (HR only, audited): the share of FTE that is contractor and that is fixed-term, each
+apart, and for the next twelve months the people whose funding ends in each month (and those whose funding has already ended).
+Aggregate only. The department breakdown shows only when every department reaches the small-group floor; a month with some but
+fewer than the floor is withheld, and no total is given, so a withheld figure cannot be worked out.
+
+### Changed — the cache is Redis in production (WPM-T217)
+
+`cache: kind: Redis` with `REDIS_URL` in production (optional: unset, it is in memory with a warning) and the demo; `rediss://` works (TLS added to the Redis client, the rustls provider chosen at boot); development and tests stay in memory. Only non-personal lookups
+are cached (organization and course names, ESCO searches), every call fails open, and a plaintext `redis://` to another host
+stops a production boot unless `WPM_ALLOW_PLAINTEXT_REDIS=1`. **Fixed:** a database host such as `127.0.0.1.example.com` was
+treated as local and skipped the TLS requirement.
+
+### Added — post funding beside the contract end (WPM-T161)
+
+`/api/workers/{pid}/funding` (migration `000063`): the funding kind, programme and end date, compared with the contract end; HR only,
+checked by the handler itself. Conversion-plan changes are now taken under a row lock, and a lost race on a second open plan answers 422.
+
 ### Added — conversion plans (WPM-T162, T163; part of T164)
 
 What a person intends for a fixed-term, contractor or intern engagement: convert, extend, end or undecided (migration `000062`,

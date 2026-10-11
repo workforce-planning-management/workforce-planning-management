@@ -29,6 +29,15 @@ services:
     tmpfs:
       - /var/lib/postgresql
 
+  redis:
+    image: docker.io/library/redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]   # a cache: nothing to keep
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
   api:
     build:
       context: ./workforce-planning-management-service-with-rust
@@ -36,8 +45,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       LOCO_ENV: demo
+      REDIS_URL: redis://redis:6379
       DATABASE_URL: postgres://loco:loco@postgres:5432/workforce_planning_management_service_demo
       WPM_REQUIRE_AUTH: "0"   # explicit, demo only: see the header of this file
       WPM_CORS_ORIGIN: http://localhost:5173

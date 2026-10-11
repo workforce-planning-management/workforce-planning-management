@@ -72,6 +72,7 @@ pub mod payslips;
 pub mod pipeline_members;
 pub mod plan_demand_lines;
 pub mod plan_objectives;
+pub mod post_fundings;
 pub mod prelude;
 pub mod professional_registrations;
 pub mod program_placements;

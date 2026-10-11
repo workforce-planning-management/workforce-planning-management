@@ -23,6 +23,7 @@ use crate::models::_entities::{
 use crate::models::audit_logs::Model as Audit;
 use crate::rules::esco as rules;
 use crate::rules::learning::valid_proficiency;
+use crate::shared_cache::Namespace;
 use crate::tasks::import_esco::ESCO_SLUG;
 use crate::validation::Problems;
 
@@ -60,6 +61,16 @@ async fn search_occupations(
     if term.trim().chars().count() < 2 {
         return Err(unprocessable("q must be at least 2 characters"));
     }
+    let cache_key = format!(
+        "{}|{}",
+        term.trim().to_lowercase(),
+        search_limit(query.limit)
+    );
+    if let Some(hit) = crate::shared_cache::get(Namespace::EscoOccupations, &cache_key).await
+        && let Ok(value) = serde_json::from_str::<serde_json::Value>(&hit)
+    {
+        return format::json(value);
+    }
     let rows = esco_occupations::Entity::find()
         .filter(sea_orm::sea_query::Expr::cust_with_values(
             "lower(label) LIKE $1 ESCAPE '\\'",
@@ -92,6 +103,10 @@ async fn search_occupations(
             })
         })
         .collect();
+    let out = serde_json::Value::Array(out);
+    if let Ok(text) = serde_json::to_string(&out) {
+        crate::shared_cache::put(Namespace::EscoOccupations, &cache_key, &text).await;
+    }
     format::json(out)
 }
 

@@ -25,7 +25,7 @@ use crate::rules::engagement as rules;
 use crate::validation::Problems;
 
 /// A worker the caller may change: HR, or the worker themself.
-async fn writable_worker(
+pub(crate) async fn writable_worker(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     pid: &str,

@@ -189,6 +189,30 @@ async fn a_conversion_is_proposed_by_a_manager_approved_by_someone_else_and_read
         let listed: Vec<Value> = get("/api/conversion-plans".into(), hr.clone()).await.json();
         assert!(listed.iter().any(|e| e["worker_pid"] == w.as_str() && e["plan"]["status"] == "proposed"));
 
+        // Funding is HR's to write and read; the comparison with the contract end follows.
+        let funding = format!("/api/workers/{w}/funding");
+        let put = |token: String, body: Value| {
+            let (request, funding) = (&request, funding.clone());
+            async move { request.put(&funding).add_header("authorization", token).json(&body).await }
+        };
+        let short = json!({ "kind": "time_limited", "ends_on": day(60) });
+        for (name, token) in [("the worker", &me), ("the manager", &manager), ("a neighbour", &neighbour)] {
+            assert_eq!(get(funding.clone(), token.clone()).await.status_code(), 403, "{name} does not read funding");
+            assert_eq!(put(token.clone(), short.clone()).await.status_code(), 403, "{name} does not write it");
+        }
+        assert_eq!(put(hr.clone(), short.clone()).await.status_code(), 200);
+        let seen = get(funding.clone(), hr.clone()).await.json::<Value>();
+        assert_eq!((seen["alignment"].as_str(), seen["needs_attention"].as_bool()), (Some("contract_outlasts_funding"), Some(true)));
+
+        // The contingent share and funding horizon are HR's, and name no one.
+        let contingent = "/api/workforce-intelligence/contingent";
+        for (name, token) in [("the worker", &me), ("the manager", &manager), ("a neighbour", &neighbour)] {
+            assert_eq!(get(contingent.into(), token.clone()).await.status_code(), 403, "{name} does not read the contingent view");
+        }
+        let view = get(contingent.into(), hr.clone()).await;
+        assert_eq!(view.status_code(), 200);
+        assert!(!view.text().contains(&w), "the aggregate names no one");
+
         // ── Approving ──────────────────────────────────────────────────────────────────
         let approve = format!("/api/conversion-plans/{pid}/approve");
         let proposer = post(approve.clone(), manager.clone(), json!({})).await;

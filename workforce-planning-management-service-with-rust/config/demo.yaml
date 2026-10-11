@@ -100,7 +100,8 @@ database:
   # Recreating schema when application loaded.  This is a dangerous operation, make sure that you using this flag only on dev environments or test mode
   dangerously_recreate: false
 
-# Cache provider: in-memory (loco `cache_inmem`, enabled by default).
+# Cache provider: Redis (loco `cache_redis`), as in production (WPM-D78). The demo compose file runs one.
 cache:
-  kind: InMem
-  max_capacity: 33554432 # 32MiB (default if not specified)
+  kind: Redis
+  uri: {{ get_env(name="REDIS_URL", default="redis://127.0.0.1:6379") }}
+  max_size: 10

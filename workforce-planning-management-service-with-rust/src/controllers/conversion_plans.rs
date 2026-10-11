@@ -11,7 +11,7 @@
 
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
+use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -222,7 +222,7 @@ async fn propose(
         today,
     )
     .map_err(|e| unprocessable(&e))?;
-    let row = conversion_plans::ActiveModel {
+    let inserted = conversion_plans::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
         intent: ActiveValue::set(payload.intent),
@@ -238,7 +238,20 @@ async fn propose(
         ..Default::default()
     }
     .insert(&ctx.db)
-    .await?;
+    .await;
+    // Two proposals at once: the partial unique index lets one in and this one is told, not failed.
+    let row = match inserted {
+        Ok(row) => row,
+        Err(e) => {
+            return if open_plan(&ctx, worker.pid).await?.is_some() {
+                Err(unprocessable(
+                    "the worker already has an open plan; approve, carry out or abandon it first",
+                ))
+            } else {
+                Err(e.into())
+            };
+        }
+    };
     Audit::record(
         &ctx.db,
         "worker",
@@ -267,6 +280,16 @@ async fn plan_and_worker(
     Ok((row, worker))
 }
 
+/// Re-read a plan inside the transaction with a row lock, so two callers acting on the same plan at
+/// once are taken one after the other and the second sees what the first did.
+async fn locked(txn: &sea_orm::DatabaseTransaction, id: i32) -> Result<conversion_plans::Model> {
+    conversion_plans::Entity::find_by_id(id)
+        .lock_exclusive()
+        .one(txn)
+        .await?
+        .ok_or(Error::NotFound)
+}
+
 /// `POST /api/conversion-plans/{pid}/approve` — approve a proposed plan. Never the proposer.
 /// Approving records the matching engagement decision against the current end date, in the same
 /// transaction, so the end-of-engagement reminder is settled by a person's decision.
@@ -278,6 +301,9 @@ async fn approve(
 ) -> Result<Response> {
     let (row, worker) = plan_and_worker(&ctx, &caller, &pid).await?;
     let actor = caller.actor().map(ToString::to_string);
+    let today = Utc::now().date_naive();
+    let txn = ctx.db.begin().await?;
+    let row = locked(&txn, row.id).await?;
     rules::validate_approval(
         &row.intent,
         &row.status,
@@ -285,8 +311,11 @@ async fn approve(
         actor.as_deref(),
     )
     .map_err(|e| unprocessable(&e))?;
-    let today = Utc::now().date_naive();
-    let txn = ctx.db.begin().await?;
+    let worker = workers::Entity::find_by_id(worker.id)
+        .lock_exclusive()
+        .one(&txn)
+        .await?
+        .ok_or(Error::NotFound)?;
     let mut active: conversion_plans::ActiveModel = row.clone().into();
     active.status = ActiveValue::set("approved".to_string());
     active.approved_by = ActiveValue::set(actor.clone());
@@ -368,12 +397,18 @@ async fn done(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let (row, worker) = plan_and_worker(&ctx, &caller, &pid).await?;
+    let today = Utc::now().date_naive();
+    let txn = ctx.db.begin().await?;
+    let row = locked(&txn, row.id).await?;
     rules::validate_done(&row.intent, &row.status).map_err(|e| unprocessable(&e))?;
+    let worker = workers::Entity::find_by_id(worker.id)
+        .lock_exclusive()
+        .one(&txn)
+        .await?
+        .ok_or(Error::NotFound)?;
     if worker.terminated_on.is_some() {
         return Err(unprocessable("the worker's employment has ended"));
     }
-    let today = Utc::now().date_naive();
-    let txn = ctx.db.begin().await?;
     let mut w: workers::ActiveModel = worker.clone().into();
     w.employment_type = ActiveValue::set("permanent".to_string());
     w.engagement_ends_on = ActiveValue::set(None);

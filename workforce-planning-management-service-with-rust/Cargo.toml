@@ -22,7 +22,7 @@ include = ["src/**/*", "README.md"]
 # and this family issues PASETO v4.public rather than JWT — see
 # agents/share/jwt.md. Dropping it removes the vulnerable crate from the
 # dependency graph rather than suppressing the advisory.
-loco-rs = { version = "1.1.0", default-features = false, features = ["cli", "with-db", "cache_inmem", "worker"] }
+loco-rs = { version = "1.1.0", default-features = false, features = ["cli", "with-db", "cache_inmem", "cache_redis", "worker"] }
 
 [features]
 # Exactly one token-verification backend, chosen at build time —
@@ -66,6 +66,13 @@ reqwest = { version = "0.12", default-features = false, features = [
   "rustls-tls",
   "json",
 ] }
+
+# Loco's Redis cache (`cache_redis`) pulls in `redis` with no TLS. Turning TLS on here, by
+# feature unification, is what makes a `rediss://` REDIS_URL work (WPM-D78).
+# Two rustls crypto providers are in the build (`ring` and `aws-lc-rs`), so rustls cannot choose one
+# and a TLS connection would panic; `shared_cache::install_tls_provider` chooses `ring` at boot.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+redis = { version = "1.7", default-features = false, features = ["tokio-rustls-comp"] }
 
 # Cross-service entity references (EntityRef URN + entity-type registry):
 # people/workers/organizations/courses are referenced, never duplicated.

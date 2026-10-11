@@ -97,3 +97,8 @@ auth:
     secret: uDpkqVzF9zmBz9d3Z7l4
     # Token expiration time in seconds
     expiration: 604800 # 7 days
+
+# In-memory cache, so the shared-cache behaviour (WPM-D78) is exercised without a Redis.
+cache:
+  kind: InMem
+  max_capacity: 33554432

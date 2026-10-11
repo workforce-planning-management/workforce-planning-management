@@ -65,10 +65,21 @@ pub async fn display_name(entity_ref: &EntityRef) -> Option<String> {
     {
         return Some(hit.clone());
     }
+    // Organization and course names are not personal: the cache every instance shares may hold them
+    // (WPM-D78). A person's or worker's name is never put there.
+    let shared = shared_namespace(entity_ref);
+    if let Some(ns) = shared
+        && let Some(hit) = crate::shared_cache::get(ns, &urn).await
+    {
+        return Some(hit);
+    }
     if mode() != Mode::Http {
         return None;
     }
     let fetched = fetch_display_name(entity_ref).await;
+    if let (Some(ns), Some(name)) = (shared, &fetched) {
+        crate::shared_cache::put(ns, &urn, name).await;
+    }
     if let Some(name) = &fetched {
         cache()
             .lock()
@@ -76,6 +87,16 @@ pub async fn display_name(entity_ref: &EntityRef) -> Option<String> {
             .insert(urn, name.clone());
     }
     fetched
+}
+
+/// The shared-cache namespace for a lookup, only for kinds of thing whose names are not personal.
+fn shared_namespace(entity_ref: &EntityRef) -> Option<crate::shared_cache::Namespace> {
+    use crate::shared_cache::Namespace;
+    match entity_ref.entity_type {
+        entity_ref::EntityType::Organization => Some(Namespace::OrganizationName),
+        entity_ref::EntityType::Course => Some(Namespace::CourseName),
+        _ => None,
+    }
 }
 
 /// Seed the cache (used by tests and the seed task).
@@ -186,6 +207,23 @@ async fn reqwest_get_json(url: &str) -> Option<serde_json::Value> {
 mod tests {
     use super::*;
     use std::str::FromStr;
+
+    /// Only the names of things that are not people may enter the cache every instance shares
+    /// (WPM-D78): a person's or worker's name stays in this process.
+    #[test]
+    fn only_non_personal_names_are_shared() {
+        use crate::shared_cache::Namespace;
+        let of = |kind: &str| {
+            shared_namespace(
+                &EntityRef::from_str(&format!("{kind}:{}", uuid::Uuid::new_v4())).unwrap(),
+            )
+        };
+        assert_eq!(of("organization"), Some(Namespace::OrganizationName));
+        assert_eq!(of("course"), Some(Namespace::CourseName));
+        for personal in ["person", "worker", "courseinstance"] {
+            assert_eq!(of(personal), None, "{personal} must not be shared");
+        }
+    }
 
     /// Stub mode misses; a primed cache hits regardless of mode.
     #[tokio::test]

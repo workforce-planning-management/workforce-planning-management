@@ -87,7 +87,18 @@ auth:
     expiration: 604800
 
 
-# Cache provider: in-memory (loco `cache_inmem`, enabled by default).
+# Cache provider: Redis (loco `cache_redis`) when REDIS_URL is set, so several instances share one cache (WPM-D78).
+# Only non-personal lookups are cached (src/shared_cache.rs lists them). Use `rediss://` across a
+# network; the service refuses a plaintext `redis://` to a remote host unless
+# WPM_ALLOW_PLAINTEXT_REDIS=1. A Redis that is down is a cache miss, never an error.
+# With no REDIS_URL the cache is in memory, one per instance: correct, only less shared (the service
+# logs a warning at boot so that is a choice and not an accident).
 cache:
+{% if get_env(name="REDIS_URL", default="") != "" %}
+  kind: Redis
+  uri: {{ get_env(name="REDIS_URL") }}
+  max_size: 10
+{% else %}
   kind: InMem
-  max_capacity: 33554432 # 32MiB (default if not specified)
+  max_capacity: 33554432 # 32MiB
+{% endif %}

@@ -672,6 +672,12 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
         let mine = listed.iter().find(|e| e["worker_pid"] == w.as_str()).expect("listed");
         assert_eq!(mine["plan"]["status"], "proposed");
 
+        // The database itself refuses a second open plan, whatever the handler does.
+        let duplicate = ctx.db.execute_unprepared(&format!(
+            "INSERT INTO conversion_plans (pid, worker_pid, intent, target_on, status) \
+             VALUES ('{}', '{w}', 'end', '{}', 'proposed')", uuid::Uuid::new_v4(), day(5))).await;
+        assert!(duplicate.is_err(), "one open plan per worker is a database rule");
+
         // Abandoning keeps the plan as history and frees the slot.
         assert_eq!(request.post(&format!("/api/conversion-plans/{pid}/done")).await.status_code(), 422, "not approved yet");
         request.post(&format!("/api/conversion-plans/{pid}/abandon")).await.assert_status_ok();
@@ -705,6 +711,109 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
             format!("SELECT count(*) AS n FROM conversion_plans WHERE worker_pid = '{w}'"),
         )).await.unwrap().unwrap().try_get::<i64>("", "n").unwrap();
         assert_eq!(left, 0, "erased with the worker");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// Post funding (WPM-R62, WPM-R98): kind and date only, compared with the contract end, an unknown
+// never a match, in the export, erased with the worker.
+async fn post_funding_is_compared_with_the_contract_end_exported_and_erased() {
+    crate::requests::request_open(|request, ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = chrono::Utc::now().date_naive();
+        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let r = request.post("/api/workers").json(&json!({
+            "person_ref": a_person(), "organization_ref": an_org(), "worker_number": format!("PF-{tag}"),
+            "display_name": "Test Worker PF", "employment_type": "fixed_term", "department": "engineering",
+            "job_title": "Engineer", "hired_on": "2026-01-05", "engagement_ends_on": day(100),
+        })).await;
+        let w = r.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let url = format!("/api/workers/{w}/funding");
+        let none: Value = request.get(&url).await.json();
+        assert_eq!((none["funding"].clone(), none["alignment"].as_str()), (Value::Null, Some("unknown")));
+        for (why, body) in [
+            ("unknown kind", json!({ "kind": "lottery" })),
+            ("time-limited needs an end", json!({ "kind": "time_limited" })),
+            ("ends before it started", json!({ "kind": "core", "ends_on": "2025-12-31" })),
+            ("programme is a thing URN", json!({ "kind": "programme", "programme_ref": "not-a-urn" })),
+        ] {
+            assert_eq!(request.put(&url).json(&body).await.status_code(), 422, "{why}");
+        }
+        for (body, expect, attention) in [
+            (json!({ "kind": "time_limited", "ends_on": day(100) }), "matched", false),
+            (json!({ "kind": "time_limited", "ends_on": day(40) }), "contract_outlasts_funding", true),
+            (json!({ "kind": "external", "ends_on": day(200) }), "funding_outlasts_contract", true),
+            (json!({ "kind": "core" }), "funding_open_ended", false),
+        ] {
+            let got: Value = request.put(&url).json(&body).await.json();
+            assert_eq!((got["alignment"].as_str(), got["needs_attention"].as_bool()), (Some(expect), Some(attention)), "{body}");
+        }
+        let export: Value = request.get(&format!("/api/workers/{w}/subject-access")).await.json();
+        assert_eq!(export["post_funding"].as_array().unwrap().len(), 1);
+        let audits = serde_json::to_string(&request.get(&format!("/api/audits/{w}")).await.json::<Value>()).unwrap();
+        assert!(audits.contains("post_funding_set"));
+        request.delete(&url).await.assert_status_ok();
+        assert_eq!(request.delete(&url).await.status_code(), 404);
+        request.put(&url).json(&json!({ "kind": "core" })).await.assert_status_ok();
+        for to in ["active", "offboarding", "terminated"] {
+            request.post(&format!("/api/workers/{w}/status")).json(&json!({ "to": to })).await.assert_status_ok();
+        }
+        request.post(&format!("/api/workers/{w}/erase")).await.assert_status_ok();
+        use sea_orm::{ConnectionTrait, Statement};
+        let left = ctx.db.query_one_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            format!("SELECT count(*) AS n FROM post_fundings WHERE worker_pid = '{w}'"),
+        )).await.unwrap().unwrap().try_get::<i64>("", "n").unwrap();
+        assert_eq!(left, 0, "erased with the worker");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// Contingent share and funding horizon (WPM-R62): shares apart, months, small months withheld.
+async fn the_contingent_view_shows_shares_and_funding_months_and_withholds_small_groups() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = chrono::Utc::now().date_naive();
+        let end = today + chrono::Duration::days(75);
+        let month = end.format("%Y-%m").to_string();
+        // Ten people whose funding ends in one month, and one whose ends in another.
+        for i in 0..11 {
+            let kind = if i < 2 { "contractor" } else if i < 4 { "fixed_term" } else { "permanent" };
+            let r = request.post("/api/workers").json(&json!({
+                "person_ref": a_person(), "organization_ref": an_org(), "worker_number": format!("CT-{tag}-{i}"),
+                "display_name": "Test Worker CT", "employment_type": kind, "department": format!("ct-{tag}"),
+                "job_title": "Engineer", "hired_on": "2026-01-05", "engagement_ends_on": (kind != "permanent").then(|| (today + chrono::Duration::days(300)).to_string()),
+            })).await;
+            assert_eq!(r.status_code(), 200, "{}", r.text());
+            let w = r.json::<Value>()["pid"].as_str().unwrap().to_string();
+            let ends = if i < 10 { end } else { today + chrono::Duration::days(200) };
+            request.put(&format!("/api/workers/{w}/funding")).json(&json!({ "kind": "external", "ends_on": ends.to_string() })).await.assert_status_ok();
+        }
+        let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
+        assert_eq!(v["small_group_floor"], 10);
+        let shares = (v["contractor_percent_of_fte"].as_f64().unwrap(), v["fixed_term_percent_of_fte"].as_f64().unwrap());
+        assert!(shares.0 > 0.0 && shares.1 > 0.0, "each is shown, apart");
+        let months = v["funding_ends"].as_array().unwrap();
+        assert_eq!(months.len(), 13);
+        assert_eq!(months[0]["month"], "already_ended");
+        let hit = months.iter().find(|m| m["month"] == month.as_str()).unwrap();
+        assert!(hit["people"].as_u64().unwrap() >= 10, "ten at the floor are shown");
+        // The one whose funding ends alone in another month is not shown by itself.
+        let lone = (today + chrono::Duration::days(200)).format("%Y-%m").to_string();
+        let lone = months.iter().find(|m| m["month"] == lone.as_str()).unwrap();
+        if lone["people"].is_null() {
+            assert!(lone["fte"].is_null(), "withheld means no figure at all");
+        } else {
+            assert!(lone["people"].as_u64().unwrap() >= 10);
+        }
+        let text = v.to_string();
+        assert!(!text.contains("Test Worker CT"), "no names");
     })
     .await;
 }

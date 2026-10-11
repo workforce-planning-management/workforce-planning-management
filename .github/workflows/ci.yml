@@ -77,8 +77,17 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     env:
       DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_service_test
+      WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v7
       - uses: Swatinem/rust-cache@v2
@@ -96,6 +105,7 @@ jobs:
       - run: cargo test --locked --test enforcement_me -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_flexible -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_conversion -- --ignored --test-threads=1
+      - run: cargo test --locked --test shared_cache_upstream
       - run: cargo test --locked --test enforcement_equality -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_health -- --ignored --test-threads=1
       - run: cargo test --locked --test security -- --ignored --test-threads=1
@@ -120,8 +130,17 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     env:
       DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_service_test
+      WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v7
       - uses: Swatinem/rust-cache@v2
@@ -149,6 +168,14 @@ jobs:
         ports: ['5432:5432']
         options: >-
           --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
@@ -252,6 +279,14 @@ jobs:
         ports: ['5432:5432']
         options: >-
           --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20

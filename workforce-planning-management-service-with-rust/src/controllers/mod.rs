@@ -27,6 +27,7 @@ pub mod esco;
 pub mod expenses;
 pub mod flexible_working;
 pub mod framework_roles;
+pub mod funding;
 pub mod grades;
 pub mod groups;
 pub mod handover;

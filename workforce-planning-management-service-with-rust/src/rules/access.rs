@@ -65,6 +65,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("candidates", Privileged),
     ("candidates/{}/assessment-profile", Privileged),
     ("workforce-intelligence/capability", Open),
+    ("workforce-intelligence/contingent", Privileged),
     ("workforce-intelligence/capability-analysis", Open),
     ("capability-frameworks", Open),
     ("capacity", Open),
@@ -194,6 +195,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("workers/{}/emergency-contacts", ControllerDecides),
     ("workers/{}/ergonomic-assessments", Worker(SelfOnly)),
     ("workers/{}/engagement", ControllerDecides),
+    ("workers/{}/funding", Privileged),
     (
         "workers/{}/engagement/status-assessments",
         ControllerDecides,

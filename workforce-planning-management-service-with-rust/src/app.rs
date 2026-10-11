@@ -102,6 +102,8 @@ impl Hooks for App {
         environment: &Environment,
         config: Config,
     ) -> Result<BootResult> {
+        // Before Loco opens the cache connection, which may be `rediss://`.
+        crate::shared_cache::install_tls_provider();
         create_app::<Self, Migrator>(mode, environment, config).await
     }
 
@@ -125,6 +127,7 @@ impl Hooks for App {
             .add_route(controllers::planning::routes())
             .add_route(controllers::capacity::routes())
             .add_route(controllers::conversion_plans::routes())
+            .add_route(controllers::funding::routes())
             .add_route(controllers::engagements::routes())
             .add_route(controllers::me::routes())
             .add_route(controllers::resignations::routes())
@@ -172,6 +175,22 @@ impl Hooks for App {
         // env fallback — the service always boots), then keep keys +
         // policy fresh.
         let production = ctx.environment == Environment::Production;
+        // The shared cache: Loco's provider (Redis in production), non-personal lookups only (WPM-D78).
+        crate::shared_cache::install(ctx.cache.clone());
+        if production && !matches!(ctx.config.cache, loco_rs::config::CacheConfig::Redis(_)) {
+            tracing::warn!(
+                "REDIS_URL is not set, so each instance keeps its own in-memory cache; set it to share one"
+            );
+        }
+        if let loco_rs::config::CacheConfig::Redis(redis) = &ctx.config.cache {
+            let allow = crate::compat::env_var("WPM_ALLOW_PLAINTEXT_REDIS")
+                .is_some_and(|v| auth::parse_bool(&v));
+            match crate::hardening::redis_check(production, &redis.uri, allow) {
+                Ok(Some(warning)) => tracing::warn!("{warning}"),
+                Ok(None) => {}
+                Err(message) => return Err(loco_rs::Error::string(&message)),
+            }
+        }
         auth::startup_check(
             auth::require_auth(),
             production,
@@ -271,6 +290,7 @@ impl Hooks for App {
 
     async fn truncate(ctx: &AppContext) -> Result<()> {
         truncate_table(&ctx.db, EventOutbox).await?;
+        truncate_table(&ctx.db, PostFundings).await?;
         truncate_table(&ctx.db, ConversionPlans).await?;
         truncate_table(&ctx.db, EngagementDecisions).await?;
         truncate_table(&ctx.db, EngagementReminders).await?;

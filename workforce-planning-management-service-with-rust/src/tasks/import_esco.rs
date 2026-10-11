@@ -54,6 +54,10 @@ impl Task for ImportEsco {
         let lang = vars.cli_arg("lang").unwrap_or("en");
         let version = vars.cli_arg("version").unwrap_or("unspecified");
         let report = import_esco(&ctx.db, Path::new(dir), lang, version).await?;
+        // The catalogue changed, so searches cached from the old one are orphaned. With the Redis
+        // provider this reaches every instance; with the in-memory one they expire within the hour.
+        crate::shared_cache::install(ctx.cache.clone());
+        crate::shared_cache::invalidate(crate::shared_cache::Namespace::EscoOccupations).await;
         tracing::info!(?report, "ESCO import finished");
         println!("{report:#?}");
         Ok(())

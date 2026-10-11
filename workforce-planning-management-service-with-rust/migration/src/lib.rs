@@ -75,6 +75,7 @@ mod m20261011_000059_equality_declarations;
 mod m20261011_000060_health_requirements;
 mod m20261012_000061_engagement_reminders;
 mod m20261012_000062_conversion_plans;
+mod m20261012_000063_post_fundings;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -149,6 +150,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261011_000060_health_requirements::Migration),
             Box::new(m20261012_000061_engagement_reminders::Migration),
             Box::new(m20261012_000062_conversion_plans::Migration),
+            Box::new(m20261012_000063_post_fundings::Migration),
             // inject-above (do not remove this comment)
         ]
     }

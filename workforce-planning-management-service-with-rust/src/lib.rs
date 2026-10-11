@@ -46,6 +46,7 @@ pub mod need_to_know;
 pub mod openapi;
 pub mod rules;
 pub mod security;
+pub mod shared_cache;
 pub mod streaming;
 pub mod tasks;
 pub mod validation;
