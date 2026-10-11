@@ -147,7 +147,10 @@
   "req": {
     "applications": "Candidatures",
     "headcount": "Effectif",
-    "months": "({months} mois)"
+    "months": "({months} mois)",
+    "new": "Ouvrir une demande de recrutement",
+    "duration": "Durée prévue (mois)",
+    "create": "Créer"
   },
   "wf": {
     "leaveRequests": "Demandes de congé",

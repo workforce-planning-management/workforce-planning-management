@@ -147,7 +147,10 @@
   "req": {
     "applications": "Bewerbungen",
     "headcount": "Stellenanzahl",
-    "months": "({months} Monate)"
+    "months": "({months} Monate)",
+    "new": "Stelle ausschreiben",
+    "duration": "Voraussichtliche Dauer (Monate)",
+    "create": "Anlegen"
   },
   "wf": {
     "leaveRequests": "Urlaubsanträge",

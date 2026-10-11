@@ -147,7 +147,10 @@
   "req": {
     "applications": "আবেদন",
     "headcount": "পদসংখ্যা",
-    "months": "({months} মাস)"
+    "months": "({months} মাস)",
+    "new": "নিয়োগের অনুরোধ খুলুন",
+    "duration": "প্রত্যাশিত মেয়াদ (মাস)",
+    "create": "তৈরি করুন"
   },
   "wf": {
     "leaveRequests": "ছুটির অনুরোধ",

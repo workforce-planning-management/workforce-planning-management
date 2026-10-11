@@ -173,7 +173,9 @@ test.describe("sign-in gate (WPM-T38)", () => {
       const page = await context.newPage();
       await page.goto("/");
       await expect(page).toHaveURL(new RegExp(`/${expected}$`));
-      expect(await page.evaluate(() => document.documentElement.lang)).toBe(expected);
+      expect(await page.evaluate(() => document.documentElement.lang)).toBe(
+        expected,
+      );
       await context.close();
     });
   }
@@ -250,9 +252,7 @@ test.describe("sign-in gate (WPM-T38)", () => {
     const response = await page.goto("/tour");
     expect(response?.status()).toBe(200);
     await expect(page).toHaveURL(/\/tour$/);
-    await expect(page.locator("h1")).toHaveText(
-      "See how it all fits together",
-    );
+    await expect(page.locator("h1")).toHaveText("See how it all fits together");
     await expect(page.locator("body")).toContainText(
       "Hiring & onboarding, start to finish",
     );
@@ -327,7 +327,8 @@ test.describe("signed-in smoke coverage", () => {
           {
             pid: "99999999-9999-4999-9999-999999999999",
             person_ref: WORKER.person_ref,
-            organization_ref: "organization:44444444-4444-4444-8444-444444444444",
+            organization_ref:
+              "organization:44444444-4444-4444-8444-444444444444",
             worker_pid: null,
             employed: false,
             role: "hr_admin",
@@ -381,7 +382,12 @@ test.describe("signed-in smoke coverage", () => {
   // overflow actually does; tiles clip silently (`overflow: hidden`), so the
   // check is on each tile's own content, not just the page.
   for (const screen of [
-    { name: "iPad 9th gen @2x (1080×810 CSS)", width: 1080, height: 810, scale: 2 },
+    {
+      name: "iPad 9th gen @2x (1080×810 CSS)",
+      width: 1080,
+      height: 810,
+      scale: 2,
+    },
     { name: "2160×1620 @1x", width: 2160, height: 1620, scale: 1 },
   ]) {
     test(`CEO dashboard fits ${screen.name} without scrolling or clipping`, async ({
@@ -402,38 +408,53 @@ test.describe("signed-in smoke coverage", () => {
       );
       let n = 0;
       const metricsFrom: string[] = [];
-      await page.route("**/api/proxy/workforce-intelligence/metrics**", (route) => {
-        metricsFrom.push(new URL(route.request().url()).searchParams.get("from") ?? "");
-        return route.fulfill({
-          json: {
-            period: { from: "2025-10-05", to: "2026-10-05" },
-            definitions: {},
-            headcount: { opening: 1180 + (n++ % 7) * 9, closing: 12345, opening_date: "2025-10-04" },
-            starters: 210,
-            leavers: 1234,
-            turnover_rate: 0.1234,
-            span_of_control: { managers: 1234, mean: 12.34, max: 40 },
-            time_to_fill: { requisitions: 99, mean_days: 61.2, median_days: 58.7 },
-          },
-        });
-      });
+      await page.route(
+        "**/api/proxy/workforce-intelligence/metrics**",
+        (route) => {
+          metricsFrom.push(
+            new URL(route.request().url()).searchParams.get("from") ?? "",
+          );
+          return route.fulfill({
+            json: {
+              period: { from: "2025-10-05", to: "2026-10-05" },
+              definitions: {},
+              headcount: {
+                opening: 1180 + (n++ % 7) * 9,
+                closing: 12345,
+                opening_date: "2025-10-04",
+              },
+              starters: 210,
+              leavers: 1234,
+              turnover_rate: 0.1234,
+              span_of_control: { managers: 1234, mean: 12.34, max: 40 },
+              time_to_fill: {
+                requisitions: 99,
+                mean_days: 61.2,
+                median_days: 58.7,
+              },
+            },
+          });
+        },
+      );
 
       const long =
         "Break leavers down by department and tenure, and compare with pulse-survey and exit feedback across every organization";
-      await page.route("**/api/proxy/workforce-intelligence/insights**", (route) =>
-        route.fulfill({
-          json: {
-            period: { from: "2025-10-05", to: "2026-10-05" },
-            thresholds: {},
-            insights: ["a", "b", "c", "d", "e"].map((c) => ({
-              code: `unknown_${c}`,
-              severity: "attention",
-              observation: long,
-              suggestion: long,
-              params: {},
-            })),
-          },
-        }),
+      await page.route(
+        "**/api/proxy/workforce-intelligence/insights**",
+        (route) =>
+          route.fulfill({
+            json: {
+              period: { from: "2025-10-05", to: "2026-10-05" },
+              thresholds: {},
+              insights: ["a", "b", "c", "d", "e"].map((c) => ({
+                code: `unknown_${c}`,
+                severity: "attention",
+                observation: long,
+                suggestion: long,
+                params: {},
+              })),
+            },
+          }),
       );
       await page.route("**/api/proxy/succession-plans/gaps", (route) =>
         route.fulfill({ json: { gaps: [{}, {}, {}] } }),
@@ -448,13 +469,17 @@ test.describe("signed-in smoke coverage", () => {
 
       const fit = await page.evaluate(() => {
         const doc = document.documentElement;
-        const tiles = [...document.querySelectorAll<HTMLElement>(".ceo .cx-tile")].map((el) => {
+        const tiles = [
+          ...document.querySelectorAll<HTMLElement>(".ceo .cx-tile"),
+        ].map((el) => {
           const box = el.getBoundingClientRect();
           return {
             name: el.dataset.testid ?? el.className,
             inView:
-              box.left >= 0 && box.top >= 0 &&
-              box.right <= window.innerWidth + 0.5 && box.bottom <= window.innerHeight + 0.5,
+              box.left >= 0 &&
+              box.top >= 0 &&
+              box.right <= window.innerWidth + 0.5 &&
+              box.bottom <= window.innerHeight + 0.5,
             clipsY: el.scrollHeight - el.clientHeight,
             clipsX: el.scrollWidth - el.clientWidth,
           };
@@ -474,8 +499,14 @@ test.describe("signed-in smoke coverage", () => {
         expect(tile.inView, `${tile.name} is inside the screen`).toBe(true);
         // Tiles clip silently; a tile whose content is taller or wider than
         // its box is clipping something the CEO needs to read.
-        expect(tile.clipsY, `${tile.name} clips vertically`).toBeLessThanOrEqual(1);
-        expect(tile.clipsX, `${tile.name} clips horizontally`).toBeLessThanOrEqual(1);
+        expect(
+          tile.clipsY,
+          `${tile.name} clips vertically`,
+        ).toBeLessThanOrEqual(1);
+        expect(
+          tile.clipsX,
+          `${tile.name} clips horizontally`,
+        ).toBeLessThanOrEqual(1);
       }
       await page.screenshot({
         path: `test-results/ceo-${screen.width}x${screen.height}.png`,
@@ -488,11 +519,19 @@ test.describe("signed-in smoke coverage", () => {
       expect(await hrefOf("kpi-gaps")).toMatch(/\/en-001\/development$/);
 
       // The period control reloads the period-based figures (and is in the URL).
-      await expect(page.getByTestId("range-12m")).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByTestId("range-12m")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
       await page.getByTestId("range-90d").click();
-      await expect(page.getByTestId("range-90d")).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByTestId("range-90d")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
       await expect(page).toHaveURL(/range=90d/);
-      const ninetyDaysBack = new Date(Date.now() - 89 * 86_400_000).toISOString().slice(0, 10);
+      const ninetyDaysBack = new Date(Date.now() - 89 * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
       await expect.poll(() => metricsFrom.includes(ninetyDaysBack)).toBe(true);
       await context.close();
     });
@@ -503,41 +542,132 @@ test.describe("signed-in smoke coverage", () => {
   }) => {
     const mv = "bbbbbbbb-0000-4000-8000-00000000b001";
     const movement = {
-      pid: mv, kind: "leaver", worker_pid: WORKER.pid, worker_name: WORKER.display_name,
-      department: "engineering", job_title: "Engineer", organization_ref: WORKER.organization_ref,
-      effective_on: "2026-11-30", reason: "resignation", status: "open", notes: null, completed_at: null,
+      pid: mv,
+      kind: "leaver",
+      worker_pid: WORKER.pid,
+      worker_name: WORKER.display_name,
+      department: "engineering",
+      job_title: "Engineer",
+      organization_ref: WORKER.organization_ref,
+      effective_on: "2026-11-30",
+      reason: "resignation",
+      status: "open",
+      notes: null,
+      completed_at: null,
       progress: { closed: 1, total: 3, overdue: 1 },
     };
     const items = [
-      { pid: "i1", position: 0, title: "Notice acknowledged and last day agreed", category: "admin", due_on: "2026-11-02", assignee_pid: null, assignee_name: null, done_on: null, done_by: null, skipped_reason: null, state: "overdue" },
-      { pid: "i2", position: 1, title: "Equipment returned", category: "equipment", due_on: "2026-11-30", assignee_pid: null, assignee_name: null, done_on: "2026-11-30", done_by: null, skipped_reason: null, state: "done" },
-      { pid: "i3", position: 2, title: "Exit interview offered", category: "people", due_on: "2026-11-27", assignee_pid: null, assignee_name: null, done_on: null, done_by: null, skipped_reason: "declined", state: "skipped" },
+      {
+        pid: "i1",
+        position: 0,
+        title: "Notice acknowledged and last day agreed",
+        category: "admin",
+        due_on: "2026-11-02",
+        assignee_pid: null,
+        assignee_name: null,
+        done_on: null,
+        done_by: null,
+        skipped_reason: null,
+        state: "overdue",
+      },
+      {
+        pid: "i2",
+        position: 1,
+        title: "Equipment returned",
+        category: "equipment",
+        due_on: "2026-11-30",
+        assignee_pid: null,
+        assignee_name: null,
+        done_on: "2026-11-30",
+        done_by: null,
+        skipped_reason: null,
+        state: "done",
+      },
+      {
+        pid: "i3",
+        position: 2,
+        title: "Exit interview offered",
+        category: "people",
+        due_on: "2026-11-27",
+        assignee_pid: null,
+        assignee_name: null,
+        done_on: null,
+        done_by: null,
+        skipped_reason: "declined",
+        state: "skipped",
+      },
     ];
     let held = [
-      { kind: "direct_report", subject_pid: "r1", label: "Ada Reports", can_reassign: true, needs_new_holder: true },
-      { kind: "access", subject_pid: "a1", label: "organization:x — hr_admin", can_reassign: false, needs_new_holder: false },
+      {
+        kind: "direct_report",
+        subject_pid: "r1",
+        label: "Ada Reports",
+        can_reassign: true,
+        needs_new_holder: true,
+      },
+      {
+        kind: "access",
+        subject_pid: "a1",
+        label: "organization:x — hr_admin",
+        can_reassign: false,
+        needs_new_holder: false,
+      },
     ];
     const trail: Array<Record<string, unknown>> = [];
-    await page.route("**/api/proxy/movements", (route) => route.fulfill({ json: [movement] }));
+    await page.route("**/api/proxy/movements", (route) =>
+      route.fulfill({ json: [movement] }),
+    );
     await page.route(`**/api/proxy/movements/${mv}`, (route) =>
       route.fulfill({ json: { ...movement, items } }),
     );
     await page.route(`**/api/proxy/movements/${mv}/handover`, (route) =>
-      route.fulfill({ json: { last_day: "2026-11-30", remaining: held.length, counts: {}, items: held } }),
+      route.fulfill({
+        json: {
+          last_day: "2026-11-30",
+          remaining: held.length,
+          counts: {},
+          items: held,
+        },
+      }),
     );
     await page.route(`**/api/proxy/movements/${mv}/handover/all`, (route) => {
       trail.push(
-        { kind: "direct_report", subject_pid: "r1", label: "Ada Reports", action: "reassigned", to_worker_pid: MASKED_WORKER.pid, to_worker_name: MASKED_WORKER.display_name, note: null, performed_by: null, performed_at: "2026-11-30T09:00:00Z" },
-        { kind: "access", subject_pid: "a1", label: "organization:x — hr_admin", action: "revoked", to_worker_pid: null, to_worker_name: null, note: null, performed_by: null, performed_at: "2026-11-30T09:00:01Z" },
+        {
+          kind: "direct_report",
+          subject_pid: "r1",
+          label: "Ada Reports",
+          action: "reassigned",
+          to_worker_pid: MASKED_WORKER.pid,
+          to_worker_name: MASKED_WORKER.display_name,
+          note: null,
+          performed_by: null,
+          performed_at: "2026-11-30T09:00:00Z",
+        },
+        {
+          kind: "access",
+          subject_pid: "a1",
+          label: "organization:x — hr_admin",
+          action: "revoked",
+          to_worker_pid: null,
+          to_worker_name: null,
+          note: null,
+          performed_by: null,
+          performed_at: "2026-11-30T09:00:01Z",
+        },
       );
       held = [];
-      return route.fulfill({ json: { handed_over: 1, access_revoked: 1, failed: [], remaining: 0 } });
+      return route.fulfill({
+        json: { handed_over: 1, access_revoked: 1, failed: [], remaining: 0 },
+      });
     });
     await page.route(`**/api/proxy/movements/${mv}/handover/actions`, (route) =>
       route.fulfill({ json: trail }),
     );
     await page.route(`**/api/proxy/movements/${mv}/complete`, (route) =>
-      route.fulfill({ status: 422, json: { description: "1 checklist item(s) still open" } }),
+      route.fulfill({
+        status: 422,
+        json: { description: "1 checklist item(s) still open" },
+      }),
     );
 
     // The list: leavers with progress, and the late count.
@@ -550,9 +680,15 @@ test.describe("signed-in smoke coverage", () => {
     // The record: dated checklist states (icon + label, not colour alone).
     await page.goto(`/movements/${mv}`);
     const checklist = page.getByTestId("movement-items");
-    await expect(checklist.locator('tr[data-state="overdue"]')).toContainText("Overdue");
-    await expect(checklist.locator('tr[data-state="done"]')).toContainText("Done");
-    await expect(checklist.locator('tr[data-state="skipped"]')).toContainText("declined");
+    await expect(checklist.locator('tr[data-state="overdue"]')).toContainText(
+      "Overdue",
+    );
+    await expect(checklist.locator('tr[data-state="done"]')).toContainText(
+      "Done",
+    );
+    await expect(checklist.locator('tr[data-state="skipped"]')).toContainText(
+      "declined",
+    );
 
     // The handover: what they hold; access is revoked, never handed over.
     const heldTable = page.getByTestId("held-items");
@@ -560,7 +696,9 @@ test.describe("signed-in smoke coverage", () => {
     await expect(heldTable).toContainText("Revoke");
     // Completion is refused while anything is open, and the service says what.
     await page.getByTestId("movement-complete").click();
-    await expect(page.getByTestId("error")).toContainText("1 checklist item(s) still open");
+    await expect(page.getByTestId("error")).toContainText(
+      "1 checklist item(s) still open",
+    );
 
     // Hand everything to one person: the table empties and the trail shows each action.
     await page.getByTestId("hand-all-to").selectOption(MASKED_WORKER.pid);
@@ -582,49 +720,123 @@ test.describe("signed-in smoke coverage", () => {
           includes_aspirations: true,
           counts: { met: 1, below: 1, undeclared: 1 },
           gaps: [
-            { skill_pid: "s1", skill: "Data modelling", category: "technical", required: 4, importance: "critical", sources: ["role", "target"], declared: 2, status: "below", shortfall: 2, priority: 6 },
-            { skill_pid: "s2", skill: "Stakeholder management", category: "leadership", required: 3, importance: "important", sources: ["role", "aspiration"], declared: null, status: "undeclared", shortfall: null, priority: 0 },
+            {
+              skill_pid: "s1",
+              skill: "Data modelling",
+              category: "technical",
+              required: 4,
+              importance: "critical",
+              sources: ["role", "target"],
+              declared: 2,
+              status: "below",
+              shortfall: 2,
+              priority: 6,
+            },
+            {
+              skill_pid: "s2",
+              skill: "Stakeholder management",
+              category: "leadership",
+              required: 3,
+              importance: "important",
+              sources: ["role", "aspiration"],
+              declared: null,
+              status: "undeclared",
+              shortfall: null,
+              priority: 0,
+            },
           ],
         },
       }),
     );
     const paces: string[] = [];
-    await page.route(`**/api/proxy/workers/${WORKER.pid}/training-plan**`, (route) => {
-      const weekly = new URL(route.request().url()).searchParams.get("weekly_hours") ?? "";
-      paces.push(weekly);
-      return route.fulfill({
-        json: {
-          worker_pid: WORKER.pid,
-          weekly_hours: weekly ? Number(weekly) : 4,
-          start: "2026-10-06",
-          total_hours: 110,
-          total_weeks: 22,
-          finish_on: "2027-03-08",
-          plan: [
-            {
-              skill_pid: "s1", skill: "Data modelling", importance: "critical", required: 4, declared: 2, shortfall: 2, priority: 6,
-              recommendation: { courses: [{ course_ref: "course:a", title: "Deep dive", hours: 60, levels: 2 }], course_levels: 2, estimated_levels: 0, hours: 60, basis: "courses" },
-              starts_on: "2026-10-06", ends_on: "2027-01-11", weeks: 15, cumulative_hours: 60,
-            },
-            {
-              skill_pid: "s3", skill: "Facilitation", importance: "useful", required: 3, declared: 1, shortfall: 2, priority: 2,
-              recommendation: { courses: [], course_levels: 0, estimated_levels: 2, hours: 50, basis: "estimate" },
-              starts_on: "2027-01-12", ends_on: "2027-03-08", weeks: 8, cumulative_hours: 110,
-            },
-          ],
-          assess_first: [{ skill_pid: "s2", skill: "Stakeholder management", required: 3, importance: "important" }],
-        },
-      });
-    });
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/training-plan**`,
+      (route) => {
+        const weekly =
+          new URL(route.request().url()).searchParams.get("weekly_hours") ?? "";
+        paces.push(weekly);
+        return route.fulfill({
+          json: {
+            worker_pid: WORKER.pid,
+            weekly_hours: weekly ? Number(weekly) : 4,
+            start: "2026-10-06",
+            total_hours: 110,
+            total_weeks: 22,
+            finish_on: "2027-03-08",
+            plan: [
+              {
+                skill_pid: "s1",
+                skill: "Data modelling",
+                importance: "critical",
+                required: 4,
+                declared: 2,
+                shortfall: 2,
+                priority: 6,
+                recommendation: {
+                  courses: [
+                    {
+                      course_ref: "course:a",
+                      title: "Deep dive",
+                      hours: 60,
+                      levels: 2,
+                    },
+                  ],
+                  course_levels: 2,
+                  estimated_levels: 0,
+                  hours: 60,
+                  basis: "courses",
+                },
+                starts_on: "2026-10-06",
+                ends_on: "2027-01-11",
+                weeks: 15,
+                cumulative_hours: 60,
+              },
+              {
+                skill_pid: "s3",
+                skill: "Facilitation",
+                importance: "useful",
+                required: 3,
+                declared: 1,
+                shortfall: 2,
+                priority: 2,
+                recommendation: {
+                  courses: [],
+                  course_levels: 0,
+                  estimated_levels: 2,
+                  hours: 50,
+                  basis: "estimate",
+                },
+                starts_on: "2027-01-12",
+                ends_on: "2027-03-08",
+                weeks: 8,
+                cumulative_hours: 110,
+              },
+            ],
+            assess_first: [
+              {
+                skill_pid: "s2",
+                skill: "Stakeholder management",
+                required: 3,
+                importance: "important",
+              },
+            ],
+          },
+        });
+      },
+    );
     await page.goto("/me");
     // The training plan: hours by what they rest on, scheduled, and honest about unknowns.
     const planTable = page.getByTestId("training-plan");
     await expect(planTable).toContainText("Catalogue courses");
     await expect(planTable).toContainText("Deep dive (60)");
-    await expect(planTable.getByText("Estimate", { exact: true })).toBeVisible();
+    await expect(
+      planTable.getByText("Estimate", { exact: true }),
+    ).toBeVisible();
     await expect(page.getByTestId("plan-total")).toContainText("110");
     await expect(page.getByTestId("plan-total")).toContainText("2027-03-08");
-    await expect(page.getByTestId("plan-assess")).toContainText("Stakeholder management");
+    await expect(page.getByTestId("plan-assess")).toContainText(
+      "Stakeholder management",
+    );
     await page.getByTestId("plan-weekly").fill("6");
     await expect.poll(() => paces.includes("6")).toBe(true);
     const mine = page.getByTestId("skill-gaps-table");
@@ -635,54 +847,113 @@ test.describe("signed-in smoke coverage", () => {
     await expect(unknownRow).toContainText("Not declared");
     await expect(unknownRow).toContainText("Role, Aspiration");
 
-    await page.route("**/api/proxy/workforce-intelligence/skill-gaps**", (route) =>
-      route.fulfill({
-        json: {
-          as_of: "2026-10-06",
-          workers_considered: 40,
-          workers_with_needs: 31,
-          skills_total: 1,
-          skills: [
-            { skill_pid: "s1", skill: "Data modelling", category: "technical", needed_by: 12, met: 5, below: 6, undeclared: 1, total_shortfall: 11, critical_below: 4, score: 31, departments: [{ department: "engineering", below: 4 }, { department: "finance", below: 2 }] },
-          ],
-        },
-      }),
+    await page.route(
+      "**/api/proxy/workforce-intelligence/skill-gaps**",
+      (route) =>
+        route.fulfill({
+          json: {
+            as_of: "2026-10-06",
+            workers_considered: 40,
+            workers_with_needs: 31,
+            skills_total: 1,
+            skills: [
+              {
+                skill_pid: "s1",
+                skill: "Data modelling",
+                category: "technical",
+                needed_by: 12,
+                met: 5,
+                below: 6,
+                undeclared: 1,
+                total_shortfall: 11,
+                critical_below: 4,
+                score: 31,
+                departments: [
+                  { department: "engineering", below: 4 },
+                  { department: "finance", below: 2 },
+                ],
+              },
+            ],
+          },
+        }),
     );
-    await page.route("**/api/proxy/workforce-intelligence/training-demand**", (route) =>
-      route.fulfill({
-        json: {
-          as_of: "2026-10-06", workers_considered: 40, people_with_gaps: 12, total_hours: 880, average_hours_per_person: 73.3,
-          skills: [{ skill_pid: "s1", skill: "Data modelling", people: 6, hours: 420, people_on_estimate: 2 }],
-          departments: [{ department: "engineering", people: 8, hours: 600 }],
-        },
-      }),
+    await page.route(
+      "**/api/proxy/workforce-intelligence/training-demand**",
+      (route) =>
+        route.fulfill({
+          json: {
+            as_of: "2026-10-06",
+            workers_considered: 40,
+            people_with_gaps: 12,
+            total_hours: 880,
+            average_hours_per_person: 73.3,
+            skills: [
+              {
+                skill_pid: "s1",
+                skill: "Data modelling",
+                people: 6,
+                hours: 420,
+                people_on_estimate: 2,
+              },
+            ],
+            departments: [{ department: "engineering", people: 8, hours: 600 }],
+          },
+        }),
     );
     const catalogue: Array<Record<string, unknown>> = [];
     await page.route("**/api/proxy/skills", (route) =>
-      route.fulfill({ json: [{ pid: "s1", name: "Data modelling", category: "technical", external_refs: [] }] }),
+      route.fulfill({
+        json: [
+          {
+            pid: "s1",
+            name: "Data modelling",
+            category: "technical",
+            external_refs: [],
+          },
+        ],
+      }),
     );
     await page.route("**/api/proxy/skills/s1/courses", (route) => {
       if (route.request().method() === "POST") {
-        catalogue.push({ pid: `c${catalogue.length + 1}`, levels: 1, ...route.request().postDataJSON() });
+        catalogue.push({
+          pid: `c${catalogue.length + 1}`,
+          levels: 1,
+          ...route.request().postDataJSON(),
+        });
         return route.fulfill({ json: catalogue.at(-1) });
       }
       return route.fulfill({
-        json: { skill_pid: "s1", hours_per_level: null, default_hours_per_level: 30, courses: catalogue },
+        json: {
+          skill_pid: "s1",
+          hours_per_level: null,
+          default_hours_per_level: 30,
+          courses: catalogue,
+        },
       });
     });
     await page.goto("/skill-gaps");
     await expect(page.getByTestId("demand-total")).toContainText("880");
     await expect(page.getByTestId("demand-total")).toContainText("73.3");
-    await expect(page.getByTestId("demand-skills")).toContainText("Data modelling");
-    await expect(page.getByTestId("demand-departments")).toContainText("engineering: 600 (8)");
+    await expect(page.getByTestId("demand-skills")).toContainText(
+      "Data modelling",
+    );
+    await expect(page.getByTestId("demand-departments")).toContainText(
+      "engineering: 600 (8)",
+    );
     // The catalogue editor adds a course to a skill.
     await page.getByTestId("catalogue-skill").selectOption("s1");
-    await expect(page.getByTestId("catalogue-courses")).toContainText("No courses listed");
-    await page.getByTestId("course-ref").fill("course:11111111-1111-4111-8111-1111111111a1");
+    await expect(page.getByTestId("catalogue-courses")).toContainText(
+      "No courses listed",
+    );
+    await page
+      .getByTestId("course-ref")
+      .fill("course:11111111-1111-4111-8111-1111111111a1");
     await page.getByTestId("course-title").fill("Fast intro");
     await page.getByTestId("course-hours").fill("10");
     await page.getByTestId("course-add").click();
-    await expect(page.getByTestId("catalogue-courses")).toContainText("Fast intro");
+    await expect(page.getByTestId("catalogue-courses")).toContainText(
+      "Fast intro",
+    );
     const table = page.getByTestId("workforce-gaps");
     await expect(table).toContainText("Data modelling");
     await expect(table).toContainText("engineering (4), finance (2)");
@@ -713,8 +984,9 @@ test.describe("signed-in smoke coverage", () => {
       },
     ];
     const reads: string[] = [];
-    await page.route(`**/api/proxy/workers/${WORKER.pid}/announcement-reads`, (route) =>
-      route.fulfill({ json: reads }),
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/announcement-reads`,
+      (route) => route.fulfill({ json: reads }),
     );
     await page.route("**/api/proxy/announcements/n1/read", (route) => {
       reads.push("n1");
@@ -748,7 +1020,10 @@ test.describe("signed-in smoke coverage", () => {
     await expect(list).toContainText("Finance");
     const links = page.getByTestId("announcement-links").locator("a");
     await expect(links).toHaveCount(1);
-    await expect(links.first()).toHaveAttribute("href", "https://intranet.example.org/hb");
+    await expect(links.first()).toHaveAttribute(
+      "href",
+      "https://intranet.example.org/hb",
+    );
     await expect(links.first()).toHaveAttribute("rel", /noopener/);
     await expect(page.getByTestId("read-count")).toHaveText("4 read");
     await expect(page.getByTestId("unread")).toBeVisible();
@@ -775,15 +1050,43 @@ test.describe("signed-in smoke coverage", () => {
       period_days: 7,
       starts_on: "2026-10-05",
       members: [
-        { position: 1, worker_pid: WORKER.pid, name: WORKER.display_name, job_title: "Engineer" },
-        { position: 2, worker_pid: MASKED_WORKER.pid, name: MASKED_WORKER.display_name, job_title: "Engineer" },
+        {
+          position: 1,
+          worker_pid: WORKER.pid,
+          name: WORKER.display_name,
+          job_title: "Engineer",
+        },
+        {
+          position: 2,
+          worker_pid: MASKED_WORKER.pid,
+          name: MASKED_WORKER.display_name,
+          job_title: "Engineer",
+        },
       ],
       overrides: swaps,
       window: { from: "2026-10-05", to: "2026-11-01" },
       runs: [
-        { from: "2026-10-05", to: "2026-10-11", worker_pid: WORKER.pid, worker_name: WORKER.display_name, source: "rotation" },
-        { from: "2026-10-12", to: "2026-10-18", worker_pid: WORKER.pid, worker_name: WORKER.display_name, source: "skipped" },
-        { from: "2026-10-19", to: "2026-10-25", worker_pid: null, worker_name: null, source: null },
+        {
+          from: "2026-10-05",
+          to: "2026-10-11",
+          worker_pid: WORKER.pid,
+          worker_name: WORKER.display_name,
+          source: "rotation",
+        },
+        {
+          from: "2026-10-12",
+          to: "2026-10-18",
+          worker_pid: WORKER.pid,
+          worker_name: WORKER.display_name,
+          source: "skipped",
+        },
+        {
+          from: "2026-10-19",
+          to: "2026-10-25",
+          worker_pid: null,
+          worker_name: null,
+          source: null,
+        },
       ],
       load: [{ worker_pid: WORKER.pid, name: WORKER.display_name, days: 14 }],
       on_call_today: { worker_pid: WORKER.pid, name: WORKER.display_name },
@@ -799,7 +1102,10 @@ test.describe("signed-in smoke coverage", () => {
             period_days: 7,
             starts_on: "2026-10-05",
             members: 2,
-            on_call_today: { worker_pid: WORKER.pid, name: WORKER.display_name },
+            on_call_today: {
+              worker_pid: WORKER.pid,
+              name: WORKER.display_name,
+            },
           },
         ],
       }),
@@ -983,7 +1289,9 @@ test.describe("signed-in smoke coverage", () => {
       "On call: Platform on-call",
     );
     await expect(page.getByTestId("away")).toHaveText("Away today");
-    await expect(page.getByTestId("covered-by")).toContainText("Covered by Kim Lee");
+    await expect(page.getByTestId("covered-by")).toContainText(
+      "Covered by Kim Lee",
+    );
     await page.getByTestId("directory-search").fill("nobody");
     await expect(page.getByTestId("directory-none")).toBeVisible();
     expect(seen).toContain("nobody");
@@ -1017,27 +1325,30 @@ test.describe("signed-in smoke coverage", () => {
       (url) => url.pathname === "/api/proxy/job-levels/google-levels",
       (route) => route.fulfill({ json: ladder }),
     );
-    await page.route(`**/api/proxy/workers/${WORKER.pid}/job-level`, async (route) => {
-      const method = route.request().method();
-      if (method === "PUT") {
-        const body = route.request().postDataJSON();
-        sent.push(body);
-        const level = ladder.levels.find((l) => l.code === body.level)!;
-        held = {
-          framework: ladder.id,
-          framework_name: ladder.name,
-          level,
-          effective_on: body.effective_on ?? "2026-10-06",
-          on_behalf: false,
-        };
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/job-level`,
+      async (route) => {
+        const method = route.request().method();
+        if (method === "PUT") {
+          const body = route.request().postDataJSON();
+          sent.push(body);
+          const level = ladder.levels.find((l) => l.code === body.level)!;
+          held = {
+            framework: ladder.id,
+            framework_name: ladder.name,
+            level,
+            effective_on: body.effective_on ?? "2026-10-06",
+            on_behalf: false,
+          };
+          return route.fulfill({ json: { job_level: held } });
+        }
+        if (method === "DELETE") {
+          held = null;
+          return route.fulfill({ status: 204, body: "" });
+        }
         return route.fulfill({ json: { job_level: held } });
-      }
-      if (method === "DELETE") {
-        held = null;
-        return route.fulfill({ status: 204, body: "" });
-      }
-      return route.fulfill({ json: { job_level: held } });
-    });
+      },
+    );
     await page.goto("/me");
     const panel = page.getByTestId("job-level");
     await expect(panel.getByTestId("job-level-none")).toBeVisible();
@@ -1045,9 +1356,16 @@ test.describe("signed-in smoke coverage", () => {
     await panel.getByTestId("job-level-since").fill("2024-03-01");
     await panel.getByTestId("job-level-save").click();
     await expect(panel.getByTestId("job-level-held")).toContainText("L5");
-    await expect(panel.getByTestId("job-level-held")).toContainText("Senior Software Engineer");
-    await expect(panel.getByTestId("job-level-held")).toContainText("2024-03-01");
-    expect(sent.at(-1)).toMatchObject({ framework: "google-levels", level: "L5" });
+    await expect(panel.getByTestId("job-level-held")).toContainText(
+      "Senior Software Engineer",
+    );
+    await expect(panel.getByTestId("job-level-held")).toContainText(
+      "2024-03-01",
+    );
+    expect(sent.at(-1)).toMatchObject({
+      framework: "google-levels",
+      level: "L5",
+    });
     await panel.getByTestId("job-level-clear").click();
     await expect(panel.getByTestId("job-level-none")).toBeVisible();
   });
@@ -1088,35 +1406,38 @@ test.describe("signed-in smoke coverage", () => {
       (url) => url.pathname === "/api/proxy/pay-scales/national-2026-27",
       (route) => route.fulfill({ json: scale }),
     );
-    await page.route(`**/api/proxy/workers/${WORKER.pid}/pay-position`, async (route) => {
-      const method = route.request().method();
-      if (method === "PUT") {
-        const body = route.request().postDataJSON();
-        sent.push(body);
-        held = {
-          scale: scale.id,
-          scale_name: scale.name,
-          band: body.band,
-          step: body.step,
-          currency: "GBP",
-          annual_minor: 4055900,
-          step_since: body.step_since ?? "2026-10-06",
-          on_behalf: false,
-          progression: {
-            kind: "not_yet",
-            eligible_on: "2026-12-01",
-            days_remaining: 56,
-            next_annual_minor: 4280500,
-          },
-        };
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/pay-position`,
+      async (route) => {
+        const method = route.request().method();
+        if (method === "PUT") {
+          const body = route.request().postDataJSON();
+          sent.push(body);
+          held = {
+            scale: scale.id,
+            scale_name: scale.name,
+            band: body.band,
+            step: body.step,
+            currency: "GBP",
+            annual_minor: 4055900,
+            step_since: body.step_since ?? "2026-10-06",
+            on_behalf: false,
+            progression: {
+              kind: "not_yet",
+              eligible_on: "2026-12-01",
+              days_remaining: 56,
+              next_annual_minor: 4280500,
+            },
+          };
+          return route.fulfill({ json: { pay_position: held } });
+        }
+        if (method === "DELETE") {
+          held = null;
+          return route.fulfill({ status: 204, body: "" });
+        }
         return route.fulfill({ json: { pay_position: held } });
-      }
-      if (method === "DELETE") {
-        held = null;
-        return route.fulfill({ status: 204, body: "" });
-      }
-      return route.fulfill({ json: { pay_position: held } });
-    });
+      },
+    );
     await page.goto("/me");
     const panel = page.getByTestId("pay-position");
     await expect(panel.getByTestId("pay-position-none")).toBeVisible();
@@ -1124,8 +1445,12 @@ test.describe("signed-in smoke coverage", () => {
     await panel.getByTestId("pay-position-step").selectOption("1");
     await panel.getByTestId("pay-position-since").fill("2024-12-01");
     await panel.getByTestId("pay-position-save").click();
-    await expect(panel.getByTestId("pay-position-held")).toContainText("Band 6, step 1");
-    await expect(panel.getByTestId("pay-position-held")).toContainText("£40,559");
+    await expect(panel.getByTestId("pay-position-held")).toContainText(
+      "Band 6, step 1",
+    );
+    await expect(panel.getByTestId("pay-position-held")).toContainText(
+      "£40,559",
+    );
     await expect(panel.getByTestId("pay-position-progression")).toContainText(
       "Eligible to move up on 2026-12-01 (in 56 calendar days), to £42,805",
     );
@@ -1146,31 +1471,75 @@ test.describe("signed-in smoke coverage", () => {
     seed?: { status: string },
   ) {
     const cid = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
-    type Item = { pid: string; incurred_on: string; category: string; amount_minor: number; description: string | null; receipt_ref: string | null };
+    type Item = {
+      pid: string;
+      incurred_on: string;
+      category: string;
+      amount_minor: number;
+      description: string | null;
+      receipt_ref: string | null;
+    };
     const state = {
       claim: seed
-        ? { pid: cid, status: seed.status, title: "Leeds visit", note: null as string | null, paid: null as string | null }
+        ? {
+            pid: cid,
+            status: seed.status,
+            title: "Leeds visit",
+            note: null as string | null,
+            paid: null as string | null,
+          }
         : null,
-      items: (seed ? [{ pid: "i1", incurred_on: "2026-10-01", category: "travel", amount_minor: 4250, description: "train", receipt_ref: null }] : []) as Item[],
+      items: (seed
+        ? [
+            {
+              pid: "i1",
+              incurred_on: "2026-10-01",
+              category: "travel",
+              amount_minor: 4250,
+              description: "train",
+              receipt_ref: null,
+            },
+          ]
+        : []) as Item[],
     };
     const sent: Array<{ verb: string; body: unknown }> = [];
     const summary = () => ({
-      pid: cid, worker_pid: WORKER.pid, title: state.claim!.title, description: null, currency: "GBP",
-      status: state.claim!.status, total_minor: state.items.reduce((n, i) => n + i.amount_minor, 0),
-      item_count: state.items.length, submitted_at: null, decided_at: null,
-      decision_note: state.claim!.note, reimbursed_on: state.claim!.paid, on_behalf: false,
+      pid: cid,
+      worker_pid: WORKER.pid,
+      title: state.claim!.title,
+      description: null,
+      currency: "GBP",
+      status: state.claim!.status,
+      total_minor: state.items.reduce((n, i) => n + i.amount_minor, 0),
+      item_count: state.items.length,
+      submitted_at: null,
+      decided_at: null,
+      decision_note: state.claim!.note,
+      reimbursed_on: state.claim!.paid,
+      on_behalf: false,
       worker_name: WORKER.display_name,
     });
     const detail = () => {
       const st = state.claim!.status;
       const seen = new Map<string, number>();
-      for (const i of state.items) seen.set(`${i.incurred_on}|${i.category}|${i.amount_minor}`, (seen.get(`${i.incurred_on}|${i.category}|${i.amount_minor}`) ?? 0) + 1);
+      for (const i of state.items)
+        seen.set(
+          `${i.incurred_on}|${i.category}|${i.amount_minor}`,
+          (seen.get(`${i.incurred_on}|${i.category}|${i.amount_minor}`) ?? 0) +
+            1,
+        );
       return {
         ...summary(),
-        items: state.items.map((i) => ({ ...i, possible_duplicate: (seen.get(`${i.incurred_on}|${i.category}|${i.amount_minor}`) ?? 0) > 1 })),
+        items: state.items.map((i) => ({
+          ...i,
+          possible_duplicate:
+            (seen.get(`${i.incurred_on}|${i.category}|${i.amount_minor}`) ??
+              0) > 1,
+        })),
         can: {
           edit: role === "claimant" && st === "draft",
-          submit: role === "claimant" && st === "draft" && state.items.length > 0,
+          submit:
+            role === "claimant" && st === "draft" && state.items.length > 0,
           withdraw: role === "claimant" && st === "submitted",
           cancel: role === "claimant" && (st === "draft" || st === "submitted"),
           decide: role === "decider" && st === "submitted",
@@ -1178,37 +1547,65 @@ test.describe("signed-in smoke coverage", () => {
         },
       };
     };
-    await page.route(`**/api/proxy/workers/${WORKER.pid}/expense-claims`, async (route) => {
-      if (route.request().method() === "POST") {
-        const body = route.request().postDataJSON();
-        state.claim = { pid: cid, status: "draft", title: body.title, note: null, paid: null };
-        return route.fulfill({ json: summary() });
-      }
-      return route.fulfill({ json: state.claim ? [summary()] : [] });
-    });
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/expense-claims`,
+      async (route) => {
+        if (route.request().method() === "POST") {
+          const body = route.request().postDataJSON();
+          state.claim = {
+            pid: cid,
+            status: "draft",
+            title: body.title,
+            note: null,
+            paid: null,
+          };
+          return route.fulfill({ json: summary() });
+        }
+        return route.fulfill({ json: state.claim ? [summary()] : [] });
+      },
+    );
     await page.route(
       (url) => url.pathname === "/api/proxy/expense-claims",
       (route) => {
-        const wanted = new URL(route.request().url()).searchParams.get("status");
-        return route.fulfill({ json: state.claim && state.claim.status === wanted ? [summary()] : [] });
+        const wanted = new URL(route.request().url()).searchParams.get(
+          "status",
+        );
+        return route.fulfill({
+          json: state.claim && state.claim.status === wanted ? [summary()] : [],
+        });
       },
     );
-    await page.route(`**/api/proxy/expense-claims/${cid}`, (route) => route.fulfill({ json: detail() }));
+    await page.route(`**/api/proxy/expense-claims/${cid}`, (route) =>
+      route.fulfill({ json: detail() }),
+    );
     // Generic verb handler first: Playwright prefers the LAST registered match, so the
     // more specific `/items` route below must come after it.
     await page.route(`**/api/proxy/expense-claims/${cid}/*`, (route) => {
       const verb = route.request().url().split("/").pop()!;
       const body = route.request().postDataJSON();
       sent.push({ verb, body });
-      const to: Record<string, string> = { submit: "submitted", withdraw: "draft", cancel: "cancelled", approve: "approved", reject: "rejected", reimburse: "reimbursed" };
+      const to: Record<string, string> = {
+        submit: "submitted",
+        withdraw: "draft",
+        cancel: "cancelled",
+        approve: "approved",
+        reject: "rejected",
+        reimburse: "reimbursed",
+      };
       state.claim!.status = to[verb]!;
       if (verb === "reject") state.claim!.note = body?.note ?? null;
-      if (verb === "reimburse") state.claim!.paid = body?.reimbursed_on ?? "2026-10-07";
+      if (verb === "reimburse")
+        state.claim!.paid = body?.reimbursed_on ?? "2026-10-07";
       return route.fulfill({ json: summary() });
     });
     await page.route(`**/api/proxy/expense-claims/${cid}/items`, (route) => {
       const b = route.request().postDataJSON();
-      state.items.push({ pid: `i${state.items.length + 1}`, description: null, receipt_ref: null, ...b });
+      state.items.push({
+        pid: `i${state.items.length + 1}`,
+        description: null,
+        receipt_ref: null,
+        ...b,
+      });
       return route.fulfill({ json: { pid: `i${state.items.length}` } });
     });
     await page.route("**/api/proxy/expense-items/*", (route) => {
@@ -1246,7 +1643,9 @@ test.describe("signed-in smoke coverage", () => {
     await panel.getByTestId("expense-remove").last().click();
     await expect(panel.getByTestId("expense-duplicate")).toHaveCount(0);
     await panel.getByTestId("expense-submit").click();
-    await expect(panel.getByTestId("expense-status")).toContainText("Submitted");
+    await expect(panel.getByTestId("expense-status")).toContainText(
+      "Submitted",
+    );
     // Nothing editable, and — the point — no way for the claimant to decide.
     await expect(panel.getByTestId("expense-item-form")).toHaveCount(0);
     await expect(panel.getByTestId("expense-approve")).toHaveCount(0);
@@ -1279,7 +1678,10 @@ test.describe("signed-in smoke coverage", () => {
     await page.getByTestId(/expense-open-/).click();
     await page.getByTestId("expense-paid-on").fill("2026-10-07");
     await page.getByTestId("expense-reimburse").click();
-    expect(sent.at(-1)).toEqual({ verb: "reimburse", body: { reimbursed_on: "2026-10-07" } });
+    expect(sent.at(-1)).toEqual({
+      verb: "reimburse",
+      body: { reimbursed_on: "2026-10-07" },
+    });
     await expect(page.getByTestId("expense-queue-empty")).toBeVisible();
   });
 
@@ -1342,15 +1744,26 @@ test.describe("signed-in smoke coverage", () => {
       ],
       allowances: [],
     };
-    let grade: Record<string, unknown> = { role_profile: pid, job_level: null, pay_band: null };
+    let grade: Record<string, unknown> = {
+      role_profile: pid,
+      job_level: null,
+      pay_band: null,
+    };
     const sent: Array<Record<string, unknown>> = [];
     const stub = (path: string, json: unknown) =>
-      page.route((url) => url.pathname === `/api/proxy${path}`, (route) =>
-        route.fulfill({ json }),
+      page.route(
+        (url) => url.pathname === `/api/proxy${path}`,
+        (route) => route.fulfill({ json }),
       );
     await stub("/skills", []);
     await stub("/role-profiles", [
-      { pid, job_title: "Platform Engineer", profession: null, role_name: null, level_order: null },
+      {
+        pid,
+        job_title: "Platform Engineer",
+        profession: null,
+        role_name: null,
+        level_order: null,
+      },
     ]);
     await stub("/capability-frameworks", []);
     await stub("/mobility/interest-summary", { derivation: "", targets: [] });
@@ -1368,40 +1781,50 @@ test.describe("signed-in smoke coverage", () => {
       headcount: 0,
       requirements: [],
     });
-    await stub(`/role-profiles/${pid}/progression`, { profile: "none", next: [] });
+    await stub(`/role-profiles/${pid}/progression`, {
+      profile: "none",
+      next: [],
+    });
     await stub("/job-levels", [{ ...ladder, levels: ["L5"] }]);
     await stub("/job-levels/google-levels", ladder);
     await stub("/pay-scales", [{ ...scale, bands: ["7"] }]);
     await stub("/pay-scales/national-2026-27", scale);
-    await page.route(`**/api/proxy/role-profiles/${pid}/grade`, async (route) => {
-      const method = route.request().method();
-      if (method === "PUT") {
-        const body = route.request().postDataJSON();
-        sent.push(body);
-        grade = {
-          role_profile: pid,
-          job_level: body.job_level
-            ? { framework: ladder.id, framework_name: ladder.name, level: ladder.levels[0] }
-            : null,
-          pay_band: body.pay_band
-            ? {
-                scale: scale.id,
-                scale_name: scale.name,
-                band: "7",
-                currency: "GBP",
-                entry_minor: 5012900,
-                top_minor: 5736500,
-              }
-            : null,
-        };
+    await page.route(
+      `**/api/proxy/role-profiles/${pid}/grade`,
+      async (route) => {
+        const method = route.request().method();
+        if (method === "PUT") {
+          const body = route.request().postDataJSON();
+          sent.push(body);
+          grade = {
+            role_profile: pid,
+            job_level: body.job_level
+              ? {
+                  framework: ladder.id,
+                  framework_name: ladder.name,
+                  level: ladder.levels[0],
+                }
+              : null,
+            pay_band: body.pay_band
+              ? {
+                  scale: scale.id,
+                  scale_name: scale.name,
+                  band: "7",
+                  currency: "GBP",
+                  entry_minor: 5012900,
+                  top_minor: 5736500,
+                }
+              : null,
+          };
+          return route.fulfill({ json: grade });
+        }
+        if (method === "DELETE") {
+          grade = { role_profile: pid, job_level: null, pay_band: null };
+          return route.fulfill({ status: 204, body: "" });
+        }
         return route.fulfill({ json: grade });
-      }
-      if (method === "DELETE") {
-        grade = { role_profile: pid, job_level: null, pay_band: null };
-        return route.fulfill({ status: 204, body: "" });
-      }
-      return route.fulfill({ json: grade });
-    });
+      },
+    );
     await page.goto("/roles");
     const panel = page.getByTestId("role-grade");
     await expect(panel.getByTestId("role-grade-none")).toBeVisible();
@@ -1449,7 +1872,12 @@ test.describe("signed-in smoke coverage", () => {
       source: "A published summary. Not an official Google publication.",
       levels: [
         level(3, "Software Engineer I", "0–1 year", null),
-        level(7, "Senior Staff / Principal Software Engineer", null, "Engineering Manager"),
+        level(
+          7,
+          "Senior Staff / Principal Software Engineer",
+          null,
+          "Engineering Manager",
+        ),
         level(8, "Distinguished / Principal Engineer", "15+ years", "Director"),
       ],
     };
@@ -1469,7 +1897,9 @@ test.describe("signed-in smoke coverage", () => {
     await expect(page.getByTestId("level-L3")).toContainText("0–1 year");
     // L7 states no experience: a dash, not an invented figure.
     await expect(page.getByTestId("level-L7")).toContainText("—");
-    await expect(page.getByTestId("level-L7")).toContainText("Engineering Manager");
+    await expect(page.getByTestId("level-L7")).toContainText(
+      "Engineering Manager",
+    );
     await expect(page.getByTestId("level-L8")).toContainText("Director");
     await expect(page.getByTestId("levels-table")).not.toContainText("£");
     await expect(page.getByTestId("levels-table")).not.toContainText("$");
@@ -1494,7 +1924,11 @@ test.describe("signed-in smoke coverage", () => {
       minutes_per_week: 2250,
       bands: [
         { code: "1", closed: true, steps: [step(26300, null)] },
-        { code: "3", closed: false, steps: [step(26300, 2), step(27890, null)] },
+        {
+          code: "3",
+          closed: false,
+          steps: [step(26300, 2), step(27890, null)],
+        },
         {
           code: "5",
           closed: false,
@@ -1502,7 +1936,11 @@ test.describe("signed-in smoke coverage", () => {
         },
       ],
       allowances: [
-        { code: "on_call_weekday_weekend", name: "On-call", amount_minor: 2605 },
+        {
+          code: "on_call_weekday_weekend",
+          name: "On-call",
+          amount_minor: 2605,
+        },
       ],
     };
     const asked: string[] = [];
@@ -1746,7 +2184,8 @@ test.describe("signed-in smoke coverage", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "de-001");
     expect(
       await page.evaluate(
-        () => JSON.parse(localStorage.getItem("sveltia-cms.prefs") ?? "{}").locale,
+        () =>
+          JSON.parse(localStorage.getItem("sveltia-cms.prefs") ?? "{}").locale,
       ),
     ).toBe("de");
     const config = await page.request.get("/admin/config.yml");

@@ -10,6 +10,11 @@ const PORT = process.env.PW_PORT ?? "4173";
 export default defineConfig({
   testDir: "tests/e2e",
   timeout: 30_000,
+  // A page can sit idle for several seconds when many pages load at once at the start of a parallel run
+  // (the dashboard specs waited 5.4 s for requests that were already stubbed, while the server answered
+  // every request in under 75 ms; alone they take 0.2 s). The default 5 s expect timeout turned that
+  // into a failure, so assertions wait up to 20 s: a real failure still fails, only later.
+  expect: { timeout: 20_000 },
   fullyParallel: true,
   use: {
     baseURL: `http://localhost:${PORT}`,

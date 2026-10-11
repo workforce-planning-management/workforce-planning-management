@@ -147,7 +147,10 @@
   "req": {
     "applications": "Applications",
     "headcount": "Headcount",
-    "months": "({months} months)"
+    "months": "({months} months)",
+    "new": "Open a requisition",
+    "duration": "Expected duration (months)",
+    "create": "Create"
   },
   "wf": {
     "leaveRequests": "Leave requests",

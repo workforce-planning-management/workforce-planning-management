@@ -113,6 +113,24 @@ describe("the proxy's key check", () => {
 });
 
 describe("the proxy handler", () => {
+  it("forwards to the service's /api/ path, not its root (found on the first run against a real service)", async () => {
+    const { GET } =
+      await import("../../src/routes/api/proxy/[...path]/+server");
+    let target = "";
+    const fetchStub = (async (url: string | URL) => {
+      target = String(url);
+      return new Response("[]", { status: 200 });
+    }) as typeof fetch;
+    await GET({
+      request: new Request("http://ui.test/api/proxy/workers?status=active"),
+      params: { path: "workers" },
+      url: new URL("http://ui.test/api/proxy/workers?status=active"),
+      locals: {},
+      fetch: fetchStub,
+    } as unknown as Parameters<typeof GET>[0]);
+    expect(target).toBe("http://localhost:5150/api/workers?status=active");
+  });
+
   async function forwarded(key: string | null) {
     const { POST } =
       await import("../../src/routes/api/proxy/[...path]/+server");

@@ -147,7 +147,10 @@
   "req": {
     "applications": "درخواستیں",
     "headcount": "تعداد",
-    "months": "({months} مہینے)"
+    "months": "({months} مہینے)",
+    "new": "بھرتی کی درخواست کھولیں",
+    "duration": "متوقع مدت (مہینے)",
+    "create": "بنائیں"
   },
   "wf": {
     "leaveRequests": "چھٹی کی درخواستیں",

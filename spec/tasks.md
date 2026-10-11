@@ -2799,17 +2799,23 @@ payroll defect and need nothing else; do them first.
       printed raw tokens**). Requisition cards show basis, duration and programme. Client functions in the path-map test. **62
       strings and 64 vocabulary values in all 13 `-001` locales**, AI-written and unreviewed; that also fixed the `untranslated` test
       that had been failing, because the vocabularies of WPM-T142, T161 and the conversion plans had no `values` entries. 11 + 1
-      Playwright specs (`workforce-contingent.spec.ts`) over a stubbed API, including each light and dark theme at a desktop and a
+      Playwright specs (`contingent.spec.ts`) over a stubbed API, including each light and dark theme at a desktop and a
       phone size, whose screenshots were **looked at**: the first phone layout split words ("Sho w who") and clipped a column, and was
       fixed (the three-column table fits; wide tables scroll inside their card). **Mutation-checked** four ways (withheld shown as 0;
       the masked rate not honoured; FTE sent when not stated; a refused read shown as an error), each failing a test. Full suites:
-      112 vitest, 59 Playwright, `svelte-check` 0 errors, prettier clean, the CMS config current. **Not verified / not done:** the
-      Playwright run is **order-sensitive** (with this spec file sorted before `smoke.spec.ts`, two dashboard specs there timed out
-      at "Loading…" in a full run though they pass alone; the file is named to sort after it, and the cause was not found); the UI
-      was not run against the real API; the requisition board change has no browser test of its own (the existing board spec
-      passes); requisitions cannot be created in the UI (the board is read and drag only, so basis and programme on a requisition
-      are set through the API); no native-speaker review; Arabic, Urdu and Bengali were not looked at on screen; the unreviewed
-      strings include `contingent.employed`, whose plural forms were not handled for Russian and Arabic beyond the number.
+      113 vitest, 60 stubbed Playwright specs and **7 live ones against a real service**, `svelte-check` 0 errors, prettier clean, the CMS
+      config current. **Follow-up (2026-10-11):** (1) **the first run against the real API found the proxy forwarded to
+      `<root>/x` instead of `<root>/api/x`, so every real call was a 404**; fixed, with a unit test, and `WPM_API_URL` documented as the
+      service root. (2) Requisitions can be **created in the UI** (basis, duration, programme); with no membership to choose from the
+      organization URN is typed, also on the plan form (**found by the live run**). (3) The suite's order sensitivity: with a spec file
+      sorted before `smoke.spec.ts`, two dashboard specs timed out at "Loading…". It was **not root-caused**: the preview server answered
+      every request in under 75 ms (checked through a logging proxy), no request reached the API, and the trace shows the page idle for
+      5.4 s while the theme stylesheet "received" for the same time; it affects only specs that start in the first seconds of a parallel
+      run, and alone they take 0.2 s. Mitigated by a 20 s `expect` timeout (four full runs, then three, all pass with the file first); a
+      real failure still fails, only later. **Not verified / not done:** the live run used enforcement **off** (`WPM_REQUIRE_AUTH=0`) and
+      a fake session cookie, so the UI was not run through the real sign-in and token exchange, nor with the policy refusing a caller; the
+      live data was seeded by a script that is not kept (`tests/live/README.md` says what to seed); the live suite is opt-in and not in
+      CI; no native-speaker review; Arabic, Urdu and Bengali were not looked at on screen; `contingent.employed` has no plural forms.
 - [x] WPM-T161 (2026-10-12) **Funding source on the engagement.** *(traces to WPM-R98, WPM-R62, WPM-R83)* The part of WPM-T109
       this needs: migration `000063` `post_fundings` (one record per worker: kind `core`, `time_limited`, `external` or
       `programme`, optional programme thing: URN, optional end date; **no amount**); `GET/PUT/DELETE /api/workers/{pid}/funding`.

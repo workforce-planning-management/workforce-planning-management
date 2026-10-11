@@ -99,10 +99,6 @@ const ROLLUP = {
   derivation: "",
 };
 
-// This file is named to sort after smoke.spec.ts: with it first, the two dashboard specs there timed out
-// at "Loading…" in a full run (they pass alone, with this file excluded, and with it last); the cause was
-// not found, so the order is the workaround.
-//
 // One worker for this file: it loads the worker page (about forty stubbed requests) several times, and
 // running those beside the rest of the suite starved the dashboard specs of time.
 test.describe.configure({ mode: "serial" });
@@ -716,5 +712,100 @@ test.describe("planning by basis and programme", () => {
     expect(sent[1]).not.toHaveProperty("expected_ends_on");
     expect(sent[1]).not.toHaveProperty("target_fte_percent");
     expect(sent[1]).not.toHaveProperty("programme_ref");
+  });
+});
+
+test.describe("requisitions by basis and programme", () => {
+  const ORG = "organization:33333333-3333-4333-8333-333333333333";
+  const PROGRAMME = "thing:cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+
+  test("a fixed-term requisition needs a duration, and the board shows basis, duration and programme", async ({
+    page,
+  }) => {
+    await signIn(page);
+    await page.route("**/api/proxy/**", (route) =>
+      route.fulfill({
+        status: 404,
+        body: "unstubbed: " + route.request().url(),
+      }),
+    );
+    await page.route("**/api/proxy/me/organizations", (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await page.route("**/api/proxy/me/organizations/scope", (route) =>
+      route.fulfill({ json: [ORG] }),
+    );
+    const made: Array<Record<string, unknown>> = [];
+    await page.route("**/api/proxy/requisitions", (route) => {
+      if (route.request().method() === "POST") {
+        const body = route.request().postDataJSON();
+        made.push(body);
+        return route.fulfill({ json: { pid: "r-new" } });
+      }
+      return route.fulfill({
+        json: made.map((b, i) => ({
+          pid: `r${i}`,
+          organization_ref: ORG,
+          department: b.department,
+          job_title: b.job_title,
+          headcount: b.headcount,
+          salary_min_minor: null,
+          salary_max_minor: null,
+          salary_currency: null,
+          status: "draft",
+          opened_on: null,
+          basis: b.basis,
+          expected_duration_months: b.expected_duration_months ?? null,
+          programme_ref: b.programme_ref ?? null,
+        })),
+      });
+    });
+    await page.goto("/requisitions");
+    await page.getByTestId("req-department").fill("research");
+    await page.getByTestId("req-title").fill("Research Fellow");
+    // A permanent post has no duration field; an ending one has, and it is required.
+    await expect(page.getByTestId("req-months")).toHaveCount(0);
+    await page.getByTestId("req-basis").selectOption("fixed_term");
+    await expect(page.getByTestId("req-months")).toBeVisible();
+    await page.getByTestId("req-create").click();
+    await page.waitForTimeout(300);
+    expect(
+      made,
+      "the browser refuses a fixed-term post with no duration",
+    ).toHaveLength(0);
+    await page.getByTestId("req-months").fill("18");
+    await page.getByTestId("req-programme").fill(PROGRAMME);
+    await page.getByTestId("req-create").click();
+    await expect.poll(() => made.length).toBe(1);
+    expect(made[0]).toMatchObject({
+      organization_ref: ORG,
+      department: "research",
+      job_title: "Research Fellow",
+      basis: "fixed_term",
+      expected_duration_months: 18,
+      programme_ref: PROGRAMME,
+    });
+    // The board reloads and the card says what it is.
+    await expect(page.getByTestId("requisition-board")).toContainText(
+      "Research Fellow",
+    );
+    await expect(page.getByTestId("requisition-board")).toContainText(
+      "fixed term (18 months)",
+    );
+    await expect(page.getByTestId("requisition-board")).toContainText(
+      PROGRAMME,
+    );
+    // A permanent post sends no duration.
+    await page.getByTestId("req-department").fill("ops");
+    await page.getByTestId("req-title").fill("Scheduler");
+    // Even after a duration was typed and the basis changed back: it is not sent.
+    await page.getByTestId("req-basis").selectOption("fixed_term");
+    await page.getByTestId("req-months").fill("12");
+    await page.getByTestId("req-basis").selectOption("permanent");
+    await page.getByTestId("req-create").click();
+    await expect.poll(() => made.length).toBe(2);
+    expect(made[1]).toMatchObject({ basis: "permanent" });
+    expect(made[1]).not.toHaveProperty("expected_duration_months");
+    expect(made[1]).not.toHaveProperty("programme_ref");
   });
 });

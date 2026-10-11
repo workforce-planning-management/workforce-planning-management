@@ -82,7 +82,13 @@ describe("org views", () => {
 
   it("byLocation sorts places and keeps unknown last", () => {
     const placed = [
-      node("a", "x", [node("b", "x", [], "1_to_3y", "Cardiff")], "1_to_3y", "Bristol"),
+      node(
+        "a",
+        "x",
+        [node("b", "x", [], "1_to_3y", "Cardiff")],
+        "1_to_3y",
+        "Bristol",
+      ),
       node("c", "x"),
       node("d", "x", [], "1_to_3y", "Cardiff"),
     ];

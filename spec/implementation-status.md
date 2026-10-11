@@ -20,8 +20,8 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Rust request tests (`tests/requests/`) | 87 |
 | Rust test binaries beside the request suite | 14 |
 | Front-end unit test files | 15 |
-| Front-end unit tests (`it(` / `test(`) | 101 |
-| Playwright tests (`test(`) | 52 |
+| Front-end unit tests (`it(` / `test(`) | 102 |
+| Playwright tests (`test(`) | 53 |
 | Front-end pages (`+page.svelte`) | 38 |
 | Content locales | 17 |
 | Topic files in `spec/` (not counting this one) | 43 |

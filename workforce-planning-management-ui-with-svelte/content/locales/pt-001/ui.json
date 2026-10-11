@@ -147,7 +147,10 @@
   "req": {
     "applications": "Candidaturas",
     "headcount": "Vagas",
-    "months": "({months} meses)"
+    "months": "({months} meses)",
+    "new": "Abrir um pedido de contratação",
+    "duration": "Duração prevista (meses)",
+    "create": "Criar"
   },
   "wf": {
     "leaveRequests": "Pedidos de licença",

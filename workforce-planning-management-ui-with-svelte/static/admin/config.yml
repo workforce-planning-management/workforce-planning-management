@@ -250,6 +250,9 @@ collections:
               - { name: "applications", label: "Applications", widget: string, required: false, i18n: true }
               - { name: "headcount", label: "Headcount", widget: string, required: false, i18n: true }
               - { name: "months", label: "Months", widget: string, required: false, i18n: true }
+              - { name: "new", label: "New", widget: string, required: false, i18n: true }
+              - { name: "duration", label: "Duration", widget: string, required: false, i18n: true }
+              - { name: "create", label: "Create", widget: string, required: false, i18n: true }
           - name: "wf"
             label: "Wf"
             widget: object

@@ -5,22 +5,9 @@
     "literalText": "Empty on purpose: no visible text outside the catalogue."
   },
   "literalText": [],
-  "anyLocale": [
-    "UK GDAD PCF",
-    "ESCO",
-    "LMS",
-    "https://…",
-    "FTE"
-  ],
+  "anyLocale": ["UK GDAD PCF", "ESCO", "LMS", "https://…", "FTE"],
   "sameAsEnglish": {
-    "cy-001": [
-      "Band",
-      "Mentor",
-      "Net",
-      "Person",
-      "Rota",
-      "intern"
-    ],
+    "cy-001": ["Band", "Mentor", "Net", "Person", "Rota", "intern"],
     "de-001": [
       "Band",
       "Benchmarks",
@@ -124,17 +111,9 @@
       "web",
       "· FTE {fte_percent}%"
     ],
-    "zh-001": [
-      "· FTE {fte_percent}%"
-    ],
-    "bn-001": [
-      "· FTE {fte_percent}%"
-    ],
-    "hi-001": [
-      "· FTE {fte_percent}%"
-    ],
-    "ur-001": [
-      "· FTE {fte_percent}%"
-    ]
+    "zh-001": ["· FTE {fte_percent}%"],
+    "bn-001": ["· FTE {fte_percent}%"],
+    "hi-001": ["· FTE {fte_percent}%"],
+    "ur-001": ["· FTE {fte_percent}%"]
   }
 }

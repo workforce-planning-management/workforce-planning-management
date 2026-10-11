@@ -24,7 +24,9 @@ describe("LilyKanban", () => {
     expect(screen.getByText("Auto-triage")).toBeTruthy();
     expect(screen.getByText("draft")).toBeTruthy();
     // The move menu is the keyboard-accessible alternative to dragging.
-    expect(screen.getByRole("button", { name: "Move Code assistant" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Move Code assistant" }),
+    ).toBeTruthy();
   });
 });
 
@@ -36,7 +38,13 @@ describe("LilyGantt", () => {
       today: "2026-10-03",
       tasks: [
         { id: "p", label: "FY27 plan", start: "2026-10-01", end: "2027-03-31" },
-        { id: "m", label: "engineering · 5", start: "2027-01-15", end: "2027-01-15", parentId: "p" },
+        {
+          id: "m",
+          label: "engineering · 5",
+          start: "2027-01-15",
+          end: "2027-01-15",
+          parentId: "p",
+        },
       ],
     });
     expect(screen.getByText("FY27 plan")).toBeTruthy();

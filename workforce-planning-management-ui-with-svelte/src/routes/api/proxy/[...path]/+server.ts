@@ -4,8 +4,12 @@
 // workforce-planning-management service. No token ever lives in browser JS: when a
 // session cookie is present (WPM-T18 magic-link flow), the server
 // exchanges it for a short-lived PASETO and injects the bearer here.
-// With `WPM_REQUIRE_AUTH` off (the shipped default) the
-// unauthenticated forward is sufficient and the exchange is skipped.
+// The service enforces authentication by default (WPM-D52); only a service
+// started with `WPM_REQUIRE_AUTH=0` (a demo) accepts the unauthenticated
+// forward, and then the exchange is simply not needed.
+//
+// `WPM_API_URL` is the service ROOT (`http://localhost:5150`); the service
+// serves its API under `/api/`, so `/api/proxy/workers` goes to `<root>/api/workers`.
 
 import type { RequestHandler } from "./$types";
 import { WPM_API_URL } from "#lib/server/config.js";
@@ -19,7 +23,7 @@ const proxy: RequestHandler = async ({
   locals,
   fetch,
 }) => {
-  const target = `${WPM_API_URL}/${params.path}${url.search}`;
+  const target = `${WPM_API_URL}/api/${params.path}${url.search}`;
 
   // Copy request headers, but drop hop-by-hop / origin-specific ones and
   // never forward the browser's cookie to the entity service.

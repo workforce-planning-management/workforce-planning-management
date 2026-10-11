@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the proxy forwarded to the wrong path (found on the first run against a real service)
+
+`/api/proxy/x` went to `<WPM_API_URL>/x`, but the service serves under `/api/`, so every call was a 404 against a real service (the stubbed suite
+never reaches the proxy). It now forwards to `<WPM_API_URL>/api/x`; `WPM_API_URL` is the service root. A unit test pins the target.
+
+### Added — requisitions can be created in the UI, and a live suite
+
+A form on `/requisitions` (organization, department, title, headcount, basis, a duration for a basis that ends, programme); with no
+membership to choose from, the organization URN is typed (also on the plan form). `tests/live/` runs seven specs against a real service
+(`WPM_LIVE_API=1`, `playwright.live.config.ts`). The Playwright `expect` timeout is 20 s: pages sometimes sat idle for several seconds at the
+start of a parallel run.
+
 ### Added — contingent workforce, engagement, and plans by basis and programme (WPM-T143)
 
 `/contingent` (HR): the share of FTE for contractors and fixed-term staff, engagements ending in 30, 60 and 90 calendar days, past their end,

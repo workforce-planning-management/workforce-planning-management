@@ -30,7 +30,7 @@ See `.env.example`.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `WPM_API_URL` | `http://localhost:5150` | workforce-planning-management-service base URL the proxy forwards to |
+| `WPM_API_URL` | `http://localhost:5150` | workforce-planning-management-service root URL (no `/api`); the proxy forwards `/api/proxy/x` to `<root>/api/x` |
 | `AUTH_API_URL` | `http://localhost:5150` | authentication-service base URL — magic-link login + session→PASETO exchange |
 | `WPM_PUBLIC_URL` | _(blank)_ | public address of this site for `/sitemap.xml` and `/robots.txt`; blank = the request origin (set it behind a proxy) |
 

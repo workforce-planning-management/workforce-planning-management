@@ -239,9 +239,14 @@
   <label>{t("pages.planning.name")} <input data-testid="plan-name" bind:value={name} required /></label>
   <label>
     {t("pages.planning.organization")}
-    <select bind:value={org} required>
-      {#each organizationRefs as ref (ref)}<option value={ref}>{ref}</option>{/each}
-    </select>
+    {#if organizationRefs.length > 0}
+      <select bind:value={org} required>
+        {#each organizationRefs as ref (ref)}<option value={ref}>{ref}</option>{/each}
+      </select>
+    {:else}
+      <!-- No membership to choose from (a demo service with enforcement off): the URN is typed. -->
+      <input data-testid="plan-org" bind:value={org} required />
+    {/if}
   </label>
   <label>{t("pages.planning.from")} <input type="date" bind:value={start} required /></label>
   <label>{t("pages.planning.to")} <input type="date" bind:value={end} required /></label>

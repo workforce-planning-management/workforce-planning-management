@@ -147,7 +147,10 @@
   "req": {
     "applications": "Solicitudes",
     "headcount": "Plazas",
-    "months": "({months} meses)"
+    "months": "({months} meses)",
+    "new": "Abrir una solicitud de contratación",
+    "duration": "Duración prevista (meses)",
+    "create": "Crear"
   },
   "wf": {
     "leaveRequests": "Solicitudes de permiso",

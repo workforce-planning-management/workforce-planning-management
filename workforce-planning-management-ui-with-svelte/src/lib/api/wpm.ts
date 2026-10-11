@@ -352,6 +352,19 @@ export function getRequisition(
   return api(`/requisitions/${pid}`, init);
 }
 
+/** Open a requisition (draft). `basis` defaults to permanent; a fixed-term or contractor post needs a duration in calendar months. */
+export function createRequisition(body: {
+  organization_ref: string;
+  department: string;
+  job_title: string;
+  headcount: number;
+  basis?: string;
+  expected_duration_months?: number;
+  programme_ref?: string;
+}): Promise<{ pid: string }> {
+  return api("/requisitions", { method: "POST", body });
+}
+
 /** One requisition transition. */
 export function requisitionStatus(
   pid: string,

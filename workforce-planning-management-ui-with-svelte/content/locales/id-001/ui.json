@@ -147,7 +147,10 @@
   "req": {
     "applications": "Lamaran",
     "headcount": "Jumlah posisi",
-    "months": "({months} bulan)"
+    "months": "({months} bulan)",
+    "new": "Buka permintaan rekrutmen",
+    "duration": "Perkiraan durasi (bulan)",
+    "create": "Buat"
   },
   "wf": {
     "leaveRequests": "Permintaan cuti",

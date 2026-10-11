@@ -6,10 +6,29 @@
 // an expression is not mistaken for the end of a tag.
 
 const VOID = new Set([
-  "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr",
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "source",
+  "track",
+  "wbr",
 ]);
 const SKIP_PARENT = new Set(["code", "pre", "kbd", "samp", "script", "style"]);
-const ATTRIBUTES = ["placeholder", "title", "aria-label", "alt", "label", "aria-description"];
+const ATTRIBUTES = [
+  "placeholder",
+  "title",
+  "aria-label",
+  "alt",
+  "label",
+  "aria-description",
+];
 
 /** Index just past the `}` matching the `{` at `i`. */
 function scanBraces(s: string, i: number): number {
@@ -22,7 +41,8 @@ function scanBraces(s: string, i: number): number {
       j++;
       while (j < s.length && s[j] !== quote) {
         if (s[j] === "\\") j++;
-        else if (quote === "`" && s[j] === "$" && s[j + 1] === "{") j = scanBraces(s, j + 1) - 1;
+        else if (quote === "`" && s[j] === "$" && s[j + 1] === "{")
+          j = scanBraces(s, j + 1) - 1;
         j++;
       }
     } else if (c === "{") depth++;
@@ -99,7 +119,8 @@ function tokenize(s: string): Token[] {
   return out;
 }
 
-const tagName = (tag: string) => /^<\/?\s*([A-Za-z][\w:.-]*)/.exec(tag)?.[1]?.toLowerCase() ?? "";
+const tagName = (tag: string) =>
+  /^<\/?\s*([A-Za-z][\w:.-]*)/.exec(tag)?.[1]?.toLowerCase() ?? "";
 
 /** Letters a reader would read: two or more in a row, once entities and `{x}` are removed. */
 export function hasWords(text: string): boolean {
@@ -122,9 +143,16 @@ export function literalText(source: string): Finding[] {
   let run: Token[] = [];
   const endRun = () => {
     if (run.length === 0) return;
-    const text = run.filter((t) => t.kind === "text").map((t) => t.value).join("");
+    const text = run
+      .filter((t) => t.kind === "text")
+      .map((t) => t.value)
+      .join("");
     const parent = stack[stack.length - 1] ?? "";
-    if (!SKIP_PARENT.has(parent) && hasWords(text) && !/^\s*https?:\/\/\S*\s*$/.test(text)) {
+    if (
+      !SKIP_PARENT.has(parent) &&
+      hasWords(text) &&
+      !/^\s*https?:\/\/\S*\s*$/.test(text)
+    ) {
       found.push({ kind: "text", text: text.replace(/\s+/g, " ").trim() });
     }
     run = [];
@@ -142,7 +170,8 @@ export function literalText(source: string): Finding[] {
     for (const attribute of ATTRIBUTES) {
       const pattern = new RegExp(`\\b${attribute}="([^"]*)"`, "g");
       for (const m of tag.matchAll(pattern)) {
-        if (hasWords(m[1]!)) found.push({ kind: "attribute", text: `${attribute}="${m[1]}"` });
+        if (hasWords(m[1]!))
+          found.push({ kind: "attribute", text: `${attribute}="${m[1]}"` });
       }
     }
     if (tag.startsWith("</")) {

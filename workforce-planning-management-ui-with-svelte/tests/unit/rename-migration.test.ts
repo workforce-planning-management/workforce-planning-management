@@ -20,7 +20,8 @@ function memoryStorage() {
   const entries = new Map<string, string>();
   return {
     getItem: (key: string) => entries.get(key) ?? null,
-    setItem: (key: string, value: string) => void entries.set(key, String(value)),
+    setItem: (key: string, value: string) =>
+      void entries.set(key, String(value)),
     removeItem: (key: string) => void entries.delete(key),
     clear: () => entries.clear(),
   };

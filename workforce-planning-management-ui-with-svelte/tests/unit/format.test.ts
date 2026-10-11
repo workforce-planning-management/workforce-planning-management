@@ -4,7 +4,14 @@
 
 import { describe, expect, it } from "vitest";
 
-import { mean, rate, percent, percentOf, percentWithWorkings, workings } from "../../src/lib/format";
+import {
+  mean,
+  rate,
+  percent,
+  percentOf,
+  percentWithWorkings,
+  workings,
+} from "../../src/lib/format";
 
 describe("percent", () => {
   it("renders a present ratio as a rounded percentage", () => {
@@ -29,7 +36,9 @@ describe("percent", () => {
 
 describe("workings", () => {
   it("renders the numerator/denominator pair", () => {
-    expect(workings({ numerator: 2, denominator: 3, value: 2 / 3 })).toBe("2/3");
+    expect(workings({ numerator: 2, denominator: 3, value: 2 / 3 })).toBe(
+      "2/3",
+    );
   });
 
   it("renders an absent ratio as null", () => {
@@ -39,13 +48,15 @@ describe("workings", () => {
 
 describe("percentWithWorkings", () => {
   it("combines the percentage and the working", () => {
-    expect(percentWithWorkings({ numerator: 2, denominator: 3, value: 2 / 3 })).toBe(
-      "67% (2/3)",
-    );
+    expect(
+      percentWithWorkings({ numerator: 2, denominator: 3, value: 2 / 3 }),
+    ).toBe("67% (2/3)");
   });
 
   it("falls back to the em dash on a zero-denominator ratio", () => {
-    expect(percentWithWorkings({ numerator: 0, denominator: 0, value: null })).toBe("—");
+    expect(
+      percentWithWorkings({ numerator: 0, denominator: 0, value: null }),
+    ).toBe("—");
   });
 
   it("falls back to the em dash on an absent ratio", () => {
@@ -85,7 +96,7 @@ describe("mean", () => {
     expect(mean(0)).toBe("0.0");
   });
 
-  it("renders null/undefined as null, never as the literal string \"undefined\"", () => {
+  it('renders null/undefined as null, never as the literal string "undefined"', () => {
     expect(mean(null)).toBeNull();
     expect(mean(undefined)).toBeNull();
   });

@@ -1,7 +1,13 @@
 <script lang="ts">
   import { Kanban, Willow, getCardShape } from "@svar-ui/svelte-kanban";
   import type { KanbanInstanceApi } from "@svar-ui/svelte-kanban";
-  import { listRequisitions, money, requisitionStatus } from "#lib/api/wpm.js";
+  import { page } from "$app/state";
+  import {
+    createRequisition,
+    listRequisitions,
+    money,
+    requisitionStatus,
+  } from "#lib/api/wpm.js";
   import { i18n, t, tf, tv } from "#lib/i18n.svelte.js";
   import type { Requisition } from "#lib/api/types.js";
 
@@ -12,6 +18,44 @@
   let requisitions = $state<Requisition[] | null>(null);
   let error = $state<string | null>(null);
   let actionError = $state<string | null>(null);
+
+  // The new-requisition form (WPM-R82): a fixed-term or contractor post needs a duration, a permanent one has none.
+  const BASES = ["permanent", "fixed_term", "contractor", "intern"] as const;
+  const organizationRefs = $derived((page.data.scope ?? []) as string[]);
+  let org = $state("");
+  let department = $state("");
+  let jobTitle = $state("");
+  let headcount = $state(1);
+  let basis = $state<(typeof BASES)[number]>("permanent");
+  let months = $state<number | null>(null);
+  let programme = $state("");
+
+  $effect(() => {
+    if (!org && organizationRefs.length > 0) org = organizationRefs[0] ?? "";
+  });
+
+  async function create(event: SubmitEvent) {
+    event.preventDefault();
+    actionError = null;
+    try {
+      await createRequisition({
+        organization_ref: org,
+        department,
+        job_title: jobTitle,
+        headcount,
+        basis,
+        ...(basis !== "permanent" && months !== null ? { expected_duration_months: months } : {}),
+        ...(programme.trim() ? { programme_ref: programme.trim() } : {}),
+      });
+      department = "";
+      jobTitle = "";
+      months = null;
+      programme = "";
+      await load();
+    } catch (cause) {
+      actionError = cause instanceof Error ? cause.message : String(cause);
+    }
+  }
 
   async function load() {
     try {
@@ -69,6 +113,38 @@
 </script>
 
 <h1>{t("nav.requisitions")}</h1>
+
+<form onsubmit={create} data-testid="requisition-form">
+  <h2>{t("req.new")}</h2>
+  <label>
+    {t("pages.planning.organization")}
+    {#if organizationRefs.length > 0}
+      <select data-testid="req-org" bind:value={org} required>
+        {#each organizationRefs as ref (ref)}<option value={ref}>{ref}</option>{/each}
+      </select>
+    {:else}
+      <!-- No membership to choose from (a demo service with enforcement off): the URN is typed. -->
+      <input data-testid="req-org" bind:value={org} required />
+    {/if}
+  </label>
+  <label>{t("common.department")} <input data-testid="req-department" bind:value={department} required /></label>
+  <label>{t("common.jobTitle")} <input data-testid="req-title" bind:value={jobTitle} required /></label>
+  <label>{t("req.headcount")} <input data-testid="req-headcount" type="number" min="1" bind:value={headcount} required /></label>
+  <label>
+    {t("engagement.basis")}
+    <select data-testid="req-basis" bind:value={basis}>
+      {#each BASES as b (b)}<option value={b}>{tv(b)}</option>{/each}
+    </select>
+  </label>
+  {#if basis !== "permanent"}
+    <label>
+      {t("req.duration")}
+      <input data-testid="req-months" type="number" min="1" max="120" bind:value={months} required={basis !== "intern"} />
+    </label>
+  {/if}
+  <label>{t("plan.programmeOptional")} <input data-testid="req-programme" bind:value={programme} /></label>
+  <button type="submit" data-testid="req-create">{t("req.create")}</button>
+</form>
 
 {#if error}
   <p class="error" data-testid="error">{t("common.error")}: {error}</p>

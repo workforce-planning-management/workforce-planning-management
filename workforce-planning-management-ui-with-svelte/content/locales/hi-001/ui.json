@@ -147,7 +147,10 @@
   "req": {
     "applications": "आवेदन",
     "headcount": "पद संख्या",
-    "months": "({months} महीने)"
+    "months": "({months} महीने)",
+    "new": "भर्ती अनुरोध खोलें",
+    "duration": "अपेक्षित अवधि (महीने)",
+    "create": "बनाएँ"
   },
   "wf": {
     "leaveRequests": "छुट्टी अनुरोध",

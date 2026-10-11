@@ -147,7 +147,10 @@
   "req": {
     "applications": "Ceisiadau",
     "headcount": "Nifer staff",
-    "months": "({months} mis)"
+    "months": "({months} mis)",
+    "new": "Agor cais recriwtio",
+    "duration": "Hyd disgwyliedig (misoedd)",
+    "create": "Creu"
   },
   "wf": {
     "leaveRequests": "Ceisiadau absenoldeb",

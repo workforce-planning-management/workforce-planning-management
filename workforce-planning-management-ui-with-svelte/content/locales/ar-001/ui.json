@@ -147,7 +147,10 @@
   "req": {
     "applications": "الطلبات",
     "headcount": "عدد الوظائف",
-    "months": "({months} أشهر)"
+    "months": "({months} أشهر)",
+    "new": "فتح طلب توظيف",
+    "duration": "المدة المتوقعة (بالأشهر)",
+    "create": "إنشاء"
   },
   "wf": {
     "leaveRequests": "طلبات الإجازة",

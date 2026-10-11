@@ -30,11 +30,18 @@ function walk(dir: string, accept: (file: string) => boolean): string[] {
   return out;
 }
 
-function flatten(node: Record<string, unknown>, prefix = ""): Record<string, string> {
+function flatten(
+  node: Record<string, unknown>,
+  prefix = "",
+): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(node)) {
     if (typeof value === "string") out[`${prefix}${key}`] = value;
-    else Object.assign(out, flatten(value as Record<string, unknown>, `${prefix}${key}.`));
+    else
+      Object.assign(
+        out,
+        flatten(value as Record<string, unknown>, `${prefix}${key}.`),
+      );
   }
   return out;
 }
@@ -45,7 +52,9 @@ const catalogue = (locale: string) =>
 describe("no visible text outside the catalogue", () => {
   const files = [
     ...walk(join(root, "src", "routes"), (f) => f.endsWith(".svelte")),
-    ...walk(join(root, "src", "lib", "components"), (f) => f.endsWith(".svelte")),
+    ...walk(join(root, "src", "lib", "components"), (f) =>
+      f.endsWith(".svelte"),
+    ),
   ];
 
   it("scans the templates", () => {
@@ -56,10 +65,15 @@ describe("no visible text outside the catalogue", () => {
     const found = literalText(
       '<p class="x">Hello there</p><input placeholder="Search here" /><span>{n}</span><code>ls -l</code>',
     );
-    expect(found.map((f) => f.text)).toEqual(["Hello there", 'placeholder="Search here"']);
+    expect(found.map((f) => f.text)).toEqual([
+      "Hello there",
+      'placeholder="Search here"',
+    ]);
     // An arrow or a comparison inside an expression does not end a tag early.
     expect(
-      literalText('<button onclick={() => count > 1 && go()}>{t("a.b")}</button>').length,
+      literalText(
+        '<button onclick={() => count > 1 && go()}>{t("a.b")}</button>',
+      ).length,
     ).toBe(0);
   });
 
@@ -68,7 +82,9 @@ describe("no visible text outside the catalogue", () => {
     for (const file of files) {
       for (const finding of literalText(readFileSync(file, "utf8"))) {
         if (!(allow.literalText as string[]).includes(finding.text)) {
-          offenders.push(`${relative(root, file)}: ${finding.text.slice(0, 90)}`);
+          offenders.push(
+            `${relative(root, file)}: ${finding.text.slice(0, 90)}`,
+          );
         }
       }
     }
@@ -101,22 +117,33 @@ describe("no locale repeats English", () => {
 });
 
 describe("every server vocabulary token has a value entry", () => {
-  const rules = join(root, "..", "workforce-planning-management-service-with-rust", "src", "rules");
+  const rules = join(
+    root,
+    "..",
+    "workforce-planning-management-service-with-rust",
+    "src",
+    "rules",
+  );
   const tables = new Set<string>();
   const tokens = new Set<string>();
 
   it("reads the vocabularies", () => {
     const privacy = readFileSync(join(rules, "privacy.rs"), "utf8");
-    const list = /SOFT_DELETED_TABLES: &\[&str\] = &\[([^\]]*)\]/.exec(privacy)?.[1] ?? "";
+    const list =
+      /SOFT_DELETED_TABLES: &\[&str\] = &\[([^\]]*)\]/.exec(privacy)?.[1] ?? "";
     for (const m of list.matchAll(/"([a-z_]+)"/g)) tables.add(m[1]!);
     expect(tables.size).toBeGreaterThan(50);
     const notificationKinds = new Set<string>();
     const notify = readFileSync(join(rules, "notify.rs"), "utf8");
-    const kinds = /pub const KINDS: &\[&str\] = &\[([^\]]*)\]/.exec(notify)?.[1] ?? "";
-    for (const m of kinds.matchAll(/"([a-z_]+)"/g)) notificationKinds.add(m[1]!);
+    const kinds =
+      /pub const KINDS: &\[&str\] = &\[([^\]]*)\]/.exec(notify)?.[1] ?? "";
+    for (const m of kinds.matchAll(/"([a-z_]+)"/g))
+      notificationKinds.add(m[1]!);
     for (const file of walk(rules, (f) => f.endsWith(".rs"))) {
       const text = readFileSync(file, "utf8");
-      for (const m of text.matchAll(/pub const ([A-Z_0-9]+): &\[&str\] = &\[([^\]]*)\];/g)) {
+      for (const m of text.matchAll(
+        /pub const ([A-Z_0-9]+): &\[&str\] = &\[([^\]]*)\];/g,
+      )) {
         for (const t of m[2]!.matchAll(/"([^"]+)"/g)) {
           const token = t[1]!;
           if (tables.has(token) || token.includes(" ")) continue;
@@ -130,7 +157,9 @@ describe("every server vocabulary token has a value entry", () => {
 
   it("has a values entry in English for each", () => {
     const values = catalogue("en-001");
-    const missing = [...tokens].filter((token) => !(`values.${token}` in values));
+    const missing = [...tokens].filter(
+      (token) => !(`values.${token}` in values),
+    );
     expect(missing, missing.join(", ")).toEqual([]);
   });
 });

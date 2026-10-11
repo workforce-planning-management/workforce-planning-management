@@ -147,7 +147,10 @@
   "req": {
     "applications": "Заявки",
     "headcount": "Штат",
-    "months": "(месяцев: {months})"
+    "months": "(месяцев: {months})",
+    "new": "Открыть заявку на найм",
+    "duration": "Ожидаемая длительность (месяцев)",
+    "create": "Создать"
   },
   "wf": {
     "leaveRequests": "Заявки на отпуск",

@@ -147,7 +147,10 @@
   "req": {
     "applications": "申请",
     "headcount": "名额",
-    "months": "（{months} 个月）"
+    "months": "（{months} 个月）",
+    "new": "发起招聘需求",
+    "duration": "预计时长（月）",
+    "create": "创建"
   },
   "wf": {
     "leaveRequests": "休假申请",
