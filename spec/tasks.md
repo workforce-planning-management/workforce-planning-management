@@ -3354,6 +3354,6 @@ deployer's lawful basis and impact assessment before they are switched on.
       the twelve translated languages (seventeen folders) all eleven page folders are renamed to native-script names and every link between pages, and in
       each locale's index, is rewritten. Verified by a script: every locale has exactly its eleven folders, each with `index.md`, a `README.md` symlink and
       the shared `.locale-peer-id`; link targets, headings and table rows match the source once the slugs are mapped back; the copies equal their sources; the
-      link and days checks pass. **Not verified:** no native speaker reviewed any translation or slug (the right-to-left pages were not rendered); non-ASCII
+      link and days checks pass. The brief's folder in each translated locale was then renamed to the translation of the topic, "Independent security testing", and not of the English folder name (`独立安全测试`, `unabhängige-sicherheitsprüfung`, `اختبار-الأمن-المستقل`). **Not verified:** no native speaker reviewed any translation or slug (the right-to-left pages were not rendered); non-ASCII
       folder names were created on macOS and have not been checked out on another platform or served over a web path; the French slug avoids an apostrophe
       (`dinformation`) on purpose; the English `Independent security tester` slug names a role while the page is a brief, which the user chose.

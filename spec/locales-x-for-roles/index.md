@@ -55,7 +55,8 @@ Each folder under `for/` (and `for/` itself) holds `index.md`, a `README.md` sym
 (slugs) are **per locale**, following [locales-for-global-sharing-with-svelte](../locales-for-global-sharing-with-svelte/index.md):
 the English locales (`en-gb-oxendict`, `en-001`, `en-us`, `en-gb`) keep the English names in the table above, and every
 translated locale names each page folder in its own language and script (for example `首席执行官`, `geschäftsführung`,
-`الرئيس-التنفيذي`), lowercase, joined by hyphens, with no spaces. The `<role>` names in the table are therefore the English
+`الرئيس-التنفيذي`), lowercase, joined by hyphens, with no spaces. The folder of the security-testing brief takes the translation of the topic (Independent security testing), not of its English
+folder name `independent-security-tester`, in every translated locale. The `<role>` names in the table are therefore the English
 ones and the key of the page; the same page in another locale is found by its `.locale-peer-id`, not by its name. The folder
 `for/` is not translated. A copy locale (`zh-001`, `hi-001`, `cy-001`, `de-001`, `es-001`) has the same slugs as its source.
 

@@ -14,7 +14,7 @@ Une page pour chaque rôle de direction, qui dit ce que Workforce Planning Manag
 | Direction de la stratégie | [direction-de-la-stratégie](direction-de-la-stratégie/index.md) |
 | Direction de la sécurité | [direction-de-la-sécurité](direction-de-la-sécurité/index.md) |
 | Gouvernance, risques, conformité | [gouvernance-risques-conformité](gouvernance-risques-conformité/index.md) |
-| Test de sécurité indépendant (note de cadrage pour le commander) | [testeur-de-sécurité-indépendant](testeur-de-sécurité-indépendant/index.md) |
+| Test de sécurité indépendant (note de cadrage pour le commander) | [test-de-sécurité-indépendant](test-de-sécurité-indépendant/index.md) |
 
 Commencez par l’[évaluation de préparation](../../../spec/readiness-assessment.md) : le verdict est qu’il s’agit d’un logiciel de démonstration, qui n’est pas prêt pour un usage en production dans une organisation exigeant un haut niveau de garantie.
 

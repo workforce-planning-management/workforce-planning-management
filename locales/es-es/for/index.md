@@ -14,7 +14,7 @@ Una página para cada rol directivo, que dice qué ofrece Workforce Planning Man
 | Dirección de estrategia | [dirección-de-estrategia](dirección-de-estrategia/index.md) |
 | Dirección de seguridad | [dirección-de-seguridad](dirección-de-seguridad/index.md) |
 | Gobernanza, riesgo y cumplimiento | [gobernanza-riesgo-cumplimiento](gobernanza-riesgo-cumplimiento/index.md) |
-| Pruebas de seguridad independientes (un informe para encargarlas) | [probador-de-seguridad-independiente](probador-de-seguridad-independiente/index.md) |
+| Pruebas de seguridad independientes (un informe para encargarlas) | [pruebas-de-seguridad-independientes](pruebas-de-seguridad-independientes/index.md) |
 
 Empiece por la [evaluación de preparación](../../../spec/readiness-assessment.md): la conclusión es que este es software de demostración y no está listo para uso en producción en una organización de alta garantía.
 

@@ -14,7 +14,7 @@ Eine Seite für jede Führungsrolle: Sie sagt, was Workforce Planning Management
 | Strategieleitung | [strategieleitung](strategieleitung/index.md) |
 | Sicherheitsleitung | [sicherheitsleitung](sicherheitsleitung/index.md) |
 | Governance, Risiko, Compliance | [governance-risiko-compliance](governance-risiko-compliance/index.md) |
-| Unabhängige Sicherheitsprüfung (ein Briefing zur Beauftragung) | [unabhängiger-sicherheitsprüfer](unabhängiger-sicherheitsprüfer/index.md) |
+| Unabhängige Sicherheitsprüfung (ein Briefing zur Beauftragung) | [unabhängige-sicherheitsprüfung](unabhängige-sicherheitsprüfung/index.md) |
 
 Beginnen Sie mit der [Reifegradbewertung](../../../spec/readiness-assessment.md): Das Ergebnis lautet, dass dies Demonstrationssoftware ist und für den Produktivbetrieb in einer Organisation mit hohem Sicherheitsanspruch nicht bereit ist.
 

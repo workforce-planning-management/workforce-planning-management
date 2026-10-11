@@ -14,7 +14,7 @@ Satu halaman untuk setiap peran kepemimpinan, yang menyatakan apa yang diberikan
 | Direktur Strategi | [direktur-strategi](direktur-strategi/index.md) |
 | Direktur Keamanan | [direktur-keamanan](direktur-keamanan/index.md) |
 | Tata kelola, risiko, kepatuhan | [tata-kelola-risiko-kepatuhan](tata-kelola-risiko-kepatuhan/index.md) |
-| Pengujian keamanan independen (ringkasan untuk memesannya) | [penguji-keamanan-independen](penguji-keamanan-independen/index.md) |
+| Pengujian keamanan independen (ringkasan untuk memesannya) | [pengujian-keamanan-independen](pengujian-keamanan-independen/index.md) |
 
 Mulailah dengan [penilaian kesiapan](../../../spec/readiness-assessment.md): putusannya adalah bahwa ini perangkat lunak demonstrasi dan belum siap untuk penggunaan produksi di organisasi dengan jaminan tinggi.
 
