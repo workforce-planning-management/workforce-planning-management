@@ -16,13 +16,14 @@ use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
 
-use super::{capacity, oversight, unprocessable};
+use super::{capacity, cutover, oversight, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{early_warnings as warnings, organization_memberships};
+use crate::models::_entities::{cutovers, early_warnings as warnings, organization_memberships};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::memberships;
 use crate::models::notifications::Model as Notification;
 use crate::rules::capacity::CellStatus;
+use crate::rules::cutover as cutover_rules;
 use crate::rules::early_warning::{self as rules, Key};
 use crate::rules::oversight::{self as oversight_rules, Reason};
 
@@ -67,6 +68,24 @@ async fn true_now(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<BTree
                     subject: m.pid,
                 },
                 m.name.clone(),
+            );
+        }
+    }
+    // A cutover whose window has not ended and whose people side is at risk.
+    for c in cutovers::Entity::find()
+        .filter(cutovers::Column::OrganizationRef.eq(org))
+        .filter(cutovers::Column::WindowEnd.gte(today))
+        .all(&ctx.db)
+        .await?
+    {
+        let (trained, cover, risk) = cutover::assess(ctx, &c).await?;
+        if cutover_rules::overall(&[&trained, &cover, &risk]) == cutover_rules::Readiness::AtRisk {
+            found.insert(
+                Key {
+                    kind: "cutover_at_risk".into(),
+                    subject: c.pid,
+                },
+                c.name.clone(),
             );
         }
     }
@@ -135,6 +154,8 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<Repo
         .await?;
         let what = if key.kind == "pool_over_committed" {
             format!("The skill pool \"{name}\" is over-committed in the coming months.")
+        } else if key.kind == "cutover_at_risk" {
+            format!("The cutover \"{name}\" has its people side at risk.")
         } else {
             format!("The measure \"{name}\" is in breach for the last complete month.")
         };

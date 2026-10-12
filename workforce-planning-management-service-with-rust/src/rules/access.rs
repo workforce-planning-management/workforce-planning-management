@@ -75,6 +75,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("governance-commitments", Open),
     ("oversight/status", Open),
     ("oversight/derivations", Open),
+    ("cutovers", Open),
+    ("cutovers/{}/readiness", Open),
     ("oversight/packs", Open),
     ("oversight/packs/{}", Open),
     ("early-warnings", Open),

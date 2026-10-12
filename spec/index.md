@@ -86,6 +86,7 @@ identities by `EntityRef` URN, never duplicating them.
 | [engagements.md](engagements.md) | Built: the end date by engagement basis, extensions with history, a contractor's supplier, route and masked rate, status assessments, and the list of engagements missing an end date (WPM-R79, R80) |
 | [delivery-capacity.md](delivery-capacity.md) | Built: skill pools, programme demand, partner commitments, the pool × month capacity view, the constraint pool, the start check and recorded start decisions (WPM-R56–R60) |
 | [workforce-measures.md](workforce-measures.md) | Built: the derived oversight measures (turnover, contingent share, over-committed pools) and the rules they follow (WPM-R67); defined, not built: sickness absence, the pulse, required training; not derivable until the pack freezes them: single points of failure and governance hours |
+| [cutover-readiness.md](cutover-readiness.md) | Built: the people side of a go-live at a site: trained staff per role, hypercare cover, key-person risk; ready, at_risk or unknown with reasons (WPM-R70) |
 | [pay-scales.md](pay-scales.md) | A national public-sector pay scale (2026/27), salary placement and progression lookup, a worker's band and step with eligibility reminders (WPM-R51, R54) |
 | [job-levels.md](job-levels.md) | Google technical job levels L3–L11 as reference data; a worker's level and a role's level and pay band (WPM-R52–R53) |
 | [skills-and-training.md](skills-and-training.md)   | Skills gap analysis and training time recommendations (WPM-R43–R44)                       |

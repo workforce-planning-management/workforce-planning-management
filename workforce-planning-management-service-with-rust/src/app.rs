@@ -133,6 +133,7 @@ impl Hooks for App {
             .add_route(controllers::oversight::routes())
             .add_route(controllers::early_warning::routes())
             .add_route(controllers::oversight_packs::routes())
+            .add_route(controllers::cutover::routes())
             .add_route(controllers::programmes::routes())
             .add_route(controllers::engagements::routes())
             .add_route(controllers::me::routes())

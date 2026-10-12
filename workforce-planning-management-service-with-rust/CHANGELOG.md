@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — cutover readiness (WPM-T117)
+
+- `cutovers`, `cutover_roles`, `cutover_pools` (migration `000073`) and `GET /api/cutovers/{pid}/readiness`: trained staff per required
+  role at the site, hypercare cover from the on-call rota over the window, and key-person risk in the pools the cutover depends on;
+  each `ready`, `at_risk` or `unknown` with reasons, the worst overall, an unknown never ready, no one named, and the go/no-go left to a
+  human. 558 unit and 95 request tests.
+
+### Changed — cutover readiness follow-up (WPM-T117)
+
+- Key-person risk is read at the site; a site is matched by name and aliases (`site_aliases`, migration `000074`) without case or
+  punctuation; a role refuses an unknown course and a renamed one makes the check unknown; planning is for an administrator; an
+  at-risk cutover opens a `cutover_at_risk` early warning. New enforcement binary `enforcement_cutover`. 561 unit and 95 request tests.
+
 ### Added — monthly oversight pack and the partner role (WPM-T116)
 
 - `oversight_packs` (migration `000071`, append-only by trigger): `POST /api/oversight/packs` freezes the oversight status and a

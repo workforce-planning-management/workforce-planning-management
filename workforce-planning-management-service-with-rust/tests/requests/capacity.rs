@@ -1128,3 +1128,208 @@ async fn the_scheduled_freeze_is_idempotent_for_a_month() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// Cutover readiness (WPM-R70, WPM-T117): trained staff per role at the site, hypercare cover and
+// key-person risk, each ready, at risk or unknown with reasons; an unknown is never ready, and the
+// answer names no one.
+#[allow(clippy::too_many_lines)] // one scenario read top to bottom
+async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_ready() {
+    use super::{activate, seed_worker};
+    use sea_orm::ConnectionTrait;
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = chrono::Utc::now().date_naive();
+        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let site = format!("Synthetic Site {tag}");
+        let course = format!("SYN-COURSE-{tag}");
+        // Four people with the role "Engineer" (the title seed_worker gives), and a role profile for it.
+        let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": "Engineer" })).await.json();
+        let profile = profile["pid"].as_str().unwrap().to_string();
+        let mut people = Vec::new();
+        for n in 0..8 {
+            let w = seed_worker!(&request, &org, format!("CO-{n}-{tag}"), None).await;
+            activate!(&request, &w).await;
+            people.push(w);
+        }
+        let (a, b, c, d) = (people[0].clone(), people[1].clone(), people[2].clone(), people[3].clone());
+        let (late_done, expiring, gardener, unplaced_holder) = (people[4].clone(), people[5].clone(), people[6].clone(), people[7].clone());
+        let annex = format!("Synthetic Annex {tag}");
+        let set_site = |w: &str, loc: &str| {
+            let db = &ctx.db;
+            let sql = format!("UPDATE workers SET location = '{loc}' WHERE pid = '{w}'");
+            async move { db.execute_unprepared(&sql).await.unwrap(); }
+        };
+        // A is recorded with different case and punctuation; B under the site's alias: both are at the site.
+        set_site(&a, &format!("  {}. ", site.to_uppercase())).await;
+        set_site(&b, &annex).await;
+        set_site(&d, "Elsewhere").await; // trained, but at another site
+        for w in [&late_done, &expiring, &gardener] {
+            set_site(w, &site).await;
+        }
+        ctx.db.execute_unprepared(&format!("UPDATE workers SET job_title = 'Gardener' WHERE pid = '{gardener}'")).await.unwrap();
+        let complete = |w: &str| {
+            let db = &ctx.db;
+            let sql = format!(
+                "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on) \
+                 VALUES ('{}', '{w}', '{course}', 'completed', '{}')", uuid::Uuid::new_v4(), day(-5));
+            async move { db.execute_unprepared(&sql).await.unwrap(); }
+        };
+        complete(&a).await;
+        complete(&c).await; // trained, no site recorded
+        complete(&d).await;
+        complete(&gardener).await; // at the site and trained, but not in the role
+        let enrol = |w: &str, completed: i64, expires: Option<i64>| {
+            let db = &ctx.db;
+            let expires = expires.map_or("NULL".to_string(), |n| format!("'{}'", day(n)));
+            let sql = format!(
+                "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on, certificate_expires_on) \
+                 VALUES ('{}', '{w}', '{course}', 'completed', '{}', {expires})", uuid::Uuid::new_v4(), day(completed));
+            async move { db.execute_unprepared(&sql).await.unwrap(); }
+        };
+        enrol(&late_done, 11, None).await; // completes the day after the window opens: not trained for it
+        enrol(&expiring, -5, Some(11)).await; // the certificate lapses before the window closes
+        // A rota that covers the window, one that starts after it begins, and a pool with a critical skill.
+        let rota_body = |name: &str, starts: String| json!({ "organization_ref": org, "name": format!("{name} {tag}"), "period_days": 7, "starts_on": starts, "members": [a, b] });
+        let good_rota: Value = request.post("/api/rotas").json(&rota_body("Hypercare", day(0))).await.json();
+        let late_rota: Value = request.post("/api/rotas").json(&rota_body("Late hypercare", day(12))).await.json();
+        let skill_name = format!("Cutover skill {tag}");
+        let skill: Value = request.post("/api/skills").json(&json!({ "name": skill_name, "category": "technical" })).await.json();
+        let skill = skill["pid"].as_str().unwrap().to_string();
+        let key_profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": format!("Key role {tag}") })).await.json();
+        request.put(&format!("/api/role-profiles/{}/requirements", key_profile["pid"].as_str().unwrap()))
+            .json(&json!({ "skill_pid": skill, "min_proficiency": 4, "importance": "critical" })).await.assert_status_ok();
+        // Another critical skill held by one person, in no listed pool: it must not count against this cutover.
+        let other_skill: Value = request.post("/api/skills").json(&json!({ "name": format!("Unlisted skill {tag}"), "category": "technical" })).await.json();
+        let other_skill = other_skill["pid"].as_str().unwrap().to_string();
+        request.put(&format!("/api/role-profiles/{}/requirements", key_profile["pid"].as_str().unwrap()))
+            .json(&json!({ "skill_pid": other_skill, "min_proficiency": 4, "importance": "critical" })).await.assert_status_ok();
+        request.put(&format!("/api/workers/{a}/skills")).json(&json!({ "skill_pid": other_skill, "proficiency": 5 })).await.assert_status_ok();
+        let pool = make_pool(&request, &org, &format!("Cutover pool {tag}"), 0).await;
+        request.post(&format!("/api/skill-pools/{pool}/members")).json(&json!({ "skill_pid": skill, "min_proficiency": 4 })).await.assert_status_ok();
+
+        let cutover = |rota: Option<&str>, start: i64, end: i64| json!({
+            "organization_ref": org, "programme_ref": a_programme(), "name": "Synthetic go-live", "site": site,
+            "window_start": day(start), "window_end": day(end), "rota_pid": rota, "site_aliases": [annex] });
+        for (why, body) in [
+            ("a window that ends before it starts", cutover(None, 12, 10)),
+            ("a window longer than the on-call schedule can show", cutover(None, 10, 120)),
+            ("a rota that is not the organization's", cutover(Some(&uuid::Uuid::new_v4().to_string()), 10, 12)),
+        ] {
+            assert_eq!(request.post("/api/cutovers").json(&body).await.status_code(), 422, "{why}");
+        }
+        let mut blank = cutover(None, 10, 12);
+        blank["site"] = json!("  ");
+        assert_eq!(request.post("/api/cutovers").json(&blank).await.status_code(), 422, "a blank site");
+        let made: Value = request.post("/api/cutovers").json(&cutover(good_rota["pid"].as_str(), 10, 12)).await.json();
+        let id = made["pid"].as_str().unwrap().to_string();
+        let ready = || async { request.get(&format!("/api/cutovers/{id}/readiness")).await.json::<Value>() };
+
+        // Nothing listed: roles and pools unknown, hypercare ready from the rota. Unknown is not ready.
+        let first = ready().await;
+        assert_eq!(first["checks"]["hypercare_cover"]["status"], "ready");
+        assert_eq!(first["checks"]["trained_staff"]["status"], "unknown");
+        assert_eq!(first["checks"]["key_person_risk"]["status"], "unknown");
+        assert_eq!(first["readiness"], "unknown");
+        assert!(first["basis"].as_str().unwrap().contains("human decision"));
+        // The role needs two trained people at the site: A is; C is trained but has no site recorded.
+        for (why, body) in [
+            ("no headcount", json!({ "role_profile_pid": profile, "course_ref": course, "required_headcount": 0 })),
+            ("a blank course", json!({ "role_profile_pid": profile, "course_ref": " ", "required_headcount": 2 })),
+            ("a role profile that does not exist", json!({ "role_profile_pid": uuid::Uuid::new_v4(), "course_ref": course, "required_headcount": 2 })),
+        ] {
+            assert_eq!(request.post(&format!("/api/cutovers/{id}/roles")).json(&body).await.status_code(), 422, "{why}");
+        }
+        assert_eq!(
+            request.post(&format!("/api/cutovers/{id}/roles")).json(&json!({ "role_profile_pid": profile, "course_ref": "NOT-A-COURSE", "required_headcount": 2 })).await.status_code(),
+            422,
+            "a course the learning records do not know"
+        );
+        let role = json!({ "role_profile_pid": profile, "course_ref": course, "required_headcount": 2 });
+        request.post(&format!("/api/cutovers/{id}/roles")).json(&role).await.assert_status_ok();
+        assert_eq!(request.post(&format!("/api/cutovers/{id}/roles")).json(&role).await.status_code(), 422, "listed once");
+        let unplaced = ready().await;
+        assert_eq!(unplaced["checks"]["trained_staff"]["status"], "unknown", "someone with no site could close the gap");
+        assert!(unplaced["checks"]["trained_staff"]["reasons"][0].as_str().unwrap().contains("no site recorded"));
+        // C is recorded at another site: now a known shortfall of one. D, trained elsewhere, never counted.
+        set_site(&c, "Elsewhere").await;
+        let short = ready().await;
+        assert_eq!(short["checks"]["trained_staff"]["status"], "at_risk");
+        assert!(short["checks"]["trained_staff"]["reasons"][0].as_str().unwrap().contains("short by 1"));
+        assert_eq!(short["readiness"], "at_risk");
+        // The sweep opens one early warning for the cutover and the next finds nothing new.
+        use workforce_planning_management_service::controllers::early_warning::sweep;
+        let opened = sweep(&ctx, &org, today).await.unwrap();
+        assert_eq!(opened.opened, 1);
+        assert_eq!(sweep(&ctx, &org, today).await.unwrap().opened, 0);
+        let warnings: Value = request.get(&format!("/api/early-warnings?organization={org}")).await.json();
+        assert_eq!(warnings["warnings"][0]["kind"], "cutover_at_risk");
+        assert_eq!(warnings["warnings"][0]["subject_name"], "Synthetic go-live");
+        // B completes the course: two trained at the site.
+        complete(&b).await;
+        assert_eq!(ready().await["checks"]["trained_staff"]["status"], "ready");
+        // The pool: one holder of a critical skill with no cover is a single point of failure.
+        request.post(&format!("/api/cutovers/{id}/pools")).json(&json!({ "pool_pid": pool })).await.assert_status_ok();
+        assert_eq!(request.post(&format!("/api/cutovers/{id}/pools")).json(&json!({ "pool_pid": pool })).await.status_code(), 422, "listed once");
+        assert_eq!(request.post(&format!("/api/cutovers/{id}/pools")).json(&json!({ "pool_pid": uuid::Uuid::new_v4() })).await.status_code(), 422);
+        let declare = |who: String, level: i32| {
+            let (request, skill) = (&request, skill.clone());
+            async move { request.put(&format!("/api/workers/{who}/skills")).json(&json!({ "skill_pid": skill, "proficiency": level })).await.assert_status_ok(); }
+        };
+        // Someone elsewhere holds it too, but not at the site: the site still has one holder.
+        declare(d.clone(), 5).await;
+        declare(a.clone(), 5).await;
+        // A backup who holds the skill but works elsewhere does not cover the holder at the site.
+        request.post(&format!("/api/workers/{a}/backups")).json(&json!({ "backup_pid": d })).await.assert_status_ok();
+        let single = ready().await;
+        assert_eq!(single["checks"]["key_person_risk"]["status"], "at_risk");
+        assert!(single["checks"]["key_person_risk"]["reasons"][0].as_str().unwrap().contains(&skill_name));
+        assert_eq!(single["readiness"], "at_risk");
+        assert!(single["checks"]["key_person_risk"]["reasons"][0].as_str().unwrap().contains("at the site"));
+        // A holder with no site on file might be there: the risk cannot be called.
+        declare(unplaced_holder.clone(), 5).await;
+        let maybe = ready().await;
+        assert_eq!(maybe["checks"]["key_person_risk"]["status"], "unknown");
+        assert!(maybe["checks"]["key_person_risk"]["reasons"][0].as_str().unwrap().contains("no site recorded"));
+        set_site(&unplaced_holder, "Elsewhere").await;
+        assert_eq!(ready().await["checks"]["key_person_risk"]["status"], "at_risk");
+        // A second holder at the site: shared. Every check is now ready, and so is the cutover.
+        declare(b.clone(), 5).await;
+        let all = ready().await;
+        assert_eq!(all["checks"]["key_person_risk"]["status"], "ready");
+        assert_eq!(all["readiness"], "ready");
+        // The warning closes when the cutover is no longer at risk.
+        let closed = sweep(&ctx, &org, today).await.unwrap();
+        assert_eq!((closed.opened, closed.cleared), (0, 1));
+        // A course renamed in the learning records cannot be checked, and is said so.
+        ctx.db.execute_unprepared(&format!("UPDATE training_enrollments SET course_ref = 'RENAMED-{tag}' WHERE course_ref = '{course}'")).await.unwrap();
+        let renamed = ready().await;
+        assert_eq!(renamed["checks"]["trained_staff"]["status"], "unknown");
+        assert!(renamed["checks"]["trained_staff"]["reasons"][0].as_str().unwrap().contains("not in the learning records"));
+        assert_eq!(renamed["readiness"], "unknown");
+        // Nobody is named anywhere in the answer.
+        let text = all.to_string();
+        for pid in [&a, &b, &c, &d] {
+            assert!(!text.contains(pid.as_str()), "the report names no one");
+        }
+        // A rota that starts after the window begins leaves days with nobody on call.
+        let late: Value = request.post("/api/cutovers").json(&cutover(late_rota["pid"].as_str(), 10, 12)).await.json();
+        let late = request.get(&format!("/api/cutovers/{}/readiness", late["pid"].as_str().unwrap())).await.json::<Value>();
+        assert_eq!(late["checks"]["hypercare_cover"]["status"], "at_risk");
+        assert!(late["checks"]["hypercare_cover"]["reasons"][0].as_str().unwrap().contains("2 calendar days"));
+        // No rota linked: unknown, not ready.
+        let none: Value = request.post("/api/cutovers").json(&cutover(None, 10, 12)).await.json();
+        let none = request.get(&format!("/api/cutovers/{}/readiness", none["pid"].as_str().unwrap())).await.json::<Value>();
+        assert_eq!(none["checks"]["hypercare_cover"]["status"], "unknown");
+        // The list, then removal.
+        let listed: Value = request.get(&format!("/api/cutovers?organization={org}")).await.json();
+        assert_eq!(listed.as_array().unwrap().len(), 3);
+        request.delete(&format!("/api/cutovers/{id}")).await.assert_status_ok();
+        assert_eq!(request.get(&format!("/api/cutovers/{id}/readiness")).await.status_code(), 404);
+        assert_eq!(request.get("/api/cutovers").await.status_code(), 422);
+    })
+    .await;
+}

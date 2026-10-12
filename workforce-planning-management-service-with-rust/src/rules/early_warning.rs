@@ -8,7 +8,7 @@ use chrono::NaiveDate;
 use uuid::Uuid;
 
 /// The kinds of condition.
-pub const KINDS: &[&str] = &["pool_over_committed", "measure_breach"];
+pub const KINDS: &[&str] = &["pool_over_committed", "measure_breach", "cutover_at_risk"];
 
 /// How many months ahead a pool is looked at, counting the current month. A pool short in any of
 /// them is over-committed.

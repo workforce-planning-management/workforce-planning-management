@@ -20,6 +20,7 @@ pub mod cpd;
 pub mod development;
 pub mod directory;
 pub mod docs;
+pub mod cutover;
 pub mod early_warning;
 pub mod engagements;
 pub mod equality_monitoring;

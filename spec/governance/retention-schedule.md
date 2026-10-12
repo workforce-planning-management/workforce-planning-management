@@ -38,7 +38,7 @@ ignored.
   a programme reference and an end date, never an amount.
 - **Does not cover** governance commitments (`governance_commitments`), which are not soft-deleted: removing one deletes the
   row at once (WPM-T111). A row holds a role, a frequency, a length and a head count, never a person.
-- **Does not cover** `oversight_packs` and `oversight_pack_withdrawals` (a frozen aggregate with no person in it, append-only by a trigger: it is never changed or removed), `early_warnings` (it names a pool or a measure and the dates they were seen and acknowledged, never a person) or the oversight tables (`oversight_levels`, `oversight_positions`, `oversight_criteria`, `oversight_measures`,
+- **Does not cover** the cutover tables (`cutovers`, `cutover_roles`, `cutover_pools`: an organization's own plan for a go-live, naming a programme, a site, a role and a pool, never a person; removed at once with the cutover) and `oversight_packs` and `oversight_pack_withdrawals` (a frozen aggregate with no person in it, append-only by a trigger: it is never changed or removed), `early_warnings` (it names a pool or a measure and the dates they were seen and acknowledged, never a person) or the oversight tables (`oversight_levels`, `oversight_positions`, `oversight_criteria`, `oversight_measures`,
   `oversight_readings`), which are an organization's own configuration and evidence, not records of a person, and are not
   soft-deleted: a level, criterion or measure is removed at once (a measure with its readings), and a recorded position stays on the
   record (WPM-T113).

@@ -41,7 +41,11 @@ async fn ensure_org_in_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str
 /// Who may freeze or withdraw a pack: an HR or organization administrator of the organization, or a
 /// caller whose token carries HR, payroll, service or administrator rights. Reading is open to anyone
 /// in scope, which is the point of a pack; changing the record of what was shown is not.
-async fn ensure_may_freeze(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
+pub(super) async fn ensure_may_freeze(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    org: &str,
+) -> Result<()> {
     if !crate::auth::require_auth() {
         return Ok(());
     }

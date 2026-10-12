@@ -23,13 +23,15 @@ use crate::models::memberships;
 use crate::rules::key_person::{self as rules, Holder, Status};
 
 /// One assessed skill in one pool (a department, or `None` for the whole scope).
-struct Row {
-    skill: Uuid,
-    name: String,
+pub(super) struct Row {
+    pub(super) skill: Uuid,
+    pub(super) name: String,
     bar: i32,
-    department: Option<String>,
-    assessment: rules::Assessment,
+    pub(super) department: Option<String>,
+    pub(super) assessment: rules::Assessment,
     sole_holder: Option<Uuid>,
+    /// With a site: employed holders of the skill with no site recorded (they might be there).
+    pub(super) unplaced_holders: usize,
 }
 
 /// Everything read from the database for one assessment.
@@ -137,9 +139,10 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
 }
 
 /// Build every row for the caller's scope.
-async fn rows(
+pub(super) async fn rows(
     ctx: &AppContext,
     scope: Option<&[String]>,
+    site: Option<&[String]>,
 ) -> Result<(Vec<Row>, Vec<workers::Model>)> {
     let Loaded {
         staff,
@@ -155,7 +158,20 @@ async fn rows(
             continue;
         };
         let holds = |pid: &Uuid| level.get(&(*skill, *pid)).is_some_and(|l| *l >= bar);
-        let holders: Vec<&workers::Model> = staff.iter().filter(|w| holds(&w.pid)).collect();
+        // Read at a site, only the people recorded there count as holders or backups; the people with
+        // no site on file are counted apart, since they might be there.
+        let here = |w: &workers::Model| {
+            site.is_none_or(|names| crate::rules::cutover::at_site(w.location.as_deref(), names))
+        };
+        let holders: Vec<&workers::Model> =
+            staff.iter().filter(|w| holds(&w.pid) && here(w)).collect();
+        let unplaced_holders = site.map_or(0, |_| {
+            staff
+                .iter()
+                .filter(|w| holds(&w.pid) && crate::rules::cutover::unplaced(w.location.as_deref()))
+                .count()
+        });
+        let at_the_site: BTreeSet<Uuid> = staff.iter().filter(|w| here(w)).map(|w| w.pid).collect();
         let facts = |w: &workers::Model| Holder {
             id: w.pid,
             backups: backups_of
@@ -163,7 +179,7 @@ async fn rows(
                 .into_iter()
                 .flatten()
                 .copied()
-                .filter(|b| *b != w.pid && holds(b))
+                .filter(|b| *b != w.pid && holds(b) && at_the_site.contains(b))
                 .collect(),
             ready_successors: successors_of.get(&w.pid).cloned().unwrap_or_default(),
         };
@@ -188,6 +204,7 @@ async fn rows(
                 department,
                 assessment: rules::assess(&facts),
                 sole_holder: (members.len() == 1).then(|| members[0].pid),
+                unplaced_holders,
             });
         }
     }
@@ -200,7 +217,7 @@ async fn rows(
 /// no person, so a small department's holder cannot be worked out from it.
 pub(super) async fn pack_json(ctx: &AppContext, org: &str) -> Result<serde_json::Value> {
     let scope = [org.to_string()];
-    let (rows, _) = rows(ctx, Some(&scope)).await?;
+    let (rows, _) = rows(ctx, Some(&scope), None).await?;
     let single = rows
         .iter()
         .filter(|r| r.department.is_some() && r.assessment.status == Status::SinglePointOfFailure)
@@ -224,7 +241,7 @@ pub(super) async fn pack_json(ctx: &AppContext, org: &str) -> Result<serde_json:
 #[debug_handler]
 async fn aggregate(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let (rows, _) = rows(&ctx, scope.as_deref()).await?;
+    let (rows, _) = rows(&ctx, scope.as_deref(), None).await?;
     let single = rows
         .iter()
         .filter(|r| r.department.is_some() && r.assessment.status == Status::SinglePointOfFailure)
@@ -254,7 +271,7 @@ async fn aggregate(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Resu
 #[debug_handler]
 async fn named(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let (rows, staff) = rows(&ctx, scope.as_deref()).await?;
+    let (rows, staff) = rows(&ctx, scope.as_deref(), None).await?;
     let by_pid: BTreeMap<Uuid, &workers::Model> = staff.iter().map(|w| (w.pid, w)).collect();
     let people: Vec<serde_json::Value> = rows
         .iter()

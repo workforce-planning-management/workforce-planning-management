@@ -2598,10 +2598,41 @@ data or tests (WPM-D48).
       organization gets `404`; direct SQL update and delete of a pack fail); **mutation-checked** (a partner may read anything; any
       partner role restricts; pack read ignoring scope; the guard switched off), each failing the enforcement test. Full suites: 548
       unit and 93 request tests, every enforcement binary, clippy, fmt. **Follow-up pass (same task), after review:** the pack now also carries the key-person counts (skills across the organization, no department row, no person) and the governance totals (no role); the daily-or-monthly task `oversight_pack_freeze` freezes the month for each organization with a position and skips one that already has it; a mistaken pack is withdrawn (`POST /api/oversight/packs/{pid}/withdraw`, migration `000072`, a separate append-only row with the date and reason, shown beside the unchanged payload to every reader); a partner can also read `/api/me/organizations/scope` to find their organizations; the pack leaves out the free-text deciding body of a position (the status route keeps it); freezing and withdrawing are for an administrator (`hr_admin` or `org_admin` of the organization, or a token with HR, payroll, service or administrator rights), refused `403` otherwise. Tests added: the scheduled freeze is idempotent for a month and the next month is frozen; the enforcement test now has an ordinary member and a partner-who-is-a-member refused the freeze, an administrator allowed by role, the withdrawal (once, with a reason, unchanged payload, same mark for partner and member), the key-person and governance figures as numbers with no roles, and the deciding body absent; **mutation-checked** again (deciding body kept in the current position; kept in the list; anyone may freeze; withdraw twice; freeze twice), each failing a test. Full suites: 548 unit, 94 request, every enforcement binary. **Not done / limits:** no user interface (the pack page is part of WPM-T118); the pack's key-person and governance figures are not yet derived as oversight measures month by month (a pack freezes them, a later task can read them back); nothing schedules the task here, it is run by the deployment's scheduler; a withdrawn pack still reads (with the mark), because the record of what was shown stays; the role gate matters only where the policy lets a non-administrator write, since the shipped policy already limits writes to HR, payroll, service and administrator tokens; a partner cannot read any other `/api/me` route.
-- [ ] WPM-T117 **Cutover readiness.** *(WPM-R70)* Trained staff per required
-      role at a site, hypercare cover from the on-call rota, and key-person risk
-      in the pools the cutover depends on; `ready` / `at_risk` / `unknown` with
-      reasons. Pure core first, then an endpoint. Unit and request tests.
+- [x] WPM-T117 **Cutover readiness.** *(WPM-R70)* Migration `000073` adds `cutovers` (programme, site, window of at most 92 calendar
+      days, optional rota), `cutover_roles` (role profile, the course that trains it, headcount) and `cutover_pools`. `POST
+      /api/cutovers`, `POST /api/cutovers/{pid}/roles` and `/pools`, `DELETE /api/cutovers/{pid}`, `GET /api/cutovers?organization=`,
+      and `GET /api/cutovers/{pid}/readiness`. Pure rules in `rules::cutover` (trained staff, hypercare, key-person risk, overall,
+      window) with unit tests; the controller gathers trained people at the site (completed the course on or before the window's
+      first day, certificate lasting through the window), the uncovered days of the rota (`rotas::compute`, so leave and swaps count)
+      and the key-person status of the skills in the listed pools. Each check is `ready`, `at_risk` or `unknown` with reasons; the
+      overall result is the worst, and an unknown is never ready. A shortfall that people with no recorded site could close is
+      unknown, not at risk. The answer names no one and says the go/no-go is a human decision. One request test (refusals; every
+      check unknown then ready; an unplaced person making it unknown; a known shortfall; a late completion, a lapsing certificate, a
+      trained person at another site and a trained person in another role not counted; one holder then two; a skill outside the
+      listed pools not counted; a rota that starts late; no rota; the list and removal); **mutation-checked** (completion date
+      ignored; completion judged at the window's end; expiry ignored; everyone counted as in the role; skills of other pools
+      included; site ignored; covered days read as uncovered), each failing the test. Topic file: [cutover-readiness.md](cutover-readiness.md).
+      Full suites at first build: 558 unit, 95 request, every enforcement binary, clippy, fmt.
+      **Follow-up pass (same task), after review:** key-person risk is now read **at the site** (only people recorded there count as
+      holders or backups; a holder elsewhere in the organization does not cover; holders with no site on file make a site risk
+      unknown, not at risk); a site is matched by its name and its **aliases** (`site_aliases`, up to ten, migration `000074`),
+      without case, punctuation or spacing (`St. Mary's  Hospital` equals `st marys hospital`); the training link is checked: a role
+      refuses a course the learning records do not know (no catalogue entry, no enrollment), and a course that later disappears from
+      them makes the check `unknown` with the reason, not a silent zero; planning (create, add role, add pool, remove) is for an
+      administrator of the organization, as for the monthly pack, and reading stays open to the organization's scope; a cutover whose
+      window has not ended and whose people side is `at_risk` opens a `cutover_at_risk` early warning in the sweep (WPM-T115) and
+      tells the HR administrators, and closes it when the risk passes. New enforcement binary `enforcement_cutover` (a member the
+      policy lets write is refused; a partner refused; an administrator of another organization gets `404`; an administrator of the
+      organization plans, adds roles and pools and removes; the readiness and list are read by the organization's member, not by
+      an outsider, a partner or an anonymous caller). **Mutation-checked** again (key-person ignoring the site; backups from other
+      sites counting; a plain lower-case site match; a renamed course not noticed; an unknown course accepted; the wrong cutover
+      condition; a role added by a member), each failing a test (one survivor, backups from other sites, led to a stronger test).
+      Full suites: 561 unit, 95 request, every enforcement binary. **Not done / limits:** a site spelt a way neither the name nor an
+      alias covers is a different site (aliases are the fix, and nothing suggests them); the course link is still the course
+      reference text, checked against the learning records when the role is added and again when read, so a renamed course makes
+      the check unknown until the role is re-pointed (there is no endpoint to change a role's course: remove the cutover or the role
+      and add it again, and roles cannot be removed singly); nothing checks that the sweep runs, as for every early warning; no
+      user interface (WPM-T118, next).
 - [ ] WPM-T118 **UI and verification.** *(WPM-R56–R70)* Capacity heatmap
       (unknown cells distinct from zero, readable in light and dark and on a
       phone), resilience panel, oversight position and criteria, the monthly
