@@ -47,6 +47,7 @@ pub mod movements;
 pub mod notifications;
 pub mod organizations;
 pub mod oversight;
+pub mod oversight_packs;
 mod oversight_derived;
 pub mod pay_positions;
 pub mod pay_scales;

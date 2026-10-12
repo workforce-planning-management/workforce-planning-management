@@ -227,11 +227,30 @@ pub async fn need_to_know_mw(
     req: Request,
     next: Next,
 ) -> Response {
-    if !auth::require_auth() || !matches!(*req.method(), Method::GET | Method::HEAD) {
+    if !auth::require_auth() {
         return next.run(req).await;
     }
     let path = req.uri().path().to_string();
-    if !path.starts_with("/api/") {
+    let is_read = matches!(*req.method(), Method::GET | Method::HEAD);
+    // A caller who holds only the partner role reads the frozen packs and nothing else (WPM-R69).
+    if path.starts_with("/api/")
+        && let Some(claims) = caller.claims()
+    {
+        match memberships::caller_memberships(&ctx.db, Some(claims)).await {
+            Ok(held) => {
+                let roles: Vec<&str> = held.iter().map(|m| m.role.as_str()).collect();
+                if access::is_partner_only(&roles) && !access::partner_may(is_read, &path) {
+                    return denied("Partner");
+                }
+            }
+            Err(error) => {
+                tracing::error!(%error, "need-to-know: decision failed, refusing");
+                return (StatusCode::INTERNAL_SERVER_ERROR, "could not check access")
+                    .into_response();
+            }
+        }
+    }
+    if !is_read || !path.starts_with("/api/") {
         return next.run(req).await;
     }
     let Some(audience) = access::classify_read(&path) else {

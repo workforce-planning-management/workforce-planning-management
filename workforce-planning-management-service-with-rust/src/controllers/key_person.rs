@@ -43,10 +43,9 @@ struct Loaded {
 }
 
 /// Read the facts for the caller's scope.
-async fn load(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<Loaded> {
+async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
     let today = chrono::Utc::now().date_naive();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let staff = super::funding::employed_in_scope(ctx, scope.as_deref(), today).await?;
+    let staff = super::funding::employed_in_scope(ctx, scope, today).await?;
     let live_profiles: BTreeSet<Uuid> = role_profiles::Entity::find()
         .filter(role_profiles::Column::DeletedAt.is_null())
         .all(&ctx.db)
@@ -138,7 +137,10 @@ async fn load(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<Loaded> {
 }
 
 /// Build every row for the caller's scope.
-async fn rows(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<(Vec<Row>, Vec<workers::Model>)> {
+async fn rows(
+    ctx: &AppContext,
+    scope: Option<&[String]>,
+) -> Result<(Vec<Row>, Vec<workers::Model>)> {
     let Loaded {
         staff,
         minimums,
@@ -146,7 +148,7 @@ async fn rows(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<(Vec<Row>, Vec
         level,
         backups_of,
         successors_of,
-    } = load(ctx, caller).await?;
+    } = load(ctx, scope).await?;
     let mut out = Vec::new();
     for (skill, mins) in &minimums {
         let (Some(bar), Some(name)) = (rules::bar(mins), names.get(skill)) else {
@@ -193,10 +195,36 @@ async fn rows(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<(Vec<Row>, Vec
     Ok((out, staff))
 }
 
+/// The key-person figures of one organization for the monthly pack: the skills across the whole
+/// organization with their counts, and the number of single points of failure. No department row and
+/// no person, so a small department's holder cannot be worked out from it.
+pub(super) async fn pack_json(ctx: &AppContext, org: &str) -> Result<serde_json::Value> {
+    let scope = [org.to_string()];
+    let (rows, _) = rows(ctx, Some(&scope)).await?;
+    let single = rows
+        .iter()
+        .filter(|r| r.department.is_some() && r.assessment.status == Status::SinglePointOfFailure)
+        .count();
+    Ok(json!({
+        "single_points_of_failure": single,
+        "skills": rows.iter().filter(|r| r.department.is_none()).map(|r| json!({
+            "skill": r.name,
+            "minimum_proficiency": r.bar,
+            "holders": r.assessment.holders,
+            "backups": r.assessment.backups,
+            "ready_successors": r.assessment.ready_successors,
+            "status": r.assessment.status.as_str(),
+        })).collect::<Vec<_>>(),
+        "basis": "Counts as at the freeze date, from the declared skill levels then on file. The number of \
+                  single points of failure counts a skill in a department held by one person; no one is named.",
+    }))
+}
+
 /// `GET /api/workforce-intelligence/key-person` — counts only; no one is named.
 #[debug_handler]
 async fn aggregate(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let (rows, _) = rows(&ctx, &caller).await?;
+    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let (rows, _) = rows(&ctx, scope.as_deref()).await?;
     let single = rows
         .iter()
         .filter(|r| r.department.is_some() && r.assessment.status == Status::SinglePointOfFailure)
@@ -225,7 +253,8 @@ async fn aggregate(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Resu
 /// failure, by worker number. HR only, and the read is audited.
 #[debug_handler]
 async fn named(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let (rows, staff) = rows(&ctx, &caller).await?;
+    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let (rows, staff) = rows(&ctx, scope.as_deref()).await?;
     let by_pid: BTreeMap<Uuid, &workers::Model> = staff.iter().map(|w| (w.pid, w)).collect();
     let people: Vec<serde_json::Value> = rows
         .iter()

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — monthly oversight pack and the partner role (WPM-T116)
+
+- `oversight_packs` (migration `000071`, append-only by trigger): `POST /api/oversight/packs` freezes the oversight status and a
+  capacity view with no person in it; `GET /api/oversight/packs` and `/{pid}` return the stored payload, identical for every
+  audience. New membership role `partner`: a caller who holds only that role may read packs in their scope and nothing else, and
+  write nothing. Follow-up: the pack carries key-person counts and governance totals; `oversight_pack_freeze` task (idempotent per month); withdrawal of a mistaken pack (migration `000072`, a separate mark); a partner can read `/api/me/organizations/scope`; the free-text deciding body is left out; freezing and withdrawing are for an administrator. 548 unit, 94 request tests and a new enforcement binary.
+
 ### Added — early warning and time to report (WPM-T115)
 
 - `early_warnings` (migration `000070`): a pool over-committed in the next six months, or an oversight measure in breach for the last

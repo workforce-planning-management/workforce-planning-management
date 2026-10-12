@@ -71,6 +71,8 @@ pub mod organization_memberships;
 pub mod oversight_criteria;
 pub mod oversight_levels;
 pub mod oversight_measures;
+pub mod oversight_pack_withdrawals;
+pub mod oversight_packs;
 pub mod oversight_positions;
 pub mod oversight_readings;
 pub mod partner_commitments;

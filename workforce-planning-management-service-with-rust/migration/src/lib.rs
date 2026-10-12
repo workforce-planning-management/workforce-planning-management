@@ -83,6 +83,8 @@ mod m20261012_000067_governance_commitments;
 mod m20261012_000068_oversight;
 mod m20261012_000069_oversight_derivation;
 mod m20261012_000070_early_warnings;
+mod m20261012_000071_oversight_packs;
+mod m20261012_000072_oversight_pack_withdrawals;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -165,6 +167,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20261012_000068_oversight::Migration),
             Box::new(m20261012_000069_oversight_derivation::Migration),
             Box::new(m20261012_000070_early_warnings::Migration),
+            Box::new(m20261012_000071_oversight_packs::Migration),
+            Box::new(m20261012_000072_oversight_pack_withdrawals::Migration),
             // inject-above (do not remove this comment)
         ]
     }

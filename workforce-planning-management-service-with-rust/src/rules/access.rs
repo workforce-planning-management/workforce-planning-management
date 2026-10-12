@@ -75,6 +75,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("governance-commitments", Open),
     ("oversight/status", Open),
     ("oversight/derivations", Open),
+    ("oversight/packs", Open),
+    ("oversight/packs/{}", Open),
     ("early-warnings", Open),
     ("governance-commitments/load", Open),
     ("capacity/settings", Open),
@@ -340,6 +342,26 @@ pub const fn permits_privileged(facts: &Facts) -> bool {
 /// (or a cycle); the walk stops and the caller is not treated as a manager.
 pub const MAX_MANAGER_DEPTH: usize = 20;
 
+/// Whether a caller who holds **only** the `partner` role may make this request: a read of the
+/// frozen oversight packs (WPM-R69) and of the list of organizations in their own scope (so they can
+/// find them), and nothing else. A partner organization sees what the board and
+/// the oversight body see, as aggregates, and cannot read another route or write anything.
+#[must_use]
+pub fn partner_may(is_read: bool, path: &str) -> bool {
+    is_read
+        && (path == "/api/oversight/packs"
+            || path == "/api/me/organizations/scope"
+            || path
+                .strip_prefix("/api/oversight/packs/")
+                .is_some_and(|rest| !rest.is_empty() && !rest.contains('/')))
+}
+
+/// Whether the roles held make the caller a partner and nothing else. No role at all is not a partner.
+#[must_use]
+pub fn is_partner_only(roles: &[&str]) -> bool {
+    !roles.is_empty() && roles.iter().all(|r| *r == "partner")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -546,5 +568,32 @@ mod tests {
             stale.is_empty(),
             "entries in READS that match no route: {stale:?}"
         );
+    }
+
+    #[test]
+    fn a_partner_reads_the_packs_and_nothing_else() {
+        assert!(partner_may(true, "/api/oversight/packs"));
+        assert!(partner_may(true, "/api/oversight/packs/abc"));
+        assert!(!partner_may(false, "/api/oversight/packs"), "no write");
+        assert!(
+            partner_may(true, "/api/me/organizations/scope"),
+            "to find the organizations"
+        );
+        assert!(!partner_may(true, "/api/me"));
+        assert!(!partner_may(true, "/api/oversight/packs/abc/extra"));
+        assert!(!partner_may(true, "/api/oversight/packs/"));
+        assert!(!partner_may(true, "/api/oversight/status"));
+        assert!(!partner_may(true, "/api/capacity"));
+        assert!(!partner_may(true, "/api/workers"));
+        assert!(!partner_may(true, "/api/oversight/packsx"));
+    }
+
+    #[test]
+    fn only_a_caller_with_nothing_but_partner_is_restricted() {
+        assert!(is_partner_only(&["partner"]));
+        assert!(is_partner_only(&["partner", "partner"]));
+        assert!(!is_partner_only(&[]));
+        assert!(!is_partner_only(&["partner", "member"]));
+        assert!(!is_partner_only(&["viewer"]));
     }
 }

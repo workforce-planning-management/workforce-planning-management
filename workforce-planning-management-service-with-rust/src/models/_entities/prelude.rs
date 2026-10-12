@@ -65,6 +65,8 @@ pub use super::onboarding_items::Entity as OnboardingItems;
 pub use super::oversight_criteria::Entity as OversightCriteria;
 pub use super::oversight_levels::Entity as OversightLevels;
 pub use super::oversight_measures::Entity as OversightMeasures;
+pub use super::oversight_pack_withdrawals::Entity as OversightPackWithdrawals;
+pub use super::oversight_packs::Entity as OversightPacks;
 pub use super::oversight_positions::Entity as OversightPositions;
 pub use super::oversight_readings::Entity as OversightReadings;
 pub use super::partner_commitments::Entity as PartnerCommitments;

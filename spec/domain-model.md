@@ -273,7 +273,7 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
 **Organizations and reporting lines**
 
 - **OrganizationMembership** (`organization_memberships`, migration 2026-09-28) — a
-  person's role (`member | hr_admin | payroll_admin | org_admin | viewer`) in an
+  person's role (`member | hr_admin | payroll_admin | org_admin | viewer | partner`; a caller who holds only `partner` reads the frozen oversight packs and nothing else, WPM-D83) in an
   organization, dated; the basis of "organizations the caller can read".
   **OrganizationConfederation** — a parent/child edge: a membership in a parent
   reads as membership in every descendant.

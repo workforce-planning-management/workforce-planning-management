@@ -467,6 +467,9 @@ pub fn spec() -> Value {
 fn add_governance_paths(document: &mut Value) {
     let ok = |what: &str| json!({ "200": { "description": what } });
     let paths = json!({
+        "/api/oversight/packs": { "get": { "tags": ["capacity"], "summary": "The frozen monthly packs of an organization (?organization=), newest first, without their payloads", "responses": ok("The packs") }, "post": { "tags": ["capacity"], "summary": "Freeze the oversight position, criteria, measures and capacity view as of today; written once, never changed", "responses": ok("The pack") } },
+        "/api/oversight/packs/{pid}/withdraw": { "post": { "tags": ["capacity"], "summary": "Withdraw a mistaken pack with a reason; the pack is not changed or removed and every reader sees the mark. For an administrator of the organization", "responses": ok("The pack with its mark") } },
+        "/api/oversight/packs/{pid}": { "get": { "tags": ["capacity"], "summary": "One frozen pack, the same payload for every audience (aggregates only; a partner-role caller may read this and nothing else)", "responses": ok("The pack") } },
         "/api/early-warnings": { "get": { "tags": ["capacity"], "summary": "The early warnings of an organization (?organization=), newest first, with days open, days to acknowledge and the time to report (the longest, null while any is unacknowledged)", "responses": ok("The warnings") } },
         "/api/early-warnings/sweep": { "post": { "tags": ["capacity"], "summary": "Look now (?organization=): open a warning for each pool over-committed in the next six months or measure in breach for the last complete month, close those that have stopped, and notify the HR administrators", "responses": ok("What the sweep did") } },
         "/api/early-warnings/{pid}/acknowledge": { "post": { "tags": ["capacity"], "summary": "A person acknowledges a warning, once; the calendar days since it was first seen are the time to report", "responses": ok("The warning") } },

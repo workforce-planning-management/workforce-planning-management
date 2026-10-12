@@ -1010,6 +1010,49 @@ struct ViewQuery {
 }
 
 /// `GET /api/capacity?organization=&from=&months=` — pool × month supply against demand.
+/// The capacity view for the monthly pack: the pool × month result and nothing finer. A pool is named
+/// (a pool is a skill, not a person); no member, no partner and no programme appears.
+pub(super) async fn pack_view(
+    ctx: &AppContext,
+    org: &str,
+    from: NaiveDate,
+) -> Result<serde_json::Value> {
+    let capacity = load_org_capacity(ctx, org, from, DEFAULT_MONTHS).await?;
+    let constraint = constraint_of(&capacity).and_then(|key| {
+        capacity
+            .pools
+            .iter()
+            .find(|p| p.pid.to_string() == key)
+            .map(|p| p.name.clone())
+    });
+    let pools: Vec<serde_json::Value> = capacity
+        .pools
+        .iter()
+        .filter_map(|pool| {
+            let view = capacity.views.get(&pool.pid.to_string())?;
+            Some(json!({
+                "name": pool.name,
+                "over_months": view.over_months,
+                "unknown_months": view.unknown_months,
+                "cells": view.cells.iter().map(|c| json!({
+                    "month": c.month,
+                    "supply_centi": c.supply_centi,
+                    "demand_centi": c.demand_centi,
+                    "remaining_shortfall_centi": c.remaining_shortfall_centi,
+                    "status": c.status.as_str(),
+                })).collect::<Vec<_>>(),
+            }))
+        })
+        .collect();
+    Ok(json!({
+        "from": capacity.months.first(),
+        "months": capacity.months,
+        "pools": pools,
+        "constraint_pool": constraint,
+        "derivation": rules::DERIVATION,
+    }))
+}
+
 #[debug_handler]
 async fn capacity_view(
     State(ctx): State<AppContext>,

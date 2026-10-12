@@ -158,6 +158,14 @@ sign-in enforcement explicitly off** (see its header).
   notification carries no figure (WPM-D23). The date a condition was "first true" is the date of the first sweep that saw it (a
   sweep run less often than daily dates it late, and the list says so); a condition that stops and returns is a new warning. Time
   to report is the longest calendar days to acknowledgement, and unknown while any warning is unacknowledged.
+- **WPM-D83 A partner reads the monthly pack through a role that can read nothing else, and the pack holds no person.** The pack
+  (WPM-R69) is one stored payload, written once (a trigger refuses any update or delete), that the board, the oversight body and
+  partner organizations all read, so no audience is shown different figures. It holds aggregates only: pools by name, months,
+  counts and verdicts; no worker, worker number or list of people, so nothing is removed for a partner and nothing can be
+  restored by mistake. The `partner` membership role is enforced in the need-to-know middleware: a caller whose live memberships
+  are all `partner` may `GET` the packs of the organizations in their scope and no other route, and may write nothing. A partner
+  who also holds another role is not restricted from reading, but is still refused the freeze unless they are an administrator, because that role is theirs for another reason. The check costs one membership
+  query per signed-in request.
 - **WPM-D80 The client names the action; the server will decide what a repeat means.** The key is made where the user acts
   (one per action, not per HTTP attempt), so a retry after a lost response or a double click can be told from a new
   action. The proxy checks the key's shape only; it keeps no state, because deduplication belongs next to the data it

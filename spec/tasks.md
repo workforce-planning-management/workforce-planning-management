@@ -2584,11 +2584,20 @@ data or tests (WPM-D48).
       per-pool setting; "first true" is the first sweep that saw it, so it is as late as the sweep is; no scheduling of the task is
       configured here; an unanswered partner makes a pool-month unknown, not over, so it does not warn; no email, and no user
       interface; the sweep is open to any caller in the organization's scope.
-- [ ] WPM-T116 **Monthly pack and partner view.** *(WPM-R69)* Freeze the
-      position, criteria, measures and capacity view as of a date; the same
-      payload for every audience; a read-only partner role that sees aggregates
-      only. Enforcement test that no named list reaches the pack or the partner
-      role.
+- [x] WPM-T116 **Monthly pack and partner view.** *(WPM-R69, WPM-D83)* Migration `000071` adds `oversight_packs` (organization, as-of
+      date, month, a JSON payload), append-only by a trigger. `POST /api/oversight/packs` freezes the oversight status (position,
+      criteria, measures, verdicts; the same function the status route uses) and the capacity view (pools by name, month cells,
+      shortfall, constraint pool; no member, partner or programme) as of today; `GET /api/oversight/packs?organization=` lists
+      them newest first without payloads; `GET /api/oversight/packs/{pid}` returns the stored payload, the same for every audience.
+      A new membership role `partner`: a caller whose live memberships are all `partner` may read packs in their scope and nothing
+      else, and may write nothing (the need-to-know middleware; pure rules `partner_may` and `is_partner_only`). Unit tests for the
+      two rules; a request test (frozen pack unchanged by later data, a later pack shows the change, newest first, no worker in the
+      payload); an **enforcement test with sign-in on** (a partner and a member read the identical payload; the payload carries no
+      worker number, display name, `worker:` or `person:`; a partner is refused the live status, capacity, workers, pools, early
+      warnings, the derivation list and every write; a partner who is also a member is not restricted; a partner of another
+      organization gets `404`; direct SQL update and delete of a pack fail); **mutation-checked** (a partner may read anything; any
+      partner role restricts; pack read ignoring scope; the guard switched off), each failing the enforcement test. Full suites: 548
+      unit and 93 request tests, every enforcement binary, clippy, fmt. **Follow-up pass (same task), after review:** the pack now also carries the key-person counts (skills across the organization, no department row, no person) and the governance totals (no role); the daily-or-monthly task `oversight_pack_freeze` freezes the month for each organization with a position and skips one that already has it; a mistaken pack is withdrawn (`POST /api/oversight/packs/{pid}/withdraw`, migration `000072`, a separate append-only row with the date and reason, shown beside the unchanged payload to every reader); a partner can also read `/api/me/organizations/scope` to find their organizations; the pack leaves out the free-text deciding body of a position (the status route keeps it); freezing and withdrawing are for an administrator (`hr_admin` or `org_admin` of the organization, or a token with HR, payroll, service or administrator rights), refused `403` otherwise. Tests added: the scheduled freeze is idempotent for a month and the next month is frozen; the enforcement test now has an ordinary member and a partner-who-is-a-member refused the freeze, an administrator allowed by role, the withdrawal (once, with a reason, unchanged payload, same mark for partner and member), the key-person and governance figures as numbers with no roles, and the deciding body absent; **mutation-checked** again (deciding body kept in the current position; kept in the list; anyone may freeze; withdraw twice; freeze twice), each failing a test. Full suites: 548 unit, 94 request, every enforcement binary. **Not done / limits:** no user interface (the pack page is part of WPM-T118); the pack's key-person and governance figures are not yet derived as oversight measures month by month (a pack freezes them, a later task can read them back); nothing schedules the task here, it is run by the deployment's scheduler; a withdrawn pack still reads (with the mark), because the record of what was shown stays; the role gate matters only where the policy lets a non-administrator write, since the shipped policy already limits writes to HR, payroll, service and administrator tokens; a partner cannot read any other `/api/me` route.
 - [ ] WPM-T117 **Cutover readiness.** *(WPM-R70)* Trained staff per required
       role at a site, hypercare cover from the on-call rota, and key-person risk
       in the pools the cutover depends on; `ready` / `at_risk` / `unknown` with

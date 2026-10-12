@@ -578,14 +578,24 @@ async fn status(
         .ok_or_else(|| unprocessable("organization is required"))?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
     let today = chrono::Utc::now().date_naive();
+    format::json(status_json(&ctx, &org, today).await?)
+}
+
+/// The status of the organization as of `today`: the same payload the status route returns and the
+/// monthly pack freezes.
+pub(super) async fn status_json(
+    ctx: &AppContext,
+    org: &str,
+    today: chrono::NaiveDate,
+) -> Result<serde_json::Value> {
     let scale = levels::Entity::find()
-        .filter(levels::Column::OrganizationRef.eq(&org))
+        .filter(levels::Column::OrganizationRef.eq(org))
         .order_by_asc(levels::Column::Ordinal)
         .all(&ctx.db)
         .await?;
     let by_pid: BTreeMap<Uuid, &levels::Model> = scale.iter().map(|l| (l.pid, l)).collect();
     let history = positions::Entity::find()
-        .filter(positions::Column::OrganizationRef.eq(&org))
+        .filter(positions::Column::OrganizationRef.eq(org))
         .order_by_desc(positions::Column::EffectiveOn)
         .order_by_desc(positions::Column::Id)
         .all(&ctx.db)
@@ -608,7 +618,7 @@ async fn status(
             let mut input = Vec::new();
             let mut shown: Vec<serde_json::Value> = Vec::new();
             for m in &ms {
-                let rs = measure_readings(&ctx, &org, m, latest).await?;
+                let rs = measure_readings(ctx, org, m, latest).await?;
                 shown.push(if m.derivation.is_some() {
                     json!(
                         rs.iter()
@@ -638,7 +648,7 @@ async fn status(
             }));
         }
     }
-    format::json(json!({
+    Ok(json!({
         "organization_ref": org,
         "as_of_month": month_label(latest),
         "scale": scale.iter().map(level_json).collect::<Vec<_>>(),

@@ -87,8 +87,14 @@ pub const PAYROLL_STATUSES: &[&str] = &["draft", "calculated", "approved", "paid
 /// staff/admin-only privilege grants (no `worker_pid`) in one closed
 /// vocabulary, so a role reliably maps to what it grants in
 /// `rules::org_access`.
-pub const ORGANIZATION_ROLES: &[&str] =
-    &["member", "hr_admin", "payroll_admin", "org_admin", "viewer"];
+pub const ORGANIZATION_ROLES: &[&str] = &[
+    "member",
+    "hr_admin",
+    "payroll_admin",
+    "org_admin",
+    "viewer",
+    "partner",
+];
 
 /// Whether `value` is a member of the closed set `set`.
 #[must_use]

@@ -1063,3 +1063,68 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// The monthly pack (WPM-R69, WPM-T116) freezes the position, criteria, measures and capacity view as of
+// a date: a later change to the live data does not change a stored pack, a second pack shows the
+// change, and the payload holds no worker.
+async fn a_monthly_pack_is_frozen_and_a_later_change_shows_only_in_a_later_pack() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let level: Value = request.post("/api/oversight/levels").json(&json!({ "organization_ref": org, "ordinal": 1, "name": "Synthetic level" })).await.json();
+        let level = level["pid"].as_str().unwrap().to_string();
+        request.post("/api/oversight/positions").json(&json!({ "organization_ref": org, "level_pid": level, "effective_on": "2026-01-01", "deciding_body": "Synthetic panel", "reason": "Synthetic review" })).await.assert_status_ok();
+        make_pool(&request, &org, "Synthetic pool one", 0).await;
+        let first: Value = request.post("/api/oversight/packs").json(&json!({ "organization_ref": org })).await.json();
+        let first_pid = first["pid"].as_str().unwrap().to_string();
+        assert_eq!(first["pack"]["oversight"]["current"]["level"], "Synthetic level");
+        let names = |v: &Value| v["pack"]["capacity"]["pools"].as_array().unwrap().iter().map(|p| p["name"].as_str().unwrap().to_string()).collect::<Vec<_>>();
+        assert_eq!(names(&first), ["Synthetic pool one"]);
+        // The live data moves on; the stored pack does not.
+        make_pool(&request, &org, "Synthetic pool two", 0).await;
+        let stored: Value = request.get(&format!("/api/oversight/packs/{first_pid}")).await.json();
+        assert_eq!(stored, first, "frozen");
+        let second: Value = request.post("/api/oversight/packs").json(&json!({ "organization_ref": org })).await.json();
+        assert_eq!(names(&second).len(), 2);
+        let list: Value = request.get(&format!("/api/oversight/packs?organization={org}")).await.json();
+        let pids: Vec<&str> = list["packs"].as_array().unwrap().iter().map(|p| p["pid"].as_str().unwrap()).collect();
+        assert_eq!(pids, [second["pid"].as_str().unwrap(), first_pid.as_str()], "newest first");
+        assert!(list["packs"][0].get("pack").is_none(), "the list carries no payload");
+        assert_eq!(request.get(&format!("/api/oversight/packs/{}", uuid::Uuid::new_v4())).await.status_code(), 404);
+        assert_eq!(request.get("/api/oversight/packs").await.status_code(), 422);
+        let text = serde_json::to_string(&second).unwrap();
+        assert!(!text.contains("worker:") && !text.contains("person:"));
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// The scheduled freeze writes one pack for the month for each organization with a position, and a
+// second run for the same month writes none.
+async fn the_scheduled_freeze_is_idempotent_for_a_month() {
+    use workforce_planning_management_service::tasks::oversight_pack_freeze::freeze_all;
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let level: Value = request.post("/api/oversight/levels").json(&json!({ "organization_ref": org, "ordinal": 1, "name": "Synthetic level" })).await.json();
+        request.post("/api/oversight/positions").json(&json!({ "organization_ref": org, "level_pid": level["pid"], "effective_on": "2026-01-01", "deciding_body": "Synthetic body", "reason": "Synthetic reason" })).await.assert_status_ok();
+        let in_org = || async { request.get(&format!("/api/oversight/packs?organization={org}")).await.json::<Value>()["packs"].as_array().unwrap().len() };
+        assert_eq!(in_org().await, 0);
+        let day = chrono::NaiveDate::from_ymd_opt(2026, 9, 2).unwrap();
+        assert!(freeze_all(&ctx, day).await.unwrap() >= 1);
+        assert_eq!(in_org().await, 1);
+        freeze_all(&ctx, day).await.unwrap();
+        assert_eq!(in_org().await, 1, "the same month is not frozen twice");
+        freeze_all(&ctx, chrono::NaiveDate::from_ymd_opt(2026, 10, 2).unwrap()).await.unwrap();
+        assert_eq!(in_org().await, 2, "the next month is");
+        // The deciding body is for the status route; the pack does not carry it.
+        let list: Value = request.get(&format!("/api/oversight/packs?organization={org}")).await.json();
+        let one: Value = request.get(&format!("/api/oversight/packs/{}", list["packs"][0]["pid"].as_str().unwrap())).await.json();
+        let text = serde_json::to_string(&one).unwrap();
+        assert!(text.contains("Synthetic reason") && !text.contains("Synthetic body"));
+    })
+    .await;
+}

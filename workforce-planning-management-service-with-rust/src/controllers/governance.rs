@@ -268,6 +268,23 @@ async fn load(
     }))
 }
 
+/// The governance load of one organization for the monthly pack: the totals only. No role and no
+/// commitment appears, since a free-text role could carry a name.
+pub(super) async fn pack_json(ctx: &AppContext, org: &str) -> Result<serde_json::Value> {
+    let rows = table::Entity::find()
+        .filter(table::Column::OrganizationRef.eq(org))
+        .all(&ctx.db)
+        .await?;
+    let commitments: Vec<_> = rows.iter().map(commitment).collect();
+    let total = rules::load(&commitments);
+    Ok(json!({
+        "commitments": rows.len(),
+        "senior_hours_per_month": hours(total.senior_tenth_hours_per_month),
+        "all_hours_per_month": hours(total.all_tenth_hours_per_month),
+        "basis": "An estimate from the commitments entered as at the freeze date; not a timesheet.",
+    }))
+}
+
 /// The governance routes.
 pub fn routes() -> Routes {
     Routes::new()
