@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — early warning and time to report (WPM-T115)
+
+- `early_warnings` (migration `000070`): a pool over-committed in the next six months, or an oversight measure in breach for the last
+  complete month, opens one warning dated by the first sweep that saw it, closes when it stops, and tells the HR administrators with
+  a reference-only `early_warning` notification. `POST /api/early-warnings/sweep`, `GET /api/early-warnings`, `POST
+  /api/early-warnings/{pid}/acknowledge`, and the daily task `early_warning_sweep`. Time to report (the longest calendar days to
+  acknowledge; null while any is open) is a fourth derived oversight measure. 546 unit and 92 request tests.
+
+### Added — derived workforce measures for the oversight criteria (WPM-T114)
+
+- A measure may be `derived`: it names `turnover_rate`, `contingent_share` or `overcommitted_pools` and takes that computation's unit.
+  The status computes the months a sustain rule needs and returns them as `derived_values`; a month the data cannot speak for is
+  `null` and is never a pass. A derived measure takes no entered reading. `GET /api/oversight/derivations` lists the definitions.
+  Migration `000069` adds `derivation`, paired with `origin` by a CHECK. Single points of failure and governance hours are not
+  derived (neither is dated); the candidate measures are defined in `spec/workforce-measures.md` and not built. 541 unit and 91 request tests.
+
 ### Added — oversight levels, positions, criteria, measures and readings (WPM-T113)
 
 Migration `000068`. `POST /api/oversight/levels|positions|criteria|measures`, `PUT /api/oversight/measures/{pid}/readings`, `DELETE`

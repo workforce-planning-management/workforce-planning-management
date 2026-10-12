@@ -33,9 +33,9 @@ impl Direction {
 
 /// The stored direction tokens.
 pub const DIRECTIONS: &[&str] = &["at_most", "at_least"];
-/// The origins a measure may be created with today. Derived measures arrive with their
-/// computation (WPM-T114); until then a derived measure would have no readings and could never be met.
-pub const AVAILABLE_ORIGINS: &[&str] = &["reported"];
+/// The origins a measure may be created with. A derived one names a computation from
+/// [`crate::rules::derived`]; a reported one is entered with evidence.
+pub const AVAILABLE_ORIGINS: &[&str] = &["reported", "derived"];
 /// The most periods a sustain rule may ask for.
 pub const MAX_SUSTAIN: u32 = 120;
 

@@ -776,10 +776,10 @@ async fn get_settings(
 // ─── The view ───────────────────────────────────────────────────────────────
 
 /// Everything the view and the start check work from, for one organization.
-struct OrgCapacity {
-    months: Vec<NaiveDate>,
-    pools: Vec<skill_pools::Model>,
-    views: BTreeMap<String, rules::PoolView>,
+pub(super) struct OrgCapacity {
+    pub(super) months: Vec<NaiveDate>,
+    pub(super) pools: Vec<skill_pools::Model>,
+    pub(super) views: BTreeMap<String, rules::PoolView>,
     demand: BTreeMap<String, Vec<rules::Demand>>,
     member_counts: BTreeMap<String, usize>,
 }
@@ -885,7 +885,7 @@ async fn worker_facts(
         .collect())
 }
 
-async fn load_org_capacity(
+pub(super) async fn load_org_capacity(
     ctx: &AppContext,
     org: &str,
     from: NaiveDate,

@@ -131,6 +131,7 @@ impl Hooks for App {
             .add_route(controllers::governance::routes())
             .add_route(controllers::key_person::routes())
             .add_route(controllers::oversight::routes())
+            .add_route(controllers::early_warning::routes())
             .add_route(controllers::programmes::routes())
             .add_route(controllers::engagements::routes())
             .add_route(controllers::me::routes())
@@ -293,6 +294,7 @@ impl Hooks for App {
         tasks.register(tasks::replay_erasures::ReplayErasures);
         tasks.register(tasks::import_framework::ImportFramework);
         tasks.register(tasks::engagement_end_reminders::EngagementEndReminders);
+        tasks.register(tasks::early_warning_sweep::EarlyWarningSweep);
         tasks.register(tasks::import_esco::ImportEsco);
         tasks.register(tasks::verify_audit_chain::VerifyAuditChain);
         // tasks-inject (do not remove)

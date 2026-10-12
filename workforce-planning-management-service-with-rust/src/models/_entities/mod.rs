@@ -26,6 +26,7 @@ pub mod development_plan_items;
 pub mod development_plans;
 pub mod dotted_line_reports;
 pub mod early_career_programs;
+pub mod early_warnings;
 pub mod emergency_contacts;
 pub mod engagement_decisions;
 pub mod engagement_extensions;

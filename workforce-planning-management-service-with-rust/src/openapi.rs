@@ -467,15 +467,19 @@ pub fn spec() -> Value {
 fn add_governance_paths(document: &mut Value) {
     let ok = |what: &str| json!({ "200": { "description": what } });
     let paths = json!({
+        "/api/early-warnings": { "get": { "tags": ["capacity"], "summary": "The early warnings of an organization (?organization=), newest first, with days open, days to acknowledge and the time to report (the longest, null while any is unacknowledged)", "responses": ok("The warnings") } },
+        "/api/early-warnings/sweep": { "post": { "tags": ["capacity"], "summary": "Look now (?organization=): open a warning for each pool over-committed in the next six months or measure in breach for the last complete month, close those that have stopped, and notify the HR administrators", "responses": ok("What the sweep did") } },
+        "/api/early-warnings/{pid}/acknowledge": { "post": { "tags": ["capacity"], "summary": "A person acknowledges a warning, once; the calendar days since it was first seen are the time to report", "responses": ok("The warning") } },
+        "/api/oversight/derivations": { "get": { "tags": ["capacity"], "summary": "The computations a derived measure may name, each with its unit and its definition: what is counted, what is left out, the period and when it is absent", "responses": ok("The derivations") } },
         "/api/oversight/status": { "get": { "tags": ["capacity"], "summary": "The organization's own scale, recorded positions and, for the criteria of the level it is at, whether each sustain rule is met as of the last complete month (?organization=). Evidence, never a verdict: the service does not change a level", "responses": ok("The oversight status") } },
         "/api/oversight/levels": { "post": { "tags": ["capacity"], "summary": "Add a level to the organization's scale (ordinal 1 to 20, a name)", "responses": ok("The level") } },
         "/api/oversight/levels/{pid}": { "delete": { "tags": ["capacity"], "summary": "Remove a level that has no position and no criterion", "responses": ok("The pid removed") } },
         "/api/oversight/positions": { "post": { "tags": ["capacity"], "summary": "Record the organization's position: the level, the effective date, the deciding body (free text) and the published reason", "responses": ok("The position") } },
         "/api/oversight/criteria": { "post": { "tags": ["capacity"], "summary": "Add an exit criterion to a level", "responses": ok("The criterion") } },
         "/api/oversight/criteria/{pid}": { "delete": { "tags": ["capacity"], "summary": "Remove a criterion with its measures and readings", "responses": ok("The pid removed") } },
-        "/api/oversight/measures": { "post": { "tags": ["capacity"], "summary": "Add a measure to a criterion (origin reported; threshold, direction at_most or at_least, sustain 1 to 120 months)", "responses": ok("The measure") } },
+        "/api/oversight/measures": { "post": { "tags": ["capacity"], "summary": "Add a measure to a criterion (origin reported, or derived with a derivation from GET /api/oversight/derivations; threshold, direction at_most or at_least, sustain 1 to 120 months)", "responses": ok("The measure") } },
         "/api/oversight/measures/{pid}": { "delete": { "tags": ["capacity"], "summary": "Remove a measure with its readings", "responses": ok("The pid removed") } },
-        "/api/oversight/measures/{pid}/readings": { "put": { "tags": ["capacity"], "summary": "Enter or replace a month's reading; a value needs an evidence note and a source document; null says the data is missing", "responses": ok("The reading") } },
+        "/api/oversight/measures/{pid}/readings": { "put": { "tags": ["capacity"], "summary": "Enter or replace a month's reading of a reported measure (a derived one is refused); a value needs an evidence note and a source document; null says the data is missing", "responses": ok("The reading") } },
         "/api/workforce-intelligence/key-person": {
             "get": { "tags": ["capacity"], "summary": "For each skill marked critical on a role profile: employed holders at the highest critical minimum, qualified backups, ready successors and a status (no_holder, single_point_of_failure, covered_single_holder, shared), overall and per department. Counts only; names no one", "responses": ok("The key-person counts") }
         },

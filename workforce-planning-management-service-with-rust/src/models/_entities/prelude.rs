@@ -26,6 +26,7 @@ pub use super::development_plan_items::Entity as DevelopmentPlanItems;
 pub use super::development_plans::Entity as DevelopmentPlans;
 pub use super::dotted_line_reports::Entity as DottedLineReports;
 pub use super::early_career_programs::Entity as EarlyCareerPrograms;
+pub use super::early_warnings::Entity as EarlyWarnings;
 pub use super::emergency_contacts::Entity as EmergencyContacts;
 pub use super::engagement_decisions::Entity as EngagementDecisions;
 pub use super::engagement_extensions::Entity as EngagementExtensions;

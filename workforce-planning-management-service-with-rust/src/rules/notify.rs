@@ -25,6 +25,7 @@ pub const KINDS: &[&str] = &[
     "flexible_working_appeal",
     "engagement_ending",
     "engagement_ended_undecided",
+    "early_warning",
 ];
 
 /// Recipients of an appraisal lifecycle move:
@@ -106,7 +107,8 @@ mod tests {
                 "flexible_working_decided",
                 "flexible_working_appeal",
                 "engagement_ending",
-                "engagement_ended_undecided"
+                "engagement_ended_undecided",
+                "early_warning"
             ]
         );
     }

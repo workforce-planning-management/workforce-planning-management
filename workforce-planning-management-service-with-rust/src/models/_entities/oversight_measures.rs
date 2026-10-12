@@ -17,6 +17,7 @@ pub struct Model {
     pub criterion_pid: Uuid,
     pub name: String,
     pub origin: String,
+    pub derivation: Option<String>,
     pub unit: String,
     pub threshold: i64,
     pub direction: String,

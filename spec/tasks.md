@@ -2547,15 +2547,43 @@ data or tests (WPM-D48).
       of that level; no enforcement test with sign-in on, so the organization scope on these routes is checked by the shared helper
       and not by a test of its own; writes are open to any caller in the organization's scope (the policy has no oversight role);
       no user interface; nothing yet marks a criterion for the level above.
-- [ ] WPM-T114 **Derived workforce measures.** *(WPM-R67)* Compute the
-      existing and new measures from plan.md WPM-R67, each with its derivation,
-      exclusions and period, and `null` on missing data. Define the three
-      candidate measures in the topic file before computing them. Unit tests
-      per measure.
-- [ ] WPM-T115 **Early warning and time to report.** *(WPM-R68)* Record when an
-      over-commitment or breach first became true and when it was acknowledged;
-      a new notification kind (reference-only, no figures in the text, as the
-      expense notifications). Time to report as a measure. Request test.
+- [x] WPM-T114 **Derived workforce measures.** *(WPM-R67)* A measure is now `derived` or `reported`. A derived measure names a
+      computation (`derivation`, paired with `origin` by a CHECK, migration `000069`) and takes its unit; it takes no entered reading
+      (a `PUT` is refused). The status computes one reading per month, only for the `sustain` months the rule needs, and shows them as
+      `derived_values`. Three derivations, pure in `rules::derived`: `turnover_rate` (the metrics layer's rate for one calendar
+      month, basis points), `contingent_share` (contractor plus fixed-term FTE over all FTE, from the last snapshot in the month) and
+      `overcommitted_pools` (pools `over` that month, from the capacity view). Each is `null`, never `0`, when it cannot speak (no
+      one to divide by, below the floor of 10, a snapshot row from before the split by basis, no snapshot, no pool, a partner who has
+      not answered); a `null` stops the run, so it is never a pass. `GET /api/oversight/derivations` returns each definition. The
+      candidate measures (sickness absence, the pulse, required training) are defined in
+      [workforce-measures.md](workforce-measures.md) and not built. Unit tests per derivation (rounding, floor, missing split,
+      unknown cell) and one request test (the catalogue, four refusals, the values shown for each measure, a null month, a boundary
+      value meeting an at-most, no pool being unknown, an over pool, nothing stored); **mutation-checked** (the earliest snapshot used
+      instead of the newest; the closing headcount taken at the start of the month; a missing split read as zero), each failing a test.
+      Full suites: 541 unit and 91 request tests, enforcement, clippy, fmt. **Not done / limits:** single points of failure and
+      governance hours are not derived, because neither is dated, so a past month cannot be computed (they join when the pack freezes
+      them, WPM-T116); the three candidates are definitions only, and required training is blocked on a data change; the capacity
+      figure for a past month is computed from the data on file now and moves if that data is corrected; the turnover floor is applied
+      to the larger of the two headcounts, which is a choice the metrics layer does not make; nothing checked against real data; the
+      seed adds no derived measure; no user interface.
+- [x] WPM-T115 **Early warning and time to report.** *(WPM-R68, WPM-D82)* Migration `000070` adds `early_warnings` (kind, the pool or
+      measure, `first_true_on`, `cleared_on`, `acknowledged_on`; one open row per kind and subject, enforced by a partial unique
+      index). A sweep (`POST /api/early-warnings/sweep?organization=`, and the daily task `early_warning_sweep`) finds the
+      conditions true now (a pool short in any of the next six months; a measure of the current level in breach for the last
+      complete month), opens a warning for each new one, closes those that stopped, and tells the organization's HR administrators
+      with a new reference-only notification kind `early_warning` (the name of the pool or measure, no figure). `GET
+      /api/early-warnings?organization=` lists them with days open, days to acknowledge and the time to report; `POST
+      /api/early-warnings/{pid}/acknowledge` is audited and works once. Time to report is the longest calendar days to
+      acknowledgement, null while any warning is unacknowledged, and is a derived oversight measure (`time_to_report`) per month.
+      Pure rules in `rules::early_warning` (reconcile, days, time to report) with unit tests; one request test (two warnings open,
+      HR told twice, a second sweep changes nothing, no figure in the text, unknown until all acknowledged, the longest not the
+      quickest, a cleared condition, a returning one as a new warning, the derived measure); **mutation-checked** (shortest instead
+      of longest; unacknowledged skipped; breach read in the wrong month; never cleared), each failing the test. Full suites: 546
+      unit and 92 request tests, enforcement, clippy, fmt. **Not done / limits:** the recipient is the HR administrators, not an
+      owner, because pools and measures have none (WPM-D82); the pool threshold is fixed at any shortfall in six months, with no
+      per-pool setting; "first true" is the first sweep that saw it, so it is as late as the sweep is; no scheduling of the task is
+      configured here; an unanswered partner makes a pool-month unknown, not over, so it does not warn; no email, and no user
+      interface; the sweep is open to any caller in the organization's scope.
 - [ ] WPM-T116 **Monthly pack and partner view.** *(WPM-R69)* Freeze the
       position, criteria, measures and capacity view as of a date; the same
       payload for every audience; a read-only partner role that sees aggregates

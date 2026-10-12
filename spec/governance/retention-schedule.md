@@ -38,7 +38,7 @@ ignored.
   a programme reference and an end date, never an amount.
 - **Does not cover** governance commitments (`governance_commitments`), which are not soft-deleted: removing one deletes the
   row at once (WPM-T111). A row holds a role, a frequency, a length and a head count, never a person.
-- **Does not cover** the oversight tables (`oversight_levels`, `oversight_positions`, `oversight_criteria`, `oversight_measures`,
+- **Does not cover** `early_warnings` (it names a pool or a measure and the dates they were seen and acknowledged, never a person) or the oversight tables (`oversight_levels`, `oversight_positions`, `oversight_criteria`, `oversight_measures`,
   `oversight_readings`), which are an organization's own configuration and evidence, not records of a person, and are not
   soft-deleted: a level, criterion or measure is removed at once (a measure with its readings), and a recorded position stays on the
   record (WPM-T113).

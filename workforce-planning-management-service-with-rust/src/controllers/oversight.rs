@@ -16,7 +16,7 @@ use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
 
-use super::{ensure_valid, unprocessable};
+use super::{ensure_valid, oversight_derived, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
     oversight_criteria as criteria, oversight_levels as levels, oversight_measures as measures,
@@ -24,6 +24,7 @@ use crate::models::_entities::{
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
+use crate::rules::derived;
 use crate::rules::oversight as rules;
 use crate::validation::Problems;
 
@@ -300,6 +301,8 @@ struct MeasurePayload {
     criterion_pid: Uuid,
     name: String,
     origin: String,
+    /// Which computation supplies the readings; required for `derived`, refused for `reported`.
+    derivation: Option<String>,
     unit: String,
     threshold: i64,
     direction: String,
@@ -321,16 +324,18 @@ async fn create_measure(
     rules::validate_spec(&p.direction, p.sustain).map_err(|e| unprocessable(&e))?;
     if !rules::AVAILABLE_ORIGINS.contains(&p.origin.as_str()) {
         return Err(unprocessable(&format!(
-            "origin must be one of {:?} (derived measures arrive with their computation)",
+            "origin must be one of {:?}",
             rules::AVAILABLE_ORIGINS
         )));
     }
+    check_derivation(&p)?;
     let c = criterion_in_scope(&ctx, &caller, p.criterion_pid).await?;
     let row = measures::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         criterion_pid: ActiveValue::set(c.pid),
         name: ActiveValue::set(p.name),
         origin: ActiveValue::set(p.origin),
+        derivation: ActiveValue::set(p.derivation),
         unit: ActiveValue::set(p.unit),
         threshold: ActiveValue::set(p.threshold),
         direction: ActiveValue::set(p.direction),
@@ -343,9 +348,49 @@ async fn create_measure(
     format::json(measure_json(&row))
 }
 
+/// A derived measure names a known computation and takes its unit, so a threshold cannot be read in
+/// another; a reported measure names none.
+fn check_derivation(p: &MeasurePayload) -> Result<()> {
+    match (p.origin.as_str(), p.derivation.as_deref()) {
+        ("derived", Some(key)) => {
+            let d = derived::find(key).ok_or_else(|| {
+                unprocessable(&format!(
+                    "derivation must be one of {:?}",
+                    derived::DERIVATIONS
+                        .iter()
+                        .map(|d| d.key)
+                        .collect::<Vec<_>>()
+                ))
+            })?;
+            if p.unit != d.unit {
+                return Err(unprocessable(&format!(
+                    "the unit of {key} is \"{}\"",
+                    d.unit
+                )));
+            }
+            Ok(())
+        }
+        ("derived", None) => Err(unprocessable("a derived measure needs a derivation")),
+        (_, Some(_)) => Err(unprocessable("only a derived measure has a derivation")),
+        _ => Ok(()),
+    }
+}
+
+/// `GET /api/oversight/derivations` — the computations a derived measure may name, each with its unit
+/// and its definition (what is counted, what is left out, the period, when it is absent).
+#[debug_handler]
+async fn list_derivations() -> Result<Response> {
+    format::json(json!({
+        "derivations": derived::DERIVATIONS.iter().map(|d| json!({
+            "key": d.key, "unit": d.unit, "definition": d.definition,
+        })).collect::<Vec<_>>(),
+    }))
+}
+
 fn measure_json(m: &measures::Model) -> serde_json::Value {
     json!({
-        "pid": m.pid, "criterion_pid": m.criterion_pid, "name": m.name, "origin": m.origin, "unit": m.unit,
+        "pid": m.pid, "criterion_pid": m.criterion_pid, "name": m.name, "origin": m.origin,
+        "derivation": m.derivation, "unit": m.unit,
         "threshold": m.threshold, "direction": m.direction, "sustain": m.sustain,
     })
 }
@@ -388,6 +433,11 @@ async fn put_reading(
     Json(p): Json<ReadingPayload>,
 ) -> Result<Response> {
     let m = measure_in_scope(&ctx, &caller, records::parse_pid(&pid)?).await?;
+    if m.origin == "derived" {
+        return Err(unprocessable(
+            "a derived measure is computed from the data; it takes no entered reading",
+        ));
+    }
     if p.value.is_some() {
         rules::validate_reported(
             p.evidence.as_deref().unwrap_or(""),
@@ -437,6 +487,75 @@ async fn put_reading(
     }))
 }
 
+/// The threshold, direction and sustain rule of a stored measure.
+pub(super) fn spec_of(m: &measures::Model) -> rules::Spec {
+    rules::Spec {
+        threshold: m.threshold,
+        direction: rules::Direction::parse(&m.direction).unwrap_or(rules::Direction::AtMost),
+        sustain: u32::try_from(m.sustain).unwrap_or(1),
+    }
+}
+
+/// The last complete month, as a period number.
+pub(super) fn last_complete_month(today: chrono::NaiveDate) -> i64 {
+    rules::month_period(today.year(), today.month()) - 1
+}
+
+/// The readings a measure is judged on: entered ones for a reported measure; for a derived one, the
+/// `sustain` months a run needs, computed now.
+pub(super) async fn measure_readings(
+    ctx: &AppContext,
+    org: &str,
+    m: &measures::Model,
+    latest: i64,
+) -> Result<Vec<rules::Reading>> {
+    if let Some(key) = m.derivation.as_deref() {
+        let first = latest - i64::from(m.sustain) + 1;
+        let periods: Vec<i64> = (first..=latest).collect();
+        return oversight_derived::readings(ctx, org, key, &periods).await;
+    }
+    Ok(readings::Entity::find()
+        .filter(readings::Column::MeasurePid.eq(m.pid))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|r| rules::Reading {
+            period: rules::month_period(r.period_on.year(), r.period_on.month()),
+            value: r.value,
+            origin: rules::Origin::Reported,
+        })
+        .collect())
+}
+
+/// The measures behind the criteria of the level the organization is at on `today` (none when no
+/// position is recorded).
+pub(super) async fn current_measures(
+    ctx: &AppContext,
+    org: &str,
+    today: chrono::NaiveDate,
+) -> Result<Vec<measures::Model>> {
+    let current = positions::Entity::find()
+        .filter(positions::Column::OrganizationRef.eq(org))
+        .filter(positions::Column::EffectiveOn.lte(today))
+        .order_by_desc(positions::Column::EffectiveOn)
+        .order_by_desc(positions::Column::Id)
+        .one(&ctx.db)
+        .await?;
+    let Some(position) = current else {
+        return Ok(Vec::new());
+    };
+    let cs = criteria::Entity::find()
+        .filter(criteria::Column::LevelPid.eq(position.level_pid))
+        .all(&ctx.db)
+        .await?;
+    let pids: Vec<Uuid> = cs.iter().map(|c| c.pid).collect();
+    Ok(measures::Entity::find()
+        .filter(measures::Column::CriterionPid.is_in(pids))
+        .order_by_asc(measures::Column::Id)
+        .all(&ctx.db)
+        .await?)
+}
+
 // ─── The status ─────────────────────────────────────────────────────────────
 
 /// Query for the status and the scale.
@@ -472,7 +591,7 @@ async fn status(
         .all(&ctx.db)
         .await?;
     let current = history.iter().find(|p| p.effective_on <= today);
-    let latest = rules::month_period(today.year(), today.month()) - 1;
+    let latest = last_complete_month(today);
     let mut verdicts = Vec::new();
     if let Some(level) = current.and_then(|p| by_pid.get(&p.level_pid)) {
         let cs = criteria::Entity::find()
@@ -487,34 +606,30 @@ async fn status(
                 .all(&ctx.db)
                 .await?;
             let mut input = Vec::new();
+            let mut shown: Vec<serde_json::Value> = Vec::new();
             for m in &ms {
-                let rs: Vec<rules::Reading> = readings::Entity::find()
-                    .filter(readings::Column::MeasurePid.eq(m.pid))
-                    .all(&ctx.db)
-                    .await?
-                    .into_iter()
-                    .map(|r| rules::Reading {
-                        period: rules::month_period(r.period_on.year(), r.period_on.month()),
-                        value: r.value,
-                        origin: rules::Origin::Reported,
-                    })
-                    .collect();
-                let direction =
-                    rules::Direction::parse(&m.direction).unwrap_or(rules::Direction::AtMost);
-                let spec = rules::Spec {
-                    threshold: m.threshold,
-                    direction,
-                    sustain: u32::try_from(m.sustain).unwrap_or(1),
-                };
-                input.push((spec, rs));
+                let rs = measure_readings(&ctx, &org, m, latest).await?;
+                shown.push(if m.derivation.is_some() {
+                    json!(
+                        rs.iter()
+                            .map(|r| json!({
+                                "month": month_label(r.period), "value": r.value,
+                            }))
+                            .collect::<Vec<_>>()
+                    )
+                } else {
+                    json!(null)
+                });
+                input.push((spec_of(m), rs));
             }
             let verdict = rules::evaluate_criterion(&input, latest);
             verdicts.push(json!({
                 "criterion_pid": c.pid,
                 "criterion": c.name,
                 "status": verdict.status.as_str(),
-                "measures": ms.iter().zip(&verdict.measures).map(|(m, v)| json!({
-                    "measure_pid": m.pid, "name": m.name, "origin": m.origin, "unit": m.unit,
+                "measures": ms.iter().zip(&verdict.measures).zip(&shown).map(|((m, v), values)| json!({
+                    "measure_pid": m.pid, "name": m.name, "origin": m.origin,
+                    "derivation": m.derivation, "unit": m.unit, "derived_values": values,
                     "threshold": m.threshold, "direction": m.direction,
                     "status": v.status.as_str(), "run": v.run, "required": v.required,
                     "stopped_by": reason_json(v.reason),
@@ -569,5 +684,6 @@ pub fn routes() -> Routes {
         .add("/measures", post(create_measure))
         .add("/measures/{pid}", delete(delete_measure))
         .add("/measures/{pid}/readings", put(put_reading))
+        .add("/derivations", get(list_derivations))
         .add("/status", get(status))
 }

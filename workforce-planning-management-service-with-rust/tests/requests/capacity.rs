@@ -787,7 +787,7 @@ async fn oversight_status_reports_the_sustain_rule_and_never_moves_the_level() {
         let criterion = criterion["pid"].as_str().unwrap().to_string();
         let measure_body = |origin: &str, direction: &str, sustain: i64| json!({ "criterion_pid": criterion, "name": "Vacancy rate", "origin": origin, "unit": "basis points", "threshold": 800, "direction": direction, "sustain": sustain });
         for (why, body) in [
-            ("a derived measure before its computation exists", measure_body("derived", "at_most", 3)),
+            ("a derived measure that names no derivation", measure_body("derived", "at_most", 3)),
             ("an unknown direction", measure_body("reported", "below", 3)),
             ("a sustain of zero", measure_body("reported", "at_most", 0)),
         ] {
@@ -832,6 +832,234 @@ async fn oversight_status_reports_the_sustain_rule_and_never_moves_the_level() {
         request.delete(&format!("/api/oversight/levels/{}", levels[0])).await.assert_status_ok();
         // The status needs an organization.
         assert_eq!(request.get("/api/oversight/status").await.status_code(), 422);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// Derived oversight measures (WPM-R67, WPM-T114): the service computes the reading itself, shows the
+// months it used, and a month the data cannot speak for is a null that is never a pass.
+async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a_pass() {
+    use chrono::{Datelike, Months, NaiveDate, Utc};
+    use sea_orm::{ActiveValue, EntityTrait};
+    use workforce_planning_management_service::models::_entities::{headcount_snapshots, workers};
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let first_of_this_month = Utc::now().date_naive().with_day(1).unwrap();
+        let month = |back: u32| first_of_this_month - Months::new(back);
+        let status = || async {
+            request.get(&format!("/api/oversight/status?organization={org}")).await.json::<Value>()
+        };
+        // The catalogue says what each derivation counts, and leaves out what cannot be dated.
+        let catalogue: Value = request.get("/api/oversight/derivations").await.json();
+        let keys: Vec<&str> = catalogue["derivations"].as_array().unwrap().iter().map(|d| d["key"].as_str().unwrap()).collect();
+        assert_eq!(keys, ["turnover_rate", "contingent_share", "overcommitted_pools", "time_to_report"]);
+        // Twenty people hired long ago; one of them leaves four days into last month but one.
+        let left_on = month(2) + chrono::Days::new(4);
+        for n in 0..20 {
+            workers::Entity::insert(workers::ActiveModel {
+                pid: ActiveValue::set(uuid::Uuid::new_v4()),
+                person_ref: ActiveValue::set(super::a_person()),
+                organization_ref: ActiveValue::set(org.clone()),
+                worker_number: ActiveValue::set(format!("D{n:03}")),
+                display_name: ActiveValue::set(format!("Synthetic Worker {n}")),
+                status: ActiveValue::set("active".into()),
+                employment_type: ActiveValue::set("permanent".into()),
+                fte_percent: ActiveValue::set(100),
+                department: ActiveValue::set("engineering".into()),
+                job_title: ActiveValue::set("Engineer".into()),
+                hired_on: ActiveValue::set(NaiveDate::from_ymd_opt(2020, 1, 1).unwrap()),
+                terminated_on: ActiveValue::set((n == 0).then_some(left_on)),
+                ..Default::default()
+            })
+            .exec(&ctx.db)
+            .await
+            .unwrap();
+        }
+        // Two snapshots in last month: the earlier shows no contingent FTE, the later (the one that
+        // counts) 100 contractor and 100 fixed-term out of 20 people and 2000 FTE.
+        for (days, contractor, fixed) in [(2, 0, 0), (10, 100, 100)] {
+        headcount_snapshots::Entity::insert(headcount_snapshots::ActiveModel {
+            pid: ActiveValue::set(uuid::Uuid::new_v4()),
+            organization_ref: ActiveValue::set(org.clone()),
+            department: ActiveValue::set("engineering".into()),
+            as_of: ActiveValue::set(month(1) + chrono::Days::new(days)),
+            headcount: ActiveValue::set(20),
+            fte_percent_total: ActiveValue::set(2000),
+            contractor_fte_percent_total: ActiveValue::set(Some(contractor)),
+            fixed_term_fte_percent_total: ActiveValue::set(Some(fixed)),
+            ..Default::default()
+        })
+        .exec(&ctx.db)
+        .await
+        .unwrap();
+        }
+        let level: Value = request.post("/api/oversight/levels").json(&json!({ "organization_ref": org, "ordinal": 1, "name": "Synthetic level" })).await.json();
+        let level = level["pid"].as_str().unwrap().to_string();
+        request.post("/api/oversight/positions").json(&json!({ "organization_ref": org, "level_pid": level, "effective_on": "2026-01-01", "deciding_body": "Synthetic panel", "reason": "Synthetic review" })).await.assert_status_ok();
+        let criterion: Value = request.post("/api/oversight/criteria").json(&json!({ "level_pid": level, "name": "Synthetic criterion" })).await.json();
+        let criterion = criterion["pid"].as_str().unwrap().to_string();
+        let measure = |derivation: Option<&str>, unit: &str, threshold: i64, sustain: i64| json!({
+            "criterion_pid": criterion, "name": "m", "origin": "derived", "derivation": derivation,
+            "unit": unit, "threshold": threshold, "direction": "at_most", "sustain": sustain });
+        for (why, body) in [
+            ("an unknown derivation", measure(Some("sickness_absence"), "basis points", 1, 1)),
+            ("no derivation", measure(None, "basis points", 1, 1)),
+            ("a unit that is not the derivation's", measure(Some("turnover_rate"), "percent", 1, 1)),
+        ] {
+            assert_eq!(request.post("/api/oversight/measures").json(&body).await.status_code(), 422, "{why}");
+        }
+        let mut reported = measure(None, "basis points", 1, 1);
+        reported["origin"] = json!("reported");
+        reported["derivation"] = json!("turnover_rate");
+        assert_eq!(request.post("/api/oversight/measures").json(&reported).await.status_code(), 422, "a reported measure names no derivation");
+        // Turnover: no leaver last month, one the month before (1 / 19.5 = 513 basis points), none before.
+        let turnover: Value = request.post("/api/oversight/measures").json(&measure(Some("turnover_rate"), "basis points", 600, 3)).await.json();
+        let turnover_pid = turnover["pid"].as_str().unwrap().to_string();
+        let contingent: Value = request.post("/api/oversight/measures").json(&measure(Some("contingent_share"), "basis points", 1000, 1)).await.json();
+        let contingent_pid = contingent["pid"].as_str().unwrap().to_string();
+        let earlier_contingent: Value = request.post("/api/oversight/measures").json(&measure(Some("contingent_share"), "basis points", 1000, 2)).await.json();
+        let earlier_contingent = earlier_contingent["pid"].as_str().unwrap().to_string();
+        let pools: Value = request.post("/api/oversight/measures").json(&measure(Some("overcommitted_pools"), "pools", 0, 1)).await.json();
+        let pools_pid = pools["pid"].as_str().unwrap().to_string();
+        // A derived measure takes no entered reading.
+        assert_eq!(
+            request.put(&format!("/api/oversight/measures/{turnover_pid}/readings"))
+                .json(&json!({ "period_on": month(1).to_string(), "value": 1, "evidence": "x", "source_document": "y" })).await.status_code(),
+            422
+        );
+        let find = |v: &Value, pid: &str| v["criteria"][0]["measures"].as_array().unwrap().iter().find(|m| m["measure_pid"] == pid).unwrap().clone();
+        let first = status().await;
+        let t = find(&first, &turnover_pid);
+        let values: Vec<i64> = t["derived_values"].as_array().unwrap().iter().map(|v| v["value"].as_i64().unwrap()).collect();
+        assert_eq!(values, [0, 513, 0], "oldest first; the leaver is counted in their month only");
+        assert_eq!(t["status"], "met");
+        assert_eq!(t["reported_periods"], 0);
+        // The share is 200 of 2000 FTE = 1000 basis points, at the threshold, which meets an at-most.
+        let c = find(&first, &contingent_pid);
+        assert_eq!(c["derived_values"][0]["value"], 1000);
+        assert_eq!(c["status"], "met");
+        // The month before has no snapshot: null, which is never a pass, so two months running is not met.
+        let e = find(&first, &earlier_contingent);
+        assert_eq!(e["derived_values"][0]["value"], Value::Null);
+        assert_eq!(e["status"], "unknown");
+        assert_eq!(e["stopped_by"]["reason"], "null_reading");
+        // No pools: nothing to count, so unknown, not zero.
+        let p = find(&first, &pools_pid);
+        assert_eq!(p["derived_values"][0]["value"], Value::Null);
+        assert_eq!(p["status"], "unknown");
+        assert_eq!(first["criteria"][0]["status"], "unknown");
+        // A pool short of an agreed claim last month makes one over-committed pool-month.
+        let pool = make_pool(&request, &org, "Synthetic pool", 0).await;
+        let programme = a_programme();
+        request.put("/api/programme-demands").json(&json!({ "programme_ref": programme, "pool_pid": pool, "month": month(1).to_string(), "fte_centi": 100 })).await.assert_status_ok();
+        request.post("/api/capacity/start-decisions").json(&json!({ "organization_ref": org, "programme_ref": programme, "decision": "proceed", "reason": "Synthetic: the shortfall is accepted." })).await.assert_status_ok();
+        let over = status().await;
+        let p = find(&over, &pools_pid);
+        assert_eq!(p["derived_values"][0]["value"], 1);
+        assert_eq!(p["status"], "not_met", "one pool over is above an at-most of none");
+        // Derived measures are read, never stored: the readings table holds nothing for them.
+        use sea_orm::{ColumnTrait, PaginatorTrait, QueryFilter};
+        use workforce_planning_management_service::models::_entities::oversight_readings;
+        let pids: Vec<uuid::Uuid> = [&turnover_pid, &contingent_pid, &pools_pid].iter().map(|p| p.parse().unwrap()).collect();
+        assert_eq!(oversight_readings::Entity::find().filter(oversight_readings::Column::MeasurePid.is_in(pids)).count(&ctx.db).await.unwrap(), 0);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// Early warning (WPM-R68, WPM-T115): a pool over-committed and a measure in breach each open one
+// warning, dated by the first sweep that saw it, tell the HR administrators without a figure, stay one
+// warning however often they are swept, close when they stop, and the time to report is the longest
+// time to acknowledge, unknown while any is open.
+async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_report() {
+    use chrono::{Datelike, Days, Months, Utc};
+    use sea_orm::ConnectionTrait;
+    use workforce_planning_management_service::controllers::early_warning::sweep;
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let today = Utc::now().date_naive();
+        let this_month = today.with_day(1).unwrap();
+        let last_month = this_month - Months::new(1);
+        let hr: Value = request.post("/api/workers").json(&json!({
+            "person_ref": super::a_person(), "organization_ref": org, "worker_number": "EW-HR",
+            "display_name": "Synthetic HR", "employment_type": "permanent", "department": "people",
+            "job_title": "Administrator", "hired_on": "2026-01-05" })).await.json();
+        let hr = hr["pid"].as_str().unwrap().to_string();
+        ctx.db.execute_unprepared(&format!(
+            "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
+             VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4(), uuid::Uuid::new_v4())).await.unwrap();
+        // A measure that breaches last month (value 900 against an at-most of 800), on the level the organization is at.
+        let level: Value = request.post("/api/oversight/levels").json(&json!({ "organization_ref": org, "ordinal": 1, "name": "Synthetic level" })).await.json();
+        let level = level["pid"].as_str().unwrap().to_string();
+        request.post("/api/oversight/positions").json(&json!({ "organization_ref": org, "level_pid": level, "effective_on": "2026-01-01", "deciding_body": "Synthetic panel", "reason": "Synthetic review" })).await.assert_status_ok();
+        let criterion: Value = request.post("/api/oversight/criteria").json(&json!({ "level_pid": level, "name": "Synthetic criterion" })).await.json();
+        let criterion = criterion["pid"].as_str().unwrap().to_string();
+        let measure: Value = request.post("/api/oversight/measures").json(&json!({ "criterion_pid": criterion, "name": "Synthetic vacancy rate", "origin": "reported", "unit": "basis points", "threshold": 800, "direction": "at_most", "sustain": 1 })).await.json();
+        let measure = measure["pid"].as_str().unwrap().to_string();
+        let reading = |value: i64| request.put(&format!("/api/oversight/measures/{measure}/readings")).json(&json!({ "period_on": last_month.to_string(), "value": value, "evidence": "Synthetic return", "source_document": "Synthetic" }));
+        reading(900).await.assert_status_ok();
+        let derived: Value = request.post("/api/oversight/measures").json(&json!({ "criterion_pid": criterion, "name": "Synthetic time to report", "origin": "derived", "derivation": "time_to_report", "unit": "calendar days", "threshold": 1000, "direction": "at_most", "sustain": 1 })).await.json();
+        let derived = derived["pid"].as_str().unwrap().to_string();
+        // A pool with an agreed claim this month and nobody to deliver it.
+        let pool = make_pool(&request, &org, "Synthetic pool", 0).await;
+        let programme = a_programme();
+        request.put("/api/programme-demands").json(&json!({ "programme_ref": programme, "pool_pid": pool, "month": this_month.to_string(), "fte_centi": 100 })).await.assert_status_ok();
+        request.post("/api/capacity/start-decisions").json(&json!({ "organization_ref": org, "programme_ref": programme, "decision": "proceed", "reason": "Synthetic: the shortfall is accepted." })).await.assert_status_ok();
+
+        // The first sweep opens one warning for each and tells HR; a second the same day changes nothing.
+        let first = sweep(&ctx, &org, today).await.unwrap();
+        assert_eq!((first.opened, first.cleared, first.told), (2, 0, 2));
+        let again = sweep(&ctx, &org, today).await.unwrap();
+        assert_eq!((again.opened, again.cleared, again.told), (0, 0, 0));
+        let notes = request.get(&format!("/api/workers/{hr}/notifications")).await.json::<Value>();
+        let text = serde_json::to_string(&notes).unwrap();
+        assert_eq!(text.matches("early_warning").count(), 2);
+        assert!(text.contains("Synthetic pool") && text.contains("Synthetic vacancy rate"));
+        for figure in ["900", "800", "100"] {
+            assert!(!text.contains(&format!("\"{figure}")) && !text.contains(&format!(" {figure} ")), "no figure {figure} in {text}");
+        }
+        let list = || async { request.get(&format!("/api/early-warnings?organization={org}")).await.json::<Value>() };
+        let l = list().await;
+        assert_eq!(l["warnings"].as_array().unwrap().len(), 2);
+        assert_eq!(l["unacknowledged"], 2);
+        assert_eq!(l["time_to_report_days"], Value::Null);
+        let pool_warning = l["warnings"].as_array().unwrap().iter().find(|w| w["kind"] == "pool_over_committed").unwrap()["pid"].as_str().unwrap().to_string();
+        let breach_warning = l["warnings"].as_array().unwrap().iter().find(|w| w["kind"] == "measure_breach").unwrap()["pid"].as_str().unwrap().to_string();
+        // Time to report measured by the oversight status is unknown while a warning is open.
+        let status = || async { request.get(&format!("/api/oversight/status?organization={org}")).await.json::<Value>() };
+        let t = |s: &Value| s["criteria"][0]["measures"].as_array().unwrap().iter().find(|m| m["measure_pid"] == derived.as_str()).unwrap().clone();
+        assert_eq!(t(&status().await)["derived_values"][0]["value"], Value::Null);
+        // The pool warning was first seen last month (backdated here), the breach today.
+        let seen = last_month + Days::new(2);
+        ctx.db.execute_unprepared(&format!("UPDATE early_warnings SET first_true_on = '{seen}' WHERE pid = '{pool_warning}'")).await.unwrap();
+        request.post(&format!("/api/early-warnings/{pool_warning}/acknowledge")).await.assert_status_ok();
+        assert_eq!(request.post(&format!("/api/early-warnings/{pool_warning}/acknowledge")).await.status_code(), 422, "once only");
+        assert_eq!(request.post(&format!("/api/early-warnings/{}/acknowledge", uuid::Uuid::new_v4())).await.status_code(), 404);
+        // Still one unacknowledged, so the overall figure is unknown; last month's, all acknowledged, is known.
+        let after_one = list().await;
+        assert_eq!(after_one["time_to_report_days"], Value::Null);
+        let expected = (today - seen).num_days();
+        let w = after_one["warnings"].as_array().unwrap().iter().find(|w| w["pid"] == pool_warning.as_str()).unwrap().clone();
+        assert_eq!(w["days_to_acknowledge"], expected);
+        assert_eq!(t(&status().await)["derived_values"][0]["value"], expected);
+        request.post(&format!("/api/early-warnings/{breach_warning}/acknowledge")).await.assert_status_ok();
+        assert_eq!(list().await["time_to_report_days"], expected, "the longest, not the quickest");
+        // The condition stops: the warning closes, and returning is a new warning, not a reopened one.
+        reading(500).await.assert_status_ok();
+        let cleared = sweep(&ctx, &org, today).await.unwrap();
+        assert_eq!((cleared.opened, cleared.cleared), (0, 1));
+        reading(900).await.assert_status_ok();
+        let back = sweep(&ctx, &org, today).await.unwrap();
+        assert_eq!((back.opened, back.cleared), (1, 0));
+        let l = list().await;
+        assert_eq!(l["warnings"].as_array().unwrap().len(), 3);
+        assert_eq!(l["unacknowledged"], 1);
+        assert_eq!(request.get("/api/early-warnings").await.status_code(), 422);
     })
     .await;
 }

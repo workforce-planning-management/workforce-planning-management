@@ -1,5 +1,6 @@
 //! loco CLI tasks.
 
+pub mod early_warning_sweep;
 pub mod engagement_end_reminders;
 pub mod import_esco;
 pub mod import_framework;
