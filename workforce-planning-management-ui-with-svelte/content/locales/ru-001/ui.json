@@ -1560,6 +1560,7 @@
     "redeploy": "перевести",
     "fixed_term_hire": "срочный найм",
     "engage_contractor": "привлечь подрядчика",
+    "convert_contingent": "перевести срочных работников в постоянные",
     "plan_assumption": "допущение плана",
     "observed_snapshots": "наблюдается по снимкам",
     "insufficient_history": "недостаточно истории"

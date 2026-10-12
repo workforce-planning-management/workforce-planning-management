@@ -457,8 +457,46 @@ pub fn spec() -> Value {
             "/metrics.prom": { "get": { "tags": ["ops"], "summary": "Prometheus metrics (public)", "responses": ok("Exposition text") } }
         }
     });
+    add_governance_paths(&mut document);
     decorate(&mut document);
     document
+}
+
+/// The governance-load paths (WPM-R64), added here because the literal above is at the macro's
+/// recursion limit.
+fn add_governance_paths(document: &mut Value) {
+    let ok = |what: &str| json!({ "200": { "description": what } });
+    let paths = json!({
+        "/api/oversight/status": { "get": { "tags": ["capacity"], "summary": "The organization's own scale, recorded positions and, for the criteria of the level it is at, whether each sustain rule is met as of the last complete month (?organization=). Evidence, never a verdict: the service does not change a level", "responses": ok("The oversight status") } },
+        "/api/oversight/levels": { "post": { "tags": ["capacity"], "summary": "Add a level to the organization's scale (ordinal 1 to 20, a name)", "responses": ok("The level") } },
+        "/api/oversight/levels/{pid}": { "delete": { "tags": ["capacity"], "summary": "Remove a level that has no position and no criterion", "responses": ok("The pid removed") } },
+        "/api/oversight/positions": { "post": { "tags": ["capacity"], "summary": "Record the organization's position: the level, the effective date, the deciding body (free text) and the published reason", "responses": ok("The position") } },
+        "/api/oversight/criteria": { "post": { "tags": ["capacity"], "summary": "Add an exit criterion to a level", "responses": ok("The criterion") } },
+        "/api/oversight/criteria/{pid}": { "delete": { "tags": ["capacity"], "summary": "Remove a criterion with its measures and readings", "responses": ok("The pid removed") } },
+        "/api/oversight/measures": { "post": { "tags": ["capacity"], "summary": "Add a measure to a criterion (origin reported; threshold, direction at_most or at_least, sustain 1 to 120 months)", "responses": ok("The measure") } },
+        "/api/oversight/measures/{pid}": { "delete": { "tags": ["capacity"], "summary": "Remove a measure with its readings", "responses": ok("The pid removed") } },
+        "/api/oversight/measures/{pid}/readings": { "put": { "tags": ["capacity"], "summary": "Enter or replace a month's reading; a value needs an evidence note and a source document; null says the data is missing", "responses": ok("The reading") } },
+        "/api/workforce-intelligence/key-person": {
+            "get": { "tags": ["capacity"], "summary": "For each skill marked critical on a role profile: employed holders at the highest critical minimum, qualified backups, ready successors and a status (no_holder, single_point_of_failure, covered_single_holder, shared), overall and per department. Counts only; names no one", "responses": ok("The key-person counts") }
+        },
+        "/api/workforce-intelligence/key-person/named": {
+            "get": { "tags": ["capacity"], "summary": "The sole holder behind each single point of failure, by worker number; HR only; the read is audited", "responses": ok("The people") }
+        },
+        "/api/governance-commitments": {
+            "get": { "tags": ["capacity"], "summary": "The governance commitments of an organization (?organization=): a role, never a person, with hours a month for each", "responses": ok("The commitments") },
+            "post": { "tags": ["capacity"], "summary": "Record a recurring commitment of a role (kind meeting, review, return or self_assessment; frequency weekly to annually; minutes one occurrence takes one person; holders = people in the role who take part)", "responses": ok("The commitment") }
+        },
+        "/api/governance-commitments/load": {
+            "get": { "tags": ["capacity"], "summary": "Hours a month per role and the senior total (?organization=); an estimate from the entered commitments, not a timesheet", "responses": ok("The load") }
+        },
+        "/api/governance-commitments/{pid}": {
+            "put": { "tags": ["capacity"], "summary": "Change a commitment", "responses": ok("The commitment") },
+            "delete": { "tags": ["capacity"], "summary": "Remove a commitment", "responses": ok("The pid removed") }
+        }
+    });
+    if let (Some(target), Some(extra)) = (document["paths"].as_object_mut(), paths.as_object()) {
+        target.extend(extra.clone());
+    }
 }
 
 /// The methods that change something, and so take an `Idempotency-Key` (WPM-R132).

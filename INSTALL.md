@@ -24,7 +24,7 @@ WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 5150; sign-in enforceme
 ```
 
 ```sh
-cargo test                 # DB-free unit tests (505)
+cargo test                 # DB-free unit tests (535)
 cargo test -- --ignored    # request tests (74; needs Postgres — see below)
 cargo test --test enforcement -- --ignored   # auth persona matrix
 ```
@@ -96,7 +96,8 @@ podman compose up --build      # or: docker compose up --build
 curl http://localhost:5150/_health
 ```
 
-This starts PostgreSQL and the API only. **It turns sign-in enforcement off**
+This starts PostgreSQL, Redis, a demo mail server (Stalwart: a catch-all for `wpm.test` that delivers nothing
+outside; read it with `python3 scripts/demo-mailbox.py`) and the API. **It turns sign-in enforcement off**
 (`WPM_REQUIRE_AUTH: "0"` in `compose.yaml`, with a warning in the log) because
 the demo has no identity service; use synthetic data only. The UI is not
 containerized. Not yet verified: the image build, because the maintainer's

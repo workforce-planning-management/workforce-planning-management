@@ -480,18 +480,66 @@ pub fn headcount_gap(demand: i64, supply: i64) -> i64 {
     demand - supply
 }
 
-/// Suggested levers for a headcount gap — suggestions with evidence, never
-/// decisions (WPM-D28).
+/// The contract FTE a department holds today, which is the evidence for the conversion lever
+/// (WPM-R63). Contractors and fixed-term staff are kept apart; an intern is neither.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ContractFte {
+    /// Contractors.
+    pub contractor_headcount: usize,
+    /// Their contracted FTE, in hundredths of an FTE.
+    pub contractor_fte_centi: i64,
+    /// Fixed-term staff.
+    pub fixed_term_headcount: usize,
+    /// Their contracted FTE, in hundredths of an FTE.
+    pub fixed_term_fte_centi: i64,
+}
+
+impl ContractFte {
+    /// True when anyone is engaged on a contract basis.
+    #[must_use]
+    pub fn any(&self) -> bool {
+        self.contractor_headcount + self.fixed_term_headcount > 0
+    }
+}
+
+/// Contractors and fixed-term staff among `people`, counted at today's contract, whatever their
+/// end date (a conversion is decided before the end, so an engagement that has not yet ended is
+/// the one that can be converted).
 #[must_use]
-pub fn suggested_levers(gap: i64) -> Vec<&'static str> {
+pub fn contract_fte(people: &[Person]) -> ContractFte {
+    use crate::rules::engagement::Basis;
+    let mut out = ContractFte::default();
+    for p in people {
+        let fte = i64::from(p.fte_percent);
+        match p.basis {
+            Basis::Contractor => {
+                out.contractor_headcount += 1;
+                out.contractor_fte_centi += fte;
+            }
+            Basis::FixedTerm => {
+                out.fixed_term_headcount += 1;
+                out.fixed_term_fte_centi += fte;
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// Suggested levers for a headcount gap — suggestions with evidence, never
+/// decisions (WPM-D28). "Convert contingent to permanent" is offered only for a shortfall in a
+/// department that has contract FTE to convert (WPM-R63).
+#[must_use]
+pub fn suggested_levers(gap: i64, contract: &ContractFte) -> Vec<&'static str> {
     match gap.cmp(&0) {
-        std::cmp::Ordering::Greater => vec![
-            "hire",
-            "fixed_term_hire",
-            "engage_contractor",
-            "reskill",
-            "promote",
-        ],
+        std::cmp::Ordering::Greater => {
+            let mut levers = vec!["hire"];
+            if contract.any() {
+                levers.push("convert_contingent");
+            }
+            levers.extend(["fixed_term_hire", "engage_contractor", "reskill", "promote"]);
+            levers
+        }
         std::cmp::Ordering::Less => vec!["redeploy"],
         std::cmp::Ordering::Equal => Vec::new(),
     }
@@ -764,7 +812,7 @@ mod tests {
         assert_eq!(headcount_gap(12, 9), 3);
         assert_eq!(headcount_gap(8, 9), -1);
         assert_eq!(
-            suggested_levers(3),
+            suggested_levers(3, &ContractFte::default()),
             [
                 "hire",
                 "fixed_term_hire",
@@ -773,8 +821,11 @@ mod tests {
                 "promote"
             ]
         );
-        assert_eq!(suggested_levers(-1), ["redeploy"]);
-        assert_eq!(suggested_levers(0), Vec::<&str>::new());
+        assert_eq!(suggested_levers(-1, &ContractFte::default()), ["redeploy"]);
+        assert_eq!(
+            suggested_levers(0, &ContractFte::default()),
+            Vec::<&str>::new()
+        );
         assert_eq!(competency_shortfall(10, 4), 6);
         assert_eq!(competency_shortfall(3, 8), 0);
     }
@@ -893,9 +944,46 @@ mod tests {
 
     #[test]
     fn a_shortfall_offers_the_contingent_levers_too() {
-        let levers = suggested_levers(2);
+        let none = ContractFte::default();
+        let levers = suggested_levers(2, &none);
         assert!(levers.contains(&"fixed_term_hire") && levers.contains(&"engage_contractor"));
         assert_eq!(levers[0], "hire");
-        assert!(!suggested_levers(-1).contains(&"engage_contractor"));
+        assert!(!suggested_levers(-1, &none).contains(&"engage_contractor"));
+    }
+
+    #[test]
+    fn contract_fte_counts_each_contract_basis_apart() {
+        use crate::rules::engagement::Basis;
+        let c = contract_fte(&[
+            person(Basis::Permanent, 100, None),
+            person(Basis::Contractor, 100, None),
+            person(Basis::Contractor, 50, None),
+            person(Basis::FixedTerm, 80, None),
+            person(Basis::Intern, 100, None),
+        ]);
+        assert_eq!((c.contractor_headcount, c.contractor_fte_centi), (2, 150));
+        assert_eq!((c.fixed_term_headcount, c.fixed_term_fte_centi), (1, 80));
+        assert!(c.any());
+        assert!(
+            !contract_fte(&[
+                person(Basis::Permanent, 100, None),
+                person(Basis::Intern, 100, None)
+            ])
+            .any()
+        );
+    }
+
+    #[test]
+    fn the_conversion_lever_needs_a_shortfall_and_contract_fte() {
+        use crate::rules::engagement::Basis;
+        let with = contract_fte(&[person(Basis::FixedTerm, 100, None)]);
+        let none = ContractFte::default();
+        assert_eq!(
+            suggested_levers(2, &with)[..2],
+            ["hire", "convert_contingent"]
+        );
+        assert!(!suggested_levers(2, &none).contains(&"convert_contingent"));
+        assert!(!suggested_levers(-1, &with).contains(&"convert_contingent"));
+        assert_eq!(suggested_levers(0, &with), [] as [&str; 0]);
     }
 }

@@ -1560,6 +1560,7 @@
     "redeploy": "réaffecter",
     "fixed_term_hire": "recrutement à durée déterminée",
     "engage_contractor": "engager un prestataire",
+    "convert_contingent": "convertir le contingent en permanent",
     "plan_assumption": "hypothèse du plan",
     "observed_snapshots": "observée dans les instantanés",
     "insufficient_history": "historique insuffisant"

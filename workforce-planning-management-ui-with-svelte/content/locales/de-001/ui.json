@@ -1560,6 +1560,7 @@
     "redeploy": "versetzen",
     "fixed_term_hire": "befristete Einstellung",
     "engage_contractor": "Auftragnehmer beauftragen",
+    "convert_contingent": "befristet Beschäftigte in unbefristete umwandeln",
     "plan_assumption": "Annahme des Plans",
     "observed_snapshots": "aus Stichtagen beobachtet",
     "insufficient_history": "nicht genug Verlauf"

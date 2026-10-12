@@ -1560,6 +1560,7 @@
     "redeploy": "reafetar",
     "fixed_term_hire": "contratação a termo",
     "engage_contractor": "contratar um prestador",
+    "convert_contingent": "converter contratados em permanentes",
     "plan_assumption": "pressuposto do plano",
     "observed_snapshots": "observada em instantâneos",
     "insufficient_history": "histórico insuficiente"

@@ -183,7 +183,7 @@ async fn clear_funding(
 }
 
 /// The people employed on `today` in the caller's scope (`None` is everyone).
-async fn employed_in_scope(
+pub(super) async fn employed_in_scope(
     ctx: &AppContext,
     scope: Option<&[String]>,
     today: chrono::NaiveDate,

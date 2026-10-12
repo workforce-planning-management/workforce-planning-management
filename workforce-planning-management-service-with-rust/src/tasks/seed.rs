@@ -9,7 +9,8 @@ use sea_orm::ActiveValue;
 use uuid::Uuid;
 
 use crate::models::_entities::{
-    benchmarks, benefit_plans, leave_entitlements, requisitions, workers,
+    benchmarks, benefit_plans, leave_entitlements, oversight_criteria, oversight_levels,
+    oversight_measures, oversight_positions, requisitions, workers,
 };
 
 /// The demo-organization seed task.
@@ -203,6 +204,64 @@ impl Task for Seed {
             .insert(db)
             .await?;
         }
+        // A synthetic oversight scale (WPM-D48): the product ships no real framework, so this one is
+        // labelled synthetic in its names and its flag, and exists only to make the views demonstrable.
+        let mut level_pids = Vec::new();
+        for (ordinal, name) in [
+            (1, "Synthetic level 1 (routine)"),
+            (2, "Synthetic level 2 (enhanced)"),
+            (3, "Synthetic level 3 (intervention)"),
+        ] {
+            let pid = Uuid::new_v4();
+            level_pids.push(pid);
+            oversight_levels::ActiveModel {
+                pid: ActiveValue::set(pid),
+                organization_ref: ActiveValue::set(org.clone()),
+                ordinal: ActiveValue::set(ordinal),
+                name: ActiveValue::set(name.to_string()),
+                synthetic: ActiveValue::set(true),
+                ..Default::default()
+            }
+            .insert(db)
+            .await?;
+        }
+        oversight_positions::ActiveModel {
+            pid: ActiveValue::set(Uuid::new_v4()),
+            organization_ref: ActiveValue::set(org.clone()),
+            level_pid: ActiveValue::set(level_pids[1]),
+            effective_on: ActiveValue::set(
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1)
+                    .ok_or_else(|| Error::string("seed data: invalid position date"))?,
+            ),
+            deciding_body: ActiveValue::set("Synthetic oversight panel".to_string()),
+            reason: ActiveValue::set("Synthetic demonstration position.".to_string()),
+            ..Default::default()
+        }
+        .insert(db)
+        .await?;
+        let criterion = Uuid::new_v4();
+        oversight_criteria::ActiveModel {
+            pid: ActiveValue::set(criterion),
+            level_pid: ActiveValue::set(level_pids[1]),
+            name: ActiveValue::set("Synthetic criterion: staffing is stable".to_string()),
+            synthetic: ActiveValue::set(true),
+            ..Default::default()
+        }
+        .insert(db)
+        .await?;
+        oversight_measures::ActiveModel {
+            pid: ActiveValue::set(Uuid::new_v4()),
+            criterion_pid: ActiveValue::set(criterion),
+            name: ActiveValue::set("Synthetic vacancy rate".to_string()),
+            origin: ActiveValue::set("reported".to_string()),
+            unit: ActiveValue::set("basis points".to_string()),
+            threshold: ActiveValue::set(800),
+            direction: ActiveValue::set("at_most".to_string()),
+            sustain: ActiveValue::set(3),
+            ..Default::default()
+        }
+        .insert(db)
+        .await?;
         tracing::info!(organization = %org, workers = n, "seeded synthetic demo organization");
         println!("seeded: organization {org} with {n} workers");
         Ok(())

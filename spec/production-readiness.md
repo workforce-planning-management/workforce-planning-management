@@ -142,6 +142,15 @@ sign-in enforcement explicitly off** (see its header).
 
 ## Decisions
 
+- **WPM-D81 The demo's mail server is a sink that cannot deliver outside, set up by its own container.** A demo that sends
+  email needs somewhere safe for it to go. `compose.yaml` runs Stalwart (`deploy/stalwart`): one domain, `wpm.test`, with a
+  **catch-all** account, so every message lands in `inbox@wpm.test` and can be read, and **no relaying**, so a message to any
+  other address is refused (`550 Relay not allowed`) and nothing leaves the machine. It is not a mail server for use: its
+  administrator, account passwords and plain SMTP without a login are demo constants, and the ports are bound to the loopback
+  address. The image adds Stalwart's command-line tool and an entrypoint that, on the first start, completes the server's own
+  setup, restarts it and applies a plan of upserts, so `podman compose up` needs no clicks and a restart converges to the same
+  state. The production SMTP settings (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`) are unchanged; the demo
+  configuration reads `SMTP_HOST` and `SMTP_PORT` too, with the old values as defaults.
 - **WPM-D80 The client names the action; the server will decide what a repeat means.** The key is made where the user acts
   (one per action, not per HTTP attempt), so a retry after a lost response or a double click can be told from a new
   action. The proxy checks the key's shape only; it keeps no state, because deduplication belongs next to the data it

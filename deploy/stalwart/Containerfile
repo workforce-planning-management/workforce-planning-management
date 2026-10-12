@@ -1,0 +1,20 @@
+# A demo mail server for the WPM demo (WPM-D81): Stalwart, with its command-line tool and an entrypoint that
+# sets the server up the first time it starts, so `podman compose up` needs no clicks.
+#
+# DEMO ONLY: a catch-all mail sink. Nothing is delivered outside the container's own domain.
+FROM docker.io/stalwartlabs/stalwart:v0.16.26
+
+# The CLI is a static binary: it is copied in rather than run as a second container, because the setup
+# has to restart the server between two steps (see entrypoint.sh).
+COPY --from=docker.io/stalwartlabs/cli:1.0.13 /usr/local/bin/stalwart-cli /usr/local/bin/stalwart-cli
+
+USER root
+COPY entrypoint.sh /opt/wpm/entrypoint.sh
+COPY plan.ndjson /opt/wpm/plan.ndjson
+RUN chmod 0555 /opt/wpm/entrypoint.sh && chmod 0444 /opt/wpm/plan.ndjson
+USER stalwart
+
+# Ready means the server runs normally AND the plan has been applied: the file /tmp/wpm-mail-ready exists
+# (compose.yaml uses it as the healthcheck; the OCI image format has no HEALTHCHECK).
+
+ENTRYPOINT ["/opt/wpm/entrypoint.sh"]

@@ -652,7 +652,7 @@ test.describe("planning by basis and programme", () => {
               ],
               headcount_gap: 2,
               fte_gap: null,
-              levers: ["hire", "fixed_term_hire", "engage_contractor"],
+              levers: ["hire", "convert_contingent", "fixed_term_hire", "engage_contractor"],
               competency_gaps: [],
             },
           ],
@@ -677,6 +677,9 @@ test.describe("planning by basis and programme", () => {
     );
     await expect(page.getByTestId("plan-forecast")).toContainText(
       "engage a contractor",
+    );
+    await expect(page.getByTestId("plan-forecast")).toContainText(
+      "convert contingent to permanent",
     );
     await expect(page.getByTestId("plan-forecast-programmes")).toContainText(
       PROGRAMME,

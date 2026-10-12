@@ -1040,6 +1040,10 @@ async fn demand_lines_by_basis_and_programme_reach_the_forecast() {
         assert_eq!(d["headcount_gap"], 2);
         let levers: Vec<_> = d["levers"].as_array().unwrap().iter().map(|l| l.as_str().unwrap()).collect();
         assert!(levers.contains(&"fixed_term_hire") && levers.contains(&"engage_contractor"));
+        // The department holds a fixed-term and a contractor engagement today, so a conversion is on offer, with its evidence.
+        assert!(levers.contains(&"convert_contingent"), "contract FTE exists, so the conversion lever is offered");
+        assert_eq!(d["contract_fte_now"]["fixed_term"]["headcount"], 1);
+        assert_eq!(d["contract_fte_now"]["contractor"]["headcount"], 1);
         assert!(f["programmes"].as_array().unwrap().iter().any(|p| p["programme_ref"] == programme.as_str() && p["headcount"] == 3));
         // The same key again updates the line instead of adding one.
         line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 2, "target_fte_percent": 200, "programme_ref": programme })).await.assert_status_ok();

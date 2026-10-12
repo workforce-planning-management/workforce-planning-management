@@ -571,3 +571,267 @@ async fn capacity_view_start_check_and_decisions() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// The governance load register (WPM-R64, WPM-D45): commitments of a role, never a person; the senior
+// hours a month; refusals; the register is scoped to its organization.
+async fn governance_load_totals_senior_hours_and_refuses_the_malformed() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let other = an_org();
+        let body = |name: &str, role: &str, senior: bool, frequency: &str, minutes: i32, holders: i32| {
+            json!({ "organization_ref": org, "name": name, "role": role, "senior": senior, "kind": "meeting",
+                    "frequency": frequency, "minutes": minutes, "holders": holders })
+        };
+        // Monthly, 90 minutes, 3 people: 4.5 hours a month, senior.
+        let board: Value = request
+            .post("/api/governance-commitments")
+            .json(&body("Oversight board", "director", true, "monthly", 90, 3))
+            .await
+            .json();
+        assert_eq!(board["hours_per_month"], 4.5);
+        // Weekly, 60 minutes, 2 people: 8.7 hours a month, not senior.
+        request
+            .post("/api/governance-commitments")
+            .json(&body("Returns", "analyst", false, "weekly", 60, 2))
+            .await
+            .assert_status_ok();
+        let load: Value = request
+            .get(&format!("/api/governance-commitments/load?organization={org}"))
+            .await
+            .json();
+        assert_eq!(load["commitments"], 2);
+        assert_eq!(load["senior_hours_per_month"], 4.5, "only the senior role counts");
+        assert_eq!(load["all_hours_per_month"], 13.2);
+        assert_eq!(load["roles"][0]["role"], "analyst", "heaviest first");
+        assert!(load["basis"].as_str().unwrap().contains("estimate"));
+        // Every refusal is a 422.
+        for (why, bad) in [
+            ("unknown kind", json!({ "kind": "party" })),
+            ("unknown frequency", json!({ "frequency": "daily" })),
+            ("no minutes", json!({ "minutes": 0 })),
+            ("no holders", json!({ "holders": 0 })),
+            ("blank role", json!({ "role": "  " })),
+        ] {
+            let mut b = body("x", "director", true, "monthly", 60, 1);
+            b.as_object_mut().unwrap().extend(bad.as_object().unwrap().clone());
+            let r = request.post("/api/governance-commitments").json(&b).await;
+            assert_eq!(r.status_code(), 422, "{why}");
+        }
+        let mut wrong = body("x", "director", true, "monthly", 60, 1);
+        wrong["organization_ref"] = json!("worker:00000000-0000-0000-0000-000000000000");
+        assert_eq!(request.post("/api/governance-commitments").json(&wrong).await.status_code(), 422);
+        // Change and remove.
+        let pid = board["pid"].as_str().unwrap();
+        let changed: Value = request
+            .put(&format!("/api/governance-commitments/{pid}"))
+            .json(&body("Oversight board", "director", true, "quarterly", 120, 2))
+            .await
+            .json();
+        assert_eq!(changed["hours_per_month"], 1.3, "4 × 120 × 2 minutes a year, a month's share");
+        request.delete(&format!("/api/governance-commitments/{pid}")).await.assert_status_ok();
+        assert_eq!(request.delete(&format!("/api/governance-commitments/{pid}")).await.status_code(), 404);
+        let after: Value = request
+            .get(&format!("/api/governance-commitments/load?organization={org}"))
+            .await
+            .json();
+        assert_eq!(after["senior_hours_per_month"], 0.0);
+        // Another organization's register is its own.
+        let theirs: Value = request.get(&format!("/api/governance-commitments?organization={other}")).await.json();
+        assert_eq!(theirs.as_array().unwrap().len(), 0);
+        assert_eq!(request.get("/api/governance-commitments").await.status_code(), 422);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// Key-person risk (WPM-R61, WPM-D47): holders, qualified backups, ready successors; the aggregate names
+// no one; the named read gives the sole holder of a single point of failure.
+async fn key_person_risk_counts_holders_backups_and_successors() {
+    use super::{activate, seed_worker};
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let skill_name = format!("Key skill {tag}");
+        let skill: Value = request
+            .post("/api/skills")
+            .json(&json!({ "name": skill_name, "category": "technical" }))
+            .await
+            .json();
+        let skill = skill["pid"].as_str().unwrap().to_string();
+        let profile: Value = request
+            .post("/api/role-profiles")
+            .json(&json!({ "job_title": format!("Key role {tag}") }))
+            .await
+            .json();
+        let profile = profile["pid"].as_str().unwrap().to_string();
+        request
+            .put(&format!("/api/role-profiles/{profile}/requirements"))
+            .json(&json!({ "skill_pid": skill, "min_proficiency": 4, "importance": "critical" }))
+            .await
+            .assert_status_ok();
+        let holder = seed_worker!(&request, &org, format!("K-1-{tag}"), None).await;
+        let other = seed_worker!(&request, &org, format!("K-2-{tag}"), None).await;
+        let junior = seed_worker!(&request, &org, format!("K-3-{tag}"), None).await;
+        for w in [&holder, &other, &junior] {
+            activate!(&request, w).await;
+        }
+        let declare = |who: String, level: i32| {
+            let request = &request;
+            let skill = skill.clone();
+            async move {
+                request
+                    .put(&format!("/api/workers/{who}/skills"))
+                    .json(&json!({ "skill_pid": skill, "proficiency": level }))
+                    .await
+                    .assert_status_ok();
+            }
+        };
+        declare(holder.clone(), 5).await;
+        declare(junior.clone(), 3).await; // below the bar: neither a holder nor a qualified backup
+        let row = |report: &Value, department: Option<&str>| {
+            report["skills"].as_array().unwrap().iter()
+                .find(|r| r["skill"] == skill_name.as_str() && r["department"] == json!(department))
+                .cloned()
+        };
+        let report = || async { request.get("/api/workforce-intelligence/key-person").await.json::<Value>() };
+        // One holder, nobody covering: a single point of failure.
+        let first = report().await;
+        assert_eq!(row(&first, None).unwrap()["status"], "single_point_of_failure");
+        assert_eq!(row(&first, Some("engineering")).unwrap()["holders"], 1);
+        assert!(!first.to_string().contains(&holder), "the aggregate names no one");
+        let named: Value = request.get("/api/workforce-intelligence/key-person/named").await.json();
+        assert!(named["people"].as_array().unwrap().iter().any(|p| p["skill"] == skill_name.as_str() && p["worker_pid"] == holder.as_str()));
+        // A backup who is below the bar does not cover.
+        request.post(&format!("/api/workers/{holder}/backups")).json(&json!({ "backup_pid": junior })).await.assert_status_ok();
+        assert_eq!(row(&report().await, None).unwrap()["status"], "single_point_of_failure");
+        // A person ranked ready now on the holder's succession plan covers them.
+        let plan: Value = request
+            .post("/api/succession-plans")
+            .json(&json!({ "role_title": format!("Key plan {tag}"), "department": "engineering", "criticality": 4, "incumbent_pid": holder }))
+            .await
+            .json();
+        let plan = plan["pid"].as_str().unwrap().to_string();
+        request
+            .post(&format!("/api/succession-plans/{plan}/candidates"))
+            .json(&json!({ "worker_pid": junior, "readiness": "ready_2y" }))
+            .await
+            .assert_status_ok();
+        assert_eq!(row(&report().await, None).unwrap()["status"], "single_point_of_failure", "ready in two years is not cover");
+        request
+            .post(&format!("/api/succession-plans/{plan}/candidates"))
+            .json(&json!({ "worker_pid": other, "readiness": "ready_now" }))
+            .await
+            .assert_status_ok();
+        let covered = report().await;
+        let r = row(&covered, None).unwrap();
+        assert_eq!((r["holders"].as_i64(), r["ready_successors"].as_i64()), (Some(1), Some(1)));
+        assert_eq!(r["status"], "covered_single_holder");
+        // A second holder shares the skill, and a backup who holds it counts as a qualified backup.
+        declare(other.clone(), 4).await;
+        request.post(&format!("/api/workers/{holder}/backups")).json(&json!({ "backup_pid": other })).await.assert_status_ok();
+        let shared = report().await;
+        let r = row(&shared, None).unwrap();
+        assert_eq!((r["holders"].as_i64(), r["backups"].as_i64()), (Some(2), Some(1)));
+        assert_eq!(r["status"], "shared");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// Oversight (WPM-R65, WPM-R66, WPM-D48, WPM-D49): the organization's own scale, a recorded position, an exit
+// criterion with a reported measure, and a sustain rule that is met only by consecutive months of evidence.
+async fn oversight_status_reports_the_sustain_rule_and_never_moves_the_level() {
+    use chrono::{Datelike, Months, Utc};
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let first_of_this_month = Utc::now().date_naive().with_day(1).unwrap();
+        let month = |back: u32| first_of_this_month - Months::new(back); // 1 = last complete month
+        let status = || async {
+            request.get(&format!("/api/oversight/status?organization={org}")).await.json::<Value>()
+        };
+        // Nothing is pre-loaded.
+        let empty = status().await;
+        assert_eq!(empty["scale"].as_array().unwrap().len(), 0);
+        assert!(empty["current"].is_null());
+        // The scale: ordinals are unique and bounded; a name is required.
+        let mut levels = Vec::new();
+        for (ordinal, name) in [(1, "Routine"), (2, "Enhanced")] {
+            let l: Value = request.post("/api/oversight/levels").json(&json!({ "organization_ref": org, "ordinal": ordinal, "name": name })).await.json();
+            levels.push(l["pid"].as_str().unwrap().to_string());
+        }
+        for (why, body) in [
+            ("a repeated ordinal", json!({ "organization_ref": org, "ordinal": 1, "name": "Again" })),
+            ("an ordinal out of range", json!({ "organization_ref": org, "ordinal": 21, "name": "Far" })),
+            ("a blank name", json!({ "organization_ref": org, "ordinal": 3, "name": " " })),
+            ("a non-organization URN", json!({ "organization_ref": "worker:00000000-0000-0000-0000-000000000000", "ordinal": 3, "name": "x" })),
+        ] {
+            assert_eq!(request.post("/api/oversight/levels").json(&body).await.status_code(), 422, "{why}");
+        }
+        // A position is recorded by a person with a body and a reason.
+        let position = |level: &str, body: &str, reason: &str| json!({ "organization_ref": org, "level_pid": level, "effective_on": "2026-01-01", "deciding_body": body, "reason": reason });
+        assert_eq!(request.post("/api/oversight/positions").json(&position(&levels[1], "", "because")).await.status_code(), 422);
+        assert_eq!(request.post("/api/oversight/positions").json(&position(&levels[1], "The panel", "")).await.status_code(), 422);
+        request.post("/api/oversight/positions").json(&position(&levels[1], "The panel", "Staffing review")).await.assert_status_ok();
+        let current = status().await;
+        assert_eq!(current["current"]["level"], "Enhanced");
+        assert_eq!(current["current"]["deciding_body"], "The panel");
+        // A criterion on the level the organization is at, with a reported measure: at most 800, three months running.
+        let criterion: Value = request.post("/api/oversight/criteria").json(&json!({ "level_pid": levels[1], "name": "Staffing is stable" })).await.json();
+        let criterion = criterion["pid"].as_str().unwrap().to_string();
+        let measure_body = |origin: &str, direction: &str, sustain: i64| json!({ "criterion_pid": criterion, "name": "Vacancy rate", "origin": origin, "unit": "basis points", "threshold": 800, "direction": direction, "sustain": sustain });
+        for (why, body) in [
+            ("a derived measure before its computation exists", measure_body("derived", "at_most", 3)),
+            ("an unknown direction", measure_body("reported", "below", 3)),
+            ("a sustain of zero", measure_body("reported", "at_most", 0)),
+        ] {
+            assert_eq!(request.post("/api/oversight/measures").json(&body).await.status_code(), 422, "{why}");
+        }
+        let measure: Value = request.post("/api/oversight/measures").json(&measure_body("reported", "at_most", 3)).await.json();
+        let measure = measure["pid"].as_str().unwrap().to_string();
+        let reading = |back: u32, value: Value| json!({ "period_on": month(back).to_string(), "value": value, "evidence": "Read from the monthly return", "source_document": "Monthly return" });
+        let put = |body: Value| request.put(&format!("/api/oversight/measures/{measure}/readings")).json(&body);
+        // A value without its evidence or source is refused.
+        assert_eq!(put(json!({ "period_on": month(1).to_string(), "value": 500 })).await.status_code(), 422);
+        assert_eq!(put(json!({ "period_on": month(1).to_string(), "value": 500, "evidence": "x" })).await.status_code(), 422);
+        // Two months of evidence do not meet a sustain rule of three, and the answer says why.
+        put(reading(1, json!(700))).await.assert_status_ok();
+        put(reading(2, json!(800))).await.assert_status_ok();
+        let two = status().await;
+        assert_eq!(two["criteria"][0]["status"], "unknown");
+        let m = &two["criteria"][0]["measures"][0];
+        assert_eq!((m["run"].as_i64(), m["required"].as_i64()), (Some(2), Some(3)));
+        assert_eq!(m["stopped_by"]["reason"], "no_reading");
+        // A null month breaks the run and is not a pass.
+        put(json!({ "period_on": month(3).to_string(), "value": null })).await.assert_status_ok();
+        assert_eq!(status().await["criteria"][0]["measures"][0]["stopped_by"]["reason"], "null_reading");
+        // A breach is not met.
+        put(reading(3, json!(900))).await.assert_status_ok();
+        let breached = status().await;
+        assert_eq!(breached["criteria"][0]["status"], "not_met");
+        assert_eq!(breached["criteria"][0]["measures"][0]["stopped_by"]["reason"], "breach");
+        // Replacing the month with a value at the threshold meets the rule; the same month is one reading.
+        put(reading(3, json!(800))).await.assert_status_ok();
+        let met = status().await;
+        assert_eq!(met["criteria"][0]["status"], "met");
+        assert_eq!(met["criteria"][0]["measures"][0]["reported_periods"], 3);
+        // The service never moves the level.
+        assert_eq!(met["current"]["level"], "Enhanced");
+        assert_eq!(met["positions"].as_array().unwrap().len(), 1);
+        // A level in use cannot be removed; a criterion goes with its measures and readings.
+        assert_eq!(request.delete(&format!("/api/oversight/levels/{}", levels[1])).await.status_code(), 422);
+        request.delete(&format!("/api/oversight/criteria/{criterion}")).await.assert_status_ok();
+        assert_eq!(status().await["criteria"].as_array().unwrap().len(), 0);
+        assert_eq!(request.delete(&format!("/api/oversight/measures/{measure}")).await.status_code(), 404);
+        request.delete(&format!("/api/oversight/levels/{}", levels[0])).await.assert_status_ok();
+        // The status needs an organization.
+        assert_eq!(request.get("/api/oversight/status").await.status_code(), 422);
+    })
+    .await;
+}

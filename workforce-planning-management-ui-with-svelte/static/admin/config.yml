@@ -2197,6 +2197,7 @@ collections:
               - { name: "redeploy", label: "Redeploy", widget: string, required: false, i18n: true }
               - { name: "fixed_term_hire", label: "Fixed_term_hire", widget: string, required: false, i18n: true }
               - { name: "engage_contractor", label: "Engage_contractor", widget: string, required: false, i18n: true }
+              - { name: "convert_contingent", label: "Convert_contingent", widget: string, required: false, i18n: true }
               - { name: "plan_assumption", label: "Plan_assumption", widget: string, required: false, i18n: true }
               - { name: "observed_snapshots", label: "Observed_snapshots", widget: string, required: false, i18n: true }
               - { name: "insufficient_history", label: "Insufficient_history", widget: string, required: false, i18n: true }

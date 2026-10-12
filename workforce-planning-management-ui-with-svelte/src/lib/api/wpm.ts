@@ -2498,6 +2498,8 @@ export function planForecast(
     headcount_gap: number | null;
     fte_gap: number | null;
     levers: string[] | null;
+    /** Contract FTE held today, the evidence for the conversion lever (WPM-R63). */
+    contract_fte_now?: Record<"contractor" | "fixed_term", { headcount: number; fte: number }>;
     competency_gaps: Array<{
       job_title: string | null;
       skill: string | null;

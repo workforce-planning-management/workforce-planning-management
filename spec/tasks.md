@@ -2453,12 +2453,21 @@ data or tests (WPM-D48).
       leave): each fails the test. Full suites: 353 unit and 66 request tests, clippy and fmt clean.
       **Not verified:** any user interface (none exists), enforcement tests for these routes with sign-in on,
       and behaviour against a large organization (the view loads an organization's workers in memory).
-- [ ] WPM-T108 **Pure core and endpoint: key-person risk.** *(WPM-R61,
-      WPM-D47)* Count holders, backups and ready successors per critical skill;
-      flag single points of failure. Aggregate endpoint (counts only) and an
-      HR-only named endpoint that writes an audit entry on every read.
-      Enforcement test: a manager and a partner role get the aggregate and a
-      403 on the named list. Mutation-check the HR-only rule.
+- [x] WPM-T108 (2026-10-11) **Pure core and endpoint: key-person risk.** *(WPM-R61, WPM-D47)* Pure
+      `rules::key_person` (`assess`, `bar`, four statuses) and `controllers/key_person.rs`. For each skill marked `critical` on a
+      live role profile: **holders** are employed people in the caller's scope whose declared proficiency meets the **highest**
+      critical minimum for that skill; **backups** are distinct, current (not ended) named backups who also hold it;
+      **ready successors** are distinct people ranked `ready_now` on a live succession plan whose incumbent is a holder. One holder
+      with neither is a `single_point_of_failure`; no holder is `no_holder` (a gap, not a single point); two or more is `shared`.
+      `GET /api/workforce-intelligence/key-person` (any signed-in caller, counts only, per skill and per department) and
+      `GET /api/workforce-intelligence/key-person/named` (the sole holder of each single point of failure by worker number; HR only;
+      every read audited). Unit tests (six), a request test on a seeded team (a backup below the bar does not cover, a ready-in-two-years
+      successor does not cover, a ready-now one does, a second holder shares it) and enforcement assertions (manager and neighbour read the
+      counts and get 403 on the named list; the worker gets 403; HR reads it). **Mutation-checked** (successors ignored; backups ignored;
+      bar the lowest; shared read as a single point; unqualified backup counted; any readiness counted; named route open), each failing a
+      test. **Not done / limits:** no floor is applied to the counts, because one holder is the thing the register exists to show, so a
+      department with one holder reveals that someone holds it (no name; the department can be small); "pool" is the department until
+      plans define pools; skill levels are the declared ones, not assessed; no user interface; the successor need not hold the skill.
 - [x] WPM-T109 (2026-10-11) **Contingent share and funding horizon.** *(WPM-R62)* The post funding table (WPM-T161), and
       `GET /api/workforce-intelligence/contingent`: contractor and fixed-term share of FTE, each apart, the twelve-month funding
       horizon (people and FTE per month, plus funding already ended), and the **trend** of the share from the snapshots split by
@@ -2480,25 +2489,64 @@ data or tests (WPM-D48).
       (`insufficient_history` when too short, as WPM-D27). Funding horizon per
       pool per month. Retention list, subject access export and erasure wiring,
       each checked by a request test.
-- [ ] WPM-T110 **Conversion lever in workforce plans.** *(WPM-R63)* Add
-      "convert contingent to permanent" to the plan levers (WPM-R37), with its
-      evidence. Unit test that the lever is offered only where contract FTE
-      exists in the pool.
-- [ ] WPM-T111 **Governance load register.** *(WPM-R64, WPM-D45)* Per-role
-      commitments with frequency and hours; senior hours per month. No per-person
-      rows. Request test for the monthly total.
-- [ ] WPM-T112 **Pure core: oversight criteria and the sustain rule.**
-      *(WPM-R65, WPM-R66, WPM-D48, WPM-D49)* Evaluate each measure against its
-      threshold and direction per period; a criterion is met when every linked
-      measure meets the sustain rule for N consecutive periods; a `null` reading
-      breaks the run and says so. The rules never output a level change. Unit
-      tests for runs, gaps, threshold edges and mixed derived and reported
-      measures.
-- [ ] WPM-T113 **Oversight levels, positions, criteria, measures.** *(WPM-R65,
-      WPM-R66)* Migrations, controllers and OpenAPI. Position changes are
-      recorded by a person with the deciding body (free text), date and reason.
-      Reported readings require an evidence note and a source. A synthetic demo
-      scale in the seed, labelled synthetic. Request tests.
+- [x] WPM-T110 (2026-10-11) **Conversion lever in workforce plans.** *(WPM-R63)* The forecast offers
+      `convert_contingent` (after `hire`) for a department with a shortfall **and** at least one contractor or fixed-term
+      worker employed today; with no contract FTE, or no shortfall, it is not offered. The evidence is `contract_fte_now` on
+      each department row: headcount and FTE, contractors and fixed-term staff apart (`rules::planning::contract_fte`). Unit
+      tests (counts per basis, the lever offered only with a shortfall and contract FTE), an assertion in the request test of
+      plans by basis, and a Playwright assertion that the lever reads in words; **mutation-checked** (offered always; fixed-term
+      counted as another basis), each failing a test. The lever's label is in the 13 locales. **Not done:** the funding horizon
+      the requirement lists as evidence is not shown in the plan, because it is HR-only and audited (WPM-T109), so the plan
+      points to the contingent view instead; the lever does not yet read open conversion plans (WPM-T164); `contract_fte_now`
+      is not drawn in the UI; the 12 non-English labels are machine-written and unreviewed.
+- [x] WPM-T111 (2026-10-11) **Governance load register.** *(WPM-R64, WPM-D45)* Migration `000067`
+      (`governance_commitments`: organization, name, role, senior, kind, frequency, minutes, holders). Pure
+      `rules::governance`: occurrences a year per frequency, person-minutes = occurrences × minutes × people, hours a month in
+      tenths rounded to nearest, **summed before rounding**; a role is senior if any of its commitments says so. Routes:
+      `GET/POST /api/governance-commitments?organization=`, `PUT/DELETE /api/governance-commitments/{pid}`,
+      `GET /api/governance-commitments/load?organization=` (hours per role, heaviest first, and the senior and all-roles totals,
+      with a `basis` sentence saying it is an estimate). Organization-scoped (out of scope is `404`), every write audited, bad kind,
+      frequency, minutes, holders, blank role or a non-organization URN is `422`. No per-person rows: the role is a text label and
+      `holders` is a count. Unit tests (eight) and a request test for the monthly totals, refusals, change, removal and scoping;
+      **mutation-checked** (senior filter ignored; people not multiplied; seniority decided by the last entry; rounding down;
+      weekly count; zero people allowed), each failing a test. **Not done:** a user interface; the role label is free text, so
+      nothing stops someone typing a person's name there (the guide says not to, and a role is not checked against the job
+      titles); who may write is the organization scope only, not a named role; no enforcement test that a partner role is
+      refused, because reads are open to any caller in scope; the hours are entered estimates and nothing checks them against
+      calendars (WPM-D45: no timesheets).
+- [x] WPM-T112 (2026-10-12) **Pure core: oversight criteria and the sustain rule.**
+      *(WPM-R65, WPM-R66, WPM-D48, WPM-D49)* `rules::oversight`: `meets` (the threshold itself meets it, `at_most` or `at_least`),
+      `evaluate_measure` (looks back from the latest period one period at a time and counts the run), `evaluate_criterion` (met only
+      when every linked measure is; not met when any is definitely not; otherwise unknown; no measure is unknown, never vacuously met),
+      `validate_spec` (direction, sustain 1 to 120 periods) and `validate_reported` (an evidence note and a source document).
+      The answer is `met`, `not_met` or `unknown`, with the run, the periods counted, how many rest on a reported reading rather than
+      a derived one, and the reason the run stopped (`sustained`, a breach, no reading or a `null` reading, with the period). A `null`
+      or missing reading is never a pass and never a breach; it makes the answer unknown unless a breach is found first. Nothing in
+      the module can output a level change (WPM-D49). 13 unit tests (threshold edges both ways, runs, an old breach outside the window,
+      null, a missing period, a breach after a gap, too little history, mixed derived and reported, criteria); **mutation-checked**
+      (either edge made exclusive; null skipped; breach read as unknown; a definite breach outweighed by unknown; an empty criterion
+      read as met; reported not counted; sustain off by one), each failing a test. Skipping a missing period makes the loop run forever,
+      which a test run would show as a hang, not a failure. **Not done:** storing anything (WPM-T113), the measures (WPM-T114); periods
+      are whole numbers the caller numbers consecutively, so calendar months and quarters are the caller's mapping, and a measure whose
+      period is not monthly is not yet defined.
+- [x] WPM-T113 (2026-10-12) **Oversight levels, positions, criteria, measures.** *(WPM-R65,
+      WPM-R66)* Migration `000068` (five tables), `controllers/oversight.rs`, nine operations in the OpenAPI document. An organization
+      adds its own levels (ordinal 1 to 20, a name; nothing is pre-loaded), **records** a position (level, effective date, deciding body
+      as free text, published reason; all required), adds exit criteria to a level, measures to a criterion (threshold, direction
+      `at_most` or `at_least`, a sustain rule of 1 to 120 months) and enters monthly readings. A value needs an evidence note and a
+      source document; `null` says the data is missing. `GET /api/oversight/status?organization=` returns the scale, the positions
+      newest first, and for the criteria of the **current** level the verdict of `rules::oversight` as of the last complete month, with
+      the run, the required length, why the run stopped (with the month) and how many months rest on a reported reading. It never
+      changes a level. Scoped to the organization (out of scope is `404`); every write audited; removing a level with a position or a
+      criterion is refused. The seed task adds a three-level scale, one position, one criterion and one measure, every name starting
+      "Synthetic" and flagged `synthetic`. One request test (empty start, scale, refusals, position, criterion and measure, a short
+      run, a null month, a breach, a threshold-equal value, no level movement, removal); **mutation-checked** (null read as zero; the
+      current month counted; evidence not required; reading not aligned to the month), each failing the test. Full suites: 535 unit
+      and 90 request tests. **Not done / limits:** only `reported` measures can be created (a derived measure would have no readings
+      until WPM-T114); the criteria shown are those of the level the organization is at, which this task takes to be the exit criteria
+      of that level; no enforcement test with sign-in on, so the organization scope on these routes is checked by the shared helper
+      and not by a test of its own; writes are open to any caller in the organization's scope (the policy has no oversight role);
+      no user interface; nothing yet marks a criterion for the level above.
 - [ ] WPM-T114 **Derived workforce measures.** *(WPM-R67)* Compute the
       existing and new measures from plan.md WPM-R67, each with its derivation,
       exclusions and period, and `null` on missing data. Define the three
@@ -3407,6 +3455,20 @@ deployer's lawful basis and impact assessment before they are switched on.
       several instances at once or two truly concurrent requests under one key (the claim is a single `INSERT ... ON CONFLICT`, reasoned and not
       raced by a test); a response over 256 KiB is not kept; the UI was not run against this API; the OpenAPI schemas cover only the funding and
       contingent answers, not every older endpoint.
+- [x] WPM-T224 (2026-10-11) **A mail server for the demo.** *(traces to WPM-D81)* `deploy/stalwart/` (a `Containerfile` on
+      `stalwartlabs/stalwart:v0.16.26` plus the CLI `1.0.13`, `entrypoint.sh`, `plan.ndjson`), a `stalwart` service in `compose.yaml`
+      (SMTP on `127.0.0.1:1025`, the management and JMAP port on `127.0.0.1:8025`, healthy only once the plan is applied) that the
+      API waits for, `SMTP_HOST` and `SMTP_PORT` for the demo configuration, and `scripts/demo-mailbox.py` to send a test message and
+      read the inbox. **Verified by running it (podman 5, Apple silicon):** from nothing the container is ready in about 6 seconds;
+      a message to `anyone@wpm.test` over plain SMTP is accepted and read back over JMAP; a message to `someone@example.com` is
+      refused with `550 5.1.2 Relay not allowed`; a container restart converges (3 updated, 0 created) and keeps the mail;
+      `podman compose up -d stalwart` reports it healthy; the API starts in the `demo` environment with `SMTP_HOST` and `SMTP_PORT`
+      set. **Not verified:** that the API itself delivers a message through it (no feature of the service sends email yet: it
+      keeps in-app notifications), so delivery was shown with a standard SMTP client only; the full `podman compose up
+      --build` of the API image; IMAP, STARTTLS or TLS on any port (the server has a placeholder certificate and the demo uses
+      none); other CPU architectures (the CLI binary was copied from the image on this machine, the image is multi-architecture);
+      Docker. Found on the way: Stalwart 0.16 starts in a setup mode with no listeners, so the server must be restarted once after
+      its setup call, and the CLI needs a writable cache directory (it failed with `Permission denied` as a non-root user).
 - [x] WPM-T223 (2026-10-11) **The security-testing brief in every locale, and translated slugs.** *(traces to WPM-R131, WPM-D79)* The page
       `for/independent-security-tester/` (a brief for commissioning an independent test; WPM-T201 stays open) added to every locale: copied or respelled for
       `en-001`, `en-us` and `en-gb`, translated one language at a time for the rest, with the five copy locales recopied. **Slugs are now per locale:** in

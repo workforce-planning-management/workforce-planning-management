@@ -787,6 +787,7 @@ async fn forecast(
                 rules::project_by_basis(&people, today, *target_on, attrition, source);
             let supply = projection.total_headcount;
             let gap = supply.map(|s| rules::headcount_gap(demand, s));
+            let contract = rules::contract_fte(&people);
             let gap_fte = demand_total
                 .fte_percent
                 .zip(projection.total_fte_centi)
@@ -846,7 +847,11 @@ async fn forecast(
                 "supply_assumptions": projection.assumptions,
                 "headcount_gap": gap,
                 "fte_gap": gap_fte.map(centi),
-                "levers": gap.map(rules::suggested_levers),
+                "levers": gap.map(|g| rules::suggested_levers(g, &contract)),
+                "contract_fte_now": {
+                    "contractor": { "headcount": contract.contractor_headcount, "fte": centi(contract.contractor_fte_centi) },
+                    "fixed_term": { "headcount": contract.fixed_term_headcount, "fte": centi(contract.fixed_term_fte_centi) },
+                },
                 "competency_gaps": competency,
             })
         })

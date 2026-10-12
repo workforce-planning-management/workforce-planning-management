@@ -36,6 +36,12 @@ ignored.
 - **Does not cover** post funding (`post_fundings`), which is not soft-deleted: clearing it deletes the row at once, and
   erasing the worker deletes it with them, so there is no deleted state to hold and sweep (WPM-T109, WPM-T161). It holds a kind,
   a programme reference and an end date, never an amount.
+- **Does not cover** governance commitments (`governance_commitments`), which are not soft-deleted: removing one deletes the
+  row at once (WPM-T111). A row holds a role, a frequency, a length and a head count, never a person.
+- **Does not cover** the oversight tables (`oversight_levels`, `oversight_positions`, `oversight_criteria`, `oversight_measures`,
+  `oversight_readings`), which are an organization's own configuration and evidence, not records of a person, and are not
+  soft-deleted: a level, criterion or measure is removed at once (a measure with its readings), and a recorded position stays on the
+  record (WPM-T113).
 - **Does not cover** the audit log (`audit_logs`), the headcount snapshots (aggregates, no
   names; since WPM-T139 they also hold contractor and fixed-term headcount and FTE per department and date, which are counts, and
   are kept as the history a trend needs), the erasure ledger (a pid and a time, which no longer identifies anyone) or

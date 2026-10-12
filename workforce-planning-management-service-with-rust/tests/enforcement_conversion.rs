@@ -239,6 +239,15 @@ async fn a_conversion_is_proposed_by_a_manager_approved_by_someone_else_and_read
             assert_eq!(get(rollup.into(), token.clone()).await.status_code(), 403, "{name} does not read the programme roll-up");
         }
         assert_eq!(get(rollup.into(), hr.clone()).await.status_code(), 200);
+        // Key-person risk: the counts are for any signed-in caller; the named sole holders are HR's.
+        let key_counts = "/api/workforce-intelligence/key-person";
+        let key_named = "/api/workforce-intelligence/key-person/named";
+        for (name, token) in [("the manager", &manager), ("a neighbour", &neighbour)] {
+            assert_eq!(get(key_counts.into(), token.clone()).await.status_code(), 200, "{name} reads the counts");
+            assert_eq!(get(key_named.into(), token.clone()).await.status_code(), 403, "{name} does not read the named list");
+        }
+        assert_eq!(get(key_named.into(), me.clone()).await.status_code(), 403);
+        assert_eq!(get(key_named.into(), hr.clone()).await.status_code(), 200);
         let named = "/api/engagements/contingent-list?list=ending_within_30";
         for (name, token) in [("the worker", &me), ("the manager", &manager), ("a neighbour", &neighbour)] {
             assert_eq!(get(named.into(), token.clone()).await.status_code(), 403, "{name} does not read the named list");

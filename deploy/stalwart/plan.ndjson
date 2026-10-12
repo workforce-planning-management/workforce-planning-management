@@ -1,0 +1,3 @@
+{"@type":"upsert","object":"Domain","matchOn":["name"],"value":{"dom":{"name":"wpm.test","description":"WPM demo mail domain","catchAllAddress":"inbox@wpm.test"}}}
+{"@type":"upsert","object":"Account","matchOn":["name","domainId"],"value":{"inbox":{"@type":"User","name":"inbox","description":"Catch-all: every message to wpm.test lands here","domainId":"#dom","credentials":{"0":{"@type":"Password","secret":"wpm-demo-mail"}}}}}
+{"@type":"upsert","object":"Account","matchOn":["name","domainId"],"value":{"noreply":{"@type":"User","name":"noreply","description":"The sender the WPM service uses","domainId":"#dom","credentials":{"0":{"@type":"Password","secret":"wpm-demo-mail"}}}}}

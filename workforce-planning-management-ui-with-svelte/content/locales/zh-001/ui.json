@@ -1560,6 +1560,7 @@
     "redeploy": "调配",
     "fixed_term_hire": "定期招聘",
     "engage_contractor": "聘用承包人",
+    "convert_contingent": "将合同人员转为长期",
     "plan_assumption": "计划的假设",
     "observed_snapshots": "根据快照观察得出",
     "insufficient_history": "历史记录不足"

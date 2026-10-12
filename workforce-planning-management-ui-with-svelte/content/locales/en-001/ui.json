@@ -1560,6 +1560,7 @@
     "redeploy": "redeploy",
     "fixed_term_hire": "fixed-term hire",
     "engage_contractor": "engage a contractor",
+    "convert_contingent": "convert contingent to permanent",
     "plan_assumption": "the plan's assumption",
     "observed_snapshots": "observed from snapshots",
     "insufficient_history": "not enough history"

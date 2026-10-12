@@ -61,6 +61,16 @@ the compose file are written but were not built where this was written; try them
 
 The UI reads `WPM_API_URL`, `AUTH_API_URL` and `WPM_PUBLIC_URL`.
 
+## Mail in the demo
+
+`compose.yaml` runs a Stalwart mail server (`deploy/stalwart`, WPM-D81) and points the API at it with `SMTP_HOST=stalwart` and
+`SMTP_PORT=25`. It serves one domain, `wpm.test`; every message to it lands in `inbox@wpm.test`; a message to any other domain is
+refused, so nothing leaves the machine. From the host: SMTP on `127.0.0.1:1025` (no login), the account page, management and JMAP
+on `http://127.0.0.1:8025` (`inbox@wpm.test` and `wpm-demo-mail`; the administrator is `admin` and `wpm-demo-admin`).
+`python3 scripts/demo-mailbox.py --send` sends a test message and lists the inbox. **These are demo constants: do not reuse them,
+and do not publish the ports.** For a real deployment set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` and `SMTP_PASSWORD` to your own mail
+service (the table above).
+
 ## Proxy and TLS
 
 Terminate TLS at a proxy. It must send `X-Forwarded-Proto: https` (for HSTS), and if you

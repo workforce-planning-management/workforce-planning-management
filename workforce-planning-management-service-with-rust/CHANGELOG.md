@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — oversight levels, positions, criteria, measures and readings (WPM-T113)
+
+Migration `000068`. `POST /api/oversight/levels|positions|criteria|measures`, `PUT /api/oversight/measures/{pid}/readings`, `DELETE`
+for levels, criteria and measures, and `GET /api/oversight/status?organization=`: the organization's own scale, its recorded
+positions, and for the criteria of the level it is at, whether each sustain rule is met as of the last complete month. A reported
+value needs an evidence note and a source document; the service never changes a level. The seed task adds a scale labelled synthetic.
+
+### Added — the sustain rule for oversight criteria (WPM-T112)
+
+`rules::oversight` (pure, no route yet): a measure meets its threshold, in a stated direction, for N consecutive periods; a criterion
+is met when every linked measure is. A `null` or missing reading breaks the run and the verdict says which period and why; the rules
+never output a level change.
+
+### Added — key-person risk (WPM-T108)
+
+`GET /api/workforce-intelligence/key-person`: for each skill marked critical on a role profile, the employed holders at the highest
+critical minimum, their qualified backups and ready successors, and a status (`no_holder`, `single_point_of_failure`,
+`covered_single_holder`, `shared`), overall and per department. Counts only. `GET .../key-person/named` gives the sole holder of each
+single point of failure by worker number: HR only, audited.
+
+### Added — the governance load register (WPM-T111)
+
+Migration `000067`. `GET/POST /api/governance-commitments`, `PUT/DELETE /api/governance-commitments/{pid}` and
+`GET /api/governance-commitments/load`: recurring commitments of a **role** (meeting, review, return, self-assessment; frequency;
+minutes; people who take part), and the hours a month they absorb per role and for senior roles. An estimate, not a timesheet; no
+person is recorded; scoped to the organization; every write is audited.
+
+### Added — the conversion lever in workforce plans (WPM-T110)
+
+A department with a shortfall and contract FTE today is offered `convert_contingent`; each forecast row carries `contract_fte_now`
+(contractors and fixed-term staff apart). The funding horizon stays in the HR-only contingent view.
+
+### Added — a mail server for the demo (WPM-T224)
+
+`compose.yaml` runs Stalwart (`deploy/stalwart`) as a catch-all sink for `wpm.test` that refuses to relay; the demo configuration reads
+`SMTP_HOST` and `SMTP_PORT` (defaults unchanged). `scripts/demo-mailbox.py` sends a test message and reads the inbox.
+
 ### Added — programme, FTE and basis on demand lines and requisitions (WPM-T140)
 
 Migration `000066`. A demand line carries a programme, an FTE target (unknown when not stated) and a basis with an end date; a

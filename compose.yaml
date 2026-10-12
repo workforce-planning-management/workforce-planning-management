@@ -14,6 +14,11 @@
 #
 # This file runs the API only; the SvelteKit UI is not containerized yet
 # (WPM-T123 notes this).
+#
+# Mail (WPM-D81): a Stalwart mail server takes the API's SMTP. It is a catch-all sink for the demo domain
+# wpm.test and refuses to relay anywhere else, so nothing leaves the machine. Read what arrived with
+#   python3 scripts/demo-mailbox.py            (or open http://localhost:8025/account, inbox@wpm.test)
+# The credentials below and in deploy/stalwart/plan.ndjson are demo constants: never reuse them.
 services:
   postgres:
     image: docker.io/library/postgres:18-alpine
@@ -38,6 +43,22 @@ services:
       timeout: 3s
       retries: 30
 
+  stalwart:
+    build:
+      context: ./deploy/stalwart
+      dockerfile: Containerfile
+    environment:
+      STALWART_RECOVERY_ADMIN: admin:wpm-demo-admin   # demo only: the administrator of this mail server
+    healthcheck:
+      # Ready = running normally and the demo domain and accounts exist (see deploy/stalwart/entrypoint.sh).
+      test: ["CMD", "test", "-f", "/tmp/wpm-mail-ready"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+    ports:
+      - "127.0.0.1:1025:25"     # SMTP, no login, only for wpm.test
+      - "127.0.0.1:8025:8080"   # management, JMAP and the account web page
+
   api:
     build:
       context: ./workforce-planning-management-service-with-rust
@@ -47,11 +68,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      stalwart:
+        condition: service_healthy
     environment:
       LOCO_ENV: demo
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgres://loco:loco@postgres:5432/workforce_planning_management_service_demo
       WPM_REQUIRE_AUTH: "0"   # explicit, demo only: see the header of this file
       WPM_CORS_ORIGIN: http://localhost:5173
+      SMTP_HOST: stalwart
+      SMTP_PORT: "25"
     ports:
       - "127.0.0.1:5150:5150"

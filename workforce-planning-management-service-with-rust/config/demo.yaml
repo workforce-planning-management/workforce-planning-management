@@ -60,10 +60,10 @@ mailer:
   smtp:
     # Enable/Disable smtp mailer.
     enable: true
-    # SMTP server host. e.x localhost, smtp.gmail.com
-    host: localhost
-    # SMTP server port
-    port: 1025
+    # SMTP server host and port: the demo mail server in compose.yaml sets these (WPM-D81);
+    # a local mail catcher on 1025 works without setting them.
+    host: {{ get_env(name="SMTP_HOST", default="localhost") }}
+    port: {{ get_env(name="SMTP_PORT", default="1025") }}
     # Use secure connection (SSL/TLS).
     secure: false
     # auth:
