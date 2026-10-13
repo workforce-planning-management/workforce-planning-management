@@ -2632,15 +2632,38 @@ data or tests (WPM-D48).
       reference text, checked against the learning records when the role is added and again when read, so a renamed course makes
       the check unknown until the role is re-pointed (there is no endpoint to change a role's course: remove the cutover or the role
       and add it again, and roles cannot be removed singly); nothing checks that the sweep runs, as for every early warning; no
-      user interface (WPM-T118, next).
-- [ ] WPM-T118 **UI and verification.** *(WPM-R56–R70)* Capacity heatmap
-      (unknown cells distinct from zero, readable in light and dark and on a
-      phone), resilience panel, oversight position and criteria, the monthly
-      pack, cutover readiness; client functions with the path-map test; strings
-      in the 12 `-001` locales. Screenshots read in light and dark at desktop and
-      phone sizes. Full suites: unit, request, enforcement, clippy, fmt,
-      svelte-check, vitest, Playwright, build, prettier. Record what was not
-      verified.
+      user interface: see WPM-T118 (reads only; planning a cutover is by API).
+- [x] WPM-T118 **UI and verification.** *(WPM-R56–R70)* Four pages and a client. `/capacity`: the heatmap of skill pools by month
+      (component `CapacityHeatmap`, also used in a frozen pack): each cell gives supply / demand in FTE, and its result as a **mark and
+      a word as well as a colour**; an `unknown` month is dashed and hatched with "?", never a zero and never a pass; the constraint
+      pool and the programmes drawing on it (with no limit set said so). `/resilience`: the critical skills with holders, backups and
+      ready successors, the number of single points of failure, and the governance load (senior hours a month by role); counts and
+      hours only. `/oversight`: the current level, the exit criteria with each measure's run ("2 of 3 months"), why a run stopped
+      (breach, no reading, a missing reading), and the monthly packs: freeze, open, withdraw with a reason; a refusal for want of
+      the administrator role is said in words; a withdrawn pack shows its mark in the list and open; the deciding body is not in a
+      pack. `/cutover`: each cutover with the three checks and the worst, each with a mark and word, and the reasons. Shared
+      `OrgPicker` (the caller's organizations, or a typed reference with none) and `stateLabel` (the word `unknown` in the
+      vocabulary reads "not enough to compare", a pay-comparison meaning, so these pages use `common.unknown`). Ten client functions
+      added to `wpm.ts` and to the path-map test in call order. 77 catalogue strings and 28 vocabulary values in the 13 `-001`
+      locales; this also adds the 20 vocabulary tokens that earlier tasks (the oversight, early-warning, pack and cutover tasks among them) had put in the service
+      without a `values` entry, which the vocabulary test was failing on. The CMS config is regenerated.
+      **Verified:** 113 unit tests (path map, parity, no English left outside the catalogue, every server token has a value),
+      `svelte-check` 0 errors, prettier clean, build, and **81 Playwright specs** (21 new: five behaviour specs and sixteen
+      page × light/dark × desktop/phone checks that the page does not scroll sideways, each with a screenshot). Screenshots were
+      **looked at** in light and dark at desktop and phone sizes: the dark ones set the saved Lily theme, since the app's dark mode is
+      a theme the picker loads and the browser colour scheme alone leaves the page light (the older `/contingent` "dark" screenshots
+      were light for that reason). **Mutation-checked** (an unknown cell tinted as a pass; a cutover unknown marked with a tick; the
+      reason a run stopped hidden; a refused freeze swallowed; the withdrawn mark hidden), each failing a spec; the first two needed
+      assertions added (the class and the mark), since the specs read the status attribute only. The service was not changed, so the
+      Rust suites were not rerun.
+      **Not done / limits:** no page to **plan** a cutover, add its roles and pools, record a level or position, enter oversight
+      measures and readings or capacity pools and demand (the pages read; the writes are by API); the cutover reasons and the
+      oversight and capacity "basis" texts come from the service in English, and the page says so; the early warnings (WPM-T115)
+      have no page; the heatmap shows twelve months at most and does not link a pool to its members (by design); "1 months over" is
+      not pluralised (the strings carry no plural forms); the new translations are AI-written and unreviewed, like the rest
+      ([REVIEW.md](../workforce-planning-management-ui-with-svelte/content/locales/REVIEW.md)); no real-service run of the new pages
+      (the live suite has no spec for them); the key-person list reads the caller's whole scope, not the chosen organization (the
+      route takes none); screen reader behaviour was not tested beyond the marks and words being text.
 WPM-T120–T122 (critical chain buffers) were withdrawn on 2026-10-09 by
 [WPM-D55](design.md): critical chain, critical path and similar scheduling
 capabilities live in project-portfolio-management. The ids are not reused.

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — capacity, resilience, oversight with the monthly pack, and cutover readiness (WPM-T118)
+
+`/capacity` (the heatmap: supply / demand in FTE by pool and month, each cell a mark and a word as well as a colour, an unknown month dashed
+and never a zero), `/resilience` (critical skills with holders, backups and successors; single points of failure; governance hours),
+`/oversight` (the level, the exit criteria and why a run stopped; the monthly packs: freeze, open, withdraw with a reason) and `/cutover`
+(three checks and the worst, each a mark and a word). Ten client functions and path-map entries; 77 strings and 28 vocabulary values in the
+13 `-001` locales, including 20 tokens earlier tasks had left without a value. 21 Playwright specs with light/dark and desktop/phone
+screenshots (dark sets the saved theme).
+
 ### Fixed — the proxy forwarded to the wrong path (found on the first run against a real service)
 
 `/api/proxy/x` went to `<WPM_API_URL>/x`, but the service serves under `/api/`, so every call was a 404 against a real service (the stubbed suite

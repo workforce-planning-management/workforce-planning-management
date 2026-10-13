@@ -12,8 +12,9 @@ boards, onboarding, time/leave/rotas, the employee record (the **self-service
 hub**) and org chart, reviews and 360°s, learning, skills, succession, payroll,
 benchmarking, wellbeing and privacy — and, since WPM-T69: `/metrics` (with
 insights), `/directory`, `/rota`, `/announcements`, `/skill-gaps`,
-`/movements`, `/planning`, `/roles`, `/groups` and the one-screen `/ceo`
-dashboard. The app owns no data; every page round-trips through the API, and
+`/movements`, `/planning`, `/roles`, `/groups` the one-screen `/ceo`
+dashboard and, since WPM-T118, `/capacity`, `/resilience`, `/oversight` (with the monthly
+pack) and `/cutover`. The app owns no data; every page round-trips through the API, and
 masked fields render as first-class masked states, never errors or fake zeros.
 
 > ⚠️ Demo software, not a production HR system. See
@@ -80,7 +81,7 @@ pnpm install
 pnpm dev                    # expects the Loco sibling on :5150
 pnpm check                  # svelte-kit sync && svelte-check (0 errors)
 pnpm test                   # vitest (113)
-pnpm exec playwright test   # 60 specs, stubbed API — no service needed
+pnpm exec playwright test   # 81 specs, stubbed API — no service needed
 WPM_LIVE_API=1 pnpm exec playwright test -c playwright.live.config.ts   # 7 specs against a REAL service (tests/live/README.md)
 pnpm build
 pnpm cms-config             # regenerate static/admin/config.yml from en-001

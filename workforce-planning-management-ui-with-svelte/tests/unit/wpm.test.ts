@@ -337,6 +337,16 @@ describe("api path map", () => {
     await wpm.contingentWorkforce();
     await wpm.contingentList("ending_31_to_60");
     await wpm.programmeRollup();
+    await wpm.capacityView("organization:abc");
+    await wpm.keyPersonRisk();
+    await wpm.governanceLoad("organization:abc");
+    await wpm.oversightStatus("organization:abc");
+    await wpm.listOversightPacks("organization:abc");
+    await wpm.getOversightPack("pack1");
+    await wpm.freezeOversightPack("organization:abc");
+    await wpm.withdrawOversightPack("pack1", "wrong month");
+    await wpm.listCutovers("organization:abc");
+    await wpm.cutoverReadiness("cut1");
     expect(calls).toEqual([
       "/api/proxy/workers?department=engineering",
       "/api/proxy/workers/p1",
@@ -503,6 +513,16 @@ describe("api path map", () => {
       "/api/proxy/workforce-intelligence/contingent",
       "/api/proxy/engagements/contingent-list?list=ending_31_to_60",
       "/api/proxy/workforce-intelligence/programmes",
+      "/api/proxy/capacity?organization=organization%3Aabc",
+      "/api/proxy/workforce-intelligence/key-person",
+      "/api/proxy/governance-commitments/load?organization=organization%3Aabc",
+      "/api/proxy/oversight/status?organization=organization%3Aabc",
+      "/api/proxy/oversight/packs?organization=organization%3Aabc",
+      "/api/proxy/oversight/packs/pack1",
+      "/api/proxy/oversight/packs",
+      "/api/proxy/oversight/packs/pack1/withdraw",
+      "/api/proxy/cutovers?organization=organization%3Aabc",
+      "/api/proxy/cutovers/cut1/readiness",
     ]);
     vi.unstubAllGlobals();
   });

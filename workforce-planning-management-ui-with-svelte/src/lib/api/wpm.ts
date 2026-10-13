@@ -2499,7 +2499,10 @@ export function planForecast(
     fte_gap: number | null;
     levers: string[] | null;
     /** Contract FTE held today, the evidence for the conversion lever (WPM-R63). */
-    contract_fte_now?: Record<"contractor" | "fixed_term", { headcount: number; fte: number }>;
+    contract_fte_now?: Record<
+      "contractor" | "fixed_term",
+      { headcount: number; fte: number }
+    >;
     competency_gaps: Array<{
       job_title: string | null;
       skill: string | null;
@@ -3410,4 +3413,300 @@ export interface ProgrammeRollup {
 /** The programme roll-up. */
 export function programmeRollup(init?: FetchLike): Promise<ProgrammeRollup> {
   return api("/workforce-intelligence/programmes", init);
+}
+
+// ─── Capacity, resilience, oversight, packs and cutover (WPM-T118) ──────────
+
+/** A pool-month's result. `unknown` is never a pass and never a zero. */
+export type CellStatus = "fits" | "fits_with_partners" | "over" | "unknown";
+
+/** One month of one pool, in centi-FTE (hundredths of an FTE). */
+export interface CapacityCell {
+  month: string;
+  supply_centi: number;
+  demand_centi: number;
+  proposed_centi: number;
+  own_balance_centi: number;
+  firm_partner_centi: number;
+  remaining_shortfall_centi: number;
+  status: CellStatus;
+  partners: Array<{
+    partner: string;
+    status: string | null;
+    fte_centi: number | null;
+  }>;
+}
+
+/** The capacity heatmap of an organization. */
+export interface CapacityView {
+  organization_ref: string;
+  from: string | null;
+  months: string[];
+  pools: Array<{
+    pid: string;
+    name: string;
+    operations_reservation_bp: number;
+    members: number;
+    over_months: number;
+    unknown_months: number;
+    over_total_centi: number;
+    cells: CapacityCell[];
+  }>;
+  constraint_pool: string | null;
+  wip: { pool_pid: string; active: number; limit: number | null } | null;
+  derivation: string;
+}
+
+/** Pools by month for one organization. */
+export function capacityView(
+  organization: string,
+  init?: FetchLike,
+): Promise<CapacityView> {
+  return api(
+    `/capacity?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** A critical skill's cover in the organization (counts only; names no one). */
+export interface KeyPersonSkill {
+  skill_pid?: string;
+  skill: string;
+  minimum_proficiency: number;
+  department?: string | null;
+  holders: number;
+  backups: number;
+  ready_successors: number;
+  status: string;
+}
+
+/** Key-person risk across the caller's scope. */
+export interface KeyPersonView {
+  single_points_of_failure: number;
+  skills: KeyPersonSkill[];
+  basis: string;
+}
+
+export function keyPersonRisk(init?: FetchLike): Promise<KeyPersonView> {
+  return api("/workforce-intelligence/key-person", init);
+}
+
+/** Senior hours a month that oversight asks for, by role. */
+export interface GovernanceLoad {
+  organization_ref: string;
+  commitments: number;
+  senior_hours_per_month: number;
+  all_hours_per_month: number;
+  roles: Array<{
+    role: string;
+    senior: boolean;
+    commitments: number;
+    hours_per_month: number;
+  }>;
+  basis: string;
+}
+
+export function governanceLoad(
+  organization: string,
+  init?: FetchLike,
+): Promise<GovernanceLoad> {
+  return api(
+    `/governance-commitments/load?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** A measure on a criterion, with where its run stopped. */
+export interface OversightMeasure {
+  measure_pid: string;
+  name: string;
+  origin: "reported" | "derived";
+  derivation: string | null;
+  unit: string;
+  derived_values: Array<{ month: string; value: number | null }> | null;
+  threshold: number;
+  direction: string;
+  status: string;
+  run: number;
+  required: number;
+  stopped_by: { reason: string; month?: string };
+  reported_periods: number;
+}
+
+/** Where the organization stands on the oversight scale, and the evidence for it. */
+export interface OversightStatus {
+  organization_ref: string;
+  as_of_month: string;
+  scale: Array<{
+    pid: string;
+    ordinal: number;
+    name: string;
+    synthetic: boolean;
+  }>;
+  current: {
+    pid: string;
+    level: string | null;
+    ordinal: number | null;
+    effective_on: string;
+    deciding_body?: string;
+    reason: string;
+  } | null;
+  positions: Array<{
+    pid: string;
+    level: string | null;
+    effective_on: string;
+    deciding_body?: string;
+    reason: string;
+  }>;
+  criteria: Array<{
+    criterion_pid: string;
+    criterion: string;
+    status: string;
+    measures: OversightMeasure[];
+  }>;
+  basis: string;
+}
+
+export function oversightStatus(
+  organization: string,
+  init?: FetchLike,
+): Promise<OversightStatus> {
+  return api(
+    `/oversight/status?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** One frozen pack in a list (no payload). */
+export interface PackSummary {
+  pid: string;
+  as_of: string;
+  month: string;
+  withdrawn: { on: string; reason: string } | null;
+}
+
+export function listOversightPacks(
+  organization: string,
+  init?: FetchLike,
+): Promise<{ organization_ref: string; packs: PackSummary[] }> {
+  return api(
+    `/oversight/packs?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** A pack as frozen. The payload is never changed after it is written. */
+export interface OversightPack {
+  pid: string;
+  organization_ref: string;
+  as_of: string;
+  month: string;
+  withdrawn: { on: string; reason: string } | null;
+  pack: {
+    oversight: OversightStatus;
+    capacity: {
+      months: string[];
+      pools: Array<{
+        name: string;
+        over_months: number;
+        unknown_months: number;
+        cells: Array<{
+          month: string;
+          supply_centi: number;
+          demand_centi: number;
+          remaining_shortfall_centi: number;
+          status: CellStatus;
+        }>;
+      }>;
+      constraint_pool: string | null;
+      derivation: string;
+    };
+    key_person: {
+      single_points_of_failure: number;
+      skills: KeyPersonSkill[];
+      basis: string;
+    };
+    governance: {
+      commitments: number;
+      senior_hours_per_month: number;
+      all_hours_per_month: number;
+      basis: string;
+    };
+    basis: string;
+  };
+}
+
+export function getOversightPack(
+  pid: string,
+  init?: FetchLike,
+): Promise<OversightPack> {
+  return api(`/oversight/packs/${pid}`, init);
+}
+
+/** Freeze this month's pack (an administrator of the organization). */
+export function freezeOversightPack(
+  organization: string,
+  init?: FetchLike,
+): Promise<OversightPack> {
+  return api("/oversight/packs", {
+    ...init,
+    method: "POST",
+    body: { organization_ref: organization },
+  });
+}
+
+/** Mark a pack withdrawn, with the reason. The pack itself is kept. */
+export function withdrawOversightPack(
+  pid: string,
+  reason: string,
+  init?: FetchLike,
+): Promise<unknown> {
+  return api(`/oversight/packs/${pid}/withdraw`, {
+    ...init,
+    method: "POST",
+    body: { reason },
+  });
+}
+
+/** One cutover and the names its site goes by. */
+export interface Cutover {
+  pid: string;
+  organization_ref: string;
+  programme_ref: string;
+  name: string;
+  site: string;
+  window_start: string;
+  window_end: string;
+  rota_pid: string | null;
+  site_aliases: string[];
+}
+
+export type Readiness = "ready" | "at_risk" | "unknown";
+
+/** The people-side readiness of a cutover. */
+export interface CutoverReadiness {
+  cutover: Cutover;
+  readiness: Readiness;
+  checks: Record<
+    "trained_staff" | "hypercare_cover" | "key_person_risk",
+    { status: Readiness; reasons: string[] }
+  >;
+  basis: string;
+}
+
+export function listCutovers(
+  organization: string,
+  init?: FetchLike,
+): Promise<Cutover[]> {
+  return api(
+    `/cutovers?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+export function cutoverReadiness(
+  pid: string,
+  init?: FetchLike,
+): Promise<CutoverReadiness> {
+  return api(`/cutovers/${pid}/readiness`, init);
 }

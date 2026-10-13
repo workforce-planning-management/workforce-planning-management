@@ -22,7 +22,7 @@ T123–T128, T144–T155), the delivery-capacity API (WPM-T104–T107) and two c
 [spec/tasks.md](spec/tasks.md) and [spec/implementation-status.md](spec/implementation-status.md).**
 Verified on 2026-10-11 for the service: 561 unit tests and 95 database-backed request tests,
 with thirteen enforcement binaries (need-to-know reads, cutover planning, the oversight pack and partner role, contractor rates, expenses, self-service, flexible working, conversion plans, equality monitoring and health requirements), security, retention-schedule and Entra suites. The Keycloak suite (real
-Keycloak 26) and the front-end counts (113 unit tests, 60 Playwright specs over a stubbed API and 7 live ones against a real service) were last
+Keycloak 26) and the front-end counts (113 unit tests, 81 Playwright specs over a stubbed API and 7 live ones against a real service) were last
 measured on 2026-10-07 and were not rerun for this update. See each
 subproject's own README for its own gate status, and [spec/testing.md](spec/testing.md).
 

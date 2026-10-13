@@ -7,7 +7,7 @@
   "literalText": [],
   "anyLocale": ["UK GDAD PCF", "ESCO", "LMS", "https://…", "FTE"],
   "sameAsEnglish": {
-    "cy-001": ["Band", "Mentor", "Net", "Person", "Rota", "intern"],
+    "cy-001": ["Band", "Mentor", "Net", "Person", "Rota", "intern", "partner"],
     "de-001": [
       "Band",
       "Benchmarks",
@@ -99,6 +99,7 @@
       "Mentor",
       "Menu",
       "Minimum",
+      "Senior",
       "Shift",
       "Status",
       "Target",
