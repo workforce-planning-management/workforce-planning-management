@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the T118 pages can now write, speak the reader's language and read one organization (WPM-T118 follow-up)
+
+Forms to plan a cutover (with its roles and pools, and remove), create skill pools, add members and set a programme's claim, add a level,
+record the position, add criteria and measures and enter readings (a missing value carries no evidence); `/warnings` lists the early warnings
+with acknowledge and "Look now"; the cutover reasons are said from the service's data (`details`) in the reader's language, in English
+only for a code the page does not know; the "how this is worked out" texts are in the catalogue, with the service's own English beneath; the
+key-person list reads the chosen organization; the month count no longer needs a plural. 88 more strings in the 13 `-001` locales; 13 more
+Playwright specs (stubbed) and four live ones; refusals (403) are said in words and any other failure shows the service's message.
+
 ### Added — capacity, resilience, oversight with the monthly pack, and cutover readiness (WPM-T118)
 
 `/capacity` (the heatmap: supply / demand in FTE by pool and month, each cell a mark and a word as well as a colour, an unknown month dashed

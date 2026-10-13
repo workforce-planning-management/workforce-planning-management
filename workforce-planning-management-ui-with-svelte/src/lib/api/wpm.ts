@@ -3487,8 +3487,15 @@ export interface KeyPersonView {
   basis: string;
 }
 
-export function keyPersonRisk(init?: FetchLike): Promise<KeyPersonView> {
-  return api("/workforce-intelligence/key-person", init);
+/** Key-person risk across the caller's scope, or for one organization when it is named. */
+export function keyPersonRisk(
+  organization?: string,
+  init?: FetchLike,
+): Promise<KeyPersonView> {
+  const query = organization
+    ? `?organization=${encodeURIComponent(organization)}`
+    : "";
+  return api(`/workforce-intelligence/key-person${query}`, init);
 }
 
 /** Senior hours a month that oversight asks for, by role. */
@@ -3689,7 +3696,12 @@ export interface CutoverReadiness {
   readiness: Readiness;
   checks: Record<
     "trained_staff" | "hypercare_cover" | "key_person_risk",
-    { status: Readiness; reasons: string[] }
+    {
+      status: Readiness;
+      reasons: string[];
+      /** The same reasons as data, in the same order, so the page can say them in its language. */
+      details?: Array<{ code: string; params: Record<string, string> }>;
+    }
   >;
   basis: string;
 }
@@ -3709,4 +3721,232 @@ export function cutoverReadiness(
   init?: FetchLike,
 ): Promise<CutoverReadiness> {
   return api(`/cutovers/${pid}/readiness`, init);
+}
+
+// ─── Writing: cutover plans, oversight, capacity (WPM-T118 follow-up) ───────
+
+/** Plan a cutover (an administrator of the organization). */
+export function createCutover(
+  body: {
+    organization_ref: string;
+    programme_ref: string;
+    name: string;
+    site: string;
+    window_start: string;
+    window_end: string;
+    rota_pid?: string | null;
+    site_aliases?: string[];
+  },
+  init?: FetchLike,
+): Promise<Cutover> {
+  return api("/cutovers", { ...init, method: "POST", body });
+}
+
+/** A role the cutover must have staffed with people who completed a course. */
+export function addCutoverRole(
+  pid: string,
+  body: {
+    role_profile_pid: string;
+    course_ref: string;
+    required_headcount: number;
+  },
+  init?: FetchLike,
+): Promise<unknown> {
+  return api(`/cutovers/${pid}/roles`, { ...init, method: "POST", body });
+}
+
+/** A skill pool the cutover depends on. */
+export function addCutoverPool(
+  pid: string,
+  poolPid: string,
+  init?: FetchLike,
+): Promise<unknown> {
+  return api(`/cutovers/${pid}/pools`, {
+    ...init,
+    method: "POST",
+    body: { pool_pid: poolPid },
+  });
+}
+
+export function removeCutover(pid: string, init?: FetchLike): Promise<unknown> {
+  return api(`/cutovers/${pid}`, { ...init, method: "DELETE" });
+}
+
+/** A skill pool with its members. */
+export interface SkillPool {
+  pid: string;
+  organization_ref: string;
+  name: string;
+  operations_reservation_bp: number;
+  members: Array<{
+    pid: string;
+    role_profile_pid: string | null;
+    skill_pid: string | null;
+    min_proficiency: number | null;
+  }>;
+}
+
+export function listSkillPools(
+  organization: string,
+  init?: FetchLike,
+): Promise<SkillPool[]> {
+  return api(
+    `/skill-pools?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+export function createSkillPool(
+  body: {
+    organization_ref: string;
+    name: string;
+    operations_reservation_bp?: number;
+  },
+  init?: FetchLike,
+): Promise<SkillPool> {
+  return api("/skill-pools", { ...init, method: "POST", body });
+}
+
+/** A member is a role profile, or a skill with a minimum proficiency. */
+export function addSkillPoolMember(
+  pid: string,
+  body: {
+    role_profile_pid?: string;
+    skill_pid?: string;
+    min_proficiency?: number;
+  },
+  init?: FetchLike,
+): Promise<unknown> {
+  return api(`/skill-pools/${pid}/members`, { ...init, method: "POST", body });
+}
+
+/** A programme's claim on a pool for a month, in centi-FTE (hundredths of an FTE). */
+export function setProgrammeDemand(
+  body: {
+    programme_ref: string;
+    pool_pid: string;
+    month: string;
+    fte_centi: number;
+    status?: "proposed" | "closed";
+  },
+  init?: FetchLike,
+): Promise<unknown> {
+  return api("/programme-demands", { ...init, method: "PUT", body });
+}
+
+export function createOversightLevel(
+  body: { organization_ref: string; ordinal: number; name: string },
+  init?: FetchLike,
+): Promise<unknown> {
+  return api("/oversight/levels", { ...init, method: "POST", body });
+}
+
+/** A person records the organization's position; the service never does. */
+export function recordOversightPosition(
+  body: {
+    organization_ref: string;
+    level_pid: string;
+    effective_on: string;
+    deciding_body: string;
+    reason: string;
+  },
+  init?: FetchLike,
+): Promise<unknown> {
+  return api("/oversight/positions", { ...init, method: "POST", body });
+}
+
+export function createOversightCriterion(
+  body: { level_pid: string; name: string },
+  init?: FetchLike,
+): Promise<unknown> {
+  return api("/oversight/criteria", { ...init, method: "POST", body });
+}
+
+export function createOversightMeasure(
+  body: {
+    criterion_pid: string;
+    name: string;
+    origin: "reported" | "derived";
+    derivation?: string;
+    unit: string;
+    threshold: number;
+    direction: "at_most" | "at_least";
+    sustain: number;
+  },
+  init?: FetchLike,
+): Promise<unknown> {
+  return api("/oversight/measures", { ...init, method: "POST", body });
+}
+
+/** A month's reading of a reported measure. `null` says the data is missing; it is never a pass. */
+export function putOversightReading(
+  measurePid: string,
+  body: {
+    period_on: string;
+    value: number | null;
+    evidence?: string;
+    source_document?: string;
+  },
+  init?: FetchLike,
+): Promise<unknown> {
+  return api(`/oversight/measures/${measurePid}/readings`, {
+    ...init,
+    method: "PUT",
+    body,
+  });
+}
+
+export function listOversightDerivations(init?: FetchLike): Promise<{
+  derivations: Array<{ key: string; unit: string; definition: string }>;
+}> {
+  return api("/oversight/derivations", init);
+}
+
+/** One early warning: a condition first seen on a date, and when someone acknowledged it. */
+export interface EarlyWarning {
+  pid: string;
+  kind: string;
+  subject_pid: string | null;
+  subject_name: string | null;
+  first_true_on: string;
+  cleared_on: string | null;
+  acknowledged_on: string | null;
+  days_open: number;
+  days_to_acknowledge: number | null;
+}
+
+export interface EarlyWarnings {
+  organization_ref: string;
+  warnings: EarlyWarning[];
+  unacknowledged: number;
+  time_to_report_days: number | null;
+  basis: string;
+}
+
+export function listEarlyWarnings(
+  organization: string,
+  init?: FetchLike,
+): Promise<EarlyWarnings> {
+  return api(
+    `/early-warnings?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** Look now: open, close and notify. */
+export function sweepEarlyWarnings(
+  organization: string,
+  init?: FetchLike,
+): Promise<{ opened: number; cleared: number; told: number }> {
+  return api(
+    `/early-warnings/sweep?organization=${encodeURIComponent(organization)}`,
+    { ...init, method: "POST" },
+  );
+}
+
+export function acknowledgeEarlyWarning(
+  pid: string,
+  init?: FetchLike,
+): Promise<EarlyWarning> {
+  return api(`/early-warnings/${pid}/acknowledge`, { ...init, method: "POST" });
 }

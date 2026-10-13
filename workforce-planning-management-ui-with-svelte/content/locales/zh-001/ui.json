@@ -39,7 +39,8 @@
     "capacity": "产能",
     "resilience": "韧性",
     "oversight": "监督",
-    "cutover": "切换"
+    "cutover": "切换",
+    "warnings": "预警"
   },
   "pr": {
     "retention": "保留",
@@ -141,7 +142,14 @@
     "days": "个自然日",
     "masked": "已隐藏",
     "noOrganization": "没有可供您使用的组织。",
-    "unknown": "未知"
+    "unknown": "未知",
+    "notAllowed": "您无权进行此更改。",
+    "fromService": "服务的原始表述（英文）",
+    "add": "添加",
+    "save": "保存",
+    "remove": "移除",
+    "month": "月份",
+    "programme": "项目引用"
   },
   "dash": {
     "title": "人力资源仪表盘",
@@ -1307,7 +1315,8 @@
     "capacity": "产能 — WPM",
     "resilience": "韧性 — WPM",
     "oversight": "监督 — WPM",
-    "cutover": "切换就绪情况 — WPM"
+    "cutover": "切换就绪情况 — WPM",
+    "warnings": "预警 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -1681,8 +1690,21 @@
     "constraint": "瓶颈技能池：{name}",
     "wip": "占用它的项目：{active} / {limit}",
     "wipNoLimit": "占用它的项目：{active}；未设上限",
-    "overMonths": "{over} 个月超限，{unknown} 个月未知",
-    "basis": "计算方式"
+    "overMonths": "超限月数：{over} · 未知：{unknown}",
+    "basis": "计算方式",
+    "basisText": "供给：对计入技能池的每个人，其 FTE × 该月在职且未休已批准假期的天数 ÷ 当月天数，求和后减去技能池的运营预留。需求：在建项目申请从技能池占用的 FTE。已确认和已承诺的合作伙伴产能可弥补缺口，仅申请的不可。合作伙伴尚未作出承诺的月份为未知，而不是零。",
+    "manage": "技能池与需求",
+    "poolName": "技能池名称",
+    "reservation": "运营预留（占供给的百分比）",
+    "createPool": "创建技能池",
+    "addMember": "向技能池添加成员",
+    "memberHint": "成员可以是岗位档案（该岗位所有人都计入），或带最低熟练度的技能。",
+    "skill": "技能",
+    "minProficiency": "最低熟练度",
+    "demandTitle": "项目对技能池的申请",
+    "fte": "该月 FTE",
+    "saveClaim": "保存申请",
+    "claimHint": "新申请为“拟议”状态：会显示，但在启动决定使其生效之前不计入。"
   },
   "res": {
     "title": "韧性",
@@ -1701,7 +1723,9 @@
     "role": "岗位",
     "senior": "资深",
     "hoursMonth": "每月小时数",
-    "noCommitments": "尚未录入治理事项。"
+    "noCommitments": "尚未录入治理事项。",
+    "basisKeyPerson": "关键技能指在有效岗位档案中被标记为关键的技能。持有人是在职且其申报水平达到最高关键最低要求的人。后备是已指定且有效、同样具备该技能的后备人员。可立即接任者是在继任计划中被评为“现在就绪”、且其现任者为持有人的人。仅为数量：其目的是为后备和继任提供资金，而不是评判任何人。",
+    "basisGovernance": "根据已录入事项的估算：每年次数 × 分钟 × 该岗位人数，按月计。是岗位而非个人；不是工时表。"
   },
   "ovs": {
     "title": "监督",
@@ -1731,7 +1755,29 @@
     "close": "关闭",
     "noPacks": "尚未冻结任何资料包。",
     "notAllowed": "只有组织管理员可以冻结或撤回资料包。",
-    "packCapacity": "资料包中的产能"
+    "packCapacity": "资料包中的产能",
+    "basisText": "所示标准是组织当前所处等级的退出标准。当每项指标在截至最近一个完整月份、连续达到要求月数的阈值时，标准即达成。缺失或为空的读数绝不算通过。这是证据：本服务从不更改等级，任何变更均由人员与决策机构一起记录。",
+    "manage": "等级、位置与证据",
+    "addLevel": "向等级添加一级",
+    "ordinal": "等级序号（1 至 20）",
+    "levelName": "等级名称",
+    "recordPosition": "记录位置",
+    "chooseLevel": "等级",
+    "effectiveOn": "生效日期",
+    "addCriterion": "为某等级添加退出标准",
+    "criterionName": "标准",
+    "addMeasure": "为某标准添加指标",
+    "origin": "来源",
+    "derivation": "计算方式",
+    "unit": "单位",
+    "direction": "方向",
+    "sustain": "所需连续月数",
+    "enterReading": "录入读数",
+    "forMeasure": "指标（仅限上报的）",
+    "readingValue": "数值（数据缺失时留空）",
+    "evidence": "证据说明",
+    "sourceDocument": "来源文件",
+    "readingHint": "填写数值需要证据说明和具名来源文件。留空表示数据缺失，绝不视为通过。"
   },
   "cut": {
     "title": "切换就绪情况",
@@ -1744,6 +1790,51 @@
     "hypercare": "强化支持覆盖",
     "keyPerson": "关键人员风险",
     "noConcerns": "未发现问题。",
-    "reasonsEnglish": "以下原因由服务以英文写出。"
+    "reasonsEnglish": "以下原因由服务以英文写出。",
+    "basisText": "仅为人员方面。已培训人员指该岗位在窗口首日在职、记录在该地点、并在当日或之前完成指定课程、且证书在整个窗口内有效的人。未记录地点的人可能弥补的缺口为未知，而非有风险。强化支持是窗口期间的值班表：无人值班的日子有风险。关键人员风险在该地点依据申报的技能水平读取，针对所列技能池中在岗位档案里属关键的技能；未记录地点的持有人会使风险变为未知。地点按名称和别名匹配，不区分大小写和标点。未知绝不算就绪。是否上线由人在本服务之外决定。",
+    "why": {
+      "no_role": "此切换未列出任何必需岗位。",
+      "course_unknown": "{name}：该课程不在学习记录中（已改名或从未有人报名），因此无法核查培训情况。",
+      "trained_unplaced": "{name}：该地点 {required} 人中有 {trained} 人已培训，另有 {unplaced} 名该岗位人员未记录地点。",
+      "trained_short": "{name}：该地点 {required} 人中有 {trained} 人已培训，缺 {short} 人。",
+      "no_rota": "切换窗口未关联值班表。",
+      "uncovered_days": "窗口内有 {count} 个日历日无人值班，第一天是 {first}。",
+      "no_pool": "此切换未列出任何依赖的技能池。",
+      "no_critical_skill": "所列技能池中没有任何技能在岗位档案里被标记为关键。",
+      "key_no_holder": "{name}：该地点无人具备。",
+      "key_single_holder": "{name}：该地点仅一人持有，无后备或可立即接任者。",
+      "key_no_holder_unplaced": "{name}：该地点无人具备；组织内其他地方有 {unplaced} 名持有人未记录地点。",
+      "key_single_holder_unplaced": "{name}：该地点仅一人持有，无后备或可立即接任者；组织内其他地方有 {unplaced} 名持有人未记录地点。"
+    },
+    "plan": "规划切换",
+    "siteLabel": "地点",
+    "windowStart": "首日",
+    "windowEnd": "末日",
+    "aliases": "地点的其他名称（逗号分隔，最多十个）",
+    "rotaRef": "值班表（可选引用）",
+    "create": "规划该切换",
+    "remove": "移除该切换",
+    "removeConfirm": "移除此切换及其岗位和技能池？",
+    "addRole": "添加必需岗位",
+    "roleProfile": "岗位档案",
+    "course": "课程引用",
+    "headcount": "所需人数",
+    "addPool": "添加其依赖的技能池"
+  },
+  "ew": {
+    "title": "预警",
+    "hint": "服务发现的情况：未来六个月内超额承诺的技能池、越界的指标、有风险的切换。情况的日期以首次发现它的巡检为准。每条预警由人确认。",
+    "sweep": "立即检查",
+    "swept": "新开 {opened}，关闭 {cleared}，通知 {told}",
+    "acknowledge": "确认",
+    "firstSeen": "首次发现 {date}",
+    "daysOpen": "{days} 个日历日",
+    "cleared": "{date} 已关闭",
+    "acknowledged": "{date} 已确认",
+    "notAcknowledged": "未确认",
+    "timeToReport": "上报用时：{days} 个日历日",
+    "timeToReportNone": "上报用时：存在未确认预警时未知",
+    "none": "没有预警。",
+    "basisText": "某情况首次为真的日期，即首次发现它的巡检日期，因此低于每日一次的巡检会使日期偏晚。上报用时是所列全部预警中，从该日期到有人确认所经的最长日历日数；只要有任何一条未确认便为未知，因为慢的预警不能显得快。"
   }
 }

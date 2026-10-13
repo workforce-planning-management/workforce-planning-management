@@ -72,6 +72,7 @@ collections:
               - { name: "resilience", label: "Resilience", widget: string, required: false, i18n: true }
               - { name: "oversight", label: "Oversight", widget: string, required: false, i18n: true }
               - { name: "cutover", label: "Cutover", widget: string, required: false, i18n: true }
+              - { name: "warnings", label: "Warnings", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -234,6 +235,13 @@ collections:
               - { name: "masked", label: "Masked", widget: string, required: false, i18n: true }
               - { name: "noOrganization", label: "No Organization", widget: string, required: false, i18n: true }
               - { name: "unknown", label: "Unknown", widget: string, required: false, i18n: true }
+              - { name: "notAllowed", label: "Not Allowed", widget: string, required: false, i18n: true }
+              - { name: "fromService", label: "From Service", widget: string, required: false, i18n: true }
+              - { name: "add", label: "Add", widget: string, required: false, i18n: true }
+              - { name: "save", label: "Save", widget: string, required: false, i18n: true }
+              - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
+              - { name: "month", label: "Month", widget: string, required: false, i18n: true }
+              - { name: "programme", label: "Programme", widget: string, required: false, i18n: true }
           - name: "dash"
             label: "Dash"
             widget: object
@@ -1940,6 +1948,7 @@ collections:
               - { name: "resilience", label: "Resilience", widget: string, required: false, i18n: true }
               - { name: "oversight", label: "Oversight", widget: string, required: false, i18n: true }
               - { name: "cutover", label: "Cutover", widget: string, required: false, i18n: true }
+              - { name: "warnings", label: "Warnings", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -2340,6 +2349,19 @@ collections:
               - { name: "wipNoLimit", label: "Wip No Limit", widget: string, required: false, i18n: true }
               - { name: "overMonths", label: "Over Months", widget: string, required: false, i18n: true }
               - { name: "basis", label: "Basis", widget: string, required: false, i18n: true }
+              - { name: "basisText", label: "Basis Text", widget: text, required: false, i18n: true }
+              - { name: "manage", label: "Manage", widget: string, required: false, i18n: true }
+              - { name: "poolName", label: "Pool Name", widget: string, required: false, i18n: true }
+              - { name: "reservation", label: "Reservation", widget: string, required: false, i18n: true }
+              - { name: "createPool", label: "Create Pool", widget: string, required: false, i18n: true }
+              - { name: "addMember", label: "Add Member", widget: string, required: false, i18n: true }
+              - { name: "memberHint", label: "Member Hint", widget: text, required: false, i18n: true }
+              - { name: "skill", label: "Skill", widget: string, required: false, i18n: true }
+              - { name: "minProficiency", label: "Min Proficiency", widget: string, required: false, i18n: true }
+              - { name: "demandTitle", label: "Demand Title", widget: string, required: false, i18n: true }
+              - { name: "fte", label: "Fte", widget: string, required: false, i18n: true }
+              - { name: "saveClaim", label: "Save Claim", widget: string, required: false, i18n: true }
+              - { name: "claimHint", label: "Claim Hint", widget: text, required: false, i18n: true }
           - name: "res"
             label: "Res"
             widget: object
@@ -2364,6 +2386,8 @@ collections:
               - { name: "senior", label: "Senior", widget: string, required: false, i18n: true }
               - { name: "hoursMonth", label: "Hours Month", widget: string, required: false, i18n: true }
               - { name: "noCommitments", label: "No Commitments", widget: string, required: false, i18n: true }
+              - { name: "basisKeyPerson", label: "Basis Key Person", widget: text, required: false, i18n: true }
+              - { name: "basisGovernance", label: "Basis Governance", widget: text, required: false, i18n: true }
           - name: "ovs"
             label: "Ovs"
             widget: object
@@ -2399,6 +2423,28 @@ collections:
               - { name: "noPacks", label: "No Packs", widget: string, required: false, i18n: true }
               - { name: "notAllowed", label: "Not Allowed", widget: string, required: false, i18n: true }
               - { name: "packCapacity", label: "Pack Capacity", widget: string, required: false, i18n: true }
+              - { name: "basisText", label: "Basis Text", widget: text, required: false, i18n: true }
+              - { name: "manage", label: "Manage", widget: string, required: false, i18n: true }
+              - { name: "addLevel", label: "Add Level", widget: string, required: false, i18n: true }
+              - { name: "ordinal", label: "Ordinal", widget: string, required: false, i18n: true }
+              - { name: "levelName", label: "Level Name", widget: string, required: false, i18n: true }
+              - { name: "recordPosition", label: "Record Position", widget: string, required: false, i18n: true }
+              - { name: "chooseLevel", label: "Choose Level", widget: string, required: false, i18n: true }
+              - { name: "effectiveOn", label: "Effective On", widget: string, required: false, i18n: true }
+              - { name: "addCriterion", label: "Add Criterion", widget: string, required: false, i18n: true }
+              - { name: "criterionName", label: "Criterion Name", widget: string, required: false, i18n: true }
+              - { name: "addMeasure", label: "Add Measure", widget: string, required: false, i18n: true }
+              - { name: "origin", label: "Origin", widget: string, required: false, i18n: true }
+              - { name: "derivation", label: "Derivation", widget: string, required: false, i18n: true }
+              - { name: "unit", label: "Unit", widget: string, required: false, i18n: true }
+              - { name: "direction", label: "Direction", widget: string, required: false, i18n: true }
+              - { name: "sustain", label: "Sustain", widget: string, required: false, i18n: true }
+              - { name: "enterReading", label: "Enter Reading", widget: string, required: false, i18n: true }
+              - { name: "forMeasure", label: "For Measure", widget: string, required: false, i18n: true }
+              - { name: "readingValue", label: "Reading Value", widget: string, required: false, i18n: true }
+              - { name: "evidence", label: "Evidence", widget: string, required: false, i18n: true }
+              - { name: "sourceDocument", label: "Source Document", widget: string, required: false, i18n: true }
+              - { name: "readingHint", label: "Reading Hint", widget: text, required: false, i18n: true }
           - name: "cut"
             label: "Cut"
             widget: object
@@ -2417,3 +2463,58 @@ collections:
               - { name: "keyPerson", label: "Key Person", widget: string, required: false, i18n: true }
               - { name: "noConcerns", label: "No Concerns", widget: string, required: false, i18n: true }
               - { name: "reasonsEnglish", label: "Reasons English", widget: string, required: false, i18n: true }
+              - { name: "basisText", label: "Basis Text", widget: text, required: false, i18n: true }
+              - name: "why"
+                label: "Why"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "no_role", label: "No_role", widget: string, required: false, i18n: true }
+                  - { name: "course_unknown", label: "Course_unknown", widget: text, required: false, i18n: true }
+                  - { name: "trained_unplaced", label: "Trained_unplaced", widget: text, required: false, i18n: true }
+                  - { name: "trained_short", label: "Trained_short", widget: string, required: false, i18n: true }
+                  - { name: "no_rota", label: "No_rota", widget: string, required: false, i18n: true }
+                  - { name: "uncovered_days", label: "Uncovered_days", widget: string, required: false, i18n: true }
+                  - { name: "no_pool", label: "No_pool", widget: string, required: false, i18n: true }
+                  - { name: "no_critical_skill", label: "No_critical_skill", widget: string, required: false, i18n: true }
+                  - { name: "key_no_holder", label: "Key_no_holder", widget: string, required: false, i18n: true }
+                  - { name: "key_single_holder", label: "Key_single_holder", widget: string, required: false, i18n: true }
+                  - { name: "key_no_holder_unplaced", label: "Key_no_holder_unplaced", widget: text, required: false, i18n: true }
+                  - { name: "key_single_holder_unplaced", label: "Key_single_holder_unplaced", widget: text, required: false, i18n: true }
+              - { name: "plan", label: "Plan", widget: string, required: false, i18n: true }
+              - { name: "siteLabel", label: "Site Label", widget: string, required: false, i18n: true }
+              - { name: "windowStart", label: "Window Start", widget: string, required: false, i18n: true }
+              - { name: "windowEnd", label: "Window End", widget: string, required: false, i18n: true }
+              - { name: "aliases", label: "Aliases", widget: string, required: false, i18n: true }
+              - { name: "rotaRef", label: "Rota Ref", widget: string, required: false, i18n: true }
+              - { name: "create", label: "Create", widget: string, required: false, i18n: true }
+              - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
+              - { name: "removeConfirm", label: "Remove Confirm", widget: string, required: false, i18n: true }
+              - { name: "addRole", label: "Add Role", widget: string, required: false, i18n: true }
+              - { name: "roleProfile", label: "Role Profile", widget: string, required: false, i18n: true }
+              - { name: "course", label: "Course", widget: string, required: false, i18n: true }
+              - { name: "headcount", label: "Headcount", widget: string, required: false, i18n: true }
+              - { name: "addPool", label: "Add Pool", widget: string, required: false, i18n: true }
+          - name: "ew"
+            label: "Ew"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "sweep", label: "Sweep", widget: string, required: false, i18n: true }
+              - { name: "swept", label: "Swept", widget: string, required: false, i18n: true }
+              - { name: "acknowledge", label: "Acknowledge", widget: string, required: false, i18n: true }
+              - { name: "firstSeen", label: "First Seen", widget: string, required: false, i18n: true }
+              - { name: "daysOpen", label: "Days Open", widget: string, required: false, i18n: true }
+              - { name: "cleared", label: "Cleared", widget: string, required: false, i18n: true }
+              - { name: "acknowledged", label: "Acknowledged", widget: string, required: false, i18n: true }
+              - { name: "notAcknowledged", label: "Not Acknowledged", widget: string, required: false, i18n: true }
+              - { name: "timeToReport", label: "Time To Report", widget: string, required: false, i18n: true }
+              - { name: "timeToReportNone", label: "Time To Report None", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "basisText", label: "Basis Text", widget: text, required: false, i18n: true }

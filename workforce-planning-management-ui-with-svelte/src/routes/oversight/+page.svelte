@@ -8,10 +8,16 @@
 <script lang="ts">
   import { ApiError } from "#lib/api/client.js";
   import {
+    createOversightCriterion,
+    createOversightLevel,
+    createOversightMeasure,
     freezeOversightPack,
     getOversightPack,
+    listOversightDerivations,
     listOversightPacks,
     oversightStatus,
+    putOversightReading,
+    recordOversightPosition,
     withdrawOversightPack,
     type OversightPack,
     type OversightStatus,
@@ -20,7 +26,9 @@
   import CapacityHeatmap from "#lib/components/CapacityHeatmap.svelte";
   import OrgPicker from "#lib/components/OrgPicker.svelte";
   import OversightCriteria from "#lib/components/OversightCriteria.svelte";
-  import { t, tf } from "#lib/i18n.svelte.js";
+  import WriteResult from "#lib/components/WriteResult.svelte";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { failure, type Failure } from "#lib/write.js";
 
   let org = $state("");
   let status = $state<OversightStatus | null>(null);
@@ -29,6 +37,58 @@
   let error = $state<string | null>(null);
   let notAllowed = $state(false);
   let reason = $state("");
+  let failed = $state<Failure | null>(null);
+  let derivations = $state<Array<{ key: string; unit: string }>>([]);
+
+  // The scale, position and evidence forms.
+  let levelOrdinal = $state(1);
+  let levelName = $state("");
+  let posLevel = $state("");
+  let posOn = $state("");
+  let posBody = $state("");
+  let posReason = $state("");
+  let critLevel = $state("");
+  let critName = $state("");
+  let measCriterion = $state("");
+  let measName = $state("");
+  let measOrigin = $state<"reported" | "derived">("reported");
+  let measDerivation = $state("");
+  let measUnit = $state("");
+  let measThreshold = $state(0);
+  let measDirection = $state<"at_most" | "at_least">("at_most");
+  let measSustain = $state(3);
+  let readMeasure = $state("");
+  let readMonth = $state("");
+  let readValue = $state<number | null>(null);
+  let readEvidence = $state("");
+  let readSource = $state("");
+
+  /** A write on the scale or the evidence, then read the status again. */
+  async function change(action: () => Promise<unknown>) {
+    failed = null;
+    try {
+      await action();
+      await load(org);
+    } catch (cause) {
+      failed = failure(cause);
+    }
+  }
+
+  $effect(() => {
+    let current = true;
+    void listOversightDerivations()
+      .then((d) => current && (derivations = d.derivations))
+      .catch(() => current && (derivations = []));
+    return () => {
+      current = false;
+    };
+  });
+
+  const reportedMeasures = $derived(
+    (status?.criteria ?? []).flatMap((c) =>
+      c.measures.filter((m) => m.origin === "reported").map((m) => ({ ...m, criterion: c.criterion })),
+    ),
+  );
 
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
 
@@ -122,7 +182,8 @@
     <OversightCriteria criteria={status.criteria} />
     <details>
       <summary>{t("cap.basis")}</summary>
-      <p class="muted">{status.basis}</p>
+      <p class="muted">{t("ovs.basisText")}</p>
+      <p class="muted small">{t("common.fromService")}: {status.basis}</p>
     </details>
   </section>
 
@@ -192,9 +253,160 @@
             · {tf("res.allHours", { hours: pack.governance.all_hours_per_month.toFixed(1) })}
           </span>
         </p>
-        <p class="muted">{pack.basis}</p>
       </article>
     {/if}
+  </section>
+
+  <section class="panel" data-testid="manage-oversight">
+    <h2>{t("ovs.manage")}</h2>
+    <h3>{t("ovs.addLevel")}</h3>
+    <form
+      class="form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        void change(() =>
+          createOversightLevel({ organization_ref: org, ordinal: levelOrdinal, name: levelName }),
+        );
+      }}
+    >
+      <label>{t("ovs.ordinal")} <input type="number" min="1" max="20" bind:value={levelOrdinal} required data-testid="level-ordinal" /></label>
+      <label>{t("ovs.levelName")} <input bind:value={levelName} required data-testid="level-name" /></label>
+      <button type="submit" data-testid="add-level">{t("common.add")}</button>
+    </form>
+
+    <h3>{t("ovs.recordPosition")}</h3>
+    <form
+      class="form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        void change(() =>
+          recordOversightPosition({
+            organization_ref: org,
+            level_pid: posLevel,
+            effective_on: posOn,
+            deciding_body: posBody,
+            reason: posReason,
+          }),
+        );
+      }}
+    >
+      <label>
+        {t("ovs.chooseLevel")}
+        <select bind:value={posLevel} required data-testid="pos-level">
+          <option value="" disabled></option>
+          {#each status.scale as l (l.pid)}<option value={l.pid}>{l.ordinal}. {l.name}</option>{/each}
+        </select>
+      </label>
+      <label>{t("ovs.effectiveOn")} <input type="date" bind:value={posOn} required data-testid="pos-on" /></label>
+      <label>{t("ovs.decidingBody")} <input bind:value={posBody} required data-testid="pos-body" /></label>
+      <label>{t("ovs.reason")} <input bind:value={posReason} required data-testid="pos-reason" /></label>
+      <button type="submit" data-testid="record-position">{t("common.save")}</button>
+    </form>
+
+    <h3>{t("ovs.addCriterion")}</h3>
+    <form
+      class="form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        void change(() => createOversightCriterion({ level_pid: critLevel, name: critName }));
+      }}
+    >
+      <label>
+        {t("ovs.chooseLevel")}
+        <select bind:value={critLevel} required data-testid="crit-level">
+          <option value="" disabled></option>
+          {#each status.scale as l (l.pid)}<option value={l.pid}>{l.ordinal}. {l.name}</option>{/each}
+        </select>
+      </label>
+      <label>{t("ovs.criterionName")} <input bind:value={critName} required data-testid="crit-name" /></label>
+      <button type="submit" data-testid="add-criterion">{t("common.add")}</button>
+    </form>
+
+    <h3>{t("ovs.addMeasure")}</h3>
+    <form
+      class="form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        void change(() =>
+          createOversightMeasure({
+            criterion_pid: measCriterion,
+            name: measName,
+            origin: measOrigin,
+            ...(measOrigin === "derived" ? { derivation: measDerivation } : {}),
+            unit: measUnit,
+            threshold: measThreshold,
+            direction: measDirection,
+            sustain: measSustain,
+          }),
+        );
+      }}
+    >
+      <label>
+        {t("ovs.criterionName")}
+        <select bind:value={measCriterion} required data-testid="meas-criterion">
+          <option value="" disabled></option>
+          {#each status.criteria as c (c.criterion_pid)}<option value={c.criterion_pid}>{c.criterion}</option>{/each}
+        </select>
+      </label>
+      <label>{t("ovs.measure")} <input bind:value={measName} required data-testid="meas-name" /></label>
+      <label>
+        {t("ovs.origin")}
+        <select bind:value={measOrigin} data-testid="meas-origin">
+          <option value="reported">{tv("reported")}</option>
+          <option value="derived">{tv("derived")}</option>
+        </select>
+      </label>
+      {#if measOrigin === "derived"}
+        <label>
+          {t("ovs.derivation")}
+          <select bind:value={measDerivation} required>
+            <option value="" disabled></option>
+            {#each derivations as d (d.key)}<option value={d.key}>{tv(d.key)}</option>{/each}
+          </select>
+        </label>
+      {/if}
+      <label>{t("ovs.unit")} <input bind:value={measUnit} required data-testid="meas-unit" /></label>
+      <label>{t("ovs.threshold")} <input type="number" bind:value={measThreshold} required data-testid="meas-threshold" /></label>
+      <label>
+        {t("ovs.direction")}
+        <select bind:value={measDirection}>
+          <option value="at_most">{tv("at_most")}</option>
+          <option value="at_least">{tv("at_least")}</option>
+        </select>
+      </label>
+      <label>{t("ovs.sustain")} <input type="number" min="1" bind:value={measSustain} required /></label>
+      <button type="submit" data-testid="add-measure">{t("common.add")}</button>
+    </form>
+
+    <h3>{t("ovs.enterReading")}</h3>
+    <p class="muted small">{t("ovs.readingHint")}</p>
+    <form
+      class="form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        void change(() =>
+          putOversightReading(readMeasure, {
+            period_on: readMonth,
+            value: readValue,
+            ...(readValue === null ? {} : { evidence: readEvidence, source_document: readSource }),
+          }),
+        );
+      }}
+    >
+      <label>
+        {t("ovs.forMeasure")}
+        <select bind:value={readMeasure} required data-testid="read-measure">
+          <option value="" disabled></option>
+          {#each reportedMeasures as m (m.measure_pid)}<option value={m.measure_pid}>{m.criterion}: {m.name}</option>{/each}
+        </select>
+      </label>
+      <label>{t("common.month")} <input type="date" bind:value={readMonth} required data-testid="read-month" /></label>
+      <label>{t("ovs.readingValue")} <input type="number" bind:value={readValue} data-testid="read-value" /></label>
+      <label>{t("ovs.evidence")} <input bind:value={readEvidence} required={readValue !== null} data-testid="read-evidence" /></label>
+      <label>{t("ovs.sourceDocument")} <input bind:value={readSource} required={readValue !== null} data-testid="read-source" /></label>
+      <button type="submit" data-testid="save-reading">{t("common.save")}</button>
+    </form>
+    <WriteResult {failed} />
   </section>
 {/if}
 
@@ -205,6 +417,9 @@
   }
   .packs li {
     margin: 0.4rem 0;
+  }
+  .small {
+    font-size: 0.82rem;
   }
   .frozen {
     border-top: 1px solid var(--line);

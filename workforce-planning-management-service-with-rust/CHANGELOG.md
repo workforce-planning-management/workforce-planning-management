@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — cutover reasons as data, key-person for one organization (WPM-T118 follow-up)
+
+- Each cutover check now also carries `details`: its reasons as `{code, params}`, in the same order as the English `reasons`, so a client can
+  say them in its own language. `GET /api/workforce-intelligence/key-person` and `/named` take `?organization=` (outside the caller's scope
+  is `404`).
+
 ### Added — cutover readiness (WPM-T117)
 
 - `cutovers`, `cutover_roles`, `cutover_pools` (migration `000073`) and `GET /api/cutovers/{pid}/readiness`: trained staff per required

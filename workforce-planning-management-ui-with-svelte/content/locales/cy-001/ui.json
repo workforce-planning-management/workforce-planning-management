@@ -39,7 +39,8 @@
     "capacity": "Capasiti",
     "resilience": "Gwydnwch",
     "oversight": "Goruchwyliaeth",
-    "cutover": "Newid drosodd"
+    "cutover": "Newid drosodd",
+    "warnings": "Rhybuddion cynnar"
   },
   "pr": {
     "retention": "Cadw data",
@@ -141,7 +142,14 @@
     "days": "diwrnod calendr",
     "masked": "Cudd",
     "noOrganization": "Nid oes sefydliad ar gael i chi.",
-    "unknown": "anhysbys"
+    "unknown": "anhysbys",
+    "notAllowed": "Nid oes gennych yr hawl i wneud y newid hwn.",
+    "fromService": "Geiriad y gwasanaeth ei hun (Saesneg)",
+    "add": "Ychwanegu",
+    "save": "Cadw",
+    "remove": "Dileu",
+    "month": "Mis",
+    "programme": "Cyfeirnod y rhaglen"
   },
   "dash": {
     "title": "Dangosfwrdd AD",
@@ -1307,7 +1315,8 @@
     "capacity": "Capasiti — WPM",
     "resilience": "Gwydnwch — WPM",
     "oversight": "Goruchwyliaeth — WPM",
-    "cutover": "Parodrwydd newid drosodd — WPM"
+    "cutover": "Parodrwydd newid drosodd — WPM",
+    "warnings": "Rhybuddion cynnar — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -1681,8 +1690,21 @@
     "constraint": "Pwll cyfyngiad: {name}",
     "wip": "Rhaglenni sy'n tynnu arno: {active} o {limit}",
     "wipNoLimit": "Rhaglenni sy'n tynnu arno: {active}; ni osodwyd terfyn",
-    "overMonths": "{over} mis dros, {unknown} anhysbys",
-    "basis": "Sut y cyfrifir hyn"
+    "overMonths": "Misoedd dros: {over} · anhysbys: {unknown}",
+    "basis": "Sut y cyfrifir hyn",
+    "basisText": "Y cyflenwad yw, ar gyfer pob person sy'n cyfrif tuag at y pwll, eu FTE × dyddiau'r mis y maent yn cael eu cyflogi ac nad ydynt ar wyliau cymeradwy ÷ dyddiau yn y mis, wedi'u hadio, llai cadw gweithrediadau'r pwll. Y galw yw'r FTE y mae hawliadau rhaglenni gweithredol yn ei gymryd o'r pwll. Mae capasiti partneriaid cadarn ac wedi'i ymrwymo yn cwmpasu diffyg; nid yw capasiti y gofynnwyd amdano. Mae mis lle nad yw partner wedi ymrwymo yn anhysbys, nid sero.",
+    "manage": "Pyllau sgiliau a galw",
+    "poolName": "Enw'r pwll",
+    "reservation": "Cadw gweithrediadau (canran o'r cyflenwad)",
+    "createPool": "Creu pwll",
+    "addMember": "Ychwanegu aelod at bwll",
+    "memberHint": "Aelod yw proffil rôl (mae pawb yn y rôl honno'n cyfrif), neu sgil gyda hyfedredd isaf.",
+    "skill": "Sgil",
+    "minProficiency": "Hyfedredd isaf",
+    "demandTitle": "Hawliad rhaglen ar bwll",
+    "fte": "FTE ar gyfer y mis",
+    "saveClaim": "Cadw'r hawliad",
+    "claimHint": "Mae hawliad newydd wedi'i gynnig: dangosir ef ond nid yw'n cyfrif nes bod penderfyniad cychwyn yn ei wneud yn weithredol."
   },
   "res": {
     "title": "Gwydnwch",
@@ -1701,7 +1723,9 @@
     "role": "Rôl",
     "senior": "Uwch",
     "hoursMonth": "Oriau y mis",
-    "noCommitments": "Ni chofnodwyd ymrwymiadau llywodraethu."
+    "noCommitments": "Ni chofnodwyd ymrwymiadau llywodraethu.",
+    "basisKeyPerson": "Sgil hanfodol yw un a nodir yn hanfodol ar broffil rôl byw. Deiliad yw person cyflogedig y mae ei hyfedredd datganedig yn bodloni'r isafswm hanfodol uchaf. Wrth gefn yw person wrth gefn a enwir, cyfredol, sydd hefyd yn dal y sgil. Olynydd parod yw un a restrir yn barod nawr ar gynllun olyniaeth y mae ei ddeiliad cyfredol yn ddeiliad. Cyfrifon yn unig: mae'n bodoli i ariannu pobl wrth gefn ac olyniaeth, nid i farnu neb.",
+    "basisGovernance": "Amcangyfrif o'r ymrwymiadau a gofnodwyd: nifer y digwyddiadau y flwyddyn × munudau × pobl yn y rôl, y mis. Rôl, byth person; nid cofnod amser."
   },
   "ovs": {
     "title": "Goruchwyliaeth",
@@ -1731,7 +1755,29 @@
     "close": "Cau",
     "noPacks": "Nid oes pecyn wedi'i rewi eto.",
     "notAllowed": "Dim ond gweinyddwr y sefydliad all rewi neu dynnu pecyn yn ôl.",
-    "packCapacity": "Capasiti yn y pecyn"
+    "packCapacity": "Capasiti yn y pecyn",
+    "basisText": "Y meini prawf a ddangosir yw meini prawf ymadael y lefel y mae'r sefydliad arni. Bodlonir maen prawf pan fo pob mesur wedi cyrraedd ei drothwy am ei reol cynnal o fisoedd olynol, hyd at y mis cyflawn diwethaf. Nid yw darlleniad coll neu null byth yn llwyddiant. Tystiolaeth yw hon: nid yw'r gwasanaeth byth yn newid lefel, ac mae person yn cofnodi unrhyw newid gyda'r corff penderfynu.",
+    "manage": "Graddfa, safle a thystiolaeth",
+    "addLevel": "Ychwanegu lefel at y raddfa",
+    "ordinal": "Lle ar y raddfa (1 i 20)",
+    "levelName": "Enw'r lefel",
+    "recordPosition": "Cofnodi'r safle",
+    "chooseLevel": "Lefel",
+    "effectiveOn": "Yn effeithiol o",
+    "addCriterion": "Ychwanegu maen prawf ymadael at lefel",
+    "criterionName": "Maen prawf",
+    "addMeasure": "Ychwanegu mesur at faen prawf",
+    "origin": "Tarddiad",
+    "derivation": "Cyfrifir fel",
+    "unit": "Uned",
+    "direction": "Cyfeiriad",
+    "sustain": "Misoedd yn olynol sydd eu hangen",
+    "enterReading": "Rhoi darlleniad",
+    "forMeasure": "Mesur (rhai a adroddwyd yn unig)",
+    "readingValue": "Gwerth (gadewch yn wag pan fo'r data ar goll)",
+    "evidence": "Nodyn tystiolaeth",
+    "sourceDocument": "Dogfen ffynhonnell",
+    "readingHint": "Mae angen nodyn tystiolaeth a dogfen ffynhonnell a enwir ar werth. Mae gwerth gwag yn dweud bod y data ar goll; ni chaiff ei ddarllen byth fel llwyddiant."
   },
   "cut": {
     "title": "Parodrwydd newid drosodd",
@@ -1744,6 +1790,51 @@
     "hypercare": "Cwmpas gofal dwys",
     "keyPerson": "Risg person allweddol",
     "noConcerns": "Ni chanfuwyd pryderon.",
-    "reasonsEnglish": "Mae'r rhesymau isod wedi'u hysgrifennu gan y gwasanaeth yn Saesneg."
+    "reasonsEnglish": "Mae'r rhesymau isod wedi'u hysgrifennu gan y gwasanaeth yn Saesneg.",
+    "basisText": "Ochr pobl yn unig. Staff hyfforddedig yw pobl y rôl, a gyflogir ar ddiwrnod cyntaf y ffenestr ac a gofnodir yn y safle, a gwblhaodd y cwrs a enwir ar neu cyn y diwrnod hwnnw ac y mae eu tystysgrif yn para trwy'r ffenestr. Mae diffyg y gallai pobl heb safle wedi'i gofnodi ei gau yn anhysbys, nid mewn perygl. Gofal dwys yw'r rota ar alwad dros y ffenestr: mae diwrnod heb neb ar alwad mewn perygl. Darllenir risg person allweddol yn y safle, o lefelau sgiliau datganedig, ar gyfer sgiliau'r pyllau a restrir sy'n hanfodol ar broffil rôl; mae deiliaid heb safle wedi'i gofnodi yn gwneud risg yn anhysbys. Paru safle yn ôl ei enw a'i enwau eraill, heb ystyried priflythrennau na atalnodi. Nid yw anhysbys byth yn barod. Penderfyniad dynol y tu allan i'r gwasanaeth hwn yw a ddylid mynd yn fyw.",
+    "why": {
+      "no_role": "Nid oes rôl ofynnol wedi'i rhestru ar gyfer y newid drosodd hwn.",
+      "course_unknown": "{name}: nid yw'r cwrs yn y cofnodion dysgu (wedi'i ailenwi neu heb gofrestru erioed), felly ni ellir gwirio hyfforddiant.",
+      "trained_unplaced": "{name}: {trained} o {required} wedi'u hyfforddi yn y safle, ac nid oes safle wedi'i gofnodi i {unplaced} o bobl y rôl.",
+      "trained_short": "{name}: {trained} o {required} wedi'u hyfforddi yn y safle, diffyg o {short}.",
+      "no_rota": "Nid oes rota ar alwad wedi'i chysylltu ar gyfer ffenestr y newid drosodd.",
+      "uncovered_days": "Nid oes neb ar alwad ar {count} diwrnod calendr o'r ffenestr, y cyntaf ar {first}.",
+      "no_pool": "Nid oes pwll wedi'i restru fel dibyniaeth ar gyfer y newid drosodd hwn.",
+      "no_critical_skill": "Nid oes unrhyw un o'r sgiliau yn y pyllau a restrir wedi'i nodi'n hanfodol ar broffil rôl.",
+      "key_no_holder": "{name}: nid oes neb yn y safle yn ei dal.",
+      "key_single_holder": "{name}: un deiliad yn y safle, heb neb wrth gefn nac olynydd parod.",
+      "key_no_holder_unplaced": "{name}: nid oes neb yn y safle yn ei dal; nid oes safle wedi'i gofnodi i {unplaced} o ddeiliaid mewn mannau eraill yn y sefydliad.",
+      "key_single_holder_unplaced": "{name}: un deiliad yn y safle, heb neb wrth gefn nac olynydd parod; nid oes safle wedi'i gofnodi i {unplaced} o ddeiliaid mewn mannau eraill yn y sefydliad."
+    },
+    "plan": "Cynllunio newid drosodd",
+    "siteLabel": "Safle",
+    "windowStart": "Diwrnod cyntaf",
+    "windowEnd": "Diwrnod olaf",
+    "aliases": "Enwau eraill ar y safle (wedi'u gwahanu gan atalnodau, hyd at ddeg)",
+    "rotaRef": "Rota ar alwad (cyfeirnod dewisol)",
+    "create": "Cynllunio'r newid drosodd",
+    "remove": "Dileu'r newid drosodd",
+    "removeConfirm": "Dileu'r newid drosodd hwn gyda'i rolau a'i byllau?",
+    "addRole": "Ychwanegu rôl ofynnol",
+    "roleProfile": "Proffil rôl",
+    "course": "Cyfeirnod y cwrs",
+    "headcount": "Nifer o bobl sydd eu hangen",
+    "addPool": "Ychwanegu pwll y mae'n dibynnu arno"
+  },
+  "ew": {
+    "title": "Rhybuddion cynnar",
+    "hint": "Amodau y mae'r gwasanaeth wedi'u gweld: pwll wedi'i or-ymrwymo yn y chwe mis nesaf, mesur wedi'i dorri, newid drosodd mewn perygl. Dyddir cyflwr gan y sgan cyntaf a'i gwelodd. Mae person yn cydnabod pob rhybudd.",
+    "sweep": "Edrych nawr",
+    "swept": "Agorwyd {opened}, clirwyd {cleared}, hysbyswyd {told}",
+    "acknowledge": "Cydnabod",
+    "firstSeen": "Gwelwyd gyntaf {date}",
+    "daysOpen": "{days} diwrnod calendr",
+    "cleared": "Clirwyd {date}",
+    "acknowledged": "Cydnabuwyd {date}",
+    "notAcknowledged": "Heb ei gydnabod",
+    "timeToReport": "Amser i adrodd: {days} diwrnod calendr",
+    "timeToReportNone": "Amser i adrodd: anhysbys tra bo unrhyw rybudd heb ei gydnabod",
+    "none": "Dim rhybuddion cynnar.",
+    "basisText": "Dyddiad y daeth cyflwr yn wir gyntaf yw dyddiad y sgan cyntaf a'i gwelodd, felly mae sgan a gynhelir yn llai aml na phob dydd yn ei ddyddio'n hwyr. Amser i adrodd yw'r nifer hiraf o ddiwrnodau calendr o'r dyddiad hwnnw nes bod person yn ei gydnabod, ar draws yr holl rybuddion a restrir; mae'n anhysbys tra bo unrhyw un heb ei gydnabod, gan na ddylai un araf ymddangos yn gyflym."
   }
 }

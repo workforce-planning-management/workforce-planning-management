@@ -489,7 +489,14 @@ async fn key_person_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules
 }
 
 fn check_json(c: &rules::Check) -> serde_json::Value {
-    json!({ "status": c.status.as_str(), "reasons": c.reasons })
+    json!({
+        "status": c.status.as_str(),
+        "reasons": c.reasons,
+        "details": c.details.iter().map(|d| json!({
+            "code": d.code,
+            "params": d.params.iter().map(|(k, v)| (k.to_string(), json!(v))).collect::<serde_json::Map<_, _>>(),
+        })).collect::<Vec<_>>(),
+    })
 }
 
 /// The three checks for a cutover.

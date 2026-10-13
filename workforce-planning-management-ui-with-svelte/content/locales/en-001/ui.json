@@ -39,7 +39,8 @@
     "capacity": "Capacity",
     "resilience": "Resilience",
     "oversight": "Oversight",
-    "cutover": "Cutovers"
+    "cutover": "Cutovers",
+    "warnings": "Early warnings"
   },
   "pr": {
     "retention": "Retention",
@@ -141,7 +142,14 @@
     "days": "calendar days",
     "masked": "Hidden",
     "noOrganization": "No organization is available to you.",
-    "unknown": "unknown"
+    "unknown": "unknown",
+    "notAllowed": "You do not have the right to make this change.",
+    "fromService": "The service's own wording (English)",
+    "add": "Add",
+    "save": "Save",
+    "remove": "Remove",
+    "month": "Month",
+    "programme": "Programme reference"
   },
   "dash": {
     "title": "HR dashboard",
@@ -1307,7 +1315,8 @@
     "capacity": "Capacity — WPM",
     "resilience": "Resilience — WPM",
     "oversight": "Oversight — WPM",
-    "cutover": "Cutover readiness — WPM"
+    "cutover": "Cutover readiness — WPM",
+    "warnings": "Early warnings — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -1681,8 +1690,21 @@
     "constraint": "Constraint pool: {name}",
     "wip": "Programmes drawing on it: {active} of {limit}",
     "wipNoLimit": "Programmes drawing on it: {active}; no limit is set",
-    "overMonths": "{over} months over, {unknown} unknown",
-    "basis": "How this is worked out"
+    "overMonths": "Months over: {over} · unknown: {unknown}",
+    "basis": "How this is worked out",
+    "basisText": "Supply is, for each person who counts toward the pool, their FTE × the days of the month they are employed and not on approved leave ÷ the days in the month, summed, less the pool's operations reservation. Demand is the FTE that active programme claims take from the pool. Confirmed and committed partner capacity covers a shortfall; requested capacity does not. A month in which a partner has made no commitment is unknown, not zero.",
+    "manage": "Skill pools and demand",
+    "poolName": "Pool name",
+    "reservation": "Operations reservation (percent of supply)",
+    "createPool": "Create pool",
+    "addMember": "Add a member to a pool",
+    "memberHint": "A member is a role profile (everyone in that role counts), or a skill with a minimum proficiency.",
+    "skill": "Skill",
+    "minProficiency": "Minimum proficiency",
+    "demandTitle": "A programme's claim on a pool",
+    "fte": "FTE for the month",
+    "saveClaim": "Save claim",
+    "claimHint": "A new claim is proposed: it is shown but does not count until a start decision makes it active."
   },
   "res": {
     "title": "Resilience",
@@ -1701,7 +1723,9 @@
     "role": "Role",
     "senior": "Senior",
     "hoursMonth": "Hours a month",
-    "noCommitments": "No governance commitments are entered."
+    "noCommitments": "No governance commitments are entered.",
+    "basisKeyPerson": "A critical skill is one marked critical on a live role profile. A holder is an employed person whose declared proficiency meets the highest critical minimum. A backup is a named, current backup who also holds it. A ready successor is ranked ready now on a succession plan whose incumbent is a holder. Counts only: it exists to fund backups and succession, not to judge anyone.",
+    "basisGovernance": "An estimate from the entered commitments: occurrences a year × minutes × people in the role, per month. A role, never a person; not a timesheet."
   },
   "ovs": {
     "title": "Oversight",
@@ -1731,7 +1755,29 @@
     "close": "Close",
     "noPacks": "No pack has been frozen yet.",
     "notAllowed": "Only an administrator of the organization can freeze or withdraw a pack.",
-    "packCapacity": "Capacity in the pack"
+    "packCapacity": "Capacity in the pack",
+    "basisText": "The criteria shown are the exit criteria of the level the organization is at. A criterion is met when every measure has met its threshold for its sustain rule of consecutive months, up to the last complete month. A missing or null reading is never a pass. This is evidence: the service never changes a level, and a person records any change with the deciding body.",
+    "manage": "Scale, position and evidence",
+    "addLevel": "Add a level to the scale",
+    "ordinal": "Place on the scale (1 to 20)",
+    "levelName": "Level name",
+    "recordPosition": "Record the position",
+    "chooseLevel": "Level",
+    "effectiveOn": "Effective on",
+    "addCriterion": "Add an exit criterion to a level",
+    "criterionName": "Criterion",
+    "addMeasure": "Add a measure to a criterion",
+    "origin": "Origin",
+    "derivation": "Computed as",
+    "unit": "Unit",
+    "direction": "Direction",
+    "sustain": "Months in a row required",
+    "enterReading": "Enter a reading",
+    "forMeasure": "Measure (reported ones only)",
+    "readingValue": "Value (leave empty when the data is missing)",
+    "evidence": "Evidence note",
+    "sourceDocument": "Source document",
+    "readingHint": "A value needs an evidence note and a named source document. An empty value says the data is missing; it is never read as a pass."
   },
   "cut": {
     "title": "Cutover readiness",
@@ -1744,6 +1790,51 @@
     "hypercare": "Hypercare cover",
     "keyPerson": "Key-person risk",
     "noConcerns": "No concerns found.",
-    "reasonsEnglish": "The reasons below are written by the service in English."
+    "reasonsEnglish": "The reasons below are written by the service in English.",
+    "basisText": "The people side only. Trained staff are people of the role, employed on the first day of the window and recorded at the site, who completed the named course on or before that day and whose certificate lasts through the window. A shortfall that people with no site recorded could close is unknown, not at risk. Hypercare is the on-call rota over the window: a day with nobody on call is at risk. Key-person risk is read at the site, from declared skill levels, for the skills of the listed pools that are critical on a role profile; holders with no site recorded make a risk unknown. A site is matched by its name and aliases, without case or punctuation. An unknown is never ready. Whether to go live is a human decision outside this service.",
+    "why": {
+      "no_role": "No required role is listed for this cutover.",
+      "course_unknown": "{name}: the course is not in the learning records (renamed or never enrolled), so training cannot be checked.",
+      "trained_unplaced": "{name}: {trained} of {required} trained at the site, and {unplaced} people of the role have no site recorded.",
+      "trained_short": "{name}: {trained} of {required} trained at the site, short by {short}.",
+      "no_rota": "No on-call rota is linked for the cutover window.",
+      "uncovered_days": "{count} calendar days of the window have nobody on call, the first on {first}.",
+      "no_pool": "No pool is listed as a dependency of this cutover.",
+      "no_critical_skill": "None of the skills in the listed pools is marked critical on a role profile.",
+      "key_no_holder": "{name}: nobody at the site holds it.",
+      "key_single_holder": "{name}: one holder at the site, with no backup or ready successor.",
+      "key_no_holder_unplaced": "{name}: nobody at the site holds it; {unplaced} holders elsewhere in the organization have no site recorded.",
+      "key_single_holder_unplaced": "{name}: one holder at the site, with no backup or ready successor; {unplaced} holders elsewhere in the organization have no site recorded."
+    },
+    "plan": "Plan a cutover",
+    "siteLabel": "Site",
+    "windowStart": "First day",
+    "windowEnd": "Last day",
+    "aliases": "Other names for the site (comma-separated, up to ten)",
+    "rotaRef": "On-call rota (optional reference)",
+    "create": "Plan the cutover",
+    "remove": "Remove cutover",
+    "removeConfirm": "Remove this cutover with its roles and pools?",
+    "addRole": "Add a required role",
+    "roleProfile": "Role profile",
+    "course": "Course reference",
+    "headcount": "People required",
+    "addPool": "Add a pool it depends on"
+  },
+  "ew": {
+    "title": "Early warnings",
+    "hint": "Conditions the service has seen: a pool over-committed in the next six months, a measure in breach, a cutover at risk. A condition is dated by the first sweep that saw it. A person acknowledges each warning.",
+    "sweep": "Look now",
+    "swept": "Opened {opened}, cleared {cleared}, told {told}",
+    "acknowledge": "Acknowledge",
+    "firstSeen": "First seen {date}",
+    "daysOpen": "{days} calendar days",
+    "cleared": "Cleared {date}",
+    "acknowledged": "Acknowledged {date}",
+    "notAcknowledged": "Not acknowledged",
+    "timeToReport": "Time to report: {days} calendar days",
+    "timeToReportNone": "Time to report: not known while any warning is unacknowledged",
+    "none": "No early warnings.",
+    "basisText": "The date a condition was first true is the date of the first sweep that saw it, so a sweep run less often than daily dates it late. Time to report is the longest calendar days from that date to a person acknowledging it, across all the warnings listed; it is not known while any is unacknowledged, because a slow one must not read as a fast one."
   }
 }

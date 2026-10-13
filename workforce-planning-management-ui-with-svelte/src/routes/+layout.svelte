@@ -45,6 +45,7 @@
     ["/resilience", "nav.resilience"],
     ["/oversight", "nav.oversight"],
     ["/cutover", "nav.cutover"],
+    ["/warnings", "nav.warnings"],
     ["/rota", "nav.rota"],
     ["/development", "nav.development"],
     ["/learning", "nav.learning"],

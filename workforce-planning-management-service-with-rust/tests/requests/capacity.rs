@@ -704,6 +704,18 @@ async fn key_person_risk_counts_holders_backups_and_successors() {
         assert_eq!(row(&first, None).unwrap()["status"], "single_point_of_failure");
         assert_eq!(row(&first, Some("engineering")).unwrap()["holders"], 1);
         assert!(!first.to_string().contains(&holder), "the aggregate names no one");
+        // Read for one organization: this one has the skill, another does not.
+        let mine: Value = request
+            .get(&format!("/api/workforce-intelligence/key-person?organization={org}"))
+            .await
+            .json();
+        assert_eq!(row(&mine, None).unwrap()["status"], "single_point_of_failure");
+        let elsewhere: Value = request
+            .get(&format!("/api/workforce-intelligence/key-person?organization=organization:{}", uuid::Uuid::new_v4()))
+            .await
+            .json();
+        let there = row(&elsewhere, None).expect("a critical skill is listed for every organization");
+        assert_eq!((there["holders"].as_i64(), there["status"].as_str()), (Some(0), Some("no_holder")), "another organization's people are not counted");
         let named: Value = request.get("/api/workforce-intelligence/key-person/named").await.json();
         assert!(named["people"].as_array().unwrap().iter().any(|p| p["skill"] == skill_name.as_str() && p["worker_pid"] == holder.as_str()));
         // A backup who is below the bar does not cover.
@@ -1259,6 +1271,10 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         let short = ready().await;
         assert_eq!(short["checks"]["trained_staff"]["status"], "at_risk");
         assert!(short["checks"]["trained_staff"]["reasons"][0].as_str().unwrap().contains("short by 1"));
+        // The same reason as data, so a client can say it in its own language.
+        let detail = &short["checks"]["trained_staff"]["details"][0];
+        assert_eq!(detail["code"], "trained_short");
+        assert_eq!(detail["params"]["short"], "1");
         assert_eq!(short["readiness"], "at_risk");
         // The sweep opens one early warning for the cutover and the next finds nothing new.
         use workforce_planning_management_service::controllers::early_warning::sweep;
@@ -1294,6 +1310,7 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         let maybe = ready().await;
         assert_eq!(maybe["checks"]["key_person_risk"]["status"], "unknown");
         assert!(maybe["checks"]["key_person_risk"]["reasons"][0].as_str().unwrap().contains("no site recorded"));
+        assert_eq!(maybe["checks"]["key_person_risk"]["details"][0]["code"], "key_single_holder_unplaced");
         set_site(&unplaced_holder, "Elsewhere").await;
         assert_eq!(ready().await["checks"]["key_person_risk"]["status"], "at_risk");
         // A second holder at the site: shared. Every check is now ready, and so is the cutover.
@@ -1320,6 +1337,8 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         let late = request.get(&format!("/api/cutovers/{}/readiness", late["pid"].as_str().unwrap())).await.json::<Value>();
         assert_eq!(late["checks"]["hypercare_cover"]["status"], "at_risk");
         assert!(late["checks"]["hypercare_cover"]["reasons"][0].as_str().unwrap().contains("2 calendar days"));
+        assert_eq!(late["checks"]["hypercare_cover"]["details"][0]["code"], "uncovered_days");
+        assert_eq!(late["checks"]["hypercare_cover"]["details"][0]["params"]["count"], "2");
         // No rota linked: unknown, not ready.
         let none: Value = request.post("/api/cutovers").json(&cutover(None, 10, 12)).await.json();
         let none = request.get(&format!("/api/cutovers/{}/readiness", none["pid"].as_str().unwrap())).await.json::<Value>();

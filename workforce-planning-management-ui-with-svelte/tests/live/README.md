@@ -11,4 +11,8 @@
    `scripts/` of the scratch run is not kept; the spec reads whatever is there and asserts shapes and rules, not exact numbers.
 3. `WPM_LIVE_API=1 PW_PORT=4510 pnpm exec playwright test -c playwright.live.config.ts`
 
+`oversight.spec.ts` (capacity, oversight with a pack, cutover, early warnings, resilience) needs no seed data: each run uses its own
+organization reference, typed in because enforcement is off. The service rate-limits writes, so a run straight after another can meet
+`429` (the page shows it); wait about forty seconds and rerun that spec.
+
 The fake session cookie only passes the UI's sign-in gate; with enforcement off the API ignores it.

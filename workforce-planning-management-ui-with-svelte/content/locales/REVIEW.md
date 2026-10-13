@@ -21,6 +21,10 @@ to offer a service in that language.
 | `ur-001` | Urdu | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `zh-001` | Chinese | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 
+The 2026-10-13 additions (88 keys for the capacity, resilience, oversight, cutover and early-warning pages, including the long
+"how this is worked out" texts and the twelve cutover reason sentences) were written by the same assistant in one pass, also unreviewed.
+Read the long texts first: they carry meaning (an unknown is never a pass; the go/no-go is a human decision).
+
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.
 

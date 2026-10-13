@@ -39,7 +39,8 @@
     "capacity": "Capacidad",
     "resilience": "Resiliencia",
     "oversight": "Supervisión",
-    "cutover": "Puestas en marcha"
+    "cutover": "Puestas en marcha",
+    "warnings": "Alertas tempranas"
   },
   "pr": {
     "retention": "Retención",
@@ -141,7 +142,14 @@
     "days": "días naturales",
     "masked": "Oculto",
     "noOrganization": "No hay ninguna organización disponible para usted.",
-    "unknown": "desconocido"
+    "unknown": "desconocido",
+    "notAllowed": "No tiene derecho a hacer este cambio.",
+    "fromService": "Texto original del servicio (en inglés)",
+    "add": "Añadir",
+    "save": "Guardar",
+    "remove": "Quitar",
+    "month": "Mes",
+    "programme": "Referencia del programa"
   },
   "dash": {
     "title": "Panel de RR. HH.",
@@ -1307,7 +1315,8 @@
     "capacity": "Capacidad — WPM",
     "resilience": "Resiliencia — WPM",
     "oversight": "Supervisión — WPM",
-    "cutover": "Preparación de la puesta en marcha — WPM"
+    "cutover": "Preparación de la puesta en marcha — WPM",
+    "warnings": "Alertas tempranas — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -1681,8 +1690,21 @@
     "constraint": "Grupo restrictivo: {name}",
     "wip": "Programas que lo usan: {active} de {limit}",
     "wipNoLimit": "Programas que lo usan: {active}; no se ha fijado límite",
-    "overMonths": "{over} meses excedidos, {unknown} desconocidos",
-    "basis": "Cómo se calcula"
+    "overMonths": "Meses excedidos: {over} · desconocidos: {unknown}",
+    "basis": "Cómo se calcula",
+    "basisText": "La oferta es, por cada persona que cuenta para el grupo, su FTE × los días del mes en que está empleada y no de baja aprobada ÷ los días del mes, sumada, menos la reserva operativa del grupo. La demanda es el FTE que las reclamaciones de programas activos toman del grupo. La capacidad de socios confirmada y comprometida cubre un déficit; la solicitada no. Un mes en el que un socio no se ha comprometido es desconocido, no cero.",
+    "manage": "Grupos de habilidades y demanda",
+    "poolName": "Nombre del grupo",
+    "reservation": "Reserva operativa (porcentaje de la oferta)",
+    "createPool": "Crear grupo",
+    "addMember": "Añadir un miembro a un grupo",
+    "memberHint": "Un miembro es un perfil de rol (cuenta todo el que tenga ese rol) o una habilidad con un nivel mínimo.",
+    "skill": "Habilidad",
+    "minProficiency": "Nivel mínimo",
+    "demandTitle": "Reclamación de un programa sobre un grupo",
+    "fte": "FTE del mes",
+    "saveClaim": "Guardar la reclamación",
+    "claimHint": "Una reclamación nueva es propuesta: se muestra, pero no cuenta hasta que una decisión de inicio la activa."
   },
   "res": {
     "title": "Resiliencia",
@@ -1701,7 +1723,9 @@
     "role": "Rol",
     "senior": "Sénior",
     "hoursMonth": "Horas al mes",
-    "noCommitments": "No hay compromisos de gobernanza registrados."
+    "noCommitments": "No hay compromisos de gobernanza registrados.",
+    "basisKeyPerson": "Una habilidad crítica es la marcada como crítica en un perfil de rol activo. Un titular es una persona empleada cuya competencia declarada alcanza el mínimo crítico más alto. Un suplente es un suplente nombrado y vigente que también la tiene. Un sucesor listo figura como listo ya en un plan de sucesión cuyo titular del puesto es un titular. Solo recuentos: existe para financiar suplencias y sucesión, no para juzgar a nadie.",
+    "basisGovernance": "Una estimación a partir de los compromisos introducidos: ocurrencias al año × minutos × personas en el rol, por mes. Un rol, nunca una persona; no es una hoja de horas."
   },
   "ovs": {
     "title": "Supervisión",
@@ -1731,7 +1755,29 @@
     "close": "Cerrar",
     "noPacks": "Todavía no se ha congelado ningún paquete.",
     "notAllowed": "Solo un administrador de la organización puede congelar o retirar un paquete.",
-    "packCapacity": "Capacidad en el paquete"
+    "packCapacity": "Capacidad en el paquete",
+    "basisText": "Los criterios mostrados son los de salida del nivel en que está la organización. Un criterio se cumple cuando cada medida ha alcanzado su umbral durante los meses consecutivos exigidos, hasta el último mes completo. Una lectura ausente o nula nunca es un aprobado. Es evidencia: el servicio nunca cambia un nivel, y una persona registra cualquier cambio con el órgano decisorio.",
+    "manage": "Escala, posición y pruebas",
+    "addLevel": "Añadir un nivel a la escala",
+    "ordinal": "Lugar en la escala (1 a 20)",
+    "levelName": "Nombre del nivel",
+    "recordPosition": "Registrar la posición",
+    "chooseLevel": "Nivel",
+    "effectiveOn": "Vigente desde",
+    "addCriterion": "Añadir un criterio de salida a un nivel",
+    "criterionName": "Criterio",
+    "addMeasure": "Añadir una medida a un criterio",
+    "origin": "Origen",
+    "derivation": "Calculado como",
+    "unit": "Unidad",
+    "direction": "Sentido",
+    "sustain": "Meses seguidos requeridos",
+    "enterReading": "Introducir una lectura",
+    "forMeasure": "Medida (solo las informadas)",
+    "readingValue": "Valor (dejar vacío si faltan los datos)",
+    "evidence": "Nota de evidencia",
+    "sourceDocument": "Documento fuente",
+    "readingHint": "Un valor necesita una nota de evidencia y un documento fuente con nombre. Un valor vacío indica que faltan datos; nunca se lee como aprobado."
   },
   "cut": {
     "title": "Preparación de la puesta en marcha",
@@ -1744,6 +1790,51 @@
     "hypercare": "Cobertura de hipercuidado",
     "keyPerson": "Riesgo de persona clave",
     "noConcerns": "No se encontraron problemas.",
-    "reasonsEnglish": "Los motivos siguientes los redacta el servicio en inglés."
+    "reasonsEnglish": "Los motivos siguientes los redacta el servicio en inglés.",
+    "basisText": "Solo el lado humano. El personal formado son personas del rol, empleadas el primer día de la ventana y registradas en la sede, que completaron el curso indicado en ese día o antes y cuyo certificado dura toda la ventana. Un déficit que podrían cubrir personas sin sede registrada es desconocido, no en riesgo. El hipercuidado es el turno de guardia durante la ventana: un día sin nadie de guardia está en riesgo. El riesgo de persona clave se lee en la sede, a partir de los niveles de habilidad declarados, para las habilidades de los grupos listados que son críticas en un perfil de rol; los titulares sin sede registrada hacen el riesgo desconocido. Una sede se compara por su nombre y alias, sin mayúsculas ni puntuación. Lo desconocido nunca está listo. Decidir si se sale en vivo es una decisión humana ajena a este servicio.",
+    "why": {
+      "no_role": "No se ha listado ningún rol requerido para esta puesta en marcha.",
+      "course_unknown": "{name}: el curso no figura en los registros de aprendizaje (renombrado o sin inscripciones), por lo que no se puede comprobar la formación.",
+      "trained_unplaced": "{name}: {trained} de {required} formados en la sede, y {unplaced} personas del rol no tienen sede registrada.",
+      "trained_short": "{name}: {trained} de {required} formados en la sede, faltan {short}.",
+      "no_rota": "No hay un turno de guardia vinculado a la ventana de la puesta en marcha.",
+      "uncovered_days": "{count} días naturales de la ventana no tienen a nadie de guardia, el primero el {first}.",
+      "no_pool": "No se ha listado ningún grupo como dependencia de esta puesta en marcha.",
+      "no_critical_skill": "Ninguna de las habilidades de los grupos listados está marcada como crítica en un perfil de rol.",
+      "key_no_holder": "{name}: nadie en la sede la tiene.",
+      "key_single_holder": "{name}: un titular en la sede, sin suplente ni sucesor listo.",
+      "key_no_holder_unplaced": "{name}: nadie en la sede la tiene; {unplaced} titulares en otras partes de la organización no tienen sede registrada.",
+      "key_single_holder_unplaced": "{name}: un titular en la sede, sin suplente ni sucesor listo; {unplaced} titulares en otras partes de la organización no tienen sede registrada."
+    },
+    "plan": "Planificar una puesta en marcha",
+    "siteLabel": "Sede",
+    "windowStart": "Primer día",
+    "windowEnd": "Último día",
+    "aliases": "Otros nombres de la sede (separados por comas, hasta diez)",
+    "rotaRef": "Turno de guardia (referencia opcional)",
+    "create": "Planificar la puesta en marcha",
+    "remove": "Quitar la puesta en marcha",
+    "removeConfirm": "¿Quitar esta puesta en marcha con sus roles y grupos?",
+    "addRole": "Añadir un rol requerido",
+    "roleProfile": "Perfil de rol",
+    "course": "Referencia del curso",
+    "headcount": "Personas requeridas",
+    "addPool": "Añadir un grupo del que depende"
+  },
+  "ew": {
+    "title": "Alertas tempranas",
+    "hint": "Condiciones que el servicio ha visto: un grupo sobrecomprometido en los próximos seis meses, una medida incumplida, una puesta en marcha en riesgo. Una condición se fecha con el primer barrido que la vio. Una persona confirma cada alerta.",
+    "sweep": "Revisar ahora",
+    "swept": "Abiertas {opened}, cerradas {cleared}, avisados {told}",
+    "acknowledge": "Confirmar",
+    "firstSeen": "Visto por primera vez el {date}",
+    "daysOpen": "{days} días naturales",
+    "cleared": "Cerrado el {date}",
+    "acknowledged": "Confirmado el {date}",
+    "notAcknowledged": "Sin confirmar",
+    "timeToReport": "Tiempo hasta informar: {days} días naturales",
+    "timeToReportNone": "Tiempo hasta informar: desconocido mientras haya alguna alerta sin confirmar",
+    "none": "No hay alertas tempranas.",
+    "basisText": "La fecha en que una condición fue cierta por primera vez es la del primer barrido que la vio, así que un barrido menos frecuente que diario la fecha tarde. El tiempo hasta informar es el mayor número de días naturales desde esa fecha hasta que una persona la confirma, entre todas las alertas listadas; es desconocido mientras alguna esté sin confirmar, porque una lenta no debe parecer rápida."
   }
 }

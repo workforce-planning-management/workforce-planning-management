@@ -39,7 +39,8 @@
     "capacity": "Kapasitas",
     "resilience": "Ketahanan",
     "oversight": "Pengawasan",
-    "cutover": "Alih operasi"
+    "cutover": "Alih operasi",
+    "warnings": "Peringatan dini"
   },
   "pr": {
     "retention": "Retensi",
@@ -141,7 +142,14 @@
     "days": "hari kalender",
     "masked": "Disembunyikan",
     "noOrganization": "Tidak ada organisasi yang tersedia untuk Anda.",
-    "unknown": "tidak diketahui"
+    "unknown": "tidak diketahui",
+    "notAllowed": "Anda tidak berhak melakukan perubahan ini.",
+    "fromService": "Redaksi asli layanan (bahasa Inggris)",
+    "add": "Tambah",
+    "save": "Simpan",
+    "remove": "Hapus",
+    "month": "Bulan",
+    "programme": "Referensi program"
   },
   "dash": {
     "title": "Dasbor SDM",
@@ -1307,7 +1315,8 @@
     "capacity": "Kapasitas — WPM",
     "resilience": "Ketahanan — WPM",
     "oversight": "Pengawasan — WPM",
-    "cutover": "Kesiapan alih operasi — WPM"
+    "cutover": "Kesiapan alih operasi — WPM",
+    "warnings": "Peringatan dini — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -1681,8 +1690,21 @@
     "constraint": "Kelompok kendala: {name}",
     "wip": "Program yang memakainya: {active} dari {limit}",
     "wipNoLimit": "Program yang memakainya: {active}; batas belum ditetapkan",
-    "overMonths": "{over} bulan melebihi, {unknown} tidak diketahui",
-    "basis": "Cara menghitungnya"
+    "overMonths": "Bulan melebihi: {over} · tidak diketahui: {unknown}",
+    "basis": "Cara menghitungnya",
+    "basisText": "Pasokan adalah, untuk setiap orang yang dihitung dalam kelompok, FTE-nya × hari dalam bulan ketika ia bekerja dan tidak cuti yang disetujui ÷ jumlah hari dalam bulan, dijumlahkan, dikurangi cadangan operasional kelompok. Permintaan adalah FTE yang diambil klaim program aktif dari kelompok. Kapasitas mitra yang dikonfirmasi dan dikomitmenkan menutup kekurangan; yang hanya diminta tidak. Bulan ketika mitra belum berkomitmen adalah tidak diketahui, bukan nol.",
+    "manage": "Kelompok keahlian dan permintaan",
+    "poolName": "Nama kelompok",
+    "reservation": "Cadangan operasional (persen dari pasokan)",
+    "createPool": "Buat kelompok",
+    "addMember": "Tambah anggota ke kelompok",
+    "memberHint": "Anggota adalah profil peran (semua orang dalam peran itu dihitung) atau keahlian dengan kemahiran minimum.",
+    "skill": "Keahlian",
+    "minProficiency": "Kemahiran minimum",
+    "demandTitle": "Klaim program atas kelompok",
+    "fte": "FTE untuk bulan itu",
+    "saveClaim": "Simpan klaim",
+    "claimHint": "Klaim baru berstatus diusulkan: ditampilkan tetapi tidak dihitung sampai keputusan mulai mengaktifkannya."
   },
   "res": {
     "title": "Ketahanan",
@@ -1701,7 +1723,9 @@
     "role": "Peran",
     "senior": "Senior",
     "hoursMonth": "Jam per bulan",
-    "noCommitments": "Belum ada komitmen tata kelola yang dimasukkan."
+    "noCommitments": "Belum ada komitmen tata kelola yang dimasukkan.",
+    "basisKeyPerson": "Keahlian kritis adalah yang ditandai kritis pada profil peran aktif. Pemegang adalah orang yang bekerja dan kemahirannya yang dinyatakan memenuhi minimum kritis tertinggi. Cadangan adalah cadangan yang ditunjuk dan berlaku yang juga memegang keahlian itu. Penerus siap adalah yang berperingkat siap sekarang pada rencana suksesi yang pemangkunya adalah pemegang. Hanya jumlah: dibuat untuk mendanai cadangan dan suksesi, bukan untuk menilai siapa pun.",
+    "basisGovernance": "Perkiraan dari komitmen yang dimasukkan: kejadian per tahun × menit × orang dalam peran, per bulan. Satu peran, bukan orang; bukan lembar waktu."
   },
   "ovs": {
     "title": "Pengawasan",
@@ -1731,7 +1755,29 @@
     "close": "Tutup",
     "noPacks": "Belum ada paket yang dibekukan.",
     "notAllowed": "Hanya administrator organisasi yang dapat membekukan atau menarik paket.",
-    "packCapacity": "Kapasitas dalam paket"
+    "packCapacity": "Kapasitas dalam paket",
+    "basisText": "Kriteria yang ditampilkan adalah kriteria keluar dari tingkat tempat organisasi berada. Kriteria terpenuhi bila setiap ukuran telah memenuhi ambangnya selama bulan berturut-turut yang disyaratkan, hingga bulan lengkap terakhir. Pembacaan yang hilang atau kosong tidak pernah dianggap lulus. Ini adalah bukti: layanan tidak pernah mengubah tingkat, dan seseorang mencatat setiap perubahan bersama badan pengambil keputusan.",
+    "manage": "Skala, posisi, dan bukti",
+    "addLevel": "Tambah tingkat pada skala",
+    "ordinal": "Urutan pada skala (1 sampai 20)",
+    "levelName": "Nama tingkat",
+    "recordPosition": "Catat posisi",
+    "chooseLevel": "Tingkat",
+    "effectiveOn": "Berlaku mulai",
+    "addCriterion": "Tambah kriteria keluar pada tingkat",
+    "criterionName": "Kriteria",
+    "addMeasure": "Tambah ukuran pada kriteria",
+    "origin": "Asal",
+    "derivation": "Dihitung sebagai",
+    "unit": "Satuan",
+    "direction": "Arah",
+    "sustain": "Bulan berturut-turut yang dibutuhkan",
+    "enterReading": "Masukkan pembacaan",
+    "forMeasure": "Ukuran (hanya yang dilaporkan)",
+    "readingValue": "Nilai (kosongkan bila data hilang)",
+    "evidence": "Catatan bukti",
+    "sourceDocument": "Dokumen sumber",
+    "readingHint": "Nilai membutuhkan catatan bukti dan dokumen sumber bernama. Nilai kosong berarti data hilang; tidak pernah dianggap lulus."
   },
   "cut": {
     "title": "Kesiapan alih operasi",
@@ -1744,6 +1790,51 @@
     "hypercare": "Cakupan hypercare",
     "keyPerson": "Risiko orang kunci",
     "noConcerns": "Tidak ada kekhawatiran.",
-    "reasonsEnglish": "Alasan di bawah ini ditulis layanan dalam bahasa Inggris."
+    "reasonsEnglish": "Alasan di bawah ini ditulis layanan dalam bahasa Inggris.",
+    "basisText": "Hanya sisi manusia. Staf terlatih adalah orang dalam peran itu, yang bekerja pada hari pertama jendela dan tercatat di lokasi, yang menyelesaikan kursus tersebut pada atau sebelum hari itu dan sertifikatnya berlaku sepanjang jendela. Kekurangan yang dapat ditutup orang tanpa lokasi tercatat adalah tidak diketahui, bukan berisiko. Hypercare adalah jadwal siaga selama jendela: hari tanpa siapa pun siaga berisiko. Risiko orang kunci dibaca di lokasi, dari tingkat keahlian yang dinyatakan, untuk keahlian pada kelompok terdaftar yang kritis pada profil peran; pemegang tanpa lokasi tercatat membuat risiko tidak diketahui. Lokasi dicocokkan dengan nama dan aliasnya, tanpa memandang huruf besar-kecil atau tanda baca. Yang tidak diketahui tidak pernah siap. Apakah akan go-live adalah keputusan manusia di luar layanan ini.",
+    "why": {
+      "no_role": "Tidak ada peran wajib yang terdaftar untuk alih operasi ini.",
+      "course_unknown": "{name}: kursus tidak ada dalam catatan belajar (diganti nama atau tidak pernah didaftar), sehingga pelatihan tidak dapat diperiksa.",
+      "trained_unplaced": "{name}: {trained} dari {required} terlatih di lokasi, dan {unplaced} orang dalam peran itu tidak memiliki lokasi tercatat.",
+      "trained_short": "{name}: {trained} dari {required} terlatih di lokasi, kurang {short}.",
+      "no_rota": "Tidak ada jadwal siaga yang ditautkan untuk jendela alih operasi.",
+      "uncovered_days": "{count} hari kalender pada jendela tidak ada yang siaga, yang pertama pada {first}.",
+      "no_pool": "Tidak ada kelompok yang terdaftar sebagai ketergantungan alih operasi ini.",
+      "no_critical_skill": "Tidak ada keahlian pada kelompok terdaftar yang ditandai kritis pada profil peran.",
+      "key_no_holder": "{name}: tidak ada yang memilikinya di lokasi.",
+      "key_single_holder": "{name}: satu pemegang di lokasi, tanpa cadangan atau penerus siap.",
+      "key_no_holder_unplaced": "{name}: tidak ada yang memilikinya di lokasi; {unplaced} pemegang di tempat lain dalam organisasi tidak memiliki lokasi tercatat.",
+      "key_single_holder_unplaced": "{name}: satu pemegang di lokasi, tanpa cadangan atau penerus siap; {unplaced} pemegang di tempat lain dalam organisasi tidak memiliki lokasi tercatat."
+    },
+    "plan": "Rencanakan alih operasi",
+    "siteLabel": "Lokasi",
+    "windowStart": "Hari pertama",
+    "windowEnd": "Hari terakhir",
+    "aliases": "Nama lain lokasi (dipisahkan koma, maksimal sepuluh)",
+    "rotaRef": "Jadwal siaga (referensi opsional)",
+    "create": "Rencanakan alih operasi",
+    "remove": "Hapus alih operasi",
+    "removeConfirm": "Hapus alih operasi ini beserta peran dan kelompoknya?",
+    "addRole": "Tambah peran wajib",
+    "roleProfile": "Profil peran",
+    "course": "Referensi kursus",
+    "headcount": "Orang yang dibutuhkan",
+    "addPool": "Tambah kelompok yang menjadi ketergantungan"
+  },
+  "ew": {
+    "title": "Peringatan dini",
+    "hint": "Kondisi yang dilihat layanan: kelompok terlalu terikat dalam enam bulan ke depan, ukuran terlampaui, alih operasi berisiko. Kondisi bertanggal dari penyisiran pertama yang melihatnya. Seseorang mengakui setiap peringatan.",
+    "sweep": "Periksa sekarang",
+    "swept": "Dibuka {opened}, ditutup {cleared}, diberi tahu {told}",
+    "acknowledge": "Akui",
+    "firstSeen": "Pertama terlihat {date}",
+    "daysOpen": "{days} hari kalender",
+    "cleared": "Ditutup {date}",
+    "acknowledged": "Diakui {date}",
+    "notAcknowledged": "Belum diakui",
+    "timeToReport": "Waktu hingga dilaporkan: {days} hari kalender",
+    "timeToReportNone": "Waktu hingga dilaporkan: tidak diketahui selama ada peringatan yang belum diakui",
+    "none": "Tidak ada peringatan dini.",
+    "basisText": "Tanggal suatu kondisi pertama kali benar adalah tanggal penyisiran pertama yang melihatnya, sehingga penyisiran yang lebih jarang dari harian memberi tanggal terlambat. Waktu hingga dilaporkan adalah hari kalender terlama dari tanggal itu sampai seseorang mengakuinya, di seluruh peringatan yang terdaftar; tidak diketahui selama ada yang belum diakui, karena yang lambat tidak boleh tampak cepat."
   }
 }

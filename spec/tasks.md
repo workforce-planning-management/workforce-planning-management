@@ -2664,6 +2664,29 @@ data or tests (WPM-D48).
       ([REVIEW.md](../workforce-planning-management-ui-with-svelte/content/locales/REVIEW.md)); no real-service run of the new pages
       (the live suite has no spec for them); the key-person list reads the caller's whole scope, not the chosen organization (the
       route takes none); screen reader behaviour was not tested beyond the marks and words being text.
+      **Follow-up pass (same task), after review:** *Writes:* forms on the pages for planning a cutover (create, add a role, add a pool,
+      remove after a confirmation), skill pools (create, add a member, a programme's claim), oversight (a level, the position, a
+      criterion, a measure, a reading; a missing value is sent as `null` with no evidence) and a new page `/warnings` (the early
+      warnings with days open and time to report, acknowledge, "Look now"); a refusal (403) is said in words and any other failure
+      shows the service's message. *English text:* cutover checks now carry `details` (`{code, params}`, same order as the English
+      `reasons`; 12 codes) and the page says them in the reader's language, falling back to the English text, with a note, only for a code
+      it does not know; the "how this is worked out" texts (capacity, key-person, governance, oversight, cutover, early warnings) are in
+      the catalogue, with the service's own English beneath. *Plurals:* the month count is worded without a number-dependent noun
+      ("Months over: 1 · unknown: 1"). *Key-person scope:* `GET /api/workforce-intelligence/key-person` and `/named` take
+      `?organization=` (outside the caller's scope `404`), and the page asks for the chosen organization. *Live suite:* four specs
+      (`tests/live/oversight.spec.ts`) ran against the real service in a scratch workspace and passed (one needed a rerun after the
+      service's own `429` rate limit, which the page showed in words). *Screen reader:* the heatmap is checked as a table by role (column
+      headers, a row header, a word in each cell, the mark hidden), which is the part that can be tested without a screen reader.
+      **Verified:** 561 unit, 95 request and every enforcement binary (`enforcement`, `_conversion`, `_cutover`, `_engagements`, `_equality`,
+      `_expenses`, `_flexible`, `_health`, `_me`, `_need_to_know`, `_oversight_pack`, `retention_schedule`, `security`; the Keycloak ones
+      need their feature and were not run), clippy, fmt; 113 vitest, `svelte-check`, prettier, build, **94 Playwright specs** (13 new);
+      screenshots looked at (light and dark, desktop and phone). **Mutation-checked** (service: no `404` for another organization's
+      register, the organization filter ignored, a wrong reason code; UI: percent not converted to basis points, reasons ignoring the
+      data, a missing reading sent with evidence, the organization not passed, the refusal not said), each failing a test.
+      **Still not done:** the translations (now 88 more strings, including long explanatory texts) are AI-written and unreviewed, and
+      added to the review record; no person has read them; a screen reader was not run; removing a level, criterion or measure, and
+      changing a pool member or a claim's status, is by API only; the live specs are not part of the default run and the rate limit
+      can fail a quick rerun.
 WPM-T120–T122 (critical chain buffers) were withdrawn on 2026-10-09 by
 [WPM-D55](design.md): critical chain, critical path and similar scheduling
 capabilities live in project-portfolio-management. The ids are not reused.

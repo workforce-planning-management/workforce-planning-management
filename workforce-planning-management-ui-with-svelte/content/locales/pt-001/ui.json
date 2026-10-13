@@ -39,7 +39,8 @@
     "capacity": "Capacidade",
     "resilience": "Resiliência",
     "oversight": "Supervisão",
-    "cutover": "Virada"
+    "cutover": "Virada",
+    "warnings": "Alertas precoces"
   },
   "pr": {
     "retention": "Retenção",
@@ -141,7 +142,14 @@
     "days": "dias corridos",
     "masked": "Oculto",
     "noOrganization": "Nenhuma organização está disponível para você.",
-    "unknown": "desconhecido"
+    "unknown": "desconhecido",
+    "notAllowed": "Você não tem o direito de fazer esta alteração.",
+    "fromService": "Texto original do serviço (em inglês)",
+    "add": "Adicionar",
+    "save": "Guardar",
+    "remove": "Remover",
+    "month": "Mês",
+    "programme": "Referência do programa"
   },
   "dash": {
     "title": "Painel de RH",
@@ -1307,7 +1315,8 @@
     "capacity": "Capacidade — WPM",
     "resilience": "Resiliência — WPM",
     "oversight": "Supervisão — WPM",
-    "cutover": "Prontidão da virada — WPM"
+    "cutover": "Prontidão da virada — WPM",
+    "warnings": "Alertas precoces — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -1681,8 +1690,21 @@
     "constraint": "Grupo restritivo: {name}",
     "wip": "Programas que recorrem a ele: {active} de {limit}",
     "wipNoLimit": "Programas que recorrem a ele: {active}; nenhum limite definido",
-    "overMonths": "{over} meses excedidos, {unknown} desconhecidos",
-    "basis": "Como é calculado"
+    "overMonths": "Meses excedidos: {over} · desconhecidos: {unknown}",
+    "basis": "Como é calculado",
+    "basisText": "A oferta é, para cada pessoa que conta para o grupo, o seu FTE × os dias do mês em que está empregada e não de licença aprovada ÷ os dias do mês, somada, menos a reserva operacional do grupo. A procura é o FTE que as reivindicações dos programas ativos retiram do grupo. A capacidade de parceiros confirmada e comprometida cobre um défice; a solicitada não. Um mês em que um parceiro não se comprometeu é desconhecido, não zero.",
+    "manage": "Grupos de competências e procura",
+    "poolName": "Nome do grupo",
+    "reservation": "Reserva operacional (percentagem da oferta)",
+    "createPool": "Criar grupo",
+    "addMember": "Adicionar um membro a um grupo",
+    "memberHint": "Um membro é um perfil de função (todos nessa função contam) ou uma competência com proficiência mínima.",
+    "skill": "Competência",
+    "minProficiency": "Proficiência mínima",
+    "demandTitle": "Reivindicação de um programa sobre um grupo",
+    "fte": "FTE do mês",
+    "saveClaim": "Guardar a reivindicação",
+    "claimHint": "Uma nova reivindicação é proposta: é mostrada, mas só conta quando uma decisão de início a torna ativa."
   },
   "res": {
     "title": "Resiliência",
@@ -1701,7 +1723,9 @@
     "role": "Função",
     "senior": "Chefia",
     "hoursMonth": "Horas por mês",
-    "noCommitments": "Não há compromissos de governação registados."
+    "noCommitments": "Não há compromissos de governação registados.",
+    "basisKeyPerson": "Uma competência crítica é a marcada como crítica num perfil de função ativo. Um detentor é uma pessoa empregada cuja proficiência declarada atinge o mínimo crítico mais alto. Um suplente é um suplente nomeado e vigente que também a detém. Um sucessor pronto está classificado como pronto agora num plano de sucessão cujo titular é um detentor. Apenas contagens: existe para financiar suplentes e sucessão, não para julgar ninguém.",
+    "basisGovernance": "Uma estimativa a partir dos compromissos introduzidos: ocorrências por ano × minutos × pessoas na função, por mês. Uma função, nunca uma pessoa; não é uma folha de horas."
   },
   "ovs": {
     "title": "Supervisão",
@@ -1731,7 +1755,29 @@
     "close": "Fechar",
     "noPacks": "Ainda não foi congelado nenhum pacote.",
     "notAllowed": "Apenas um administrador da organização pode congelar ou retirar um pacote.",
-    "packCapacity": "Capacidade no pacote"
+    "packCapacity": "Capacidade no pacote",
+    "basisText": "Os critérios mostrados são os de saída do nível em que a organização está. Um critério é cumprido quando cada medida atingiu o seu limiar durante os meses consecutivos exigidos, até ao último mês completo. Uma leitura em falta ou nula nunca é aprovação. É evidência: o serviço nunca altera um nível, e uma pessoa regista qualquer alteração com o órgão decisor.",
+    "manage": "Escala, posição e provas",
+    "addLevel": "Adicionar um nível à escala",
+    "ordinal": "Lugar na escala (1 a 20)",
+    "levelName": "Nome do nível",
+    "recordPosition": "Registar a posição",
+    "chooseLevel": "Nível",
+    "effectiveOn": "Em vigor desde",
+    "addCriterion": "Adicionar um critério de saída a um nível",
+    "criterionName": "Critério",
+    "addMeasure": "Adicionar uma medida a um critério",
+    "origin": "Origem",
+    "derivation": "Calculado como",
+    "unit": "Unidade",
+    "direction": "Sentido",
+    "sustain": "Meses consecutivos exigidos",
+    "enterReading": "Introduzir uma leitura",
+    "forMeasure": "Medida (apenas as reportadas)",
+    "readingValue": "Valor (deixar vazio se os dados faltarem)",
+    "evidence": "Nota de evidência",
+    "sourceDocument": "Documento de origem",
+    "readingHint": "Um valor precisa de uma nota de evidência e de um documento de origem nomeado. Um valor vazio diz que faltam dados; nunca é lido como aprovação."
   },
   "cut": {
     "title": "Prontidão da virada",
@@ -1744,6 +1790,51 @@
     "hypercare": "Cobertura de hypercare",
     "keyPerson": "Risco de pessoa-chave",
     "noConcerns": "Nenhuma preocupação encontrada.",
-    "reasonsEnglish": "Os motivos abaixo são escritos pelo serviço em inglês."
+    "reasonsEnglish": "Os motivos abaixo são escritos pelo serviço em inglês.",
+    "basisText": "Apenas o lado humano. O pessoal formado são pessoas da função, empregadas no primeiro dia da janela e registadas no local, que concluíram o curso indicado nesse dia ou antes e cujo certificado dura toda a janela. Um défice que pessoas sem local registado poderiam cobrir é desconhecido, não em risco. O hypercare é a escala de prevenção durante a janela: um dia sem ninguém de prevenção está em risco. O risco de pessoa-chave é lido no local, a partir dos níveis de competência declarados, para as competências dos grupos listados que são críticas num perfil de função; detentores sem local registado tornam o risco desconhecido. Um local é comparado pelo nome e alias, sem maiúsculas nem pontuação. Um desconhecido nunca está pronto. Decidir se avança é uma decisão humana, fora deste serviço.",
+    "why": {
+      "no_role": "Nenhuma função necessária está listada para esta virada.",
+      "course_unknown": "{name}: o curso não consta dos registos de aprendizagem (renomeado ou sem inscrições), pelo que a formação não pode ser verificada.",
+      "trained_unplaced": "{name}: {trained} de {required} formados no local, e {unplaced} pessoas da função não têm local registado.",
+      "trained_short": "{name}: {trained} de {required} formados no local, faltam {short}.",
+      "no_rota": "Nenhuma escala de prevenção está ligada à janela da virada.",
+      "uncovered_days": "{count} dias corridos da janela não têm ninguém de prevenção, o primeiro em {first}.",
+      "no_pool": "Nenhum grupo está listado como dependência desta virada.",
+      "no_critical_skill": "Nenhuma das competências dos grupos listados está marcada como crítica num perfil de função.",
+      "key_no_holder": "{name}: ninguém no local a detém.",
+      "key_single_holder": "{name}: um detentor no local, sem suplente nem sucessor pronto.",
+      "key_no_holder_unplaced": "{name}: ninguém no local a detém; {unplaced} detentores noutras partes da organização não têm local registado.",
+      "key_single_holder_unplaced": "{name}: um detentor no local, sem suplente nem sucessor pronto; {unplaced} detentores noutras partes da organização não têm local registado."
+    },
+    "plan": "Planear uma virada",
+    "siteLabel": "Local",
+    "windowStart": "Primeiro dia",
+    "windowEnd": "Último dia",
+    "aliases": "Outros nomes do local (separados por vírgulas, até dez)",
+    "rotaRef": "Escala de prevenção (referência opcional)",
+    "create": "Planear a virada",
+    "remove": "Remover a virada",
+    "removeConfirm": "Remover esta virada com as suas funções e grupos?",
+    "addRole": "Adicionar uma função necessária",
+    "roleProfile": "Perfil de função",
+    "course": "Referência do curso",
+    "headcount": "Pessoas necessárias",
+    "addPool": "Adicionar um grupo de que depende"
+  },
+  "ew": {
+    "title": "Alertas precoces",
+    "hint": "Condições que o serviço viu: um grupo sobrecomprometido nos próximos seis meses, uma medida violada, uma virada em risco. Uma condição é datada pela primeira varredura que a viu. Uma pessoa reconhece cada alerta.",
+    "sweep": "Verificar agora",
+    "swept": "Abertos {opened}, fechados {cleared}, avisados {told}",
+    "acknowledge": "Reconhecer",
+    "firstSeen": "Visto pela primeira vez em {date}",
+    "daysOpen": "{days} dias corridos",
+    "cleared": "Fechado em {date}",
+    "acknowledged": "Reconhecido em {date}",
+    "notAcknowledged": "Não reconhecido",
+    "timeToReport": "Tempo até reportar: {days} dias corridos",
+    "timeToReportNone": "Tempo até reportar: desconhecido enquanto algum alerta não for reconhecido",
+    "none": "Sem alertas precoces.",
+    "basisText": "A data em que uma condição foi verdadeira pela primeira vez é a da primeira varredura que a viu, pelo que uma varredura menos frequente do que diária a data tarde. O tempo até reportar é o maior número de dias corridos desde essa data até uma pessoa a reconhecer, entre todos os alertas listados; é desconhecido enquanto algum não for reconhecido, porque um lento não deve parecer rápido."
   }
 }

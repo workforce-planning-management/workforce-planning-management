@@ -339,6 +339,7 @@ describe("api path map", () => {
     await wpm.programmeRollup();
     await wpm.capacityView("organization:abc");
     await wpm.keyPersonRisk();
+    await wpm.keyPersonRisk("organization:abc");
     await wpm.governanceLoad("organization:abc");
     await wpm.oversightStatus("organization:abc");
     await wpm.listOversightPacks("organization:abc");
@@ -347,6 +348,63 @@ describe("api path map", () => {
     await wpm.withdrawOversightPack("pack1", "wrong month");
     await wpm.listCutovers("organization:abc");
     await wpm.cutoverReadiness("cut1");
+    await wpm.createCutover({
+      organization_ref: "organization:abc",
+      programme_ref: "thing:p",
+      name: "n",
+      site: "s",
+      window_start: "2026-11-02",
+      window_end: "2026-11-15",
+    });
+    await wpm.addCutoverRole("cut1", {
+      role_profile_pid: "r1",
+      course_ref: "C",
+      required_headcount: 2,
+    });
+    await wpm.addCutoverPool("cut1", "pool1");
+    await wpm.removeCutover("cut1");
+    await wpm.listSkillPools("organization:abc");
+    await wpm.createSkillPool({
+      organization_ref: "organization:abc",
+      name: "p",
+    });
+    await wpm.addSkillPoolMember("pool1", { role_profile_pid: "r1" });
+    await wpm.setProgrammeDemand({
+      programme_ref: "thing:p",
+      pool_pid: "pool1",
+      month: "2026-11-01",
+      fte_centi: 150,
+    });
+    await wpm.createOversightLevel({
+      organization_ref: "organization:abc",
+      ordinal: 1,
+      name: "L",
+    });
+    await wpm.recordOversightPosition({
+      organization_ref: "organization:abc",
+      level_pid: "l1",
+      effective_on: "2026-10-01",
+      deciding_body: "b",
+      reason: "r",
+    });
+    await wpm.createOversightCriterion({ level_pid: "l1", name: "c" });
+    await wpm.createOversightMeasure({
+      criterion_pid: "c1",
+      name: "m",
+      origin: "reported",
+      unit: "u",
+      threshold: 1,
+      direction: "at_most",
+      sustain: 3,
+    });
+    await wpm.putOversightReading("m1", {
+      period_on: "2026-09-01",
+      value: null,
+    });
+    await wpm.listOversightDerivations();
+    await wpm.listEarlyWarnings("organization:abc");
+    await wpm.sweepEarlyWarnings("organization:abc");
+    await wpm.acknowledgeEarlyWarning("w1");
     expect(calls).toEqual([
       "/api/proxy/workers?department=engineering",
       "/api/proxy/workers/p1",
@@ -515,6 +573,7 @@ describe("api path map", () => {
       "/api/proxy/workforce-intelligence/programmes",
       "/api/proxy/capacity?organization=organization%3Aabc",
       "/api/proxy/workforce-intelligence/key-person",
+      "/api/proxy/workforce-intelligence/key-person?organization=organization%3Aabc",
       "/api/proxy/governance-commitments/load?organization=organization%3Aabc",
       "/api/proxy/oversight/status?organization=organization%3Aabc",
       "/api/proxy/oversight/packs?organization=organization%3Aabc",
@@ -523,6 +582,23 @@ describe("api path map", () => {
       "/api/proxy/oversight/packs/pack1/withdraw",
       "/api/proxy/cutovers?organization=organization%3Aabc",
       "/api/proxy/cutovers/cut1/readiness",
+      "/api/proxy/cutovers",
+      "/api/proxy/cutovers/cut1/roles",
+      "/api/proxy/cutovers/cut1/pools",
+      "/api/proxy/cutovers/cut1",
+      "/api/proxy/skill-pools?organization=organization%3Aabc",
+      "/api/proxy/skill-pools",
+      "/api/proxy/skill-pools/pool1/members",
+      "/api/proxy/programme-demands",
+      "/api/proxy/oversight/levels",
+      "/api/proxy/oversight/positions",
+      "/api/proxy/oversight/criteria",
+      "/api/proxy/oversight/measures",
+      "/api/proxy/oversight/measures/m1/readings",
+      "/api/proxy/oversight/derivations",
+      "/api/proxy/early-warnings?organization=organization%3Aabc",
+      "/api/proxy/early-warnings/sweep?organization=organization%3Aabc",
+      "/api/proxy/early-warnings/w1/acknowledge",
     ]);
     vi.unstubAllGlobals();
   });

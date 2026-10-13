@@ -237,10 +237,41 @@ pub(super) async fn pack_json(ctx: &AppContext, org: &str) -> Result<serde_json:
     }))
 }
 
-/// `GET /api/workforce-intelligence/key-person` — counts only; no one is named.
-#[debug_handler]
-async fn aggregate(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
+/// Query for the key-person routes.
+#[derive(Debug, serde::Deserialize)]
+struct OrgQuery {
+    /// Read one organization instead of the whole of the caller's scope.
+    organization: Option<String>,
+}
+
+/// The scope to read: the caller's, or the one organization asked for. An organization outside the
+/// caller's scope is `404`, as for every scoped read.
+async fn scope_for(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    query: &OrgQuery,
+) -> Result<Option<Vec<String>>> {
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let Some(org) = query.organization.as_deref() else {
+        return Ok(scope);
+    };
+    if let Some(refs) = &scope
+        && !refs.iter().any(|r| r == org)
+    {
+        return Err(Error::NotFound);
+    }
+    Ok(Some(vec![org.to_string()]))
+}
+
+/// `GET /api/workforce-intelligence/key-person` — counts only; no one is named. With
+/// `?organization=`, only that organization.
+#[debug_handler]
+async fn aggregate(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+) -> Result<Response> {
+    let scope = scope_for(&ctx, &caller, &query).await?;
     let (rows, _) = rows(&ctx, scope.as_deref(), None).await?;
     let single = rows
         .iter()
@@ -269,8 +300,12 @@ async fn aggregate(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Resu
 /// `GET /api/workforce-intelligence/key-person/named` — the sole holder behind each single point of
 /// failure, by worker number. HR only, and the read is audited.
 #[debug_handler]
-async fn named(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+async fn named(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+) -> Result<Response> {
+    let scope = scope_for(&ctx, &caller, &query).await?;
     let (rows, staff) = rows(&ctx, scope.as_deref(), None).await?;
     let by_pid: BTreeMap<Uuid, &workers::Model> = staff.iter().map(|w| (w.pid, w)).collect();
     let people: Vec<serde_json::Value> = rows

@@ -39,7 +39,8 @@
     "capacity": "Kapazität",
     "resilience": "Resilienz",
     "oversight": "Aufsicht",
-    "cutover": "Umstellungen"
+    "cutover": "Umstellungen",
+    "warnings": "Frühwarnungen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -141,7 +142,14 @@
     "days": "Kalendertage",
     "masked": "Verborgen",
     "noOrganization": "Für Sie ist keine Organisation verfügbar.",
-    "unknown": "unbekannt"
+    "unknown": "unbekannt",
+    "notAllowed": "Sie haben nicht das Recht, diese Änderung vorzunehmen.",
+    "fromService": "Originaltext des Dienstes (Englisch)",
+    "add": "Hinzufügen",
+    "save": "Speichern",
+    "remove": "Entfernen",
+    "month": "Monat",
+    "programme": "Programmreferenz"
   },
   "dash": {
     "title": "HR-Übersicht",
@@ -1307,7 +1315,8 @@
     "capacity": "Kapazität — WPM",
     "resilience": "Resilienz — WPM",
     "oversight": "Aufsicht — WPM",
-    "cutover": "Umstellungsbereitschaft — WPM"
+    "cutover": "Umstellungsbereitschaft — WPM",
+    "warnings": "Frühwarnungen — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -1681,8 +1690,21 @@
     "constraint": "Engpass-Pool: {name}",
     "wip": "Programme, die darauf zugreifen: {active} von {limit}",
     "wipNoLimit": "Programme, die darauf zugreifen: {active}; es ist keine Grenze gesetzt",
-    "overMonths": "{over} Monate überlastet, {unknown} unbekannt",
-    "basis": "So wird es berechnet"
+    "overMonths": "Monate überlastet: {over} · unbekannt: {unknown}",
+    "basis": "So wird es berechnet",
+    "basisText": "Das Angebot ist für jede Person, die zum Pool zählt, ihre FTE × die Tage des Monats, an denen sie beschäftigt und nicht in genehmigtem Urlaub ist ÷ die Tage des Monats, summiert, abzüglich der Betriebsreserve des Pools. Der Bedarf ist die FTE, die aktive Programmansprüche dem Pool entnehmen. Bestätigte und zugesagte Partnerkapazität deckt einen Fehlbetrag; angefragte nicht. Ein Monat, in dem ein Partner nichts zugesagt hat, ist unbekannt, nicht null.",
+    "manage": "Kompetenzpools und Bedarf",
+    "poolName": "Name des Pools",
+    "reservation": "Betriebsreserve (Prozent des Angebots)",
+    "createPool": "Pool anlegen",
+    "addMember": "Mitglied zu einem Pool hinzufügen",
+    "memberHint": "Ein Mitglied ist ein Rollenprofil (alle in dieser Rolle zählen) oder eine Fähigkeit mit Mindeststufe.",
+    "skill": "Fähigkeit",
+    "minProficiency": "Mindeststufe",
+    "demandTitle": "Anspruch eines Programms auf einen Pool",
+    "fte": "FTE für den Monat",
+    "saveClaim": "Anspruch speichern",
+    "claimHint": "Ein neuer Anspruch ist vorgeschlagen: Er wird gezeigt, zählt aber erst, wenn eine Startentscheidung ihn aktiv macht."
   },
   "res": {
     "title": "Resilienz",
@@ -1701,7 +1723,9 @@
     "role": "Rolle",
     "senior": "Leitend",
     "hoursMonth": "Stunden pro Monat",
-    "noCommitments": "Es sind keine Governance-Verpflichtungen erfasst."
+    "noCommitments": "Es sind keine Governance-Verpflichtungen erfasst.",
+    "basisKeyPerson": "Eine kritische Fähigkeit ist in einem aktiven Rollenprofil als kritisch markiert. Inhaber ist eine beschäftigte Person, deren erklärte Kompetenz die höchste kritische Mindeststufe erreicht. Eine Vertretung ist eine benannte, aktuelle Vertretung, die die Fähigkeit ebenfalls hat. Ein bereiter Nachfolger ist auf einem Nachfolgeplan als sofort bereit eingestuft, dessen Stelleninhaber ein Inhaber ist. Nur Zahlen: Sie dienen dazu, Vertretungen und Nachfolge zu finanzieren, nicht dazu, jemanden zu beurteilen.",
+    "basisGovernance": "Eine Schätzung aus den erfassten Verpflichtungen: Termine pro Jahr × Minuten × Personen in der Rolle, pro Monat. Eine Rolle, nie eine Person; kein Zeitnachweis."
   },
   "ovs": {
     "title": "Aufsicht",
@@ -1731,7 +1755,29 @@
     "close": "Schließen",
     "noPacks": "Es wurde noch kein Paket eingefroren.",
     "notAllowed": "Nur eine Administratorin oder ein Administrator der Organisation kann ein Paket einfrieren oder zurückziehen.",
-    "packCapacity": "Kapazität im Paket"
+    "packCapacity": "Kapazität im Paket",
+    "basisText": "Die gezeigten Kriterien sind die Ausstiegskriterien der Stufe, auf der die Organisation steht. Ein Kriterium ist erfüllt, wenn jede Kennzahl ihren Schwellenwert über die geforderte Zahl aufeinanderfolgender Monate bis zum letzten vollständigen Monat erreicht hat. Ein fehlender oder leerer Messwert ist nie bestanden. Das ist Evidenz: Der Dienst ändert nie eine Stufe, und eine Person hält jede Änderung mit dem entscheidenden Gremium fest.",
+    "manage": "Skala, Einstufung und Belege",
+    "addLevel": "Stufe zur Skala hinzufügen",
+    "ordinal": "Platz auf der Skala (1 bis 20)",
+    "levelName": "Name der Stufe",
+    "recordPosition": "Einstufung erfassen",
+    "chooseLevel": "Stufe",
+    "effectiveOn": "Gültig ab",
+    "addCriterion": "Ausstiegskriterium zu einer Stufe hinzufügen",
+    "criterionName": "Kriterium",
+    "addMeasure": "Kennzahl zu einem Kriterium hinzufügen",
+    "origin": "Herkunft",
+    "derivation": "Berechnet als",
+    "unit": "Einheit",
+    "direction": "Richtung",
+    "sustain": "Aufeinanderfolgende Monate erforderlich",
+    "enterReading": "Messwert erfassen",
+    "forMeasure": "Kennzahl (nur gemeldete)",
+    "readingValue": "Wert (leer lassen, wenn die Daten fehlen)",
+    "evidence": "Belegnotiz",
+    "sourceDocument": "Quelldokument",
+    "readingHint": "Ein Wert braucht eine Belegnotiz und ein benanntes Quelldokument. Ein leerer Wert sagt, dass die Daten fehlen; er gilt nie als bestanden."
   },
   "cut": {
     "title": "Umstellungsbereitschaft",
@@ -1744,6 +1790,51 @@
     "hypercare": "Hypercare-Abdeckung",
     "keyPerson": "Schlüsselpersonenrisiko",
     "noConcerns": "Keine Bedenken gefunden.",
-    "reasonsEnglish": "Die folgenden Gründe schreibt der Dienst auf Englisch."
+    "reasonsEnglish": "Die folgenden Gründe schreibt der Dienst auf Englisch.",
+    "basisText": "Nur die Personenseite. Geschultes Personal sind Personen der Rolle, die am ersten Tag des Zeitfensters beschäftigt und am Standort erfasst sind, den genannten Kurs an oder vor diesem Tag abgeschlossen haben und deren Zertifikat das Zeitfenster überdauert. Ein Fehlbetrag, den Personen ohne erfassten Standort schließen könnten, ist unbekannt, nicht gefährdet. Hypercare ist der Bereitschaftsplan über das Zeitfenster: Ein Tag ohne Bereitschaft ist gefährdet. Das Schlüsselpersonenrisiko wird am Standort aus erklärten Kompetenzstufen gelesen, für die Fähigkeiten der aufgeführten Pools, die in einem Rollenprofil kritisch sind; Inhaber ohne erfassten Standort machen ein Risiko unbekannt. Ein Standort wird über Namen und Aliasse ohne Groß-/Kleinschreibung und Satzzeichen zugeordnet. Unbekannt ist nie bereit. Ob live gegangen wird, entscheiden Menschen außerhalb dieses Dienstes.",
+    "why": {
+      "no_role": "Für diese Umstellung ist keine erforderliche Rolle aufgeführt.",
+      "course_unknown": "{name}: Der Kurs steht nicht in den Lernunterlagen (umbenannt oder nie belegt), die Schulung lässt sich daher nicht prüfen.",
+      "trained_unplaced": "{name}: {trained} von {required} am Standort geschult, und {unplaced} Personen der Rolle haben keinen erfassten Standort.",
+      "trained_short": "{name}: {trained} von {required} am Standort geschult, es fehlen {short}.",
+      "no_rota": "Für das Umstellungsfenster ist kein Bereitschaftsplan verknüpft.",
+      "uncovered_days": "An {count} Kalendertagen des Fensters ist niemand in Bereitschaft, der erste am {first}.",
+      "no_pool": "Für diese Umstellung ist kein Pool als Abhängigkeit aufgeführt.",
+      "no_critical_skill": "Keine der Fähigkeiten in den aufgeführten Pools ist in einem Rollenprofil als kritisch markiert.",
+      "key_no_holder": "{name}: Niemand am Standort hat sie.",
+      "key_single_holder": "{name}: ein Inhaber am Standort, ohne Vertretung oder bereiten Nachfolger.",
+      "key_no_holder_unplaced": "{name}: Niemand am Standort hat sie; {unplaced} Inhaber anderswo in der Organisation haben keinen erfassten Standort.",
+      "key_single_holder_unplaced": "{name}: ein Inhaber am Standort, ohne Vertretung oder bereiten Nachfolger; {unplaced} Inhaber anderswo in der Organisation haben keinen erfassten Standort."
+    },
+    "plan": "Umstellung planen",
+    "siteLabel": "Standort",
+    "windowStart": "Erster Tag",
+    "windowEnd": "Letzter Tag",
+    "aliases": "Weitere Namen des Standorts (kommagetrennt, bis zu zehn)",
+    "rotaRef": "Bereitschaftsplan (optionale Referenz)",
+    "create": "Umstellung planen",
+    "remove": "Umstellung entfernen",
+    "removeConfirm": "Diese Umstellung mit ihren Rollen und Pools entfernen?",
+    "addRole": "Erforderliche Rolle hinzufügen",
+    "roleProfile": "Rollenprofil",
+    "course": "Kursreferenz",
+    "headcount": "Erforderliche Personen",
+    "addPool": "Abhängigen Pool hinzufügen"
+  },
+  "ew": {
+    "title": "Frühwarnungen",
+    "hint": "Zustände, die der Dienst gesehen hat: ein Pool in den nächsten sechs Monaten überbucht, eine verletzte Kennzahl, eine gefährdete Umstellung. Ein Zustand wird mit dem ersten Durchlauf datiert, der ihn sah. Eine Person bestätigt jede Warnung.",
+    "sweep": "Jetzt prüfen",
+    "swept": "Geöffnet {opened}, geschlossen {cleared}, benachrichtigt {told}",
+    "acknowledge": "Bestätigen",
+    "firstSeen": "Erstmals gesehen am {date}",
+    "daysOpen": "{days} Kalendertage",
+    "cleared": "Beendet am {date}",
+    "acknowledged": "Bestätigt am {date}",
+    "notAcknowledged": "Nicht bestätigt",
+    "timeToReport": "Zeit bis zur Meldung: {days} Kalendertage",
+    "timeToReportNone": "Zeit bis zur Meldung: unbekannt, solange eine Warnung unbestätigt ist",
+    "none": "Keine Frühwarnungen.",
+    "basisText": "Das Datum, an dem ein Zustand erstmals zutraf, ist das Datum des ersten Durchlaufs, der ihn sah; ein seltener als täglicher Durchlauf datiert ihn also spät. Die Zeit bis zur Meldung sind die meisten Kalendertage von diesem Datum bis zur Bestätigung durch eine Person über alle aufgeführten Warnungen; sie ist unbekannt, solange eine unbestätigt ist, weil eine langsame nicht schnell wirken darf."
   }
 }

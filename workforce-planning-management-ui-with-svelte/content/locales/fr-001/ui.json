@@ -39,7 +39,8 @@
     "capacity": "Capacité",
     "resilience": "Résilience",
     "oversight": "Supervision",
-    "cutover": "Bascules"
+    "cutover": "Bascules",
+    "warnings": "Alertes précoces"
   },
   "pr": {
     "retention": "Conservation",
@@ -141,7 +142,14 @@
     "days": "jours calendaires",
     "masked": "Masqué",
     "noOrganization": "Aucune organisation n'est disponible pour vous.",
-    "unknown": "inconnu"
+    "unknown": "inconnu",
+    "notAllowed": "Vous n'avez pas le droit d'effectuer ce changement.",
+    "fromService": "Formulation d'origine du service (en anglais)",
+    "add": "Ajouter",
+    "save": "Enregistrer",
+    "remove": "Retirer",
+    "month": "Mois",
+    "programme": "Référence du programme"
   },
   "dash": {
     "title": "Tableau de bord RH",
@@ -1307,7 +1315,8 @@
     "capacity": "Capacité — WPM",
     "resilience": "Résilience — WPM",
     "oversight": "Supervision — WPM",
-    "cutover": "Préparation à la bascule — WPM"
+    "cutover": "Préparation à la bascule — WPM",
+    "warnings": "Alertes précoces — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -1681,8 +1690,21 @@
     "constraint": "Pool contraignant : {name}",
     "wip": "Programmes qui y puisent : {active} sur {limit}",
     "wipNoLimit": "Programmes qui y puisent : {active} ; aucune limite n'est fixée",
-    "overMonths": "{over} mois en dépassement, {unknown} inconnus",
-    "basis": "Comment c'est calculé"
+    "overMonths": "Mois en dépassement : {over} · inconnus : {unknown}",
+    "basis": "Comment c'est calculé",
+    "basisText": "L'offre est, pour chaque personne comptée dans le pool, son ETP × les jours du mois où elle est employée et pas en congé approuvé ÷ les jours du mois, additionnée, moins la réserve opérationnelle du pool. La demande est l'ETP que les demandes des programmes actifs prélèvent sur le pool. La capacité de partenaires confirmée et engagée couvre un déficit ; la capacité demandée non. Un mois où un partenaire ne s'est pas engagé est inconnu, pas zéro.",
+    "manage": "Pools de compétences et demande",
+    "poolName": "Nom du pool",
+    "reservation": "Réserve opérationnelle (pourcentage de l'offre)",
+    "createPool": "Créer le pool",
+    "addMember": "Ajouter un membre à un pool",
+    "memberHint": "Un membre est un profil de poste (tous ceux qui ont ce rôle comptent) ou une compétence avec un niveau minimal.",
+    "skill": "Compétence",
+    "minProficiency": "Niveau minimal",
+    "demandTitle": "Demande d'un programme sur un pool",
+    "fte": "ETP du mois",
+    "saveClaim": "Enregistrer la demande",
+    "claimHint": "Une nouvelle demande est proposée : elle s'affiche mais ne compte pas tant qu'une décision de démarrage ne l'active pas."
   },
   "res": {
     "title": "Résilience",
@@ -1701,7 +1723,9 @@
     "role": "Rôle",
     "senior": "Cadre",
     "hoursMonth": "Heures par mois",
-    "noCommitments": "Aucun engagement de gouvernance n'est saisi."
+    "noCommitments": "Aucun engagement de gouvernance n'est saisi.",
+    "basisKeyPerson": "Une compétence critique est marquée critique sur un profil de poste actif. Un détenteur est une personne employée dont le niveau déclaré atteint le minimum critique le plus élevé. Un suppléant est un suppléant nommé et en cours qui la détient aussi. Un successeur prêt est classé prêt maintenant sur un plan de succession dont le titulaire est un détenteur. Des nombres seulement : l'outil sert à financer suppléances et succession, pas à juger quiconque.",
+    "basisGovernance": "Une estimation à partir des engagements saisis : occurrences par an × minutes × personnes dans le rôle, par mois. Un rôle, jamais une personne ; ce n'est pas une feuille de temps."
   },
   "ovs": {
     "title": "Supervision",
@@ -1731,7 +1755,29 @@
     "close": "Fermer",
     "noPacks": "Aucun dossier n'a encore été figé.",
     "notAllowed": "Seul un administrateur de l'organisation peut figer ou retirer un dossier.",
-    "packCapacity": "Capacité dans le dossier"
+    "packCapacity": "Capacité dans le dossier",
+    "basisText": "Les critères affichés sont les critères de sortie du niveau où se trouve l'organisation. Un critère est satisfait quand chaque mesure a atteint son seuil pendant le nombre de mois consécutifs exigé, jusqu'au dernier mois complet. Une mesure absente ou nulle n'est jamais une réussite. C'est une preuve : le service ne change jamais de niveau, et une personne enregistre tout changement avec l'instance décisionnelle.",
+    "manage": "Échelle, position et preuves",
+    "addLevel": "Ajouter un niveau à l'échelle",
+    "ordinal": "Place sur l'échelle (1 à 20)",
+    "levelName": "Nom du niveau",
+    "recordPosition": "Enregistrer la position",
+    "chooseLevel": "Niveau",
+    "effectiveOn": "En vigueur le",
+    "addCriterion": "Ajouter un critère de sortie à un niveau",
+    "criterionName": "Critère",
+    "addMeasure": "Ajouter une mesure à un critère",
+    "origin": "Origine",
+    "derivation": "Calculé comme",
+    "unit": "Unité",
+    "direction": "Sens",
+    "sustain": "Mois consécutifs requis",
+    "enterReading": "Saisir une mesure",
+    "forMeasure": "Mesure (déclarées seulement)",
+    "readingValue": "Valeur (laisser vide si les données manquent)",
+    "evidence": "Note de preuve",
+    "sourceDocument": "Document source",
+    "readingHint": "Une valeur exige une note de preuve et un document source nommé. Une valeur vide dit que les données manquent ; elle n'est jamais lue comme une réussite."
   },
   "cut": {
     "title": "Préparation à la bascule",
@@ -1744,6 +1790,51 @@
     "hypercare": "Couverture d'hypercare",
     "keyPerson": "Risque lié aux personnes clés",
     "noConcerns": "Aucun point d'inquiétude.",
-    "reasonsEnglish": "Les motifs ci-dessous sont rédigés en anglais par le service."
+    "reasonsEnglish": "Les motifs ci-dessous sont rédigés en anglais par le service.",
+    "basisText": "Le volet humain seulement. Le personnel formé, ce sont les personnes du rôle, employées le premier jour de la fenêtre et enregistrées sur le site, qui ont terminé le cours indiqué ce jour-là ou avant et dont le certificat couvre toute la fenêtre. Un déficit que des personnes sans site enregistré pourraient combler est inconnu, pas à risque. L'hypercare est le planning d'astreinte sur la fenêtre : un jour sans personne d'astreinte est à risque. Le risque lié aux personnes clés est lu sur le site, à partir des niveaux de compétence déclarés, pour les compétences des pools listés qui sont critiques sur un profil de poste ; les détenteurs sans site enregistré rendent un risque inconnu. Un site est rapproché par son nom et ses alias, sans casse ni ponctuation. Un inconnu n'est jamais prêt. La décision de basculer est humaine et extérieure à ce service.",
+    "why": {
+      "no_role": "Aucun rôle requis n'est listé pour cette bascule.",
+      "course_unknown": "{name} : le cours ne figure pas dans les dossiers de formation (renommé ou jamais suivi), la formation ne peut donc pas être vérifiée.",
+      "trained_unplaced": "{name} : {trained} sur {required} formés sur le site, et {unplaced} personnes du rôle n'ont pas de site enregistré.",
+      "trained_short": "{name} : {trained} sur {required} formés sur le site, il en manque {short}.",
+      "no_rota": "Aucun planning d'astreinte n'est lié à la fenêtre de bascule.",
+      "uncovered_days": "{count} jours calendaires de la fenêtre n'ont personne d'astreinte, le premier le {first}.",
+      "no_pool": "Aucun pool n'est listé comme dépendance de cette bascule.",
+      "no_critical_skill": "Aucune des compétences des pools listés n'est marquée critique sur un profil de poste.",
+      "key_no_holder": "{name} : personne sur le site ne la détient.",
+      "key_single_holder": "{name} : un détenteur sur le site, sans suppléant ni successeur prêt.",
+      "key_no_holder_unplaced": "{name} : personne sur le site ne la détient ; {unplaced} détenteurs ailleurs dans l'organisation n'ont pas de site enregistré.",
+      "key_single_holder_unplaced": "{name} : un détenteur sur le site, sans suppléant ni successeur prêt ; {unplaced} détenteurs ailleurs dans l'organisation n'ont pas de site enregistré."
+    },
+    "plan": "Planifier une bascule",
+    "siteLabel": "Site",
+    "windowStart": "Premier jour",
+    "windowEnd": "Dernier jour",
+    "aliases": "Autres noms du site (séparés par des virgules, dix au plus)",
+    "rotaRef": "Planning d'astreinte (référence facultative)",
+    "create": "Planifier la bascule",
+    "remove": "Retirer la bascule",
+    "removeConfirm": "Retirer cette bascule avec ses rôles et pools ?",
+    "addRole": "Ajouter un rôle requis",
+    "roleProfile": "Profil de poste",
+    "course": "Référence du cours",
+    "headcount": "Personnes requises",
+    "addPool": "Ajouter un pool dont elle dépend"
+  },
+  "ew": {
+    "title": "Alertes précoces",
+    "hint": "Situations que le service a vues : un pool surengagé dans les six prochains mois, une mesure franchie, une bascule à risque. Une situation est datée du premier balayage qui l'a vue. Une personne accuse réception de chaque alerte.",
+    "sweep": "Vérifier maintenant",
+    "swept": "Ouvertes {opened}, closes {cleared}, prévenus {told}",
+    "acknowledge": "Accuser réception",
+    "firstSeen": "Vu pour la première fois le {date}",
+    "daysOpen": "{days} jours calendaires",
+    "cleared": "Clos le {date}",
+    "acknowledged": "Accusé le {date}",
+    "notAcknowledged": "Sans accusé",
+    "timeToReport": "Délai de signalement : {days} jours calendaires",
+    "timeToReportNone": "Délai de signalement : inconnu tant qu'une alerte n'a pas d'accusé",
+    "none": "Aucune alerte précoce.",
+    "basisText": "La date à laquelle une situation a été vraie pour la première fois est celle du premier balayage qui l'a vue, donc un balayage moins fréquent que quotidien la date tard. Le délai de signalement est le plus grand nombre de jours calendaires entre cette date et l'accusé de réception par une personne, parmi toutes les alertes listées ; il est inconnu tant qu'une alerte n'a pas d'accusé, car une alerte lente ne doit pas sembler rapide."
   }
 }

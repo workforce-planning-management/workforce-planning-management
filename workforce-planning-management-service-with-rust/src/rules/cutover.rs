@@ -36,13 +36,41 @@ impl Readiness {
     }
 }
 
+/// One reason as data: a code and its figures, so a client can say it in its own language. The same
+/// reason is also given as English text in [`Check::reasons`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Detail {
+    /// What kind of reason.
+    pub code: &'static str,
+    /// The names and figures in it.
+    pub params: Vec<(&'static str, String)>,
+}
+
+/// A reason: English text for a reader of the API, and the same thing as data for a client.
+fn why(code: &'static str, params: Vec<(&'static str, String)>, text: String) -> (Detail, String) {
+    (Detail { code, params }, text)
+}
+
 /// A check's result with its reasons, in words and without a person.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Check {
     /// The result.
     pub status: Readiness,
-    /// Why.
+    /// Why, in English.
     pub reasons: Vec<String>,
+    /// Why, as data; one entry for each reason, in the same order.
+    pub details: Vec<Detail>,
+}
+
+impl Check {
+    fn new(status: Readiness, whys: Vec<(Detail, String)>) -> Self {
+        let (details, reasons) = whys.into_iter().unzip();
+        Self {
+            status,
+            reasons,
+            details,
+        }
+    }
 }
 
 /// Overall: a known risk outweighs an unknown, which outweighs ready. An unknown is never a pass.
@@ -95,18 +123,26 @@ pub struct RoleCount {
 #[must_use]
 pub fn trained_staff(roles: &[(String, RoleCount)]) -> Check {
     if roles.is_empty() {
-        return Check {
-            status: Readiness::Unknown,
-            reasons: vec!["no required role is listed for this cutover".to_string()],
-        };
+        return Check::new(
+            Readiness::Unknown,
+            vec![why(
+                "no_role",
+                vec![],
+                "no required role is listed for this cutover".to_string(),
+            )],
+        );
     }
     let mut status = Readiness::Ready;
     let mut reasons = Vec::new();
     for (name, r) in roles {
         if !r.course_known {
             status = status.max(Readiness::Unknown);
-            reasons.push(format!(
-                "{name}: the course is not in the learning records (renamed or never enrolled), so training cannot be checked"
+            reasons.push(why(
+                "course_unknown",
+                vec![("name", name.clone())],
+                format!(
+                    "{name}: the course is not in the learning records (renamed or never enrolled), so training cannot be checked"
+                ),
             ));
             continue;
         }
@@ -116,19 +152,37 @@ pub fn trained_staff(roles: &[(String, RoleCount)]) -> Check {
         let short = r.required - r.trained;
         if r.unplaced >= short {
             status = status.max(Readiness::Unknown);
-            reasons.push(format!(
-                "{name}: {} of {} trained at the site, and {} people of the role have no site recorded",
-                r.trained, r.required, r.unplaced
+            reasons.push(why(
+                "trained_unplaced",
+                vec![
+                    ("name", name.clone()),
+                    ("trained", r.trained.to_string()),
+                    ("required", r.required.to_string()),
+                    ("unplaced", r.unplaced.to_string()),
+                ],
+                format!(
+                    "{name}: {} of {} trained at the site, and {} people of the role have no site recorded",
+                    r.trained, r.required, r.unplaced
+                ),
             ));
         } else {
             status = Readiness::AtRisk;
-            reasons.push(format!(
-                "{name}: {} of {} trained at the site, short by {short}",
-                r.trained, r.required
+            reasons.push(why(
+                "trained_short",
+                vec![
+                    ("name", name.clone()),
+                    ("trained", r.trained.to_string()),
+                    ("required", r.required.to_string()),
+                    ("short", short.to_string()),
+                ],
+                format!(
+                    "{name}: {} of {} trained at the site, short by {short}",
+                    r.trained, r.required
+                ),
             ));
         }
     }
-    Check { status, reasons }
+    Check::new(status, reasons)
 }
 
 /// Hypercare cover from the on-call rota. `rota` is `false` when none is linked; `uncovered` is the
@@ -136,23 +190,31 @@ pub fn trained_staff(roles: &[(String, RoleCount)]) -> Check {
 #[must_use]
 pub fn hypercare(rota: bool, uncovered: &[NaiveDate]) -> Check {
     if !rota {
-        return Check {
-            status: Readiness::Unknown,
-            reasons: vec!["no on-call rota is linked for the cutover window".to_string()],
-        };
+        return Check::new(
+            Readiness::Unknown,
+            vec![why(
+                "no_rota",
+                vec![],
+                "no on-call rota is linked for the cutover window".to_string(),
+            )],
+        );
     }
     match uncovered.first() {
-        None => Check {
-            status: Readiness::Ready,
-            reasons: Vec::new(),
-        },
-        Some(first) => Check {
-            status: Readiness::AtRisk,
-            reasons: vec![format!(
-                "{} calendar days of the window have nobody on call, the first on {first}",
-                uncovered.len()
+        None => Check::new(Readiness::Ready, Vec::new()),
+        Some(first) => Check::new(
+            Readiness::AtRisk,
+            vec![why(
+                "uncovered_days",
+                vec![
+                    ("count", uncovered.len().to_string()),
+                    ("first", first.to_string()),
+                ],
+                format!(
+                    "{} calendar days of the window have nobody on call, the first on {first}",
+                    uncovered.len()
+                ),
             )],
-        },
+        ),
     }
 }
 
@@ -164,41 +226,60 @@ pub fn hypercare(rota: bool, uncovered: &[NaiveDate]) -> Check {
 #[must_use]
 pub fn key_person(pools_listed: bool, skills: &[(String, KeyStatus, usize)]) -> Check {
     if !pools_listed {
-        return Check {
-            status: Readiness::Unknown,
-            reasons: vec!["no pool is listed as a dependency of this cutover".to_string()],
-        };
+        return Check::new(
+            Readiness::Unknown,
+            vec![why(
+                "no_pool",
+                vec![],
+                "no pool is listed as a dependency of this cutover".to_string(),
+            )],
+        );
     }
     if skills.is_empty() {
-        return Check {
-            status: Readiness::Unknown,
-            reasons: vec![
+        return Check::new(
+            Readiness::Unknown,
+            vec![why(
+                "no_critical_skill",
+                vec![],
                 "none of the skills in the listed pools is marked critical on a role profile"
                     .to_string(),
-            ],
-        };
+            )],
+        );
     }
     let mut status = Readiness::Ready;
     let mut reasons = Vec::new();
     for (name, held, unplaced) in skills {
-        let what = match held {
-            KeyStatus::NoHolder => format!("{name}: nobody at the site holds it"),
-            KeyStatus::SinglePointOfFailure => {
-                format!("{name}: one holder at the site, with no backup or ready successor")
-            }
+        let (code, what) = match held {
+            KeyStatus::NoHolder => (
+                "key_no_holder",
+                format!("{name}: nobody at the site holds it"),
+            ),
+            KeyStatus::SinglePointOfFailure => (
+                "key_single_holder",
+                format!("{name}: one holder at the site, with no backup or ready successor"),
+            ),
             KeyStatus::CoveredSingleHolder | KeyStatus::Shared => continue,
         };
         if *unplaced > 0 {
             status = status.max(Readiness::Unknown);
-            reasons.push(format!(
-                "{what}; {unplaced} holders elsewhere in the organization have no site recorded"
+            let code = if code == "key_no_holder" {
+                "key_no_holder_unplaced"
+            } else {
+                "key_single_holder_unplaced"
+            };
+            reasons.push(why(
+                code,
+                vec![("name", name.clone()), ("unplaced", unplaced.to_string())],
+                format!(
+                    "{what}; {unplaced} holders elsewhere in the organization have no site recorded"
+                ),
             ));
         } else {
             status = Readiness::AtRisk;
-            reasons.push(what);
+            reasons.push(why(code, vec![("name", name.clone())], what));
         }
     }
-    Check { status, reasons }
+    Check::new(status, reasons)
 }
 
 /// A site name as compared: lower case, apostrophes dropped, other punctuation turned into spaces,
@@ -373,14 +454,17 @@ mod tests {
         let ready = Check {
             status: Readiness::Ready,
             reasons: vec![],
+            details: vec![],
         };
         let unknown = Check {
             status: Readiness::Unknown,
             reasons: vec![],
+            details: vec![],
         };
         let risk = Check {
             status: Readiness::AtRisk,
             reasons: vec![],
+            details: vec![],
         };
         assert_eq!(overall(&[&ready, &ready]), Readiness::Ready);
         assert_eq!(overall(&[&ready, &unknown]), Readiness::Unknown);

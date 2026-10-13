@@ -6,14 +6,23 @@
 -->
 <script lang="ts">
   import {
+    addCutoverPool,
+    addCutoverRole,
+    createCutover,
     cutoverReadiness,
     listCutovers,
+    listRoleProfiles,
+    listSkillPools,
+    removeCutover,
     type Cutover,
     type CutoverReadiness,
     type Readiness,
+    type SkillPool,
   } from "#lib/api/wpm.js";
   import OrgPicker from "#lib/components/OrgPicker.svelte";
-  import { t, tf } from "#lib/i18n.svelte.js";
+  import WriteResult from "#lib/components/WriteResult.svelte";
+  import { t, tf, tp } from "#lib/i18n.svelte.js";
+  import { failure, type Failure } from "#lib/write.js";
   import { stateLabel } from "#lib/stateLabel.js";
 
   let org = $state("");
@@ -21,14 +30,18 @@
   let readiness = $state<Record<string, CutoverReadiness>>({});
   let error = $state<string | null>(null);
 
+  let pools = $state<SkillPool[]>([]);
+  let roleProfiles = $state<Array<{ pid: string; job_title: string }>>([]);
+  let failed = $state<Failure | null>(null);
+  let reload = $state(0);
+
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
 
   $effect(() => {
     const chosen = org;
+    void reload;
     if (!chosen) return;
     let current = true;
-    cutovers = null;
-    readiness = {};
     void (async () => {
       try {
         const list = await listCutovers(chosen);
@@ -45,6 +58,66 @@
       current = false;
     };
   });
+
+  // What the planning forms choose from; a caller who may not read them just gets empty lists.
+  $effect(() => {
+    const chosen = org;
+    if (!chosen) return;
+    let current = true;
+    void listSkillPools(chosen)
+      .then((p) => current && (pools = p))
+      .catch(() => current && (pools = []));
+    void listRoleProfiles()
+      .then((p) => current && (roleProfiles = p))
+      .catch(() => current && (roleProfiles = []));
+    return () => {
+      current = false;
+    };
+  });
+
+  /** Run a planning write, then read everything again. */
+  async function write(action: () => Promise<unknown>) {
+    failed = null;
+    try {
+      await action();
+      reload += 1;
+    } catch (cause) {
+      failed = failure(cause);
+    }
+  }
+
+  // The new-cutover form.
+  let programme = $state("");
+  let name = $state("");
+  let site = $state("");
+  let start = $state("");
+  let end = $state("");
+  let aliases = $state("");
+  let rota = $state("");
+
+  const aliasList = () =>
+    aliases
+      .split(",")
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+
+  // The add-role and add-pool forms, one set for whichever cutover they are used under.
+  let roleProfile = $state("");
+  let course = $state("");
+  let headcount = $state(1);
+  let poolChoice = $state("");
+
+  /** A reason in the reader's language, from the service's data; its English text when the code is new. */
+  function reasonText(
+    check: CutoverReadiness["checks"][keyof CutoverReadiness["checks"]],
+    i: number,
+  ): { text: string; translated: boolean } {
+    const d = check.details?.[i];
+    const said = d ? tp(`cut.why.${d.code}`, d.params) : null;
+    return said === null
+      ? { text: check.reasons[i] ?? "", translated: false }
+      : { text: said, translated: true };
+  }
 
   const CHECKS = [
     ["trained_staff", "cut.trainedStaff"],
@@ -72,7 +145,9 @@
 {:else if cutovers.length === 0}
   <p class="muted" data-testid="no-cutovers">{t("cut.none")}</p>
 {:else}
-  <p class="muted small">{t("cut.reasonsEnglish")}</p>
+  {#if cutovers.some((c) => CHECKS.some(([key]) => readiness[c.pid]?.checks[key].reasons.some((_, i) => !reasonText(readiness[c.pid]!.checks[key], i).translated)))}
+    <p class="muted small">{t("cut.reasonsEnglish")}</p>
+  {/if}
   {#each cutovers as c (c.pid)}
     {@const r = readiness[c.pid]}
     <section class="panel" data-testid="cutover">
@@ -104,7 +179,9 @@
                 <span class="muted">{t("cut.noConcerns")}</span>
               {:else}
                 <ul>
-                  {#each check.reasons as reason (reason)}<li>{reason}</li>{/each}
+                  {#each check.reasons as _, i (i)}
+                    <li>{reasonText(check, i).text}</li>
+                  {/each}
                 </ul>
               {/if}
             </li>
@@ -112,11 +189,107 @@
         </ul>
         <details>
           <summary>{t("cap.basis")}</summary>
-          <p class="muted">{r.basis}</p>
+          <p class="muted">{t("cut.basisText")}</p>
+          <p class="muted small">{t("common.fromService")}: {r.basis}</p>
         </details>
       {/if}
+      <details>
+        <summary>{t("cut.addRole")}</summary>
+        <form
+          class="form"
+          onsubmit={(e) => {
+            e.preventDefault();
+            void write(() =>
+              addCutoverRole(c.pid, {
+                role_profile_pid: roleProfile,
+                course_ref: course,
+                required_headcount: headcount,
+              }),
+            );
+          }}
+        >
+          <label>
+            {t("cut.roleProfile")}
+            <select bind:value={roleProfile} required data-testid="role-profile">
+              <option value="" disabled></option>
+              {#each roleProfiles as p (p.pid)}<option value={p.pid}>{p.job_title}</option>{/each}
+            </select>
+          </label>
+          <label>
+            {t("cut.course")}
+            <input bind:value={course} required data-testid="role-course" />
+          </label>
+          <label>
+            {t("cut.headcount")}
+            <input type="number" min="1" bind:value={headcount} required />
+          </label>
+          <button type="submit" data-testid="add-role">{t("common.add")}</button>
+        </form>
+      </details>
+      <details>
+        <summary>{t("cut.addPool")}</summary>
+        <form
+          class="form"
+          onsubmit={(e) => {
+            e.preventDefault();
+            void write(() => addCutoverPool(c.pid, poolChoice));
+          }}
+        >
+          <label>
+            {t("cap.pool")}
+            <select bind:value={poolChoice} required data-testid="pool-choice">
+              <option value="" disabled></option>
+              {#each pools as p (p.pid)}<option value={p.pid}>{p.name}</option>{/each}
+            </select>
+          </label>
+          <button type="submit" data-testid="add-pool">{t("common.add")}</button>
+        </form>
+      </details>
+      <button
+        type="button"
+        data-testid="remove-cutover"
+        onclick={() => {
+          if (confirm(t("cut.removeConfirm"))) void write(() => removeCutover(c.pid));
+        }}
+      >
+        {t("cut.remove")}
+      </button>
     </section>
   {/each}
+{/if}
+
+{#if org}
+  <section class="panel" data-testid="plan-cutover">
+    <h2>{t("cut.plan")}</h2>
+    <form
+      class="form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        void write(() =>
+          createCutover({
+            organization_ref: org,
+            programme_ref: programme,
+            name,
+            site,
+            window_start: start,
+            window_end: end,
+            rota_pid: rota.trim() === "" ? null : rota.trim(),
+            site_aliases: aliasList(),
+          }),
+        );
+      }}
+    >
+      <label>{t("common.programme")} <input bind:value={programme} required data-testid="cut-programme" /></label>
+      <label>{t("common.name")} <input bind:value={name} required data-testid="cut-name" /></label>
+      <label>{t("cut.siteLabel")} <input bind:value={site} required data-testid="cut-site" /></label>
+      <label>{t("cut.windowStart")} <input type="date" bind:value={start} required data-testid="cut-start" /></label>
+      <label>{t("cut.windowEnd")} <input type="date" bind:value={end} required data-testid="cut-end" /></label>
+      <label>{t("cut.aliases")} <input bind:value={aliases} data-testid="cut-aliases" /></label>
+      <label>{t("cut.rotaRef")} <input bind:value={rota} /></label>
+      <button type="submit" data-testid="plan-create">{t("cut.create")}</button>
+    </form>
+    <WriteResult {failed} />
+  </section>
 {/if}
 
 <style>

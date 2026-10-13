@@ -2,7 +2,7 @@
   Resilience (`/resilience`, WPM-R61, WPM-R64): the critical skills and how many people hold, back up
   and could succeed to each, with the number of single points of failure; and the senior hours a
   month that oversight commitments absorb, by role. Counts and hours only: nobody is named, and the
-  skills are read across the whole of the caller's scope (a named read is a separate, audited route).
+  skills are read for the chosen organization (a named read is a separate, audited route).
 -->
 <script lang="ts">
   import {
@@ -23,8 +23,12 @@
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
 
   $effect(() => {
+    const chosen = org;
+    if (!chosen) return;
     let current = true;
-    void keyPersonRisk()
+    people = null;
+    peopleError = null;
+    void keyPersonRisk(chosen)
       .then((v) => current && (people = v))
       .catch((cause) => current && (peopleError = message(cause)));
     return () => {
@@ -56,9 +60,13 @@
 <h1>{t("res.title")}</h1>
 <p class="muted">{t("res.hint")}</p>
 
+<div class="form"><OrgPicker bind:value={org} /></div>
+
 <section class="panel" data-testid="key-person">
   <h2>{t("res.keyPerson")}</h2>
-  {#if peopleError}
+  {#if !org}
+    <p class="muted">{t("common.noOrganization")}</p>
+  {:else if peopleError}
     <p class="error" data-testid="error">{t("common.error")}: {peopleError}</p>
   {:else if people === null}
     <p>{t("common.loading")}</p>
@@ -100,12 +108,11 @@
     {/if}
     <details>
       <summary>{t("cap.basis")}</summary>
-      <p class="muted">{people.basis}</p>
+      <p class="muted">{t("res.basisKeyPerson")}</p>
+      <p class="muted small">{t("common.fromService")}: {people.basis}</p>
     </details>
   {/if}
 </section>
-
-<div class="form"><OrgPicker bind:value={org} /></div>
 
 <section class="panel" data-testid="governance">
   <h2>{t("res.governance")}</h2>
@@ -144,7 +151,8 @@
     </div>
     <details>
       <summary>{t("cap.basis")}</summary>
-      <p class="muted">{load.basis}</p>
+      <p class="muted">{t("res.basisGovernance")}</p>
+      <p class="muted small">{t("common.fromService")}: {load.basis}</p>
     </details>
   {/if}
 </section>
@@ -152,6 +160,9 @@
 <style>
   .scroll {
     overflow-x: auto;
+  }
+  .small {
+    font-size: 0.82rem;
   }
   .wide :global(table) {
     min-width: 32rem;

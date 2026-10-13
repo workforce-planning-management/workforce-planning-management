@@ -10,7 +10,7 @@ it depends on.
 
 ## The three checks
 
-Each is `ready`, `at_risk` or `unknown`, with reasons in words. The overall result is the worst: a known risk
+Each is `ready`, `at_risk` or `unknown`, with reasons in words (and the same reasons as data, `details`: a code and its figures, so a client can say them in its own language). The overall result is the worst: a known risk
 outweighs an unknown, which outweighs ready. **An unknown is never ready.**
 
 | Check | Ready | At risk | Unknown |

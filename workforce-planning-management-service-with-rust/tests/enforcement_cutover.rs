@@ -158,6 +158,10 @@ async fn only_an_administrator_plans_a_cutover_and_only_the_organization_reads_i
         assert_eq!(get(list.clone(), member.clone()).await.status_code(), 200);
         assert_eq!(get(readiness.clone(), outsider.clone()).await.status_code(), 404);
         assert_eq!(get(list.clone(), outsider.clone()).await.status_code(), 404);
+        // The key-person register reads one organization when asked, and only one the caller can see.
+        let register = format!("/api/workforce-intelligence/key-person?organization={org}");
+        assert_eq!(get(register.clone(), member.clone()).await.status_code(), 200);
+        assert_eq!(get(register.clone(), outsider.clone()).await.status_code(), 404, "another organization's register is not readable");
         assert_eq!(get(readiness.clone(), partner.clone()).await.status_code(), 403);
         assert_eq!(get(list.clone(), partner.clone()).await.status_code(), 403);
         // Removal is for an administrator too.
