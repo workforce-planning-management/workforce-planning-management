@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed — ready to package for crates.io
 
 - `migration` is now `workforce-planning-management-migration` (library name still `migration`) with a README, and is publishable; the
-  `migration` name on crates.io belongs to another project. `entity-ref` (0.2) and `authentication-verifier` (0.9) carry versions next
-  to their paths; the vendored source is identical to the published 0.2.1 and 0.9.1. The package now ships `config/` and the changelog
+  `migration` name on crates.io belongs to another project. `entity-ref` (0.2) carries a version next to its path; `authentication-verifier`
+  now comes from crates.io (0.9.1; the vendored copy under `crates/` was identical and is no longer used by the build). The package now ships `config/` and the changelog
   beside `src/` (the service reads `config/<environment>.yaml` at start). Not yet published.
 
 ### Changed — dependencies

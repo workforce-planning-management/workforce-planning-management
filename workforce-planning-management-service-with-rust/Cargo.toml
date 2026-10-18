@@ -84,7 +84,7 @@ entity-ref = { path = "crates/entity-ref", version = "0.2" }
 # `Claims`/`Policy`/`Action` types here are backend-agnostic (see the
 # `keycloak` feature above) — only `Verifier` (PASETO signature
 # verification) is `paseto`-specific.
-authentication-verifier = { path = "crates/authentication-verifier", version = "0.9", features = ["fetch"] }
+authentication-verifier = { version = "0.9", features = ["fetch"] }
 
 # `keycloak` feature only: direct verification of a Keycloak-issued JWT
 # against the realm's JWKS. `aws_lc_rs` is the ONLY crypto backend this
