@@ -3148,7 +3148,10 @@ payroll defect and need nothing else; do them first.
       looked at screenshots of the panel with no plan and with an approved one. **Not verified:** the UI against the real API (the
       specs stub it); a manager who is not HR proposing against the real service (the panel's propose-only mode, shown when the plan read is refused
       with 403 and the viewer is not the worker, was tested against a stub that refuses the read: the proposal is sent, nothing of the plan is
-      shown, the service's refusal is shown); the panel in a right-to-left or other locale on screen, or on a phone;
+      shown, the service's refusal is shown; the three behaviours were **mutation-checked** — the 403 handling, the sent notice and the
+      worker-themselves guard, the last only after a test was added for it). Read from the code, not run: a 403 on the plan read comes only from
+      the need-to-know guard (`workers/{}/conversion-plans` is `Privileged` in `src/rules/access.rs`); the handler itself answers 404 for a
+      worker outside the caller's scope and the session layer 401, so a 403 there means "not privileged"; the panel in a right-to-left or other locale on screen, or on a phone;
       the planning row and the contingent list in a screenshot; the reminder text on the worker page.
 
 ## Phase 15 — operations, information governance, OIDC and locales (WPM-R89–R94, WPM-D60–D64)
