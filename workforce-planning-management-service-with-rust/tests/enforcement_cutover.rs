@@ -14,7 +14,7 @@ use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payloa
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
-use workforce_planning_management_service::app::App;
+use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
 const AUDIENCE: &str = "main-x-service";

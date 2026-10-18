@@ -109,7 +109,7 @@ with a device pixel ratio of 2 to see it as intended.
 From a fresh clone, with no sibling repositories:
 
 ```sh
-podman compose up --build      # or: docker compose up --build
+podman compose up --build
 curl http://localhost:5150/_health
 ```
 

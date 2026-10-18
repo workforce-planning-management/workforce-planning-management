@@ -23,7 +23,7 @@
    tables. None of the migrations so far take long on a database of this size, but test
    yours.
 4. Deploy the new binary or image **without** starting traffic, then
-   `workforce-planning-management-service db migrate`.
+   `workforce-planning-management db migrate`.
 5. Start it. Check `GET /_health`, `GET /_posture` (`auth_enforced: true`), and a read.
 6. Watch the logs for `WARN` lines: the service warns when sign-in is off and when it is
    on with no key source.

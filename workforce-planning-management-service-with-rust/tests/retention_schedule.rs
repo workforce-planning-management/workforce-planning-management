@@ -13,7 +13,7 @@ use loco_rs::testing::prelude::*;
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
+use workforce_planning_management::app::App;
 
 /// How many rows of `table` still exist (soft-deleted or not).
 async fn count(ctx: &loco_rs::app::AppContext, table: &str) -> i64 {

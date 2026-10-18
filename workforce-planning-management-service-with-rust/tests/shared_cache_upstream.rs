@@ -11,8 +11,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use axum::{Json, Router, extract::Path, routing::get};
 use entity_ref::EntityRef;
 use serde_json::json;
-use workforce_planning_management_service::clients;
-use workforce_planning_management_service::shared_cache::{self as cache, Namespace};
+use workforce_planning_management::clients;
+use workforce_planning_management::shared_cache::{self as cache, Namespace};
 
 #[tokio::test]
 async fn organization_names_are_shared_and_person_names_are_not() {

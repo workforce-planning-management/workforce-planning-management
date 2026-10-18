@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the crate, the binary and the databases are named `workforce-planning-management`
+
+- The package, the `[[bin]]` and `default-run` are now `workforce-planning-management` (was `…-service`); the Rust crate path is
+  `workforce_planning_management`. The default database names drop `_service`: `workforce_planning_management_development`, `_test`
+  and `_demo`. An existing local database is renamed with `ALTER DATABASE workforce_planning_management_service_development RENAME TO
+  workforce_planning_management_development;` (and the same for `_test` and `_demo`), or `DATABASE_URL` is set to the old name.
+  The directory `workforce-planning-management-service-with-rust` is unchanged. Container releases build and push with Podman.
+
 ### Changed — the planner shows conversion plans (WPM-T164)
 
 - Each department of `GET /api/workforce-plans/{pid}/forecast` carries `conversions`: `agreed` (approved plans to convert) and `hoped`

@@ -128,14 +128,14 @@ handled for you; one needs an operator action.
 | **Database name** | **Manual — see below.** |
 
 The service's default database name changed
-(`human_capital_management_service*` → `workforce_planning_management_service*`).
+(`human_capital_management_service*` → `workforce_planning_management*`).
 Nothing can rename an existing database for you, so either point
 `DATABASE_URL` at the existing one (no rename needed), or rename it:
 
 ```sql
-ALTER DATABASE human_capital_management_service            RENAME TO workforce_planning_management_service;
-ALTER DATABASE human_capital_management_service_test       RENAME TO workforce_planning_management_service_test;
-ALTER DATABASE human_capital_management_service_development RENAME TO workforce_planning_management_service_development;
+ALTER DATABASE human_capital_management_service            RENAME TO workforce_planning_management;
+ALTER DATABASE human_capital_management_service_test       RENAME TO workforce_planning_management_test;
+ALTER DATABASE human_capital_management_service_development RENAME TO workforce_planning_management_development;
 ```
 
 A `DATABASE_URL` set explicitly (the usual deployment shape) overrides
@@ -145,7 +145,7 @@ the default and is unaffected either way.
 
 ```bash
 # Postgres 18 with a loco user, then:
-export DATABASE_URL=postgres://loco:loco@localhost:5432/workforce_planning_management_service_development
+export DATABASE_URL=postgres://loco:loco@localhost:5432/workforce_planning_management_development
 cargo run -- db migrate       # create the schema
 cargo run -- task seed        # synthetic demo org (40 workers)
 cargo run -- start            # serve on :5150

@@ -41,7 +41,7 @@ WPM_BACKUP_KEY_FILE=/path/to/backup.key DATABASE_URL=postgres://… scripts/back
 DATABASE_URL=postgres://… scripts/export-erasure-ledger.sh /path/off-host/erasure-ledger.csv
 
 # After a loss: restore into an EMPTY database, replay erasures, then start.
-WPM_BACKUP_KEY_FILE=/path/to/backup.key WPM_BIN=/path/to/workforce-planning-management-service \
+WPM_BACKUP_KEY_FILE=/path/to/backup.key WPM_BIN=/path/to/workforce-planning-management \
   scripts/restore.sh /path/to/backups/wpm-…dump.enc postgres://…/new_database \
   /path/off-host/erasure-ledger.csv
 ```

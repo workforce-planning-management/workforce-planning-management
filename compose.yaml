@@ -1,6 +1,6 @@
 # A demo of the service from a fresh clone, with no sibling repositories:
 #
-#   podman compose up --build        (or: docker compose up --build)
+#   podman compose up --build
 #   curl http://localhost:5150/_health
 #   open http://localhost:5150/swagger-ui/
 #
@@ -25,9 +25,9 @@ services:
     environment:
       POSTGRES_USER: loco
       POSTGRES_PASSWORD: loco
-      POSTGRES_DB: workforce_planning_management_service_demo
+      POSTGRES_DB: workforce_planning_management_demo
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U loco -d workforce_planning_management_service_demo"]
+      test: ["CMD-SHELL", "pg_isready -U loco -d workforce_planning_management_demo"]
       interval: 3s
       timeout: 3s
       retries: 30
@@ -73,7 +73,7 @@ services:
     environment:
       LOCO_ENV: demo
       REDIS_URL: redis://redis:6379
-      DATABASE_URL: postgres://loco:loco@postgres:5432/workforce_planning_management_service_demo
+      DATABASE_URL: postgres://loco:loco@postgres:5432/workforce_planning_management_demo
       WPM_REQUIRE_AUTH: "0"   # explicit, demo only: see the header of this file
       WPM_CORS_ORIGIN: http://localhost:5173
       SMTP_HOST: stalwart

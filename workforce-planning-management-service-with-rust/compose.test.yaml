@@ -4,8 +4,7 @@
 #   cargo test -- --ignored --test-threads=1
 #   podman compose -f compose.test.yaml down
 #
-# Podman, not Docker (spec/rust-loco-stack.md); the file is plain Compose
-# spec, so `docker compose` also works.
+# Podman, not Docker (spec/rust-loco-stack.md).
 #
 # The connection details deliberately match what CI provides
 # (.github/workflows/ci.yml, job `api-db`): superuser `loco`/`loco` on 5432.
@@ -22,7 +21,7 @@ services:
       POSTGRES_PASSWORD: loco
       # Matches config/test.yaml, so a bare `cargo test -- --ignored`
       # finds its database.
-      POSTGRES_DB: workforce_planning_management_service_test
+      POSTGRES_DB: workforce_planning_management_test
     ports:
       # Override to run two databases side by side:
       #   TEST_DB_PORT=5433 podman compose -f compose.test.yaml up -d
@@ -41,7 +40,7 @@ services:
     healthcheck:
       # `up --wait` waits on this, so a test run cannot start against a
       # database that is still initialising.
-      test: ["CMD-SHELL", "pg_isready -U loco -d workforce_planning_management_service_test"]
+      test: ["CMD-SHELL", "pg_isready -U loco -d workforce_planning_management_test"]
       interval: 2s
       timeout: 3s
       retries: 30

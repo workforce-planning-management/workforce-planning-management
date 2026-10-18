@@ -12,7 +12,7 @@
 use authentication_verifier::Claims;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::models::memberships;
+use workforce_planning_management::models::memberships;
 
 use super::{a_person, an_org, seed_worker};
 

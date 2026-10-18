@@ -2,7 +2,7 @@
 # The restore drill (WPM-R89): prove a backup can be restored, every run.
 #
 #   ADMIN_DATABASE_URL=postgres://loco:loco@localhost:5432/postgres \
-#   WPM_BIN=target/debug/workforce-planning-management-service \
+#   WPM_BIN=target/debug/workforce-planning-management \
 #     scripts/restore-drill.sh
 #
 # ADMIN_DATABASE_URL names a server where the role may create databases; the

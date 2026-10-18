@@ -128,7 +128,7 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
         assert_eq!(count(&request, &org, &title).await, 4);
 
         // A request still running makes a repeat wait; one abandoned long ago is taken over.
-        let fingerprint = workforce_planning_management_service::rules::idempotency::fingerprint(
+        let fingerprint = workforce_planning_management::rules::idempotency::fingerprint(
             "POST",
             "/api/announcements",
             body.to_string().as_bytes(),

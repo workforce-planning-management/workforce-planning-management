@@ -103,7 +103,7 @@ async fn wellbeing_round_trip() {
             .await
             .json();
         let person_urn = worker_row["person_ref"].as_str().unwrap();
-        workforce_planning_management_service::clients::prime_birth_date(
+        workforce_planning_management::clients::prime_birth_date(
             person_urn,
             chrono::NaiveDate::from_ymd_opt(1958, 3, 14).unwrap(),
         );

@@ -6,7 +6,7 @@
 use sea_orm::ConnectionTrait;
 use serde_json::json;
 use serial_test::serial;
-use workforce_planning_management_service::controllers::privacy::{ReplayReport, replay_erasures};
+use workforce_planning_management::controllers::privacy::{ReplayReport, replay_erasures};
 
 use super::{activate, an_org, seed_worker};
 

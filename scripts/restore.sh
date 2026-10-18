@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Restore a backup into an EMPTY database, then replay erasures (WPM-R89).
 #
-#   WPM_BIN=/path/to/workforce-planning-management-service \
+#   WPM_BIN=/path/to/workforce-planning-management \
 #     scripts/restore.sh DUMP TARGET_DATABASE_URL [LEDGER_FILE]
 #
 # - Refuses a target that already has tables.

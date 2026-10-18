@@ -15,7 +15,7 @@ use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
-use workforce_planning_management_service::app::App;
+use workforce_planning_management::app::App;
 
 const SEED: [u8; 32] = [7; 32];
 

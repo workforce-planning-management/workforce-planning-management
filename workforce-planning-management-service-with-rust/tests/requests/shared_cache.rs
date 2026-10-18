@@ -4,7 +4,7 @@
 use sea_orm::ConnectionTrait;
 use serde_json::Value;
 use serial_test::serial;
-use workforce_planning_management_service::shared_cache::{self as cache, Namespace};
+use workforce_planning_management::shared_cache::{self as cache, Namespace};
 
 #[tokio::test]
 #[serial]

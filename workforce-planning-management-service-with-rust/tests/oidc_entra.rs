@@ -37,7 +37,7 @@ use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
-use workforce_planning_management_service::app::App;
+use workforce_planning_management::app::App;
 
 const TENANT: &str = "99999999-9999-4999-8999-999999999999";
 const CLIENT_ID: &str = "11111111-2222-4333-8444-555555555555";

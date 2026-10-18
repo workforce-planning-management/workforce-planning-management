@@ -70,7 +70,7 @@ jobs:
         env:
           POSTGRES_USER: loco
           POSTGRES_PASSWORD: loco
-          POSTGRES_DB: workforce_planning_management_service_test
+          POSTGRES_DB: workforce_planning_management_test
         ports: ['5432:5432']
         options: >-
           --health-cmd pg_isready
@@ -86,7 +86,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
-      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_service_test
+      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
       WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v7
@@ -123,7 +123,7 @@ jobs:
         env:
           POSTGRES_USER: loco
           POSTGRES_PASSWORD: loco
-          POSTGRES_DB: workforce_planning_management_service_test
+          POSTGRES_DB: workforce_planning_management_test
         ports: ['5432:5432']
         options: >-
           --health-cmd pg_isready
@@ -139,7 +139,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
-      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_service_test
+      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
       WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v7
@@ -194,19 +194,19 @@ jobs:
           key: drill
       - name: build the service
         working-directory: workforce-planning-management-service-with-rust
-        run: cargo build --locked --bin workforce-planning-management-service
+        run: cargo build --locked --bin workforce-planning-management
       - name: restore drill
         env:
           ADMIN_DATABASE_URL: postgres://loco:loco@localhost:5432/postgres
         run: |
-          export WPM_BIN="$PWD/workforce-planning-management-service-with-rust/target/debug/workforce-planning-management-service"
+          export WPM_BIN="$PWD/workforce-planning-management-service-with-rust/target/debug/workforce-planning-management"
           scripts/restore-drill.sh
 
   api-keycloak:
     name: api · Keycloak suite (not yet required)
     runs-on: ubuntu-latest
     # Written but not yet observed green: it needs Testcontainers against the
-    # runner's Docker. Promote it to a required check once it has passed.
+    # runner's container socket (Podman). Promote it to a required check once it has passed.
     continue-on-error: true
     defaults:
       run:
@@ -275,7 +275,7 @@ jobs:
         env:
           POSTGRES_USER: loco
           POSTGRES_PASSWORD: loco
-          POSTGRES_DB: workforce_planning_management_service_demo
+          POSTGRES_DB: workforce_planning_management_demo
         ports: ['5432:5432']
         options: >-
           --health-cmd pg_isready
@@ -300,10 +300,10 @@ jobs:
         working-directory: workforce-planning-management-service-with-rust
         env:
           LOCO_ENV: demo
-          DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_service_demo
+          DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_demo
         run: |
-          cargo build --locked --release --bin workforce-planning-management-service
-          ./target/release/workforce-planning-management-service start > service.log 2>&1 &
+          cargo build --locked --release --bin workforce-planning-management
+          ./target/release/workforce-planning-management start > service.log 2>&1 &
           for i in $(seq 1 60); do curl -fs http://localhost:5150/_health && break; sleep 2; done
           curl -fs http://localhost:5150/_posture | grep -q '"auth_enforced":true'
       - name: ZAP baseline scan

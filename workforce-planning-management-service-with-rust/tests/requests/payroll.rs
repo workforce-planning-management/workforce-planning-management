@@ -4,7 +4,7 @@
 
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::rules::payroll as rules;
+use workforce_planning_management::rules::payroll as rules;
 
 use super::{activate, an_org, seed_worker};
 

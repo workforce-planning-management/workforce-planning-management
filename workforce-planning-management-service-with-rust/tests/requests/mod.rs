@@ -130,7 +130,7 @@ where
             std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
         };
     });
-    loco_rs::testing::prelude::request::<workforce_planning_management_service::app::App, _, _>(
+    loco_rs::testing::prelude::request::<workforce_planning_management::app::App, _, _>(
         callback,
     )
     .await;

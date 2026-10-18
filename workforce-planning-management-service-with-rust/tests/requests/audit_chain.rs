@@ -149,7 +149,7 @@ async fn removing_an_entry_from_the_middle_is_found_and_the_tail_is_not() {
 // Entries written at the same moment by different transactions still form one gapless chain.
 async fn concurrent_writers_make_one_chain() {
     use sea_orm::TransactionTrait;
-    use workforce_planning_management_service::models::audit_logs::Model as Audit;
+    use workforce_planning_management::models::audit_logs::Model as Audit;
     crate::requests::request_open(|request, ctx| async move {
         // The application's test pool holds one connection, so the writers would queue; open a
         // pool of their own so they genuinely overlap.

@@ -527,7 +527,7 @@ async fn workforce_insights_flag_a_shrinking_headcount() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn headcount_snapshots_are_recorded_idempotently() {
-    use workforce_planning_management_service::tasks::snapshot::run_snapshot;
+    use workforce_planning_management::tasks::snapshot::run_snapshot;
 
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -1358,8 +1358,8 @@ async fn workforce_plan_costs_hiring_against_a_budget() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn capability_framework_import_and_progression() {
-    use workforce_planning_management_service::rules::framework::LevelMapping;
-    use workforce_planning_management_service::tasks::import_framework::import_pcf;
+    use workforce_planning_management::rules::framework::LevelMapping;
+    use workforce_planning_management::tasks::import_framework::import_pcf;
 
     crate::requests::request_open(|request, ctx| async move {
         let fixture =
@@ -1629,7 +1629,7 @@ async fn skills_can_be_edited_categorised_and_referenced() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn esco_import_search_and_seeding() {
-    use workforce_planning_management_service::tasks::import_esco::import_esco;
+    use workforce_planning_management::tasks::import_esco::import_esco;
 
     crate::requests::request_open(|request, ctx| async move {
         // Catalogue skills that may or may not link to ESCO.
@@ -1827,9 +1827,9 @@ async fn skills_merge_keeps_the_stronger_statement_and_delete_refuses_use() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
-    use workforce_planning_management_service::rules::framework::LevelMapping;
-    use workforce_planning_management_service::tasks::import_esco::import_esco;
-    use workforce_planning_management_service::tasks::import_framework::import_pcf;
+    use workforce_planning_management::rules::framework::LevelMapping;
+    use workforce_planning_management::tasks::import_esco::import_esco;
+    use workforce_planning_management::tasks::import_framework::import_pcf;
 
     crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -1937,9 +1937,9 @@ async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn career_history_and_aspirations() {
-    use workforce_planning_management_service::rules::framework::LevelMapping;
-    use workforce_planning_management_service::tasks::import_esco::import_esco;
-    use workforce_planning_management_service::tasks::import_framework::import_pcf;
+    use workforce_planning_management::rules::framework::LevelMapping;
+    use workforce_planning_management::tasks::import_esco::import_esco;
+    use workforce_planning_management::tasks::import_framework::import_pcf;
 
     crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");

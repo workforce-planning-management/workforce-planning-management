@@ -121,7 +121,7 @@ once:
 
 **Publishing a release.** AI **may** decide that an already-merged
 version bump on `main` is ready to release, and execute the registry
-publish for it — `cargo publish` for `workforce-planning-management-service`,
+publish for it — `cargo publish` for `workforce-planning-management`,
 `npm publish` for `workforce-planning-management-ui-with-svelte`
 — once:
 

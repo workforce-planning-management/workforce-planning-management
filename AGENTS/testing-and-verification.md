@@ -36,9 +36,9 @@ database-backed suites:
    `rsync -a --delete --exclude target --exclude .git` — and run there.)
 2. Start a throwaway Postgres 18 with **Podman** (never Docker) on a free port:
    `podman run -d --rm --name <unique> -e POSTGRES_USER=loco -e POSTGRES_PASSWORD=loco
-   -e POSTGRES_DB=workforce_planning_management_service_test -p 55440:5432 --tmpfs
+   -e POSTGRES_DB=workforce_planning_management_test -p 55440:5432 --tmpfs
    /var/lib/postgresql <postgres-18-image>`; wait a few seconds.
-3. `DATABASE_URL=postgres://loco:loco@localhost:55440/workforce_planning_management_service_test
+3. `DATABASE_URL=postgres://loco:loco@localhost:55440/workforce_planning_management_test
    cargo test --offline --test mod -- --ignored --test-threads=1` in `<ws>/repo/api`.
 4. For Keycloak: `export DOCKER_HOST="unix://$(podman machine inspect --format
    '{{.ConnectionInfo.PodmanSocket.Path}}')"` and `TESTCONTAINERS_RYUK_DISABLED=true`.

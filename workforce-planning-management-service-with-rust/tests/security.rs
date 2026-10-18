@@ -11,7 +11,7 @@
 
 use loco_rs::testing::prelude::*;
 use serial_test::serial;
-use workforce_planning_management_service::app::App;
+use workforce_planning_management::app::App;
 
 const BASELINE: [&str; 6] = [
     "content-security-policy",

@@ -1,7 +1,7 @@
 # Container image for the workforce-planning-management service.
 #
-# Build from this directory (podman or docker):
-#   podman build -f Containerfile -t workforce-planning-management-service .
+# Build from this directory:
+#   podman build -f Containerfile -t workforce-planning-management .
 #
 # The image runs as a non-root user and carries the binary and `config/`.
 # Pick the configuration with LOCO_ENV: `production` (the default here)
@@ -14,7 +14,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
 COPY migration ./migration
 COPY src ./src
-RUN cargo build --release --locked --bin workforce-planning-management-service
+RUN cargo build --release --locked --bin workforce-planning-management
 
 FROM docker.io/library/debian:stable-slim AS runtime
 RUN apt-get update \
@@ -22,7 +22,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --system --uid 10001 --home-dir /app --shell /usr/sbin/nologin wpm
 WORKDIR /app
-COPY --from=build /src/target/release/workforce-planning-management-service /app/
+COPY --from=build /src/target/release/workforce-planning-management /app/
 COPY config /app/config
 ENV LOCO_ENV=production \
     PORT=5150
@@ -30,5 +30,5 @@ USER wpm
 EXPOSE 5150
 # No HEALTHCHECK: the slim runtime has no HTTP client. Probe GET /_health from
 # the orchestrator.
-ENTRYPOINT ["/app/workforce-planning-management-service"]
+ENTRYPOINT ["/app/workforce-planning-management"]
 CMD ["start"]

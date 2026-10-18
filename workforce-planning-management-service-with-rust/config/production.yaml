@@ -1,4 +1,4 @@
-# Loco configuration file — workforce-planning-management-service (production).
+# Loco configuration file — workforce-planning-management (production).
 #
 # This file previously held ONLY the `cache:` block below — no
 # `server:`, `database:`, or `logger:` at all. loco's top-level

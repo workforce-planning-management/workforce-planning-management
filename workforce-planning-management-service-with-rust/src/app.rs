@@ -1,7 +1,7 @@
 //! loco.rs application wiring: the [`App`] `Hooks` implementation that
 //! registers routes, the blanket auth guard, the API-version
 //! middleware, and the truncate lifecycle for
-//! `workforce-planning-management-service`.
+//! `workforce-planning-management`.
 
 use async_trait::async_trait;
 use axum::{
@@ -79,7 +79,7 @@ fn warn_auth_off() {
     );
 }
 
-/// The loco.rs application hooks for `workforce-planning-management-service`.
+/// The loco.rs application hooks for `workforce-planning-management`.
 pub struct App;
 #[async_trait]
 impl Hooks for App {

@@ -29,7 +29,7 @@ use serial_test::serial;
 use testcontainers::core::{IntoContainerPort, WaitFor};
 use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
-use workforce_planning_management_service::app::App;
+use workforce_planning_management::app::App;
 
 use loco_rs::testing::prelude::*;
 

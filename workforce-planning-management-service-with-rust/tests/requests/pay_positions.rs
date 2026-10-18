@@ -6,7 +6,7 @@ use chrono::{Duration, Months, Utc};
 use sea_orm::{ConnectionTrait, Statement};
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management_service::tasks::pay_progression_reminders::send_reminders;
+use workforce_planning_management::tasks::pay_progression_reminders::send_reminders;
 
 use super::{activate, an_org, seed_worker};
 

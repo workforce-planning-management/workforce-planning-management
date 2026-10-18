@@ -1,5 +1,5 @@
 //! `sea-orm-migration` schema migrations for
-//! `workforce-planning-management-service`.
+//! `workforce-planning-management`.
 //!
 //! The [`Migrator`] runs the ordered list below at boot (or via
 //! `cargo loco db migrate`): the worker core, the acquisition

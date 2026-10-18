@@ -459,7 +459,7 @@ async fn contractor_details_and_assessments() {
             .assert_status_ok();
         // The worker is gone from reads; the rows about them are gone from the tables.
         use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
-        use workforce_planning_management_service::models::_entities::{
+        use workforce_planning_management::models::_entities::{
             engagement_extensions, engagement_status_assessments, worker_contractor_details,
         };
         let pid: uuid::Uuid = worker.parse().unwrap();
@@ -501,7 +501,7 @@ async fn contractor_details_and_assessments() {
 // made for, and an extension gives a new date and so a new question.
 async fn end_of_engagement_reminders_and_decisions() {
     use sea_orm::ConnectionTrait;
-    use workforce_planning_management_service::tasks::engagement_end_reminders::send_reminders;
+    use workforce_planning_management::tasks::engagement_end_reminders::send_reminders;
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
@@ -610,7 +610,7 @@ async fn end_of_engagement_reminders_and_decisions() {
 // A conversion plan (WPM-R98): its refusals, its flags, the reminder that names its status and
 // review date but never its reason, the one-open-plan rule, the export and the erasure.
 async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
-    use workforce_planning_management_service::tasks::engagement_end_reminders::send_reminders;
+    use workforce_planning_management::tasks::engagement_end_reminders::send_reminders;
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
@@ -839,7 +839,7 @@ async fn the_contingent_view_shows_shares_and_funding_months_and_withholds_small
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 // The contingent trend (WPM-R62, WPM-T139): snapshots carry the split by basis; too little history says so.
 async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
-    use workforce_planning_management_service::tasks::snapshot::run_snapshot;
+    use workforce_planning_management::tasks::snapshot::run_snapshot;
 
     crate::requests::request_open(|request, ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string();

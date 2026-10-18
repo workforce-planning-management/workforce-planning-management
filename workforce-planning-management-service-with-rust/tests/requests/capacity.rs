@@ -856,7 +856,7 @@ async fn oversight_status_reports_the_sustain_rule_and_never_moves_the_level() {
 async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a_pass() {
     use chrono::{Datelike, Months, NaiveDate, Utc};
     use sea_orm::{ActiveValue, EntityTrait};
-    use workforce_planning_management_service::models::_entities::{headcount_snapshots, workers};
+    use workforce_planning_management::models::_entities::{headcount_snapshots, workers};
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let first_of_this_month = Utc::now().date_naive().with_day(1).unwrap();
@@ -974,7 +974,7 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
         assert_eq!(p["status"], "not_met", "one pool over is above an at-most of none");
         // Derived measures are read, never stored: the readings table holds nothing for them.
         use sea_orm::{ColumnTrait, PaginatorTrait, QueryFilter};
-        use workforce_planning_management_service::models::_entities::oversight_readings;
+        use workforce_planning_management::models::_entities::oversight_readings;
         let pids: Vec<uuid::Uuid> = [&turnover_pid, &contingent_pid, &pools_pid].iter().map(|p| p.parse().unwrap()).collect();
         assert_eq!(oversight_readings::Entity::find().filter(oversight_readings::Column::MeasurePid.is_in(pids)).count(&ctx.db).await.unwrap(), 0);
     })
@@ -991,7 +991,7 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
 async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_report() {
     use chrono::{Datelike, Days, Months, Utc};
     use sea_orm::ConnectionTrait;
-    use workforce_planning_management_service::controllers::early_warning::sweep;
+    use workforce_planning_management::controllers::early_warning::sweep;
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let today = Utc::now().date_naive();
@@ -1118,7 +1118,7 @@ async fn a_monthly_pack_is_frozen_and_a_later_change_shows_only_in_a_later_pack(
 // The scheduled freeze writes one pack for the month for each organization with a position, and a
 // second run for the same month writes none.
 async fn the_scheduled_freeze_is_idempotent_for_a_month() {
-    use workforce_planning_management_service::tasks::oversight_pack_freeze::freeze_all;
+    use workforce_planning_management::tasks::oversight_pack_freeze::freeze_all;
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let level: Value = request.post("/api/oversight/levels").json(&json!({ "organization_ref": org, "ordinal": 1, "name": "Synthetic level" })).await.json();
@@ -1277,7 +1277,7 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         assert_eq!(detail["params"]["short"], "1");
         assert_eq!(short["readiness"], "at_risk");
         // The sweep opens one early warning for the cutover and the next finds nothing new.
-        use workforce_planning_management_service::controllers::early_warning::sweep;
+        use workforce_planning_management::controllers::early_warning::sweep;
         let opened = sweep(&ctx, &org, today).await.unwrap();
         assert_eq!(opened.opened, 1);
         assert_eq!(sweep(&ctx, &org, today).await.unwrap().opened, 0);

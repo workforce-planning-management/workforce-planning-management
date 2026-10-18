@@ -1,4 +1,4 @@
-//! `workforce-planning-management-service` — a loco.rs consumer application
+//! `workforce-planning-management` — a loco.rs consumer application
 //! for **workforce planning management** across the worker lifecycle:
 //! requisitions and the applicant-tracking pipeline, onboarding
 //! checklists, worker records with the derived org chart, time &
