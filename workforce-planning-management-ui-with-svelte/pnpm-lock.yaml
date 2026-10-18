@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@lilydesignsystem/locale-translations':
-        specifier: ^0.1.0
-        version: 0.1.0
       '@lilydesignsystem/svelte-calendar':
         specifier: 0.6.0
         version: 0.6.0(svelte@5.57.2)
@@ -24,14 +21,17 @@ importers:
         specifier: 0.5.0
         version: 0.5.0(svelte@5.57.2)
       '@lilydesignsystem/svelte-kanban-board':
-        specifier: 0.7.0
-        version: 0.7.0(svelte@5.57.2)
+        specifier: 0.8.1
+        version: 0.8.1(@lilydesignsystem/svelte-headless@0.5.0(svelte@5.57.2))(svelte@5.57.2)
       '@lilydesignsystem/svelte-link-picker':
         specifier: 0.2.0
         version: 0.2.0(svelte@5.57.2)
       '@lilydesignsystem/svelte-locale-picker':
         specifier: 0.3.0
         version: 0.3.0(svelte@5.57.2)
+      '@lilydesignsystem/svelte-locale-translations':
+        specifier: 0.1.0
+        version: 0.1.0
       '@lilydesignsystem/svelte-picker-bar':
         specifier: 0.4.0
         version: 0.4.0(svelte@5.57.2)
@@ -181,10 +181,6 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@lilydesignsystem/locale-translations@0.1.0':
-    resolution: {integrity: sha512-VtfbSpX0gqkhlUiudGpC4rNULmq+f8jBxC7XQuSSH8ec1NFao0j786dhieDhv7a5jMIse9wl1lspCc3PYrJEiA==}
-    engines: {node: '>=26'}
-
   '@lilydesignsystem/svelte-calendar@0.6.0':
     resolution: {integrity: sha512-9VMLqCGcB7y3w/azFjmHnUuUitaGwD2VKu8Y/Ka1tONOoAmiZ9gy0fz8texbzUHg23QaQnTNEw+ykPDAaLJppw==}
     engines: {node: '=26'}
@@ -227,10 +223,11 @@ packages:
     peerDependencies:
       svelte: ^5.0.0
 
-  '@lilydesignsystem/svelte-kanban-board@0.7.0':
-    resolution: {integrity: sha512-xgnZ8NIeu2ygmHqXYwmGT26gkAHpEZojNsHDXXL8qkuz3NNPbflGFQpEzjuJeIMU1MMTCxlhNCW3Kn/2k7/zzA==}
-    engines: {node: '=26'}
+  '@lilydesignsystem/svelte-kanban-board@0.8.1':
+    resolution: {integrity: sha512-S5MJeVGZau/3jIE/TyYxE6Bm9LqK5adNkQHefrtD9eMgyGDwB/6fkpKkr4s3QU1cSvgY7AnUKz7uhECWZV4gdg==}
+    engines: {node: '>=26'}
     peerDependencies:
+      '@lilydesignsystem/svelte-headless': '>=0.4.0 <1.0.0'
       svelte: ^5.0.0
 
   '@lilydesignsystem/svelte-link-picker@0.1.1':
@@ -256,6 +253,10 @@ packages:
     engines: {node: '=26'}
     peerDependencies:
       svelte: ^5.0.0
+
+  '@lilydesignsystem/svelte-locale-translations@0.1.0':
+    resolution: {integrity: sha512-LxoLvd8A7WdlVBYyb0tsOJuVCaaWWL9NtRPMEhFMOf94BC2hzeBWeIm6xBvvJQsWP5O6ARbq1EJyFsdpv7DIbg==}
+    engines: {node: '>=26'}
 
   '@lilydesignsystem/svelte-picker-bar@0.4.0':
     resolution: {integrity: sha512-XT8c3U2Fw29Vzl+EFXIFT4d9SWMS/HdXXJiPK3Mx7FEvlnXxWd7pHNVZkDyWGUx9Oaw3M2j4jf6nrizt9atoxQ==}
@@ -1106,8 +1107,6 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@lilydesignsystem/locale-translations@0.1.0': {}
-
   '@lilydesignsystem/svelte-calendar@0.6.0(svelte@5.57.2)':
     dependencies:
       '@lilydesignsystem/svelte-date-time-picker': 0.2.0(svelte@5.57.2)
@@ -1145,9 +1144,9 @@ snapshots:
       aria-query: 5.3.2
       svelte: 5.57.2
 
-  '@lilydesignsystem/svelte-kanban-board@0.7.0(svelte@5.57.2)':
+  '@lilydesignsystem/svelte-kanban-board@0.8.1(@lilydesignsystem/svelte-headless@0.5.0(svelte@5.57.2))(svelte@5.57.2)':
     dependencies:
-      '@lilydesignsystem/svelte-headless': 0.4.0(svelte@5.57.2)
+      '@lilydesignsystem/svelte-headless': 0.5.0(svelte@5.57.2)
       svelte: 5.57.2
 
   '@lilydesignsystem/svelte-link-picker@0.1.1(svelte@5.57.2)':
@@ -1169,6 +1168,8 @@ snapshots:
     dependencies:
       '@lilydesignsystem/svelte-headless': 0.4.0(svelte@5.57.2)
       svelte: 5.57.2
+
+  '@lilydesignsystem/svelte-locale-translations@0.1.0': {}
 
   '@lilydesignsystem/svelte-picker-bar@0.4.0(svelte@5.57.2)':
     dependencies:
