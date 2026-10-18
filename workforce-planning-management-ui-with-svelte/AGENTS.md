@@ -80,8 +80,8 @@ masked fields render as first-class masked states, never errors or fake zeros.
 pnpm install
 pnpm dev                    # expects the Loco sibling on :5150
 pnpm check                  # svelte-kit sync && svelte-check (0 errors)
-pnpm test                   # vitest (129)
-pnpm exec playwright test   # 120 specs, stubbed API — no service needed
+pnpm test                   # vitest (145)
+pnpm exec playwright test   # 135 specs, stubbed API — no service needed
 WPM_LIVE_API=1 pnpm exec playwright test -c playwright.live.config.ts   # 11 specs against a REAL service (tests/live/README.md)
 pnpm build
 # The demo (guided tour, fictitious data): see INSTALL.md "Try the demo". WPM_DEMO_API_URL names a SEPARATE

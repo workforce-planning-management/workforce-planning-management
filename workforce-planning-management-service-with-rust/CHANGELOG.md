@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — dependencies
+
+- `sha2` 0.10 → 0.11 and `prometheus` 0.13 → 0.14, and the lockfile brought up to date within the declared ranges (127 packages). The ZAP
+  baseline action is 0.15.0. Verified: all targets compile; 562 unit tests, the 95 request tests and every enforcement binary pass against
+  PostgreSQL. Not run: the Keycloak and Entra suites (they need containers).
+
 ### Changed — the crate, the binary and the databases are named `workforce-planning-management`
 
 - The package, the `[[bin]]` and `default-run` are now `workforce-planning-management` (was `…-service`); the Rust crate path is
