@@ -3150,7 +3150,7 @@ payroll defect and need nothing else; do them first.
       and carry out both returned 200 and the worker became permanent with no end date; the planner's engineering row showed hoped 1
       (1 FTE) as the forecast returned; the contingent list named the engagement with its plan; no HTTP error or page error. That run
       found a missing space in the history line, fixed. **Not verified:** a signed-in non-HR caller (enforcement was off, so the 403 path
-      never ran for real); a manager who is not HR proposing against the real service (the panel's propose-only mode, shown when the plan read is refused
+      never ran for real); a manager who is not HR proposing through the UI against the real service (the service side is covered: `tests/enforcement_conversion.rs`, run on 2026-10-18 with enforcement on, shows the line manager's proposal accepted, the same manager and the worker refused the plan read with 403, and a manager outside the chain refused the proposal; only the browser path is not run; the panel's propose-only mode, shown when the plan read is refused
       with 403 and the viewer is not the worker, was tested against a stub that refuses the read: the proposal is sent, nothing of the plan is
       shown, the service's refusal is shown; the three behaviours were **mutation-checked** — the 403 handling, the sent notice and the
       worker-themselves guard, the last only after a test was added for it). Read from the code, not run: a 403 on the plan read comes only from
