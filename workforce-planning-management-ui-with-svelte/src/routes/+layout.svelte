@@ -8,6 +8,7 @@
     isRtl,
     l,
     t,
+    tf,
     splitLocale,
     localePath,
     normaliseLocale,
@@ -15,6 +16,7 @@
     LOCALE_LABELS,
   } from "#lib/i18n.svelte.js";
   import PickerBar from "@lilydesignsystem/svelte-picker-bar";
+  import { stepAt } from "#lib/demoTour.js";
   import { Drawer } from "@lilydesignsystem/svelte-headless";
   import type { ShareTarget } from "@lilydesignsystem/svelte-share-picker";
 
@@ -50,6 +52,7 @@
     ["/development", "nav.development"],
     ["/learning", "nav.learning"],
     ["/me", "nav.me"],
+    ["/kanban", "nav.kanban"],
     ["/roles", "nav.roles"],
     ["/skills", "nav.skills"],
     ["/skill-gaps", "nav.skillGaps"],
@@ -86,6 +89,17 @@
   // `page.data.title` convention, set per-route by each route's load
   // function so it stays in sync with that page's own <svelte:head>
   // <title> without SharePicker having to read the DOM).
+  // The pages the link picker offers: the same list as the menu drawer, in the reader's language, with
+  // the current page marked.
+  const PAGE_LINKS = $derived(
+    NAV_LINKS.map(([href, key]) => ({
+      id: href,
+      label: t(key),
+      href: l(href),
+      current: page.url.pathname === l(href),
+    })),
+  );
+
   const SHARE_TARGETS: ShareTarget[] = [
     {
       id: "email",
@@ -194,10 +208,30 @@
   <a class="brand" href={l("/")}>{t("brand.name")}</a>
   <span class="spacer"></span>
   <a href={l("/tour")}>{t("nav.tour")}</a>
-  <a href={l("/signin")}>{t("nav.signin")}</a>
+  {#if page.data.signedIn}
+    <!-- A form, not a link: signing out changes state, so it is a POST (the route is not locale-prefixed). -->
+    <form method="POST" action="/signout" class="signout">
+      <button type="submit" class="linklike" data-testid="signout">{t("nav.signout")}</button>
+    </form>
+  {:else}
+    <a href={l("/signin")} data-testid="signin-link">{t("nav.signin")}</a>
+  {/if}
   <div class="chrome">
     <PickerBar
+      links={PAGE_LINKS}
+      linkProps={{ navigate: (href: string) => void goto(href) }}
+      searchProps={{
+        // The bar sends `<action>?<query>`; the directory reads `?q=`, so the query is re-addressed.
+        navigate: (href: string) => {
+          const query = decodeURIComponent(href.split("?")[1] ?? "");
+          void goto(`${l("/directory")}?q=${encodeURIComponent(query)}`);
+        },
+      }}
       labels={{
+        link: t("chrome.pages"),
+        search: t("chrome.search"),
+        searchInput: t("chrome.searchInput"),
+        searchSubmit: t("chrome.searchSubmit"),
         theme: "Theme",
         locale: t("chrome.language"),
         textSize: t("nav.text_size"),
@@ -225,6 +259,27 @@
     />
   </div>
 </nav>
+
+{#if page.data.demo}
+  {@const here = stepAt(splitLocale(page.url.pathname).rest)}
+  <aside class="demo-banner" aria-label={t("demo.label")} data-testid="demo-banner">
+    <strong>{t("demo.banner")}</strong>
+    {#if here}
+      <span class="demo-step" data-testid="demo-step">
+        {tf("demo.step", { n: here.index + 1, total: here.total })}
+      </span>
+      {#if here.previous}
+        <a href={l(here.previous.path)} data-testid="demo-previous">{t("demo.previous")}</a>
+      {/if}
+      {#if here.next}
+        <a class="demo-next" href={l(here.next.path)} data-testid="demo-next">{t("demo.next")}</a>
+      {:else}
+        <a class="demo-next" href={l("/demo")} data-testid="demo-finish">{t("demo.finish")}</a>
+      {/if}
+    {/if}
+    <a href={l("/demo")} data-testid="demo-tour-link">{t("demo.tour")}</a>
+  </aside>
+{/if}
 
 {#if navOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
@@ -335,12 +390,60 @@
   nav.top {
     position: relative;
   }
+  .signout {
+    display: inline;
+    margin: 0;
+  }
+  /* The sign-out button reads like the links beside it. */
+  .linklike {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .linklike:hover {
+    text-decoration: underline;
+  }
+  .demo-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding: 0.4rem 1rem;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--state-reserved) 18%, var(--panel));
+    color: var(--ink);
+    font-size: 0.9rem;
+  }
+  .demo-next {
+    font-weight: 600;
+  }
   .chrome :global(.theme-picker-list),
   .chrome :global(.locale-picker-list),
   .chrome :global(.text-size-picker-list),
   .chrome :global(.share-picker-list) {
     inset-inline-start: auto;
     inset-inline-end: 0;
+  }
+
+  /* The pickers' hover tooltips (new in the 0.2 pickers) carry the same words as the button's aria-label.
+     Headless and unstyled, one is a block in normal flow: it widened its picker's box on hover, which moved
+     the button out from under the pointer (the click then landed on the empty box and did nothing). Taken
+     out of flow, anchored to nav.top's end edge under the bar like the lists, and never a click target. */
+  .chrome :global([class$="-picker-tooltip"]) {
+    position: absolute;
+    inset-inline-end: 0;
+    top: 100%;
+    z-index: 50;
+    pointer-events: none;
+    white-space: nowrap;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 0.25rem;
+    background: var(--ink);
+    color: var(--panel);
   }
 
   /* Every other *-picker leaves its status line to the consumer, so

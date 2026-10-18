@@ -40,7 +40,9 @@
     "resilience": "Resilience",
     "oversight": "Oversight",
     "cutover": "Cutovers",
-    "warnings": "Early warnings"
+    "warnings": "Early warnings",
+    "signout": "Sign out",
+    "kanban": "My board"
   },
   "pr": {
     "retention": "Retention",
@@ -124,7 +126,11 @@
     "name": "Workforce Planning Management"
   },
   "chrome": {
-    "language": "Language"
+    "language": "Language",
+    "pages": "Pages",
+    "search": "Search people",
+    "searchInput": "Name, title or department",
+    "searchSubmit": "Search"
   },
   "share": {
     "copy_link": "Copy link",
@@ -152,11 +158,14 @@
     "programme": "Programme reference"
   },
   "dash": {
-    "title": "HR dashboard",
+    "title": "My Home Page",
     "activeWorkers": "Active workers",
     "openRequisitions": "Open vacancies",
     "pendingLeave": "Pending leave",
-    "successionGaps": "Succession gaps"
+    "successionGaps": "Succession gaps",
+    "singlePoints": "Single points of failure",
+    "earlyWarnings": "Early warnings not acknowledged",
+    "poolsOver": "Pools over capacity"
   },
   "req": {
     "applications": "Applications",
@@ -1316,7 +1325,9 @@
     "resilience": "Resilience — WPM",
     "oversight": "Oversight — WPM",
     "cutover": "Cutover readiness — WPM",
-    "warnings": "Early warnings — WPM"
+    "warnings": "Early warnings — WPM",
+    "demo": "Guided tour of the demo — WPM",
+    "kanban": "My board — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -1836,5 +1847,102 @@
     "timeToReportNone": "Time to report: not known while any warning is unacknowledged",
     "none": "No early warnings.",
     "basisText": "The date a condition was first true is the date of the first sweep that saw it, so a sweep run less often than daily dates it late. Time to report is the longest calendar days from that date to a person acknowledging it, across all the warnings listed; it is not known while any is unacknowledged, because a slow one must not read as a fast one."
+  },
+  "demo": {
+    "label": "Demo",
+    "banner": "Demo: every person, figure and document here is fictitious.",
+    "step": "Step {n} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "finish": "Finish the tour",
+    "tour": "Guided tour",
+    "title": "Guided tour of the demo",
+    "hint": "You are signed in as a fictitious user, in a fictitious organization. Nothing you see or change here is real, and it is not connected to any real data. Start at step 1 and press Next to see every feature in turn, or open any page below.",
+    "start": "Start the tour",
+    "count": "{total} pages",
+    "signinHint": "To try the demo, sign in as example@example.com. Everything in it is fictitious."
+  },
+  "kanban": {
+    "title": "My board",
+    "hint": "Your own development steps, one column for each status. Drag a card, or use its Move menu. Marking a step achieved does not change the declared level of the skill: that is a separate act, with evidence.",
+    "noWorker": "You have no worker record, so there is no board to show.",
+    "empty": "You have no development steps yet. They appear here when a development plan is opened for you.",
+    "steps": "Steps: {count}",
+    "unknownSkill": "A skill",
+    "achievedNote": "Marked achieved. The declared level of the skill is unchanged: record it separately, with evidence.",
+    "cardCount": "Cards: {count}",
+    "overLimit": "Over limit: {count} of {limit}",
+    "moveButton": "Move {title}",
+    "moveMenu": "Move to column",
+    "moved": "{title} moved to {column}",
+    "emptyColumn": "Nothing in {column}"
+  },
+  "dataTable": {
+    "columns": "Columns",
+    "showColumn": "Show {column}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "pageStatus": "Page {page} of {pages} ({rows} rows)",
+    "sorted": "{header}: sorted {direction}",
+    "ascending": "ascending",
+    "descending": "descending",
+    "unsorted": "not sorted",
+    "export": "Export",
+    "exportCsv": "CSV",
+    "exportExcel": "Excel",
+    "exported": "Exported {count} rows to {file}",
+    "search": "Filter rows",
+    "exportTsv": "TSV",
+    "copy": "Copy",
+    "copied": "Copied {count} rows",
+    "copyFailed": "Could not copy",
+    "pagination": "Pages",
+    "searchField": "Filter by column",
+    "searchAllFields": "All columns",
+    "filtered": "{matches} of {total} rows"
+  },
+  "columns": {
+    "person": "Person",
+    "kind": "Kind",
+    "dates": "Dates",
+    "typeYear": "Type and year",
+    "remaining": "Remaining",
+    "rating": "Rating",
+    "content": "Content",
+    "course": "Course",
+    "certificateExpires": "Certificate expires",
+    "shift": "Shift",
+    "filled": "Filled",
+    "weeklyAverage": "Weekly average",
+    "restBreaks": "Rest breaks",
+    "rule": "Rule",
+    "cohort": "Who it applies to",
+    "doses": "Doses",
+    "entitlement": "Entitlement",
+    "responses": "Responses",
+    "uptake": "Uptake",
+    "result": "Result",
+    "role": "Role",
+    "criticality": "Criticality",
+    "candidates": "Candidates",
+    "tableName": "Table",
+    "rowCount": "Rows"
+  },
+  "calendar": {
+    "week": "Week",
+    "fourWeeks": "4 weeks",
+    "month": "Month",
+    "previous": "Previous period",
+    "next": "Next period",
+    "today": "Today",
+    "announcement": "Showing {start} to {end}",
+    "more": "+{count} more",
+    "leave": "Leave calendar",
+    "shifts": "Shifts calendar",
+    "onCall": "On-call calendar",
+    "cpd": "CPD calendar",
+    "expiring": "Certificate expiry calendar",
+    "agenda": "Agenda",
+    "agendaEmpty": "Nothing in this month"
   }
 }

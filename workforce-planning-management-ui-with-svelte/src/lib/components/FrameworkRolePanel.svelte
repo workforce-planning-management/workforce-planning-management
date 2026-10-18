@@ -242,6 +242,7 @@
     <p class="muted">
       {t("comp.frameworkRolePanel.tick_the_skills_you_have_and_set")}
     </p>
+    <!-- Plain table: every row holds a checkbox and a level select that must keep focus and state. -->
     <table data-testid={`skills-${framework}`}>
       <thead>
         <tr><th>{t("comp.frameworkRolePanel.i_have_it")}</th><th>{t("comp.frameworkRolePanel.skill")}</th><th>{framework === "esco" ? t("comp.frameworkRolePanel.relation") : t("comp.frameworkRolePanel.role_expects")}</th><th>{t("comp.frameworkRolePanel.my_level")}</th></tr>

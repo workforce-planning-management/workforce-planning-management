@@ -79,9 +79,9 @@ A new UI string goes in `content/locales/en-001/ui.json` **and** every other
 
 | Area               | Views                                                                       |
 | ------------------ | --------------------------------------------------------------------------- |
-| Talent acquisition | requisition board (SVAR Kanban), application pipeline, candidate pool, onboarding tracker |
+| Talent acquisition | requisition board (Lily kanban), application pipeline, candidate pool, onboarding tracker |
 | Workforce          | team approvals, department rota, working-time flags, ergonomic issues       |
-| HR core            | employee list (SVAR grid) + profile (masked salary unless entitled), org chart, benefits |
+| HR core            | employee list (Lily data grid) + profile (masked salary unless entitled), org chart, benefits |
 | Wellbeing          | `/wellbeing`: entitlement rules + aggregate uptake & conversion + pulse results; `/privacy`: retention report + sweep |
 | Development        | review panel, `/learning` (skills matrix, analytics, paths), `/mentorship`, succession + gap report |
 | Payroll            | run screen (draft → calculated → approved), payslips, benchmarking table    |

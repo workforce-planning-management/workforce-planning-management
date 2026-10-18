@@ -136,6 +136,26 @@ can complete their own assessment from it:
   person typed, tokens the catalogue does not know yet (shown humanized, in English), dates and
   numbers (shown in ISO form), plural forms, and the third-party content manager.
 
+## WPM-R133 — Export a table as CSV, TSV or Excel
+
+- **Three formats.** A table that offers export offers **CSV**, **TSV** (tab-separated) and **Excel** (`.xlsx`), as three
+  buttons in one labelled group, built on `@lilydesignsystem/svelte-data-grid` (its `exportCsv`, `exportTsv` and
+  `exportExcel` labels, `exportFilename` and `onExport`). Today two are wired (CSV and Excel); TSV is the addition.
+- **Only tables that name no one.** Export is switched on per table, by name, and only for aggregate tables (counts, rates,
+  totals by department or programme). A table with a person's name, pid or pay on a row never offers it: an export leaves the
+  app's masking and access checks behind. The five tables that offer it today are `metrics`, `training-analytics`,
+  `contingent-departments`, `pay-bands` and `cpd-overview`; adding a sixth is a spec change.
+- **What the file holds.** The columns shown, in the order shown, without an actions column (`exportable: false`), and the
+  rows the reader has after search and sort. An unknown value is exported as "—", never as `0` or a blank that reads as zero. A column drawn by a cell snippet names the
+  value it exports (`exportValue`), and an amount of money is exported with its currency, not as bare minor units.
+  A masked value is exported as the same masked token the table shows. Headers are in the page's locale.
+- **A spreadsheet cannot run it.** A text cell that starts with `=`, `+`, `-`, `@`, a tab or a carriage return is exported with
+  a leading `'` (the grid's `safe` default stays on). CSV and TSV carry a UTF-8 byte-order mark so Excel reads other scripts.
+- **Said aloud.** The export is announced to assistive technology with the file name and the row count, in the page's locale
+  (`dataTable.exported`). The three button labels and the group label are in every `-001` locale (WPM-R94).
+- **The file name** is the table's export name plus the format's extension (`cpd-overview.csv`, `.tsv`, `.xlsx`), with no
+  person, organization or date in it.
+
 ## Decisions
 
 - **WPM-D60 Retention is per kind, set by the deployer.** One horizon for every
@@ -155,3 +175,8 @@ can complete their own assessment from it:
   accepted.
 - **WPM-D64 Translated text is content, and an unreviewed translation says so.**
   The repository never presents a machine translation as reviewed.
+- **WPM-D84 Export is built in the browser from the rows the page already holds.** No export endpoint: the grid builds the
+  file from rows the API already returned under the caller's access and masking, so an export can never show more than the page
+  does. The cost is that it can never show more than one page of a very large table's source either; a large export would be a
+  server endpoint with its own access check, and that is a separate decision. Export stays opt-in per table (WPM-R133), because
+  the cheapest privacy control is that the button does not exist.

@@ -5,13 +5,34 @@
     "literalText": "Empty on purpose: no visible text outside the catalogue."
   },
   "literalText": [],
-  "anyLocale": ["UK GDAD PCF", "ESCO", "LMS", "https://…", "FTE"],
+  "anyLocale": [
+    "TSV",
+    "UK GDAD PCF",
+    "ESCO",
+    "LMS",
+    "https://…",
+    "FTE",
+    "CSV",
+    "Excel"
+  ],
   "sameAsEnglish": {
-    "cy-001": ["Band", "Mentor", "Net", "Person", "Rota", "intern", "partner"],
+    "cy-001": [
+      "Agenda",
+      "Band",
+      "Demo",
+      "Mentor",
+      "Net",
+      "Person",
+      "Rota",
+      "intern",
+      "partner"
+    ],
     "de-001": [
+      "Agenda",
       "Band",
       "Benchmarks",
       "Definition",
+      "Demo",
       "Info",
       "Initiative",
       "Mentee",
@@ -25,6 +46,7 @@
       "Status"
     ],
     "es-001": [
+      "Agenda",
       "Mentor",
       "Plan",
       "Total",
@@ -41,6 +63,8 @@
       "Attention",
       "Catalogue",
       "Date",
+      "Dates",
+      "Demo",
       "Description",
       "Direction",
       "Doses",
@@ -58,6 +82,7 @@
       "Net",
       "Note",
       "Notifications",
+      "Pages",
       "Plan",
       "Plans",
       "Programme",
@@ -67,6 +92,7 @@
       "Score",
       "Site",
       "Source",
+      "Table",
       "Total",
       "aptitude",
       "direct",
@@ -76,9 +102,11 @@
       "parental",
       "points",
       "web",
+      "{total} pages",
       "· budget {currency} ·"
     ],
     "pt-001": [
+      "Agenda",
       "Benchmarks",
       "Doses",
       "Mentor",
@@ -93,6 +121,8 @@
       "web"
     ],
     "id-001": [
+      "Agenda",
+      "Demo",
       "Email",
       "Info",
       "Level",

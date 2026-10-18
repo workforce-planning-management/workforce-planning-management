@@ -7,6 +7,11 @@
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import { listRoleProfiles, workerRoleGap } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   let { workerPid }: { workerPid: string } = $props();
 
@@ -39,7 +44,33 @@
       error = cause instanceof Error ? cause.message : String(cause);
     }
   }
+
+  type Requirement = Gap["requirements"][number];
+
+  const columns = $derived<DataGridColumn[]>([
+    { id: "skill", header: t("comp.roleGap.skill"), sortable: true },
+    {
+      id: "importance",
+      header: t("comp.roleGap.importance"),
+      sortable: true,
+      format: (v) => tv(String(v)),
+    },
+    { id: "min_proficiency", header: t("comp.roleGap.needs"), sortable: true, align: "end" },
+    { id: "declared", header: t("comp.roleGap.declared"), sortable: true, align: "end" },
+    {
+      id: "grade",
+      header: t("comp.roleGap.status"),
+      sortable: true,
+      cellClass: ({ row }) => ((row as unknown as Requirement).grade !== "met" ? "cx-warn" : ""),
+      cell: gradeCell,
+    },
+  ]);
 </script>
+
+{#snippet gradeCell({ row }: { row: DataGridRow })}
+  {@const r = row as unknown as Requirement}
+  {tv(r.grade)}{#if r.shortfall !== null} (−{r.shortfall}){/if}
+{/snippet}
 
 {#if profiles.length > 0}
   <div class="panel" data-testid="role-gap">
@@ -63,28 +94,16 @@
           gap.all_met,
         ) })}
       </p>
-      <table>
-        <thead>
-          <tr><th>{t("comp.roleGap.skill")}</th><th>{t("comp.roleGap.importance")}</th><th>{t("comp.roleGap.needs")}</th><th>{t("comp.roleGap.declared")}</th><th>{t("comp.roleGap.status")}</th></tr>
-        </thead>
-        <tbody>
-          {#each gap.requirements as row (row.skill_pid)}
-            <tr>
-              <td>{row.skill}</td>
-              <td>{tv(row.importance)}</td>
-              <td>{row.min_proficiency}</td>
-              <td>{row.declared ?? "—"}</td>
-              <td class:warn={row.grade !== "met"}>
-                {tv(row.grade)}{#if row.shortfall !== null} (−{row.shortfall}){/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+      <DataTable
+        label={t("comp.roleGap.compare_to_a_role")}
+        columns={columns}
+        rows={gap.requirements as unknown as DataGridRow[]}
+        rowId={(row) => String(row.skill_pid)}
+      />
     {/if}
   </div>
 {/if}
 
 <style>
-  td.warn { color: #b45309; font-weight: 600; }
+  :global(td.cx-warn) { color: #b45309; font-weight: 600; }
 </style>

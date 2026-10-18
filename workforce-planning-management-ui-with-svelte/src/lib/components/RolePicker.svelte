@@ -15,8 +15,12 @@
   let hits = $state<Awaited<ReturnType<typeof searchEscoOccupations>>>([]);
   let error = $state<string | null>(null);
 
+  // Asked for once. Reading `profiles.length` in the effect made every answer re-run it, so a framework
+  // with no profiles was asked for again and again, as fast as the service would answer.
+  let asked = false;
   $effect(() => {
-    if (framework === "uk-gdad-pcf" && profiles.length === 0) {
+    if (framework === "uk-gdad-pcf" && !asked) {
+      asked = true;
       void listRoleProfiles("uk-gdad-pcf")
         .then((p) => (profiles = p))
         .catch((cause) => (error = cause instanceof Error ? cause.message : String(cause)));

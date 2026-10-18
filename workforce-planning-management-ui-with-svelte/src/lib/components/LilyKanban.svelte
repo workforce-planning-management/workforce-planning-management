@@ -8,6 +8,7 @@
 <script lang="ts">
   import KanbanBoard from "@lilydesignsystem/svelte-kanban-board";
   import type { KanbanCard, KanbanColumn } from "@lilydesignsystem/svelte-kanban-board";
+  import { tf, t } from "#lib/i18n.svelte.js";
 
   let {
     label,
@@ -29,11 +30,12 @@
     {cards}
     {onMove}
     labels={{
-      cardCount: (count) => `${count} card${count === 1 ? "" : "s"}`,
-      overLimit: (count, limit) => `Over limit: ${count} of ${limit}`,
-      moveButton: (card) => `Move ${card.title}`,
-      moveMenuLabel: "Move to column",
-      moveAnnouncement: (title, column) => `${title} moved to ${column}`,
+      cardCount: (count) => tf("kanban.cardCount", { count }),
+      overLimit: (count, limit) => tf("kanban.overLimit", { count, limit }),
+      moveButton: (card) => tf("kanban.moveButton", { title: card.title }),
+      emptyColumn: (column: KanbanColumn) => tf("kanban.emptyColumn", { column: column.title }),
+      moveMenuLabel: t("kanban.moveMenu"),
+      moveAnnouncement: (title, column) => tf("kanban.moved", { title, column }),
     }}
   />
 </div>

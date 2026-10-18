@@ -5,12 +5,18 @@
 import type { RequestHandler } from "./$types";
 import { redirect } from "@sveltejs/kit";
 import { signout } from "#lib/server/auth.js";
-import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "#lib/server/session.js";
+import { isDemoSession } from "#lib/server/demo.js";
+import { clearSessionCookie } from "#lib/server/session.js";
 
-export const POST: RequestHandler = async ({ locals, cookies, fetch }) => {
-  if (locals.sessionId) {
-    await signout(fetch, locals.sessionId);
+export const POST: RequestHandler = async ({ locals, cookies, fetch, url }) => {
+  if (locals.sessionId && !isDemoSession(locals.sessionId)) {
+    // Best effort: whatever the authentication service does, the visitor leaves.
+    try {
+      await signout(fetch, locals.sessionId);
+    } catch {
+      // The cookie below is cleared regardless.
+    }
   }
-  cookies.delete(SESSION_COOKIE, SESSION_COOKIE_OPTIONS);
+  clearSessionCookie(cookies, url);
   redirect(303, "/");
 };

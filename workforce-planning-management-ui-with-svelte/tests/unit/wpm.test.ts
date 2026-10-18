@@ -405,6 +405,8 @@ describe("api path map", () => {
     await wpm.listEarlyWarnings("organization:abc");
     await wpm.sweepEarlyWarnings("organization:abc");
     await wpm.acknowledgeEarlyWarning("w1");
+    await wpm.listDevelopmentPlans("w1");
+    await wpm.setDevelopmentItemStatus("i1", "achieved");
     expect(calls).toEqual([
       "/api/proxy/workers?department=engineering",
       "/api/proxy/workers/p1",
@@ -599,6 +601,8 @@ describe("api path map", () => {
       "/api/proxy/early-warnings?organization=organization%3Aabc",
       "/api/proxy/early-warnings/sweep?organization=organization%3Aabc",
       "/api/proxy/early-warnings/w1/acknowledge",
+      "/api/proxy/workers/w1/development-plans",
+      "/api/proxy/development-plan-items/i1",
     ]);
     vi.unstubAllGlobals();
   });

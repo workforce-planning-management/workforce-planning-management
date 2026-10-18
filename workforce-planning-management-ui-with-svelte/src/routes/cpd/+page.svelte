@@ -20,6 +20,12 @@
   import { percentWithWorkings } from "#lib/format.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import type { Worker } from "#lib/api/types.js";
+  import CalendarPanel from "#lib/components/CalendarPanel.svelte";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   type Overview = Awaited<ReturnType<typeof cpdOverview>>;
   type Progress = Awaited<ReturnType<typeof cpdProgress>>;
@@ -120,6 +126,37 @@
     }
   }
 
+  const overviewColumns = $derived<DataGridColumn[]>([
+    { id: "name", header: t("pages.cpd.requirement"), sortable: true, rowHeader: true, cell: requirementCell },
+    { id: "period_start", header: t("pages.cpd.period"), sortable: true, cell: periodCell },
+    { id: "applicable_workers", header: t("pages.cpd.applies_to"), sortable: true, align: "end" },
+    {
+      id: "met_recorded",
+      header: t("pages.cpd.met_recorded"),
+      accessor: (r) => percentWithWorkings(r.met_recorded as never),
+    },
+    {
+      id: "met_verified",
+      header: t("pages.cpd.met_verified"),
+      accessor: (r) => percentWithWorkings(r.met_verified as never),
+    },
+  ]);
+  const progressColumns = $derived<DataGridColumn[]>([
+    { id: "name", header: t("pages.cpd.requirement"), sortable: true, rowHeader: true, cell: progressRequirementCell },
+    { id: "required", header: t("pages.cpd.required"), sortable: true, align: "end", cell: requiredCell },
+    { id: "recorded", header: t("pages.cpd.recorded"), sortable: true, align: "end" },
+    { id: "verified", header: t("pages.cpd.verified"), sortable: true, align: "end" },
+    { id: "remaining", header: t("pages.cpd.remaining"), sortable: true, align: "end", cell: remainingCell },
+  ]);
+  const entryColumns = $derived<DataGridColumn[]>([
+    { id: "entry_date", type: "date", header: t("pages.cpd.date"), sortable: true },
+    { id: "activity", header: t("pages.cpd.activity"), sortable: true, cell: activityCell },
+    { id: "category", header: t("pages.cpd.category"), sortable: true, accessor: (r) => tv(String(r.category)) },
+    { id: "amount", header: t("pages.cpd.amount"), sortable: true, align: "end", cell: entryAmountCell },
+    { id: "evidence_url", header: t("pages.cpd.evidence"), cell: evidenceCell },
+    { id: "verified_on", header: t("pages.cpd.verified"), cell: verifyCell },
+  ]);
+
   async function verify(pid: string) {
     error = null;
     try {
@@ -134,6 +171,45 @@
 
 <svelte:head><title>{tf("pages.cpd.page_title", { cpd: t("nav.cpd") })}</title></svelte:head>
 
+{#snippet requirementCell({ row }: { row: DataGridRow })}
+  {@const r = row as unknown as Overview["requirements"][number]}
+  {r.name} <span class="muted">({tv(r.unit)})</span>
+{/snippet}
+
+{#snippet periodCell({ row }: { row: DataGridRow })}
+  {row.period_start} → {row.period_end}
+{/snippet}
+
+{#snippet progressRequirementCell({ row }: { row: DataGridRow })}
+  {row.name} <span class="muted">({row.period_start} → {row.period_end})</span>
+{/snippet}
+
+{#snippet requiredCell({ row }: { row: DataGridRow })}
+  {row.required} {tv(String(row.unit))}
+{/snippet}
+
+{#snippet remainingCell({ row }: { row: DataGridRow })}
+  <span class:warn={!row.met}>{row.remaining}</span>
+{/snippet}
+
+{#snippet activityCell({ row }: { row: DataGridRow })}
+  {row.activity}{#if row.source === "lms"} <span class="chip">{t("pages.cpd.lms")}</span>{/if}
+{/snippet}
+
+{#snippet entryAmountCell({ row }: { row: DataGridRow })}
+  {row.amount} {tv(String(row.unit))}
+{/snippet}
+
+{#snippet evidenceCell({ row }: { row: DataGridRow })}
+  {#if row.evidence_url}<a href={String(row.evidence_url)} rel="noopener noreferrer">{t("pages.cpd.link")}</a>{:else}—{/if}
+{/snippet}
+
+{#snippet verifyCell({ row }: { row: DataGridRow })}
+  {#if row.verified_on}✓ {row.verified_on}{:else}
+    <button type="button" onclick={() => void verify(String(row.pid))}>{t("pages.cpd.verify")}</button>
+  {/if}
+{/snippet}
+
 <h1>{t("nav.cpd")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 
@@ -143,24 +219,18 @@
   <p data-testid="cpd-registrations">
     {tf("pages.cpd.registrations_expiring_expired", { expiring: overview.registrations.expiring, expired: overview.registrations.expired })}
   </p>
-  <table data-testid="cpd-overview">
-    <thead>
-      <tr><th>{t("pages.cpd.requirement")}</th><th>{t("pages.cpd.period")}</th><th>{t("pages.cpd.applies_to")}</th><th>{t("pages.cpd.met_recorded")}</th><th>{t("pages.cpd.met_verified")}</th></tr>
-    </thead>
-    <tbody>
-      {#each overview.requirements as row (row.requirement_pid)}
-        <tr>
-          <td>{row.name} <span class="muted">({tv(row.unit)})</span></td>
-          <td>{row.period_start} → {row.period_end}</td>
-          <td>{row.applicable_workers}</td>
-          <td>{percentWithWorkings(row.met_recorded)}</td>
-          <td>{percentWithWorkings(row.met_verified)}</td>
-        </tr>
-      {:else}
-        <tr><td colspan="5" class="muted">{t("pages.cpd.no_cpd_requirements_defined_yet")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if overview.requirements.length === 0}
+    <p class="muted" data-testid="cpd-overview">{t("pages.cpd.no_cpd_requirements_defined_yet")}</p>
+  {:else}
+    <DataTable
+      testid="cpd-overview"
+      exportName="cpd-overview"
+      label={t("pages.cpd.across_the_workforce")}
+      columns={overviewColumns}
+      rows={overview.requirements as unknown as DataGridRow[]}
+      rowId={(row) => String(row.requirement_pid)}
+    />
+  {/if}
 {/if}
 
 <h2>{t("pages.cpd.define_a_requirement")}</h2>
@@ -199,24 +269,17 @@
 
 {#if progress}
   <p class="muted">{progress.derivation}</p>
-  <table data-testid="cpd-progress">
-    <thead>
-      <tr><th>{t("pages.cpd.requirement")}</th><th>{t("pages.cpd.required")}</th><th>{t("pages.cpd.recorded")}</th><th>{t("pages.cpd.verified")}</th><th>{t("pages.cpd.remaining")}</th></tr>
-    </thead>
-    <tbody>
-      {#each progress.requirements as row (row.requirement_pid)}
-        <tr>
-          <td>{row.name} <span class="muted">({row.period_start} → {row.period_end})</span></td>
-          <td>{row.required} {tv(row.unit)}</td>
-          <td>{row.recorded}</td>
-          <td>{row.verified}</td>
-          <td class:warn={!row.met}>{row.remaining}</td>
-        </tr>
-      {:else}
-        <tr><td colspan="5" class="muted">{t("pages.cpd.no_requirement_applies_to_this")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if progress.requirements.length === 0}
+    <p class="muted" data-testid="cpd-progress">{t("pages.cpd.no_requirement_applies_to_this")}</p>
+  {:else}
+    <DataTable
+      testid="cpd-progress"
+      label={t("pages.cpd.a_worker_s_cpd")}
+      columns={progressColumns}
+      rows={progress.requirements as unknown as DataGridRow[]}
+      rowId={(row) => String(row.requirement_pid)}
+    />
+  {/if}
   {#if progress.registrations.length > 0}
     <h3>{t("pages.cpd.registrations")}</h3>
     <ul>
@@ -226,32 +289,31 @@
     </ul>
   {/if}
 
+  <CalendarPanel
+    testid="cpd-calendar"
+    label={t("calendar.cpd")}
+    events={[
+      ...entries.map((e) => ({ id: e.pid, date: e.entry_date, title: `${e.activity} · ${e.amount} ${tv(e.unit)}` })),
+      ...progress.registrations.flatMap((r, i) =>
+        r.expires_on ? [{ id: `registration-${i}`, date: r.expires_on, title: `${r.body} · ${tv(r.status)}` }] : [],
+      ),
+    ]}
+    ranges={progress.requirements.map((r) => ({ start: r.period_start, end: r.period_end, kind: "requirement", label: r.name }))}
+  />
+
   <h3>{t("pages.cpd.ledger")}</h3>
-  <table data-testid="cpd-entries">
-    <thead>
-      <tr><th>{t("pages.cpd.date")}</th><th>{t("pages.cpd.activity")}</th><th>{t("pages.cpd.category")}</th><th>{t("pages.cpd.amount")}</th><th>{t("pages.cpd.evidence")}</th><th></th></tr>
-    </thead>
-    <tbody>
-      {#each entries as e (e.pid)}
-        <tr>
-          <td>{e.entry_date}</td>
-          <td>{e.activity}{#if e.source === "lms"} <span class="chip">{t("pages.cpd.lms")}</span>{/if}</td>
-          <td>{tv(e.category)}</td>
-          <td>{e.amount} {tv(e.unit)}</td>
-          <td>
-            {#if e.evidence_url}<a href={e.evidence_url} rel="noopener noreferrer">{t("pages.cpd.link")}</a>{:else}—{/if}
-          </td>
-          <td>
-            {#if e.verified_on}✓ {e.verified_on}{:else}
-              <button type="button" onclick={() => void verify(e.pid)}>{t("pages.cpd.verify")}</button>
-            {/if}
-          </td>
-        </tr>
-      {:else}
-        <tr><td colspan="6" class="muted">{t("pages.cpd.nothing_recorded_yet")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if entries.length === 0}
+    <p class="muted" data-testid="cpd-entries">{t("pages.cpd.nothing_recorded_yet")}</p>
+  {:else}
+    <DataTable
+      testid="cpd-entries"
+      label={t("pages.cpd.ledger")}
+      columns={entryColumns}
+      rows={entries as unknown as DataGridRow[]}
+      rowId={(row) => String(row.pid)}
+      pageSize={25}
+    />
+  {/if}
 
   <h3>{t("pages.cpd.record_an_activity")}</h3>
   <form
@@ -277,5 +339,5 @@
 {/if}
 
 <style>
-  td.warn, .chip.warn { color: #b45309; font-weight: 600; }
+  .warn, .chip.warn { color: #b45309; font-weight: 600; }
 </style>

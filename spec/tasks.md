@@ -2687,6 +2687,115 @@ data or tests (WPM-D48).
       added to the review record; no person has read them; a screen reader was not run; removing a level, criterion or measure, and
       changing a pool member or a claim's status, is by API only; the live specs are not part of the default run and the rate limit
       can fail a quick rerun.
+      **Second follow-up (2026-10-13): Lily upgrade, a demo tour, two bugs found by using the app.** *Lily:* `@lilydesignsystem/*`
+      upgraded (picker bar 0.1 to 0.3, the locale, theme, share and text-size pickers to 0.2, headless 0.4, themes 0.4) and the
+      header now carries the **link picker** (a home icon: every page, in the reader's language, the current one marked, locale kept)
+      and the **search picker** (sends the query to the directory, which opens with it filled in from `?q=`). Four strings in 13
+      locales. The 0.2 pickers add hover tooltips that the headless themes do not position: in flow, one widened its picker's box on
+      hover and moved the button out from under the pointer, so a click on the language or text-size button did nothing (found
+      because the existing locale-switcher spec failed); the tooltips are now out of flow in the layout CSS, with a spec that hovers
+      and clicks every picker. *SSO:* `/signin/sso` (and under any locale) threw a `500`, since SvelteKit's `redirect()` refuses an
+      address on another origin; it now returns a plain 303, with a spec. **Not done:** the UI's SSO contract (`/api/auth/sso/start`
+      and `/sso/callback`) does not match the sibling authentication service, which exposes `/api/auth/oidc/login` and bridges back
+      through the magic-link `/verify?token=`; SSO has not been run end to end against Keycloak. *Request loop:* the role picker
+      on `/me` asked for the GDAD role profiles again after every answer when the answer was empty (it read the list length in its
+      own effect): 744 requests in three seconds on a service with no such profiles, enough to trip the service's rate limit and
+      break every later page; fixed (asked once), with a unit test that fails on the old code. *Demo:* where `WPM_DEMO_API_URL` names
+      a separate service instance that holds only fictitious data (authentication off), signing in as **example@example.com** (no
+      email is sent) sets a `demo:` session and opens `/demo`, a guided tour of every page (34 steps in nine sections, the same
+      sections as the public tour), and a banner on each page says the data is fictitious with Step n of 34, Previous and Next.
+      The demo session reaches that service and nowhere else (no token exchange at the authentication service; with no demo
+      configured the `demo:` prefix opens nothing, a `401`); its memberships (an administrator of the demo organization, the first
+      permanent worker as "me") are made up in the proxy, since nothing else says who the demo user is. `scripts/demo-data.py`
+      (standard library, public API only, so every rule that guards a write applies) fills a seeded service with fictitious
+      capacity, governance, oversight, a rota, a cutover, 11 contractors with funding, a conversion plan, a workforce plan, groups,
+      learning, a mentorship, reviews, succession, CPD, wellbeing, a pulse survey, announcements, payroll, an expense claim and a
+      change initiative: it ran with 0 failed steps and every one of the 34 pages loaded with data and no error. Strings: 11 in 13
+      locales. **Verified:** 123 vitest (the demo session, the sign-in branch with and without a demo and for another address, the
+      proxy routing and refusal, the made-up memberships, the tour order, the role-picker loop), svelte-check, prettier, build, 106
+      Playwright specs (the tour page, Next and Previous, locale kept, no banner for an ordinary session, four screenshot sizes
+      checked for sideways scroll and looked at). **Not done / limits:** the demo's caller-specific pages (my leave, the expense
+      decisions queue for "my reports") show little, since the demo user has no real identity; the demo is not reset on a timer
+      (rerun the script on a fresh database); demo data is loaded by a script, not a Loco task; `/workers` on a phone scrolls
+      sideways (not touched here); the demo hint is client-rendered; Keycloak was not launched.
+      **Found by the first real trial (Safari engine):** signing in as the example address did nothing. The server set the
+      `Secure`, `__Host-` session cookie over `http://localhost`, which Chromium and Firefox keep and Safari (WebKit) refuses, so the
+      next page sent the visitor back to sign in; the Playwright specs run Chromium only and passed. On plain http on this machine
+      (localhost, 127.0.0.1, ::1) the session now travels in a cookie without the prefix and without `Secure` (`mxi_session`);
+      anywhere else only the host-locked cookie counts and a cookie of the other name is ignored (unit-tested both ways, and the
+      magic-link and SSO verify routes and sign-out use the same helpers). Checked by signing in with Firefox, Chromium and WebKit
+      through Playwright: all three reach the tour and keep the session. The specs still run Chromium only.
+      **Third follow-up (2026-10-13): the home page, a board, organizations.** *Home:* the signed-in dashboard's headline is "My
+      Home Page" and it has **six tiles** (active workers, open vacancies, succession gaps, and new: single points of failure,
+      early warnings not acknowledged, pools over capacity), each linking to its page; the three new ones read across every
+      organization the person belongs to, and one that cannot be read shows a dash, never 0. The header says **Sign out** (a POST
+      form; best effort at the authentication service, the cookie is cleared regardless) when signed in and **Sign in** when not,
+      which it did not before (it always said Sign in and the app had no sign-out control at all). *Board:* `/<locale>/kanban`
+      ("My board") shows the signed-in person's development-plan steps on `@lilydesignsystem/svelte-kanban-board`, one column
+      for each status (planned, in progress, achieved, abandoned); a card moves by drag or by its Move menu, the move is saved at
+      once (`PUT /api/development-plan-items/{pid}`) and the board is read again so a refused move goes back and its reason stays
+      shown; marking a step achieved says the declared skill level is unchanged. The existing board component's labels were
+      English literals and are now in the catalogue (the requisition board gets them too; "Cards: n", with no plural noun).
+      *Organizations:* organizations have no names in this system (a URN), so the demo's are four organizations that have
+      people (the seeded one and three regions of 12 people each, with governance, an oversight scale and position, two with a
+      skill pool and a claim) and a parent that contains them all (`organization-confederations`); the demo user is an
+      administrator of each, made up in the proxy, and "me" (the first permanent worker) has a development plan with a step in
+      each of three statuses. **Verified:** 129 vitest, svelte-check, prettier, build, 120 Playwright specs (the six tiles and
+      their figures, a failing tile, Sign in versus Sign out signed in and out, signing out, the Welsh headline and button,
+      the board's columns, a saved move, a refused move put back, no worker record, no plan, Welsh, four screenshot sizes);
+      the demo ran with 0 failed steps and the home page showed 5 organizations and the populated board. **Not done:** converting
+      the data tables to `@lilydesignsystem/svelte-data-grid` (see below); the organizations have no names to show in the picker.
+      **Data grid:** the grid (0.1.0) renders text cells only (`format` returns a string; no cell snippet), so it cannot hold the
+      links, buttons, chips and inputs that 36 of the UI's 73 tables carry, and the other 37 are plain text. Nothing was converted,
+      pending a decision on whether to convert only the plain-text tables.
+      **Update 2026-10-13:** `@lilydesignsystem/svelte-data-grid` 0.4.0 adds `cell` snippets, `mode="table"`, `rowHeader` and
+      `rowAttrs`, so link/chip tables can convert. `DataTable.svelte` wraps it (sortable headers, locale-aware collation, unknown
+      sorts last and shows "—"). Converted: `/directory`, `/job-levels`, `/movements`. **Not done:** the other ~70 tables;
+      pagination, column visibility and the filter box (each needs new strings in every locale).
+      **Update 2026-10-17: SVAR removed.** `/requisitions` (board) and `/workers` (list, with a filter box and 25 per page) now use the
+      Lily kanban and `DataTable`; the six `@svar-ui` packages and `svar-filter-augment.d.ts` are gone. The worker filter is a
+      single text box over every column (was a per-field rule builder); the worker name is now a link, not row selection.
+      Verified: svelte-check 0, 129 vitest, 127 Playwright. Not looked at: screenshots of the two pages; drag on the board.
+      **Update 2026-10-14:** `dataTable.*` strings (columns, show column, previous/next page, page status, sort announcement) are
+      in all 12 `-001` locales (AI-written, unreviewed); `DataTable` takes `pageSize` (pager shown only when rows overflow) and
+      shows the column picker when a column is `hidable`. Converted 31 more tables; 29 stay plain with a comment (headerless
+      lists with no header strings, `<tfoot>`/colspan rows, inline forms/selects that must keep focus, matrices, a hidden chart
+      table, and `movement-items`, whose spec reads `tr[data-state]`). **Verified:** svelte-check 0 errors, 129 vitest, 121
+      Playwright specs pass (one pickers spec failed once in the full run and passed on re-run). **Not checked:** no screenshots
+      looked at; no spec exercises the pager or the column picker; column visibility is not yet used by any table.
+      **Update 2026-10-14 (headerless tables):** 27 `columns.*` header strings added to the 12 `-001` locales (AI-written,
+      unreviewed; fr "Dates"/"Table" allow-listed as the same word). Converted 14 more tables: `workers/[pid]` (5), `workforce`
+      (4), `wellbeing` (3), `development` (2), `privacy` (1) — headers now name what the old cells labelled inline (payslips drop
+      "Gross:"/"Net:", enrolment conversion drops its prefix). Still plain: `contingent` figures list, `movement-items`,
+      `held-items`, the tables with inline forms. **Verified:** svelte-check 0 errors, 129 vitest, 121 Playwright. **Not checked:**
+      screenshots.
+      **Update 2026-10-14 (upgrade and calendar):** all `@lilydesignsystem` packages raised to latest (calendar 0.3.0, data-grid
+      0.5.0, gantt-chart 0.3.0, headless 0.5.0, kanban-board 0.3.0). `CalendarPanel.svelte` wraps `svelte-calendar` (week, four
+      weeks, month; weekday and month names from Intl; 12 `calendar.*` strings in the 12 `-001` locales, AI-written, unreviewed)
+      and is on `/workforce` (pending leave, shifts), the worker page (leave), `/rota` (on-call runs) and `/cpd` (ledger entries,
+      requirement period marked). Events show a text title, never colour alone. **Verified:** svelte-check 0 errors, 129 vitest,
+      Playwright (new `calendar.spec.ts`: entry on its day, period marked, view switch, Welsh) and a screenshot looked at.
+      **Follow-up 2026-10-14:** registration expiries join the `/cpd` calendar and `/development` gets a certificate-expiry
+      calendar (`calendar.expiring`, all 12 locales). Today is outlined, not filled (the fill read poorly in dark). The grid now
+      fits a 390px phone without page scroll. Playwright 126 pass; light/dark/phone screenshots of the `/cpd` calendar looked at.
+      **Not done:** day-click or drag-to-reschedule, team calendars across organizations; the other calendars (`/workforce`,
+      `/rota`, worker page, `/development`) have no screenshots or content assertions.
+      **Update 2026-10-17:** all `@lilydesignsystem` packages raised again (calendar 0.5.0, data-grid 0.9.0, gantt-chart 0.5.0,
+      kanban-board 0.6.0, pickers 0.2–0.4, themes 0.5.0); svelte-check 0, 129 vitest, 126 Playwright (one full run flaked after
+      the install and passed on re-run). New in those versions and not yet used: typed fields and in-place edit (`onFieldEdit`,
+      `onCellEdit`), CSV/TSV/Excel export, column reorder and pinning, `virtualize`, calendar agenda view. Export would be a new
+      disclosure path, so each use needs a privacy review first (AGENTS/privacy-and-data-rules.md).
+      **Follow-up 2026-10-17 (adoption):** `DataTable` now passes `empty`, `footer`, `locale` and `exportName`; `training-plan` and
+      `expense-items` are converted (totals rows as footers); the first column is pinned on five wide tables; date columns on
+      seven tables use the grid's `date` type (shown in the reader's locale, no longer ISO). Calendars open on the agenda on a
+      phone (`calendar.agenda`, `agendaEmpty`), and leave status and shift fill are typed event fields. Kanban columns say when
+      they are empty (`kanban.emptyColumn`). **Export** (CSV and Excel, `dataTable.export*`) is on five tables that name no
+      one: metrics, training analytics, contingent departments, pay bands, CPD overview. It is a new disclosure path and has no
+      requirement or decision entry yet: **a requirement and a decision are still to be written** (spec-first rule).
+      **Not done:** in-place editing (`onCellEdit`, `onFieldEdit`) on the grid, calendar and Gantt, which needs a write endpoint
+      and a permission decision per table; Gantt task fields; `movable` columns (needs announcement strings).
+      **Verified:** svelte-check 0, 129 vitest, 127 Playwright (a new spec downloads the CPD overview CSV and checks that an
+      unknown stays a dash); one phone screenshot of the agenda looked at. Localized dates in the grids were not looked at.
 WPM-T120–T122 (critical chain buffers) were withdrawn on 2026-10-09 by
 [WPM-D55](design.md): critical chain, critical path and similar scheduling
 capabilities live in project-portfolio-management. The ids are not reused.
@@ -3018,11 +3127,15 @@ payroll defect and need nothing else; do them first.
       contractor details and is not added to payroll by this step (those belong to the processes that own them); an
       organization above the worker's does not decide; no user interface.
 - [ ] WPM-T164 **Conversion plans feed the planner and the reminders.** *(WPM-R98, WPM-R63, WPM-R81)* **Done
-      (2026-10-12):** the end-of-engagement reminder (WPM-T138) names an open plan's status and review date, never its
+      (2026-10-13), the planner:** each department of the forecast now carries `conversions`: the open plans to convert its people
+      to permanent, **agreed** (approved by a person) and **hoped** (only proposed) kept apart, as headcount and FTE (pure
+      `rules::planning::conversion_cover`, one unit test; a request test: none, proposed is a hope, approved is agreed and no longer
+      a hope, an abandoned plan counts for nothing, the projection is unchanged, the forecast names no one). Neither changes the
+      projected supply (an agreed conversion keeps a worker beyond their end date, so the projection understates it; the planner
+      decides). The derivation text says so. **Done (2026-10-12):** the end-of-engagement reminder (WPM-T138) names an open plan's status and review date, never its
       reason (verified, mutation-checked); approving a plan records the decision a manager takes; a done conversion changes
       the worker in one transaction; `GET /api/conversion-plans` lists open plans apart from the candidates. **Still to do:**
-      the workforce plan's "convert contingent to permanent" lever reading these plans (the lever itself is not yet in
-      code), the UI panel on the worker page and the conversion list in the contingent workforce view, and strings in the
+      the UI: the planning page showing agreed and hoped conversions beside the lever (the lever has been in code since WPM-T110), the panel on the worker page and the conversion list in the contingent workforce view, and strings in the
       13 locales (the catalogue rules of WPM-R94 apply: no literal text).
 
 ## Phase 15 — operations, information governance, OIDC and locales (WPM-R89–R94, WPM-D60–D64)
@@ -3592,3 +3705,18 @@ deployer's lawful basis and impact assessment before they are switched on.
       link and days checks pass. The brief's folder in each translated locale was then renamed to the translation of the topic, "Independent security testing", and not of the English folder name (`独立安全测试`, `unabhängige-sicherheitsprüfung`, `اختبار-الأمن-المستقل`). **Not verified:** no native speaker reviewed any translation or slug (the right-to-left pages were not rendered); non-ASCII
       folder names were created on macOS and have not been checked out on another platform or served over a web path; the French slug avoids an apostrophe
       (`dinformation`) on purpose; the English `Independent security tester` slug names a role while the page is a brief, which the user chose.
+- [x] WPM-T225 (2026-10-18) **Export a table as CSV, TSV or Excel.** *(traces to WPM-R133, WPM-D84)* `@lilydesignsystem` calendar 0.6.0,
+      data-grid 0.10.0, gantt-chart 0.7.0 and kanban-board 0.7.0. `DataTable.svelte` offers TSV and a Copy button beside CSV and Excel on tables
+      with an export name, a labelled pager, a column select for the search, and uses the grid's `emptyValue` and locale sorting in place of its own
+      code. Its labels are now built in `src/lib/data-table-labels.ts` (pure) and gain `filterAnnouncement`; eight keys (`dataTable.exportTsv`,
+      `copy`, `copied`, `copyFailed`, `pagination`, `searchField`, `searchAllFields`, `filtered`) in all 12 `-001` locales (AI-written,
+      unreviewed). **Found by auditing what each export holds, and fixed:** the metrics export had an empty Value column (a cell snippet exports
+      nothing), the pay-band export had bare minor units with no currency, and the training-analytics completion export lacked its workings; each
+      now has an `exportValue`. **No action column** exists on the five export tables, so nothing needed `exportable: false`; a future one must
+      set it. Verified: svelte-check 0 errors; 145 unit tests, including each locale's bundle against the grid's `missingLabels` (it failed
+      13 tests when a label was removed) and the exact list of tables that pass `exportName` (it failed when one was renamed); 130 Playwright
+      specs, including TSV, Excel and Copy from `cpd-overview` and `tests/e2e/export.spec.ts` (metrics value column and dashes, pay bands with
+      currency; both failed when the `exportValue` lines were removed). **Not verified:** that export covers every page of the filtered rows and
+      not only the visible page; the `.xlsx` was checked for its name, not opened; no screenshots of the new select, pager or buttons in any locale
+      or on a phone; training-analytics and contingent-departments exports were not downloaded; that `pay-bands` names no one was taken from its
+      name; the grid's development warning for missing labels was not read in a browser console.

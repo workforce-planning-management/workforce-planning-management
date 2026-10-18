@@ -13,6 +13,11 @@
     withdrawMobilityInterest,
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   let { workerPid }: { workerPid: string } = $props();
 
@@ -65,58 +70,88 @@
       error = message(cause);
     }
   }
+
+  type RoleMatch = Matches["roles"][number];
+  type Opportunity = Opportunities["opportunities"][number];
+
+  const roleColumns = $derived<DataGridColumn[]>([
+    { id: "job_title", header: t("comp.mobility.role"), sortable: true },
+    {
+      id: "critical_met",
+      header: t("comp.mobility.critical_met"),
+      sortable: true,
+      accessor: (r) => (r as unknown as RoleMatch).fit.critical_met?.value ?? null,
+      format: (_v, r) => percentWithWorkings((r as unknown as RoleMatch).fit.critical_met),
+    },
+    {
+      id: "all_met",
+      header: t("comp.mobility.all_met"),
+      sortable: true,
+      accessor: (r) => (r as unknown as RoleMatch).fit.all_met?.value ?? null,
+      format: (_v, r) => percentWithWorkings((r as unknown as RoleMatch).fit.all_met),
+    },
+    { id: "action", header: "", cell: roleAction },
+  ]);
+
+  const openColumns = $derived<DataGridColumn[]>([
+    { id: "job_title", header: t("comp.mobility.role"), sortable: true },
+    { id: "department", header: t("comp.mobility.department"), sortable: true },
+    {
+      id: "fit",
+      header: t("comp.mobility.my_fit_critical"),
+      sortable: true,
+      accessor: (r) => (r as unknown as Opportunity).fit?.critical_met?.value ?? null,
+      format: (_v, r) => {
+        const f = (r as unknown as Opportunity).fit;
+        return f ? percentWithWorkings(f.critical_met) : "—";
+      },
+    },
+    { id: "action", header: "", cell: openAction },
+  ]);
 </script>
+
+{#snippet roleAction({ row }: { row: DataGridRow })}
+  {@const role = row as unknown as RoleMatch}
+  {#if interested(role.role_profile_pid)}
+    <span class="muted">{t("comp.mobility.interested")}</span>
+  {:else}
+    <button type="button" onclick={() => void express({ role_profile_pid: role.role_profile_pid })}>
+      {t("comp.mobility.i_m_interested")}
+    </button>
+  {/if}
+{/snippet}
+
+{#snippet openAction({ row }: { row: DataGridRow })}
+  {@const opp = row as unknown as Opportunity}
+  {#if interested(opp.requisition_pid)}
+    <span class="muted">{t("comp.mobility.interested")}</span>
+  {:else}
+    <button type="button" onclick={() => void express({ requisition_pid: opp.requisition_pid })}>
+      {t("comp.mobility.i_m_interested")}
+    </button>
+  {/if}
+{/snippet}
 
 {#if matches && (matches.roles.length > 0 || (open?.opportunities.length ?? 0) > 0)}
   <div class="panel" data-testid="mobility">
     <h3>{t("comp.mobility.roles_that_fit_my_skills")}</h3>
     <p class="muted">{matches.derivation}</p>
     {#if error}<p class="error">{error}</p>{/if}
-    <table>
-      <thead><tr><th>{t("comp.mobility.role")}</th><th>{t("comp.mobility.critical_met")}</th><th>{t("comp.mobility.all_met")}</th><th></th></tr></thead>
-      <tbody>
-        {#each matches.roles as role (role.role_profile_pid)}
-          <tr>
-            <td>{role.job_title}</td>
-            <td>{percentWithWorkings(role.fit.critical_met)}</td>
-            <td>{percentWithWorkings(role.fit.all_met)}</td>
-            <td>
-              {#if interested(role.role_profile_pid)}
-                <span class="muted">{t("comp.mobility.interested")}</span>
-              {:else}
-                <button type="button" onclick={() => void express({ role_profile_pid: role.role_profile_pid })}>
-                  {t("comp.mobility.i_m_interested")}
-                </button>
-              {/if}
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <DataTable
+      label={t("comp.mobility.roles_that_fit_my_skills")}
+      columns={roleColumns}
+      rows={matches.roles as unknown as DataGridRow[]}
+      rowId={(row) => String(row.role_profile_pid)}
+    />
 
     {#if open && open.opportunities.length > 0}
       <h3>{t("comp.mobility.open_roles")}</h3>
-      <table>
-        <thead><tr><th>{t("comp.mobility.role")}</th><th>{t("comp.mobility.department")}</th><th>{t("comp.mobility.my_fit_critical")}</th><th></th></tr></thead>
-        <tbody>
-          {#each open.opportunities as opp (opp.requisition_pid)}
-            <tr>
-              <td>{opp.job_title}</td>
-              <td>{opp.department}</td>
-              <td>{opp.fit ? percentWithWorkings(opp.fit.critical_met) : "—"}</td>
-              <td>
-                {#if interested(opp.requisition_pid)}
-                  <span class="muted">{t("comp.mobility.interested")}</span>
-                {:else}
-                  <button type="button" onclick={() => void express({ requisition_pid: opp.requisition_pid })}>
-                    {t("comp.mobility.i_m_interested")}
-                  </button>
-                {/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+      <DataTable
+        label={t("comp.mobility.open_roles")}
+        columns={openColumns}
+        rows={open.opportunities as unknown as DataGridRow[]}
+        rowId={(row) => String(row.requisition_pid)}
+      />
     {/if}
 
     {#if interests.length > 0}

@@ -14,6 +14,11 @@
   } from "#lib/api/wpm.js";
   import type { ExpenseClaim } from "#lib/api/types.js";
   import { t, tp, i18n } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   let { claimPid, onchange }: { claimPid: string; onchange?: () => void } = $props();
 
@@ -46,6 +51,27 @@
   let paidOn = $state("");
 
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+
+  type Item = ExpenseClaim["items"][number];
+  const item = (row: DataGridRow) => row as unknown as Item;
+  const itemColumns = $derived<DataGridColumn[]>([
+    { id: "incurred_on", type: "date", header: t("expenses.date"), sortable: true },
+    {
+      id: "category",
+      header: t("expenses.category"),
+      sortable: true,
+      format: (v) => tp(`expenses.categories.${v}`) ?? String(v),
+    },
+    {
+      id: "amount_minor",
+      header: t("expenses.amount"),
+      sortable: true,
+      align: "end",
+      format: (_v, r) => money(item(r).amount_minor, claim?.currency ?? "", i18n.locale),
+    },
+    { id: "description", header: t("expenses.description"), cell: descriptionCell },
+    { id: "remove", header: t("common.actions"), cell: removeCell },
+  ]);
 
   async function load() {
     try {
@@ -110,6 +136,22 @@
   }
 </script>
 
+{#snippet descriptionCell({ row }: { row: DataGridRow })}
+  {item(row).description ?? ""}
+  {#if item(row).receipt_ref}<span class="muted">({item(row).receipt_ref})</span>{/if}
+  {#if item(row).possible_duplicate}
+    <span class="chip" data-testid="expense-duplicate">▲ {t("expenses.possibleDuplicate")}</span>
+  {/if}
+{/snippet}
+
+{#snippet removeCell({ row }: { row: DataGridRow })}
+  {#if claim?.can.edit}
+    <button type="button" data-testid="expense-remove" onclick={() => run(() => removeExpenseItem(item(row).pid))}>
+      {t("expenses.remove")}
+    </button>
+  {/if}
+{/snippet}
+
 {#if error}<p class="error" data-testid="expense-error">{error}</p>{/if}
 {#if claim}
   <div class="cx-claim" data-testid="expense-claim">
@@ -131,55 +173,24 @@
       <p>✓ {t("expenses.reimbursedOn")} {claim.reimbursed_on}</p>
     {/if}
 
-    <div class="cx-scroll">
-      <table data-testid="expense-items">
-        <thead>
-          <tr>
-            <th>{t("expenses.date")}</th>
-            <th>{t("expenses.category")}</th>
-            <th>{t("expenses.amount")}</th>
-            <th>{t("expenses.description")}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each claim.items as item (item.pid)}
-            <tr>
-              <td>{item.incurred_on}</td>
-              <td>{tp(`expenses.categories.${item.category}`)}</td>
-              <td>{money(item.amount_minor, claim.currency, i18n.locale)}</td>
-              <td>
-                {item.description ?? ""}
-                {#if item.receipt_ref}<span class="muted">({item.receipt_ref})</span>{/if}
-                {#if item.possible_duplicate}
-                  <span class="chip" data-testid="expense-duplicate">▲ {t("expenses.possibleDuplicate")}</span>
-                {/if}
-              </td>
-              <td>
-                {#if claim.can.edit}
-                  <button
-                    type="button"
-                    data-testid="expense-remove"
-                    onclick={() => run(() => removeExpenseItem(item.pid))}
-                  >
-                    {t("expenses.remove")}
-                  </button>
-                {/if}
-              </td>
-            </tr>
-          {:else}
-            <tr><td colspan="5" class="muted">{t("expenses.noItems")}</td></tr>
-          {/each}
-        </tbody>
-        <tfoot>
+    <DataTable
+      testid="expense-items"
+      label={t("expenses.itemsHeading")}
+      columns={itemColumns}
+      rows={claim.items as unknown as DataGridRow[]}
+      rowId={(row) => String(row.pid)}
+    >
+      {#snippet empty()}<span class="muted">{t("expenses.noItems")}</span>{/snippet}
+      {#snippet footer()}
+        {#if claim}
           <tr>
             <th colspan="2">{t("expenses.total")}</th>
             <td data-testid="expense-total">{money(claim.total_minor, claim.currency, i18n.locale)}</td>
             <td colspan="2"></td>
           </tr>
-        </tfoot>
-      </table>
-    </div>
+        {/if}
+      {/snippet}
+    </DataTable>
 
     {#if claim.can.edit}
       <form class="cx-form" onsubmit={addItem} data-testid="expense-item-form">
@@ -258,17 +269,6 @@
     border-inline-start: 3px solid currentColor;
     padding-inline-start: 0.75rem;
     margin: 0.75rem 0;
-  }
-  .cx-scroll {
-    overflow-x: auto;
-  }
-  .cx-scroll table {
-    min-width: 34rem;
-  }
-  /* Words and dates are never split mid-word; the box scrolls instead. */
-  .cx-scroll th,
-  .cx-scroll td:first-child {
-    white-space: nowrap;
   }
   .cx-form {
     display: flex;

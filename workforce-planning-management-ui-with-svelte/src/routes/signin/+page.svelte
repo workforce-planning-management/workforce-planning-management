@@ -9,7 +9,7 @@
   import type { ActionData } from "./$types";
   import { enhance } from "$app/forms";
 
-  let { form }: { form: ActionData } = $props();
+  let { form, data }: { form: ActionData; data: { demo?: boolean } } = $props();
 </script>
 
 <svelte:head><title>{t("pages.signin.page_title")}</title></svelte:head
@@ -34,6 +34,9 @@
       <p class="error" role="alert">
         {t("pages.signin.could_not_send_the_sign_in_link")}
       </p>
+    {/if}
+    {#if data.demo}
+      <p class="muted" data-testid="demo-hint">{t("demo.signinHint")}</p>
     {/if}
     <p class="divider">{t("pages.signin.or")}</p>
     <a class="btn" href={l("/signin/sso")}>{t("pages.signin.sign_in_with_sso")}</a>

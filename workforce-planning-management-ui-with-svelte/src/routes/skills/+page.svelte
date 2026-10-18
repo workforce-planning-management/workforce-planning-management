@@ -19,6 +19,11 @@
     updateSkill,
   } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   type Skills = Awaited<ReturnType<typeof listSkills>>;
   type Suggestions = Awaited<ReturnType<typeof categorySuggestions>>;
@@ -59,6 +64,13 @@
     Object.fromEntries(SKILL_CATEGORIES.map((c) => [c, skills.filter((s) => s.category === c).length])),
   );
 
+  const suggestionColumns = $derived<DataGridColumn[]>([
+    { id: "name", header: t("pages.skills.skill"), sortable: true, rowHeader: true },
+    { id: "suggested", header: t("pages.skills.suggested"), sortable: true },
+    { id: "keyword", header: t("pages.skills.because"), sortable: true, cell: keywordCell },
+    { id: "accept", header: t("pages.skills.accept"), cell: acceptCell },
+  ]);
+
   async function load() {
     try {
       [skills, suggestions] = await Promise.all([listSkills(), categorySuggestions()]);
@@ -84,6 +96,14 @@
 
 <svelte:head><title>{tf("pages.skills.page_title", { skills: t("nav.skills") })}</title></svelte:head>
 
+{#snippet keywordCell({ row }: { row: DataGridRow })}
+  <span class="muted">"{row.keyword}"</span>
+{/snippet}
+
+{#snippet acceptCell({ row }: { row: DataGridRow })}
+  <button type="button" onclick={() => void run(() => applyCategorySuggestions([String(row.pid)]))}>{t("pages.skills.accept")}</button>
+{/snippet}
+
 <h1>{t("nav.skills")}</h1>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 {#if notice}<p data-testid="notice">{notice}</p>{/if}
@@ -105,17 +125,14 @@
       {tf("pages.skills.apply_all", { suggestions: suggestions.suggestions.length })}
     </button>
   </p>
-  <table data-testid="suggestions">
-    <thead><tr><th>{t("pages.skills.skill")}</th><th>{t("pages.skills.suggested")}</th><th>{t("pages.skills.because")}</th><th></th></tr></thead>
-    <tbody>
-      {#each suggestions.suggestions.slice(0, 50) as s (s.pid)}
-        <tr>
-          <td>{s.name}</td><td>{s.suggested}</td><td class="muted">"{s.keyword}"</td>
-          <td><button type="button" onclick={() => void run(() => applyCategorySuggestions([s.pid]))}>{t("pages.skills.accept")}</button></td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    testid="suggestions"
+    label={t("pages.skills.suggested_categories")}
+    columns={suggestionColumns}
+    rows={suggestions.suggestions.slice(0, 50) as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+    pageSize={25}
+  />
   {#if suggestions.suggestions.length > 50}<p class="muted">{tf("pages.skills.showing_50_of", { suggestions: suggestions.suggestions.length })}</p>{/if}
 {/if}
 
@@ -130,6 +147,7 @@
     </select>
   </label>
 </p>
+<!-- Left as a plain table: every cell holds live inline forms (rename, category select, ESCO search, merge) that must keep focus and state. -->
 <table data-testid="skill-table">
   <thead><tr><th>{t("pages.skills.skill")}</th><th>{t("pages.skills.category")}</th><th>{t("pages.skills.external_references")}</th><th></th></tr></thead>
   <tbody>

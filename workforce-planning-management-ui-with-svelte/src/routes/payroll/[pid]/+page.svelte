@@ -3,6 +3,11 @@
   import { getRun, money, runAction, runPayslips } from "#lib/api/wpm.js";
   import { i18n, t, l, tv } from "#lib/i18n.svelte.js";
   import type { Payslip, PayrollRun } from "#lib/api/types.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   /** The action(s) each run status offers (WPM-D5: derive, approve, pay). */
   const ACTIONS: Record<string, ("calculate" | "approve" | "pay" | "reopen")[]> = {
@@ -41,7 +46,44 @@
       actionError = cause instanceof Error ? cause.message : String(cause);
     }
   }
+
+  const columns = $derived<DataGridColumn[]>([
+    {
+      id: "worker_pid",
+      header: t("nav.workers"),
+      sortable: true,
+      accessor: (r) => String((r as unknown as Payslip).worker_pid).slice(0, 8),
+      cell: workerCell,
+    },
+    {
+      id: "gross_minor",
+      header: t("pay.gross"),
+      sortable: true,
+      align: "end",
+      format: (v, r) => money(Number(v), (r as unknown as Payslip).currency, i18n.locale),
+    },
+    { id: "deductions", header: t("pay.deductions"), cell: deductionsCell },
+    {
+      id: "net_minor",
+      header: t("pay.net"),
+      sortable: true,
+      align: "end",
+      format: (v, r) => money(Number(v), (r as unknown as Payslip).currency, i18n.locale),
+    },
+  ]);
 </script>
+
+{#snippet workerCell({ row, formatted }: { row: DataGridRow; formatted: string })}
+  {@const slip = row as unknown as Payslip}
+  <a href={l(`/workers/${slip.worker_pid}`)}>{formatted}</a>
+{/snippet}
+
+{#snippet deductionsCell({ row }: { row: DataGridRow })}
+  {@const slip = row as unknown as Payslip}
+  {#each slip.deductions as deduction (deduction.label)}
+    <span class="chip">{deduction.label}: {money(deduction.amount_minor, slip.currency, i18n.locale)}</span>
+  {/each}
+{/snippet}
 
 {#if error}
   <p class="error" data-testid="error">{t("common.error")}: {error}</p>
@@ -64,28 +106,12 @@
   </div>
 
   <h2>{t("emp.payslips")}</h2>
-  <table data-testid="payslips">
-    <thead>
-      <tr>
-        <th>{t("nav.workers")}</th>
-        <th>{t("pay.gross")}</th>
-        <th>{t("pay.deductions")}</th>
-        <th>{t("pay.net")}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each payslips as slip (slip.pid)}
-        <tr>
-          <td><a href={l(`/workers/${slip.worker_pid}`)}>{slip.worker_pid.slice(0, 8)}</a></td>
-          <td>{money(slip.gross_minor, slip.currency, i18n.locale)}</td>
-          <td>
-            {#each slip.deductions as deduction (deduction.label)}
-              <span class="chip">{deduction.label}: {money(deduction.amount_minor, slip.currency, i18n.locale)}</span>
-            {/each}
-          </td>
-          <td>{money(slip.net_minor, slip.currency, i18n.locale)}</td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    testid="payslips"
+    label={t("emp.payslips")}
+    columns={columns}
+    rows={payslips as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+    pageSize={25}
+  />
 {/if}

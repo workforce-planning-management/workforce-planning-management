@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { Kanban, Willow, getCardShape } from "@svar-ui/svelte-kanban";
-  import type { KanbanInstanceApi } from "@svar-ui/svelte-kanban";
+  import LilyKanban from "#lib/components/LilyKanban.svelte";
   import { page } from "$app/state";
   import {
     createRequisition,
@@ -70,7 +69,7 @@
   });
 
   const columns = $derived(
-    COLUMNS.map((status) => ({ id: status, label: status, addCard: false })),
+    COLUMNS.map((status) => ({ id: status, title: tv(status) })),
   );
 
   const cards = $derived(
@@ -78,8 +77,8 @@
       .filter((r) => r.status !== "cancelled")
       .map((r) => ({
         id: r.pid,
-        label: r.job_title,
-        description:
+        title: r.job_title,
+        subtitle:
           `${r.department} · ${t("req.headcount")} ${r.headcount}` +
           (r.basis && r.basis !== "permanent"
             ? ` · ${tv(r.basis)}` +
@@ -91,24 +90,20 @@
           (r.salary_min_minor !== null && r.salary_max_minor !== null
             ? ` · ${money(r.salary_min_minor, r.salary_currency, i18n.locale)}–${money(r.salary_max_minor, r.salary_currency, i18n.locale)}`
             : ""),
-        status: r.status,
+        columnId: r.status,
       })),
   );
 
   // Drag = a pipeline transition through the API; the service's state
   // machine refuses illegal moves (422), and the reload puts the card
   // back where the truth says it belongs.
-  function init(api: KanbanInstanceApi) {
-    api.on("move-card", (raw) => {
-      const ev = raw as { id: string | number; column?: string | number };
-      if (!ev.column) return;
-      actionError = null;
-      void requisitionStatus(String(ev.id), String(ev.column))
-        .catch((cause) => {
-          actionError = cause instanceof Error ? cause.message : String(cause);
-        })
-        .finally(load);
-    });
+  function onMove(cardId: string, toColumnId: string) {
+    actionError = null;
+    void requisitionStatus(cardId, toColumnId)
+      .catch((cause) => {
+        actionError = cause instanceof Error ? cause.message : String(cause);
+      })
+      .finally(load);
   }
 </script>
 
@@ -154,22 +149,7 @@
   {#if actionError}
     <p class="error" data-testid="action-error">{actionError}</p>
   {/if}
-  <div class="board-wrap" data-testid="requisition-board">
-    <Willow>
-      <Kanban
-        {cards}
-        {columns}
-        columnAccessor="status"
-        card={{ ...getCardShape(), menu: false }}
-        {init}
-      />
-    </Willow>
+  <div data-testid="requisition-board">
+    <LilyKanban label={t("nav.requisitions")} {columns} {cards} {onMove} />
   </div>
 {/if}
-
-<style>
-  .board-wrap {
-    height: 620px;
-    overflow-x: auto;
-  }
-</style>

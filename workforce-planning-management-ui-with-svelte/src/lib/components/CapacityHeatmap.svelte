@@ -33,6 +33,7 @@
 </script>
 
 <div class="scroll" data-testid="heatmap">
+  <!-- Plain table: a heat map matrix with one column per month and styled status cells, not a sortable list. -->
   <table class="heat">
     <thead>
       <tr>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import CalendarPanel from "#lib/components/CalendarPanel.svelte";
   import RoleGap from "#lib/components/RoleGap.svelte";
   import Mobility from "#lib/components/Mobility.svelte";
   import Backups from "#lib/components/Backups.svelte";
@@ -60,6 +61,11 @@
   } from "#lib/api/wpm.js";
   import { mean } from "#lib/format.js";
   import { i18n, t, tf, tv } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
   import type {
     Worker,
     LeaveEntitlement,
@@ -206,7 +212,71 @@
       actionError = cause instanceof Error ? cause.message : String(cause);
     }
   }
+
+  const balanceRow = (row: DataGridRow) => row as unknown as LeaveEntitlement;
+  const balanceColumns = $derived<DataGridColumn[]>([
+    {
+      id: "kind",
+      header: t("columns.typeYear"),
+      sortable: true,
+      accessor: (r) => `${tv(balanceRow(r).kind)} ${balanceRow(r).year}`,
+    },
+    {
+      id: "remaining",
+      header: t("columns.remaining"),
+      sortable: true,
+      accessor: (r) => balanceRow(r).entitled_days - balanceRow(r).used_days,
+      format: (_v, r) =>
+        `${balanceRow(r).entitled_days - balanceRow(r).used_days} / ${balanceRow(r).entitled_days} ${t("common.days")}`,
+    },
+  ]);
+  const leaveColumns = $derived<DataGridColumn[]>([
+    { id: "kind", header: t("columns.kind"), sortable: true, accessor: (r) => tv(String(r.kind)) },
+    {
+      id: "start_on",
+      header: t("columns.dates"),
+      sortable: true,
+      format: (_v, r) =>
+        `${r.start_on} → ${r.end_on} (${r.days} ${t("common.days")})`,
+    },
+    { id: "status", header: t("common.status"), sortable: true, cell: statusChip },
+  ]);
+  const payslipColumns = $derived<DataGridColumn[]>([
+    {
+      id: "gross_minor",
+      header: t("pay.gross"),
+      sortable: true,
+      align: "end",
+      format: (_v, r) => money(Number(r.gross_minor), String(r.currency), i18n.locale),
+    },
+    {
+      id: "net_minor",
+      header: t("pay.net"),
+      sortable: true,
+      align: "end",
+      format: (_v, r) => money(Number(r.net_minor), String(r.currency), i18n.locale),
+    },
+  ]);
+  const reviewColumns = $derived<DataGridColumn[]>([
+    { id: "status", header: t("common.status"), sortable: true, cell: statusChip },
+    { id: "rating", header: t("columns.rating"), sortable: true },
+    { id: "content", header: t("columns.content"), format: (v) => (v == null ? "" : String(v)) },
+  ]);
+  const trainingColumns = $derived<DataGridColumn[]>([
+    { id: "course_ref", header: t("columns.course"), sortable: true },
+    { id: "status", header: t("common.status"), sortable: true, cell: statusChip },
+    {
+      id: "certificate_expires_on",
+      header: t("columns.certificateExpires"),
+      sortable: true,
+      format: (v) => (v == null ? "" : String(v)),
+    },
+  ]);
 </script>
+
+{#snippet statusChip({ value }: { value: unknown })}
+  <span class="chip">{tv(String(value))}</span>
+{/snippet}
 
 {#if error}
   <p class="error" data-testid="error">{t("common.error")}: {error}</p>
@@ -314,41 +384,34 @@
   {/if}
 
   <h2>{t("emp.balances")}</h2>
-  <table>
-    <tbody>
-      {#each balances as balance (balance.pid)}
-        <tr>
-          <td>{tv(balance.kind)} {balance.year}</td>
-          <td>{balance.entitled_days - balance.used_days} / {balance.entitled_days} {t("common.days")}</td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    label={t("emp.balances")}
+    columns={balanceColumns}
+    rows={balances as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
 
   <h2>{t("wf.leaveRequests")}</h2>
-  <table>
-    <tbody>
-      {#each leave as request (request.pid)}
-        <tr>
-          <td>{tv(request.kind)}</td>
-          <td>{request.start_on} → {request.end_on} ({request.days} {t("common.days")})</td>
-          <td><span class="chip">{tv(request.status)}</span></td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    label={t("wf.leaveRequests")}
+    columns={leaveColumns}
+    rows={leave as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
+  <CalendarPanel
+    testid="leave-calendar"
+    label={t("calendar.leave")}
+    events={leave.map((r) => ({ id: r.pid, start: r.start_on, end: r.end_on, title: tv(r.kind), values: { status: tv(r.status) } }))}
+    fields={[{ id: "status", header: t("common.status") }]}
+  />
 
   <h2>{t("emp.payslips")}</h2>
-  <table>
-    <tbody>
-      {#each payslips as slip (slip.pid)}
-        <tr>
-          <td>{t("pay.gross")}: {money(slip.gross_minor, slip.currency, i18n.locale)}</td>
-          <td>{t("pay.net")}: {money(slip.net_minor, slip.currency, i18n.locale)}</td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    label={t("emp.payslips")}
+    columns={payslipColumns}
+    rows={payslips as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
 
   {#if notifications.length}
     <h2>{t("emp.notifications")}</h2>
@@ -588,30 +651,20 @@
   </div>
 
   <h2>{t("emp.reviews")}</h2>
-  <table>
-    <tbody>
-      {#each reviews as review (review.pid)}
-        <tr>
-          <td><span class="chip">{tv(review.status)}</span></td>
-          <td>{review.rating ?? "—"}</td>
-          <td>{review.content ?? ""}</td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    label={t("emp.reviews")}
+    columns={reviewColumns}
+    rows={reviews as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
 
   <h2>{t("emp.training")}</h2>
-  <table>
-    <tbody>
-      {#each training as enrollment (enrollment.pid)}
-        <tr>
-          <td>{enrollment.course_ref}</td>
-          <td><span class="chip">{tv(enrollment.status)}</span></td>
-          <td>{enrollment.certificate_expires_on ?? ""}</td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    label={t("emp.training")}
+    columns={trainingColumns}
+    rows={training as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
   <RoleGap workerPid={worker.pid} />
   <Mobility workerPid={worker.pid} />
   {@const ownPid = worker.pid}

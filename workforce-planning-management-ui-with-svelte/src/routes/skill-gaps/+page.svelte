@@ -9,6 +9,11 @@
   import type { TrainingDemand, WorkforceSkillGap } from "#lib/api/types.js";
   import SkillTrainingCatalogue from "#lib/components/SkillTrainingCatalogue.svelte";
   import { t, tf } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   let department = $state("");
   let departments = $state<string[]>([]);
@@ -40,9 +45,47 @@
       current = false;
     };
   });
+
+  const gapColumns = $derived<DataGridColumn[]>([
+    { id: "skill", pinned: "start", header: t("nav.skills"), sortable: true, rowHeader: true, accessor: (r) => r.skill ?? r.skill_pid, cell: gapSkillCell },
+    { id: "needed_by", header: t("skillgaps.needed"), sortable: true, align: "end" },
+    { id: "below", header: t("skillgaps.below"), sortable: true, align: "end" },
+    { id: "undeclared", header: t("skillgaps.undeclared"), sortable: true, align: "end" },
+    { id: "total_shortfall", header: t("skillgaps.short"), sortable: true, align: "end" },
+    { id: "critical_below", header: t("skillgaps.criticalBelow"), sortable: true, align: "end" },
+    { id: "score", header: t("skillgaps.score"), sortable: true, align: "end", cell: scoreCell },
+    {
+      id: "departments",
+      header: t("skillgaps.departments"),
+      accessor: (r) => (r as unknown as WorkforceSkillGap).departments.map((d) => `${d.department} (${d.below})`).join(", "),
+      cell: gapDepartmentsCell,
+    },
+  ]);
+  const demandColumns = $derived<DataGridColumn[]>([
+    { id: "skill", header: t("nav.skills"), sortable: true, rowHeader: true, accessor: (r) => r.skill ?? r.skill_pid },
+    { id: "people", header: t("training.people"), sortable: true, align: "end" },
+    { id: "hours", header: t("training.hours"), sortable: true, align: "end" },
+    { id: "people_on_estimate", header: t("training.basisEstimate"), sortable: true, align: "end", cell: estimateCell },
+  ]);
 </script>
 
 <svelte:head><title>{tf("pages.skillGaps.page_title", { skillGaps: t("nav.skillGaps") })}</title></svelte:head>
+
+{#snippet gapSkillCell({ row }: { row: DataGridRow })}
+  <strong>{row.skill ?? row.skill_pid}</strong> <span class="muted">{row.category ?? ""}</span>
+{/snippet}
+
+{#snippet scoreCell({ row }: { row: DataGridRow })}
+  <strong>{row.score}</strong>
+{/snippet}
+
+{#snippet gapDepartmentsCell({ value }: { value: unknown })}
+  <span class="muted">{value}</span>
+{/snippet}
+
+{#snippet estimateCell({ row }: { row: DataGridRow })}
+  <span class="muted">{row.people_on_estimate}</span>
+{/snippet}
 
 <h1>{t("skillgaps.workforceTitle")}</h1>
 <p class="muted">{t("skillgaps.hint")}</p>
@@ -60,34 +103,14 @@
 {:else if skills.length === 0}
   <p class="muted" data-testid="gaps-none">{t("skillgaps.none")}</p>
 {:else}
-  <table data-testid="workforce-gaps">
-    <thead>
-      <tr>
-        <th>{t("nav.skills")}</th>
-        <th>{t("skillgaps.needed")}</th>
-        <th>{t("skillgaps.below")}</th>
-        <th>{t("skillgaps.undeclared")}</th>
-        <th>{t("skillgaps.short")}</th>
-        <th>{t("skillgaps.criticalBelow")}</th>
-        <th>{t("skillgaps.score")}</th>
-        <th>{t("skillgaps.departments")}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each skills as s (s.skill_pid)}
-        <tr>
-          <td><strong>{s.skill ?? s.skill_pid}</strong> <span class="muted">{s.category ?? ""}</span></td>
-          <td>{s.needed_by}</td>
-          <td>{s.below}</td>
-          <td>{s.undeclared}</td>
-          <td>{s.total_shortfall}</td>
-          <td>{s.critical_below}</td>
-          <td><strong>{s.score}</strong></td>
-          <td class="muted">{s.departments.map((d) => `${d.department} (${d.below})`).join(", ")}</td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    testid="workforce-gaps"
+    label={t("skillgaps.workforceTitle")}
+    columns={gapColumns}
+    rows={skills as unknown as DataGridRow[]}
+    rowId={(row) => String(row.skill_pid)}
+    pageSize={25}
+  />
 {/if}
 
 {#if demand}
@@ -101,26 +124,13 @@
     {/if}
   </p>
   {#if demand.skills.length > 0}
-    <table data-testid="demand-skills">
-      <thead>
-        <tr>
-          <th>{t("nav.skills")}</th>
-          <th>{t("training.people")}</th>
-          <th>{t("training.hours")}</th>
-          <th>{t("training.basisEstimate")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each demand.skills as s (s.skill_pid)}
-          <tr>
-            <td>{s.skill ?? s.skill_pid}</td>
-            <td>{s.people}</td>
-            <td>{s.hours}</td>
-            <td class="muted">{s.people_on_estimate}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <DataTable
+      testid="demand-skills"
+      label={t("training.demandTitle")}
+      columns={demandColumns}
+      rows={demand.skills as unknown as DataGridRow[]}
+      rowId={(row) => String(row.skill_pid)}
+    />
   {/if}
   {#if demand.departments.length > 0}
     <p class="muted" data-testid="demand-departments">

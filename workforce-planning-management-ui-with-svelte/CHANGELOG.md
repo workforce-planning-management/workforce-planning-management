@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a demo with a guided tour, the Lily link and search pickers, and two fixes (WPM-T118)
+
+Signing in as `example@example.com`, where `WPM_DEMO_API_URL` names a separate service with fictitious data, opens `/demo`: a tour of
+34 pages with a banner (Step n of 34, Previous, Next); `scripts/demo-data.py` fills the demo service. `@lilydesignsystem/*` upgraded; the
+header gains the link picker (every page) and the search picker (the directory). Fixed: `/signin/sso` threw a 500; the pickers\' hover
+tooltips moved a button from under the pointer; the role picker on `/me` re-asked for an empty list without end.
+
+### Added — a demo with a guided tour, the Lily link and search pickers, and two fixes (WPM-T118)
+
+Signing in as `example@example.com`, where `WPM_DEMO_API_URL` names a separate service with fictitious data, opens `/demo`: a tour of
+34 pages with a banner (Step n of 34, Previous, Next); `scripts/demo-data.py` fills the demo service. `@lilydesignsystem/*` upgraded; the
+header gains the link picker (every page) and the search picker (the directory). Fixed: `/signin/sso` threw a 500; the pickers' hover
+tooltips moved a button from under the pointer; the role picker on `/me` re-asked for an empty list without end.
+
 ### Changed — the T118 pages can now write, speak the reader's language and read one organization (WPM-T118 follow-up)
 
 Forms to plan a cutover (with its roles and pools, and remove), create skill pools, add members and set a programme's claim, add a level,

@@ -23,6 +23,11 @@
   import { percentWithWorkings } from "#lib/format.js";
   import LilyKanban from "#lib/components/LilyKanban.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   type Initiatives = Awaited<ReturnType<typeof listChangeInitiatives>>;
   type Initiative = Awaited<ReturnType<typeof getChangeInitiative>>;
@@ -52,6 +57,24 @@
       title: `${i.name} · ${i.roles_affected} role(s), ${i.skills_shifting} skill(s)`,
     })),
   );
+
+  const roleColumns = $derived<DataGridColumn[]>([
+    { id: "job_title", header: t("pages.change.role"), sortable: true, rowHeader: true },
+    { id: "impact", header: t("pages.change.impact"), sortable: true, accessor: (r) => tv(String(r.impact)) },
+    { id: "timeframe", header: t("pages.change.when"), sortable: true, accessor: (r) => tv(String(r.timeframe)) },
+    { id: "employed_workers", header: t("pages.change.employed"), sortable: true, align: "end" },
+    {
+      id: "reskill_plan_coverage",
+      header: t("pages.change.reskill_plans"),
+      accessor: (r) => percentWithWorkings(r.reskill_plan_coverage as never),
+    },
+  ]);
+  const skillColumns = $derived<DataGridColumn[]>([
+    { id: "skill", header: t("pages.change.rising_skill"), sortable: true, rowHeader: true },
+    { id: "meeting", header: tf("pages.change.meeting", { bar: readiness?.bar ?? "" }), sortable: true, align: "end" },
+    { id: "below", header: t("pages.change.below"), sortable: true, align: "end" },
+    { id: "undeclared", header: t("pages.change.undeclared"), sortable: true, align: "end" },
+  ]);
 
   /** A card move is a lifecycle transition; the service refuses illegal ones
    * (422) and the reload puts the card back where the truth says it is. */
@@ -174,31 +197,29 @@
       {tf("pages.change.affected_workers_with_an_active", { affected_workers: readiness.affected_workers, reskill_plan_coverage: percentWithWorkings(readiness.reskill_plan_coverage) })}
     </p>
     <h3>{t("pages.change.roles")}</h3>
-    <table data-testid="change-roles">
-      <thead><tr><th>{t("pages.change.role")}</th><th>{t("pages.change.impact")}</th><th>{t("pages.change.when")}</th><th>{t("pages.change.employed")}</th><th>{t("pages.change.reskill_plans")}</th></tr></thead>
-      <tbody>
-        {#each readiness.roles as row (row.job_title + row.impact)}
-          <tr>
-            <td>{row.job_title}</td><td>{tv(row.impact)}</td><td>{tv(row.timeframe)}</td>
-            <td>{row.employed_workers}</td>
-            <td>{percentWithWorkings(row.reskill_plan_coverage)}</td>
-          </tr>
-        {:else}
-          <tr><td colspan="5" class="muted">{t("pages.change.no_roles_recorded_yet")}</td></tr>
-        {/each}
-      </tbody>
-    </table>
+    {#if readiness.roles.length === 0}
+      <p class="muted" data-testid="change-roles">{t("pages.change.no_roles_recorded_yet")}</p>
+    {:else}
+      <DataTable
+        testid="change-roles"
+        label={t("pages.change.roles")}
+        columns={roleColumns}
+        rows={readiness.roles as unknown as DataGridRow[]}
+        rowId={(row) => String(row.job_title) + String(row.impact)}
+      />
+    {/if}
     <h3>{t("pages.change.skills")}</h3>
-    <table data-testid="change-skills">
-      <thead><tr><th>{t("pages.change.rising_skill")}</th><th>{tf("pages.change.meeting", { bar: readiness.bar })}</th><th>{t("pages.change.below")}</th><th>{t("pages.change.undeclared")}</th></tr></thead>
-      <tbody>
-        {#each readiness.rising_skills as row (row.skill)}
-          <tr><td>{row.skill}</td><td>{row.meeting}</td><td>{row.below}</td><td>{row.undeclared}</td></tr>
-        {:else}
-          <tr><td colspan="4" class="muted">{t("pages.change.no_rising_skills_recorded")}</td></tr>
-        {/each}
-      </tbody>
-    </table>
+    {#if readiness.rising_skills.length === 0}
+      <p class="muted" data-testid="change-skills">{t("pages.change.no_rising_skills_recorded")}</p>
+    {:else}
+      <DataTable
+        testid="change-skills"
+        label={t("pages.change.skills")}
+        columns={skillColumns}
+        rows={readiness.rising_skills as unknown as DataGridRow[]}
+        rowId={(row) => String(row.skill)}
+      />
+    {/if}
     {#if readiness.declining_skills.length > 0}
       <p class="muted">{tf("pages.change.declining", { declining_skills: readiness.declining_skills.join(", ") })}</p>
     {/if}

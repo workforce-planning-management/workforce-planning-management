@@ -58,6 +58,7 @@
   {#if actionError}
     <p class="error" data-testid="action-error">{actionError}</p>
   {/if}
+  <!-- Plain table: the offer row holds a hire-number input that must keep focus and its value. -->
   <table data-testid="applications">
     <thead>
       <tr><th>{t("common.name")}</th><th>{t("common.status")}</th><th>{t("common.actions")}</th></tr>

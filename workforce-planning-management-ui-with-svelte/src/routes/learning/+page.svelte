@@ -15,6 +15,8 @@
   } from "#lib/api/wpm.js";
   import { percentOf, percentWithWorkings } from "#lib/format.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
   type Matrix = Awaited<ReturnType<typeof skillsMatrix>>;
   type Analytics = Awaited<ReturnType<typeof trainingAnalytics>>;
@@ -69,6 +71,78 @@
     }
   }
 
+  const matrixColumns = $derived<DataGridColumn[]>([
+    { id: "department", pinned: "start", header: t("pages.learning.department"), sortable: true },
+    { id: "skill", header: t("pages.learning.skill"), sortable: true },
+    { id: "workers", header: t("pages.learning.workers"), sortable: true, align: "end" },
+    {
+      id: "average_proficiency",
+      header: t("pages.learning.avg_proficiency"),
+      sortable: true,
+      align: "end",
+      format: (v) => (typeof v === "number" ? v.toFixed(1) : "—"),
+    },
+    {
+      id: "below_target",
+      header: t("pages.learning.below_target"),
+      sortable: true,
+      align: "end",
+      cellClass: ({ value }) => (typeof value === "number" && value > 0 ? "cx-warn" : ""),
+    },
+  ]);
+
+  const analyticsColumns = $derived<DataGridColumn[]>([
+    { id: "department", header: t("pages.learning.department"), sortable: true },
+    {
+      id: "completion_rate",
+      header: t("pages.learning.completion"),
+      sortable: true,
+      align: "end",
+      accessor: (r) => (r.completion_rate as { value: number | null } | null)?.value ?? null,
+      format: (_v, r) => percentWithWorkings(r.completion_rate as Parameters<typeof percentWithWorkings>[0]),
+      exportValue: (r) => percentWithWorkings(r.completion_rate as Parameters<typeof percentWithWorkings>[0]),
+    },
+    { id: "certs_expiring", header: t("pages.learning.certs_expiring"), sortable: true, align: "end" },
+  ]);
+
+  const capabilityColumns = $derived<DataGridColumn[]>([
+    { id: "skill", pinned: "start", header: t("pages.learning.skill"), sortable: true },
+    { id: "category", header: t("pages.learning.category"), sortable: true, format: (v) => tv(String(v)) },
+    { id: "declared_by", header: t("pages.learning.declared"), sortable: true, align: "end" },
+    { id: "proficient", header: t("pages.learning.proficient"), sortable: true, align: "end" },
+    { id: "proficient_departments", header: t("pages.learning.departments"), sortable: true, align: "end" },
+    {
+      id: "status",
+      header: t("pages.learning.status"),
+      sortable: true,
+      format: (v) => tv(String(v)),
+      cellClass: ({ value }) => (value !== "adequate" ? "cx-warn" : ""),
+    },
+  ]);
+
+  const progressColumns = $derived<DataGridColumn[]>([
+    {
+      id: "display_name",
+      header: t("pages.learning.worker"),
+      sortable: true,
+      accessor: (r) => r.display_name ?? r.worker_pid,
+    },
+    {
+      id: "completed_steps",
+      header: t("pages.learning.completed"),
+      sortable: true,
+      align: "end",
+      format: (_v, r) => `${r.completed_steps} / ${r.total_steps}`,
+    },
+    {
+      id: "progress",
+      header: t("pages.learning.progress"),
+      sortable: true,
+      align: "end",
+      accessor: (r) => (r.total_steps === 0 ? null : (r.completed_steps as number) / (r.total_steps as number)),
+      format: (_v, r) => percentOf(r.completed_steps as number, r.total_steps as number),
+    },
+  ]);
 </script>
 
 <svelte:head><title>{tf("pages.learning.page_title", { learning: t("nav.learning") })}</title></svelte:head>
@@ -79,24 +153,18 @@
 {#if matrix}
   <h2>{t("pages.learning.skills_matrix")}</h2>
   <p class="muted">{matrix.note}</p>
-  <table data-testid="skills-matrix">
-    <thead>
-      <tr><th>{t("pages.learning.department")}</th><th>{t("pages.learning.skill")}</th><th>{t("pages.learning.workers")}</th><th>{t("pages.learning.avg_proficiency")}</th><th>{t("pages.learning.below_target")}</th></tr>
-    </thead>
-    <tbody>
-      {#each matrix.matrix as cell (cell.department + cell.skill)}
-        <tr>
-          <td>{cell.department}</td>
-          <td>{cell.skill ?? "—"}</td>
-          <td>{cell.workers}</td>
-          <td>{cell.average_proficiency.toFixed(1)}</td>
-          <td class:warn={cell.below_target > 0}>{cell.below_target}</td>
-        </tr>
-      {:else}
-        <tr><td colspan="5" class="muted">{t("pages.learning.no_declared_skills_yet")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if matrix.matrix.length === 0}
+    <p class="muted">{t("pages.learning.no_declared_skills_yet")}</p>
+  {:else}
+    <DataTable
+      testid="skills-matrix"
+      label={t("pages.learning.skills_matrix")}
+      columns={matrixColumns}
+      rows={matrix.matrix as unknown as DataGridRow[]}
+      rowId={(row) => String(row.department) + String(row.skill)}
+      pageSize={25}
+    />
+  {/if}
   {#if matrix.gaps.length > 0}
     <h3>{t("pages.learning.skill_gaps")}</h3>
     <ul data-testid="skills-gaps">
@@ -110,22 +178,18 @@
 {#if analytics}
   <h2>{t("pages.learning.training_analytics")}</h2>
   <p class="muted">{tf("pages.learning.certs_expiring_by", { note: analytics.note, horizon: analytics.horizon })}</p>
-  <table data-testid="training-analytics">
-    <thead>
-      <tr><th>{t("pages.learning.department")}</th><th>{t("pages.learning.completion")}</th><th>{t("pages.learning.certs_expiring")}</th></tr>
-    </thead>
-    <tbody>
-      {#each analytics.departments as dept (dept.department)}
-        <tr>
-          <td>{dept.department}</td>
-          <td>{percentWithWorkings(dept.completion_rate)}</td>
-          <td>{dept.certs_expiring}</td>
-        </tr>
-      {:else}
-        <tr><td colspan="3" class="muted">{t("pages.learning.no_training_enrolments_yet")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if analytics.departments.length === 0}
+    <p class="muted">{t("pages.learning.no_training_enrolments_yet")}</p>
+  {:else}
+    <DataTable
+      testid="training-analytics"
+      exportName="training-analytics"
+      label={t("pages.learning.training_analytics")}
+      columns={analyticsColumns}
+      rows={analytics.departments as unknown as DataGridRow[]}
+      rowId={(row) => String(row.department)}
+    />
+  {/if}
 {/if}
 
 {#if capability}
@@ -156,25 +220,18 @@
   <p data-testid="capability-summary">
     {tf("pages.learning.adequately_covered_skills", { adequately_covered: percentWithWorkings(capability.adequately_covered) })}
   </p>
-  <table data-testid="capability-analysis">
-    <thead>
-      <tr><th>{t("pages.learning.skill")}</th><th>{t("pages.learning.category")}</th><th>{t("pages.learning.declared")}</th><th>{t("pages.learning.proficient")}</th><th>{t("pages.learning.departments")}</th><th>{t("pages.learning.status")}</th></tr>
-    </thead>
-    <tbody>
-      {#each capability.skills as row (row.skill + row.category)}
-        <tr>
-          <td>{row.skill}</td>
-          <td>{tv(row.category)}</td>
-          <td>{row.declared_by}</td>
-          <td>{row.proficient}</td>
-          <td>{row.proficient_departments}</td>
-          <td class:warn={row.status !== "adequate"}>{tv(row.status)}</td>
-        </tr>
-      {:else}
-        <tr><td colspan="6" class="muted">{t("pages.learning.no_skills_in_the_catalogue_yet")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if capability.skills.length === 0}
+    <p class="muted">{t("pages.learning.no_skills_in_the_catalogue_yet")}</p>
+  {:else}
+    <DataTable
+      testid="capability-analysis"
+      label={t("pages.learning.capability_analysis")}
+      columns={capabilityColumns}
+      rows={capability.skills as unknown as DataGridRow[]}
+      rowId={(row) => String(row.skill) + String(row.category)}
+      pageSize={25}
+    />
+  {/if}
 {/if}
 
 <h2>{t("pages.learning.learning_path_progress")}</h2>
@@ -198,22 +255,20 @@
 
 {#if progress}
   <p class="muted">{progress.derivation}</p>
-  <table data-testid="path-progress">
-    <thead><tr><th>{t("pages.learning.worker")}</th><th>{t("pages.learning.completed")}</th><th>{t("pages.learning.progress")}</th></tr></thead>
-    <tbody>
-      {#each progress.members as member (member.worker_pid)}
-        <tr>
-          <td>{member.display_name ?? member.worker_pid}</td>
-          <td>{member.completed_steps} / {member.total_steps}</td>
-          <td>{percentOf(member.completed_steps, member.total_steps)}</td>
-        </tr>
-      {:else}
-        <tr><td colspan="3" class="muted">{t("pages.learning.no_one_enrolled")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if progress.members.length === 0}
+    <p class="muted">{t("pages.learning.no_one_enrolled")}</p>
+  {:else}
+    <DataTable
+      testid="path-progress"
+      label={t("pages.learning.learning_path_progress")}
+      columns={progressColumns}
+      rows={progress.members as unknown as DataGridRow[]}
+      rowId={(row) => String(row.worker_pid)}
+      pageSize={25}
+    />
+  {/if}
 {/if}
 
 <style>
-  td.warn { color: #b45309; font-weight: 600; }
+  :global(td.cx-warn) { color: #b45309; font-weight: 600; }
 </style>

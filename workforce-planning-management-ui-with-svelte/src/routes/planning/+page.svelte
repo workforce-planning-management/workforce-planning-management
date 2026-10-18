@@ -27,6 +27,8 @@
   import LilyGantt from "#lib/components/LilyGantt.svelte";
   import LilyKanban from "#lib/components/LilyKanban.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
   type Plans = Awaited<ReturnType<typeof listWorkforcePlans>>;
   type Plan = Awaited<ReturnType<typeof getWorkforcePlan>>;
@@ -172,7 +174,68 @@
       : [...current, objective];
     await run(() => setLineObjectives(selected, lineId, next));
   }
+
+  const compareColumns = $derived<DataGridColumn[]>([
+    { id: "name", header: t("pages.planning.plan"), sortable: true, rowHeader: true, cell: planCell },
+    { id: "status", header: t("pages.planning.status"), sortable: true, format: (v) => tv(String(v)) },
+    {
+      id: "horizon_start",
+      header: t("pages.planning.horizon"),
+      sortable: true,
+      format: (_v, r) => `${r.horizon_start} → ${r.horizon_end}`,
+    },
+    { id: "demand_lines", header: t("pages.planning.lines"), sortable: true, align: "end" },
+    {
+      id: "planned_headcount",
+      header: t("pages.planning.planned_headcount"),
+      sortable: true,
+      align: "end",
+      accessor: (r) => totals[String(r.pid)] ?? null,
+    },
+  ]);
+
+  const programmeColumns = $derived<DataGridColumn[]>([
+    {
+      id: "programme_ref",
+      header: t("plan.programme"),
+      sortable: true,
+      accessor: (r) => r.programme_ref ?? t("plan.noProgramme"),
+    },
+    { id: "target_on", type: "date", header: t("pages.planning.date"), sortable: true },
+    { id: "headcount", header: t("pages.planning.headcount"), sortable: true, align: "end" },
+    { id: "fte", header: t("contingent.fte"), sortable: true, align: "end" },
+  ]);
+
+  const costColumns = (currency: string): DataGridColumn[] => [
+    { id: "department", header: t("pages.planning.department"), sortable: true },
+    { id: "target_on", type: "date", header: t("pages.planning.date"), sortable: true },
+    { id: "hires_needed", header: t("pages.planning.hires_needed"), sortable: true, align: "end" },
+    {
+      id: "unit_cost_minor",
+      header: t("pages.planning.unit_cost"),
+      sortable: true,
+      align: "end",
+      format: (v) => money(v as number | null, currency),
+    },
+    {
+      id: "unit_cost_source",
+      header: t("pages.planning.source"),
+      sortable: true,
+      accessor: (r) => tv(String(r.unit_cost_source ?? "")) || tv(String(r.reason ?? "")) || null,
+    },
+    {
+      id: "annual_cost_minor",
+      header: t("pages.planning.annual_cost"),
+      sortable: true,
+      align: "end",
+      format: (v) => money(v as number | null, currency),
+    },
+  ];
 </script>
+
+{#snippet planCell({ row }: { row: DataGridRow })}
+  <button type="button" onclick={() => { selected = String(row.pid); void loadDetail(); }}>{row.name}</button>
+{/snippet}
 
 <svelte:head><title>{tf("pages.planning.page_title", { planning: t("nav.planning") })}</title></svelte:head>
 
@@ -199,22 +262,17 @@
     timeUnit="month"
   />
 {/if}
-<table data-testid="plan-compare">
-  <thead><tr><th>{t("pages.planning.plan")}</th><th>{t("pages.planning.status")}</th><th>{t("pages.planning.horizon")}</th><th>{t("pages.planning.lines")}</th><th>{t("pages.planning.planned_headcount")}</th></tr></thead>
-  <tbody>
-    {#each plans as p (p.pid)}
-      <tr>
-        <td><button type="button" onclick={() => { selected = p.pid; void loadDetail(); }}>{p.name}</button></td>
-        <td>{tv(p.status)}</td>
-        <td>{p.horizon_start} → {p.horizon_end}</td>
-        <td>{p.demand_lines}</td>
-        <td>{totals[p.pid] ?? "—"}</td>
-      </tr>
-    {:else}
-      <tr><td colspan="5" class="muted">{t("pages.planning.no_plans_yet")}</td></tr>
-    {/each}
-  </tbody>
-</table>
+{#if plans.length === 0}
+  <p class="muted" data-testid="plan-compare">{t("pages.planning.no_plans_yet")}</p>
+{:else}
+  <DataTable
+    testid="plan-compare"
+    label={t("pages.planning.plan")}
+    columns={compareColumns}
+    rows={plans as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
+{/if}
 
 <form
   onsubmit={(event) => {
@@ -274,6 +332,7 @@
       {/if}
       {tf("pages.planning.hires_assumed", { hires_assumed: forecast.assumptions.hires_assumed })}
     </p>
+    <!-- Plain table: each row is followed by colspan note rows (basis split, assumptions, competency gaps), which the grid cannot hold. -->
     <table data-testid="plan-forecast">
       <thead>
         <tr><th>{t("pages.planning.department")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.today")}</th><th>{t("pages.planning.planned")}</th><th>{t("pages.planning.projected_supply")}</th><th>{t("pages.planning.gap")}</th><th>{t("pages.planning.suggested_levers")}</th></tr>
@@ -325,14 +384,13 @@
     </table>
     {#if forecast.programmes.some((p) => p.programme_ref)}
       <h3>{t("plan.demandByProgramme")}</h3>
-      <table data-testid="plan-forecast-programmes">
-        <thead><tr><th>{t("plan.programme")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.headcount")}</th><th>{t("contingent.fte")}</th></tr></thead>
-        <tbody>
-          {#each forecast.programmes as p (p.target_on + (p.programme_ref ?? ""))}
-            <tr><td>{p.programme_ref ?? t("plan.noProgramme")}</td><td>{p.target_on}</td><td>{p.headcount}</td><td>{p.fte ?? "—"}</td></tr>
-          {/each}
-        </tbody>
-      </table>
+      <DataTable
+        testid="plan-forecast-programmes"
+        label={t("plan.demandByProgramme")}
+        columns={programmeColumns}
+        rows={forecast.programmes as unknown as DataGridRow[]}
+        rowId={(row) => String(row.target_on) + String(row.programme_ref ?? "")}
+      />
     {/if}
   {/if}
 
@@ -342,19 +400,13 @@
     {#if !cost.salary_visible}
       <p data-testid="plan-cost-hidden">{t("pages.planning.salary_figures_need_payroll_read")}</p>
     {/if}
-    <table data-testid="plan-cost">
-      <thead><tr><th>{t("pages.planning.department")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.hires_needed")}</th><th>{t("pages.planning.unit_cost")}</th><th>{t("pages.planning.source")}</th><th>{t("pages.planning.annual_cost")}</th></tr></thead>
-      <tbody>
-        {#each cost.groups as g (g.department + g.target_on)}
-          <tr>
-            <td>{g.department}</td><td>{g.target_on}</td><td>{g.hires_needed ?? "—"}</td>
-            <td>{money(g.unit_cost_minor, cost.currency)}</td>
-            <td>{tv(g.unit_cost_source) || tv(g.reason) || "—"}</td>
-            <td>{money(g.annual_cost_minor, cost.currency)}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <DataTable
+      testid="plan-cost"
+      label={t("pages.planning.cost_of_closing_the_gaps_by_hiring")}
+      columns={costColumns(cost.currency)}
+      rows={cost.groups as unknown as DataGridRow[]}
+      rowId={(row) => String(row.department) + String(row.target_on)}
+    />
     {#if cost.salary_visible}
       <p data-testid="plan-cost-total">
         {tf("pages.planning.total_annual_incl_on_cost", { on_cost_bp: (cost.assumptions.on_cost_bp / 100).toFixed(1), currency: money(cost.total_annual_cost_minor, cost.currency) })}
@@ -383,6 +435,7 @@
   {/if}
 
   <h3>{t("pages.planning.demand_lines")}</h3>
+  <!-- Plain table: one checkbox column per strategic objective (dynamic columns) whose inputs keep focus across re-renders. -->
   <table>
     <thead>
       <tr><th>{t("pages.planning.department")}</th><th>{t("pages.planning.role")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.headcount")}</th><th>{t("contingent.fte")}</th><th>{t("engagement.basis")}</th><th>{t("plan.programme")}</th>{#each plan.objectives as o (o.pid)}<th>{o.title}</th>{/each}<th></th></tr>

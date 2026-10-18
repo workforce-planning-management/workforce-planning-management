@@ -40,7 +40,9 @@
     "resilience": "Resiliência",
     "oversight": "Supervisão",
     "cutover": "Virada",
-    "warnings": "Alertas precoces"
+    "warnings": "Alertas precoces",
+    "signout": "Terminar sessão",
+    "kanban": "O meu quadro"
   },
   "pr": {
     "retention": "Retenção",
@@ -124,7 +126,11 @@
     "name": "Gestão de planejamento de força de trabalho"
   },
   "chrome": {
-    "language": "Idioma"
+    "language": "Idioma",
+    "pages": "Páginas",
+    "search": "Pesquisar pessoas",
+    "searchInput": "Nome, cargo ou departamento",
+    "searchSubmit": "Pesquisar"
   },
   "share": {
     "copy_link": "Copiar link",
@@ -152,11 +158,14 @@
     "programme": "Referência do programa"
   },
   "dash": {
-    "title": "Painel de RH",
+    "title": "Minha página inicial",
     "activeWorkers": "Trabalhadores ativos",
     "openRequisitions": "Vagas abertas",
     "pendingLeave": "Licenças pendentes",
-    "successionGaps": "Lacunas de sucessão"
+    "successionGaps": "Lacunas de sucessão",
+    "singlePoints": "Pontos únicos de falha",
+    "earlyWarnings": "Alertas precoces por reconhecer",
+    "poolsOver": "Grupos acima da capacidade"
   },
   "req": {
     "applications": "Candidaturas",
@@ -1316,7 +1325,9 @@
     "resilience": "Resiliência — WPM",
     "oversight": "Supervisão — WPM",
     "cutover": "Prontidão da virada — WPM",
-    "warnings": "Alertas precoces — WPM"
+    "warnings": "Alertas precoces — WPM",
+    "demo": "Percurso guiado pela demonstração — WPM",
+    "kanban": "O meu quadro — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -1836,5 +1847,102 @@
     "timeToReportNone": "Tempo até reportar: desconhecido enquanto algum alerta não for reconhecido",
     "none": "Sem alertas precoces.",
     "basisText": "A data em que uma condição foi verdadeira pela primeira vez é a da primeira varredura que a viu, pelo que uma varredura menos frequente do que diária a data tarde. O tempo até reportar é o maior número de dias corridos desde essa data até uma pessoa a reconhecer, entre todos os alertas listados; é desconhecido enquanto algum não for reconhecido, porque um lento não deve parecer rápido."
+  },
+  "demo": {
+    "label": "Demonstração",
+    "banner": "Demonstração: todas as pessoas, números e documentos aqui são fictícios.",
+    "step": "Passo {n} de {total}",
+    "previous": "Anterior",
+    "next": "Seguinte",
+    "finish": "Terminar o percurso",
+    "tour": "Percurso guiado",
+    "title": "Percurso guiado pela demonstração",
+    "hint": "Iniciou sessão como um utilizador fictício, numa organização fictícia. Nada do que vê ou altera aqui é real nem está ligado a dados reais. Comece no passo 1 e prima Seguinte para ver cada funcionalidade por ordem, ou abra qualquer página abaixo.",
+    "start": "Começar o percurso",
+    "count": "{total} páginas",
+    "signinHint": "Para experimentar a demonstração, inicie sessão como example@example.com. Tudo nela é fictício."
+  },
+  "kanban": {
+    "title": "O meu quadro",
+    "hint": "Os seus próprios passos de desenvolvimento, uma coluna por estado. Arraste um cartão ou use o seu menu Mover. Marcar um passo como alcançado não altera o nível declarado da competência: é um ato separado, com evidência.",
+    "noWorker": "Não tem registo de trabalhador, por isso não há quadro para mostrar.",
+    "empty": "Ainda não tem passos de desenvolvimento. Aparecem aqui quando um plano de desenvolvimento é aberto para si.",
+    "steps": "Passos: {count}",
+    "unknownSkill": "Uma competência",
+    "achievedNote": "Marcado como alcançado. O nível declarado da competência não mudou: registe-o à parte, com evidência.",
+    "cardCount": "Cartões: {count}",
+    "overLimit": "Acima do limite: {count} de {limit}",
+    "moveButton": "Mover {title}",
+    "moveMenu": "Mover para a coluna",
+    "moved": "{title} movido para {column}",
+    "emptyColumn": "Nada em {column}"
+  },
+  "dataTable": {
+    "columns": "Colunas",
+    "showColumn": "Mostrar {column}",
+    "previousPage": "Página anterior",
+    "nextPage": "Página seguinte",
+    "pageStatus": "Página {page} de {pages} ({rows} linhas)",
+    "sorted": "{header}: ordenado {direction}",
+    "ascending": "crescente",
+    "descending": "decrescente",
+    "unsorted": "sem ordenação",
+    "export": "Exportar",
+    "exportCsv": "CSV",
+    "exportExcel": "Excel",
+    "exported": "{count} linhas exportadas para {file}",
+    "search": "Filtrar linhas",
+    "exportTsv": "TSV",
+    "copy": "Copiar",
+    "copied": "{count} linhas copiadas",
+    "copyFailed": "Não foi possível copiar",
+    "pagination": "Páginas",
+    "searchField": "Filtrar por coluna",
+    "searchAllFields": "Todas as colunas",
+    "filtered": "{matches} de {total} linhas"
+  },
+  "columns": {
+    "person": "Pessoa",
+    "kind": "Tipo",
+    "dates": "Datas",
+    "typeYear": "Tipo e ano",
+    "remaining": "Restante",
+    "rating": "Avaliação",
+    "content": "Conteúdo",
+    "course": "Curso",
+    "certificateExpires": "Validade do certificado",
+    "shift": "Turno",
+    "filled": "Preenchido",
+    "weeklyAverage": "Média semanal",
+    "restBreaks": "Pausas de descanso",
+    "rule": "Regra",
+    "cohort": "A quem se aplica",
+    "doses": "Doses",
+    "entitlement": "Direito",
+    "responses": "Respostas",
+    "uptake": "Adesão",
+    "result": "Resultado",
+    "role": "Função",
+    "criticality": "Criticidade",
+    "candidates": "Candidatos",
+    "tableName": "Tabela",
+    "rowCount": "Linhas"
+  },
+  "calendar": {
+    "week": "Semana",
+    "fourWeeks": "4 semanas",
+    "month": "Mês",
+    "previous": "Período anterior",
+    "next": "Período seguinte",
+    "today": "Hoje",
+    "announcement": "A mostrar de {start} a {end}",
+    "more": "+{count} mais",
+    "leave": "Calendário de licenças",
+    "shifts": "Calendário de turnos",
+    "onCall": "Calendário de prevenção",
+    "cpd": "Calendário de formação contínua",
+    "expiring": "Calendário de validade dos certificados",
+    "agenda": "Agenda",
+    "agendaEmpty": "Nada neste mês"
   }
 }

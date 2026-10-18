@@ -40,7 +40,9 @@
     "resilience": "Gwydnwch",
     "oversight": "Goruchwyliaeth",
     "cutover": "Newid drosodd",
-    "warnings": "Rhybuddion cynnar"
+    "warnings": "Rhybuddion cynnar",
+    "signout": "Allgofnodi",
+    "kanban": "Fy mwrdd"
   },
   "pr": {
     "retention": "Cadw data",
@@ -124,7 +126,11 @@
     "name": "Rheoli Cynllunio'r Gweithlu"
   },
   "chrome": {
-    "language": "Iaith"
+    "language": "Iaith",
+    "pages": "Tudalennau",
+    "search": "Chwilio am bobl",
+    "searchInput": "Enw, teitl neu adran",
+    "searchSubmit": "Chwilio"
   },
   "share": {
     "copy_link": "Copïo dolen",
@@ -152,11 +158,14 @@
     "programme": "Cyfeirnod y rhaglen"
   },
   "dash": {
-    "title": "Dangosfwrdd AD",
+    "title": "Fy Nhudalen Hafan",
     "activeWorkers": "Gweithwyr gweithredol",
     "openRequisitions": "Swyddi gwag agored",
     "pendingLeave": "Absenoldeb yn yr arfaeth",
-    "successionGaps": "Bylchau olyniaeth"
+    "successionGaps": "Bylchau olyniaeth",
+    "singlePoints": "Pwyntiau methiant sengl",
+    "earlyWarnings": "Rhybuddion cynnar heb eu cydnabod",
+    "poolsOver": "Pyllau dros eu capasiti"
   },
   "req": {
     "applications": "Ceisiadau",
@@ -1316,7 +1325,9 @@
     "resilience": "Gwydnwch — WPM",
     "oversight": "Goruchwyliaeth — WPM",
     "cutover": "Parodrwydd newid drosodd — WPM",
-    "warnings": "Rhybuddion cynnar — WPM"
+    "warnings": "Rhybuddion cynnar — WPM",
+    "demo": "Taith dywys o'r demo — WPM",
+    "kanban": "Fy mwrdd — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -1836,5 +1847,102 @@
     "timeToReportNone": "Amser i adrodd: anhysbys tra bo unrhyw rybudd heb ei gydnabod",
     "none": "Dim rhybuddion cynnar.",
     "basisText": "Dyddiad y daeth cyflwr yn wir gyntaf yw dyddiad y sgan cyntaf a'i gwelodd, felly mae sgan a gynhelir yn llai aml na phob dydd yn ei ddyddio'n hwyr. Amser i adrodd yw'r nifer hiraf o ddiwrnodau calendr o'r dyddiad hwnnw nes bod person yn ei gydnabod, ar draws yr holl rybuddion a restrir; mae'n anhysbys tra bo unrhyw un heb ei gydnabod, gan na ddylai un araf ymddangos yn gyflym."
+  },
+  "demo": {
+    "label": "Demo",
+    "banner": "Demo: mae pob person, ffigur a dogfen yma yn ffuglennol.",
+    "step": "Cam {n} o {total}",
+    "previous": "Blaenorol",
+    "next": "Nesaf",
+    "finish": "Gorffen y daith",
+    "tour": "Taith dywys",
+    "title": "Taith dywys o'r demo",
+    "hint": "Rydych wedi mewngofnodi fel defnyddiwr ffuglennol, mewn sefydliad ffuglennol. Nid yw dim a welwch neu a newidiwch yma yn real, ac nid yw wedi'i gysylltu ag unrhyw ddata real. Dechreuwch ar gam 1 a gwasgwch Nesaf i weld pob nodwedd yn eu tro, neu agorwch unrhyw dudalen isod.",
+    "start": "Dechrau'r daith",
+    "count": "{total} tudalen",
+    "signinHint": "I roi cynnig ar y demo, mewngofnodwch fel example@example.com. Mae popeth ynddo'n ffuglennol."
+  },
+  "kanban": {
+    "title": "Fy mwrdd",
+    "hint": "Eich camau datblygu eich hun, un golofn ar gyfer pob statws. Llusgwch gerdyn, neu defnyddiwch ei ddewislen Symud. Nid yw nodi cam fel un a gyflawnwyd yn newid lefel ddatganedig y sgil: gweithred ar wahân yw honno, gyda thystiolaeth.",
+    "noWorker": "Nid oes gennych gofnod gweithiwr, felly nid oes mwrdd i'w ddangos.",
+    "empty": "Nid oes gennych gamau datblygu eto. Maent yn ymddangos yma pan agorir cynllun datblygu ar eich cyfer.",
+    "steps": "Camau: {count}",
+    "unknownSkill": "Sgil",
+    "achievedNote": "Wedi'i nodi fel un a gyflawnwyd. Nid yw lefel ddatganedig y sgil wedi newid: cofnodwch hi ar wahân, gyda thystiolaeth.",
+    "cardCount": "Cardiau: {count}",
+    "overLimit": "Dros y terfyn: {count} o {limit}",
+    "moveButton": "Symud {title}",
+    "moveMenu": "Symud i golofn",
+    "moved": "Symudwyd {title} i {column}",
+    "emptyColumn": "Dim byd yn {column}"
+  },
+  "dataTable": {
+    "columns": "Colofnau",
+    "showColumn": "Dangos {column}",
+    "previousPage": "Tudalen flaenorol",
+    "nextPage": "Tudalen nesaf",
+    "pageStatus": "Tudalen {page} o {pages} ({rows} rhes)",
+    "sorted": "{header}: wedi'i drefnu {direction}",
+    "ascending": "ar i fyny",
+    "descending": "ar i lawr",
+    "unsorted": "heb ei drefnu",
+    "export": "Allforio",
+    "exportCsv": "CSV",
+    "exportExcel": "Excel",
+    "exported": "Allforiwyd {count} rhes i {file}",
+    "search": "Hidlo rhesi",
+    "exportTsv": "TSV",
+    "copy": "Copïo",
+    "copied": "Copïwyd {count} rhes",
+    "copyFailed": "Methwyd copïo",
+    "pagination": "Tudalennau",
+    "searchField": "Hidlo yn ôl colofn",
+    "searchAllFields": "Pob colofn",
+    "filtered": "{matches} o {total} rhes"
+  },
+  "columns": {
+    "person": "Person",
+    "kind": "Math",
+    "dates": "Dyddiadau",
+    "typeYear": "Math a blwyddyn",
+    "remaining": "Yn weddill",
+    "rating": "Sgôr",
+    "content": "Cynnwys",
+    "course": "Cwrs",
+    "certificateExpires": "Tystysgrif yn dod i ben",
+    "shift": "Shifft",
+    "filled": "Wedi'i llenwi",
+    "weeklyAverage": "Cyfartaledd wythnosol",
+    "restBreaks": "Seibiannau gorffwys",
+    "rule": "Rheol",
+    "cohort": "I bwy mae'n berthnasol",
+    "doses": "Dosau",
+    "entitlement": "Hawlnod",
+    "responses": "Ymatebion",
+    "uptake": "Cyfradd defnyddio",
+    "result": "Canlyniad",
+    "role": "Rôl",
+    "criticality": "Pwysigrwydd",
+    "candidates": "Ymgeiswyr",
+    "tableName": "Tabl",
+    "rowCount": "Rhesi"
+  },
+  "calendar": {
+    "week": "Wythnos",
+    "fourWeeks": "4 wythnos",
+    "month": "Mis",
+    "previous": "Cyfnod blaenorol",
+    "next": "Cyfnod nesaf",
+    "today": "Heddiw",
+    "announcement": "Yn dangos {start} i {end}",
+    "more": "+{count} arall",
+    "leave": "Calendr absenoldeb",
+    "shifts": "Calendr shifftiau",
+    "onCall": "Calendr ar alwad",
+    "cpd": "Calendr DPP",
+    "expiring": "Calendr dyddiadau dod i ben tystysgrifau",
+    "agenda": "Agenda",
+    "agendaEmpty": "Dim byd y mis hwn"
   }
 }

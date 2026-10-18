@@ -9,6 +9,11 @@
   import { workerSkillGaps, workerTrainingPlan } from "#lib/api/wpm.js";
   import type { SkillGap, TrainingPlan } from "#lib/api/types.js";
   import { t } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   let { workerPid }: { workerPid: string } = $props();
 
@@ -55,6 +60,39 @@
         ? t("training.basisMixed")
         : t("training.basisEstimate");
 
+  type PlanItem = TrainingPlan["plan"][number];
+  const planItem = (row: DataGridRow) => row as unknown as PlanItem;
+  const planColumns = $derived<DataGridColumn[]>([
+    {
+      id: "skill",
+      header: t("nav.skills"),
+      sortable: true,
+      accessor: (r) => planItem(r).skill ?? planItem(r).skill_pid,
+      cell: planSkill,
+    },
+    {
+      id: "hours",
+      header: t("training.hours"),
+      sortable: true,
+      accessor: (r) => planItem(r).recommendation.hours,
+    },
+    {
+      id: "basis",
+      header: t("training.basis"),
+      accessor: (r) => planItem(r).recommendation.basis,
+      cell: planBasis,
+    },
+    {
+      id: "courses",
+      header: t("training.courses"),
+      accessor: (r) =>
+        planItem(r)
+          .recommendation.courses.map((c) => `${c.title} (${c.hours})`)
+          .join(", ") || null,
+    },
+    { id: "starts_on", header: t("training.dates"), sortable: true, cell: planDates },
+  ]);
+
   const source = (s: SkillGap["sources"][number]) =>
     s === "role"
       ? t("skillgaps.sourceRole")
@@ -68,7 +106,63 @@
       : i === "important"
         ? t("skillgaps.impImportant")
         : t("skillgaps.impUseful");
+
+  const gapColumns = $derived<DataGridColumn[]>([
+    {
+      id: "skill",
+      header: t("nav.skills"),
+      sortable: true,
+      accessor: (r) => {
+        const g = r as unknown as SkillGap;
+        return g.skill ?? g.skill_pid;
+      },
+      cell: skillCell,
+    },
+    { id: "required", header: t("skillgaps.required"), sortable: true, align: "end" },
+    { id: "declared", header: t("skillgaps.declared"), sortable: true, align: "end" },
+    { id: "shortfall", header: t("skillgaps.short"), sortable: true, align: "end", cell: shortCell },
+    {
+      id: "priority",
+      header: t("skillgaps.priority"),
+      sortable: true,
+      align: "end",
+      accessor: (r) => {
+        const g = r as unknown as SkillGap;
+        return g.status === "below" ? g.priority : null;
+      },
+    },
+    {
+      id: "sources",
+      header: t("skillgaps.sources"),
+      sortable: true,
+      accessor: (r) => (r as unknown as SkillGap).sources.map(source).join(", "),
+    },
+  ]);
 </script>
+
+{#snippet planSkill({ row }: { row: DataGridRow })}
+  <strong>{planItem(row).skill ?? planItem(row).skill_pid}</strong>
+{/snippet}
+
+{#snippet planBasis({ value }: { value: unknown })}
+  <span class="chip">{basis(String(value))}</span>
+{/snippet}
+
+{#snippet planDates({ row }: { row: DataGridRow })}
+  {planItem(row).starts_on} → {planItem(row).ends_on}
+  <span class="muted">({planItem(row).weeks} {t("training.weeks")})</span>
+{/snippet}
+
+{#snippet skillCell({ row }: { row: DataGridRow })}
+  {@const g = row as unknown as SkillGap}
+  <strong>{g.skill ?? g.skill_pid}</strong>
+  <span class="muted">· {importance(g.importance)}</span>
+{/snippet}
+
+{#snippet shortCell({ row }: { row: DataGridRow })}
+  {@const g = row as unknown as SkillGap}
+  {#if g.shortfall !== null}{g.shortfall}{:else}<span class="chip" title={t("skillgaps.unknownHint")}>{t("skillgaps.undeclared")}</span>{/if}
+{/snippet}
 
 <section class="panel" data-testid="skill-gaps">
   <h2>{t("skillgaps.title")}</h2>
@@ -79,35 +173,14 @@
   {:else if gaps.length === 0}
     <p class="muted" data-testid="skill-gaps-none">{t("skillgaps.none")}</p>
   {:else}
-    <table data-testid="skill-gaps-table">
-      <thead>
-        <tr>
-          <th>{t("nav.skills")}</th>
-          <th>{t("skillgaps.required")}</th>
-          <th>{t("skillgaps.declared")}</th>
-          <th>{t("skillgaps.short")}</th>
-          <th>{t("skillgaps.priority")}</th>
-          <th>{t("skillgaps.sources")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each gaps as g (g.skill_pid)}
-          <tr data-status={g.status}>
-            <td>
-              <strong>{g.skill ?? g.skill_pid}</strong>
-              <span class="muted">· {importance(g.importance)}</span>
-            </td>
-            <td>{g.required}</td>
-            <td>{g.declared ?? "—"}</td>
-            <td>
-              {#if g.shortfall !== null}{g.shortfall}{:else}<span class="chip" title={t("skillgaps.unknownHint")}>{t("skillgaps.undeclared")}</span>{/if}
-            </td>
-            <td>{g.status === "below" ? g.priority : "—"}</td>
-            <td>{g.sources.map(source).join(", ")}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <DataTable
+      testid="skill-gaps-table"
+      label={t("skillgaps.title")}
+      columns={gapColumns}
+      rows={gaps as unknown as DataGridRow[]}
+      rowId={(row) => String(row.skill_pid)}
+      rowAttrs={(row) => ({ "data-status": row.status })}
+    />
   {/if}
 
   {#if plan}
@@ -127,37 +200,23 @@
     {#if plan.plan.length === 0}
       <p class="muted" data-testid="plan-none">{t("training.noPlan")}</p>
     {:else}
-      <table data-testid="training-plan">
-        <thead>
-          <tr>
-            <th>{t("nav.skills")}</th>
-            <th>{t("training.hours")}</th>
-            <th>{t("training.basis")}</th>
-            <th>{t("training.courses")}</th>
-            <th>{t("training.dates")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each plan.plan as item (item.skill_pid)}
-            <tr>
-              <td><strong>{item.skill ?? item.skill_pid}</strong></td>
-              <td>{item.recommendation.hours}</td>
-              <td><span class="chip">{basis(item.recommendation.basis)}</span></td>
-              <td>{item.recommendation.courses.map((c) => `${c.title} (${c.hours})`).join(", ") || "—"}</td>
-              <td>{item.starts_on} → {item.ends_on} <span class="muted">({item.weeks} {t("training.weeks")})</span></td>
-            </tr>
-          {/each}
-        </tbody>
-        <tfoot>
+      <DataTable
+        testid="training-plan"
+        label={t("training.title")}
+        columns={planColumns}
+        rows={plan.plan as unknown as DataGridRow[]}
+        rowId={(row) => String(row.skill_pid)}
+      >
+        {#snippet footer()}
           <tr data-testid="plan-total">
             <th>{t("training.total")}</th>
-            <th>{plan.total_hours}</th>
+            <th>{plan?.total_hours}</th>
             <th></th>
             <th></th>
-            <th>{t("training.finish")} {plan.finish_on} ({plan.total_weeks} {t("training.weeks")})</th>
+            <th>{t("training.finish")} {plan?.finish_on} ({plan?.total_weeks} {t("training.weeks")})</th>
           </tr>
-        </tfoot>
-      </table>
+        {/snippet}
+      </DataTable>
     {/if}
     {#if plan.assess_first.length > 0}
       <p data-testid="plan-assess">

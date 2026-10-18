@@ -1297,6 +1297,44 @@ test.describe("signed-in smoke coverage", () => {
     expect(seen).toContain("nobody");
   });
 
+  test("directory columns sort on click, unknown values last and shown as a dash", async ({
+    page,
+  }) => {
+    const row = (pid: string, name: string, manager: string | null) => ({
+      pid,
+      display_name: name,
+      job_title: "Engineer",
+      department: "Platform",
+      location: null,
+      organization_ref: WORKER.organization_ref,
+      manager_name: manager,
+      away_today: false,
+      covered_by: null,
+      on_call: [],
+    });
+    await page.route(
+      (url) => url.pathname === "/api/proxy/directory",
+      (route) =>
+        route.fulfill({
+          json: [
+            row("p1", "Zed", null),
+            row("p2", "Amy", "Bo"),
+            row("p3", "Cy", "Al"),
+          ],
+        }),
+    );
+    await page.goto("/directory");
+    const names = page.locator(
+      '[data-testid="directory-table"] tbody tr td:first-child',
+    );
+    await expect(names).toHaveText(["Zed", "Amy", "Cy"]);
+    await page.getByRole("button", { name: "Name" }).click();
+    await expect(names).toHaveText(["Amy", "Cy", "Zed"]);
+    await page.getByRole("button", { name: "Manager" }).click();
+    await expect(names).toHaveText(["Cy", "Amy", "Zed"]);
+    await expect(page.getByTestId("directory-table")).toContainText("—");
+  });
+
   test("a person records their job level; it is cleared on request, and hidden when not theirs", async ({
     page,
   }) => {
@@ -2222,7 +2260,7 @@ test.describe("signed-in smoke coverage", () => {
     await expect(drawer).toBeHidden();
   });
 
-  test("requisition board renders SVAR Kanban columns and cards", async ({
+  test("requisition board renders its columns and cards", async ({
     page,
   }) => {
     await page.route("**/api/proxy/requisitions", (route) =>

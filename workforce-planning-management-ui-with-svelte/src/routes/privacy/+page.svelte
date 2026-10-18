@@ -5,6 +5,11 @@
   // Erasure lives on the worker profile (it is per-person).
   import { retentionReport, retentionSweep } from "#lib/api/wpm.js";
   import { t } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   type Report = Awaited<ReturnType<typeof retentionReport>>;
   type SweepResult = Awaited<ReturnType<typeof retentionSweep>>;
@@ -35,6 +40,11 @@
       actionError = cause instanceof Error ? cause.message : String(cause);
     }
   }
+
+  const tableColumns: DataGridColumn[] = [
+    { id: "table", header: t("columns.tableName"), sortable: true },
+    { id: "count", header: t("columns.rowCount"), sortable: true, align: "end" },
+  ];
 </script>
 
 <h1>{t("nav.privacy")}</h1>
@@ -51,13 +61,12 @@
     {#if Object.keys(report.soft_deleted_past_horizon).length === 0}
       <p class="muted">—</p>
     {:else}
-      <table>
-        <tbody>
-          {#each Object.entries(report.soft_deleted_past_horizon) as [table, count] (table)}
-            <tr><td>{table}</td><td>{count}</td></tr>
-          {/each}
-        </tbody>
-      </table>
+      <DataTable
+        label={t("pr.pastHorizon")}
+        columns={tableColumns}
+        rows={Object.entries(report.soft_deleted_past_horizon).map(([table, count]) => ({ table, count })) as unknown as DataGridRow[]}
+        rowId={(row) => String(row.table)}
+      />
     {/if}
     <p>{t("pr.candidates")}: <strong>{report.expired_consent_candidates}</strong></p>
     <p class="muted">{report.derivation}</p>

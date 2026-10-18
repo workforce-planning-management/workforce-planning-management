@@ -5,14 +5,25 @@
   no pay, dates or person reference ever reach this page.
 -->
 <script lang="ts">
+  import { page } from "$app/state";
   import { employeeDirectory } from "#lib/api/wpm.js";
   import { t, l, tf } from "#lib/i18n.svelte.js";
   import type { DirectoryEntry } from "#lib/api/types.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   /** Most rows asked for at once; the search narrows beyond that. */
   const LIMIT = 100;
 
-  let query = $state("");
+  // The header's search picker sends people here with `?q=`; typing in the box below takes over.
+  let query = $state(page.url.searchParams.get("q") ?? "");
+  $effect(() => {
+    const asked = page.url.searchParams.get("q");
+    if (asked !== null) query = asked;
+  });
   let department = $state("");
   let entries = $state<DirectoryEntry[] | null>(null);
   // Departments seen so far, so choosing one doesn't empty the picker.
@@ -43,7 +54,34 @@
     }, 200);
     return () => clearTimeout(timer);
   });
+
+  const columns = $derived<DataGridColumn[]>([
+    { id: "display_name", header: t("common.name"), sortable: true, cell: nameCell },
+    { id: "job_title", header: t("common.jobTitle"), sortable: true },
+    { id: "department", header: t("common.department"), sortable: true },
+    {
+      id: "location",
+      header: t("directory.location"),
+      sortable: true,
+      format: (v) => (v == null ? t("org.noLocation") : String(v)),
+    },
+    { id: "manager_name", header: t("directory.manager"), sortable: true },
+  ]);
 </script>
+
+{#snippet nameCell({ row }: { row: DataGridRow })}
+  {@const e = row as unknown as DirectoryEntry}
+  <a href={l(`/workers/${e.pid}`)}>{e.display_name}</a>
+  {#each e.on_call as rota (rota)}
+    <span class="chip" data-testid="on-call" title={rota}>{t("rota.who")}: {rota}</span>
+  {/each}
+  {#if e.away_today}
+    <span class="chip" data-testid="away">{t("directory.away")}</span>
+    <span class="muted" data-testid="covered-by">
+      {#if e.covered_by}{t("directory.coveredBy")} {e.covered_by}{:else}{t("directory.noCover")}{/if}
+    </span>
+  {/if}
+{/snippet}
 
 <svelte:head><title>{tf("pages.directory.page_title", { directory: t("nav.directory") })}</title></svelte:head>
 
@@ -75,37 +113,11 @@
 {:else if entries.length === 0}
   <p class="muted" data-testid="directory-none">{t("directory.noMatches")}</p>
 {:else}
-  <table data-testid="directory-table">
-    <thead>
-      <tr>
-        <th>{t("common.name")}</th>
-        <th>{t("common.jobTitle")}</th>
-        <th>{t("common.department")}</th>
-        <th>{t("directory.location")}</th>
-        <th>{t("directory.manager")}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each entries as e (e.pid)}
-        <tr>
-          <td>
-            <a href={l(`/workers/${e.pid}`)}>{e.display_name}</a>
-            {#each e.on_call as rota (rota)}
-              <span class="chip" data-testid="on-call" title={rota}>{t("rota.who")}: {rota}</span>
-            {/each}
-            {#if e.away_today}
-              <span class="chip" data-testid="away">{t("directory.away")}</span>
-              <span class="muted" data-testid="covered-by">
-                {#if e.covered_by}{t("directory.coveredBy")} {e.covered_by}{:else}{t("directory.noCover")}{/if}
-              </span>
-            {/if}
-          </td>
-          <td>{e.job_title}</td>
-          <td>{e.department}</td>
-          <td>{e.location ?? t("org.noLocation")}</td>
-          <td>{e.manager_name ?? "—"}</td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    testid="directory-table"
+    label={t("nav.directory")}
+    columns={columns}
+    rows={entries as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
 {/if}

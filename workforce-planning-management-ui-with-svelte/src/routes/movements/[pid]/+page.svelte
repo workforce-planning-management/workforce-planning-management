@@ -119,6 +119,7 @@
   </p>
 
   <h2>{t("movements.checklist")} ({movement.progress.closed}/{movement.progress.total})</h2>
+  <!-- Left as a plain table: rows carry data-state on a real <tr> (specs and styles rely on it) and cells hold inline skip inputs. -->
   <table data-testid="movement-items">
     <thead>
       <tr>
@@ -180,6 +181,7 @@
     {#if held.length === 0}
       <p class="muted" data-testid="held-none">{t("movements.nothingHeld")}</p>
     {:else}
+      <!-- Left as a plain table: headerless rows whose cells hold selects bound to per-item state. -->
       <table data-testid="held-items">
         <tbody>
           {#each held as h (h.kind + h.subject_pid)}

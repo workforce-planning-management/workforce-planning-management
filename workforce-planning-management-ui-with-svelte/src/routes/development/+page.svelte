@@ -1,6 +1,12 @@
 <script lang="ts">
   import { expiringTraining, listSuccession, successionGaps } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
+  import CalendarPanel from "#lib/components/CalendarPanel.svelte";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
   import type { SuccessionEntry, TrainingEnrollment } from "#lib/api/types.js";
 
   let succession = $state<SuccessionEntry[] | null>(null);
@@ -24,7 +30,25 @@
       }
     })();
   });
+
+  const successionColumns = $derived<DataGridColumn[]>([
+    { id: "role_title", header: t("columns.role"), sortable: true },
+    { id: "department", header: t("common.department"), sortable: true },
+    { id: "criticality", header: t("columns.criticality"), sortable: true },
+    { id: "candidates", header: t("columns.candidates"), cell: candidatesCell },
+  ]);
+  const expiringColumns = $derived<DataGridColumn[]>([
+    { id: "course_ref", header: t("columns.course"), sortable: true },
+    { id: "certificate_expires_on", type: "date", header: t("columns.certificateExpires"), sortable: true },
+  ]);
 </script>
+
+{#snippet candidatesCell({ row }: { row: DataGridRow })}
+  {@const candidates = row.candidates as Array<{ pid: string; rank: number; readiness: string }>}
+  {#each candidates as candidate (candidate.pid)}
+    <span class="chip">#{candidate.rank} {candidate.readiness}</span>
+  {/each}
+{/snippet}
 
 <h1>{t("nav.development")}</h1>
 
@@ -43,32 +67,27 @@
   </ul>
 
   <h2>{t("dev.succession")}</h2>
-  <table data-testid="succession">
-    <tbody>
-      {#each succession as entry (entry.plan.pid)}
-        <tr>
-          <td>{entry.plan.role_title}</td>
-          <td>{entry.plan.department}</td>
-          <td>{entry.plan.criticality}</td>
-          <td>
-            {#each entry.candidates as candidate (candidate.pid)}
-              <span class="chip">#{candidate.rank} {candidate.readiness}</span>
-            {/each}
-          </td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    testid="succession"
+    label={t("dev.succession")}
+    columns={successionColumns}
+    rows={succession.map((e) => ({ ...e.plan, candidates: e.candidates })) as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
 
   <h2>{t("dev.expiring")}</h2>
-  <table data-testid="expiring">
-    <tbody>
-      {#each expiring as enrollment (enrollment.pid)}
-        <tr>
-          <td>{enrollment.course_ref}</td>
-          <td>{enrollment.certificate_expires_on}</td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    testid="expiring"
+    label={t("dev.expiring")}
+    columns={expiringColumns}
+    rows={expiring as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
+  <CalendarPanel
+    testid="expiring-calendar"
+    label={t("calendar.expiring")}
+    events={expiring.flatMap((e) =>
+      e.certificate_expires_on ? [{ id: e.pid, date: e.certificate_expires_on, title: e.course_ref }] : [],
+    )}
+  />
 {/if}

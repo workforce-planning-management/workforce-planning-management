@@ -8,8 +8,7 @@
 import type { PageServerLoad } from "./$types";
 import { redirect } from "@sveltejs/kit";
 import {
-  SESSION_COOKIE,
-  SESSION_COOKIE_OPTIONS,
+  setSessionCookie,
   sessionIdFromResponse,
 } from "#lib/server/session.js";
 import { verifyMagicLink } from "#lib/server/auth.js";
@@ -57,6 +56,6 @@ export const load: PageServerLoad = async ({ url, fetch, cookies }) => {
       title: pageTitle("titles.verify", url),
     };
   }
-  cookies.set(SESSION_COOKIE, sid, SESSION_COOKIE_OPTIONS);
+  setSessionCookie(cookies, url, sid);
   redirect(303, "/");
 };

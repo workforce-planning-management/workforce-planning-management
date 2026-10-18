@@ -78,6 +78,7 @@
   </svg>
   <!-- The wrapper clips: a table ignores `overflow`, so its rows would spill past
        a 1px box and stretch the page's scroll height. -->
+  <!-- Plain table: the visually hidden chart data, not a grid to sort or page. -->
   <div class="sr-only">
     <table>
       <caption>{label}</caption>

@@ -6,10 +6,13 @@
 // convention (`../+page.server.ts`): the authentication service brings
 // the browser back to THIS app's own `/verify/sso`.
 
-import { redirect } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { ssoStartUrl } from "#lib/server/auth.js";
 
-export const GET: RequestHandler = ({ url }) => {
-  redirect(303, ssoStartUrl(`${url.origin}/verify/sso`));
-};
+// SvelteKit's `redirect()` refuses an external address (the authentication service is another origin),
+// so the 303 is returned as a plain response.
+export const GET: RequestHandler = ({ url }) =>
+  new Response(null, {
+    status: 303,
+    headers: { location: ssoStartUrl(`${url.origin}/verify/sso`) },
+  });

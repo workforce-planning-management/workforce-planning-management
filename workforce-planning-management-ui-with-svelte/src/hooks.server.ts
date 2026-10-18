@@ -6,7 +6,7 @@ import type { Handle } from "@sveltejs/kit/hooks";
 // The browser never reads the cookie; only the SvelteKit server does,
 // and only the server talks to the services (WPM-T18, per
 // `agents/share/authentication-sessions.md`).
-import { SESSION_COOKIE } from "#lib/server/session.js";
+import { readSessionId } from "#lib/server/session.js";
 import { securityHeaders } from "#lib/security-headers.js";
 import {
   isRtl,
@@ -31,7 +31,7 @@ function isUnprefixed(pathname: string): boolean {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-  event.locals.sessionId = event.cookies.get(SESSION_COOKIE) ?? null;
+  event.locals.sessionId = readSessionId(event.cookies, event.url);
 
   const { pathname, search } = event.url;
   const { locale } = splitLocale(pathname);

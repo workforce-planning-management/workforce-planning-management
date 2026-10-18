@@ -8,6 +8,11 @@
   import { getPayScale, listPayScales, money, moneyWhole, payPosition } from "#lib/api/wpm.js";
   import { t, tp, i18n, tf } from "#lib/i18n.svelte.js";
   import type { PayLookup, PayScale } from "#lib/api/types.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   let scale = $state<PayScale | null>(null);
   let error = $state<string | null>(null);
@@ -36,6 +41,38 @@
     };
   });
 
+  type Band = PayScale["bands"][number];
+  type Step = Band["steps"][number];
+  // A band with two steps has no intermediate one: its middle cell is unknown ("—").
+  const stepsOf = (b: Band): Array<Step | undefined> =>
+    b.steps.length === 3 ? b.steps : [b.steps[0], undefined, b.steps[1]];
+  const stepColumn = (
+    id: string,
+    header: string,
+    index: number,
+    cell: DataGridColumn["cell"],
+  ): DataGridColumn => ({
+    id,
+    header,
+    sortable: true,
+    align: "end",
+    accessor: (r) => stepsOf(r as unknown as Band)[index]?.annual_minor ?? null,
+    cell,
+  });
+  const columns = $derived<DataGridColumn[]>([
+    {
+      id: "code",
+      header: t("payScales.band"),
+      sortable: true,
+      rowHeader: true,
+      cellClass: "cx-band",
+      cell: bandCell,
+    },
+    stepColumn("entry", t("payScales.entry"), 0, entryCell),
+    stepColumn("intermediate", t("payScales.intermediate"), 1, middleCell),
+    stepColumn("top", t("payScales.top"), 2, topCell),
+  ]);
+
   const perCent = (tenths: number): string => `${(tenths / 10).toFixed(1)}%`;
 
   async function ask(event: SubmitEvent): Promise<void> {
@@ -63,6 +100,26 @@
   }
 </script>
 
+{#snippet bandCell({ row }: { row: DataGridRow })}
+  {@const b = row as unknown as Band}
+  {b.code}
+  {#if b.closed}<span class="chip">{t("payScales.closed")}</span>{/if}
+{/snippet}
+
+{#snippet entryCell({ row }: { row: DataGridRow })}{@render stepView(row, 0)}{/snippet}
+{#snippet middleCell({ row }: { row: DataGridRow })}{@render stepView(row, 1)}{/snippet}
+{#snippet topCell({ row }: { row: DataGridRow })}{@render stepView(row, 2)}{/snippet}
+
+{#snippet stepView(row: DataGridRow, index: number)}
+  {@const cell = stepsOf(row as unknown as Band)[index]}
+  {#if cell && scale}
+    {moneyWhole(cell.annual_minor, scale.currency, i18n.locale)}
+    {#if cell.years_to_next}
+      <span class="muted">· {cell.years_to_next} {t("payScales.years")}</span>
+    {/if}
+  {:else}—{/if}
+{/snippet}
+
 <svelte:head><title>{tf("pages.payScales.page_title", { payScales: t("nav.payScales") })}</title></svelte:head>
 
 <h1>{t("nav.payScales")}</h1>
@@ -76,39 +133,14 @@
   </p>
   <p class="muted">{t("payScales.basis")}</p>
 
-  <div class="cx-scroll">
-  <table data-testid="pay-scale-table">
-    <thead>
-      <tr>
-        <th>{t("payScales.band")}</th>
-        <th>{t("payScales.entry")}</th>
-        <th>{t("payScales.intermediate")}</th>
-        <th>{t("payScales.top")}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each scale.bands as b (b.code)}
-        {@const cells = b.steps.length === 3 ? b.steps : [b.steps[0], undefined, b.steps[1]]}
-        <tr data-testid={`band-${b.code}`}>
-          <th scope="row" class="cx-band">
-            {b.code}
-            {#if b.closed}<span class="chip">{t("payScales.closed")}</span>{/if}
-          </th>
-          {#each cells as cell, i (i)}
-            <td>
-              {#if cell}
-                {moneyWhole(cell.annual_minor, scale.currency, i18n.locale)}
-                {#if cell.years_to_next}
-                  <span class="muted">· {cell.years_to_next} {t("payScales.years")}</span>
-                {/if}
-              {:else}—{/if}
-            </td>
-          {/each}
-        </tr>
-      {/each}
-    </tbody>
-  </table>
-  </div>
+  <DataTable
+    testid="pay-scale-table"
+    label={t("payScales.band")}
+    columns={columns}
+    rows={scale.bands as unknown as DataGridRow[]}
+    rowId={(row) => String(row.code)}
+    rowAttrs={(row) => ({ "data-testid": `band-${row.code}` })}
+  />
 
   <h2>{t("payScales.allowances")}</h2>
   <ul data-testid="pay-allowances">
@@ -188,13 +220,7 @@
 
 <style>
   /* Global table headers are upper-cased; a band code is a name ("8a"). */
-  .cx-scroll {
-    overflow-x: auto;
-  }
-  .cx-scroll table {
-    min-width: 34rem;
-  }
-  .cx-band {
+  :global(.cx-band) {
     text-transform: none;
   }
   .cx-form {

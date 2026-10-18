@@ -40,7 +40,9 @@
     "resilience": "Ketahanan",
     "oversight": "Pengawasan",
     "cutover": "Alih operasi",
-    "warnings": "Peringatan dini"
+    "warnings": "Peringatan dini",
+    "signout": "Keluar",
+    "kanban": "Papan saya"
   },
   "pr": {
     "retention": "Retensi",
@@ -124,7 +126,11 @@
     "name": "Manajemen Perencanaan Tenaga Kerja"
   },
   "chrome": {
-    "language": "Bahasa"
+    "language": "Bahasa",
+    "pages": "Halaman",
+    "search": "Cari orang",
+    "searchInput": "Nama, jabatan, atau departemen",
+    "searchSubmit": "Cari"
   },
   "share": {
     "copy_link": "Salin tautan",
@@ -152,11 +158,14 @@
     "programme": "Referensi program"
   },
   "dash": {
-    "title": "Dasbor SDM",
+    "title": "Beranda Saya",
     "activeWorkers": "Pekerja aktif",
     "openRequisitions": "Lowongan terbuka",
     "pendingLeave": "Cuti tertunda",
-    "successionGaps": "Kesenjangan suksesi"
+    "successionGaps": "Kesenjangan suksesi",
+    "singlePoints": "Titik kegagalan tunggal",
+    "earlyWarnings": "Peringatan dini belum diakui",
+    "poolsOver": "Kelompok melebihi kapasitas"
   },
   "req": {
     "applications": "Lamaran",
@@ -1316,7 +1325,9 @@
     "resilience": "Ketahanan — WPM",
     "oversight": "Pengawasan — WPM",
     "cutover": "Kesiapan alih operasi — WPM",
-    "warnings": "Peringatan dini — WPM"
+    "warnings": "Peringatan dini — WPM",
+    "demo": "Tur berpemandu demo — WPM",
+    "kanban": "Papan saya — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -1836,5 +1847,102 @@
     "timeToReportNone": "Waktu hingga dilaporkan: tidak diketahui selama ada peringatan yang belum diakui",
     "none": "Tidak ada peringatan dini.",
     "basisText": "Tanggal suatu kondisi pertama kali benar adalah tanggal penyisiran pertama yang melihatnya, sehingga penyisiran yang lebih jarang dari harian memberi tanggal terlambat. Waktu hingga dilaporkan adalah hari kalender terlama dari tanggal itu sampai seseorang mengakuinya, di seluruh peringatan yang terdaftar; tidak diketahui selama ada yang belum diakui, karena yang lambat tidak boleh tampak cepat."
+  },
+  "demo": {
+    "label": "Demo",
+    "banner": "Demo: setiap orang, angka, dan dokumen di sini fiktif.",
+    "step": "Langkah {n} dari {total}",
+    "previous": "Sebelumnya",
+    "next": "Berikutnya",
+    "finish": "Selesaikan tur",
+    "tour": "Tur berpemandu",
+    "title": "Tur berpemandu demo",
+    "hint": "Anda masuk sebagai pengguna fiktif di organisasi fiktif. Tidak ada yang Anda lihat atau ubah di sini yang nyata, dan tidak terhubung ke data nyata mana pun. Mulai dari langkah 1 dan tekan Berikutnya untuk melihat setiap fitur secara berurutan, atau buka halaman mana pun di bawah.",
+    "start": "Mulai tur",
+    "count": "{total} halaman",
+    "signinHint": "Untuk mencoba demo, masuk sebagai example@example.com. Semuanya fiktif."
+  },
+  "kanban": {
+    "title": "Papan saya",
+    "hint": "Langkah pengembangan Anda sendiri, satu kolom untuk setiap status. Seret kartu atau gunakan menu Pindahkan. Menandai langkah tercapai tidak mengubah tingkat keahlian yang dinyatakan: itu tindakan terpisah, dengan bukti.",
+    "noWorker": "Anda tidak memiliki catatan pekerja, jadi tidak ada papan untuk ditampilkan.",
+    "empty": "Anda belum memiliki langkah pengembangan. Langkah akan muncul di sini saat rencana pengembangan dibuka untuk Anda.",
+    "steps": "Langkah: {count}",
+    "unknownSkill": "Satu keahlian",
+    "achievedNote": "Ditandai tercapai. Tingkat keahlian yang dinyatakan tidak berubah: catat secara terpisah, dengan bukti.",
+    "cardCount": "Kartu: {count}",
+    "overLimit": "Melebihi batas: {count} dari {limit}",
+    "moveButton": "Pindahkan {title}",
+    "moveMenu": "Pindahkan ke kolom",
+    "moved": "{title} dipindahkan ke {column}",
+    "emptyColumn": "Tidak ada di {column}"
+  },
+  "dataTable": {
+    "columns": "Kolom",
+    "showColumn": "Tampilkan {column}",
+    "previousPage": "Halaman sebelumnya",
+    "nextPage": "Halaman berikutnya",
+    "pageStatus": "Halaman {page} dari {pages} ({rows} baris)",
+    "sorted": "{header}: diurutkan {direction}",
+    "ascending": "naik",
+    "descending": "turun",
+    "unsorted": "tidak diurutkan",
+    "export": "Ekspor",
+    "exportCsv": "CSV",
+    "exportExcel": "Excel",
+    "exported": "{count} baris diekspor ke {file}",
+    "search": "Saring baris",
+    "exportTsv": "TSV",
+    "copy": "Salin",
+    "copied": "{count} baris disalin",
+    "copyFailed": "Tidak dapat menyalin",
+    "pagination": "Halaman",
+    "searchField": "Filter menurut kolom",
+    "searchAllFields": "Semua kolom",
+    "filtered": "{matches} dari {total} baris"
+  },
+  "columns": {
+    "person": "Orang",
+    "kind": "Jenis",
+    "dates": "Tanggal",
+    "typeYear": "Jenis dan tahun",
+    "remaining": "Sisa",
+    "rating": "Penilaian",
+    "content": "Isi",
+    "course": "Kursus",
+    "certificateExpires": "Sertifikat kedaluwarsa",
+    "shift": "Shift",
+    "filled": "Terisi",
+    "weeklyAverage": "Rata-rata mingguan",
+    "restBreaks": "Jeda istirahat",
+    "rule": "Aturan",
+    "cohort": "Berlaku untuk",
+    "doses": "Dosis",
+    "entitlement": "Hak",
+    "responses": "Respons",
+    "uptake": "Tingkat pemanfaatan",
+    "result": "Hasil",
+    "role": "Peran",
+    "criticality": "Tingkat kekritisan",
+    "candidates": "Kandidat",
+    "tableName": "Tabel",
+    "rowCount": "Baris"
+  },
+  "calendar": {
+    "week": "Minggu",
+    "fourWeeks": "4 minggu",
+    "month": "Bulan",
+    "previous": "Periode sebelumnya",
+    "next": "Periode berikutnya",
+    "today": "Hari ini",
+    "announcement": "Menampilkan {start} sampai {end}",
+    "more": "+{count} lagi",
+    "leave": "Kalender cuti",
+    "shifts": "Kalender shift",
+    "onCall": "Kalender siaga",
+    "cpd": "Kalender CPD",
+    "expiring": "Kalender kedaluwarsa sertifikat",
+    "agenda": "Agenda",
+    "agendaEmpty": "Tidak ada di bulan ini"
   }
 }

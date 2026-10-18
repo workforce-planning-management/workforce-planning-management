@@ -23,6 +23,8 @@
   import RoleGrade from "#lib/components/RoleGrade.svelte";
   import { percentWithWorkings } from "#lib/format.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
   type Profiles = Awaited<ReturnType<typeof listRoleProfiles>>;
   type Profile = Awaited<ReturnType<typeof getRoleProfile>>;
@@ -201,7 +203,73 @@
       error = message(cause);
     }
   }
+
+  type Requirement = Profile["requirements"][number];
+
+  const interestColumns = $derived<DataGridColumn[]>([
+    { id: "title", header: t("pages.roles.target"), sortable: true, accessor: (r) => r.title ?? r.target_pid },
+    { id: "kind", header: t("pages.roles.kind"), sortable: true, format: (v) => tv(String(v)) },
+    { id: "interested", header: t("pages.roles.interested"), sortable: true, align: "end" },
+  ]);
+
+  const requirementColumns = $derived<DataGridColumn[]>([
+    { id: "skill", header: t("pages.roles.skill"), sortable: true, rowHeader: true, cell: skillCell,
+      accessor: (r) => r.skill ?? r.skill_pid },
+    { id: "category", header: t("pages.roles.category"), sortable: true },
+    {
+      id: "min_proficiency",
+      header: t("pages.roles.minimum"),
+      sortable: true,
+      align: "end",
+      format: (v) => `${v} / 5`,
+    },
+    {
+      id: "source_level",
+      header: t("pages.roles.framework_level"),
+      sortable: true,
+      align: "end",
+      format: (v, r) => (v !== null && v !== undefined ? `${v} of ${r.source_scale_max}` : "—"),
+    },
+    {
+      id: "importance",
+      header: t("pages.roles.importance"),
+      sortable: true,
+      format: (v) => tv(String(v)),
+      cellClass: ({ value }) => (value === "critical" ? "cx-warn" : ""),
+    },
+    { id: "remove", header: t("pages.roles.remove"), cell: removeCell },
+  ]);
+
+  const coverageColumns = $derived<DataGridColumn[]>([
+    { id: "skill", header: t("pages.roles.skill"), sortable: true },
+    { id: "min_proficiency", header: t("pages.roles.needs"), sortable: true, align: "end" },
+    { id: "meeting", header: t("pages.roles.meeting"), sortable: true, align: "end" },
+    { id: "below", header: t("pages.roles.below"), sortable: true, align: "end" },
+    { id: "undeclared", header: t("pages.roles.undeclared"), sortable: true, align: "end" },
+    {
+      id: "coverage",
+      header: t("pages.roles.coverage"),
+      sortable: true,
+      align: "end",
+      accessor: (r) => (r.coverage as { value: number | null } | null)?.value ?? null,
+      format: (_v, r) => percentWithWorkings(r.coverage as Parameters<typeof percentWithWorkings>[0]),
+    },
+  ]);
 </script>
+
+{#snippet skillCell({ row }: { row: DataGridRow })}
+  {@const req = row as unknown as Requirement}
+  {req.skill ?? req.skill_pid}
+  {#if req.note}
+    <details><summary class="muted">{t("pages.roles.what_the_framework_says")}</summary><p>{req.note}</p></details>
+  {/if}
+{/snippet}
+
+{#snippet removeCell({ row }: { row: DataGridRow })}
+  <button type="button" onclick={() => void dropRequirement(String(row.skill_pid))}>
+    {t("pages.roles.remove")}
+  </button>
+{/snippet}
 
 <svelte:head><title>{tf("pages.roles.page_title", { roles: t("nav.roles") })}</title></svelte:head>
 
@@ -215,14 +283,13 @@
 {#if interest && interest.targets.length > 0}
   <h2>{t("pages.roles.employee_interest")}</h2>
   <p class="muted">{interest.derivation}</p>
-  <table data-testid="mobility-summary">
-    <thead><tr><th>{t("pages.roles.target")}</th><th>{t("pages.roles.kind")}</th><th>{t("pages.roles.interested")}</th></tr></thead>
-    <tbody>
-      {#each interest.targets as row (row.target_pid)}
-        <tr><td>{row.title ?? row.target_pid}</td><td>{tv(row.kind)}</td><td>{row.interested}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    testid="mobility-summary"
+    label={t("pages.roles.employee_interest")}
+    columns={interestColumns}
+    rows={interest.targets as unknown as DataGridRow[]}
+    rowId={(row) => String(row.target_pid)}
+  />
 {/if}
 
 <h2>{t("pages.roles.profiles")}</h2>
@@ -342,34 +409,17 @@
   {:else if profile.source_ref}<p class="muted">{tf("pages.roles.source", { source_ref: profile.source_ref })}</p>{/if}
   {#if profile.description}<p>{profile.description}</p>{/if}
   <RoleGrade profilePid={profile.pid} />
-  <table data-testid="role-requirements">
-    <thead>
-      <tr><th>{t("pages.roles.skill")}</th><th>{t("pages.roles.category")}</th><th>{t("pages.roles.minimum")}</th><th>{t("pages.roles.framework_level")}</th><th>{t("pages.roles.importance")}</th><th></th></tr>
-    </thead>
-    <tbody>
-      {#each profile.requirements as req (req.skill_pid)}
-        <tr>
-          <td>
-            {req.skill ?? req.skill_pid}
-            {#if req.note}
-              <details><summary class="muted">{t("pages.roles.what_the_framework_says")}</summary><p>{req.note}</p></details>
-            {/if}
-          </td>
-          <td>{req.category ?? "—"}</td>
-          <td>{req.min_proficiency} / 5</td>
-          <td>{req.source_level !== null ? `${req.source_level} of ${req.source_scale_max}` : "—"}</td>
-          <td class:warn={req.importance === "critical"}>{tv(req.importance)}</td>
-          <td>
-            <button type="button" onclick={() => void dropRequirement(req.skill_pid)}>
-              {t("pages.roles.remove")}
-            </button>
-          </td>
-        </tr>
-      {:else}
-        <tr><td colspan="6" class="muted">{t("pages.roles.no_required_skills_yet")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if profile.requirements.length === 0}
+    <p class="muted" data-testid="role-requirements">{t("pages.roles.no_required_skills_yet")}</p>
+  {:else}
+    <DataTable
+      testid="role-requirements"
+      label={t("pages.roles.profiles")}
+      columns={requirementColumns}
+      rows={profile.requirements as unknown as DataGridRow[]}
+      rowId={(row) => String(row.skill_pid)}
+    />
+  {/if}
 
   {#if progression && typeof progression.profile !== "string"}
     <h3>{t("pages.roles.next_level_up")}</h3>
@@ -389,23 +439,13 @@
   {#if coverage}
     <h3>{t("pages.roles.can_we_staff_this_role_today")}</h3>
     <p class="muted">{coverage.derivation}</p>
-    <table data-testid="role-coverage">
-      <thead>
-        <tr><th>{t("pages.roles.skill")}</th><th>{t("pages.roles.needs")}</th><th>{t("pages.roles.meeting")}</th><th>{t("pages.roles.below")}</th><th>{t("pages.roles.undeclared")}</th><th>{t("pages.roles.coverage")}</th></tr>
-      </thead>
-      <tbody>
-        {#each coverage.requirements as row (row.skill)}
-          <tr>
-            <td>{row.skill}</td>
-            <td>{row.min_proficiency}</td>
-            <td>{row.meeting}</td>
-            <td>{row.below}</td>
-            <td>{row.undeclared}</td>
-            <td>{percentWithWorkings(row.coverage)}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <DataTable
+      testid="role-coverage"
+      label={t("pages.roles.can_we_staff_this_role_today")}
+      columns={coverageColumns}
+      rows={coverage.requirements as unknown as DataGridRow[]}
+      rowId={(row) => String(row.skill)}
+    />
   {/if}
 
   <h3>{t("pages.roles.require_a_skill")}</h3>
@@ -443,5 +483,5 @@
 {/if}
 
 <style>
-  td.warn { color: #b45309; font-weight: 600; }
+  :global(td.cx-warn) { color: #b45309; font-weight: 600; }
 </style>

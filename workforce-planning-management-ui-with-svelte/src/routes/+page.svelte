@@ -1,7 +1,14 @@
 <script lang="ts">
   import AnnouncementsFeed from "#lib/components/AnnouncementsFeed.svelte";
   import { page } from "$app/state";
-  import { listWorkers, listRequisitions, successionGaps } from "#lib/api/wpm.js";
+  import {
+    capacityView,
+    keyPersonRisk,
+    listEarlyWarnings,
+    listWorkers,
+    listRequisitions,
+    successionGaps,
+  } from "#lib/api/wpm.js";
   import { t, l } from "#lib/i18n.svelte.js";
   import type { Worker, Requisition, MyOrganization } from "#lib/api/types.js";
 
@@ -16,6 +23,11 @@
   let open = $state<Requisition[] | null>(null);
   let gapCount = $state<number | null>(null);
   let error = $state<string | null>(null);
+  // The three tiles that read the capacity, resilience and early-warning pages. Each is `null` until it is
+  // known, and stays `null` (shown as a dash, never as 0) when it cannot be read.
+  let singlePoints = $state<number | null>(null);
+  let warnings = $state<number | null>(null);
+  let poolsOver = $state<number | null>(null);
 
   // Only a signed-in visitor reaches the dashboard tiles; a signed-out
   // one gets the splash below and never touches the API.
@@ -35,6 +47,37 @@
         error = cause instanceof Error ? cause.message : String(cause);
       }
     })();
+  });
+
+  // Across every organization the person belongs to; one that cannot be read leaves the tile unknown.
+  $effect(() => {
+    if (!signedIn) return;
+    const refs = [...new Set(organizations.map((m) => m.organization_ref))];
+    let current = true;
+    const sum = (counts: number[]) => counts.reduce((a, b) => a + b, 0);
+    void keyPersonRisk()
+      .then((v) => current && (singlePoints = v.single_points_of_failure))
+      .catch(() => current && (singlePoints = null));
+    if (refs.length === 0) {
+      warnings = null;
+      poolsOver = null;
+    } else {
+      void Promise.all(refs.map((org) => listEarlyWarnings(org)))
+        .then((all) => current && (warnings = sum(all.map((w) => w.unacknowledged))))
+        .catch(() => current && (warnings = null));
+      void Promise.all(refs.map((org) => capacityView(org)))
+        .then(
+          (all) =>
+            current &&
+            (poolsOver = sum(
+              all.map((v) => v.pools.filter((p) => p.over_months > 0).length),
+            )),
+        )
+        .catch(() => current && (poolsOver = null));
+    }
+    return () => {
+      current = false;
+    };
   });
 
   const FEATURES = [
@@ -76,6 +119,18 @@
       <a class="tile" href={l("/development")} data-testid="tile-gaps">
         <strong>{gapCount ?? 0}</strong>
         <span>{t("dash.successionGaps")}</span>
+      </a>
+      <a class="tile" href={l("/resilience")} data-testid="tile-single-points">
+        <strong>{singlePoints ?? "—"}</strong>
+        <span>{t("dash.singlePoints")}</span>
+      </a>
+      <a class="tile" href={l("/warnings")} data-testid="tile-warnings">
+        <strong>{warnings ?? "—"}</strong>
+        <span>{t("dash.earlyWarnings")}</span>
+      </a>
+      <a class="tile" href={l("/capacity")} data-testid="tile-pools-over">
+        <strong>{poolsOver ?? "—"}</strong>
+        <span>{t("dash.poolsOver")}</span>
       </a>
     </div>
     <AnnouncementsFeed limit={3} />

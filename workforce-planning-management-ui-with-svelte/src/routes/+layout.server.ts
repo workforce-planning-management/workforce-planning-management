@@ -39,6 +39,7 @@
 import { redirect } from "@sveltejs/kit";
 import { localePath, negotiateLocale, splitLocale } from "#lib/locales.js";
 import { isPublicPath } from "#lib/publicPages.js";
+import { isDemoSession } from "#lib/server/demo.js";
 import type { LayoutServerLoad } from "./$types";
 
 export const load: LayoutServerLoad = ({ locals, url, request }) => {
@@ -51,6 +52,8 @@ export const load: LayoutServerLoad = ({ locals, url, request }) => {
   }
   return {
     signedIn: locals.sessionId !== null,
+    // In the demo: every page says so, and offers the guided tour.
+    demo: isDemoSession(locals.sessionId),
     // What the server would pick from `Accept-Language`: the fallback for a
     // bare `/` visit whose browser language this app does not serve.
     fallbackLocale: negotiateLocale(request.headers.get("accept-language")),

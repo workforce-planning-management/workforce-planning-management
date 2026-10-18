@@ -7,6 +7,11 @@
 <script lang="ts">
   import { mentorshipOverview } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   type Overview = Awaited<ReturnType<typeof mentorshipOverview>>;
   let overview = $state<Overview | null>(null);
@@ -21,6 +26,16 @@
       }
     })();
   });
+
+  const loadColumns = $derived<DataGridColumn[]>([
+    { id: "mentor", header: t("pages.mentorship.mentor"), sortable: true, rowHeader: true, accessor: (r) => r.mentor ?? r.mentor_pid },
+    { id: "active_mentees", header: t("pages.mentorship.active_mentees"), sortable: true, align: "end" },
+  ]);
+  const staleColumns = $derived<DataGridColumn[]>([
+    { id: "mentor", header: t("pages.mentorship.mentor"), sortable: true },
+    { id: "mentee", header: t("pages.mentorship.mentee"), sortable: true },
+    { id: "last_session", header: t("pages.mentorship.last_session"), sortable: true, accessor: (r) => r.last_session ?? "never" },
+  ]);
 </script>
 
 <svelte:head><title>{tf("pages.mentorship.page_title", { mentorship: t("nav.mentorship") })}</title></svelte:head>
@@ -39,31 +54,29 @@
   </section>
 
   <h2>{t("pages.mentorship.mentor_load")}</h2>
-  <table data-testid="mentor-load">
-    <thead><tr><th>{t("pages.mentorship.mentor")}</th><th>{t("pages.mentorship.active_mentees")}</th></tr></thead>
-    <tbody>
-      {#each overview.mentor_load as row (row.mentor_pid)}
-        <tr><td>{row.mentor ?? row.mentor_pid}</td><td>{row.active_mentees}</td></tr>
-      {:else}
-        <tr><td colspan="2" class="muted">{t("pages.mentorship.no_active_mentorships")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  {#if overview.mentor_load.length === 0}
+    <p class="muted" data-testid="mentor-load">{t("pages.mentorship.no_active_mentorships")}</p>
+  {:else}
+    <DataTable
+      testid="mentor-load"
+      label={t("pages.mentorship.mentor_load")}
+      columns={loadColumns}
+      rows={overview.mentor_load as unknown as DataGridRow[]}
+      rowId={(row) => String(row.mentor_pid)}
+      pageSize={25}
+    />
+  {/if}
 
   {#if overview.stale_mentorships.length > 0}
     <h2>{t("pages.mentorship.stale_mentorships")}</h2>
-    <table data-testid="stale-mentorships">
-      <thead><tr><th>{t("pages.mentorship.mentor")}</th><th>{t("pages.mentorship.mentee")}</th><th>{t("pages.mentorship.last_session")}</th></tr></thead>
-      <tbody>
-        {#each overview.stale_mentorships as row (row.pid)}
-          <tr>
-            <td>{row.mentor ?? "—"}</td>
-            <td>{row.mentee ?? "—"}</td>
-            <td>{row.last_session ?? "never"}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <DataTable
+      testid="stale-mentorships"
+      label={t("pages.mentorship.stale_mentorships")}
+      columns={staleColumns}
+      rows={overview.stale_mentorships as unknown as DataGridRow[]}
+      rowId={(row) => String(row.pid)}
+      pageSize={25}
+    />
   {/if}
 
   <h2>{t("pages.mentorship.unmatched_workers")}</h2>

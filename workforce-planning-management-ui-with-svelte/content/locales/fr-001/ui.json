@@ -40,7 +40,9 @@
     "resilience": "Résilience",
     "oversight": "Supervision",
     "cutover": "Bascules",
-    "warnings": "Alertes précoces"
+    "warnings": "Alertes précoces",
+    "signout": "Se déconnecter",
+    "kanban": "Mon tableau"
   },
   "pr": {
     "retention": "Conservation",
@@ -124,7 +126,11 @@
     "name": "Gestion de la planification des effectifs"
   },
   "chrome": {
-    "language": "Langue"
+    "language": "Langue",
+    "pages": "Pages",
+    "search": "Rechercher des personnes",
+    "searchInput": "Nom, titre ou service",
+    "searchSubmit": "Rechercher"
   },
   "share": {
     "copy_link": "Copier le lien",
@@ -152,11 +158,14 @@
     "programme": "Référence du programme"
   },
   "dash": {
-    "title": "Tableau de bord RH",
+    "title": "Ma page d'accueil",
     "activeWorkers": "Travailleurs actifs",
     "openRequisitions": "Postes ouverts",
     "pendingLeave": "Congés en attente",
-    "successionGaps": "Lacunes de succession"
+    "successionGaps": "Lacunes de succession",
+    "singlePoints": "Points de défaillance uniques",
+    "earlyWarnings": "Alertes précoces sans accusé",
+    "poolsOver": "Pools au-delà de leur capacité"
   },
   "req": {
     "applications": "Candidatures",
@@ -1316,7 +1325,9 @@
     "resilience": "Résilience — WPM",
     "oversight": "Supervision — WPM",
     "cutover": "Préparation à la bascule — WPM",
-    "warnings": "Alertes précoces — WPM"
+    "warnings": "Alertes précoces — WPM",
+    "demo": "Visite guidée de la démo — WPM",
+    "kanban": "Mon tableau — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -1836,5 +1847,102 @@
     "timeToReportNone": "Délai de signalement : inconnu tant qu'une alerte n'a pas d'accusé",
     "none": "Aucune alerte précoce.",
     "basisText": "La date à laquelle une situation a été vraie pour la première fois est celle du premier balayage qui l'a vue, donc un balayage moins fréquent que quotidien la date tard. Le délai de signalement est le plus grand nombre de jours calendaires entre cette date et l'accusé de réception par une personne, parmi toutes les alertes listées ; il est inconnu tant qu'une alerte n'a pas d'accusé, car une alerte lente ne doit pas sembler rapide."
+  },
+  "demo": {
+    "label": "Démo",
+    "banner": "Démo : toutes les personnes, chiffres et documents ici sont fictifs.",
+    "step": "Étape {n} sur {total}",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "finish": "Terminer la visite",
+    "tour": "Visite guidée",
+    "title": "Visite guidée de la démo",
+    "hint": "Vous êtes connecté en tant qu'utilisateur fictif, dans une organisation fictive. Rien de ce que vous voyez ou modifiez ici n'est réel, ni relié à des données réelles. Commencez à l'étape 1 et appuyez sur Suivant pour voir chaque fonction à tour de rôle, ou ouvrez n'importe quelle page ci-dessous.",
+    "start": "Commencer la visite",
+    "count": "{total} pages",
+    "signinHint": "Pour essayer la démo, connectez-vous avec example@example.com. Tout y est fictif."
+  },
+  "kanban": {
+    "title": "Mon tableau",
+    "hint": "Vos propres étapes de développement, une colonne par statut. Faites glisser une carte ou utilisez son menu Déplacer. Marquer une étape comme atteinte ne modifie pas le niveau déclaré de la compétence : c'est un acte distinct, avec preuve.",
+    "noWorker": "Vous n'avez pas de dossier de travailleur, il n'y a donc pas de tableau à afficher.",
+    "empty": "Vous n'avez pas encore d'étapes de développement. Elles apparaissent ici quand un plan de développement est ouvert pour vous.",
+    "steps": "Étapes : {count}",
+    "unknownSkill": "Une compétence",
+    "achievedNote": "Marqué comme atteint. Le niveau déclaré de la compétence est inchangé : enregistrez-le séparément, avec preuve.",
+    "cardCount": "Cartes : {count}",
+    "overLimit": "Au-delà de la limite : {count} sur {limit}",
+    "moveButton": "Déplacer {title}",
+    "moveMenu": "Déplacer vers la colonne",
+    "moved": "{title} déplacée vers {column}",
+    "emptyColumn": "Rien dans {column}"
+  },
+  "dataTable": {
+    "columns": "Colonnes",
+    "showColumn": "Afficher {column}",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "pageStatus": "Page {page} sur {pages} ({rows} lignes)",
+    "sorted": "{header} : trié {direction}",
+    "ascending": "croissant",
+    "descending": "décroissant",
+    "unsorted": "non trié",
+    "export": "Exporter",
+    "exportCsv": "CSV",
+    "exportExcel": "Excel",
+    "exported": "{count} lignes exportées vers {file}",
+    "search": "Filtrer les lignes",
+    "exportTsv": "TSV",
+    "copy": "Copier",
+    "copied": "{count} lignes copiées",
+    "copyFailed": "Copie impossible",
+    "pagination": "Pages",
+    "searchField": "Filtrer par colonne",
+    "searchAllFields": "Toutes les colonnes",
+    "filtered": "{matches} lignes sur {total}"
+  },
+  "columns": {
+    "person": "Personne",
+    "kind": "Type",
+    "dates": "Dates",
+    "typeYear": "Type et année",
+    "remaining": "Restant",
+    "rating": "Note",
+    "content": "Contenu",
+    "course": "Formation",
+    "certificateExpires": "Expiration du certificat",
+    "shift": "Poste",
+    "filled": "Pourvu",
+    "weeklyAverage": "Moyenne hebdomadaire",
+    "restBreaks": "Repos",
+    "rule": "Règle",
+    "cohort": "Public concerné",
+    "doses": "Doses",
+    "entitlement": "Droit",
+    "responses": "Réponses",
+    "uptake": "Taux d'adhésion",
+    "result": "Résultat",
+    "role": "Rôle",
+    "criticality": "Criticité",
+    "candidates": "Candidats",
+    "tableName": "Table",
+    "rowCount": "Lignes"
+  },
+  "calendar": {
+    "week": "Semaine",
+    "fourWeeks": "4 semaines",
+    "month": "Mois",
+    "previous": "Période précédente",
+    "next": "Période suivante",
+    "today": "Aujourd'hui",
+    "announcement": "Affichage du {start} au {end}",
+    "more": "+{count} de plus",
+    "leave": "Calendrier des congés",
+    "shifts": "Calendrier des postes",
+    "onCall": "Calendrier des astreintes",
+    "cpd": "Calendrier de formation continue",
+    "expiring": "Calendrier d'expiration des certificats",
+    "agenda": "Programme",
+    "agendaEmpty": "Rien ce mois-ci"
   }
 }

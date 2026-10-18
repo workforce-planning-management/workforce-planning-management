@@ -84,6 +84,7 @@
   {#if !isPerson}
     <p class="muted">{t("comp.aspirations.you_see_only_what_this_person_has")}</p>
   {/if}
+  <!-- Plain table: every row holds status/visibility selects that reload the list on change and must keep focus. -->
   <table data-testid="aspiration-list">
     <thead><tr><th>{t("comp.aspirations.goal")}</th><th>{t("comp.aspirations.when")}</th><th>{t("comp.aspirations.status")}</th><th>{t("comp.aspirations.progress")}</th><th>{t("comp.aspirations.who_can_see")}</th><th></th></tr></thead>
     <tbody>

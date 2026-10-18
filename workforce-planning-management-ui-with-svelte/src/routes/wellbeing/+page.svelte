@@ -14,6 +14,11 @@
   } from "#lib/api/wpm.js";
   import { mean, percentWithWorkings } from "#lib/format.js";
   import { t } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   type Uptake = Awaited<ReturnType<typeof wellbeingUptake>>;
   type PulseResult = Awaited<ReturnType<typeof pulseResults>>;
@@ -108,7 +113,59 @@
     if (rule.job_titles.length) parts.push(rule.job_titles.join(", "));
     return parts.length ? parts.join(" · ") : "—";
   }
+
+  const ruleColumns = $derived<DataGridColumn[]>([
+    { id: "name", header: t("columns.rule"), sortable: true, cell: ruleCell },
+    {
+      id: "cohort",
+      header: t("columns.cohort"),
+      accessor: (r) => cohort(r as unknown as WellbeingEntitlement),
+    },
+    { id: "doses", header: t("columns.doses"), sortable: true, format: (v) => `×${v}` },
+    { id: "close", header: t("common.actions"), cell: closeCell },
+  ]);
+  const departmentColumns = $derived<DataGridColumn[]>([
+    { id: "department", header: t("common.department"), sortable: true },
+    {
+      id: "result",
+      header: t("columns.result"),
+      accessor: (r) => cell(r as unknown as PulseResult["overall"]),
+    },
+  ]);
+  const uptakeColumns = $derived<DataGridColumn[]>([
+    { id: "name", header: t("columns.entitlement"), sortable: true },
+    { id: "responses", header: t("columns.responses"), cell: responsesCell },
+    {
+      id: "uptake_rate",
+      header: t("columns.uptake"),
+      sortable: true,
+      accessor: (r) => (r.uptake_rate as { value?: number | null } | null)?.value ?? null,
+      format: (_v, r) => percentWithWorkings(r.uptake_rate as Parameters<typeof percentWithWorkings>[0]),
+    },
+    { id: "enrolment_conversion", header: t("wb.conversion"), cell: conversionCell },
+  ]);
 </script>
+
+{#snippet ruleCell({ row }: { row: DataGridRow })}
+  {@const rule = row as unknown as WellbeingEntitlement}
+  <strong>{rule.name}</strong> <span class="chip">{kindLabel(rule.kind)}</span><br /><span class="muted">{rule.description}</span>
+{/snippet}
+
+{#snippet closeCell({ row }: { row: DataGridRow })}
+  <button onclick={() => void close(String(row.pid))}>✕</button>
+{/snippet}
+
+{#snippet responsesCell({ row }: { row: DataGridRow })}
+  {#each Object.entries(row.by_response as Record<string, number>) as [response, count] (response)}
+    <span class="chip">{response}: {count}</span>
+  {/each}
+{/snippet}
+
+{#snippet conversionCell({ row }: { row: DataGridRow })}
+  {#if row.enrolment_conversion}
+    {percentWithWorkings(row.enrolment_conversion as Parameters<typeof percentWithWorkings>[0])}
+  {/if}
+{/snippet}
 
 <h1>{t("nav.wellbeing")}</h1>
 
@@ -116,18 +173,13 @@
   <p class="error" data-testid="error">{t("common.error")}: {error}</p>
 {:else}
   <h2>{t("wb.rules")}</h2>
-  <table data-testid="wellbeing-rules">
-    <tbody>
-      {#each rules as rule (rule.pid)}
-        <tr>
-          <td><strong>{rule.name}</strong> <span class="chip">{kindLabel(rule.kind)}</span><br /><span class="muted">{rule.description}</span></td>
-          <td>{cohort(rule)}</td>
-          <td>×{rule.doses}</td>
-          <td><button onclick={() => void close(rule.pid)}>✕</button></td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <DataTable
+    testid="wellbeing-rules"
+    label={t("wb.rules")}
+    columns={ruleColumns}
+    rows={rules as unknown as DataGridRow[]}
+    rowId={(row) => String(row.pid)}
+  />
 
   <form class="panel" onsubmit={(event) => void create(event)} data-testid="wellbeing-form">
     <input placeholder={t("common.name")} bind:value={name} required />
@@ -153,16 +205,12 @@
       <div class="panel" data-testid="pulse-results">
         <strong>{result.survey.name}</strong> — {result.survey.question}<br />
         <span data-testid="pulse-overall">{cell(result.overall)}</span>
-        <table>
-          <tbody>
-            {#each result.departments as department (department.department)}
-              <tr>
-                <td>{department.department}</td>
-                <td>{cell(department)}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
+        <DataTable
+          label={t("columns.result")}
+          columns={departmentColumns}
+          rows={result.departments as unknown as DataGridRow[]}
+          rowId={(row) => String(row.department)}
+        />
         <p class="muted">{result.derivation}</p>
       </div>
     {/each}
@@ -171,25 +219,12 @@
   {#if uptake}
     <h2>{t("wb.uptake")}</h2>
     <p class="muted">{uptake.derivation}</p>
-    <table data-testid="wellbeing-uptake">
-      <tbody>
-        {#each uptake.entitlements as row (row.entitlement_pid)}
-          <tr>
-            <td>{row.name}</td>
-            <td>
-              {#each Object.entries(row.by_response) as [response, count] (response)}
-                <span class="chip">{response}: {count}</span>
-              {/each}
-            </td>
-            <td>{percentWithWorkings(row.uptake_rate)}</td>
-            <td>
-              {#if row.enrolment_conversion}
-                {t("wb.conversion")}: {percentWithWorkings(row.enrolment_conversion)}
-              {/if}
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+  <DataTable
+    testid="wellbeing-uptake"
+    label={t("wb.uptake")}
+    columns={uptakeColumns}
+    rows={uptake.entitlements as unknown as DataGridRow[]}
+    rowId={(row) => String(row.entitlement_pid)}
+  />
   {/if}
 {/if}

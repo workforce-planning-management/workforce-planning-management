@@ -50,7 +50,7 @@ describe("verify/sso load", () => {
     });
     await expect(
       load({
-        url: new URL("http://localhost/verify/sso?code=abc"),
+        url: new URL("https://wpm.example.org/verify/sso?code=abc"),
         fetch: vi.fn().mockResolvedValue(upstream),
         cookies,
       } as unknown as Parameters<typeof load>[0]),
@@ -58,7 +58,26 @@ describe("verify/sso load", () => {
     expect(cookies.set).toHaveBeenCalledWith(
       "__Host-mxi_session",
       "sid123",
-      expect.objectContaining({ httpOnly: true }),
+      expect.objectContaining({ httpOnly: true, secure: true }),
+    );
+  });
+
+  it("on plain http on this machine, keeps the session in the cookie Safari accepts", async () => {
+    const upstream = new Response(null, {
+      status: 200,
+      headers: { "set-cookie": "__Host-mxi_session=sid123; Path=/" },
+    });
+    await expect(
+      load({
+        url: new URL("http://localhost:4520/verify/sso?code=abc"),
+        fetch: vi.fn().mockResolvedValue(upstream),
+        cookies,
+      } as unknown as Parameters<typeof load>[0]),
+    ).rejects.toMatchObject({ status: 303 });
+    expect(cookies.set).toHaveBeenCalledWith(
+      "mxi_session",
+      "sid123",
+      expect.objectContaining({ httpOnly: true, secure: false }),
     );
   });
 });

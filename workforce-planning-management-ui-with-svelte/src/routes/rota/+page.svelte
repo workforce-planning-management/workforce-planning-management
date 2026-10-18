@@ -22,6 +22,12 @@
   } from "#lib/api/wpm.js";
   import type { RotaSummary, RotaView, SwapRequest } from "#lib/api/types.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import CalendarPanel from "#lib/components/CalendarPanel.svelte";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   const organizationRefs = $derived((page.data.scope ?? []) as string[]);
 
@@ -105,6 +111,29 @@
         : source === "override"
           ? t("rota.sourceOverride")
           : "—";
+
+  type Run = RotaView["runs"][number];
+
+  const runColumns = $derived<DataGridColumn[]>([
+    { id: "from", type: "date", header: t("rota.from"), sortable: true },
+    { id: "to", type: "date", header: t("rota.to"), sortable: true },
+    {
+      id: "who",
+      header: t("rota.who"),
+      sortable: true,
+      accessor: (r) => {
+        const run = r as unknown as Run;
+        return run.worker_name ?? (run.worker_pid ? run.worker_pid : t("rota.nobody"));
+      },
+    },
+    {
+      id: "source",
+      header: t("rota.why"),
+      sortable: true,
+      cellClass: "muted",
+      accessor: (r) => sourceLabel((r as unknown as Run).source),
+    },
+  ]);
 </script>
 
 <svelte:head><title>{tf("pages.rota.page_title", { rota: t("nav.rota") })}</title></svelte:head>
@@ -136,21 +165,24 @@
     </p>
 
     <h2>{view.name}</h2>
-    <table data-testid="rota-runs">
-      <thead>
-        <tr><th>{t("rota.from")}</th><th>{t("rota.to")}</th><th>{t("rota.who")}</th><th>{t("rota.why")}</th></tr>
-      </thead>
-      <tbody>
-        {#each view.runs as run (run.from)}
-          <tr>
-            <td>{run.from}</td>
-            <td>{run.to}</td>
-            <td>{run.worker_name ?? (run.worker_pid ? run.worker_pid : t("rota.nobody"))}</td>
-            <td class="muted">{sourceLabel(run.source)}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <DataTable
+      testid="rota-runs"
+      label={view.name}
+      columns={runColumns}
+      rows={view.runs as unknown as DataGridRow[]}
+      rowId={(row) => String(row.from)}
+    />
+    <CalendarPanel
+      testid="on-call-calendar"
+      label={t("calendar.onCall")}
+      events={view.runs.map((run) => ({
+        id: run.from,
+        start: run.from,
+        end: run.to,
+        title: run.worker_name ?? run.worker_pid ?? t("rota.nobody"),
+      }))}
+      initialDate={view.window.from}
+    />
 
     <h3>{t("rota.load")}</h3>
     <ul data-testid="rota-load">

@@ -17,7 +17,13 @@
     type RoleHistoryRow,
     type SkillHistoryRow,
   } from "#lib/api/wpm.js";
+  import type { DataGridCellContext } from "@lilydesignsystem/svelte-data-grid";
   import RolePicker from "#lib/components/RolePicker.svelte";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   let { workerPid }: { workerPid: string } = $props();
 
@@ -81,7 +87,80 @@
       error = message(cause);
     }
   }
+
+  const roleColumns = $derived<DataGridColumn[]>([
+    {
+      id: "framework",
+      header: t("comp.careerHistory.framework"),
+      sortable: true,
+      accessor: (r) => ((r as unknown as RoleHistoryRow).framework === "esco" ? "ESCO" : "UK GDAD PCF"),
+    },
+    { id: "role_label", header: t("comp.careerHistory.role"), sortable: true, cell: roleCell },
+    {
+      id: "started_at",
+      header: t("comp.careerHistory.from"),
+      sortable: true,
+      accessor: (r) => day((r as unknown as RoleHistoryRow).started_at),
+    },
+    {
+      id: "ended_at",
+      header: t("comp.careerHistory.to"),
+      sortable: true,
+      accessor: (r) => day((r as unknown as RoleHistoryRow).ended_at),
+    },
+    {
+      id: "recorded_by",
+      header: t("comp.careerHistory.recorded_by"),
+      sortable: true,
+      cellClass: "muted",
+      cell: roleByCell,
+    },
+  ]);
+
+  const skillColumns = $derived<DataGridColumn[]>([
+    { id: "skill", header: t("comp.careerHistory.skill"), sortable: true },
+    { id: "proficiency", header: t("comp.careerHistory.level"), sortable: true, cell: levelCell },
+    {
+      id: "started_at",
+      header: t("comp.careerHistory.from"),
+      sortable: true,
+      accessor: (r) => day((r as unknown as SkillHistoryRow).started_at),
+    },
+    {
+      id: "ended_at",
+      header: t("comp.careerHistory.to"),
+      sortable: true,
+      accessor: (r) => day((r as unknown as SkillHistoryRow).ended_at),
+    },
+    {
+      id: "source",
+      header: t("comp.careerHistory.recorded_by"),
+      sortable: true,
+      cellClass: "muted",
+      cell: skillByCell,
+    },
+  ]);
 </script>
+
+{#snippet roleCell({ row, formatted }: DataGridCellContext)}
+  {@const r = row as unknown as RoleHistoryRow}
+  {formatted} {#if r.current}<span class="chip ok">{t("comp.careerHistory.current")}</span>{/if}
+{/snippet}
+
+{#snippet roleByCell({ row }: DataGridCellContext)}
+  {@const r = row as unknown as RoleHistoryRow}
+  {r.recorded_by ?? "—"}{#if r.on_behalf} <span class="chip">{t("comp.careerHistory.on_their_behalf")}</span>{/if}
+{/snippet}
+
+{#snippet levelCell({ row, formatted }: DataGridCellContext)}
+  {@const h = row as unknown as SkillHistoryRow}
+  {formatted} {#if h.current}<span class="chip ok">{t("comp.careerHistory.current")}</span>{/if}
+{/snippet}
+
+{#snippet skillByCell({ row }: DataGridCellContext)}
+  {@const h = row as unknown as SkillHistoryRow}
+  {tv(h.source)}{#if h.on_behalf} <span class="chip">{t("comp.careerHistory.on_their_behalf")}</span>{/if}
+{/snippet}
 
 <section class="panel" data-testid="career-history">
   <h2>{t("comp.careerHistory.career_history")}</h2>
@@ -89,21 +168,18 @@
   {#if notice}<p data-testid="notice">{notice}</p>{/if}
 
   <h3>{t("comp.careerHistory.roles_over_time")}</h3>
-  <table data-testid="role-history">
-    <thead><tr><th>{t("comp.careerHistory.framework")}</th><th>{t("comp.careerHistory.role")}</th><th>{t("comp.careerHistory.from")}</th><th>{t("comp.careerHistory.to")}</th><th>{t("comp.careerHistory.recorded_by")}</th></tr></thead>
-    <tbody>
-      {#each roles as r (r.pid)}
-        <tr>
-          <td>{r.framework === "esco" ? "ESCO" : "UK GDAD PCF"}</td>
-          <td>{r.role_label} {#if r.current}<span class="chip ok">{t("comp.careerHistory.current")}</span>{/if}</td>
-          <td>{day(r.started_at)}</td><td>{day(r.ended_at)}</td>
-          <td class="muted">{r.recorded_by ?? "—"}{#if r.on_behalf} <span class="chip">{t("comp.careerHistory.on_their_behalf")}</span>{/if}</td>
-        </tr>
-      {:else}
-        <tr><td colspan="5" class="muted">{t("comp.careerHistory.no_roles_recorded_yet")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  <div data-testid="role-history">
+    {#if roles.length === 0}
+      <p class="muted">{t("comp.careerHistory.no_roles_recorded_yet")}</p>
+    {:else}
+      <DataTable
+        label={t("comp.careerHistory.roles_over_time")}
+        columns={roleColumns}
+        rows={roles as unknown as DataGridRow[]}
+        rowId={(row) => String(row.pid)}
+      />
+    {/if}
+  </div>
 
   <h4>{t("comp.careerHistory.add_a_past_role")}</h4>
   <form
@@ -136,21 +212,18 @@
   </form>
 
   <h3>{t("comp.careerHistory.skill_levels_over_time")}</h3>
-  <table data-testid="skill-history">
-    <thead><tr><th>{t("comp.careerHistory.skill")}</th><th>{t("comp.careerHistory.level")}</th><th>{t("comp.careerHistory.from")}</th><th>{t("comp.careerHistory.to")}</th><th>{t("comp.careerHistory.recorded_by")}</th></tr></thead>
-    <tbody>
-      {#each history as h (h.pid)}
-        <tr>
-          <td>{h.skill}</td>
-          <td>{h.proficiency} {#if h.current}<span class="chip ok">{t("comp.careerHistory.current")}</span>{/if}</td>
-          <td>{day(h.started_at)}</td><td>{day(h.ended_at)}</td>
-          <td class="muted">{tv(h.source)}{#if h.on_behalf} <span class="chip">{t("comp.careerHistory.on_their_behalf")}</span>{/if}</td>
-        </tr>
-      {:else}
-        <tr><td colspan="5" class="muted">{t("comp.careerHistory.no_skill_levels_recorded_yet")}</td></tr>
-      {/each}
-    </tbody>
-  </table>
+  <div data-testid="skill-history">
+    {#if history.length === 0}
+      <p class="muted">{t("comp.careerHistory.no_skill_levels_recorded_yet")}</p>
+    {:else}
+      <DataTable
+        label={t("comp.careerHistory.skill_levels_over_time")}
+        columns={skillColumns}
+        rows={history as unknown as DataGridRow[]}
+        rowId={(row) => String(row.pid)}
+      />
+    {/if}
+  </div>
 
   <h4>{t("comp.careerHistory.add_a_past_skill_level")}</h4>
   <form

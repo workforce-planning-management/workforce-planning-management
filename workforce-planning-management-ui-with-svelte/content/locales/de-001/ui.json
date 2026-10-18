@@ -40,7 +40,9 @@
     "resilience": "Resilienz",
     "oversight": "Aufsicht",
     "cutover": "Umstellungen",
-    "warnings": "Frühwarnungen"
+    "warnings": "Frühwarnungen",
+    "signout": "Abmelden",
+    "kanban": "Mein Board"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -124,7 +126,11 @@
     "name": "Personalplanung und -verwaltung"
   },
   "chrome": {
-    "language": "Sprache"
+    "language": "Sprache",
+    "pages": "Seiten",
+    "search": "Personen suchen",
+    "searchInput": "Name, Titel oder Abteilung",
+    "searchSubmit": "Suchen"
   },
   "share": {
     "copy_link": "Link kopieren",
@@ -152,11 +158,14 @@
     "programme": "Programmreferenz"
   },
   "dash": {
-    "title": "HR-Übersicht",
+    "title": "Meine Startseite",
     "activeWorkers": "Aktive Arbeitskräfte",
     "openRequisitions": "Offene Stellen",
     "pendingLeave": "Ausstehender Urlaub",
-    "successionGaps": "Nachfolgelücken"
+    "successionGaps": "Nachfolgelücken",
+    "singlePoints": "Einzelne Ausfallpunkte",
+    "earlyWarnings": "Unbestätigte Frühwarnungen",
+    "poolsOver": "Pools über Kapazität"
   },
   "req": {
     "applications": "Bewerbungen",
@@ -1316,7 +1325,9 @@
     "resilience": "Resilienz — WPM",
     "oversight": "Aufsicht — WPM",
     "cutover": "Umstellungsbereitschaft — WPM",
-    "warnings": "Frühwarnungen — WPM"
+    "warnings": "Frühwarnungen — WPM",
+    "demo": "Geführter Rundgang durch die Demo — WPM",
+    "kanban": "Mein Board — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -1836,5 +1847,102 @@
     "timeToReportNone": "Zeit bis zur Meldung: unbekannt, solange eine Warnung unbestätigt ist",
     "none": "Keine Frühwarnungen.",
     "basisText": "Das Datum, an dem ein Zustand erstmals zutraf, ist das Datum des ersten Durchlaufs, der ihn sah; ein seltener als täglicher Durchlauf datiert ihn also spät. Die Zeit bis zur Meldung sind die meisten Kalendertage von diesem Datum bis zur Bestätigung durch eine Person über alle aufgeführten Warnungen; sie ist unbekannt, solange eine unbestätigt ist, weil eine langsame nicht schnell wirken darf."
+  },
+  "demo": {
+    "label": "Demo",
+    "banner": "Demo: Jede Person, Zahl und jedes Dokument hier ist erfunden.",
+    "step": "Schritt {n} von {total}",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "finish": "Rundgang beenden",
+    "tour": "Geführter Rundgang",
+    "title": "Geführter Rundgang durch die Demo",
+    "hint": "Sie sind als fiktiver Benutzer in einer fiktiven Organisation angemeldet. Nichts, was Sie hier sehen oder ändern, ist echt, und nichts ist mit echten Daten verbunden. Beginnen Sie bei Schritt 1 und drücken Sie Weiter, um jede Funktion der Reihe nach zu sehen, oder öffnen Sie unten eine beliebige Seite.",
+    "start": "Rundgang starten",
+    "count": "{total} Seiten",
+    "signinHint": "Um die Demo auszuprobieren, melden Sie sich als example@example.com an. Alles darin ist erfunden."
+  },
+  "kanban": {
+    "title": "Mein Board",
+    "hint": "Ihre eigenen Entwicklungsschritte, eine Spalte je Status. Ziehen Sie eine Karte oder nutzen Sie ihr Verschieben-Menü. Einen Schritt als erreicht zu markieren ändert die erklärte Stufe der Fähigkeit nicht: Das ist ein eigener Schritt mit Nachweis.",
+    "noWorker": "Sie haben keinen Mitarbeitendeneintrag, daher gibt es kein Board.",
+    "empty": "Sie haben noch keine Entwicklungsschritte. Sie erscheinen hier, sobald ein Entwicklungsplan für Sie eröffnet wird.",
+    "steps": "Schritte: {count}",
+    "unknownSkill": "Eine Fähigkeit",
+    "achievedNote": "Als erreicht markiert. Die erklärte Stufe der Fähigkeit ist unverändert: Halten Sie sie getrennt und mit Nachweis fest.",
+    "cardCount": "Karten: {count}",
+    "overLimit": "Über dem Limit: {count} von {limit}",
+    "moveButton": "{title} verschieben",
+    "moveMenu": "In Spalte verschieben",
+    "moved": "{title} nach {column} verschoben",
+    "emptyColumn": "Nichts in {column}"
+  },
+  "dataTable": {
+    "columns": "Spalten",
+    "showColumn": "{column} anzeigen",
+    "previousPage": "Vorherige Seite",
+    "nextPage": "Nächste Seite",
+    "pageStatus": "Seite {page} von {pages} ({rows} Zeilen)",
+    "sorted": "{header}: {direction} sortiert",
+    "ascending": "aufsteigend",
+    "descending": "absteigend",
+    "unsorted": "nicht sortiert",
+    "export": "Exportieren",
+    "exportCsv": "CSV",
+    "exportExcel": "Excel",
+    "exported": "{count} Zeilen nach {file} exportiert",
+    "search": "Zeilen filtern",
+    "exportTsv": "TSV",
+    "copy": "Kopieren",
+    "copied": "{count} Zeilen kopiert",
+    "copyFailed": "Kopieren nicht möglich",
+    "pagination": "Seiten",
+    "searchField": "Nach Spalte filtern",
+    "searchAllFields": "Alle Spalten",
+    "filtered": "{matches} von {total} Zeilen"
+  },
+  "columns": {
+    "person": "Person",
+    "kind": "Art",
+    "dates": "Zeitraum",
+    "typeYear": "Art und Jahr",
+    "remaining": "Verbleibend",
+    "rating": "Bewertung",
+    "content": "Inhalt",
+    "course": "Kurs",
+    "certificateExpires": "Zertifikat läuft ab",
+    "shift": "Schicht",
+    "filled": "Besetzt",
+    "weeklyAverage": "Wochendurchschnitt",
+    "restBreaks": "Ruhezeiten",
+    "rule": "Regel",
+    "cohort": "Gilt für",
+    "doses": "Dosen",
+    "entitlement": "Anspruch",
+    "responses": "Antworten",
+    "uptake": "Inanspruchnahme",
+    "result": "Ergebnis",
+    "role": "Rolle",
+    "criticality": "Kritikalität",
+    "candidates": "Kandidaten",
+    "tableName": "Tabelle",
+    "rowCount": "Zeilen"
+  },
+  "calendar": {
+    "week": "Woche",
+    "fourWeeks": "4 Wochen",
+    "month": "Monat",
+    "previous": "Voriger Zeitraum",
+    "next": "Nächster Zeitraum",
+    "today": "Heute",
+    "announcement": "Zeige {start} bis {end}",
+    "more": "+{count} weitere",
+    "leave": "Urlaubskalender",
+    "shifts": "Schichtkalender",
+    "onCall": "Bereitschaftskalender",
+    "cpd": "Weiterbildungskalender",
+    "expiring": "Kalender der Zertifikatsabläufe",
+    "agenda": "Agenda",
+    "agendaEmpty": "Nichts in diesem Monat"
   }
 }

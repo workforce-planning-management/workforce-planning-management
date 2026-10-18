@@ -40,7 +40,9 @@
     "resilience": "韧性",
     "oversight": "监督",
     "cutover": "切换",
-    "warnings": "预警"
+    "warnings": "预警",
+    "signout": "退出登录",
+    "kanban": "我的看板"
   },
   "pr": {
     "retention": "保留",
@@ -124,7 +126,11 @@
     "name": "劳动力规划管理"
   },
   "chrome": {
-    "language": "语言"
+    "language": "语言",
+    "pages": "页面",
+    "search": "搜索人员",
+    "searchInput": "姓名、职位或部门",
+    "searchSubmit": "搜索"
   },
   "share": {
     "copy_link": "复制链接",
@@ -152,11 +158,14 @@
     "programme": "项目引用"
   },
   "dash": {
-    "title": "人力资源仪表盘",
+    "title": "我的主页",
     "activeWorkers": "在职劳动者",
     "openRequisitions": "开放职位",
     "pendingLeave": "待批休假",
-    "successionGaps": "继任缺口"
+    "successionGaps": "继任缺口",
+    "singlePoints": "单点故障",
+    "earlyWarnings": "未确认的预警",
+    "poolsOver": "超出产能的技能池"
   },
   "req": {
     "applications": "申请",
@@ -1316,7 +1325,9 @@
     "resilience": "韧性 — WPM",
     "oversight": "监督 — WPM",
     "cutover": "切换就绪情况 — WPM",
-    "warnings": "预警 — WPM"
+    "warnings": "预警 — WPM",
+    "demo": "演示导览 — WPM",
+    "kanban": "我的看板 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -1836,5 +1847,102 @@
     "timeToReportNone": "上报用时：存在未确认预警时未知",
     "none": "没有预警。",
     "basisText": "某情况首次为真的日期，即首次发现它的巡检日期，因此低于每日一次的巡检会使日期偏晚。上报用时是所列全部预警中，从该日期到有人确认所经的最长日历日数；只要有任何一条未确认便为未知，因为慢的预警不能显得快。"
+  },
+  "demo": {
+    "label": "演示",
+    "banner": "演示：此处所有人员、数字和文件均为虚构。",
+    "step": "第 {n} 步，共 {total} 步",
+    "previous": "上一步",
+    "next": "下一步",
+    "finish": "结束导览",
+    "tour": "导览",
+    "title": "演示导览",
+    "hint": "您以虚构用户的身份登录了一个虚构的组织。您在此看到或更改的一切都不是真实的，也未连接任何真实数据。从第 1 步开始，按“下一步”依次查看每项功能，或打开下面任意页面。",
+    "start": "开始导览",
+    "count": "共 {total} 页",
+    "signinHint": "要试用演示，请以 example@example.com 登录。其中一切均为虚构。"
+  },
+  "kanban": {
+    "title": "我的看板",
+    "hint": "您自己的发展步骤，每个状态一列。拖动卡片，或使用其“移动”菜单。将步骤标为已达成不会改变该技能的申报水平：那是另需证据的单独操作。",
+    "noWorker": "您没有员工记录，因此没有可显示的看板。",
+    "empty": "您还没有发展步骤。为您创建发展计划后，它们会显示在这里。",
+    "steps": "步骤：{count}",
+    "unknownSkill": "一项技能",
+    "achievedNote": "已标为达成。该技能的申报水平未变：请另行记录并附证据。",
+    "cardCount": "卡片：{count}",
+    "overLimit": "超出上限：{count} / {limit}",
+    "moveButton": "移动 {title}",
+    "moveMenu": "移动到列",
+    "moved": "{title} 已移至 {column}",
+    "emptyColumn": "{column}中没有内容"
+  },
+  "dataTable": {
+    "columns": "列",
+    "showColumn": "显示{column}",
+    "previousPage": "上一页",
+    "nextPage": "下一页",
+    "pageStatus": "第 {page} 页，共 {pages} 页（{rows} 行）",
+    "sorted": "{header}：{direction}排序",
+    "ascending": "升序",
+    "descending": "降序",
+    "unsorted": "未排序",
+    "export": "导出",
+    "exportCsv": "CSV",
+    "exportExcel": "Excel",
+    "exported": "已将 {count} 行导出到 {file}",
+    "search": "筛选行",
+    "exportTsv": "TSV",
+    "copy": "复制",
+    "copied": "已复制 {count} 行",
+    "copyFailed": "无法复制",
+    "pagination": "页面",
+    "searchField": "按列筛选",
+    "searchAllFields": "所有列",
+    "filtered": "共 {total} 行，显示 {matches} 行"
+  },
+  "columns": {
+    "person": "人员",
+    "kind": "类型",
+    "dates": "日期",
+    "typeYear": "类型和年份",
+    "remaining": "剩余",
+    "rating": "评分",
+    "content": "内容",
+    "course": "课程",
+    "certificateExpires": "证书到期",
+    "shift": "班次",
+    "filled": "已安排",
+    "weeklyAverage": "每周平均",
+    "restBreaks": "休息间隔",
+    "rule": "规则",
+    "cohort": "适用对象",
+    "doses": "剂量",
+    "entitlement": "权益",
+    "responses": "回复",
+    "uptake": "使用率",
+    "result": "结果",
+    "role": "角色",
+    "criticality": "重要性",
+    "candidates": "候选人",
+    "tableName": "表",
+    "rowCount": "行数"
+  },
+  "calendar": {
+    "week": "周",
+    "fourWeeks": "4 周",
+    "month": "月",
+    "previous": "上一时段",
+    "next": "下一时段",
+    "today": "今天",
+    "announcement": "显示 {start} 至 {end}",
+    "more": "另有 +{count}",
+    "leave": "休假日历",
+    "shifts": "排班日历",
+    "onCall": "待命日历",
+    "cpd": "持续专业发展日历",
+    "expiring": "证书到期日历",
+    "agenda": "议程",
+    "agendaEmpty": "本月没有内容"
   }
 }

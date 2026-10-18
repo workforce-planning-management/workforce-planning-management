@@ -3950,3 +3950,50 @@ export function acknowledgeEarlyWarning(
 ): Promise<EarlyWarning> {
   return api(`/early-warnings/${pid}/acknowledge`, { ...init, method: "POST" });
 }
+
+// ─── My board: development plan steps (WPM-T118 follow-up) ──────────────────
+
+/** One skill step of a development plan: the card on the kanban board. */
+export interface DevelopmentItem {
+  pid: string;
+  plan_pid: string;
+  skill_pid: string;
+  current_level: number;
+  target_level: number;
+  method: string;
+  course_ref: string | null;
+  due_on: string | null;
+  status: "planned" | "in_progress" | "achieved" | "abandoned";
+}
+
+/** A worker's development plans with their steps. */
+export interface DevelopmentPlans {
+  worker_pid: string;
+  plans: Array<{
+    pid: string;
+    kind: string;
+    status: string;
+    target_job_title: string | null;
+    items: DevelopmentItem[];
+  }>;
+}
+
+export function listDevelopmentPlans(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<DevelopmentPlans> {
+  return api(`/workers/${workerPid}/development-plans`, init);
+}
+
+/** Move one step to another status. Claiming `achieved` does not change the declared proficiency. */
+export function setDevelopmentItemStatus(
+  itemPid: string,
+  status: DevelopmentItem["status"],
+  init?: FetchLike,
+): Promise<unknown> {
+  return api(`/development-plan-items/${itemPid}`, {
+    ...init,
+    method: "PUT",
+    body: { status },
+  });
+}

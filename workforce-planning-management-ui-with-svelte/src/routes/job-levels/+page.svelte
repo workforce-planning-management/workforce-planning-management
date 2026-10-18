@@ -8,6 +8,19 @@
   import { getJobLevelFramework, listJobLevelFrameworks } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
   import type { JobLevelFramework } from "#lib/api/types.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
+
+  const columns = $derived<DataGridColumn[]>([
+    { id: "code", header: t("jobLevels.level"), sortable: true, rowHeader: true },
+    { id: "title", header: t("jobLevels.title"), sortable: true },
+    { id: "summary", header: t("jobLevels.summary") },
+    { id: "experience", header: t("jobLevels.experience"), sortable: true },
+    { id: "management_equivalent", header: t("jobLevels.management"), sortable: true },
+  ]);
 
   let framework = $state<JobLevelFramework | null>(null);
   let error = $state<string | null>(null);
@@ -40,43 +53,14 @@
   </p>
   <p class="muted">{t("jobLevels.noPay")}</p>
 
-  <div class="cx-scroll">
-  <table data-testid="levels-table">
-    <thead>
-      <tr>
-        <th class="cx-nowrap">{t("jobLevels.level")}</th>
-        <th>{t("jobLevels.title")}</th>
-        <th>{t("jobLevels.summary")}</th>
-        <th>{t("jobLevels.experience")}</th>
-        <th>{t("jobLevels.management")}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each framework.levels as level (level.code)}
-        <tr data-testid={`level-${level.code}`}>
-          <th scope="row" class="cx-nowrap">{level.code}</th>
-          <td>{level.title}</td>
-          <td>{level.summary}</td>
-          <td>{level.experience ?? "—"}</td>
-          <td>{level.management_equivalent ?? "—"}</td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
-  </div>
+  <DataTable
+    testid="levels-table"
+    label={t("nav.jobLevels")}
+    columns={columns}
+    rows={framework.levels as unknown as DataGridRow[]}
+    rowId={(row) => String(row.code)}
+    rowAttrs={(row) => ({ "data-testid": `level-${row.code}` })}
+  />
 {:else if !error}
   <p>{t("common.loading")}</p>
 {/if}
-
-<style>
-  /* A wide table scrolls inside its own box; the page never scrolls sideways. */
-  .cx-scroll {
-    overflow-x: auto;
-  }
-  .cx-scroll table {
-    min-width: 44rem;
-  }
-  .cx-nowrap {
-    white-space: nowrap;
-  }
-</style>

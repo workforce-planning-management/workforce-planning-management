@@ -18,6 +18,8 @@
     type Withheld,
   } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
   let view = $state<ContingentWorkforce | null>(null);
   let rollup = $state<ProgrammeRollup | null>(null);
@@ -72,6 +74,48 @@
   const pct = (n: number | null) => (n === null ? "—" : `${n.toFixed(1)}%`);
   const fte = (n: number | null) => (n === null ? "—" : n.toFixed(2));
 
+  const pctFmt = (v: unknown) => pct(v as number | null);
+  const fteFmt = (v: unknown) => fte(v as number | null);
+
+  const departmentColumns = $derived<DataGridColumn[]>([
+    { id: "department", header: t("common.department"), sortable: true },
+    { id: "headcount", header: t("contingent.people"), sortable: true, align: "end" },
+    { id: "contractor_percent_of_fte", header: t("contingent.contractors"), sortable: true, align: "end", format: pctFmt },
+    { id: "fixed_term_percent_of_fte", header: t("contingent.fixedTerm"), sortable: true, align: "end", format: pctFmt },
+  ]);
+
+  const whoColumns = $derived<DataGridColumn[]>([
+    { id: "worker_number", pinned: "start", header: t("contingent.workerNumber"), sortable: true },
+    { id: "department", header: t("common.department"), sortable: true },
+    { id: "employment_type", header: t("engagement.basis"), sortable: true, accessor: (r) => tv(String(r.employment_type)) },
+    { id: "engagement_ends_on", type: "date", header: t("engagement.ends"), sortable: true },
+  ]);
+
+  const fundingColumns = $derived<DataGridColumn[]>([
+    {
+      id: "month",
+      header: t("contingent.month"),
+      accessor: (r) => (r.month === "already_ended" ? t("contingent.alreadyEnded") : r.month),
+    },
+    { id: "people", header: t("contingent.people"), align: "end", cell: withheldCell },
+    { id: "fte", header: t("contingent.fte"), align: "end", format: fteFmt },
+  ]);
+
+  const trendColumns = $derived<DataGridColumn[]>([
+    { id: "as_of", header: t("contingent.date"), sortable: true },
+    { id: "contractor_percent_of_fte", header: t("contingent.contractors"), sortable: true, align: "end", format: pctFmt },
+    { id: "fixed_term_percent_of_fte", header: t("contingent.fixedTerm"), sortable: true, align: "end", format: pctFmt },
+  ]);
+
+  const programmeColumns = $derived<DataGridColumn[]>([
+    { id: "month", header: t("contingent.month"), sortable: true },
+    { id: "funded_fte", header: t("contingent.fundedFte"), sortable: true, align: "end", format: fteFmt },
+    { id: "contractor_percent_of_fte", header: t("contingent.contractors"), sortable: true, align: "end", format: pctFmt },
+    { id: "fixed_term_percent_of_fte", header: t("contingent.fixedTerm"), sortable: true, align: "end", format: pctFmt },
+    { id: "engagements_ending", header: t("contingent.engagementsEnding"), sortable: true, align: "end", cell: withheldCell },
+    { id: "funding_ending", header: t("contingent.fundingEnding"), sortable: true, align: "end", cell: withheldCell },
+  ]);
+
   const figures = $derived(
     view === null
       ? []
@@ -98,6 +142,10 @@
 
 <svelte:head><title>{t("titles.contingent")}</title></svelte:head>
 
+{#snippet withheldCell({ value }: { value: unknown })}
+  {#if value === null || value === undefined}<span class="muted">{t("contingent.withheld")}</span>{:else}{value}{/if}
+{/snippet}
+
 <h1>{t("contingent.title")}</h1>
 <p class="muted">{t("contingent.hint")}</p>
 
@@ -116,24 +164,14 @@
       <span class="muted">· {tf("contingent.employed", { headcount: view.headcount, fte: fte(view.fte) })}</span>
     </p>
     {#if view.departments_shown}
-      <div class="scroll wide">
-        <table data-testid="contingent-departments">
-          <thead>
-            <tr>
-              <th>{t("common.department")}</th><th>{t("contingent.people")}</th>
-              <th>{t("contingent.contractors")}</th><th>{t("contingent.fixedTerm")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each view.by_department as d (d.department)}
-              <tr>
-                <td>{d.department}</td><td>{d.headcount ?? "—"}</td>
-                <td>{pct(d.contractor_percent_of_fte)}</td><td>{pct(d.fixed_term_percent_of_fte)}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        testid="contingent-departments"
+        exportName="contingent-departments"
+        label={t("contingent.share")}
+        columns={departmentColumns}
+        rows={view.by_department as unknown as DataGridRow[]}
+        rowId={(row) => String(row.department)}
+      />
     {:else}
       <p class="muted" data-testid="departments-withheld">{t("contingent.departmentsWithheld")}</p>
     {/if}
@@ -142,6 +180,7 @@
   <section class="panel" data-testid="contingent-engagements">
     <h2>{t("contingent.engagements")}</h2>
     <div class="scroll">
+      <!-- Plain table: a headerless label / count / button list, and the grid needs column headers. -->
       <table>
         <tbody>
           {#each figures as [list, label, n] (list)}
@@ -170,24 +209,14 @@
         {:else if people.length === 0}
           <p class="muted">{t("contingent.nobody")}</p>
         {:else}
-          <div class="scroll wide">
-            <table data-testid="contingent-who-table">
-              <thead>
-                <tr>
-                  <th>{t("contingent.workerNumber")}</th><th>{t("common.department")}</th>
-                  <th>{t("engagement.basis")}</th><th>{t("engagement.ends")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each people as p (p.worker_pid)}
-                  <tr>
-                    <td>{p.worker_number}</td><td>{p.department}</td>
-                    <td>{tv(p.employment_type)}</td><td>{p.engagement_ends_on ?? "—"}</td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            testid="contingent-who-table"
+            label={t("contingent.whoTitle")}
+            columns={whoColumns}
+            rows={people as unknown as DataGridRow[]}
+            rowId={(row) => String(row.worker_pid)}
+            pageSize={25}
+          />
         {/if}
       </div>
     {/if}
@@ -196,22 +225,12 @@
 
   <section class="panel" data-testid="contingent-funding">
     <h2>{t("contingent.fundingByMonth")}</h2>
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr><th>{t("contingent.month")}</th><th>{t("contingent.people")}</th><th>{t("contingent.fte")}</th></tr>
-        </thead>
-        <tbody>
-          {#each view.funding_ends as m (m.month)}
-            <tr>
-              <td>{m.month === "already_ended" ? t("contingent.alreadyEnded") : m.month}</td>
-              <td>{#if count(m.people) === null}<span class="muted">{t("contingent.withheld")}</span>{:else}{m.people}{/if}</td>
-              <td>{fte(m.fte)}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      label={t("contingent.fundingByMonth")}
+      columns={fundingColumns}
+      rows={view.funding_ends as unknown as DataGridRow[]}
+      rowId={(row) => String(row.month)}
+    />
   </section>
 
   <section class="panel" data-testid="contingent-trend">
@@ -219,18 +238,13 @@
     {#if view.trend.status === "insufficient_history"}
       <p class="muted" data-testid="trend-insufficient">{t("contingent.trendInsufficient")}</p>
     {:else}
-      <div class="scroll">
-        <table data-testid="trend-table">
-          <thead>
-            <tr><th>{t("contingent.date")}</th><th>{t("contingent.contractors")}</th><th>{t("contingent.fixedTerm")}</th></tr>
-          </thead>
-          <tbody>
-            {#each view.trend.points as p (p.as_of)}
-              <tr><td>{p.as_of}</td><td>{pct(p.contractor_percent_of_fte)}</td><td>{pct(p.fixed_term_percent_of_fte)}</td></tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        testid="trend-table"
+        label={t("contingent.trend")}
+        columns={trendColumns}
+        rows={view.trend.points as unknown as DataGridRow[]}
+        rowId={(row) => String(row.as_of)}
+      />
     {/if}
   </section>
 
@@ -248,27 +262,13 @@
       {/if}
       {#each rollup.programmes as p (p.programme)}
         <h3>{p.programme}</h3>
-        <div class="scroll wide">
-          <table data-testid={`programme-${p.programme}`}>
-            <thead>
-              <tr>
-                <th>{t("contingent.month")}</th><th>{t("contingent.fundedFte")}</th>
-                <th>{t("contingent.contractors")}</th><th>{t("contingent.fixedTerm")}</th>
-                <th>{t("contingent.engagementsEnding")}</th><th>{t("contingent.fundingEnding")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each p.months as m (m.month)}
-                <tr>
-                  <td>{m.month}</td><td>{fte(m.funded_fte)}</td>
-                  <td>{pct(m.contractor_percent_of_fte)}</td><td>{pct(m.fixed_term_percent_of_fte)}</td>
-                  <td>{#if m.engagements_ending === null}<span class="muted">{t("contingent.withheld")}</span>{:else}{m.engagements_ending}{/if}</td>
-                  <td>{#if m.funding_ending === null}<span class="muted">{t("contingent.withheld")}</span>{:else}{m.funding_ending}{/if}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          testid={`programme-${p.programme}`}
+          label={p.programme}
+          columns={programmeColumns}
+          rows={p.months as unknown as DataGridRow[]}
+          rowId={(row) => String(row.month)}
+        />
       {/each}
     </section>
   {/if}
@@ -277,10 +277,6 @@
 <style>
   .scroll {
     overflow-x: auto;
-  }
-  /* A table scrolls inside its wrapper on a phone instead of squeezing words apart. */
-  .wide :global(table) {
-    min-width: 40rem;
   }
   .scroll :global(td),
   .scroll :global(th) {

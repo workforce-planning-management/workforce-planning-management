@@ -40,7 +40,9 @@
     "resilience": "Resiliencia",
     "oversight": "Supervisión",
     "cutover": "Puestas en marcha",
-    "warnings": "Alertas tempranas"
+    "warnings": "Alertas tempranas",
+    "signout": "Cerrar sesión",
+    "kanban": "Mi tablero"
   },
   "pr": {
     "retention": "Retención",
@@ -124,7 +126,11 @@
     "name": "Gestión de planificación de plantilla"
   },
   "chrome": {
-    "language": "Idioma"
+    "language": "Idioma",
+    "pages": "Páginas",
+    "search": "Buscar personas",
+    "searchInput": "Nombre, cargo o departamento",
+    "searchSubmit": "Buscar"
   },
   "share": {
     "copy_link": "Copiar enlace",
@@ -152,11 +158,14 @@
     "programme": "Referencia del programa"
   },
   "dash": {
-    "title": "Panel de RR. HH.",
+    "title": "Mi página de inicio",
     "activeWorkers": "Trabajadores activos",
     "openRequisitions": "Vacantes abiertas",
     "pendingLeave": "Permisos pendientes",
-    "successionGaps": "Brechas de sucesión"
+    "successionGaps": "Brechas de sucesión",
+    "singlePoints": "Puntos únicos de fallo",
+    "earlyWarnings": "Alertas tempranas sin confirmar",
+    "poolsOver": "Grupos por encima de su capacidad"
   },
   "req": {
     "applications": "Solicitudes",
@@ -1316,7 +1325,9 @@
     "resilience": "Resiliencia — WPM",
     "oversight": "Supervisión — WPM",
     "cutover": "Preparación de la puesta en marcha — WPM",
-    "warnings": "Alertas tempranas — WPM"
+    "warnings": "Alertas tempranas — WPM",
+    "demo": "Recorrido guiado por la demostración — WPM",
+    "kanban": "Mi tablero — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -1836,5 +1847,102 @@
     "timeToReportNone": "Tiempo hasta informar: desconocido mientras haya alguna alerta sin confirmar",
     "none": "No hay alertas tempranas.",
     "basisText": "La fecha en que una condición fue cierta por primera vez es la del primer barrido que la vio, así que un barrido menos frecuente que diario la fecha tarde. El tiempo hasta informar es el mayor número de días naturales desde esa fecha hasta que una persona la confirma, entre todas las alertas listadas; es desconocido mientras alguna esté sin confirmar, porque una lenta no debe parecer rápida."
+  },
+  "demo": {
+    "label": "Demostración",
+    "banner": "Demostración: todas las personas, cifras y documentos son ficticios.",
+    "step": "Paso {n} de {total}",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "finish": "Terminar el recorrido",
+    "tour": "Recorrido guiado",
+    "title": "Recorrido guiado por la demostración",
+    "hint": "Ha iniciado sesión como un usuario ficticio, en una organización ficticia. Nada de lo que ve o cambia aquí es real ni está conectado con datos reales. Empiece en el paso 1 y pulse Siguiente para ver cada función por turno, o abra cualquier página de abajo.",
+    "start": "Empezar el recorrido",
+    "count": "{total} páginas",
+    "signinHint": "Para probar la demostración, inicie sesión como example@example.com. Todo en ella es ficticio."
+  },
+  "kanban": {
+    "title": "Mi tablero",
+    "hint": "Sus propios pasos de desarrollo, una columna por estado. Arrastre una tarjeta o use su menú Mover. Marcar un paso como logrado no cambia el nivel declarado de la habilidad: es un acto aparte, con evidencia.",
+    "noWorker": "No tiene un registro de trabajador, así que no hay tablero que mostrar.",
+    "empty": "Todavía no tiene pasos de desarrollo. Aparecen aquí cuando se abre un plan de desarrollo para usted.",
+    "steps": "Pasos: {count}",
+    "unknownSkill": "Una habilidad",
+    "achievedNote": "Marcado como logrado. El nivel declarado de la habilidad no cambia: regístrelo aparte, con evidencia.",
+    "cardCount": "Tarjetas: {count}",
+    "overLimit": "Por encima del límite: {count} de {limit}",
+    "moveButton": "Mover {title}",
+    "moveMenu": "Mover a la columna",
+    "moved": "{title} movida a {column}",
+    "emptyColumn": "Nada en {column}"
+  },
+  "dataTable": {
+    "columns": "Columnas",
+    "showColumn": "Mostrar {column}",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "pageStatus": "Página {page} de {pages} ({rows} filas)",
+    "sorted": "{header}: ordenado {direction}",
+    "ascending": "ascendente",
+    "descending": "descendente",
+    "unsorted": "sin ordenar",
+    "export": "Exportar",
+    "exportCsv": "CSV",
+    "exportExcel": "Excel",
+    "exported": "{count} filas exportadas a {file}",
+    "search": "Filtrar filas",
+    "exportTsv": "TSV",
+    "copy": "Copiar",
+    "copied": "{count} filas copiadas",
+    "copyFailed": "No se pudo copiar",
+    "pagination": "Páginas",
+    "searchField": "Filtrar por columna",
+    "searchAllFields": "Todas las columnas",
+    "filtered": "{matches} de {total} filas"
+  },
+  "columns": {
+    "person": "Persona",
+    "kind": "Tipo",
+    "dates": "Fechas",
+    "typeYear": "Tipo y año",
+    "remaining": "Restante",
+    "rating": "Valoración",
+    "content": "Contenido",
+    "course": "Curso",
+    "certificateExpires": "Caducidad del certificado",
+    "shift": "Turno",
+    "filled": "Cubierto",
+    "weeklyAverage": "Media semanal",
+    "restBreaks": "Descansos",
+    "rule": "Regla",
+    "cohort": "A quién se aplica",
+    "doses": "Dosis",
+    "entitlement": "Derecho",
+    "responses": "Respuestas",
+    "uptake": "Aceptación",
+    "result": "Resultado",
+    "role": "Puesto",
+    "criticality": "Criticidad",
+    "candidates": "Candidatos",
+    "tableName": "Tabla",
+    "rowCount": "Filas"
+  },
+  "calendar": {
+    "week": "Semana",
+    "fourWeeks": "4 semanas",
+    "month": "Mes",
+    "previous": "Periodo anterior",
+    "next": "Periodo siguiente",
+    "today": "Hoy",
+    "announcement": "Mostrando del {start} al {end}",
+    "more": "+{count} más",
+    "leave": "Calendario de permisos",
+    "shifts": "Calendario de turnos",
+    "onCall": "Calendario de guardias",
+    "cpd": "Calendario de formación continua",
+    "expiring": "Calendario de caducidad de certificados",
+    "agenda": "Agenda",
+    "agendaEmpty": "Nada este mes"
   }
 }

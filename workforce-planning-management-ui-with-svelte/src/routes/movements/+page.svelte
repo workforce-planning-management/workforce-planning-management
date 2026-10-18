@@ -9,6 +9,11 @@
   import { listMovements, listWorkers, openMovement } from "#lib/api/wpm.js";
   import type { Movement } from "#lib/api/types.js";
   import { t, l, tf } from "#lib/i18n.svelte.js";
+  import DataTable from "#lib/components/DataTable.svelte";
+  import type {
+    DataGridColumn,
+    DataGridRow,
+  } from "@lilydesignsystem/svelte-data-grid";
 
   const REASONS = [
     ["resignation", "movements.reasonResignation"],
@@ -40,6 +45,26 @@
     void load();
   });
 
+  const movementColumns = (dateLabel: string): DataGridColumn[] => [
+    {
+      id: "worker_name",
+      header: t("movements.person"),
+      sortable: true,
+      cell: personCell,
+    },
+    { id: "effective_on", type: "date", header: dateLabel, sortable: true },
+    {
+      id: "progress",
+      header: t("movements.progress"),
+      sortable: true,
+      accessor: (r) => {
+        const { closed, total } = (r as unknown as Movement).progress;
+        return total === 0 ? null : closed / total;
+      },
+      cell: progressCell,
+    },
+  ];
+
   const joiners = $derived((rows ?? []).filter((m) => m.kind === "joiner"));
   const leavers = $derived((rows ?? []).filter((m) => m.kind === "leaver"));
 
@@ -63,36 +88,31 @@
 <h1>{t("nav.movements")}</h1>
 {#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
 
+{#snippet personCell({ row }: { row: DataGridRow })}
+  {@const m = row as unknown as Movement}
+  <a href={l(`/movements/${m.pid}`)}>{m.worker_name}</a>
+  <span class="muted">· {m.job_title}, {m.department}</span>
+{/snippet}
+
+{#snippet progressCell({ row }: { row: DataGridRow })}
+  {@const m = row as unknown as Movement}
+  {m.progress.closed}/{m.progress.total}
+  {#if m.progress.overdue > 0}
+    <span class="chip" data-testid="overdue-chip">▲ {m.progress.overdue} {t("movements.overdue")}</span>
+  {/if}
+{/snippet}
+
 {#snippet table(list: Movement[], testid: string, dateLabel: string)}
   {#if list.length === 0}
     <p class="muted">{t("movements.none")}</p>
   {:else}
-    <table data-testid={testid}>
-      <thead>
-        <tr>
-          <th>{t("movements.person")}</th>
-          <th>{dateLabel}</th>
-          <th>{t("movements.progress")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each list as m (m.pid)}
-          <tr>
-            <td>
-              <a href={l(`/movements/${m.pid}`)}>{m.worker_name}</a>
-              <span class="muted">· {m.job_title}, {m.department}</span>
-            </td>
-            <td>{m.effective_on}</td>
-            <td>
-              {m.progress.closed}/{m.progress.total}
-              {#if m.progress.overdue > 0}
-                <span class="chip" data-testid="overdue-chip">▲ {m.progress.overdue} {t("movements.overdue")}</span>
-              {/if}
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <DataTable
+      {testid}
+      label={dateLabel}
+      columns={movementColumns(dateLabel)}
+      rows={list as unknown as DataGridRow[]}
+      rowId={(row) => String(row.pid)}
+    />
   {/if}
 {/snippet}
 
