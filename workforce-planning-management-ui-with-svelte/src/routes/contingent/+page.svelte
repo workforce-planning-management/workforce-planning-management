@@ -11,13 +11,15 @@
   import {
     contingentList,
     contingentWorkforce,
+    openConversionPlans,
+    type OpenConversionRow,
     programmeRollup,
     type ContingentList,
     type ContingentWorkforce,
     type ProgrammeRollup,
     type Withheld,
   } from "#lib/api/wpm.js";
-  import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { l, t, tf, tv } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
@@ -28,6 +30,21 @@
   let open = $state<ContingentList | null>(null);
   let people = $state<Awaited<ReturnType<typeof contingentList>>["people"] | null>(null);
   let listError = $state<string | null>(null);
+  let conversions = $state<OpenConversionRow[] | null>(null);
+  let conversionsOpen = $state(false);
+  let conversionsError = $state<string | null>(null);
+
+  /** Open plans and engagements past their end with none: names workers by number, and the service audits the read. */
+  async function showConversions() {
+    conversionsOpen = !conversionsOpen;
+    if (!conversionsOpen || conversions !== null) return;
+    conversionsError = null;
+    try {
+      conversions = await openConversionPlans();
+    } catch (cause) {
+      conversionsError = cause instanceof Error ? cause.message : String(cause);
+    }
+  }
 
   $effect(() => {
     let current = true;
@@ -91,6 +108,27 @@
     { id: "engagement_ends_on", type: "date", header: t("engagement.ends"), sortable: true },
   ]);
 
+  const conversionColumns = $derived<DataGridColumn[]>([
+    { id: "worker_number", pinned: "start", header: t("contingent.workerNumber"), sortable: true, cell: conversionWorkerCell },
+    { id: "department", header: t("common.department"), sortable: true },
+    { id: "employment_type", header: t("engagement.basis"), sortable: true, accessor: (r) => tv(String(r.employment_type)) },
+    { id: "engagement_ends_on", type: "date", header: t("engagement.ends"), sortable: true },
+    {
+      id: "plan",
+      header: t("conversion.plan"),
+      sortable: true,
+      accessor: (r) => {
+        const plan = r.plan as OpenConversionRow["plan"];
+        return plan ? `${tv(plan.intent)} · ${tv(plan.status)}` : null;
+      },
+    },
+    {
+      id: "flags",
+      header: t("conversion.flags"),
+      accessor: (r) => (r.flags as string[]).map((f) => tv(f)).join(", ") || null,
+    },
+  ]);
+
   const fundingColumns = $derived<DataGridColumn[]>([
     {
       id: "month",
@@ -141,6 +179,10 @@
 </script>
 
 <svelte:head><title>{t("titles.contingent")}</title></svelte:head>
+
+{#snippet conversionWorkerCell({ row }: { row: DataGridRow })}
+  <a href={l(`/workers/${row.worker_pid}`)}>{row.worker_number}</a>
+{/snippet}
 
 {#snippet withheldCell({ value }: { value: unknown })}
   {#if value === null || value === undefined}<span class="muted">{t("contingent.withheld")}</span>{:else}{value}{/if}
@@ -221,6 +263,32 @@
       </div>
     {/if}
     <p class="muted">{t("contingent.noTotal")}</p>
+  </section>
+
+  <section class="panel" data-testid="contingent-conversions">
+    <h2>{t("conversion.listTitle")}</h2>
+    <p class="muted">{t("conversion.listHint")}</p>
+    <button type="button" data-testid="show-conversions" aria-expanded={conversionsOpen} onclick={() => void showConversions()}>
+      {conversionsOpen ? t("conversion.hidePlans") : t("conversion.showPlans")}
+    </button>
+    {#if conversionsOpen}
+      {#if conversionsError}
+        <p class="error">{t("common.error")}: {conversionsError}</p>
+      {:else if conversions === null}
+        <p>{t("common.loading")}</p>
+      {:else if conversions.length === 0}
+        <p class="muted" data-testid="conversions-none">{t("conversion.nobody")}</p>
+      {:else}
+        <DataTable
+          testid="conversion-table"
+          label={t("conversion.listTitle")}
+          columns={conversionColumns}
+          rows={conversions as unknown as DataGridRow[]}
+          rowId={(row) => String(row.worker_pid)}
+          pageSize={25}
+        />
+      {/if}
+    {/if}
   </section>
 
   <section class="panel" data-testid="contingent-funding">

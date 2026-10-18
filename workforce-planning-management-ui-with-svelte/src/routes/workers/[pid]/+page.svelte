@@ -9,6 +9,7 @@
   import ExpenseClaims from "#lib/components/ExpenseClaims.svelte";
   import PayPosition from "#lib/components/PayPosition.svelte";
   import EngagementPanel from "#lib/components/EngagementPanel.svelte";
+  import ConversionPanel from "#lib/components/ConversionPanel.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
@@ -687,6 +688,12 @@
   <Aspirations workerPid={worker.pid} />
   <SkillGaps workerPid={worker.pid} />
   <EngagementPanel workerPid={worker.pid} />
+  <ConversionPanel
+    workerPid={worker.pid}
+    employmentType={worker.employment_type}
+    terminated={worker.terminated_on !== null}
+    own={mine}
+  />
   <JobLevel workerPid={worker.pid} />
   <PayPosition workerPid={worker.pid} />
   <ExpenseClaims workerPid={worker.pid} />

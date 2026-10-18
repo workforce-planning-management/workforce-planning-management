@@ -1621,7 +1621,9 @@
     "derived": "abgeleitet",
     "payroll_admin": "Lohnbuchhaltungs-Administrator",
     "viewer": "Lesende Person",
-    "partner": "Partner"
+    "partner": "Partner",
+    "past_end_without_approved_plan": "Abgelaufen ohne genehmigten Plan",
+    "review_due": "Überprüfung fällig"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",
@@ -1689,7 +1691,11 @@
     "noProgramme": "Kein Programm",
     "fteOptional": "VZÄ (optional)",
     "expectedEnd": "Voraussichtliches Ende",
-    "programmeOptional": "Programm (optional)"
+    "programmeOptional": "Programm (optional)",
+    "conversions": "Umwandlungspläne",
+    "conversionsAgreed": "vereinbart",
+    "conversionsHoped": "erhofft",
+    "conversionsNote": "Keiner von beiden ändert das prognostizierte Angebot."
   },
   "cap": {
     "title": "Kapazität",
@@ -1944,5 +1950,33 @@
     "expiring": "Kalender der Zertifikatsabläufe",
     "agenda": "Agenda",
     "agendaEmpty": "Nichts in diesem Monat"
+  },
+  "conversion": {
+    "title": "Umwandlungsplan",
+    "hint": "Was eine Person mit diesem Vertragsverhältnis vorhat. Ein Plan ist eine Entscheidung, die jemand festhält, nie die Folge einer Dienstzeit.",
+    "none": "Kein Plan erfasst.",
+    "intent": "Absicht",
+    "target": "Zieldatum",
+    "review": "Überprüfung am",
+    "funding": "Finanzierung der Stelle",
+    "reason": "Begründung",
+    "reasonInput": "Begründung (optional, höchstens 500 Zeichen; nur Personalabteilung)",
+    "proposedBy": "Vorgeschlagen von",
+    "approvedBy": "Genehmigt von",
+    "settledOn": "Abgeschlossen am",
+    "propose": "Plan vorschlagen",
+    "approve": "Genehmigen",
+    "abandon": "Verwerfen",
+    "done": "Als umgewandelt markieren",
+    "history": "Verlauf",
+    "plan": "Plan",
+    "flags": "Hinweise",
+    "listTitle": "Umwandlungspläne",
+    "listHint": "Offene Pläne und Verträge, die ohne genehmigten Plan abgelaufen sind. Nennt Beschäftigte mit ihrer Nummer; der Dienst protokolliert diesen Abruf.",
+    "showPlans": "Pläne anzeigen",
+    "hidePlans": "Pläne ausblenden",
+    "nobody": "Keine offenen Pläne, und nichts ist ohne einen abgelaufen.",
+    "proposeOnly": "Hier können Sie einen Plan vorschlagen. Bestehende Pläne liest die Personalabteilung, Sie sehen also keinen.",
+    "sent": "Plan vorgeschlagen."
   }
 }

@@ -1621,7 +1621,9 @@
     "derived": "推导",
     "payroll_admin": "薪资管理员",
     "viewer": "查看者",
-    "partner": "合作伙伴"
+    "partner": "合作伙伴",
+    "past_end_without_approved_plan": "已到期且无获批计划",
+    "review_due": "复核到期"
   },
   "engagement": {
     "title": "用工关系",
@@ -1689,7 +1691,11 @@
     "noProgramme": "无项目",
     "fteOptional": "全时当量（可选）",
     "expectedEnd": "预计结束",
-    "programmeOptional": "项目（可选）"
+    "programmeOptional": "项目（可选）",
+    "conversions": "转正计划",
+    "conversionsAgreed": "已商定",
+    "conversionsHoped": "期望中",
+    "conversionsNote": "两者都不会改变预测的供给。"
   },
   "cap": {
     "title": "产能",
@@ -1944,5 +1950,33 @@
     "expiring": "证书到期日历",
     "agenda": "议程",
     "agendaEmpty": "本月没有内容"
+  },
+  "conversion": {
+    "title": "转正计划",
+    "hint": "某人打算如何处理这份聘用。计划是有人记录下的决定，绝不是服务年限的自然结果。",
+    "none": "尚未记录计划。",
+    "intent": "意向",
+    "target": "目标日期",
+    "review": "复核日期",
+    "funding": "岗位经费",
+    "reason": "原因",
+    "reasonInput": "原因（可选，最多 500 字；仅限人力资源）",
+    "proposedBy": "提议人",
+    "approvedBy": "批准人",
+    "settledOn": "办结日期",
+    "propose": "提出计划",
+    "approve": "批准",
+    "abandon": "放弃",
+    "done": "标记为已转正",
+    "history": "历史",
+    "plan": "计划",
+    "flags": "提示",
+    "listTitle": "转正计划",
+    "listHint": "未结计划，以及已到期却没有获批计划的聘用。按编号列出员工；服务会记录这次读取。",
+    "showPlans": "显示计划",
+    "hidePlans": "隐藏计划",
+    "nobody": "没有未结计划，也没有到期而无计划的聘用。",
+    "proposeOnly": "您可以在此提出计划。现有计划由人力资源查阅，因此您看不到。",
+    "sent": "计划已提出。"
   }
 }

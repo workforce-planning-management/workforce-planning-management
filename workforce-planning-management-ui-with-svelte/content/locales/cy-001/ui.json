@@ -1621,7 +1621,9 @@
     "derived": "deilliedig",
     "payroll_admin": "gweinyddwr cyflogres",
     "viewer": "gwyliwr",
-    "partner": "partner"
+    "partner": "partner",
+    "past_end_without_approved_plan": "Wedi dod i ben heb gynllun cymeradwy",
+    "review_due": "Adolygiad yn ddyledus"
   },
   "engagement": {
     "title": "Ymgysylltiad",
@@ -1689,7 +1691,11 @@
     "noProgramme": "Dim rhaglen",
     "fteOptional": "Cyfwerth ag amser llawn (dewisol)",
     "expectedEnd": "Diwedd disgwyliedig",
-    "programmeOptional": "Rhaglen (dewisol)"
+    "programmeOptional": "Rhaglen (dewisol)",
+    "conversions": "Cynlluniau trosi",
+    "conversionsAgreed": "cytunedig",
+    "conversionsHoped": "gobeithiedig",
+    "conversionsNote": "Nid yw'r naill na'r llall yn newid y cyflenwad a ragwelir."
   },
   "cap": {
     "title": "Capasiti",
@@ -1944,5 +1950,33 @@
     "expiring": "Calendr dyddiadau dod i ben tystysgrifau",
     "agenda": "Agenda",
     "agendaEmpty": "Dim byd y mis hwn"
+  },
+  "conversion": {
+    "title": "Cynllun trosi",
+    "hint": "Beth y mae person yn bwriadu ei wneud â'r ymgysylltiad hwn. Penderfyniad a gofnodir gan rywun yw cynllun, byth canlyniad hyd gwasanaeth.",
+    "none": "Dim cynllun wedi'i gofnodi.",
+    "intent": "Bwriad",
+    "target": "Dyddiad targed",
+    "review": "Adolygu ar",
+    "funding": "Cyllid y swydd",
+    "reason": "Rheswm",
+    "reasonInput": "Rheswm (dewisol, 500 nod ar y mwyaf; Adnoddau Dynol yn unig)",
+    "proposedBy": "Cynigiwyd gan",
+    "approvedBy": "Cymeradwywyd gan",
+    "settledOn": "Setlwyd ar",
+    "propose": "Cynnig cynllun",
+    "approve": "Cymeradwyo",
+    "abandon": "Rhoi'r gorau iddi",
+    "done": "Nodi bod wedi trosi",
+    "history": "Hanes",
+    "plan": "Cynllun",
+    "flags": "Baneri",
+    "listTitle": "Cynlluniau trosi",
+    "listHint": "Cynlluniau agored, ac ymgysylltiadau sydd wedi dod i ben heb gynllun cymeradwy. Yn enwi gweithwyr yn ôl rhif; mae'r gwasanaeth yn cofnodi'r darlleniad hwn.",
+    "showPlans": "Dangos cynlluniau",
+    "hidePlans": "Cuddio cynlluniau",
+    "nobody": "Dim cynlluniau agored, a dim byd wedi dod i ben heb un.",
+    "proposeOnly": "Gallwch gynnig cynllun yma. Adnoddau Dynol sy'n darllen cynlluniau presennol, felly ni welwch un.",
+    "sent": "Cynigiwyd y cynllun."
   }
 }

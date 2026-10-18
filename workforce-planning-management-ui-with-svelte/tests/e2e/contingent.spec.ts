@@ -652,7 +652,16 @@ test.describe("planning by basis and programme", () => {
               ],
               headcount_gap: 2,
               fte_gap: null,
-              levers: ["hire", "convert_contingent", "fixed_term_hire", "engage_contractor"],
+              levers: [
+                "hire",
+                "convert_contingent",
+                "fixed_term_hire",
+                "engage_contractor",
+              ],
+              conversions: {
+                agreed: { headcount: 1, fte: 1 },
+                hoped: { headcount: 2, fte: null },
+              },
               competency_gaps: [],
             },
           ],
@@ -680,6 +689,16 @@ test.describe("planning by basis and programme", () => {
     );
     await expect(page.getByTestId("plan-forecast")).toContainText(
       "convert contingent to permanent",
+    );
+    // Conversion plans (WPM-T164): agreed and hoped apart, and a hoped FTE that is unknown is not shown as 0.
+    await expect(page.getByTestId("conversions-agreed")).toContainText(
+      "agreed: 1 (1 FTE)",
+    );
+    await expect(page.getByTestId("conversions-hoped")).toHaveText(
+      /hoped: 2\s*$/,
+    );
+    await expect(page.getByTestId("forecast-conversions")).toContainText(
+      "Neither changes the projected supply",
     );
     await expect(page.getByTestId("plan-forecast-programmes")).toContainText(
       PROGRAMME,
@@ -810,5 +829,279 @@ test.describe("requisitions by basis and programme", () => {
     expect(made[1]).toMatchObject({ basis: "permanent" });
     expect(made[1]).not.toHaveProperty("expected_duration_months");
     expect(made[1]).not.toHaveProperty("programme_ref");
+  });
+});
+
+test.describe("conversion plans (WPM-T164)", () => {
+  const PLAN = (over: Record<string, unknown> = {}) => ({
+    pid: "cccccccc-0000-4000-8000-000000000001",
+    worker_pid: WORKER.pid,
+    intent: "convert",
+    target_on: "2026-12-01",
+    department: null,
+    role_profile_ref: null,
+    post_funding_kind: "core",
+    post_funding_ends_on: null,
+    reason: "Funded from April",
+    proposed_by: "user:manager",
+    approved_by: null,
+    status: "proposed",
+    review_on: null,
+    settled_on: null,
+    flags: [],
+    ...over,
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await signIn(page);
+    await page.route("**/api/proxy/**", (route) =>
+      route.fulfill({
+        status: 404,
+        body: "unstubbed: " + route.request().url(),
+      }),
+    );
+  });
+
+  async function stubWorkerPage(page: Page) {
+    for (const list of [
+      "onboarding",
+      "leave-entitlements",
+      "leave-requests",
+      "payslips",
+      "reviews",
+      "training-enrollments",
+      "appraisals",
+      "appraisal-requests",
+      "notifications",
+      "ergonomic-assessments",
+      "adjustment-requests",
+    ]) {
+      await page.route(`**/api/proxy/workers/${WORKER.pid}/${list}`, (route) =>
+        route.fulfill({ json: [] }),
+      );
+    }
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/wellbeing-prompts`,
+      (route) => route.fulfill({ json: { prompts: [] } }),
+    );
+    await page.route("**/api/proxy/pulse-surveys", (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await page.route(`**/api/proxy/workers/${WORKER.pid}`, (route) =>
+      route.fulfill({ json: WORKER }),
+    );
+  }
+
+  test("HR proposes a plan, approves it, and carries it out; the buttons follow its status", async ({
+    page,
+  }) => {
+    await stubWorkerPage(page);
+    let plans: ReturnType<typeof PLAN>[] = [];
+    const sent: unknown[] = [];
+    const moves: string[] = [];
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/conversion-plans`,
+      (route) => {
+        if (route.request().method() === "POST") {
+          sent.push(route.request().postDataJSON());
+          plans = [PLAN()];
+          return route.fulfill({ json: plans[0] });
+        }
+        return route.fulfill({ json: plans });
+      },
+    );
+    await page.route("**/api/proxy/conversion-plans/*/*", (route) => {
+      const verb = route.request().url().split("/").pop()!;
+      moves.push(verb);
+      plans = [
+        PLAN({
+          status: verb === "approve" ? "approved" : "done",
+          approved_by: "user:hr",
+          settled_on: verb === "done" ? "2026-10-18" : null,
+        }),
+      ];
+      return route.fulfill({ json: plans[0] });
+    });
+    await page.goto(`/workers/${WORKER.pid}`);
+    const panel = page.getByTestId("conversion");
+    await expect(panel).toBeVisible();
+    await expect(page.getByTestId("conversion-none")).toBeVisible();
+    await expect(page.getByTestId("conversion-approve")).toHaveCount(0);
+    await panel.screenshot({ path: "test-results/conversion-panel-empty.png" });
+
+    await page.getByTestId("conversion-target-input").fill("2026-12-01");
+    await page.getByTestId("conversion-funding-input").selectOption("core");
+    await page.getByTestId("conversion-propose").click();
+    await expect(page.getByTestId("conversion-status")).toHaveText("proposed");
+    expect(sent).toEqual([
+      { intent: "convert", target_on: "2026-12-01", post_funding_kind: "core" },
+    ]);
+    // One plan is open at a time: no form while it is.
+    await expect(page.getByTestId("conversion-form")).toHaveCount(0);
+    await expect(page.getByTestId("conversion-done")).toHaveCount(0);
+
+    await page.getByTestId("conversion-approve").click();
+    await expect(page.getByTestId("conversion-status")).toHaveText("approved");
+    await expect(page.getByTestId("conversion-approve")).toHaveCount(0);
+    await panel.screenshot({
+      path: "test-results/conversion-panel-approved.png",
+    });
+
+    await page.getByTestId("conversion-done").click();
+    expect(moves).toEqual(["approve", "done"]);
+    // A done plan is history; the form is back only for a worker still on a contract (this stub's worker is).
+    await expect(page.getByTestId("conversion-history")).toContainText(
+      "convert to permanent",
+    );
+    await expect(page.getByTestId("conversion-open")).toHaveCount(0);
+  });
+
+  test("the service's refusal is shown, and a caller who may not read plans sees no panel", async ({
+    page,
+  }) => {
+    await stubWorkerPage(page);
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/conversion-plans`,
+      (route) => {
+        if (route.request().method() === "POST") {
+          return route.fulfill({
+            status: 422,
+            json: {
+              description:
+                "the worker already has an open plan; approve, carry out or abandon it first",
+            },
+          });
+        }
+        return route.fulfill({ json: [] });
+      },
+    );
+    await page.goto(`/workers/${WORKER.pid}`);
+    await page.getByTestId("conversion-target-input").fill("2026-12-01");
+    await page.getByTestId("conversion-propose").click();
+    await expect(page.getByTestId("conversion-action-error")).toContainText(
+      "already has an open plan",
+    );
+
+    await page.unroute(`**/api/proxy/workers/${WORKER.pid}/conversion-plans`);
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/conversion-plans`,
+      (route) =>
+        route.fulfill({ status: 403, json: { description: "forbidden" } }),
+    );
+    await page.goto(`/workers/${WORKER.pid}`);
+    await expect(
+      page
+        .getByTestId("engagement-basis")
+        .or(page.getByRole("heading", { level: 1 })),
+    ).toBeVisible();
+    await expect(page.getByTestId("conversion")).toHaveCount(0);
+    await expect(page.getByTestId("conversion-error")).toHaveCount(0);
+  });
+
+  test("a caller who may not read plans can still propose one, and never sees the plan back", async ({
+    page,
+  }) => {
+    await stubWorkerPage(page);
+    const sent: unknown[] = [];
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/conversion-plans`,
+      (route) => {
+        if (route.request().method() === "POST") {
+          sent.push(route.request().postDataJSON());
+          return route.fulfill({ json: PLAN() });
+        }
+        return route.fulfill({
+          status: 403,
+          json: { description: "forbidden" },
+        });
+      },
+    );
+    await page.goto(`/workers/${WORKER.pid}`);
+    const panel = page.getByTestId("conversion-propose-only");
+    await expect(panel).toBeVisible();
+    await expect(page.getByTestId("conversion")).toHaveCount(0);
+    await expect(page.getByTestId("conversion-error")).toHaveCount(0);
+    await page.getByTestId("conversion-intent-input").selectOption("extend");
+    await page.getByTestId("conversion-target-input").fill("2027-01-31");
+    await page.getByTestId("conversion-propose").click();
+    await expect(page.getByTestId("conversion-sent")).toBeVisible();
+    expect(sent).toEqual([{ intent: "extend", target_on: "2027-01-31" }]);
+    // Nothing of the plan is shown: this caller cannot read it.
+    await expect(panel).not.toContainText("Funded from April");
+    await panel.screenshot({
+      path: "test-results/conversion-propose-only.png",
+    });
+    // A refusal from the service (not the line manager) is shown as it is.
+    await page.unroute(`**/api/proxy/workers/${WORKER.pid}/conversion-plans`);
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/conversion-plans`,
+      (route) =>
+        route.request().method() === "POST"
+          ? route.fulfill({
+              status: 403,
+              json: {
+                description: "only the worker's line manager or HR decides",
+              },
+            })
+          : route.fulfill({ status: 403, json: { description: "forbidden" } }),
+    );
+    await page.getByTestId("conversion-target-input").fill("2027-01-31");
+    await page.getByTestId("conversion-propose").click();
+    await expect(page.getByTestId("conversion-action-error")).toContainText(
+      "line manager or HR",
+    );
+    await expect(page.getByTestId("conversion-sent")).toHaveCount(0);
+  });
+
+  test("the contingent page lists open plans and what is past its end, only when asked", async ({
+    page,
+  }) => {
+    await page.route(
+      "**/api/proxy/workforce-intelligence/contingent",
+      (route) => route.fulfill({ json: VIEW }),
+    );
+    await page.route(
+      "**/api/proxy/workforce-intelligence/programmes",
+      (route) => route.fulfill({ json: ROLLUP }),
+    );
+    let asked = 0;
+    await page.route("**/api/proxy/conversion-plans", (route) => {
+      asked += 1;
+      return route.fulfill({
+        json: [
+          {
+            worker_pid: WORKER.pid,
+            worker_number: "C-0042",
+            department: "engineering",
+            employment_type: "contractor",
+            engagement_ends_on: "2026-10-01",
+            plan: null,
+            flags: ["past_end_without_approved_plan"],
+          },
+          {
+            worker_pid: "11111111-1111-4111-8111-111111111112",
+            worker_number: "C-0043",
+            department: "design",
+            employment_type: "fixed_term",
+            engagement_ends_on: "2026-12-31",
+            plan: PLAN({ worker_pid: "11111111-1111-4111-8111-111111111112" }),
+            flags: [],
+          },
+        ],
+      });
+    });
+    await page.goto("/contingent");
+    await expect(page.getByTestId("contingent-conversions")).toBeVisible();
+    expect(asked).toBe(0);
+    await page.getByTestId("show-conversions").click();
+    const table = page.getByTestId("conversion-table");
+    await expect(table).toContainText("C-0042");
+    await expect(table).toContainText("Past its end with no approved plan");
+    await expect(table).toContainText("convert to permanent · proposed");
+    // The reason is not in the list.
+    await expect(table).not.toContainText("Funded from April");
+    expect(asked).toBe(1);
+    await page.getByTestId("show-conversions").click();
+    await expect(table).toHaveCount(0);
   });
 });

@@ -334,6 +334,14 @@ describe("api path map", () => {
     await wpm.workerEngagement("w1");
     await wpm.workerContractorDetails("w1");
     await wpm.workerFunding("w1");
+    await wpm.workerConversionPlans("w1");
+    await wpm.proposeConversionPlan("w1", {
+      intent: "convert",
+      target_on: "2027-01-01",
+    });
+    await wpm.moveConversionPlan("c1", "approve");
+    await wpm.openConversionPlans();
+    await wpm.openConversionPlans("organization:abc");
     await wpm.contingentWorkforce();
     await wpm.contingentList("ending_31_to_60");
     await wpm.programmeRollup();
@@ -570,6 +578,11 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/engagement",
       "/api/proxy/workers/w1/contractor-details",
       "/api/proxy/workers/w1/funding",
+      "/api/proxy/workers/w1/conversion-plans",
+      "/api/proxy/workers/w1/conversion-plans",
+      "/api/proxy/conversion-plans/c1/approve",
+      "/api/proxy/conversion-plans",
+      "/api/proxy/conversion-plans?organization=organization%3Aabc",
       "/api/proxy/workforce-intelligence/contingent",
       "/api/proxy/engagements/contingent-list?list=ending_31_to_60",
       "/api/proxy/workforce-intelligence/programmes",

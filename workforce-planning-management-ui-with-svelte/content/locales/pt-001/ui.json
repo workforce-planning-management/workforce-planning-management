@@ -1621,7 +1621,9 @@
     "derived": "derivado",
     "payroll_admin": "administrador de folha de pagamento",
     "viewer": "leitor",
-    "partner": "parceiro"
+    "partner": "parceiro",
+    "past_end_without_approved_plan": "Terminado sem plano aprovado",
+    "review_due": "Revisão em atraso"
   },
   "engagement": {
     "title": "Vínculo",
@@ -1689,7 +1691,11 @@
     "noProgramme": "Sem programa",
     "fteOptional": "ETC (opcional)",
     "expectedEnd": "Fim previsto",
-    "programmeOptional": "Programa (opcional)"
+    "programmeOptional": "Programa (opcional)",
+    "conversions": "Planos de conversão",
+    "conversionsAgreed": "acordados",
+    "conversionsHoped": "esperados",
+    "conversionsNote": "Nenhum altera a oferta projetada."
   },
   "cap": {
     "title": "Capacidade",
@@ -1944,5 +1950,33 @@
     "expiring": "Calendário de validade dos certificados",
     "agenda": "Agenda",
     "agendaEmpty": "Nada neste mês"
+  },
+  "conversion": {
+    "title": "Plano de conversão",
+    "hint": "O que uma pessoa pretende fazer com este vínculo. Um plano é uma decisão que alguém regista, nunca o resultado do tempo de serviço.",
+    "none": "Nenhum plano registado.",
+    "intent": "Intenção",
+    "target": "Data-alvo",
+    "review": "Revisão em",
+    "funding": "Financiamento do posto",
+    "reason": "Motivo",
+    "reasonInput": "Motivo (opcional, no máximo 500 caracteres; só RH)",
+    "proposedBy": "Proposto por",
+    "approvedBy": "Aprovado por",
+    "settledOn": "Resolvido em",
+    "propose": "Propor um plano",
+    "approve": "Aprovar",
+    "abandon": "Abandonar",
+    "done": "Marcar como convertido",
+    "history": "Histórico",
+    "plan": "Plano",
+    "flags": "Alertas",
+    "listTitle": "Planos de conversão",
+    "listHint": "Planos em aberto e vínculos terminados sem plano aprovado. Identifica as pessoas pelo número; o serviço regista esta leitura.",
+    "showPlans": "Mostrar planos",
+    "hidePlans": "Ocultar planos",
+    "nobody": "Nenhum plano em aberto, e nada terminado sem um.",
+    "proposeOnly": "Pode propor um plano aqui. Os planos existentes são lidos pelos RH, por isso não verá nenhum.",
+    "sent": "Plano proposto."
   }
 }

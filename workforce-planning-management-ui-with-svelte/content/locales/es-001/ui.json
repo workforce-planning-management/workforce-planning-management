@@ -1621,7 +1621,9 @@
     "derived": "derivado",
     "payroll_admin": "administrador de nóminas",
     "viewer": "lector",
-    "partner": "socio"
+    "partner": "socio",
+    "past_end_without_approved_plan": "Vencido sin plan aprobado",
+    "review_due": "Revisión pendiente"
   },
   "engagement": {
     "title": "Contratación",
@@ -1689,7 +1691,11 @@
     "noProgramme": "Sin programa",
     "fteOptional": "ETC (opcional)",
     "expectedEnd": "Fin previsto",
-    "programmeOptional": "Programa (opcional)"
+    "programmeOptional": "Programa (opcional)",
+    "conversions": "Planes de conversión",
+    "conversionsAgreed": "acordados",
+    "conversionsHoped": "esperados",
+    "conversionsNote": "Ninguno cambia la oferta proyectada."
   },
   "cap": {
     "title": "Capacidad",
@@ -1944,5 +1950,33 @@
     "expiring": "Calendario de caducidad de certificados",
     "agenda": "Agenda",
     "agendaEmpty": "Nada este mes"
+  },
+  "conversion": {
+    "title": "Plan de conversión",
+    "hint": "Lo que una persona se propone hacer con esta contratación. Un plan es una decisión que alguien registra, nunca el resultado de la antigüedad.",
+    "none": "No hay ningún plan registrado.",
+    "intent": "Intención",
+    "target": "Fecha objetivo",
+    "review": "Revisión el",
+    "funding": "Financiación del puesto",
+    "reason": "Motivo",
+    "reasonInput": "Motivo (opcional, 500 caracteres como máximo; solo RR. HH.)",
+    "proposedBy": "Propuesto por",
+    "approvedBy": "Aprobado por",
+    "settledOn": "Resuelto el",
+    "propose": "Proponer un plan",
+    "approve": "Aprobar",
+    "abandon": "Abandonar",
+    "done": "Marcar como convertido",
+    "history": "Historial",
+    "plan": "Plan",
+    "flags": "Avisos",
+    "listTitle": "Planes de conversión",
+    "listHint": "Planes abiertos y contratos vencidos sin un plan aprobado. Nombra a las personas por número; el servicio registra esta lectura.",
+    "showPlans": "Mostrar planes",
+    "hidePlans": "Ocultar planes",
+    "nobody": "No hay planes abiertos ni nada vencido sin uno.",
+    "proposeOnly": "Aquí puede proponer un plan. Los planes existentes los lee RR. HH., así que no verá ninguno.",
+    "sent": "Plan propuesto."
   }
 }

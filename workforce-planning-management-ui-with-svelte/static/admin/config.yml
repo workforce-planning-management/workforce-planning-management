@@ -2259,6 +2259,8 @@ collections:
               - { name: "payroll_admin", label: "Payroll_admin", widget: string, required: false, i18n: true }
               - { name: "viewer", label: "Viewer", widget: string, required: false, i18n: true }
               - { name: "partner", label: "Partner", widget: string, required: false, i18n: true }
+              - { name: "past_end_without_approved_plan", label: "Past_end_without_approved_plan", widget: string, required: false, i18n: true }
+              - { name: "review_due", label: "Review_due", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object
@@ -2342,6 +2344,10 @@ collections:
               - { name: "fteOptional", label: "Fte Optional", widget: string, required: false, i18n: true }
               - { name: "expectedEnd", label: "Expected End", widget: string, required: false, i18n: true }
               - { name: "programmeOptional", label: "Programme Optional", widget: string, required: false, i18n: true }
+              - { name: "conversions", label: "Conversions", widget: string, required: false, i18n: true }
+              - { name: "conversionsAgreed", label: "Conversions Agreed", widget: string, required: false, i18n: true }
+              - { name: "conversionsHoped", label: "Conversions Hoped", widget: string, required: false, i18n: true }
+              - { name: "conversionsNote", label: "Conversions Note", widget: string, required: false, i18n: true }
           - name: "cap"
             label: "Cap"
             widget: object
@@ -2651,3 +2657,36 @@ collections:
               - { name: "expiring", label: "Expiring", widget: string, required: false, i18n: true }
               - { name: "agenda", label: "Agenda", widget: string, required: false, i18n: true }
               - { name: "agendaEmpty", label: "Agenda Empty", widget: string, required: false, i18n: true }
+          - name: "conversion"
+            label: "Conversion"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "intent", label: "Intent", widget: string, required: false, i18n: true }
+              - { name: "target", label: "Target", widget: string, required: false, i18n: true }
+              - { name: "review", label: "Review", widget: string, required: false, i18n: true }
+              - { name: "funding", label: "Funding", widget: string, required: false, i18n: true }
+              - { name: "reason", label: "Reason", widget: string, required: false, i18n: true }
+              - { name: "reasonInput", label: "Reason Input", widget: string, required: false, i18n: true }
+              - { name: "proposedBy", label: "Proposed By", widget: string, required: false, i18n: true }
+              - { name: "approvedBy", label: "Approved By", widget: string, required: false, i18n: true }
+              - { name: "settledOn", label: "Settled On", widget: string, required: false, i18n: true }
+              - { name: "propose", label: "Propose", widget: string, required: false, i18n: true }
+              - { name: "approve", label: "Approve", widget: string, required: false, i18n: true }
+              - { name: "abandon", label: "Abandon", widget: string, required: false, i18n: true }
+              - { name: "done", label: "Done", widget: string, required: false, i18n: true }
+              - { name: "history", label: "History", widget: string, required: false, i18n: true }
+              - { name: "plan", label: "Plan", widget: string, required: false, i18n: true }
+              - { name: "flags", label: "Flags", widget: string, required: false, i18n: true }
+              - { name: "listTitle", label: "List Title", widget: string, required: false, i18n: true }
+              - { name: "listHint", label: "List Hint", widget: text, required: false, i18n: true }
+              - { name: "showPlans", label: "Show Plans", widget: string, required: false, i18n: true }
+              - { name: "hidePlans", label: "Hide Plans", widget: string, required: false, i18n: true }
+              - { name: "nobody", label: "Nobody", widget: string, required: false, i18n: true }
+              - { name: "proposeOnly", label: "Propose Only", widget: text, required: false, i18n: true }
+              - { name: "sent", label: "Sent", widget: string, required: false, i18n: true }

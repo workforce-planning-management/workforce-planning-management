@@ -2503,6 +2503,11 @@ export function planForecast(
       "contractor" | "fixed_term",
       { headcount: number; fte: number }
     >;
+    /** Open plans to convert, agreed (approved) and hoped (proposed) apart; neither changes the supply (WPM-T164). */
+    conversions?: Record<
+      "agreed" | "hoped",
+      { headcount: number; fte: number | null }
+    >;
     competency_gaps: Array<{
       job_title: string | null;
       skill: string | null;
@@ -3255,6 +3260,98 @@ export function workerEngagement(
   init?: FetchLike,
 ): Promise<WorkerEngagement> {
   return api(`/workers/${workerPid}/engagement`, init);
+}
+
+/** What a person intends for a fixed-term or contractor engagement (WPM-R98). */
+export const CONVERSION_INTENTS = [
+  "convert",
+  "extend",
+  "end",
+  "undecided",
+] as const;
+export type ConversionIntent = (typeof CONVERSION_INTENTS)[number];
+export const CONVERSION_FUNDING_KINDS = [
+  "core",
+  "time_limited",
+  "external",
+  "programme",
+] as const;
+
+export type ConversionFlag = "past_end_without_approved_plan" | "review_due";
+
+/** One plan, with its flags on today's date (HR only). */
+export interface ConversionPlan {
+  pid: string;
+  worker_pid: string;
+  intent: ConversionIntent;
+  target_on: string;
+  department: string | null;
+  role_profile_ref: string | null;
+  post_funding_kind: string | null;
+  post_funding_ends_on: string | null;
+  reason: string | null;
+  proposed_by: string | null;
+  approved_by: string | null;
+  status: "proposed" | "approved" | "done" | "abandoned";
+  review_on: string | null;
+  settled_on: string | null;
+  flags: ConversionFlag[];
+}
+
+/** A worker's plans, oldest first (HR only; the read is audited). */
+export function workerConversionPlans(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<ConversionPlan[]> {
+  return api(`/workers/${workerPid}/conversion-plans`, init);
+}
+
+/** Propose a plan; one is open at a time. The reason is optional and never leaves HR. */
+export function proposeConversionPlan(
+  workerPid: string,
+  body: {
+    intent: ConversionIntent;
+    target_on: string;
+    post_funding_kind?: string;
+    post_funding_ends_on?: string;
+    reason?: string;
+    review_on?: string;
+  },
+): Promise<ConversionPlan> {
+  return api(`/workers/${workerPid}/conversion-plans`, {
+    method: "POST",
+    body,
+  });
+}
+
+/** Approve, abandon, or carry out (`done`) a plan. Only `done` changes the worker. */
+export function moveConversionPlan(
+  pid: string,
+  verb: "approve" | "abandon" | "done",
+): Promise<ConversionPlan> {
+  return api(`/conversion-plans/${pid}/${verb}`, { method: "POST", body: {} });
+}
+
+/** One engagement with an open plan, or past its end with none (HR only; names workers by number). */
+export interface OpenConversionRow {
+  worker_pid: string;
+  worker_number: string;
+  department: string;
+  employment_type: string;
+  engagement_ends_on: string | null;
+  plan: ConversionPlan | null;
+  flags: ConversionFlag[];
+}
+
+/** Open plans and the engagements past their end that no approved plan covers (the read is audited). */
+export function openConversionPlans(
+  organization?: string,
+  init?: FetchLike,
+): Promise<OpenConversionRow[]> {
+  const qs = organization
+    ? `?organization=${encodeURIComponent(organization)}`
+    : "";
+  return api(`/conversion-plans${qs}`, init);
 }
 
 /** A contractor's details; the rate is masked unless the caller may see it. */

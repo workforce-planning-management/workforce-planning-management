@@ -1621,7 +1621,9 @@
     "derived": "dérivé",
     "payroll_admin": "administrateur de paie",
     "viewer": "lecteur",
-    "partner": "partenaire"
+    "partner": "partenaire",
+    "past_end_without_approved_plan": "Échu sans plan approuvé",
+    "review_due": "Revue à faire"
   },
   "engagement": {
     "title": "Engagement",
@@ -1689,7 +1691,11 @@
     "noProgramme": "Aucun programme",
     "fteOptional": "ETP (facultatif)",
     "expectedEnd": "Fin prévue",
-    "programmeOptional": "Programme (facultatif)"
+    "programmeOptional": "Programme (facultatif)",
+    "conversions": "Plans de conversion",
+    "conversionsAgreed": "convenus",
+    "conversionsHoped": "espérés",
+    "conversionsNote": "Aucun ne modifie l'offre projetée."
   },
   "cap": {
     "title": "Capacité",
@@ -1944,5 +1950,33 @@
     "expiring": "Calendrier d'expiration des certificats",
     "agenda": "Programme",
     "agendaEmpty": "Rien ce mois-ci"
+  },
+  "conversion": {
+    "title": "Plan de conversion",
+    "hint": "Ce qu'une personne compte faire de ce contrat. Un plan est une décision que quelqu'un consigne, jamais la conséquence de l'ancienneté.",
+    "none": "Aucun plan enregistré.",
+    "intent": "Intention",
+    "target": "Date cible",
+    "review": "Revue le",
+    "funding": "Financement du poste",
+    "reason": "Motif",
+    "reasonInput": "Motif (facultatif, 500 caractères au plus ; RH uniquement)",
+    "proposedBy": "Proposé par",
+    "approvedBy": "Approuvé par",
+    "settledOn": "Réglé le",
+    "propose": "Proposer un plan",
+    "approve": "Approuver",
+    "abandon": "Abandonner",
+    "done": "Marquer comme converti",
+    "history": "Historique",
+    "plan": "Plan",
+    "flags": "Alertes",
+    "listTitle": "Plans de conversion",
+    "listHint": "Plans ouverts et contrats échus sans plan approuvé. Désigne les personnes par leur numéro ; le service enregistre cette lecture.",
+    "showPlans": "Afficher les plans",
+    "hidePlans": "Masquer les plans",
+    "nobody": "Aucun plan ouvert, et rien d'échu sans plan.",
+    "proposeOnly": "Vous pouvez proposer un plan ici. Les plans existants sont lus par les RH ; vous n'en verrez donc aucun.",
+    "sent": "Plan proposé."
   }
 }

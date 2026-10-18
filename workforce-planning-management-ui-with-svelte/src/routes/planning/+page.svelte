@@ -366,6 +366,22 @@
               {/if}
             </td>
           </tr>
+          {#if row.conversions}
+            <tr class="muted" data-testid="forecast-conversions">
+              <td colspan="2">{t("plan.conversions")}</td>
+              <td colspan="5">
+                <span class="chip" data-testid="conversions-agreed">
+                  {t("plan.conversionsAgreed")}: {row.conversions.agreed.headcount}
+                  {#if row.conversions.agreed.fte !== null}({row.conversions.agreed.fte} {t("contingent.fte")}){/if}
+                </span>
+                <span class="chip" data-testid="conversions-hoped">
+                  {t("plan.conversionsHoped")}: {row.conversions.hoped.headcount}
+                  {#if row.conversions.hoped.fte !== null}({row.conversions.hoped.fte} {t("contingent.fte")}){/if}
+                </span>
+                {t("plan.conversionsNote")}
+              </td>
+            </tr>
+          {/if}
           {#each row.supply_assumptions.slice(1) as note (note)}
             <tr class="muted"><td colspan="7">{note}</td></tr>
           {/each}

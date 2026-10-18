@@ -3126,7 +3126,7 @@ payroll defect and need nothing else; do them first.
       reminder; no erasure), each making a test fail. **Not verified:** a contractor converted to permanent keeps their
       contractor details and is not added to payroll by this step (those belong to the processes that own them); an
       organization above the worker's does not decide; no user interface.
-- [ ] WPM-T164 **Conversion plans feed the planner and the reminders.** *(WPM-R98, WPM-R63, WPM-R81)* **Done
+- [x] WPM-T164 **Conversion plans feed the planner and the reminders.** *(WPM-R98, WPM-R63, WPM-R81)* **Done
       (2026-10-13), the planner:** each department of the forecast now carries `conversions`: the open plans to convert its people
       to permanent, **agreed** (approved by a person) and **hoped** (only proposed) kept apart, as headcount and FTE (pure
       `rules::planning::conversion_cover`, one unit test; a request test: none, proposed is a hope, approved is agreed and no longer
@@ -3134,9 +3134,22 @@ payroll defect and need nothing else; do them first.
       projected supply (an agreed conversion keeps a worker beyond their end date, so the projection understates it; the planner
       decides). The derivation text says so. **Done (2026-10-12):** the end-of-engagement reminder (WPM-T138) names an open plan's status and review date, never its
       reason (verified, mutation-checked); approving a plan records the decision a manager takes; a done conversion changes
-      the worker in one transaction; `GET /api/conversion-plans` lists open plans apart from the candidates. **Still to do:**
-      the UI: the planning page showing agreed and hoped conversions beside the lever (the lever has been in code since WPM-T110), the panel on the worker page and the conversion list in the contingent workforce view, and strings in the
-      13 locales (the catalogue rules of WPM-R94 apply: no literal text).
+      the worker in one transaction; `GET /api/conversion-plans` lists open plans apart from the candidates. **Done (2026-10-18), the UI:** the planning page shows agreed and hoped conversions
+      beside the levers in each forecast row, apart and with a note that neither changes the projected supply (an unknown FTE is
+      not shown as 0); the worker page has a conversion panel (`ConversionPanel`) that lists the plan and its history, proposes,
+      approves, abandons and carries out (the buttons follow the status: approve only a proposed plan, carry out only an approved
+      conversion, no form while a plan is open) and shows the service's refusal; the contingent page has a "Conversion plans" list
+      of open plans and engagements past their end with none, loaded only on request (the service audits the read), naming workers
+      by number and never showing a reason. A caller the service refuses sees no panel and no error. Client functions and types in
+      `wpm.ts` (unit-tested paths); 26 keys in `conversion.*`, 4 in `plan.*` and 2 flag values in all 13 locales (AI-written, unreviewed).
+      Verified: svelte-check 0 errors; 145 unit tests; 134 Playwright specs, four new (propose, approve and carry out with the
+      buttons following status; a refusal and a 403; the contingent list on request with no reason in it) and a planning assertion,
+      each **mutation-checked** (approve shown on any status; hoped showing the agreed count; the reason leaking into the list), and I
+      looked at screenshots of the panel with no plan and with an approved one. **Not verified:** the UI against the real API (the
+      specs stub it); a manager who is not HR proposing against the real service (the panel's propose-only mode, shown when the plan read is refused
+      with 403 and the viewer is not the worker, was tested against a stub that refuses the read: the proposal is sent, nothing of the plan is
+      shown, the service's refusal is shown); the panel in a right-to-left or other locale on screen, or on a phone;
+      the planning row and the contingent list in a screenshot; the reminder text on the worker page.
 
 ## Phase 15 — operations, information governance, OIDC and locales (WPM-R89–R94, WPM-D60–D64)
 

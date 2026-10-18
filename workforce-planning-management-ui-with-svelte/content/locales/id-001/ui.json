@@ -1621,7 +1621,9 @@
     "derived": "diturunkan",
     "payroll_admin": "administrator penggajian",
     "viewer": "pemirsa",
-    "partner": "mitra"
+    "partner": "mitra",
+    "past_end_without_approved_plan": "Berakhir tanpa rencana yang disetujui",
+    "review_due": "Tinjauan jatuh tempo"
   },
   "engagement": {
     "title": "Keterlibatan",
@@ -1689,7 +1691,11 @@
     "noProgramme": "Tanpa program",
     "fteOptional": "FTE (opsional)",
     "expectedEnd": "Perkiraan berakhir",
-    "programmeOptional": "Program (opsional)"
+    "programmeOptional": "Program (opsional)",
+    "conversions": "Rencana konversi",
+    "conversionsAgreed": "disepakati",
+    "conversionsHoped": "diharapkan",
+    "conversionsNote": "Keduanya tidak mengubah proyeksi pasokan."
   },
   "cap": {
     "title": "Kapasitas",
@@ -1944,5 +1950,33 @@
     "expiring": "Kalender kedaluwarsa sertifikat",
     "agenda": "Agenda",
     "agendaEmpty": "Tidak ada di bulan ini"
+  },
+  "conversion": {
+    "title": "Rencana konversi",
+    "hint": "Apa yang ingin dilakukan seseorang terhadap penugasan ini. Rencana adalah keputusan yang dicatat seseorang, bukan hasil otomatis dari lama bekerja.",
+    "none": "Belum ada rencana yang dicatat.",
+    "intent": "Maksud",
+    "target": "Tanggal target",
+    "review": "Tinjau pada",
+    "funding": "Pendanaan posisi",
+    "reason": "Alasan",
+    "reasonInput": "Alasan (opsional, maksimal 500 karakter; hanya SDM)",
+    "proposedBy": "Diusulkan oleh",
+    "approvedBy": "Disetujui oleh",
+    "settledOn": "Diselesaikan pada",
+    "propose": "Usulkan rencana",
+    "approve": "Setujui",
+    "abandon": "Batalkan",
+    "done": "Tandai sudah dikonversi",
+    "history": "Riwayat",
+    "plan": "Rencana",
+    "flags": "Peringatan",
+    "listTitle": "Rencana konversi",
+    "listHint": "Rencana terbuka, dan penugasan yang berakhir tanpa rencana yang disetujui. Menyebut pekerja dengan nomor; layanan mencatat pembacaan ini.",
+    "showPlans": "Tampilkan rencana",
+    "hidePlans": "Sembunyikan rencana",
+    "nobody": "Tidak ada rencana terbuka, dan tidak ada yang berakhir tanpa rencana.",
+    "proposeOnly": "Anda dapat mengusulkan rencana di sini. Rencana yang ada dibaca oleh SDM, jadi Anda tidak akan melihatnya.",
+    "sent": "Rencana diusulkan."
   }
 }

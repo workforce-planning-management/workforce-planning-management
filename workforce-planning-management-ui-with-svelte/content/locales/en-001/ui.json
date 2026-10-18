@@ -1621,7 +1621,9 @@
     "derived": "derived",
     "payroll_admin": "payroll administrator",
     "viewer": "viewer",
-    "partner": "partner"
+    "partner": "partner",
+    "past_end_without_approved_plan": "Past its end with no approved plan",
+    "review_due": "Review due"
   },
   "engagement": {
     "title": "Engagement",
@@ -1689,7 +1691,11 @@
     "noProgramme": "No programme",
     "fteOptional": "FTE (optional)",
     "expectedEnd": "Expected end",
-    "programmeOptional": "Programme (optional)"
+    "programmeOptional": "Programme (optional)",
+    "conversions": "Conversion plans",
+    "conversionsAgreed": "agreed",
+    "conversionsHoped": "hoped",
+    "conversionsNote": "Neither changes the projected supply."
   },
   "cap": {
     "title": "Capacity",
@@ -1944,5 +1950,33 @@
     "expiring": "Certificate expiry calendar",
     "agenda": "Agenda",
     "agendaEmpty": "Nothing in this month"
+  },
+  "conversion": {
+    "title": "Conversion plan",
+    "hint": "What a person intends for this engagement. A plan is a decision someone records, never an outcome of length of service.",
+    "none": "No plan recorded.",
+    "intent": "Intent",
+    "target": "Target date",
+    "review": "Review on",
+    "funding": "Post funding",
+    "reason": "Reason",
+    "reasonInput": "Reason (optional, 500 characters at most; HR only)",
+    "proposedBy": "Proposed by",
+    "approvedBy": "Approved by",
+    "settledOn": "Settled on",
+    "propose": "Propose a plan",
+    "approve": "Approve",
+    "abandon": "Abandon",
+    "done": "Mark as converted",
+    "history": "History",
+    "plan": "Plan",
+    "flags": "Flags",
+    "listTitle": "Conversion plans",
+    "listHint": "Open plans, and engagements past their end that no approved plan covers. Names workers by number; the service records this read.",
+    "showPlans": "Show plans",
+    "hidePlans": "Hide plans",
+    "nobody": "No open plans, and nothing past its end without one.",
+    "proposeOnly": "You can propose a plan here. Existing plans are read by HR, so you will not see one.",
+    "sent": "Plan proposed."
   }
 }
