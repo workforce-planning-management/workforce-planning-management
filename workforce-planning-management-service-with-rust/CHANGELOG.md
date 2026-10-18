@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — ready to package for crates.io
+
+- `migration` is now `workforce-planning-management-migration` (library name still `migration`) with a README, and is publishable; the
+  `migration` name on crates.io belongs to another project. `entity-ref` (0.2) and `authentication-verifier` (0.9) carry versions next
+  to their paths; the vendored source is identical to the published 0.2.1 and 0.9.1. The package now ships `config/` and the changelog
+  beside `src/` (the service reads `config/<environment>.yaml` at start). Not yet published.
+
 ### Changed — dependencies
 
 - `sha2` 0.10 → 0.11 and `prometheus` 0.13 → 0.14, and the lockfile brought up to date within the declared ranges (127 packages). The ZAP
