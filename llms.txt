@@ -1,7 +1,7 @@
 # Workforce Planning Management (WPM)
 
 > An open-source, spec-driven, all-in-one HR platform demo: hiring to retirement,
-> in Rust (Loco, Axum, SeaORM, PostgreSQL) and SvelteKit 2 (Svelte 5 runes), in 17
+> in Rust (Loco, Axum, SeaORM, PostgreSQL) and SvelteKit (Svelte 5 runes), in 17
 > locales. **Demo software — not a production HR or payroll system; synthetic
 > data only.** WPM owns the employment relationship and references identities
 > (person, worker, organization, course services) by EntityRef URN.
@@ -10,20 +10,23 @@ Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
 (WPM-D*), a task (WPM-T*), code and tests.
 
+Status as of 2026-10-18: tasks WPM-T1–T225; requirements up to WPM-R133; decisions up to WPM-D84; 74 migrations, 62 controllers, 45 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
+
 ## Specification
 
 - [spec/index.md](spec/index.md): overview, topic map, status
-- [spec/tasks.md](spec/tasks.md): the live delivery checklist (WPM-T1–T97); each entry records what was verified and what was not
-- [spec/requirements.md](spec/requirements.md): requirements WPM-R1–R38 (R39–R50 are in the topic files below)
-- [spec/design.md](spec/design.md): design decisions WPM-D1–D28 (D29–D37 are in the topic files below)
+- [spec/tasks.md](spec/tasks.md): the live delivery checklist (WPM-T1–T225); each entry records what was verified and what was not
+- [spec/requirements.md](spec/requirements.md): requirements (WPM-R1–R38 here; R39–R133 are in the topic files below)
+- [spec/design.md](spec/design.md): design decisions (WPM-D1–D28 here; D29–D84 are in the topic files below)
 - [spec/domain-model.md](spec/domain-model.md): entities
 - [spec/auth.md](spec/auth.md): personas, ABAC, masking, the sensitivity map, the activation runbook
-- [spec/audit.md](spec/audit.md), [spec/testing.md](spec/testing.md), [spec/regulatory.md](spec/regulatory.md), [spec/roadmap.md](spec/roadmap.md), [spec/glossary.md](spec/glossary.md)
+- [spec/audit.md](spec/audit.md): 
 - [spec/expense-claims.md](spec/expense-claims.md): expense claims with approval by someone other than the claimant (WPM-R55)
 - [spec/job-levels.md](spec/job-levels.md): Google technical job levels L3–L11, a worker's level, a role's level and pay band (WPM-R52–R53)
 - [spec/sfia.md](spec/sfia.md): proposed SFIA and SFIAplus support, imported from the deployer's licensed download, never shipped (WPM-R109–R113)
 - [spec/worker-unions.md](spec/worker-unions.md): research and proposal for recognised bodies, collective agreements, consultation obligations and aggregate information, never individual union membership (WPM-R102–R108)
-- [spec/equality-impact/template.md](spec/equality-impact/template.md): equality impact template for any scoring, with [spec/equality-impact/register.md](spec/equality-impact/register.md) (WPM-R99–R101)
+- [spec/equality-impact/template.md](spec/equality-impact/template.md): equality impact template for any scoring (WPM-R99–R101)
+- [spec/equality-impact/register.md](spec/equality-impact/register.md): scoring register and draft equality impact assessments for each score WPM has today
 - [spec/ppm-issues-and-changes.md](spec/ppm-issues-and-changes.md): proposed issues register (FR-14) and change requests for project-portfolio-management, with the people-impact answer from WPM (WPM-R95–R97)
 - [spec/operations-and-governance.md](spec/operations-and-governance.md): backup and restore, deployment, upgrade, runbook, information governance pack, retention per record kind, Entra ID sign-in, every page in every locale (WPM-R89–R94)
 - [spec/production-readiness.md](spec/production-readiness.md): sign-in on by default, security headers, rate limiting, standalone build and CI, license texts, releases, generated status (WPM-R72–R74, R77, R78, R87, R88)
@@ -40,18 +43,73 @@ lands without it. A change is a requirement (WPM-R*), a design decision
 - [spec/communication-and-leadership.md](spec/communication-and-leadership.md): announcements, the CEO dashboard, insights (WPM-R47–R49)
 - [spec/locales-for-global-sharing-with-svelte/index.md](spec/locales-for-global-sharing-with-svelte/index.md): locales; "How WPM applies this" (WPM-R50)
 - [spec/strategic-workforce-planning.md](spec/strategic-workforce-planning.md): plans, forecast, gap analysis (WPM-R34–R38)
+- [spec/purpose.md](spec/purpose.md): why the platform exists: workforce administration scattered across inboxes and spreadsheets
+- [spec/scope.md](spec/scope.md): what WPM owns (the employment relationship and its operational state) and what it only references by EntityRef URN
+- [spec/architecture.md](spec/architecture.md): the browser client, the same-origin proxy, the JSON API and PostgreSQL
+- [spec/integrations.md](spec/integrations.md): how WPM consumes the Main X Index family: EntityRef references, never duplicated demographics
+- [spec/talent-acquisition.md](spec/talent-acquisition.md): requisitions, the applicant pipeline, onboarding
+- [spec/workforce-management.md](spec/workforce-management.md): time entries, leave, shifts with advisory working-time guardrails
+- [spec/hr-core.md](spec/hr-core.md): the employment record, the org chart, reporting lines, status lifecycle
+- [spec/talent-development.md](spec/talent-development.md): review cycles, 360° appraisals, assessments, succession
+- [spec/payroll-compensation.md](spec/payroll-compensation.md): runs, payslips, minor-unit money, benchmarking
+- [spec/workforce-measures.md](spec/workforce-measures.md): oversight measures computed by the service from WPM data, one reading per calendar day (WPM-R67)
+- [spec/cutover-readiness.md](spec/cutover-readiness.md): whether the people side of a programme's go-live is ready, per site and window (WPM-R70)
+- [spec/plan.md](spec/plan.md): the proposed delivery plan for those three areas
+- [spec/governance/dpia.md](spec/governance/dpia.md): information governance: data protection impact assessment
+- [spec/governance/record-of-processing.md](spec/governance/record-of-processing.md): information governance: record of processing
+- [spec/governance/retention-schedule.md](spec/governance/retention-schedule.md): information governance: retention per record kind
+- [spec/governance/threat-model.md](spec/governance/threat-model.md): information governance: threat model
+- [spec/governance/data-flow.md](spec/governance/data-flow.md): information governance: data flows
+- [spec/governance/assessment-checklist.md](spec/governance/assessment-checklist.md): information governance: the readiness assessment checklist (met, partly met, not met, deployer to answer)
+- [spec/governance/accessibility-statement.md](spec/governance/accessibility-statement.md): information governance: accessibility statement
+- [spec/governance/official-language-statement.md](spec/governance/official-language-statement.md): information governance: official language statement
+- [spec/operations/backup-and-restore.md](spec/operations/backup-and-restore.md): operations: backup and restore
+- [spec/operations/deployment.md](spec/operations/deployment.md): operations: deployment
+- [spec/operations/entra-sign-in.md](spec/operations/entra-sign-in.md): operations: Microsoft Entra ID sign-in
+- [spec/operations/runbook.md](spec/operations/runbook.md): operations: the runbook
+- [spec/operations/upgrade-and-migration.md](spec/operations/upgrade-and-migration.md): operations: upgrade and migration
+- [spec/rust-loco-stack.md](spec/rust-loco-stack.md): stack: the Rust Loco stack: Podman not Docker, PostgreSQL not SQLite, MUSL, MiMalloc
+- [spec/rust-clippy-pedantic.md](spec/rust-clippy-pedantic.md): stack: Clippy pedantic for Rust code
+- [spec/rust-async-development-rules.md](spec/rust-async-development-rules.md): stack: async Rust and concurrency rules
+- [spec/rust-tracing-stack.md](spec/rust-tracing-stack.md): stack: tracing and OpenTelemetry environment variables
+- [spec/rust-cargo-config-toml-musl.md](spec/rust-cargo-config-toml-musl.md): stack: the .cargo/config.toml for the MUSL target
+- [spec/rust-msrv-n-minus-2/index.md](spec/rust-msrv-n-minus-2/index.md): stack: the minimum supported Rust version is the current release minus two
+- [spec/testcontainers-keycloak/index.md](spec/testcontainers-keycloak/index.md): stack: integration tests against a real Keycloak with Testcontainers (Podman)
+- [spec/serial-comma/index.md](spec/serial-comma/index.md): convention: prose uses the serial comma
+- [spec/oxford-spelling/index.md](spec/oxford-spelling/index.md): convention: prose uses Oxford spelling
+- [spec/calendar-days-or-business-days/index.md](spec/calendar-days-or-business-days/index.md): convention: every duration in days says calendar days or business days
+- [spec/special-files-for-public-repos/index.md](spec/special-files-for-public-repos/index.md): convention: the special top-level files a public repository carries
+- [spec/lily-design-system-svelte-with-picker-bar/index.md](spec/lily-design-system-svelte-with-picker-bar/index.md): convention: the Lily Design System with the picker bar in each Svelte app
+- [spec/contents-for-global-sharing-with-svelte/index.md](spec/contents-for-global-sharing-with-svelte/index.md): convention: tables of contents for global sharing with Svelte
+- [spec/glossary.md](spec/glossary.md): terms used across the spec
+- [spec/regulatory.md](spec/regulatory.md): regulatory position: demo software, not a production HR or payroll system
+- [spec/roadmap.md](spec/roadmap.md): what is delivered, proposed and deferred
+- [spec/testing.md](spec/testing.md): how to run each suite, the PostgreSQL and Podman setup
 
 ## Code
 
-- [workforce-planning-management-service-with-rust/](workforce-planning-management-service-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 49 migrations
-- [workforce-planning-management-ui-with-svelte/](workforce-planning-management-ui-with-svelte/index.md): the browser client; strings in `content/locales/<locale>/ui.json`
-- Working agreements for contributors and agents: [AGENTS.md](AGENTS.md) (entry point) and [AGENTS/](AGENTS/spec-driven-delivery.md) (spec-driven delivery, backend, frontend, privacy and data rules, localization, testing and verification, git and releases, docs); stack-level: [API AGENTS.md](workforce-planning-management-service-with-rust/AGENTS.md), [UI AGENTS.md](workforce-planning-management-ui-with-svelte/AGENTS.md)
+- [workforce-planning-management-service-with-rust/index.md](workforce-planning-management-service-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 49 migrations
+- [workforce-planning-management-ui-with-svelte/index.md](workforce-planning-management-ui-with-svelte/index.md): the browser client; strings in `content/locales/<locale>/ui.json`
+
+## Working agreements
+
+- [AGENTS.md](AGENTS.md): Entry point: the five rules and a map
+- [AGENTS/spec-driven-delivery.md](AGENTS/spec-driven-delivery.md): The requirement, decision, task loop; task-entry shape; next free ids
+- [AGENTS/backend-rust.md](AGENTS/backend-rust.md): Order of work, controller patterns, gotchas
+- [AGENTS/frontend-svelte.md](AGENTS/frontend-svelte.md): Order of work, runes conventions, charts and the CEO dashboard, gotchas
+- [AGENTS/privacy-and-data-rules.md](AGENTS/privacy-and-data-rules.md): Unrepresentability, unknown is not zero, counts only; checklist for new personal data
+- [AGENTS/localization.md](AGENTS/localization.md): Adding strings and locales, routing, the CMS
+- [AGENTS/testing-and-verification.md](AGENTS/testing-and-verification.md): What to run, scratch workspace for the sibling crates, reporting
+- [AGENTS/git-and-releases.md](AGENTS/git-and-releases.md): Branching, commits, pushing, releases
+- [AGENTS/docs-and-agent-files.md](AGENTS/docs-and-agent-files.md): Editing documentation; these files; llms files
+- [workforce-planning-management-service-with-rust/AGENTS.md](workforce-planning-management-service-with-rust/AGENTS.md): Service stack-level agreements
+- [workforce-planning-management-ui-with-svelte/AGENTS.md](workforce-planning-management-ui-with-svelte/AGENTS.md): Front-end stack-level agreements
 
 ## Operate
 
 - [INSTALL.md](INSTALL.md): build, run, test, schedule `snapshot_headcount` and `rota_reminders` daily, edit translations
-- [README.md](README.md), [NEWS.md](NEWS.md), [CHANGELOG.md](CHANGELOG.md), [COMPARISONS.md](COMPARISONS.md), [BENCHMARKS.md](BENCHMARKS.md)
-- [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), [AI_STATEMENT.md](AI_STATEMENT.md), [GOVERNANCE.md](GOVERNANCE.md)
+- [README.md](README.md): 
+- [SECURITY.md](SECURITY.md): 
 
 ## Conventions an agent must keep
 
@@ -64,5 +122,6 @@ lands without it. A change is a requirement (WPM-R*), a design decision
 
 ## Optional
 
-- [spec/monorepo-github-pages/index.md](spec/monorepo-github-pages/index.md): the spec for a GitHub Pages sibling site (not yet created)
-- [spec/uk-gdad-pcf/index.md](spec/uk-gdad-pcf/index.md), [spec/esco/index.md](spec/esco/index.md): the capability frameworks WPM imports
+- [spec/monorepo-github-pages/index.md](spec/monorepo-github-pages/index.md): Spec for a GitHub Pages sibling site (not yet created)
+- [spec/uk-gdad-pcf/index.md](spec/uk-gdad-pcf/index.md): the UK Government Digital and Data Profession Capability Framework WPM imports
+- [spec/esco/index.md](spec/esco/index.md): the ESCO skills classification WPM imports

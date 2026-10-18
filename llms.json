@@ -3,19 +3,26 @@
   "slug": "workforce-planning-management",
   "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Loco) and SvelteKit, in 17 locales. Demo software; synthetic data only.",
   "status": {
-    "tasks_delivered": "WPM-T1–T97",
+    "tasks_delivered": "WPM-T1–T225",
+    "highest_requirement": "WPM-R133",
+    "highest_decision": "WPM-D84",
     "deferred": [],
-    "as_of": "2026-10-07"
+    "as_of": "2026-10-18",
+    "counts_from": "spec/implementation-status.md"
   },
   "stack": {
     "api": "Rust, Loco (Axum + SeaORM), PostgreSQL 18",
     "ui": "SvelteKit 2, Svelte 5 runes, TypeScript",
     "tests": {
-      "service_unit": 297,
-      "service_request": 54,
-      "ui_unit": 80,
-      "ui_e2e": 45
-    }
+      "service_unit_declared": 579,
+      "service_request_declared": 95,
+      "ui_unit_declared": 122,
+      "ui_e2e_declared": 101,
+      "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
+    },
+    "migrations": 74,
+    "controllers": 62,
+    "pages": 45
   },
   "sections": {
     "specification": [
@@ -27,17 +34,17 @@
       {
         "title": "spec/tasks.md",
         "path": "spec/tasks.md",
-        "description": "the live delivery checklist (WPM-T1–T97); each entry records what was verified and what was not"
+        "description": "the live delivery checklist (WPM-T1–T225); each entry records what was verified and what was not"
       },
       {
         "title": "spec/requirements.md",
         "path": "spec/requirements.md",
-        "description": "requirements WPM-R1–R38 (R39–R50 are in the topic files below)"
+        "description": "requirements (WPM-R1–R38 here; R39–R133 are in the topic files below)"
       },
       {
         "title": "spec/design.md",
         "path": "spec/design.md",
-        "description": "design decisions WPM-D1–D28 (D29–D37 are in the topic files below)"
+        "description": "design decisions (WPM-D1–D28 here; D29–D84 are in the topic files below)"
       },
       {
         "title": "spec/domain-model.md",
@@ -163,6 +170,216 @@
         "title": "spec/strategic-workforce-planning.md",
         "path": "spec/strategic-workforce-planning.md",
         "description": "plans, forecast, gap analysis (WPM-R34–R38)"
+      },
+      {
+        "title": "spec/purpose.md",
+        "path": "spec/purpose.md",
+        "description": "why the platform exists: workforce administration scattered across inboxes and spreadsheets"
+      },
+      {
+        "title": "spec/scope.md",
+        "path": "spec/scope.md",
+        "description": "what WPM owns (the employment relationship and its operational state) and what it only references by EntityRef URN"
+      },
+      {
+        "title": "spec/architecture.md",
+        "path": "spec/architecture.md",
+        "description": "the browser client, the same-origin proxy, the JSON API and PostgreSQL"
+      },
+      {
+        "title": "spec/integrations.md",
+        "path": "spec/integrations.md",
+        "description": "how WPM consumes the Main X Index family: EntityRef references, never duplicated demographics"
+      },
+      {
+        "title": "spec/talent-acquisition.md",
+        "path": "spec/talent-acquisition.md",
+        "description": "requisitions, the applicant pipeline, onboarding"
+      },
+      {
+        "title": "spec/workforce-management.md",
+        "path": "spec/workforce-management.md",
+        "description": "time entries, leave, shifts with advisory working-time guardrails"
+      },
+      {
+        "title": "spec/hr-core.md",
+        "path": "spec/hr-core.md",
+        "description": "the employment record, the org chart, reporting lines, status lifecycle"
+      },
+      {
+        "title": "spec/talent-development.md",
+        "path": "spec/talent-development.md",
+        "description": "review cycles, 360° appraisals, assessments, succession"
+      },
+      {
+        "title": "spec/payroll-compensation.md",
+        "path": "spec/payroll-compensation.md",
+        "description": "runs, payslips, minor-unit money, benchmarking"
+      },
+      {
+        "title": "spec/workforce-measures.md",
+        "path": "spec/workforce-measures.md",
+        "description": "oversight measures computed by the service from WPM data, one reading per calendar day (WPM-R67)"
+      },
+      {
+        "title": "spec/cutover-readiness.md",
+        "path": "spec/cutover-readiness.md",
+        "description": "whether the people side of a programme's go-live is ready, per site and window (WPM-R70)"
+      },
+      {
+        "title": "spec/plan.md",
+        "path": "spec/plan.md",
+        "description": "the proposed delivery plan for those three areas"
+      },
+      {
+        "title": "spec/governance/dpia.md",
+        "path": "spec/governance/dpia.md",
+        "description": "information governance: data protection impact assessment"
+      },
+      {
+        "title": "spec/governance/record-of-processing.md",
+        "path": "spec/governance/record-of-processing.md",
+        "description": "information governance: record of processing"
+      },
+      {
+        "title": "spec/governance/retention-schedule.md",
+        "path": "spec/governance/retention-schedule.md",
+        "description": "information governance: retention per record kind"
+      },
+      {
+        "title": "spec/governance/threat-model.md",
+        "path": "spec/governance/threat-model.md",
+        "description": "information governance: threat model"
+      },
+      {
+        "title": "spec/governance/data-flow.md",
+        "path": "spec/governance/data-flow.md",
+        "description": "information governance: data flows"
+      },
+      {
+        "title": "spec/governance/assessment-checklist.md",
+        "path": "spec/governance/assessment-checklist.md",
+        "description": "information governance: the readiness assessment checklist (met, partly met, not met, deployer to answer)"
+      },
+      {
+        "title": "spec/governance/accessibility-statement.md",
+        "path": "spec/governance/accessibility-statement.md",
+        "description": "information governance: accessibility statement"
+      },
+      {
+        "title": "spec/governance/official-language-statement.md",
+        "path": "spec/governance/official-language-statement.md",
+        "description": "information governance: official language statement"
+      },
+      {
+        "title": "spec/operations/backup-and-restore.md",
+        "path": "spec/operations/backup-and-restore.md",
+        "description": "operations: backup and restore"
+      },
+      {
+        "title": "spec/operations/deployment.md",
+        "path": "spec/operations/deployment.md",
+        "description": "operations: deployment"
+      },
+      {
+        "title": "spec/operations/entra-sign-in.md",
+        "path": "spec/operations/entra-sign-in.md",
+        "description": "operations: Microsoft Entra ID sign-in"
+      },
+      {
+        "title": "spec/operations/runbook.md",
+        "path": "spec/operations/runbook.md",
+        "description": "operations: the runbook"
+      },
+      {
+        "title": "spec/operations/upgrade-and-migration.md",
+        "path": "spec/operations/upgrade-and-migration.md",
+        "description": "operations: upgrade and migration"
+      },
+      {
+        "title": "spec/rust-loco-stack.md",
+        "path": "spec/rust-loco-stack.md",
+        "description": "stack: the Rust Loco stack: Podman not Docker, PostgreSQL not SQLite, MUSL, MiMalloc"
+      },
+      {
+        "title": "spec/rust-clippy-pedantic.md",
+        "path": "spec/rust-clippy-pedantic.md",
+        "description": "stack: Clippy pedantic for Rust code"
+      },
+      {
+        "title": "spec/rust-async-development-rules.md",
+        "path": "spec/rust-async-development-rules.md",
+        "description": "stack: async Rust and concurrency rules"
+      },
+      {
+        "title": "spec/rust-tracing-stack.md",
+        "path": "spec/rust-tracing-stack.md",
+        "description": "stack: tracing and OpenTelemetry environment variables"
+      },
+      {
+        "title": "spec/rust-cargo-config-toml-musl.md",
+        "path": "spec/rust-cargo-config-toml-musl.md",
+        "description": "stack: the .cargo/config.toml for the MUSL target"
+      },
+      {
+        "title": "spec/rust-msrv-n-minus-2/index.md",
+        "path": "spec/rust-msrv-n-minus-2/index.md",
+        "description": "stack: the minimum supported Rust version is the current release minus two"
+      },
+      {
+        "title": "spec/testcontainers-keycloak/index.md",
+        "path": "spec/testcontainers-keycloak/index.md",
+        "description": "stack: integration tests against a real Keycloak with Testcontainers (Podman)"
+      },
+      {
+        "title": "spec/serial-comma/index.md",
+        "path": "spec/serial-comma/index.md",
+        "description": "convention: prose uses the serial comma"
+      },
+      {
+        "title": "spec/oxford-spelling/index.md",
+        "path": "spec/oxford-spelling/index.md",
+        "description": "convention: prose uses Oxford spelling"
+      },
+      {
+        "title": "spec/calendar-days-or-business-days/index.md",
+        "path": "spec/calendar-days-or-business-days/index.md",
+        "description": "convention: every duration in days says calendar days or business days"
+      },
+      {
+        "title": "spec/special-files-for-public-repos/index.md",
+        "path": "spec/special-files-for-public-repos/index.md",
+        "description": "convention: the special top-level files a public repository carries"
+      },
+      {
+        "title": "spec/lily-design-system-svelte-with-picker-bar/index.md",
+        "path": "spec/lily-design-system-svelte-with-picker-bar/index.md",
+        "description": "convention: the Lily Design System with the picker bar in each Svelte app"
+      },
+      {
+        "title": "spec/contents-for-global-sharing-with-svelte/index.md",
+        "path": "spec/contents-for-global-sharing-with-svelte/index.md",
+        "description": "convention: tables of contents for global sharing with Svelte"
+      },
+      {
+        "title": "spec/glossary.md",
+        "path": "spec/glossary.md",
+        "description": "terms used across the spec"
+      },
+      {
+        "title": "spec/regulatory.md",
+        "path": "spec/regulatory.md",
+        "description": "regulatory position: demo software, not a production HR or payroll system"
+      },
+      {
+        "title": "spec/roadmap.md",
+        "path": "spec/roadmap.md",
+        "description": "what is delivered, proposed and deferred"
+      },
+      {
+        "title": "spec/testing.md",
+        "path": "spec/testing.md",
+        "description": "how to run each suite, the PostgreSQL and Podman setup"
       }
     ],
     "code": [
@@ -265,6 +482,16 @@
       "title": "monorepo-github-pages spec",
       "path": "spec/monorepo-github-pages/index.md",
       "description": "Spec for a GitHub Pages sibling site (not yet created)"
+    },
+    {
+      "title": "spec/uk-gdad-pcf/index.md",
+      "path": "spec/uk-gdad-pcf/index.md",
+      "description": "the UK Government Digital and Data Profession Capability Framework WPM imports"
+    },
+    {
+      "title": "spec/esco/index.md",
+      "path": "spec/esco/index.md",
+      "description": "the ESCO skills classification WPM imports"
     }
   ],
   "see_also": "llms.txt"

@@ -41,6 +41,8 @@ jobs:
         run: python3 scripts/check-licenses.py
       - name: implementation status is current
         run: python3 scripts/status.py --check
+      - name: llms.txt and llms.json are current and every path exists
+        run: python3 scripts/llms.py --check
 
   api-lint:
     name: api · fmt, clippy, unit tests

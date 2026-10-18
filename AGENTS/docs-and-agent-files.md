@@ -52,5 +52,8 @@ created).
 
 `llms.txt` is the readable index (sections: Specification, Code, Operate,
 Conventions an agent must keep, Optional). `llms.json` carries the same entries
-as data (`sections`, `conventions`, `status`, `stack.tests`). Keep them in step by
-hand (there is no generator yet); every path must exist.
+as data (`sections`, `conventions`, `status`, `stack.tests`). `llms.json` is the
+source: edit the entries there, then run `python3 scripts/llms.py`, which fills the
+counts from `spec/implementation-status.md` and renders `llms.txt`. CI runs
+`python3 scripts/llms.py --check`, which fails on a missing path, a spec file listed
+in neither file, or a stale file.
