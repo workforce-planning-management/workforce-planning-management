@@ -240,7 +240,7 @@
         {#each past as plan (plan.pid)}
           <li>
             {tv(plan.intent)} · {tv(plan.status)} · {plan.target_on}{#if plan.settled_on}
-              <span class="muted"> · {plan.settled_on}</span>{/if}
+              {" "}<span class="muted">· {plan.settled_on}</span>{/if}
           </li>
         {/each}
       </ul>

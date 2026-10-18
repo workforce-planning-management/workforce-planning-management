@@ -3145,8 +3145,12 @@ payroll defect and need nothing else; do them first.
       Verified: svelte-check 0 errors; 145 unit tests; 134 Playwright specs, four new (propose, approve and carry out with the
       buttons following status; a refusal and a 403; the contingent list on request with no reason in it) and a planning assertion,
       each **mutation-checked** (approve shown on any status; hoped showing the agreed count; the reason leaking into the list), and I
-      looked at screenshots of the panel with no plan and with an approved one. **Not verified:** the UI against the real API (the
-      specs stub it); a manager who is not HR proposing against the real service (the panel's propose-only mode, shown when the plan read is refused
+      looked at screenshots of the panel with no plan and with an approved one. **Run against the real service** (current build,
+      fresh database, `scripts/demo-data.py`, sign-in enforcement off, 2026-10-18): the panel showed the demo's proposed plan; approve
+      and carry out both returned 200 and the worker became permanent with no end date; the planner's engineering row showed hoped 1
+      (1 FTE) as the forecast returned; the contingent list named the engagement with its plan; no HTTP error or page error. That run
+      found a missing space in the history line, fixed. **Not verified:** a signed-in non-HR caller (enforcement was off, so the 403 path
+      never ran for real); a manager who is not HR proposing against the real service (the panel's propose-only mode, shown when the plan read is refused
       with 403 and the viewer is not the worker, was tested against a stub that refuses the read: the proposal is sent, nothing of the plan is
       shown, the service's refusal is shown; the three behaviours were **mutation-checked** — the 403 handling, the sent notice and the
       worker-themselves guard, the last only after a test was added for it). Read from the code, not run: a 403 on the plan read comes only from
