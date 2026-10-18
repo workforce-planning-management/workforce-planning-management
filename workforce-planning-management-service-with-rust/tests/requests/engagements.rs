@@ -991,6 +991,7 @@ async fn demand_lines_by_basis_and_programme_reach_the_forecast() {
         let programme = format!("thing:{}", uuid::Uuid::new_v4());
         let dept = format!("fc-{tag}");
         // One permanent, one fixed-term ending before the target, one contractor ending after it.
+        let mut made: Vec<String> = Vec::new();
         for (i, (kind, ends)) in [("permanent", None), ("fixed_term", Some("2027-03-31")), ("contractor", Some("2028-01-31"))].into_iter().enumerate() {
             let r = request.post("/api/workers").json(&json!({
                 "person_ref": a_person(), "organization_ref": org, "worker_number": format!("FC-{tag}-{i}"),
@@ -998,6 +999,7 @@ async fn demand_lines_by_basis_and_programme_reach_the_forecast() {
                 "job_title": "Engineer", "hired_on": "2026-01-05", "engagement_ends_on": ends,
             })).await;
             assert_eq!(r.status_code(), 200, "{}", r.text());
+            made.push(r.json::<Value>()["pid"].as_str().unwrap().to_string());
         }
         let plan: Value = request.post("/api/workforce-plans").json(&json!({
             "name": "Basis plan", "organization_ref": org,
@@ -1045,6 +1047,30 @@ async fn demand_lines_by_basis_and_programme_reach_the_forecast() {
         assert_eq!(d["contract_fte_now"]["fixed_term"]["headcount"], 1);
         assert_eq!(d["contract_fte_now"]["contractor"]["headcount"], 1);
         assert!(f["programmes"].as_array().unwrap().iter().any(|p| p["programme_ref"] == programme.as_str() && p["headcount"] == 3));
+        // Conversion plans (WPM-T164): none yet; a proposed one is a hope; an approved one is agreed. Neither
+        // moves the projected supply, and a plan that is abandoned counts for nothing.
+        let counts = |f: &Value| {
+            let c = &f["departments"][0]["conversions"];
+            (c["agreed"]["headcount"].as_i64(), c["hoped"]["headcount"].as_i64(), c["agreed"]["fte"].as_f64(), c["hoped"]["fte"].as_f64())
+        };
+        assert_eq!(counts(&f), (Some(0), Some(0), Some(0.0), Some(0.0)));
+        let contractor = &made[2];
+        let proposed = request
+            .post(&format!("/api/workers/{contractor}/conversion-plans"))
+            .json(&json!({ "intent": "convert", "target_on": "2027-06-01", "post_funding_kind": "core" }))
+            .await;
+        assert_eq!(proposed.status_code(), 200, "{}", proposed.text());
+        let conversion = proposed.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let forecast = || async { request.get(&format!("/api/workforce-plans/{plan}/forecast")).await.json::<Value>() };
+        let hoped = forecast().await;
+        assert_eq!(counts(&hoped), (Some(0), Some(1), Some(0.0), Some(1.0)), "proposed is a hope");
+        request.post(&format!("/api/conversion-plans/{conversion}/approve")).await.assert_status_ok();
+        let agreed = forecast().await;
+        assert_eq!(counts(&agreed), (Some(1), Some(0), Some(1.0), Some(0.0)), "approved is agreed, and no longer only a hope");
+        assert_eq!(agreed["departments"][0]["projected_supply"], 2, "an agreed conversion does not change the projection");
+        assert!(!agreed.to_string().contains(contractor), "the forecast names no one");
+        request.post(&format!("/api/conversion-plans/{conversion}/abandon")).await.assert_status_ok();
+        assert_eq!(counts(&forecast().await), (Some(0), Some(0), Some(0.0), Some(0.0)), "an abandoned plan counts for nothing");
         // The same key again updates the line instead of adding one.
         line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 2, "target_fte_percent": 200, "programme_ref": programme })).await.assert_status_ok();
         let again: Value = request.get(&format!("/api/workforce-plans/{plan}")).await.json();

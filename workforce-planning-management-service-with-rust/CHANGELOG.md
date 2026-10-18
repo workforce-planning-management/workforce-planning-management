@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the planner shows conversion plans (WPM-T164)
+
+- Each department of `GET /api/workforce-plans/{pid}/forecast` carries `conversions`: `agreed` (approved plans to convert) and `hoped`
+  (proposed), each a headcount and FTE. Aggregate, naming no one; neither changes the projected supply.
+
 ### Changed — cutover reasons as data, key-person for one organization (WPM-T118 follow-up)
 
 - Each cutover check now also carries `details`: its reasons as `{code, params}`, in the same order as the English `reasons`, so a client can

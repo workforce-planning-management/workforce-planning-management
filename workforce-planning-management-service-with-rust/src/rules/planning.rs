@@ -526,6 +526,45 @@ pub fn contract_fte(people: &[Person]) -> ContractFte {
     out
 }
 
+/// What the conversion plans of a department's contract staff come to (WPM-T164). A plan to convert
+/// that a person has **approved** is an agreed conversion; one only **proposed** is a hope. The
+/// planner is shown both apart, and neither changes the projected supply: an agreed conversion keeps
+/// a fixed-term or contract worker beyond their end date, so the projection understates it, and the
+/// planner decides what to make of that.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ConversionCover {
+    /// People whose conversion to permanent a person has approved.
+    pub agreed_headcount: usize,
+    /// Their contracted FTE, in hundredths of an FTE.
+    pub agreed_fte_centi: i64,
+    /// People whose conversion is proposed and not yet approved.
+    pub hoped_headcount: usize,
+    /// Their contracted FTE, in hundredths of an FTE.
+    pub hoped_fte_centi: i64,
+}
+
+/// Count the open plans to convert. `plans` is each plan's status and its worker's FTE; a plan that
+/// is done, abandoned or of any other status is not counted (a done one has already made the worker
+/// permanent, so they are in the supply).
+#[must_use]
+pub fn conversion_cover(plans: &[(&str, i32)]) -> ConversionCover {
+    let mut out = ConversionCover::default();
+    for (status, fte) in plans {
+        match *status {
+            "approved" => {
+                out.agreed_headcount += 1;
+                out.agreed_fte_centi += i64::from(*fte);
+            }
+            "proposed" => {
+                out.hoped_headcount += 1;
+                out.hoped_fte_centi += i64::from(*fte);
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
 /// Suggested levers for a headcount gap — suggestions with evidence, never
 /// decisions (WPM-D28). "Convert contingent to permanent" is offered only for a shortfall in a
 /// department that has contract FTE to convert (WPM-R63).
@@ -971,6 +1010,27 @@ mod tests {
             ])
             .any()
         );
+    }
+
+    #[test]
+    fn conversion_cover_keeps_agreed_and_hoped_apart_and_ignores_settled_plans() {
+        let cover = conversion_cover(&[
+            ("approved", 100),
+            ("approved", 50),
+            ("proposed", 100),
+            ("done", 100),
+            ("abandoned", 100),
+        ]);
+        assert_eq!(
+            cover,
+            ConversionCover {
+                agreed_headcount: 2,
+                agreed_fte_centi: 150,
+                hoped_headcount: 1,
+                hoped_fte_centi: 100,
+            }
+        );
+        assert_eq!(conversion_cover(&[]), ConversionCover::default());
     }
 
     #[test]

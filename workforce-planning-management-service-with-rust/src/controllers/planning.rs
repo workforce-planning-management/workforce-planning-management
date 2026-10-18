@@ -17,9 +17,9 @@ use uuid::Uuid;
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    benchmarks, demand_line_objectives, headcount_snapshots, plan_demand_lines, plan_objectives,
-    role_profiles, role_skill_requirements, succession_candidates, succession_plans, worker_skills,
-    workers, workforce_plans,
+    benchmarks, conversion_plans, demand_line_objectives, headcount_snapshots, plan_demand_lines,
+    plan_objectives, role_profiles, role_skill_requirements, succession_candidates,
+    succession_plans, worker_skills, workers, workforce_plans,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
@@ -749,6 +749,17 @@ async fn forecast(
         .map(|d| ((d.worker_pid, d.skill_pid), d.proficiency))
         .collect();
 
+    // Open plans to convert, by the status and FTE of the worker they are for. A plan names a worker, so
+    // only counts leave here, and they are read against the department the worker is in today.
+    let open_conversions: BTreeMap<Uuid, String> = conversion_plans::Entity::find()
+        .filter(conversion_plans::Column::Intent.eq("convert"))
+        .filter(conversion_plans::Column::Status.is_in(["proposed", "approved"]))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|c| (c.worker_pid, c.status))
+        .collect();
+
     // Group lines by (department, target date).
     let mut groups: BTreeMap<(String, chrono::NaiveDate), Vec<&plan_demand_lines::Model>> =
         BTreeMap::new();
@@ -788,6 +799,16 @@ async fn forecast(
             let supply = projection.total_headcount;
             let gap = supply.map(|s| rules::headcount_gap(demand, s));
             let contract = rules::contract_fte(&people);
+            let conversions = rules::conversion_cover(
+                &in_dept
+                    .iter()
+                    .filter_map(|w| {
+                        open_conversions
+                            .get(&w.pid)
+                            .map(|status| (status.as_str(), w.fte_percent))
+                    })
+                    .collect::<Vec<_>>(),
+            );
             let gap_fte = demand_total
                 .fte_percent
                 .zip(projection.total_fte_centi)
@@ -852,6 +873,10 @@ async fn forecast(
                     "contractor": { "headcount": contract.contractor_headcount, "fte": centi(contract.contractor_fte_centi) },
                     "fixed_term": { "headcount": contract.fixed_term_headcount, "fte": centi(contract.fixed_term_fte_centi) },
                 },
+                "conversions": {
+                    "agreed": { "headcount": conversions.agreed_headcount, "fte": centi(conversions.agreed_fte_centi) },
+                    "hoped": { "headcount": conversions.hoped_headcount, "fte": centi(conversions.hoped_fte_centi) },
+                },
                 "competency_gaps": competency,
             })
         })
@@ -882,8 +907,11 @@ async fn forecast(
                        gap = planned demand − projected supply (positive = shortfall). Lines for \
                        the same department and date add up. Competency counts EMPLOYED workers in \
                        the department whose DECLARED proficiency meets the requirement; the \
-                       reskill pool is those who declared it below the bar. Aggregate only; \
-                       levers are suggestions, not decisions.",
+                       reskill pool is those who declared it below the bar. Conversions count \
+                       the open plans to convert a department's people to permanent: agreed \
+                       (approved by a person) and hoped (only proposed), apart; neither changes \
+                       the projected supply. Aggregate only; levers are suggestions, not \
+                       decisions.",
         "plan": { "pid": plan.pid, "name": plan.name, "status": plan.status },
         "as_of": today,
         "assumptions": {
