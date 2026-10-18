@@ -2,6 +2,23 @@
 
 How to build and run both WPM subprojects from source.
 
+## Try the demo (a guided tour with fictitious data)
+
+The demo needs a **separate** service instance that holds nothing real, because it runs with authentication
+off. In the service directory: create an empty database, `cargo run -- db migrate`, `cargo run -- task seed`,
+start it with `WPM_REQUIRE_AUTH=0` (and, since a tour clicks quickly, `WPM_RATE_LIMIT_PER_MINUTE=6000`), then
+fill it from the repository root:
+
+```sh
+python3 scripts/demo-data.py http://localhost:5150
+```
+
+Start the UI with `WPM_DEMO_API_URL=http://localhost:5150`. On the sign-in page, sign in as
+**example@example.com** (no email is sent): you land on `/demo`, a tour of every page, and a banner on each
+page says the data is fictitious and offers Previous and Next. With `WPM_DEMO_API_URL` unset there is no
+demo and that address signs in like any other. Never point `WPM_DEMO_API_URL` at a service that holds real
+data: a demo session reaches only that service, with no authentication.
+
 ## Prerequisites
 
 - **Rust** — MSRV is declared as `rust-version = "1.96"` in
