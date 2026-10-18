@@ -1053,6 +1053,29 @@ test.describe("conversion plans (WPM-T164)", () => {
     await expect(page.getByTestId("conversion-sent")).toHaveCount(0);
   });
 
+  test("the worker themselves is offered no way to propose their own plan", async ({
+    page,
+  }) => {
+    await stubWorkerPage(page);
+    await page.route("**/api/proxy/me/organizations", (route) =>
+      route.fulfill({
+        json: [{ worker_pid: WORKER.pid }],
+      }),
+    );
+    await page.route("**/api/proxy/me/organizations/scope", (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/conversion-plans`,
+      (route) =>
+        route.fulfill({ status: 403, json: { description: "forbidden" } }),
+    );
+    await page.goto(`/workers/${WORKER.pid}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByTestId("conversion-propose-only")).toHaveCount(0);
+    await expect(page.getByTestId("conversion-form")).toHaveCount(0);
+  });
+
   test("the contingent page lists open plans and what is past its end, only when asked", async ({
     page,
   }) => {
