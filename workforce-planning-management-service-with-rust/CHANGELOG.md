@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Redis for the local test run
+
+- `compose.test.yaml` starts Redis 7 beside Postgres under Podman (port override `TEST_REDIS_PORT`), matching CI. With `WPM_TEST_REDIS_URL` set, the Redis shared-cache tests run (5 pass, including password and TLS) instead of skipping. Docs that called `authentication-verifier` vendored, or the MSRV 1.96, are corrected.
+
 ### Changed — ready to package for crates.io
 
 - `migration` is now `workforce-planning-management-migration` (library name still `migration`) with a README, and is publishable; the

@@ -21,10 +21,10 @@ data: a demo session reaches only that service, with no authentication.
 
 ## Prerequisites
 
-- **Rust** — MSRV is declared as `rust-version = "1.96"` in
+- **Rust** — MSRV is declared as `rust-version = "1.99"` in
   `workforce-planning-management-service-with-rust/Cargo.toml`.
-- **Podman** (not Docker) — for the service's test database.
-- **PostgreSQL 18** — provided by
+- **Podman** (not Docker) — for the service's test database and Redis.
+- **PostgreSQL 18 and Redis 7** — provided by
   `workforce-planning-management-service-with-rust/compose.test.yaml`;
   no host install needed for development.
 - **Node.js 26** and **pnpm** — for the SvelteKit front-end
@@ -64,7 +64,8 @@ Optional imports: `cargo run -- task import_framework` (UK GDAD PCF) and
 ## Run the service's DB-gated tests
 
 ```sh
-podman compose -f compose.test.yaml up -d
+podman compose -f compose.test.yaml up -d --wait
+export WPM_TEST_REDIS_URL=redis://localhost:6379   # the Redis-backed tests skip without it
 cargo test -- --ignored
 podman compose -f compose.test.yaml down
 ```
@@ -122,14 +123,15 @@ machine could not pull base images when this was written.
 
 ## Running the service tests
 
-The two shared crates (`entity-ref`, `authentication-verifier`) are vendored in
-`workforce-planning-management-service-with-rust/crates/`, so a fresh clone builds
-and tests on its own. Start a throwaway database and run the suites (the request
+`entity-ref` is vendored in `workforce-planning-management-service-with-rust/crates/`
+and `authentication-verifier` comes from crates.io, so a fresh clone builds and tests
+on its own. Start a throwaway Postgres and Redis and run the suites (the request
 suite runs serially, and each of the other test binaries in its own process):
 
 ```sh
 cd workforce-planning-management-service-with-rust
 podman compose -f compose.test.yaml up -d --wait
+export WPM_TEST_REDIS_URL=redis://localhost:6379   # Postgres on 5432, Redis on 6379; both have port overrides
 cargo test                                   # unit tests, no database
 cargo test --test mod -- --ignored --test-threads=1
 cargo test --test enforcement -- --ignored --test-threads=1

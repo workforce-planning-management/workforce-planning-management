@@ -1,13 +1,15 @@
-# Postgres for this service's DB-gated test suite. From this directory:
+# Postgres and Redis for this service's DB-gated test suite. From this directory:
 #
 #   podman compose -f compose.test.yaml up -d --wait
+#   export WPM_TEST_REDIS_URL=redis://localhost:6379   # the Redis-backed tests skip without it
 #   cargo test -- --ignored --test-threads=1
 #   podman compose -f compose.test.yaml down
 #
 # Podman, not Docker (spec/rust-loco-stack.md).
 #
 # The connection details deliberately match what CI provides
-# (.github/workflows/ci.yml, job `api-db`): superuser `loco`/`loco` on 5432.
+# (.github/workflows/ci.yml, job `api-db`): superuser `loco`/`loco` on 5432,
+# Redis 7 on 6379.
 # A database a test passes against locally but CI cannot reproduce is
 # worse than no local database.
 services:
@@ -45,3 +47,17 @@ services:
       timeout: 3s
       retries: 30
       start_period: 5s
+
+  redis:
+    image: docker.io/library/redis:7-alpine
+    container_name: wpm-test-redis
+    # A cache: nothing to keep, so no snapshots and no append-only file.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      # TEST_REDIS_PORT=6380 podman compose -f compose.test.yaml up -d
+      - "${TEST_REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
