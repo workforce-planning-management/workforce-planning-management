@@ -38,5 +38,7 @@ export default defineConfig({
         include: ["tests/unit/**/*.{test,spec}.{ts,js}"],
         environment: "jsdom",
         globals: true,
+        // the package's dist/index.js imports "./label-pack" without an extension, which Node's ESM loader refuses
+        server: { deps: { inline: ["@lilydesignsystem/svelte-locale-translations"] } },
     },
 });

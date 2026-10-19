@@ -1,6 +1,10 @@
 // Every string the data grid shows or announces, from the catalogue, for one table. Pure (the
 // translators are passed in) so a test can build the bundle for each locale and ask the grid's
 // `missingLabels` whether anything it needs is absent.
+import {
+  labelsFor,
+  type LabelPack,
+} from "@lilydesignsystem/svelte-locale-translations";
 import type { StringKey } from "#lib/i18n.svelte.js";
 
 export type Say = {
@@ -52,4 +56,42 @@ export function dataTableLabels({ t, tf }: Say, o: TableOptions) {
     copyAnnouncement: (count: number) => tf("dataTable.copied", { count }),
     copyFailed: t("dataTable.copyFailed"),
   };
+}
+
+// The Lily label packs, one per language, loaded only for the page's locale (a separate chunk each).
+// WPM's own catalogue stays authoritative (it is content, editable in the CMS); a pack only fills a
+// label the catalogue does not name at all, so a grid feature added later is announced in the
+// reader's language instead of left unnamed. Both are unreviewed drafts (content/locales/REVIEW.md).
+const packs = import.meta.glob<LabelPack>(
+  "../../node_modules/@lilydesignsystem/svelte-locale-translations/label-packs/{ar,bn,cy,de,en,es,fr,hi,id,pt,ru,ur,zh}-001.json",
+  { import: "default" },
+);
+
+/** The pack that matches a locale's language: `de-de` -> `de-001`. */
+export function packLocale(locale: string): string {
+  return `${locale.split(/[-_]/)[0]}-001`;
+}
+
+export async function loadPack(locale: string): Promise<LabelPack | undefined> {
+  const wanted = `/${packLocale(locale)}.json`;
+  const key = Object.keys(packs).find((k) => k.endsWith(wanted));
+  const load = key ? packs[key] : undefined;
+  return load ? await load() : undefined;
+}
+
+/**
+ * `ours` over the pack's data-grid labels. A key `ours` names, even as undefined (the table does not
+ * offer that control), is never filled from the pack.
+ */
+export function withPackFallback(
+  ours: Record<string, unknown>,
+  pack: LabelPack | undefined,
+): Record<string, unknown> {
+  if (!pack) return ours;
+  const fallback = labelsFor("data-grid", pack);
+  const out: Record<string, unknown> = { ...ours };
+  for (const [key, value] of Object.entries(fallback)) {
+    if (!(key in ours)) out[key] = value;
+  }
+  return out;
 }

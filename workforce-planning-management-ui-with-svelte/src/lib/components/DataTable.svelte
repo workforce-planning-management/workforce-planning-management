@@ -11,7 +11,12 @@
     DataGridRow,
   } from "@lilydesignsystem/svelte-data-grid";
   import { i18n, t, tf } from "#lib/i18n.svelte.js";
-  import { dataTableLabels } from "#lib/data-table-labels.js";
+  import {
+    dataTableLabels,
+    loadPack,
+    withPackFallback,
+  } from "#lib/data-table-labels.js";
+  import type { LabelPack } from "@lilydesignsystem/svelte-locale-translations";
 
   let {
     label,
@@ -48,15 +53,29 @@
   } = $props();
 
   // Column visibility is offered only when a column is marked `hidable: true`.
+  let pack = $state<LabelPack>();
+  $effect(() => {
+    const locale = i18n.locale;
+    let current = true;
+    loadPack(locale).then((p) => {
+      if (current) pack = p;
+    });
+    return () => {
+      current = false;
+    };
+  });
   const labels = $derived(
-    dataTableLabels(
-      { t, tf },
-      {
-        hidable: columns.some((c) => c.hidable),
-        searchable,
-        exportable: !!exportName,
-        rowCount: rows.length,
-      },
+    withPackFallback(
+      dataTableLabels(
+        { t, tf },
+        {
+          hidable: columns.some((c) => c.hidable),
+          searchable,
+          exportable: !!exportName,
+          rowCount: rows.length,
+        },
+      ),
+      pack,
     ),
   );
 </script>

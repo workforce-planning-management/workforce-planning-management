@@ -6,7 +6,13 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { missingLabels } from "@lilydesignsystem/svelte-data-grid";
 import { describe, expect, it } from "vitest";
-import { dataTableLabels, type Say } from "../../src/lib/data-table-labels";
+import {
+  dataTableLabels,
+  loadPack,
+  packLocale,
+  withPackFallback,
+  type Say,
+} from "../../src/lib/data-table-labels";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const locales = join(root, "content", "locales");
@@ -84,6 +90,28 @@ describe("the grid's labels, per locale", () => {
     expect(labels.copy).toBeUndefined();
     expect(labels.search).toBeUndefined();
     expect(labels.columnVisibility).toBeUndefined();
+  });
+});
+
+describe("the Lily label pack behind the catalogue", () => {
+  const all = readdirSync(locales).filter((l) => l.endsWith("-001"));
+  for (const locale of all) {
+    it(`${locale} has a pack`, async () => {
+      const pack = await loadPack(locale);
+      expect(pack?.locale).toBe(packLocale(locale));
+    });
+  }
+  it("a regional locale uses its language's pack", async () => {
+    expect((await loadPack("de-de"))?.locale).toBe("de-001");
+    expect(await loadPack("xx-001")).toBeUndefined();
+  });
+  it("the catalogue wins; the pack fills only labels it does not name", async () => {
+    const ours = dataTableLabels(sayFor("cy-001"), { rowCount: 3 });
+    const merged = withPackFallback(ours, await loadPack("cy-001"));
+    expect(merged.nextPage).toBe(ours.nextPage);
+    expect("export" in merged && merged.export).toBe(undefined);
+    expect(merged.selectAll).toBeTruthy();
+    expect(withPackFallback(ours, undefined)).toBe(ours);
   });
 });
 

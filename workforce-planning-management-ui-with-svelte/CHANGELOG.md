@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — data tables fall back to the Lily label pack (WPM-T227)
+
+The catalogue's `dataTable.*` strings stay first; `@lilydesignsystem/svelte-locale-translations` fills only the grid labels the catalogue does not name, for the page's language, loaded one chunk per language. Unreviewed machine drafts, like the catalogue.
+
 ### Added — a demo with a guided tour, the Lily link and search pickers, and two fixes (WPM-T118)
 
 Signing in as `example@example.com`, where `WPM_DEMO_API_URL` names a separate service with fictitious data, opens `/demo`: a tour of

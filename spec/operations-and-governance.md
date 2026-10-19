@@ -156,6 +156,16 @@ can complete their own assessment from it:
 - **The file name** is the table's export name plus the format's extension (`cpd-overview.csv`, `.tsv`, `.xlsx`), with no
   person, organization or date in it.
 
+## WPM-R135 — A data table's labels fall back to the Lily label pack
+
+- **The catalogue first.** Every string a data table shows or announces comes from WPM's own catalogue (`content/locales/<locale>/ui.json`,
+  `dataTable.*`), which stays the editable, reviewable source (WPM-D64).
+- **The pack fills only what the catalogue does not name.** `@lilydesignsystem/svelte-locale-translations` supplies the grid's other labels
+  for the page's language (`de-de` uses `de-001`), so a grid feature added later is announced in the reader's language rather than left
+  unnamed. A label the catalogue sets to "not offered" (export on a table without export) is never filled from the pack.
+- **Same status as the catalogue.** All 13 content locales have a pack, and every pack but English is an unreviewed machine draft (the
+  catalogue's translations are too: `content/locales/REVIEW.md`). Neither is presented as reviewed.
+
 ## Decisions
 
 - **WPM-D60 Retention is per kind, set by the deployer.** One horizon for every
@@ -180,3 +190,6 @@ can complete their own assessment from it:
   does. The cost is that it can never show more than one page of a very large table's source either; a large export would be a
   server endpoint with its own access check, and that is a separate decision. Export stays opt-in per table (WPM-R133), because
   the cheapest privacy control is that the button does not exist.
+- **WPM-D86 The pack is a fallback, not a replacement, and loads per language.** Replacing WPM's strings with the pack's would trade one
+  unreviewed draft for another and take the strings out of the CMS. The pack is a separate chunk per language, fetched for the current
+  locale only, so the other 12 cost nothing.

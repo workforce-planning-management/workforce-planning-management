@@ -3750,6 +3750,14 @@ deployer's lawful basis and impact assessment before they are switched on.
       organization; a different date of birth or a different number in the same organization caps `match` at `review`; `Debug` shows no values;
       the result is symmetric. Verified: 37 unit tests, 7 contract tests and 1 doctest pass; clippy `-D warnings` and `cargo fmt --check` clean;
       four mutations (cap removed, `min_fields` ignored, organization ignored, match threshold unreachable) each failed at least one test.
-      **Not done:** the service does not call it (no import or merge wiring, no endpoint); not published to crates.io; no fuzz or property tests;
+      **Not done:** the service does not call it (no import or merge wiring, no endpoint); published to crates.io as 0.1.0 on 2026-10-19; no fuzz or property tests;
       the thresholds and weights were tuned on no data, real or synthetic, and the nickname table is English only; no benchmark; no address, no
       transliteration across scripts (a Cyrillic and a Latin spelling of one name will not match).
+
+- [x] WPM-T227 (2026-10-19) **Data-table labels fall back to the Lily label pack.** *(traces to WPM-R135, WPM-D86)* `src/lib/data-table-labels.ts`
+      gains `loadPack`, `packLocale` and `withPackFallback`; `DataTable.svelte` loads the pack for `i18n.locale` and lays the catalogue's labels over
+      it. Pins: the catalogue wins; a key the catalogue names as undefined stays unset; a regional locale uses its language's pack; each of the
+      13 content locales has a pack (loaded lazily, one chunk each). `vite.config.ts` inlines the package for
+      Vitest because its `dist/index.js` imports `./label-pack` without an extension. Verified: vitest 160 pass, `svelte-check` 0 errors, build
+      and all 135 Playwright specs pass. **Not done:** no check of what a reader hears from the pack's wording, and the packs are unreviewed
+      machine drafts; the pack's other helpers (kanban, calendar, Gantt) are not used here.
