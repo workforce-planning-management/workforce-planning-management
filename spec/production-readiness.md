@@ -73,9 +73,8 @@ file.
   `status.py --check`), `cargo fmt --check`, `clippy -D warnings`, unit tests,
   the database suites (`mod`, `enforcement`, `enforcement_expenses`, `security`)
   against a Postgres service, `cargo deny check`, the UI (`svelte-check`,
-  vitest, build, prettier, Playwright, an advisory `pnpm audit`), plus two jobs
-  not yet required: the Keycloak suite and an OWASP ZAP baseline against the
-  defaults. `.github/dependabot.yml` covers cargo, npm and the workflow actions.
+  vitest, build, prettier, Playwright, an advisory `pnpm audit`), the Keycloak suite and an OWASP ZAP baseline
+  against the defaults (both blocking since they stayed green over six runs). `.github/dependabot.yml` covers cargo, npm and the workflow actions.
 - Branch protection (requiring those jobs) is a repository setting, not a file.
 
 ## WPM-R78 — License files

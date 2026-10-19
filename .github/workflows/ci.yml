@@ -225,12 +225,11 @@ jobs:
           ../scripts/restore-drill.sh
 
   api-keycloak:
-    name: api · Keycloak suite (not yet required)
+    name: api · Keycloak suite
     runs-on: ubuntu-latest
     # First green on 2026-10-19 (run for d4ee6c6; it needed the same Postgres and Redis services as
-    # the OIDC job). It uses Testcontainers on the runner's container socket. Drop `continue-on-error`
-    # and make it a required check once it has stayed green over a few runs.
-    continue-on-error: true
+    # the OIDC job). It uses Testcontainers on the runner's container socket. Green on the six runs
+    # after that, so it is blocking and a required check.
     defaults:
       run:
         working-directory: workforce-planning-management-service-with-rust
@@ -314,8 +313,8 @@ jobs:
     runs-on: ubuntu-latest
     # First green on 2026-10-19 (run for d4ee6c6), after `X-Powered-By` was removed. ZAP reports warnings for things this
     # service cannot fix as an API (for example a missing anti-CSRF token), so
-    # the rules file `.zap/rules.tsv` lists each accepted rule with its reason.
-    continue-on-error: true
+    # the rules file `.zap/rules.tsv` lists each accepted rule with its reason. Green on the six runs
+    # after that, so it is blocking and a required check.
     services:
       postgres:
         image: postgres:18
