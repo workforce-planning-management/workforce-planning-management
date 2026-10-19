@@ -3740,3 +3740,16 @@ deployer's lawful basis and impact assessment before they are switched on.
       not only the visible page; the `.xlsx` was checked for its name, not opened; no screenshots of the new select, pager or buttons in any locale
       or on a phone; training-analytics and contingent-departments exports were not downloaded; that `pay-bands` names no one was taken from its
       name; the grid's development warning for missing labels was not read in a browser console.
+
+- [x] WPM-T226 (2026-10-19) **Worker matcher crate.** *(traces to WPM-R134, WPM-D85)* New crate
+      `workforce-planning-management-matcher` in `workforce-planning-management-matcher-with-rust/` (own `[workspace]`, no database, no clock;
+      deps `chrono`, `serde`, `strsim`, `thiserror`, `unicode-normalization`). `WorkerRecord`, `MatchingEngine`, `MatchConfig` (default, `strict`,
+      `lenient`; serialises; validated), `Decision` (`match`/`review`/`no_match`/`insufficient`), `Basis`, `Breakdown`, `NicknameTable`, a normalizer
+      (diacritics, email with opt-in Gmail folding, phone to `+digits`, worker number, Soundex) and a scorer; batch `match_one_to_many` and
+      `rank_one_to_many`. Pins: unknown is `null` not zero; below `min_fields` is `insufficient`; the same worker number matches only within one
+      organization; a different date of birth or a different number in the same organization caps `match` at `review`; `Debug` shows no values;
+      the result is symmetric. Verified: 37 unit tests, 7 contract tests and 1 doctest pass; clippy `-D warnings` and `cargo fmt --check` clean;
+      four mutations (cap removed, `min_fields` ignored, organization ignored, match threshold unreachable) each failed at least one test.
+      **Not done:** the service does not call it (no import or merge wiring, no endpoint); not published to crates.io; no fuzz or property tests;
+      the thresholds and weights were tuned on no data, real or synthetic, and the nickname table is English only; no benchmark; no address, no
+      transliteration across scripts (a Cyrillic and a Latin spelling of one name will not match).

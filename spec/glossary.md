@@ -9,6 +9,7 @@
 | **`-001` locale**  | A language's general-purpose locale (UN M.49 "world"): holds every UI key; `cy-001` is Welsh, `en-001` English, the source |
 | **Regional locale** | A locale such as `en-gb` or `de-de` that holds only **overrides** of its language's `-001` locale and falls back to it |
 | **Locale address** | The one URL prefix a locale is served under, its full code (`/cy-001/…`); a bare language (`/cy/`) is not a route, only a tag that matches its `-001` locale |
+| **Worker matcher**  | The pure crate that scores whether two worker records are the same person; says `match`, `review`, `no_match` or `insufficient`, and shows each field's score ([worker-matching](worker-matching.md)) |
 | **Accrual**         | Leave entitlement earned over time; v1 grants annual entitlements, accrual schedules are roadmap |
 | **Pay scale**       | A banded public-sector pay and grading scale, transcribed from the government's yearly pay circular ([pay-scales.md](pay-scales.md)) |
 | **Expense claim** | A worker's request to be repaid for money spent for work: dated, categorised items in one currency, decided by someone other than the claimant ([expense-claims.md](expense-claims.md)) |

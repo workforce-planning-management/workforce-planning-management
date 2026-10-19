@@ -60,6 +60,22 @@ jobs:
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked --lib
 
+  matcher:
+    name: matcher crate · fmt, clippy, tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workforce-planning-management-matcher-with-rust
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup component add rustfmt clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: workforce-planning-management-matcher-with-rust
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+
   api-db:
     name: api · database, enforcement and security suites
     runs-on: ubuntu-latest

@@ -3,11 +3,11 @@
   "slug": "workforce-planning-management",
   "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Loco) and SvelteKit, in 17 locales. Demo software; synthetic data only.",
   "status": {
-    "tasks_delivered": "WPM-T1–T225",
-    "highest_requirement": "WPM-R133",
-    "highest_decision": "WPM-D84",
+    "tasks_delivered": "WPM-T1–T226",
+    "highest_requirement": "WPM-R134",
+    "highest_decision": "WPM-D85",
     "deferred": [],
-    "as_of": "2026-10-18",
+    "as_of": "2026-10-19",
     "counts_from": "spec/implementation-status.md"
   },
   "stack": {
@@ -380,6 +380,11 @@
         "title": "spec/testing.md",
         "path": "spec/testing.md",
         "description": "how to run each suite, the PostgreSQL and Podman setup"
+      },
+      {
+        "title": "spec/worker-matching.md",
+        "path": "spec/worker-matching.md",
+        "description": "WPM-R134 and WPM-D85: matching worker records, unknown is never zero, a score proposes and never merges"
       }
     ],
     "code": [
@@ -392,6 +397,11 @@
         "title": "workforce-planning-management-ui-with-svelte/",
         "path": "workforce-planning-management-ui-with-svelte/index.md",
         "description": "the browser client; strings in `content/locales/<locale>/ui.json`"
+      },
+      {
+        "title": "workforce-planning-management-matcher-with-rust/",
+        "path": "workforce-planning-management-matcher-with-rust/README.md",
+        "description": "the worker matcher crate: pure, explainable matching of worker records; no national identifiers (WPM-R134)"
       }
     ],
     "operate": [

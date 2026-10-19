@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — worker matcher crate (WPM-R134, WPM-D85, WPM-T226)
+
+`workforce-planning-management-matcher-with-rust/`: a pure crate that scores whether two worker records are the same person, with each field's score and what the decision rests on; no national identifiers; a differing date of birth caps a match at review. Not wired into the service and not published. Details: [its changelog](workforce-planning-management-matcher-with-rust/CHANGELOG.md), [spec](spec/worker-matching.md).
+
 ### Added — delivery capacity API (WPM-T104–T107)
 
 Skill pools, programme demand, partner commitments, the capacity view, the start check and recorded
