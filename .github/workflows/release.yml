@@ -6,7 +6,7 @@ name: Release
 # (the workflow checks). It publishes the API container image to GHCR as
 # `ghcr.io/<owner>/<repo>-api:<version>` and `:<sha>`, attaches a CycloneDX
 # software bill of materials, and creates a GitHub release with generated notes.
-# Written but not yet run: the first tag is its first test.
+# First run: tag v0.1.0 (2026-10-19) succeeded and created the release with its SBOM.
 
 on:
   push:
