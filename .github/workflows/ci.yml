@@ -233,6 +233,30 @@ jobs:
     defaults:
       run:
         working-directory: workforce-planning-management-service-with-rust
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: loco
+          POSTGRES_PASSWORD: loco
+          POSTGRES_DB: workforce_planning_management_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
+      WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v7
       - uses: Swatinem/rust-cache@v2
