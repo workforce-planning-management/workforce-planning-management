@@ -728,6 +728,9 @@ test.describe("planning by basis and programme", () => {
     await expect(page.getByTestId("line-ends")).toHaveCount(0);
     await page.getByTestId("line-fte").fill("");
     await page.getByTestId("line-programme").fill("");
+    // the page reloads after the first add; wait until it has settled on the blanks before sending again
+    await expect(page.getByTestId("line-fte")).toHaveValue("");
+    await expect(page.getByTestId("line-programme")).toHaveValue("");
     await page.getByTestId("line-add").click();
     await expect.poll(() => sent.length).toBe(2);
     expect(sent[1]).toMatchObject({ basis: "permanent" });
