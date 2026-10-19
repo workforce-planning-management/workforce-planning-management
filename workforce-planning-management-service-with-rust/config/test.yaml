@@ -16,6 +16,8 @@ logger:
 
 # Web server configuration
 server:
+  # No `X-Powered-By` header: it names the stack to a scanner and helps no caller (ZAP 10037).
+  ident: ""
   # Port on which the server will listen. the server binding is 0.0.0.0:{PORT}
   port: 5150
   # The UI hostname or IP address that mailers will point to.

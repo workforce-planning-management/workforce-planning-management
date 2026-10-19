@@ -59,6 +59,11 @@ async fn headers_everywhere_and_the_limiter_trips() {
                     "{name} missing on {path} ({expect})"
                 );
             }
+            // The framework's `X-Powered-By: loco.rs` names the stack to a scanner (ZAP 10037).
+            assert!(
+                !response.headers().contains_key("x-powered-by"),
+                "x-powered-by present on {path} ({expect})"
+            );
         }
         let api = request.get("/api/workers").await;
         assert_eq!(api.headers()["cache-control"], "no-store");

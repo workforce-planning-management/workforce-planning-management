@@ -17,6 +17,8 @@ logger:
   format: json
 
 server:
+  # No `X-Powered-By` header: it names the stack to a scanner and helps no caller (ZAP 10037).
+  ident: ""
   port: {{ get_env(name="PORT", default="5150") }}
   binding: 0.0.0.0
   host: {{ get_env(name="HOST", default="http://localhost") }}
