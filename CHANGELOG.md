@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added — worker matcher crate (WPM-R134, WPM-D85, WPM-T226)
 
-`workforce-planning-management-matcher-with-rust/`: a pure crate that scores whether two worker records are the same person, with each field's score and what the decision rests on; no national identifiers; a differing date of birth caps a match at review. Not wired into the service and not published. Details: [its changelog](workforce-planning-management-matcher-with-rust/CHANGELOG.md), [spec](spec/worker-matching.md).
+`workforce-planning-management-matcher-with-rust/`: a pure crate that scores whether two worker records are the same person, with each field's score and what the decision rests on; no national identifiers; a differing date of birth caps a match at review. Not wired into the service. Published to crates.io as 0.1.0 (2026-10-19). Details: [its changelog](workforce-planning-management-matcher-with-rust/CHANGELOG.md), [spec](spec/worker-matching.md).
 
 ### Added — delivery capacity API (WPM-T104–T107)
 

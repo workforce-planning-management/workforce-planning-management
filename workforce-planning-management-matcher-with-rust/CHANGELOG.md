@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 - 2026-10-19
 
 - First version: `WorkerRecord`, `MatchingEngine`, `MatchConfig` (strict, default,
   lenient), `Decision`, `Basis`, `Breakdown`, `NicknameTable`, normalizer and scorer.
