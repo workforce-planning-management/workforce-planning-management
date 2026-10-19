@@ -202,7 +202,9 @@ jobs:
           ADMIN_DATABASE_URL: postgres://loco:loco@localhost:5432/postgres
         run: |
           export WPM_BIN="$PWD/workforce-planning-management-service-with-rust/target/debug/workforce-planning-management"
-          scripts/restore-drill.sh
+          # the service reads config/ from its working directory
+          cd workforce-planning-management-service-with-rust
+          ../scripts/restore-drill.sh
 
   api-keycloak:
     name: api · Keycloak suite (not yet required)
