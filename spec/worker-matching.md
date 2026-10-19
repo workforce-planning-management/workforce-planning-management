@@ -8,7 +8,7 @@ modelled on the sixarm `person-matcher` crate and narrowed to what WPM may hold.
 ## WPM-R134 — Match worker records, and say what the answer rests on
 
 - **A library, not an endpoint.** The matcher is a pure Rust crate: no database, no clock, no network, no state between calls.
-  The service does not call it yet; wiring it to an import or a merge is a later requirement with its own access check.
+  The service calls it for exactly one read-only question (WPM-R136); an import or a merge is still a later requirement with its own access check.
 - **What it compares.** Given name, family name, date of birth, email addresses, phone numbers and employer worker numbers.
   Each is optional. It has **no field for a national identifier** and none for anything about health, because WPM stores neither
   (WPM-D17, WPM-D25). A worker number belongs to the organization that issued it: the same number from two organizations is no evidence.
@@ -28,3 +28,22 @@ Two real people share a name and a birth year. A merge cannot be taken back with
 returns a *decision with its working* and the caller keeps a person in the loop at `review`. The thresholds (match 0.88, review 0.70) are
 defaults to be tuned on the deployer's own data; they are not claimed to be accurate, and the crate has been measured on no real data
 (this repository holds synthetic data only). A deployment that auto-merges on `match` must say so in its own information-governance record.
+
+## WPM-R136 — Ask which existing workers a new hire might already be
+
+- **One read-only endpoint.** `POST /api/workers/possible-duplicates` takes `display_name`, `organization_ref` and an optional
+  `worker_number`, and returns at most 10 existing workers that might be the same person, best first, each with `worker_pid`,
+  `display_name`, `decision`, `basis`, `score` and the field `breakdown`. It writes nothing, merges nothing and records no audit row.
+- **Only what the caller can already read.** Candidates are the workers in the caller's organizations that pass the per-record `Read`
+  check; `organization_ref` outside the caller's organizations is `403`. The answer names no one the directory would not.
+- **Evidence is a name and a worker number, nothing else.** WPM holds one `display_name` (split into its first and last word) and no
+  date of birth. Email and phone are not compared (WPM-D87), so the breakdown has no email, phone or birth score.
+- **A name alone is `review`.** Only the same worker number from the same organization is `match`. A different organization's number is
+  no evidence. One word, or a blank, is too little and lists no one. Invalid input is `422`.
+
+## WPM-D87 — Compare names and numbers only, and never let a name decide
+
+Two reasons narrow the comparison. First, the contact details (`worker_contact_details`) sit behind a narrower access check than
+the directory; "the email you typed matches worker X" would tell a caller the very thing that check withholds, so email and phone are
+left out even though the matcher can score them. Second, two real people share a name, and WPM has no date of birth to separate them, so
+a name-only `match` is reported as `review` and a person decides (WPM-D85). The thresholds are the matcher's defaults, tuned on no data.

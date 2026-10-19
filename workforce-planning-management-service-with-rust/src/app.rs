@@ -149,6 +149,7 @@ impl Hooks for App {
             .add_route(controllers::announcements::routes())
             .add_route(controllers::contacts::routes())
             .add_route(controllers::directory::routes())
+            .add_route(controllers::duplicates::routes())
             .add_route(controllers::pay_scales::routes())
             .add_route(controllers::job_levels::routes())
             .add_route(controllers::grades::routes())

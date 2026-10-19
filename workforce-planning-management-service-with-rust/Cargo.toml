@@ -84,6 +84,7 @@ entity-ref = { path = "crates/entity-ref", version = "0.2" }
 # `Claims`/`Policy`/`Action` types here are backend-agnostic (see the
 # `keycloak` feature above) — only `Verifier` (PASETO signature
 # verification) is `paseto`-specific.
+workforce-planning-management-matcher = "0.1"
 authentication-verifier = { version = "0.9", features = ["fetch"] }
 
 # `keycloak` feature only: direct verification of a Keycloak-issued JWT

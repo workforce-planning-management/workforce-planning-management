@@ -541,6 +541,8 @@ acceptance criteria and traces to the tasks that delivered it:
   [job-levels.md](job-levels.md) (WPM-T93–T94).
 - **WPM-R134** match worker records, and say what the answer rests on —
   [worker-matching.md](worker-matching.md) (WPM-T226).
+- **WPM-R136** ask which existing workers a new hire might already be, read-only, a name alone is review —
+  [worker-matching.md](worker-matching.md) (WPM-T228).
 - **WPM-R135** a data table's labels fall back to the Lily label pack, behind WPM's own catalogue —
   [operations-and-governance.md](operations-and-governance.md) (WPM-T227).
 - **WPM-R89–R94** backup and restore, operations documents, retention per record

@@ -36,6 +36,7 @@ pub fn spec() -> Value {
                 "put": { "tags": ["hr-core"], "summary": "Update employment facts (manager change is cycle-checked)", "responses": ok("Updated worker") },
                 "delete": { "tags": ["hr-core"], "summary": "Soft-delete a worker", "responses": ok("Deleted") }
             },
+            "/api/workers/possible-duplicates": { "post": { "tags": ["hr-core"], "summary": "Which existing workers might this name (and worker number) be? Read-only; names and worker numbers only; a name alone is review, never match", "responses": ok("Possible duplicates, best first") } },
             "/api/workers/{pid}/status": { "post": { "tags": ["hr-core"], "summary": "Worker lifecycle transition (activation gated on mandatory onboarding items)", "responses": transition } },
             "/api/org-chart": { "get": { "tags": ["hr-core"], "summary": "The manager forest for one organization (?organization=)", "responses": ok("OrgNodes") } },
             "/api/benefit-plans": {

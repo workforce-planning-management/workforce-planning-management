@@ -3761,3 +3761,13 @@ deployer's lawful basis and impact assessment before they are switched on.
       Vitest because its `dist/index.js` imports `./label-pack` without an extension. Verified: vitest 160 pass, `svelte-check` 0 errors, build
       and all 135 Playwright specs pass. **Not done:** no check of what a reader hears from the pack's wording, and the packs are unreviewed
       machine drafts; the pack's other helpers (kanban, calendar, Gantt) are not used here.
+- [x] WPM-T228 (2026-10-20) **Possible-duplicate check.** *(traces to WPM-R136, WPM-D87, WPM-R134)* The service depends on
+      `workforce-planning-management-matcher` 0.1 from crates.io. `src/rules/duplicates.rs` (pure: `split_name`, `possible_duplicates`),
+      `src/controllers/duplicates.rs` (`POST /api/workers/possible-duplicates`), the route in `app.rs`, and the OpenAPI entry (the
+      route-coverage test caught its absence). Pins: a name alone is `review`; the same number in one organization is `match` with basis
+      `worker_number`; another organization's number is no evidence; one word lists no one; at most 10; no email, phone or birth score in
+      the answer; read-only. Verified: 9 unit tests and 2 request tests pass; the whole unit suite (570), `mod` (97), `enforcement`,
+      `enforcement_expenses` and `security` pass against Postgres 18; clippy `-D warnings` and `cargo fmt --check` clean. **Not done:** no UI
+      (the hire form does not call it), no match-on-import, no merge, no per-organization thresholds; not exercised with signed-in callers of
+      differing scope (the scope and `Read` checks reuse the directory's, but no enforcement-matrix test covers this route).
+

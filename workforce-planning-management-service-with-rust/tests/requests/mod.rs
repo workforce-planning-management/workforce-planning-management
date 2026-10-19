@@ -12,6 +12,7 @@ mod assessments;
 mod audit_chain;
 mod capacity;
 mod contacts;
+mod duplicates;
 mod engagements;
 mod erasure_replay;
 mod ergonomics;

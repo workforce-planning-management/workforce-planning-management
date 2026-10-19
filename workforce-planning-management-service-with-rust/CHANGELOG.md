@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — possible-duplicate check (WPM-T228)
+
+`POST /api/workers/possible-duplicates` lists existing workers a new hire might already be, using the published `workforce-planning-management-matcher`. Read-only; names and worker numbers only; a name alone is `review`, only a shared worker number is `match`.
+
 ## [0.1.1] - 2026-10-19
 
 First release with the fixes below: 0.1.0 still sent `X-Powered-By`, and its container image had no OCI labels. `workforce-planning-management-migration` is released at the same version.

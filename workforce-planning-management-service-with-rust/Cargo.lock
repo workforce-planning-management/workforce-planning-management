@@ -7242,7 +7242,21 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "workforce-planning-management-matcher",
  "workforce-planning-management-migration",
+]
+
+[[package]]
+name = "workforce-planning-management-matcher"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d42bf43f7fc73a3fc393059467ebcbe2a38a3476e1e474e111396a510388cf09"
+dependencies = [
+ "chrono",
+ "serde",
+ "strsim",
+ "thiserror 2.0.21",
+ "unicode-normalization",
 ]
 
 [[package]]
