@@ -118,5 +118,5 @@ service peer (`svc`) presents a signed token and is not a person; protect its si
 
 This repository cannot test that the identity provider enforces MFA: its tests start a local OIDC provider and prove
 the token verification and the persona mapping only. An assessor (for example question C3.5 of the NHS Digital
-Technology Assessment Criteria, see [the assessment](../../united-kingdom/national-health-service/digital-technology-assessment-criteria/2.0/index.md))
+Technology Assessment Criteria, see [the assessment](../../docs/united-kingdom/national-health-service/digital-technology-assessment-criteria/2.0/index.md))
 will ask for the policy itself.
