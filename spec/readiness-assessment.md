@@ -23,7 +23,7 @@ deployment meets a standard.
 - **A tested restore** (the drill in CI), a runbook, deployment and upgrade documents (WPM-R89, R90).
 - **A governance pack** to adapt: data protection impact assessment, data flow, record of processing,
   retention, an assessment checklist, an accessibility statement (WPM-R92). Honest about gaps (WPM-D61).
-- **Dependency policy:** `cargo deny`, a software bill of materials on release, vendored shared crates.
+- **Dependency policy:** `cargo deny`, a software bill of materials on release, version-pinned shared crates.
 - **Sign-in with an enterprise directory** (OIDC, Entra-compatible) tested in-process (WPM-R93).
 
 ## 2. The blocker found by this assessment: reads were not need-to-know

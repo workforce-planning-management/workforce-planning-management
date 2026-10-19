@@ -15,7 +15,7 @@ what has nobody tested?
 | Abuse | Rate limits per caller, stricter for erase, import, export and token routes | WPM-R74, same file |
 | Insecure configuration | Boot refuses a plaintext database connection or plaintext Redis to another host, and a missing CORS origin | [operations/deployment.md](../../../../spec/operations/deployment.md) |
 | Data at rest | Encrypted backups; the shared cache holds non-personal lookups only and fails open | [operations/backup-and-restore.md](../../../../spec/operations/backup-and-restore.md) |
-| Supply chain | Licence and ban checks with `cargo deny`, vendored shared crates, a software bill of materials on release | [production-readiness.md](../../../../spec/production-readiness.md) |
+| Supply chain | Licence and ban checks with `cargo deny`, version-pinned shared crates, a software bill of materials on release | [production-readiness.md](../../../../spec/production-readiness.md) |
 | Incidents | A runbook of first actions; you add contacts and notification duties | [operations/runbook.md](../../../../spec/operations/runbook.md) |
 | Self-assessment | A control checklist: met, partly met, not met, deployer to answer | [governance/assessment-checklist.md](../../../../spec/governance/assessment-checklist.md) |
 

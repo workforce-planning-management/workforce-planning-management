@@ -11,7 +11,7 @@
 | Spec first | A change is a requirement, a decision, a task, code and tests together; each task entry says what was **not** verified | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | Tests | Unit tests on the rules, database-backed request tests, enforcement binaries run with sign-in on, front-end unit tests and browser tests. Mutation checks: break the code on purpose and confirm a test fails | [testing.md](../../../../spec/testing.md) |
 | Counts | Generated from the files, never copied by hand | [implementation-status.md](../../../../spec/implementation-status.md) |
-| Supply chain | `cargo deny` for licenses and bans, vendored shared crates, a software bill of materials on release | [production-readiness.md](../../../../spec/production-readiness.md) |
+| Supply chain | `cargo deny` for licenses and bans, version-pinned shared crates, a software bill of materials on release | [production-readiness.md](../../../../spec/production-readiness.md) |
 | API contract | OpenAPI, and a test that fails if a registered route is undocumented | [workforce-planning-management-service-with-rust/AGENTS.md](../../../../workforce-planning-management-service-with-rust/AGENTS.md) |
 | Access control | The policy decides by action only; handlers and a classified route table decide need to know, and a source scan fails on an unclassified read route | [auth.md](../../../../spec/auth.md) |
 | Performance | [BENCHMARKS.md](../../../../BENCHMARKS.md) records what was measured; no load test exists | [readiness-assessment.md](../../../../spec/readiness-assessment.md) |

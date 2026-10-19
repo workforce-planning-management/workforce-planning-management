@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed — the unused vendored `crates/authentication-verifier`
+
+- The build has used crates.io 0.9.1 since the switch; the directory was dead weight. `entity-ref` stays vendored. Current-state docs that said both shared crates were vendored now say what is true (history entries are unchanged).
+
 ### Added — OCI labels on the image
 
 - The `Containerfile` takes `VERSION` and `REVISION` build arguments and sets the `org.opencontainers.image.{title,description,source,licenses,version,revision}` labels. The release workflow passes the crate version and the commit, and fails before pushing if the image's labels disagree with the crate version, the tag or the commit. The builder stage never had git, so nothing was dropped.

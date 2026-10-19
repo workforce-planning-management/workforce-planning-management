@@ -64,7 +64,7 @@ elevation of privilege.
 | T17 | D | A slow request holds a connection | The production configuration times requests out | A request that hits the limit was not exercised in a test |
 | T18 | D | Audit writes serialise and deadlock under load | Chosen for correctness (WPM-D72) and documented | Throughput not measured |
 | T19 | I | Personal data in logs | Logs are JSON; the limiter keeps no address; a request identifier is on every response | A test that logs hold no query string or personal data does not exist (WPM-T197) |
-| T20 | E | A malicious or compromised dependency | `cargo deny`, vendored shared crates, a software bill of materials on release, Dependabot | Actions are pinned by tag, not commit; no secret scanning; no image signature or provenance (WPM-T194, T195) |
+| T20 | E | A malicious or compromised dependency | `cargo deny`, version-pinned shared crates, a software bill of materials on release, Dependabot | Actions are pinned by tag, not commit; no secret scanning; no image signature or provenance (WPM-T194, T195) |
 | T21 | E | A malicious change merged | A single maintainer with machine gates; the AI statement says how AI is used | No second reviewer by design; branch protection is a setting not yet applied |
 | T22 | I | Equality or union data misused | The service stores neither today; if added they are bounded and off by default (WPM-D68, D74) | Proposed, not built |
 | T23 | I | A score used to discriminate | Scores advise; an equality impact register exists | The register's assessments are unapproved drafts; the scoring register is not in code (WPM-T166) |

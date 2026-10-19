@@ -119,4 +119,4 @@ Loco tasks (`cargo run -- task <name>`): `seed`, `snapshot_headcount`
 (**schedule daily**), `rota_reminders [days_ahead:N]` (**schedule daily**),
 `pay_progression_reminders [days_ahead:N]` (**schedule daily**),
 `import_framework`, `import_esco`. See [testing](../spec/testing.md) for running
-the suites (the shared crates are vendored in `crates/`).
+the suites (`entity-ref` is vendored in `crates/`; `authentication-verifier` comes from crates.io).
