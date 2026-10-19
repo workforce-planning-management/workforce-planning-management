@@ -206,6 +206,8 @@ jobs:
           sudo apt-get install -y postgresql-common
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-client-18
+          # the runner image ships an older pg_dump first on PATH
+          echo /usr/lib/postgresql/18/bin >> "$GITHUB_PATH"
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: workforce-planning-management-service-with-rust

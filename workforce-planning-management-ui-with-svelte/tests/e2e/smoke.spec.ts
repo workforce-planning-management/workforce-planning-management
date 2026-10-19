@@ -1709,17 +1709,21 @@ test.describe("signed-in smoke coverage", () => {
     await expect(page.getByTestId("expense-item-form")).toHaveCount(0);
     await page.getByTestId("expense-note").fill("fine");
     await page.getByTestId("expense-approve").click();
-    expect(sent.at(-1)).toEqual({ verb: "approve", body: { note: "fine" } });
+    await expect
+      .poll(() => sent.at(-1))
+      .toEqual({ verb: "approve", body: { note: "fine" } });
     // It leaves the submitted queue; reimburse it from the approved one.
     await expect(page.getByTestId("expense-queue-empty")).toBeVisible();
     await page.getByTestId("expense-queue-status").selectOption("approved");
     await page.getByTestId(/expense-open-/).click();
     await page.getByTestId("expense-paid-on").fill("2026-10-07");
     await page.getByTestId("expense-reimburse").click();
-    expect(sent.at(-1)).toEqual({
-      verb: "reimburse",
-      body: { reimbursed_on: "2026-10-07" },
-    });
+    await expect
+      .poll(() => sent.at(-1))
+      .toEqual({
+        verb: "reimburse",
+        body: { reimbursed_on: "2026-10-07" },
+      });
     await expect(page.getByTestId("expense-queue-empty")).toBeVisible();
   });
 
@@ -2260,9 +2264,7 @@ test.describe("signed-in smoke coverage", () => {
     await expect(drawer).toBeHidden();
   });
 
-  test("requisition board renders its columns and cards", async ({
-    page,
-  }) => {
+  test("requisition board renders its columns and cards", async ({ page }) => {
     await page.route("**/api/proxy/requisitions", (route) =>
       route.fulfill({
         json: [
