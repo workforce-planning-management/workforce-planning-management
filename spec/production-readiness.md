@@ -188,3 +188,27 @@ sign-in enforcement explicitly off** (see its header).
   controls.** Counters are in memory per window, keyed by a hash of the network
   address; no address, subject or token is stored or logged. A bearer token is
   never the key, because varying it would buy a fresh bucket on every request.
+
+## WPM-R137 — The service fails cleanly when its database misbehaves, and heals
+
+- **Bounded and plain.** With the database refusing, silent or slow, a request ends within seconds as a `5xx` whose body names no
+  connection string, driver, SQL or address. No request hangs, and none panics.
+- **All or nothing.** A write that fails leaves nothing behind. Of the writes that were cut off at random, every worker that exists has
+  exactly one `created` audit row. There may be more workers than success replies, because a cut can lose the reply to a write that
+  committed; never fewer, and never a write applied twice.
+- **It heals.** Once the database answers again, the service answers `200` within seconds, without a restart.
+- **Reproducible.** The fault schedule comes from a seed that is printed, and `WPM_CHAOS_SEED` replays it.
+
+## WPM-D88 — Chaos by a proxy in the test, not by killing containers
+
+A proxy in the test process injects the faults, so the same test runs on a laptop under Podman and on a CI runner, and each fault is exact
+and repeatable. Stopping the real container would be closer to an outage but is slow, differs between Podman and the runner, and cannot
+produce a half-open or slow connection. The proxy cuts every open connection when its mode changes, as a real network does when it
+partitions and when it heals.
+
+**A known limit, found by this test.** While a database accepts a connection and then says nothing, a connection attempt holds its pool
+slot until that socket dies, and the test configuration's pool has one slot, so the service stays failing until the socket is reset. A
+deployment's pool is larger, and a healed partition resets the half-open flows, but a database that stays silent for a long time keeps
+slots occupied. The remedy is a connection-level timeout (TCP keepalive or a proxy that closes idle handshakes) in the deployment, not in
+this repository.
+

@@ -110,6 +110,7 @@ cargo test                          # DB-free unit tests
 cargo test --test mod -- --ignored --test-threads=1    # request tests (Postgres)
 cargo test --test enforcement -- --ignored             # auth persona matrix
 cargo test --test security -- --ignored                # headers and rate limits
+cargo test --test chaos -- --ignored --nocapture       # database faults (reset, blackhole, slow, a seeded monkey)
 cargo test --no-default-features --features keycloak \
   --test keycloak -- --ignored      # real Keycloak via Testcontainers (Podman)
 cargo clippy --all-targets          # pedantic; keep new files clean

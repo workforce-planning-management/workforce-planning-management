@@ -3770,4 +3770,14 @@ deployer's lawful basis and impact assessment before they are switched on.
       `enforcement_expenses` and `security` pass against Postgres 18; clippy `-D warnings` and `cargo fmt --check` clean. **Not done:** no UI
       (the hire form does not call it), no match-on-import, no merge, no per-organization thresholds; not exercised with signed-in callers of
       differing scope (the scope and `Read` checks reuse the directory's, but no enforcement-matrix test covers this route).
+- [x] WPM-T229 (2026-10-20) **Chaos testing.** *(traces to WPM-R137, WPM-D88)* `tests/chaos.rs` (own binary, `#[ignore]`d; tokio dev features
+      `io-util`, `sync`, `time`): a TCP proxy to Postgres with modes pass, reset, blackhole and slow; a baseline write; reset and blackhole
+      each checked for a bounded `5xx` that leaks nothing, no leftover row, and recovery; a slow database; then a seeded monkey of 30 rounds
+      of 3 writes in a random mode. Asserts every status is `200` or `5xx`, no leak, workers present are at least the successes and at most the
+      attempts, and each has exactly one `created` audit row. New CI step in `api-db`. Verified: passes with three different seeds
+      (about 20 seconds each; 54, 39 and 54 of 90 writes succeeded); clippy and `cargo fmt --check` clean. It first failed, and the
+      cause is recorded in WPM-D88 (a silent database holds a pool slot until the socket dies). **Not done:** no mutation check that the
+      atomicity assertion fails when a write is deliberately split; faults on Redis, the identity service and the mail server are not
+      injected; the monkey's requests run one after another, not concurrently; no latency percentiles; only `POST /api/workers`
+      is written under fault.
 

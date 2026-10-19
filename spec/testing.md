@@ -98,6 +98,11 @@ binaries, each in its own process. Sign-in enforcement is **on by default**
 `tests/requests/mod.rs::request_open`, which also turns the rate limits off; the
 `security` binary runs with the defaults and low limits to prove them.
 
+**Chaos** (`tests/chaos.rs`, WPM-R137): a TCP proxy between the app and Postgres resets, swallows or slows connections, and a seeded monkey flips it
+at random during writes. It asserts every request ends soon as a plain `5xx` that leaks no connection detail, that a refused write leaves
+nothing behind, that every worker present has its one audit row, and that the service answers again once the database does. The seed is printed;
+`WPM_CHAOS_SEED=<n>` replays a run. Its own binary, because it points `DATABASE_URL` at the proxy for the process.
+
 ## Front-end edition (`workforce-planning-management-ui-with-svelte`)
 
 - **vitest — 80 tests / 12 files**: the API client **path map** (every

@@ -128,6 +128,8 @@ jobs:
       - run: cargo test --locked --test enforcement_health -- --ignored --test-threads=1
       - run: cargo test --locked --test security -- --ignored --test-threads=1
       - run: cargo test --locked --test retention_schedule -- --ignored --test-threads=1
+      # Chaos: a proxy resets, swallows and slows the database connection; the seed is in the log (WPM_CHAOS_SEED replays it).
+      - run: cargo test --locked --test chaos -- --ignored --nocapture
 
   api-oidc:
     name: api · sign in with an Entra-compatible OIDC provider

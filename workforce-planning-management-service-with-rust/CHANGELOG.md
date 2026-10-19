@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — chaos testing (WPM-T229)
+
+`tests/chaos.rs` puts a fault-injecting proxy between the app and Postgres (reset, silent, slow) and runs a seeded random monkey during writes. It checks that failures are quick, plain `5xx`s that leak nothing, that writes are all-or-nothing, and that the service heals. Seed printed; `WPM_CHAOS_SEED` replays. New CI step.
+
 ### Added — possible-duplicate check (WPM-T228)
 
 `POST /api/workers/possible-duplicates` lists existing workers a new hire might already be, using the published `workforce-planning-management-matcher`. Read-only; names and worker numbers only; a name alone is `review`, only a shared worker number is `match`.

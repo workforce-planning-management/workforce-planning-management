@@ -137,6 +137,7 @@ cargo test --test mod -- --ignored --test-threads=1
 cargo test --test enforcement -- --ignored --test-threads=1
 cargo test --test enforcement_expenses -- --ignored --test-threads=1
 cargo test --test security -- --ignored --test-threads=1
+cargo test --test chaos -- --ignored --nocapture   # database faults; WPM_CHAOS_SEED=<n> replays a run
 podman compose -f compose.test.yaml down
 ```
 
