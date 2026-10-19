@@ -2,7 +2,7 @@
 
 [package]
 name = "workforce-planning-management"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.99"
 publish = true
@@ -51,7 +51,7 @@ async-trait = { version = "0.1" }
 axum = { version = "0.8" }
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-migration = { package = "workforce-planning-management-migration", path = "migration", version = "0.1.0" }
+migration = { package = "workforce-planning-management-migration", path = "migration", version = "0.1.1" }
 sea-orm = { version = "2.0", features = [
   "sqlx-sqlite",
   "sqlx-postgres",

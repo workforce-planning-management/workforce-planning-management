@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-19
+
+First release with the fixes below: 0.1.0 still sent `X-Powered-By`, and its container image had no OCI labels. `workforce-planning-management-migration` is released at the same version.
+
 ### Removed — the unused vendored `crates/authentication-verifier`
 
 - The build has used crates.io 0.9.1 since the switch; the directory was dead weight. `entity-ref` stays vendored. Current-state docs that said both shared crates were vendored now say what is true (history entries are unchanged).
