@@ -3,6 +3,11 @@
 # Build from this directory:
 #   podman build -f Containerfile -t workforce-planning-management .
 #
+# The release workflow passes the OCI label values, so the image says which
+# version and commit it is (VERSION is the crate version in Cargo.toml, and the
+# workflow checks that it, the tag and the label agree):
+#   podman build -f Containerfile --build-arg VERSION=0.1.0 --build-arg REVISION=$(git rev-parse HEAD) .
+#
 # The image runs as a non-root user and carries the binary and `config/`.
 # Pick the configuration with LOCO_ENV: `production` (the default here)
 # refuses to start without sign-in enforcement and a token key source; `demo`
@@ -21,6 +26,14 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --system --uid 10001 --home-dir /app --shell /usr/sbin/nologin wpm
+ARG VERSION=unknown
+ARG REVISION=unknown
+LABEL org.opencontainers.image.title="workforce-planning-management" \
+      org.opencontainers.image.description="Workforce planning management service (demo software; synthetic data only)" \
+      org.opencontainers.image.source="https://github.com/workforce-planning-management/workforce-planning-management" \
+      org.opencontainers.image.licenses="MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}"
 WORKDIR /app
 COPY --from=build /src/target/release/workforce-planning-management /app/
 COPY config /app/config

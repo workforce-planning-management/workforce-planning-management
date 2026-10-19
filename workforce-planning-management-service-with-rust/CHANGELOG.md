@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — OCI labels on the image
+
+- The `Containerfile` takes `VERSION` and `REVISION` build arguments and sets the `org.opencontainers.image.{title,description,source,licenses,version,revision}` labels. The release workflow passes the crate version and the commit, and fails before pushing if the image's labels disagree with the crate version, the tag or the commit. The builder stage never had git, so nothing was dropped.
+
 ### Fixed — no `X-Powered-By` header
 
 - `server.ident: ""` in every config removes loco's `X-Powered-By: loco.rs`, the one OWASP ZAP baseline finding (rule 10037). `tests/security.rs` now asserts the header is absent on every checked route (it failed before the config change).
