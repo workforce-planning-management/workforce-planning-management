@@ -256,6 +256,7 @@ including unrelated ones. Three changes, each with the largest effect for its vi
   order). The leave, backups and managers are read for the page only. `rules::directory::search` stays as the reference the unit tests state.
 - **The capacity view** reads workers in batches of 2,000 by `id` and adds up `pool_weighted_days`; the one rounding happens on the total
   (`supply_from_weighted`), so the answer is identical (a unit test says so) and memory no longer depends on the organization.
+  *(Superseded by WPM-D95: the sum is now made by the database, one query per pool; the rule stays the reference and a test walks every day.)*
 - **The plan forecast and cost views** read only the departments the plan names, and only the skills its roles ask for.
 
 What is **still read whole** is the plan views' planned-department workers. For them, one `COUNT` before the load and a `422` over

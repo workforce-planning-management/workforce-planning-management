@@ -12,15 +12,14 @@ use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, IntoActiveModel, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    capacity_settings, leave_requests, partner_commitments, programme_demands, role_profiles,
-    skill_pool_members, skill_pools, skills, start_decisions, worker_framework_roles,
-    worker_skills, workers,
+    capacity_settings, partner_commitments, programme_demands, role_profiles, skill_pool_members,
+    skill_pools, skills, start_decisions,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};

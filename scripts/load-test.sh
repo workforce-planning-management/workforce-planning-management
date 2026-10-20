@@ -41,6 +41,9 @@ export DATABASE_URL="postgres://loco:loco@localhost:$port/load" WPM_REQUIRE_AUTH
 # Rate limits are per network address and would answer a single-address load with 429; they are measured
 # separately (tests/security.rs). Demo profile: it reads PORT, and the production profile demands a CORS origin and JWT secret.
 export PORT=$port_api LOCO_ENV=demo WPM_RATE_LIMIT_PER_MINUTE=0 WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE=0
+# The demo profile holds ONE database connection with a 500 ms wait; a production deployment holds 20 (config/production.yaml).
+# Measured with one, every query over half a second made the others fail with a pool timeout.
+export DB_MAX_CONNECTIONS=${LOAD_DB_CONNECTIONS:-20} DB_CONNECT_TIMEOUT=${LOAD_DB_TIMEOUT_MS:-5000}
 (cd "$svc" && "$bin" db migrate >/dev/null 2>&1)
 
 echo "# machine: $(uname -sm), $(sysctl -n hw.ncpu 2>/dev/null || nproc) cpus; ${secs}s per endpoint, ${conc} connections"

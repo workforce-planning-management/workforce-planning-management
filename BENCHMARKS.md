@@ -124,3 +124,24 @@ The first run at the new supported size, before any change for it (8 connections
 | working time | 925 | 1,993 | 61 | **no** |
 
 Five routes fail the bar: capacity, plan forecast and cost, the CPD overview, the key-person register and working time. Several failures are connection-pool timeouts under 8 connections, not slow single requests.
+
+### Correction, and capacity in the database (WPM-T239, first step)
+
+**The load test ran the demo profile, which holds one database connection and waits 500 ms for it.** Any query over half a second made the
+other seven connections fail with a pool timeout, so most "failed requests" above (working time, the CPD overview, the key-person register,
+the worker list at 200,000) were that setting, not the code. A production deployment holds 20 (`config/production.yaml`); the script now
+sets `DB_MAX_CONNECTIONS` (default 20) and `DB_CONNECT_TIMEOUT` (5 s). Slow routes are still slow; the failures were not real.
+
+Capacity now sums supply in the database (one query per pool; the rule's definitions, in SQL). With 20 connections, at 200,000 workers:
+
+| Route | p50 ms | p99 ms | Failed | Meets the bar (2 s p95, none failed) |
+|---|---:|---:|---:|---|
+| worker list / directory | 24 / 127 | 53 / 271 | 0 | yes |
+| capacity | 1,279 | 1,494 | 0 | yes (was no answer in 8 s) |
+| CPD overview | 170 | 261 | 0 | yes |
+| workforce overview / metrics / insights | 198 / 33 / 32 | 281 / 74 / 61 | 0 | yes |
+| key-person register | 535 | 859 | 0 | yes |
+| working time | 1,433 | 3,041 | 0 | **no** (p99 over 3 s) |
+| plan forecast / cost | refused (`422`) | | all | **no** |
+
+Two routes remain: working time, and the plan forecast and cost (still refused over 10,000 workers).

@@ -1352,3 +1352,129 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
     })
     .await;
 }
+
+/// What one worker adds to a pool in a month, by walking every day: the definition the view's supply must
+/// equal, however it is computed (WPM-D95).
+fn walked_weighted_days(
+    fte: i64,
+    hired: chrono::NaiveDate,
+    terminated: Option<chrono::NaiveDate>,
+    leave: &[(chrono::NaiveDate, chrono::NaiveDate)],
+    month: chrono::NaiveDate,
+) -> i64 {
+    let mut days = 0;
+    let mut day = month;
+    while chrono::Datelike::month(&day) == chrono::Datelike::month(&month) {
+        let employed = hired <= day && terminated.is_none_or(|t| t > day);
+        let away = leave.iter().any(|(s, e)| *s <= day && day <= *e);
+        if employed && !away {
+            days += 1;
+        }
+        day += chrono::Duration::days(1);
+    }
+    fte * days
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// Supply by role and by skill: overlapping and month-spanning leave, a part-month start and end, a
+// pending and a withdrawn leave, a worker who qualifies twice — equal to walking the days.
+async fn capacity_supply_equals_walking_the_days() {
+    use chrono::NaiveDate;
+    use sea_orm::ConnectionTrait;
+    let d = |s: &str| NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap();
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let title = format!("Walker {tag}");
+        let skill: Value = request
+            .post("/api/skills")
+            .json(&json!({ "name": format!("Walking {tag}"), "category": "technical" }))
+            .await
+            .json();
+        // (fte, hired, terminated, title?, skill level?, approved leave)
+        type Spec = (i32, &'static str, Option<&'static str>, bool, Option<i32>, Vec<(&'static str, &'static str)>);
+        let specs: Vec<Spec> = vec![
+            (100, "2026-01-05", None, true, None,
+             vec![("2027-01-04", "2027-01-10"), ("2027-01-08", "2027-01-12"), ("2027-01-31", "2027-02-02"), ("2026-12-20", "2027-01-02")]),
+            (50, "2027-01-20", Some("2027-03-10"), true, None, vec![]),
+            (100, "2026-01-05", None, false, Some(3), vec![("2027-02-10", "2027-02-10")]),
+            (75, "2026-01-05", Some("2027-02-01"), true, Some(5), vec![("2027-01-15", "2027-03-31")]),
+            (100, "2026-01-05", None, false, Some(2), vec![]),
+        ];
+        let mut who = Vec::new();
+        for (n, (fte, hired, ended, titled, level, leave)) in specs.iter().enumerate() {
+            let created: Value = request
+                .post("/api/workers")
+                .json(&json!({
+                    "person_ref": super::a_person(), "organization_ref": org,
+                    "worker_number": format!("WALK-{tag}-{n}"), "display_name": format!("Test Worker WALK-{n}"),
+                    "employment_type": "permanent", "fte_percent": fte, "department": "engineering",
+                    "job_title": if *titled { title.clone() } else { format!("Other {n} {tag}") },
+                    "hired_on": hired,
+                }))
+                .await
+                .json();
+            let pid = created["pid"].as_str().unwrap().to_string();
+            activate!(&request, &pid).await;
+            if let Some(level) = level {
+                request.put(&format!("/api/workers/{pid}/skills"))
+                    .json(&json!({ "skill_pid": skill["pid"], "proficiency": level }))
+                    .await.assert_status_ok();
+            }
+            if let Some(end) = ended {
+                ctx.db.execute_unprepared(&format!("UPDATE workers SET terminated_on = '{end}' WHERE pid = '{pid}'")).await.unwrap();
+            }
+            for (s, e) in leave {
+                ctx.db.execute_unprepared(&format!(
+                    "INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status)
+                     VALUES (gen_random_uuid(), '{pid}', 'annual', '{s}', '{e}', 1, 'approved')")).await.unwrap();
+            }
+            // Pending and withdrawn leave never count.
+            ctx.db.execute_unprepared(&format!(
+                "INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status)
+                 VALUES (gen_random_uuid(), '{pid}', 'annual', '2027-01-01', '2027-03-31', 1, 'requested');
+                 INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status, deleted_at)
+                 VALUES (gen_random_uuid(), '{pid}', 'annual', '2027-01-01', '2027-03-31', 1, 'approved', now())")).await.unwrap();
+            who.push(pid);
+        }
+        let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": title })).await.json();
+        let by_role = make_pool(&request, &org, &format!("By role {tag}"), 0).await;
+        let by_skill = make_pool(&request, &org, &format!("By skill {tag}"), 0).await;
+        let both = make_pool(&request, &org, &format!("Both {tag}"), 0).await;
+        let empty = make_pool(&request, &org, &format!("Empty {tag}"), 0).await;
+        let add = |pool: &String, body: Value| {
+            let request = &request;
+            let pool = pool.clone();
+            async move { request.post(&format!("/api/skill-pools/{pool}/members")).json(&body).await.assert_status_ok(); }
+        };
+        add(&by_role, json!({ "role_profile_pid": profile["pid"] })).await;
+        add(&by_skill, json!({ "skill_pid": skill["pid"], "min_proficiency": 3 })).await;
+        add(&both, json!({ "role_profile_pid": profile["pid"] })).await;
+        add(&both, json!({ "skill_pid": skill["pid"], "min_proficiency": 3 })).await;
+
+        let view: Value = request.get(&format!("/api/capacity?organization={org}&from=2027-01-01&months=3")).await.json();
+        let months = [d("2027-01-01"), d("2027-02-01"), d("2027-03-01")];
+        let counts = |pool: &str, w: usize| match pool {
+            "role" => specs[w].3,
+            "skill" => specs[w].4.is_some_and(|l| l >= 3),
+            _ => specs[w].3 || specs[w].4.is_some_and(|l| l >= 3),
+        };
+        for (pool, kind) in [(&by_role, "role"), (&by_skill, "skill"), (&both, "both"), (&empty, "empty")] {
+            let cells = view["pools"].as_array().unwrap().iter().find(|p| p["pid"] == pool.as_str()).unwrap()["cells"].clone();
+            for (i, month) in months.iter().enumerate() {
+                let weighted: i64 = if kind == "empty" { 0 } else {
+                    specs.iter().enumerate().filter(|(w, _)| counts(kind, *w)).map(|(_, (fte, hired, ended, _, _, leave))| {
+                        let leave: Vec<_> = leave.iter().map(|(s, e)| (d(s), d(e))).collect();
+                        walked_weighted_days(i64::from(*fte), d(hired), ended.map(d), &leave, *month)
+                    }).sum()
+                };
+                let dim = i64::from(chrono::Datelike::day(&(*month + chrono::Months::new(1) - chrono::Duration::days(1))));
+                assert_eq!(cells[i]["supply_centi"], (2 * weighted + dim) / (2 * dim), "{kind} {month}");
+            }
+        }
+        let _ = who;
+    })
+    .await;
+}

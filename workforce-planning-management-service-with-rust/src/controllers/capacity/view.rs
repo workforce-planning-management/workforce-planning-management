@@ -26,154 +26,102 @@ pub(super) fn parse_demand_rows(rows: &[programme_demands::Model]) -> Vec<rules:
         .collect()
 }
 
-/// How many workers are read and worked out at a time (WPM-D90). The view's memory and each query's size
-/// depend on this, not on the size of the organization.
-const WORKER_BATCH: u64 = 2_000;
-
-/// Role profiles by trimmed lower-case job title: a worker whose title matches one holds it.
-async fn titles_to_roles(ctx: &AppContext) -> Result<HashMap<String, Uuid>> {
-    Ok(role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|p| (p.job_title.trim().to_lowercase(), p.pid))
-        .collect())
-}
-
-/// The next batch of the organization's workers who are employed at some point in the months, as
-/// capacity facts, with the `id` to continue after. An empty batch is the end.
-async fn worker_facts_batch(
-    ctx: &AppContext,
-    org: &str,
-    months: &[NaiveDate],
-    wanted_skills: &BTreeSet<Uuid>,
-    titles: &HashMap<String, Uuid>,
-    after_id: i32,
-) -> Result<(Vec<rules::WorkerFacts>, i32)> {
-    let first = months.first().copied().unwrap_or_else(today);
-    let last_month = months.last().copied().unwrap_or(first);
-    let last_day = last_month
-        .checked_add_days(chrono::Days::new(
-            u64::try_from(rules::days_in_month(last_month)).unwrap_or(31),
-        ))
-        .unwrap_or(last_month);
-    // Six columns, not the whole row: decoding the rest was most of the time (WPM-D90).
-    let staff: Vec<(i32, Uuid, i32, NaiveDate, Option<NaiveDate>, String)> =
-        workers::Entity::find()
-            .select_only()
-            .columns([
-                workers::Column::Id,
-                workers::Column::Pid,
-                workers::Column::FtePercent,
-                workers::Column::HiredOn,
-                workers::Column::TerminatedOn,
-                workers::Column::JobTitle,
-            ])
-            .filter(workers::Column::DeletedAt.is_null())
-            .filter(workers::Column::OrganizationRef.eq(org))
-            .filter(workers::Column::HiredOn.lt(last_day))
-            .filter(
-                Condition::any()
-                    .add(workers::Column::TerminatedOn.is_null())
-                    .add(workers::Column::TerminatedOn.gt(first)),
-            )
-            .filter(workers::Column::Id.gt(after_id))
-            .order_by_asc(workers::Column::Id)
-            .limit(WORKER_BATCH)
-            .into_tuple()
-            .all(&ctx.db)
-            .await?;
-    let Some(last_id) = staff.last().map(|w| w.0) else {
-        return Ok((Vec::new(), after_id));
-    };
-    let pids: Vec<Uuid> = staff.iter().map(|w| w.1).collect();
-    let mut chosen: HashMap<Uuid, Vec<Uuid>> = HashMap::new();
-    for row in worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.is_in(pids.clone()))
-        .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .all(&ctx.db)
-        .await?
-    {
-        if let Some(role) = row.role_profile_pid {
-            chosen.entry(row.worker_pid).or_default().push(role);
-        }
-    }
-    let mut skill_levels: HashMap<Uuid, Vec<(Uuid, i32)>> = HashMap::new();
-    if !wanted_skills.is_empty() {
-        for row in worker_skills::Entity::find()
-            .filter(worker_skills::Column::WorkerPid.is_in(pids.clone()))
-            .filter(worker_skills::Column::SkillPid.is_in(wanted_skills.iter().copied()))
-            .filter(worker_skills::Column::DeletedAt.is_null())
-            .all(&ctx.db)
-            .await?
-        {
-            skill_levels
-                .entry(row.worker_pid)
-                .or_default()
-                .push((row.skill_pid, row.proficiency));
-        }
-    }
-    let mut leave: HashMap<Uuid, Vec<(NaiveDate, NaiveDate)>> = HashMap::new();
-    for row in leave_requests::Entity::find()
-        .filter(leave_requests::Column::WorkerPid.is_in(pids))
-        .filter(leave_requests::Column::Status.eq("approved"))
-        .filter(leave_requests::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-    {
-        leave
-            .entry(row.worker_pid)
-            .or_default()
-            .push((row.start_on, row.end_on));
-    }
-    let facts = staff
-        .into_iter()
-        .map(
-            |(_, pid, fte_percent, hired_on, terminated_on, job_title)| {
-                let mut roles = chosen.remove(&pid).unwrap_or_default();
-                if let Some(role) = titles.get(&job_title.trim().to_lowercase()) {
-                    roles.push(*role);
-                }
-                rules::WorkerFacts {
-                    fte_percent,
-                    hired_on,
-                    terminated_on,
-                    role_profiles: roles,
-                    skills: skill_levels.remove(&pid).unwrap_or_default(),
-                    approved_leave: leave.remove(&pid).unwrap_or_default(),
-                }
-            },
-        )
-        .collect();
-    Ok((facts, last_id))
-}
-
-/// For each pool and month, the summed [`rules::pool_weighted_days`] over the organization's workers.
-/// Supply adds up across workers, so they are read in batches and only the sums are kept.
+/// For each pool and month, the summed [`rules::pool_weighted_days`] over the organization's workers,
+/// worked out by the database (WPM-D95): one query per pool returns a row per month, so neither the
+/// time nor the memory of the view depends on how many workers there are. The definitions are the
+/// rules': a worker counts if they hold one of the pool's role profiles (chosen, or by job title) or
+/// a skill at its minimum; the days are the employed days of the month less the merged approved
+/// leave, clipped to employment (`rules::available_days`, which the test walking every day pins).
 async fn weighted_days(
     ctx: &AppContext,
     org: &str,
     months: &[NaiveDate],
-    wanted: &BTreeSet<Uuid>,
     members_by_pool: &[Vec<rules::Member>],
 ) -> Result<Vec<Vec<i64>>> {
-    let titles = titles_to_roles(ctx).await?;
     let mut weighted = vec![vec![0_i64; months.len()]; members_by_pool.len()];
-    let mut after_id = 0;
-    loop {
-        let (batch, last_id) =
-            worker_facts_batch(ctx, org, months, wanted, &titles, after_id).await?;
-        if batch.is_empty() {
-            return Ok(weighted);
+    for (members, sums) in members_by_pool.iter().zip(weighted.iter_mut()) {
+        if members.is_empty() || months.is_empty() {
+            continue;
         }
-        for (members, sums) in members_by_pool.iter().zip(weighted.iter_mut()) {
-            for (sum, month) in sums.iter_mut().zip(months) {
-                *sum += rules::pool_weighted_days(members, &batch, *month);
+        let rows = ctx
+            .db
+            .query_all_raw(sea_orm::Statement::from_sql_and_values(
+                sea_orm::DbBackend::Postgres,
+                pool_supply_sql(members, months),
+                [org.into()],
+            ))
+            .await?;
+        for row in rows {
+            let first: NaiveDate = row.try_get("", "first")?;
+            let total: i64 = row.try_get("", "total")?;
+            if let Some(i) = months.iter().position(|m| *m == first) {
+                sums[i] = total;
             }
         }
-        after_id = last_id;
     }
+    Ok(weighted)
+}
+
+/// The SQL of [`weighted_days`] for one pool. Only dates, UUIDs and integers are written into it (all
+/// from typed values, never from text); the organization is a bound parameter.
+fn pool_supply_sql(members: &[rules::Member], months: &[NaiveDate]) -> String {
+    let month_rows = months
+        .iter()
+        .map(|m| {
+            let first = rules::month_start(*m);
+            let last = first
+                .checked_add_days(chrono::Days::new(
+                    u64::try_from(rules::days_in_month(first) - 1).unwrap_or(30),
+                ))
+                .unwrap_or(first);
+            format!("(DATE '{first}', DATE '{last}')")
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    let holds = members
+        .iter()
+        .map(|member| match member {
+            rules::Member::RoleProfile(role) => format!(
+                "EXISTS (SELECT 1 FROM worker_framework_roles r WHERE r.worker_pid = w.pid
+                         AND r.ended_at IS NULL AND r.role_profile_pid = '{role}')
+                 OR lower(btrim(w.job_title)) = (SELECT lower(btrim(p.job_title)) FROM role_profiles p
+                                                 WHERE p.pid = '{role}' AND p.deleted_at IS NULL)"
+            ),
+            rules::Member::Skill {
+                skill,
+                min_proficiency,
+            } => format!(
+                "EXISTS (SELECT 1 FROM worker_skills k WHERE k.worker_pid = w.pid AND k.deleted_at IS NULL
+                         AND k.skill_pid = '{skill}' AND k.proficiency >= {min_proficiency})"
+            ),
+        })
+        .collect::<Vec<_>>()
+        .join(" OR ");
+    format!(
+        "WITH m(first, last) AS (VALUES {month_rows}),
+         span AS (
+           SELECT w.pid, greatest(w.fte_percent, 0) AS fte, m.first,
+                  greatest(m.first, w.hired_on) AS f,
+                  least(m.last, coalesce(w.terminated_on - 1, m.last)) AS t
+           FROM workers w CROSS JOIN m
+           WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND ({holds})
+             AND greatest(m.first, w.hired_on) <= least(m.last, coalesce(w.terminated_on - 1, m.last))),
+         clipped AS (
+           SELECT s.pid, s.first, s.f, greatest(l.start_on, s.f) AS ls, least(l.end_on, s.t) AS le
+           FROM span s JOIN leave_requests l
+             ON l.worker_pid = s.pid AND l.status = 'approved' AND l.deleted_at IS NULL
+            AND l.start_on <= s.t AND l.end_on >= s.f),
+         away AS (
+           SELECT pid, first, sum(greatest(0, le - greatest(ls, coalesce(covered, f - 1) + 1) + 1)) AS days
+           FROM (SELECT c.*, max(le) OVER (PARTITION BY pid, first ORDER BY ls, le
+                                           ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS covered
+                 FROM clipped c) c
+           GROUP BY pid, first)
+         SELECT s.first AS first,
+                coalesce(sum(s.fte::bigint * ((s.t - s.f + 1) - coalesce(a.days, 0))), 0)::bigint AS total
+         FROM span s LEFT JOIN away a ON a.pid = s.pid AND a.first = s.first
+         GROUP BY s.first"
+    )
 }
 
 pub(crate) async fn load_org_capacity(
@@ -195,7 +143,6 @@ pub(crate) async fn load_org_capacity(
         .filter(skill_pool_members::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    let wanted: BTreeSet<Uuid> = member_rows.iter().filter_map(|m| m.skill_pid).collect();
     let demand_rows = programme_demands::Entity::find()
         .filter(programme_demands::Column::PoolPid.is_in(pool_pids.clone()))
         .filter(programme_demands::Column::DeletedAt.is_null())
@@ -225,7 +172,7 @@ pub(crate) async fn load_org_capacity(
                 .collect()
         })
         .collect();
-    let weighted = weighted_days(ctx, org, &months, &wanted, &members_by_pool).await?;
+    let weighted = weighted_days(ctx, org, &months, &members_by_pool).await?;
     let mut views = BTreeMap::new();
     let mut demand_by_pool = BTreeMap::new();
     let mut member_counts = BTreeMap::new();

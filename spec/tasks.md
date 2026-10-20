@@ -3543,7 +3543,10 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
-- [ ] WPM-T239 **Hold 200,000 workers.** *(WPM-R142, WPM-D95)* Run `scripts/load-test.sh 200000`; for each route over 2 s p95 or failing at 8
+- [ ] WPM-T239 **Hold 200,000 workers.** *(WPM-R142, WPM-D95)* **Progress (2026-10-20):** capacity sums supply in SQL (one query per pool, leave merged by a
+      window function), pinned by a new test that equals walking every day, **mutation-checked** twice; the load test now uses 20 connections
+      (the demo profile's single connection had produced most of the failures). At 200,000 only working time (p99 3 s) and the plan forecast and cost
+      (refused) miss the bar (`BENCHMARKS.md`). Run `scripts/load-test.sh 200000`; for each route over 2 s p95 or failing at 8
       connections, move its work into the database or batches, with a parity test first; then raise the `WPM_MAX_ORG_WORKERS` default. Order by
       measurement: capacity, plan forecast and cost, working time, then the remaining whole-table reads.
 - [x] WPM-T238 (2026-10-20) **The key-person register and working time are read by the database.** *(WPM-R120, WPM-D90)* At 50,000 workers both read every
