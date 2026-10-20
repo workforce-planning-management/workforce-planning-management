@@ -5,7 +5,7 @@
 #   scripts/load-test.sh [sizes...]          default sizes: 1000 10000 50000
 #   LOAD_SECONDS=10 LOAD_CONCURRENCY=8       per-endpoint duration and parallel connections
 #
-# Needs: podman (a Postgres container), oha, and a release build of the service
+# Needs: curl, podman (a Postgres container), oha, and a release build of the service
 # (cargo build --release in workforce-planning-management-service-with-rust). Synthetic data only.
 # Auth enforcement is off (WPM_REQUIRE_AUTH=0): this measures the service and the database, not the token check.
 set -euo pipefail
@@ -52,14 +52,14 @@ for n in "${sizes[@]}"; do
   psql <<SQL
 INSERT INTO skills (pid, name, category) VALUES ('00000000-0000-4000-8000-000000000001', 'load-skill', 'load')
   ON CONFLICT DO NOTHING;
-INSERT INTO skill_pools (pid, organization_ref, name) VALUES ('00000000-0000-4000-8000-000000000002', 'organization:load', 'Load pool')
+INSERT INTO skill_pools (pid, organization_ref, name) VALUES ('00000000-0000-4000-8000-000000000002', 'organization:00000000-0000-4000-8000-0000000000aa', 'Load pool')
   ON CONFLICT DO NOTHING;
 INSERT INTO skill_pool_members (pid, pool_pid, skill_pid, min_proficiency)
   SELECT '00000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', 2
   WHERE NOT EXISTS (SELECT 1 FROM skill_pool_members);
 INSERT INTO workers (pid, person_ref, organization_ref, worker_number, display_name, status, employment_type,
                      fte_percent, department, job_title, hired_on)
-  SELECT gen_random_uuid(), 'person:' || g, 'organization:load', 'W' || g, 'Synthetic Worker ' || g, 'active', 'permanent',
+  SELECT gen_random_uuid(), 'person:' || g, 'organization:00000000-0000-4000-8000-0000000000aa', 'W' || g, 'Synthetic Worker ' || g, 'active', 'permanent',
          100, 'dept-' || (g % 20), 'Engineer', DATE '2020-01-01' + (g % 1000)
   FROM generate_series($seeded + 1, $n) g;
 INSERT INTO worker_skills (pid, worker_pid, skill_pid, proficiency)
@@ -78,7 +78,17 @@ SQL
   for _ in $(seq 60); do curl -fs "127.0.0.1:$port_api/_ping" >/dev/null 2>&1 && { ready=1; break; }; sleep 1; done
   [ "$ready" = 1 ] || { echo "the service did not become ready"; exit 1; }
 
-  for path in "/_ping" "/api/workers?limit=50" "/api/directory?organization=organization:load" "/api/capacity?organization=organization:load"; do
+  # A plan with a demand line in every department (the workers are in dept-0..dept-19): the worst case for
+  # the plan views, which read the workers of the departments the plan names.
+  api="http://127.0.0.1:$port_api"
+  plan=$(curl -fsS -X POST "$api/api/workforce-plans" -H 'content-type: application/json' \
+    -d '{"name":"load","organization_ref":"organization:00000000-0000-4000-8000-0000000000aa","horizon_start":"2026-01-01","horizon_end":"2028-12-31","attrition_bp":1000}' \
+    | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["pid"])')
+  for d in $(seq 0 19); do
+    curl -fs -X PUT "$api/api/workforce-plans/$plan/demand-lines" -H 'content-type: application/json' \
+      -d "{\"department\":\"dept-$d\",\"target_on\":\"2027-06-30\",\"target_headcount\":$((n / 20 + 10))}" >/dev/null
+  done
+  for path in "/_ping" "/api/workers?limit=50" "/api/directory?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/capacity?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce-plans/$plan/forecast" "/api/workforce-plans/$plan/cost"; do
     out=$(oha -z "${secs}s" -c "$conc" --no-tui --output-format json "http://127.0.0.1:$port_api$path" 2>/dev/null || echo '{}')
     echo "$out" | python3 -I -c '
 import json, sys

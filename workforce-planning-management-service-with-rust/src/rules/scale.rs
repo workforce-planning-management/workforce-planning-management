@@ -1,7 +1,7 @@
 //! How many workers one request may load (WPM-R120, WPM-D90).
 //!
-//! The directory, the capacity view and the plan forecast read every live worker of the scope into
-//! memory and work them out there. That is fine until it is not, so the count is checked first and a
+//! The plan forecast and cost views read the workers of the departments a plan names into memory and
+//! work them out there (the directory pages in SQL and the capacity view reads in batches, WPM-T230). That is fine until it is not, so the count is checked first and a
 //! request over the ceiling is refused with a message, not left to run for seconds.
 //!
 //! The default ceiling is the largest organization the load test ran with no failed request at eight

@@ -48,9 +48,10 @@ pub(super) async fn cost(
     }
     let on_cost_bp = plan.on_cost_bp.unwrap_or(0);
     let today = chrono::Utc::now().date_naive();
-    let employed = employed_in_org(&ctx, &plan.organization_ref).await?;
     let (attrition, source) = resolve_attrition(&ctx, &plan).await?;
     let lines = plan_lines(&ctx, plan.pid).await?;
+    let employed =
+        employed_in_departments(&ctx, &plan.organization_ref, &departments_of(&lines)).await?;
     let titles = role_titles(&ctx).await?;
     let medians: BTreeMap<String, i64> = benchmarks::Entity::find()
         .filter(benchmarks::Column::DeletedAt.is_null())

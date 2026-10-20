@@ -13,6 +13,7 @@ mod audit_chain;
 mod audit_export;
 mod capacity;
 mod contacts;
+mod directory_paging;
 mod duplicates;
 mod engagements;
 mod erasure_replay;

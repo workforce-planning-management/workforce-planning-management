@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed — whole-organization views are refused above 10,000 workers (WPM-T196)
+### Changed — views read in pages and batches (WPM-T196, WPM-T230)
 
-`GET /api/directory`, `GET /api/capacity` and the plan forecast answer `422` when they would load more than `WPM_MAX_ORG_WORKERS` workers (default 10,000). **Upgrade note:** an organization above that loses those views until the setting is raised; measure first with `scripts/load-test.sh`. New `BENCHMARKS.md` results: at 50,000 workers requests failed.
+`GET /api/directory` searches, orders and pages in the database; `GET /api/capacity` reads workers in batches and adds up the supply; the plan forecast and cost views read only the departments the plan names. Answers are unchanged. The plan views answer `422` when they would read more than `WPM_MAX_ORG_WORKERS` workers (default 10,000). **Upgrade note:** a plan over 10,000 workers loses its forecast and cost until the setting is raised; measure first with `scripts/load-test.sh`. `controllers/capacity.rs` and `controllers/planning.rs` are split into directories (no route changes).
 
 ### Changed — request log (WPM-T197)
 

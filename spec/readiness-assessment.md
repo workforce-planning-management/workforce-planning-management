@@ -60,7 +60,7 @@ and many routes did not. WPM-T188 adds a guard with a table in code (WPM-D71).
 | 5 | **Fixed (WPM-T192):** backups were protected by file permissions only | `scripts/backup.sh` says to encrypt at rest and does not | WPM-R117, T192 |
 | 6 | No threat model | None in `spec/` | **WPM-T193 (built):** [governance/threat-model.md](governance/threat-model.md) |
 | 7 | Supply chain: actions pinned by SHA and secret-scanned (T194, 2026-10-20); image signature, provenance and base-image digests built (T195) but not yet run on a runner | `.github/workflows/*.yml` | WPM-R119, T194, T195 (both built) |
-| 8 | **Measured (WPM-T196):** the whole-organization views grow with the organization and fail at 50,000 workers; three are refused above 10,000 | `BENCHMARKS.md`, `scripts/load-test.sh`, `rules/scale.rs`; one laptop run, the views are refused rather than rewritten | WPM-R120, D90, T196 (done) |
+| 8 | **Measured (WPM-T196, T230):** the directory pages in SQL and the capacity view reads in batches (neither fails at 50,000); the plan views are refused above 10,000 workers | `BENCHMARKS.md`, `scripts/load-test.sh`, `rules/scale.rs`; one laptop run; capacity is still linear (3 s at 50,000) | WPM-R120, D90, T196, T230 (done) |
 | 9 | **Built (WPM-T197):** a request id on every response, a log line with no query string or identifier (tested), and an audit export for a monitoring system | `src/request_log.rs`, `tests/request_log.rs`, `GET /api/audits/export` | WPM-R122, T197 (done) |
 | 10 | Rate limits are per instance | **Documented (WPM-T198):** the deployer's options are in `deployment.md` | WPM-T198 (done) |
 | 11 | **Built (WPM-T199):** a migrator role and a runtime role without DDL, verified by running the request tests as the runtime role | `postgres-roles/roles.sql`, `scripts/verify-db-roles.sh` | WPM-R123, T199 (done) |
@@ -96,7 +96,7 @@ sector. Each is the deployer's or a later task's.
 **Built and verified** (each with tests that were broken on purpose to prove they fail): the need-to-know guard
 (T188), the append-only hash-chained audit trail (T189), no diagnosis in sick leave (T190), refusal of a plaintext
 database connection and a request timeout in production (T191), encrypted backups (T192), and a threat model
-(T193). **Open and written down:** supply-chain pinning and signing (T194, T195), load evidence (T196, measured; the views are capped, not yet rewritten),
+(T193). **Open and written down:** supply-chain pinning and signing (T194, T195), load evidence (T196, T230: measured and improved; the capacity view is still linear),
 observability checks (T197), the multi-instance and database-role guidance (T198, T199), token age (T200), and
 the independent tests and audits (T201–T203). **The verdict stands:** the one blocker is fixed, but the gates in
 section 4 are still open, and a first round by the author is not an independent review.

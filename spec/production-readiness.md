@@ -246,11 +246,19 @@ a short list of fields (and a path that is reduced to its words) cannot leak wha
 place of a configuration switch. **A limit:** a path segment that is a lowercase word is kept, so a route whose path carries a lowercase
 word that is itself personal would be logged; none does today, and the test will not know about a new one. Keep personal values out of paths.
 
-## WPM-D90 — Refuse a whole-organization read over a measured ceiling
+## WPM-D90 — Read an organization in pages and batches, and refuse what is still read whole over a measured ceiling
 
-The directory, the capacity view and the plan forecast load every live worker of the scope and work them out in memory. The load
-test (`BENCHMARKS.md`) shows the cost grows with the organization and that at 50,000 workers requests fail, including unrelated ones. The
-choice was between paging the work in SQL (right, large, touches the rules those views share) and a check that says no early. This does the
-second now: one `COUNT` before the load, a `422` over `WPM_MAX_ORG_WORKERS` (default 10,000, the largest size run with no failure). A
-refusal that names the number is better than a request that holds a connection for two seconds and a runtime for the others. **It is
-a stopgap, and the cost is real:** an organization over the ceiling loses those three views until the setting is raised or the views are rewritten.
+The load test (`BENCHMARKS.md`) showed the views that loaded an organization grew with it and, at 50,000 workers, failed requests,
+including unrelated ones. Three changes, each with the largest effect for its view:
+
+- **The directory** searches, orders and pages in the database (`strpos(lower(…), term)`, an `EXISTS` for the readable manager's name, the
+  on-call match as a pid list, ordering by lower-cased name in the `C` collation then pid so pages are stable and equal to the in-memory rule's
+  order). The leave, backups and managers are read for the page only. `rules::directory::search` stays as the reference the unit tests state.
+- **The capacity view** reads workers in batches of 2,000 by `id` and adds up `pool_weighted_days`; the one rounding happens on the total
+  (`supply_from_weighted`), so the answer is identical (a unit test says so) and memory no longer depends on the organization.
+- **The plan forecast and cost views** read only the departments the plan names, and only the skills its roles ask for.
+
+What is **still read whole** is the plan views' planned-department workers. For them, one `COUNT` before the load and a `422` over
+`WPM_MAX_ORG_WORKERS` (default 10,000; at 50,000 they failed). A refusal that names the number is better than a request that holds
+a connection for a second and a runtime for the others. **The cost is real**: a plan over 10,000 workers loses its forecast and cost until
+the setting is raised or the arithmetic is moved into SQL aggregates.

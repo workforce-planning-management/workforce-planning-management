@@ -38,25 +38,45 @@ impl Drop for Ceiling {
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
-async fn the_directory_and_capacity_refuse_over_the_ceiling_and_answer_at_it() {
+async fn the_plan_views_refuse_over_the_ceiling_and_the_paged_views_have_none() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         hire(&request, &org, "1").await;
         hire(&request, &org, "2").await;
+        let plan: Value = request
+            .post("/api/workforce-plans")
+            .json(&json!({
+                "name": "scale", "organization_ref": org,
+                "horizon_start": "2026-01-01", "horizon_end": "2027-12-31", "attrition_bp": 1000,
+            }))
+            .await
+            .json();
+        let pid = plan["pid"].as_str().expect("plan pid").to_string();
+        request
+            .put(&format!("/api/workforce-plans/{pid}/demand-lines"))
+            .json(&json!({ "department": "engineering", "target_on": "2027-06-30", "target_headcount": 5 }))
+            .await
+            .assert_status_ok();
+        let forecast = format!("/api/workforce-plans/{pid}/forecast");
+        let cost = format!("/api/workforce-plans/{pid}/cost");
         let capacity = format!("/api/capacity?organization={org}");
 
         {
             let _ceiling = Ceiling::set("1");
-            let refused = request.get("/api/directory").await;
-            assert_eq!(refused.status_code(), 422, "{}", refused.text());
-            let body: Value = refused.json();
-            assert!(body.to_string().contains("WPM_MAX_ORG_WORKERS"), "{body}");
-            assert_eq!(request.get(&capacity).await.status_code(), 422);
+            for route in [&forecast, &cost] {
+                let refused = request.get(route).await;
+                assert_eq!(refused.status_code(), 422, "{route}: {}", refused.text());
+                let body: Value = refused.json();
+                assert!(body.to_string().contains("WPM_MAX_ORG_WORKERS"), "{body}");
+            }
+            // the directory pages in SQL and the capacity view reads in batches: neither has a ceiling
+            request.get("/api/directory").await.assert_status_ok();
+            request.get(&capacity).await.assert_status_ok();
         }
 
         let _ceiling = Ceiling::set("1000000");
-        request.get("/api/directory").await.assert_status_ok();
-        request.get(&capacity).await.assert_status_ok();
+        request.get(&forecast).await.assert_status_ok();
+        request.get(&cost).await.assert_status_ok();
     })
     .await;
 }

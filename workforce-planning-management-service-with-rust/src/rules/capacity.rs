@@ -235,11 +235,29 @@ pub fn pool_supply_centi(
     workers: &[WorkerFacts],
     month: NaiveDate,
 ) -> i64 {
-    let weighted: i64 = workers
+    supply_from_weighted(
+        pool_weighted_days(members, workers, month),
+        reservation_bp,
+        month,
+    )
+}
+
+/// The part of a pool's supply that adds up across workers: FTE percent times available days, for
+/// those who count toward the pool. Workers can be summed in batches and the batches added, so an
+/// organization need not be held in memory whole (WPM-D90); [`supply_from_weighted`] finishes it.
+#[must_use]
+pub fn pool_weighted_days(members: &[Member], workers: &[WorkerFacts], month: NaiveDate) -> i64 {
+    workers
         .iter()
         .filter(|w| counts_toward(members, w))
         .map(|w| i64::from(w.fte_percent.max(0)) * available_days(w, month))
-        .sum();
+        .sum()
+}
+
+/// A pool's supply in centi-FTE from the summed [`pool_weighted_days`]: less the operations
+/// reservation, rounded half up. The rounding happens once, on the total.
+#[must_use]
+pub fn supply_from_weighted(weighted: i64, reservation_bp: i32, month: NaiveDate) -> i64 {
     let kept = i64::from(FULL_BP - reservation_bp.clamp(0, FULL_BP));
     let denominator = days_in_month(month) * i64::from(FULL_BP);
     (2 * weighted * kept + denominator) / (2 * denominator)
@@ -1164,5 +1182,31 @@ mod tests {
         assert!(CommitmentStatus::parse("maybe").is_none());
         assert!(CommitmentStatus::Confirmed.is_firm());
         assert!(!CommitmentStatus::Requested.is_firm());
+    }
+
+    #[test]
+    fn supply_summed_in_batches_equals_supply_of_the_whole() {
+        let jan = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let role = Uuid::from_u128(1);
+        let mut staff = Vec::new();
+        for i in 0..7 {
+            staff.push(WorkerFacts {
+                fte_percent: 40 + 10 * i,
+                hired_on: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+                terminated_on: None,
+                role_profiles: vec![role],
+                skills: Vec::new(),
+                approved_leave: Vec::new(),
+            });
+        }
+        let members = [Member::RoleProfile(role)];
+        for reservation in [0, 1_234, 10_000] {
+            let whole = pool_supply_centi(&members, reservation, &staff, jan);
+            let weighted: i64 = staff
+                .chunks(3)
+                .map(|batch| pool_weighted_days(&members, batch, jan))
+                .sum();
+            assert_eq!(supply_from_weighted(weighted, reservation, jan), whole);
+        }
     }
 }

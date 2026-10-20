@@ -26,13 +26,31 @@ pub(super) fn parse_demand_rows(rows: &[programme_demands::Model]) -> Vec<rules:
         .collect()
 }
 
-/// Workers of the organization as capacity facts for the given months.
-pub(super) async fn worker_facts(
+/// How many workers are read and worked out at a time (WPM-D90). The view's memory and each query's size
+/// depend on this, not on the size of the organization.
+const WORKER_BATCH: u64 = 2_000;
+
+/// Role profiles by trimmed lower-case job title: a worker whose title matches one holds it.
+async fn titles_to_roles(ctx: &AppContext) -> Result<HashMap<String, Uuid>> {
+    Ok(role_profiles::Entity::find()
+        .filter(role_profiles::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|p| (p.job_title.trim().to_lowercase(), p.pid))
+        .collect())
+}
+
+/// The next batch of the organization's workers who are employed at some point in the months, as
+/// capacity facts, with the `id` to continue after. An empty batch is the end.
+async fn worker_facts_batch(
     ctx: &AppContext,
     org: &str,
     months: &[NaiveDate],
     wanted_skills: &BTreeSet<Uuid>,
-) -> Result<Vec<rules::WorkerFacts>> {
+    titles: &HashMap<String, Uuid>,
+    after_id: i32,
+) -> Result<(Vec<rules::WorkerFacts>, i32)> {
     let first = months.first().copied().unwrap_or_else(today);
     let last_month = months.last().copied().unwrap_or(first);
     let last_day = last_month
@@ -40,24 +58,24 @@ pub(super) async fn worker_facts(
             u64::try_from(rules::days_in_month(last_month)).unwrap_or(31),
         ))
         .unwrap_or(last_month);
-    let scope = workers::Entity::find()
+    let staff: Vec<workers::Model> = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::OrganizationRef.eq(org));
-    crate::controllers::ensure_scale(ctx, scope.clone()).await?;
-    let staff: Vec<workers::Model> = scope
+        .filter(workers::Column::OrganizationRef.eq(org))
+        .filter(workers::Column::HiredOn.lt(last_day))
+        .filter(
+            Condition::any()
+                .add(workers::Column::TerminatedOn.is_null())
+                .add(workers::Column::TerminatedOn.gt(first)),
+        )
+        .filter(workers::Column::Id.gt(after_id))
+        .order_by_asc(workers::Column::Id)
+        .limit(WORKER_BATCH)
         .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| w.hired_on < last_day && w.terminated_on.is_none_or(|t| t > first))
-        .collect();
+        .await?;
+    let Some(last_id) = staff.last().map(|w| w.id) else {
+        return Ok((Vec::new(), after_id));
+    };
     let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
-    let titles: HashMap<String, Uuid> = role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|p| (p.job_title.trim().to_lowercase(), p.pid))
-        .collect();
     let mut chosen: HashMap<Uuid, Vec<Uuid>> = HashMap::new();
     for row in worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.is_in(pids.clone()))
@@ -97,7 +115,7 @@ pub(super) async fn worker_facts(
             .or_default()
             .push((row.start_on, row.end_on));
     }
-    Ok(staff
+    let facts = staff
         .into_iter()
         .map(|w| {
             let mut roles = chosen.remove(&w.pid).unwrap_or_default();
@@ -113,7 +131,35 @@ pub(super) async fn worker_facts(
                 approved_leave: leave.remove(&w.pid).unwrap_or_default(),
             }
         })
-        .collect())
+        .collect();
+    Ok((facts, last_id))
+}
+
+/// For each pool and month, the summed [`rules::pool_weighted_days`] over the organization's workers.
+/// Supply adds up across workers, so they are read in batches and only the sums are kept.
+async fn weighted_days(
+    ctx: &AppContext,
+    org: &str,
+    months: &[NaiveDate],
+    wanted: &BTreeSet<Uuid>,
+    members_by_pool: &[Vec<rules::Member>],
+) -> Result<Vec<Vec<i64>>> {
+    let titles = titles_to_roles(ctx).await?;
+    let mut weighted = vec![vec![0_i64; months.len()]; members_by_pool.len()];
+    let mut after_id = 0;
+    loop {
+        let (batch, last_id) =
+            worker_facts_batch(ctx, org, months, wanted, &titles, after_id).await?;
+        if batch.is_empty() {
+            return Ok(weighted);
+        }
+        for (members, sums) in members_by_pool.iter().zip(weighted.iter_mut()) {
+            for (sum, month) in sums.iter_mut().zip(months) {
+                *sum += rules::pool_weighted_days(members, &batch, *month);
+            }
+        }
+        after_id = last_id;
+    }
 }
 
 pub(crate) async fn load_org_capacity(
@@ -136,7 +182,6 @@ pub(crate) async fn load_org_capacity(
         .all(&ctx.db)
         .await?;
     let wanted: BTreeSet<Uuid> = member_rows.iter().filter_map(|m| m.skill_pid).collect();
-    let staff = worker_facts(ctx, org, &months, &wanted).await?;
     let demand_rows = programme_demands::Entity::find()
         .filter(programme_demands::Column::PoolPid.is_in(pool_pids.clone()))
         .filter(programme_demands::Column::DeletedAt.is_null())
@@ -147,27 +192,36 @@ pub(crate) async fn load_org_capacity(
         .filter(partner_commitments::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
+    let members_by_pool: Vec<Vec<rules::Member>> = pools
+        .iter()
+        .map(|pool| {
+            member_rows
+                .iter()
+                .filter(|m| m.pool_pid == pool.pid)
+                .filter_map(
+                    |m| match (m.role_profile_pid, m.skill_pid, m.min_proficiency) {
+                        (Some(role), None, _) => Some(rules::Member::RoleProfile(role)),
+                        (None, Some(skill), Some(min_proficiency)) => Some(rules::Member::Skill {
+                            skill,
+                            min_proficiency,
+                        }),
+                        _ => None,
+                    },
+                )
+                .collect()
+        })
+        .collect();
+    let weighted = weighted_days(ctx, org, &months, &wanted, &members_by_pool).await?;
     let mut views = BTreeMap::new();
     let mut demand_by_pool = BTreeMap::new();
     let mut member_counts = BTreeMap::new();
-    for pool in &pools {
-        let members: Vec<rules::Member> = member_rows
-            .iter()
-            .filter(|m| m.pool_pid == pool.pid)
-            .filter_map(
-                |m| match (m.role_profile_pid, m.skill_pid, m.min_proficiency) {
-                    (Some(role), None, _) => Some(rules::Member::RoleProfile(role)),
-                    (None, Some(skill), Some(min_proficiency)) => Some(rules::Member::Skill {
-                        skill,
-                        min_proficiency,
-                    }),
-                    _ => None,
-                },
-            )
-            .collect();
+    for ((pool, members), sums) in pools.iter().zip(&members_by_pool).zip(&weighted) {
         let supply: Vec<i64> = months
             .iter()
-            .map(|m| rules::pool_supply_centi(&members, pool.operations_reservation_bp, &staff, *m))
+            .zip(sums)
+            .map(|(month, total)| {
+                rules::supply_from_weighted(*total, pool.operations_reservation_bp, *month)
+            })
             .collect();
         let demand = parse_demand_rows(
             &demand_rows

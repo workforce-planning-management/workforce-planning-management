@@ -4,19 +4,40 @@
 #[allow(clippy::wildcard_imports)]
 use super::*;
 
-/// Employed workers of the plan's organization, today.
-pub(super) async fn employed_in_org(ctx: &AppContext, org: &str) -> Result<Vec<workers::Model>> {
+/// Workers per skills query, well under the database's bind-parameter limit.
+const DECLARED_CHUNK: usize = 5_000;
+
+/// Employed workers of the plan's organization in the given departments, today. Only the planned
+/// departments are read: a plan about two of twenty departments does not load the other eighteen.
+pub(super) async fn employed_in_departments(
+    ctx: &AppContext,
+    org: &str,
+    departments: &BTreeSet<String>,
+) -> Result<Vec<workers::Model>> {
     let today = chrono::Utc::now().date_naive();
     let scope = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::OrganizationRef.eq(org));
+        .filter(workers::Column::OrganizationRef.eq(org))
+        .filter(workers::Column::Department.is_in(departments.iter().cloned()))
+        .filter(workers::Column::HiredOn.lte(today))
+        .filter(
+            Condition::any()
+                .add(workers::Column::TerminatedOn.is_null())
+                .add(workers::Column::TerminatedOn.gt(today)),
+        );
     crate::controllers::ensure_scale(ctx, scope.clone()).await?;
     Ok(scope
         .all(&ctx.db)
         .await?
         .into_iter()
+        // the rule is the authority on "employed today"; SQL only narrows what is read
         .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
         .collect())
+}
+
+/// The departments a plan's demand lines name.
+pub(super) fn departments_of(lines: &[plan_demand_lines::Model]) -> BTreeSet<String> {
+    lines.iter().map(|l| l.department.clone()).collect()
 }
 
 /// The attrition assumption in force: the plan's own, else the observed
@@ -100,9 +121,10 @@ pub(super) async fn forecast(
 ) -> Result<Response> {
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     let today = chrono::Utc::now().date_naive();
-    let employed = employed_in_org(&ctx, &plan.organization_ref).await?;
     let (attrition, source) = resolve_attrition(&ctx, &plan).await?;
     let lines = plan_lines(&ctx, plan.pid).await?;
+    let employed =
+        employed_in_departments(&ctx, &plan.organization_ref, &departments_of(&lines)).await?;
     let titles = role_titles(&ctx).await?;
     let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
     let skill_names: BTreeMap<Uuid, String> = crate::models::_entities::skills::Entity::find()
@@ -111,13 +133,20 @@ pub(super) async fn forecast(
         .into_iter()
         .map(|s| (s.pid, s.name))
         .collect();
-    let declared: BTreeMap<(Uuid, Uuid), i32> = worker_skills::Entity::find()
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|d| ((d.worker_pid, d.skill_pid), d.proficiency))
-        .collect();
+    // Only the planned departments' workers and only the skills the lines' roles ask for are read.
+    let needed_skills: BTreeSet<Uuid> = requirements.iter().map(|r| r.skill_pid).collect();
+    let mut declared: BTreeMap<(Uuid, Uuid), i32> = BTreeMap::new();
+    for chunk in employed.chunks(DECLARED_CHUNK) {
+        for d in worker_skills::Entity::find()
+            .filter(worker_skills::Column::DeletedAt.is_null())
+            .filter(worker_skills::Column::WorkerPid.is_in(chunk.iter().map(|w| w.pid)))
+            .filter(worker_skills::Column::SkillPid.is_in(needed_skills.iter().copied()))
+            .all(&ctx.db)
+            .await?
+        {
+            declared.insert((d.worker_pid, d.skill_pid), d.proficiency);
+        }
+    }
 
     // Open plans to convert, by the status and FTE of the worker they are for. A plan names a worker, so
     // only counts leave here, and they are read against the department the worker is in today.

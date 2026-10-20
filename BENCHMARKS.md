@@ -7,43 +7,63 @@ One measurement exists: the load test below (WPM-T196, 2026-10-20). There is no 
 
 `scripts/load-test.sh [sizes...]` starts a throwaway Postgres 17 in Podman, applies the migrations, seeds
 **one organization** at each size (workers, one skill each, approved leave for a third), starts the release
-binary on it and drives four routes with [`oha`](https://github.com/hatoo/oha) for 10 seconds each at 8 connections.
+binary on it and drives six routes (the plan views on a plan with a demand line in every department) with [`oha`](https://github.com/hatoo/oha) for 10 seconds each at 8 connections.
 It tears everything down and refuses to run if the port is already answering (a leftover server would be measured
 instead). `LOAD_SECONDS`, `LOAD_CONCURRENCY` and `LOAD_LOG` (the service's log) tune it.
 
-Result, one run, 2026-10-20, Apple M-series laptop (16 cores), Postgres in a container on the same machine,
+Two passes, 2026-10-20, Apple M-series laptop (16 cores), Postgres in a container on the same machine,
 `cargo build --release`, sign-in enforcement **off** and rate limits **off** (so this measures the service and the
-database, not the token check or the 429s):
+database, not the token check or the 429s). Median latency in ms; **failed** is any request that did not get a `2xx`.
+
+**First pass** (before WPM-T230): every view loaded the whole organization into memory.
+
+| workers | `/api/workers?limit=50` | directory | capacity | failed |
+|---:|---:|---:|---:|---:|
+| 1,000 | 10 | 44 | 88 | 0 |
+| 10,000 | 16 | 266 | 518 | 0 |
+| 50,000 | 38 | 1,229 | 2,202 | **5, 19, 19** |
+
+**Second pass** (after WPM-T230: the directory searches, orders and pages in SQL; the capacity view reads workers in
+batches of 2,000 and adds up the supply; the plan views read only the planned departments' workers).
+Requests/s, p50 ms, p99 ms, 10 s at 8 connections:
 
 | workers | route | requests/s | p50 ms | p99 ms | failed |
 |---:|---|---:|---:|---:|---:|
-| 1,000 | `/_ping` | 52,504 | 0.1 | 0.2 | 0 |
-| 1,000 | `/api/workers?limit=50` | 704 | 10.3 | 35.1 | 0 |
-| 1,000 | `/api/directory?organization=…` | 175 | 43.9 | 68.6 | 0 |
-| 1,000 | `/api/capacity?organization=…` | 88 | 87.6 | 134.7 | 0 |
-| 10,000 | `/api/workers?limit=50` | 474 | 16.0 | 31.5 | 0 |
-| 10,000 | `/api/directory?organization=…` | 30 | 266 | 370 | 0 |
-| 10,000 | `/api/capacity?organization=…` | 16 | 518 | 594 | 0 |
-| 50,000 | `/api/workers?limit=50` | 180 | 37.9 | 93.1 | **5** |
-| 50,000 | `/api/directory?organization=…` | 7 | 1,229 | 1,364 | **19** |
-| 50,000 | `/api/capacity?organization=…` | 5 | 2,202 | 2,489 | **19** |
+| 1,000 | `/api/workers?limit=50` | 477 | 11.7 | 94.9 | 0 |
+| 1,000 | directory | 146 | 40.4 | 219.9 | 0 |
+| 1,000 | capacity | 78 | 89.6 | 248.9 | 0 |
+| 1,000 | plan forecast / cost | 127 / 172 | 61 / 46 | 106 / 62 | 0 |
+| 10,000 | `/api/workers?limit=50` | 488 | 15.9 | 24.8 | 0 |
+| 10,000 | directory | 115 | 68.5 | 117 | 0 |
+| 10,000 | capacity | 14 | 617 | 652 | 0 |
+| 10,000 | plan forecast / cost | 27 / 34 | 282 / 235 | 482 / 317 | 0 |
+| 50,000 | `/api/workers?limit=50` | 201 | 39.3 | 60.2 | 0 |
+| 50,000 | directory | 50 | 158.5 | 171 | 0 |
+| 50,000 | capacity | 3 | 3,027 | 3,061 | 0 |
+| 50,000 | plan forecast / cost | refused (`422`, over 10,000) | | | |
+| 50,000 | plan forecast / cost, ceiling raised to 100,000 | 7 / 8 | 1,227 / 1,057 | 1,277 / 1,071 | **7 of 64, 7 of 77** |
+
+(The 1,000-worker rows are the first of each run and are noisy: an earlier run measured the directory at 285 requests/s,
+27 ms.)
 
 What it shows:
 
-- **The views that load a whole organization cost in proportion to its size** (directory 44 → 266 → 1,229 ms; capacity
-  88 → 518 → 2,202 ms for 1k → 10k → 50k workers). The paged worker list also slows (10 → 16 → 38 ms) because it counts the
-  scope on every page.
-- **At 50,000 workers requests fail**: `500 Failed to acquire connection from pool: timed out`. Each heavy request holds the
-  async runtime for one to two seconds, so even the cheap paged list misses its 500 ms slot to take a connection.
-  This is why the default ceiling is **10,000 workers** (`WPM_MAX_ORG_WORKERS`, WPM-D90): the largest size run with no failed request.
+- **The directory now costs the page, not the organization**: 1,229 ms and failures at 50,000 became 159 ms and none. The
+  paged worker list also slows with size (11 → 16 → 39 ms) because it counts the scope on every page.
+- **The capacity view no longer fails** at 50,000 (it reads in batches and holds only sums), but it is **still linear**:
+  3 s at 50,000, slower than before (2.2 s) because it now makes a round of queries per batch. It is the next thing to move into SQL
+  aggregates; the supply arithmetic (`rules::capacity::pool_weighted_days`) already adds up across workers.
+- **The plan views still read every worker of the planned departments**, and above 10,000 of them requests fail
+  (`500 … Connection pool timed out`: each request holds the async runtime for about a second). That is why
+  `WPM_MAX_ORG_WORKERS` (default **10,000**, WPM-D90) still guards them and only them.
 - The service does about 50,000 requests/s on a route that touches nothing (`/_ping`); the rest is database and work per request.
 
 What it does **not** show: any other route; mixed traffic or writes; more than 8 connections; a database on another
 host or a managed one; sign-in enforcement (a token check adds work to every request); a cold cache; a long run (10 seconds
 per route, once, no repeat to give a spread). One run on one laptop is a sketch of the shape, not a capacity plan: repeat it on your hardware before
 relying on any figure, and raise `WPM_MAX_ORG_WORKERS` only after doing so. It is **not** a CI job, because shared runners are too noisy to compare.
-Other whole-table reads exist (about fifty queries load a `workers` or related table with `.all()`); only the directory, the capacity view and the
-plan forecast are bounded.
+Other whole-table reads exist (about fifty queries load a `workers` or related table with `.all()`); of those, the directory, the capacity view and the
+plan forecast and cost views are bounded or paged, and the rest are not measured.
 
 ## What exists today
 
