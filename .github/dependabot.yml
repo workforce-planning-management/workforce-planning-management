@@ -29,3 +29,18 @@ updates:
       interval: "weekly"
       day: "monday"
     labels: ["dependencies", "ci"]
+  # Image digests in the compose files (WPM-T231). Dependabot does not read a `Containerfile` or the
+  # service images in a workflow, so those digests (the service image, Stalwart, CI's Postgres and
+  # Redis) are updated by hand; `scripts/check-actions-pinned.py` fails if one loses its digest.
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "containers"]
+  - package-ecosystem: "docker-compose"
+    directory: "/workforce-planning-management-service-with-rust"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "containers"]

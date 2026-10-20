@@ -102,7 +102,7 @@ jobs:
         working-directory: workforce-planning-management-service-with-rust
     services:
       postgres:
-        image: postgres:18
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
         env:
           POSTGRES_USER: loco
           POSTGRES_PASSWORD: loco
@@ -114,7 +114,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping"
@@ -159,7 +159,7 @@ jobs:
         working-directory: workforce-planning-management-service-with-rust
     services:
       postgres:
-        image: postgres:18
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
         env:
           POSTGRES_USER: loco
           POSTGRES_PASSWORD: loco
@@ -171,7 +171,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping"
@@ -200,7 +200,7 @@ jobs:
     # smoke test of the restored data, not the request suite.
     services:
       postgres:
-        image: postgres:18
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
         env:
           POSTGRES_USER: loco
           POSTGRES_PASSWORD: loco
@@ -212,7 +212,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping"
@@ -257,7 +257,7 @@ jobs:
         working-directory: workforce-planning-management-service-with-rust
     services:
       postgres:
-        image: postgres:18
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
         env:
           POSTGRES_USER: loco
           POSTGRES_PASSWORD: loco
@@ -269,7 +269,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping"
@@ -294,7 +294,7 @@ jobs:
     # as the second, which must be refused every schema change and every change to the audit trail (WPM-T199).
     services:
       postgres:
-        image: postgres:18
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
         env:
           POSTGRES_USER: loco
           POSTGRES_PASSWORD: loco
@@ -306,7 +306,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping"
@@ -376,7 +376,7 @@ jobs:
     # after that, so it is blocking and a required check.
     services:
       postgres:
-        image: postgres:18
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
         env:
           POSTGRES_USER: loco
           POSTGRES_PASSWORD: loco
@@ -388,7 +388,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping"

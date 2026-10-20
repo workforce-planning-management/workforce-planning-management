@@ -3542,6 +3542,13 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T231 (2026-10-20) **Every container image is pinned by digest.** *(WPM-R119)* The Postgres and Redis service containers in `ci.yml` (twelve), both
+      compose files, the Stalwart `Containerfile` (base and `COPY --from`) and the load-test script name `image:tag@sha256:…` (the multi-arch index
+      digest, read from the registry; two pulled by digest to check). `scripts/check-actions-pinned.py` now fails on an image reference without a
+      digest in a workflow service, a compose file, a Containerfile or a script, and was shown to fail when a digest was removed. Dependabot gets
+      `docker-compose` entries. **Not done:** Dependabot does not read a `Containerfile` or a workflow's service images, so those digests are updated by
+      hand; a digest pins what the tag was today, it does not say the image is free of vulnerabilities (no image scan runs); the Keycloak image used by
+      the tests and the demo was not among the references the checker found (it is started by the test, by tag).
 - [x] WPM-T197 (2026-10-20) **Observability.** *(WPM-R122, WPM-D89)* `src/request_log.rs` is the outermost layer: it sets `X-Request-Id` on
       every response (the caller's if plain, else a UUID; checked on a hostile one) and writes one line per request with the id, method, a
       `route` with identifiers replaced by `{}`, the status and the latency. Loco's request logger, which writes the whole URI, is off in
