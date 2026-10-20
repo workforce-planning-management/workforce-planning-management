@@ -4,7 +4,7 @@
 //! transaction.
 
 use loco_rs::prelude::*;
-use sea_orm::{PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
+use sea_orm::{ExprTrait, PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -738,6 +738,9 @@ struct WorkingTimeQuery {
 /// recent turnarounds and the *planned* rota alike.
 const REST_WINDOW_DAYS: i64 = 28;
 
+/// Ids per `IN (…)` list, well under the database's bind-parameter limit.
+const BATCH: usize = 5_000;
+
 /// One shift's `(starts, ends)` in UTC, for the rest-gap check.
 type ShiftInterval = (chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>);
 
@@ -749,6 +752,7 @@ type ShiftInterval = (chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Ut
 /// shift assignments. Flags only — nothing is refused (WPM-D19).
 /// Visibility equals the rota's: flagged workers are named.
 #[debug_handler]
+#[allow(clippy::too_many_lines)] // minutes → shifts → rest breaches → flagged, linearly
 async fn working_time(
     axum::extract::Query(query): axum::extract::Query<WorkingTimeQuery>,
     State(ctx): State<AppContext>,
@@ -757,35 +761,55 @@ async fn working_time(
         .as_of
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
     let window_start = as_of - chrono::Duration::weeks(working_time::REFERENCE_WEEKS);
-    let mut worker_find = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
-    if let Some(department) = &query.department {
-        worker_find = worker_find.filter(workers::Column::Department.eq(department.as_str()));
-    }
-    let worker_rows = worker_find.all(&ctx.db).await?;
-    // Recorded minutes per worker over the reference window.
-    let entries = time_entries::Entity::find()
-        .filter(time_entries::Column::DeletedAt.is_null())
-        .filter(time_entries::Column::WorkedOn.gt(window_start))
-        .filter(time_entries::Column::WorkedOn.lte(as_of))
+    let department = query.department.as_deref();
+    let live_workers = || {
+        let mut find = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
+        if let Some(department) = department {
+            find = find.filter(workers::Column::Department.eq(department));
+        }
+        find
+    };
+    let workers_checked = live_workers().count(&ctx.db).await?;
+    // Recorded minutes per worker over the reference window, summed by the database: only the
+    // workers over the ceiling come back (the same comparison as `working_time::over_average`).
+    let ceiling =
+        working_time::MAX_AVG_WEEKLY_MINUTES.saturating_mul(working_time::REFERENCE_WEEKS);
+    let windowed_minutes = || {
+        time_entries::Entity::find()
+            .select_only()
+            .column(time_entries::Column::WorkerPid)
+            .column_as(
+                sea_orm::sea_query::Expr::col(time_entries::Column::Minutes).sum(),
+                "total",
+            )
+            .filter(time_entries::Column::DeletedAt.is_null())
+            .filter(time_entries::Column::WorkedOn.gt(window_start))
+            .filter(time_entries::Column::WorkedOn.lte(as_of))
+            .group_by(time_entries::Column::WorkerPid)
+    };
+    let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = windowed_minutes()
+        .having(
+            sea_orm::sea_query::Expr::col(time_entries::Column::Minutes)
+                .sum()
+                .gt(ceiling),
+        )
+        .into_tuple::<(Uuid, i64)>()
         .all(&ctx.db)
-        .await?;
-    let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = std::collections::BTreeMap::new();
-    for entry in &entries {
-        *minutes_of.entry(entry.worker_pid).or_default() += i64::from(entry.minutes);
-    }
-    // Shift intervals per worker around `as_of` (recent + planned).
+        .await?
+        .into_iter()
+        .collect();
+    // Shift intervals per worker around `as_of` (recent + planned): only the shifts in the window.
     let rest_start = as_of - chrono::Duration::days(REST_WINDOW_DAYS);
     let rest_end = as_of + chrono::Duration::days(REST_WINDOW_DAYS);
+    let utc_midnight = |date: chrono::NaiveDate| date.and_time(chrono::NaiveTime::MIN).and_utc();
     let shift_rows = shifts::Entity::find()
         .filter(shifts::Column::DeletedAt.is_null())
+        .filter(shifts::Column::StartsAt.gte(utc_midnight(rest_start)))
+        .filter(shifts::Column::StartsAt.lt(utc_midnight(rest_end + chrono::Duration::days(1))))
         .all(&ctx.db)
         .await?;
     let window_shifts: std::collections::BTreeMap<Uuid, ShiftInterval> = shift_rows
         .iter()
-        .filter(|shift| {
-            let start = shift.starts_at.date_naive();
-            start >= rest_start && start <= rest_end
-        })
         .map(|shift| {
             (
                 shift.pid,
@@ -796,54 +820,94 @@ async fn working_time(
             )
         })
         .collect();
-    let assignments = shift_assignments::Entity::find()
-        .filter(shift_assignments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
     let mut intervals_of: std::collections::BTreeMap<Uuid, Vec<ShiftInterval>> =
         std::collections::BTreeMap::new();
-    for assignment in &assignments {
-        if let Some(interval) = window_shifts.get(&assignment.shift_pid) {
-            intervals_of
-                .entry(assignment.worker_pid)
-                .or_default()
-                .push(*interval);
+    for shift_pids in window_shifts
+        .keys()
+        .copied()
+        .collect::<Vec<_>>()
+        .chunks(BATCH)
+    {
+        for assignment in shift_assignments::Entity::find()
+            .filter(shift_assignments::Column::DeletedAt.is_null())
+            .filter(shift_assignments::Column::ShiftPid.is_in(shift_pids.to_vec()))
+            .all(&ctx.db)
+            .await?
+        {
+            if let Some(interval) = window_shifts.get(&assignment.shift_pid) {
+                intervals_of
+                    .entry(assignment.worker_pid)
+                    .or_default()
+                    .push(*interval);
+            }
         }
     }
+    let breaches_of: std::collections::BTreeMap<Uuid, Vec<working_time::RestBreach>> = intervals_of
+        .iter()
+        .map(|(pid, intervals)| (*pid, working_time::rest_breaches(intervals)))
+        .filter(|(_, breaches)| !breaches.is_empty())
+        .collect();
+    // A worker flagged only for rest still shows their total: read just those.
+    let rest_only: Vec<Uuid> = breaches_of
+        .keys()
+        .filter(|pid| !minutes_of.contains_key(pid))
+        .copied()
+        .collect();
+    for pids in rest_only.chunks(BATCH) {
+        minutes_of.extend(
+            windowed_minutes()
+                .filter(time_entries::Column::WorkerPid.is_in(pids.to_vec()))
+                .into_tuple::<(Uuid, i64)>()
+                .all(&ctx.db)
+                .await?,
+        );
+    }
+    let mut candidates: Vec<Uuid> = minutes_of
+        .keys()
+        .chain(breaches_of.keys())
+        .copied()
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    candidates.sort_unstable();
     let mut flagged = Vec::new();
-    for worker in &worker_rows {
-        let total_minutes = minutes_of.get(&worker.pid).copied().unwrap_or(0);
-        let over = working_time::over_average(total_minutes, working_time::REFERENCE_WEEKS);
-        let breaches = intervals_of
-            .get(&worker.pid)
-            .map(|intervals| working_time::rest_breaches(intervals))
-            .unwrap_or_default();
-        if !over && breaches.is_empty() {
-            continue;
+    for pids in candidates.chunks(BATCH) {
+        let people = live_workers()
+            .filter(workers::Column::Pid.is_in(pids.to_vec()))
+            .order_by_asc(workers::Column::Id)
+            .all(&ctx.db)
+            .await?;
+        for worker in &people {
+            let total_minutes = minutes_of.get(&worker.pid).copied().unwrap_or(0);
+            let over = working_time::over_average(total_minutes, working_time::REFERENCE_WEEKS);
+            let breaches = breaches_of.get(&worker.pid).map_or(&[][..], Vec::as_slice);
+            if !over && breaches.is_empty() {
+                continue;
+            }
+            flagged.push(serde_json::json!({
+                "worker_pid": worker.pid,
+                "display_name": worker.display_name,
+                "department": worker.department,
+                "average_weekly": {
+                    "numerator_minutes": total_minutes,
+                    "denominator_weeks": working_time::REFERENCE_WEEKS,
+                    "value_minutes_per_week":
+                        working_time::weekly_average(total_minutes, working_time::REFERENCE_WEEKS),
+                },
+                "over_48h": over,
+                "rest_breaches": breaches.iter().map(|breach| serde_json::json!({
+                    "prev_end": breach.prev_end,
+                    "next_start": breach.next_start,
+                    "gap_minutes": breach.gap_minutes,
+                })).collect::<Vec<_>>(),
+            }));
         }
-        flagged.push(serde_json::json!({
-            "worker_pid": worker.pid,
-            "display_name": worker.display_name,
-            "department": worker.department,
-            "average_weekly": {
-                "numerator_minutes": total_minutes,
-                "denominator_weeks": working_time::REFERENCE_WEEKS,
-                "value_minutes_per_week":
-                    working_time::weekly_average(total_minutes, working_time::REFERENCE_WEEKS),
-            },
-            "over_48h": over,
-            "rest_breaches": breaches.iter().map(|breach| serde_json::json!({
-                "prev_end": breach.prev_end,
-                "next_start": breach.next_start,
-                "gap_minutes": breach.gap_minutes,
-            })).collect::<Vec<_>>(),
-        }));
     }
     format::json(serde_json::json!({
         "as_of": as_of,
         "reference_weeks": working_time::REFERENCE_WEEKS,
         "rest_window_days": REST_WINDOW_DAYS,
-        "workers_checked": worker_rows.len(),
+        "workers_checked": workers_checked,
         "flagged": flagged,
         "derivation": "advisory only, nothing is refused (WPM-D19); average = all \
                        recorded (not merely approved) minutes over the trailing 17 \

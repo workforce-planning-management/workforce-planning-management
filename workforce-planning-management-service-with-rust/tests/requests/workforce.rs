@@ -290,6 +290,39 @@ async fn working_time_guardrails() {
                 .assert_status_ok();
         }
 
+        // A worker flagged for rest alone still shows their (modest) total; a turnaround more than
+        // 28 days from `as_of` is outside the window and flags no one.
+        let rest_only = seed_worker!(&request, &org, "WT-3", None).await;
+        activate!(&request, &rest_only).await;
+        request
+            .post(&format!("/api/workers/{rest_only}/time-entries"))
+            .json(&json!({ "worked_on": "2026-07-02", "minutes": 600 }))
+            .await
+            .assert_status_ok();
+        let far = seed_worker!(&request, &org, "WT-4", None).await;
+        activate!(&request, &far).await;
+        for (who, starts, ends) in [
+            (&rest_only, "2026-07-12T14:00:00Z", "2026-07-12T22:00:00Z"),
+            (&rest_only, "2026-07-13T08:00:00Z", "2026-07-13T16:00:00Z"),
+            (&far, "2026-09-05T14:00:00Z", "2026-09-05T22:00:00Z"),
+            (&far, "2026-09-06T08:00:00Z", "2026-09-06T16:00:00Z"),
+        ] {
+            let shift: Value = request
+                .post("/api/shifts")
+                .json(&json!({ "department": "engineering", "starts_at": starts,
+                               "ends_at": ends, "required_headcount": 1 }))
+                .await
+                .json();
+            request
+                .post(&format!(
+                    "/api/shifts/{}/assignments",
+                    shift["pid"].as_str().unwrap()
+                ))
+                .json(&json!({ "worker_pid": who }))
+                .await
+                .assert_status_ok();
+        }
+
         let signals: Value = request
             .get("/api/workforce/working-time?as_of=2026-07-10")
             .await
@@ -308,6 +341,17 @@ async fn working_time_guardrails() {
         assert!(
             !flagged.iter().any(|f| f["worker_pid"] == light.as_str()),
             "a modest week is not flagged"
+        );
+        let rest = flagged
+            .iter()
+            .find(|f| f["worker_pid"] == rest_only.as_str())
+            .expect("a rest breach alone flags");
+        assert_eq!(rest["over_48h"], false);
+        assert_eq!(rest["average_weekly"]["numerator_minutes"], 600);
+        assert_eq!(rest["rest_breaches"][0]["gap_minutes"], 600);
+        assert!(
+            !flagged.iter().any(|f| f["worker_pid"] == far.as_str()),
+            "a turnaround outside the 28-day window is not flagged"
         );
         // The department filter scopes the check.
         let scoped: Value = request

@@ -6,7 +6,7 @@
 //! erased with them. Nothing here changes an engagement.
 
 use loco_rs::prelude::*;
-use sea_orm::ActiveValue;
+use sea_orm::{ActiveValue, Select};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -188,14 +188,27 @@ pub(super) async fn employed_in_scope(
     scope: Option<&[String]>,
     today: chrono::NaiveDate,
 ) -> Result<Vec<workers::Model>> {
-    Ok(workers::Entity::find()
+    Ok(employed_in_scope_query(scope, today).all(&ctx.db).await?)
+}
+
+/// The same people as a query, to filter, count or use as a subquery in the database
+/// ([`crate::rules::metrics::is_employed_on`], in SQL).
+pub(super) fn employed_in_scope_query(
+    scope: Option<&[String]>,
+    today: chrono::NaiveDate,
+) -> Select<workers::Entity> {
+    let mut find = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| crate::rules::metrics::is_employed_on(today, w.hired_on, w.terminated_on))
-        .filter(|w| scope.is_none_or(|refs| refs.iter().any(|r| r == &w.organization_ref)))
-        .collect())
+        .filter(workers::Column::HiredOn.lte(today))
+        .filter(
+            Condition::any()
+                .add(workers::Column::TerminatedOn.is_null())
+                .add(workers::Column::TerminatedOn.gt(today)),
+        );
+    if let Some(refs) = scope {
+        find = find.filter(workers::Column::OrganizationRef.is_in(refs.to_vec()));
+    }
+    find
 }
 
 /// Each contractor and fixed-term person among `staff`, as the engagement rules see them.

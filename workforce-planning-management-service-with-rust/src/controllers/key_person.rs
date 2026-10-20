@@ -10,6 +10,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use loco_rs::prelude::*;
+use sea_orm::QueryTrait;
 use serde_json::json;
 use uuid::Uuid;
 
@@ -36,6 +37,7 @@ pub(super) struct Row {
 
 /// Everything read from the database for one assessment.
 struct Loaded {
+    /// The employed people who hold at least one critical skill at its bar.
     staff: Vec<workers::Model>,
     minimums: BTreeMap<Uuid, Vec<i32>>,
     names: BTreeMap<Uuid, String>,
@@ -44,10 +46,15 @@ struct Loaded {
     successors_of: BTreeMap<Uuid, BTreeSet<Uuid>>,
 }
 
-/// Read the facts for the caller's scope.
+/// Ids per `IN (…)` list, well under the database's bind-parameter limit.
+const BATCH: usize = 5_000;
+
+/// Read the facts for the caller's scope. Only the people who hold a critical skill at its bar are
+/// loaded (they are the only ones the register counts), so a workforce with no critical skills reads
+/// no workers at all.
+#[allow(clippy::too_many_lines)] // skills → holders → their backups and successors, linearly
 async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
     let today = chrono::Utc::now().date_naive();
-    let staff = super::funding::employed_in_scope(ctx, scope, today).await?;
     let live_profiles: BTreeSet<Uuid> = role_profiles::Entity::find()
         .filter(role_profiles::Column::DeletedAt.is_null())
         .all(&ctx.db)
@@ -77,55 +84,85 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
         .into_iter()
         .map(|s| (s.pid, s.name))
         .collect();
-    let staff_pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
+    // A holder meets the bar of the skill, so nobody under the lowest bar can be one.
+    let lowest_bar = minimums
+        .values()
+        .filter_map(|mins| rules::bar(mins))
+        .min()
+        .unwrap_or(i32::MAX);
+    let employed_pids = super::funding::employed_in_scope_query(scope, today)
+        .select_only()
+        .column(workers::Column::Pid)
+        .into_query();
     let mut level: BTreeMap<(Uuid, Uuid), i32> = BTreeMap::new();
-    for s in worker_skills::Entity::find()
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .filter(worker_skills::Column::SkillPid.is_in(skill_pids))
-        .filter(worker_skills::Column::WorkerPid.is_in(staff_pids.clone()))
-        .all(&ctx.db)
-        .await?
-    {
-        let e = level.entry((s.skill_pid, s.worker_pid)).or_insert(0);
-        *e = (*e).max(s.proficiency);
+    if !skill_pids.is_empty() {
+        for s in worker_skills::Entity::find()
+            .filter(worker_skills::Column::DeletedAt.is_null())
+            .filter(worker_skills::Column::SkillPid.is_in(skill_pids))
+            .filter(worker_skills::Column::Proficiency.gte(lowest_bar))
+            .filter(worker_skills::Column::WorkerPid.in_subquery(employed_pids))
+            .all(&ctx.db)
+            .await?
+        {
+            let e = level.entry((s.skill_pid, s.worker_pid)).or_insert(0);
+            *e = (*e).max(s.proficiency);
+        }
     }
-    let mut backups_of: BTreeMap<Uuid, BTreeSet<Uuid>> = BTreeMap::new();
-    for b in worker_backups::Entity::find()
-        .filter(worker_backups::Column::DeletedAt.is_null())
-        .filter(worker_backups::Column::WorkerPid.is_in(staff_pids.clone()))
-        .all(&ctx.db)
-        .await?
+    let staff_pids: Vec<Uuid> = level
+        .keys()
+        .map(|(_, worker)| *worker)
+        .collect::<BTreeSet<_>>()
         .into_iter()
-        .filter(|b| b.ends_on.is_none_or(|end| end >= today))
-    {
-        backups_of
-            .entry(b.worker_pid)
-            .or_default()
-            .insert(b.backup_pid);
-    }
-    let plans: BTreeMap<Uuid, Uuid> = succession_plans::Entity::find()
-        .filter(succession_plans::Column::DeletedAt.is_null())
-        .filter(succession_plans::Column::IncumbentPid.is_in(staff_pids))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter_map(|p| p.incumbent_pid.map(|i| (p.pid, i)))
         .collect();
-    let mut successors_of: BTreeMap<Uuid, BTreeSet<Uuid>> = BTreeMap::new();
-    for c in succession_candidates::Entity::find()
-        .filter(succession_candidates::Column::DeletedAt.is_null())
-        .filter(succession_candidates::Column::Readiness.eq("ready_now"))
-        .filter(
-            succession_candidates::Column::PlanPid.is_in(plans.keys().copied().collect::<Vec<_>>()),
-        )
-        .all(&ctx.db)
-        .await?
-    {
-        if let Some(incumbent) = plans.get(&c.plan_pid) {
-            successors_of
-                .entry(*incumbent)
+    let mut staff: Vec<workers::Model> = Vec::with_capacity(staff_pids.len());
+    let mut backups_of: BTreeMap<Uuid, BTreeSet<Uuid>> = BTreeMap::new();
+    let mut plans: BTreeMap<Uuid, Uuid> = BTreeMap::new();
+    for pids in staff_pids.chunks(BATCH) {
+        staff.extend(
+            workers::Entity::find()
+                .filter(workers::Column::Pid.is_in(pids.to_vec()))
+                .all(&ctx.db)
+                .await?,
+        );
+        for b in worker_backups::Entity::find()
+            .filter(worker_backups::Column::DeletedAt.is_null())
+            .filter(worker_backups::Column::WorkerPid.is_in(pids.to_vec()))
+            .all(&ctx.db)
+            .await?
+            .into_iter()
+            .filter(|b| b.ends_on.is_none_or(|end| end >= today))
+        {
+            backups_of
+                .entry(b.worker_pid)
                 .or_default()
-                .insert(c.worker_pid);
+                .insert(b.backup_pid);
+        }
+        plans.extend(
+            succession_plans::Entity::find()
+                .filter(succession_plans::Column::DeletedAt.is_null())
+                .filter(succession_plans::Column::IncumbentPid.is_in(pids.to_vec()))
+                .all(&ctx.db)
+                .await?
+                .into_iter()
+                .filter_map(|p| p.incumbent_pid.map(|i| (p.pid, i))),
+        );
+    }
+    let mut successors_of: BTreeMap<Uuid, BTreeSet<Uuid>> = BTreeMap::new();
+    let plan_pids: Vec<Uuid> = plans.keys().copied().collect();
+    for pids in plan_pids.chunks(BATCH) {
+        for c in succession_candidates::Entity::find()
+            .filter(succession_candidates::Column::DeletedAt.is_null())
+            .filter(succession_candidates::Column::Readiness.eq("ready_now"))
+            .filter(succession_candidates::Column::PlanPid.is_in(pids.to_vec()))
+            .all(&ctx.db)
+            .await?
+        {
+            if let Some(incumbent) = plans.get(&c.plan_pid) {
+                successors_of
+                    .entry(*incumbent)
+                    .or_default()
+                    .insert(c.worker_pid);
+            }
         }
     }
     Ok(Loaded {

@@ -3543,6 +3543,18 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T238 (2026-10-20) **The key-person register and working time are read by the database.** *(WPM-R120, WPM-D90)* At 50,000 workers both read every
+      worker into memory and failed requests (1.3 s and 1.0 s). The register now reads only the people who hold a critical skill at its bar (the employed
+      population is a subquery, the same `is_employed_on` rule written in SQL once in `employed_in_scope_query`), their backups and succession plans in
+      batches of 5,000, and nobody when no skill is critical. Working time sums the window's minutes per worker in SQL and brings back only those over
+      the ceiling, reads only the shifts inside the window of 28 calendar days either side and their assignments in batches, and reads the workers only for those flagged;
+      `workers_checked` is a count. The answers are the same. At 50,000 workers with 10,000 holders and 1,000,000 time entries, one request at a time:
+      register 1,292 to 65 ms, working time 965 to 117 ms, no failures; at 8 concurrent connections on the laptop that also hosts the database, 516 and
+      916 ms, and working time still lost 3 requests to a pool timeout (`BENCHMARKS.md`). Verified: the existing key-person and working-time request tests
+      pass unchanged, working time gained two cases (a rest breach alone flags and shows its total; a turnaround outside the window does not), the
+      workforce request tests, clippy. `scripts/load-test.sh` now seeds a critical skill and 20 time entries per worker, so both routes do real work.
+      **Not done:** working time's aggregate scans every entry in the window and saturates the pool at 8 concurrent requests at this size (an index
+      covering `worked_on` was not tried); capacity remains linear; about 40 other whole-table reads.
 - [x] WPM-T237 (2026-10-20) **The dashboard's counts are made by the database.** *(WPM-R120, WPM-D90)* Measured at 50,000 workers, the workforce overview, metrics and
       insights read every worker and failed requests (about 600 ms). `GET /api/workforce-intelligence/overview` now groups in SQL (department, status,
       type, hire date for tenure, one row per manager, a sum for FTE; a manager is named only if employed on the date) and `period_metrics` counts opening,

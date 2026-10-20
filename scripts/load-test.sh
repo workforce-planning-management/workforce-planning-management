@@ -68,6 +68,15 @@ INSERT INTO worker_skills (pid, worker_pid, skill_pid, proficiency)
 INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status)
   SELECT gen_random_uuid(), w.pid, 'annual', CURRENT_DATE + (w.id % 60), CURRENT_DATE + (w.id % 60) + 4, 5, 'approved'
   FROM workers w WHERE w.id > $seeded AND w.id % 3 = 0;
+INSERT INTO role_profiles (pid, job_title) VALUES ('00000000-0000-4000-8000-000000000004', 'Engineer')
+  ON CONFLICT DO NOTHING;
+INSERT INTO role_skill_requirements (pid, role_profile_pid, skill_pid, min_proficiency, importance)
+  VALUES ('00000000-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000004',
+          '00000000-0000-4000-8000-000000000001', 5, 'critical')
+  ON CONFLICT DO NOTHING;
+INSERT INTO time_entries (pid, worker_pid, worked_on, minutes, kind, status)
+  SELECT gen_random_uuid(), w.pid, CURRENT_DATE - d, CASE WHEN w.id % 100 = 0 THEN 3000 ELSE 480 END, 'regular', 'approved'
+  FROM workers w, generate_series(1, 20) d WHERE w.id > $seeded;
 ANALYZE;
 SQL
   seeded=$n
