@@ -981,7 +981,9 @@
       "evidence_link": "رابط الدليل",
       "https": "https://…",
       "no_expiry": "بلا انتهاء",
-      "lms_open": "فتح في نظام التعلّم"
+      "lms_open": "فتح في نظام التعلّم",
+      "pace": "الوتيرة",
+      "needed_per_30_days": "المطلوب كل 30 يومًا"
     },
     "development": {
       "criticality": "— {department} (الأهمية الحرجة {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "مشاهد",
     "partner": "شريك",
     "past_end_without_approved_plan": "انتهى دون خطة معتمدة",
-    "review_due": "المراجعة مستحقة"
+    "review_due": "المراجعة مستحقة",
+    "not_started": "لم تبدأ",
+    "on_track": "على المسار",
+    "behind": "متأخر"
   },
   "engagement": {
     "title": "التعاقد",

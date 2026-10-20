@@ -541,6 +541,8 @@ acceptance criteria and traces to the tasks that delivered it:
   [job-levels.md](job-levels.md) (WPM-T93–T94).
 - **WPM-R134** match worker records, and say what the answer rests on —
   [worker-matching.md](worker-matching.md) (WPM-T226).
+- **WPM-R139** a CPD requirement can be corrected or withdrawn, and a worker's progress says whether the pace is
+  enough and on what basis — [skills-and-training.md](skills-and-training.md) (WPM-T233).
 - **WPM-R138** a course, a CPD entry from the learning system and a training enrolment link to the course in the
   learning management system, from a template the deployer sets —
   [skills-and-training.md](skills-and-training.md) (WPM-T232).

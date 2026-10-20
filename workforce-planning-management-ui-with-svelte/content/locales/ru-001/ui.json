@@ -981,7 +981,9 @@
       "evidence_link": "Ссылка на подтверждение",
       "https": "https://…",
       "no_expiry": "бессрочно",
-      "lms_open": "Открыть в системе обучения"
+      "lms_open": "Открыть в системе обучения",
+      "pace": "Темп",
+      "needed_per_30_days": "Нужно за 30 дней"
     },
     "development": {
       "criticality": "— {department} (критичность {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "наблюдатель",
     "partner": "партнёр",
     "past_end_without_approved_plan": "Истёк без утверждённого плана",
-    "review_due": "Пора пересмотреть"
+    "review_due": "Пора пересмотреть",
+    "not_started": "Не начат",
+    "on_track": "По плану",
+    "behind": "Отстаёт"
   },
   "engagement": {
     "title": "Трудовые отношения",

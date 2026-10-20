@@ -981,7 +981,9 @@
       "evidence_link": "ثبوت کا لنک",
       "https": "https://…",
       "no_expiry": "کوئی میعاد نہیں",
-      "lms_open": "لرننگ سسٹم میں کھولیں"
+      "lms_open": "لرننگ سسٹم میں کھولیں",
+      "pace": "رفتار",
+      "needed_per_30_days": "ہر 30 دن میں درکار"
     },
     "development": {
       "criticality": "— {department} (اہمیت {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "ناظر",
     "partner": "شراکت دار",
     "past_end_without_approved_plan": "منظور شدہ منصوبے کے بغیر ختم",
-    "review_due": "جائزہ واجب الادا"
+    "review_due": "جائزہ واجب الادا",
+    "not_started": "شروع نہیں ہوا",
+    "on_track": "درست رفتار پر",
+    "behind": "پیچھے"
   },
   "engagement": {
     "title": "تقرری",

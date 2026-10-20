@@ -981,7 +981,9 @@
       "evidence_link": "Lien du justificatif",
       "https": "https://…",
       "no_expiry": "sans expiration",
-      "lms_open": "Ouvrir dans le système d'apprentissage"
+      "lms_open": "Ouvrir dans le système d'apprentissage",
+      "pace": "Rythme",
+      "needed_per_30_days": "Nécessaire par 30 jours"
     },
     "development": {
       "criticality": "— {department} (criticité {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "lecteur",
     "partner": "partenaire",
     "past_end_without_approved_plan": "Échu sans plan approuvé",
-    "review_due": "Revue à faire"
+    "review_due": "Revue à faire",
+    "not_started": "Pas commencé",
+    "on_track": "Dans les temps",
+    "behind": "En retard"
   },
   "engagement": {
     "title": "Engagement",

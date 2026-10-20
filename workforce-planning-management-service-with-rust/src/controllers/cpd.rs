@@ -46,6 +46,17 @@ fn units(hundredths: i64) -> f64 {
     hundredths as f64 / 100.0
 }
 
+/// A pace as the progress payload shows it: amounts in units, and the basis it rests on.
+fn pace_json(pace: &rules::Pace) -> serde_json::Value {
+    serde_json::json!({
+        "status": pace.status,
+        "days_left": pace.days_left,
+        "needed_per_30_days": pace.needed_per_30_days_hundredths.map(units),
+        "expected_by_today": pace.expected_by_today_hundredths.map(units),
+        "basis": rules::PACE_BASIS,
+    })
+}
+
 /// Whether an evidence URL is an http(s) link.
 fn is_web_url(url: &str) -> bool {
     url.starts_with("https://") || url.starts_with("http://")
@@ -67,13 +78,8 @@ struct RequirementPayload {
     job_title: Option<String>,
 }
 
-/// `POST /api/cpd-requirements` — define what must be done in a period.
-#[debug_handler]
-async fn create_requirement(
-    State(ctx): State<AppContext>,
-    caller: MaybeAuthUser,
-    Json(payload): Json<RequirementPayload>,
-) -> Result<Response> {
+/// The checked fields of a requirement body: its name, required hundredths and job title.
+fn checked_requirement(payload: &RequirementPayload) -> Result<(String, i64, Option<String>)> {
     let mut problems = Problems::new();
     problems.require_text("name", &payload.name);
     problems.cap_text("name", &payload.name);
@@ -96,9 +102,20 @@ async fn create_requirement(
         .map(str::trim)
         .filter(|t| !t.is_empty())
         .map(ToString::to_string);
+    Ok((payload.name.trim().to_string(), required, job_title))
+}
+
+/// `POST /api/cpd-requirements` — define what must be done in a period.
+#[debug_handler]
+async fn create_requirement(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(payload): Json<RequirementPayload>,
+) -> Result<Response> {
+    let (name, required, job_title) = checked_requirement(&payload)?;
     let row = cpd_requirements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.trim().to_string()),
+        name: ActiveValue::set(name),
         unit: ActiveValue::set(payload.unit.clone()),
         required_hundredths: ActiveValue::set(required),
         period_start: ActiveValue::set(payload.period_start),
@@ -121,6 +138,75 @@ async fn create_requirement(
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
+}
+
+async fn find_requirement(ctx: &AppContext, pid: &str) -> Result<cpd_requirements::Model> {
+    cpd_requirements::Entity::find()
+        .filter(cpd_requirements::Column::Pid.eq(records::parse_pid(pid)?))
+        .filter(cpd_requirements::Column::DeletedAt.is_null())
+        .one(&ctx.db)
+        .await?
+        .ok_or(Error::NotFound)
+}
+
+/// `PUT /api/cpd-requirements/{pid}` — correct a requirement (WPM-R139). The unit stays: entries were
+/// counted in it. Entries are untouched and are counted afresh against the new terms.
+#[debug_handler]
+async fn update_requirement(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+    Json(payload): Json<RequirementPayload>,
+) -> Result<Response> {
+    let existing = find_requirement(&ctx, &pid).await?;
+    if payload.unit != existing.unit {
+        return Err(unprocessable(
+            "the unit of a requirement cannot change; withdraw it and define a new one",
+        ));
+    }
+    let (name, required, job_title) = checked_requirement(&payload)?;
+    let mut active: cpd_requirements::ActiveModel = existing.into();
+    active.name = ActiveValue::set(name);
+    active.required_hundredths = ActiveValue::set(required);
+    active.period_start = ActiveValue::set(payload.period_start);
+    active.period_end = ActiveValue::set(payload.period_end);
+    active.job_title = ActiveValue::set(job_title);
+    let row = active.update(&ctx.db).await?;
+    Audit::record(
+        &ctx.db,
+        "cpd_requirement",
+        row.pid,
+        "updated",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    format::json(PidRef {
+        pid: row.pid.to_string(),
+    })
+}
+
+/// `DELETE /api/cpd-requirements/{pid}` — withdraw a requirement (soft delete).
+#[debug_handler]
+async fn delete_requirement(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let existing = find_requirement(&ctx, &pid).await?;
+    let mut active: cpd_requirements::ActiveModel = existing.into();
+    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
+    let row = active.update(&ctx.db).await?;
+    Audit::record(
+        &ctx.db,
+        "cpd_requirement",
+        row.pid,
+        "withdrawn",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    format::empty_json()
 }
 
 /// `GET /api/cpd-requirements` — live requirements, newest period first.
@@ -466,6 +552,13 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
                 "remaining": units(p.remaining()),
                 "met": p.met(),
                 "met_verified": p.met_verified(),
+                "pace": pace_json(&rules::pace(
+                    p.recorded,
+                    p.required,
+                    r.period_start,
+                    r.period_end,
+                    today,
+                )),
             })
         })
         .collect();
@@ -581,6 +674,8 @@ pub fn routes() -> Routes {
         .prefix("/api")
         .add("/cpd-requirements", post(create_requirement))
         .add("/cpd-requirements", get(list_requirements))
+        .add("/cpd-requirements/{pid}", put(update_requirement))
+        .add("/cpd-requirements/{pid}", delete(delete_requirement))
         .add("/workers/{pid}/cpd-entries", post(create_entry))
         .add("/workers/{pid}/cpd-entries", get(list_entries))
         .add("/workers/{pid}/cpd-progress", get(progress))

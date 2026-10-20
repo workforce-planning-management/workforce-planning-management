@@ -981,7 +981,9 @@
       "evidence_link": "Enlace de la prueba",
       "https": "https://…",
       "no_expiry": "sin caducidad",
-      "lms_open": "Abrir en el sistema de aprendizaje"
+      "lms_open": "Abrir en el sistema de aprendizaje",
+      "pace": "Ritmo",
+      "needed_per_30_days": "Necesario cada 30 días"
     },
     "development": {
       "criticality": "— {department} (criticidad {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "lector",
     "partner": "socio",
     "past_end_without_approved_plan": "Vencido sin plan aprobado",
-    "review_due": "Revisión pendiente"
+    "review_due": "Revisión pendiente",
+    "not_started": "No iniciado",
+    "on_track": "En camino",
+    "behind": "Atrasado"
   },
   "engagement": {
     "title": "Contratación",

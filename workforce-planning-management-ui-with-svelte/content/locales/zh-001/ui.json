@@ -981,7 +981,9 @@
       "evidence_link": "证明材料链接",
       "https": "https://…",
       "no_expiry": "无到期日",
-      "lms_open": "在学习系统中打开"
+      "lms_open": "在学习系统中打开",
+      "pace": "进度",
+      "needed_per_30_days": "每30天所需"
     },
     "development": {
       "criticality": "— {department}（关键度 {criticality}）"
@@ -1624,7 +1626,10 @@
     "viewer": "查看者",
     "partner": "合作伙伴",
     "past_end_without_approved_plan": "已到期且无获批计划",
-    "review_due": "复核到期"
+    "review_due": "复核到期",
+    "not_started": "未开始",
+    "on_track": "进度正常",
+    "behind": "落后"
   },
   "engagement": {
     "title": "用工关系",

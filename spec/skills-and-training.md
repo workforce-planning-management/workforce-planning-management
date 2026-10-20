@@ -68,7 +68,24 @@ get from WPM to the course, every place that names a course also carries a link 
 - **A link is not a disclosure:** it carries the course id only, never the worker, and it is built from data the caller could
   already read in the same response.
 
+## WPM-R139 — CPD requirements can be corrected, and progress says whether the pace is enough
+
+- **Correct a requirement:** `PUT /api/cpd-requirements/{pid}` changes its name, amount, period or job title, and
+  `DELETE /api/cpd-requirements/{pid}` withdraws it (soft delete, audited). The unit cannot change once defined, because entries
+  were counted in it. Entries are never touched: they belong to the worker and are counted afresh against whatever the requirement now says.
+- **Pace:** each requirement in a worker's `cpd-progress` carries `pace`: `status` (`met`, `not_started`, `on_track`, `behind`,
+  `missed`), `days_left`, `needed_per_30_days` (what the remaining amount comes to for each 30 calendar days left, rounded up; absent once the
+  period is over or the requirement is met) and `basis`, which says what the status rests on (WPM-D92).
+- **It names no one beyond the worker's own page:** the overview (HR's aggregate) is unchanged; pace is shown where the worker's progress
+  already is, to whoever may already read it.
+
 ## Design decisions
+
+- **WPM-D92 — Pace is a straight line, and says so.** `behind` means the recorded amount is less than the share of the requirement that the
+  elapsed share of the period would give (`required × days elapsed ÷ days in the period`), counting both ends of the period. Real CPD is
+  lumpy (a conference is two days of hours at once), so `behind` is a prompt to look, not a finding about the person; the payload
+  carries the basis and the numbers so nobody has to guess. Verified hours are not used: pace is about what has been done, and
+  verification is about evidence. Rejected: a score or a rank across workers (WPM-D32: roll-ups name no one); a prediction of the final total.
 
 - **WPM-D91 — A link is built from the deployer's template, never from a caller's text.** Following a link out of WPM is a trust
   decision, so the destination is fixed by whoever runs the service: `https` only, the placeholder once, a real host with no user-info,

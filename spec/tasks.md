@@ -3542,6 +3542,15 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T233 (2026-10-20) **CPD: correct a requirement; pace.** *(WPM-R139, WPM-D92)* `PUT` and `DELETE /api/cpd-requirements/{pid}` (the unit
+      cannot change; entries untouched; audited `updated` and `withdrawn`). `rules::cpd::pace`: `met`, `not_started`, `on_track`, `behind`, `missed`,
+      days left, the amount needed per 30 calendar days (rounded up) and the amount the straight line gives by today, with its basis in the payload; on every
+      requirement of `cpd-progress`. UI: a Pace and a Needed-per-30-calendar-days column and the basis line; five strings in 13 locales (AI-written, not
+      reviewed). Verified: 5 unit tests on the edges (exactly on the line, one hundredth short, a one-day period, met winning before and after the
+      period), a request test (behind, corrected to on track, unit change refused, withdrawn, entry kept), a Playwright assertion, OpenAPI entries,
+      svelte-check 0, 160 vitest. **Not done:** the overview (HR's aggregate) has no pace; the UI cannot yet correct or withdraw a requirement (the
+      API can); pace ignores that CPD is lumpy by design (WPM-D92 says so); `GET /api/cpd/overview` still reads every employed worker and every entry
+      whole (not paged).
 - [x] WPM-T232 (2026-10-20) **Links to the learning management system.** *(WPM-R138, WPM-D91)* `rules::lms::parse_template` (https only, one `{course}`,
       no spaces, a real host with no user-info, at most 500 characters) and `course_url` (the id after the URN's first colon, percent-encoded so it
       cannot add a path, query or host); `WPM_LMS_COURSE_URL` sets the template, unset means no links. `lms_url` appears on a CPD entry from the

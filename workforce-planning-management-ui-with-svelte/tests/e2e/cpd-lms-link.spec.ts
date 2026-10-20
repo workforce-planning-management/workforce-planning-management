@@ -50,7 +50,20 @@ async function stub(page: Page, entries: unknown[]) {
   );
   await page.route("**/api/proxy/cpd-requirements", (route) => route.fulfill({ json: [] }));
   await page.route(`**/api/proxy/workers/${WORKER}/cpd-progress`, (route) =>
-    route.fulfill({ json: { derivation: "", worker_pid: WORKER, requirements: [], registrations: [] } }),
+    route.fulfill({
+      json: {
+        derivation: "",
+        worker_pid: WORKER,
+        registrations: [],
+        requirements: [
+          {
+            requirement_pid: "r1", name: "Annual hours", unit: "hours", period_start: "2026-01-01", period_end: "2026-12-31",
+            required: 30, recorded: 5, verified: 0, remaining: 25, met: false, met_verified: false,
+            pace: { status: "behind", days_left: 60, needed_per_30_days: 12.5, expected_by_today: 25, basis: "a straight line" },
+          },
+        ],
+      },
+    }),
   );
   await page.route(`**/api/proxy/workers/${WORKER}/cpd-entries`, (route) => route.fulfill({ json: entries }));
   await page.route("**/api/proxy/calendar**", (route) => route.fulfill({ json: { events: [] } }));
@@ -73,6 +86,9 @@ test.describe("CPD entries and the learning system", () => {
     await expect(link).toHaveAttribute("target", "_blank");
     await expect(link).toHaveAttribute("rel", "noopener noreferrer");
     await expect(link).toHaveAttribute("title", "Open in the learning system");
+    // the pace is shown with its basis, and a worker behind the line is marked
+    await expect(page.getByTestId("cpd-pace-basis")).toHaveText("a straight line");
+    await expect(page.getByTestId("cpd-progress").getByText("Behind")).toBeVisible();
     // without a template the entry still says where it came from, as plain text
     await expect(page.getByText("LMS", { exact: true })).toHaveCount(1);
   });

@@ -981,7 +981,9 @@
       "evidence_link": "প্রমাণের লিঙ্ক",
       "https": "https://…",
       "no_expiry": "মেয়াদ নেই",
-      "lms_open": "লার্নিং সিস্টেমে খুলুন"
+      "lms_open": "লার্নিং সিস্টেমে খুলুন",
+      "pace": "গতি",
+      "needed_per_30_days": "প্রতি ৩০ দিনে প্রয়োজন"
     },
     "development": {
       "criticality": "— {department} (জরুরিত্ব {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "দর্শক",
     "partner": "অংশীদার",
     "past_end_without_approved_plan": "অনুমোদিত পরিকল্পনা ছাড়া মেয়াদ শেষ",
-    "review_due": "পর্যালোচনা বাকি"
+    "review_due": "পর্যালোচনা বাকি",
+    "not_started": "শুরু হয়নি",
+    "on_track": "সঠিক পথে",
+    "behind": "পিছিয়ে"
   },
   "engagement": {
     "title": "নিয়োগ",

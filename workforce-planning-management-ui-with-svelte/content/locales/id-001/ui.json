@@ -981,7 +981,9 @@
       "evidence_link": "Tautan bukti",
       "https": "https://…",
       "no_expiry": "tanpa kedaluwarsa",
-      "lms_open": "Buka di sistem pembelajaran"
+      "lms_open": "Buka di sistem pembelajaran",
+      "pace": "Laju",
+      "needed_per_30_days": "Dibutuhkan per 30 hari"
     },
     "development": {
       "criticality": "— {department} (kekritisan {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "pemirsa",
     "partner": "mitra",
     "past_end_without_approved_plan": "Berakhir tanpa rencana yang disetujui",
-    "review_due": "Tinjauan jatuh tempo"
+    "review_due": "Tinjauan jatuh tempo",
+    "not_started": "Belum dimulai",
+    "on_track": "Sesuai jalur",
+    "behind": "Tertinggal"
   },
   "engagement": {
     "title": "Keterlibatan",

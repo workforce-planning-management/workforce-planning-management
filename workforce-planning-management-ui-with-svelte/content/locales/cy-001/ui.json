@@ -981,7 +981,9 @@
       "evidence_link": "Dolen tystiolaeth",
       "https": "https://…",
       "no_expiry": "dim dyddiad dod i ben",
-      "lms_open": "Agor yn y system ddysgu"
+      "lms_open": "Agor yn y system ddysgu",
+      "pace": "Cyflymder",
+      "needed_per_30_days": "Ei angen bob 30 diwrnod"
     },
     "development": {
       "criticality": "— {department} (hollbwysigrwydd {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "gwyliwr",
     "partner": "partner",
     "past_end_without_approved_plan": "Wedi dod i ben heb gynllun cymeradwy",
-    "review_due": "Adolygiad yn ddyledus"
+    "review_due": "Adolygiad yn ddyledus",
+    "not_started": "Heb ddechrau",
+    "on_track": "Ar y trywydd iawn",
+    "behind": "Y tu ôl i'r amserlen"
   },
   "engagement": {
     "title": "Ymgysylltiad",

@@ -981,7 +981,9 @@
       "evidence_link": "Link da comprovação",
       "https": "https://…",
       "no_expiry": "sem validade",
-      "lms_open": "Abrir no sistema de aprendizagem"
+      "lms_open": "Abrir no sistema de aprendizagem",
+      "pace": "Ritmo",
+      "needed_per_30_days": "Necessário a cada 30 dias"
     },
     "development": {
       "criticality": "— {department} (criticidade {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "leitor",
     "partner": "parceiro",
     "past_end_without_approved_plan": "Terminado sem plano aprovado",
-    "review_due": "Revisão em atraso"
+    "review_due": "Revisão em atraso",
+    "not_started": "Não iniciado",
+    "on_track": "No ritmo",
+    "behind": "Atrasado"
   },
   "engagement": {
     "title": "Vínculo",

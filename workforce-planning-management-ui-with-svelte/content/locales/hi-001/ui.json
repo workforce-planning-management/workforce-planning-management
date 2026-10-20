@@ -981,7 +981,9 @@
       "evidence_link": "प्रमाण का लिंक",
       "https": "https://…",
       "no_expiry": "कोई समाप्ति नहीं",
-      "lms_open": "लर्निंग सिस्टम में खोलें"
+      "lms_open": "लर्निंग सिस्टम में खोलें",
+      "pace": "गति",
+      "needed_per_30_days": "प्रति 30 दिन आवश्यक"
     },
     "development": {
       "criticality": "— {department} (महत्त्व {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "दर्शक",
     "partner": "साझेदार",
     "past_end_without_approved_plan": "स्वीकृत योजना के बिना समाप्त",
-    "review_due": "समीक्षा देय"
+    "review_due": "समीक्षा देय",
+    "not_started": "शुरू नहीं हुआ",
+    "on_track": "सही गति पर",
+    "behind": "पीछे"
   },
   "engagement": {
     "title": "नियुक्ति",

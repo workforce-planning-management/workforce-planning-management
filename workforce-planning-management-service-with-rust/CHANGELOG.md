@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — CPD requirements can be corrected; progress has a pace (WPM-T233)
+
+`PUT|DELETE /api/cpd-requirements/{pid}`. Each requirement in `GET /api/workers/{pid}/cpd-progress` gains `pace` (`status`, `days_left`, `needed_per_30_days`, `expected_by_today`, `basis`), a straight-line comparison that says it is one.
+
 ### Added — links to the learning management system (WPM-T232)
 
 `WPM_LMS_COURSE_URL` (a `https` template with `{course}`) turns a course URN into a link: `lms_url` on CPD entries from the learning system, training enrolments, learning-path steps, skill courses and cutover roles. Unset means `null`. Migration `000075` adds `cpd_entries.course_ref`.

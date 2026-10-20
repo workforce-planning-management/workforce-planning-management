@@ -172,6 +172,86 @@ pub fn registration_status(
     }
 }
 
+/// Where a worker stands against a requirement's period (WPM-D92).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PaceStatus {
+    /// Recorded at least the required amount.
+    Met,
+    /// The period has not begun.
+    NotStarted,
+    /// At or ahead of the straight line.
+    OnTrack,
+    /// Less than the straight line gives by now.
+    Behind,
+    /// The period is over and the requirement was not met.
+    Missed,
+}
+
+/// How the recorded amount compares with the straight line through the period.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct Pace {
+    /// The comparison.
+    pub status: PaceStatus,
+    /// Calendar days left in the period, counting today; `0` once it is over.
+    pub days_left: i64,
+    /// The remaining amount (hundredths) per 30 days left, rounded up; absent when met or over.
+    pub needed_per_30_days_hundredths: Option<i64>,
+    /// What the straight line gives by today (hundredths), when the period is under way.
+    pub expected_by_today_hundredths: Option<i64>,
+}
+
+/// What [`Pace`] rests on, to show beside it.
+pub const PACE_BASIS: &str = "a straight line from the first to the last day of the period, both counted: \
+behind means less recorded than that line gives by today. Real CPD comes in lumps, so behind is a prompt \
+to look, not a finding. Verification is not used.";
+
+/// Compare `recorded` with a requirement of `required` over `start..=end`, as of `today`.
+#[must_use]
+pub fn pace(
+    recorded: i64,
+    required: i64,
+    start: NaiveDate,
+    end: NaiveDate,
+    today: NaiveDate,
+) -> Pace {
+    let days_left = if today > end {
+        0
+    } else {
+        (end - today.max(start)).num_days() + 1
+    };
+    let none = |status| Pace {
+        status,
+        days_left,
+        needed_per_30_days_hundredths: None,
+        expected_by_today_hundredths: None,
+    };
+    if recorded >= required {
+        return none(PaceStatus::Met);
+    }
+    if today > end {
+        return none(PaceStatus::Missed);
+    }
+    if today < start {
+        return none(PaceStatus::NotStarted);
+    }
+    let total_days = (end - start).num_days() + 1;
+    let elapsed = (today - start).num_days() + 1;
+    // required × elapsed ÷ total, rounded down: a worker exactly on the line is on track
+    let expected = required * elapsed / total_days;
+    let remaining = required - recorded;
+    Pace {
+        status: if recorded >= expected {
+            PaceStatus::OnTrack
+        } else {
+            PaceStatus::Behind
+        },
+        days_left,
+        needed_per_30_days_hundredths: Some((remaining * 30 + days_left - 1) / days_left),
+        expected_by_today_hundredths: Some(expected),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -290,5 +370,66 @@ mod tests {
             registration_status(Some(day(2027, 3, 1)), today, 90),
             "valid"
         );
+    }
+
+    fn d(m: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(2026, m, day).unwrap()
+    }
+
+    #[test]
+    fn pace_is_met_before_anything_else() {
+        // met wins even before the period starts or after it ends
+        for today in [d(12, 31), d(1, 15), d(3, 1)] {
+            let p = pace(3_000, 3_000, d(1, 1), d(2, 28), today);
+            assert_eq!(p.status, PaceStatus::Met);
+            assert_eq!(p.needed_per_30_days_hundredths, None);
+        }
+    }
+
+    #[test]
+    fn pace_before_during_and_after_the_period() {
+        let (start, end) = (d(1, 1), d(1, 30)); // 30 days
+        assert_eq!(
+            pace(0, 3_000, d(3, 1), d(3, 30), d(2, 1)).status,
+            PaceStatus::NotStarted
+        );
+        assert_eq!(
+            pace(0, 3_000, start, end, d(2, 1)).status,
+            PaceStatus::Missed
+        );
+        let during = pace(0, 3_000, start, end, d(1, 10));
+        assert_eq!(during.status, PaceStatus::Behind);
+        assert_eq!(during.days_left, 21); // the 10th to the 30th, both counted
+    }
+
+    #[test]
+    fn exactly_on_the_line_is_on_track_and_one_hundredth_short_is_behind() {
+        let (start, end) = (d(1, 1), d(1, 30));
+        // day 15 of 30: the line gives 3,000 × 15 ÷ 30 = 1,500
+        let on = pace(1_500, 3_000, start, end, d(1, 15));
+        assert_eq!(on.status, PaceStatus::OnTrack);
+        assert_eq!(on.expected_by_today_hundredths, Some(1_500));
+        assert_eq!(
+            pace(1_499, 3_000, start, end, d(1, 15)).status,
+            PaceStatus::Behind
+        );
+    }
+
+    #[test]
+    fn the_needed_pace_rounds_up_and_uses_the_days_left() {
+        // 1,000 remaining over 16 days left (15th to 30th): 1,000 × 30 ÷ 16 = 1,875
+        let p = pace(2_000, 3_000, d(1, 1), d(1, 30), d(1, 15));
+        assert_eq!(p.days_left, 16);
+        assert_eq!(p.needed_per_30_days_hundredths, Some(1_875));
+        // 100 remaining over 7 days left: 3,000 ÷ 7 = 428.57…, rounded up
+        let q = pace(2_900, 3_000, d(1, 1), d(1, 30), d(1, 24));
+        assert_eq!(q.needed_per_30_days_hundredths, Some(429));
+    }
+
+    #[test]
+    fn a_one_day_period_is_handled() {
+        let day = d(5, 5);
+        assert_eq!(pace(0, 100, day, day, day).status, PaceStatus::Behind);
+        assert_eq!(pace(100, 100, day, day, day).status, PaceStatus::Met);
     }
 }

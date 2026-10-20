@@ -981,7 +981,9 @@
       "evidence_link": "Evidence link",
       "https": "https://…",
       "no_expiry": "no expiry",
-      "lms_open": "Open in the learning system"
+      "lms_open": "Open in the learning system",
+      "pace": "Pace",
+      "needed_per_30_days": "Needed per 30 calendar days"
     },
     "development": {
       "criticality": "— {department} (criticality {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "viewer",
     "partner": "partner",
     "past_end_without_approved_plan": "Past its end with no approved plan",
-    "review_due": "Review due"
+    "review_due": "Review due",
+    "not_started": "Not started",
+    "on_track": "On track",
+    "behind": "Behind"
   },
   "engagement": {
     "title": "Engagement",

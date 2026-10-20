@@ -147,6 +147,8 @@
     { id: "recorded", header: t("pages.cpd.recorded"), sortable: true, align: "end" },
     { id: "verified", header: t("pages.cpd.verified"), sortable: true, align: "end" },
     { id: "remaining", header: t("pages.cpd.remaining"), sortable: true, align: "end", cell: remainingCell },
+    { id: "pace", header: t("pages.cpd.pace"), sortable: true, accessor: (r) => tv(paceOf(r)?.status), cell: paceCell },
+    { id: "needed", header: t("pages.cpd.needed_per_30_days"), sortable: true, align: "end", accessor: (r) => paceOf(r)?.needed_per_30_days ?? "" },
   ]);
   const entryColumns = $derived<DataGridColumn[]>([
     { id: "entry_date", type: "date", header: t("pages.cpd.date"), sortable: true },
@@ -156,6 +158,9 @@
     { id: "evidence_url", header: t("pages.cpd.evidence"), cell: evidenceCell },
     { id: "verified_on", header: t("pages.cpd.verified"), cell: verifyCell },
   ]);
+
+  /** The pace the service worked out for a progress row (WPM-D92). */
+  const paceOf = (row: DataGridRow) => row.pace as { status: string; needed_per_30_days: number | null } | undefined;
 
   async function verify(pid: string) {
     error = null;
@@ -186,6 +191,11 @@
 
 {#snippet requiredCell({ row }: { row: DataGridRow })}
   {row.required} {tv(String(row.unit))}
+{/snippet}
+
+{#snippet paceCell({ row }: { row: DataGridRow })}
+  {@const pace = paceOf(row)}
+  {#if pace}<span class="chip" class:warn={pace.status === "behind" || pace.status === "missed"}>{tv(pace.status)}</span>{/if}
 {/snippet}
 
 {#snippet remainingCell({ row }: { row: DataGridRow })}
@@ -280,6 +290,7 @@
   {#if progress.requirements.length === 0}
     <p class="muted" data-testid="cpd-progress">{t("pages.cpd.no_requirement_applies_to_this")}</p>
   {:else}
+    <p class="muted" data-testid="cpd-pace-basis">{progress.requirements[0]?.pace?.basis}</p>
     <DataTable
       testid="cpd-progress"
       label={t("pages.cpd.a_worker_s_cpd")}

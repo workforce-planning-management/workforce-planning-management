@@ -972,6 +972,14 @@ export function cpdProgress(
     remaining: number;
     met: boolean;
     met_verified: boolean;
+    /** Where the recorded amount stands against a straight line through the period (WPM-D92). */
+    pace: {
+      status: "met" | "not_started" | "on_track" | "behind" | "missed";
+      days_left: number;
+      needed_per_30_days: number | null;
+      expected_by_today: number | null;
+      basis: string;
+    };
   }>;
   registrations: Array<{
     body: string;

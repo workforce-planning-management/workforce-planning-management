@@ -981,7 +981,9 @@
       "evidence_link": "Nachweis-Link",
       "https": "https://…",
       "no_expiry": "kein Ablauf",
-      "lms_open": "Im Lernsystem öffnen"
+      "lms_open": "Im Lernsystem öffnen",
+      "pace": "Tempo",
+      "needed_per_30_days": "Nötig je 30 Tage"
     },
     "development": {
       "criticality": "— {department} (Kritikalität {criticality})"
@@ -1624,7 +1626,10 @@
     "viewer": "Lesende Person",
     "partner": "Partner",
     "past_end_without_approved_plan": "Abgelaufen ohne genehmigten Plan",
-    "review_due": "Überprüfung fällig"
+    "review_due": "Überprüfung fällig",
+    "not_started": "Nicht begonnen",
+    "on_track": "Im Plan",
+    "behind": "Im Rückstand"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",
