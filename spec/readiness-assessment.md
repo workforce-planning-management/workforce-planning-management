@@ -59,7 +59,7 @@ and many routes did not. WPM-T188 adds a guard with a table in code (WPM-D71).
 | 4 | **Fixed (WPM-T191):** the database connection could be plaintext, and a request may hang | `config/production.yaml` has no TLS setting or request timeout; deployment docs do not mention `sslmode` | WPM-R116, T191 |
 | 5 | **Fixed (WPM-T192):** backups were protected by file permissions only | `scripts/backup.sh` says to encrypt at rest and does not | WPM-R117, T192 |
 | 6 | No threat model | None in `spec/` | **WPM-T193 (built):** [governance/threat-model.md](governance/threat-model.md) |
-| 7 | Supply chain: actions pinned by SHA and secret-scanned (T194, 2026-10-20); no image signature or provenance, base images by tag | `.github/workflows/*.yml` | WPM-R119, T195 (T194 done) |
+| 7 | Supply chain: actions pinned by SHA and secret-scanned (T194, 2026-10-20); image signature, provenance and base-image digests built (T195) but not yet run on a runner | `.github/workflows/*.yml` | WPM-R119, T194, T195 (both built) |
 | 8 | No evidence the service holds up under load; several views load an organization's records into memory | `BENCHMARKS.md` records no measurement; `controllers/capacity.rs` and `planning.rs` load whole organizations | WPM-R120, T196 |
 | 9 | Observability: a request id is on every response (confirmed on the running service, WPM-T191), but there is no check that logs hold no personal data, audit is not exportable to a security monitoring system | No test; loco's default request id not confirmed | WPM-R122, T197 |
 | 10 | Rate limits are per instance | Documented in WPM-R74 | WPM-T198 (document the limit; shared store is deployer's) |

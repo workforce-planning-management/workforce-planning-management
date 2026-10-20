@@ -3513,8 +3513,17 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       production reads `JWT_SECRET` from the environment. **Not done:** GitHub's own secret scanning and push protection (a repository
       setting); a pull-request-only trigger (the checks run on every push); `zaproxy/action-baseline` is pinned but is a third-party action
       that runs with the job's permissions; the gitleaks job is not yet a required check.
-- [ ] WPM-T195 **Release integrity.** *(WPM-R119)* Sign the image, attach build provenance, pin base images by digest.
-      Needs the hosting platform; **not done**.
+- [x] WPM-T195 (2026-10-20) **Release integrity.** *(WPM-R119)* The `Containerfile`'s two base images (`rust:1`, `debian:stable-slim`) are pinned
+      by their index digest. `release.yml` now takes `id-token` and `attestations` write permission, signs the pushed image by digest with
+      cosign (keyless, `sigstore/cosign-installer` and `actions/attest-build-provenance`, both pinned to commit SHAs), attaches SLSA build
+      provenance pushed to the registry, and runs `cosign verify` (issuer and this workflow's identity) and `gh attestation verify` before the
+      release is created, so an image that cannot be verified is not released. How to check an image is in `spec/production-readiness.md`
+      (WPM-R87). Verified: the image builds locally from the digest-pinned bases with the version and revision labels set; the workflow
+      parses and every action is pinned. **Not verified:** the signing, attestation and verification steps have not run on a runner; the first
+      tag to carry them (v0.1.2 or later) is their first test, and a failure there stops the release before it is created. **Not done:**
+      the digests are refreshed by hand (Dependabot does not read a `Containerfile`); the demo and test images in `compose*.yaml` and the CI
+      service containers (`postgres:18`, `redis:7-alpine`) are not pinned; no SBOM attestation (the CycloneDX file is attached, not signed); the
+      v0.1.0 and v0.1.1 images stay unsigned.
 - [ ] WPM-T196 **Load evidence and bounded views.** *(WPM-R120)* A repeatable load test at stated sizes, paging or caps on the views
       that load an organization's records, the result recorded in `BENCHMARKS.md`. **Not done.**
 - [ ] WPM-T197 **Observability.** *(WPM-R122)* A request id on responses and in logs, a test that logs hold no query string or

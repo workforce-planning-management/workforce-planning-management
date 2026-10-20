@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — a signed, attested release image (WPM-R119, WPM-T195)
+
+The release workflow signs the image by digest (cosign, keyless), attaches SLSA build provenance and verifies both before it creates the release; the `Containerfile`'s base images are pinned by digest. Not yet run on a runner: the next tag is its first test. Checking an image: [spec/production-readiness.md](spec/production-readiness.md).
+
 ### Added — CI hardening (WPM-R119, WPM-T194)
 
 Every GitHub Action is pinned to a commit SHA (`scripts/check-actions-pinned.py` fails an unpinned one), and a `secrets` job runs gitleaks over the whole history; the seven reviewed findings are test fixtures, listed with reasons in `.gitleaksignore`.

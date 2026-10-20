@@ -92,6 +92,17 @@ the options in `LICENSE/index.md`. `scripts/check-licenses.py` checks that the
 build the API container image from `Containerfile`, push it to GHCR by version
 and by commit, generate a CycloneDX bill of materials with `cargo cyclonedx`, and
 create a GitHub release with generated notes and the bill of materials attached.
+**Signed and attested (WPM-T195):** the image is signed by its digest with cosign (keyless: the signature names the release workflow run, and
+there is no key to keep or lose), carries SLSA build provenance (a GitHub attestation pushed to the registry), and the workflow verifies
+both before it creates the release. The `Containerfile`'s two base images are pinned by digest.
+To check an image yourself:
+
+```sh
+IMAGE=ghcr.io/workforce-planning-management/workforce-planning-management-api:v0.1.2   # use the tag you run
+cosign verify "$IMAGE" --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/workforce-planning-management/workforce-planning-management/\.github/workflows/release\.yml@refs/tags/v'
+gh attestation verify "oci://$IMAGE" --repo workforce-planning-management/workforce-planning-management
+```
 `compose.yaml` runs the API and PostgreSQL from a fresh clone as a **demo with
 sign-in enforcement explicitly off** (see its header).
 
