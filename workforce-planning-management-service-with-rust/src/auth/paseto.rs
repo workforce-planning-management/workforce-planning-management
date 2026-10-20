@@ -204,6 +204,7 @@ pub fn bearer_claims(
     verifier
         .verify(token.trim())
         .map_err(|e| (StatusCode::UNAUTHORIZED, e.to_string()))
+        .and_then(super::within_lifetime)
 }
 
 /// The blanket-enforcement decision: authentication, then ABAC
@@ -281,8 +282,8 @@ mod tests {
     }
 
     /// Mint a signed PASETO `v4.public` token for the test identity with
-    /// `kid` in the footer and `exp` set `exp_offset_secs` from a fixed
-    /// `iat` (negative offsets produce an already-expired token).
+    /// `kid` in the footer and `exp` set `exp_offset_secs` from an
+    /// `iat` of now (negative offsets produce an already-expired token).
     fn sign(kid: &str, exp_offset_secs: i64) -> String {
         sign_with_attrs(kid, exp_offset_secs, &[])
     }
@@ -290,7 +291,14 @@ mod tests {
     /// Like [`sign`], with the given ABAC subject attributes minted into
     /// the token's `attrs` claim (e.g. `&[("access", &["write"])]`).
     fn sign_with_attrs(kid: &str, exp_offset_secs: i64, attrs: &[(&str, &[&str])]) -> String {
-        let iat: i64 = 1_700_000_000;
+        // issued now, so a one-hour token is within the lifetime limit and an expired one really is expired
+        let iat: i64 = i64::try_from(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_secs(),
+        )
+        .expect("clock fits");
         let claims = Claims {
             sub: "11111111-1111-1111-1111-111111111111".into(),
             email: "alice@example.com".into(),
@@ -331,13 +339,25 @@ mod tests {
         h
     }
 
+    #[test]
+    fn a_token_that_outlives_the_maximum_lifetime_is_refused() {
+        let (keys, kid) = test_keys_and_kid();
+        let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).expect("verifier");
+        // valid signature and not expired, but meant to live for centuries
+        let token = sign(&kid, 10_000_000_000);
+        let rejected = bearer_claims(&bearer(&token), &verifier).unwrap_err();
+        assert_eq!(rejected.0, StatusCode::UNAUTHORIZED);
+        assert_eq!(rejected.1, "token lifetime exceeds the maximum");
+        assert!(bearer_claims(&bearer(&sign(&kid, 3_600)), &verifier).is_ok());
+    }
+
     /// A well-formed, in-date, correctly-signed token verifies and yields
     /// the expected claims.
     #[test]
     fn valid_token_yields_claims() {
         let (keys, kid) = test_keys_and_kid();
         let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let token = sign(&kid, 10_000_000_000);
+        let token = sign(&kid, 3_600);
         let claims = bearer_claims(&bearer(&token), &verifier).expect("valid token verifies");
         assert_eq!(claims.sub, "11111111-1111-1111-1111-111111111111");
         assert_eq!(claims.email, "alice@example.com");
@@ -382,7 +402,7 @@ mod tests {
     fn tampered_token_is_401() {
         let (keys, kid) = test_keys_and_kid();
         let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let mut token = sign(&kid, 10_000_000_000);
+        let mut token = sign(&kid, 3_600);
         let last = token.pop().unwrap();
         token.push(if last == 'a' { 'b' } else { 'a' });
         assert_eq!(
@@ -396,7 +416,7 @@ mod tests {
     fn empty_verifier_rejects_everything() {
         let verifier = empty_verifier(ISSUER, AUDIENCE);
         let (_, kid) = test_keys_and_kid();
-        let token = sign(&kid, 10_000_000_000);
+        let token = sign(&kid, 3_600);
         assert_eq!(
             bearer_claims(&bearer(&token), &verifier).unwrap_err().0,
             StatusCode::UNAUTHORIZED
@@ -509,7 +529,7 @@ mod tests {
     fn enforce_on_protected_with_valid_token_is_ok() {
         let (keys, kid) = test_keys_and_kid();
         let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let token = sign(&kid, 10_000_000_000);
+        let token = sign(&kid, 3_600);
         assert!(
             enforce(
                 true,
@@ -546,7 +566,7 @@ mod tests {
     fn enforce_on_protected_with_tampered_token_is_401() {
         let (keys, kid) = test_keys_and_kid();
         let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
-        let mut token = sign(&kid, 10_000_000_000);
+        let mut token = sign(&kid, 3_600);
         let last = token.pop().unwrap();
         token.push(if last == 'a' { 'b' } else { 'a' });
         let err = enforce(
@@ -568,7 +588,7 @@ mod tests {
         let (keys, kid) = test_keys_and_kid();
         let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
         let policy = policy();
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[]);
+        let token = sign_with_attrs(&kid, 3_600, &[]);
         assert!(
             enforce(
                 true,
@@ -599,7 +619,7 @@ mod tests {
         let (keys, kid) = test_keys_and_kid();
         let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
         let policy = policy();
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[("access", &["write"])]);
+        let token = sign_with_attrs(&kid, 3_600, &[("access", &["write"])]);
         for method in [Method::POST, Method::PUT] {
             assert!(
                 enforce(
@@ -643,7 +663,7 @@ mod tests {
         let (keys, kid) = test_keys_and_kid();
         let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
         let policy = policy();
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[("access", &["admin"])]);
+        let token = sign_with_attrs(&kid, 3_600, &[("access", &["admin"])]);
         assert!(
             enforce(
                 true,
@@ -677,7 +697,7 @@ mod tests {
         let (keys, kid) = test_keys_and_kid();
         let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
         let policy = policy();
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[("svc", &["true"])]);
+        let token = sign_with_attrs(&kid, 3_600, &[("svc", &["true"])]);
         for (method, path) in [
             (Method::GET, "/api/wards"),
             (Method::POST, "/api/wards"),
@@ -708,7 +728,7 @@ mod tests {
         .expect("policy parses");
         let denied = sign_with_attrs(
             &kid,
-            10_000_000_000,
+            3_600,
             &[("access", &["write"]), ("purpose", &["research"])],
         );
         let err = enforce(
@@ -721,7 +741,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(err.0, StatusCode::FORBIDDEN);
-        let allowed = sign_with_attrs(&kid, 10_000_000_000, &[("access", &["write"])]);
+        let allowed = sign_with_attrs(&kid, 3_600, &[("access", &["write"])]);
         assert!(
             enforce(
                 true,
@@ -752,7 +772,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(no_token.0, StatusCode::UNAUTHORIZED);
-        let token = sign_with_attrs(&kid, 10_000_000_000, &[]);
+        let token = sign_with_attrs(&kid, 3_600, &[]);
         let denied = enforce(
             true,
             &Method::POST,
@@ -797,7 +817,7 @@ mod tests {
         let url = serve_keys(keys).await;
         let verifier = fetch_or(&url, ISSUER, AUDIENCE, empty_verifier(ISSUER, AUDIENCE)).await;
         assert_eq!(verifier.key_count(), 1);
-        let token = sign(&kid, 10_000_000_000);
+        let token = sign(&kid, 3_600);
         let claims =
             bearer_claims(&bearer(&token), &verifier).expect("token signed by fetched key");
         assert_eq!(claims.sub, "11111111-1111-1111-1111-111111111111");
@@ -813,7 +833,7 @@ mod tests {
         let fallback = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
         let verifier = fetch_or("http://127.0.0.1:1/", ISSUER, AUDIENCE, fallback).await;
         assert_eq!(verifier.key_count(), 1);
-        let token = sign(&kid, 10_000_000_000);
+        let token = sign(&kid, 3_600);
         assert!(bearer_claims(&bearer(&token), &verifier).is_ok());
     }
 }

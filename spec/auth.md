@@ -94,6 +94,32 @@ so HR, the service and an administrator cannot record a health status (WPM-D75).
 Everything else a plain worker tries to write is still `403`. A person with several worker records gets the earliest
 one still employed.
 
+## Token age and revocation (WPM-R72, WPM-T200)
+
+WPM verifies a bearer token **statelessly**: the signature, the issuer, the audience, the expiry, and (from WPM-T200) the lifetime.
+It keeps no list of revoked tokens and does not call the identity provider on a request. So **a stolen token works until it
+expires**, and the only controls are how long tokens live and the keys that sign them.
+
+**What WPM checks.** `exp - iat` must not exceed `WPM_MAX_TOKEN_LIFETIME_SECONDS` (default `86400`, 24 hours; `0` or `off` removes the
+limit). A longer token, or one with no `iat`, is `401` with a reason that names neither the limit nor the token. Both token backends do
+this, after the signature and expiry checks. The default admits what the usual providers issue (Keycloak minutes, Entra about an hour)
+and refuses one meant to live for days. **Set it to what your provider actually issues**, plus a margin.
+
+**What the identity provider must do.**
+
+- **Issue short-lived access tokens** (an hour at most; minutes is better) and renew them with a refresh token, which the provider can
+  revoke. A short token is WPM's only revocation.
+- **Put `iat` and `exp` in every token.** A token without `iat` is refused.
+- **Revoke at the source**: disabling a user or ending a session at the provider stops renewal, so the longest an ended session works
+  here is one token lifetime. If that is too long for your risk, shorten the lifetime; do not expect WPM to be told.
+- **Rotate signing keys** and publish the old key's removal. WPM reloads the key set while running (`WPM_PASETO_KEYS_URL`,
+  `WPM_KEYCLOAK_JWKS_URL`); taking a key out of the set refuses every token it signed, which is the emergency revocation for a leaked
+  signing key or a mass compromise.
+- **Keep audience and issuer exact** (`WPM_TOKEN_AUDIENCE`, `WPM_TOKEN_ISSUER`), so a token for another application is refused.
+
+**Not done.** No revocation list or introspection call (they would make the provider a dependency of every request); no check of the
+`sid` against the provider; no refresh handling (that belongs to the UI's session, not the API).
+
 ## Activation runbook (WPM-G1)
 
 Before WPM-D52 the shipped default was wide open (the family posture).

@@ -3528,12 +3528,30 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       that load an organization's records, the result recorded in `BENCHMARKS.md`. **Not done.**
 - [ ] WPM-T197 **Observability.** *(WPM-R122)* A request id on responses and in logs, a test that logs hold no query string or
       personal data, and an export of the audit trail for a security monitoring system. **Not done.**
-- [ ] WPM-T198 **Rate limits across instances.** *(WPM-R74)* Document that limits are per instance and what a deployer must add
-      behind several. **Not done.**
-- [ ] WPM-T199 **Least-privilege database roles.** *(WPM-R123)* SQL for a migration role and a runtime role without DDL, verified
-      by running the service as the runtime role. **Not done.**
-- [ ] WPM-T200 **Token age and revocation.** *(WPM-R72)* Document what the identity provider must do and check a maximum token
-      lifetime in the verifier. **Not done.**
+- [x] WPM-T198 (2026-10-20) **Rate limits across instances.** *(WPM-R74)* `spec/operations/deployment.md` gains "Running more than one
+      instance": limits are per instance, so a caller gets N times the limit behind N instances (and N times the sensitive limit); three ways
+      to restore a real limit (at the proxy or gateway, recommended; divide the settings by N; sticky routing), why WPM has no shared
+      counter (it would make the limiter a dependency of every request), the `WPM_TRUST_FORWARDED` condition, and what does not need
+      sharing. `spec/production-readiness.md` points to it. **Not done:** no shared counter; no test (it is guidance); the proxy snippets
+      are named, not given for each product.
+- [x] WPM-T199 (2026-10-20) **Least-privilege database roles.** *(WPM-R123)* `postgres-roles/roles.sql` (idempotent) makes `wpm_migrator` (owns and
+      changes the schema) and `wpm_app` (rows and sequences only; no create, alter, drop or truncate; no update, delete or truncate on
+      `audit_logs`). `scripts/verify-db-roles.sh` migrates as the migrator, shows the runtime role refused nine schema and audit
+      changes, then runs every request test (97) as `wpm_app`, each on its own clone of the migrated template database: 95 pass and the 2 tests
+      that deliberately tamper with the audit trail are refused by the database. New `api-roles` CI job. `config/test.yaml` gained
+      `WPM_TEST_FRESH_SCHEMA` and `WPM_TEST_TRUNCATE` (both default on, so nothing else changes). Guidance in `deployment.md`
+      ("Database roles"). Verified: the script passes three times locally against Postgres 18. It first showed that the suite resets data
+      by recreating the schema, which the runtime role must not do, hence a clone per test. **Not done:** the other DB-gated binaries
+      (enforcement, security and so on) were not run as `wpm_app`; the backup and restore role is not defined; the extensions are
+      created by an administrator, not by `roles.sql`; row-level security and per-table grants narrower than read-write are not attempted.
+- [x] WPM-T200 (2026-10-20) **Token age and revocation.** *(WPM-R72)* `auth::check_token_lifetime` refuses a token whose `exp - iat` exceeds
+      `WPM_MAX_TOKEN_LIFETIME_SECONDS` (default 86400; `0`/`off` removes it) or that has no `iat`, with a `401` that names neither limit nor
+      token; both backends (PASETO and Keycloak/Entra) call it after signature and expiry. `spec/auth.md` "Token age and revocation" states
+      that revocation is by lifetime and key rotation (there is no list and no introspection) and what the identity provider must do.
+      Verified: 3 unit tests of the rule and one per backend; the 10 `enforcement*` binaries and `oidc_entra` pass. The test tokens
+      (11 files minted ten thousand million seconds ahead) now live an hour and are issued now. **Not verified:** against a real Keycloak
+      (the CI `api-keycloak` job does, and issues five-minute tokens). **Not done:** no revocation list, no `sid` check, and the 24-hour default is a
+      judgement: a provider issuing longer tokens must raise the setting.
 - [ ] WPM-T201 **Independent penetration test.** *(WPM-R121)* A person's task, recorded here when done. **Not done.**
 - [ ] WPM-T202 **Independent accessibility audit.** *(WPM-R121)* A person's task. **Not done.**
 - [ ] WPM-T203 **Gates refresh.** *(WPM-R121)* Fold T201, T202 and the existing WPM-T132 gates into one list and keep the

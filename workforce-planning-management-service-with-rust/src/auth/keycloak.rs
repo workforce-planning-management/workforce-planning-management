@@ -468,7 +468,7 @@ pub fn bearer_claims(
     let sub = claims
         .subject(&key_material.subject_claim)
         .ok_or_else(|| unauthorized("token has no subject claim"))?;
-    Ok(Claims {
+    super::within_lifetime(Claims {
         sub,
         email: claims.email.unwrap_or_default(),
         name: claims
@@ -548,7 +548,7 @@ mod tests {
             iss: ISSUER.to_string(),
             aud: serde_json::json!(AUDIENCE),
             exp: 2_000_000_000,
-            iat: 1_900_000_000,
+            iat: 1_999_996_400,
             nbf: None,
             sid: Some("test-sid".to_string()),
             realm_access: Some(RealmAccess {
@@ -678,7 +678,7 @@ mod tests {
             "iss": ISSUER,
             "aud": AUDIENCE,
             "exp": 2_000_000_000,
-            "iat": 1_900_000_000,
+            "iat": 1_999_996_400,
         })
     }
 
@@ -783,6 +783,19 @@ mod tests {
     }
 
     #[test]
+    fn a_token_that_outlives_the_maximum_lifetime_is_refused() {
+        let (pkcs8, x, y) = generate_es256_test_key();
+        let material = key_material("test-key", &x, &y, ISSUER, AUDIENCE);
+        let mut claims = default_claims_json();
+        // not expired, correctly signed, but meant to live for ten years
+        claims["iat"] = serde_json::json!(1_999_996_400_i64 - 315_360_000);
+        let token = sign(&pkcs8, "test-key", &claims);
+        let rejected = bearer_claims(&bearer(&token), &material).unwrap_err();
+        assert_eq!(rejected.0, StatusCode::UNAUTHORIZED);
+        assert_eq!(rejected.1, "token lifetime exceeds the maximum");
+    }
+
+    #[test]
     fn tampered_signature_is_401() {
         let (pkcs8, x, y) = generate_es256_test_key();
         let material = key_material("test-key", &x, &y, ISSUER, AUDIENCE);
@@ -874,7 +887,7 @@ mod tests {
             "iss": ISSUER,
             "aud": AUDIENCE,
             "exp": 2_000_000_000,
-            "iat": 1_900_000_000,
+            "iat": 1_999_996_400,
             "nbf": 1_700_000_000,
         })
     }

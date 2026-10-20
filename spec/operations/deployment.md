@@ -53,6 +53,7 @@ the compose file are written but were not built where this was written; try them
 | `WPM_RATE_LIMIT_PER_MINUTE` | 600 | Requests per caller per minute (`0` disables) |
 | `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE` | 20 | Erase, sweep, import, merge, token and export routes |
 | `WPM_TRUST_FORWARDED` | off | Name callers by the first `X-Forwarded-For` hop. Set only behind a proxy that **overwrites** that header |
+| `WPM_MAX_TOKEN_LIFETIME_SECONDS` | `86400` | The longest token lifetime accepted (`exp` minus `iat`); a longer one, or one with no issue time, is `401`. `0` or `off` removes the limit. Tighten it to what your identity provider issues, see [Token age and revocation](../auth.md#token-age-and-revocation-wpm-r72-wpm-t200) |
 | `WPM_HSTS` | off | Send HSTS even when the request is not seen as TLS |
 | `WPM_RETENTION_DAYS` | unset | Legacy: one horizon for every record kind without its own override |
 | `WPM_RETENTION_<KIND>_DAYS` | per kind | Retention per record kind; see [retention-schedule](../governance/retention-schedule.md) |
@@ -77,6 +78,50 @@ Terminate TLS at a proxy. It must send `X-Forwarded-Proto: https` (for HSTS), an
 set `WPM_TRUST_FORWARDED` it must overwrite `X-Forwarded-For` with the real client
 address, or callers can pick their own rate-limit bucket. Without `WPM_TRUST_FORWARDED`,
 every caller behind the proxy shares one bucket, which is safe but coarse.
+
+## Running more than one instance (WPM-T198)
+
+Every instance counts rate limits **on its own**, in memory. Behind N instances a caller can make up to N times the
+configured limit, and the sensitive limit (erase, sweep, import, merge, token and export routes) is N times as loose, because
+the load balancer spreads one caller's requests over all of them. WPM has no shared counter, and adding one (Redis) would make
+the rate limiter a dependency whose outage blocks every request, so that is left to the deployer. Do one of these:
+
+1. **Limit at the proxy or gateway** (recommended): enforce the per-client limit where all traffic meets, for example nginx `limit_req`,
+   an ingress controller's rate-limit annotations, or your cloud's WAF. Keep WPM's own limits as a second, looser layer.
+2. **Divide the limits by the number of instances**: with 3 instances set `WPM_RATE_LIMIT_PER_MINUTE=200` and
+   `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE=7`. This is right only when the balancer spreads one caller's requests evenly, and it is
+   wrong while instances are being added or removed.
+3. **Pin a caller to an instance** (sticky routing by client address): then each caller meets one counter again. It costs even load
+   and does not survive an instance restart.
+
+Whatever you choose, name callers correctly: set `WPM_TRUST_FORWARDED` only when the proxy overwrites `X-Forwarded-For` (above), or
+every caller shares the proxy's bucket. The sensitive limit is the one that matters most, since it protects irreversible routes.
+What does **not** need sharing: the cache (use `REDIS_URL`, WPM-D78), tokens (stateless), and the policy (each instance reloads its file).
+
+## Database roles (WPM-R123, WPM-T199)
+
+The service should not connect as a role that can change the schema. [`postgres-roles/roles.sql`](../../workforce-planning-management-service-with-rust/postgres-roles/roles.sql)
+makes two:
+
+| Role | Used by | May |
+| --- | --- | --- |
+| `wpm_migrator` | `db migrate`, as a deliberate step | create, alter and drop what WPM owns |
+| `wpm_app` | the running service (`DATABASE_URL`) | select, insert, update and delete rows, and use sequences. **Not** create, alter, drop or truncate a table, create a role, or update, delete or truncate `audit_logs` |
+
+```sh
+psql "$ADMIN_DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -v migrator_password="$WPM_MIGRATOR_PASSWORD" -v runtime_password="$WPM_APP_PASSWORD" \
+  -f postgres-roles/roles.sql                      # once, before the first migration
+DATABASE_URL=postgres://wpm_migrator:...@db/wpm workforce-planning-management db migrate
+psql ... -f postgres-roles/roles.sql               # again after every migration: it grants on what was just created
+# start the service with DATABASE_URL=postgres://wpm_app:...@db/wpm (production has auto_migrate: false)
+```
+
+The audit trail is already append-only by trigger for every role; removing the privilege as well means a stolen runtime credential is
+refused by the privilege check before the trigger, and cannot switch the trigger off (that needs ownership). Create the extensions
+(`citext`, `unaccent`, `pg_trgm`, `pgcrypto`) as an administrator before the first migration. `scripts/verify-db-roles.sh` proves the
+set: it migrates as `wpm_migrator`, shows `wpm_app` is refused each schema and audit change, and runs the service's request tests as
+`wpm_app` (CI runs it as the `api-roles` job). It does not cover your backup and restore role, which needs its own grants.
 
 ## Probes
 

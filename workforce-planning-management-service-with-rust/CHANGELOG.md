@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — token lifetime limit and least-privilege database roles (WPM-T199, WPM-T200)
+
+A bearer token whose `exp - iat` is longer than `WPM_MAX_TOKEN_LIFETIME_SECONDS` (default 86400; `0` or `off` for none), or that has no `iat`, is `401`. **Upgrade note:** a provider that issues tokens longer than 24 hours needs the setting raised. `postgres-roles/roles.sql` creates `wpm_migrator` and `wpm_app`; the service needs nothing new to run as `wpm_app`. The test profile reads `WPM_TEST_FRESH_SCHEMA` and `WPM_TEST_TRUNCATE` (default on).
+
 ### Added — chaos testing (WPM-T229)
 
 `tests/chaos.rs` puts a fault-injecting proxy between the app and Postgres (reset, silent, slow) and runs a seeded random monkey during writes. It checks that failures are quick, plain `5xx`s that leak nothing, that writes are all-or-nothing, and that the service heals. Seed printed; `WPM_CHAOS_SEED` replays. New CI step.

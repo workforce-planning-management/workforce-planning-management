@@ -60,7 +60,9 @@ file.
   deployment behind a reverse proxy that *overwrites* that header must do
   (otherwise every caller shares the proxy's address and one bucket).
 - Limits are per instance (in memory); behind several instances each counts
-  alone.
+  alone, so the caller's real limit is the number of instances times the setting.
+  What a deployer adds (a limit at the proxy, divided limits, or sticky routing) is in
+  [deployment.md](operations/deployment.md#running-more-than-one-instance-wpm-t198) (WPM-T198).
 
 ## WPM-R77 — Builds from its own repository, and CI checks it
 

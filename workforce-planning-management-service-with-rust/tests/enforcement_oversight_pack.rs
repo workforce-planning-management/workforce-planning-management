@@ -37,12 +37,16 @@ fn sign_as(kid: &str, sub: &str, attrs: &[(&str, &[&str])]) -> String {
         .iter()
         .map(|(key, values)| ((*key).to_string(), json!(values)))
         .collect();
-    let iat: i64 = 1_700_000_000;
+    let iat: i64 = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .and_then(|d| i64::try_from(d.as_secs()).ok())
+        .expect("the clock is after 1970");
     let payload = json!({
         "sub": sub,
         "email": "person@example.com", "name": "Test Person",
         "iss": ISSUER, "aud": AUDIENCE,
-        "exp": iat + 10_000_000_000_i64, "iat": iat,
+        "exp": iat + 3_600, "iat": iat,
         "sid": "test-sid", "attrs": attrs_map,
     })
     .to_string();

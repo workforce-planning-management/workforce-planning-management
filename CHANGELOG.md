@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — rate-limit guidance, least-privilege database roles, a token lifetime limit (WPM-T198, T199, T200)
+
+Behind several instances rate limits multiply; `deployment.md` says what to add. `postgres-roles/roles.sql` makes a migrator role and a runtime role that cannot change the schema or the audit trail, and `scripts/verify-db-roles.sh` (CI job `api-roles`) runs the request tests as that role. The service refuses a token whose lifetime exceeds `WPM_MAX_TOKEN_LIFETIME_SECONDS` (default 24 hours).
+
 ### Added — a signed, attested release image (WPM-R119, WPM-T195)
 
 The release workflow signs the image by digest (cosign, keyless), attaches SLSA build provenance and verifies both before it creates the release; the `Containerfile`'s base images are pinned by digest. Not yet run on a runner: the next tag is its first test. Checking an image: [spec/production-readiness.md](spec/production-readiness.md).

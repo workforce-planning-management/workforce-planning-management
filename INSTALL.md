@@ -138,6 +138,7 @@ cargo test --test enforcement -- --ignored --test-threads=1
 cargo test --test enforcement_expenses -- --ignored --test-threads=1
 cargo test --test security -- --ignored --test-threads=1
 cargo test --test chaos -- --ignored --nocapture   # database faults; WPM_CHAOS_SEED=<n> replays a run
+scripts/verify-db-roles.sh                         # the request tests as the least-privilege role (postgres-roles/roles.sql); a few minutes
 podman compose -f compose.test.yaml down
 ```
 

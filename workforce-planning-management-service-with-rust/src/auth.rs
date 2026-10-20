@@ -121,6 +121,65 @@ pub fn require_auth() -> bool {
         .get_or_init(|| parse_require_auth(crate::compat::env_var("WPM_REQUIRE_AUTH").as_deref()))
 }
 
+/// The longest token lifetime (`exp` minus `iat`) accepted when `WPM_MAX_TOKEN_LIFETIME_SECONDS` is unset: 24 hours.
+/// It admits what the usual identity providers issue (Keycloak minutes, Entra about an hour) and refuses a token
+/// meant to live for weeks, which could not be called back once stolen. WPM verifies tokens statelessly and keeps no
+/// revocation list (WPM-R72, WPM-T200), so the lifetime is the bound on how long a stolen token works.
+pub const DEFAULT_MAX_TOKEN_LIFETIME_SECONDS: i64 = 86_400;
+
+/// The configured limit: a positive number of seconds, or `None` (no limit) for `0`/`off`. Unset, empty or
+/// unreadable keeps the default, so a typo can only make the check stricter.
+#[must_use]
+pub fn parse_max_token_lifetime(value: Option<&str>) -> Option<i64> {
+    match value.map(|v| v.trim().to_ascii_lowercase()).as_deref() {
+        Some("0" | "off" | "false" | "no") => None,
+        Some(v) => match v.parse::<i64>() {
+            Ok(n) if n > 0 => Some(n),
+            _ => Some(DEFAULT_MAX_TOKEN_LIFETIME_SECONDS),
+        },
+        None => Some(DEFAULT_MAX_TOKEN_LIFETIME_SECONDS),
+    }
+}
+
+/// `WPM_MAX_TOKEN_LIFETIME_SECONDS`, read once.
+#[must_use]
+pub fn max_token_lifetime() -> Option<i64> {
+    static MAX: OnceLock<Option<i64>> = OnceLock::new();
+    *MAX.get_or_init(|| {
+        parse_max_token_lifetime(
+            crate::compat::env_var("WPM_MAX_TOKEN_LIFETIME_SECONDS").as_deref(),
+        )
+    })
+}
+
+/// Whether a token issued at `iat` and expiring at `exp` is within `max` seconds. A token with no issue time
+/// (`iat` of zero) cannot be measured and is refused when a limit is set.
+///
+/// # Errors
+///
+/// The reason, for the `401` body.
+pub fn check_token_lifetime(iat: i64, exp: i64, max: Option<i64>) -> Result<(), &'static str> {
+    let Some(max) = max else { return Ok(()) };
+    if iat <= 0 {
+        return Err("token has no issue time");
+    }
+    if exp.saturating_sub(iat) > max {
+        return Err("token lifetime exceeds the maximum");
+    }
+    Ok(())
+}
+
+/// Apply [`check_token_lifetime`] to verified claims (both token backends call this last).
+///
+/// # Errors
+///
+/// `401` when the lifetime is over the limit.
+pub fn within_lifetime(claims: Claims) -> Result<Claims, (StatusCode, String)> {
+    check_token_lifetime(claims.iat, claims.exp, max_token_lifetime())
+        .map(|()| claims)
+        .map_err(|reason| (StatusCode::UNAUTHORIZED, reason.to_string()))
+}
+
 /// Secure by default (WPM-D52): enforcement is on unless the value is an
 /// explicit `0`/`false`/`no`/`off` (case-insensitive, whitespace
 /// ignored). Unset, empty and unrecognized values — including a typo —
@@ -623,6 +682,43 @@ mod tests {
         assert!(
             startup_check(true, false, false).is_ok(),
             "development may lack keys"
+        );
+    }
+
+    #[test]
+    fn the_token_lifetime_limit_parses_and_a_typo_keeps_the_default() {
+        assert_eq!(parse_max_token_lifetime(None), Some(86_400));
+        assert_eq!(parse_max_token_lifetime(Some("")), Some(86_400));
+        assert_eq!(parse_max_token_lifetime(Some("900")), Some(900));
+        assert_eq!(parse_max_token_lifetime(Some(" 3600 ")), Some(3600));
+        assert_eq!(parse_max_token_lifetime(Some("-5")), Some(86_400));
+        assert_eq!(parse_max_token_lifetime(Some("an hour")), Some(86_400));
+        assert_eq!(parse_max_token_lifetime(Some("0")), None);
+        assert_eq!(parse_max_token_lifetime(Some("OFF")), None);
+    }
+
+    #[test]
+    fn a_token_that_lives_too_long_or_has_no_issue_time_is_refused() {
+        let max = Some(3600);
+        assert!(
+            check_token_lifetime(1_000, 1_000 + 3600, max).is_ok(),
+            "exactly the limit is allowed"
+        );
+        assert_eq!(
+            check_token_lifetime(1_000, 1_000 + 3601, max),
+            Err("token lifetime exceeds the maximum")
+        );
+        assert_eq!(
+            check_token_lifetime(0, 5_000, max),
+            Err("token has no issue time")
+        );
+        assert!(
+            check_token_lifetime(0, 5_000_000_000, None).is_ok(),
+            "no limit, no check"
+        );
+        assert!(
+            check_token_lifetime(i64::MIN + 1, i64::MAX, Some(1)).is_err(),
+            "no overflow panic"
         );
     }
 
