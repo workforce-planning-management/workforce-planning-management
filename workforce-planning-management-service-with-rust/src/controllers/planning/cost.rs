@@ -59,8 +59,21 @@ pub(super) async fn cost_value(
     let today = chrono::Utc::now().date_naive();
     let (attrition, source) = resolve_attrition(ctx, &plan).await?;
     let lines = plan_lines(ctx, plan.pid).await?;
-    let employed =
-        employed_in_departments(ctx, &plan.organization_ref, &departments_of(&lines)).await?;
+    let departments_named = departments_of(&lines);
+    let people_in =
+        people_by_department(ctx, &plan.organization_ref, &departments_named, today).await?;
+    let salaries_in = if salary_visible {
+        salaries_by_department(
+            ctx,
+            &plan.organization_ref,
+            &departments_named,
+            &currency,
+            today,
+        )
+        .await?
+    } else {
+        BTreeMap::new()
+    };
     let titles = role_titles(ctx).await?;
     let medians: BTreeMap<String, i64> = benchmarks::Entity::find()
         .filter(benchmarks::Column::DeletedAt.is_null())
@@ -85,15 +98,11 @@ pub(super) async fn cost_value(
     let rows: Vec<serde_json::Value> = groups
         .iter()
         .map(|((department, target_on), group)| {
-            let in_dept: Vec<&workers::Model> = employed
-                .iter()
-                .filter(|w| &w.department == department)
-                .collect();
+            let headcount = people_in.get(department).map_or(0, Vec::len);
             let demand: i64 = group.iter().map(|l| i64::from(l.target_headcount)).sum();
             let days = (*target_on - today).num_days().max(0);
-            let gap = attrition.map(|bp| {
-                rules::headcount_gap(demand, rules::project_supply(in_dept.len(), bp, days))
-            });
+            let gap = attrition
+                .map(|bp| rules::headcount_gap(demand, rules::project_supply(headcount, bp, days)));
             let hires = gap.map(cost_rules::hires_to_close);
             let benchmark_parts: Vec<(i64, usize)> = group
                 .iter()
@@ -106,13 +115,9 @@ pub(super) async fn cost_value(
             let benchmark = (benchmark_parts.len() == group.len())
                 .then(|| cost_rules::weighted_unit_cost(&benchmark_parts))
                 .flatten();
-            let salaries: Vec<i64> = in_dept
-                .iter()
-                .filter(|w| w.salary_currency.as_deref() == Some(currency.as_str()))
-                .filter_map(|w| w.salary_minor)
-                .collect();
+            let salaries: &[i64] = salaries_in.get(department).map_or(&[], Vec::as_slice);
             let unit =
-                cost_rules::pick_unit_cost(benchmark, cost_rules::cohort_average_minor(&salaries));
+                cost_rules::pick_unit_cost(benchmark, cost_rules::cohort_average_minor(salaries));
             let (annual, reason) = match (hires, unit, salary_visible) {
                 (_, _, false) => (None, Some("salary_not_visible")),
                 (None, _, _) => (None, Some("insufficient_history")),

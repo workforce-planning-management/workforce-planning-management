@@ -31,7 +31,7 @@ trap cleanup EXIT
 
 ! curl -fs "127.0.0.1:$port_api/_ping" >/dev/null 2>&1 || { echo "something already answers on port $port_api; stop it first"; exit 1; }
 podman rm -f "$pg" >/dev/null 2>&1 || true
-podman run -d --name "$pg" -e POSTGRES_USER=loco -e POSTGRES_PASSWORD=loco -e POSTGRES_DB=load \
+podman run -d --shm-size=512m --name "$pg" -e POSTGRES_USER=loco -e POSTGRES_PASSWORD=loco -e POSTGRES_DB=load \
   -p "$port:5432" docker.io/library/postgres:17@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3 >/dev/null
 for _ in $(seq 60); do podman exec "$pg" pg_isready -U loco -d load >/dev/null 2>&1 && break; sleep 1; done
 sleep 2

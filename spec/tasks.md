@@ -3545,8 +3545,10 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       rows, then pages), fine at the sizes measured.
 - [ ] WPM-T239 **Hold 200,000 workers.** *(WPM-R142, WPM-D95)* **Progress (2026-10-20):** capacity sums supply in SQL (one query per pool, leave merged by a
       window function), pinned by a new test that equals walking every day, **mutation-checked** twice; the load test now uses 20 connections
-      (the demo profile's single connection had produced most of the failures). At 200,000 only working time (p99 3 s) and the plan forecast and cost
-      (refused) miss the bar (`BENCHMARKS.md`). Run `scripts/load-test.sh 200000`; for each route over 2 s p95 or failing at 8
+      (the demo profile's single connection had produced most of the failures). The plan forecast and cost read groups, not workers (a new test of
+      a department with every kind of person pins the answers and was written against the old code first; mutation-checked), and
+      `WPM_MAX_ORG_WORKERS` defaults to 200,000. At 200,000 only **working time** misses the bar (p50 1.9 s, p99 3.9 s at 8 connections; 515 ms alone):
+      it needs a weekly rollup of recorded minutes (`BENCHMARKS.md`). Run `scripts/load-test.sh 200000`; for each route over 2 s p95 or failing at 8
       connections, move its work into the database or batches, with a parity test first; then raise the `WPM_MAX_ORG_WORKERS` default. Order by
       measurement: capacity, plan forecast and cost, working time, then the remaining whole-table reads.
 - [x] WPM-T238 (2026-10-20) **The key-person register and working time are read by the database.** *(WPM-R120, WPM-D90)* At 50,000 workers both read every

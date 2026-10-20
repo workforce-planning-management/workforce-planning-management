@@ -1,16 +1,17 @@
 //! How many workers one request may load (WPM-R120, WPM-D90).
 //!
-//! The plan forecast and cost views read the workers of the departments a plan names into memory and
-//! work them out there (the directory pages in SQL and the capacity view reads in batches, WPM-T230). That is fine until it is not, so the count is checked first and a
-//! request over the ceiling is refused with a message, not left to run for seconds.
+//! The plan forecast and cost views count the workers of the departments a plan names in the database
+//! (WPM-D95), so their cost no longer grows with the organization as fast as it did, but it does grow.
+//! The count is checked first and a request over the ceiling is refused with a message, not left to run
+//! for seconds.
 //!
-//! The default ceiling is the largest organization the load test ran with no failed request at eight
-//! concurrent callers (`BENCHMARKS.md`; 50,000 workers starved the runtime and failed requests): nothing
-//! is accepted that was not measured. A deployer who measures a larger organization on their own
-//! hardware raises it with `WPM_MAX_ORG_WORKERS`.
+//! The default ceiling is the supported size, 200,000 workers (WPM-R142), the largest organization the load
+//! test ran with no failed request at eight concurrent callers (`BENCHMARKS.md`): nothing is accepted that
+//! was not measured. A deployer who measures a larger organization on their own hardware raises it with
+//! `WPM_MAX_ORG_WORKERS`.
 
 /// The largest worker count a whole-organization view accepts by default.
-pub const DEFAULT_MAX_ORG_WORKERS: u64 = 10_000;
+pub const DEFAULT_MAX_ORG_WORKERS: u64 = 200_000;
 
 /// The ceiling from a setting: absent, blank, zero or unparseable means the default.
 #[must_use]

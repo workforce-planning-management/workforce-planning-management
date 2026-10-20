@@ -72,7 +72,7 @@ What it shows:
   batch of 2,000 workers, mostly decoding rows and four round trips; the next step is SQL aggregates, which has not been done.
 - **The plan views still read every worker of the planned departments**, and above 10,000 of them requests fail
   (`500 … Connection pool timed out`: each request holds the async runtime for about a second). That is why
-  `WPM_MAX_ORG_WORKERS` (default **10,000**, WPM-D90) still guards them and only them.
+  `WPM_MAX_ORG_WORKERS` (default **10,000** when this was written; **200,000** since WPM-D95) still guards them and only them.
 - The service does about 50,000 requests/s on a route that touches nothing (`/_ping`); the rest is database and work per request.
 
 What it does **not** show: any other route; mixed traffic or writes; more than 8 connections; a database on another
@@ -145,3 +145,24 @@ Capacity now sums supply in the database (one query per pool; the rule's definit
 | plan forecast / cost | refused (`422`) | | all | **no** |
 
 Two routes remain: working time, and the plan forecast and cost (still refused over 10,000 workers).
+
+### The plan forecast and cost in the database (WPM-T239, second step)
+
+The two views counted every employed worker of the planned departments in memory. They now read groups: employed people grouped by
+department, type, FTE and engagement end (a few hundred rows), the declared skill levels as counts, the few people named by an open plan to
+convert, and the salaries of one currency; the answers are the same (`plan_views_count_every_kind_of_person_once`, **mutation-checked**).
+The ceiling `WPM_MAX_ORG_WORKERS` defaults to 200,000. The load test's Postgres now gets 512 MB of shared memory: with the container's
+default 64 MB, parallel queries failed with "could not resize shared memory segment", which a deployer's database should also have room for.
+
+At 200,000 workers, 8 connections, 20 database connections:
+
+| Route | p50 ms | p99 ms | Failed | Meets the bar |
+|---|---:|---:|---:|---|
+| plan forecast / cost | 243 / 134 | 458 / 279 | 0 | yes (were refused) |
+| capacity | 1,352 | 1,751 | 0 | yes |
+| key-person register | 576 | 901 | 0 | yes |
+| working time | 1,917 | 3,904 | 0 | **no**; one request at a time takes 515 ms |
+
+One route is left: working time. Its sum reads every time entry of the 17-week window (4,000,000 rows here, at 20 per worker; a
+worker who records daily has about 85), so it is bound by the database's CPU, and a seven-times-heavier ledger would be worse. It needs a
+rollup (a weekly total per worker kept as entries change), not a faster query.

@@ -260,7 +260,7 @@ including unrelated ones. Three changes, each with the largest effect for its vi
 - **The plan forecast and cost views** read only the departments the plan names, and only the skills its roles ask for.
 
 What is **still read whole** is the plan views' planned-department workers. For them, one `COUNT` before the load and a `422` over
-`WPM_MAX_ORG_WORKERS` (default 10,000; at 50,000 they failed). A refusal that names the number is better than a request that holds
+`WPM_MAX_ORG_WORKERS` (default 10,000 then; at 50,000 they failed; **200,000 since WPM-D95**). A refusal that names the number is better than a request that holds
 a connection for a second and a runtime for the others. **The cost is real**: a plan over 10,000 workers loses its forecast and cost until
 the setting is raised or the arithmetic is moved into SQL aggregates.
 
@@ -269,8 +269,7 @@ the setting is raised or the arithmetic is moved into SQL aggregates.
 The requirement changed from "bounded and refused above a measured ceiling" (WPM-D90) to **200,000 workers in one organization**.
 The rule for every view that loads an organization: its work is done by the database (aggregates, pages, joins) or in batches whose
 memory does not depend on the organization, and it answers **within 2 seconds at the 95th percentile with 8 concurrent connections and
-no failed request** on `scripts/load-test.sh 200000`. The `WPM_MAX_ORG_WORKERS` refusal stays as a deployer's guard but its default
-rises to 200,000 only when the plan forecast and cost views meet that bar; until then the refusal at 10,000 is the honest answer and
-the list of views that do not meet it is kept in `BENCHMARKS.md`. Seeding 200,000 workers is the evidence; a claim without it is not
+no failed request** on `scripts/load-test.sh 200000`. The `WPM_MAX_ORG_WORKERS` refusal stays as a deployer's guard; its default **is 200,000** since the plan forecast and cost views
+met the bar (WPM-T239). The views that still do not are listed in `BENCHMARKS.md`. Seeding 200,000 workers is the evidence; a claim without it is not
 made. **The cost:** the arithmetic of the plan views (forecast, cost, capacity) has to move into SQL aggregates, which is the largest
 part of the work and is done view by view (WPM-T239).

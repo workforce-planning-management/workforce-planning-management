@@ -19,12 +19,11 @@ use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     benchmarks, conversion_plans, demand_line_objectives, headcount_snapshots, plan_demand_lines,
     plan_objectives, role_profiles, role_skill_requirements, succession_candidates,
-    succession_plans, worker_skills, workers, workforce_plans,
+    succession_plans, workers, workforce_plans,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::cost as cost_rules;
-use crate::rules::metrics::is_employed_on;
 use crate::rules::planning as rules;
 use crate::rules::talent as talent_rules;
 use crate::validation::Problems;
@@ -48,6 +47,7 @@ mod escalations;
 mod forecast;
 mod objectives;
 mod plans;
+mod staff;
 mod tolerances;
 // The sections share this module's imports and each other's handlers.
 #[allow(clippy::wildcard_imports)]
@@ -64,6 +64,8 @@ use self::forecast::*;
 use self::objectives::*;
 #[allow(clippy::wildcard_imports)]
 use self::plans::*;
+#[allow(clippy::wildcard_imports)]
+use self::staff::*;
 #[allow(clippy::wildcard_imports)]
 use self::tolerances::*;
 

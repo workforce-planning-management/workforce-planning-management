@@ -4,37 +4,6 @@
 #[allow(clippy::wildcard_imports)]
 use super::*;
 
-/// Workers per skills query, well under the database's bind-parameter limit.
-const DECLARED_CHUNK: usize = 5_000;
-
-/// Employed workers of the plan's organization in the given departments, today. Only the planned
-/// departments are read: a plan about two of twenty departments does not load the other eighteen.
-pub(super) async fn employed_in_departments(
-    ctx: &AppContext,
-    org: &str,
-    departments: &BTreeSet<String>,
-) -> Result<Vec<workers::Model>> {
-    let today = chrono::Utc::now().date_naive();
-    let scope = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::OrganizationRef.eq(org))
-        .filter(workers::Column::Department.is_in(departments.iter().cloned()))
-        .filter(workers::Column::HiredOn.lte(today))
-        .filter(
-            Condition::any()
-                .add(workers::Column::TerminatedOn.is_null())
-                .add(workers::Column::TerminatedOn.gt(today)),
-        );
-    crate::controllers::ensure_scale(ctx, scope.clone()).await?;
-    Ok(scope
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        // the rule is the authority on "employed today"; SQL only narrows what is read
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .collect())
-}
-
 /// The departments a plan's demand lines name.
 pub(super) fn departments_of(lines: &[plan_demand_lines::Model]) -> BTreeSet<String> {
     lines.iter().map(|l| l.department.clone()).collect()
@@ -131,8 +100,9 @@ pub(super) async fn forecast_value(
     let today = chrono::Utc::now().date_naive();
     let (attrition, source) = resolve_attrition(ctx, &plan).await?;
     let lines = plan_lines(ctx, plan.pid).await?;
-    let employed =
-        employed_in_departments(ctx, &plan.organization_ref, &departments_of(&lines)).await?;
+    let departments_named = departments_of(&lines);
+    let people_in =
+        people_by_department(ctx, &plan.organization_ref, &departments_named, today).await?;
     let titles = role_titles(ctx).await?;
     let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
     let skill_names: BTreeMap<Uuid, String> = crate::models::_entities::skills::Entity::find()
@@ -141,31 +111,20 @@ pub(super) async fn forecast_value(
         .into_iter()
         .map(|s| (s.pid, s.name))
         .collect();
-    // Only the planned departments' workers and only the skills the lines' roles ask for are read.
+    // Only the planned departments' workers and only the skills the lines' roles ask for are counted.
     let needed_skills: BTreeSet<Uuid> = requirements.iter().map(|r| r.skill_pid).collect();
-    let mut declared: BTreeMap<(Uuid, Uuid), i32> = BTreeMap::new();
-    for chunk in employed.chunks(DECLARED_CHUNK) {
-        for d in worker_skills::Entity::find()
-            .filter(worker_skills::Column::DeletedAt.is_null())
-            .filter(worker_skills::Column::WorkerPid.is_in(chunk.iter().map(|w| w.pid)))
-            .filter(worker_skills::Column::SkillPid.is_in(needed_skills.iter().copied()))
-            .all(&ctx.db)
-            .await?
-        {
-            declared.insert((d.worker_pid, d.skill_pid), d.proficiency);
-        }
-    }
-
+    let declared = skill_levels_by_department(
+        ctx,
+        &plan.organization_ref,
+        &departments_named,
+        &needed_skills,
+        today,
+    )
+    .await?;
     // Open plans to convert, by the status and FTE of the worker they are for. A plan names a worker, so
     // only counts leave here, and they are read against the department the worker is in today.
-    let open_conversions: BTreeMap<Uuid, String> = conversion_plans::Entity::find()
-        .filter(conversion_plans::Column::Intent.eq("convert"))
-        .filter(conversion_plans::Column::Status.is_in(["proposed", "approved"]))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|c| (c.worker_pid, c.status))
-        .collect();
+    let open_conversions =
+        converting_by_department(ctx, &plan.organization_ref, &departments_named, today).await?;
 
     // Group lines by (department, target date).
     let mut groups: BTreeMap<(String, chrono::NaiveDate), Vec<&plan_demand_lines::Model>> =
@@ -179,11 +138,8 @@ pub(super) async fn forecast_value(
     let departments: Vec<serde_json::Value> = groups
         .iter()
         .map(|((department, target_on), group)| {
-            let in_dept: Vec<&workers::Model> = employed
-                .iter()
-                .filter(|w| &w.department == department)
-                .collect();
-            let opening = in_dept.len();
+            let people: &[rules::Person] = people_in.get(department).map_or(&[], Vec::as_slice);
+            let opening = people.len();
             let demand_lines = demand_lines_of(group);
             let rules::Breakdown {
                 total: demand_total,
@@ -192,28 +148,17 @@ pub(super) async fn forecast_value(
             } = rules::demand_breakdown(&demand_lines);
             let demand = demand_total.headcount;
             let days = (*target_on - today).num_days().max(0);
-            let people: Vec<rules::Person> = in_dept
-                .iter()
-                .map(|w| rules::Person {
-                    basis: crate::rules::engagement::Basis::parse(&w.employment_type)
-                        .unwrap_or(crate::rules::engagement::Basis::Permanent),
-                    fte_percent: w.fte_percent,
-                    ends_on: w.engagement_ends_on,
-                })
-                .collect();
             let projection =
-                rules::project_by_basis(&people, today, *target_on, attrition, source);
+                rules::project_by_basis(people, today, *target_on, attrition, source);
             let supply = projection.total_headcount;
             let gap = supply.map(|s| rules::headcount_gap(demand, s));
-            let contract = rules::contract_fte(&people);
+            let contract = rules::contract_fte(people);
             let conversions = rules::conversion_cover(
-                &in_dept
-                    .iter()
-                    .filter_map(|w| {
-                        open_conversions
-                            .get(&w.pid)
-                            .map(|status| (status.as_str(), w.fte_percent))
-                    })
+                &open_conversions
+                    .get(department)
+                    .into_iter()
+                    .flatten()
+                    .map(|(status, fte)| (status.as_str(), *fte))
                     .collect::<Vec<_>>(),
             );
             let gap_fte = demand_total
@@ -230,11 +175,15 @@ pub(super) async fn forecast_value(
                         .filter(move |r| r.role_profile_pid == role)
                         .map(|r| {
                             let (mut proficient, mut reskill_pool) = (0usize, 0usize);
-                            for worker in &in_dept {
-                                match declared.get(&(worker.pid, r.skill_pid)) {
-                                    Some(level) if *level >= r.min_proficiency => proficient += 1,
-                                    Some(_) => reskill_pool += 1,
-                                    None => {}
+                            for (level, n) in declared
+                                .get(&(department.clone(), r.skill_pid))
+                                .into_iter()
+                                .flatten()
+                            {
+                                if *level >= r.min_proficiency {
+                                    proficient += n;
+                                } else {
+                                    reskill_pool += n;
                                 }
                             }
                             serde_json::json!({
