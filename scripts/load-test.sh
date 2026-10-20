@@ -91,7 +91,7 @@ SQL
   # a CPD requirement for every worker: the overview counts who has met it
   curl -fsS -X POST "$api/api/cpd-requirements" -H 'content-type: application/json' \
     -d '{"name":"load","unit":"hours","required":10,"period_start":"2026-01-01","period_end":"2026-12-31"}' >/dev/null
-  for path in "/_ping" "/api/workers?limit=50" "/api/directory?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/capacity?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce-plans/$plan/forecast" "/api/workforce-plans/$plan/cost" "/api/cpd/overview"; do
+  for path in "/_ping" "/api/workers?limit=50" "/api/directory?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/capacity?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce-plans/$plan/forecast" "/api/workforce-plans/$plan/cost" "/api/cpd/overview" "/api/workforce-intelligence/overview" "/api/workforce-intelligence/metrics" "/api/workforce-intelligence/insights" "/api/workforce-intelligence/key-person?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce/working-time"; do
     out=$(oha -z "${secs}s" -c "$conc" --no-tui --output-format json "http://127.0.0.1:$port_api$path" 2>/dev/null || echo '{}')
     echo "$out" | python3 -I -c '
 import json, sys

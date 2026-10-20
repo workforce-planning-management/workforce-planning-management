@@ -3543,6 +3543,15 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T237 (2026-10-20) **The dashboard's counts are made by the database.** *(WPM-R120, WPM-D90)* Measured at 50,000 workers, the workforce overview, metrics and
+      insights read every worker and failed requests (about 600 ms). `GET /api/workforce-intelligence/overview` now groups in SQL (department, status,
+      type, hire date for tenure, one row per manager, a sum for FTE; a manager is named only if employed on the date) and `period_metrics` counts opening,
+      closing, starters and leavers in one query and span of control from one row per manager; the definitions (`is_employed_on`, starters, leavers) are
+      written once in SQL. Metrics and insights 655 to 51 ms, the overview 561 to 272 ms, no failures (`BENCHMARKS.md`). Verified: two new request tests
+      (groups, fte, tenure, a named and an unnamed manager, an earlier `as_of`; opening, closing, starters, leavers across the period edges) that pass
+      against the old code and the new, the 106 existing request tests, clippy. **Not done:** the key-person register and working time still read every worker
+      and fail at 50,000; the overview still returns one row per manager (unbounded in an organization with very many managers); the module doc's
+      "in-process, datasets are small" was true when written and is amended.
 - [x] WPM-T236 (2026-10-20) **The CPD overview counts in the database.** *(WPM-R120, WPM-D90)* `GET /api/cpd/overview` no longer reads every worker and
       every CPD entry: per requirement one aggregate query returns who it applies to, who recorded and who verified at least the required amount (the
       definitions of `applies_to`, `in_period` and `progress`, in SQL), the headcount is a count, and only the registrations that are expired or inside

@@ -42,6 +42,12 @@ Requests/s, p50 ms, p99 ms, 10 s at 8 connections:
 | 50,000 | capacity | 4 | 2,245 | 2,251 | 0 |
 | 10,000 | CPD overview (one requirement) | 158 | 50.5 | 60.7 | 0 |
 | 50,000 | CPD overview (one requirement) | 25 | 323 | 369 | 0 |
+| 10,000 | workforce overview / metrics / insights (before) | 40 / 38 / 40 | 208 / 203 / 203 | 229 / 303 / 217 | 0 |
+| 10,000 | workforce overview / metrics / insights (after) | 91 / 409 / 417 | 87 / 19 / 19 | 118 / 28 / 23 | 0 |
+| 50,000 | workforce overview / metrics / insights (before) | 16 / 12 / 13 | 561 / 655 / 587 | 629 / 945 / 968 | **30 / 16 / 19** |
+| 50,000 | workforce overview / metrics / insights (after) | 30 / 155 / 155 | 272 / 51 / 51 | 295 / 67 / 64 | 0 |
+| 10,000 | key-person register / working time | 29 / 38 | 286 / 211 | 354 / 228 | 0 |
+| 50,000 | key-person register / working time | 7 / 10 | 1,292 / 965 | 1,396 / 1,098 | **6 / 5** |
 | 50,000 | plan forecast / cost | refused (`422`, over 10,000) | | | |
 | 50,000 | plan forecast / cost, ceiling raised to 100,000 | 7 / 8 | 1,227 / 1,057 | 1,277 / 1,071 | **7 of 64, 7 of 77** |
 
@@ -49,6 +55,9 @@ Requests/s, p50 ms, p99 ms, 10 s at 8 connections:
 27 ms.)
 
 What it shows:
+
+- **The workforce overview, metrics and insights** (the dashboard's numbers) counted by reading every worker into memory and failed requests at 50,000. They are now counted by the database (opening, closing, starters and leavers in one query; groups and spans as grouped queries): metrics and insights 655 ms to 51 ms, the overview 561 to 272 ms, no failures. Two new request tests pin the answers and pass against the old code as well as the new.
+- **Still failing at 50,000:** the key-person register (`/api/workforce-intelligence/key-person`) and working time (`/api/workforce/working-time`) read every worker and fail under load.
 
 - **The CPD overview** (added to the load test after the second pass, with the workers seeded but no CPD entries, so the entry side is not exercised at scale) counts in the database: 50,000 workers, one requirement, 323 ms and no failure. Before, it read every worker and every entry into memory.
 

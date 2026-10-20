@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the workforce overview and metrics are counted by the database (WPM-T237)
+
+`GET /api/workforce-intelligence/overview`, `/metrics` and `/insights` give the same answers; at 50,000 workers they went from about 600 ms with failed requests to 50 to 270 ms with none.
+
 ### Changed — the CPD overview counts in the database (WPM-T236)
 
 `GET /api/cpd/overview` gives the same answers without reading every worker and entry into memory.

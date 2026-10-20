@@ -26,6 +26,7 @@ mod grades;
 mod health_detail;
 mod hr;
 mod idempotency;
+mod intelligence_overview;
 mod job_levels;
 mod learning;
 mod lms_links;

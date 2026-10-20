@@ -21,12 +21,17 @@
 //!    incumbent worker pid — the same information the succession
 //!    endpoints already return under their own audit.
 //!
-//! Aggregates are computed in-process from the entity rows rather than
-//! in SQL: the datasets are small (one organisation's workforce), and
-//! the derivations stay in reviewable Rust next to their tests.
+//! Aggregates were computed in-process from the entity rows so the derivations stay in reviewable Rust
+//! next to their tests. Where the load test showed that reading every worker fails at scale (the overview
+//! and the period metrics, WPM-D90), the same counts are made by the database, with the definitions
+//! (`is_employed_on`, starters, leavers) written once in SQL and a request test that pins the answers.
 
 use loco_rs::prelude::*;
-use sea_orm::EntityTrait;
+use sea_orm::sea_query::Expr;
+use sea_orm::{
+    ColumnTrait, Condition, ConnectionTrait, DatabaseBackend, EntityTrait, PaginatorTrait,
+    QueryFilter, QuerySelect, Select, Statement,
+};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
@@ -74,39 +79,59 @@ async fn overview(
     let as_of = query
         .as_of
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
-    let staff = employed_workers(&ctx, as_of).await?;
-
-    let mut by_department: BTreeMap<String, usize> = BTreeMap::new();
-    let mut by_status: BTreeMap<String, usize> = BTreeMap::new();
-    let mut by_employment_type: BTreeMap<String, usize> = BTreeMap::new();
+    // Counts are worked out by the database, one small grouped query each: the dashboard asks for this
+    // on every load, and reading every worker into memory made it fail at 50,000 (WPM-D90).
+    let headcount = employed_on(as_of).count(&ctx.db).await?;
+    let by_department = grouped(&ctx, as_of, workers::Column::Department).await?;
+    let by_status = grouped(&ctx, as_of, workers::Column::Status).await?;
+    let by_employment_type = grouped(&ctx, as_of, workers::Column::EmploymentType).await?;
+    let hire_dates: Vec<(chrono::NaiveDate, i64)> = employed_on(as_of)
+        .select_only()
+        .column(workers::Column::HiredOn)
+        .column_as(Expr::cust("count(*)"), "n")
+        .group_by(workers::Column::HiredOn)
+        .into_tuple()
+        .all(&ctx.db)
+        .await?;
     let mut by_tenure: BTreeMap<&str, usize> = BTreeMap::new();
-    let mut fte_percent_total: i64 = 0;
-    let mut span_of_control: BTreeMap<Uuid, usize> = BTreeMap::new();
-
-    for worker in &staff {
-        *by_department.entry(worker.department.clone()).or_default() += 1;
-        *by_status.entry(worker.status.clone()).or_default() += 1;
-        *by_employment_type
-            .entry(worker.employment_type.clone())
-            .or_default() += 1;
-        let months = rules::months_of_service(worker.hired_on, as_of);
-        *by_tenure.entry(rules::tenure_bucket(months)).or_default() += 1;
-        fte_percent_total += i64::from(worker.fte_percent);
-        if let Some(manager) = worker.manager_pid {
-            *span_of_control.entry(manager).or_default() += 1;
-        }
+    for (hired_on, n) in hire_dates {
+        let months = rules::months_of_service(hired_on, as_of);
+        *by_tenure.entry(rules::tenure_bucket(months)).or_default() +=
+            usize::try_from(n).unwrap_or(0);
     }
-
-    let name_of: BTreeMap<Uuid, &str> = staff
-        .iter()
-        .map(|e| (e.pid, e.display_name.as_str()))
+    let (fte_percent_total,): (i64,) = employed_on(as_of)
+        .select_only()
+        .column_as(Expr::cust("COALESCE(SUM(fte_percent), 0)::bigint"), "total")
+        .into_tuple()
+        .one(&ctx.db)
+        .await?
+        .unwrap_or((0,));
+    let managers: Vec<(Uuid, i64)> = employed_on(as_of)
+        .select_only()
+        .column(workers::Column::ManagerPid)
+        .column_as(Expr::cust("count(*)"), "n")
+        .filter(workers::Column::ManagerPid.is_not_null())
+        .group_by(workers::Column::ManagerPid)
+        .into_tuple()
+        .all(&ctx.db)
+        .await?;
+    // a manager is named only if they are employed on the date too
+    let names: BTreeMap<Uuid, String> = employed_on(as_of)
+        .select_only()
+        .column(workers::Column::Pid)
+        .column(workers::Column::DisplayName)
+        .filter(workers::Column::Pid.is_in(managers.iter().map(|(m, _)| *m)))
+        .into_tuple::<(Uuid, String)>()
+        .all(&ctx.db)
+        .await?
+        .into_iter()
         .collect();
-    let mut spans: Vec<serde_json::Value> = span_of_control
+    let mut spans: Vec<serde_json::Value> = managers
         .iter()
         .map(|(manager, reports)| {
             serde_json::json!({
                 "manager_pid": manager,
-                "display_name": name_of.get(manager),
+                "display_name": names.get(manager),
                 "direct_reports": reports,
             })
         })
@@ -120,7 +145,7 @@ async fn overview(
                        definition as /metrics; FTE is the \
                        sum of declared fte_percent (in hundredths of a person); tenure is whole \
                        completed months since hired_on",
-        "headcount": staff.len(),
+        "headcount": headcount,
         "fte_percent_total": fte_percent_total,
         "by_department": by_department,
         "by_status": by_status,
@@ -420,32 +445,45 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
         return Err(super::unprocessable("from must not be after to"));
     }
 
-    let staff = live_workers(ctx).await?;
-    let tenures: Vec<metric_rules::Tenure> = staff
-        .iter()
-        .map(|w| metric_rules::Tenure {
-            hired_on: w.hired_on,
-            terminated_on: w.terminated_on,
-        })
-        .collect();
-    // Opening headcount is the day before the period starts.
+    // Opening and closing headcount, starters and leavers: one pass in the database over live workers.
     let opening_date = from.pred_opt().unwrap_or(from);
-    let opening = metric_rules::headcount_on(opening_date, &tenures);
-    let closing = metric_rules::headcount_on(to, &tenures);
-    let leavers = metric_rules::leavers(from, to, &tenures);
+    let counts_row = ctx
+        .db
+        .query_one_raw(Statement::from_sql_and_values(
+            DatabaseBackend::Postgres,
+            "SELECT count(*) FILTER (WHERE hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)) AS opening,
+                    count(*) FILTER (WHERE hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)) AS closing,
+                    count(*) FILTER (WHERE hired_on >= $3 AND hired_on <= $2) AS starters,
+                    count(*) FILTER (WHERE terminated_on >= $3 AND terminated_on <= $2) AS leavers
+               FROM workers WHERE deleted_at IS NULL",
+            [opening_date.into(), to.into(), from.into()],
+        ))
+        .await?
+        .ok_or_else(|| Error::string("the headcount query returned no row"))?;
+    let count = |name: &str| -> Result<usize> {
+        let n: i64 = counts_row.try_get("", name)?;
+        Ok(usize::try_from(n).unwrap_or(0))
+    };
+    let (opening, closing, starters, leavers) = (
+        count("opening")?,
+        count("closing")?,
+        count("starters")?,
+        count("leavers")?,
+    );
 
-    // Span of control over managers of workers employed on `to`.
-    let employed: Vec<&workers::Model> = staff
+    // Span of control over managers of workers employed on `to`: one row per manager.
+    let reports: Vec<(i64,)> = employed_on(to)
+        .select_only()
+        .column_as(Expr::cust("count(*)"), "n")
+        .filter(workers::Column::ManagerPid.is_not_null())
+        .group_by(workers::Column::ManagerPid)
+        .into_tuple()
+        .all(&ctx.db)
+        .await?;
+    let counts: Vec<usize> = reports
         .iter()
-        .filter(|w| metric_rules::is_employed_on(to, w.hired_on, w.terminated_on))
+        .map(|(n,)| usize::try_from(*n).unwrap_or(0))
         .collect();
-    let mut reports: BTreeMap<Uuid, usize> = BTreeMap::new();
-    for worker in &employed {
-        if let Some(manager) = worker.manager_pid {
-            *reports.entry(manager).or_default() += 1;
-        }
-    }
-    let counts: Vec<usize> = reports.values().copied().collect();
 
     // Time-to-fill over requisitions filled within the period.
     let filled_days: Vec<i64> = requisitions::Entity::find()
@@ -463,7 +501,7 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
         opening_date,
         opening,
         closing,
-        starters: metric_rules::starters(from, to, &tenures),
+        starters,
         leavers,
         turnover_rate: metric_rules::turnover_rate(leavers, opening, closing),
         span: metric_rules::span_of_control(&counts),
@@ -760,6 +798,38 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
         "ready_share": ratio_json(rules::ratio(ready_total, live_total)),
         "early_careers": early_careers,
     }))
+}
+
+/// Live workers employed on `date` ([`metric_rules::is_employed_on`] in SQL): the one population every
+/// headcount-style view counts.
+fn employed_on(date: chrono::NaiveDate) -> Select<workers::Entity> {
+    workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::HiredOn.lte(date))
+        .filter(
+            Condition::any()
+                .add(workers::Column::TerminatedOn.is_null())
+                .add(workers::Column::TerminatedOn.gt(date)),
+        )
+}
+
+/// Workers employed on `date` counted by one text column (department, status, employment type).
+async fn grouped(
+    ctx: &AppContext,
+    date: chrono::NaiveDate,
+    column: workers::Column,
+) -> Result<BTreeMap<String, usize>> {
+    Ok(employed_on(date)
+        .select_only()
+        .column(column)
+        .column_as(Expr::cust("count(*)"), "n")
+        .group_by(column)
+        .into_tuple::<(String, i64)>()
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|(key, n)| (key, usize::try_from(n).unwrap_or(0)))
+        .collect())
 }
 
 /// Every live (not soft-deleted) worker record, whatever its status.
