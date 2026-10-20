@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the CPD overview counts in the database (WPM-T236)
+
+`GET /api/cpd/overview` gives the same answers without reading every worker and entry into memory.
+
 ### Added — escalations of a breached tolerance (WPM-T235)
 
 `POST /api/workforce-plans/{pid}/escalations` takes an amber or red dimension to level 1 (`plan_owner`); `POST /api/escalations/{pid}/raise-level` goes up to `board` then `executive`; `POST …/decide` (an administrator of the organization) closes it with a decision and a note. `GET /api/escalations?organization=` lists the open ones. The tolerances view gains `escalation` per dimension and `breaches_without_escalation`. Migration `000077`.

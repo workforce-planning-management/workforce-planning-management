@@ -3543,6 +3543,14 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T236 (2026-10-20) **The CPD overview counts in the database.** *(WPM-R120, WPM-D90)* `GET /api/cpd/overview` no longer reads every worker and
+      every CPD entry: per requirement one aggregate query returns who it applies to, who recorded and who verified at least the required amount (the
+      definitions of `applies_to`, `in_period` and `progress`, in SQL), the headcount is a count, and only the registrations that are expired or inside
+      the warning window are read. The answers are the same. Verified: a new request test with workers of the title (case and spaces ignored), another
+      title, one not yet employed, entries of another unit, outside the period and withdrawn, and registrations expired, expiring, valid and for a
+      worker not yet employed, **mutation-checked** (`>=` made `>` fails it); the existing CPD ledger test passes; measured in `BENCHMARKS.md`
+      (50,000 workers, 323 ms, no failure). **Not done:** the entry side was not exercised at scale (the load test seeds no CPD entries); about forty
+      other whole-table reads remain; the job-title match is exact after lower-casing and trimming, as before (ASCII-exact lower-casing in SQL).
 - [x] WPM-T235 (2026-10-20) **Escalations of a breached tolerance.** *(WPM-R141, WPM-D94)* [tolerances.md](tolerances.md#escalations). Migration `000077`
       `plan_escalations` (level 1 to 3, open or decided, the status, deviation and limit at raising and at deciding, one open per plan and dimension,
       checked in the database). `rules::escalation`: the three levels, the decisions, `may_raise` (amber or red only, the refusal says which status it

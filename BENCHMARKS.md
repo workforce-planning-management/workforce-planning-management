@@ -40,6 +40,8 @@ Requests/s, p50 ms, p99 ms, 10 s at 8 connections:
 | 50,000 | `/api/workers?limit=50` | 201 | 39.3 | 60.2 | 0 |
 | 50,000 | directory | 50 | 158.5 | 171 | 0 |
 | 50,000 | capacity | 4 | 2,245 | 2,251 | 0 |
+| 10,000 | CPD overview (one requirement) | 158 | 50.5 | 60.7 | 0 |
+| 50,000 | CPD overview (one requirement) | 25 | 323 | 369 | 0 |
 | 50,000 | plan forecast / cost | refused (`422`, over 10,000) | | | |
 | 50,000 | plan forecast / cost, ceiling raised to 100,000 | 7 / 8 | 1,227 / 1,057 | 1,277 / 1,071 | **7 of 64, 7 of 77** |
 
@@ -47,6 +49,8 @@ Requests/s, p50 ms, p99 ms, 10 s at 8 connections:
 27 ms.)
 
 What it shows:
+
+- **The CPD overview** (added to the load test after the second pass, with the workers seeded but no CPD entries, so the entry side is not exercised at scale) counts in the database: 50,000 workers, one requirement, 323 ms and no failure. Before, it read every worker and every entry into memory.
 
 - **The directory now costs the page, not the organization**: 1,229 ms and failures at 50,000 became 159 ms and none. The
   paged worker list also slows with size (11 → 16 → 39 ms) because it counts the scope on every page.

@@ -10,9 +10,8 @@
 //! `null`, never `0`.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, QuerySelect, QueryTrait};
 use serde::Deserialize;
-use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
@@ -23,7 +22,6 @@ use crate::models::_entities::{
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::cpd as rules;
-use crate::rules::metrics::is_employed_on;
 use crate::rules::talent::ratio;
 use crate::validation::Problems;
 
@@ -590,67 +588,48 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
 #[debug_handler]
 async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .collect();
-    let entries = cpd_entries::Entity::find()
-        .filter(cpd_entries::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let mut by_worker: BTreeMap<Uuid, Vec<&cpd_entries::Model>> = BTreeMap::new();
-    for entry in &entries {
-        by_worker.entry(entry.worker_pid).or_default().push(entry);
+    let employed = || {
+        workers::Entity::find()
+            .filter(workers::Column::DeletedAt.is_null())
+            .filter(workers::Column::HiredOn.lte(today))
+            .filter(
+                Condition::any()
+                    .add(workers::Column::TerminatedOn.is_null())
+                    .add(workers::Column::TerminatedOn.gt(today)),
+            )
+    };
+    let headcount = employed().count(&ctx.db).await?;
+    // One aggregate per requirement, worked out by the database: no worker and no entry is read into memory.
+    let mut requirements: Vec<serde_json::Value> = Vec::new();
+    for r in live_requirements(&ctx).await? {
+        let (applicable, met, met_verified) = requirement_counts(&ctx, &r, today).await?;
+        requirements.push(serde_json::json!({
+            "requirement_pid": r.pid,
+            "name": r.name,
+            "unit": r.unit,
+            "period_start": r.period_start,
+            "period_end": r.period_end,
+            "applicable_workers": applicable,
+            "met_recorded": ratio_json(ratio(met, applicable)),
+            "met_verified": ratio_json(ratio(met_verified, applicable)),
+        }));
     }
-    let requirements: Vec<serde_json::Value> = live_requirements(&ctx)
-        .await?
-        .iter()
-        .map(|r| {
-            let (mut applicable, mut met, mut met_verified) = (0usize, 0usize, 0usize);
-            for worker in staff
-                .iter()
-                .filter(|w| rules::applies_to(r.job_title.as_deref(), &w.job_title))
-            {
-                applicable += 1;
-                let counted: Vec<(i64, bool)> = by_worker
-                    .get(&worker.pid)
-                    .map(|list| {
-                        list.iter()
-                            .filter(|e| {
-                                e.unit == r.unit
-                                    && rules::in_period(e.entry_date, r.period_start, r.period_end)
-                            })
-                            .map(|e| (e.amount_hundredths, e.verified_on.is_some()))
-                            .collect()
-                    })
-                    .unwrap_or_default();
-                let p = rules::progress(&counted, r.required_hundredths);
-                met += usize::from(p.met());
-                met_verified += usize::from(p.met_verified());
-            }
-            serde_json::json!({
-                "requirement_pid": r.pid,
-                "name": r.name,
-                "unit": r.unit,
-                "period_start": r.period_start,
-                "period_end": r.period_end,
-                "applicable_workers": applicable,
-                "met_recorded": ratio_json(ratio(met, applicable)),
-                "met_verified": ratio_json(ratio(met_verified, applicable)),
-            })
-        })
-        .collect();
-    let employed: std::collections::HashSet<Uuid> = staff.iter().map(|w| w.pid).collect();
+    // Only the registrations that need attention are read: expired, or expiring inside the warning window.
+    let horizon = today + chrono::Days::new(u64::try_from(rules::DEFAULT_WARN_DAYS).unwrap_or(90));
     let (mut expiring, mut expired) = (0usize, 0usize);
     for registration in professional_registrations::Entity::find()
         .filter(professional_registrations::Column::DeletedAt.is_null())
+        .filter(professional_registrations::Column::ExpiresOn.lte(horizon))
+        .filter(
+            professional_registrations::Column::WorkerPid.in_subquery(
+                employed()
+                    .select_only()
+                    .column(workers::Column::Pid)
+                    .into_query(),
+            ),
+        )
         .all(&ctx.db)
         .await?
-        .iter()
-        .filter(|r| employed.contains(&r.worker_pid))
     {
         match rules::registration_status(registration.expires_on, today, rules::DEFAULT_WARN_DAYS) {
             "expiring" => expiring += 1,
@@ -662,10 +641,57 @@ async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
         "derivation": "counts EMPLOYED workers (the shared employed-on-date definition) the \
                        requirement applies to; met_recorded uses all entries, met_verified only \
                        verified ones; registrations expiring are within 90 days",
-        "headcount": staff.len(),
+        "headcount": headcount,
         "requirements": requirements,
         "registrations": { "expiring": expiring, "expired": expired },
     }))
+}
+
+/// For one requirement: how many employed workers it applies to, how many have recorded at least the
+/// required amount in its unit and period, and how many have verified at least that much. The same
+/// definitions as [`rules::applies_to`], [`rules::in_period`] and [`rules::progress`], done in SQL.
+async fn requirement_counts(
+    ctx: &AppContext,
+    r: &cpd_requirements::Model,
+    today: chrono::NaiveDate,
+) -> Result<(usize, usize, usize)> {
+    use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
+    let statement = Statement::from_sql_and_values(
+        DatabaseBackend::Postgres,
+        "SELECT count(*) AS applicable,
+                count(*) FILTER (WHERE recorded >= $1) AS met,
+                count(*) FILTER (WHERE verified >= $1) AS met_verified
+           FROM (
+             SELECT COALESCE(SUM(e.amount_hundredths), 0) AS recorded,
+                    COALESCE(SUM(e.amount_hundredths) FILTER (WHERE e.verified_on IS NOT NULL), 0) AS verified
+               FROM workers w
+               LEFT JOIN cpd_entries e
+                      ON e.worker_pid = w.pid AND e.deleted_at IS NULL AND e.unit = $2
+                     AND e.entry_date BETWEEN $3 AND $4
+              WHERE w.deleted_at IS NULL AND w.hired_on <= $5
+                AND (w.terminated_on IS NULL OR w.terminated_on > $5)
+                AND ($6::text IS NULL OR lower(btrim(w.job_title)) = lower(btrim($6::text)))
+              GROUP BY w.pid
+           ) per_worker",
+        [
+            r.required_hundredths.into(),
+            r.unit.clone().into(),
+            r.period_start.into(),
+            r.period_end.into(),
+            today.into(),
+            r.job_title.clone().into(),
+        ],
+    );
+    let row = ctx
+        .db
+        .query_one_raw(statement)
+        .await?
+        .ok_or_else(|| Error::string("the requirement count returned no row"))?;
+    let count = |name: &str| -> Result<usize> {
+        let n: i64 = row.try_get("", name)?;
+        Ok(usize::try_from(n).unwrap_or(0))
+    };
+    Ok((count("applicable")?, count("met")?, count("met_verified")?))
 }
 
 /// The CPD routes.
