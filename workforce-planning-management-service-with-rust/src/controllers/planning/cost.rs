@@ -5,7 +5,7 @@
 use super::*;
 
 /// Query for the cost view.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub(super) struct CostQuery {
     /// ISO-4217 currency to cost in; default the plan's budget currency,
     /// else GBP. Totals never mix currencies.
@@ -24,16 +24,25 @@ pub(super) struct CostQuery {
 /// costed at its latest target date. Annual run-rate of salary plus the
 /// plan's stated on-cost — not recruitment or onboarding.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // groups → hires → unit cost → totals, linearly
 pub(super) async fn cost(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
     axum::extract::Query(query): axum::extract::Query<CostQuery>,
 ) -> Result<Response> {
-    let plan = scoped_plan(&ctx, &caller, &pid).await?;
+    format::json(cost_value(&ctx, &caller, &pid, query).await?)
+}
+
+#[allow(clippy::too_many_lines)] // groups → hires → unit cost → totals, linearly
+pub(super) async fn cost_value(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    pid: &str,
+    query: CostQuery,
+) -> Result<serde_json::Value> {
+    let plan = scoped_plan(ctx, caller, pid).await?;
     let obligations = auth::authorize_record(
-        &caller,
+        caller,
         authentication_verifier::Action::Read,
         &BTreeMap::new(),
     )
@@ -48,11 +57,11 @@ pub(super) async fn cost(
     }
     let on_cost_bp = plan.on_cost_bp.unwrap_or(0);
     let today = chrono::Utc::now().date_naive();
-    let (attrition, source) = resolve_attrition(&ctx, &plan).await?;
-    let lines = plan_lines(&ctx, plan.pid).await?;
+    let (attrition, source) = resolve_attrition(ctx, &plan).await?;
+    let lines = plan_lines(ctx, plan.pid).await?;
     let employed =
-        employed_in_departments(&ctx, &plan.organization_ref, &departments_of(&lines)).await?;
-    let titles = role_titles(&ctx).await?;
+        employed_in_departments(ctx, &plan.organization_ref, &departments_of(&lines)).await?;
+    let titles = role_titles(ctx).await?;
     let medians: BTreeMap<String, i64> = benchmarks::Entity::find()
         .filter(benchmarks::Column::DeletedAt.is_null())
         .filter(benchmarks::Column::Currency.eq(&currency))
@@ -149,7 +158,7 @@ pub(super) async fn cost(
     } else {
         None
     };
-    format::json(serde_json::json!({
+    Ok(serde_json::json!({
         "derivation": "annual run-rate of salary for the hires needed to close each headcount gap \
                        (gap from the forecast: demand − projected supply, no hires assumed), plus \
                        the plan's stated on-cost. Unit cost: a salary benchmark median when every \

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — tolerances on a workforce plan (WPM-T234)
+
+`GET /api/workforce-plans/{pid}/tolerances` and `PUT|DELETE …/tolerances/{dimension}`: the largest deviation allowed in `time` (calendar days), `cost` and `resources` (basis points) and `risk` (roles), and a red, amber or green status for each and overall, with the deviation and its basis. An unknown deviation is `unknown`, never green. The alignment view gains `succession_plans_in_plan_departments`. Migration `000076`.
+
 ### Added — CPD requirements can be corrected; progress has a pace (WPM-T233)
 
 `PUT|DELETE /api/cpd-requirements/{pid}`. Each requirement in `GET /api/workers/{pid}/cpd-progress` gains `pace` (`status`, `days_left`, `needed_per_30_days`, `expected_by_today`, `basis`), a straight-line comparison that says it is one.

@@ -1156,7 +1156,13 @@
       "add_an_objective": "Ajouter un objectif",
       "objective": "Objectif",
       "within_budget": "dans le budget",
-      "over_budget": "hors budget"
+      "over_budget": "hors budget",
+      "tolerances": "Tolérances",
+      "tolerance_overall": "Global",
+      "deviation_now": "Écart actuel",
+      "tolerance_limit": "Tolérance (écart maximal admis)",
+      "amber_from": "Orange à partir de (% de la tolérance)",
+      "set_tolerance": "Définir la tolérance"
     },
     "requisitionsPid": {
       "hired": "→ embauché"
@@ -1629,7 +1635,19 @@
     "review_due": "Revue à faire",
     "not_started": "Pas commencé",
     "on_track": "Dans les temps",
-    "behind": "En retard"
+    "behind": "En retard",
+    "green": "Vert",
+    "amber": "Orange",
+    "red": "Rouge",
+    "not_set": "Non défini",
+    "time": "Délai",
+    "cost": "Coût",
+    "resources": "Ressources",
+    "risk": "Risque",
+    "calendar_days": "jours calendaires",
+    "basis_points": "points de base",
+    "roles": "rôles",
+    "rag_unknown": "Inconnu"
   },
   "engagement": {
     "title": "Engagement",

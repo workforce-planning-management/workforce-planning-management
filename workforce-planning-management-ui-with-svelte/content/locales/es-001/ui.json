@@ -1156,7 +1156,13 @@
       "add_an_objective": "Añadir un objetivo",
       "objective": "Objetivo",
       "within_budget": "dentro del presupuesto",
-      "over_budget": "por encima del presupuesto"
+      "over_budget": "por encima del presupuesto",
+      "tolerances": "Tolerancias",
+      "tolerance_overall": "En conjunto",
+      "deviation_now": "Desviación ahora",
+      "tolerance_limit": "Tolerancia (mayor desviación permitida)",
+      "amber_from": "Ámbar desde (% de la tolerancia)",
+      "set_tolerance": "Definir tolerancia"
     },
     "requisitionsPid": {
       "hired": "→ contratado"
@@ -1629,7 +1635,19 @@
     "review_due": "Revisión pendiente",
     "not_started": "No iniciado",
     "on_track": "En camino",
-    "behind": "Atrasado"
+    "behind": "Atrasado",
+    "green": "Verde",
+    "amber": "Ámbar",
+    "red": "Rojo",
+    "not_set": "Sin definir",
+    "time": "Tiempo",
+    "cost": "Coste",
+    "resources": "Recursos",
+    "risk": "Riesgo",
+    "calendar_days": "días naturales",
+    "basis_points": "puntos básicos",
+    "roles": "funciones",
+    "rag_unknown": "Desconocido"
   },
   "engagement": {
     "title": "Contratación",

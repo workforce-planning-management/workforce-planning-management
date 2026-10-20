@@ -1156,7 +1156,13 @@
       "add_an_objective": "إضافة هدف",
       "objective": "الهدف",
       "within_budget": "ضمن الميزانية",
-      "over_budget": "فوق الميزانية"
+      "over_budget": "فوق الميزانية",
+      "tolerances": "حدود التفاوت",
+      "tolerance_overall": "الإجمالي",
+      "deviation_now": "الانحراف الآن",
+      "tolerance_limit": "التفاوت (أكبر انحراف مسموح)",
+      "amber_from": "كهرماني من (٪ من التفاوت)",
+      "set_tolerance": "تعيين التفاوت"
     },
     "requisitionsPid": {
       "hired": "← تم التعيين"
@@ -1629,7 +1635,19 @@
     "review_due": "المراجعة مستحقة",
     "not_started": "لم تبدأ",
     "on_track": "على المسار",
-    "behind": "متأخر"
+    "behind": "متأخر",
+    "green": "أخضر",
+    "amber": "كهرماني",
+    "red": "أحمر",
+    "not_set": "غير محدد",
+    "time": "الوقت",
+    "cost": "التكلفة",
+    "resources": "الموارد",
+    "risk": "المخاطر",
+    "calendar_days": "أيام تقويمية",
+    "basis_points": "نقاط أساس",
+    "roles": "أدوار",
+    "rag_unknown": "غير معروف"
   },
   "engagement": {
     "title": "التعاقد",

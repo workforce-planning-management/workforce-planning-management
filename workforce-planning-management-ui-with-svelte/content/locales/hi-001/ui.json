@@ -1156,7 +1156,13 @@
       "add_an_objective": "उद्देश्य जोड़ें",
       "objective": "उद्देश्य",
       "within_budget": "बजट के भीतर",
-      "over_budget": "बजट से ऊपर"
+      "over_budget": "बजट से ऊपर",
+      "tolerances": "सहनसीमा",
+      "tolerance_overall": "कुल मिलाकर",
+      "deviation_now": "अभी विचलन",
+      "tolerance_limit": "सहनसीमा (अधिकतम अनुमत विचलन)",
+      "amber_from": "एम्बर से (सहनसीमा का %)",
+      "set_tolerance": "सहनसीमा तय करें"
     },
     "requisitionsPid": {
       "hired": "→ भर्ती हुआ"
@@ -1629,7 +1635,19 @@
     "review_due": "समीक्षा देय",
     "not_started": "शुरू नहीं हुआ",
     "on_track": "सही गति पर",
-    "behind": "पीछे"
+    "behind": "पीछे",
+    "green": "हरा",
+    "amber": "एम्बर",
+    "red": "लाल",
+    "not_set": "निर्धारित नहीं",
+    "time": "समय",
+    "cost": "लागत",
+    "resources": "संसाधन",
+    "risk": "जोखिम",
+    "calendar_days": "कैलेंडर दिन",
+    "basis_points": "आधार अंक",
+    "roles": "भूमिकाएँ",
+    "rag_unknown": "अज्ञात"
   },
   "engagement": {
     "title": "नियुक्ति",

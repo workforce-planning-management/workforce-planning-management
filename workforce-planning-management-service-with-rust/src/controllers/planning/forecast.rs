@@ -113,19 +113,27 @@ pub(super) fn demand_lines_of(group: &[&plan_demand_lines::Model]) -> Vec<rules:
 /// department are already proficient in each required skill. Aggregate
 /// only; levers are suggestions.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // headcount gap + competency gap in one pass
 pub(super) async fn forecast(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let plan = scoped_plan(&ctx, &caller, &pid).await?;
+    format::json(forecast_value(&ctx, &caller, &pid).await?)
+}
+
+#[allow(clippy::too_many_lines)] // headcount gap + competency gap in one pass
+pub(super) async fn forecast_value(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    pid: &str,
+) -> Result<serde_json::Value> {
+    let plan = scoped_plan(ctx, caller, pid).await?;
     let today = chrono::Utc::now().date_naive();
-    let (attrition, source) = resolve_attrition(&ctx, &plan).await?;
-    let lines = plan_lines(&ctx, plan.pid).await?;
+    let (attrition, source) = resolve_attrition(ctx, &plan).await?;
+    let lines = plan_lines(ctx, plan.pid).await?;
     let employed =
-        employed_in_departments(&ctx, &plan.organization_ref, &departments_of(&lines)).await?;
-    let titles = role_titles(&ctx).await?;
+        employed_in_departments(ctx, &plan.organization_ref, &departments_of(&lines)).await?;
+    let titles = role_titles(ctx).await?;
     let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
     let skill_names: BTreeMap<Uuid, String> = crate::models::_entities::skills::Entity::find()
         .all(&ctx.db)
@@ -298,7 +306,7 @@ pub(super) async fn forecast(
             })
         })
         .collect();
-    format::json(serde_json::json!({
+    Ok(serde_json::json!({
         "derivation": "opening = employed workers in the department today; projected supply = \
                        each basis on its own terms: permanent staff leave at the stated attrition, \
                        fixed-term, contractor and intern engagements on their recorded end dates \

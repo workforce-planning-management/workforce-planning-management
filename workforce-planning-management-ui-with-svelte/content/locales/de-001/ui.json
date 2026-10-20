@@ -1156,7 +1156,13 @@
       "add_an_objective": "Ziel hinzufügen",
       "objective": "Ziel",
       "within_budget": "im Budget",
-      "over_budget": "über dem Budget"
+      "over_budget": "über dem Budget",
+      "tolerances": "Toleranzen",
+      "tolerance_overall": "Gesamt",
+      "deviation_now": "Abweichung jetzt",
+      "tolerance_limit": "Toleranz (größte erlaubte Abweichung)",
+      "amber_from": "Gelb ab (% der Toleranz)",
+      "set_tolerance": "Toleranz festlegen"
     },
     "requisitionsPid": {
       "hired": "→ eingestellt"
@@ -1629,7 +1635,19 @@
     "review_due": "Überprüfung fällig",
     "not_started": "Nicht begonnen",
     "on_track": "Im Plan",
-    "behind": "Im Rückstand"
+    "behind": "Im Rückstand",
+    "green": "Grün",
+    "amber": "Gelb",
+    "red": "Rot",
+    "not_set": "Nicht festgelegt",
+    "time": "Zeit",
+    "cost": "Kosten",
+    "resources": "Ressourcen",
+    "risk": "Risiko",
+    "calendar_days": "Kalendertage",
+    "basis_points": "Basispunkte",
+    "roles": "Rollen",
+    "rag_unknown": "Unbekannt"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

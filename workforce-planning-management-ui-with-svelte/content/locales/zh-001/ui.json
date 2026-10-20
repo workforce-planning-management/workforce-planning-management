@@ -1156,7 +1156,13 @@
       "add_an_objective": "添加目标",
       "objective": "目标",
       "within_budget": "预算内",
-      "over_budget": "超出预算"
+      "over_budget": "超出预算",
+      "tolerances": "容忍度",
+      "tolerance_overall": "总体",
+      "deviation_now": "当前偏差",
+      "tolerance_limit": "容忍度（允许的最大偏差）",
+      "amber_from": "自（容忍度的%）起为黄",
+      "set_tolerance": "设置容忍度"
     },
     "requisitionsPid": {
       "hired": "→ 已录用"
@@ -1629,7 +1635,19 @@
     "review_due": "复核到期",
     "not_started": "未开始",
     "on_track": "进度正常",
-    "behind": "落后"
+    "behind": "落后",
+    "green": "绿",
+    "amber": "黄",
+    "red": "红",
+    "not_set": "未设置",
+    "time": "时间",
+    "cost": "成本",
+    "resources": "资源",
+    "risk": "风险",
+    "calendar_days": "日历日",
+    "basis_points": "基点",
+    "roles": "个岗位",
+    "rag_unknown": "未知"
   },
   "engagement": {
     "title": "用工关系",

@@ -1156,7 +1156,13 @@
       "add_an_objective": "Add an objective",
       "objective": "Objective",
       "within_budget": "within budget",
-      "over_budget": "over budget"
+      "over_budget": "over budget",
+      "tolerances": "Tolerances",
+      "tolerance_overall": "Overall",
+      "deviation_now": "Deviation now",
+      "tolerance_limit": "Tolerance (largest deviation allowed)",
+      "amber_from": "Amber from (% of tolerance)",
+      "set_tolerance": "Set tolerance"
     },
     "requisitionsPid": {
       "hired": "→ hired"
@@ -1629,7 +1635,19 @@
     "review_due": "Review due",
     "not_started": "Not started",
     "on_track": "On track",
-    "behind": "Behind"
+    "behind": "Behind",
+    "green": "Green",
+    "amber": "Amber",
+    "red": "Red",
+    "not_set": "Not set",
+    "time": "Time",
+    "cost": "Cost",
+    "resources": "Resources",
+    "risk": "Risk",
+    "calendar_days": "calendar days",
+    "basis_points": "basis points",
+    "roles": "roles",
+    "rag_unknown": "Unknown"
   },
   "engagement": {
     "title": "Engagement",

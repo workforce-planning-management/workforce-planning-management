@@ -1156,7 +1156,13 @@
       "add_an_objective": "Tambah sasaran",
       "objective": "Sasaran",
       "within_budget": "dalam anggaran",
-      "over_budget": "melebihi anggaran"
+      "over_budget": "melebihi anggaran",
+      "tolerances": "Toleransi",
+      "tolerance_overall": "Keseluruhan",
+      "deviation_now": "Deviasi saat ini",
+      "tolerance_limit": "Toleransi (deviasi terbesar yang diizinkan)",
+      "amber_from": "Kuning mulai (% dari toleransi)",
+      "set_tolerance": "Atur toleransi"
     },
     "requisitionsPid": {
       "hired": "→ direkrut"
@@ -1629,7 +1635,19 @@
     "review_due": "Tinjauan jatuh tempo",
     "not_started": "Belum dimulai",
     "on_track": "Sesuai jalur",
-    "behind": "Tertinggal"
+    "behind": "Tertinggal",
+    "green": "Hijau",
+    "amber": "Kuning",
+    "red": "Merah",
+    "not_set": "Belum diatur",
+    "time": "Waktu",
+    "cost": "Biaya",
+    "resources": "Sumber daya",
+    "risk": "Risiko",
+    "calendar_days": "hari kalender",
+    "basis_points": "basis poin",
+    "roles": "peran",
+    "rag_unknown": "Tidak diketahui"
   },
   "engagement": {
     "title": "Keterlibatan",

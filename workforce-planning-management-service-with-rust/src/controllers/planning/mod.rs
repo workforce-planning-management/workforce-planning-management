@@ -47,6 +47,7 @@ mod demand_lines;
 mod forecast;
 mod objectives;
 mod plans;
+mod tolerances;
 // The sections share this module's imports and each other's handlers.
 #[allow(clippy::wildcard_imports)]
 use self::alignment::*;
@@ -60,6 +61,8 @@ use self::forecast::*;
 use self::objectives::*;
 #[allow(clippy::wildcard_imports)]
 use self::plans::*;
+#[allow(clippy::wildcard_imports)]
+use self::tolerances::*;
 
 /// The workforce-planning routes.
 pub fn routes() -> Routes {
@@ -82,4 +85,9 @@ pub fn routes() -> Routes {
         .add("/workforce-plans/{pid}/forecast", get(forecast))
         .add("/workforce-plans/{pid}/cost", get(cost))
         .add("/workforce-plans/{pid}/alignment", get(alignment))
+        .add("/workforce-plans/{pid}/tolerances", get(list_tolerances))
+        .add(
+            "/workforce-plans/{pid}/tolerances/{dimension}",
+            put(set_tolerance).delete(delete_tolerance),
+        )
 }

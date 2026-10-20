@@ -1156,7 +1156,13 @@
       "add_an_objective": "Добавить цель",
       "objective": "Цель",
       "within_budget": "в рамках бюджета",
-      "over_budget": "сверх бюджета"
+      "over_budget": "сверх бюджета",
+      "tolerances": "Допуски",
+      "tolerance_overall": "В целом",
+      "deviation_now": "Отклонение сейчас",
+      "tolerance_limit": "Допуск (наибольшее допустимое отклонение)",
+      "amber_from": "Жёлтый с (% допуска)",
+      "set_tolerance": "Задать допуск"
     },
     "requisitionsPid": {
       "hired": "→ принят"
@@ -1629,7 +1635,19 @@
     "review_due": "Пора пересмотреть",
     "not_started": "Не начат",
     "on_track": "По плану",
-    "behind": "Отстаёт"
+    "behind": "Отстаёт",
+    "green": "Зелёный",
+    "amber": "Жёлтый",
+    "red": "Красный",
+    "not_set": "Не задано",
+    "time": "Сроки",
+    "cost": "Стоимость",
+    "resources": "Ресурсы",
+    "risk": "Риск",
+    "calendar_days": "календарных дней",
+    "basis_points": "базисных пунктов",
+    "roles": "ролей",
+    "rag_unknown": "Неизвестно"
   },
   "engagement": {
     "title": "Трудовые отношения",

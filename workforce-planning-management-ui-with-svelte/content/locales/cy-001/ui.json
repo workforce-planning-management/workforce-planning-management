@@ -1156,7 +1156,13 @@
       "add_an_objective": "Ychwanegu amcan",
       "objective": "Amcan",
       "within_budget": "o fewn y gyllideb",
-      "over_budget": "dros y gyllideb"
+      "over_budget": "dros y gyllideb",
+      "tolerances": "Goddefiannau",
+      "tolerance_overall": "Cyffredinol",
+      "deviation_now": "Gwyriad nawr",
+      "tolerance_limit": "Goddefiant (y gwyriad mwyaf a ganiateir)",
+      "amber_from": "Ambr o (% o'r goddefiant)",
+      "set_tolerance": "Gosod goddefiant"
     },
     "requisitionsPid": {
       "hired": "→ wedi'i gyflogi"
@@ -1629,7 +1635,19 @@
     "review_due": "Adolygiad yn ddyledus",
     "not_started": "Heb ddechrau",
     "on_track": "Ar y trywydd iawn",
-    "behind": "Y tu ôl i'r amserlen"
+    "behind": "Y tu ôl i'r amserlen",
+    "green": "Gwyrdd",
+    "amber": "Ambr",
+    "red": "Coch",
+    "not_set": "Heb ei osod",
+    "time": "Amser",
+    "cost": "Cost",
+    "resources": "Adnoddau",
+    "risk": "Risg",
+    "calendar_days": "diwrnod calendr",
+    "basis_points": "pwyntiau sail",
+    "roles": "rolau",
+    "rag_unknown": "Anhysbys"
   },
   "engagement": {
     "title": "Ymgysylltiad",

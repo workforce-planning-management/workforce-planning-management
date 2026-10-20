@@ -2570,6 +2570,58 @@ export function planCost(
   return api(`/workforce-plans/${pid}/cost${qs}`, init);
 }
 
+/** Red, amber or green for a plan against its tolerance, or why not (WPM-R140). */
+export type Rag = "green" | "amber" | "red" | "unknown" | "not_set";
+
+/** One dimension of a plan's tolerances. */
+export interface PlanTolerance {
+  dimension: "time" | "cost" | "resources" | "risk";
+  unit: "calendar_days" | "basis_points" | "roles";
+  set: boolean;
+  limit: number | null;
+  amber_percent: number | null;
+  /** How far the plan is from where it should be now; null when it cannot be worked out. */
+  deviation: number | null;
+  rag: Rag;
+  basis: string;
+  reason: string | null;
+}
+
+/** A plan's tolerances and where it stands against each. */
+export function planTolerances(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  derivation: string;
+  as_of: string;
+  overall: Rag;
+  dimensions: PlanTolerance[];
+}> {
+  return api(`/workforce-plans/${pid}/tolerances`, init);
+}
+
+/** Set or change one tolerance. */
+export function setPlanTolerance(
+  pid: string,
+  dimension: string,
+  body: { limit: number; amber_percent?: number },
+): Promise<unknown> {
+  return api(`/workforce-plans/${pid}/tolerances/${dimension}`, {
+    method: "PUT",
+    body,
+  });
+}
+
+/** Remove one tolerance. */
+export function removePlanTolerance(
+  pid: string,
+  dimension: string,
+): Promise<unknown> {
+  return api(`/workforce-plans/${pid}/tolerances/${dimension}`, {
+    method: "DELETE",
+  });
+}
+
 /** Does the planned headcount serve the strategy? */
 export function planAlignment(
   pid: string,

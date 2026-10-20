@@ -14,8 +14,16 @@ pub(super) async fn alignment(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let plan = scoped_plan(&ctx, &caller, &pid).await?;
-    let lines = plan_lines(&ctx, plan.pid).await?;
+    format::json(alignment_value(&ctx, &caller, &pid).await?)
+}
+
+pub(super) async fn alignment_value(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    pid: &str,
+) -> Result<serde_json::Value> {
+    let plan = scoped_plan(ctx, caller, pid).await?;
+    let lines = plan_lines(ctx, plan.pid).await?;
     let objectives = plan_objectives::Entity::find()
         .filter(plan_objectives::Column::PlanPid.eq(plan.pid))
         .all(&ctx.db)
@@ -60,8 +68,11 @@ pub(super) async fn alignment(
         .filter(succession_candidates::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    let (mut spof_total, mut spof_in_plan) = (0usize, 0usize);
+    let (mut spof_total, mut spof_in_plan, mut plans_in_plan) = (0usize, 0usize, 0usize);
     for s in &succession {
+        if plan_departments.contains(s.department.as_str()) {
+            plans_in_plan += 1;
+        }
         let readiness: Vec<String> = candidates
             .iter()
             .filter(|c| c.plan_pid == s.pid)
@@ -80,7 +91,7 @@ pub(super) async fn alignment(
         }
     }
 
-    format::json(serde_json::json!({
+    Ok(serde_json::json!({
         "derivation": "planned headcount sums the plan's demand lines; a line is aligned when it \
                        serves at least one objective. Critical roles with no ready successor use \
                        the shared single-point-of-failure rule. Terms-carrying ratios; null when \
@@ -93,6 +104,7 @@ pub(super) async fn alignment(
         "unaligned_demand_lines": unaligned,
         "critical_roles_without_bench": {
             "in_plan_departments": spof_in_plan,
+            "succession_plans_in_plan_departments": plans_in_plan,
             "all_departments": spof_total,
         },
     }))

@@ -73,6 +73,7 @@ pub mod skill_merge;
 pub mod talent;
 pub mod time_off;
 pub mod tokens;
+pub mod tolerance;
 pub mod training;
 pub mod wellbeing;
 pub mod workforce;

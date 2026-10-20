@@ -19,6 +19,7 @@
     "cy-001": [
       "Agenda",
       "Band",
+      "Cost",
       "Demo",
       "Mentor",
       "Net",
@@ -143,9 +144,17 @@
       "web",
       "· FTE {fte_percent}%"
     ],
-    "zh-001": ["· FTE {fte_percent}%"],
-    "bn-001": ["· FTE {fte_percent}%"],
-    "hi-001": ["· FTE {fte_percent}%"],
-    "ur-001": ["· FTE {fte_percent}%"]
+    "zh-001": [
+      "· FTE {fte_percent}%"
+    ],
+    "bn-001": [
+      "· FTE {fte_percent}%"
+    ],
+    "hi-001": [
+      "· FTE {fte_percent}%"
+    ],
+    "ur-001": [
+      "· FTE {fte_percent}%"
+    ]
   }
 }

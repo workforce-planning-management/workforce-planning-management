@@ -1156,7 +1156,13 @@
       "add_an_objective": "একটি উদ্দেশ্য যোগ করুন",
       "objective": "উদ্দেশ্য",
       "within_budget": "বাজেটের মধ্যে",
-      "over_budget": "বাজেটের বেশি"
+      "over_budget": "বাজেটের বেশি",
+      "tolerances": "সহনসীমা",
+      "tolerance_overall": "সামগ্রিক",
+      "deviation_now": "বর্তমান বিচ্যুতি",
+      "tolerance_limit": "সহনসীমা (সর্বোচ্চ অনুমোদিত বিচ্যুতি)",
+      "amber_from": "অ্যাম্বার শুরু (সহনসীমার %)",
+      "set_tolerance": "সহনসীমা নির্ধারণ"
     },
     "requisitionsPid": {
       "hired": "→ নিয়োগ হয়েছে"
@@ -1629,7 +1635,19 @@
     "review_due": "পর্যালোচনা বাকি",
     "not_started": "শুরু হয়নি",
     "on_track": "সঠিক পথে",
-    "behind": "পিছিয়ে"
+    "behind": "পিছিয়ে",
+    "green": "সবুজ",
+    "amber": "অ্যাম্বার",
+    "red": "লাল",
+    "not_set": "নির্ধারিত নয়",
+    "time": "সময়",
+    "cost": "খরচ",
+    "resources": "সম্পদ",
+    "risk": "ঝুঁকি",
+    "calendar_days": "ক্যালেন্ডার দিন",
+    "basis_points": "বেসিস পয়েন্ট",
+    "roles": "ভূমিকা",
+    "rag_unknown": "অজানা"
   },
   "engagement": {
     "title": "নিয়োগ",

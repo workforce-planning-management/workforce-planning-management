@@ -1725,6 +1725,12 @@ collections:
                   - { name: "objective", label: "Objective", widget: string, required: false, i18n: true }
                   - { name: "within_budget", label: "Within_budget", widget: string, required: false, i18n: true }
                   - { name: "over_budget", label: "Over_budget", widget: string, required: false, i18n: true }
+                  - { name: "tolerances", label: "Tolerances", widget: string, required: false, i18n: true }
+                  - { name: "tolerance_overall", label: "Tolerance_overall", widget: string, required: false, i18n: true }
+                  - { name: "deviation_now", label: "Deviation_now", widget: string, required: false, i18n: true }
+                  - { name: "tolerance_limit", label: "Tolerance_limit", widget: string, required: false, i18n: true }
+                  - { name: "amber_from", label: "Amber_from", widget: string, required: false, i18n: true }
+                  - { name: "set_tolerance", label: "Set_tolerance", widget: string, required: false, i18n: true }
               - name: "requisitionsPid"
                 label: "Requisitions Pid"
                 widget: object
@@ -2267,6 +2273,18 @@ collections:
               - { name: "not_started", label: "Not_started", widget: string, required: false, i18n: true }
               - { name: "on_track", label: "On_track", widget: string, required: false, i18n: true }
               - { name: "behind", label: "Behind", widget: string, required: false, i18n: true }
+              - { name: "green", label: "Green", widget: string, required: false, i18n: true }
+              - { name: "amber", label: "Amber", widget: string, required: false, i18n: true }
+              - { name: "red", label: "Red", widget: string, required: false, i18n: true }
+              - { name: "not_set", label: "Not_set", widget: string, required: false, i18n: true }
+              - { name: "time", label: "Time", widget: string, required: false, i18n: true }
+              - { name: "cost", label: "Cost", widget: string, required: false, i18n: true }
+              - { name: "resources", label: "Resources", widget: string, required: false, i18n: true }
+              - { name: "risk", label: "Risk", widget: string, required: false, i18n: true }
+              - { name: "calendar_days", label: "Calendar_days", widget: string, required: false, i18n: true }
+              - { name: "basis_points", label: "Basis_points", widget: string, required: false, i18n: true }
+              - { name: "roles", label: "Roles", widget: string, required: false, i18n: true }
+              - { name: "rag_unknown", label: "Rag_unknown", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

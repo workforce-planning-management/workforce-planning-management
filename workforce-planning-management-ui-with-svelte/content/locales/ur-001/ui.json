@@ -1156,7 +1156,13 @@
       "add_an_objective": "مقصد شامل کریں",
       "objective": "مقصد",
       "within_budget": "بجٹ کے اندر",
-      "over_budget": "بجٹ سے اوپر"
+      "over_budget": "بجٹ سے اوپر",
+      "tolerances": "رواداری",
+      "tolerance_overall": "مجموعی",
+      "deviation_now": "موجودہ انحراف",
+      "tolerance_limit": "رواداری (زیادہ سے زیادہ مجاز انحراف)",
+      "amber_from": "امبر از (رواداری کا %)",
+      "set_tolerance": "رواداری مقرر کریں"
     },
     "requisitionsPid": {
       "hired": "← بھرتی ہو گیا"
@@ -1629,7 +1635,19 @@
     "review_due": "جائزہ واجب الادا",
     "not_started": "شروع نہیں ہوا",
     "on_track": "درست رفتار پر",
-    "behind": "پیچھے"
+    "behind": "پیچھے",
+    "green": "سبز",
+    "amber": "امبر",
+    "red": "سرخ",
+    "not_set": "مقرر نہیں",
+    "time": "وقت",
+    "cost": "لاگت",
+    "resources": "وسائل",
+    "risk": "خطرہ",
+    "calendar_days": "کیلنڈر دن",
+    "basis_points": "بیسس پوائنٹس",
+    "roles": "کردار",
+    "rag_unknown": "نامعلوم"
   },
   "engagement": {
     "title": "تقرری",

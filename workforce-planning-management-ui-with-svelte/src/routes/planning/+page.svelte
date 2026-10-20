@@ -18,10 +18,14 @@
     planAlignment,
     planCost,
     planForecast,
+    planTolerances,
     removeDemandLine,
+    removePlanTolerance,
     setDemandLine,
     setLineObjectives,
     setPlanStatus,
+    setPlanTolerance,
+    type Rag,
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
   import LilyGantt from "#lib/components/LilyGantt.svelte";
@@ -35,6 +39,7 @@
   type Forecast = Awaited<ReturnType<typeof planForecast>>;
   type Alignment = Awaited<ReturnType<typeof planAlignment>>;
   type Cost = Awaited<ReturnType<typeof planCost>>;
+  type Tolerances = Awaited<ReturnType<typeof planTolerances>>;
 
   const BASES = ["permanent", "fixed_term", "contractor", "intern"] as const;
   const NEXT: Record<string, string[]> = {
@@ -51,6 +56,9 @@
   let forecast = $state<Forecast | null>(null);
   let alignment = $state<Alignment | null>(null);
   let cost = $state<Cost | null>(null);
+  let tolerances = $state<Tolerances | null>(null);
+  /** What is typed in each tolerance row, by dimension, before it is saved. */
+  let draft = $state<Record<string, { limit: string; amber: string }>>({});
   let roles = $state<Awaited<ReturnType<typeof listRoleProfiles>>>([]);
   let totals = $state<Record<string, number>>({});
   let details = $state<Plan[]>([]);
@@ -116,14 +124,22 @@
     forecast = null;
     alignment = null;
     cost = null;
+    tolerances = null;
     if (!selected) return;
     try {
-      [plan, forecast, alignment, cost] = await Promise.all([
+      [plan, forecast, alignment, cost, tolerances] = await Promise.all([
         getWorkforcePlan(selected),
         planForecast(selected),
         planAlignment(selected),
         planCost(selected),
+        planTolerances(selected),
       ]);
+      draft = Object.fromEntries(
+        tolerances.dimensions.map((d) => [
+          d.dimension,
+          { limit: d.limit === null ? "" : String(d.limit), amber: String(d.amber_percent ?? 75) },
+        ]),
+      );
     } catch (cause) {
       error = message(cause);
     }
@@ -166,6 +182,18 @@
     } catch (cause) {
       error = message(cause);
     }
+  }
+
+  const RAG_SHAPE: Record<Rag, string> = { green: "●", amber: "▲", red: "■", unknown: "?", not_set: "–" };
+
+  async function saveTolerance(dimension: string) {
+    const row = draft[dimension];
+    if (!row || String(row.limit).trim() === "") return;
+    await run(() => setPlanTolerance(selected, dimension, { limit: Number(row.limit), amber_percent: Number(row.amber) }));
+  }
+
+  async function dropTolerance(dimension: string) {
+    await run(() => removePlanTolerance(selected, dimension));
   }
 
   async function toggleObjective(lineId: string, current: string[], objective: string) {
@@ -232,6 +260,10 @@
     },
   ];
 </script>
+
+{#snippet ragChip(rag: Rag)}
+  <span class="chip rag rag-{rag}" data-rag={rag}><span class="shape" aria-hidden="true">{RAG_SHAPE[rag]}</span>{tv(rag === "unknown" ? "rag_unknown" : rag)}</span>
+{/snippet}
 
 {#snippet planCell({ row }: { row: DataGridRow })}
   <button type="button" onclick={() => { selected = String(row.pid); void loadDetail(); }}>{row.name}</button>
@@ -448,6 +480,48 @@
     {#if alignment.unaligned_demand_lines.length > 0}
       <p class="muted">{tf("pages.planning.demand_serving_no_objective", { target_headcount: alignment.unaligned_demand_lines.map((l) => `${l.department} ${l.target_on} (${l.target_headcount})`).join("; ") })}</p>
     {/if}
+  {/if}
+
+  {#if tolerances}
+    <h3>{t("pages.planning.tolerances")} {@render ragChip(tolerances.overall)}</h3>
+    <p class="muted" data-testid="tolerance-derivation">{tolerances.derivation}</p>
+    <table data-testid="plan-tolerances">
+      <thead>
+        <tr>
+          <th>{t("pages.planning.tolerances")}</th>
+          <th>{t("pages.planning.deviation_now")}</th>
+          <th>{t("pages.planning.tolerance_limit")}</th>
+          <th>{t("pages.planning.amber_from")}</th>
+          <th>{t("common.status")}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each tolerances.dimensions as d (d.dimension)}
+          <tr data-testid="tolerance-{d.dimension}">
+            <th scope="row" title={d.basis}>{tv(d.dimension)}</th>
+            <td>{#if d.deviation === null}<span class="muted" title={d.reason ?? ""}>{tv("unknown")}</span>{:else}{d.deviation} {tv(d.unit)}{/if}</td>
+            <td>
+              {#if draft[d.dimension]}
+                <input type="number" min="0" step="1" aria-label="{tv(d.dimension)}: {t('pages.planning.tolerance_limit')}" bind:value={draft[d.dimension]!.limit} /> {tv(d.unit)}
+              {/if}
+            </td>
+            <td>
+              {#if draft[d.dimension]}
+                <input type="number" min="1" max="99" step="1" aria-label="{tv(d.dimension)}: {t('pages.planning.amber_from')}" bind:value={draft[d.dimension]!.amber} />
+              {/if}
+            </td>
+            <td>{@render ragChip(d.rag)}</td>
+            <td>
+              {#if plan.status !== "archived"}
+                <button type="button" onclick={() => void saveTolerance(d.dimension)}>{t("pages.planning.set_tolerance")}</button>
+                {#if d.set}<button type="button" onclick={() => void dropTolerance(d.dimension)}>{t("pages.planning.remove")}</button>{/if}
+              {/if}
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
   {/if}
 
   <h3>{t("pages.planning.demand_lines")}</h3>

@@ -78,6 +78,7 @@ pub use super::payslips::Entity as Payslips;
 pub use super::pipeline_members::Entity as PipelineMembers;
 pub use super::plan_demand_lines::Entity as PlanDemandLines;
 pub use super::plan_objectives::Entity as PlanObjectives;
+pub use super::plan_tolerances::Entity as PlanTolerances;
 pub use super::post_fundings::Entity as PostFundings;
 pub use super::professional_registrations::Entity as ProfessionalRegistrations;
 pub use super::program_placements::Entity as ProgramPlacements;

@@ -140,6 +140,7 @@ describe("api path map", () => {
     await wpm.planAlignment("p1");
     await wpm.planCost("p1");
     await wpm.planCost("p1", "EUR");
+    await wpm.planTolerances("p1");
     await wpm.listRoleProfiles();
     await wpm.listRoleProfiles("uk-gdad-pcf");
     await wpm.listFrameworks();
@@ -447,6 +448,7 @@ describe("api path map", () => {
       "/api/proxy/workforce-plans/p1/alignment",
       "/api/proxy/workforce-plans/p1/cost",
       "/api/proxy/workforce-plans/p1/cost?currency=EUR",
+      "/api/proxy/workforce-plans/p1/tolerances",
       "/api/proxy/role-profiles",
       "/api/proxy/role-profiles?framework=uk-gdad-pcf",
       "/api/proxy/capability-frameworks",

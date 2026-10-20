@@ -39,6 +39,7 @@ mod scale;
 mod shared_cache;
 mod skill_gaps;
 mod talent;
+mod tolerances;
 mod wellbeing;
 mod workforce;
 

@@ -3542,6 +3542,21 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T234 (2026-10-20) **Tolerances on a workforce plan, with red, amber, green.** *(WPM-R140, WPM-D93)* [tolerances.md](tolerances.md). Migration `000076`
+      `plan_tolerances` (plan, dimension, limit, amber share; unique per plan and dimension; checked in the database). `rules::tolerance`: the four
+      dimensions (time in calendar days, cost and resources in basis points, risk in roles), `assess` (green, amber, red, unknown; a limit of 0 makes any
+      deviation red), `overall` (worst wins; unknown ranks above green), and the four deviations, each `None` when it cannot be worked out. The
+      forecast, cost and alignment handlers now return their values through `*_value` functions, so a deviation is read off the one definition of each
+      figure; alignment also reports how many succession plans it looked at, so "no plans" is unknown and not 0 risk. `GET
+      /api/workforce-plans/{pid}/tolerances`, `PUT` and `DELETE …/{dimension}` (audited; access table and OpenAPI entries). UI: a Tolerances table on
+      `/planning` with an overall chip and a chip per dimension that is a colour, a shape (● ▲ ■ ?) and a word, with the deviation, limit and amber share
+      editable; 17 strings in 13 locales (AI-written, not reviewed). Verified: 12 unit tests on the edges (the amber and red points, a zero limit, small
+      limits, unknown never green, an incomplete cost total never "within budget", saturation), a request test that walks one plan through amber, red,
+      green and unknown and the refusals, **mutation-checked** (an unknown made green fails both), 2 Playwright specs (statuses and the PUT/DELETE sent),
+      screenshots looked at in light and dark, svelte-check 0, 160 vitest. **Not done:** nothing escalates or notifies when a plan goes red (WPM does not
+      know who may accept a breach); no history of a plan's status over time; tolerances only on workforce plans, not on capacity, a cutover or a
+      programme; quality and benefits (the other project-management tolerances) have no measure here; the risk figure counts critical roles without a
+      ready successor and nothing else; `time` measures overdue demand, not a forecast of slipping; the Welsh word for cost is the English one and is allow-listed.
 - [x] WPM-T233 (2026-10-20) **CPD: correct a requirement; pace.** *(WPM-R139, WPM-D92)* `PUT` and `DELETE /api/cpd-requirements/{pid}` (the unit
       cannot change; entries untouched; audited `updated` and `withdrawn`). `rules::cpd::pace`: `met`, `not_started`, `on_track`, `behind`, `missed`,
       days left, the amount needed per 30 calendar days (rounded up) and the amount the straight line gives by today, with its basis in the payload; on every

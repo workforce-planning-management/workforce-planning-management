@@ -263,6 +263,25 @@ th {
   color: var(--state-available);
   background: #eef7f1;
 }
+/* Red, amber, green (tolerances): a colour, a shape and a word, so colour is never the only signal. */
+.chip.rag {
+  font-weight: 600;
+  border-color: var(--rag, var(--line));
+  color: var(--rag, var(--muted));
+  background: color-mix(in srgb, var(--rag, transparent) 14%, transparent);
+}
+.chip.rag-green {
+  --rag: var(--state-available);
+}
+.chip.rag-amber {
+  --rag: var(--state-reserved);
+}
+.chip.rag-red {
+  --rag: var(--red-day);
+}
+.chip.rag .shape {
+  margin-inline-end: 0.3rem;
+}
 .chip.red-day {
   background: var(--red-day);
   border-color: var(--red-day);
