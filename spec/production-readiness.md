@@ -75,7 +75,7 @@ file.
   against a Postgres service, `cargo deny check`, the UI (`svelte-check`,
   vitest, build, prettier, Playwright, an advisory `pnpm audit`), the Keycloak suite and an OWASP ZAP baseline
   against the defaults (both blocking since they stayed green over six runs). `.github/dependabot.yml` covers cargo, npm and the workflow actions.
-- Branch protection (requiring those 10 jobs; force-push and deletion blocked; admins may bypass) is a repository setting, not a file. Set 2026-10-19.
+- Branch protection (requiring those 11 jobs; force-push and deletion blocked; admins may bypass) is a repository setting, not a file. Set 2026-10-19.
 
 ## WPM-R78 — License files
 
