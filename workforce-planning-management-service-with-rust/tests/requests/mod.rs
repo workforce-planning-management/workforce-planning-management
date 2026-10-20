@@ -10,6 +10,7 @@ mod announcements;
 mod appraisals;
 mod assessments;
 mod audit_chain;
+mod audit_export;
 mod capacity;
 mod contacts;
 mod duplicates;

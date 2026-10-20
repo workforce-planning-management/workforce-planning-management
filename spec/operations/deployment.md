@@ -129,6 +129,17 @@ set: it migrates as `wpm_migrator`, shows `wpm_app` is refused each schema and a
 (`{"auth_enforced": true|false}`: alert if it is false in production). `GET /metrics.prom`
 needs a bearer token; give the scraper a service token.
 
+## Logs and the audit feed (WPM-R122, WPM-T197)
+
+Each request writes one line (JSON in production): `request_id`, `method`, `route` (`/api/workers/{}`), `status`, `latency_ms`. It holds
+no query string, header, body or caller, so the log can go to a shared system without a personal-data review of its own. The response's
+`X-Request-Id` is the same id: ask a user for it when they report a problem, and search for it. Send your proxy's request id in
+`X-Request-Id` (plain characters only) to carry one id through both.
+
+For a security monitoring system, poll `GET /api/audits/export?after=<last chain_seq>` with a privileged service token. It returns JSON
+Lines, oldest first, resumable, with the chain hashes and no snapshots. Keep the last `X-Next-After` you were given. The export is rate
+limited as a sensitive route; poll every minute or so, not every second.
+
 ## Scheduled tasks
 
 Nothing runs these by itself; schedule each with cron, a timer or a Kubernetes CronJob.

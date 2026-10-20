@@ -58,6 +58,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("audits", Privileged),
     ("audits/recent", Privileged),
     ("audits/verify", Privileged),
+    ("audits/export", Privileged),
     ("audits/{}", Privileged),
     ("benchmarks", Privileged),
     ("benchmarks/comparison", Privileged),

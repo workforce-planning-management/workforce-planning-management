@@ -123,6 +123,26 @@ impl Model {
         Ok(rows)
     }
 
+    /// Entries after `after_seq` in chain order, oldest first, at most `limit`: one page of the export for a
+    /// security monitoring system, which resumes from the last `chain_seq` it saw.
+    ///
+    /// # Errors
+    ///
+    /// When the query fails.
+    pub async fn export_after(
+        db: &DatabaseConnection,
+        after_seq: i64,
+        limit: u64,
+    ) -> ModelResult<Vec<Self>> {
+        let rows = audit_logs::Entity::find()
+            .filter(audit_logs::Column::ChainSeq.gt(after_seq))
+            .order_by_asc(audit_logs::Column::ChainSeq)
+            .limit(limit)
+            .all(db)
+            .await?;
+        Ok(rows)
+    }
+
     /// Audit entries for one record, most-recent first.
     ///
     /// # Errors

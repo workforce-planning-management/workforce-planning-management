@@ -225,3 +225,24 @@ deployment's pool is larger, and a healed partition resets the half-open flows, 
 slots occupied. The remedy is a connection-level timeout (TCP keepalive or a proxy that closes idle handshakes) in the deployment, not in
 this repository.
 
+## WPM-R122 — Every request leaves a line with an id and nothing personal; the audit trail can be exported
+
+- **A request id on every response.** `X-Request-Id` is the caller's when it is plain (letters, digits, `-`, `_`, `@`, up to 128), else a
+  new UUID. The outermost layer sets it, so a `401` or `429` carries it too.
+- **One log line per request, and what is in it.** `request_id`, `method`, a `route`, then on completion `status` and `latency_ms`. The route is
+  the path with every segment that is not a plain lowercase word replaced by `{}` (`/api/workers/{}/status`), so no identifier, reference or
+  name in a path reaches the log. **Not in it:** the query string, any header (so no token, address or user agent), the body, the caller.
+  Loco's own request logger writes the whole URI and is switched off in every profile. A test captures the real log output for a request
+  carrying a name in the query, an identifier in the path and a token, and fails if any appears.
+- **The audit trail for a security monitoring system.** `GET /api/audits/export?after=<chain_seq>&limit=<n>` returns JSON Lines, oldest
+  first, at most 1000 (default 500). Each line has `chain_seq`, `at`, `entity`, `entity_pid`, `action`, `actor`, `prev_hash` and
+  `entry_hash`, and **never the snapshot**, which carries record content. `X-Next-After` names the last `chain_seq`; the monitor polls
+  with it. Privileged callers only (WPM-R114), and in the sensitive rate-limit class (it ends in `/export`).
+
+## WPM-D89 — Replace the framework's request log rather than filter it
+
+Filtering a URI after the fact trusts every future route and every future query parameter not to carry a name. A line that is built from
+a short list of fields (and a path that is reduced to its words) cannot leak what it never reads. The cost is one small middleware in
+place of a configuration switch. **A limit:** a path segment that is a lowercase word is kept, so a route whose path carries a lowercase
+word that is itself personal would be logged; none does today, and the test will not know about a new one. Keep personal values out of paths.
+

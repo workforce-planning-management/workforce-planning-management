@@ -26,6 +26,10 @@ server:
   host: http://localhost
   # Out of the box middleware configuration. to disable middleware you can changed the `enable` field to `false` of comment the middleware block
   middlewares:
+    # Loco's request logger writes the whole URI, query string included. `src/request_log.rs` replaces it with a line
+    # that holds a request id and a route with no identifiers (WPM-R122).
+    logger:
+      enable: false
     # Explicit backstop (SEC-M1) — no bulk/upload feature in this
     # crate, so loco's own 2mb default is plenty for CRUD-shaped JSON;
     # made explicit rather than implicit so it is visible in the file

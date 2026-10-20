@@ -282,6 +282,11 @@ impl Hooks for App {
             .layer(axum::middleware::from_fn(crate::security::rate_limit_mw))
             .layer(axum::middleware::from_fn(
                 crate::security::security_headers_mw,
+            ))
+            // Outermost: every response, a 401 or 429 included, carries the request id, and every
+            // request leaves one line with no query string or identifier (WPM-R122).
+            .layer(axum::middleware::from_fn(
+                crate::request_log::request_log_mw,
             )))
     }
 

@@ -146,6 +146,8 @@ jobs:
       - run: cargo test --locked --test enforcement_health -- --ignored --test-threads=1
       - run: cargo test --locked --test security -- --ignored --test-threads=1
       - run: cargo test --locked --test retention_schedule -- --ignored --test-threads=1
+      # What the log holds for a request (WPM-R122): an id and a route, never a query string or an identifier.
+      - run: cargo test --locked --test request_log -- --ignored --test-threads=1
       # Chaos: a proxy resets, swallows and slows the database connection; the seed is in the log (WPM_CHAOS_SEED replays it).
       - run: cargo test --locked --test chaos -- --ignored --nocapture
 

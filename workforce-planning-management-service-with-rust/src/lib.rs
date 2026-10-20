@@ -45,6 +45,7 @@ pub mod metrics;
 pub mod models;
 pub mod need_to_know;
 pub mod openapi;
+pub mod request_log;
 pub mod rules;
 pub mod security;
 pub mod shared_cache;

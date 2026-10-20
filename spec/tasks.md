@@ -3526,8 +3526,17 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       v0.1.0 and v0.1.1 images stay unsigned.
 - [ ] WPM-T196 **Load evidence and bounded views.** *(WPM-R120)* A repeatable load test at stated sizes, paging or caps on the views
       that load an organization's records, the result recorded in `BENCHMARKS.md`. **Not done.**
-- [ ] WPM-T197 **Observability.** *(WPM-R122)* A request id on responses and in logs, a test that logs hold no query string or
-      personal data, and an export of the audit trail for a security monitoring system. **Not done.**
+- [x] WPM-T197 (2026-10-20) **Observability.** *(WPM-R122, WPM-D89)* `src/request_log.rs` is the outermost layer: it sets `X-Request-Id` on
+      every response (the caller's if plain, else a UUID; checked on a hostile one) and writes one line per request with the id, method, a
+      `route` with identifiers replaced by `{}`, the status and the latency. Loco's request logger, which writes the whole URI, is off in
+      all four profiles. `tests/request_log.rs` installs a subscriber, sends a name in the query, a UUID in the path, a token and a user
+      agent, and fails if any appears in the captured output; shown to fail when loco's logger is switched back on (it logged the UUID).
+      `GET /api/audits/export` returns the trail as JSON Lines (resumable by `after`, capped, `X-Next-After`, no snapshot), classified
+      Privileged in the need-to-know table and in the sensitive rate-limit class, with a request test, a unit test that the snapshot
+      never leaves, and an OpenAPI entry. New CI step. Verified: 577 unit tests, `mod` (98), `enforcement`, `enforcement_expenses`,
+      `security` and `chaos` pass; clippy and `cargo fmt --check` clean. **Not done:** the exported fields were not agreed with a real
+      monitoring product; no push (webhook or syslog) transport, only polling; the log has no trace or span ids beyond the request id; a
+      lowercase word in a path is kept in the log (WPM-D89); the export has no enforcement-matrix test of its own beyond the table entry.
 - [x] WPM-T198 (2026-10-20) **Rate limits across instances.** *(WPM-R74)* `spec/operations/deployment.md` gains "Running more than one
       instance": limits are per instance, so a caller gets N times the limit behind N instances (and N times the sensitive limit); three ways
       to restore a real limit (at the proxy or gateway, recommended; divide the settings by N; sticky routing), why WPM has no shared

@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — request log without personal data, and an audit export (WPM-R122, WPM-T197)
+
+One log line per request with a request id and a route such as `/api/workers/{}`: no query string, header, body or caller. Loco's own logger, which wrote the whole URI, is off. `GET /api/audits/export` returns the audit trail as resumable JSON Lines for a security monitoring system, without snapshots.
+
 ### Added — rate-limit guidance, least-privilege database roles, a token lifetime limit (WPM-T198, T199, T200)
 
 Behind several instances rate limits multiply; `deployment.md` says what to add. `postgres-roles/roles.sql` makes a migrator role and a runtime role that cannot change the schema or the audit trail, and `scripts/verify-db-roles.sh` (CI job `api-roles`) runs the request tests as that role. The service refuses a token whose lifetime exceeds `WPM_MAX_TOKEN_LIFETIME_SECONDS` (default 24 hours).

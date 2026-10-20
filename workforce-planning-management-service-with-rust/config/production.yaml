@@ -23,6 +23,10 @@ server:
   binding: 0.0.0.0
   host: {{ get_env(name="HOST", default="http://localhost") }}
   middlewares:
+    # Loco's request logger writes the whole URI, query string included. `src/request_log.rs` replaces it with a line
+    # that holds a request id and a route with no identifiers (WPM-R122).
+    logger:
+      enable: false
     compression:
       enable: true
     etag:

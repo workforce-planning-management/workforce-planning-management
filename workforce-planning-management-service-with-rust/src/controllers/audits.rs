@@ -23,6 +23,56 @@ async fn verify(State(ctx): State<AppContext>) -> Result<Response> {
     format::json(Audit::verify_chain(&ctx.db).await?)
 }
 
+/// Entries per page of the export, by default and at most.
+const EXPORT_DEFAULT_LIMIT: u64 = 500;
+const EXPORT_MAX_LIMIT: u64 = 1000;
+
+#[derive(Debug, Deserialize)]
+struct ExportParams {
+    /// Resume after this `chain_seq` (the last one the monitor saw); absent means from the start.
+    #[serde(default)]
+    after: Option<i64>,
+    #[serde(default)]
+    limit: Option<u64>,
+}
+
+/// `GET /api/audits/export?after=<chain_seq>&limit=<n>` — the audit trail as JSON Lines for a security monitoring
+/// system (WPM-R122): one entry per line, oldest first, resumable. Each line has the chain sequence, time, entity,
+/// entity pid, action, actor and the two hashes, **not** the snapshot (which can carry record content).
+/// `X-Next-After` names the last `chain_seq` returned; poll again with it. Privileged callers only.
+#[debug_handler]
+async fn export(
+    State(ctx): State<AppContext>,
+    Query(params): Query<ExportParams>,
+) -> Result<Response> {
+    let after = params.after.unwrap_or(0);
+    if after < 0 {
+        return Err(super::unprocessable("after must not be negative"));
+    }
+    let limit = params
+        .limit
+        .filter(|l| *l > 0)
+        .unwrap_or(EXPORT_DEFAULT_LIMIT)
+        .min(EXPORT_MAX_LIMIT);
+    let rows = Audit::export_after(&ctx.db, after, limit).await?;
+    let next = rows.last().map_or(after, |r| r.chain_seq);
+    let body: String = rows.iter().map(crate::rules::audit_export::line).collect();
+    Ok((
+        [
+            (
+                axum::http::header::CONTENT_TYPE,
+                "application/x-ndjson; charset=utf-8".to_string(),
+            ),
+            (
+                axum::http::HeaderName::from_static("x-next-after"),
+                next.to_string(),
+            ),
+        ],
+        body,
+    )
+        .into_response())
+}
+
 /// `GET /api/audits/{entity_pid}` — one record's trail.
 #[debug_handler]
 async fn for_entity(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
@@ -62,6 +112,7 @@ pub fn routes() -> Routes {
         .prefix("/api")
         .add("/audits/recent", get(recent))
         .add("/audits/verify", get(verify))
+        .add("/audits/export", get(export))
         .add("/audits", get(department))
         .add("/audits/{entity_pid}", get(for_entity))
         .add("/events/recent", get(events_recent))

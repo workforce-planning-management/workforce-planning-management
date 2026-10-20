@@ -61,7 +61,7 @@ and many routes did not. WPM-T188 adds a guard with a table in code (WPM-D71).
 | 6 | No threat model | None in `spec/` | **WPM-T193 (built):** [governance/threat-model.md](governance/threat-model.md) |
 | 7 | Supply chain: actions pinned by SHA and secret-scanned (T194, 2026-10-20); image signature, provenance and base-image digests built (T195) but not yet run on a runner | `.github/workflows/*.yml` | WPM-R119, T194, T195 (both built) |
 | 8 | No evidence the service holds up under load; several views load an organization's records into memory | `BENCHMARKS.md` records no measurement; `controllers/capacity.rs` and `planning.rs` load whole organizations | WPM-R120, T196 |
-| 9 | Observability: a request id is on every response (confirmed on the running service, WPM-T191), but there is no check that logs hold no personal data, audit is not exportable to a security monitoring system | No test; loco's default request id not confirmed | WPM-R122, T197 |
+| 9 | **Built (WPM-T197):** a request id on every response, a log line with no query string or identifier (tested), and an audit export for a monitoring system | `src/request_log.rs`, `tests/request_log.rs`, `GET /api/audits/export` | WPM-R122, T197 (done) |
 | 10 | Rate limits are per instance | **Documented (WPM-T198):** the deployer's options are in `deployment.md` | WPM-T198 (done) |
 | 11 | **Built (WPM-T199):** a migrator role and a runtime role without DDL, verified by running the request tests as the runtime role | `postgres-roles/roles.sql`, `scripts/verify-db-roles.sh` | WPM-R123, T199 (done) |
 | 12 | Token revocation and maximum token age are the identity provider's, undocumented here | `spec/auth.md` | WPM-T200 (document and check the maximum age) |
