@@ -1162,7 +1162,18 @@
       "deviation_now": "Deviasi saat ini",
       "tolerance_limit": "Toleransi (deviasi terbesar yang diizinkan)",
       "amber_from": "Kuning mulai (% dari toleransi)",
-      "set_tolerance": "Atur toleransi"
+      "set_tolerance": "Atur toleransi",
+      "escalation": "Eskalasi",
+      "escalate": "Eskalasikan",
+      "escalation_note": "Catatan (tanpa data pribadi)",
+      "raise_level": "Naikkan tingkat",
+      "decide": "Putuskan",
+      "decision": "Keputusan",
+      "decision_note": "Alasan (wajib, tanpa data pribadi)",
+      "breaches_without_escalation": "{count} merah tanpa eskalasi",
+      "days_open_calendar": "terbuka {days} hari kalender",
+      "escalation_history": "Riwayat eskalasi",
+      "level": "Tingkat"
     },
     "requisitionsPid": {
       "hired": "→ direkrut"
@@ -1647,7 +1658,14 @@
     "calendar_days": "hari kalender",
     "basis_points": "basis poin",
     "roles": "peran",
-    "rag_unknown": "Tidak diketahui"
+    "rag_unknown": "Tidak diketahui",
+    "decided": "Diputuskan",
+    "plan_owner": "Pemilik rencana",
+    "board": "Dewan",
+    "executive": "Eksekutif",
+    "accept_deviation": "Terima deviasi",
+    "change_plan": "Ubah rencana",
+    "stop": "Hentikan rencana"
   },
   "engagement": {
     "title": "Keterlibatan",

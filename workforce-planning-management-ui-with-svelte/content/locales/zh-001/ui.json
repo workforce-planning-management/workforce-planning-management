@@ -1162,7 +1162,18 @@
       "deviation_now": "当前偏差",
       "tolerance_limit": "容忍度（允许的最大偏差）",
       "amber_from": "自（容忍度的%）起为黄",
-      "set_tolerance": "设置容忍度"
+      "set_tolerance": "设置容忍度",
+      "escalation": "上报",
+      "escalate": "上报",
+      "escalation_note": "备注（不含个人信息）",
+      "raise_level": "升级一级",
+      "decide": "作出决定",
+      "decision": "决定",
+      "decision_note": "理由（必填，不含个人信息）",
+      "breaches_without_escalation": "{count} 项红色未上报",
+      "days_open_calendar": "已开放 {days} 个日历日",
+      "escalation_history": "上报历史",
+      "level": "级别"
     },
     "requisitionsPid": {
       "hired": "→ 已录用"
@@ -1647,7 +1658,14 @@
     "calendar_days": "日历日",
     "basis_points": "基点",
     "roles": "个岗位",
-    "rag_unknown": "未知"
+    "rag_unknown": "未知",
+    "decided": "已决定",
+    "plan_owner": "计划负责人",
+    "board": "委员会",
+    "executive": "高管层",
+    "accept_deviation": "接受偏差",
+    "change_plan": "修改计划",
+    "stop": "终止计划"
   },
   "engagement": {
     "title": "用工关系",

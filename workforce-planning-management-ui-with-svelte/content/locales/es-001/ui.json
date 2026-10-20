@@ -1162,7 +1162,18 @@
       "deviation_now": "Desviación ahora",
       "tolerance_limit": "Tolerancia (mayor desviación permitida)",
       "amber_from": "Ámbar desde (% de la tolerancia)",
-      "set_tolerance": "Definir tolerancia"
+      "set_tolerance": "Definir tolerancia",
+      "escalation": "Escalado",
+      "escalate": "Escalar",
+      "escalation_note": "Nota (sin datos personales)",
+      "raise_level": "Subir de nivel",
+      "decide": "Decidir",
+      "decision": "Decisión",
+      "decision_note": "Motivo (obligatorio, sin datos personales)",
+      "breaches_without_escalation": "{count} en rojo sin escalar",
+      "days_open_calendar": "abierto hace {days} días naturales",
+      "escalation_history": "Historial de escalados",
+      "level": "Nivel"
     },
     "requisitionsPid": {
       "hired": "→ contratado"
@@ -1647,7 +1658,14 @@
     "calendar_days": "días naturales",
     "basis_points": "puntos básicos",
     "roles": "funciones",
-    "rag_unknown": "Desconocido"
+    "rag_unknown": "Desconocido",
+    "decided": "Decidido",
+    "plan_owner": "Responsable del plan",
+    "board": "Consejo",
+    "executive": "Dirección",
+    "accept_deviation": "Aceptar la desviación",
+    "change_plan": "Cambiar el plan",
+    "stop": "Detener el plan"
   },
   "engagement": {
     "title": "Contratación",

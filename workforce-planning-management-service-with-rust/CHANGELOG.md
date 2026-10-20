@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — escalations of a breached tolerance (WPM-T235)
+
+`POST /api/workforce-plans/{pid}/escalations` takes an amber or red dimension to level 1 (`plan_owner`); `POST /api/escalations/{pid}/raise-level` goes up to `board` then `executive`; `POST …/decide` (an administrator of the organization) closes it with a decision and a note. `GET /api/escalations?organization=` lists the open ones. The tolerances view gains `escalation` per dimension and `breaches_without_escalation`. Migration `000077`.
+
 ## [0.1.2] - 2026-10-20
 
 This release is signed (cosign, keyless) and carries SLSA build provenance; both are checked by the release workflow before the GitHub release is created, and the commands to check them yourself are in `spec/production-readiness.md`. `workforce-planning-management-migration` is released at the same version; `workforce-planning-management-matcher` stays at 0.1.0.

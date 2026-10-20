@@ -1162,7 +1162,18 @@
       "deviation_now": "अभी विचलन",
       "tolerance_limit": "सहनसीमा (अधिकतम अनुमत विचलन)",
       "amber_from": "एम्बर से (सहनसीमा का %)",
-      "set_tolerance": "सहनसीमा तय करें"
+      "set_tolerance": "सहनसीमा तय करें",
+      "escalation": "एस्केलेशन",
+      "escalate": "एस्केलेट करें",
+      "escalation_note": "टिप्पणी (व्यक्तिगत विवरण नहीं)",
+      "raise_level": "स्तर बढ़ाएँ",
+      "decide": "निर्णय लें",
+      "decision": "निर्णय",
+      "decision_note": "कारण (आवश्यक, व्यक्तिगत विवरण नहीं)",
+      "breaches_without_escalation": "{count} लाल, एस्केलेशन नहीं",
+      "days_open_calendar": "{days} कैलेंडर दिनों से खुला",
+      "escalation_history": "एस्केलेशन इतिहास",
+      "level": "स्तर"
     },
     "requisitionsPid": {
       "hired": "→ भर्ती हुआ"
@@ -1647,7 +1658,14 @@
     "calendar_days": "कैलेंडर दिन",
     "basis_points": "आधार अंक",
     "roles": "भूमिकाएँ",
-    "rag_unknown": "अज्ञात"
+    "rag_unknown": "अज्ञात",
+    "decided": "निर्णय हो गया",
+    "plan_owner": "योजना स्वामी",
+    "board": "बोर्ड",
+    "executive": "कार्यकारी",
+    "accept_deviation": "विचलन स्वीकार करें",
+    "change_plan": "योजना बदलें",
+    "stop": "योजना रोकें"
   },
   "engagement": {
     "title": "नियुक्ति",

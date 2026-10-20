@@ -1162,7 +1162,18 @@
       "deviation_now": "Deviation now",
       "tolerance_limit": "Tolerance (largest deviation allowed)",
       "amber_from": "Amber from (% of tolerance)",
-      "set_tolerance": "Set tolerance"
+      "set_tolerance": "Set tolerance",
+      "escalation": "Escalation",
+      "escalate": "Escalate",
+      "escalation_note": "Note (no personal details)",
+      "raise_level": "Raise level",
+      "decide": "Decide",
+      "decision": "Decision",
+      "decision_note": "Why (required, no personal details)",
+      "breaches_without_escalation": "{count} red with no escalation",
+      "days_open_calendar": "{days} calendar days open",
+      "escalation_history": "Escalation history",
+      "level": "Level"
     },
     "requisitionsPid": {
       "hired": "→ hired"
@@ -1647,7 +1658,14 @@
     "calendar_days": "calendar days",
     "basis_points": "basis points",
     "roles": "roles",
-    "rag_unknown": "Unknown"
+    "rag_unknown": "Unknown",
+    "decided": "Decided",
+    "plan_owner": "Plan owner",
+    "board": "Board",
+    "executive": "Executive",
+    "accept_deviation": "Accept the deviation",
+    "change_plan": "Change the plan",
+    "stop": "Stop the plan"
   },
   "engagement": {
     "title": "Engagement",

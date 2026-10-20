@@ -1162,7 +1162,18 @@
       "deviation_now": "Abweichung jetzt",
       "tolerance_limit": "Toleranz (größte erlaubte Abweichung)",
       "amber_from": "Gelb ab (% der Toleranz)",
-      "set_tolerance": "Toleranz festlegen"
+      "set_tolerance": "Toleranz festlegen",
+      "escalation": "Eskalation",
+      "escalate": "Eskalieren",
+      "escalation_note": "Notiz (keine personenbezogenen Angaben)",
+      "raise_level": "Eine Stufe höher",
+      "decide": "Entscheiden",
+      "decision": "Entscheidung",
+      "decision_note": "Begründung (erforderlich, keine personenbezogenen Angaben)",
+      "breaches_without_escalation": "{count} rot ohne Eskalation",
+      "days_open_calendar": "seit {days} Kalendertagen offen",
+      "escalation_history": "Eskalationsverlauf",
+      "level": "Stufe"
     },
     "requisitionsPid": {
       "hired": "→ eingestellt"
@@ -1647,7 +1658,14 @@
     "calendar_days": "Kalendertage",
     "basis_points": "Basispunkte",
     "roles": "Rollen",
-    "rag_unknown": "Unbekannt"
+    "rag_unknown": "Unbekannt",
+    "decided": "Entschieden",
+    "plan_owner": "Plan-Verantwortliche",
+    "board": "Gremium",
+    "executive": "Geschäftsleitung",
+    "accept_deviation": "Abweichung akzeptieren",
+    "change_plan": "Plan ändern",
+    "stop": "Plan beenden"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

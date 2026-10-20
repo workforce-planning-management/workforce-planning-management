@@ -1162,7 +1162,18 @@
       "deviation_now": "Desvio agora",
       "tolerance_limit": "Tolerância (maior desvio permitido)",
       "amber_from": "Âmbar a partir de (% da tolerância)",
-      "set_tolerance": "Definir tolerância"
+      "set_tolerance": "Definir tolerância",
+      "escalation": "Escalonamento",
+      "escalate": "Escalar",
+      "escalation_note": "Nota (sem dados pessoais)",
+      "raise_level": "Subir de nível",
+      "decide": "Decidir",
+      "decision": "Decisão",
+      "decision_note": "Motivo (obrigatório, sem dados pessoais)",
+      "breaches_without_escalation": "{count} em vermelho sem escalonamento",
+      "days_open_calendar": "aberto há {days} dias corridos",
+      "escalation_history": "Histórico de escalonamentos",
+      "level": "Nível"
     },
     "requisitionsPid": {
       "hired": "→ contratado"
@@ -1647,7 +1658,14 @@
     "calendar_days": "dias corridos",
     "basis_points": "pontos-base",
     "roles": "funções",
-    "rag_unknown": "Desconhecido"
+    "rag_unknown": "Desconhecido",
+    "decided": "Decidido",
+    "plan_owner": "Responsável pelo plano",
+    "board": "Conselho",
+    "executive": "Diretoria",
+    "accept_deviation": "Aceitar o desvio",
+    "change_plan": "Alterar o plano",
+    "stop": "Parar o plano"
   },
   "engagement": {
     "title": "Vínculo",

@@ -1162,7 +1162,18 @@
       "deviation_now": "বর্তমান বিচ্যুতি",
       "tolerance_limit": "সহনসীমা (সর্বোচ্চ অনুমোদিত বিচ্যুতি)",
       "amber_from": "অ্যাম্বার শুরু (সহনসীমার %)",
-      "set_tolerance": "সহনসীমা নির্ধারণ"
+      "set_tolerance": "সহনসীমা নির্ধারণ",
+      "escalation": "উর্ধ্বতন স্তরে পাঠানো",
+      "escalate": "উর্ধ্বতন স্তরে পাঠান",
+      "escalation_note": "নোট (ব্যক্তিগত তথ্য ছাড়া)",
+      "raise_level": "স্তর বাড়ান",
+      "decide": "সিদ্ধান্ত নিন",
+      "decision": "সিদ্ধান্ত",
+      "decision_note": "কারণ (আবশ্যক, ব্যক্তিগত তথ্য ছাড়া)",
+      "breaches_without_escalation": "{count}টি লাল, উর্ধ্বতনে পাঠানো হয়নি",
+      "days_open_calendar": "{days} ক্যালেন্ডার দিন ধরে খোলা",
+      "escalation_history": "উর্ধ্বতনে পাঠানোর ইতিহাস",
+      "level": "স্তর"
     },
     "requisitionsPid": {
       "hired": "→ নিয়োগ হয়েছে"
@@ -1647,7 +1658,14 @@
     "calendar_days": "ক্যালেন্ডার দিন",
     "basis_points": "বেসিস পয়েন্ট",
     "roles": "ভূমিকা",
-    "rag_unknown": "অজানা"
+    "rag_unknown": "অজানা",
+    "decided": "সিদ্ধান্ত হয়েছে",
+    "plan_owner": "পরিকল্পনার মালিক",
+    "board": "বোর্ড",
+    "executive": "নির্বাহী",
+    "accept_deviation": "বিচ্যুতি গ্রহণ",
+    "change_plan": "পরিকল্পনা বদলান",
+    "stop": "পরিকল্পনা বন্ধ করুন"
   },
   "engagement": {
     "title": "নিয়োগ",

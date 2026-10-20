@@ -1162,7 +1162,18 @@
       "deviation_now": "موجودہ انحراف",
       "tolerance_limit": "رواداری (زیادہ سے زیادہ مجاز انحراف)",
       "amber_from": "امبر از (رواداری کا %)",
-      "set_tolerance": "رواداری مقرر کریں"
+      "set_tolerance": "رواداری مقرر کریں",
+      "escalation": "اعلیٰ سطح پر بھیجنا",
+      "escalate": "اعلیٰ سطح پر بھیجیں",
+      "escalation_note": "نوٹ (ذاتی تفصیلات کے بغیر)",
+      "raise_level": "سطح بڑھائیں",
+      "decide": "فیصلہ کریں",
+      "decision": "فیصلہ",
+      "decision_note": "وجہ (لازمی، ذاتی تفصیلات کے بغیر)",
+      "breaches_without_escalation": "{count} سرخ، اعلیٰ سطح پر نہیں بھیجا گیا",
+      "days_open_calendar": "{days} کیلنڈر دن سے کھلا",
+      "escalation_history": "اعلیٰ سطح پر بھیجنے کی تاریخ",
+      "level": "سطح"
     },
     "requisitionsPid": {
       "hired": "← بھرتی ہو گیا"
@@ -1647,7 +1658,14 @@
     "calendar_days": "کیلنڈر دن",
     "basis_points": "بیسس پوائنٹس",
     "roles": "کردار",
-    "rag_unknown": "نامعلوم"
+    "rag_unknown": "نامعلوم",
+    "decided": "فیصلہ ہو گیا",
+    "plan_owner": "منصوبے کا مالک",
+    "board": "بورڈ",
+    "executive": "انتظامیہ",
+    "accept_deviation": "انحراف قبول کریں",
+    "change_plan": "منصوبہ بدلیں",
+    "stop": "منصوبہ روکیں"
   },
   "engagement": {
     "title": "تقرری",

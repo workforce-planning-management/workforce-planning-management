@@ -2573,6 +2573,28 @@ export function planCost(
 /** Red, amber or green for a plan against its tolerance, or why not (WPM-R140). */
 export type Rag = "green" | "amber" | "red" | "unknown" | "not_set";
 
+/** A breached tolerance taken to someone who can decide (WPM-R141). */
+export interface Escalation {
+  pid: string;
+  plan_pid: string;
+  plan_name: string | null;
+  dimension: string;
+  status: "open" | "decided";
+  level: "plan_owner" | "board" | "executive";
+  level_number: number;
+  raised_by: string | null;
+  raised_on: string;
+  level_raised_on: string | null;
+  days_open: number | null;
+  note: string | null;
+  at_raise: { rag: string; deviation: number | null; limit: number };
+  decision: "accept_deviation" | "change_plan" | "stop" | null;
+  decided_by: string | null;
+  decided_on: string | null;
+  decision_note: string | null;
+  at_decision: { rag: string | null; deviation: number | null } | null;
+}
+
 /** One dimension of a plan's tolerances. */
 export interface PlanTolerance {
   dimension: "time" | "cost" | "resources" | "risk";
@@ -2585,6 +2607,8 @@ export interface PlanTolerance {
   rag: Rag;
   basis: string;
   reason: string | null;
+  /** The open escalation for this dimension, if a person has raised one. */
+  escalation: Escalation | null;
 }
 
 /** A plan's tolerances and where it stands against each. */
@@ -2595,9 +2619,40 @@ export function planTolerances(
   derivation: string;
   as_of: string;
   overall: Rag;
+  /** Red dimensions that no open escalation covers. */
+  breaches_without_escalation: number;
   dimensions: PlanTolerance[];
 }> {
   return api(`/workforce-plans/${pid}/tolerances`, init);
+}
+
+/** A plan's escalations, open first. */
+export function planEscalations(
+  pid: string,
+  init?: FetchLike,
+): Promise<Escalation[]> {
+  return api(`/workforce-plans/${pid}/escalations`, init);
+}
+
+/** Take an amber or red dimension to level 1. */
+export function raisePlanEscalation(
+  pid: string,
+  body: { dimension: string; note?: string },
+): Promise<Escalation> {
+  return api(`/workforce-plans/${pid}/escalations`, { method: "POST", body });
+}
+
+/** Move an open escalation up one level. */
+export function raiseEscalationLevel(pid: string): Promise<Escalation> {
+  return api(`/escalations/${pid}/raise-level`, { method: "POST" });
+}
+
+/** An administrator of the organization closes an escalation. */
+export function decideEscalation(
+  pid: string,
+  body: { decision: string; note: string },
+): Promise<Escalation> {
+  return api(`/escalations/${pid}/decide`, { method: "POST", body });
 }
 
 /** Set or change one tolerance. */

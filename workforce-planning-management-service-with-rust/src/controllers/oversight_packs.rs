@@ -46,6 +46,18 @@ pub(super) async fn ensure_may_freeze(
     caller: &MaybeAuthUser,
     org: &str,
 ) -> Result<()> {
+    ensure_org_administrator(ctx, caller, org, "freezing or withdrawing a pack").await
+}
+
+/// An administrator of the organization (HR or organization), or a caller whose token carries HR,
+/// payroll, service or administrator rights; anyone when sign-in is not enforced. `what` completes the
+/// refusal: "<what> is for an administrator of the organization".
+pub(crate) async fn ensure_org_administrator(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    org: &str,
+    what: &str,
+) -> Result<()> {
     if !crate::auth::require_auth() {
         return Ok(());
     }
@@ -58,7 +70,7 @@ pub(super) async fn ensure_may_freeze(
     }
     Err(record_rejection((
         axum::http::StatusCode::FORBIDDEN,
-        "freezing or withdrawing a pack is for an administrator of the organization".to_string(),
+        format!("{what} is for an administrator of the organization"),
     )))
 }
 

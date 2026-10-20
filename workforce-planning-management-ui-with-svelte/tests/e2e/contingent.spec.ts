@@ -571,8 +571,11 @@ test.describe("planning by basis and programme", () => {
     );
     await page.route(`**/api/proxy/workforce-plans/${PLAN}/tolerances`, (route) =>
       route.fulfill({
-        json: { derivation: "", as_of: "2026-10-20", overall: "not_set", dimensions: [] },
+        json: { derivation: "", as_of: "2026-10-20", overall: "not_set", breaches_without_escalation: 0, dimensions: [] },
       }),
+    );
+    await page.route(`**/api/proxy/workforce-plans/${PLAN}/escalations`, (route) =>
+      route.fulfill({ json: [] }),
     );
     await page.route(`**/api/proxy/workforce-plans/${PLAN}/cost`, (route) =>
       route.fulfill({

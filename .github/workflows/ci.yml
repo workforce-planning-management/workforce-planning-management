@@ -144,6 +144,9 @@ jobs:
       - run: cargo test --locked --test shared_cache_upstream
       - run: cargo test --locked --test enforcement_equality -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_health -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_oversight_pack -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_cutover -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_escalations -- --ignored --test-threads=1
       - run: cargo test --locked --test security -- --ignored --test-threads=1
       - run: cargo test --locked --test retention_schedule -- --ignored --test-threads=1
       # What the log holds for a request (WPM-R122): an id and a route, never a query string or an identifier.

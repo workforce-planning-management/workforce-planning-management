@@ -30,6 +30,7 @@ pub mod emergency;
 pub mod engagement;
 pub mod equality_monitoring;
 pub mod ergonomics;
+pub mod escalation;
 pub mod esco;
 pub mod expenses;
 pub mod flexible_working;

@@ -44,6 +44,7 @@ fn ratio_json(terms: Option<(usize, usize, f64)>) -> serde_json::Value {
 mod alignment;
 mod cost;
 mod demand_lines;
+mod escalations;
 mod forecast;
 mod objectives;
 mod plans;
@@ -55,6 +56,8 @@ use self::alignment::*;
 use self::cost::*;
 #[allow(clippy::wildcard_imports)]
 use self::demand_lines::*;
+#[allow(clippy::wildcard_imports)]
+use self::escalations::*;
 #[allow(clippy::wildcard_imports)]
 use self::forecast::*;
 #[allow(clippy::wildcard_imports)]
@@ -86,6 +89,13 @@ pub fn routes() -> Routes {
         .add("/workforce-plans/{pid}/cost", get(cost))
         .add("/workforce-plans/{pid}/alignment", get(alignment))
         .add("/workforce-plans/{pid}/tolerances", get(list_tolerances))
+        .add(
+            "/workforce-plans/{pid}/escalations",
+            post(raise_escalation).get(list_plan_escalations),
+        )
+        .add("/escalations", get(list_open_escalations))
+        .add("/escalations/{pid}/raise-level", post(raise_level))
+        .add("/escalations/{pid}/decide", post(decide_escalation))
         .add(
             "/workforce-plans/{pid}/tolerances/{dimension}",
             put(set_tolerance).delete(delete_tolerance),

@@ -29,6 +29,7 @@ const dimension = (name: string, unit: string, over: Record<string, unknown>) =>
   rag: "green",
   basis: `basis of ${name}`,
   reason: null,
+  escalation: null,
   ...over,
 });
 
@@ -36,6 +37,7 @@ const TOLERANCES = {
   derivation: "a tolerance is the largest deviation the plan may have",
   as_of: "2026-10-20",
   overall: "red",
+  breaches_without_escalation: 1,
   dimensions: [
     dimension("time", "calendar_days", { deviation: 112, limit: 120, rag: "amber" }),
     dimension("cost", "basis_points", { deviation: 10000, limit: 20000, rag: "green" }),
@@ -68,6 +70,7 @@ async function stub(page: Page) {
     derivation: "", planned_headcount: 0, aligned_share: null, objectives: 0, unresourced_objectives: [],
     unaligned_demand_lines: [], critical_roles_without_bench: { in_plan_departments: 0, all_departments: 0 },
   });
+  await json(`**/api/proxy/workforce-plans/${PLAN}/escalations`, []);
   await json(`**/api/proxy/workforce-plans/${PLAN}/cost`, {
     derivation: "", currency: "GBP", salary_visible: true, assumptions: { on_cost_bp: 0 }, groups: [],
     total_annual_cost_minor: 0, uncosted_groups: 0, affordability: null,
@@ -130,5 +133,68 @@ test.describe("tolerances", () => {
     await row.getByRole("button", { name: "Remove" }).click();
     await expect.poll(() => sent.length).toBe(2);
     expect(sent[1]?.method).toBe("DELETE");
+  });
+
+  test("a red breach with no escalation is flagged, can be escalated, raised and decided", async ({ page }) => {
+    await signIn(page);
+    await stub(page);
+    // the plan's tolerances change as the escalation does: first unanswered, then open at level 1
+    let open: Record<string, unknown> | null = null;
+    const view = () => ({
+      ...TOLERANCES,
+      breaches_without_escalation: open ? 0 : 1,
+      dimensions: TOLERANCES.dimensions.map((d) => (d.dimension === "resources" ? { ...d, escalation: open } : d)),
+    });
+    const sent: Array<{ method: string; path: string; body: string | null }> = [];
+    await page.route(`**/api/proxy/workforce-plans/${PLAN}/tolerances`, (route) => route.fulfill({ json: view() }));
+    await page.route(`**/api/proxy/workforce-plans/${PLAN}/escalations`, (route) => {
+      const request = route.request();
+      if (request.method() === "GET") return route.fulfill({ json: [] });
+      sent.push({ method: "POST", path: new URL(request.url()).pathname, body: request.postData() });
+      open = {
+        pid: "e1", plan_pid: PLAN, plan_name: null, dimension: "resources", status: "open", level: "plan_owner",
+        level_number: 1, raised_by: null, raised_on: "2026-10-20", level_raised_on: null, days_open: 3, note: null,
+        at_raise: { rag: "red", deviation: 4000, limit: 3000 }, decision: null, decided_by: null, decided_on: null,
+        decision_note: null, at_decision: null,
+      };
+      return route.fulfill({ json: open });
+    });
+    await page.route("**/api/proxy/escalations/e1/**", (route) => {
+      const request = route.request();
+      sent.push({ method: request.method(), path: new URL(request.url()).pathname, body: request.postData() });
+      return route.fulfill({ json: {} });
+    });
+    await page.goto("/en-001/planning");
+
+    // the breach is flagged, and only a red or amber dimension offers to escalate
+    await expect(page.getByTestId("breaches-without-escalation")).toContainText("1 red with no escalation");
+    await expect(page.getByTestId("escalation-cost").getByRole("button")).toHaveCount(0); // green
+    await expect(page.getByTestId("escalation-risk").getByRole("button")).toHaveCount(0); // unknown
+    const cell = page.getByTestId("escalation-resources");
+    await cell.getByRole("button", { name: "Escalate" }).click();
+    await cell.getByLabel(/Note \(no personal details\)/).fill("the gap is wider than agreed");
+    await cell.getByRole("button", { name: "Escalate" }).last().click();
+    await expect.poll(() => sent.length).toBe(1);
+    expect(sent[0]?.path).toMatch(/\/escalations$/);
+    expect(JSON.parse(sent[0]?.body ?? "{}")).toEqual({ dimension: "resources", note: "the gap is wider than agreed" });
+
+    // now it is open at level 1: the banner goes, the level and the days open show, and it can go up or be decided
+    await expect(page.getByTestId("breaches-without-escalation")).toHaveCount(0);
+    await expect(cell).toContainText("Level 1: Plan owner");
+    await expect(cell).toContainText("3 calendar days open");
+    await cell.getByRole("button", { name: "Raise level" }).click();
+    await expect.poll(() => sent.length).toBe(2);
+    expect(sent[1]?.path).toMatch(/\/escalations\/e1\/raise-level$/);
+
+    await cell.getByRole("button", { name: "Decide" }).click();
+    await page.getByTestId("plan-tolerances").screenshot({ path: "test-results/escalation-open.png" });
+    const submit = cell.getByRole("button", { name: "Decide" }).last();
+    await expect(submit).toBeDisabled(); // a reason is required
+    await cell.getByLabel("Decision").selectOption("change_plan");
+    await cell.getByLabel(/Why \(required/).fill("bring forward the intake");
+    await submit.click();
+    await expect.poll(() => sent.length).toBe(3);
+    expect(sent[2]?.path).toMatch(/\/escalations\/e1\/decide$/);
+    expect(JSON.parse(sent[2]?.body ?? "{}")).toEqual({ decision: "change_plan", note: "bring forward the intake" });
   });
 });

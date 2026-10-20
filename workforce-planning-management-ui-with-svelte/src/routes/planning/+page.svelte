@@ -18,7 +18,11 @@
     planAlignment,
     planCost,
     planForecast,
+    planEscalations,
     planTolerances,
+    raiseEscalationLevel,
+    raisePlanEscalation,
+    decideEscalation,
     removeDemandLine,
     removePlanTolerance,
     setDemandLine,
@@ -40,6 +44,7 @@
   type Alignment = Awaited<ReturnType<typeof planAlignment>>;
   type Cost = Awaited<ReturnType<typeof planCost>>;
   type Tolerances = Awaited<ReturnType<typeof planTolerances>>;
+  type Escalations = Awaited<ReturnType<typeof planEscalations>>;
 
   const BASES = ["permanent", "fixed_term", "contractor", "intern"] as const;
   const NEXT: Record<string, string[]> = {
@@ -57,6 +62,13 @@
   let alignment = $state<Alignment | null>(null);
   let cost = $state<Cost | null>(null);
   let tolerances = $state<Tolerances | null>(null);
+  let escalations = $state<Escalations>([]);
+  /** The dimension whose escalate or decide form is open, and what is typed in it. */
+  let escalating = $state<string | null>(null);
+  let deciding = $state<string | null>(null);
+  let escNote = $state("");
+  let decisionPick = $state("accept_deviation");
+  let decisionNote = $state("");
   /** What is typed in each tolerance row, by dimension, before it is saved. */
   let draft = $state<Record<string, { limit: string; amber: string }>>({});
   let roles = $state<Awaited<ReturnType<typeof listRoleProfiles>>>([]);
@@ -125,14 +137,18 @@
     alignment = null;
     cost = null;
     tolerances = null;
+    escalations = [];
+    escalating = null;
+    deciding = null;
     if (!selected) return;
     try {
-      [plan, forecast, alignment, cost, tolerances] = await Promise.all([
+      [plan, forecast, alignment, cost, tolerances, escalations] = await Promise.all([
         getWorkforcePlan(selected),
         planForecast(selected),
         planAlignment(selected),
         planCost(selected),
         planTolerances(selected),
+        planEscalations(selected),
       ]);
       draft = Object.fromEntries(
         tolerances.dimensions.map((d) => [
@@ -190,6 +206,16 @@
     const row = draft[dimension];
     if (!row || String(row.limit).trim() === "") return;
     await run(() => setPlanTolerance(selected, dimension, { limit: Number(row.limit), amber_percent: Number(row.amber) }));
+  }
+
+  async function escalate(dimension: string) {
+    await run(() => raisePlanEscalation(selected, { dimension, ...(escNote.trim() ? { note: escNote.trim() } : {}) }));
+    escNote = "";
+  }
+
+  async function decide(pid: string) {
+    await run(() => decideEscalation(pid, { decision: decisionPick, note: decisionNote }));
+    decisionNote = "";
   }
 
   async function dropTolerance(dimension: string) {
@@ -485,7 +511,12 @@
   {#if tolerances}
     <h3>{t("pages.planning.tolerances")} {@render ragChip(tolerances.overall)}</h3>
     <p class="muted" data-testid="tolerance-derivation">{tolerances.derivation}</p>
-    <table data-testid="plan-tolerances">
+    {#if tolerances.breaches_without_escalation > 0}
+      <p class="warn" data-testid="breaches-without-escalation">
+        {tf("pages.planning.breaches_without_escalation", { count: tolerances.breaches_without_escalation })}
+      </p>
+    {/if}
+    <table class="tolerances" data-testid="plan-tolerances">
       <thead>
         <tr>
           <th>{t("pages.planning.tolerances")}</th>
@@ -493,6 +524,7 @@
           <th>{t("pages.planning.tolerance_limit")}</th>
           <th>{t("pages.planning.amber_from")}</th>
           <th>{t("common.status")}</th>
+          <th>{t("pages.planning.escalation")}</th>
           <th></th>
         </tr>
       </thead>
@@ -512,6 +544,35 @@
               {/if}
             </td>
             <td>{@render ragChip(d.rag)}</td>
+            <td data-testid="escalation-{d.dimension}">
+              {#if d.escalation}
+                <span class="chip">{t("pages.planning.level")} {d.escalation.level_number}: {tv(d.escalation.level)}</span>
+                <span class="muted">{tf("pages.planning.days_open_calendar", { days: d.escalation.days_open ?? 0 })}</span>
+                {#if d.escalation.level_number < 3}
+                  <button type="button" onclick={() => void run(() => raiseEscalationLevel(d.escalation!.pid))}>{t("pages.planning.raise_level")}</button>
+                {/if}
+                <button type="button" onclick={() => { deciding = d.dimension; decisionNote = ""; }}>{t("pages.planning.decide")}</button>
+                {#if deciding === d.dimension}
+                  <div>
+                    <label>{t("pages.planning.decision")}
+                      <select bind:value={decisionPick}>
+                        {#each ["accept_deviation", "change_plan", "stop"] as option (option)}<option value={option}>{tv(option)}</option>{/each}
+                      </select>
+                    </label>
+                    <label>{t("pages.planning.decision_note")} <input maxlength="500" bind:value={decisionNote} /></label>
+                    <button type="button" disabled={decisionNote.trim() === ""} onclick={() => void decide(d.escalation!.pid)}>{t("pages.planning.decide")}</button>
+                  </div>
+                {/if}
+              {:else if d.set && (d.rag === "amber" || d.rag === "red") && plan.status !== "archived"}
+                <button type="button" onclick={() => { escalating = d.dimension; escNote = ""; }}>{t("pages.planning.escalate")}</button>
+                {#if escalating === d.dimension}
+                  <div>
+                    <label>{t("pages.planning.escalation_note")} <input maxlength="500" bind:value={escNote} /></label>
+                    <button type="button" onclick={() => void escalate(d.dimension)}>{t("pages.planning.escalate")}</button>
+                  </div>
+                {/if}
+              {/if}
+            </td>
             <td>
               {#if plan.status !== "archived"}
                 <button type="button" onclick={() => void saveTolerance(d.dimension)}>{t("pages.planning.set_tolerance")}</button>
@@ -522,6 +583,17 @@
         {/each}
       </tbody>
     </table>
+  {/if}
+
+  {#if escalations.some((e) => e.status === "decided")}
+    <h3>{t("pages.planning.escalation_history")}</h3>
+    <ul data-testid="escalation-history">
+      {#each escalations.filter((e) => e.status === "decided") as e (e.pid)}
+        <li>
+          {tv(e.dimension)} · {e.raised_on} → {e.decided_on} · {tv(e.decision)}{#if e.decision_note} — {e.decision_note}{/if}
+        </li>
+      {/each}
+    </ul>
   {/if}
 
   <h3>{t("pages.planning.demand_lines")}</h3>
@@ -615,5 +687,11 @@
 {/if}
 
 <style>
+  .tolerances th:first-child {
+    white-space: nowrap;
+  }
+  .tolerances td button {
+    margin-block: 0.1rem;
+  }
   td.warn { color: #b45309; font-weight: 600; }
 </style>

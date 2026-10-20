@@ -1731,6 +1731,17 @@ collections:
                   - { name: "tolerance_limit", label: "Tolerance_limit", widget: string, required: false, i18n: true }
                   - { name: "amber_from", label: "Amber_from", widget: string, required: false, i18n: true }
                   - { name: "set_tolerance", label: "Set_tolerance", widget: string, required: false, i18n: true }
+                  - { name: "escalation", label: "Escalation", widget: string, required: false, i18n: true }
+                  - { name: "escalate", label: "Escalate", widget: string, required: false, i18n: true }
+                  - { name: "escalation_note", label: "Escalation_note", widget: string, required: false, i18n: true }
+                  - { name: "raise_level", label: "Raise_level", widget: string, required: false, i18n: true }
+                  - { name: "decide", label: "Decide", widget: string, required: false, i18n: true }
+                  - { name: "decision", label: "Decision", widget: string, required: false, i18n: true }
+                  - { name: "decision_note", label: "Decision_note", widget: string, required: false, i18n: true }
+                  - { name: "breaches_without_escalation", label: "Breaches_without_escalation", widget: string, required: false, i18n: true }
+                  - { name: "days_open_calendar", label: "Days_open_calendar", widget: string, required: false, i18n: true }
+                  - { name: "escalation_history", label: "Escalation_history", widget: string, required: false, i18n: true }
+                  - { name: "level", label: "Level", widget: string, required: false, i18n: true }
               - name: "requisitionsPid"
                 label: "Requisitions Pid"
                 widget: object
@@ -2285,6 +2296,13 @@ collections:
               - { name: "basis_points", label: "Basis_points", widget: string, required: false, i18n: true }
               - { name: "roles", label: "Roles", widget: string, required: false, i18n: true }
               - { name: "rag_unknown", label: "Rag_unknown", widget: string, required: false, i18n: true }
+              - { name: "decided", label: "Decided", widget: string, required: false, i18n: true }
+              - { name: "plan_owner", label: "Plan_owner", widget: string, required: false, i18n: true }
+              - { name: "board", label: "Board", widget: string, required: false, i18n: true }
+              - { name: "executive", label: "Executive", widget: string, required: false, i18n: true }
+              - { name: "accept_deviation", label: "Accept_deviation", widget: string, required: false, i18n: true }
+              - { name: "change_plan", label: "Change_plan", widget: string, required: false, i18n: true }
+              - { name: "stop", label: "Stop", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

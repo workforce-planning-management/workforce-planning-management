@@ -7,7 +7,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
-use crate::models::_entities::plan_tolerances;
+use crate::models::_entities::{plan_escalations, plan_tolerances};
 use crate::rules::tolerance as tol;
 
 /// `PUT /api/workforce-plans/{pid}/tolerances/{dimension}` body.
@@ -67,15 +67,23 @@ fn lines_of(forecast: &serde_json::Value) -> Vec<tol::Line> {
         .collect()
 }
 
-/// `GET /api/workforce-plans/{pid}/tolerances` — every dimension with its deviation, limit and status.
-#[debug_handler]
-pub(super) async fn list_tolerances(
-    State(ctx): State<AppContext>,
-    caller: MaybeAuthUser,
-    Path(pid): Path<String>,
-) -> Result<Response> {
-    let plan = scoped_plan(&ctx, &caller, &pid).await?;
-    let set: BTreeMap<String, plan_tolerances::Model> = plan_tolerances::Entity::find()
+/// One dimension as it stands now: the tolerance (if set), the deviation and the status.
+pub(super) struct DimensionState {
+    pub(super) dimension: tol::Dimension,
+    pub(super) tolerance: Option<plan_tolerances::Model>,
+    pub(super) deviation: Option<i64>,
+    pub(super) rag: tol::Rag,
+}
+
+/// Every dimension of the plan as it stands today, worked out from the plan's own forecast, cost and
+/// alignment views and compared with its tolerances.
+pub(super) async fn dimension_states(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    pid: &str,
+    plan: &workforce_plans::Model,
+) -> Result<Vec<DimensionState>> {
+    let mut set: BTreeMap<String, plan_tolerances::Model> = plan_tolerances::Entity::find()
         .filter(plan_tolerances::Column::PlanPid.eq(plan.pid))
         .all(&ctx.db)
         .await?
@@ -83,15 +91,13 @@ pub(super) async fn list_tolerances(
         .map(|t| (t.dimension.clone(), t))
         .collect();
     let today = chrono::Utc::now().date_naive();
-    let forecast = forecast_value(&ctx, &caller, &pid).await?;
-    let cost = cost_value(&ctx, &caller, &pid, CostQuery::default()).await?;
-    let alignment = alignment_value(&ctx, &caller, &pid).await?;
+    let forecast = forecast_value(ctx, caller, pid).await?;
+    let cost = cost_value(ctx, caller, pid, CostQuery::default()).await?;
+    let alignment = alignment_value(ctx, caller, pid).await?;
     let lines = lines_of(&forecast);
     let bench = &alignment["critical_roles_without_bench"];
     let usize_of = |v: &serde_json::Value| usize::try_from(v.as_u64().unwrap_or(0)).unwrap_or(0);
-
-    let mut statuses = Vec::new();
-    let dimensions: Vec<serde_json::Value> = tol::Dimension::ALL
+    Ok(tol::Dimension::ALL
         .into_iter()
         .map(|dimension| {
             let deviation = match dimension {
@@ -107,33 +113,72 @@ pub(super) async fn list_tolerances(
                     usize_of(&bench["in_plan_departments"]),
                 ),
             };
-            let row = set.get(dimension.as_str());
-            let rag = row.map_or(tol::Rag::NotSet, |t| {
+            let tolerance = set.remove(dimension.as_str());
+            let rag = tolerance.as_ref().map_or(tol::Rag::NotSet, |t| {
                 tol::assess(deviation, t.limit_value, t.amber_percent)
             });
-            if row.is_some() {
-                statuses.push(rag);
+            DimensionState {
+                dimension,
+                tolerance,
+                deviation,
+                rag,
             }
+        })
+        .collect())
+}
+
+/// `GET /api/workforce-plans/{pid}/tolerances` — every dimension with its deviation, limit and status.
+#[debug_handler]
+pub(super) async fn list_tolerances(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let plan = scoped_plan(&ctx, &caller, &pid).await?;
+    let today = chrono::Utc::now().date_naive();
+    let states = dimension_states(&ctx, &caller, &pid, &plan).await?;
+    let open: BTreeMap<String, plan_escalations::Model> = plan_escalations::Entity::find()
+        .filter(plan_escalations::Column::PlanPid.eq(plan.pid))
+        .filter(plan_escalations::Column::Status.eq("open"))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|e| (e.dimension.clone(), e))
+        .collect();
+    let overall_inputs: Vec<tol::Rag> = states
+        .iter()
+        .filter(|s| s.tolerance.is_some())
+        .map(|s| s.rag)
+        .collect();
+    let unanswered: Vec<(tol::Rag, bool)> = states
+        .iter()
+        .map(|s| (s.rag, open.contains_key(s.dimension.as_str())))
+        .collect();
+    let dimensions: Vec<serde_json::Value> = states
+        .iter()
+        .map(|s| {
             serde_json::json!({
-                "dimension": dimension,
-                "unit": dimension.unit(),
-                "set": row.is_some(),
-                "limit": row.map(|t| t.limit_value),
-                "amber_percent": row.map(|t| t.amber_percent),
-                "deviation": deviation,
-                "rag": rag,
-                "basis": basis(dimension),
-                "reason": if deviation.is_none() { Some(reason(dimension)) } else { None },
+                "dimension": s.dimension,
+                "unit": s.dimension.unit(),
+                "set": s.tolerance.is_some(),
+                "limit": s.tolerance.as_ref().map(|t| t.limit_value),
+                "amber_percent": s.tolerance.as_ref().map(|t| t.amber_percent),
+                "deviation": s.deviation,
+                "rag": s.rag,
+                "basis": basis(s.dimension),
+                "reason": if s.deviation.is_none() { Some(reason(s.dimension)) } else { None },
+                "escalation": open.get(s.dimension.as_str()).map(|e| escalation_json(e, today, None)),
             })
         })
         .collect();
     format::json(serde_json::json!({
         "derivation": "a tolerance is the largest deviation the plan may have; green is under amber_percent of it, amber is amber_percent of it up to and including the limit, red is over the limit. \
                        A deviation that cannot be worked out is unknown, never green. The overall status is the worst of the dimensions that have a tolerance. \
-                       Nothing is escalated or blocked: this measures and shows its working.",
+                       Nothing is escalated or blocked by the measurement: a person raises an escalation, and breaches_without_escalation counts the red dimensions nobody has.",
         "plan": { "pid": plan.pid, "name": plan.name, "status": plan.status },
         "as_of": today,
-        "overall": tol::overall(&statuses),
+        "overall": tol::overall(&overall_inputs),
+        "breaches_without_escalation": crate::rules::escalation::breaches_without_escalation(&unanswered),
         "dimensions": dimensions,
     }))
 }

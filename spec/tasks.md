@@ -3519,10 +3519,11 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       provenance pushed to the registry, and runs `cosign verify` (issuer and this workflow's identity) and `gh attestation verify` before the
       release is created, so an image that cannot be verified is not released. How to check an image is in `spec/production-readiness.md`
       (WPM-R87). Verified: the image builds locally from the digest-pinned bases with the version and revision labels set; the workflow
-      parses and every action is pinned. **Not verified:** the signing, attestation and verification steps have not run on a runner; the first
-      tag to carry them (v0.1.2 or later) is their first test, and a failure there stops the release before it is created. **Not done:**
+      parses and every action is pinned. **Run on a runner (2026-10-20, v0.1.2):** the signing, attestation and verification steps all passed in the release workflow before the release was
+      created. **Not verified by anyone outside the workflow:** the image's package is private, so `cosign verify` and `gh attestation verify` from a
+      machine that is not signed in to the organization cannot be tried; making the package public is a decision for the owner, not taken. **Not done:**
       the digests are refreshed by hand (Dependabot does not read a `Containerfile`); the demo and test images in `compose*.yaml` and the CI
-      service containers (`postgres:18`, `redis:7-alpine`) are not pinned; no SBOM attestation (the CycloneDX file is attached, not signed); the
+      service containers were not pinned (they are now, WPM-T231); no SBOM attestation (the CycloneDX file is attached, not signed); the
       v0.1.0 and v0.1.1 images stay unsigned.
 - [x] WPM-T196 (2026-10-20) **Load evidence and bounded views.** *(WPM-R120, WPM-D90)* `scripts/load-test.sh` seeds one organization at 1k, 10k and 50k workers and
       drives four routes with `oha`; the result is in `BENCHMARKS.md`. The whole-organization views grow with the organization
@@ -3542,6 +3543,22 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T235 (2026-10-20) **Escalations of a breached tolerance.** *(WPM-R141, WPM-D94)* [tolerances.md](tolerances.md#escalations). Migration `000077`
+      `plan_escalations` (level 1 to 3, open or decided, the status, deviation and limit at raising and at deciding, one open per plan and dimension,
+      checked in the database). `rules::escalation`: the three levels, the decisions, `may_raise` (amber or red only, the refusal says which status it
+      found), `clean_note` (at most 500 characters, required for a decision), `days_open` in calendar days, `breaches_without_escalation`. `POST
+      /api/workforce-plans/{pid}/escalations`, `POST /api/escalations/{pid}/raise-level`, `POST …/decide` (an administrator of the plan's organization,
+      the check shared with frozen oversight packs), `GET …/escalations` and the organization inbox `GET /api/escalations?organization=`; in-app
+      notification to the organization's administrators on raising and on a level raise (the note is never copied into it); audited. The tolerances view
+      carries each dimension's open escalation and `breaches_without_escalation`. UI: an Escalation column on the Tolerances table (escalate with a note,
+      raise level, decide with a reason), a flag for red breaches nobody has been asked about, and a history of decided ones; 18 strings in 13 locales
+      (AI-written, not reviewed). Verified: 6 unit tests, a request test through all three levels, the refusals, the decision and a second escalation,
+      a new enforcement binary `enforcement_escalations` (a member who may write raises, only an administrator decides, another organization sees
+      nothing, `decided_by` is the signed-in person), 3 Playwright specs, screenshots looked at, svelte-check 0, 160 vitest. **Also fixed:** the
+      `enforcement_oversight_pack` and `enforcement_cutover` binaries were never run by CI; they pass and now are. **Not done:** nothing escalates by
+      itself and nothing chases a late decision; levels are generic names, not tied to a role (who is "the board" is the organization's); a decision does
+      not change the tolerance or the plan; no notification to the decider when a level is raised beyond the administrators; the inbox is per organization
+      and is not on the CEO dashboard; the note is free text and could hold a name (the form says not to, nothing checks).
 - [x] WPM-T234 (2026-10-20) **Tolerances on a workforce plan, with red, amber, green.** *(WPM-R140, WPM-D93)* [tolerances.md](tolerances.md). Migration `000076`
       `plan_tolerances` (plan, dimension, limit, amber share; unique per plan and dimension; checked in the database). `rules::tolerance`: the four
       dimensions (time in calendar days, cost and resources in basis points, risk in roles), `assess` (green, amber, red, unknown; a limit of 0 makes any

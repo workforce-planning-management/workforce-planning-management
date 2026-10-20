@@ -1162,7 +1162,18 @@
       "deviation_now": "Écart actuel",
       "tolerance_limit": "Tolérance (écart maximal admis)",
       "amber_from": "Orange à partir de (% de la tolérance)",
-      "set_tolerance": "Définir la tolérance"
+      "set_tolerance": "Définir la tolérance",
+      "escalation": "Escalade",
+      "escalate": "Escalader",
+      "escalation_note": "Note (sans données personnelles)",
+      "raise_level": "Monter d'un niveau",
+      "decide": "Décider",
+      "decision": "Décision",
+      "decision_note": "Pourquoi (obligatoire, sans données personnelles)",
+      "breaches_without_escalation": "{count} en rouge sans escalade",
+      "days_open_calendar": "ouvert depuis {days} jours calendaires",
+      "escalation_history": "Historique des escalades",
+      "level": "Niveau"
     },
     "requisitionsPid": {
       "hired": "→ embauché"
@@ -1647,7 +1658,14 @@
     "calendar_days": "jours calendaires",
     "basis_points": "points de base",
     "roles": "rôles",
-    "rag_unknown": "Inconnu"
+    "rag_unknown": "Inconnu",
+    "decided": "Décidé",
+    "plan_owner": "Responsable du plan",
+    "board": "Comité",
+    "executive": "Direction",
+    "accept_deviation": "Accepter l'écart",
+    "change_plan": "Modifier le plan",
+    "stop": "Arrêter le plan"
   },
   "engagement": {
     "title": "Engagement",

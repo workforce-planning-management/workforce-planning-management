@@ -541,6 +541,8 @@ acceptance criteria and traces to the tasks that delivered it:
   [job-levels.md](job-levels.md) (WPM-T93–T94).
 - **WPM-R134** match worker records, and say what the answer rests on —
   [worker-matching.md](worker-matching.md) (WPM-T226).
+- **WPM-R141** a breached tolerance can be escalated by a person, up three levels, and decided by an administrator, with
+  the measure recorded at each step — [tolerances.md](tolerances.md) (WPM-T235).
 - **WPM-R140** a workforce plan has tolerances in time, cost, resources and risk, and shows red, amber or green for
   each and overall — [tolerances.md](tolerances.md) (WPM-T234).
 - **WPM-R139** a CPD requirement can be corrected or withdrawn, and a worker's progress says whether the pace is

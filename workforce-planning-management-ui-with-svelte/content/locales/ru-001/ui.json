@@ -1162,7 +1162,18 @@
       "deviation_now": "Отклонение сейчас",
       "tolerance_limit": "Допуск (наибольшее допустимое отклонение)",
       "amber_from": "Жёлтый с (% допуска)",
-      "set_tolerance": "Задать допуск"
+      "set_tolerance": "Задать допуск",
+      "escalation": "Эскалация",
+      "escalate": "Эскалировать",
+      "escalation_note": "Примечание (без личных данных)",
+      "raise_level": "Повысить уровень",
+      "decide": "Решить",
+      "decision": "Решение",
+      "decision_note": "Почему (обязательно, без личных данных)",
+      "breaches_without_escalation": "{count} красных без эскалации",
+      "days_open_calendar": "открыто {days} календарных дней",
+      "escalation_history": "История эскалаций",
+      "level": "Уровень"
     },
     "requisitionsPid": {
       "hired": "→ принят"
@@ -1647,7 +1658,14 @@
     "calendar_days": "календарных дней",
     "basis_points": "базисных пунктов",
     "roles": "ролей",
-    "rag_unknown": "Неизвестно"
+    "rag_unknown": "Неизвестно",
+    "decided": "Решено",
+    "plan_owner": "Владелец плана",
+    "board": "Совет",
+    "executive": "Руководство",
+    "accept_deviation": "Принять отклонение",
+    "change_plan": "Изменить план",
+    "stop": "Остановить план"
   },
   "engagement": {
     "title": "Трудовые отношения",

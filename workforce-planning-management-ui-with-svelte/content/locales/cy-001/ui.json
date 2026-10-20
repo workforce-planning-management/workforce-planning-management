@@ -1162,7 +1162,18 @@
       "deviation_now": "Gwyriad nawr",
       "tolerance_limit": "Goddefiant (y gwyriad mwyaf a ganiateir)",
       "amber_from": "Ambr o (% o'r goddefiant)",
-      "set_tolerance": "Gosod goddefiant"
+      "set_tolerance": "Gosod goddefiant",
+      "escalation": "Uwchgyfeirio",
+      "escalate": "Uwchgyfeirio",
+      "escalation_note": "Nodyn (dim manylion personol)",
+      "raise_level": "Codi lefel",
+      "decide": "Penderfynu",
+      "decision": "Penderfyniad",
+      "decision_note": "Pam (angenrheidiol, dim manylion personol)",
+      "breaches_without_escalation": "{count} coch heb uwchgyfeirio",
+      "days_open_calendar": "ar agor ers {days} diwrnod calendr",
+      "escalation_history": "Hanes uwchgyfeirio",
+      "level": "Lefel"
     },
     "requisitionsPid": {
       "hired": "→ wedi'i gyflogi"
@@ -1647,7 +1658,14 @@
     "calendar_days": "diwrnod calendr",
     "basis_points": "pwyntiau sail",
     "roles": "rolau",
-    "rag_unknown": "Anhysbys"
+    "rag_unknown": "Anhysbys",
+    "decided": "Penderfynwyd",
+    "plan_owner": "Perchennog y cynllun",
+    "board": "Bwrdd",
+    "executive": "Gweithredol",
+    "accept_deviation": "Derbyn y gwyriad",
+    "change_plan": "Newid y cynllun",
+    "stop": "Stopio'r cynllun"
   },
   "engagement": {
     "title": "Ymgysylltiad",

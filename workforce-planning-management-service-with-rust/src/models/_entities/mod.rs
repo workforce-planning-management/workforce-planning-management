@@ -84,6 +84,7 @@ pub mod payroll_runs;
 pub mod payslips;
 pub mod pipeline_members;
 pub mod plan_demand_lines;
+pub mod plan_escalations;
 pub mod plan_objectives;
 pub mod plan_tolerances;
 pub mod post_fundings;

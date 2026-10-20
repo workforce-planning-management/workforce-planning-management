@@ -19,6 +19,7 @@ mod duplicates;
 mod engagements;
 mod erasure_replay;
 mod ergonomics;
+mod escalations;
 mod expenses;
 mod grades;
 mod health_detail;

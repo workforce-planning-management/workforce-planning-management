@@ -8,6 +8,7 @@ name: Release
 # software bill of materials, and creates a GitHub release with generated notes.
 # From v0.1.2 the image is signed (cosign, keyless) and carries SLSA build provenance; both are verified before the release is created.
 # First run: tag v0.1.0 (2026-10-19) succeeded and created the release with its SBOM.
+# v0.1.2 (2026-10-20) was the first run of the signing, provenance and verification steps; they passed.
 
 on:
   push:

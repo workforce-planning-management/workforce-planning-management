@@ -1162,7 +1162,18 @@
       "deviation_now": "الانحراف الآن",
       "tolerance_limit": "التفاوت (أكبر انحراف مسموح)",
       "amber_from": "كهرماني من (٪ من التفاوت)",
-      "set_tolerance": "تعيين التفاوت"
+      "set_tolerance": "تعيين التفاوت",
+      "escalation": "التصعيد",
+      "escalate": "تصعيد",
+      "escalation_note": "ملاحظة (دون بيانات شخصية)",
+      "raise_level": "رفع المستوى",
+      "decide": "قرار",
+      "decision": "القرار",
+      "decision_note": "السبب (مطلوب، دون بيانات شخصية)",
+      "breaches_without_escalation": "{count} أحمر بلا تصعيد",
+      "days_open_calendar": "مفتوح منذ {days} يومًا تقويميًا",
+      "escalation_history": "سجل التصعيد",
+      "level": "المستوى"
     },
     "requisitionsPid": {
       "hired": "← تم التعيين"
@@ -1647,7 +1658,14 @@
     "calendar_days": "أيام تقويمية",
     "basis_points": "نقاط أساس",
     "roles": "أدوار",
-    "rag_unknown": "غير معروف"
+    "rag_unknown": "غير معروف",
+    "decided": "تم البتّ فيه",
+    "plan_owner": "مالك الخطة",
+    "board": "المجلس",
+    "executive": "الإدارة العليا",
+    "accept_deviation": "قبول الانحراف",
+    "change_plan": "تغيير الخطة",
+    "stop": "إيقاف الخطة"
   },
   "engagement": {
     "title": "التعاقد",
