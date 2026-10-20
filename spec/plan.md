@@ -428,6 +428,8 @@ applicants' details and the audit trail) and a list of gaps with evidence.
   provenance, base images pinned by digest.
 - **WPM-R120 Evidence under load.** A repeatable load test, bounded work per request for views that load an
   organization's records, and a recorded result.
+- **WPM-R142 Two hundred thousand workers.** One organization of 200,000 workers is a supported size, not a ceiling
+  to be refused at (supersedes the 10,000 refusal of WPM-D90 once every view meets it; WPM-D95).
 - **WPM-R121 Independent assurance.** A penetration test, an accessibility audit, a signed-off impact
   assessment, a translation review: recorded as gates, not claimed.
 - **WPM-R122 Observability.** A request identifier on every response and in every log line; a test that logs hold

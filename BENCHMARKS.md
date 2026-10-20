@@ -106,3 +106,21 @@ Prefer Criterion (`cargo bench`) for the service; assert the property
 you care about in a test where possible — a number nobody compares is
 not a gate. Record the method and any measured results here, with the
 task id from [spec/tasks.md](spec/tasks.md) that motivated it.
+
+## Baseline at 200,000 workers (WPM-R142, WPM-D95)
+
+The first run at the new supported size, before any change for it (8 connections, 8 s per route, one laptop; the bar is 2 s p95 with no failure):
+
+| Route | p50 ms | p99 ms | Failed | Meets the bar |
+|---|---:|---:|---:|---|
+| worker list (50) | 84 | 122 | 0 | yes |
+| directory | 377 | 418 | 0 | yes |
+| capacity | no answer in 8 s | | all | **no** |
+| plan forecast / cost | refused (`422`, over 10,000) | | 557 / 581 | **no** |
+| CPD overview | 756 | 821 | 5 | **no** |
+| workforce overview | 587 | 635 | 0 | yes |
+| metrics / insights | 103 / 105 | 152 / 258 | 0 | yes |
+| key-person register | 2,145 | 2,244 | 1 | **no** |
+| working time | 925 | 1,993 | 61 | **no** |
+
+Five routes fail the bar: capacity, plan forecast and cost, the CPD overview, the key-person register and working time. Several failures are connection-pool timeouts under 8 connections, not slow single requests.

@@ -110,7 +110,7 @@ s = d.get("summary", {})
 p = d.get("latencyPercentiles", {})
 codes = d.get("statusCodeDistribution", {})
 bad = sum(v for k, v in codes.items() if not k.startswith("2"))
-print("| %s | `%s` | %.0f | %.1f | %.1f | %d |" % (n, path, s.get("requestsPerSec", 0), (p.get("p50") or 0)*1000, (p.get("p99") or 0)*1000, bad + (0 if s.get("successRate", 0) > 0 else 1)))
+print("| %s | `%s` | %.0f | %.1f | %.1f | %d |" % (n, path, s.get("requestsPerSec", 0), (p.get("p50") or 0)*1000, (p.get("p99") or 0)*1000, bad + (0 if (s.get("successRate") or 0) > 0 else 1)))
 if bad or d.get("errorDistribution"):
     print("<!-- %s %s: status %s, errors %s -->" % (n, path, codes, d.get("errorDistribution")))
 ' "$n" "$path"
