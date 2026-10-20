@@ -3553,8 +3553,8 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       916 ms, and working time still lost 3 requests to a pool timeout (`BENCHMARKS.md`). Verified: the existing key-person and working-time request tests
       pass unchanged, working time gained two cases (a rest breach alone flags and shows its total; a turnaround outside the window does not), the
       workforce request tests, clippy. `scripts/load-test.sh` now seeds a critical skill and 20 time entries per worker, so both routes do real work.
-      **Not done:** working time's aggregate scans every entry in the window and saturates the pool at 8 concurrent requests at this size (an index
-      covering `worked_on` was not tried); capacity remains linear; about 40 other whole-table reads.
+      **Not done:** working time's aggregate scans every entry in the window and saturates the pool at 8 concurrent requests at this size (a covering index on
+      `worked_on` was tried and changed nothing, 877 ms against 916, so it was not kept); capacity remains linear; about 40 other whole-table reads.
 - [x] WPM-T237 (2026-10-20) **The dashboard's counts are made by the database.** *(WPM-R120, WPM-D90)* Measured at 50,000 workers, the workforce overview, metrics and
       insights read every worker and failed requests (about 600 ms). `GET /api/workforce-intelligence/overview` now groups in SQL (department, status,
       type, hire date for tenure, one row per manager, a sum for FTE; a manager is named only if employed on the date) and `period_metrics` counts opening,
