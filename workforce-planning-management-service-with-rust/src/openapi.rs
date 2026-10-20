@@ -786,7 +786,11 @@ mod tests {
         )
         .unwrap()
         {
-            let path = entry.unwrap().path();
+            let mut path = entry.unwrap().path();
+            if path.is_dir() {
+                // a controller split into sections keeps its routes in `mod.rs`
+                path.push("mod.rs");
+            }
             if path.extension().and_then(|e| e.to_str()) != Some("rs") {
                 continue;
             }

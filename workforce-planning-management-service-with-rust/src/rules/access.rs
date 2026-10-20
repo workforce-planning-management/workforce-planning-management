@@ -493,7 +493,11 @@ mod tests {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/controllers");
         let mut routes: Vec<String> = Vec::new();
         for entry in std::fs::read_dir(dir).expect("controllers directory") {
-            let path = entry.expect("entry").path();
+            let mut path = entry.expect("entry").path();
+            if path.is_dir() {
+                // a controller split into sections keeps its routes in `mod.rs`
+                path.push("mod.rs");
+            }
             if path.extension().and_then(|e| e.to_str()) != Some("rs") {
                 continue;
             }

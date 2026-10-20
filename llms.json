@@ -21,7 +21,7 @@
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
     "migrations": 74,
-    "controllers": 63,
+    "controllers": 61,
     "pages": 45
   },
   "sections": {
