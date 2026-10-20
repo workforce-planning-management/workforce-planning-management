@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-20
+
+This release is signed (cosign, keyless) and carries SLSA build provenance; both are checked by the release workflow before the GitHub release is created, and the commands to check them yourself are in `spec/production-readiness.md`. `workforce-planning-management-migration` is released at the same version; `workforce-planning-management-matcher` stays at 0.1.0.
+
+**Upgrade notes** (each is detailed below):
+
+- Database: migrations `000075` (`cpd_entries.course_ref`) and `000076` (`plan_tolerances`) run on start; both only add.
+- A bearer token whose lifetime (`exp` minus `iat`) is over `WPM_MAX_TOKEN_LIFETIME_SECONDS` (default 86400) is refused. A provider that issues longer tokens needs the setting raised.
+- The request log format changed: loco's `http-request` span with `http.uri` and `http.user_agent` is gone, replaced by a line with `request_id`, `method`, `route`, `status` and `latency_ms`. A log search or alert on the old fields needs updating.
+- The plan forecast and cost views answer `422` when they would read more than `WPM_MAX_ORG_WORKERS` workers (default 10,000).
+- Every container image used by CI, the compose files and the Stalwart image is pinned by digest.
+
 ### Added — tolerances on a workforce plan (WPM-T234)
 
 `GET /api/workforce-plans/{pid}/tolerances` and `PUT|DELETE …/tolerances/{dimension}`: the largest deviation allowed in `time` (calendar days), `cost` and `resources` (basis points) and `risk` (roles), and a red, amber or green status for each and overall, with the deviation and its basis. An unknown deviation is `unknown`, never green. The alignment view gains `succession_plans_in_plan_departments`. Migration `000076`.
