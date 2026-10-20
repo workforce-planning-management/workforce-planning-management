@@ -39,7 +39,6 @@ impl Task for Seed {
             ("Analyst", 3_000_000),
             ("Coordinator", 2_800_000),
         ];
-        let mut managers: Vec<Uuid> = Vec::new();
         let mut n = 0;
         for department in departments {
             // One department head (no manager), then nine reports.
@@ -71,7 +70,6 @@ impl Task for Seed {
             }
             .insert(db)
             .await?;
-            managers.push(head);
             for i in 0..9 {
                 n += 1;
                 let (title, salary) = titles[usize::try_from(n).unwrap_or(0) % titles.len()];

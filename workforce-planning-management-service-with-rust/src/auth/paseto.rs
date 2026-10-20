@@ -190,17 +190,21 @@ pub fn bearer_claims(
     let header = headers
         .get(AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            "missing authorization header".to_string(),
-        ))?;
+        .ok_or_else(|| {
+            (
+                StatusCode::UNAUTHORIZED,
+                "missing authorization header".to_string(),
+            )
+        })?;
     let token = header
         .strip_prefix("Bearer ")
         .or_else(|| header.strip_prefix("bearer "))
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            "expected bearer token".to_string(),
-        ))?;
+        .ok_or_else(|| {
+            (
+                StatusCode::UNAUTHORIZED,
+                "expected bearer token".to_string(),
+            )
+        })?;
     verifier
         .verify(token.trim())
         .map_err(|e| (StatusCode::UNAUTHORIZED, e.to_string()))

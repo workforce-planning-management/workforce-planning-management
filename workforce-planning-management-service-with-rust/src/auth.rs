@@ -541,7 +541,7 @@ pub fn authorize_record(
     }
     let claims = caller
         .claims()
-        .ok_or((StatusCode::UNAUTHORIZED, "missing bearer token".to_string()))?;
+        .ok_or_else(|| (StatusCode::UNAUTHORIZED, "missing bearer token".to_string()))?;
     let decision = policy().current().evaluate_with_context(
         claims,
         action,

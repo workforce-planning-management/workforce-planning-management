@@ -906,7 +906,8 @@ async fn update_succession_candidate(
     let from = candidate.readiness.clone();
     let mut active: succession_candidates::ActiveModel = candidate.into();
     if payload.readiness.is_some() {
-        active.readiness = ActiveValue::set(payload.readiness.clone().unwrap_or(from.clone()));
+        active.readiness =
+            ActiveValue::set(payload.readiness.clone().unwrap_or_else(|| from.clone()));
     }
     if let Some(rank) = payload.rank {
         active.rank = ActiveValue::set(rank);
