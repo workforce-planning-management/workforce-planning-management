@@ -980,7 +980,8 @@
       "record_an_activity": "Записать деятельность",
       "evidence_link": "Ссылка на подтверждение",
       "https": "https://…",
-      "no_expiry": "бессрочно"
+      "no_expiry": "бессрочно",
+      "lms_open": "Открыть в системе обучения"
     },
     "development": {
       "criticality": "— {department} (критичность {criticality})"

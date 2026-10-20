@@ -980,7 +980,8 @@
       "record_an_activity": "একটি কার্যক্রম লিপিবদ্ধ করুন",
       "evidence_link": "প্রমাণের লিঙ্ক",
       "https": "https://…",
-      "no_expiry": "মেয়াদ নেই"
+      "no_expiry": "মেয়াদ নেই",
+      "lms_open": "লার্নিং সিস্টেমে খুলুন"
     },
     "development": {
       "criticality": "— {department} (জরুরিত্ব {criticality})"

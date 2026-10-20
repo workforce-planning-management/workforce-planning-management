@@ -980,7 +980,8 @@
       "record_an_activity": "تسجيل نشاط",
       "evidence_link": "رابط الدليل",
       "https": "https://…",
-      "no_expiry": "بلا انتهاء"
+      "no_expiry": "بلا انتهاء",
+      "lms_open": "فتح في نظام التعلّم"
     },
     "development": {
       "criticality": "— {department} (الأهمية الحرجة {criticality})"

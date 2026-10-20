@@ -919,6 +919,7 @@ async fn path_progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -
         "path": { "pid": path.pid, "name": path.name },
         "steps": steps.iter().map(|s| serde_json::json!({
             "course_ref": s.course_ref, "title": s.title, "position": s.position,
+            "lms_url": super::lms::course_url(&s.course_ref),
         })).collect::<Vec<_>>(),
         "derivation": "a step is complete iff the worker has a completed training \
                        enrolment for its course_ref; real completions only",

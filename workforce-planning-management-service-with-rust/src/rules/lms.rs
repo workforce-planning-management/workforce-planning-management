@@ -8,6 +8,7 @@
 //! redelivery is recognised and changes nothing.
 
 use chrono::NaiveDate;
+use std::fmt::Write;
 
 use crate::rules::cpd::to_hundredths;
 
@@ -107,6 +108,68 @@ pub fn enrollment_action(
     }
 }
 
+/// The longest course-link template accepted.
+pub const MAX_TEMPLATE_LEN: usize = 500;
+
+/// Where the course id goes in a course-link template.
+pub const PLACEHOLDER: &str = "{course}";
+
+/// Check a deployer's course-link template, such as `https://lms.example.org/course/{course}`.
+///
+/// It must be an `https` link with the placeholder exactly once, no spaces and no user-info
+/// (`https://user@host/` is how a link hides where it goes). The template is the deployer's: a caller
+/// of the API never supplies one, so a link cannot be made to point anywhere the deployer did not choose.
+///
+/// # Errors
+///
+/// What is wrong with the template.
+pub fn parse_template(raw: &str) -> Result<String, String> {
+    let template = raw.trim();
+    if template.chars().count() > MAX_TEMPLATE_LEN {
+        return Err(format!("longer than {MAX_TEMPLATE_LEN} characters"));
+    }
+    let Some(rest) = template.strip_prefix("https://") else {
+        return Err("must start with https://".to_string());
+    };
+    if template
+        .chars()
+        .any(|c| c.is_whitespace() || c.is_control())
+    {
+        return Err("must not contain spaces or control characters".to_string());
+    }
+    if template.matches(PLACEHOLDER).count() != 1 {
+        return Err(format!("must contain {PLACEHOLDER} exactly once"));
+    }
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
+    if authority.is_empty() || authority.contains('@') || authority.contains(PLACEHOLDER) {
+        return Err("needs a host, with no user-info and no placeholder in it".to_string());
+    }
+    Ok(template.to_string())
+}
+
+/// The link to a course in the LMS: the template with the course's id in place of the placeholder.
+/// The id is the part of the `course:` or `courseinstance:` URN after the first colon, percent-encoded
+/// so it cannot add a path, a query or a second host. `None` when there is no id.
+#[must_use]
+pub fn course_url(template: &str, course_ref: &str) -> Option<String> {
+    let id = course_ref
+        .split_once(':')
+        .map_or(course_ref, |(_, id)| id)
+        .trim();
+    if id.is_empty() {
+        return None;
+    }
+    let mut encoded = String::with_capacity(id.len());
+    for byte in id.bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
+            encoded.push(char::from(byte));
+        } else {
+            let _ = write!(encoded, "%{byte:02X}");
+        }
+    }
+    Some(template.replacen(PLACEHOLDER, &encoded, 1))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,6 +242,58 @@ mod tests {
         assert_eq!(
             enrollment_action(Some(&failed), done, None),
             EnrollmentAction::Complete
+        );
+    }
+
+    const TEMPLATE: &str = "https://lms.example.org/course/{course}";
+
+    #[test]
+    fn a_template_must_be_https_with_one_placeholder_and_a_plain_host() {
+        assert_eq!(
+            parse_template(&format!("  {TEMPLATE} ")),
+            Ok(TEMPLATE.to_string())
+        );
+        for bad in [
+            "http://lms.example.org/{course}",
+            "https://lms.example.org/course",
+            "https://lms.example.org/{course}/{course}",
+            "https://user@lms.example.org/{course}",
+            "https://{course}.example.org/",
+            "https:///{course}",
+            "https://lms.example.org/a b/{course}",
+            "javascript:alert(1)//{course}",
+            "",
+        ] {
+            assert!(parse_template(bad).is_err(), "{bad}");
+        }
+        let long = format!("https://a.org/{}{{course}}", "x".repeat(MAX_TEMPLATE_LEN));
+        assert!(parse_template(&long).is_err());
+    }
+
+    #[test]
+    fn the_course_id_is_the_urn_after_its_first_colon() {
+        let id = "3f2a1c9e-1111-4222-8333-444455556666";
+        assert_eq!(
+            course_url(TEMPLATE, &format!("course:{id}")),
+            Some(format!("https://lms.example.org/course/{id}"))
+        );
+        assert_eq!(
+            course_url(TEMPLATE, &format!("courseinstance:{id}")),
+            Some(format!("https://lms.example.org/course/{id}"))
+        );
+        assert_eq!(course_url(TEMPLATE, "course:"), None);
+        assert_eq!(course_url(TEMPLATE, "  "), None);
+    }
+
+    #[test]
+    fn a_course_id_cannot_change_where_the_link_goes() {
+        let url = course_url(TEMPLATE, "course:../../admin?x=1#y&z=https://evil.example/").unwrap();
+        assert!(url.starts_with("https://lms.example.org/course/"));
+        let tail = &url["https://lms.example.org/course/".len()..];
+        assert!(!tail.contains(['/', '?', '#', '&', ':', ' ']), "{tail}");
+        assert_eq!(
+            course_url(TEMPLATE, "course:a b/é"),
+            Some("https://lms.example.org/course/a%20b%2F%C3%A9".to_string())
         );
     }
 }

@@ -576,6 +576,18 @@ async fn list_training(State(ctx): State<AppContext>, Path(pid): Path<String>) -
         .order_by_asc(training_enrollments::Column::Id)
         .all(&ctx.db)
         .await?;
+    // each row as it is, plus the link to its course in the learning system (WPM-R138)
+    let rows: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            let lms_url = super::lms::course_url(&row.course_ref);
+            let mut json = serde_json::to_value(&row).unwrap_or(serde_json::Value::Null);
+            if let Some(object) = json.as_object_mut() {
+                object.insert("lms_url".to_string(), serde_json::json!(lms_url));
+            }
+            json
+        })
+        .collect();
     format::json(rows)
 }
 

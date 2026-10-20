@@ -242,7 +242,7 @@ async fn add_role(
     audit(&ctx, &caller, "cutover_role", row.pid, "added").await?;
     format::json(json!({
         "pid": row.pid, "cutover_pid": row.cutover_pid, "role_profile_pid": row.role_profile_pid,
-        "course_ref": row.course_ref, "required_headcount": row.required_headcount,
+        "course_ref": row.course_ref, "lms_url": super::lms::course_url(&row.course_ref), "required_headcount": row.required_headcount,
     }))
 }
 

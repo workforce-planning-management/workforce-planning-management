@@ -923,6 +923,8 @@ export function listCpdEntries(
     evidence_note: string | null;
     evidence_url: string | null;
     source: string;
+    /** The course in the learning system, when the deployer has set a link template (WPM-R138). */
+    lms_url: string | null;
     verified_on: string | null;
     verified_by: string | null;
   }>

@@ -45,6 +45,7 @@ fn course_json(c: &skill_courses::Model) -> serde_json::Value {
     serde_json::json!({
         "pid": c.pid,
         "course_ref": c.course_ref,
+        "lms_url": super::lms::course_url(&c.course_ref),
         "title": c.title,
         "hours": c.hours,
         "levels": c.levels,

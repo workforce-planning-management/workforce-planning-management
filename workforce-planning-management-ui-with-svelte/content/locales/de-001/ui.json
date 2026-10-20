@@ -980,7 +980,8 @@
       "record_an_activity": "Aktivität erfassen",
       "evidence_link": "Nachweis-Link",
       "https": "https://…",
-      "no_expiry": "kein Ablauf"
+      "no_expiry": "kein Ablauf",
+      "lms_open": "Im Lernsystem öffnen"
     },
     "development": {
       "criticality": "— {department} (Kritikalität {criticality})"

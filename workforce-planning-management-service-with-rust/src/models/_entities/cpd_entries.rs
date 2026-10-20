@@ -24,6 +24,7 @@ pub struct Model {
     pub evidence_url: Option<String>,
     pub source: String,
     pub external_ref: Option<String>,
+    pub course_ref: Option<String>,
     pub verified_on: Option<Date>,
     pub verified_by: Option<String>,
     pub deleted_at: Option<DateTimeWithTimeZone>,

@@ -264,7 +264,7 @@
     { id: "content", header: t("columns.content"), format: (v) => (v == null ? "" : String(v)) },
   ]);
   const trainingColumns = $derived<DataGridColumn[]>([
-    { id: "course_ref", header: t("columns.course"), sortable: true },
+    { id: "course_ref", header: t("columns.course"), sortable: true, cell: courseCell },
     { id: "status", header: t("common.status"), sortable: true, cell: statusChip },
     {
       id: "certificate_expires_on",
@@ -274,6 +274,14 @@
     },
   ]);
 </script>
+
+{#snippet courseCell({ row, value }: { row: DataGridRow; value: unknown })}
+  {#if row.lms_url}
+    <a href={String(row.lms_url)} target="_blank" rel="noopener noreferrer" title={t("pages.cpd.lms_open")}>{String(value)} ↗</a>
+  {:else}
+    {String(value)}
+  {/if}
+{/snippet}
 
 {#snippet statusChip({ value }: { value: unknown })}
   <span class="chip">{tv(String(value))}</span>

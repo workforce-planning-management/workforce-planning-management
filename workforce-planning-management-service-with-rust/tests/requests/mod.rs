@@ -25,6 +25,7 @@ mod hr;
 mod idempotency;
 mod job_levels;
 mod learning;
+mod lms_links;
 mod movements;
 mod organizations;
 mod pagination;

@@ -980,7 +980,8 @@
       "record_an_activity": "Enregistrer une activité",
       "evidence_link": "Lien du justificatif",
       "https": "https://…",
-      "no_expiry": "sans expiration"
+      "no_expiry": "sans expiration",
+      "lms_open": "Ouvrir dans le système d'apprentissage"
     },
     "development": {
       "criticality": "— {department} (criticité {criticality})"

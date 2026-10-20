@@ -980,7 +980,8 @@
       "record_an_activity": "गतिविधि दर्ज करें",
       "evidence_link": "प्रमाण का लिंक",
       "https": "https://…",
-      "no_expiry": "कोई समाप्ति नहीं"
+      "no_expiry": "कोई समाप्ति नहीं",
+      "lms_open": "लर्निंग सिस्टम में खोलें"
     },
     "development": {
       "criticality": "— {department} (महत्त्व {criticality})"

@@ -214,6 +214,7 @@ async fn create_entry(
         evidence_url: ActiveValue::set(payload.evidence_url.clone()),
         source: ActiveValue::set("manual".to_string()),
         external_ref: ActiveValue::set(None),
+        course_ref: ActiveValue::set(None),
         verified_on: ActiveValue::set(None),
         verified_by: ActiveValue::set(None),
         deleted_at: ActiveValue::set(None),
@@ -247,6 +248,7 @@ fn entry_json(e: &cpd_entries::Model) -> serde_json::Value {
         "evidence_note": e.evidence_note,
         "evidence_url": e.evidence_url,
         "source": e.source,
+        "lms_url": e.course_ref.as_deref().and_then(super::lms::course_url),
         "verified_on": e.verified_on,
         "verified_by": e.verified_by,
     })

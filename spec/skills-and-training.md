@@ -54,7 +54,27 @@ takes, and when I would finish at a pace I choose.*
 - UI: a training plan under "My skill gaps"; workforce training time and a
   catalogue editor on `/skill-gaps`.
 
+## WPM-R138 — Links to the learning management system
+
+The LMS owns courses and learners (WPM-D10); WPM holds a course only as a `course:` or `courseinstance:` URN. So that a person can
+get from WPM to the course, every place that names a course also carries a link to it.
+
+- **One setting, the deployer's:** `WPM_LMS_COURSE_URL`, a template such as `https://lms.example.org/course/{course}`. Unset means no
+  links, which is the default; a template that is not valid (WPM-D91) is ignored with a warning at boot, never half-used.
+- **Where a link appears** (`lms_url`, `null` when there is no template): a CPD entry that came from the LMS, a worker's training
+  enrolment, a learning-path step, a skill's catalogue course, a cutover role's course. Nowhere else.
+- **A CPD entry remembers its course:** migration `000075` adds `cpd_entries.course_ref` (set by the completion sync; filled from the
+  entry's text for those already there), because a link from a sentence of text would be a guess.
+- **A link is not a disclosure:** it carries the course id only, never the worker, and it is built from data the caller could
+  already read in the same response.
+
 ## Design decisions
+
+- **WPM-D91 — A link is built from the deployer's template, never from a caller's text.** Following a link out of WPM is a trust
+  decision, so the destination is fixed by whoever runs the service: `https` only, the placeholder once, a real host with no user-info,
+  and the course id percent-encoded so it cannot add a path, a query or a second host. A caller supplies only the URN, which was already
+  validated as one. Rejected: an `lms_url` field on each record (a caller could point it anywhere); a link built in the browser (the template
+  would have to ship to every client, and the rule would be written twice).
 
 - **WPM-D32 — Unknown is not a number, and aggregates name no one.** Extends
   WPM-D16: an undeclared skill never becomes a zero or a shortfall;

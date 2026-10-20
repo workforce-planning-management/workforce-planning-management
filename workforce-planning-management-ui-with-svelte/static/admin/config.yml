@@ -1484,6 +1484,7 @@ collections:
                   - { name: "evidence_link", label: "Evidence_link", widget: string, required: false, i18n: true }
                   - { name: "https", label: "Https", widget: string, required: false, i18n: true }
                   - { name: "no_expiry", label: "No_expiry", widget: string, required: false, i18n: true }
+                  - { name: "lms_open", label: "Lms_open", widget: string, required: false, i18n: true }
               - name: "development"
                 label: "Development"
                 widget: object

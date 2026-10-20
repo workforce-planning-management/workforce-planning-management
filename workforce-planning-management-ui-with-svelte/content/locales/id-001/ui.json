@@ -980,7 +980,8 @@
       "record_an_activity": "Catat aktivitas",
       "evidence_link": "Tautan bukti",
       "https": "https://…",
-      "no_expiry": "tanpa kedaluwarsa"
+      "no_expiry": "tanpa kedaluwarsa",
+      "lms_open": "Buka di sistem pembelajaran"
     },
     "development": {
       "criticality": "— {department} (kekritisan {criticality})"

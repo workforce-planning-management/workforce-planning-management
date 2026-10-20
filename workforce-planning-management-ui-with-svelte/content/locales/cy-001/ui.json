@@ -980,7 +980,8 @@
       "record_an_activity": "Cofnodi gweithgaredd",
       "evidence_link": "Dolen tystiolaeth",
       "https": "https://…",
-      "no_expiry": "dim dyddiad dod i ben"
+      "no_expiry": "dim dyddiad dod i ben",
+      "lms_open": "Agor yn y system ddysgu"
     },
     "development": {
       "criticality": "— {department} (hollbwysigrwydd {criticality})"

@@ -980,7 +980,8 @@
       "record_an_activity": "Record an activity",
       "evidence_link": "Evidence link",
       "https": "https://…",
-      "no_expiry": "no expiry"
+      "no_expiry": "no expiry",
+      "lms_open": "Open in the learning system"
     },
     "development": {
       "criticality": "— {department} (criticality {criticality})"

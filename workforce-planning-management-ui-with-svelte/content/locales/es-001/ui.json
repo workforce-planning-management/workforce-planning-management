@@ -980,7 +980,8 @@
       "record_an_activity": "Registrar una actividad",
       "evidence_link": "Enlace de la prueba",
       "https": "https://…",
-      "no_expiry": "sin caducidad"
+      "no_expiry": "sin caducidad",
+      "lms_open": "Abrir en el sistema de aprendizaje"
     },
     "development": {
       "criticality": "— {department} (criticidad {criticality})"

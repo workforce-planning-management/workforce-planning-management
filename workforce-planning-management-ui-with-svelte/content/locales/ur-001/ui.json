@@ -980,7 +980,8 @@
       "record_an_activity": "سرگرمی درج کریں",
       "evidence_link": "ثبوت کا لنک",
       "https": "https://…",
-      "no_expiry": "کوئی میعاد نہیں"
+      "no_expiry": "کوئی میعاد نہیں",
+      "lms_open": "لرننگ سسٹم میں کھولیں"
     },
     "development": {
       "criticality": "— {department} (اہمیت {criticality})"

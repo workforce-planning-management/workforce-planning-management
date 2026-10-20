@@ -23,6 +23,21 @@ use crate::models::_entities::{cpd_entries, training_enrollments, workers};
 use crate::models::audit_logs::Model as Audit;
 use crate::rules::lms as rules;
 
+/// The link to a course in the learning system, from the deployer's `WPM_LMS_COURSE_URL` (WPM-R138,
+/// WPM-D91); `None` when it is unset or not valid. An invalid one is logged, once.
+#[must_use]
+pub fn course_url(course_ref: &str) -> Option<String> {
+    static WARNED: std::sync::Once = std::sync::Once::new();
+    let raw = crate::compat::env_var("WPM_LMS_COURSE_URL")?;
+    match rules::parse_template(&raw) {
+        Ok(template) => rules::course_url(&template, course_ref),
+        Err(why) => {
+            WARNED.call_once(|| tracing::warn!("WPM_LMS_COURSE_URL is ignored: {why}"));
+            None
+        }
+    }
+}
+
 /// One completion event from the LMS.
 #[derive(Debug, Deserialize)]
 struct CompletionEvent {
@@ -256,6 +271,7 @@ async fn apply(
                 evidence_url: ActiveValue::set(None),
                 source: ActiveValue::set("lms".to_string()),
                 external_ref: ActiveValue::set(Some(reference.to_string())),
+                course_ref: ActiveValue::set(Some(event.course_ref.clone())),
                 verified_on: ActiveValue::set(None),
                 verified_by: ActiveValue::set(None),
                 deleted_at: ActiveValue::set(None),

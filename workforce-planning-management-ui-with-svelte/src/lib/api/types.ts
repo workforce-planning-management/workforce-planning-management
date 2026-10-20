@@ -689,6 +689,8 @@ export interface TrainingEnrollment {
   status: string;
   completed_on: string | null;
   certificate_expires_on: string | null;
+  /** The course in the learning system, when the deployer has set a link template (WPM-R138). */
+  lms_url?: string | null;
 }
 
 /** One succession plan with candidates. */

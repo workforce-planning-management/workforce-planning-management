@@ -3542,6 +3542,17 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T232 (2026-10-20) **Links to the learning management system.** *(WPM-R138, WPM-D91)* `rules::lms::parse_template` (https only, one `{course}`,
+      no spaces, a real host with no user-info, at most 500 characters) and `course_url` (the id after the URN's first colon, percent-encoded so it
+      cannot add a path, query or host); `WPM_LMS_COURSE_URL` sets the template, unset means no links. `lms_url` appears on a CPD entry from the
+      learning system, a worker's training enrolments, a learning-path step, a skill's catalogue course and a cutover role's course. Migration
+      `000075` adds `cpd_entries.course_ref`, set by the completion sync and filled for earlier entries from their text. UI: the LMS chip on a CPD
+      entry and the course in a worker's training table open the course in a new tab (`noopener noreferrer`); one new string in 13 locales
+      (AI-written, not reviewed by a native speaker). Verified: 3 unit tests (including a course id that tries to add a path, query, fragment and
+      second host), a request test (no template, a valid one, three unsafe ones), **mutation-checked**, a Playwright spec, **mutation-checked**,
+      svelte-check 0, 160 vitest. **Not done:** the link is not followed or checked (the service does not know the course exists there); an
+      unreachable or renamed LMS leaves dead links; one template for the whole deployment (no per-organization LMS); links are not on the certificate
+      expiry list, the skills-gap plan or an exported CSV.
 - [x] WPM-T231 (2026-10-20) **Every container image is pinned by digest.** *(WPM-R119)* The Postgres and Redis service containers in `ci.yml` (twelve), both
       compose files, the Stalwart `Containerfile` (base and `COPY --from`) and the load-test script name `image:tag@sha256:…` (the multi-arch index
       digest, read from the registry; two pulled by digest to check). `scripts/check-actions-pinned.py` now fails on an image reference without a

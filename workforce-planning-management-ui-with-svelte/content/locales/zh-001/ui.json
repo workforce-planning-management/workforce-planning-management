@@ -980,7 +980,8 @@
       "record_an_activity": "记录活动",
       "evidence_link": "证明材料链接",
       "https": "https://…",
-      "no_expiry": "无到期日"
+      "no_expiry": "无到期日",
+      "lms_open": "在学习系统中打开"
     },
     "development": {
       "criticality": "— {department}（关键度 {criticality}）"

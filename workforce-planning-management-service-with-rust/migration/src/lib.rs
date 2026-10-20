@@ -87,6 +87,7 @@ mod m20261012_000071_oversight_packs;
 mod m20261012_000072_oversight_pack_withdrawals;
 mod m20261012_000073_cutover;
 mod m20261012_000074_cutover_follow_up;
+mod m20261020_000075_cpd_entry_course;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -173,6 +174,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261012_000072_oversight_pack_withdrawals::Migration),
             Box::new(m20261012_000073_cutover::Migration),
             Box::new(m20261012_000074_cutover_follow_up::Migration),
+            Box::new(m20261020_000075_cpd_entry_course::Migration),
             // inject-above (do not remove this comment)
         ]
     }

@@ -193,7 +193,15 @@
 {/snippet}
 
 {#snippet activityCell({ row }: { row: DataGridRow })}
-  {row.activity}{#if row.source === "lms"} <span class="chip">{t("pages.cpd.lms")}</span>{/if}
+  {row.activity}{#if row.source === "lms"}
+    {#if row.lms_url}
+      <a class="chip" href={String(row.lms_url)} target="_blank" rel="noopener noreferrer" title={t("pages.cpd.lms_open")}
+        >{t("pages.cpd.lms")} ↗</a
+      >
+    {:else}
+      <span class="chip">{t("pages.cpd.lms")}</span>
+    {/if}
+  {/if}
 {/snippet}
 
 {#snippet entryAmountCell({ row }: { row: DataGridRow })}
