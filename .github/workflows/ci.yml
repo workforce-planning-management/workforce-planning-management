@@ -32,17 +32,35 @@ jobs:
     name: docs, links, days, licenses, status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Markdown links resolve
         run: python3 scripts/check-links.py
       - name: durations say calendar days or business days
         run: python3 scripts/check-days.py
       - name: license fields match the LICENSE/ directory
         run: python3 scripts/check-licenses.py
+      - name: every action is pinned to a commit SHA
+        run: python3 scripts/check-actions-pinned.py
       - name: implementation status is current
         run: python3 scripts/status.py --check
       - name: llms.txt and llms.json are current and every path exists
         run: python3 scripts/llms.py --check
+
+  secrets:
+    name: secret scan (gitleaks, whole history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      # The release binary, checked against its published SHA-256, so the scanner is pinned like the actions.
+      # Reviewed findings (test fixtures, development defaults) are listed with reasons in `.gitleaksignore`.
+      - name: gitleaks 8.30.1
+        run: |
+          curl -sSL -o gitleaks.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+          ./gitleaks detect --source . --redact --no-banner
 
   api-lint:
     name: api · fmt, clippy, unit tests
@@ -51,9 +69,9 @@ jobs:
       run:
         working-directory: workforce-planning-management-service-with-rust
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - run: rustup component add rustfmt clippy
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: workforce-planning-management-service-with-rust
       - run: cargo fmt --check
@@ -67,9 +85,9 @@ jobs:
       run:
         working-directory: workforce-planning-management-matcher-with-rust
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - run: rustup component add rustfmt clippy
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: workforce-planning-management-matcher-with-rust
       - run: cargo fmt --check
@@ -107,8 +125,8 @@ jobs:
       DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
       WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
-      - uses: actions/checkout@v7
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: workforce-planning-management-service-with-rust
           key: db
@@ -162,8 +180,8 @@ jobs:
       DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
       WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
-      - uses: actions/checkout@v7
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: workforce-planning-management-service-with-rust
           key: oidc
@@ -200,7 +218,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # pg_dump must be at least the server's version (18).
       - name: install the PostgreSQL 18 client
         run: |
@@ -210,7 +228,7 @@ jobs:
           sudo apt-get install -y postgresql-client-18
           # the runner image ships an older pg_dump first on PATH
           echo /usr/lib/postgresql/18/bin >> "$GITHUB_PATH"
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: workforce-planning-management-service-with-rust
           key: drill
@@ -260,8 +278,8 @@ jobs:
       DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
       WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
-      - uses: actions/checkout@v7
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: workforce-planning-management-service-with-rust
           key: keycloak
@@ -274,8 +292,8 @@ jobs:
       run:
         working-directory: workforce-planning-management-service-with-rust
     steps:
-      - uses: actions/checkout@v7
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: workforce-planning-management-service-with-rust
           key: deny
@@ -289,11 +307,11 @@ jobs:
       run:
         working-directory: workforce-planning-management-ui-with-svelte
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           version: 11.0.8
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 26
           cache: pnpm
@@ -339,8 +357,8 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: workforce-planning-management-service-with-rust
           key: zap
@@ -355,7 +373,7 @@ jobs:
           for i in $(seq 1 60); do curl -fs http://localhost:5150/_health && break; sleep 2; done
           curl -fs http://localhost:5150/_posture | grep -q '"auth_enforced":true'
       - name: ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.15.0
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         with:
           target: http://localhost:5150/api-docs/openapi.json
           rules_file_name: .zap/rules.tsv

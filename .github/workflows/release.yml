@@ -20,14 +20,14 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: tag matches the crate version
         id: crate
         run: |
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' workforce-planning-management-service-with-rust/Cargo.toml | head -1)
           test "v${version}" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != crate version v${version}"; exit 1; }
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: workforce-planning-management-service-with-rust
       - name: software bill of materials

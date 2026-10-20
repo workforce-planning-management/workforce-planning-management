@@ -3504,8 +3504,15 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       interface's session handling, fuzzing, algorithm confusion, server-side request forgery beyond the short
       timeout, a scanner baseline). **Written by the same assistant that wrote the software and reviewed by no
       one else**; an independent team should redo it (WPM-T201).
-- [ ] WPM-T194 **CI hardening.** *(WPM-R119)* Pin each action to a commit SHA, add secret scanning, and fail a pull request that
-      adds an unpinned action. Needs network access to resolve the SHAs; **not done**.
+- [x] WPM-T194 (2026-10-20) **CI hardening.** *(WPM-R119)* Every `uses:` in `ci.yml` and `release.yml` is pinned to the commit SHA its tag
+      pointed at, with the version in a comment (Dependabot's `github-actions` entry updates both). `scripts/check-actions-pinned.py`
+      runs in the `docs` job and fails on any action that is not a 40-character SHA; shown to fail on an unpinned `actions/checkout@v7`.
+      New `secrets` job: gitleaks 8.30.1, downloaded as a release binary and checked against its published SHA-256, over the whole history.
+      It found 7 things, all reviewed: test and development fixtures (throwaway RSA keys in a since-removed directory, a made-up
+      idempotency key, loco's default JWT secret in the test and development profiles). They are in `.gitleaksignore` with the reason;
+      production reads `JWT_SECRET` from the environment. **Not done:** GitHub's own secret scanning and push protection (a repository
+      setting); a pull-request-only trigger (the checks run on every push); `zaproxy/action-baseline` is pinned but is a third-party action
+      that runs with the job's permissions; the gitleaks job is not yet a required check.
 - [ ] WPM-T195 **Release integrity.** *(WPM-R119)* Sign the image, attach build provenance, pin base images by digest.
       Needs the hosting platform; **not done**.
 - [ ] WPM-T196 **Load evidence and bounded views.** *(WPM-R120)* A repeatable load test at stated sizes, paging or caps on the views

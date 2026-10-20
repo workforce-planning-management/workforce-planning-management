@@ -1,0 +1,17 @@
+# Findings reviewed and accepted: all are test fixtures or development-profile defaults, none protects real data.
+# Format: <commit>:<file>:<rule>:<line>. Production reads its secrets from the environment.
+
+# a made-up idempotency key in a test
+be585be55d27a7d5157aea92b0c5091c746310c5:workforce-planning-management-service-with-rust/tests/requests/idempotency.rs:generic-api-key:162
+# a made-up idempotency key in a test
+fd02d154686d449edc8b6e67ba2c577957a4f777:workforce-planning-management-ui-with-svelte/tests/unit/idempotency.test.ts:generic-api-key:141
+# a throwaway RSA key for the OIDC test provider, in the since-removed api directory
+62824d5376d4c7d93256c9cb8b6a27582dc13f7c:workforce-planning-management-api-with-rust/tests/fixtures/oidc/other-signing-key.pem:private-key:1
+# a throwaway RSA key for the OIDC test provider, in the since-removed api directory
+62824d5376d4c7d93256c9cb8b6a27582dc13f7c:workforce-planning-management-api-with-rust/tests/fixtures/oidc/test-signing-key.pem:private-key:1
+# a throwaway RSA key for the in-process test identity provider
+4bf77bb1dfe0a35b534547f8ca1e16f68ac11019:workforce-planning-management-api-with-rust/crates/authentication-verifier/src/test_idp.rs:private-key:28
+# loco default JWT secret for the test profile (production reads JWT_SECRET from the environment)
+37bca1399ddc3178850a900782ef0b77fb8f1041:workforce-planning-management-service-with-rust/config/test.yaml:generic-api-key:93
+# loco default JWT secret for the development profile (production reads JWT_SECRET from the environment)
+37bca1399ddc3178850a900782ef0b77fb8f1041:workforce-planning-management-service-with-rust/config/development.yaml:generic-api-key:96
