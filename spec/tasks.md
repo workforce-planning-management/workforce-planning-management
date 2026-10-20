@@ -3537,7 +3537,7 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       directory searches, orders and pages in SQL; the capacity view reads in batches of 2,000 and sums (`pool_weighted_days`,
       `supply_from_weighted`, a unit test that batches add up to the whole); the plan views read only the planned departments and skills; the
       guard `WPM_MAX_ORG_WORKERS` now covers the plan views only. Re-measured in `BENCHMARKS.md`: the directory at 50,000 workers went from 1,229 ms
-      and failures to 159 ms and none; capacity no longer fails but is still 3 s there. Verified: all 101 database-backed tests, the unit tests, new
+      and failures to 159 ms and none; capacity no longer fails but is still 2.2 s there (3.0 s before it selected six columns and counted days by interval arithmetic). Verified: all 101 database-backed tests, the unit tests, new
       tests for paging order (case-insensitive, **mutation-checked**), text-not-pattern search and manager-name search. **Not done:** the capacity
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed

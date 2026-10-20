@@ -58,24 +58,36 @@ async fn worker_facts_batch(
             u64::try_from(rules::days_in_month(last_month)).unwrap_or(31),
         ))
         .unwrap_or(last_month);
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::OrganizationRef.eq(org))
-        .filter(workers::Column::HiredOn.lt(last_day))
-        .filter(
-            Condition::any()
-                .add(workers::Column::TerminatedOn.is_null())
-                .add(workers::Column::TerminatedOn.gt(first)),
-        )
-        .filter(workers::Column::Id.gt(after_id))
-        .order_by_asc(workers::Column::Id)
-        .limit(WORKER_BATCH)
-        .all(&ctx.db)
-        .await?;
-    let Some(last_id) = staff.last().map(|w| w.id) else {
+    // Six columns, not the whole row: decoding the rest was most of the time (WPM-D90).
+    let staff: Vec<(i32, Uuid, i32, NaiveDate, Option<NaiveDate>, String)> =
+        workers::Entity::find()
+            .select_only()
+            .columns([
+                workers::Column::Id,
+                workers::Column::Pid,
+                workers::Column::FtePercent,
+                workers::Column::HiredOn,
+                workers::Column::TerminatedOn,
+                workers::Column::JobTitle,
+            ])
+            .filter(workers::Column::DeletedAt.is_null())
+            .filter(workers::Column::OrganizationRef.eq(org))
+            .filter(workers::Column::HiredOn.lt(last_day))
+            .filter(
+                Condition::any()
+                    .add(workers::Column::TerminatedOn.is_null())
+                    .add(workers::Column::TerminatedOn.gt(first)),
+            )
+            .filter(workers::Column::Id.gt(after_id))
+            .order_by_asc(workers::Column::Id)
+            .limit(WORKER_BATCH)
+            .into_tuple()
+            .all(&ctx.db)
+            .await?;
+    let Some(last_id) = staff.last().map(|w| w.0) else {
         return Ok((Vec::new(), after_id));
     };
-    let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
+    let pids: Vec<Uuid> = staff.iter().map(|w| w.1).collect();
     let mut chosen: HashMap<Uuid, Vec<Uuid>> = HashMap::new();
     for row in worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.is_in(pids.clone()))
@@ -117,20 +129,22 @@ async fn worker_facts_batch(
     }
     let facts = staff
         .into_iter()
-        .map(|w| {
-            let mut roles = chosen.remove(&w.pid).unwrap_or_default();
-            if let Some(role) = titles.get(&w.job_title.trim().to_lowercase()) {
-                roles.push(*role);
-            }
-            rules::WorkerFacts {
-                fte_percent: w.fte_percent,
-                hired_on: w.hired_on,
-                terminated_on: w.terminated_on,
-                role_profiles: roles,
-                skills: skill_levels.remove(&w.pid).unwrap_or_default(),
-                approved_leave: leave.remove(&w.pid).unwrap_or_default(),
-            }
-        })
+        .map(
+            |(_, pid, fte_percent, hired_on, terminated_on, job_title)| {
+                let mut roles = chosen.remove(&pid).unwrap_or_default();
+                if let Some(role) = titles.get(&job_title.trim().to_lowercase()) {
+                    roles.push(*role);
+                }
+                rules::WorkerFacts {
+                    fte_percent,
+                    hired_on,
+                    terminated_on,
+                    role_profiles: roles,
+                    skills: skill_levels.remove(&pid).unwrap_or_default(),
+                    approved_leave: leave.remove(&pid).unwrap_or_default(),
+                }
+            },
+        )
         .collect();
     Ok((facts, last_id))
 }

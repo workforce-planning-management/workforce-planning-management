@@ -35,11 +35,11 @@ Requests/s, p50 ms, p99 ms, 10 s at 8 connections:
 | 1,000 | plan forecast / cost | 127 / 172 | 61 / 46 | 106 / 62 | 0 |
 | 10,000 | `/api/workers?limit=50` | 488 | 15.9 | 24.8 | 0 |
 | 10,000 | directory | 115 | 68.5 | 117 | 0 |
-| 10,000 | capacity | 14 | 617 | 652 | 0 |
+| 10,000 | capacity | 19 | 437 | 480 | 0 |
 | 10,000 | plan forecast / cost | 27 / 34 | 282 / 235 | 482 / 317 | 0 |
 | 50,000 | `/api/workers?limit=50` | 201 | 39.3 | 60.2 | 0 |
 | 50,000 | directory | 50 | 158.5 | 171 | 0 |
-| 50,000 | capacity | 3 | 3,027 | 3,061 | 0 |
+| 50,000 | capacity | 4 | 2,245 | 2,251 | 0 |
 | 50,000 | plan forecast / cost | refused (`422`, over 10,000) | | | |
 | 50,000 | plan forecast / cost, ceiling raised to 100,000 | 7 / 8 | 1,227 / 1,057 | 1,277 / 1,071 | **7 of 64, 7 of 77** |
 
@@ -50,9 +50,10 @@ What it shows:
 
 - **The directory now costs the page, not the organization**: 1,229 ms and failures at 50,000 became 159 ms and none. The
   paged worker list also slows with size (11 → 16 → 39 ms) because it counts the scope on every page.
-- **The capacity view no longer fails** at 50,000 (it reads in batches and holds only sums), but it is **still linear**:
-  3 s at 50,000, slower than before (2.2 s) because it now makes a round of queries per batch. It is the next thing to move into SQL
-  aggregates; the supply arithmetic (`rules::capacity::pool_weighted_days`) already adds up across workers.
+- **The capacity view no longer fails** at 50,000 (it reads in batches and holds only sums), but it is **still linear**: 2.2 s at 50,000
+  (the same as before, 2.2 s, once the extra queries per batch were paid back). A later pass selected only the six columns it needs and counted
+  available days by interval arithmetic (a test says it equals walking the days) and took it from 3.0 s. A single request spends about 25 ms per
+  batch of 2,000 workers, mostly decoding rows and four round trips; the next step is SQL aggregates, which has not been done.
 - **The plan views still read every worker of the planned departments**, and above 10,000 of them requests fail
   (`500 … Connection pool timed out`: each request holds the async runtime for about a second). That is why
   `WPM_MAX_ORG_WORKERS` (default **10,000**, WPM-D90) still guards them and only them.

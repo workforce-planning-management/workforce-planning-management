@@ -201,16 +201,55 @@ pub fn counts_toward(members: &[Member], worker: &WorkerFacts) -> bool {
 }
 
 /// The days of `month` on which the worker is employed and not on approved leave.
+///
+/// Counted by interval arithmetic (the employed span within the month, less the merged leave spans),
+/// not by walking the days: the view calls this for every worker and month (WPM-D90).
 #[must_use]
 pub fn available_days(worker: &WorkerFacts, month: NaiveDate) -> i64 {
+    use chrono::Datelike;
+    let first = i64::from(month_start(month).num_days_from_ce());
+    let last = first + days_in_month(month_start(month)) - 1;
+    // employed: hired_on <= day and (not terminated, or terminated_on > day)
+    let from = first.max(i64::from(worker.hired_on.num_days_from_ce()));
+    let to = worker
+        .terminated_on
+        .map_or(last, |t| last.min(i64::from(t.num_days_from_ce()) - 1));
+    if from > to {
+        return 0;
+    }
+    let mut leave: Vec<(i64, i64)> = worker
+        .approved_leave
+        .iter()
+        .map(|(s, e)| {
+            (
+                i64::from(s.num_days_from_ce()).max(from),
+                i64::from(e.num_days_from_ce()).min(to),
+            )
+        })
+        .filter(|(s, e)| s <= e)
+        .collect();
+    leave.sort_unstable();
+    let mut away = 0;
+    let mut covered_to = from - 1;
+    for (s, e) in leave {
+        let s = s.max(covered_to + 1);
+        if s <= e {
+            away += e - s + 1;
+            covered_to = e;
+        }
+    }
+    to - from + 1 - away
+}
+
+/// The same count, one day at a time: the definition [`available_days`] must equal.
+#[cfg(test)]
+fn available_days_by_walking(worker: &WorkerFacts, month: NaiveDate) -> i64 {
     let first = month_start(month);
     let mut count = 0;
     for offset in 0..days_in_month(first) {
-        let Some(day) =
-            first.checked_add_days(chrono::Days::new(u64::try_from(offset).unwrap_or(0)))
-        else {
-            continue;
-        };
+        let day = first
+            .checked_add_days(chrono::Days::new(u64::try_from(offset).unwrap_or(0)))
+            .unwrap();
         let employed =
             worker.hired_on <= day && worker.terminated_on.is_none_or(|ended| ended > day);
         let on_leave = worker
@@ -1207,6 +1246,46 @@ mod tests {
                 .map(|batch| pool_weighted_days(&members, batch, jan))
                 .sum();
             assert_eq!(supply_from_weighted(weighted, reservation, jan), whole);
+        }
+    }
+
+    #[test]
+    fn counting_by_intervals_equals_walking_the_days() {
+        // a small deterministic generator: every combination of hire, end and overlapping leave
+        let base = NaiveDate::from_ymd_opt(2026, 1, 20).unwrap();
+        let at = |n: i64| base + chrono::Days::new(u64::try_from(n.rem_euclid(120)).unwrap());
+        let mut state = 12_345_u64;
+        let mut next = |m: i64| {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
+            i64::try_from(state >> 33).unwrap() % m
+        };
+        for _ in 0..4_000 {
+            let hired_on = at(next(90) - 20);
+            let terminated_on = (next(3) > 0).then(|| at(next(110)));
+            let approved_leave = (0..next(4))
+                .map(|_| {
+                    let s = at(next(100));
+                    (s, s + chrono::Days::new(u64::try_from(next(20)).unwrap()))
+                })
+                .collect();
+            let worker = WorkerFacts {
+                fte_percent: 100,
+                hired_on,
+                terminated_on,
+                role_profiles: Vec::new(),
+                skills: Vec::new(),
+                approved_leave,
+            };
+            for month in [(2026, 1), (2026, 2), (2026, 3), (2026, 4)] {
+                let month = NaiveDate::from_ymd_opt(month.0, month.1, 1).unwrap();
+                assert_eq!(
+                    available_days(&worker, month),
+                    available_days_by_walking(&worker, month),
+                    "{worker:?} in {month}"
+                );
+            }
         }
     }
 }
