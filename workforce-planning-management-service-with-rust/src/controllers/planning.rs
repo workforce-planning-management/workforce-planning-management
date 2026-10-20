@@ -639,9 +639,11 @@ async fn set_line_objectives(
 /// Employed workers of the plan's organization, today.
 async fn employed_in_org(ctx: &AppContext, org: &str) -> Result<Vec<workers::Model>> {
     let today = chrono::Utc::now().date_naive();
-    Ok(workers::Entity::find()
+    let scope = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::OrganizationRef.eq(org))
+        .filter(workers::Column::OrganizationRef.eq(org));
+    super::ensure_scale(ctx, scope.clone()).await?;
+    Ok(scope
         .all(&ctx.db)
         .await?
         .into_iter()

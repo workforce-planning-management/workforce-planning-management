@@ -94,6 +94,25 @@ pub fn unprocessable(message: &str) -> Error {
     )
 }
 
+/// Refuse a whole-organization read that would load more workers than the measured ceiling
+/// (WPM-R120, WPM-D90). `scope` is the same `workers` query the view is about to load, so the count
+/// is of exactly those rows. The check costs one indexed `COUNT`.
+///
+/// # Errors
+///
+/// A `422` naming the count and the ceiling, or a database error.
+pub async fn ensure_scale(
+    ctx: &AppContext,
+    scope: sea_orm::Select<crate::models::_entities::workers::Entity>,
+) -> Result<()> {
+    use sea_orm::PaginatorTrait;
+    let count = scope.count(&ctx.db).await?;
+    let ceiling = crate::rules::scale::parse_ceiling(
+        crate::compat::env_var("WPM_MAX_ORG_WORKERS").as_deref(),
+    );
+    crate::rules::scale::check(count, ceiling).map_err(|m| unprocessable(&m))
+}
+
 /// Map a record-level authorization rejection (`(status, reason)`) to a
 /// loco error response: `403` = policy denied; `401` = fail-safe when
 /// claims are missing behind the guard.

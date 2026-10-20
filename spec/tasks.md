@@ -3524,8 +3524,14 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       the digests are refreshed by hand (Dependabot does not read a `Containerfile`); the demo and test images in `compose*.yaml` and the CI
       service containers (`postgres:18`, `redis:7-alpine`) are not pinned; no SBOM attestation (the CycloneDX file is attached, not signed); the
       v0.1.0 and v0.1.1 images stay unsigned.
-- [ ] WPM-T196 **Load evidence and bounded views.** *(WPM-R120)* A repeatable load test at stated sizes, paging or caps on the views
-      that load an organization's records, the result recorded in `BENCHMARKS.md`. **Not done.**
+- [x] WPM-T196 (2026-10-20) **Load evidence and bounded views.** *(WPM-R120, WPM-D90)* `scripts/load-test.sh` seeds one organization at 1k, 10k and 50k workers and
+      drives four routes with `oha`; the result is in `BENCHMARKS.md`. The whole-organization views grow with the organization
+      (capacity 88 → 518 → 2,202 ms) and **at 50,000 workers requests fail** (pool-acquire timeouts, 19 of 39 on the heavy views, 5 on the paged list).
+      So `rules::scale` and `controllers::ensure_scale` refuse the directory, the capacity view and the plan forecast with a `422` above
+      10,000 workers (`WPM_MAX_ORG_WORKERS`). Verified: 3 unit tests, a request test (refused at a ceiling of 1, answered above), **mutation-checked**
+      (removing the check from the directory fails it). **Not done:** one run on one laptop, 8 connections, auth and rate limits off, no repeat; about fifty other
+      reads still load a table with `.all()`; the views are refused, not paged or moved into SQL (the proper fix, and a larger job); the count adds a query to
+      each; the load test is not in CI. A deployment with more than 10,000 workers in one organization cannot use those three views until it raises the setting after measuring.
 - [x] WPM-T197 (2026-10-20) **Observability.** *(WPM-R122, WPM-D89)* `src/request_log.rs` is the outermost layer: it sets `X-Request-Id` on
       every response (the caller's if plain, else a UUID; checked on a hostile one) and writes one line per request with the id, method, a
       `route` with identifiers replaced by `{}`, the status and the latency. Loco's request logger, which writes the whole URI, is off in

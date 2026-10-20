@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — whole-organization views are refused above 10,000 workers (WPM-T196)
+
+`GET /api/directory`, `GET /api/capacity` and the plan forecast answer `422` when they would load more than `WPM_MAX_ORG_WORKERS` workers (default 10,000). **Upgrade note:** an organization above that loses those views until the setting is raised; measure first with `scripts/load-test.sh`. New `BENCHMARKS.md` results: at 50,000 workers requests failed.
+
 ### Changed — request log (WPM-T197)
 
 **Log format change:** loco's request logger (`http-request` span with `http.uri`, `http.user_agent`) is replaced by a line with `request_id`, `method`, `route`, `status` and `latency_ms`. A log search or alert keyed on the old fields needs updating. New `GET /api/audits/export` (JSON Lines, privileged).

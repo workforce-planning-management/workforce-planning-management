@@ -811,9 +811,11 @@ async fn worker_facts(
             u64::try_from(rules::days_in_month(last_month)).unwrap_or(31),
         ))
         .unwrap_or(last_month);
-    let staff: Vec<workers::Model> = workers::Entity::find()
+    let scope = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::OrganizationRef.eq(org))
+        .filter(workers::Column::OrganizationRef.eq(org));
+    super::ensure_scale(ctx, scope.clone()).await?;
+    let staff: Vec<workers::Model> = scope
         .all(&ctx.db)
         .await?
         .into_iter()

@@ -32,6 +32,7 @@ mod pay_scales;
 mod payroll;
 mod privacy;
 mod rotas;
+mod scale;
 mod shared_cache;
 mod skill_gaps;
 mod talent;

@@ -66,6 +66,7 @@ pub mod pulse;
 pub mod resignation;
 pub mod roles;
 pub mod rota;
+pub mod scale;
 pub mod self_service;
 pub mod skill_gap;
 pub mod skill_merge;

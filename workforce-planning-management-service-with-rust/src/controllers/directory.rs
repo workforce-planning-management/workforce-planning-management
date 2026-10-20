@@ -69,6 +69,7 @@ async fn directory(
     if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
         query = query.filter(workers::Column::OrganizationRef.is_in(refs));
     }
+    super::ensure_scale(&ctx, query.clone()).await?;
     let today = chrono::Utc::now().date_naive();
     let staff: Vec<workers::Model> = query
         .all(&ctx.db)

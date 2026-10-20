@@ -246,3 +246,11 @@ a short list of fields (and a path that is reduced to its words) cannot leak wha
 place of a configuration switch. **A limit:** a path segment that is a lowercase word is kept, so a route whose path carries a lowercase
 word that is itself personal would be logged; none does today, and the test will not know about a new one. Keep personal values out of paths.
 
+## WPM-D90 — Refuse a whole-organization read over a measured ceiling
+
+The directory, the capacity view and the plan forecast load every live worker of the scope and work them out in memory. The load
+test (`BENCHMARKS.md`) shows the cost grows with the organization and that at 50,000 workers requests fail, including unrelated ones. The
+choice was between paging the work in SQL (right, large, touches the rules those views share) and a check that says no early. This does the
+second now: one `COUNT` before the load, a `422` over `WPM_MAX_ORG_WORKERS` (default 10,000, the largest size run with no failure). A
+refusal that names the number is better than a request that holds a connection for two seconds and a runtime for the others. **It is
+a stopgap, and the cost is real:** an organization over the ceiling loses those three views until the setting is raised or the views are rewritten.
