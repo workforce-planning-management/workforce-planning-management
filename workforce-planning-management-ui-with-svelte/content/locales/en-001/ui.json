@@ -496,7 +496,10 @@
     "range90d": "90 calendar days",
     "range12m": "12 months",
     "rangeYtd": "Year to date",
-    "vsStart": "vs start of period"
+    "vsStart": "vs start of period",
+    "escalations": "Open escalations",
+    "noEscalations": "None open",
+    "oldestOpen": "oldest {days} calendar days"
   },
   "skillgaps": {
     "title": "My skill gaps",

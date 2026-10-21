@@ -406,6 +406,16 @@ test.describe("signed-in smoke coverage", () => {
       await page.route("**/api/proxy/me/organizations**", (route) =>
         route.fulfill({ json: [] }),
       );
+      await page.route("**/api/proxy/me/organizations/scope", (route) =>
+        route.fulfill({
+          json: ["organization:00000000-0000-4000-8000-0000000000aa"],
+        }),
+      );
+      await page.route("**/api/proxy/escalations?**", (route) =>
+        route.fulfill({
+          json: [{ days_open: 3 }, { days_open: 41 }, { days_open: null }],
+        }),
+      );
       let n = 0;
       const metricsFrom: string[] = [];
       await page.route(
@@ -466,6 +476,10 @@ test.describe("signed-in smoke coverage", () => {
       await expect(page.getByTestId("kpi-headcount")).toContainText("12345");
       await expect(page.getByTestId("trend-chart")).toBeVisible();
       await expect(page.getByTestId("ceo-insights")).toContainText("Attention");
+      await expect(page.getByTestId("kpi-escalations")).toContainText("3");
+      await expect(page.getByTestId("kpi-escalations")).toContainText(
+        "oldest 41 calendar days",
+      );
 
       const fit = await page.evaluate(() => {
         const doc = document.documentElement;
@@ -494,7 +508,7 @@ test.describe("signed-in smoke coverage", () => {
       expect(fit.pageY, "page scrolls vertically").toBeLessThanOrEqual(0);
       expect(fit.pageX, "page scrolls horizontally").toBeLessThanOrEqual(0);
       expect(fit.bodyY, "body scrolls").toBeLessThanOrEqual(0);
-      expect(fit.tiles).toHaveLength(6);
+      expect(fit.tiles).toHaveLength(7);
       for (const tile of fit.tiles) {
         expect(tile.inView, `${tile.name} is inside the screen`).toBe(true);
         // Tiles clip silently; a tile whose content is taller or wider than
@@ -517,6 +531,7 @@ test.describe("signed-in smoke coverage", () => {
       expect(await hrefOf("kpi-headcount")).toMatch(/\/en-001\/metrics$/);
       expect(await hrefOf("kpi-open")).toMatch(/\/en-001\/requisitions$/);
       expect(await hrefOf("kpi-gaps")).toMatch(/\/en-001\/development$/);
+      expect(await hrefOf("kpi-escalations")).toMatch(/\/en-001\/planning$/);
 
       // The period control reloads the period-based figures (and is in the URL).
       await expect(page.getByTestId("range-12m")).toHaveAttribute(

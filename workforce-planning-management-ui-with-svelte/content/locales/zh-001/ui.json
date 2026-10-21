@@ -496,7 +496,10 @@
     "range90d": "90 个自然日",
     "range12m": "12 个月",
     "rangeYtd": "年初至今",
-    "vsStart": "较期初"
+    "vsStart": "较期初",
+    "escalations": "未结升级事项",
+    "noEscalations": "无未结事项",
+    "oldestOpen": "最久：{days} 个日历日"
   },
   "skillgaps": {
     "title": "我的技能差距",

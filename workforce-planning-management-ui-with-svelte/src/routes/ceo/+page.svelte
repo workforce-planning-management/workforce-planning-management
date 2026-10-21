@@ -16,6 +16,7 @@
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
   import {
+    listOpenEscalations,
     listRequisitions,
     successionGaps,
     workforceInsights,
@@ -42,6 +43,9 @@
   let trend = $state<TrendPoint[]>([]);
   let gaps = $state<number | null>(null);
   let openRoles = $state<number | null>(null);
+  /** Open escalations across the caller's organizations; null when they cannot be loaded. */
+  let escalations = $state<{ count: number; oldest: number | null } | null>(null);
+  const organizationRefs = $derived((page.data.scope ?? []) as string[]);
 
   const dash = "—";
   const today = new Date().toISOString().slice(0, 10);
@@ -78,6 +82,14 @@
       ]);
       gaps = g ? g.gaps.length : null;
       openRoles = open ? open.length : null;
+      if (organizationRefs.length > 0) {
+        const lists = await Promise.all(organizationRefs.map((o) => settle(listOpenEscalations(o))));
+        if (lists.every((x) => x !== null)) {
+          const open = lists.flat();
+          const ages = open.flatMap((e) => (e?.days_open == null ? [] : [e.days_open]));
+          escalations = { count: open.length, oldest: ages.length > 0 ? Math.max(...ages) : null };
+        }
+      }
       trend = dates.flatMap((d, i) => {
         const month = months[i];
         return month ? [{ date: d, value: month.headcount.closing }] : [];
@@ -197,6 +209,15 @@
     {/if}
   </a>
 
+  <a class="cx-tile cx-kpi" href={l("/planning")} data-testid="kpi-escalations">
+    <span class="cx-label">{t("ceo.escalations")}</span>
+    <strong class="cx-hero">{escalations ? escalations.count : dash}</strong>
+    <span class="cx-sub">
+      {#if escalations === null}{dash}
+      {:else if escalations.count === 0}<span class="cx-status cx-good">✓ {t("ceo.noEscalations")}</span>
+      {:else if escalations.oldest !== null}{tf("ceo.oldestOpen", { days: escalations.oldest })}{:else}{dash}{/if}
+    </span>
+  </a>
 </div>
 
 <style>
@@ -316,9 +337,6 @@
     padding-top: 1.4em;
   }
   .cx-trend {
-    grid-column: span 2;
-  }
-  .cx-insights {
     grid-column: span 2;
   }
   .cx-label {

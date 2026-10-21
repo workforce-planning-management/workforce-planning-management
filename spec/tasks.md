@@ -3543,6 +3543,12 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T242 (2026-10-21) **Open escalations on the CEO dashboard.** *(WPM-R141, WPM-D94)* A seventh tile counts the open escalations of the caller's
+      organizations (the same `GET /api/escalations?organization=` inbox, one call per organization in scope) with the age of the oldest in calendar
+      days, links to Planning, and shows "—" when it cannot be loaded or the caller has no organization in scope (never 0). The third row is now the trend
+      (two columns), the insights and the escalations (one each). Three strings in 13 locales (AI-written, not reviewed). Verified: the CEO smoke spec at both
+      screen sizes (seven tiles, none clipped, the count, the oldest age, the link), the whole Playwright suite (140), svelte-check 0, 160 vitest, prettier.
+      *Not checked:* with the real service; the insights tile is narrower and shows less of each insight than before.
 - [x] WPM-T241 (2026-10-21) **CPD: correct and withdraw a requirement from the page.** *(WPM-R139, WPM-D92)* The CPD page lists the defined requirements with
       Correct (name, amount and period; the unit is shown and sent unchanged) and Withdraw (a second click confirms; recorded entries are kept), over the
       existing `PUT` and `DELETE`. Six strings in 13 locales (AI-written, not reviewed). Verified: a Playwright spec stubbing the API (the body sent, the

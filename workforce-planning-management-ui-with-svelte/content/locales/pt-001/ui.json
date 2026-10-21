@@ -496,7 +496,10 @@
     "range90d": "90 dias corridos",
     "range12m": "12 meses",
     "rangeYtd": "Ano até à data",
-    "vsStart": "face ao início do período"
+    "vsStart": "face ao início do período",
+    "escalations": "Escalonamentos abertos",
+    "noEscalations": "Nenhum aberto",
+    "oldestOpen": "o mais antigo: {days} dias corridos"
   },
   "skillgaps": {
     "title": "As minhas lacunas de competências",

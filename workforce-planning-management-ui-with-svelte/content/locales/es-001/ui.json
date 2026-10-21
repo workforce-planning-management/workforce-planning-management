@@ -496,7 +496,10 @@
     "range90d": "90 días naturales",
     "range12m": "12 meses",
     "rangeYtd": "Año en curso",
-    "vsStart": "frente al inicio del periodo"
+    "vsStart": "frente al inicio del periodo",
+    "escalations": "Escaladas abiertas",
+    "noEscalations": "Ninguna abierta",
+    "oldestOpen": "la más antigua: {days} días naturales"
   },
   "skillgaps": {
     "title": "Mis brechas de competencias",

@@ -496,7 +496,10 @@
     "range90d": "90 diwrnod calendr",
     "range12m": "12 mis",
     "rangeYtd": "Y flwyddyn hyd yma",
-    "vsStart": "o gymharu â dechrau'r cyfnod"
+    "vsStart": "o gymharu â dechrau'r cyfnod",
+    "escalations": "Uwchgyfeirio agored",
+    "noEscalations": "Dim ar agor",
+    "oldestOpen": "hynaf: {days} diwrnod calendr"
   },
   "skillgaps": {
     "title": "Fy mylchau sgiliau",

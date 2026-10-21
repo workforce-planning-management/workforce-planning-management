@@ -496,7 +496,10 @@
     "range90d": "90 jours calendaires",
     "range12m": "12 mois",
     "rangeYtd": "Depuis le 1er janvier",
-    "vsStart": "par rapport au début de la période"
+    "vsStart": "par rapport au début de la période",
+    "escalations": "Escalades ouvertes",
+    "noEscalations": "Aucune ouverte",
+    "oldestOpen": "la plus ancienne : {days} jours calendaires"
   },
   "skillgaps": {
     "title": "Mes écarts de compétences",

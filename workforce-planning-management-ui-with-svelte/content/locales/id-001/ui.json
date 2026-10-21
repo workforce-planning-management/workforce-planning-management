@@ -496,7 +496,10 @@
     "range90d": "90 hari kalender",
     "range12m": "12 bulan",
     "rangeYtd": "Tahun berjalan",
-    "vsStart": "dibanding awal periode"
+    "vsStart": "dibanding awal periode",
+    "escalations": "Eskalasi terbuka",
+    "noEscalations": "Tidak ada yang terbuka",
+    "oldestOpen": "terlama: {days} hari kalender"
   },
   "skillgaps": {
     "title": "Kesenjangan keterampilan saya",

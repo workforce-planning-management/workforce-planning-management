@@ -496,7 +496,10 @@
     "range90d": "90 Kalendertage",
     "range12m": "12 Monate",
     "rangeYtd": "Seit Jahresbeginn",
-    "vsStart": "ggü. Beginn des Zeitraums"
+    "vsStart": "ggü. Beginn des Zeitraums",
+    "escalations": "Offene Eskalationen",
+    "noEscalations": "Keine offen",
+    "oldestOpen": "älteste: {days} Kalendertage"
   },
   "skillgaps": {
     "title": "Meine Kompetenzlücken",

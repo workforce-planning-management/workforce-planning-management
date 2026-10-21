@@ -859,6 +859,9 @@ collections:
               - { name: "range12m", label: "Range12m", widget: string, required: false, i18n: true }
               - { name: "rangeYtd", label: "Range Ytd", widget: string, required: false, i18n: true }
               - { name: "vsStart", label: "Vs Start", widget: string, required: false, i18n: true }
+              - { name: "escalations", label: "Escalations", widget: string, required: false, i18n: true }
+              - { name: "noEscalations", label: "No Escalations", widget: string, required: false, i18n: true }
+              - { name: "oldestOpen", label: "Oldest Open", widget: string, required: false, i18n: true }
           - name: "skillgaps"
             label: "Skillgaps"
             widget: object

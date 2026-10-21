@@ -2654,6 +2654,17 @@ export function planEscalations(
   return api(`/workforce-plans/${pid}/escalations`, init);
 }
 
+/** The open escalations of an organization, oldest first. */
+export function listOpenEscalations(
+  organization: string,
+  init?: FetchLike,
+): Promise<Escalation[]> {
+  return api(
+    `/escalations?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
 /** Take an amber or red dimension to level 1. */
 export function raisePlanEscalation(
   pid: string,
