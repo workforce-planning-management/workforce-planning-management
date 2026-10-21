@@ -983,7 +983,13 @@
       "no_expiry": "کوئی میعاد نہیں",
       "lms_open": "لرننگ سسٹم میں کھولیں",
       "pace": "رفتار",
-      "needed_per_30_days": "ہر 30 دن میں درکار"
+      "needed_per_30_days": "ہر 30 دن میں درکار",
+      "correct": "درست کریں",
+      "save": "محفوظ کریں",
+      "cancel": "منسوخ",
+      "withdraw": "واپس لیں",
+      "confirm_withdraw": "واپسی کی تصدیق کریں (درج اندراجات برقرار رہتے ہیں)",
+      "requirements": "تقاضے"
     },
     "development": {
       "criticality": "— {department} (اہمیت {criticality})"

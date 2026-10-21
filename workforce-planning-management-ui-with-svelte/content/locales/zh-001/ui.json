@@ -983,7 +983,13 @@
       "no_expiry": "无到期日",
       "lms_open": "在学习系统中打开",
       "pace": "进度",
-      "needed_per_30_days": "每30天所需"
+      "needed_per_30_days": "每30天所需",
+      "correct": "更正",
+      "save": "保存",
+      "cancel": "取消",
+      "withdraw": "撤销",
+      "confirm_withdraw": "确认撤销（已记录的条目将保留）",
+      "requirements": "要求"
     },
     "development": {
       "criticality": "— {department}（关键度 {criticality}）"

@@ -983,7 +983,13 @@
       "no_expiry": "sans expiration",
       "lms_open": "Ouvrir dans le système d'apprentissage",
       "pace": "Rythme",
-      "needed_per_30_days": "Nécessaire par 30 jours"
+      "needed_per_30_days": "Nécessaire par 30 jours",
+      "correct": "Corriger",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "withdraw": "Retirer",
+      "confirm_withdraw": "Confirmer le retrait (les entrées enregistrées sont conservées)",
+      "requirements": "Exigences"
     },
     "development": {
       "criticality": "— {department} (criticité {criticality})"

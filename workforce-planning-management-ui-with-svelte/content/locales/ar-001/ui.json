@@ -983,7 +983,13 @@
       "no_expiry": "بلا انتهاء",
       "lms_open": "فتح في نظام التعلّم",
       "pace": "الوتيرة",
-      "needed_per_30_days": "المطلوب كل 30 يومًا"
+      "needed_per_30_days": "المطلوب كل 30 يومًا",
+      "correct": "تصحيح",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "withdraw": "سحب",
+      "confirm_withdraw": "تأكيد السحب (تبقى الإدخالات المسجلة)",
+      "requirements": "المتطلبات"
     },
     "development": {
       "criticality": "— {department} (الأهمية الحرجة {criticality})"

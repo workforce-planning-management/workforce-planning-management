@@ -908,6 +908,26 @@ export function createCpdRequirement(body: {
   return api("/cpd-requirements", { method: "POST", body });
 }
 
+/** Correct a CPD requirement (its unit cannot change). */
+export function updateCpdRequirement(
+  pid: string,
+  body: {
+    name: string;
+    unit: string;
+    required: number;
+    period_start: string;
+    period_end: string;
+    job_title?: string | null;
+  },
+): Promise<{ pid: string }> {
+  return api(`/cpd-requirements/${pid}`, { method: "PUT", body });
+}
+
+/** Withdraw a CPD requirement; recorded entries are kept. */
+export function withdrawCpdRequirement(pid: string): Promise<unknown> {
+  return api(`/cpd-requirements/${pid}`, { method: "DELETE" });
+}
+
 /** A worker's CPD ledger. */
 export function listCpdEntries(
   workerPid: string,

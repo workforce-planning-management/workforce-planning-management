@@ -15,7 +15,9 @@
     listCpdEntries,
     listCpdRequirements,
     listWorkers,
+    updateCpdRequirement,
     verifyCpdEntry,
+    withdrawCpdRequirement,
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
@@ -46,6 +48,13 @@
   let reqAmount = $state(30);
   let reqStart = $state("");
   let reqEnd = $state("");
+  // correcting or withdrawing a requirement
+  let editing = $state<string | null>(null);
+  let editName = $state("");
+  let editAmount = $state(0);
+  let editStart = $state("");
+  let editEnd = $state("");
+  let withdrawing = $state<string | null>(null);
   // new entry
   let entryDate = $state(new Date().toISOString().slice(0, 10));
   let entryActivity = $state("");
@@ -98,6 +107,46 @@
         period_end: reqEnd,
       });
       reqName = "";
+      await loadShared();
+      await loadWorker();
+    } catch (cause) {
+      error = message(cause);
+    }
+  }
+
+  function startEdit(r: Requirements[number]) {
+    editing = r.pid;
+    withdrawing = null;
+    editName = r.name;
+    editAmount = r.required;
+    editStart = r.period_start;
+    editEnd = r.period_end;
+  }
+
+  async function saveEdit(r: Requirements[number]) {
+    error = null;
+    try {
+      await updateCpdRequirement(r.pid, {
+        name: editName,
+        unit: r.unit,
+        required: editAmount,
+        period_start: editStart,
+        period_end: editEnd,
+        job_title: r.job_title,
+      });
+      editing = null;
+      await loadShared();
+      await loadWorker();
+    } catch (cause) {
+      error = message(cause);
+    }
+  }
+
+  async function withdraw(pid: string) {
+    error = null;
+    try {
+      await withdrawCpdRequirement(pid);
+      withdrawing = null;
       await loadShared();
       await loadWorker();
     } catch (cause) {
@@ -269,6 +318,39 @@
   <button type="submit" data-testid="cpd-req-add">{t("pages.cpd.add")}</button>
 </form>
 <p class="muted">{tf("pages.cpd.requirement_s_defined", { requirements: requirements.length })}</p>
+{#if requirements.length > 0}
+  <h3>{t("pages.cpd.requirements")}</h3>
+  <ul class="requirements" data-testid="cpd-requirements">
+    {#each requirements as r (r.pid)}
+      <li data-testid="cpd-requirement-{r.pid}">
+        {#if editing === r.pid}
+          <form
+            onsubmit={(event) => {
+              event.preventDefault();
+              void saveEdit(r);
+            }}
+          >
+            <label>{t("pages.cpd.name")} <input data-testid="cpd-edit-name" bind:value={editName} required /></label>
+            <label>{t("pages.cpd.required")} ({tv(r.unit)}) <input data-testid="cpd-edit-required" type="number" min="1" step="any" bind:value={editAmount} required /></label>
+            <label>{t("pages.cpd.from")} <input type="date" bind:value={editStart} required /></label>
+            <label>{t("pages.cpd.to")} <input type="date" bind:value={editEnd} required /></label>
+            <button type="submit" data-testid="cpd-edit-save">{t("pages.cpd.save")}</button>
+            <button type="button" onclick={() => (editing = null)}>{t("pages.cpd.cancel")}</button>
+          </form>
+        {:else}
+          {r.name} <span class="muted">— {r.required} {tv(r.unit)}, {r.period_start} → {r.period_end}{r.job_title ? ` · ${r.job_title}` : ""}</span>
+          <button type="button" data-testid="cpd-correct" onclick={() => startEdit(r)}>{t("pages.cpd.correct")}</button>
+          {#if withdrawing === r.pid}
+            <button type="button" class="warn" data-testid="cpd-withdraw-confirm" onclick={() => void withdraw(r.pid)}>{t("pages.cpd.confirm_withdraw")}</button>
+            <button type="button" onclick={() => (withdrawing = null)}>{t("pages.cpd.cancel")}</button>
+          {:else}
+            <button type="button" data-testid="cpd-withdraw" onclick={() => { withdrawing = r.pid; editing = null; }}>{t("pages.cpd.withdraw")}</button>
+          {/if}
+        {/if}
+      </li>
+    {/each}
+  </ul>
+{/if}
 
 <h2>{t("pages.cpd.a_worker_s_cpd")}</h2>
 <p>

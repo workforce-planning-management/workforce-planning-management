@@ -983,7 +983,13 @@
       "no_expiry": "sin caducidad",
       "lms_open": "Abrir en el sistema de aprendizaje",
       "pace": "Ritmo",
-      "needed_per_30_days": "Necesario cada 30 días"
+      "needed_per_30_days": "Necesario cada 30 días",
+      "correct": "Corregir",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "withdraw": "Retirar",
+      "confirm_withdraw": "Confirmar retirada (los registros se conservan)",
+      "requirements": "Requisitos"
     },
     "development": {
       "criticality": "— {department} (criticidad {criticality})"

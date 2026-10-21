@@ -1487,6 +1487,12 @@ collections:
                   - { name: "lms_open", label: "Lms_open", widget: string, required: false, i18n: true }
                   - { name: "pace", label: "Pace", widget: string, required: false, i18n: true }
                   - { name: "needed_per_30_days", label: "Needed_per_30_days", widget: string, required: false, i18n: true }
+                  - { name: "correct", label: "Correct", widget: string, required: false, i18n: true }
+                  - { name: "save", label: "Save", widget: string, required: false, i18n: true }
+                  - { name: "cancel", label: "Cancel", widget: string, required: false, i18n: true }
+                  - { name: "withdraw", label: "Withdraw", widget: string, required: false, i18n: true }
+                  - { name: "confirm_withdraw", label: "Confirm_withdraw", widget: string, required: false, i18n: true }
+                  - { name: "requirements", label: "Requirements", widget: string, required: false, i18n: true }
               - name: "development"
                 label: "Development"
                 widget: object

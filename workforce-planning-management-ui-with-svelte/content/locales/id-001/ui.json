@@ -983,7 +983,13 @@
       "no_expiry": "tanpa kedaluwarsa",
       "lms_open": "Buka di sistem pembelajaran",
       "pace": "Laju",
-      "needed_per_30_days": "Dibutuhkan per 30 hari"
+      "needed_per_30_days": "Dibutuhkan per 30 hari",
+      "correct": "Koreksi",
+      "save": "Simpan",
+      "cancel": "Batal",
+      "withdraw": "Tarik",
+      "confirm_withdraw": "Konfirmasi penarikan (entri yang tercatat tetap ada)",
+      "requirements": "Persyaratan"
     },
     "development": {
       "criticality": "— {department} (kekritisan {criticality})"

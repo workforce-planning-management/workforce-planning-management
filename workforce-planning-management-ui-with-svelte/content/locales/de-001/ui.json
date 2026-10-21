@@ -983,7 +983,13 @@
       "no_expiry": "kein Ablauf",
       "lms_open": "Im Lernsystem öffnen",
       "pace": "Tempo",
-      "needed_per_30_days": "Nötig je 30 Tage"
+      "needed_per_30_days": "Nötig je 30 Tage",
+      "correct": "Korrigieren",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "withdraw": "Zurückziehen",
+      "confirm_withdraw": "Rückzug bestätigen (erfasste Einträge bleiben erhalten)",
+      "requirements": "Anforderungen"
     },
     "development": {
       "criticality": "— {department} (Kritikalität {criticality})"

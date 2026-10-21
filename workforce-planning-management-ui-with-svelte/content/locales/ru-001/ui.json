@@ -983,7 +983,13 @@
       "no_expiry": "бессрочно",
       "lms_open": "Открыть в системе обучения",
       "pace": "Темп",
-      "needed_per_30_days": "Нужно за 30 дней"
+      "needed_per_30_days": "Нужно за 30 дней",
+      "correct": "Исправить",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "withdraw": "Отозвать",
+      "confirm_withdraw": "Подтвердить отзыв (записи сохраняются)",
+      "requirements": "Требования"
     },
     "development": {
       "criticality": "— {department} (критичность {criticality})"

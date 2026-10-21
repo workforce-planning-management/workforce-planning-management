@@ -983,7 +983,13 @@
       "no_expiry": "no expiry",
       "lms_open": "Open in the learning system",
       "pace": "Pace",
-      "needed_per_30_days": "Needed per 30 calendar days"
+      "needed_per_30_days": "Needed per 30 calendar days",
+      "correct": "Correct",
+      "save": "Save",
+      "cancel": "Cancel",
+      "withdraw": "Withdraw",
+      "confirm_withdraw": "Confirm withdraw (recorded entries are kept)",
+      "requirements": "Requirements"
     },
     "development": {
       "criticality": "— {department} (criticality {criticality})"

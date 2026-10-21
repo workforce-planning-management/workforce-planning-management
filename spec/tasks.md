@@ -3543,6 +3543,11 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T241 (2026-10-21) **CPD: correct and withdraw a requirement from the page.** *(WPM-R139, WPM-D92)* The CPD page lists the defined requirements with
+      Correct (name, amount and period; the unit is shown and sent unchanged) and Withdraw (a second click confirms; recorded entries are kept), over the
+      existing `PUT` and `DELETE`. Six strings in 13 locales (AI-written, not reviewed). Verified: a Playwright spec stubbing the API (the body sent, the
+      first click only asks, the list updates), svelte-check 0, 160 vitest, prettier. *Not checked:* against the real service in a browser; changing the job
+      title restriction is not offered (it is sent unchanged).
 - [x] WPM-T240 (2026-10-21) **Working time reads a weekly rollup.** *(WPM-R142, WPM-D96)* `time_entry_weeks` (worker, week, recorded minutes) is kept by a
       trigger and backfilled by migration 78; the view names the workers who can be over from a partial index on heavy weeks, sums their weeks, then
       sums their entries over the exact window, so the answer is unchanged. New tests: the window edges, the rollup equals the entries across an

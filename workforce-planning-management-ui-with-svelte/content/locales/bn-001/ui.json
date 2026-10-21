@@ -983,7 +983,13 @@
       "no_expiry": "মেয়াদ নেই",
       "lms_open": "লার্নিং সিস্টেমে খুলুন",
       "pace": "গতি",
-      "needed_per_30_days": "প্রতি ৩০ দিনে প্রয়োজন"
+      "needed_per_30_days": "প্রতি ৩০ দিনে প্রয়োজন",
+      "correct": "সংশোধন",
+      "save": "সংরক্ষণ",
+      "cancel": "বাতিল",
+      "withdraw": "প্রত্যাহার",
+      "confirm_withdraw": "প্রত্যাহার নিশ্চিত করুন (নথিভুক্ত এন্ট্রি থাকবে)",
+      "requirements": "প্রয়োজনীয়তা"
     },
     "development": {
       "criticality": "— {department} (জরুরিত্ব {criticality})"

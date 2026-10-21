@@ -983,7 +983,13 @@
       "no_expiry": "कोई समाप्ति नहीं",
       "lms_open": "लर्निंग सिस्टम में खोलें",
       "pace": "गति",
-      "needed_per_30_days": "प्रति 30 दिन आवश्यक"
+      "needed_per_30_days": "प्रति 30 दिन आवश्यक",
+      "correct": "सुधारें",
+      "save": "सहेजें",
+      "cancel": "रद्द करें",
+      "withdraw": "वापस लें",
+      "confirm_withdraw": "वापसी की पुष्टि करें (दर्ज प्रविष्टियाँ बनी रहती हैं)",
+      "requirements": "आवश्यकताएँ"
     },
     "development": {
       "criticality": "— {department} (महत्त्व {criticality})"
