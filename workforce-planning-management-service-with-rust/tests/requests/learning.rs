@@ -2063,6 +2063,42 @@ async fn career_history_and_aspirations() {
     .await;
 }
 
+/// A manager who has left is not staff: the chain through them stops, above and below (WPM-R142: the
+/// views read the chain, not every worker, and answer as before).
+#[tokio::test]
+#[ignore = "needs Postgres"]
+async fn reporting_lines_stop_at_a_manager_who_has_left() {
+    crate::requests::request_open(|request, ctx| async move {
+        use sea_orm::ConnectionTrait;
+        let org = an_org();
+        let mut pids = Vec::new();
+        for n in ["L-1", "L-2", "L-3", "L-4"] {
+            pids.push(seed_worker!(&request, &org, n, None).await);
+        }
+        let (top, middle, low, other) = (&pids[0], &pids[1], &pids[2], &pids[3]);
+        for (w, m) in [(middle, top), (low, middle), (other, top)] {
+            request.put(&format!("/api/workers/{w}")).json(&json!({ "manager_pid": m })).await.assert_status_ok();
+        }
+        let len = |v: &Value, key: &str| v[key].as_array().unwrap().len();
+        let up: Value = request.get(&format!("/api/workers/{low}/upline")).await.json();
+        assert_eq!(len(&up, "upline"), 2);
+        let down: Value = request.get(&format!("/api/workers/{top}/downline")).await.json();
+        assert_eq!(down["summary"]["total"], 3);
+
+        ctx.db.execute_unprepared(&format!("UPDATE workers SET terminated_on = '2026-02-01' WHERE pid = '{middle}'")).await.unwrap();
+        let up: Value = request.get(&format!("/api/workers/{low}/upline")).await.json();
+        assert_eq!(len(&up, "upline"), 0, "the chain stops at a manager who has left");
+        let down: Value = request.get(&format!("/api/workers/{top}/downline")).await.json();
+        assert_eq!(down["summary"]["total"], 1, "and so does the downline: only the other direct report remains");
+        assert_eq!(down["downline"][0]["pid"], other.as_str());
+        let gone: Value = request.get(&format!("/api/workers/{middle}/upline")).await.json();
+        assert_eq!(len(&gone, "upline"), 0, "someone who has left has no upline");
+        let dot = request.post(&format!("/api/workers/{low}/dotted-line-managers")).json(&json!({ "manager_pid": middle })).await;
+        assert_eq!(dot.status_code(), 422, "a dotted-line manager must be employed");
+    })
+    .await;
+}
+
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]

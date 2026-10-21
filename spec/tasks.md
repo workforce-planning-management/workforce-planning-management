@@ -3555,6 +3555,14 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       table indexed. UI: the org chart and the mentorship page say when they show part (two strings in 13 locales, AI-written, not reviewed);
       Playwright 143, vitest 160, svelte-check 0. *Not checked:* routes that take an id; the gap SQL assumes one current PCF role per worker (a unique
       index says so); the unmatched list of the mentorship page is no longer complete by design.
+- [x] WPM-T244 (2026-10-21) **The routes that take a worker or a plan.** *(WPM-R142)* `LOAD_SURVEY` and `LOAD_PATHS` accept `{WORKER}` (a worker from the middle of the
+      seed) and `{PLAN}`. The survey of 60 such `GET` routes at 200,000 workers found four that read every worker to answer for a few: upline, downline,
+      reports and dotted-line (0.54 to 0.60 s for one request). They now read the chain (one manager at a time up; level by level down; only the
+      people on the dotted lines): p95 1.4 ms (upline) and 2.5 ms (the others), no failed request. The other 56 answer in under 150 ms for one request
+      (plan forecast 98, plan tolerances 143 for one cold request; both measured under load in T239/T243). Test: a manager who has left breaks the chain above
+      and below and cannot be a dotted-line manager (**mutation-checked**: with the employed filter removed it fails). *Not checked:* the downline of
+      the top manager of 200,000 still returns every report (cost grows with the team, not the organization; no `limit` yet); the seed has no
+      reporting hierarchy, so the chain walks were measured short.
 - [x] WPM-T242 (2026-10-21) **Open escalations on the CEO dashboard.** *(WPM-R141, WPM-D94)* A seventh tile counts the open escalations of the caller's
       organizations (the same `GET /api/escalations?organization=` inbox, one call per organization in scope) with the age of the oldest in calendar
       days, links to Planning, and shows "—" when it cannot be loaded or the caller has no organization in scope (never 0). The third row is now the trend

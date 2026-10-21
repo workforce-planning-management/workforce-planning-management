@@ -104,11 +104,14 @@ SQL
   # a CPD requirement for every worker: the overview counts who has met it
   curl -fsS -X POST "$api/api/cpd-requirements" -H 'content-type: application/json' \
     -d '{"name":"load","unit":"hours","required":10,"period_start":"2026-01-01","period_end":"2026-12-31"}' >/dev/null
+  worker=$(psql -t -A -c "SELECT pid FROM workers ORDER BY id LIMIT 1 OFFSET $((n / 2))" | tr -d '[:space:]')
   # LOAD_SURVEY=<file of paths>: one timed request per path instead of the load, to find the views that
   # read a whole table (WPM-R142). Slowest first; a path that needs a parameter answers 422 and is listed as such.
+  # {PLAN} and {WORKER} in a path stand for the seed's plan and a worker from the middle of it.
   if [ -n "${LOAD_SURVEY:-}" ]; then
     org="organization:00000000-0000-4000-8000-0000000000aa"
     while read -r path; do
+      path=${path//\{PLAN\}/$plan}; path=${path//\{WORKER\}/$worker}  # {PLAN} and {WORKER}: a plan and a worker of the seed
       join='?'; case "$path" in *\?*) join='&';; esac
       curl -s -o /tmp/wpm-survey-body -m 60 -w "%{time_total} %{http_code} %{size_download} $path" "$api$path${join}organization=$org"
       code=$(head -c 160 /tmp/wpm-survey-body | tr -d '\n'); [ ${#code} -lt 160 ] && [ "$(wc -c < /tmp/wpm-survey-body)" -lt 160 ] && printf ' %s' "$code"; echo
@@ -118,7 +121,7 @@ SQL
   fi
   # LOAD_PATHS=<file>: measure these paths (one per line) instead of the default set; the organization is added.
   if [ -n "${LOAD_PATHS:-}" ]; then
-    paths=(); while read -r line; do paths+=("$line?organization=organization:00000000-0000-4000-8000-0000000000aa"); done < "$LOAD_PATHS"
+    paths=(); while read -r line; do line=${line//\{PLAN\}/$plan}; line=${line//\{WORKER\}/$worker}; paths+=("$line?organization=organization:00000000-0000-4000-8000-0000000000aa"); done < "$LOAD_PATHS"
   else
     paths=("/_ping" "/api/workers?limit=50" "/api/directory?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/capacity?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce-plans/$plan/forecast" "/api/workforce-plans/$plan/cost" "/api/cpd/overview" "/api/workforce-intelligence/overview" "/api/workforce-intelligence/metrics" "/api/workforce-intelligence/insights" "/api/workforce-intelligence/key-person?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce/working-time")
   fi

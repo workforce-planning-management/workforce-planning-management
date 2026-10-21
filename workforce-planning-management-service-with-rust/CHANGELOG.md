@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — upline, downline, reports and dotted-line read only the people they need (WPM-T244)
+
+`GET /api/workers/{pid}/upline`, `/downline`, `/reports` and `/dotted-line` gave the same answers after reading every worker; at 200,000 workers that took 0.55 s a request. They now follow the chain, so the cost grows with the team, not the organization.
+
 ## [0.1.3] - 2026-10-21
 
 One organization of 200,000 workers now answers every measured view within 2 seconds at the 95th percentile with eight connections and no failed request (WPM-R142; method and numbers in `BENCHMARKS.md`).

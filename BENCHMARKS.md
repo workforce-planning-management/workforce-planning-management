@@ -211,5 +211,9 @@ After (8 connections, 20 database connections, 8 seconds each):
 
 The standard set, run again: worker list 22 ms, directory 108, capacity 1,204 (p95 1,389, the slowest), plan forecast 204, cost 111, CPD overview 164,
 workforce overview 188, metrics 34, insights 43, key-person register 612 (p95 722), working time 740 (p95 964). **All 24 measured routes meet the
-bar.** Routes that take an id (a worker, a plan) were not surveyed.
+bar.** 
+
+### Routes that take an id (WPM-T244)
+
+60 `GET` routes under `/api/workers/{pid}` and `/api/workforce-plans/{pid}` were timed once at 200,000 workers. Four read every worker to answer for a few: upline, downline, reports and dotted-line (0.54 to 0.60 s each). They now read only the chain they need; under 8 connections: upline p95 1.4 ms, downline 2.5, reports 2.5, dotted-line 2.5, no failed request. The seed has no reporting hierarchy, so the chain walks were short; the downline of the top manager of a deep hierarchy still returns every report.
 

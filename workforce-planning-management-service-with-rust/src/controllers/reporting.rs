@@ -21,26 +21,77 @@ use crate::rules::metrics::is_employed_on;
 use crate::rules::org::{self, ReportKind};
 use sea_orm::{ActiveValue, QueryOrder};
 
-/// The employed workers the caller may see, by pid.
-async fn visible_staff(
+/// The workers employed today that the caller may see (none of them read yet).
+async fn staff_select(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
-) -> Result<BTreeMap<Uuid, workers::Model>> {
+) -> Result<sea_orm::Select<workers::Entity>> {
     let today = chrono::Utc::now().date_naive();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    Ok(workers::Entity::find()
+    let mut select = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .filter(workers::Column::HiredOn.lte(today))
+        .filter(
+            sea_orm::Condition::any()
+                .add(workers::Column::TerminatedOn.is_null())
+                .add(workers::Column::TerminatedOn.gt(today)),
+        );
+    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+        select = select.filter(workers::Column::OrganizationRef.is_in(refs));
+    }
+    Ok(select)
+}
+
+/// Those of `pids` who are employed and visible, by pid. Reads only them (WPM-R142): the staff of an
+/// organization of 200,000 are never loaded to answer for a handful.
+async fn staff_among(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    pids: &[Uuid],
+) -> Result<BTreeMap<Uuid, workers::Model>> {
+    let select = staff_select(ctx, caller).await?;
+    Ok(super::find_in(ctx, select, workers::Column::Pid, pids)
         .await?
         .into_iter()
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .filter(|w| {
-            scope
-                .as_ref()
-                .is_none_or(|refs| refs.contains(&w.organization_ref))
-        })
         .map(|w| (w.pid, w))
         .collect())
+}
+
+/// Everyone below `manager` who is employed and visible, level by level (a cycle revisits no one).
+async fn staff_below(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    manager: Uuid,
+) -> Result<BTreeMap<Uuid, workers::Model>> {
+    let select = staff_select(ctx, caller).await?;
+    let mut found: BTreeMap<Uuid, workers::Model> = BTreeMap::new();
+    let mut frontier = vec![manager];
+    while !frontier.is_empty() {
+        let level =
+            super::find_in(ctx, select.clone(), workers::Column::ManagerPid, &frontier).await?;
+        frontier = Vec::new();
+        for w in level {
+            if w.pid != manager && !found.contains_key(&w.pid) {
+                frontier.push(w.pid);
+                found.insert(w.pid, w);
+            }
+        }
+    }
+    Ok(found)
+}
+
+/// The worker, required to be visible to the caller (a worker who is not, or no longer, employed is
+/// still addressable; one outside the caller's organizations is not).
+async fn visible_worker(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    pid: &str,
+) -> Result<workers::Model> {
+    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
+    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    if scope.is_some_and(|refs| !refs.contains(&worker.organization_ref)) {
+        return Err(Error::NotFound);
+    }
+    Ok(worker)
 }
 
 fn person_json(w: &workers::Model) -> serde_json::Value {
@@ -52,23 +103,6 @@ fn person_json(w: &workers::Model) -> serde_json::Value {
     })
 }
 
-/// The worker, required to be visible to the caller.
-async fn visible_worker(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-    pid: &str,
-) -> Result<(workers::Model, BTreeMap<Uuid, workers::Model>)> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    let staff = visible_staff(ctx, caller).await?;
-    // A worker who is not (or no longer) employed is still addressable, but
-    // one outside the caller's organizations is not.
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    if scope.is_some_and(|refs| !refs.contains(&worker.organization_ref)) {
-        return Err(Error::NotFound);
-    }
-    Ok((worker, staff))
-}
-
 /// `GET /api/workers/{pid}/upline` — the management chain above a worker,
 /// nearest first: `level` 1 is their direct manager, 2 their manager's
 /// manager, and so on up to the top.
@@ -78,23 +112,24 @@ async fn upline(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let (worker, staff) = visible_worker(&ctx, &caller, &pid).await?;
-    let manager_of: BTreeMap<Uuid, Uuid> = staff
-        .values()
-        .filter_map(|w| w.manager_pid.map(|m| (w.pid, m)))
-        .collect();
-    let chain: Vec<serde_json::Value> = org::upline(worker.pid, &manager_of)
-        .iter()
-        .enumerate()
-        .filter_map(|(i, m)| {
-            staff.get(m).map(|boss| {
-                let mut json = person_json(boss);
-                json["level"] = serde_json::json!(i + 1);
-                json["direct_manager"] = serde_json::json!(i == 0);
-                json
-            })
-        })
-        .collect();
+    let worker = visible_worker(&ctx, &caller, &pid).await?;
+    // One manager at a time, up from the worker, while each is employed and visible; a cycle stops.
+    let today = chrono::Utc::now().date_naive();
+    let mut chain: Vec<serde_json::Value> = Vec::new();
+    let mut seen = std::collections::BTreeSet::from([worker.pid]);
+    let mut manager = is_employed_on(today, worker.hired_on, worker.terminated_on)
+        .then_some(worker.manager_pid)
+        .flatten();
+    while let Some(pid) = manager.filter(|m| seen.insert(*m)) {
+        let Some(boss) = staff_among(&ctx, &caller, &[pid]).await?.remove(&pid) else {
+            break;
+        };
+        let mut json = person_json(&boss);
+        json["level"] = serde_json::json!(chain.len() + 1);
+        json["direct_manager"] = serde_json::json!(chain.is_empty());
+        chain.push(json);
+        manager = boss.manager_pid;
+    }
     format::json(serde_json::json!({
         "worker": person_json(&worker),
         "upline": chain,
@@ -139,7 +174,8 @@ async fn downline(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let (manager, staff) = visible_worker(&ctx, &caller, &pid).await?;
+    let manager = visible_worker(&ctx, &caller, &pid).await?;
+    let staff = staff_below(&ctx, &caller, manager.pid).await?;
     let team = below(manager.pid, &staff);
     let direct = team.iter().filter(|(_, d)| *d == 1).count();
     format::json(serde_json::json!({
@@ -164,7 +200,8 @@ async fn reports(
         Some("indirect") => Some(ReportKind::Indirect),
         Some(_) => return Err(unprocessable("kind must be direct or indirect")),
     };
-    let (manager, staff) = visible_worker(&ctx, &caller, &pid).await?;
+    let manager = visible_worker(&ctx, &caller, &pid).await?;
+    let staff = staff_below(&ctx, &caller, manager.pid).await?;
     let team: Vec<serde_json::Value> = below(manager.pid, &staff)
         .iter()
         .filter(|(_, d)| wanted.is_none_or(|k| org::report_kind(*d) == Some(k)))
@@ -202,7 +239,7 @@ async fn dotted_line(
     Path(pid): Path<String>,
     axum::extract::Query(query): axum::extract::Query<PastQuery>,
 ) -> Result<Response> {
-    let (worker, staff) = visible_worker(&ctx, &caller, &pid).await?;
+    let worker = visible_worker(&ctx, &caller, &pid).await?;
     let mut select = dotted_line_reports::Entity::find();
     if !query.include_past {
         select = select.filter(dotted_line_reports::Column::EndedAt.is_null());
@@ -216,6 +253,11 @@ async fn dotted_line(
         .order_by_desc(dotted_line_reports::Column::StartedAt)
         .all(&ctx.db)
         .await?;
+    let others: Vec<Uuid> = rows
+        .iter()
+        .map(|d| if d.report_pid == worker.pid { d.manager_pid } else { d.report_pid })
+        .collect();
+    let staff = staff_among(&ctx, &caller, &others).await?;
     let managers: Vec<serde_json::Value> = rows
         .iter()
         .filter(|d| d.report_pid == worker.pid)
@@ -275,7 +317,7 @@ async fn add_dotted_manager(
     {
         return Err(unprocessable("note is longer than 500 characters"));
     }
-    let staff = visible_staff(&ctx, &caller).await?;
+    let staff = staff_among(&ctx, &caller, &[payload.manager_pid]).await?;
     if !staff.contains_key(&payload.manager_pid) {
         return Err(unprocessable(
             "the dotted-line manager must be an employed worker you can see",
