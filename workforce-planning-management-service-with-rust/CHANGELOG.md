@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-21
+
+One organization of 200,000 workers now answers every measured view within 2 seconds at the 95th percentile with eight connections and no failed request (WPM-R142; method and numbers in `BENCHMARKS.md`).
+
+**Upgrade notes:**
+
+- Database: migrations `000078` (`time_entry_weeks`, kept by a trigger on `time_entries`, backfilled from existing entries) and `000079` (a partial index on `deleted_at` for every soft-deleting table) run on start. On a large database the backfill and the indexes take time and the backfill holds writes to `time_entries`; run them in a quiet window.
+- `GET /api/learning/mentorship-overview` names the newest 200 unpaired workers (`unmatched_limit`, at most 1,000) and always gives `unmatched_total`; it is no longer a complete list.
+- `GET /api/org-chart` returns at most 5,000 people, roots first (`limit`, at most 20,000); `GET /api/org-chart/size` gives the total.
+
+### Changed — every view holds 200,000 workers (WPM-T243)
+
+Skill gaps, training demand, contingent share, programmes, capability, capability analysis, the skills matrix, training analytics, ergonomics and the retention report count in the database or read ids in batches of 5,000. Four of them failed outright at 200,000 workers (over Postgres's 65,535-parameter limit). Answers are unchanged apart from the two bounded lists above.
+
+### Added — a weekly rollup for working time (WPM-T240)
+
+`GET /api/workforce/working-time` reads `time_entry_weeks` to find the weeks that could breach the limit, then sums the exact window; answers are unchanged.
+
+### Added — escalations on the CEO dashboard (WPM-T242) and CPD requirements can be corrected or withdrawn in the UI (WPM-T241)
+
 ### Changed — the workforce overview and metrics are counted by the database (WPM-T237)
 
 `GET /api/workforce-intelligence/overview`, `/metrics` and `/insights` give the same answers; at 50,000 workers they went from about 600 ms with failed requests to 50 to 270 ms with none.
