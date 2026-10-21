@@ -430,6 +430,8 @@ applicants' details and the audit trail) and a list of gaps with evidence.
   organization's records, and a recorded result.
 - **WPM-R142 Two hundred thousand workers.** One organization of 200,000 workers is a supported size, not a ceiling
   to be refused at (supersedes the 10,000 refusal of WPM-D90 once every view meets it; WPM-D95).
+- **WPM-R143 API versioning by header.** The API is at `/api`, and a client selects a version with the `Accepts-version`
+  request header; no URL carries a version (`/api/v1`, `/api/v2` are not used) (WPM-D98).
 - **WPM-R121 Independent assurance.** A penetration test, an accessibility audit, a signed-off impact
   assessment, a translation review: recorded as gates, not claimed.
 - **WPM-R122 Observability.** A request identifier on every response and in every log line; a test that logs hold

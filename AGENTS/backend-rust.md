@@ -73,3 +73,5 @@ Notification::push(&txn, worker_pid, "kind", "reference-only text", json!({…})
 
 Money is minor units (`i64`) + ISO-4217; no floats. "Employed on a date" is
 `rules::metrics::is_employed_on` — use it, never re-derive it.
+
+- **API versioning is a header.** Routes are `/api/<noun>`; select a version with `Accepts-version`. Never add `/api/v1`, `/api/v2` or any version segment (WPM-D98).

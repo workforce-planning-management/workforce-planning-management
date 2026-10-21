@@ -541,6 +541,8 @@ acceptance criteria and traces to the tasks that delivered it:
   [job-levels.md](job-levels.md) (WPM-T93–T94).
 - **WPM-R134** match worker records, and say what the answer rests on —
   [worker-matching.md](worker-matching.md) (WPM-T226).
+- **WPM-R143** the API is versioned by the `Accepts-version` header at `/api`, never by a URL segment such as `/api/v1` —
+  [production-readiness.md](production-readiness.md) (WPM-D98, WPM-T245).
 - **WPM-R142** one deployment holds 200,000 workers in one organization: every view answers without a failed request and
   without a size refusal, within a stated time at the load test's concurrency — [production-readiness.md](production-readiness.md)
   (WPM-D95, WPM-D96, WPM-T239, WPM-T240).

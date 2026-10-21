@@ -48,6 +48,6 @@ New data-changing migrations add a row here in the change that introduces them.
 
 ## Compatibility
 
-The API is versioned by header (`Accepts-version`); an unsupported version is a `406`.
+The API is versioned by header (`Accepts-version`), never by URL (`/api/v1` is not used; WPM-D98); an unsupported version is a `406`.
 Environment variables are renamed with a compatibility layer (`HCM_` to `WPM_`); a
 deprecated name still works but logs. Check the changelog before relying on either.

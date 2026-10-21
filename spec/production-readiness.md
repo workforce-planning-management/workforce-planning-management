@@ -312,3 +312,14 @@ they passed every worker id to one `IN (…)` list and a statement carries at mo
 **Not claimed:** routes that take an id (a worker, a plan) were not surveyed; the case-insensitive department filter now uses `lower()`, which also
 folds non-ASCII letters (the old code folded ASCII only).
 
+## WPM-D98 — The API version is a header, not a path
+
+Every route is `/api/<noun>`. A client selects a representation with `Accepts-version: 1.0`; a request without the header gets the current
+version, a bare major (`1`) is read as its current minor, and an unsupported version is a `406`. The response carries the version it served.
+A new version is added to `SUPPORTED_API_VERSIONS` in `src/version.rs`, **never** to the URL: **do not** add `/api/v1`, `/api/v2` or any
+version segment, and do not mount a second copy of a route under one. One URL then names one resource for its whole life, so links, the
+OpenAPI document, the UI's `/api/proxy/*` calls and bookmarks do not change when a version does.
+
+**Why:** a version in the path forks every URL and every client at once, and invites two copies of each handler to be kept in step. A header
+changes only the representation. **Not claimed:** only version `1.0` exists, so no request has yet been served a different representation;
+the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).

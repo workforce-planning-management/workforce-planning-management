@@ -113,6 +113,26 @@ pub async fn require_version_mw(req: Request, next: Next) -> Response {
 mod tests {
     use super::*;
 
+    /// WPM-D98: a version is never a path segment; every documented route is `/api/<noun>`.
+    #[test]
+    fn no_route_carries_a_version_segment() {
+        let doc = crate::openapi::spec();
+        for path in doc["paths"].as_object().expect("paths").keys() {
+            let mut segments = path.split('/').filter(|s| !s.is_empty());
+            if segments.next() != Some("api") {
+                continue;
+            }
+            let second = segments.next().unwrap_or("");
+            let versioned = second.len() > 1
+                && second.starts_with('v')
+                && second[1..].chars().all(|c| c.is_ascii_digit());
+            assert!(
+                !versioned,
+                "{path} puts a version in the URL; use {VERSION_HEADER}"
+            );
+        }
+    }
+
     #[test]
     fn absent_header_resolves_to_current() {
         assert_eq!(resolve_version(None), Ok(CURRENT_API_VERSION));

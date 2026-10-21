@@ -3977,4 +3977,7 @@ deployer's lawful basis and impact assessment before they are switched on.
       atomicity assertion fails when a write is deliberately split; faults on Redis, the identity service and the mail server are not
       injected; the monkey's requests run one after another, not concurrently; no latency percentiles; only `POST /api/workers`
       is written under fault.
-
+- [x] WPM-T245 (2026-10-21) **API versioning by header, stated and guarded.** *(WPM-R143, WPM-D98)* The behaviour was built in `src/version.rs` from the
+      start; this records it as a requirement and a decision, and adds a test (`version::tests::no_route_carries_a_version_segment`) that fails if any
+      path in the OpenAPI document is `/api/v<digits>/…`. **Not checked:** the test reads the documented routes, not the router, so an
+      undocumented versioned route would not be caught.
