@@ -58,7 +58,11 @@ file.
 - The caller is its **network address**: the peer address, or the first
   `X-Forwarded-For` hop only when `WPM_TRUST_FORWARDED` is set, which a
   deployment behind a reverse proxy that *overwrites* that header must do
-  (otherwise every caller shares the proxy's address and one bucket).
+  (otherwise every caller shares the proxy's address and one bucket). The UI's
+  same-origin proxy is such a proxy: it overwrites `X-Forwarded-For` with the
+  address it sees (`getClientAddress()`; behind a further proxy, set the Node
+  adapter's `ADDRESS_HEADER`), and forwards only `accept`, `content-type`,
+  `if-none-match`, a plain idempotency key and its own bearer (WPM-T248).
 - Limits are per instance (in memory); behind several instances each counts
   alone, so the caller's real limit is the number of instances times the setting.
   What a deployer adds (a limit at the proxy, divided limits, or sticky routing) is in

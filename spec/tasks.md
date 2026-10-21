@@ -4003,9 +4003,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       needs the acknowledgement. Verified: `wellbeing_round_trip` now fetches twice (same answer), answers, then is quiet;
       with the old stamp put back it failed; the other three wellbeing and training tests pass. **Not checked:** the UI was not
       changed or run (its answer buttons already post an acknowledgement, which is what now uses the reminder up).
-- [ ] WPM-T248 **The proxy forwards an allow-list.** *(WPM-D52)* `routes/api/proxy/[...path]/+server.ts` forwards only
-      `content-type`, `accept`, `if-none-match` and `idempotency-key`; always deletes `authorization` before setting it; refuses
-      `.` and `..` segments with 400. Unit tests for each.
+- [x] WPM-T248 (2026-10-21) **The proxy forwards an allow-list.** *(WPM-D52)* `src/lib/server/proxy.ts` (pure: `forwardHeaders`,
+      `isSafeApiPath`); `routes/api/proxy/[...path]/+server.ts` uses both. Forwarded: `accept`, `content-type`, `if-none-match`, a
+      plain idempotency key, `accepts-version`, the exchanged bearer and `x-forwarded-for` set to `getClientAddress()`. A browser's
+      `authorization`, cookie and `x-forwarded-for` are never passed on; an empty, `.` or `..` segment or a backslash is `400`
+      before any call. `production-readiness.md` says so beside the rate-limit note. Verified: 8 tests in
+      `tests/unit/proxy.test.ts`; with the old copy-every-header line put back, the no-session test failed; all 168 vitest,
+      svelte-check 0 errors, prettier clean. **Not checked:** Playwright (its stubs answer in the browser, so the server route
+      never runs there); a real browser against a running API; whether a deployment's adapter reports the right client address
+      behind another proxy.
 - [ ] WPM-T249 **The CMS page is pinned and has a policy.** *(WPM-D52)* `routes/admin/+server.ts` loads an exact Sveltia CMS
       version with `integrity` and `crossorigin`, and sends a CSP (script-src self, the CDN, the inline script's hash). A
       Playwright check that `/admin` still loads.

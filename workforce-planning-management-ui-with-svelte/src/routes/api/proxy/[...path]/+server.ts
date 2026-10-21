@@ -15,7 +15,7 @@ import type { RequestHandler } from "./$types";
 import { WPM_API_URL, WPM_DEMO_API_URL } from "#lib/server/config.js";
 import { demoMemberships, isDemoSession } from "#lib/server/demo.js";
 import { exchangeToken } from "#lib/server/auth.js";
-import { isIdempotencyKey } from "#lib/idempotency.js";
+import { forwardHeaders, isSafeApiPath } from "#lib/server/proxy.js";
 
 const proxy: RequestHandler = async ({
   request,
@@ -23,7 +23,15 @@ const proxy: RequestHandler = async ({
   url,
   locals,
   fetch,
+  getClientAddress,
 }) => {
+  // A dot segment would leave `/api/` once the URL is resolved (WPM-T248).
+  if (!isSafeApiPath(params.path)) {
+    return new Response(JSON.stringify({ error: "bad_path" }), {
+      status: 400,
+      headers: { "content-type": "application/json" },
+    });
+  }
   // A demo session goes to the demo service (fictitious data, no authentication) and nowhere else; with
   // no demo configured it opens nothing.
   const demo = isDemoSession(locals.sessionId);
@@ -53,25 +61,19 @@ const proxy: RequestHandler = async ({
   }
   const target = `${demo ? WPM_DEMO_API_URL : WPM_API_URL}/api/${params.path}${url.search}`;
 
-  // Copy request headers, but drop hop-by-hop / origin-specific ones and
-  // never forward the browser's cookie to the entity service.
-  const headers = new Headers(request.headers);
-  headers.delete("cookie");
-  headers.delete("host");
-  headers.delete("connection");
-  headers.delete("content-length");
-  headers.set("accepts-version", "1.0");
-
-  // Pass an idempotency key through only if it is a plain token (WPM-R132);
-  // anything else is dropped rather than forwarded.
-  const key = headers.get("idempotency-key");
-  if (key !== null && !isIdempotencyKey(key)) headers.delete("idempotency-key");
-
-  // Session → short-lived PASETO, server-side only (WPM-T18).
-  if (locals.sessionId && !demo) {
-    const token = await exchangeToken(fetch, locals.sessionId);
-    if (token) headers.set("authorization", `Bearer ${token}`);
+  // Session → short-lived PASETO, server-side only (WPM-T18). Only the allow-listed headers go with it: never the
+  // browser's cookie, its own authorization or its x-forwarded-for (WPM-T248); a plain idempotency key does (WPM-R132).
+  const token =
+    locals.sessionId && !demo
+      ? await exchangeToken(fetch, locals.sessionId)
+      : null;
+  let clientAddress: string | null = null;
+  try {
+    clientAddress = getClientAddress();
+  } catch {
+    // Some adapters and tests cannot say; the API then sees this server as the caller.
   }
+  const headers = forwardHeaders(request.headers, { token, clientAddress });
 
   const init: RequestInit = { method: request.method, headers };
   if (request.method !== "GET" && request.method !== "HEAD") {
