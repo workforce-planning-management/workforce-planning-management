@@ -2077,24 +2077,66 @@ async fn reporting_lines_stop_at_a_manager_who_has_left() {
         }
         let (top, middle, low, other) = (&pids[0], &pids[1], &pids[2], &pids[3]);
         for (w, m) in [(middle, top), (low, middle), (other, top)] {
-            request.put(&format!("/api/workers/{w}")).json(&json!({ "manager_pid": m })).await.assert_status_ok();
+            request
+                .put(&format!("/api/workers/{w}"))
+                .json(&json!({ "manager_pid": m }))
+                .await
+                .assert_status_ok();
         }
         let len = |v: &Value, key: &str| v[key].as_array().unwrap().len();
-        let up: Value = request.get(&format!("/api/workers/{low}/upline")).await.json();
+        let up: Value = request
+            .get(&format!("/api/workers/{low}/upline"))
+            .await
+            .json();
         assert_eq!(len(&up, "upline"), 2);
-        let down: Value = request.get(&format!("/api/workers/{top}/downline")).await.json();
+        let down: Value = request
+            .get(&format!("/api/workers/{top}/downline"))
+            .await
+            .json();
         assert_eq!(down["summary"]["total"], 3);
 
-        ctx.db.execute_unprepared(&format!("UPDATE workers SET terminated_on = '2026-02-01' WHERE pid = '{middle}'")).await.unwrap();
-        let up: Value = request.get(&format!("/api/workers/{low}/upline")).await.json();
-        assert_eq!(len(&up, "upline"), 0, "the chain stops at a manager who has left");
-        let down: Value = request.get(&format!("/api/workers/{top}/downline")).await.json();
-        assert_eq!(down["summary"]["total"], 1, "and so does the downline: only the other direct report remains");
+        ctx.db
+            .execute_unprepared(&format!(
+                "UPDATE workers SET terminated_on = '2026-02-01' WHERE pid = '{middle}'"
+            ))
+            .await
+            .unwrap();
+        let up: Value = request
+            .get(&format!("/api/workers/{low}/upline"))
+            .await
+            .json();
+        assert_eq!(
+            len(&up, "upline"),
+            0,
+            "the chain stops at a manager who has left"
+        );
+        let down: Value = request
+            .get(&format!("/api/workers/{top}/downline"))
+            .await
+            .json();
+        assert_eq!(
+            down["summary"]["total"], 1,
+            "and so does the downline: only the other direct report remains"
+        );
         assert_eq!(down["downline"][0]["pid"], other.as_str());
-        let gone: Value = request.get(&format!("/api/workers/{middle}/upline")).await.json();
-        assert_eq!(len(&gone, "upline"), 0, "someone who has left has no upline");
-        let dot = request.post(&format!("/api/workers/{low}/dotted-line-managers")).json(&json!({ "manager_pid": middle })).await;
-        assert_eq!(dot.status_code(), 422, "a dotted-line manager must be employed");
+        let gone: Value = request
+            .get(&format!("/api/workers/{middle}/upline"))
+            .await
+            .json();
+        assert_eq!(
+            len(&gone, "upline"),
+            0,
+            "someone who has left has no upline"
+        );
+        let dot = request
+            .post(&format!("/api/workers/{low}/dotted-line-managers"))
+            .json(&json!({ "manager_pid": middle }))
+            .await;
+        assert_eq!(
+            dot.status_code(),
+            422,
+            "a dotted-line manager must be employed"
+        );
     })
     .await;
 }

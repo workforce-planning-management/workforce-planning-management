@@ -255,7 +255,13 @@ async fn dotted_line(
         .await?;
     let others: Vec<Uuid> = rows
         .iter()
-        .map(|d| if d.report_pid == worker.pid { d.manager_pid } else { d.report_pid })
+        .map(|d| {
+            if d.report_pid == worker.pid {
+                d.manager_pid
+            } else {
+                d.report_pid
+            }
+        })
         .collect();
     let staff = staff_among(&ctx, &caller, &others).await?;
     let managers: Vec<serde_json::Value> = rows
