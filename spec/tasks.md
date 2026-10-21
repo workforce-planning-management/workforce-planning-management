@@ -3997,9 +3997,12 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       plan.md section O says so). Verified: `training_plans_…` request test asserts the actions; with the removal's audit
       action changed it failed (`["created", "nothing"]`); clippy `-D warnings` and `cargo fmt` clean. **Not checked:** no
       enforcement-matrix row was added for these routes (they are covered by the blanket policy test, not by name).
-- [ ] WPM-T247 **A GET changes nothing.** *(WPM-R25, WPM-R26)* `GET /workers/{pid}/wellbeing-prompts` (`controllers/wellbeing.rs:343`)
-      stops stamping `reminded_on`; the stamp moves to an explicit POST. `rules::prompt_state` returns the acknowledgement with
-      the `Reminder` state so the `expect` goes. A test that two GETs return the same answer.
+- [x] WPM-T247 (2026-10-21) **A GET changes nothing.** *(WPM-R25, WPM-R26)* `GET /workers/{pid}/wellbeing-prompts` no longer
+      stamps `reminded_on`: the multi-dose reminder stays on the list until the worker answers it, and answering it (any
+      response) records `reminded_on`, in one transaction with the audit row. The `expect` is gone because the GET no longer
+      needs the acknowledgement. Verified: `wellbeing_round_trip` now fetches twice (same answer), answers, then is quiet;
+      with the old stamp put back it failed; the other three wellbeing and training tests pass. **Not checked:** the UI was not
+      changed or run (its answer buttons already post an acknowledgement, which is what now uses the reminder up).
 - [ ] WPM-T248 **The proxy forwards an allow-list.** *(WPM-D52)* `routes/api/proxy/[...path]/+server.ts` forwards only
       `content-type`, `accept`, `if-none-match` and `idempotency-key`; always deletes `authorization` before setting it; refuses
       `.` and `..` segments with 400. Unit tests for each.

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the wellbeing reminder stays until it is answered (WPM-T247)
+
+`GET /api/workers/{pid}/wellbeing-prompts` no longer writes: it used to mark the one multi-dose reminder as sent while serving it, so a prefetch or retry used it up. The reminder now stays on the list until the worker answers it, and answering it marks it sent.
+
 ### Fixed — course-catalogue changes are audited (WPM-T246)
 
 `POST /api/skills/{pid}/courses`, `DELETE /api/skill-courses/{pid}` and `PUT /api/skills/{pid}/training-hours` now record who made the change, in the same transaction as the change.

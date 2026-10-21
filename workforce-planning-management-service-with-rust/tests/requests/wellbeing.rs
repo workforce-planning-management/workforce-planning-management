@@ -163,7 +163,23 @@ async fn wellbeing_round_trip() {
         );
         assert_eq!(items[0]["kind"], "reminder");
         assert_eq!(items[0]["name"], "Seasonal flu vaccination");
-        // Serving it stamped it: the next fetch is quiet.
+        // Reading changes nothing (WPM-T247): a second fetch shows the same reminder.
+        let again: Value = request
+            .get(&format!("/api/workers/{engineer}/wellbeing-prompts"))
+            .await
+            .json();
+        assert_eq!(
+            again["prompts"], prompts["prompts"],
+            "a GET does not use up the reminder"
+        );
+        // Answering it uses it up: the next fetch is quiet.
+        request
+            .post(&format!(
+                "/api/workers/{engineer}/wellbeing-acknowledgements"
+            ))
+            .json(&json!({ "entitlement_pid": flu_pid, "response": "booked" }))
+            .await
+            .assert_status_ok();
         let prompts: Value = request
             .get(&format!("/api/workers/{engineer}/wellbeing-prompts"))
             .await

@@ -50,7 +50,7 @@ so the prompt signposts enrolment and goes quiet once the employee is
 enrolled (derived, never stored — WPM-D18). Eligible employees see an
 informational prompt in self-service and record one acknowledgement
 (`booked | done | declined | dismissed`); one optional reminder for
-multi-dose courses. Acknowledgements are employee-owned and
+multi-dose courses, shown until the employee answers it (reading the prompts changes nothing). Acknowledgements are employee-owned and
 aggregate-only for HR — never manager-visible; WPM stores no
 vaccination status or clinical data ([design.md](design.md)
 WPM-D17/D18; [requirements.md](requirements.md) WPM-R25, WPM-R26).

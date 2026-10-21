@@ -14,7 +14,7 @@
 use std::str::FromStr;
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -340,17 +340,8 @@ async fn worker_prompts(
         );
         let kind = match state {
             rules::PromptState::Prompt => "prompt",
-            rules::PromptState::Reminder => {
-                // Serving the reminder is what "one reminder" means:
-                // stamp it so it never appears again.
-                let mut active: entitlement_acknowledgements::ActiveModel = ack
-                    .expect("reminder implies an acknowledgement")
-                    .clone()
-                    .into();
-                active.reminded_on = ActiveValue::set(Some(today));
-                active.update(&ctx.db).await?;
-                "reminder"
-            }
+            // Reading changes nothing: the reminder stays until the worker answers it (WPM-T247).
+            rules::PromptState::Reminder => "reminder",
             rules::PromptState::Quiet => continue,
         };
         prompts.push(serde_json::json!({
@@ -416,12 +407,22 @@ async fn acknowledge(
         .filter(entitlement_acknowledgements::Column::WorkerPid.eq(worker.pid))
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let row = match existing {
         Some(row) => {
+            // Answering the one reminder uses it up, whatever the answer.
+            let answers_reminder = rules::prompt_state(
+                entitlement.doses,
+                Some(row.response.as_str()),
+                row.reminded_on.is_some(),
+            ) == rules::PromptState::Reminder;
             let mut active: entitlement_acknowledgements::ActiveModel = row.into();
             active.response = ActiveValue::set(payload.response.clone());
             active.responded_on = ActiveValue::set(today);
-            active.update(&ctx.db).await?
+            if answers_reminder {
+                active.reminded_on = ActiveValue::set(Some(today));
+            }
+            active.update(&txn).await?
         }
         None => {
             entitlement_acknowledgements::ActiveModel {
@@ -433,12 +434,12 @@ async fn acknowledge(
                 reminded_on: ActiveValue::set(None),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?
         }
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "entitlement_acknowledgement",
         row.pid,
         "acknowledged",
@@ -446,6 +447,7 @@ async fn acknowledge(
         Some(serde_json::json!({ "response": payload.response })),
     )
     .await?;
+    txn.commit().await?;
     format::json(row)
 }
 
