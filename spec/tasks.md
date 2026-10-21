@@ -4012,9 +4012,19 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       svelte-check 0 errors, prettier clean. **Not checked:** Playwright (its stubs answer in the browser, so the server route
       never runs there); a real browser against a running API; whether a deployment's adapter reports the right client address
       behind another proxy.
-- [ ] WPM-T249 **The CMS page is pinned and has a policy.** *(WPM-D52)* `routes/admin/+server.ts` loads an exact Sveltia CMS
-      version with `integrity` and `crossorigin`, and sends a CSP (script-src self, the CDN, the inline script's hash). A
-      Playwright check that `/admin` still loads.
+- [x] WPM-T249 (2026-10-21) **The CMS page is pinned and has a policy.** *(WPM-D52, WPM-R73)* `src/lib/server/admin-page.ts`:
+      Sveltia CMS 0.230.0 (released 2026-10-06, chosen as at least two weeks old) from unpkg with its `sha384` integrity and
+      `crossorigin`, and a CSP for the `/admin` response: the inline language script by its `sha256` hash, Sveltia's documented
+      sources (its security page), and `api.github.com`, `www.githubstatus.com` and `avatars.githubusercontent.com` for the
+      GitHub backend (the hosts read from the pinned bundle). `production-readiness.md` no longer lists it as a known gap.
+      Verified: 2 unit tests (exact version, integrity shape, the hash matches the inline script in three locales, no
+      `'unsafe-inline'` or `'unsafe-eval'` for scripts); in Chromium against `vite preview`, `/en-001/admin`, `/cy-001/admin`
+      and `/ar-001/admin` render the sign-in screen with no console error or policy violation (Arabic in Arabic, so the hashed
+      script ran; Welsh maps to `en-GB` by design); with one character of the hash changed, Chromium blocked the script and
+      reported the same digest. Build, svelte-check 0 errors, 170 vitest, prettier clean; Playwright 149 passed, 4 skipped,
+      1 failed (`pickers.spec.ts:69`, a hover-position spec; it passed 3 of 3 alone, so it is flaky under load, not caused here).
+      **Not checked:** signing in with GitHub, or editing and saving an entry, under the policy (no GitHub login was used), so
+      a host the CMS needs only after sign-in may still be missing; Firefox and Safari.
 - [ ] WPM-T250 **Write and audit in one transaction.** `mutate(ctx, |txn| …)` in `controllers/mod.rs`; then move the about 154
       `Audit::record(&ctx.db, …)` calls into the write's transaction, one controller per commit. Decide (plan.md section 6)
       whether `Audit::record` should stop accepting a bare connection. A test that a failing audit insert rolls back the change.

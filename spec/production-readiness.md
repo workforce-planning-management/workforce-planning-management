@@ -42,8 +42,11 @@ file.
   `frame-ancestors 'none'`; `style-src` allows inline styles because Svelte sets
   them).
 - The one exception is the content manager's path (`/admin`): its sign-in uses a popup, so it gets
-  `Cross-Origin-Opener-Policy: same-origin-allow-popups`. It also loads a script from a public CDN
-  without a pinned version or an integrity hash, which is a known gap.
+  `Cross-Origin-Opener-Policy: same-origin-allow-popups`. Its CMS script comes from a public CDN at
+  an exact version with a `sha384` integrity hash (`src/lib/server/admin-page.ts`), and the page
+  sends its own policy, since `kit.csp` does not reach it: the inline language script by its
+  `sha256` hash (no `'unsafe-inline'` for scripts), Sveltia's documented sources, and the GitHub
+  backend's `api.github.com` and avatars (WPM-T249). A new CMS version needs a new hash.
 - **CORS** in production is an allow-list from `WPM_CORS_ORIGIN`, required: boot
   fails when it is unset rather than falling back to `*`. Methods and headers are
   listed, credentials are off.

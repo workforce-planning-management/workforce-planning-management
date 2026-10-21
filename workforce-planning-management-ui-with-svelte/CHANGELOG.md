@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security — the content manager's script is pinned and its page has a policy (WPM-T249)
+
+`/admin` loaded Sveltia CMS from unpkg at whatever version was newest, with no integrity hash and no content security policy. It now loads 0.230.0 with its `sha384` hash, and the page sends a policy that lets only that script and its own hashed inline script run. Updating the CMS means changing the version and the hash in `src/lib/server/admin-page.ts`.
+
 ### Security — the API proxy forwards an allow-list (WPM-T248)
 
 The proxy used to copy every browser header except four, so with no session a browser's own `authorization` and `x-forwarded-for` reached the API. It now sends only `accept`, `content-type`, `if-none-match`, a plain idempotency key, the version, its own bearer, and the caller's address as the server sees it. A path with an empty, `.` or `..` segment is refused with `400`.
