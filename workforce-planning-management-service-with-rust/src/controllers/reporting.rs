@@ -141,6 +141,22 @@ async fn upline(
 struct KindQuery {
     /// `direct`, `indirect`, or absent for both.
     kind: Option<String>,
+    /// How many people to list, nearest first (default 5,000, at most 20,000); the totals are of everyone.
+    limit: Option<usize>,
+}
+
+/// Query for the downline.
+#[derive(Debug, Deserialize)]
+struct LimitQuery {
+    /// How many people to list, nearest first (default 5,000, at most 20,000); the summary is of everyone.
+    limit: Option<usize>,
+}
+
+const LIST_DEFAULT_LIMIT: usize = 5_000;
+const LIST_MAX_LIMIT: usize = 20_000;
+
+fn list_limit(asked: Option<usize>) -> usize {
+    asked.unwrap_or(LIST_DEFAULT_LIMIT).clamp(1, LIST_MAX_LIMIT)
 }
 
 /// The downline of a manager: `(worker, depth)` for everyone below.
@@ -173,7 +189,9 @@ async fn downline(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
+    axum::extract::Query(query): axum::extract::Query<LimitQuery>,
 ) -> Result<Response> {
+    let limit = list_limit(query.limit);
     let manager = visible_worker(&ctx, &caller, &pid).await?;
     let staff = staff_below(&ctx, &caller, manager.pid).await?;
     let team = below(manager.pid, &staff);
@@ -181,7 +199,8 @@ async fn downline(
     format::json(serde_json::json!({
         "manager": person_json(&manager),
         "summary": { "direct": direct, "indirect": team.len() - direct, "total": team.len() },
-        "downline": team.iter().map(|(w, d)| report_json(w, *d)).collect::<Vec<_>>(),
+        "downline": team.iter().take(limit).map(|(w, d)| report_json(w, *d)).collect::<Vec<_>>(),
+        "truncated": team.len() > limit,
     }))
 }
 
@@ -202,15 +221,22 @@ async fn reports(
     };
     let manager = visible_worker(&ctx, &caller, &pid).await?;
     let staff = staff_below(&ctx, &caller, manager.pid).await?;
-    let team: Vec<serde_json::Value> = below(manager.pid, &staff)
-        .iter()
+    let limit = list_limit(query.limit);
+    let matching: Vec<(&workers::Model, usize)> = below(manager.pid, &staff)
+        .into_iter()
         .filter(|(_, d)| wanted.is_none_or(|k| org::report_kind(*d) == Some(k)))
+        .collect();
+    let team: Vec<serde_json::Value> = matching
+        .iter()
+        .take(limit)
         .map(|(w, d)| report_json(w, *d))
         .collect();
     format::json(serde_json::json!({
         "manager": person_json(&manager),
         "kind": query.kind,
         "reports": team,
+        "total": matching.len(),
+        "truncated": matching.len() > limit,
     }))
 }
 

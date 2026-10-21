@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed — upline, downline, reports and dotted-line read only the people they need (WPM-T244)
 
-`GET /api/workers/{pid}/upline`, `/downline`, `/reports` and `/dotted-line` gave the same answers after reading every worker; at 200,000 workers that took 0.55 s a request. They now follow the chain, so the cost grows with the team, not the organization.
+`GET /api/workers/{pid}/upline`, `/downline`, `/reports` and `/dotted-line` gave the same answers after reading every worker; at 200,000 workers that took 0.55 s a request. They now follow the chain, so the cost grows with the team, not the organization. `downline` and `reports` list at most `limit` people (default 5,000, at most 20,000), nearest first; the summary and `total` count everyone and `truncated` says whether the list is whole.
 
 ## [0.1.3] - 2026-10-21
 

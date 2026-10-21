@@ -215,5 +215,5 @@ bar.**
 
 ### Routes that take an id (WPM-T244)
 
-60 `GET` routes under `/api/workers/{pid}` and `/api/workforce-plans/{pid}` were timed once at 200,000 workers. Four read every worker to answer for a few: upline, downline, reports and dotted-line (0.54 to 0.60 s each). They now read only the chain they need; under 8 connections: upline p95 1.4 ms, downline 2.5, reports 2.5, dotted-line 2.5, no failed request. The seed has no reporting hierarchy, so the chain walks were short; the downline of the top manager of a deep hierarchy still returns every report.
+60 `GET` routes under `/api/workers/{pid}` and `/api/workforce-plans/{pid}` were timed once at 200,000 workers. Four read every worker to answer for a few: upline, downline, reports and dotted-line (0.54 to 0.60 s each). They now read only the chain they need; under 8 connections: upline p95 1.4 ms, downline 2.5, reports 2.5, dotted-line 2.5, no failed request. The seed has no reporting hierarchy, so the chain walks were short; the downline and reports lists are capped (`limit`, default 5,000) with the totals of everyone.
 

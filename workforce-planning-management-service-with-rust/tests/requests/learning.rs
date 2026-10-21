@@ -2180,6 +2180,13 @@ async fn reporting_lines_downline_aspirations_and_groups() {
         assert_eq!(all["summary"]["total"], 4);
         let indirect: Value = request.get(&format!("/api/workers/{ceo}/reports?kind=indirect")).await.json();
         assert_eq!(indirect["reports"].as_array().unwrap().len(), 2);
+        let capped: Value = request.get(&format!("/api/workers/{ceo}/downline?limit=1")).await.json();
+        assert_eq!(capped["downline"].as_array().unwrap().len(), 1, "the list is capped");
+        assert_eq!(capped["summary"]["total"], 4, "the summary still counts everyone");
+        assert_eq!(capped["truncated"], true);
+        assert_eq!(all["truncated"], false);
+        let capped: Value = request.get(&format!("/api/workers/{ceo}/reports?kind=indirect&limit=1")).await.json();
+        assert_eq!((capped["reports"].as_array().unwrap().len(), &capped["total"], &capped["truncated"]), (1, &json!(2), &json!(true)));
         let direct: Value = request.get(&format!("/api/workers/{ceo}/reports?kind=direct")).await.json();
         assert_eq!(direct["reports"].as_array().unwrap().len(), 2);
         assert_eq!(request.get(&format!("/api/workers/{ceo}/reports?kind=sideways")).await.status_code(), 422);

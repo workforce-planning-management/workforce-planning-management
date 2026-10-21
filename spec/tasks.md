@@ -3561,7 +3561,7 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       people on the dotted lines): p95 1.4 ms (upline) and 2.5 ms (the others), no failed request. The other 56 answer in under 150 ms for one request
       (plan forecast 98, plan tolerances 143 for one cold request; both measured under load in T239/T243). Test: a manager who has left breaks the chain above
       and below and cannot be a dotted-line manager (**mutation-checked**: with the employed filter removed it fails). *Not checked:* the downline of
-      the top manager of 200,000 still returns every report (cost grows with the team, not the organization; no `limit` yet); the seed has no
+      the top manager of 200,000 returned every report before (cost grows with the team, not the organization); closed in the same task by a `limit` (default 5,000, at most 20,000, nearest first) on `downline` and `reports`, the summary and `total` counting everyone and `truncated` saying whether the list is whole (tested); the seed has no
       reporting hierarchy, so the chain walks were measured short.
 - [x] WPM-T242 (2026-10-21) **Open escalations on the CEO dashboard.** *(WPM-R141, WPM-D94)* A seventh tile counts the open escalations of the caller's
       organizations (the same `GET /api/escalations?organization=` inbox, one call per organization in scope) with the age of the oldest in calendar
