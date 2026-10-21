@@ -16,7 +16,7 @@
 
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use uuid::Uuid;
@@ -25,6 +25,7 @@ use super::skill_gaps::{Evidence, load_evidence};
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{skill_courses, skills, training_enrollments, workers};
+use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::skill_gap::{self as gap_rules, Gap, Status};
 use crate::rules::training::{self as rules, Course, DEFAULT_HOURS_PER_LEVEL, Recommendation};
@@ -85,6 +86,7 @@ struct CoursePayload {
 #[debug_handler]
 async fn add_course(
     State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
     Path(pid): Path<String>,
     Json(payload): Json<CoursePayload>,
 ) -> Result<Response> {
@@ -116,6 +118,7 @@ async fn add_course(
             "that course is already listed for this skill",
         ));
     }
+    let txn = ctx.db.begin().await?;
     let row = skill_courses::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         skill_pid: ActiveValue::set(skill.pid),
@@ -126,23 +129,48 @@ async fn add_course(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
+    Audit::record(
+        &txn,
+        "skill_course",
+        row.pid,
+        "created",
+        caller.actor(),
+        Some(course_json(&row)),
+    )
+    .await?;
+    txn.commit().await?;
     format::json(course_json(&row))
 }
 
 /// `DELETE /api/skill-courses/{pid}` — take a course off a skill (soft-delete).
 #[debug_handler]
-async fn remove_course(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
+async fn remove_course(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
     let row = skill_courses::Entity::find()
         .filter(skill_courses::Column::Pid.eq(records::parse_pid(&pid)?))
         .filter(skill_courses::Column::DeletedAt.is_null())
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
+    let txn = ctx.db.begin().await?;
     let mut active: skill_courses::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&ctx.db).await?;
+    let removed = active.update(&txn).await?;
+    Audit::record(
+        &txn,
+        "skill_course",
+        removed.pid,
+        "deleted",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -158,6 +186,7 @@ struct HoursPayload {
 #[debug_handler]
 async fn set_hours(
     State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
     Path(pid): Path<String>,
     Json(payload): Json<HoursPayload>,
 ) -> Result<Response> {
@@ -170,7 +199,18 @@ async fn set_hours(
     }
     let mut active: skills::ActiveModel = skill.into();
     active.hours_per_level = ActiveValue::set(payload.hours_per_level);
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
+    Audit::record(
+        &txn,
+        "skill",
+        updated.pid,
+        "updated",
+        caller.actor(),
+        Some(serde_json::json!({ "hours_per_level": updated.hours_per_level })),
+    )
+    .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({
         "skill_pid": updated.pid,
         "hours_per_level": updated.hours_per_level,

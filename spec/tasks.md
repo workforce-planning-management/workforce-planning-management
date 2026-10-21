@@ -3990,9 +3990,13 @@ deployer's lawful basis and impact assessment before they are switched on.
 
 No new requirement: each task restores a rule in `AGENTS/`. The four defects come first.
 
-- [ ] WPM-T246 **Training-plan writes take a caller.** *(WPM-R15, WPM-R16)* `controllers/training_plan.rs` `add_course`,
-      `remove_course` and `set_hours` take `MaybeAuthUser`, require an editor role on the worker, and audit inside the write's
-      transaction. Enforcement-matrix rows for the three routes; a test that fails when the role check is removed.
+- [x] WPM-T246 (2026-10-21) **Training-plan writes name who made them.** *(WPM-R15, WPM-R16)* `controllers/training_plan.rs`
+      `add_course`, `remove_course` and `set_hours` take the caller and write an audit row (`skill_course` created and
+      deleted; `skill` updated, with the new figure) in the same transaction as the change. The planned role check was not
+      needed: the request-level policy already lets only a `Write` holder through (the audit's first reading was wrong;
+      plan.md section O says so). Verified: `training_plans_…` request test asserts the actions; with the removal's audit
+      action changed it failed (`["created", "nothing"]`); clippy `-D warnings` and `cargo fmt` clean. **Not checked:** no
+      enforcement-matrix row was added for these routes (they are covered by the blanket policy test, not by name).
 - [ ] WPM-T247 **A GET changes nothing.** *(WPM-R25, WPM-R26)* `GET /workers/{pid}/wellbeing-prompts` (`controllers/wellbeing.rs:343`)
       stops stamping `reminded_on`; the stamp moves to an explicit POST. `rules::prompt_state` returns the acknowledgement with
       the `Reminder` state so the `expect` goes. A test that two GETs return the same answer.

@@ -313,6 +313,26 @@ async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_prio
         let listed: Value = request.get(&courses).await.json();
         assert_eq!(listed["courses"].as_array().unwrap().len(), 1);
         assert_eq!(listed["default_hours_per_level"], 30);
+
+        // Every catalogue write is audited (WPM-T246): the course's creation and removal, and the per-level figure.
+        let actions = |entity: &'static str, pid: String| {
+            let db = ctx.db.clone();
+            async move {
+                db.query_all_raw(sea_orm::Statement::from_sql_and_values(
+                    sea_orm::DbBackend::Postgres,
+                    "SELECT action FROM audit_logs WHERE entity = $1 AND entity_pid = $2::uuid ORDER BY id",
+                    [entity.into(), pid.into()],
+                ))
+                .await
+                .unwrap()
+                .iter()
+                .map(|r| r.try_get::<String>("", "action").unwrap())
+                .collect::<Vec<_>>()
+            }
+        };
+        let fast_pid = fast_row["pid"].as_str().unwrap().to_string();
+        assert_eq!(actions("skill_course", fast_pid).await, ["created", "deleted"]);
+        assert_eq!(actions("skill", skills[1].clone()).await.last().map(String::as_str), Some("updated"));
     })
     .await;
 }
