@@ -29,6 +29,10 @@ planning and contingent workforce (WPM-T133–T143). See [plan.md](plan.md).
 Scheduling (critical chain, critical path and similar) lives in
 project-portfolio-management (WPM-D55).
 
+**Proposed (2026-10-21), not started:** Phase 22, code quality (WPM-T246–T267, four defects
+first), and Phase 23, regulatory reporting, integration and planning depth (WPM-T268–T285,
+WPM-R144–R158, WPM-D99–D106). See [plan.md](plan.md) sections N and O.
+
 ## Phase 0 — specification
 
 - [x] WPM-T0 Cross-cutting spec round: topic files + SDD trio, both
@@ -3981,3 +3985,111 @@ deployer's lawful basis and impact assessment before they are switched on.
       start; this records it as a requirement and a decision, and adds a test (`version::tests::no_route_carries_a_version_segment`) that fails if any
       path in the OpenAPI document is `/api/v<digits>/…`. **Not checked:** the test reads the documented routes, not the router, so an
       undocumented versioned route would not be caught.
+
+## Phase 22 — code quality (assessed 2026-10-21; [plan.md](plan.md) section O)
+
+No new requirement: each task restores a rule in `AGENTS/`. The four defects come first.
+
+- [ ] WPM-T246 **Training-plan writes take a caller.** *(WPM-R15, WPM-R16)* `controllers/training_plan.rs` `add_course`,
+      `remove_course` and `set_hours` take `MaybeAuthUser`, require an editor role on the worker, and audit inside the write's
+      transaction. Enforcement-matrix rows for the three routes; a test that fails when the role check is removed.
+- [ ] WPM-T247 **A GET changes nothing.** *(WPM-R25, WPM-R26)* `GET /workers/{pid}/wellbeing-prompts` (`controllers/wellbeing.rs:343`)
+      stops stamping `reminded_on`; the stamp moves to an explicit POST. `rules::prompt_state` returns the acknowledgement with
+      the `Reminder` state so the `expect` goes. A test that two GETs return the same answer.
+- [ ] WPM-T248 **The proxy forwards an allow-list.** *(WPM-D52)* `routes/api/proxy/[...path]/+server.ts` forwards only
+      `content-type`, `accept`, `if-none-match` and `idempotency-key`; always deletes `authorization` before setting it; refuses
+      `.` and `..` segments with 400. Unit tests for each.
+- [ ] WPM-T249 **The CMS page is pinned and has a policy.** *(WPM-D52)* `routes/admin/+server.ts` loads an exact Sveltia CMS
+      version with `integrity` and `crossorigin`, and sends a CSP (script-src self, the CDN, the inline script's hash). A
+      Playwright check that `/admin` still loads.
+- [ ] WPM-T250 **Write and audit in one transaction.** `mutate(ctx, |txn| …)` in `controllers/mod.rs`; then move the about 154
+      `Audit::record(&ctx.db, …)` calls into the write's transaction, one controller per commit. Decide (plan.md section 6)
+      whether `Audit::record` should stop accepting a bare connection. A test that a failing audit insert rolls back the change.
+- [ ] WPM-T251 **Shared controller helpers.** `writable_worker` (×9), `ensure_org_in_scope` (×6 plus 23 inline), `ratio_json`
+      (×6), a `forbidden(msg)` beside `unprocessable` (about 9 hand-built 403s), and `find_in` in place of local `BATCH`
+      constants (`workforce.rs:742`, `key_person.rs:50`). No behaviour change; the request suites pass unchanged.
+- [ ] WPM-T252 **Responses are views, not rows.** About 46 `format::json(row)` responses (`development.rs`, `workforce.rs`,
+      `ergonomics.rs`, `appraisals.rs`, `adjustments.rs`, `hr_core.rs`, `learning.rs`, `notifications.rs`) get `*_json` view
+      functions. A guard test that no documented response schema carries `id` or `deleted_at`.
+- [ ] WPM-T253 **Arithmetic into the pure core.** `rules::display::{ratio, from_hundredths, from_tenths}` replaces the three
+      fixed-point copies and the inline divisions (`learning.rs:1238`, `wellbeing.rs:497`, `cpd.rs:43`, `governance.rs:23`,
+      `planning/forecast.rs:50`); pure `*_value` functions for `working_time`, `planning/forecast` and `planning/cost`, with unit
+      tests.
+- [ ] WPM-T254 **Paged lists and counts in SQL.** `Page` and `check_offset` on worker- and org-scoped lists (about 68 unpaged);
+      `GROUP BY` for `groups.rs:80 member_counts`; filtered reads for `intelligence.rs:653` and `:729`. Seed-200k measurement
+      before and after, recorded in `BENCHMARKS.md` (WPM-R142).
+- [ ] WPM-T255 **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
+      plan-builder out of `handover::apply` (235 lines) and `lms::apply` (178).
+- [ ] WPM-T256 **Dependency hygiene.** `reqwest` 0.13 to match the verifier; drop `sqlx-sqlite`; one `sha2` major if the
+      upstream allows. `cargo tree -d` before and after in the task note.
+- [ ] WPM-T257 **The matcher follows the house lints and is built from the sibling.** `#![forbid(unsafe_code)]`,
+      `#![warn(clippy::pedantic)]`, `#![deny(missing_docs)]` (or a `[lints]` table); annotate `scorer.rs:16`; unit tests for
+      `record.rs` and `error.rs`; a `[patch.crates-io]` path override in the service for development.
+- [ ] WPM-T258 **Request tests for every route.** The about 32 routes in no test (`development.rs` ×8, `movements.rs` ×4,
+      `change.rs` ×3, `handover.rs`, `audits.rs`, `expenses.rs` withdraw, `hr_core.rs`, `workforce.rs`); a route-coverage test
+      that fails on a route no request test calls; more unit tests for `benchmark.rs`, `tokens.rs`, `audit_export.rs`,
+      `adjustments.rs`, `framework_roles.rs` and `job_levels.rs`.
+- [ ] WPM-T259 **One error vocabulary.** An internal-invariant helper (logs, answers 500 with no detail) for `Error::string`
+      uses (`intelligence.rs:471`, `resignations.rs:59`); drop the bespoke 401 in `funding.rs:86`.
+- [ ] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the
+      late-response guard; move the about 40 unguarded `$effect` loaders onto it. The worker page uses `Promise.allSettled` and
+      an error per panel, so a failed secondary panel hides only itself. A unit test of the guard.
+- [ ] WPM-T261 **Errors are content.** Every catch goes through `failure()` (`src/lib/write.ts`); status codes 401, 403, 404,
+      409, 422 and 5xx map to `t()` keys in the 13 locales (AI-written, marked unreviewed); one `<ErrorNote>` with
+      `role="alert"` replaces the 85 `<p class="error">`. Extend `untranslated.test.ts` to script-side error strings.
+- [ ] WPM-T262 **Titles and labels.** `+page.ts` with `pageTitle(...)` for the twelve untitled pages; a label or
+      `aria-label={t(...)}` for the about 20 unlabelled controls (`workers/[pid]`, `wellbeing`, `requisitions/[pid]`,
+      `movements/[pid]`); move the wellbeing placeholder text into the catalogue. An axe check in Playwright on those pages.
+- [ ] WPM-T263 **Types from the OpenAPI document.** `openapi-typescript` into `src/lib/api/schema.d.ts`; the hand-written
+      functions in `wpm.ts` typed from it, ending the 75 `Promise<unknown>`; a CI check that the generated file is current.
+- [ ] WPM-T264 **Cache the exchanged token.** Per session id until shortly before expiry, cleared on sign-out; a unit test that
+      one page load exchanges once.
+- [ ] WPM-T265 **UI dependency and config hygiene.** Drop the five unused Lily picker packages and align `share-picker` with
+      `svelte-picker-bar`; `adapter-node` in place of `adapter-auto`; remove `apiConditional`; one shared `write()` for
+      oversight, capacity and cutover.
+- [ ] WPM-T266 **Specs for every area.** Playwright specs for `/change`, `/skills`, `/groups`, `/development`, `/workforce`,
+      `/payroll` and `/requisitions/[pid]`; split `smoke.spec.ts` (2,659 lines) into one file per area.
+- [ ] WPM-T267 **Split the largest pages.** Panels and forms of `workers/[pid]` (713 lines), `planning` (697) and `roles` (487)
+      into components; screenshots before and after in light, dark and a phone width.
+
+## Phase 23 — regulatory reporting, integration and planning depth (proposed WPM-R144–R158, WPM-D99–D106; [plan.md](plan.md) section N)
+
+- [ ] WPM-T268 **Spec round.** *(WPM-R144–R158, WPM-D99–D106)* Check every date and threshold in section N against primary
+      text (Directive 2023/970 and a chosen transposition, AI Act Article 26 and the Omnibus, ISO 30414:2025, ESRS S1);
+      topic files `pay-transparency.md`, `human-capital-reporting.md`, `integrations.md` additions, `positions.md`; the domain
+      model, auth, audit, regulatory, glossary, index and `llms.txt`; move the next-free-ids line.
+- [ ] WPM-T269 **Pay gap indicators: pure core.** *(WPM-R144, WPM-D99)* `rules::pay_gap`: the seven indicators overall and per
+      category, the floor, exclusion counts, `unknown` for one-sided cells. Exhaustive unit tests, including a cell of one.
+- [ ] WPM-T270 **Pay gap indicators: records, API and screen.** *(WPM-R144)* `pay_categories` with a stated basis; an HR-only
+      report; enforcement test that it names no one; CSV export with workings.
+- [ ] WPM-T271 **Pay information for the worker and the candidate.** *(WPM-R145)* `POST /api/me/pay-information-requests` with a
+      computed due date; HR's answer screen; a pay range required before a requisition is advertised; a guard test that no
+      candidate table has a pay-history column.
+- [ ] WPM-T272 **Joint pay assessment trigger.** *(WPM-R146)* Pure rule over the indicators and configured threshold and
+      period; a "due" signal linked to the recognised body (Phase 18). It reports; a person records the decision.
+- [ ] WPM-T273 **Human capital report.** *(WPM-R147, WPM-D100)* A dated, read-only report from existing measures, each with
+      metric name, definition, source and exclusions; `unknown` where WPM cannot compute it; a test that no licensed text is in
+      the repo.
+- [ ] WPM-T274 **AI and scoring deployer register.** *(WPM-R148, WPM-D103)* Extends `rules::scoring::REGISTER` (WPM-T166):
+      category, overseer role, informed-on date, log retention; per-decision explanation readable by the person concerned.
+- [ ] WPM-T275 **Read-only MCP server.** *(WPM-R149, WPM-D101)* Tools over existing reads under the caller's token; a test that
+      every tool maps to a documented route and that a caller without access is refused; audit per call.
+- [ ] WPM-T276 **SCIM 2.0 outbound.** *(WPM-R150, WPM-D102)* Pure mapping from worker to SCIM `User` with the Enterprise
+      extension; a push task over the outbox; tested against Keycloak's SCIM or a stub server; a test that no contact field
+      leaves.
+- [ ] WPM-T277 **Outbound webhooks.** *(WPM-R151, WPM-D106)* Subscriptions, HMAC signature, retry with back-off, a delivery
+      log with no payload body; a test that payloads hold URNs and kinds only.
+- [ ] WPM-T278 **Positions: pure core.** *(WPM-R152, WPM-D104)* States and moves, vacancy and over-establishment arithmetic.
+- [ ] WPM-T279 **Positions: records, API and screen.** *(WPM-R152)* Links to plan demand lines, requisitions and post funding;
+      an establishment view per cost centre.
+- [ ] WPM-T280 **Current versus target organization.** *(WPM-R153)* Pure diff over two trees; a screen beside the org chart.
+      Closes the `[~]` "Workforce transformation" item in Phase 9.
+- [ ] WPM-T281 **Pay position analysis.** *(WPM-R154)* Compa-ratio and range penetration per band, outliers by level,
+      department and location, with the floor.
+- [ ] WPM-T282 **Equipment issued and returned.** *(WPM-R155)* Assets and issues; open issues on the leaver checklist.
+- [ ] WPM-T283 **Policies and acknowledgements.** *(WPM-R156, WPM-D105)* Versioned policies by audience; acknowledgement per
+      version; manager counts; HR's named, audited record.
+- [ ] WPM-T284 **Verifiable credentials and the skills crosswalk.** *(WPM-R157, WPM-R158)* Open Badges 3.0 issuance with a
+      revocation list; `skill_mappings` with basis and confidence, read by gap analysis; `unknown` for an unmapped skill.
+- [ ] WPM-T285 **Verification and documents.** *(WPM-R144–R158)* Full suites, enforcement tests for every new route, strings
+      in the 13 locales, screenshots of new screens, and what was not checked.

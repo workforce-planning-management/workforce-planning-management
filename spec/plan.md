@@ -1,6 +1,7 @@
 # Plan — delivery capacity, oversight readiness and production readiness
 
-Status: **proposed** (2026-10-09). Nothing here is built. Delivery is queued as
+Status: **proposed** (2026-10-09; sections N and O added 2026-10-21). Some sections have since
+been built; sections N and O are not. Delivery is queued as
 Phase 12 (WPM-T103–T118), Phase 13 (WPM-T123–T132, WPM-T144–T145) and Phase 14
 (WPM-T133–T143) in [tasks.md](tasks.md). When the work starts, the requirements and decisions
 below move into topic files (`delivery-capacity-and-oversight.md` for sections
@@ -463,6 +464,154 @@ enabled only with a recorded lawful basis.
   **WPM-D77** a worker's request is decided by a person; the software computes dates and never changes a
   contract.
 
+### N. Regulatory reporting, integration and planning depth (proposed 2026-10-21)
+
+From a scan on 2026-10-21 of open-source HR (Frappe HRMS, Odoo, Horilla, OrangeHRM), commercial
+planning and HCM products (Workday Adaptive Planning, Orgvue, ChartHop, Lattice, HiBob, Rippling) and
+the standards and law that reach HR software in 2026 to 2027. Each item was checked against `spec/`
+first; none is built or already proposed. Most sources are secondary (vendor and law-firm summaries),
+so every date and threshold below must be checked against the primary text in the spec round
+(WPM-T268). Delivery is Phase 23 (WPM-T268–T285).
+
+**Regulatory set** (one thread: equality data, worker representatives, honest aggregates):
+
+- **WPM-R144 Pay gap indicators.** The seven indicators of the EU Pay Transparency Directive
+  (2023/970; transposition was due 7 June 2026, first reports June 2027 for 150 or more workers):
+  mean and median pay gap, mean and median bonus gap, the share of each sex receiving a bonus, the
+  share receiving benefits, and the pay quartiles, overall and per category of work of equal value.
+  Computed in the pure core from pay scales (WPM-R51) and the bounded, off-by-default equality data
+  (WPM-R125, WPM-D74). Cells under the floor are withheld; workers with no recorded sex are excluded
+  and counted (WPM-D99). Each category says the basis on which its roles count as equal value.
+- **WPM-R145 Pay transparency for the worker and the candidate.** A worker may ask for their own
+  pay level and the average pay, by sex, for their category; the answer is due within a configured
+  period (two months in the directive) and the clock is computed, not assumed. A requisition carries
+  a pay range before it is advertised, and the candidate record has no pay-history field.
+- **WPM-R146 Joint pay assessment trigger.** Where a category's unexplained gap is at or above a
+  configured threshold (5% in the directive) and is not corrected within the configured period, the
+  service reports that a joint assessment with worker representatives is due (links to section J).
+  It reports; a person decides (WPM-D49 spirit).
+- **WPM-R147 Human capital report.** A dated, read-only report built from measures WPM already
+  holds, mapped to ISO 30414:2025 metric names and to the ESRS S1 own-workforce datapoints
+  (headcount and FTE by contract type, departures and turnover, collective-bargaining coverage,
+  training hours, time to fill, workforce cost). Every figure carries its definition, source and
+  exclusions; a measure WPM cannot compute is `unknown`, not zero. ISO text is licensed, so the
+  repo maps names and copies no text (WPM-D100, as SFIA in section K).
+- **WPM-R148 AI and scoring deployer register.** Extends the scoring register (WPM-R99) with what a
+  deployer of a high-risk HR system must keep under the EU AI Act (Article 26): its Annex III
+  category, the person responsible for human oversight, the date workers and their representatives
+  were informed, the log-retention period (at least six months), and a per-decision explanation the
+  person concerned can read. A feature with no recorded overseer shows `unknown` (WPM-D103). The
+  Annex III date was reported as moved to 2 December 2027; confirm in the Official Journal.
+
+**Integration:**
+
+- **WPM-R149 Read-only MCP server.** Exposes existing reads (my details, my time-off, plan totals,
+  aggregates) as Model Context Protocol tools, under the caller's own token, each call audited.
+  It adds no read the API does not already have (WPM-D101).
+- **WPM-R150 SCIM 2.0 outbound provisioning.** Joiners, movers and leavers pushed as SCIM `User`
+  with the Enterprise extension (`employeeNumber`, `manager`, `department`) to an identity provider
+  (Entra ID, Okta, Keycloak). Employment attributes only; contact details stay upstream (WPM-D23,
+  WPM-D102). The leaver's deprovision date is the last day from the handover.
+- **WPM-R151 Outbound webhooks.** Signed (HMAC), retried, per-subscriber delivery of the outbox's
+  events (hire, movement, leave approved, last day). Payloads carry URNs and event kinds, never
+  personal fields (WPM-D106).
+
+**Planning depth:**
+
+- **WPM-R152 Position management.** A budgeted position (a seat with FTE, cost centre and funding)
+  exists independently of whoever holds it: planned, approved, open (a requisition), filled, frozen,
+  abolished. Vacancy is budgeted minus held FTE; over-establishment is held beyond budget. Links
+  plan demand lines (WPM-T47), requisitions (WPM-R1) and post funding (section G). Common in public
+  sector and health (section L) (WPM-D104).
+- **WPM-R153 Current versus target organization.** Closes the open "Workforce transformation" item
+  in Phase 9: a diff between the live structure and a plan's target, with span of control, layers,
+  cost, skills, and roles added, removed and moved. Pure core over the cycle-safe tree (WPM-T2).
+- **WPM-R154 Pay position analysis.** Compa-ratio and range penetration per band, with outliers by
+  level, department and location, as aggregates with the floor. It is the evidence a future
+  compensation review (roadmap) would consume, not the review itself.
+
+**Table-stakes in the open-source field:**
+
+- **WPM-R155 Equipment issued and returned.** Assets issued to a worker and returned, linked to the
+  leaver checklist (Horilla, Odoo and Frappe all have it). No location tracking.
+- **WPM-R156 Policies and acknowledgements.** Versioned policies assigned by audience, with a dated
+  acknowledgement per version. Managers see counts (WPM-D35); HR sees the individual record where
+  evidence is required (WPM-D105).
+
+**Differentiators for skills:**
+
+- **WPM-R157 Verifiable credentials out.** A completed CPD record or demonstrated skill issued as a
+  signed Open Badges 3.0 credential, with its ESCO or SFIA code. The worker holds it; WPM keeps the
+  issuance record only.
+- **WPM-R158 Skills framework crosswalk.** Mappings between ESCO, SFIA and other frameworks so a
+  skill declared in one counts in gap analysis under another. Each mapping states its basis and
+  confidence; a skill with no mapping is `unknown`. Licensed taxonomies are handled as SFIA is.
+
+### O. Code quality (assessed 2026-10-21)
+
+A read-only audit of the service, the matcher and the UI on 2026-10-21. Counts came from grep and
+scripts, not the compiler, so treat them as close, not exact. Two findings were checked by hand
+and confirmed: the three training-plan write routes take no caller and write no audit, and a GET
+of wellbeing prompts writes to the database. (The audit first said the training-plan writes had
+no role check either. That was wrong: the request-level policy in `require_auth_mw` lets only a
+`Write` holder through; only the need-to-know layer passes non-GETs on.) No new requirement is needed: each item restores a rule the repo already has
+([AGENTS/backend-rust.md](../AGENTS/backend-rust.md),
+[AGENTS/frontend-svelte.md](../AGENTS/frontend-svelte.md),
+[AGENTS/privacy-and-data-rules.md](../AGENTS/privacy-and-data-rules.md)). Delivery is Phase 22
+(WPM-T246–T267), and it should run before Phase 23.
+
+**Defects (fix first):**
+
+- `controllers/training_plan.rs` `add_course`, `remove_course`, `set_hours`: no caller and no
+  audit row, so a change to the course catalogue names no one. (Fixed by WPM-T246.)
+- `controllers/wellbeing.rs:343-352`: `GET …/wellbeing-prompts` stamps `reminded_on` (a prefetch
+  uses up the one reminder), with no audit and the only `expect` in request handling. (Fixed by
+  WPM-T247.)
+- UI `routes/api/proxy/[...path]/+server.ts:57-62`: forwards every browser header except four, so
+  with no session a browser-supplied `authorization` reaches the API; dot segments are not refused.
+- UI `routes/admin/+server.ts:42`: the CMS script loads from unpkg with no version and no SRI, and
+  this response has no content security policy.
+
+**Service:**
+
+- About 154 `Audit::record(&ctx.db, …)` calls sit outside the write's transaction (65 use `&txn`):
+  a failed audit insert leaves a change with no audit row.
+- Copied helpers: `writable_worker` ×9, `ensure_org_in_scope` ×6 (and 23 inline copies),
+  `ratio_json` ×6, about 9 hand-built 403s, `BATCH` constants beside `find_in`.
+- About 46 responses serialize raw rows (`development.rs`, `workforce.rs`, `hr_core.rs` and others),
+  exposing internal `id`, `deleted_at` and any future column.
+- Arithmetic in controllers that belongs in `src/rules` (three fixed-point-to-display copies; the
+  bodies of `working_time`, `planning/forecast.rs`, `planning/cost.rs`).
+- About 68 of 78 list handlers are unpaged; `intelligence.rs` and `groups.rs` load whole tables to
+  count.
+- Large functions and files: `handover::apply` (235 lines), `lms::apply` (178), `learning.rs` (1,433).
+- Dependencies: two `reqwest` majors (0.12 direct, 0.13 through the verifier), `sqlx-sqlite`
+  enabled and unused, two `sha2` majors.
+- The matcher has no `forbid(unsafe_code)`, pedantic or `missing_docs` lints, and the service builds
+  it from crates.io, so local matcher changes never reach the service's tests.
+- About 32 of 468 routes are in no request test (most in `development.rs`, `movements.rs`,
+  `change.rs`); several rules modules have one or two tests.
+- `Error::string` (a 500) for invariants; a bespoke 401 in `funding.rs`.
+
+**UI:**
+
+- About 40 `$effect` loaders lack the stale-response guard; the worker page (713 lines) runs six
+  calls in series after seven in parallel, and one failed panel blanks the page.
+- `cause instanceof Error ? cause.message : String(cause)` in 67 files: untranslated service text
+  reaches every locale. Only 6 of 85 error paragraphs have `role="alert"`.
+- Twelve pages have no title (WCAG 2.4.2); about 20 form controls have no label.
+- `src/lib/api/wpm.ts` (4,477 lines) is typed by hand, with 75 functions returning `Promise<unknown>`,
+  while the service publishes OpenAPI.
+- The proxy exchanges a token on every call (about 13 per worker page) with no cache.
+- Lily picker packages installed twice (direct pins at newer minors than `svelte-picker-bar` uses;
+  five never imported); `adapter-auto`; an unused `apiConditional`.
+- Seven areas no Playwright spec visits (`/change`, `/skills`, `/groups`, `/development`,
+  `/workforce`, `/payroll`, `/requisitions/[pid]`); `smoke.spec.ts` is 2,659 lines.
+
+**Checked and clean:** no TODO or FIXME; `unsafe` forbidden; every `/api` path is in the OpenAPI
+document; money is `i64` minor units; casts are few and annotated; every `too_many_lines` allow has a
+reason; no Svelte 4 syntax, no `any`, no `{@html}`; strict TypeScript; strict `kit.csp`.
+
 ## 3. Design decisions (proposed)
 
 - **WPM-D45 Capacity is planned by pool, not by person.** Supply comes from
@@ -515,6 +664,24 @@ enabled only with a recorded lawful basis.
   link to a programme is the funding of their post or the plan line they fill,
   both facts HR already holds. There are no per-person time allocations, in
   keeping with WPM-D45.
+- **WPM-D99 A pay gap is withheld, never guessed.** A cell under the floor shows "withheld", a
+  worker with no recorded sex is excluded and the exclusion counted, and an indicator with too few
+  people on either side is `unknown`. The categories of equal value are configuration with a stated
+  basis, never inferred from job titles.
+- **WPM-D100 Standards are mapped, not copied.** ISO 30414 and ESRS S1 figures use the standard's
+  metric name and an identifier; the repo holds no licensed text, as with SFIA (WPM-D69).
+- **WPM-D101 An agent sees what the caller sees.** The MCP server is an adapter over existing
+  endpoints under the caller's token. No tool exists without an endpoint, and no service account.
+- **WPM-D102 Provisioning sends employment facts only.** SCIM carries employee number, manager,
+  department, title and active state; contact details stay with the person service (WPM-D23).
+- **WPM-D103 A register records; it does not certify.** The AI deployer register says what was
+  recorded and shows `unknown` where nothing was. It is not evidence of compliance by itself.
+- **WPM-D104 A position is a seat, not a person.** Positions hold budgeted FTE and funding kind;
+  the holder is a link. No per-person time allocation (WPM-D45, WPM-D59).
+- **WPM-D105 Acknowledgements are counted for managers.** Managers see how many have acknowledged
+  a version; the named record is HR-only and audited.
+- **WPM-D106 Events leave as references.** Webhooks and SCIM payloads carry URNs and kinds; a
+  subscriber that needs more reads it through the API with its own access.
 
 ## 4. Data and privacy summary
 
@@ -535,6 +702,15 @@ enabled only with a recorded lawful basis.
 | `conversion_plans` | Worker, intent, dates, post funding kind, reason, proposer, approver, status | Yes (HR-only; in export; erased; no pay figure) |
 | `plan_demand_lines`, `requisitions` (new columns) | Programme URN, FTE, basis, expected duration | No |
 | `headcount_snapshots` (new columns) | Headcount and FTE per basis | No (aggregate) |
+| `pay_categories` (section N) | Category of equal value, member role profiles, stated basis | No |
+| `pay_information_requests` | Worker, asked on, due on, answered on | Yes (HR-only; in export; erased) |
+| `ai_register_entries` | Feature, Annex III category, overseer role, informed on, log retention | No |
+| `webhook_subscriptions`, `scim_targets` | Endpoint, secret reference, event kinds | No (secrets by reference only) |
+| `positions` | Cost centre, budgeted FTE, funding kind, state, holder link | Holder link only (HR-only) |
+| `assets`, `asset_issues` | Asset kind and tag; worker, issued on, returned on | Yes (in export; erased) |
+| `policies`, `policy_acknowledgements` | Version, audience; worker, version, date | Yes (HR-only by name; in export) |
+| `credential_issuances` | Worker, credential kind, issued on, revoked on | Yes (in export; erased) |
+| `skill_mappings` | From skill, to skill, basis, confidence | No |
 
 Every one of these updates [domain-model.md](domain-model.md). The named
 key-person list and `post_fundings` update [auth.md](auth.md) and
@@ -564,6 +740,11 @@ For sections A to D (Phase 12):
 A comes first because B's contingent share, C's derived measures and D's
 readiness all read pools.
 
+For sections N and O (2026-10-21): Phase 22 (section O) first, its four defects before anything
+else, because the later phases add controllers that should start from the shared transaction and
+scope helpers. Then Phase 23 (section N): the regulatory set (R144–R148), then integration
+(R149–R151), then planning depth (R152–R154), then the rest.
+
 ## 6. Open questions
 
 - Should oversight readiness (C) live in WPM, or in project-portfolio-management
@@ -585,6 +766,14 @@ readiness all read pools.
   engagement, with rates in a procurement system?
 - Which reminder window and extension threshold are sensible defaults, and
   should a jurisdiction setting supply them?
+- Section N: which member state's transposition of 2023/970 is the demo's reference, given that
+  thresholds and periods differ between them? Is the AI Act's Annex III date now 2 December 2027 in
+  the Official Journal? Is the simplified ESRS S1 delegated act final, and which pay-gap datapoint
+  did it keep?
+- Section N: should the MCP server live in this repo or beside the API as its own crate? Should
+  SCIM also accept the identity provider's inbound feed, or only push?
+- Section O: should audit writes outside a transaction be fixed controller by controller, or should
+  `Audit::record` stop accepting a bare connection so the compiler finds every one?
 
 ## 7. Out of scope
 
