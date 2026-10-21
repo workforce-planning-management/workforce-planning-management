@@ -3,7 +3,7 @@
 Requested 2026-10-11 as six capabilities. **Built so far (2026-10-11): the `/api/me` surface and its write
 allow-list, contact details, emergency contacts by the worker, my time-off, self-service leave requests,
 resignations, flexible working requests, equality monitoring and workplace health requirements** (WPM-T205–T214,
-WPM-T216; API only, no screen). **All six requested capabilities exist at the API level; the screen (WPM-T215) is not built**; the tasks are in [tasks.md](tasks.md) Phase 21. Generic by design: any legal right a deployer must honour (for example a
+WPM-T216). **All six requested capabilities exist at the API level, and the screen (`/me/details`, WPM-T215, built 2026-10-21) shows them**; the tasks are in [tasks.md](tasks.md) Phase 21. Generic by design: any legal right a deployer must honour (for example a
 statutory right to request flexible working, a notice period, an occupational-health duty) is a
 **configuration they own**, never hard-coded, and the examples below are examples.
 

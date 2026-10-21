@@ -3817,9 +3817,17 @@ deployer's lawful basis and impact assessment before they are switched on.
       `reminder` flag in their view, not a scheduled notification. **Not verified:** the interface (none); any real occupational
       health arrangement; what a deployer's own rule does with "not cleared" (the software only reports it); and the legal basis,
       which is the deployer's.
-- [ ] WPM-T215 **My details screen, translations and verification.** *(WPM-R124–R130)* One screen for the six, strings in the 13 locales
-      under the catalogue rules (WPM-R94), screenshots read in light and dark at desktop and phone sizes, full
-      suites, and what was not verified recorded.
+- [x] WPM-T215 (2026-10-21) **My details screen, translations and verification.** *(WPM-R124–R130)* `/me/details`, linked from `/me`: contact details (replaced as a whole,
+      removable), the emergency contacts component, time off (balances, this year's requests with cancel, past absence, a leave request with no reason field for sick
+      leave), flexible working (new request, accept or decline a counter-proposal, appeal a refusal, withdraw, the decide-by date and "overdue"), a resignation (a second
+      click to send, withdraw while logged), equality monitoring (off says so; answers changed or taken back one at a time or all) and workplace health requirements
+      (off says so; own standing, dates, "cleared" or "not cleared", reminder). Everything is the caller's own through `/api/me`: no worker id is ever sent. 86 strings
+      (the page, 9 contact fields, and 8 `values` tokens the vocabularies lacked) in the 13 `-001` locales, written by the assistant and **not reviewed**; the equality and
+      health notices are the service's own English text. Playwright `my-details.spec.ts` (7 tests: what each panel sends, the resignation confirmation, the off states,
+      no worker record) plus four screenshots read in light and dark at 1280 and 390 px (a phone showed the time-off headings breaking mid-word; the table now scrolls).
+      Full suites: Playwright 150, vitest 160, svelte-check 0, prettier clean on `src`. *Not checked:* the page against the real API (the API is stubbed; `enforcement_me`
+      covers the routes); a screen reader; right-to-left layout of the new page in Arabic and Urdu (strings only); equality categories and values show as the deployer wrote
+      them; the leave-request kinds, flexible-working kinds and resignation reasons are copied into the page from the service's lists.
 - [x] WPM-T216 (2026-10-11) **Self-service leave requests.** *(traces to WPM-R129, WPM-R130)* `POST /api/me/leave-requests` and `POST /api/me/leave-requests/{pid}/cancel` on
       the allow-list, sharing the HR route's validation (the balance, a valid span, no reason on sick leave).
       `rules::time_off::can_worker_cancel`: a request awaiting a decision can be cancelled at any time, an approved one

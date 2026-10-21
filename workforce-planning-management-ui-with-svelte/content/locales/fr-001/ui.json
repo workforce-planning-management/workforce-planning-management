@@ -1358,7 +1358,8 @@
     "cutover": "Préparation à la bascule — WPM",
     "warnings": "Alertes précoces — WPM",
     "demo": "Visite guidée de la démo — WPM",
-    "kanban": "Mon tableau — WPM"
+    "kanban": "Mon tableau — WPM",
+    "my_details": "Mes informations — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -1676,7 +1677,15 @@
     "executive": "Direction",
     "accept_deviation": "Accepter l'écart",
     "change_plan": "Modifier le plan",
-    "stop": "Arrêter le plan"
+    "stop": "Arrêter le plan",
+    "counter_proposed": "contre-proposition",
+    "refused": "refusée",
+    "appealed": "contestée",
+    "logged": "enregistrée",
+    "rescinded": "annulée",
+    "not_recorded": "non enregistré",
+    "due_soon": "échéance proche",
+    "overdue": "en retard"
   },
   "engagement": {
     "title": "Engagement",
@@ -2031,5 +2040,103 @@
     "nobody": "Aucun plan ouvert, et rien d'échu sans plan.",
     "proposeOnly": "Vous pouvez proposer un plan ici. Les plans existants sont lus par les RH ; vous n'en verrez donc aucun.",
     "sent": "Plan proposé."
+  },
+  "details": {
+    "title": "Mes informations",
+    "link": "Mes informations : coordonnées, absences, demandes et déclarations",
+    "back": "Retour à mon profil",
+    "no_worker": "Vous n'avez de dossier de salarié dans aucune organisation ; il n'y a donc rien de vous à afficher ici.",
+    "saved": "Enregistré.",
+    "cancel": "Annuler",
+    "contact": {
+      "title": "Coordonnées",
+      "hint": "Votre adresse personnelle, vos numéros de téléphone et votre adresse e-mail personnelle. Vous pouvez les modifier vous-même. Les RH et la paie peuvent les lire ; votre responsable, non. L'ancienne valeur n'est pas conservée.",
+      "address_line1": "Adresse, ligne 1",
+      "address_line2": "Adresse, ligne 2",
+      "city": "Ville",
+      "region": "Département ou région",
+      "postcode": "Code postal",
+      "country": "Pays (deux lettres)",
+      "phone_mobile": "Téléphone mobile",
+      "phone_home": "Téléphone fixe",
+      "personal_email": "E-mail personnel",
+      "clear": "Supprimer toutes mes coordonnées"
+    },
+    "time": {
+      "title": "Mes absences",
+      "kind": "Type",
+      "entitled": "Droits",
+      "taken": "Pris",
+      "booked": "Posés",
+      "requested": "Demandés",
+      "remaining": "Restants",
+      "no_allowance": "Aucun droit n'est enregistré pour vous cette année.",
+      "unit": "En jours calendaires, pour {year}. Un type sans droit enregistré n'a pas de solde restant.",
+      "no_requests": "Aucune demande cette année.",
+      "cancel": "Annuler cette demande",
+      "history": "Absences passées",
+      "request": "Demander un congé",
+      "from": "Du",
+      "to": "Au",
+      "reason": "Motif (facultatif)",
+      "sick_no_reason": "Un arrêt maladie n'a pas de motif.",
+      "send": "Envoyer la demande"
+    },
+    "flex": {
+      "title": "Demandes de travail flexible",
+      "hint": "Demandez un autre aménagement de votre travail. Une personne décide avant la date indiquée ; le logiciel calcule seulement les dates et ne modifie jamais votre contrat.",
+      "from": "à partir du {date}",
+      "decide_by": "décision avant le {date}",
+      "overdue": "En retard",
+      "trial": "période d'essai jusqu'au {date}",
+      "hr_applies": "Les RH appliquent le changement à {fte} %",
+      "counter": "Un autre aménagement a été proposé",
+      "accept": "Accepter",
+      "decline": "Refuser",
+      "withdraw": "Retirer",
+      "appeal": "Faire appel",
+      "appeal_note": "Pourquoi (facultatif)",
+      "none": "Aucune demande pour l'instant.",
+      "new": "Nouvelle demande",
+      "kind": "Ce que vous voulez changer",
+      "start": "À partir du",
+      "fte": "Temps de travail en pourcentage du temps plein (facultatif)",
+      "effect": "Effet sur l'équipe, avec vos mots (facultatif)",
+      "manage": "Comment cela pourrait être géré (facultatif)",
+      "no_health": "N'indiquez pas d'informations de santé dans ces champs.",
+      "send": "Envoyer la demande"
+    },
+    "resign": {
+      "title": "Démission",
+      "hint": "Informez votre employeur que vous comptez démissionner. Une personne l'accepte et convient du dernier jour ; rien ne prend fin tout seul. Votre motif vous appartient : votre responsable et les RH ne le voient pas.",
+      "logged": "enregistrée le {date}",
+      "proposed": "dernier jour proposé : {date}",
+      "agreed": "dernier jour convenu : {date}",
+      "withdraw": "La retirer",
+      "last_day": "Dernier jour proposé",
+      "reason": "Motif (facultatif)",
+      "no_reason": "Aucun motif indiqué",
+      "log": "Démissionner",
+      "confirm": "Cela informe votre employeur que vous comptez démissionner. Vous pouvez la retirer tant qu'elle n'est pas acceptée. Continuer ?",
+      "confirm_button": "Oui, informer mon employeur"
+    },
+    "equality": {
+      "title": "Suivi de l'égalité",
+      "off": "Le suivi de l'égalité n'est pas activé ; rien ne vous est donc demandé.",
+      "basis": "Base juridique : {basis}. Un groupe de moins de {floor} personnes n'est jamais affiché.",
+      "unanswered": "Pas de réponse",
+      "take_back": "Retirer",
+      "take_back_all": "Retirer toutes mes réponses"
+    },
+    "health": {
+      "title": "Exigences de santé au travail",
+      "off": "Les exigences de santé au travail ne sont pas activées.",
+      "none": "Aucune exigence ne s'applique à vous.",
+      "cleared": "apte",
+      "not_cleared": "non apte",
+      "recorded": "enregistré le {date}",
+      "due": "échéance le {date}",
+      "reminder": "Un rappel est dû."
+    }
   }
 }

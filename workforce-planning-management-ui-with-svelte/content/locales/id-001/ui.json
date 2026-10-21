@@ -1358,7 +1358,8 @@
     "cutover": "Kesiapan alih operasi — WPM",
     "warnings": "Peringatan dini — WPM",
     "demo": "Tur berpemandu demo — WPM",
-    "kanban": "Papan saya — WPM"
+    "kanban": "Papan saya — WPM",
+    "my_details": "Data saya — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -1676,7 +1677,15 @@
     "executive": "Eksekutif",
     "accept_deviation": "Terima deviasi",
     "change_plan": "Ubah rencana",
-    "stop": "Hentikan rencana"
+    "stop": "Hentikan rencana",
+    "counter_proposed": "usulan balik",
+    "refused": "ditolak",
+    "appealed": "dibanding",
+    "logged": "dicatat",
+    "rescinded": "dibatalkan",
+    "not_recorded": "belum dicatat",
+    "due_soon": "segera jatuh tempo",
+    "overdue": "terlambat"
   },
   "engagement": {
     "title": "Keterlibatan",
@@ -2031,5 +2040,103 @@
     "nobody": "Tidak ada rencana terbuka, dan tidak ada yang berakhir tanpa rencana.",
     "proposeOnly": "Anda dapat mengusulkan rencana di sini. Rencana yang ada dibaca oleh SDM, jadi Anda tidak akan melihatnya.",
     "sent": "Rencana diusulkan."
+  },
+  "details": {
+    "title": "Data saya",
+    "link": "Data saya: kontak, cuti, permohonan, dan pernyataan",
+    "back": "Kembali ke profil saya",
+    "no_worker": "Anda tidak memiliki catatan pekerja di organisasi mana pun, jadi tidak ada data Anda yang dapat ditampilkan di sini.",
+    "saved": "Tersimpan.",
+    "cancel": "Batal",
+    "contact": {
+      "title": "Detail kontak",
+      "hint": "Alamat rumah, nomor telepon, dan e-mail pribadi Anda. Anda dapat mengubahnya sendiri. SDM dan penggajian dapat membacanya; atasan Anda tidak. Nilai lama tidak disimpan.",
+      "address_line1": "Alamat baris 1",
+      "address_line2": "Alamat baris 2",
+      "city": "Kota",
+      "region": "Provinsi atau wilayah",
+      "postcode": "Kode pos",
+      "country": "Negara (dua huruf)",
+      "phone_mobile": "Telepon seluler",
+      "phone_home": "Telepon rumah",
+      "personal_email": "E-mail pribadi",
+      "clear": "Hapus semua detail kontak saya"
+    },
+    "time": {
+      "title": "Cuti saya",
+      "kind": "Jenis",
+      "entitled": "Jatah",
+      "taken": "Diambil",
+      "booked": "Dipesan",
+      "requested": "Diminta",
+      "remaining": "Sisa",
+      "no_allowance": "Tidak ada jatah yang tercatat untuk Anda tahun ini.",
+      "unit": "Dalam hari kalender, untuk {year}. Jenis tanpa jatah tidak memiliki angka sisa.",
+      "no_requests": "Tidak ada permohonan tahun ini.",
+      "cancel": "Batalkan permohonan ini",
+      "history": "Ketidakhadiran sebelumnya",
+      "request": "Ajukan cuti",
+      "from": "Dari",
+      "to": "Sampai",
+      "reason": "Alasan (opsional)",
+      "sick_no_reason": "Cuti sakit tidak memerlukan alasan.",
+      "send": "Kirim permohonan"
+    },
+    "flex": {
+      "title": "Permohonan kerja fleksibel",
+      "hint": "Ajukan pengaturan kerja yang berbeda. Seseorang memutuskan sebelum tanggal yang ditunjukkan; perangkat lunak hanya menghitung tanggal dan tidak pernah mengubah kontrak Anda.",
+      "from": "mulai {date}",
+      "decide_by": "putuskan sebelum {date}",
+      "overdue": "Terlambat",
+      "trial": "masa percobaan hingga {date}",
+      "hr_applies": "SDM menerapkan perubahan ke {fte}%",
+      "counter": "Pengaturan yang berbeda ditawarkan",
+      "accept": "Terima",
+      "decline": "Tolak",
+      "withdraw": "Tarik kembali",
+      "appeal": "Banding",
+      "appeal_note": "Alasan (opsional)",
+      "none": "Belum ada permohonan.",
+      "new": "Permohonan baru",
+      "kind": "Yang ingin Anda ubah",
+      "start": "Mulai pada",
+      "fte": "Jam kerja sebagai persentase waktu penuh (opsional)",
+      "effect": "Dampak pada tim, dengan kata-kata Anda (opsional)",
+      "manage": "Bagaimana hal ini dapat dikelola (opsional)",
+      "no_health": "Jangan menulis detail kesehatan di kolom ini.",
+      "send": "Kirim permohonan"
+    },
+    "resign": {
+      "title": "Pengunduran diri",
+      "hint": "Beri tahu pemberi kerja bahwa Anda berniat mengundurkan diri. Seseorang menerimanya dan menyepakati hari terakhir; tidak ada yang berakhir dengan sendirinya. Alasan Anda adalah milik Anda: atasan dan SDM tidak melihatnya.",
+      "logged": "dicatat {date}",
+      "proposed": "hari terakhir yang diusulkan {date}",
+      "agreed": "hari terakhir yang disepakati {date}",
+      "withdraw": "Tarik kembali",
+      "last_day": "Hari terakhir yang diusulkan",
+      "reason": "Alasan (opsional)",
+      "no_reason": "Tanpa alasan",
+      "log": "Mengundurkan diri",
+      "confirm": "Ini memberi tahu pemberi kerja bahwa Anda berniat mengundurkan diri. Anda dapat menariknya kembali sampai diterima. Lanjutkan?",
+      "confirm_button": "Ya, beri tahu pemberi kerja saya"
+    },
+    "equality": {
+      "title": "Pemantauan kesetaraan",
+      "off": "Pemantauan kesetaraan tidak diaktifkan, jadi tidak ada yang diminta dari Anda.",
+      "basis": "Dasar hukum: {basis}. Kelompok yang lebih kecil dari {floor} tidak pernah ditampilkan.",
+      "unanswered": "Tidak ada jawaban",
+      "take_back": "Tarik kembali",
+      "take_back_all": "Tarik kembali semua jawaban saya"
+    },
+    "health": {
+      "title": "Persyaratan kesehatan di tempat kerja",
+      "off": "Persyaratan kesehatan di tempat kerja tidak diaktifkan.",
+      "none": "Tidak ada persyaratan yang berlaku untuk Anda.",
+      "cleared": "memenuhi syarat",
+      "not_cleared": "belum memenuhi syarat",
+      "recorded": "dicatat {date}",
+      "due": "jatuh tempo {date}",
+      "reminder": "Pengingat sudah jatuh tempo."
+    }
   }
 }

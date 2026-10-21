@@ -4255,3 +4255,223 @@ export function setDevelopmentItemStatus(
     body: { status },
   });
 }
+
+// ─── My details: what a worker does about themself (WPM-R124–R130, WPM-T215) ───
+
+export type MyContactDetails = {
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  region: string | null;
+  postcode: string | null;
+  country: string | null;
+  phone_mobile: string | null;
+  phone_home: string | null;
+  personal_email: string | null;
+  on_behalf: boolean;
+};
+
+/** The caller's own home address, telephone numbers and personal e-mail, or null. */
+export function getMyContactDetails(
+  init?: FetchLike,
+): Promise<{ contact_details: MyContactDetails | null }> {
+  return api("/me/contact-details", init);
+}
+
+/** Replace the caller's own contact details as a whole; a blank field is cleared. */
+export function setMyContactDetails(
+  body: Partial<Omit<MyContactDetails, "on_behalf">>,
+): Promise<{ contact_details: MyContactDetails }> {
+  return api("/me/contact-details", { method: "PUT", body });
+}
+
+/** Remove every contact detail held for the caller. */
+export function clearMyContactDetails(): Promise<unknown> {
+  return api("/me/contact-details", { method: "DELETE" });
+}
+
+export type MyTimeOff = {
+  as_of: string;
+  year: number;
+  balances: Array<{
+    kind: string;
+    year: number;
+    entitled: number;
+    used: number;
+    taken: number;
+    booked: number;
+    requested: number;
+    remaining: number | null;
+  }>;
+  requests: Array<{
+    pid: string;
+    kind: string;
+    start_on: string;
+    end_on: string;
+    days: number;
+    status: string;
+    reason: string | null;
+  }>;
+  history: Array<{
+    year: number;
+    absences: Array<{ kind: string; absences: number; days: number }>;
+  }>;
+};
+
+/** The caller's allowances, requests and past absence for a year, in calendar days. */
+export function getMyTimeOff(
+  year?: number,
+  init?: FetchLike,
+): Promise<MyTimeOff> {
+  return api(`/me/time-off${year ? `?year=${year}` : ""}`, init);
+}
+
+/** Request leave for the caller; a person with authority decides it. */
+export function requestMyLeave(body: {
+  kind: string;
+  start_on: string;
+  end_on: string;
+  reason?: string;
+}): Promise<unknown> {
+  return api("/me/leave-requests", { method: "POST", body });
+}
+
+/** Cancel one of the caller's own requests. */
+export function cancelMyLeave(pid: string): Promise<unknown> {
+  return api(`/me/leave-requests/${pid}/cancel`, { method: "POST" });
+}
+
+export type MyFlexibleRequest = {
+  pid: string;
+  kind: string;
+  requested_on: string;
+  proposed_start: string;
+  proposed_fte_percent: number | null;
+  status: string;
+  decide_by: string;
+  overdue: boolean;
+  decided_on: string | null;
+  decision_reason: string | null;
+  decision_note: string | null;
+  counter_note: string | null;
+  counter_fte_percent: number | null;
+  trial_until: string | null;
+  can_appeal: boolean;
+  hr_to_apply_fte_percent: number | null;
+};
+
+/** The caller's flexible working requests, newest first. */
+export function listMyFlexibleRequests(
+  init?: FetchLike,
+): Promise<MyFlexibleRequest[]> {
+  return api("/me/flexible-working", init);
+}
+
+/** Ask for a different working arrangement. */
+export function requestFlexibleWorking(body: {
+  kind: string;
+  proposed_start: string;
+  proposed_fte_percent?: number;
+  effect_on_team?: string;
+  how_to_manage?: string;
+}): Promise<unknown> {
+  return api("/me/flexible-working", { method: "POST", body });
+}
+
+/** `withdraw`, `respond` (accept or decline a counter-proposal) or `appeal` a request. */
+export function actOnFlexibleRequest(
+  pid: string,
+  action: "withdraw" | "respond" | "appeal",
+  body?: { response?: "accept" | "decline"; note?: string },
+): Promise<unknown> {
+  return api(`/me/flexible-working/${pid}/${action}`, {
+    method: "POST",
+    body: body ?? {},
+  });
+}
+
+export type MyResignation = {
+  pid: string;
+  status: string;
+  logged_on: string;
+  proposed_last_day: string;
+  agreed_last_day: string | null;
+  reason: string | null;
+  notice_calendar_days: number;
+};
+
+/** The caller's latest resignation, or null. */
+export function getMyResignation(
+  init?: FetchLike,
+): Promise<{ resignation: MyResignation | null }> {
+  return api("/me/resignation", init);
+}
+
+/** Log an intent to resign; a person accepts it, nothing ends here. */
+export function logMyResignation(body: {
+  proposed_last_day: string;
+  reason?: string;
+}): Promise<unknown> {
+  return api("/me/resignation", { method: "POST", body });
+}
+
+/** Take the resignation back while it awaits acceptance. */
+export function withdrawMyResignation(): Promise<unknown> {
+  return api("/me/resignation/withdraw", { method: "POST" });
+}
+
+export type MyEquality =
+  | { enabled: false }
+  | {
+      enabled: true;
+      lawful_basis: string;
+      categories: Record<string, string[]>;
+      declarations: Record<string, string>;
+      small_group_floor: number;
+      notice: string;
+    };
+
+/** Whether equality monitoring is on, what is offered and the caller's own answers. */
+export function getMyEquality(init?: FetchLike): Promise<MyEquality> {
+  return api("/me/equality-monitoring", init);
+}
+
+/** Declare or change answers for the categories given. */
+export function declareMyEquality(
+  declarations: Record<string, string>,
+): Promise<unknown> {
+  return api("/me/equality-monitoring", {
+    method: "PUT",
+    body: { declarations },
+  });
+}
+
+/** Take back one answer, or every answer. */
+export function withdrawMyEquality(category?: string): Promise<unknown> {
+  return api(
+    `/me/equality-monitoring${category ? `/${encodeURIComponent(category)}` : ""}`,
+    { method: "DELETE" },
+  );
+}
+
+export type MyHealthRequirements =
+  | { enabled: false }
+  | {
+      enabled: true;
+      requirements: Array<{
+        requirement: { pid: string; name: string; description: string | null };
+        standing: string;
+        cleared: boolean;
+        recorded_on: string | null;
+        next_due: string | null;
+        reminder: boolean;
+      }>;
+      notice: string;
+    };
+
+/** Each workplace health requirement that applies to the caller, with their own standing. */
+export function getMyHealthRequirements(
+  init?: FetchLike,
+): Promise<MyHealthRequirements> {
+  return api("/me/health-requirements", init);
+}

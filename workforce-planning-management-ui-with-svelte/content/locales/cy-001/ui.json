@@ -1358,7 +1358,8 @@
     "cutover": "Parodrwydd newid drosodd — WPM",
     "warnings": "Rhybuddion cynnar — WPM",
     "demo": "Taith dywys o'r demo — WPM",
-    "kanban": "Fy mwrdd — WPM"
+    "kanban": "Fy mwrdd — WPM",
+    "my_details": "Fy manylion — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -1676,7 +1677,15 @@
     "executive": "Gweithredol",
     "accept_deviation": "Derbyn y gwyriad",
     "change_plan": "Newid y cynllun",
-    "stop": "Stopio'r cynllun"
+    "stop": "Stopio'r cynllun",
+    "counter_proposed": "gwrth-gynnig",
+    "refused": "wedi'i wrthod",
+    "appealed": "apeliwyd",
+    "logged": "wedi'i gofnodi",
+    "rescinded": "wedi'i ddiddymu",
+    "not_recorded": "heb ei gofnodi",
+    "due_soon": "yn ddyledus cyn bo hir",
+    "overdue": "wedi mynd heibio'r dyddiad"
   },
   "engagement": {
     "title": "Ymgysylltiad",
@@ -2031,5 +2040,103 @@
     "nobody": "Dim cynlluniau agored, a dim byd wedi dod i ben heb un.",
     "proposeOnly": "Gallwch gynnig cynllun yma. Adnoddau Dynol sy'n darllen cynlluniau presennol, felly ni welwch un.",
     "sent": "Cynigiwyd y cynllun."
+  },
+  "details": {
+    "title": "Fy manylion",
+    "link": "Fy manylion: cyswllt, amser i ffwrdd, ceisiadau a datganiadau",
+    "back": "Yn ôl i fy mhroffil",
+    "no_worker": "Nid oes gennych gofnod gweithiwr mewn unrhyw sefydliad, felly nid oes dim ohonoch i'w ddangos yma.",
+    "saved": "Wedi'i gadw.",
+    "cancel": "Canslo",
+    "contact": {
+      "title": "Manylion cyswllt",
+      "hint": "Cyfeiriad eich cartref, eich rhifau ffôn a'ch e-bost personol. Gallwch eu newid eich hun. Gall Adnoddau Dynol a chyflogres eu darllen; ni all eich rheolwr. Nid yw'r hen werth yn cael ei gadw.",
+      "address_line1": "Cyfeiriad, llinell 1",
+      "address_line2": "Cyfeiriad, llinell 2",
+      "city": "Tref neu ddinas",
+      "region": "Sir neu ranbarth",
+      "postcode": "Cod post",
+      "country": "Gwlad (dwy lythyren)",
+      "phone_mobile": "Ffôn symudol",
+      "phone_home": "Ffôn cartref",
+      "personal_email": "E-bost personol",
+      "clear": "Dileu fy holl fanylion cyswllt"
+    },
+    "time": {
+      "title": "Fy amser i ffwrdd",
+      "kind": "Math",
+      "entitled": "Hawl",
+      "taken": "Wedi'i gymryd",
+      "booked": "Wedi'i archebu",
+      "requested": "Wedi'i ofyn",
+      "remaining": "Yn weddill",
+      "no_allowance": "Nid oes hawl wedi'i chofnodi i chi eleni.",
+      "unit": "Mewn diwrnodau calendr, ar gyfer {year}. Nid oes ffigur gweddill i fath heb hawl wedi'i chofnodi.",
+      "no_requests": "Dim ceisiadau eleni.",
+      "cancel": "Canslo'r cais hwn",
+      "history": "Absenoldeb yn y gorffennol",
+      "request": "Gofyn am wyliau",
+      "from": "O",
+      "to": "Hyd at",
+      "reason": "Rheswm (dewisol)",
+      "sick_no_reason": "Nid oes angen rheswm am absenoldeb salwch.",
+      "send": "Anfon y cais"
+    },
+    "flex": {
+      "title": "Ceisiadau gweithio hyblyg",
+      "hint": "Gofynnwch am drefniant gwaith gwahanol. Mae person yn penderfynu erbyn y dyddiad a ddangosir; dim ond cyfrifo'r dyddiadau y mae'r meddalwedd ac nid yw byth yn newid eich contract.",
+      "from": "o {date}",
+      "decide_by": "penderfynu erbyn {date}",
+      "overdue": "Wedi mynd heibio'r dyddiad",
+      "trial": "cyfnod prawf tan {date}",
+      "hr_applies": "Mae Adnoddau Dynol yn gweithredu'r newid ar {fte}%",
+      "counter": "Cynigiwyd trefniant gwahanol",
+      "accept": "Derbyn",
+      "decline": "Gwrthod",
+      "withdraw": "Tynnu'n ôl",
+      "appeal": "Apelio",
+      "appeal_note": "Pam (dewisol)",
+      "none": "Dim ceisiadau eto.",
+      "new": "Cais newydd",
+      "kind": "Beth rydych am ei newid",
+      "start": "Yn dechrau ar",
+      "fte": "Oriau fel canran o amser llawn (dewisol)",
+      "effect": "Effaith ar y tîm, yn eich geiriau eich hun (dewisol)",
+      "manage": "Sut y gellid ei reoli (dewisol)",
+      "no_health": "Peidiwch â rhoi manylion iechyd yn y blychau hyn.",
+      "send": "Anfon y cais"
+    },
+    "resign": {
+      "title": "Ymddiswyddo",
+      "hint": "Dywedwch wrth eich cyflogwr eich bod yn bwriadu ymddiswyddo. Mae person yn ei dderbyn ac yn cytuno ar y diwrnod olaf; nid oes dim yn dod i ben ohono'i hun. Eich rheswm chi yw e: ni chaiff eich rheolwr nac Adnoddau Dynol ei weld.",
+      "logged": "cofnodwyd {date}",
+      "proposed": "diwrnod olaf arfaethedig {date}",
+      "agreed": "diwrnod olaf y cytunwyd arno {date}",
+      "withdraw": "Ei dynnu'n ôl",
+      "last_day": "Diwrnod olaf arfaethedig",
+      "reason": "Rheswm (dewisol)",
+      "no_reason": "Dim rheswm",
+      "log": "Ymddiswyddo",
+      "confirm": "Mae hyn yn dweud wrth eich cyflogwr eich bod yn bwriadu ymddiswyddo. Gallwch ei dynnu'n ôl nes ei fod wedi'i dderbyn. Parhau?",
+      "confirm_button": "Ie, dywedwch wrth fy nghyflogwr"
+    },
+    "equality": {
+      "title": "Monitro cydraddoldeb",
+      "off": "Nid yw monitro cydraddoldeb wedi'i droi ymlaen, felly ni ofynnir dim i chi.",
+      "basis": "Sail gyfreithlon: {basis}. Ni ddangosir grŵp llai na {floor} byth.",
+      "unanswered": "Dim ateb",
+      "take_back": "Tynnu'n ôl",
+      "take_back_all": "Tynnu fy holl atebion yn ôl"
+    },
+    "health": {
+      "title": "Gofynion iechyd yn y gweithle",
+      "off": "Nid yw gofynion iechyd yn y gweithle wedi'u troi ymlaen.",
+      "none": "Nid oes gofyniad yn berthnasol i chi.",
+      "cleared": "wedi'i glirio",
+      "not_cleared": "heb ei glirio",
+      "recorded": "cofnodwyd {date}",
+      "due": "yn ddyledus {date}",
+      "reminder": "Mae nodyn atgoffa'n ddyledus."
+    }
   }
 }

@@ -20,7 +20,7 @@
   import Aspirations from "#lib/components/Aspirations.svelte";
   import CareerHistory from "#lib/components/CareerHistory.svelte";
   import FrameworkRolePanel from "#lib/components/FrameworkRolePanel.svelte";
-  import { t, tf } from "#lib/i18n.svelte.js";
+  import { l, t, tf } from "#lib/i18n.svelte.js";
 
   type Org = { pid: string; organization_ref: string; worker_pid: string | null; employed: boolean };
   const memberships = $derived(((page.data.organizations ?? []) as Org[]).filter((m) => m.worker_pid));
@@ -45,6 +45,7 @@
 <svelte:head><title>{tf("pages.me.page_title", { me: t("nav.me") })}</title></svelte:head>
 
 <h1>{t("nav.me")}</h1>
+<p><a href={l("/me/details")} data-testid="my-details-link">{t("details.link")}</a></p>
 {#if error}<p class="error" data-testid="error">{error}</p>{/if}
 
 {#if memberships.length === 0}

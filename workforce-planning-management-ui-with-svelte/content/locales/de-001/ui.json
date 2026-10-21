@@ -1358,7 +1358,8 @@
     "cutover": "Umstellungsbereitschaft — WPM",
     "warnings": "Frühwarnungen — WPM",
     "demo": "Geführter Rundgang durch die Demo — WPM",
-    "kanban": "Mein Board — WPM"
+    "kanban": "Mein Board — WPM",
+    "my_details": "Meine Angaben — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -1676,7 +1677,15 @@
     "executive": "Geschäftsleitung",
     "accept_deviation": "Abweichung akzeptieren",
     "change_plan": "Plan ändern",
-    "stop": "Plan beenden"
+    "stop": "Plan beenden",
+    "counter_proposed": "Gegenvorschlag",
+    "refused": "abgelehnt",
+    "appealed": "Widerspruch eingelegt",
+    "logged": "erfasst",
+    "rescinded": "zurückgenommen",
+    "not_recorded": "nicht erfasst",
+    "due_soon": "bald fällig",
+    "overdue": "überfällig"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",
@@ -2031,5 +2040,103 @@
     "nobody": "Keine offenen Pläne, und nichts ist ohne einen abgelaufen.",
     "proposeOnly": "Hier können Sie einen Plan vorschlagen. Bestehende Pläne liest die Personalabteilung, Sie sehen also keinen.",
     "sent": "Plan vorgeschlagen."
+  },
+  "details": {
+    "title": "Meine Angaben",
+    "link": "Meine Angaben: Kontakt, Abwesenheit, Anträge und Erklärungen",
+    "back": "Zurück zu meinem Profil",
+    "no_worker": "Sie haben in keiner Organisation einen Mitarbeitendeneintrag, daher gibt es hier nichts von Ihnen anzuzeigen.",
+    "saved": "Gespeichert.",
+    "cancel": "Abbrechen",
+    "contact": {
+      "title": "Kontaktdaten",
+      "hint": "Ihre Privatadresse, Telefonnummern und private E-Mail-Adresse. Sie können sie selbst ändern. Personalabteilung und Lohnbuchhaltung können sie lesen, Ihre Führungskraft nicht. Der alte Wert wird nicht aufbewahrt.",
+      "address_line1": "Adresszeile 1",
+      "address_line2": "Adresszeile 2",
+      "city": "Ort",
+      "region": "Landkreis oder Region",
+      "postcode": "Postleitzahl",
+      "country": "Land (zwei Buchstaben)",
+      "phone_mobile": "Mobiltelefon",
+      "phone_home": "Festnetztelefon",
+      "personal_email": "Private E-Mail-Adresse",
+      "clear": "Alle meine Kontaktdaten entfernen"
+    },
+    "time": {
+      "title": "Meine Abwesenheit",
+      "kind": "Art",
+      "entitled": "Zugestanden",
+      "taken": "Genommen",
+      "booked": "Gebucht",
+      "requested": "Beantragt",
+      "remaining": "Verbleibend",
+      "no_allowance": "Für Sie ist in diesem Jahr kein Anspruch erfasst.",
+      "unit": "In Kalendertagen, für {year}. Für eine Art ohne Anspruch gibt es keinen Restwert.",
+      "no_requests": "Keine Anträge in diesem Jahr.",
+      "cancel": "Diesen Antrag zurückziehen",
+      "history": "Vergangene Abwesenheit",
+      "request": "Urlaub beantragen",
+      "from": "Von",
+      "to": "Bis",
+      "reason": "Grund (optional)",
+      "sick_no_reason": "Für Krankheit wird kein Grund angegeben.",
+      "send": "Antrag senden"
+    },
+    "flex": {
+      "title": "Anträge auf flexibles Arbeiten",
+      "hint": "Beantragen Sie eine andere Arbeitsregelung. Eine Person entscheidet bis zum angezeigten Datum; die Software berechnet nur die Fristen und ändert nie Ihren Vertrag.",
+      "from": "ab {date}",
+      "decide_by": "Entscheidung bis {date}",
+      "overdue": "Überfällig",
+      "trial": "Probezeit bis {date}",
+      "hr_applies": "Die Personalabteilung setzt die Änderung auf {fte} % um",
+      "counter": "Eine andere Regelung wurde angeboten",
+      "accept": "Annehmen",
+      "decline": "Ablehnen",
+      "withdraw": "Zurückziehen",
+      "appeal": "Widerspruch einlegen",
+      "appeal_note": "Begründung (optional)",
+      "none": "Noch keine Anträge.",
+      "new": "Neuer Antrag",
+      "kind": "Was Sie ändern möchten",
+      "start": "Beginn am",
+      "fte": "Arbeitszeit in Prozent einer Vollzeitstelle (optional)",
+      "effect": "Auswirkung auf das Team, in Ihren Worten (optional)",
+      "manage": "Wie es umgesetzt werden könnte (optional)",
+      "no_health": "Tragen Sie in diese Felder keine Gesundheitsangaben ein.",
+      "send": "Antrag senden"
+    },
+    "resign": {
+      "title": "Kündigung",
+      "hint": "Teilen Sie Ihrem Arbeitgeber mit, dass Sie kündigen möchten. Eine Person nimmt sie an und vereinbart den letzten Tag; nichts endet von selbst. Ihr Grund gehört Ihnen: Ihre Führungskraft und die Personalabteilung sehen ihn nicht.",
+      "logged": "erfasst am {date}",
+      "proposed": "vorgeschlagener letzter Tag {date}",
+      "agreed": "vereinbarter letzter Tag {date}",
+      "withdraw": "Zurücknehmen",
+      "last_day": "Vorgeschlagener letzter Tag",
+      "reason": "Grund (optional)",
+      "no_reason": "Kein Grund angegeben",
+      "log": "Kündigen",
+      "confirm": "Damit teilen Sie Ihrem Arbeitgeber mit, dass Sie kündigen möchten. Sie können es zurücknehmen, bis es angenommen ist. Fortfahren?",
+      "confirm_button": "Ja, meinem Arbeitgeber mitteilen"
+    },
+    "equality": {
+      "title": "Gleichstellungsmonitoring",
+      "off": "Das Gleichstellungsmonitoring ist nicht eingeschaltet, daher wird nichts von Ihnen abgefragt.",
+      "basis": "Rechtsgrundlage: {basis}. Eine Gruppe mit weniger als {floor} Personen wird nie angezeigt.",
+      "unanswered": "Keine Angabe",
+      "take_back": "Zurücknehmen",
+      "take_back_all": "Alle meine Angaben zurücknehmen"
+    },
+    "health": {
+      "title": "Gesundheitsanforderungen am Arbeitsplatz",
+      "off": "Gesundheitsanforderungen am Arbeitsplatz sind nicht eingeschaltet.",
+      "none": "Für Sie gilt keine Anforderung.",
+      "cleared": "freigegeben",
+      "not_cleared": "nicht freigegeben",
+      "recorded": "erfasst am {date}",
+      "due": "fällig am {date}",
+      "reminder": "Eine Erinnerung ist fällig."
+    }
   }
 }

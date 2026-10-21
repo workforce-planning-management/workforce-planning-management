@@ -25,6 +25,8 @@ The 2026-10-13 additions (88 keys for the capacity, resilience, oversight, cutov
 "how this is worked out" texts and the twelve cutover reason sentences) were written by the same assistant in one pass, also unreviewed.
 Read the long texts first: they carry meaning (an unknown is never a pass; the go/no-go is a human decision).
 
+The 2026-10-21 additions (86 keys for the My details page and eight status words) were written by the same assistant, also unreviewed. The equality and health notices on that page are the service's English text.
+
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.
 

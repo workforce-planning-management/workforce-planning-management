@@ -1358,7 +1358,8 @@
     "cutover": "切换就绪情况 — WPM",
     "warnings": "预警 — WPM",
     "demo": "演示导览 — WPM",
-    "kanban": "我的看板 — WPM"
+    "kanban": "我的看板 — WPM",
+    "my_details": "我的资料 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -1676,7 +1677,15 @@
     "executive": "高管层",
     "accept_deviation": "接受偏差",
     "change_plan": "修改计划",
-    "stop": "终止计划"
+    "stop": "终止计划",
+    "counter_proposed": "还价方案",
+    "refused": "已拒绝",
+    "appealed": "已申诉",
+    "logged": "已记录",
+    "rescinded": "已撤销",
+    "not_recorded": "未记录",
+    "due_soon": "即将到期",
+    "overdue": "已逾期"
   },
   "engagement": {
     "title": "用工关系",
@@ -2031,5 +2040,103 @@
     "nobody": "没有未结计划，也没有到期而无计划的聘用。",
     "proposeOnly": "您可以在此提出计划。现有计划由人力资源查阅，因此您看不到。",
     "sent": "计划已提出。"
+  },
+  "details": {
+    "title": "我的资料",
+    "link": "我的资料：联系方式、休假、申请和声明",
+    "back": "返回我的个人资料",
+    "no_worker": "您在任何组织中都没有员工记录，因此这里没有属于您的内容可显示。",
+    "saved": "已保存。",
+    "cancel": "取消",
+    "contact": {
+      "title": "联系方式",
+      "hint": "您的家庭住址、电话号码和个人电子邮箱。您可以自行修改。人力资源和薪资部门可以查看，您的上级不能。旧的值不会保留。",
+      "address_line1": "地址第 1 行",
+      "address_line2": "地址第 2 行",
+      "city": "城市",
+      "region": "省或地区",
+      "postcode": "邮政编码",
+      "country": "国家（两个字母）",
+      "phone_mobile": "手机",
+      "phone_home": "住宅电话",
+      "personal_email": "个人电子邮箱",
+      "clear": "删除我的所有联系方式"
+    },
+    "time": {
+      "title": "我的休假",
+      "kind": "类型",
+      "entitled": "额度",
+      "taken": "已休",
+      "booked": "已预订",
+      "requested": "已申请",
+      "remaining": "剩余",
+      "no_allowance": "今年没有为您记录休假额度。",
+      "unit": "按日历日计算，{year} 年。没有记录额度的类型不显示剩余天数。",
+      "no_requests": "今年没有申请。",
+      "cancel": "取消此申请",
+      "history": "以往缺勤",
+      "request": "申请休假",
+      "from": "自",
+      "to": "至",
+      "reason": "原因（可选）",
+      "sick_no_reason": "病假无需填写原因。",
+      "send": "提交申请"
+    },
+    "flex": {
+      "title": "灵活工作申请",
+      "hint": "申请不同的工作安排。由人在所示日期前作出决定；软件只计算日期，绝不更改您的合同。",
+      "from": "自 {date} 起",
+      "decide_by": "{date} 前决定",
+      "overdue": "已逾期",
+      "trial": "试用至 {date}",
+      "hr_applies": "人力资源将把变更应用为 {fte}%",
+      "counter": "已提出另一种安排",
+      "accept": "接受",
+      "decline": "拒绝",
+      "withdraw": "撤回",
+      "appeal": "申诉",
+      "appeal_note": "原因（可选）",
+      "none": "暂无申请。",
+      "new": "新申请",
+      "kind": "您想更改什么",
+      "start": "开始日期",
+      "fte": "工时占全职的百分比（可选）",
+      "effect": "对团队的影响，用您自己的话（可选）",
+      "manage": "可以如何安排（可选）",
+      "no_health": "请勿在这些框中填写健康信息。",
+      "send": "提交申请"
+    },
+    "resign": {
+      "title": "辞职",
+      "hint": "告知雇主您打算辞职。由人接受并商定最后一天；不会自动终止任何事项。原因属于您本人：您的上级和人力资源看不到。",
+      "logged": "记录于 {date}",
+      "proposed": "建议的最后一天：{date}",
+      "agreed": "商定的最后一天：{date}",
+      "withdraw": "撤回",
+      "last_day": "建议的最后一天",
+      "reason": "原因（可选）",
+      "no_reason": "不说明原因",
+      "log": "辞职",
+      "confirm": "这将告知您的雇主您打算辞职。在被接受之前您可以撤回。是否继续？",
+      "confirm_button": "是，告知我的雇主"
+    },
+    "equality": {
+      "title": "平等监测",
+      "off": "平等监测未开启，因此不会向您询问任何内容。",
+      "basis": "法律依据：{basis}。少于 {floor} 人的群体永远不会显示。",
+      "unanswered": "不回答",
+      "take_back": "撤回",
+      "take_back_all": "撤回我的所有回答"
+    },
+    "health": {
+      "title": "工作场所健康要求",
+      "off": "工作场所健康要求未开启。",
+      "none": "没有适用于您的要求。",
+      "cleared": "已达标",
+      "not_cleared": "未达标",
+      "recorded": "记录于 {date}",
+      "due": "到期日 {date}",
+      "reminder": "有一项提醒到期。"
+    }
   }
 }

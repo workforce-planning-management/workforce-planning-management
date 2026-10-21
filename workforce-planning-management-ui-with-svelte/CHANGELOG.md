@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — My details (WPM-T215)
+
+`/me/details`, linked from `/me`: contact details, emergency contacts, time off and leave requests, flexible working requests, a resignation, equality monitoring and workplace health requirements, all the signed-in person's own. 86 new strings in the 13 locales (machine drafts, unreviewed).
+
 ### Added — data tables fall back to the Lily label pack (WPM-T227)
 
 The catalogue's `dataTable.*` strings stay first; `@lilydesignsystem/svelte-locale-translations` fills only the grid labels the catalogue does not name, for the page's language, loaded one chunk per language. Unreviewed machine drafts, like the catalogue.

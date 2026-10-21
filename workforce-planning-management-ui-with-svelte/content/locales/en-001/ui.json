@@ -1358,7 +1358,8 @@
     "cutover": "Cutover readiness — WPM",
     "warnings": "Early warnings — WPM",
     "demo": "Guided tour of the demo — WPM",
-    "kanban": "My board — WPM"
+    "kanban": "My board — WPM",
+    "my_details": "My details — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -1676,7 +1677,15 @@
     "executive": "Executive",
     "accept_deviation": "Accept the deviation",
     "change_plan": "Change the plan",
-    "stop": "Stop the plan"
+    "stop": "Stop the plan",
+    "counter_proposed": "counter-proposed",
+    "refused": "refused",
+    "appealed": "appealed",
+    "logged": "logged",
+    "rescinded": "rescinded",
+    "not_recorded": "not recorded",
+    "due_soon": "due soon",
+    "overdue": "overdue"
   },
   "engagement": {
     "title": "Engagement",
@@ -2031,5 +2040,103 @@
     "nobody": "No open plans, and nothing past its end without one.",
     "proposeOnly": "You can propose a plan here. Existing plans are read by HR, so you will not see one.",
     "sent": "Plan proposed."
+  },
+  "details": {
+    "title": "My details",
+    "link": "My details: contact, time off, requests and declarations",
+    "back": "Back to my profile",
+    "no_worker": "You do not have a worker record in any organization, so there is nothing of yours to show here.",
+    "saved": "Saved.",
+    "cancel": "Cancel",
+    "contact": {
+      "title": "Contact details",
+      "hint": "Your home address, telephone numbers and personal e-mail. You can change them yourself. HR and payroll can read them; your manager cannot. The old value is not kept.",
+      "address_line1": "Address line 1",
+      "address_line2": "Address line 2",
+      "city": "Town or city",
+      "region": "County or region",
+      "postcode": "Postcode",
+      "country": "Country (two letters)",
+      "phone_mobile": "Mobile telephone",
+      "phone_home": "Home telephone",
+      "personal_email": "Personal e-mail",
+      "clear": "Remove all my contact details"
+    },
+    "time": {
+      "title": "My time off",
+      "kind": "Kind",
+      "entitled": "Allowed",
+      "taken": "Taken",
+      "booked": "Booked",
+      "requested": "Requested",
+      "remaining": "Remaining",
+      "no_allowance": "No allowance is recorded for you this year.",
+      "unit": "In calendar days, for {year}. A kind with no allowance has no remaining figure.",
+      "no_requests": "No requests this year.",
+      "cancel": "Cancel this request",
+      "history": "Past absence",
+      "request": "Request leave",
+      "from": "From",
+      "to": "To",
+      "reason": "Reason (optional)",
+      "sick_no_reason": "Sick leave takes no reason.",
+      "send": "Send request"
+    },
+    "flex": {
+      "title": "Flexible working requests",
+      "hint": "Ask for a different working arrangement. A person decides, by the date shown; the software only works out the dates and never changes your contract.",
+      "from": "from {date}",
+      "decide_by": "decide by {date}",
+      "overdue": "Overdue",
+      "trial": "trial until {date}",
+      "hr_applies": "HR applies the change to {fte}%",
+      "counter": "A different arrangement was offered",
+      "accept": "Accept",
+      "decline": "Decline",
+      "withdraw": "Withdraw",
+      "appeal": "Appeal",
+      "appeal_note": "Why (optional)",
+      "none": "No requests yet.",
+      "new": "New request",
+      "kind": "What you want to change",
+      "start": "Starting on",
+      "fte": "Hours as a percentage of full time (optional)",
+      "effect": "Effect on the team, in your words (optional)",
+      "manage": "How it could be managed (optional)",
+      "no_health": "Do not put health details in these boxes.",
+      "send": "Send request"
+    },
+    "resign": {
+      "title": "Resignation",
+      "hint": "Tell your employer you intend to resign. A person accepts it and agrees the last day; nothing ends by itself. Your reason is yours: your manager and HR are not shown it.",
+      "logged": "logged {date}",
+      "proposed": "proposed last day {date}",
+      "agreed": "agreed last day {date}",
+      "withdraw": "Take it back",
+      "last_day": "Proposed last day",
+      "reason": "Reason (optional)",
+      "no_reason": "No reason given",
+      "log": "Resign",
+      "confirm": "This tells your employer you intend to resign. You can take it back until it is accepted. Continue?",
+      "confirm_button": "Yes, tell my employer"
+    },
+    "equality": {
+      "title": "Equality monitoring",
+      "off": "Equality monitoring is not switched on, so nothing is asked of you.",
+      "basis": "Lawful basis: {basis}. A group smaller than {floor} is never shown.",
+      "unanswered": "No answer",
+      "take_back": "Take back",
+      "take_back_all": "Take back all my answers"
+    },
+    "health": {
+      "title": "Workplace health requirements",
+      "off": "Workplace health requirements are not switched on.",
+      "none": "No requirement applies to you.",
+      "cleared": "cleared",
+      "not_cleared": "not cleared",
+      "recorded": "recorded {date}",
+      "due": "due {date}",
+      "reminder": "A reminder is due."
+    }
   }
 }

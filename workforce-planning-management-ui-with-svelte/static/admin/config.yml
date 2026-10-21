@@ -1991,6 +1991,7 @@ collections:
               - { name: "warnings", label: "Warnings", widget: string, required: false, i18n: true }
               - { name: "demo", label: "Demo", widget: string, required: false, i18n: true }
               - { name: "kanban", label: "Kanban", widget: string, required: false, i18n: true }
+              - { name: "my_details", label: "My_details", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -2314,6 +2315,14 @@ collections:
               - { name: "accept_deviation", label: "Accept_deviation", widget: string, required: false, i18n: true }
               - { name: "change_plan", label: "Change_plan", widget: string, required: false, i18n: true }
               - { name: "stop", label: "Stop", widget: string, required: false, i18n: true }
+              - { name: "counter_proposed", label: "Counter_proposed", widget: string, required: false, i18n: true }
+              - { name: "refused", label: "Refused", widget: string, required: false, i18n: true }
+              - { name: "appealed", label: "Appealed", widget: string, required: false, i18n: true }
+              - { name: "logged", label: "Logged", widget: string, required: false, i18n: true }
+              - { name: "rescinded", label: "Rescinded", widget: string, required: false, i18n: true }
+              - { name: "not_recorded", label: "Not_recorded", widget: string, required: false, i18n: true }
+              - { name: "due_soon", label: "Due_soon", widget: string, required: false, i18n: true }
+              - { name: "overdue", label: "Overdue", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object
@@ -2743,3 +2752,136 @@ collections:
               - { name: "nobody", label: "Nobody", widget: string, required: false, i18n: true }
               - { name: "proposeOnly", label: "Propose Only", widget: text, required: false, i18n: true }
               - { name: "sent", label: "Sent", widget: string, required: false, i18n: true }
+          - name: "details"
+            label: "Details"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "link", label: "Link", widget: string, required: false, i18n: true }
+              - { name: "back", label: "Back", widget: string, required: false, i18n: true }
+              - { name: "no_worker", label: "No_worker", widget: text, required: false, i18n: true }
+              - { name: "saved", label: "Saved", widget: string, required: false, i18n: true }
+              - { name: "cancel", label: "Cancel", widget: string, required: false, i18n: true }
+              - name: "contact"
+                label: "Contact"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+                  - { name: "address_line1", label: "Address_line1", widget: string, required: false, i18n: true }
+                  - { name: "address_line2", label: "Address_line2", widget: string, required: false, i18n: true }
+                  - { name: "city", label: "City", widget: string, required: false, i18n: true }
+                  - { name: "region", label: "Region", widget: string, required: false, i18n: true }
+                  - { name: "postcode", label: "Postcode", widget: string, required: false, i18n: true }
+                  - { name: "country", label: "Country", widget: string, required: false, i18n: true }
+                  - { name: "phone_mobile", label: "Phone_mobile", widget: string, required: false, i18n: true }
+                  - { name: "phone_home", label: "Phone_home", widget: string, required: false, i18n: true }
+                  - { name: "personal_email", label: "Personal_email", widget: string, required: false, i18n: true }
+                  - { name: "clear", label: "Clear", widget: string, required: false, i18n: true }
+              - name: "time"
+                label: "Time"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "kind", label: "Kind", widget: string, required: false, i18n: true }
+                  - { name: "entitled", label: "Entitled", widget: string, required: false, i18n: true }
+                  - { name: "taken", label: "Taken", widget: string, required: false, i18n: true }
+                  - { name: "booked", label: "Booked", widget: string, required: false, i18n: true }
+                  - { name: "requested", label: "Requested", widget: string, required: false, i18n: true }
+                  - { name: "remaining", label: "Remaining", widget: string, required: false, i18n: true }
+                  - { name: "no_allowance", label: "No_allowance", widget: string, required: false, i18n: true }
+                  - { name: "unit", label: "Unit", widget: string, required: false, i18n: true }
+                  - { name: "no_requests", label: "No_requests", widget: string, required: false, i18n: true }
+                  - { name: "cancel", label: "Cancel", widget: string, required: false, i18n: true }
+                  - { name: "history", label: "History", widget: string, required: false, i18n: true }
+                  - { name: "request", label: "Request", widget: string, required: false, i18n: true }
+                  - { name: "from", label: "From", widget: string, required: false, i18n: true }
+                  - { name: "to", label: "To", widget: string, required: false, i18n: true }
+                  - { name: "reason", label: "Reason", widget: string, required: false, i18n: true }
+                  - { name: "sick_no_reason", label: "Sick_no_reason", widget: string, required: false, i18n: true }
+                  - { name: "send", label: "Send", widget: string, required: false, i18n: true }
+              - name: "flex"
+                label: "Flex"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+                  - { name: "from", label: "From", widget: string, required: false, i18n: true }
+                  - { name: "decide_by", label: "Decide_by", widget: string, required: false, i18n: true }
+                  - { name: "overdue", label: "Overdue", widget: string, required: false, i18n: true }
+                  - { name: "trial", label: "Trial", widget: string, required: false, i18n: true }
+                  - { name: "hr_applies", label: "Hr_applies", widget: string, required: false, i18n: true }
+                  - { name: "counter", label: "Counter", widget: string, required: false, i18n: true }
+                  - { name: "accept", label: "Accept", widget: string, required: false, i18n: true }
+                  - { name: "decline", label: "Decline", widget: string, required: false, i18n: true }
+                  - { name: "withdraw", label: "Withdraw", widget: string, required: false, i18n: true }
+                  - { name: "appeal", label: "Appeal", widget: string, required: false, i18n: true }
+                  - { name: "appeal_note", label: "Appeal_note", widget: string, required: false, i18n: true }
+                  - { name: "none", label: "None", widget: string, required: false, i18n: true }
+                  - { name: "new", label: "New", widget: string, required: false, i18n: true }
+                  - { name: "kind", label: "Kind", widget: string, required: false, i18n: true }
+                  - { name: "start", label: "Start", widget: string, required: false, i18n: true }
+                  - { name: "fte", label: "Fte", widget: string, required: false, i18n: true }
+                  - { name: "effect", label: "Effect", widget: string, required: false, i18n: true }
+                  - { name: "manage", label: "Manage", widget: string, required: false, i18n: true }
+                  - { name: "no_health", label: "No_health", widget: string, required: false, i18n: true }
+                  - { name: "send", label: "Send", widget: string, required: false, i18n: true }
+              - name: "resign"
+                label: "Resign"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+                  - { name: "logged", label: "Logged", widget: string, required: false, i18n: true }
+                  - { name: "proposed", label: "Proposed", widget: string, required: false, i18n: true }
+                  - { name: "agreed", label: "Agreed", widget: string, required: false, i18n: true }
+                  - { name: "withdraw", label: "Withdraw", widget: string, required: false, i18n: true }
+                  - { name: "last_day", label: "Last_day", widget: string, required: false, i18n: true }
+                  - { name: "reason", label: "Reason", widget: string, required: false, i18n: true }
+                  - { name: "no_reason", label: "No_reason", widget: string, required: false, i18n: true }
+                  - { name: "log", label: "Log", widget: string, required: false, i18n: true }
+                  - { name: "confirm", label: "Confirm", widget: text, required: false, i18n: true }
+                  - { name: "confirm_button", label: "Confirm_button", widget: string, required: false, i18n: true }
+              - name: "equality"
+                label: "Equality"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "off", label: "Off", widget: string, required: false, i18n: true }
+                  - { name: "basis", label: "Basis", widget: string, required: false, i18n: true }
+                  - { name: "unanswered", label: "Unanswered", widget: string, required: false, i18n: true }
+                  - { name: "take_back", label: "Take_back", widget: string, required: false, i18n: true }
+                  - { name: "take_back_all", label: "Take_back_all", widget: string, required: false, i18n: true }
+              - name: "health"
+                label: "Health"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "off", label: "Off", widget: string, required: false, i18n: true }
+                  - { name: "none", label: "None", widget: string, required: false, i18n: true }
+                  - { name: "cleared", label: "Cleared", widget: string, required: false, i18n: true }
+                  - { name: "not_cleared", label: "Not_cleared", widget: string, required: false, i18n: true }
+                  - { name: "recorded", label: "Recorded", widget: string, required: false, i18n: true }
+                  - { name: "due", label: "Due", widget: string, required: false, i18n: true }
+                  - { name: "reminder", label: "Reminder", widget: string, required: false, i18n: true }

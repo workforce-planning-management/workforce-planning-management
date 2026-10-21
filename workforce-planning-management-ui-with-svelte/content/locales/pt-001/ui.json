@@ -1358,7 +1358,8 @@
     "cutover": "Prontidão da virada — WPM",
     "warnings": "Alertas precoces — WPM",
     "demo": "Percurso guiado pela demonstração — WPM",
-    "kanban": "O meu quadro — WPM"
+    "kanban": "O meu quadro — WPM",
+    "my_details": "Meus dados — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -1676,7 +1677,15 @@
     "executive": "Diretoria",
     "accept_deviation": "Aceitar o desvio",
     "change_plan": "Alterar o plano",
-    "stop": "Parar o plano"
+    "stop": "Parar o plano",
+    "counter_proposed": "contraproposta",
+    "refused": "recusado",
+    "appealed": "recorrido",
+    "logged": "registado",
+    "rescinded": "anulado",
+    "not_recorded": "não registado",
+    "due_soon": "vence em breve",
+    "overdue": "em atraso"
   },
   "engagement": {
     "title": "Vínculo",
@@ -2031,5 +2040,103 @@
     "nobody": "Nenhum plano em aberto, e nada terminado sem um.",
     "proposeOnly": "Pode propor um plano aqui. Os planos existentes são lidos pelos RH, por isso não verá nenhum.",
     "sent": "Plano proposto."
+  },
+  "details": {
+    "title": "Meus dados",
+    "link": "Meus dados: contacto, ausências, pedidos e declarações",
+    "back": "Voltar ao meu perfil",
+    "no_worker": "Você não tem registo de trabalhador em nenhuma organização, por isso não há nada seu para mostrar aqui.",
+    "saved": "Guardado.",
+    "cancel": "Cancelar",
+    "contact": {
+      "title": "Dados de contacto",
+      "hint": "A sua morada, os seus números de telefone e o seu e-mail pessoal. Pode alterá-los você mesmo. Os Recursos Humanos e o processamento salarial podem lê-los; o seu responsável não. O valor anterior não é guardado.",
+      "address_line1": "Morada, linha 1",
+      "address_line2": "Morada, linha 2",
+      "city": "Localidade",
+      "region": "Distrito ou região",
+      "postcode": "Código postal",
+      "country": "País (duas letras)",
+      "phone_mobile": "Telemóvel",
+      "phone_home": "Telefone fixo",
+      "personal_email": "E-mail pessoal",
+      "clear": "Remover todos os meus dados de contacto"
+    },
+    "time": {
+      "title": "As minhas ausências",
+      "kind": "Tipo",
+      "entitled": "Direito",
+      "taken": "Gozados",
+      "booked": "Marcados",
+      "requested": "Pedidos",
+      "remaining": "Restantes",
+      "no_allowance": "Não há direito registado para si este ano.",
+      "unit": "Em dias de calendário, para {year}. Um tipo sem direito registado não tem valor restante.",
+      "no_requests": "Sem pedidos este ano.",
+      "cancel": "Cancelar este pedido",
+      "history": "Ausências passadas",
+      "request": "Pedir licença",
+      "from": "De",
+      "to": "Até",
+      "reason": "Motivo (opcional)",
+      "sick_no_reason": "A baixa por doença não leva motivo.",
+      "send": "Enviar pedido"
+    },
+    "flex": {
+      "title": "Pedidos de trabalho flexível",
+      "hint": "Peça um regime de trabalho diferente. Uma pessoa decide até à data indicada; o programa apenas calcula as datas e nunca altera o seu contrato.",
+      "from": "a partir de {date}",
+      "decide_by": "decidir até {date}",
+      "overdue": "Em atraso",
+      "trial": "período experimental até {date}",
+      "hr_applies": "Os Recursos Humanos aplicam a alteração a {fte} %",
+      "counter": "Foi proposto um regime diferente",
+      "accept": "Aceitar",
+      "decline": "Recusar",
+      "withdraw": "Retirar",
+      "appeal": "Recorrer",
+      "appeal_note": "Porquê (opcional)",
+      "none": "Ainda não há pedidos.",
+      "new": "Novo pedido",
+      "kind": "O que quer alterar",
+      "start": "A partir de",
+      "fte": "Horas em percentagem do tempo inteiro (opcional)",
+      "effect": "Efeito na equipa, nas suas palavras (opcional)",
+      "manage": "Como poderia ser gerido (opcional)",
+      "no_health": "Não escreva dados de saúde nestes campos.",
+      "send": "Enviar pedido"
+    },
+    "resign": {
+      "title": "Demissão",
+      "hint": "Diga ao seu empregador que pretende demitir-se. Uma pessoa aceita e acorda o último dia; nada termina por si só. O motivo é seu: o seu responsável e os Recursos Humanos não o veem.",
+      "logged": "registada em {date}",
+      "proposed": "último dia proposto: {date}",
+      "agreed": "último dia acordado: {date}",
+      "withdraw": "Retirar",
+      "last_day": "Último dia proposto",
+      "reason": "Motivo (opcional)",
+      "no_reason": "Sem motivo",
+      "log": "Demitir-me",
+      "confirm": "Isto informa o seu empregador de que pretende demitir-se. Pode retirar até ser aceite. Continuar?",
+      "confirm_button": "Sim, informar o meu empregador"
+    },
+    "equality": {
+      "title": "Monitorização da igualdade",
+      "off": "A monitorização da igualdade não está ativada, por isso nada lhe é pedido.",
+      "basis": "Base jurídica: {basis}. Um grupo com menos de {floor} pessoas nunca é mostrado.",
+      "unanswered": "Sem resposta",
+      "take_back": "Retirar",
+      "take_back_all": "Retirar todas as minhas respostas"
+    },
+    "health": {
+      "title": "Requisitos de saúde no trabalho",
+      "off": "Os requisitos de saúde no trabalho não estão ativados.",
+      "none": "Nenhum requisito se aplica a si.",
+      "cleared": "apto",
+      "not_cleared": "não apto",
+      "recorded": "registado em {date}",
+      "due": "vence em {date}",
+      "reminder": "Há um lembrete pendente."
+    }
   }
 }
