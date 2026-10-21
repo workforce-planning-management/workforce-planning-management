@@ -2403,6 +2403,7 @@ test.describe("signed-in smoke coverage", () => {
           mentor_load: [
             { mentor_pid: "e1", mentor: "Ada Mentor", active_mentees: 1 },
           ],
+          unmatched_total: 1,
           unmatched_workers: [
             { pid: "e3", display_name: "Solo Dev", department: "engineering" },
           ],
@@ -2441,6 +2442,7 @@ test.describe("signed-in smoke coverage", () => {
           mentor_load: [
             { mentor_pid: "e1", mentor: "Ada Mentor", active_mentees: 1 },
           ],
+          unmatched_total: 0,
           unmatched_workers: [],
           stale_days: 30,
           stale_mentorships: [

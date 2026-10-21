@@ -288,7 +288,8 @@
     "tenureYears": "years",
     "noLocation": "Location not recorded",
     "employed": "Employed here",
-    "staffOnly": "Staff access"
+    "staffOnly": "Staff access",
+    "truncated": "Showing {shown} of {total} people; the rest are not drawn."
   },
   "metrics": {
     "from": "From",
@@ -1088,7 +1089,8 @@
       "mentee": "Mentee",
       "last_session": "Last session",
       "unmatched_workers": "Unmatched workers",
-      "everyone_active_is_in_a_mentorship": "Everyone active is in a mentorship."
+      "everyone_active_is_in_a_mentorship": "Everyone active is in a mentorship.",
+      "unmatched_shown": "Showing the newest {shown} of {total}."
     },
     "metrics": {
       "page_title": "{metrics} — WPM"

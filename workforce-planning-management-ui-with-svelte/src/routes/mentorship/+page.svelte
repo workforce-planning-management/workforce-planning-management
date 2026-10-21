@@ -46,7 +46,7 @@
 {#if overview}
   <section class="tiles" data-testid="mentorship-tiles">
     <div class="tile"><strong>{overview.active_pairings}</strong><span>{t("pages.mentorship.active_pairings")}</span></div>
-    <div class="tile"><strong>{overview.unmatched_workers.length}</strong><span>{t("pages.mentorship.unmatched")}</span></div>
+    <div class="tile"><strong>{overview.unmatched_total}</strong><span>{t("pages.mentorship.unmatched")}</span></div>
     <div class="tile">
       <strong>{overview.stale_mentorships.length}</strong>
       <span>{tf("pages.mentorship.stale_over_d", { stale_days: overview.stale_days })}</span>
@@ -80,6 +80,11 @@
   {/if}
 
   <h2>{t("pages.mentorship.unmatched_workers")}</h2>
+  {#if overview.unmatched_total > overview.unmatched_workers.length}
+    <p class="muted" data-testid="unmatched-shown">
+      {tf("pages.mentorship.unmatched_shown", { shown: overview.unmatched_workers.length, total: overview.unmatched_total })}
+    </p>
+  {/if}
   <ul data-testid="unmatched">
     {#each overview.unmatched_workers as worker (worker.pid)}
       <li>{worker.display_name} <span class="muted">({worker.department})</span></li>

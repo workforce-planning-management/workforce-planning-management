@@ -104,7 +104,25 @@ SQL
   # a CPD requirement for every worker: the overview counts who has met it
   curl -fsS -X POST "$api/api/cpd-requirements" -H 'content-type: application/json' \
     -d '{"name":"load","unit":"hours","required":10,"period_start":"2026-01-01","period_end":"2026-12-31"}' >/dev/null
-  for path in "/_ping" "/api/workers?limit=50" "/api/directory?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/capacity?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce-plans/$plan/forecast" "/api/workforce-plans/$plan/cost" "/api/cpd/overview" "/api/workforce-intelligence/overview" "/api/workforce-intelligence/metrics" "/api/workforce-intelligence/insights" "/api/workforce-intelligence/key-person?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce/working-time"; do
+  # LOAD_SURVEY=<file of paths>: one timed request per path instead of the load, to find the views that
+  # read a whole table (WPM-R142). Slowest first; a path that needs a parameter answers 422 and is listed as such.
+  if [ -n "${LOAD_SURVEY:-}" ]; then
+    org="organization:00000000-0000-4000-8000-0000000000aa"
+    while read -r path; do
+      join='?'; case "$path" in *\?*) join='&';; esac
+      curl -s -o /tmp/wpm-survey-body -m 60 -w "%{time_total} %{http_code} %{size_download} $path" "$api$path${join}organization=$org"
+      code=$(head -c 160 /tmp/wpm-survey-body | tr -d '\n'); [ ${#code} -lt 160 ] && [ "$(wc -c < /tmp/wpm-survey-body)" -lt 160 ] && printf ' %s' "$code"; echo
+    done < "$LOAD_SURVEY" | sort -rn | head -${LOAD_SURVEY_TOP:-40}
+    kill "$api_pid" 2>/dev/null || true; wait "$api_pid" 2>/dev/null || true; api_pid=
+    continue
+  fi
+  # LOAD_PATHS=<file>: measure these paths (one per line) instead of the default set; the organization is added.
+  if [ -n "${LOAD_PATHS:-}" ]; then
+    paths=(); while read -r line; do paths+=("$line?organization=organization:00000000-0000-4000-8000-0000000000aa"); done < "$LOAD_PATHS"
+  else
+    paths=("/_ping" "/api/workers?limit=50" "/api/directory?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/capacity?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce-plans/$plan/forecast" "/api/workforce-plans/$plan/cost" "/api/cpd/overview" "/api/workforce-intelligence/overview" "/api/workforce-intelligence/metrics" "/api/workforce-intelligence/insights" "/api/workforce-intelligence/key-person?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce/working-time")
+  fi
+  for path in "${paths[@]}"; do
     out=$(oha -z "${secs}s" -c "$conc" --no-tui --output-format json "http://127.0.0.1:$port_api$path" 2>/dev/null || echo '{}')
     echo "$out" | python3 -I -c '
 import json, sys

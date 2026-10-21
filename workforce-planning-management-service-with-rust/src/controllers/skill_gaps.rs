@@ -14,7 +14,6 @@
 
 use chrono::Utc;
 use loco_rs::prelude::*;
-use sea_orm::QueryOrder;
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
@@ -23,10 +22,8 @@ use super::record_rejection;
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     role_skill_requirements, skills, worker_aspirations, worker_framework_roles, worker_skills,
-    workers,
 };
 use crate::models::{memberships, records};
-use crate::rules::metrics::is_employed_on;
 use crate::rules::skill_gap::{self as rules, Gap, Need, Source, Status};
 use crate::tasks::import_framework::PCF_SLUG;
 
@@ -50,12 +47,15 @@ pub(crate) async fn load_evidence(
     worker_pids: &[Uuid],
     with_aspirations: bool,
 ) -> Result<Evidence> {
-    let roles_rows = worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.is_in(worker_pids.to_vec()))
-        .filter(worker_framework_roles::Column::FrameworkSlug.eq(PCF_SLUG))
-        .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let roles_rows = super::find_in(
+        ctx,
+        worker_framework_roles::Entity::find()
+            .filter(worker_framework_roles::Column::FrameworkSlug.eq(PCF_SLUG))
+            .filter(worker_framework_roles::Column::EndedAt.is_null()),
+        worker_framework_roles::Column::WorkerPid,
+        worker_pids,
+    )
+    .await?;
     let roles: HashMap<Uuid, Uuid> = roles_rows
         .iter()
         .filter_map(|r| r.role_profile_pid.map(|p| (r.worker_pid, p)))
@@ -70,11 +70,13 @@ pub(crate) async fn load_evidence(
         requirements.entry(r.role_profile_pid).or_default().push(r);
     }
     let mut declared: HashMap<Uuid, BTreeMap<Uuid, (i32, Option<i32>)>> = HashMap::new();
-    for d in worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.is_in(worker_pids.to_vec()))
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
+    for d in super::find_in(
+        ctx,
+        worker_skills::Entity::find().filter(worker_skills::Column::DeletedAt.is_null()),
+        worker_skills::Column::WorkerPid,
+        worker_pids,
+    )
+    .await?
     {
         declared
             .entry(d.worker_pid)
@@ -83,12 +85,15 @@ pub(crate) async fn load_evidence(
     }
     let mut aspirations: HashMap<Uuid, Vec<worker_aspirations::Model>> = HashMap::new();
     if with_aspirations {
-        for a in worker_aspirations::Entity::find()
-            .filter(worker_aspirations::Column::WorkerPid.is_in(worker_pids.to_vec()))
-            .filter(worker_aspirations::Column::DeletedAt.is_null())
-            .filter(worker_aspirations::Column::Kind.eq("skill"))
-            .all(&ctx.db)
-            .await?
+        for a in super::find_in(
+            ctx,
+            worker_aspirations::Entity::find()
+                .filter(worker_aspirations::Column::DeletedAt.is_null())
+                .filter(worker_aspirations::Column::Kind.eq("skill")),
+            worker_aspirations::Column::WorkerPid,
+            worker_pids,
+        )
+        .await?
         {
             if ACTIVE_ASPIRATIONS.contains(&a.status.as_str()) {
                 aspirations.entry(a.worker_pid).or_default().push(a);
@@ -241,43 +246,14 @@ async fn workforce_gaps(
     axum::extract::Query(q): axum::extract::Query<WorkforceQuery>,
 ) -> Result<Response> {
     let limit = q.limit.unwrap_or(25).clamp(1, 100);
-    let mut query = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        query = query.filter(workers::Column::OrganizationRef.is_in(refs));
-    }
+    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
     let today = Utc::now().date_naive();
-    let staff: Vec<workers::Model> = query
-        .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .filter(|w| {
-            q.department
-                .as_deref()
-                .is_none_or(|d| w.department.eq_ignore_ascii_case(d))
-        })
-        .collect();
-    let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
-    let evidence = load_evidence(&ctx, &pids, false).await?;
-    let mut rows = Vec::new();
-    let mut with_needs = 0;
-    for w in &staff {
-        let gaps = evidence.gaps_for(w.pid);
-        if !gaps.is_empty() {
-            with_needs += 1;
-        }
-        for g in gaps {
-            rows.push(rules::Row {
-                skill: g.skill,
-                department: w.department.clone(),
-                status: g.status,
-                shortfall: g.shortfall,
-                importance: g.importance,
-            });
-        }
-    }
-    let rolled = rules::rollup(&rows);
+    let department = q.department.as_deref();
+    // Counted by the database (see `gap_sql`): the same grading as `Evidence::gaps_for`, for everyone at once.
+    let considered = super::gap_sql::staff_count(&ctx, scope.as_deref(), department, today).await?;
+    let (rows, with_needs) =
+        super::gap_sql::gap_rows(&ctx, scope.as_deref(), department, today).await?;
+    let rolled = rules::rollup_counted(&rows);
     let total = rolled.len();
     let index = skill_index(&ctx).await?;
     let skills_out: Vec<serde_json::Value> = rolled
@@ -308,7 +284,7 @@ async fn workforce_gaps(
                        weight × levels short. Aggregate only: nobody is named, and private \\
                        aspirations are never included.",
         "as_of": today,
-        "workers_considered": staff.len(),
+        "workers_considered": considered,
         "workers_with_needs": with_needs,
         "skills_total": total,
         "skills": skills_out,

@@ -231,27 +231,54 @@ async fn complete_assessment(
 /// per-department counts.
 #[debug_handler]
 async fn issues(State(ctx): State<AppContext>) -> Result<Response> {
-    let worker_rows = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let assessments = ergonomic_assessments::Entity::find()
-        .filter(ergonomic_assessments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    // The flagged items first; then only their assessments and those assessments' workers.
     let items = ergonomic_items::Entity::find()
         .filter(ergonomic_items::Column::DeletedAt.is_null())
         .filter(ergonomic_items::Column::Ok.eq(false))
         .all(&ctx.db)
         .await?;
+    let assessment_pids: Vec<uuid::Uuid> = items
+        .iter()
+        .map(|i| i.assessment_pid)
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    let assessments: std::collections::HashMap<uuid::Uuid, ergonomic_assessments::Model> =
+        super::find_in(
+            &ctx,
+            ergonomic_assessments::Entity::find()
+                .filter(ergonomic_assessments::Column::DeletedAt.is_null()),
+            ergonomic_assessments::Column::Pid,
+            &assessment_pids,
+        )
+        .await?
+        .into_iter()
+        .map(|a| (a.pid, a))
+        .collect();
+    let worker_pids: Vec<uuid::Uuid> = assessments
+        .values()
+        .map(|a| a.worker_pid)
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    let worker_rows: std::collections::HashMap<uuid::Uuid, workers::Model> = super::find_in(
+        &ctx,
+        workers::Entity::find().filter(workers::Column::DeletedAt.is_null()),
+        workers::Column::Pid,
+        &worker_pids,
+    )
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w))
+    .collect();
     let mut listed = Vec::new();
     let mut by_department: std::collections::BTreeMap<String, usize> =
         std::collections::BTreeMap::new();
     for item in &items {
-        let Some(assessment) = assessments.iter().find(|a| a.pid == item.assessment_pid) else {
+        let Some(assessment) = assessments.get(&item.assessment_pid) else {
             continue;
         };
-        let Some(worker) = worker_rows.iter().find(|e| e.pid == assessment.worker_pid) else {
+        let Some(worker) = worker_rows.get(&assessment.worker_pid) else {
             continue;
         };
         *by_department.entry(worker.department.clone()).or_default() += 1;

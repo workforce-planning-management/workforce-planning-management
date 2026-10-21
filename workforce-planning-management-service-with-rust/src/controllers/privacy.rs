@@ -545,7 +545,7 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
                 sea_orm::DatabaseBackend::Postgres,
                 format!(
                     "SELECT COUNT(*) AS n FROM {table} \
-                     WHERE deleted_at < now() - interval '{days} days'"
+                     WHERE deleted_at IS NOT NULL AND deleted_at < now() - interval '{days} days'"
                 ),
             ))
             .await?
@@ -562,9 +562,8 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
             candidates::Column::ConsentUntil
                 .lt(chrono::Utc::now().date_naive() - chrono::Duration::days(recruitment_days)),
         )
-        .all(&ctx.db)
-        .await?
-        .len();
+        .count(&ctx.db)
+        .await?;
     format::json(serde_json::json!({
         "as_of": chrono::Utc::now(),
         "horizons": horizon_map(&all),

@@ -336,6 +336,17 @@ export function orgChart(
   );
 }
 
+/** How many people the organization has in all (the chart may draw only part). */
+export function orgChartSize(
+  organization: string,
+  init?: FetchLike,
+): Promise<{ people: number }> {
+  return api(
+    `/org-chart/size?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
 /** Requisitions (optionally by status). */
 export function listRequisitions(
   status?: string,
@@ -2850,6 +2861,8 @@ export function mentorshipOverview(
     mentor: string | null;
     active_mentees: number;
   }>;
+  /** Everyone unmatched; `unmatched_workers` names only the newest few. */
+  unmatched_total: number;
   unmatched_workers: Array<{
     pid: string;
     display_name: string;

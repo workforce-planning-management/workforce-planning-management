@@ -288,7 +288,8 @@
     "tenureYears": "বছর",
     "noLocation": "অবস্থান নথিভুক্ত নয়",
     "employed": "এখানে কর্মরত",
-    "staffOnly": "স্টাফ অ্যাক্সেস"
+    "staffOnly": "স্টাফ অ্যাক্সেস",
+    "truncated": "{total} জনের মধ্যে {shown} জনকে দেখানো হচ্ছে; বাকিদের আঁকা হয়নি।"
   },
   "metrics": {
     "from": "থেকে",
@@ -1088,7 +1089,8 @@
       "mentee": "মেন্টি",
       "last_session": "শেষ অধিবেশন",
       "unmatched_workers": "জুটিহীন কর্মী",
-      "everyone_active_is_in_a_mentorship": "সক্রিয় সবাই একটি মেন্টরশিপে আছেন।"
+      "everyone_active_is_in_a_mentorship": "সক্রিয় সবাই একটি মেন্টরশিপে আছেন।",
+      "unmatched_shown": "{total} জনের মধ্যে সবচেয়ে নতুন {shown} জনকে দেখানো হচ্ছে।"
     },
     "metrics": {
       "page_title": "{metrics} — WPM"

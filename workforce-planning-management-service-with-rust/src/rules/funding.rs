@@ -143,6 +143,21 @@ fn percent(part: i64, whole: i64) -> Option<f64> {
 /// floor, so a withheld one cannot be worked out from the others.
 #[must_use]
 pub fn contingent_share(rows: &[(String, String, i32)], floor: usize) -> ContingentShare {
+    let counted: Vec<(String, String, i32, usize)> = rows
+        .iter()
+        .map(|(department, kind, fte)| (department.clone(), kind.clone(), *fte, 1))
+        .collect();
+    contingent_share_counted(&counted, floor)
+}
+
+/// [`contingent_share`] over groups: each row is `(department, basis, fte_percent, people)`, the
+/// number of people who share those three values. The same answer as one row per person, from a
+/// few hundred groups instead of one row per worker of the organization.
+#[must_use]
+pub fn contingent_share_counted(
+    rows: &[(String, String, i32, usize)],
+    floor: usize,
+) -> ContingentShare {
     use std::collections::BTreeMap;
     #[derive(Default)]
     struct Sum {
@@ -153,10 +168,11 @@ pub fn contingent_share(rows: &[(String, String, i32)], floor: usize) -> Conting
     }
     let mut by: BTreeMap<&str, Sum> = BTreeMap::new();
     let mut all = Sum::default();
-    for (department, kind, fte) in rows {
-        let fte = i64::from(*fte);
+    for (department, kind, fte, people) in rows {
+        let people = *people;
+        let fte = i64::from(*fte) * i64::try_from(people).unwrap_or(i64::MAX);
         for sum in [by.entry(department).or_default(), &mut all] {
-            sum.people += 1;
+            sum.people += people;
             sum.fte += fte;
             match kind.as_str() {
                 "contractor" => sum.contractor += fte,
@@ -350,6 +366,31 @@ mod tests {
 
     fn d(y: i32, m: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    }
+
+    /// Groups of people give exactly the answer that one row per person gives.
+    #[test]
+    fn grouped_share_equals_one_row_per_person() {
+        let mut rows = Vec::new();
+        let groups = [
+            ("a", "contractor", 100, 7_usize),
+            ("a", "permanent", 50, 4),
+            ("b", "fixed_term", 80, 6),
+            ("b", "permanent", 100, 9),
+            ("c", "contractor", 20, 1),
+        ];
+        let mut counted = Vec::new();
+        for (department, basis, fte, people) in groups {
+            counted.push((department.to_string(), basis.to_string(), fte, people));
+            for _ in 0..people {
+                rows.push((department.to_string(), basis.to_string(), fte));
+            }
+        }
+        for floor in [1, 5, 8] {
+            let one = contingent_share(&rows, floor);
+            let many = contingent_share_counted(&counted, floor);
+            assert_eq!(format!("{one:?}"), format!("{many:?}"), "floor {floor}");
+        }
     }
 
     #[test]

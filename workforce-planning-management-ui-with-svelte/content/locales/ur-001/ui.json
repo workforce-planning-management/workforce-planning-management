@@ -288,7 +288,8 @@
     "tenureYears": "سال",
     "noLocation": "مقام درج نہیں",
     "employed": "یہاں کام کرتا ہے",
-    "staffOnly": "عملے کی رسائی"
+    "staffOnly": "عملے کی رسائی",
+    "truncated": "{total} میں سے {shown} افراد دکھائے گئے ہیں؛ باقی نہیں بنائے گئے۔"
   },
   "metrics": {
     "from": "از",
@@ -1088,7 +1089,8 @@
       "mentee": "زیرِ رہنمائی",
       "last_session": "آخری نشست",
       "unmatched_workers": "بغیر جوڑی کے کارکن",
-      "everyone_active_is_in_a_mentorship": "تمام فعال افراد کسی رہنمائی میں ہیں۔"
+      "everyone_active_is_in_a_mentorship": "تمام فعال افراد کسی رہنمائی میں ہیں۔",
+      "unmatched_shown": "{total} میں سے نئے ترین {shown} دکھائے گئے ہیں۔"
     },
     "metrics": {
       "page_title": "{metrics} — WPM"

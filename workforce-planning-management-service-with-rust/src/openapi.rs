@@ -38,7 +38,8 @@ pub fn spec() -> Value {
             },
             "/api/workers/possible-duplicates": { "post": { "tags": ["hr-core"], "summary": "Which existing workers might this name (and worker number) be? Read-only; names and worker numbers only; a name alone is review, never match", "responses": ok("Possible duplicates, best first") } },
             "/api/workers/{pid}/status": { "post": { "tags": ["hr-core"], "summary": "Worker lifecycle transition (activation gated on mandatory onboarding items)", "responses": transition } },
-            "/api/org-chart": { "get": { "tags": ["hr-core"], "summary": "The manager forest for one organization (?organization=)", "responses": ok("OrgNodes") } },
+            "/api/org-chart": { "get": { "tags": ["hr-core"], "summary": "The manager forest for one organization (?organization=&limit=; at most limit people are drawn, roots first then each level; default 5000, at most 20000)", "responses": ok("OrgNodes") } },
+            "/api/org-chart/size": { "get": { "tags": ["hr-core"], "summary": "How many people the organization has in all (?organization=), to say when the chart is only part of it", "responses": ok("People count") } },
             "/api/benefit-plans": {
                 "post": { "tags": ["benefits"], "summary": "Create a benefit plan (minor-unit costs)", "responses": created },
                 "get": { "tags": ["benefits"], "summary": "List plans", "responses": ok("Plans") }

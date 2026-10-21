@@ -288,7 +288,8 @@
     "tenureYears": "лет",
     "noLocation": "Местоположение не указано",
     "employed": "Работает здесь",
-    "staffOnly": "Административный доступ"
+    "staffOnly": "Административный доступ",
+    "truncated": "Показано {shown} из {total} человек; остальные не отображены."
   },
   "metrics": {
     "from": "С",
@@ -1088,7 +1089,8 @@
       "mentee": "Подопечный",
       "last_session": "Последняя встреча",
       "unmatched_workers": "Работники без пары",
-      "everyone_active_is_in_a_mentorship": "Все активные участвуют в наставничестве."
+      "everyone_active_is_in_a_mentorship": "Все активные участвуют в наставничестве.",
+      "unmatched_shown": "Показаны {shown} новейших из {total}."
     },
     "metrics": {
       "page_title": "{metrics} — WPM"

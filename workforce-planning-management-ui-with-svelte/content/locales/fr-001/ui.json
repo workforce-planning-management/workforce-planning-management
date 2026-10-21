@@ -288,7 +288,8 @@
     "tenureYears": "ans",
     "noLocation": "Site non renseigné",
     "employed": "Employé ici",
-    "staffOnly": "Accès du personnel"
+    "staffOnly": "Accès du personnel",
+    "truncated": "Affichage de {shown} personnes sur {total} ; les autres ne sont pas dessinées."
   },
   "metrics": {
     "from": "Du",
@@ -1088,7 +1089,8 @@
       "mentee": "Mentoré",
       "last_session": "Dernière séance",
       "unmatched_workers": "Personnes sans binôme",
-      "everyone_active_is_in_a_mentorship": "Toutes les personnes actives sont dans un mentorat."
+      "everyone_active_is_in_a_mentorship": "Toutes les personnes actives sont dans un mentorat.",
+      "unmatched_shown": "Affichage des {shown} plus récentes sur {total}."
     },
     "metrics": {
       "page_title": "{metrics} — WPM"

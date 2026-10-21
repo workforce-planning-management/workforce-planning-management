@@ -195,6 +195,18 @@ async fn learning_round_trip() {
             .collect();
         assert!(unmatched.contains(&"Test Worker E-3"));
         assert!(!unmatched.contains(&"Test Worker E-1"));
+        // The names are capped and the total is always given: with a limit of one, one name (the newest)
+        // is listed and the total still counts everyone unmatched.
+        let capped: Value = request
+            .get("/api/learning/mentorship-overview?days=3650&unmatched_limit=1")
+            .await
+            .json();
+        assert_eq!(capped["unmatched_workers"].as_array().unwrap().len(), 1);
+        assert_eq!(
+            capped["unmatched_total"].as_u64().unwrap(),
+            overview["unmatched_total"].as_u64().unwrap()
+        );
+        assert!(capped["unmatched_total"].as_u64().unwrap() >= 1);
     })
     .await;
 }
@@ -2252,6 +2264,115 @@ async fn confederation_groups_and_transfers() {
         assert_eq!(t2["ended_group_memberships"], json!(["Federation guild"]));
         assert_eq!(request.post(&format!("/api/workers/{in_a}/transfer")).json(&json!({ "organization_ref": outsider })).await.status_code(), 422);
         assert_eq!(request.post(&format!("/api/workers/{in_a}/transfer")).json(&json!({ "organization_ref": "nonsense" })).await.status_code(), 422);
+    })
+    .await;
+}
+
+async fn capability_view(request: &loco_rs::TestServer) -> Value {
+    request
+        .get("/api/workforce-intelligence/capability")
+        .await
+        .json()
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// The capability view counts, in the database, what it used to count in memory: holders at and below their
+// own target, the people with a gap and how many of them have an active plan, completed sittings per category.
+// Read as the difference from before, since the test database holds other people.
+async fn capability_counts_targets_plans_and_completed_sittings() {
+    use sea_orm::ConnectionTrait;
+    crate::requests::request_open(|request, ctx| async move {
+        let org = super::an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let before = capability_view(&request).await;
+        let skill: Value = request
+            .post("/api/skills")
+            .json(&json!({ "name": format!("Cap {tag}"), "category": "technical" }))
+            .await
+            .json();
+        let skill_pid = skill["pid"].as_str().unwrap().to_string();
+        let mut people = Vec::new();
+        // (proficiency, target): at target, below with a plan, below without a plan, no target
+        for (n, (level, target)) in [(3, Some(3)), (2, Some(4)), (1, Some(2)), (5, None)].into_iter().enumerate() {
+            let w = super::seed_worker!(&request, &org, format!("CAP-{tag}-{n}"), None).await;
+            super::activate!(&request, &w).await;
+            let mut body = json!({ "skill_pid": skill_pid, "proficiency": level });
+            if let Some(t) = target {
+                body["target"] = json!(t);
+            }
+            request.put(&format!("/api/workers/{w}/skills")).json(&body).await.assert_status_ok();
+            people.push(w);
+        }
+        // The second person has a development plan, made active.
+        request
+            .post(&format!("/api/workers/{}/development-plans", people[1]))
+            .json(&json!({
+                "kind": "upskill",
+                "items": [{ "skill_pid": skill_pid, "current_level": 2, "target_level": 4, "method": "course" }],
+            }))
+            .await
+            .assert_status_ok();
+        ctx.db
+            .execute_unprepared(&format!(
+                "UPDATE development_plans SET status = 'active' WHERE worker_pid = '{}'",
+                people[1]
+            ))
+            .await
+            .unwrap();
+        // The first person completed an aptitude sitting; the third only scheduled one.
+        let instrument: Value = request
+            .post("/api/assessment-instruments")
+            .json(&json!({ "name": format!("Apt {tag}"), "category": "aptitude", "scales": ["numerical_reasoning"] }))
+            .await
+            .json();
+        for (who, complete) in [(&people[0], true), (&people[2], false), (&people[3], false)] {
+            let sitting: Value = request
+                .post("/api/assessments")
+                .json(&json!({ "instrument_pid": instrument["pid"], "subject_kind": "worker", "subject_pid": who }))
+                .await
+                .json();
+            let pid = sitting["pid"].as_str().unwrap();
+            if complete {
+                request
+                    .post(&format!("/api/assessments/{pid}/results"))
+                    .json(&json!({ "scale": "numerical_reasoning", "percentile": 60 }))
+                    .await
+                    .assert_status_ok();
+                request
+                    .post(&format!("/api/assessments/{pid}/status"))
+                    .json(&json!({ "to": "completed" }))
+                    .await
+                    .assert_status_ok();
+            }
+        }
+
+        let after = capability_view(&request).await;
+        let row = after["skills"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|s| s["skill"] == format!("Cap {tag}").as_str())
+            .expect("the skill is in the catalogue");
+        assert_eq!(row["declared_by"], 4);
+        assert_eq!(row["at_or_above_target"], 1, "3 against a target of 3 is at target");
+        assert_eq!(row["below_target"], 2);
+        let n = |v: &Value, k: &str| v[k].as_u64().unwrap();
+        assert_eq!(n(&after, "people_with_a_declared_gap"), n(&before, "people_with_a_declared_gap") + 2);
+        let covered = |v: &Value| v["gaps_with_an_active_plan"]["numerator"].as_u64().unwrap_or(0);
+        assert_eq!(covered(&after), covered(&before) + 1, "only the one with an active plan");
+        let assessed = |v: &Value| {
+            v["assessment_coverage"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|c| c["category"] == "aptitude")
+                .unwrap()["workers_assessed"]
+                .as_u64()
+                .unwrap()
+        };
+        assert_eq!(assessed(&after), assessed(&before) + 1, "a scheduled sitting does not count");
     })
     .await;
 }

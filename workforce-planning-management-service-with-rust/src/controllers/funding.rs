@@ -6,7 +6,7 @@
 //! erased with them. Nothing here changes an engagement.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, Select};
+use sea_orm::{ActiveValue, ExprTrait, QuerySelect, Select};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -191,6 +191,25 @@ pub(super) async fn employed_in_scope(
     Ok(employed_in_scope_query(scope, today).all(&ctx.db).await?)
 }
 
+/// The people among `pids` who are employed on `today` in the caller's scope, by id.
+pub(super) async fn employed_among(
+    ctx: &AppContext,
+    scope: Option<&[String]>,
+    today: chrono::NaiveDate,
+    pids: &[uuid::Uuid],
+) -> Result<std::collections::HashMap<uuid::Uuid, workers::Model>> {
+    Ok(super::find_in(
+        ctx,
+        employed_in_scope_query(scope, today),
+        workers::Column::Pid,
+        pids,
+    )
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w))
+    .collect())
+}
+
 /// The same people as a query, to filter, count or use as a subquery in the database
 /// ([`crate::rules::metrics::is_employed_on`], in SQL).
 pub(super) fn employed_in_scope_query(
@@ -221,14 +240,20 @@ async fn engagements_of<'a>(
         .filter(|w| matches!(w.employment_type.as_str(), "contractor" | "fixed_term"))
         .collect();
     let contingent_pids: Vec<uuid::Uuid> = contingent_staff.iter().map(|w| w.pid).collect();
-    let decisions = engagement_decisions::Entity::find()
-        .filter(engagement_decisions::Column::WorkerPid.is_in(contingent_pids.clone()))
-        .all(&ctx.db)
-        .await?;
-    let extensions = engagement_extensions::Entity::find()
-        .filter(engagement_extensions::Column::WorkerPid.is_in(contingent_pids))
-        .all(&ctx.db)
-        .await?;
+    let decisions = super::find_in(
+        ctx,
+        engagement_decisions::Entity::find(),
+        engagement_decisions::Column::WorkerPid,
+        &contingent_pids,
+    )
+    .await?;
+    let extensions = super::find_in(
+        ctx,
+        engagement_extensions::Entity::find(),
+        engagement_extensions::Column::WorkerPid,
+        &contingent_pids,
+    )
+    .await?;
     Ok(contingent_staff
         .into_iter()
         .map(|w| {
@@ -349,35 +374,57 @@ async fn snapshot_trend(
 /// fixed-term (each apart), and the funding horizon: who is left when each month's money runs out
 /// (WPM-R62). Aggregate only, names no one, small groups withheld. HR only.
 #[debug_handler]
+#[allow(clippy::too_many_lines)] // loads, groups, then one JSON body, linearly
 async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let staff = employed_in_scope(&ctx, scope.as_deref(), today).await?;
-    let rows: Vec<(String, String, i32)> = staff
-        .iter()
-        .map(|w| {
-            (
-                w.department.clone(),
-                w.employment_type.clone(),
-                w.fte_percent,
+    // Grouped by the database: department, basis and FTE with the number of people who share them.
+    let groups: Vec<(String, String, i32, usize)> =
+        employed_in_scope_query(scope.as_deref(), today)
+            .select_only()
+            .column(workers::Column::Department)
+            .column(workers::Column::EmploymentType)
+            .column(workers::Column::FtePercent)
+            .column_as(
+                sea_orm::sea_query::Expr::col(workers::Column::Id).count(),
+                "people",
             )
-        })
-        .collect();
+            .group_by(workers::Column::Department)
+            .group_by(workers::Column::EmploymentType)
+            .group_by(workers::Column::FtePercent)
+            .into_tuple::<(String, String, i32, i64)>()
+            .all(&ctx.db)
+            .await?
+            .into_iter()
+            .map(|(department, basis, fte, people)| {
+                (department, basis, fte, usize::try_from(people).unwrap_or(0))
+            })
+            .collect();
     let floor = DEFAULT_FLOOR;
-    let share = rules::contingent_share(&rows, floor);
-    let pids: Vec<uuid::Uuid> = staff.iter().map(|w| w.pid).collect();
-    let fte_of: std::collections::BTreeMap<uuid::Uuid, i32> =
-        staff.iter().map(|w| (w.pid, w.fte_percent)).collect();
-    let ends: Vec<(chrono::NaiveDate, i32)> = post_fundings::Entity::find()
-        .filter(post_fundings::Column::WorkerPid.is_in(pids))
+    let share = rules::contingent_share_counted(&groups, floor);
+    // Only the contractors and fixed-term people are read whole: the engagement figures are about them.
+    let contingent_staff: Vec<workers::Model> = employed_in_scope_query(scope.as_deref(), today)
+        .filter(workers::Column::EmploymentType.is_in(["contractor", "fixed_term"]))
+        .all(&ctx.db)
+        .await?;
+    // The funding ends of employed people, with their FTE.
+    let funded = post_fundings::Entity::find()
         .filter(post_fundings::Column::EndsOn.is_not_null())
         .all(&ctx.db)
-        .await?
+        .await?;
+    let funded_pids: Vec<uuid::Uuid> = funded
+        .iter()
+        .map(|f| f.worker_pid)
+        .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
-        .filter_map(|f| Some((f.ends_on?, *fte_of.get(&f.worker_pid)?)))
+        .collect();
+    let employed = employed_among(&ctx, scope.as_deref(), today, &funded_pids).await?;
+    let ends: Vec<(chrono::NaiveDate, i32)> = funded
+        .into_iter()
+        .filter_map(|f| Some((f.ends_on?, employed.get(&f.worker_pid)?.fte_percent)))
         .collect();
     let horizon = rules::funding_horizon(&ends, today, HORIZON_MONTHS, floor);
-    let counts = engagement_counts(&ctx, &staff, today, floor).await?;
+    let counts = engagement_counts(&ctx, &contingent_staff, today, floor).await?;
     let trend = snapshot_trend(&ctx, scope.as_deref(), floor).await?;
     Audit::record(
         &ctx.db,

@@ -192,9 +192,18 @@ pub struct SkillRollup {
 /// skill id).
 #[must_use]
 pub fn rollup(rows: &[Row]) -> Vec<SkillRollup> {
+    let counted: Vec<(Row, usize)> = rows.iter().map(|r| (r.clone(), 1)).collect();
+    rollup_counted(&counted)
+}
+
+/// [`rollup`] over groups: each entry is a row and the number of people who share it. The same answer
+/// as one row per person, from the distinct rows instead.
+#[must_use]
+pub fn rollup_counted(rows: &[(Row, usize)]) -> Vec<SkillRollup> {
     let mut by_skill: BTreeMap<Uuid, SkillRollup> = BTreeMap::new();
     let mut depts: BTreeMap<Uuid, BTreeMap<String, usize>> = BTreeMap::new();
-    for r in rows {
+    for (r, n) in rows {
+        let n = *n;
         let e = by_skill.entry(r.skill).or_insert_with(|| SkillRollup {
             skill: r.skill,
             needed_by: 0,
@@ -206,23 +215,25 @@ pub fn rollup(rows: &[Row]) -> Vec<SkillRollup> {
             score: 0,
             departments: Vec::new(),
         });
-        e.needed_by += 1;
+        let times = i32::try_from(n).unwrap_or(i32::MAX);
+        let times_u32 = u32::try_from(n).unwrap_or(u32::MAX);
+        e.needed_by += n;
         match r.status {
-            Status::Met => e.met += 1,
-            Status::Undeclared => e.undeclared += 1,
+            Status::Met => e.met += n,
+            Status::Undeclared => e.undeclared += n,
             Status::Below => {
-                e.below += 1;
+                e.below += n;
                 let s = r.shortfall.unwrap_or(0);
-                e.total_shortfall += s;
-                e.score += weight(&r.importance) * u32::try_from(s).unwrap_or(0);
+                e.total_shortfall += s * times;
+                e.score += weight(&r.importance) * u32::try_from(s).unwrap_or(0) * times_u32;
                 if r.importance == "critical" {
-                    e.critical_below += 1;
+                    e.critical_below += n;
                 }
                 *depts
                     .entry(r.skill)
                     .or_default()
                     .entry(r.department.clone())
-                    .or_default() += 1;
+                    .or_default() += n;
             }
         }
     }

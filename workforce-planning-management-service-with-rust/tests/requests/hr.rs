@@ -222,6 +222,23 @@ async fn contracts_404_cycle_and_uniqueness() {
         let roots = chart.as_array().unwrap();
         assert_eq!(roots.len(), 1);
         assert_eq!(roots[0]["reports"].as_array().unwrap().len(), 1);
+        // A limit draws the roots first and a person only under a manager who is drawn; the size says how many
+        // there are in all.
+        let one: Value = request
+            .get(&format!("/api/org-chart?organization={org}&limit=1"))
+            .await
+            .json();
+        assert_eq!(one.as_array().unwrap().len(), 1);
+        assert_eq!(
+            one[0]["reports"].as_array().unwrap().len(),
+            0,
+            "the report is cut off"
+        );
+        let size: Value = request
+            .get(&format!("/api/org-chart/size?organization={org}"))
+            .await
+            .json();
+        assert_eq!(size["people"], 2);
         // Worker-number uniqueness per organization (index): the
         // duplicate insert surfaces as an error, not a silent success.
         let duplicate = request

@@ -189,3 +189,27 @@ At 200,000 workers, 8 connections, 20 database connections, 4,000,000 time entri
 index prunes nothing: the same run with a record of 8 hours on seven calendar days a week for everyone gave p50 2,094 ms and p99 2,706 ms (a miss), and without the index
 1,032 and 2,071 ms. That is not a normal workforce, but it is the limit of the claim.
 
+### Every other view (WPM-T243)
+
+A survey of the 107 `GET` routes without an id at 200,000 workers (`LOAD_SURVEY`) found four routes that **failed**: they passed every worker id
+to one `IN (…)` list, over the database's limit of 65,535 parameters (skill gaps, training demand, contingent, programmes). Two returned 22 MB
+(mentorship overview) and 36 MB (org chart). Before the fix, at 8 connections: p95 between 2.0 and 5.0 s for eleven routes.
+
+After (8 connections, 20 database connections, 8 seconds each):
+
+| Route | p50 ms | p95 ms | p99 ms | Failed |
+|---|---:|---:|---:|---:|
+| org chart (5,000 people drawn) | 32 | 52 | 63 | 0 |
+| mentorship overview | 27 | 45 | 61 | 0 |
+| skills matrix | 105 | 163 | 189 | 0 |
+| training analytics | 1 | 1 | 2 | 0 |
+| capability / capability analysis | 117 / 192 | 165 / 240 | 201 / 275 | 0 |
+| skill gaps / training demand | 57 / 51 | 73 / 68 | 108 / 91 | 0 |
+| contingent / programmes | 68 / 3 | 107 / 3 | 147 / 5 | 0 |
+| ergonomic issues | 1 | 1 | 2 | 0 |
+| retention report (before: p50 487 and 1,728 ms in two runs) | 53 | 60 | 78 | 0 |
+
+The standard set, run again: worker list 22 ms, directory 108, capacity 1,204 (p95 1,389, the slowest), plan forecast 204, cost 111, CPD overview 164,
+workforce overview 188, metrics 34, insights 43, key-person register 612 (p95 722), working time 740 (p95 964). **All 24 measured routes meet the
+bar.** Routes that take an id (a worker, a plan) were not surveyed.
+

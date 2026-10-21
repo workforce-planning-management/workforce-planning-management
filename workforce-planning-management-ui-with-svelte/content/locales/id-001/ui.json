@@ -288,7 +288,8 @@
     "tenureYears": "tahun",
     "noLocation": "Lokasi belum dicatat",
     "employed": "Bekerja di sini",
-    "staffOnly": "Akses staf"
+    "staffOnly": "Akses staf",
+    "truncated": "Menampilkan {shown} dari {total} orang; sisanya tidak digambar."
   },
   "metrics": {
     "from": "Dari",
@@ -1088,7 +1089,8 @@
       "mentee": "Mentee",
       "last_session": "Sesi terakhir",
       "unmatched_workers": "Pekerja belum berpasangan",
-      "everyone_active_is_in_a_mentorship": "Semua orang yang aktif sudah ikut mentoring."
+      "everyone_active_is_in_a_mentorship": "Semua orang yang aktif sudah ikut mentoring.",
+      "unmatched_shown": "Menampilkan {shown} terbaru dari {total}."
     },
     "metrics": {
       "page_title": "{metrics} — WPM"

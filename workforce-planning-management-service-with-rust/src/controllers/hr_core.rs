@@ -629,11 +629,35 @@ fn build_org_node(
     }
 }
 
-/// `GET /api/org-chart?organization=<ref>` — the manager forest for
-/// one organization (roots = workers with no manager).
+/// `GET /api/org-chart?organization=<ref>&limit=` — the manager forest for
+/// one organization (roots = workers with no manager). At most `limit` people are drawn (default 5,000,
+/// at most 20,000), the roots first and then each level in turn, so a person is drawn only when their
+/// manager is; `GET /api/org-chart/size` says how many there are in all (WPM-R142).
 #[derive(Debug, Deserialize)]
 struct OrgChartParams {
     organization: String,
+    limit: Option<usize>,
+}
+
+/// The default and the largest number of people one org-chart answer draws.
+const ORG_CHART_DEFAULT_LIMIT: usize = 5_000;
+const ORG_CHART_MAX_LIMIT: usize = 20_000;
+
+/// The live workers of the organization the caller may read (none when it is outside their scope).
+async fn org_chart_people(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    organization: &str,
+) -> Result<sea_orm::Select<workers::Entity>> {
+    let mut query = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::OrganizationRef.eq(organization));
+    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+        // `organization` outside the caller's scope ANDs down to
+        // zero rows here — no separate 403 needed for this read.
+        query = query.filter(workers::Column::OrganizationRef.is_in(refs));
+    }
+    Ok(query)
 }
 
 #[debug_handler]
@@ -642,15 +666,39 @@ async fn org_chart(
     caller: MaybeAuthUser,
     Query(params): Query<OrgChartParams>,
 ) -> Result<Response> {
-    let mut query = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::OrganizationRef.eq(&params.organization));
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        // `params.organization` outside the caller's scope ANDs down to
-        // zero rows here — no separate 403 needed for this read.
-        query = query.filter(workers::Column::OrganizationRef.is_in(refs));
+    let limit = params
+        .limit
+        .unwrap_or(ORG_CHART_DEFAULT_LIMIT)
+        .clamp(1, ORG_CHART_MAX_LIMIT);
+    let people = org_chart_people(&ctx, &caller, &params.organization).await?;
+    // Breadth first: the roots, then the reports of each level, until `limit` people are held.
+    let mut rows: Vec<workers::Model> = people
+        .clone()
+        .filter(workers::Column::ManagerPid.is_null())
+        .order_by_asc(workers::Column::Id)
+        .limit(limit as u64)
+        .all(&ctx.db)
+        .await?;
+    let mut frontier: Vec<Uuid> = rows.iter().map(|r| r.pid).collect();
+    for _ in 0..33 {
+        if frontier.is_empty() || rows.len() >= limit {
+            break;
+        }
+        let mut next = Vec::new();
+        for chunk in frontier.chunks(super::IN_BATCH) {
+            next.extend(
+                people
+                    .clone()
+                    .filter(workers::Column::ManagerPid.is_in(chunk.to_vec()))
+                    .all(&ctx.db)
+                    .await?,
+            );
+        }
+        next.sort_by_key(|w| w.id);
+        next.truncate(limit - rows.len());
+        frontier = next.iter().map(|r| r.pid).collect();
+        rows.extend(next);
     }
-    let rows = query.order_by_asc(workers::Column::Id).all(&ctx.db).await?;
     let mut children: HashMap<Option<Uuid>, Vec<&workers::Model>> = HashMap::new();
     for e in &rows {
         children.entry(e.manager_pid).or_default().push(e);
@@ -665,6 +713,18 @@ async fn org_chart(
         })
         .unwrap_or_default();
     format::json(roots)
+}
+
+/// `GET /api/org-chart/size?organization=<ref>` — how many people the organization has in all, so a
+/// client can say when the chart it was given is only part of it.
+#[debug_handler]
+async fn org_chart_size(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Query(params): Query<OrgChartParams>,
+) -> Result<Response> {
+    let people = org_chart_people(&ctx, &caller, &params.organization).await?;
+    format::json(serde_json::json!({ "people": people.count(&ctx.db).await? }))
 }
 
 /// `POST /api/benefit-plans`.
@@ -882,6 +942,7 @@ pub fn routes() -> Routes {
         .add("/workers/{pid}", delete(delete_worker))
         .add("/workers/{pid}/status", post(change_status))
         .add("/org-chart", get(org_chart))
+        .add("/org-chart/size", get(org_chart_size))
         .add("/benefit-plans", post(create_plan))
         .add("/benefit-plans", get(list_plans))
         .add("/workers/{pid}/benefit-enrollments", post(enroll))

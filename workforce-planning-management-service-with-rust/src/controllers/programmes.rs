@@ -6,7 +6,7 @@ use loco_rs::prelude::*;
 use serde_json::json;
 
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{post_fundings, workers};
+use crate::models::_entities::post_fundings;
 use crate::models::audit_logs::Model as Audit;
 use crate::models::memberships;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
@@ -23,27 +23,21 @@ const MONTHS: u32 = 12;
 async fn programmes(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| crate::rules::metrics::is_employed_on(today, w.hired_on, w.terminated_on))
-        .filter(|w| {
-            scope
-                .as_ref()
-                .is_none_or(|refs| refs.iter().any(|r| r == &w.organization_ref))
-        })
-        .collect();
-    let pids: Vec<uuid::Uuid> = staff.iter().map(|w| w.pid).collect();
-    let rows: Vec<OnProgramme> = post_fundings::Entity::find()
-        .filter(post_fundings::Column::WorkerPid.is_in(pids))
+    let funded = post_fundings::Entity::find()
         .filter(post_fundings::Column::ProgrammeRef.is_not_null())
         .all(&ctx.db)
-        .await?
+        .await?;
+    let funded_pids: Vec<uuid::Uuid> = funded
+        .iter()
+        .map(|f| f.worker_pid)
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    let staff = super::funding::employed_among(&ctx, scope.as_deref(), today, &funded_pids).await?;
+    let rows: Vec<OnProgramme> = funded
         .into_iter()
         .filter_map(|f| {
-            let w = staff.iter().find(|w| w.pid == f.worker_pid)?;
+            let w = staff.get(&f.worker_pid)?;
             Some(OnProgramme {
                 programme: f.programme_ref?,
                 fte_percent: w.fte_percent,

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { orgChart } from "#lib/api/wpm.js";
-  import { t, l } from "#lib/i18n.svelte.js";
+  import { orgChart, orgChartSize } from "#lib/api/wpm.js";
+  import { t, tf, l } from "#lib/i18n.svelte.js";
   import type { OrgNode } from "#lib/api/types.js";
   import OrgTree from "#lib/components/OrgTree.svelte";
   import {
@@ -22,6 +22,10 @@
   const organizationRefs = $derived((page.data.scope ?? []) as string[]);
 
   let byOrganization = $state<Record<string, OrgNode[]> | null>(null);
+  /** How many people each organization has in all; the chart draws at most a few thousand. */
+  let sizes = $state<Record<string, number>>({});
+  const drawn = (nodes: OrgNode[]): number =>
+    nodes.reduce((sum, n) => sum + 1 + drawn(n.reports), 0);
   let error = $state<string | null>(null);
   let view = $state<OrgView>("manager");
 
@@ -35,6 +39,18 @@
           ),
         );
         byOrganization = Object.fromEntries(entries);
+        // Only to say when the chart is part of the organization; a failure here hides nothing else.
+        sizes = Object.fromEntries(
+          await Promise.all(
+            refs.map(async (ref) => {
+              try {
+                return [ref, (await orgChartSize(ref)).people] as const;
+              } catch {
+                return [ref, 0] as const;
+              }
+            }),
+          ),
+        );
       } catch (cause) {
         error = cause instanceof Error ? cause.message : String(cause);
       }
@@ -64,6 +80,11 @@
   {#each organizationRefs as ref (ref)}
     <section class="panel org-chart-section" data-testid="org-chart">
       <h2><code>{ref}</code></h2>
+      {#if (sizes[ref] ?? 0) > drawn(byOrganization[ref] ?? [])}
+        <p class="muted" data-testid="org-chart-truncated">
+          {tf("org.truncated", { shown: drawn(byOrganization[ref] ?? []), total: sizes[ref] ?? 0 })}
+        </p>
+      {/if}
       {#if view === "manager"}
         {#each byOrganization[ref] ?? [] as root (root.pid)}
           <OrgTree node={root} />

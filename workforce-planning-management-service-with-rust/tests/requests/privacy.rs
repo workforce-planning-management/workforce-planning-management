@@ -134,3 +134,34 @@ async fn subject_rights_round_trip() {
     })
     .await;
 }
+
+/// The retention report counts, and the sweep deletes, rows past a horizon in every soft-deleting table
+/// (WPM-R142): each has an index on `deleted_at` that holds only the deleted rows, so neither scans the table.
+#[tokio::test]
+#[serial_test::serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn every_soft_deleting_table_has_a_deleted_at_index() {
+    use sea_orm::ConnectionTrait;
+    crate::requests::request_open(|_request, ctx| async move {
+        let rows = ctx
+            .db
+            .query_all_raw(sea_orm::Statement::from_string(
+                sea_orm::DbBackend::Postgres,
+                "SELECT tablename FROM pg_indexes WHERE schemaname = current_schema()
+                   AND indexdef LIKE '%(deleted_at) WHERE (deleted_at IS NOT NULL)%'",
+            ))
+            .await
+            .unwrap();
+        let indexed: std::collections::BTreeSet<String> = rows
+            .iter()
+            .map(|r| r.try_get::<String>("", "tablename").unwrap())
+            .collect();
+        for table in workforce_planning_management::rules::privacy::SOFT_DELETED_TABLES {
+            assert!(
+                indexed.contains(*table),
+                "{table} has no partial index on deleted_at; add it to a migration"
+            );
+        }
+    })
+    .await;
+}

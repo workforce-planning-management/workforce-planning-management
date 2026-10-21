@@ -288,7 +288,8 @@
     "tenureYears": "سنوات",
     "noLocation": "الموقع غير مسجّل",
     "employed": "يعمل هنا",
-    "staffOnly": "وصول إداري"
+    "staffOnly": "وصول إداري",
+    "truncated": "يُعرض {shown} من أصل {total} شخصًا؛ ولم يُرسم الباقون."
   },
   "metrics": {
     "from": "من",
@@ -1088,7 +1089,8 @@
       "mentee": "المتدرّب",
       "last_session": "آخر جلسة",
       "unmatched_workers": "عاملون غير مقترنين",
-      "everyone_active_is_in_a_mentorship": "جميع النشطين ضمن إرشاد."
+      "everyone_active_is_in_a_mentorship": "جميع النشطين ضمن إرشاد.",
+      "unmatched_shown": "يُعرض أحدث {shown} من أصل {total}."
     },
     "metrics": {
       "page_title": "{metrics} — WPM"

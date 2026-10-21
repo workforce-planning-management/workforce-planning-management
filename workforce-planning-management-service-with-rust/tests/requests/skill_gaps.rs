@@ -70,9 +70,10 @@ async fn skill_gaps_merge_sources_rank_by_priority_and_roll_up_without_names() {
             }
             (format!("/api/workers/{worker}/skills"), body)
         };
-        // A: S1 at 2 (below 4), S2 at 3 with a target of 4. B: S1 at 4 (met), S2 at 1.
+        // A: S1 at 2 with an own target of 3 (the role's critical 4 still rules: the strongest importance and the
+        // highest level win), S2 at 3 with a target of 4. B: S1 at 4 (met), S2 at 1.
         for (url, body) in [
-            declare(&a, &skills[0], 2, None),
+            declare(&a, &skills[0], 2, Some(3)),
             declare(&a, &skills[1], 3, Some(4)),
             declare(&b, &skills[0], 4, None),
             declare(&b, &skills[1], 1, None),
@@ -106,7 +107,7 @@ async fn skill_gaps_merge_sources_rank_by_priority_and_roll_up_without_names() {
 
         // The workforce: counts, ranked, nobody named, aspirations excluded.
         let all: Value = request
-            .get("/api/workforce-intelligence/skill-gaps?department=engineering&limit=100")
+            .get("/api/workforce-intelligence/skill-gaps?department=ENGINEERING&limit=100")
             .await
             .json();
         let rows: Vec<&Value> = all["skills"]

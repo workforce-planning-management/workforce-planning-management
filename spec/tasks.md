@@ -3543,6 +3543,18 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
+- [x] WPM-T243 (2026-10-21) **The remaining whole-table reads.** *(WPM-R142, WPM-D97)* `scripts/load-test.sh` gains `LOAD_SURVEY=<paths>` (one timed
+      request per route) and `LOAD_PATHS=<paths>` (the load on chosen routes). The survey of 107 parameterless `GET` routes at 200,000 workers found
+      four that failed (`IN` list over the bind limit: skill gaps, training demand, contingent, programmes), two of 22 and 36 MB (mentorship overview,
+      org chart) and eight over the bar at 8 connections. All now pass: p95 under 250 ms each (capability analysis 240, skills matrix 163, contingent
+      107, org chart 52, mentorship 45, training demand 68, skill gaps 73, capability 165, ergonomics 1, training analytics 1, programmes 3), and
+      retention 60 (it scanned 4,000,000 time entries: p50 0.5 s in one run, 1.7 s in another; migration 79 indexes it); the standard set still passes (working time p95 964 ms,
+      capacity 1,389 ms, the worst). Parity tests: a skill-gap roll-up of merged role and target needs (**mutation-checked**: weakest importance
+      wins, the met boundary, the highest level, case-insensitive department), capability (targets, active plans, completed sittings; mutation-checked
+      three ways), grouped shares equal one row per person (rule tests), the org-chart limit and size, the mentorship cap, and every soft-deleting
+      table indexed. UI: the org chart and the mentorship page say when they show part (two strings in 13 locales, AI-written, not reviewed);
+      Playwright 143, vitest 160, svelte-check 0. *Not checked:* routes that take an id; the gap SQL assumes one current PCF role per worker (a unique
+      index says so); the unmatched list of the mentorship page is no longer complete by design.
 - [x] WPM-T242 (2026-10-21) **Open escalations on the CEO dashboard.** *(WPM-R141, WPM-D94)* A seventh tile counts the open escalations of the caller's
       organizations (the same `GET /api/escalations?organization=` inbox, one call per organization in scope) with the age of the oldest in calendar
       days, links to Planning, and shows "—" when it cannot be loaded or the caller has no organization in scope (never 0). The third row is now the trend

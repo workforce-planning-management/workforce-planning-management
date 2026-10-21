@@ -288,7 +288,8 @@
     "tenureYears": "blynedd",
     "noLocation": "Lleoliad heb ei gofnodi",
     "employed": "Yn gyflogedig yma",
-    "staffOnly": "Mynediad staff"
+    "staffOnly": "Mynediad staff",
+    "truncated": "Yn dangos {shown} o {total} o bobl; nid yw'r gweddill wedi'u tynnu."
   },
   "metrics": {
     "from": "O",
@@ -1088,7 +1089,8 @@
       "mentee": "Mentorai",
       "last_session": "Sesiwn olaf",
       "unmatched_workers": "Gweithwyr heb eu paru",
-      "everyone_active_is_in_a_mentorship": "Mae pawb gweithredol mewn mentora."
+      "everyone_active_is_in_a_mentorship": "Mae pawb gweithredol mewn mentora.",
+      "unmatched_shown": "Yn dangos y {shown} diweddaraf o {total}."
     },
     "metrics": {
       "page_title": "{metrics} — WPM"

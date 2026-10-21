@@ -31,6 +31,7 @@ pub mod expenses;
 pub mod flexible_working;
 pub mod framework_roles;
 pub mod funding;
+pub mod gap_sql;
 pub mod governance;
 pub mod grades;
 pub mod groups;
@@ -83,6 +84,38 @@ pub fn ensure_valid(problems: &[String]) -> Result<()> {
         StatusCode::UNPROCESSABLE_ENTITY,
         ErrorDetail::new("validation", problems.join("; ")),
     ))
+}
+
+/// Ids per `IN (…)` list. A statement carries at most 65,535 bind parameters, so a list of every worker
+/// of a large organization (WPM-R142) fails outright; a list this size is well under it.
+pub(crate) const IN_BATCH: usize = 5_000;
+
+/// Every row of `select` whose `column` is one of `ids`, read in batches of [`IN_BATCH`] ids.
+///
+/// # Errors
+///
+/// Propagates a database error.
+pub(crate) async fn find_in<E, C>(
+    ctx: &AppContext,
+    select: sea_orm::Select<E>,
+    column: C,
+    ids: &[uuid::Uuid],
+) -> Result<Vec<E::Model>>
+where
+    E: sea_orm::EntityTrait,
+    C: sea_orm::ColumnTrait,
+{
+    let mut rows = Vec::new();
+    for chunk in ids.chunks(IN_BATCH) {
+        rows.extend(
+            select
+                .clone()
+                .filter(column.is_in(chunk.to_vec()))
+                .all(&ctx.db)
+                .await?,
+        );
+    }
+    Ok(rows)
 }
 
 /// A `422` with a single message (state-machine refusals etc.).

@@ -33,14 +33,13 @@ use sea_orm::{
     QueryFilter, QuerySelect, Select, Statement,
 };
 use serde::Deserialize;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    assessment_instruments, assessments, development_plans, early_career_programs,
-    headcount_snapshots, pipeline_members, program_placements, requisitions, skills,
-    succession_candidates, succession_plans, talent_pipelines, worker_skills, workers,
+    early_career_programs, headcount_snapshots, pipeline_members, program_placements, requisitions,
+    skills, succession_candidates, succession_plans, talent_pipelines, workers,
 };
 use crate::models::memberships;
 use crate::rules::assessment as assessment_rules;
@@ -166,12 +165,8 @@ async fn overview(
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // one pass over skills, plans, and sittings
 async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
-    let staff = employed_workers(&ctx, chrono::Utc::now().date_naive()).await?;
-    let headcount = staff.len();
-    let department_of: BTreeMap<Uuid, &str> = staff
-        .iter()
-        .map(|e| (e.pid, e.department.as_str()))
-        .collect();
+    let today = chrono::Utc::now().date_naive();
+    let headcount = employed_count(&ctx, today).await?;
 
     let skill_rows = skills::Entity::find()
         .filter(skills::Column::DeletedAt.is_null())
@@ -181,29 +176,51 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
         .iter()
         .map(|s| (s.pid, s.name.as_str()))
         .collect();
-    let declared = worker_skills::Entity::find()
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
 
-    // skill → (holders, at-or-above-target, below-target)
+    // skill → (holders, at-or-above-target, below-target), counted by the database over employed people
+    // (a declaration from a departed worker is not counted).
     let mut per_skill: BTreeMap<Uuid, (usize, usize, usize)> = BTreeMap::new();
-    let mut people_with_a_gap: std::collections::HashSet<Uuid> = std::collections::HashSet::new();
-    for row in &declared {
-        if !department_of.contains_key(&row.worker_pid) {
-            continue; // a declaration from a departed worker
-        }
-        let entry = per_skill.entry(row.skill_pid).or_default();
-        entry.0 += 1;
-        match row.target {
-            Some(target) if row.proficiency < target => {
-                entry.2 += 1;
-                people_with_a_gap.insert(row.worker_pid);
-            }
-            Some(_) => entry.1 += 1,
-            None => {}
-        }
+    for row in rows_on(
+        &ctx,
+        &format!(
+            "SELECT ws.skill_pid AS skill_pid, COUNT(*)::bigint AS holders,
+                    (COUNT(*) FILTER (WHERE ws.target IS NOT NULL AND ws.proficiency >= ws.target))::bigint AS at_target,
+                    (COUNT(*) FILTER (WHERE ws.target IS NOT NULL AND ws.proficiency < ws.target))::bigint AS below
+               FROM worker_skills ws JOIN ({EMPLOYED_SQL}) e ON e.pid = ws.worker_pid
+              WHERE ws.deleted_at IS NULL GROUP BY ws.skill_pid"
+        ),
+        today,
+    )
+    .await?
+    {
+        let count = |name: &str| -> Result<usize> {
+            Ok(usize::try_from(row.try_get::<i64>("", name)?).unwrap_or(0))
+        };
+        per_skill.insert(
+            row.try_get("", "skill_pid")?,
+            (count("holders")?, count("at_target")?, count("below")?),
+        );
     }
+    // Employed people with a declared gap, and how many of them have an active development plan.
+    let gap_counts = rows_on(
+        &ctx,
+        &format!(
+            "SELECT COUNT(DISTINCT ws.worker_pid)::bigint AS with_gap,
+                    (COUNT(DISTINCT ws.worker_pid) FILTER (WHERE EXISTS (
+                        SELECT 1 FROM development_plans dp
+                         WHERE dp.worker_pid = ws.worker_pid AND dp.deleted_at IS NULL
+                           AND dp.status = 'active')))::bigint AS covered
+               FROM worker_skills ws JOIN ({EMPLOYED_SQL}) e ON e.pid = ws.worker_pid
+              WHERE ws.deleted_at IS NULL AND ws.target IS NOT NULL AND ws.proficiency < ws.target"
+        ),
+        today,
+    )
+    .await?;
+    let count_of = |name: &str| -> Result<usize> {
+        let n: i64 = gap_counts.first().map_or(Ok(0), |r| r.try_get("", name))?;
+        Ok(usize::try_from(n).unwrap_or(0))
+    };
+    let (with_gap, gap_covered) = (count_of("with_gap")?, count_of("covered")?);
 
     let coverage: Vec<serde_json::Value> = skill_rows
         .iter()
@@ -222,57 +239,47 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
         })
         .collect();
 
-    // Development plans in flight, by kind.
-    let plans = development_plans::Entity::find()
-        .filter(development_plans::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    // Development plans in flight, by kind and status.
     let mut plans_by_kind: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
-    for plan in &plans {
-        *plans_by_kind
-            .entry(plan.kind.clone())
+    for row in rows_on(
+        &ctx,
+        "SELECT kind, status, COUNT(*)::bigint AS total FROM development_plans
+          WHERE deleted_at IS NULL AND $1::date IS NOT NULL GROUP BY kind, status",
+        today,
+    )
+    .await?
+    {
+        plans_by_kind
+            .entry(row.try_get("", "kind")?)
             .or_default()
-            .entry(plan.status.clone())
-            .or_default() += 1;
+            .insert(
+                row.try_get("", "status")?,
+                usize::try_from(row.try_get::<i64>("", "total")?).unwrap_or(0),
+            );
     }
-    let people_on_active_plans: std::collections::HashSet<Uuid> = plans
-        .iter()
-        .filter(|p| p.status == "active")
-        .map(|p| p.worker_pid)
-        .collect();
-    let gap_covered = people_with_a_gap
-        .iter()
-        .filter(|pid| people_on_active_plans.contains(pid))
-        .count();
 
-    // Assessment coverage: workers with at least one completed sitting.
-    let sittings = assessments::Entity::find()
-        .filter(assessments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let instruments = assessment_instruments::Entity::find().all(&ctx.db).await?;
-    let category_of: BTreeMap<Uuid, &str> = instruments
-        .iter()
-        .map(|i| (i.pid, i.category.as_str()))
-        .collect();
-    let mut assessed_by_category: BTreeMap<&str, std::collections::HashSet<Uuid>> = BTreeMap::new();
-    for sitting in &sittings {
-        if sitting.subject_kind != "worker" || sitting.status != "completed" {
-            continue;
-        }
-        if let Some(category) = category_of.get(&sitting.instrument_pid) {
-            assessed_by_category
-                .entry(category)
-                .or_default()
-                .insert(sitting.subject_pid);
-        }
+    // Assessment coverage: workers with at least one completed sitting, per instrument category.
+    let mut assessed_by_category: BTreeMap<String, usize> = BTreeMap::new();
+    for row in rows_on(
+        &ctx,
+        "SELECT i.category AS category, COUNT(DISTINCT a.subject_pid)::bigint AS assessed
+           FROM assessments a JOIN assessment_instruments i ON i.pid = a.instrument_pid
+          WHERE a.deleted_at IS NULL AND a.subject_kind = 'worker' AND a.status = 'completed'
+            AND $1::date IS NOT NULL
+          GROUP BY i.category",
+        today,
+    )
+    .await?
+    {
+        assessed_by_category.insert(
+            row.try_get("", "category")?,
+            usize::try_from(row.try_get::<i64>("", "assessed")?).unwrap_or(0),
+        );
     }
     let assessment_coverage: Vec<serde_json::Value> = assessment_rules::ASSESSMENT_CATEGORIES
         .iter()
         .map(|category| {
-            let assessed = assessed_by_category
-                .get(category)
-                .map_or(0, std::collections::HashSet::len);
+            let assessed = assessed_by_category.get(*category).copied().unwrap_or(0);
             serde_json::json!({
                 "category": category,
                 "workers_assessed": assessed,
@@ -288,8 +295,8 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
                        least one COMPLETED sitting in that category",
         "headcount": headcount,
         "skills": coverage,
-        "people_with_a_declared_gap": people_with_a_gap.len(),
-        "gaps_with_an_active_plan": ratio_json(rules::ratio(gap_covered, people_with_a_gap.len())),
+        "people_with_a_declared_gap": with_gap,
+        "gaps_with_an_active_plan": ratio_json(rules::ratio(gap_covered, with_gap)),
         "development_plans_by_kind": plans_by_kind,
         "assessment_coverage": assessment_coverage,
         "skill_catalog_size": skill_name.len(),
@@ -337,44 +344,46 @@ async fn capability_analysis(
         }
     })?;
 
-    let staff = employed_workers(&ctx, chrono::Utc::now().date_naive()).await?;
-    let headcount = staff.len();
-    let department_of: BTreeMap<Uuid, &str> = staff
-        .iter()
-        .map(|e| (e.pid, e.department.as_str()))
-        .collect();
+    let today = chrono::Utc::now().date_naive();
+    let headcount = employed_count(&ctx, today).await?;
     let skill_rows = skills::Entity::find()
         .filter(skills::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    let declared = worker_skills::Entity::find()
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
 
-    // skill → (declared, proficient, departments of the proficient)
-    let mut per_skill: BTreeMap<Uuid, (usize, usize, BTreeSet<&str>)> = BTreeMap::new();
-    for row in &declared {
-        let Some(department) = department_of.get(&row.worker_pid) else {
-            continue; // a declaration from a departed worker
+    // skill → (declared, proficient, departments of the proficient), counted by the database over employed people
+    // (a declaration from a departed worker is not counted).
+    let mut per_skill: BTreeMap<Uuid, (usize, usize, usize)> = BTreeMap::new();
+    for row in ctx
+        .db
+        .query_all_raw(sea_orm::Statement::from_sql_and_values(
+            sea_orm::DbBackend::Postgres,
+            format!(
+                "SELECT ws.skill_pid AS skill_pid, COUNT(*)::bigint AS declared,
+                        (COUNT(*) FILTER (WHERE ws.proficiency >= $2))::bigint AS proficient,
+                        COUNT(DISTINCT e.department) FILTER (WHERE ws.proficiency >= $2) AS departments
+                   FROM worker_skills ws JOIN ({EMPLOYED_SQL}) e ON e.pid = ws.worker_pid
+                  WHERE ws.deleted_at IS NULL GROUP BY ws.skill_pid"
+            ),
+            [today.into(), min_proficiency.into()],
+        ))
+        .await?
+    {
+        let count = |name: &str| -> Result<usize> {
+            Ok(usize::try_from(row.try_get::<i64>("", name)?).unwrap_or(0))
         };
-        let entry = per_skill.entry(row.skill_pid).or_default();
-        entry.0 += 1;
-        if row.proficiency >= min_proficiency {
-            entry.1 += 1;
-            entry.2.insert(*department);
-        }
+        per_skill.insert(
+            row.try_get("", "skill_pid")?,
+            (count("declared")?, count("proficient")?, count("departments")?),
+        );
     }
 
     // category → status → count
     let mut by_category: BTreeMap<String, BTreeMap<&str, usize>> = BTreeMap::new();
     let mut skills_out = Vec::with_capacity(skill_rows.len());
     for skill in &skill_rows {
-        let (declared_by, proficient, departments) = per_skill
-            .get(&skill.pid)
-            .map_or((0, 0, BTreeSet::new()), |(d, p, deps)| {
-                (*d, *p, deps.clone())
-            });
+        let (declared_by, proficient, departments) =
+            per_skill.get(&skill.pid).copied().unwrap_or((0, 0, 0));
         let status = capability_rules::depth_status(declared_by, proficient, min_depth);
         *by_category
             .entry(skill.category.clone())
@@ -386,7 +395,7 @@ async fn capability_analysis(
             "category": skill.category,
             "declared_by": declared_by,
             "proficient": proficient,
-            "proficient_departments": departments.len(),
+            "proficient_departments": departments,
             "proficient_share": ratio_json(rules::ratio(proficient, headcount)),
             "status": status,
         }));
@@ -832,27 +841,36 @@ async fn grouped(
         .collect())
 }
 
-/// Every live (not soft-deleted) worker record, whatever its status.
-async fn live_workers(ctx: &AppContext) -> Result<Vec<workers::Model>> {
-    let rows = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    Ok(rows)
+/// The people employed on `$1` ([`metric_rules::is_employed_on`], in SQL), as a subquery.
+const EMPLOYED_SQL: &str = "SELECT pid, department FROM workers
+     WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)";
+
+/// Run `sql` (which binds `$1` as the date) and return its rows.
+async fn rows_on(
+    ctx: &AppContext,
+    sql: &str,
+    date: chrono::NaiveDate,
+) -> Result<Vec<sea_orm::QueryResult>> {
+    Ok(ctx
+        .db
+        .query_all_raw(sea_orm::Statement::from_sql_and_values(
+            sea_orm::DbBackend::Postgres,
+            sql,
+            [date.into()],
+        ))
+        .await?)
 }
 
-/// Live workers **employed on `date`** ([`metric_rules::is_employed_on`])
-/// — the one population every headcount-style view counts, so the same
-/// word means the same number everywhere.
-async fn employed_workers(
-    ctx: &AppContext,
-    date: chrono::NaiveDate,
-) -> Result<Vec<workers::Model>> {
-    Ok(live_workers(ctx)
-        .await?
-        .into_iter()
-        .filter(|w| metric_rules::is_employed_on(date, w.hired_on, w.terminated_on))
-        .collect())
+/// How many people are employed on `date`.
+async fn employed_count(ctx: &AppContext, date: chrono::NaiveDate) -> Result<usize> {
+    let rows = rows_on(
+        ctx,
+        &format!("SELECT COUNT(*)::bigint AS total FROM ({EMPLOYED_SQL}) e"),
+        date,
+    )
+    .await?;
+    let total: i64 = rows.first().map_or(Ok(0), |r| r.try_get("", "total"))?;
+    Ok(usize::try_from(total).unwrap_or(0))
 }
 
 /// The workforce-intelligence routes (read-only).

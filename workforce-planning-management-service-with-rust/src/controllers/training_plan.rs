@@ -26,7 +26,6 @@ use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{skill_courses, skills, training_enrollments, workers};
 use crate::models::{memberships, records};
-use crate::rules::metrics::is_employed_on;
 use crate::rules::skill_gap::{self as gap_rules, Gap, Status};
 use crate::rules::training::{self as rules, Course, DEFAULT_HOURS_PER_LEVEL, Recommendation};
 
@@ -211,12 +210,15 @@ async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Result<Catalo
         names.insert(s.pid, s.name);
     }
     let mut completed: HashMap<Uuid, HashSet<String>> = HashMap::new();
-    for t in training_enrollments::Entity::find()
-        .filter(training_enrollments::Column::WorkerPid.is_in(worker_pids.to_vec()))
-        .filter(training_enrollments::Column::DeletedAt.is_null())
-        .filter(training_enrollments::Column::Status.eq("completed"))
-        .all(&ctx.db)
-        .await?
+    for t in super::find_in(
+        ctx,
+        training_enrollments::Entity::find()
+            .filter(training_enrollments::Column::DeletedAt.is_null())
+            .filter(training_enrollments::Column::Status.eq("completed")),
+        training_enrollments::Column::WorkerPid,
+        worker_pids,
+    )
+    .await?
     {
         completed
             .entry(t.worker_pid)
@@ -366,24 +368,20 @@ async fn training_demand(
     caller: MaybeAuthUser,
     axum::extract::Query(q): axum::extract::Query<DemandQuery>,
 ) -> Result<Response> {
-    let mut query = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        query = query.filter(workers::Column::OrganizationRef.is_in(refs));
-    }
+    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
     let today = Utc::now().date_naive();
-    let staff: Vec<workers::Model> = query
-        .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .filter(|w| {
-            q.department
-                .as_deref()
-                .is_none_or(|d| w.department.eq_ignore_ascii_case(d))
-        })
-        .collect();
-    let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
+    let department = q.department.as_deref();
+    // Only people below a need can add hours, so only they are read whole; everyone else is counted.
+    let considered = super::gap_sql::staff_count(&ctx, scope.as_deref(), department, today).await?;
+    let pids =
+        super::gap_sql::workers_below_a_need(&ctx, scope.as_deref(), department, today).await?;
+    let by_pid: HashMap<Uuid, workers::Model> =
+        super::find_in(&ctx, workers::Entity::find(), workers::Column::Pid, &pids)
+            .await?
+            .into_iter()
+            .map(|w| (w.pid, w))
+            .collect();
+    let staff: Vec<&workers::Model> = pids.iter().filter_map(|p| by_pid.get(p)).collect();
     let evidence: Evidence = load_evidence(&ctx, &pids, false).await?;
     let catalogue = load_catalogue(&ctx, &pids).await?;
 
@@ -392,7 +390,7 @@ async fn training_demand(
     let mut by_department: BTreeMap<String, (usize, u32)> = BTreeMap::new();
     let mut people_with_gaps = 0usize;
     let mut total_hours = 0u32;
-    for w in &staff {
+    for w in staff {
         let mut person_hours = 0u32;
         for g in evidence
             .gaps_for(w.pid)
@@ -429,7 +427,7 @@ async fn training_demand(
                        unknown and add no hours. Planning estimates; counts and hours only — \\
                        nobody is named.",
         "as_of": today,
-        "workers_considered": staff.len(),
+        "workers_considered": considered,
         "people_with_gaps": people_with_gaps,
         "total_hours": total_hours,
         "average_hours_per_person": average,

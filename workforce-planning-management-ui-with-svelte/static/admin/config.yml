@@ -511,6 +511,7 @@ collections:
               - { name: "noLocation", label: "No Location", widget: string, required: false, i18n: true }
               - { name: "employed", label: "Employed", widget: string, required: false, i18n: true }
               - { name: "staffOnly", label: "Staff Only", widget: string, required: false, i18n: true }
+              - { name: "truncated", label: "Truncated", widget: string, required: false, i18n: true }
           - name: "metrics"
             label: "Metrics"
             widget: object
@@ -1632,6 +1633,7 @@ collections:
                   - { name: "last_session", label: "Last_session", widget: string, required: false, i18n: true }
                   - { name: "unmatched_workers", label: "Unmatched_workers", widget: string, required: false, i18n: true }
                   - { name: "everyone_active_is_in_a_mentorship", label: "Everyone_active_is_in_a_mentorship", widget: string, required: false, i18n: true }
+                  - { name: "unmatched_shown", label: "Unmatched_shown", widget: string, required: false, i18n: true }
               - name: "metrics"
                 label: "Metrics"
                 widget: object

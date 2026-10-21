@@ -288,7 +288,8 @@
     "tenureYears": "年",
     "noLocation": "未记录地点",
     "employed": "在此任职",
-    "staffOnly": "管理权限"
+    "staffOnly": "管理权限",
+    "truncated": "显示 {total} 人中的 {shown} 人；其余未绘出。"
   },
   "metrics": {
     "from": "从",
@@ -1088,7 +1089,8 @@
       "mentee": "学员",
       "last_session": "最近一次会面",
       "unmatched_workers": "未配对的员工",
-      "everyone_active_is_in_a_mentorship": "所有在职人员都已参与导师辅导。"
+      "everyone_active_is_in_a_mentorship": "所有在职人员都已参与导师辅导。",
+      "unmatched_shown": "显示 {total} 人中最新的 {shown} 人。"
     },
     "metrics": {
       "page_title": "{metrics} — WPM"

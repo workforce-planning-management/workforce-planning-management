@@ -290,3 +290,25 @@ equals the entries after an insert, an update, a soft delete, a restore and a ha
 **Not claimed:** the rollup is derived from entries already exported and erased with the worker; it holds only a worker reference, a week and a
 total, so it is not listed as a separate record in subject access. A deployer whose workers all record more than 45 hours in a week gets no pruning
 (the index holds everything) and the view costs what it did before the index, about 1 s at the median for 200,000 workers.
+
+## WPM-D97 — A view reads what it needs: counts in the database, batches for lists, a cap on what it names
+
+Surveying every parameterless `GET` route at 200,000 workers (`LOAD_SURVEY`) found what the bar had not: four views **failed outright**, because
+they passed every worker id to one `IN (…)` list and a statement carries at most 65,535 bind parameters (a size-dependent `500`); two returned
+22 and 36 MB; and eight more took 0.5 to 1.1 s alone and 2 to 5 s at eight connections. The rules that follow:
+
+- **Count in the database** what a view only counts (training analytics, the skills matrix, capability, capability analysis, the contingent
+  share, the workforce skill gaps). The rule that grades one person (`skill_gap::merge`) stays the reference; `gap_sql` grades everyone at once and
+  `rollup_counted` and `contingent_share_counted` give the answer that one row per person gives (a test pins each).
+- **Read a list in batches** (`controllers::find_in`, 5,000 ids a time), never as one `IN` list. A quadratic lookup (`iter().find()` per row) is a
+  defect at this size.
+- **Read whole only the people who can change the answer**: training demand reads only those below a need; the rest are counted.
+- **A view that names people names a bounded number and says how many there are in all.** The mentorship overview names the newest 200 unmatched
+  people (at most 1,000) and always gives the total; the org chart draws at most 5,000 people (at most 20,000), roots first and then each level,
+  and `/api/org-chart/size` gives the total so the page says when it shows only part.
+- **Index what a periodic report scans**: every soft-deleting table has a partial index on `deleted_at` (migration 79; a test pins it), so the
+  retention report and sweep do not scan millions of time entries.
+
+**Not claimed:** routes that take an id (a worker, a plan) were not surveyed; the case-insensitive department filter now uses `lower()`, which also
+folds non-ASCII letters (the old code folded ASCII only).
+
