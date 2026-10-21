@@ -47,8 +47,8 @@ export DB_MAX_CONNECTIONS=${LOAD_DB_CONNECTIONS:-20} DB_CONNECT_TIMEOUT=${LOAD_D
 (cd "$svc" && "$bin" db migrate >/dev/null 2>&1)
 
 echo "# machine: $(uname -sm), $(sysctl -n hw.ncpu 2>/dev/null || nproc) cpus; ${secs}s per endpoint, ${conc} connections"
-echo "| workers | endpoint | requests/s | p50 ms | p99 ms | non-2xx |"
-echo "|---:|---|---:|---:|---:|---:|"
+echo "| workers | endpoint | requests/s | p50 ms | p95 ms | p99 ms | non-2xx |"
+echo "|---:|---|---:|---:|---:|---:|---:|"
 
 seeded=0
 for n in "${sizes[@]}"; do
@@ -79,7 +79,8 @@ INSERT INTO role_skill_requirements (pid, role_profile_pid, skill_pid, min_profi
   ON CONFLICT DO NOTHING;
 INSERT INTO time_entries (pid, worker_pid, worked_on, minutes, kind, status)
   SELECT gen_random_uuid(), w.pid, CURRENT_DATE - d, CASE WHEN w.id % 100 = 0 THEN 3000 ELSE 480 END, 'regular', 'approved'
-  FROM workers w, generate_series(1, 20) d WHERE w.id > $seeded;
+  FROM workers w, generate_series(1, 28) d
+  WHERE w.id > $seeded AND EXTRACT(ISODOW FROM CURRENT_DATE - d) < 6;  -- weekdays: 20 entries, a 40-hour week is 2,400 minutes
 ANALYZE;
 SQL
   seeded=$n
@@ -113,7 +114,7 @@ s = d.get("summary", {})
 p = d.get("latencyPercentiles", {})
 codes = d.get("statusCodeDistribution", {})
 bad = sum(v for k, v in codes.items() if not k.startswith("2"))
-print("| %s | `%s` | %.0f | %.1f | %.1f | %d |" % (n, path, s.get("requestsPerSec", 0), (p.get("p50") or 0)*1000, (p.get("p99") or 0)*1000, bad + (0 if (s.get("successRate") or 0) > 0 else 1)))
+print("| %s | `%s` | %.0f | %.1f | %.1f | %.1f | %d |" % (n, path, s.get("requestsPerSec", 0), (p.get("p50") or 0)*1000, (p.get("p95") or 0)*1000, (p.get("p99") or 0)*1000, bad + (0 if (s.get("successRate") or 0) > 0 else 1)))
 if bad or d.get("errorDistribution"):
     print("<!-- %s %s: status %s, errors %s -->" % (n, path, codes, d.get("errorDistribution")))
 ' "$n" "$path"

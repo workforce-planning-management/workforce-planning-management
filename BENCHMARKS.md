@@ -166,3 +166,26 @@ At 200,000 workers, 8 connections, 20 database connections:
 One route is left: working time. Its sum reads every time entry of the 17-week window (4,000,000 rows here, at 20 per worker; a
 worker who records daily has about 85), so it is bound by the database's CPU, and a seven-times-heavier ledger would be worse. It needs a
 rollup (a weekly total per worker kept as entries change), not a faster query.
+
+### Working time from a weekly rollup (WPM-T240, last step)
+
+`time_entry_weeks` holds the recorded minutes per worker per calendar week, kept by a trigger; the view finds who can be over from a partial
+index on heavy weeks (2,720 minutes or more, the least a total over the ceiling must contain), sums those workers' weeks, and confirms over the exact
+window. The load test now records weekdays only (a 40-hour week is 2,400 minutes, 20 entries per worker, 1% of workers heavy) and prints p95.
+
+At 200,000 workers, 8 connections, 20 database connections, 4,000,000 time entries:
+
+| Route | p50 ms | p95 ms | p99 ms | Failed | Meets the bar |
+|---|---:|---:|---:|---:|---|
+| worker list / directory | 21 / 108 | 32 / 193 | 47 / 216 | 0 | yes |
+| capacity | 1,116 | 1,248 | 1,277 | 0 | yes |
+| plan forecast / cost | 200 / 108 | 281 / 151 | 329 / 182 | 0 | yes |
+| CPD overview | 160 | 199 | 225 | 0 | yes |
+| workforce overview / metrics / insights | 185 / 32 / 33 | 235 / 50 / 55 | 275 / 67 / 70 | 0 | yes |
+| key-person register | 522 | 679 | 720 | 0 | yes |
+| working time | 458 | 802 | 862 | 0 | yes (was 1,917 / 3,904 p99) |
+
+**Every measured route meets the bar.** The worst case for working time is a ledger where every worker has a week of 45 hours or more, so the
+index prunes nothing: the same run with a record of 8 hours on seven calendar days a week for everyone gave p50 2,094 ms and p99 2,706 ms (a miss), and without the index
+1,032 and 2,071 ms. That is not a normal workforce, but it is the limit of the claim.
+

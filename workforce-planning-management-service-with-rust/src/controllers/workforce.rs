@@ -787,17 +787,39 @@ async fn working_time(
             .filter(time_entries::Column::WorkedOn.lte(as_of))
             .group_by(time_entries::Column::WorkerPid)
     };
-    let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = windowed_minutes()
-        .having(
-            sea_orm::sea_query::Expr::col(time_entries::Column::Minutes)
-                .sum()
-                .gt(ceiling),
-        )
-        .into_tuple::<(Uuid, i64)>()
-        .all(&ctx.db)
+    // The weekly rollup (`time_entry_weeks`, kept by triggers) names every worker whose weeks touching
+    // the window add up to more than the ceiling: a superset of the answer. Only workers with a heavy week
+    // (a partial index) can be over, so only their weeks are summed.
+    // Only those workers' entries are then summed over the exact window, so the result is unchanged.
+    let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = ctx
+        .db
+        .query_all_raw(sea_orm::Statement::from_sql_and_values(
+            sea_orm::DbBackend::Postgres,
+            "WITH heavy AS (
+                 SELECT DISTINCT worker_pid FROM time_entry_weeks
+                  WHERE week_start >= date_trunc('week', $1::date + 1)::date AND week_start <= $2
+                    AND minutes >= $4),
+                  maybe AS (
+                 SELECT w.worker_pid FROM time_entry_weeks w
+                  WHERE w.worker_pid IN (SELECT worker_pid FROM heavy)
+                    AND w.week_start >= date_trunc('week', $1::date + 1)::date AND w.week_start <= $2
+                  GROUP BY w.worker_pid HAVING SUM(w.minutes) > $3)
+             SELECT t.worker_pid, SUM(t.minutes)::bigint AS total
+               FROM time_entries t
+              WHERE t.worker_pid IN (SELECT worker_pid FROM maybe)
+                AND t.deleted_at IS NULL AND t.worked_on > $1 AND t.worked_on <= $2
+              GROUP BY t.worker_pid HAVING SUM(t.minutes) > $3",
+            [
+                window_start.into(),
+                as_of.into(),
+                ceiling.into(),
+                working_time::HEAVY_WEEK_MINUTES.into(),
+            ],
+        ))
         .await?
         .into_iter()
-        .collect();
+        .map(|row| Ok((row.try_get("", "worker_pid")?, row.try_get("", "total")?)))
+        .collect::<Result<_, sea_orm::DbErr>>()?;
     // Shift intervals per worker around `as_of` (recent + planned): only the shifts in the window.
     let rest_start = as_of - chrono::Duration::days(REST_WINDOW_DAYS);
     let rest_end = as_of + chrono::Duration::days(REST_WINDOW_DAYS);

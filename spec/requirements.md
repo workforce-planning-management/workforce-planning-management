@@ -543,7 +543,7 @@ acceptance criteria and traces to the tasks that delivered it:
   [worker-matching.md](worker-matching.md) (WPM-T226).
 - **WPM-R142** one deployment holds 200,000 workers in one organization: every view answers without a failed request and
   without a size refusal, within a stated time at the load test's concurrency — [production-readiness.md](production-readiness.md)
-  (WPM-D95, WPM-T239).
+  (WPM-D95, WPM-D96, WPM-T239, WPM-T240).
 - **WPM-R141** a breached tolerance can be escalated by a person, up three levels, and decided by an administrator, with
   the measure recorded at each step — [tolerances.md](tolerances.md) (WPM-T235).
 - **WPM-R140** a workforce plan has tolerances in time, cost, resources and risk, and shows red, amber or green for

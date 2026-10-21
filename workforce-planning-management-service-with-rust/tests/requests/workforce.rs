@@ -363,3 +363,94 @@ async fn working_time_guardrails() {
     })
     .await;
 }
+
+/// The flagged row for `who` in the working-time view as of 2026-07-10, if any.
+async fn flagged_as_of(request: &loco_rs::TestServer, who: &str) -> Option<Value> {
+    let signals: Value = request
+        .get("/api/workforce/working-time?as_of=2026-07-10")
+        .await
+        .json();
+    signals["flagged"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["worker_pid"] == who)
+        .cloned()
+}
+
+/// The weekly rollup behind the working-time view (WPM-D96) and the window it answers over: a total
+/// exactly at the ceiling is not flagged; a minute on the day the window starts (excluded) or the day
+/// after `as_of` changes nothing; a minute on `as_of` (included) flags; deleting an entry unflags.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn working_time_window_edges_and_rollup_follow_the_entries() {
+    use sea_orm::{ConnectionTrait, Statement};
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let who = seed_worker!(&request, &org, "WT-EDGE", None).await;
+        activate!(&request, &who).await;
+        let record = |day: chrono::NaiveDate, minutes: i32| {
+            let request = &request;
+            let who = &who;
+            async move {
+                request
+                    .post(&format!("/api/workers/{who}/time-entries"))
+                    .json(&json!({ "worked_on": day, "minutes": minutes }))
+                    .await
+                    .assert_status_ok();
+            }
+        };
+        // as_of 2026-07-10 → the window is the 119 days 2026-03-14 ..= 2026-07-10.
+        let first = chrono::NaiveDate::from_ymd_opt(2026, 3, 14).unwrap();
+        for n in 0..34 {
+            record(first + chrono::Duration::days(n), 1440).await; // 48 960 = the ceiling
+        }
+        record(first - chrono::Duration::days(1), 5).await; // the day the window starts: excluded
+        record(chrono::NaiveDate::from_ymd_opt(2026, 7, 11).unwrap(), 5).await; // after as_of: excluded
+        assert!(flagged_as_of(&request, &who).await.is_none(), "exactly the ceiling is not over it");
+        record(chrono::NaiveDate::from_ymd_opt(2026, 7, 10).unwrap(), 1).await;
+        let row = flagged_as_of(&request, &who).await.expect("one more minute on as_of flags");
+        assert_eq!(row["average_weekly"]["numerator_minutes"], 48_961);
+
+        // The rollup equals the entries after an update, a soft delete, a restore and a hard delete.
+        let rollup_matches = || async {
+            let rows = ctx
+                .db
+                .query_all_raw(Statement::from_string(
+                    sea_orm::DbBackend::Postgres,
+                    "SELECT (SELECT COALESCE(SUM(minutes), 0) FROM time_entry_weeks)::bigint AS rolled,
+                            (SELECT COALESCE(SUM(minutes), 0) FROM time_entries WHERE deleted_at IS NULL)::bigint AS entered,
+                            (SELECT COUNT(*) FROM (
+                                 SELECT worker_pid, date_trunc('week', worked_on)::date AS w, SUM(minutes) AS m
+                                   FROM time_entries WHERE deleted_at IS NULL GROUP BY 1, 2
+                                 EXCEPT SELECT worker_pid, week_start, minutes FROM time_entry_weeks) x)::bigint AS missing,
+                            (SELECT COUNT(*) FROM (
+                                 SELECT worker_pid, week_start, minutes FROM time_entry_weeks
+                                 EXCEPT SELECT worker_pid, date_trunc('week', worked_on)::date, SUM(minutes)
+                                   FROM time_entries WHERE deleted_at IS NULL GROUP BY 1, 2) y)::bigint AS extra",
+                ))
+                .await
+                .unwrap();
+            let get = |c: &str| rows[0].try_get::<i64>("", c).unwrap();
+            assert_eq!((get("missing"), get("extra")), (0, 0), "rollup rows equal the entries");
+            assert_eq!(get("rolled"), get("entered"));
+        };
+        rollup_matches().await;
+        let sql = |s: String| {
+            let db = ctx.db.clone();
+            async move { db.execute_unprepared(&s).await.unwrap() }
+        };
+        let pid = who.clone();
+        sql(format!("UPDATE time_entries SET minutes = minutes + 60, worked_on = worked_on + 9 WHERE worker_pid = '{pid}' AND minutes = 1")).await;
+        rollup_matches().await;
+        sql(format!("UPDATE time_entries SET deleted_at = now() WHERE worker_pid = '{pid}' AND minutes = 61")).await;
+        rollup_matches().await;
+        assert!(flagged_as_of(&request, &who).await.is_none(), "with the extra entry deleted the total is the ceiling again");
+        sql(format!("UPDATE time_entries SET deleted_at = NULL WHERE worker_pid = '{pid}' AND minutes = 61")).await;
+        rollup_matches().await;
+        sql(format!("DELETE FROM time_entries WHERE worker_pid = '{pid}' AND minutes = 5")).await;
+        rollup_matches().await;
+    })
+    .await;
+}

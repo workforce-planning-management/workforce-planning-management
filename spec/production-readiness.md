@@ -273,3 +273,20 @@ no failed request** on `scripts/load-test.sh 200000`. The `WPM_MAX_ORG_WORKERS` 
 met the bar (WPM-T239). The views that still do not are listed in `BENCHMARKS.md`. Seeding 200,000 workers is the evidence; a claim without it is not
 made. **The cost:** the arithmetic of the plan views (forecast, cost, capacity) has to move into SQL aggregates, which is the largest
 part of the work and is done view by view (WPM-T239).
+
+## WPM-D96 — Working time reads a weekly rollup, kept by triggers
+
+The 17-week average of recorded minutes summed every time entry of the window: at 200,000 workers (4,000,000 entries) one request took 515 ms
+and eight at once took 1.9 s at the median, bound by the database's CPU. The view now reads **`time_entry_weeks`**, one row per worker per
+calendar week (Monday start) holding the live (not deleted) recorded minutes, kept by a trigger on `time_entries` for every insert, update and
+delete, so no writer can forget it. Migration 78 builds it from the entries.
+
+The answer is unchanged: the rollup only *names who can be over*. The window of 119 calendar days touches 18 calendar weeks, so a total over the
+ceiling (48 hours x 17 weeks) must contain a week of at least 2,720 minutes (`working_time::HEAVY_WEEK_MINUTES`); a partial index holds those weeks, the
+view finds the workers with one, sums their weeks as an upper bound, and then sums their entries over the exact window. Workers who rest-flag but
+are not over still read their own total. A test pins the window edges (the day the window starts is out, the day of `as_of` is in) and that the rollup
+equals the entries after an insert, an update, a soft delete, a restore and a hard delete; a second test pins the floor to the index.
+
+**Not claimed:** the rollup is derived from entries already exported and erased with the worker; it holds only a worker reference, a week and a
+total, so it is not listed as a separate record in subject access. A deployer whose workers all record more than 45 hours in a week gets no pruning
+(the index holds everything) and the view costs what it did before the index, about 1 s at the median for 200,000 workers.

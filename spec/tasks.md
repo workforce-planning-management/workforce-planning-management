@@ -3543,14 +3543,17 @@ Assessed in [readiness-assessment.md](readiness-assessment.md); specified in [pl
       view is still linear (the next step is SQL aggregates); the plan views are still read whole and refused over 10,000; the SQL ordering and
       lower-casing is exact for ASCII names and may differ from Rust's for some non-ASCII ones; the search has no index (`strpos` scans the employed
       rows, then pages), fine at the sizes measured.
-- [ ] WPM-T239 **Hold 200,000 workers.** *(WPM-R142, WPM-D95)* **Progress (2026-10-20):** capacity sums supply in SQL (one query per pool, leave merged by a
-      window function), pinned by a new test that equals walking every day, **mutation-checked** twice; the load test now uses 20 connections
-      (the demo profile's single connection had produced most of the failures). The plan forecast and cost read groups, not workers (a new test of
-      a department with every kind of person pins the answers and was written against the old code first; mutation-checked), and
-      `WPM_MAX_ORG_WORKERS` defaults to 200,000. At 200,000 only **working time** misses the bar (p50 1.9 s, p99 3.9 s at 8 connections; 515 ms alone):
-      it needs a weekly rollup of recorded minutes (`BENCHMARKS.md`). Run `scripts/load-test.sh 200000`; for each route over 2 s p95 or failing at 8
-      connections, move its work into the database or batches, with a parity test first; then raise the `WPM_MAX_ORG_WORKERS` default. Order by
-      measurement: capacity, plan forecast and cost, working time, then the remaining whole-table reads.
+- [x] WPM-T240 (2026-10-21) **Working time reads a weekly rollup.** *(WPM-R142, WPM-D96)* `time_entry_weeks` (worker, week, recorded minutes) is kept by a
+      trigger and backfilled by migration 78; the view names the workers who can be over from a partial index on heavy weeks, sums their weeks, then
+      sums their entries over the exact window, so the answer is unchanged. New tests: the window edges, the rollup equals the entries across an
+      insert, update, soft delete, restore and hard delete (**mutation-checked**: moving the window edge fails it), and the floor equals the index.
+      At 200,000 workers (the load test now records weekdays only, a 40-hour week of 2,400 minutes, and prints p95): working time p50 458 ms, p95 802 ms,
+      p99 862 ms, no failures. Worst case, every worker with a 56-hour week (the index prunes nothing): p50 2.1 s, p99 2.7 s. *Not checked:* a real ledger's
+      shape; the trigger's write cost at scale beyond the seeding of 4,000,000 entries, which completed.
+- [x] WPM-T239 (2026-10-21) **Hold 200,000 workers.** *(WPM-R142, WPM-D95)* Every measured route meets the bar (p95 under 2 s, none failed at 8 connections)
+      on `scripts/load-test.sh 200000`: capacity in SQL, the plan forecast and cost in groups, the key-person register and working time read by the
+      database, and working time from a weekly rollup (WPM-T240); the ceiling `WPM_MAX_ORG_WORKERS` defaults to 200,000. The failures first seen were
+      mostly the demo profile's single database connection. *Not done:* about 40 other whole-table reads that no measured route uses (not measured here).
 - [x] WPM-T238 (2026-10-20) **The key-person register and working time are read by the database.** *(WPM-R120, WPM-D90)* At 50,000 workers both read every
       worker into memory and failed requests (1.3 s and 1.0 s). The register now reads only the people who hold a critical skill at its bar (the employed
       population is a subquery, the same `is_employed_on` rule written in SQL once in `employed_in_scope_query`), their backups and succession plans in

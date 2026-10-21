@@ -12,6 +12,13 @@ pub const REFERENCE_WEEKS: i64 = 17;
 /// The 48-hour average weekly ceiling, in minutes.
 pub const MAX_AVG_WEEKLY_MINUTES: i64 = 48 * 60;
 
+/// The least recorded minutes in one calendar week that a worker over the ceiling must have in at
+/// least one week: the window touches `REFERENCE_WEEKS + 1` calendar weeks, so a total over the
+/// ceiling has a week of at least this many. The rollup's partial index (`time_entry_weeks_heavy`,
+/// migration 78) is built on this number; a test pins them together.
+pub const HEAVY_WEEK_MINUTES: i64 =
+    MAX_AVG_WEEKLY_MINUTES * REFERENCE_WEEKS / (REFERENCE_WEEKS + 1);
+
 /// The 11-hour daily rest floor between shifts, in minutes.
 pub const MIN_DAILY_REST_MINUTES: i64 = 11 * 60;
 
@@ -71,6 +78,18 @@ pub fn rest_breaches(intervals: &[(DateTime<Utc>, DateTime<Utc>)]) -> Vec<RestBr
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The migration's partial index is `WHERE minutes >= 2720`; a changed rule needs a new index,
+    /// and until then the query is correct but cannot use it.
+    #[test]
+    fn the_heavy_week_floor_matches_the_rollup_index() {
+        assert_eq!(HEAVY_WEEK_MINUTES, 2_720);
+        // Any total over the ceiling spread over the 18 calendar weeks has a week at the floor.
+        let weeks = REFERENCE_WEEKS + 1;
+        let ceiling = MAX_AVG_WEEKLY_MINUTES * REFERENCE_WEEKS;
+        assert!((ceiling + 1 + weeks - 1) / weeks >= HEAVY_WEEK_MINUTES);
+        assert!(HEAVY_WEEK_MINUTES * weeks <= ceiling);
+    }
 
     fn at(day: u32, hour: u32) -> DateTime<Utc> {
         chrono::NaiveDate::from_ymd_opt(2026, 7, day)
