@@ -32,6 +32,7 @@ mod intelligence_overview;
 mod job_levels;
 mod learning;
 mod lms_links;
+mod mobility;
 mod movements;
 mod organizations;
 mod pagination;

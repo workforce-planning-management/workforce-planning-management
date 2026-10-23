@@ -4123,11 +4123,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       shared, expiring certificates, succession restate and gaps), `movements.rs` (add item, assign, reopen, cancel),
       `change.rs` (initiative read-back, removing impacts and shifts, the department audit and event views),
       `workforce.rs` (unassign a shift seat) and `hr_core.rs` (end a benefit enrolment). Request suite: 123 pass, clippy clean.
-      **Still open:** the route-coverage test (the route list needs a method-aware scan; my first path-only scan also gave false
-      positives where a test builds the URL from a variable); `framework_roles.rs` (5 routes), `health_requirements.rs` (put,
-      delete), `assessments.rs` (2 reads), `career.rs` past role, `mobility.rs` opportunities, skill-pool member delete, skill
-      framework-ref delete, `me` equality-category delete, demand-line delete, and the unit tests for `benchmark.rs`,
-      `tokens.rs`, `audit_export.rs`, `adjustments.rs`, `framework_roles.rs` and `job_levels.rs`.
+      **Part 2 (2026-10-23):** `mobility.rs` request tests for `opportunities` (own organization only, own title excluded,
+      drafts excluded, unknown fit null) and for `/api-docs/openapi.json` and `/swagger-ui`. Found and fixed: the Swagger page
+      title read "Patient Flow Service API", left over from another project. Most of the other routes my first scan listed
+      are in fact exercised (`framework_roles`, `assessments`, the `/refs/`, `/past`, demand-line and skill-pool deletes,
+      expense withdraw, handover actions: tests build those URLs from variables), and `health-requirements` and
+      `equality-monitoring` are covered in the `enforcement_*` binaries, not in `tests/requests`.
+      **Still open:** the route-coverage test (it needs a method-aware scan that follows URLs built from variables, or a
+      runtime check against the request log); and the unit tests for `benchmark.rs`, `tokens.rs`, `audit_export.rs`,
+      `adjustments.rs`, `framework_roles.rs` and `job_levels.rs`.
 - [ ] WPM-T259 **One error vocabulary.** An internal-invariant helper (logs, answers 500 with no detail) for `Error::string`
       uses (`intelligence.rs:471`, `resignations.rs:59`); drop the bespoke 401 in `funding.rs:86`.
 - [ ] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the
