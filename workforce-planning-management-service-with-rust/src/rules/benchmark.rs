@@ -61,4 +61,51 @@ mod tests {
         );
         assert_eq!(compare(150, "USD", 100, 200, "GBP"), None);
     }
+
+    #[test]
+    fn the_band_edges_belong_to_within() {
+        assert_eq!(
+            compare(100, "GBP", 100, 100, "GBP"),
+            Some(BenchmarkFlag::Within)
+        );
+        assert_eq!(
+            compare(99, "GBP", 100, 100, "GBP"),
+            Some(BenchmarkFlag::BelowMin)
+        );
+        assert_eq!(
+            compare(101, "GBP", 100, 100, "GBP"),
+            Some(BenchmarkFlag::AboveMax)
+        );
+        assert_eq!(compare(0, "GBP", 0, 10, "GBP"), Some(BenchmarkFlag::Within));
+        assert_eq!(
+            compare(i64::MAX, "GBP", 0, i64::MAX, "GBP"),
+            Some(BenchmarkFlag::Within)
+        );
+    }
+
+    #[test]
+    fn currency_codes_compare_without_regard_to_case_but_not_to_padding() {
+        assert!(compare(1, "gbp", 0, 2, "GBP").is_some());
+        assert!(
+            compare(1, "GBP ", 0, 2, "GBP").is_none(),
+            "a padded code is a different code"
+        );
+        assert!(
+            compare(1, "", 0, 2, "").is_some(),
+            "two unknowns are not a mismatch, and are not made up"
+        );
+    }
+
+    #[test]
+    fn flags_serialise_as_snake_case_words() {
+        let words: Vec<String> = [
+            BenchmarkFlag::BelowMin,
+            BenchmarkFlag::Within,
+            BenchmarkFlag::AboveMax,
+        ]
+        .iter()
+        .map(|f| serde_json::to_string(f).unwrap())
+        .collect();
+        assert_eq!(words, ["\"below_min\"", "\"within\"", "\"above_max\""]);
+    }
 }

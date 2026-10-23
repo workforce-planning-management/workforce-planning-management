@@ -62,4 +62,48 @@ mod tests {
         let text = line(&entry());
         assert!(!text.contains("snapshot") && !text.contains("secret-department"));
     }
+
+    #[test]
+    fn a_missing_actor_is_null_not_an_empty_string() {
+        let mut e = entry();
+        e.actor = None;
+        let value: serde_json::Value = serde_json::from_str(&line(&e)).unwrap();
+        assert_eq!(value["actor"], serde_json::Value::Null);
+    }
+
+    /// The line is exactly the monitor's fields: a new column on the audit row
+    /// does not leak into the export until someone adds it here on purpose.
+    #[test]
+    fn the_line_carries_exactly_the_agreed_keys() {
+        let value: serde_json::Value = serde_json::from_str(&line(&entry())).unwrap();
+        let mut keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        keys.sort_unstable();
+        assert_eq!(
+            keys,
+            [
+                "action",
+                "actor",
+                "at",
+                "chain_seq",
+                "entity",
+                "entity_pid",
+                "entry_hash",
+                "prev_hash"
+            ]
+        );
+        assert_eq!(value["entity_pid"], "00000000-0000-0000-0000-000000000000");
+    }
+
+    #[test]
+    fn a_non_utc_time_keeps_its_offset() {
+        let mut e = entry();
+        e.created_at = chrono::DateTime::parse_from_rfc3339("2026-10-20T09:30:00+02:00").unwrap();
+        let value: serde_json::Value = serde_json::from_str(&line(&e)).unwrap();
+        assert_eq!(value["at"], "2026-10-20T09:30:00+02:00");
+    }
 }

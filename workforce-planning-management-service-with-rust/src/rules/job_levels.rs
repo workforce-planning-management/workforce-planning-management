@@ -165,14 +165,16 @@ impl LevelFramework {
     /// The level with this code (`l5` and `L5` both work) or number-only (`5`).
     #[must_use]
     pub fn level(&self, code: &str) -> Option<&Level> {
-        let wanted = code.trim().trim_start_matches(['l', 'L']);
+        let code = code.trim();
+        let wanted = code.strip_prefix(['l', 'L']).unwrap_or(code);
         self.levels.iter().find(|l| l.number.to_string() == wanted)
     }
 
     /// The next level up, if any.
     #[must_use]
     pub fn next_above(&self, number: u8) -> Option<&Level> {
-        self.levels.iter().find(|l| l.number == number + 1)
+        let above = number.checked_add(1)?;
+        self.levels.iter().find(|l| l.number == above)
     }
 }
 
@@ -230,5 +232,44 @@ mod tests {
         assert!(g.next_above(11).is_none(), "L11 is the top");
         assert!(find("google-levels").is_some());
         assert!(find("meta-levels").is_none());
+    }
+
+    #[test]
+    fn frameworks_have_unique_ids_and_levels_ascend_without_pay() {
+        let all = all();
+        let ids: std::collections::BTreeSet<&str> = all.iter().map(|f| f.id).collect();
+        assert_eq!(ids.len(), all.len());
+        for f in &all {
+            assert!(
+                f.levels.windows(2).all(|w| w[0].number < w[1].number),
+                "{} ascends",
+                f.id
+            );
+            assert!(f.next_above(f.levels.last().unwrap().number).is_none());
+            let text = serde_json::to_string(f).unwrap().to_lowercase();
+            assert!(
+                !text.contains("salary") && !text.contains("pay_"),
+                "{} states no pay",
+                f.id
+            );
+        }
+    }
+
+    #[test]
+    fn next_above_is_the_following_number_and_never_overflows() {
+        let g = google_levels();
+        assert_eq!(g.next_above(2).unwrap().number, 3);
+        assert_eq!(g.next_above(10).unwrap().number, 11);
+        assert!(g.next_above(0).is_none(), "level 1 is not on this ladder");
+        assert!(g.next_above(u8::MAX).is_none());
+    }
+
+    #[test]
+    fn odd_lookups_are_refused_not_guessed() {
+        let g = google_levels();
+        for bad in ["L", "LL5", "5.0", "-5", "L-5", "L 5", "l05x"] {
+            assert!(g.level(bad).is_none(), "{bad:?}");
+        }
+        assert!(find("").is_none() && find("Google-Levels").is_none());
     }
 }

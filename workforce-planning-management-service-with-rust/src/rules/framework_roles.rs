@@ -94,4 +94,51 @@ mod tests {
             .collect();
         assert!(validate_choices(&many).is_err(), "bounded");
     }
+
+    #[test]
+    fn the_limit_is_inclusive_and_a_deselect_only_batch_is_fine() {
+        let at_limit: Vec<Choice> = (0..MAX_CHOICES)
+            .map(|i| choice(&i.to_string(), None))
+            .collect();
+        assert!(
+            validate_choices(&at_limit).is_ok(),
+            "exactly {MAX_CHOICES} is allowed"
+        );
+        let over = validate_choices(&[at_limit, vec![choice("x", None)]].concat()).unwrap_err();
+        assert!(over.contains("500"), "{over}");
+    }
+
+    #[test]
+    fn references_are_compared_after_trimming() {
+        let err = validate_choices(&[choice("esco:1", Some(2)), choice("  esco:1 ", Some(3))])
+            .unwrap_err();
+        assert!(
+            err.contains("`esco:1`") && err.contains("more than once"),
+            "{err}"
+        );
+        assert!(
+            validate_choices(&[choice("esco:1", Some(2)), choice("ESCO:1", Some(2))]).is_ok(),
+            "case is significant in a URI"
+        );
+    }
+
+    #[test]
+    fn the_first_problem_wins_and_the_scale_edges_are_in() {
+        assert!(validate_choices(&[choice("a", Some(1)), choice("b", Some(5))]).is_ok());
+        assert!(
+            validate_choices(&[choice("a", Some(-1))])
+                .unwrap_err()
+                .contains("1 and 5")
+        );
+        assert_eq!(
+            validate_choices(&[choice("", Some(9))]).unwrap_err(),
+            "every choice needs a ref"
+        );
+    }
+
+    #[test]
+    fn framework_slugs_are_exact() {
+        assert!(!valid_framework("ESCO") && !valid_framework(" esco"));
+        assert_eq!(FRAMEWORKS.len(), 2);
+    }
 }

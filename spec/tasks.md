@@ -4129,9 +4129,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       are in fact exercised (`framework_roles`, `assessments`, the `/refs/`, `/past`, demand-line and skill-pool deletes,
       expense withdraw, handover actions: tests build those URLs from variables), and `health-requirements` and
       `equality-monitoring` are covered in the `enforcement_*` binaries, not in `tests/requests`.
+      **Part 3 (2026-10-23):** unit tests added to `rules::tokens` (every vocabulary non-empty, unique, `snake_case`, listed from
+      the source), `benchmark`, `audit_export` (exactly the eight agreed keys, a null actor, the offset kept), `adjustments`
+      (the full status matrix: exactly five legal moves), `framework_roles` (limit inclusive, trimmed duplicates) and
+      `job_levels`. The controllers named in the task (`adjustments`, `framework_roles`, `job_levels`) hold no pure logic of
+      their own; their rules are the modules tested here. Two defects found and fixed in `rules::job_levels`: `level("LL5")`
+      resolved to L5 (every leading `L` was stripped; now one prefix), and `next_above(255)` overflowed `u8`.
+      Verified: 639 unit tests (was 621), clippy clean.
       **Still open:** the route-coverage test (it needs a method-aware scan that follows URLs built from variables, or a
-      runtime check against the request log); and the unit tests for `benchmark.rs`, `tokens.rs`, `audit_export.rs`,
-      `adjustments.rs`, `framework_roles.rs` and `job_levels.rs`.
+      runtime check against the request log).
 - [ ] WPM-T259 **One error vocabulary.** An internal-invariant helper (logs, answers 500 with no detail) for `Error::string`
       uses (`intelligence.rs:471`, `resignations.rs:59`); drop the bespoke 401 in `funding.rs:86`.
 - [ ] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the

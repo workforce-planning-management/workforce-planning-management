@@ -87,4 +87,56 @@ mod tests {
         assert!(transition("in_place", "withdrawn").is_err(), "terminal");
         assert!(transition("agreed", "sideways").is_err(), "unknown");
     }
+
+    /// Every pair of statuses, checked against the written lifecycle: exactly
+    /// five moves are legal and the three terminal states have none out.
+    #[test]
+    fn exactly_the_documented_moves_are_legal() {
+        let mut legal = Vec::new();
+        for from in ADJUSTMENT_STATUSES {
+            for to in ADJUSTMENT_STATUSES {
+                if transition(from, to).is_ok() {
+                    legal.push((*from, *to));
+                }
+            }
+        }
+        assert_eq!(
+            legal,
+            [
+                ("requested", "agreed"),
+                ("requested", "declined"),
+                ("requested", "withdrawn"),
+                ("agreed", "in_place"),
+                ("agreed", "withdrawn"),
+            ]
+        );
+    }
+
+    #[test]
+    fn refusals_name_the_problem() {
+        assert!(
+            transition("requested", "sideways")
+                .unwrap_err()
+                .contains("unknown status")
+        );
+        assert!(
+            transition("declined", "agreed")
+                .unwrap_err()
+                .contains("illegal transition")
+        );
+        assert!(
+            transition("nonsense", "agreed").is_err(),
+            "an unknown current status moves nowhere"
+        );
+        assert!(transition("agreed", "agreed").is_err(), "no self-loop");
+    }
+
+    #[test]
+    fn categories_are_unique_snake_case() {
+        let mut seen = std::collections::BTreeSet::new();
+        for c in ADJUSTMENT_CATEGORIES {
+            assert!(seen.insert(*c), "{c} repeats");
+            assert!(c.chars().all(|ch| ch.is_ascii_lowercase() || ch == '_'));
+        }
+    }
 }

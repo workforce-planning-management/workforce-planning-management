@@ -117,4 +117,52 @@ mod tests {
         assert!(!is_token(ORGANIZATION_ROLES, "Org_Admin"));
         assert!(!is_token(ORGANIZATION_ROLES, "superadmin"));
     }
+
+    /// Every vocabulary is non-empty, has no repeats, and holds only lower-case
+    /// `snake_case` tokens (the database stores them verbatim).
+    #[test]
+    fn every_vocabulary_is_a_clean_closed_set() {
+        let all: &[(&str, &[&str])] = &[
+            ("WORKER_STATUSES", WORKER_STATUSES),
+            ("EMPLOYMENT_TYPES", EMPLOYMENT_TYPES),
+            ("REQUISITION_STATUSES", REQUISITION_STATUSES),
+            ("CANDIDATE_SOURCES", CANDIDATE_SOURCES),
+            ("APPLICATION_STAGES", APPLICATION_STAGES),
+            ("INTERVIEW_OUTCOMES", INTERVIEW_OUTCOMES),
+            ("ONBOARDING_STATUSES", ONBOARDING_STATUSES),
+            ("TIME_KINDS", TIME_KINDS),
+            ("TIME_STATUSES", TIME_STATUSES),
+            ("LEAVE_KINDS", LEAVE_KINDS),
+            ("LEAVE_STATUSES", LEAVE_STATUSES),
+            ("BENEFIT_KINDS", BENEFIT_KINDS),
+            ("CYCLE_STATUSES", CYCLE_STATUSES),
+            ("REVIEW_STATUSES", REVIEW_STATUSES),
+            ("GOAL_STATUSES", GOAL_STATUSES),
+            ("TRAINING_STATUSES", TRAINING_STATUSES),
+            ("READINESS", READINESS),
+            ("PAYROLL_STATUSES", PAYROLL_STATUSES),
+            ("ORGANIZATION_ROLES", ORGANIZATION_ROLES),
+        ];
+        for (name, set) in all {
+            assert!(!set.is_empty(), "{name} is empty");
+            let mut seen = std::collections::BTreeSet::new();
+            for token in *set {
+                assert!(seen.insert(*token), "{name} repeats {token}");
+                assert!(
+                    !token.is_empty()
+                        && token
+                            .chars()
+                            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_'),
+                    "{name}: {token:?} is not snake_case"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_token_is_not_matched_by_prefix_or_padding() {
+        assert!(!is_token(WORKER_STATUSES, "activ"));
+        assert!(!is_token(WORKER_STATUSES, "active "));
+        assert!(!is_token(&[], "active"));
+    }
 }
