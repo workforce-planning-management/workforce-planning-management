@@ -54,7 +54,7 @@ fn on() -> Result<(String, Config, usize)> {
             floor,
         }) => Ok((basis, config, floor)),
         Ok(Gate::Off) => Err(Error::NotFound),
-        Err(message) => Err(Error::string(&message)),
+        Err(message) => Err(super::internal(&message)),
     }
 }
 
@@ -89,7 +89,7 @@ pub(crate) async fn view_for(ctx: &AppContext, worker: &workers::Model) -> Resul
                        and a group smaller than the floor is never shown. They are never used to make a \
                        decision about you. You can change an answer or take them all back at any time.",
         })),
-        Err(message) => Err(Error::string(&message)),
+        Err(message) => Err(super::internal(&message)),
     }
 }
 

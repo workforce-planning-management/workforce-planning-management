@@ -460,7 +460,7 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
             [opening_date.into(), to.into(), from.into()],
         ))
         .await?
-        .ok_or_else(|| Error::string("the headcount query returned no row"))?;
+        .ok_or_else(|| super::internal("the headcount query returned no row"))?;
     let count = |name: &str| -> Result<usize> {
         let n: i64 = counts_row.try_get("", name)?;
         Ok(usize::try_from(n).unwrap_or(0))

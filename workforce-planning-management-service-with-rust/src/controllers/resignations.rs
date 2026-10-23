@@ -57,7 +57,7 @@ pub(crate) async fn latest(
 }
 
 fn status_of(row: &resignations::Model) -> Result<Status> {
-    Status::parse(&row.status).ok_or_else(|| Error::string("a resignation has an unknown status"))
+    Status::parse(&row.status).ok_or_else(|| super::internal("a resignation has an unknown status"))
 }
 
 /// What the worker themself sees, with their reason.

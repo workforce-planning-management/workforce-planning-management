@@ -159,6 +159,23 @@ pub fn record_rejection((status, reason): (StatusCode, String)) -> Error {
     Error::CustomError(status, ErrorDetail::new(code, &reason))
 }
 
+/// A `401` with a single message: the caller is not signed in (WPM-T259).
+#[must_use]
+pub fn unauthorized(message: &str) -> Error {
+    record_rejection((StatusCode::UNAUTHORIZED, message.to_string()))
+}
+
+/// An internal invariant broke (a query that must return a row did not, a stored value is not
+/// one the code writes). The cause is logged; the caller gets a `500` with no detail (WPM-T259).
+#[must_use]
+pub fn internal(what: &str) -> Error {
+    tracing::error!(invariant = what, "internal invariant broken");
+    Error::CustomError(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        ErrorDetail::new("internal", "internal error"),
+    )
+}
+
 /// A `403` with a single message, for a refusal the caller's role earns (WPM-T251).
 #[must_use]
 pub fn forbidden(message: &str) -> Error {
@@ -221,7 +238,7 @@ pub(crate) fn ratio_json(terms: Option<(usize, usize, f64)>) -> serde_json::Valu
 ///
 /// When the row does not serialize to a JSON object.
 pub(crate) fn row_json<T: serde::Serialize>(row: &T) -> Result<serde_json::Value> {
-    let mut value = serde_json::to_value(row).map_err(|e| Error::string(&e.to_string()))?;
+    let mut value = serde_json::to_value(row).map_err(|e| internal(&e.to_string()))?;
     if let Some(object) = value.as_object_mut() {
         object.remove("id");
         object.remove("deleted_at");
@@ -374,6 +391,25 @@ where
 #[cfg(test)]
 mod tests {
     use super::row_json;
+
+    /// The cause of a broken invariant stays in the log; the caller learns only that it was internal.
+    #[test]
+    fn an_internal_error_is_a_500_that_names_nothing() {
+        use super::{Error, StatusCode, internal, unauthorized};
+        let Error::CustomError(status, detail) = internal("secret table name") else {
+            panic!("a custom error");
+        };
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+        let text = format!("{detail:?}");
+        assert!(
+            text.contains("internal error") && !text.contains("secret"),
+            "{text}"
+        );
+        let Error::CustomError(status, _) = unauthorized("sign in") else {
+            panic!("a custom error");
+        };
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+    }
 
     #[test]
     fn a_window_clamps_and_refuses_a_deep_offset() {

@@ -673,7 +673,7 @@ async fn requirement_counts(
         .db
         .query_one_raw(statement)
         .await?
-        .ok_or_else(|| Error::string("the requirement count returned no row"))?;
+        .ok_or_else(|| super::internal("the requirement count returned no row"))?;
     let count = |name: &str| -> Result<usize> {
         let n: i64 = row.try_get("", name)?;
         Ok(usize::try_from(n).unwrap_or(0))

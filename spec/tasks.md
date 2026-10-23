@@ -4149,8 +4149,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       Verified: request suite 130 pass (Postgres 18, Podman), `enforcement_health` pass, 639 unit tests, clippy clean. The other
       `enforcement_*` binaries were not re-run (only the one edited); `enforcement_health` drops the test database when it ends,
       so run it last or recreate the database.
-- [ ] WPM-T259 **One error vocabulary.** An internal-invariant helper (logs, answers 500 with no detail) for `Error::string`
+- [x] WPM-T259 **One error vocabulary.** An internal-invariant helper (logs, answers 500 with no detail) for `Error::string`
       uses (`intelligence.rs:471`, `resignations.rs:59`); drop the bespoke 401 in `funding.rs:86`.
+      Done: `controllers::internal(what)` logs the cause and answers 500 `internal error` with no detail; `controllers::unauthorized`
+      replaces the bare `Error::Unauthorized` in `funding.rs` and `flexible_working.rs`. Every `Error::string` in `src/controllers/`
+      (intelligence, resignations, flexible working, CPD, ESCO, equality monitoring, `row_json`) now uses `internal`. The ones in
+      `app.rs` and `src/tasks/` stay: they are start-up and command-line errors read by an operator, not HTTP answers.
+      Verified: 640 unit tests (one new), 130 request tests (Postgres 18, Podman), clippy clean. Not run: the `enforcement_*`
+      binaries; no test drives an invariant failure through HTTP, so the 500 body is covered by the unit test only.
 - [ ] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the
       late-response guard; move the about 40 unguarded `$effect` loaders onto it. The worker page uses `Promise.allSettled` and
       an error per panel, so a failed secondary panel hides only itself. A unit test of the guard.

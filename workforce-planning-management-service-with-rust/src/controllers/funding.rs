@@ -80,7 +80,7 @@ async fn ensure_privileged(
     }
     let claims = caller
         .claims()
-        .ok_or(Error::Unauthorized("sign in".to_string()))?;
+        .ok_or_else(|| super::unauthorized("sign in"))?;
     if facts_for(ctx, claims, worker).await?.privileged {
         Ok(())
     } else {

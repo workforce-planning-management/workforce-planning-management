@@ -102,7 +102,7 @@ pub fn refusal_reasons() -> Vec<String> {
 // ─── Views ──────────────────────────────────────────────────────────────────
 
 fn status_of(row: &requests::Model) -> Result<Status> {
-    Status::parse(&row.status).ok_or_else(|| Error::string("a request has an unknown status"))
+    Status::parse(&row.status).ok_or_else(|| super::internal("a request has an unknown status"))
 }
 
 fn view(row: &requests::Model, today: NaiveDate) -> serde_json::Value {
@@ -412,7 +412,7 @@ pub(crate) async fn ensure_decider(
     }
     let claims = caller
         .claims()
-        .ok_or(Error::Unauthorized("sign in".to_string()))?;
+        .ok_or_else(|| super::unauthorized("sign in"))?;
     let facts = facts_for(ctx, claims, worker).await?;
     if facts.relation == Relation::Own {
         return Err(unprocessable("nobody decides their own request"));

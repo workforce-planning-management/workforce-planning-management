@@ -492,7 +492,7 @@ async fn unique_name(txn: &sea_orm::DatabaseTransaction, label: &str) -> Result<
             return Ok(candidate);
         }
     }
-    Err(Error::string("cannot find a free skill name"))
+    Err(super::internal("cannot find a free skill name"))
 }
 
 /// The ESCO routes.
