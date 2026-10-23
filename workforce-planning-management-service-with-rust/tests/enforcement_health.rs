@@ -155,6 +155,19 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         let induction = post("/api/health-requirements".into(), hr.clone(), json!({ "name": "Safety induction" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
         assert_eq!(post("/api/health-requirements".into(), hr.clone(), json!({ "name": "hepatitis b" })).await.status_code(), 422, "names are unique");
 
+        // ── Restating and retiring a requirement: only HR writes, a retired one is gone ──
+        let temp = post("/api/health-requirements".into(), hr.clone(), json!({ "name": "Temporary check" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let temp_url = format!("/api/health-requirements/{temp}");
+        let restate = |token: String, body: Value| { let request = &request; let url = temp_url.clone(); async move { request.put(&url).add_header("authorization", token).json(&body).await } };
+        let retire = |token: String, url: String| { let request = &request; async move { request.delete(&url).add_header("authorization", token).await } };
+        assert_eq!(restate(worker.clone(), json!({ "name": "Renamed" })).await.status_code(), 403, "the policy: only HR writes");
+        assert_eq!(restate(hr.clone(), json!({ "name": "Renamed check" })).await.status_code(), 200);
+        assert_eq!(restate(hr.clone(), json!({ "name": "Hepatitis B" })).await.status_code(), 422, "names stay unique when restated");
+        assert_eq!(retire(worker.clone(), temp_url.clone()).await.status_code(), 403);
+        assert_eq!(retire(hr.clone(), temp_url.clone()).await.status_code(), 403, "HR restates; removing is a service act");
+        assert_eq!(retire(svc.clone(), temp_url.clone()).await.status_code(), 200);
+        assert_eq!(retire(svc.clone(), temp_url.clone()).await.status_code(), 404, "already retired");
+
         // ── What each worker is asked for ──────────────────────────────────────────────
         let mine: Value = get("/api/me/health-requirements".into(), worker.clone()).await.json();
         assert_eq!(mine["enabled"], true);

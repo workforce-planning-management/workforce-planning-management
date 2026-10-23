@@ -1989,6 +1989,10 @@ async fn career_history_and_aspirations() {
         let all: Value = request.get(&format!("/api/workers/{me}/role-history")).await.json();
         assert_eq!(all.as_array().unwrap().len(), 3);
 
+        // ── Clearing a framework with nothing selected is harmless; an unknown framework is refused.
+        request.delete(&format!("/api/workers/{me}/framework-roles/esco")).await.assert_status_ok();
+        assert_eq!(request.delete(&format!("/api/workers/{me}/framework-roles/sfia")).await.status_code(), 422);
+
         // ── Skills over time.
         let skill: Value = request.post("/api/skills").json(&json!({ "name": "History skill", "category": "technical" })).await.json();
         let skill_pid = skill["pid"].as_str().unwrap().to_string();

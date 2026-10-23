@@ -4115,7 +4115,7 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       the `[patch.crates-io]` path override as a commented block: committed live it would break the Containerfile build and
       rewrite `Cargo.lock`.
       Verified: matcher clippy clean, 50 tests; the override was switched on once and the service checked against the sibling.
-- [ ] WPM-T258 **Request tests for every route.** The about 32 routes in no test (`development.rs` ×8, `movements.rs` ×4,
+- [x] WPM-T258 (2026-10-23) **Request tests for every route.** The about 32 routes in no test (`development.rs` ×8, `movements.rs` ×4,
       `change.rs` ×3, `handover.rs`, `audits.rs`, `expenses.rs` withdraw, `hr_core.rs`, `workforce.rs`); a route-coverage test
       that fails on a route no request test calls; more unit tests for `benchmark.rs`, `tokens.rs`, `audit_export.rs`,
       `adjustments.rs`, `framework_roles.rs` and `job_levels.rs`.
@@ -4136,8 +4136,19 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       their own; their rules are the modules tested here. Two defects found and fixed in `rules::job_levels`: `level("LL5")`
       resolved to L5 (every leading `L` was stripped; now one prefix), and `next_above(255)` overflowed `u8`.
       Verified: 639 unit tests (was 621), clippy clean.
-      **Still open:** the route-coverage test (it needs a method-aware scan that follows URLs built from variables, or a
-      runtime check against the request log).
+      **Part 4 (2026-10-23), closing:** `tests/route_coverage.rs` (DB-free, runs in plain `cargo test`) reads every route and
+      method from `app::app_routes()` (new; `Hooks::routes` calls it) and fails on a route no test calls. A call is found by
+      reading the test sources: a literal URL, or a name bound to one by `let` or by a `for url in [...]` list. Eight
+      routes (and the health-requirement `PUT`/`DELETE`) are called through helper closures or tables the scan cannot follow;
+      they are in `BUILT_FROM_A_VARIABLE` with the test that calls each, and the test fails if an entry becomes redundant or
+      names no route. It is a text scan: it cannot tell that a call asserts anything, and a tail such as `{base}/handover/actions`
+      matches by its last two segments, so it can over-credit. Its first method-aware run found real gaps, closed here: the
+      collection reads (`lists.rs`: eleven lists and the health probes), `removals.rs` (backup, pool member, demand line,
+      tolerance, group and wellbeing-rule restatement, worker and application reads), framework-role clear, and the health
+      requirement restate and retire (HR may restate; only the service may retire).
+      Verified: request suite 130 pass (Postgres 18, Podman), `enforcement_health` pass, 639 unit tests, clippy clean. The other
+      `enforcement_*` binaries were not re-run (only the one edited); `enforcement_health` drops the test database when it ends,
+      so run it last or recreate the database.
 - [ ] WPM-T259 **One error vocabulary.** An internal-invariant helper (logs, answers 500 with no detail) for `Error::string`
       uses (`intelligence.rs:471`, `resignations.rs:59`); drop the bespoke 401 in `funding.rs:86`.
 - [ ] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the
