@@ -5,6 +5,8 @@
   their values are the deployer's own wording and are shown as the service sends them.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     declareMyEquality,
     getMyEquality,
@@ -17,7 +19,7 @@
   let error = $state<string | null>(null);
   let chosen = $state<Record<string, string>>({});
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load() {
     try {
@@ -42,7 +44,7 @@
 
 <section class="panel" data-testid="my-equality">
   <h2>{t("details.equality.title")}</h2>
-  {#if error}<p class="error" data-testid="equality-error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="equality-error" message={error} />{/if}
   {#if view && !view.enabled}
     <p class="muted" data-testid="equality-off">{t("details.equality.off")}</p>
   {:else if view?.enabled}

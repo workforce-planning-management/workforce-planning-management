@@ -5,6 +5,7 @@
   memberships; selected skills become ordinary skill declarations.
 -->
 <script lang="ts">
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import { listSelectableFrameworks } from "#lib/api/wpm.js";
   import Backups from "#lib/components/Backups.svelte";
@@ -42,7 +43,7 @@
 
 <h1>{t("nav.me")}</h1>
 <p><a href={l("/me/details")} data-testid="my-details-link">{t("details.link")}</a></p>
-{#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if error}<ErrorNote testid="error" message={error} />{/if}
 
 {#if memberships.length === 0}
   <p class="muted" data-testid="no-worker">

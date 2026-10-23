@@ -5,6 +5,8 @@
   step achieved does not change the declared level of the skill: that is a separate, evidenced act.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import type { KanbanCard, KanbanColumn } from "@lilydesignsystem/svelte-kanban-board";
   import { page } from "$app/state";
   import {
@@ -33,7 +35,7 @@
   // which puts the card back, must not hide the reason.
   let moveError = $state<string | null>(null);
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load(worker: string) {
     try {
@@ -82,7 +84,7 @@
 {#if !me}
   <p class="muted" data-testid="kanban-no-worker">{t("kanban.noWorker")}</p>
 {:else if error}
-  <p class="error" role="alert" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if plans === null}
   <p>{t("common.loading")}</p>
 {:else if items.length === 0}
@@ -93,7 +95,7 @@
     <LilyKanban label={t("kanban.title")} {columns} {cards} {onMove} />
   </div>
   {#if moveError}
-    <p class="error" role="alert" data-testid="move-error">{moveError}</p>
+    <ErrorNote testid="move-error" message={moveError} />
   {/if}
   {#if notice}<p class="muted" role="status" data-testid="kanban-notice">{notice}</p>{/if}
 {/if}

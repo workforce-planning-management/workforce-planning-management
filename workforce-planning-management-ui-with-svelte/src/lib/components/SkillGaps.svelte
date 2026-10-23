@@ -6,6 +6,8 @@
   A development conversation starter, not a selection decision.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { workerSkillGaps, workerTrainingPlan } from "#lib/api/wpm.js";
   import type { SkillGap, TrainingPlan } from "#lib/api/types.js";
   import { t } from "#lib/i18n.svelte.js";
@@ -30,7 +32,7 @@
         gaps = (await workerSkillGaps(workerPid)).gaps;
         error = null;
       } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = errorText(cause);
       }
     })();
   });
@@ -167,7 +169,7 @@
 <section class="panel" data-testid="skill-gaps">
   <h2>{t("skillgaps.title")}</h2>
   {#if error}
-    <p class="error" data-testid="error">{error}</p>
+    <ErrorNote testid="error" message={error} />
   {:else if gaps === null}
     <p>{t("common.loading")}</p>
   {:else if gaps.length === 0}

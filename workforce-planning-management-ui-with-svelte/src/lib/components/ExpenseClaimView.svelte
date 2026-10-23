@@ -5,6 +5,8 @@
   never sees Add item. A possible duplicate is flagged (▲), not refused.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     addExpenseItem,
     getExpenseClaim,
@@ -50,7 +52,7 @@
   let note = $state("");
   let paidOn = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   type Item = ExpenseClaim["items"][number];
   const item = (row: DataGridRow) => row as unknown as Item;
@@ -152,7 +154,7 @@
   {/if}
 {/snippet}
 
-{#if error}<p class="error" data-testid="expense-error">{error}</p>{/if}
+{#if error}<ErrorNote testid="expense-error" message={error} />{/if}
 {#if claim}
   <div class="cx-claim" data-testid="expense-claim">
     <p>

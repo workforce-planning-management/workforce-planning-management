@@ -3,6 +3,8 @@
   an ESCO occupation by search. Reports the choice (and its label) to the caller.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t } from "#lib/i18n.svelte.js";
   import { listRoleProfiles, searchEscoOccupations } from "#lib/api/wpm.js";
 
@@ -23,7 +25,7 @@
       asked = true;
       void listRoleProfiles("uk-gdad-pcf")
         .then((p) => (profiles = p))
-        .catch((cause) => (error = cause instanceof Error ? cause.message : String(cause)));
+        .catch((cause) => (error = errorText(cause)));
     }
   });
 
@@ -43,12 +45,12 @@
     try {
       hits = query.trim().length >= 2 ? await searchEscoOccupations(query.trim()) : [];
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      error = errorText(cause);
     }
   }
 </script>
 
-{#if error}<p class="error">{error}</p>{/if}
+{#if error}<ErrorNote message={error} />{/if}
 {#if framework === "uk-gdad-pcf"}
   <select
     aria-label={t("comp.rolePicker.role_level")}

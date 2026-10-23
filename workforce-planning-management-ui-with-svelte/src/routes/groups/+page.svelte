@@ -5,6 +5,8 @@
   fewer than the floor of people declare.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { createGroup, groupMembers, groupSkills, listGroups, GROUP_KINDS, type Group } from "#lib/api/wpm.js";
   import { page } from "$app/state";
   import { t, tf } from "#lib/i18n.svelte.js";
@@ -31,7 +33,7 @@
   let description = $state("");
   let spans = $state(false);
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   const kindLabel = (k: string) => (k === "practice" ? t("pages.groups.kind_practice") : k === "interest" ? t("pages.groups.kind_interest") : t("pages.groups.kind_group"));
 
   const groupColumns = $derived<DataGridColumn[]>([
@@ -108,7 +110,7 @@
 {/snippet}
 
 <h1>{t("nav.groups")}</h1>
-{#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if error}<ErrorNote testid="error" message={error} />{/if}
 {#if organizations.length === 0}
   <p class="muted">{t("org.noOrganizations")}</p>
 {:else}

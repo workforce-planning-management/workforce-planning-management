@@ -5,6 +5,7 @@
   missing/invalid link.
 -->
 <script lang="ts">
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { l, t } from "#lib/i18n.svelte.js";
   import type { PageData } from "./$types";
 
@@ -25,6 +26,6 @@
 
 <h1>{t("pages.verify.sign_in_link")}</h1>
 <div class="panel">
-  <p class="error" role="alert">{message}</p>
+  <ErrorNote message={message} />
   <p><a href={l("/signin")}>{t("pages.verify.request_a_new_link")}</a></p>
 </div>

@@ -7,6 +7,8 @@
   as unavailable, never guessed. HR creates rotas and records swaps.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import {
     addRotaSwap,
@@ -56,7 +58,7 @@
   let swapUntil = $state("");
   let swapNote = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   const org = $derived(organization || organizationRefs[0] || "");
   const orgWorkers = $derived(everyone.filter((w) => w.organization_ref === org));
   // Colleagues of the rota being viewed (its own organization, not the create form's).
@@ -139,7 +141,7 @@
 <svelte:head><title>{tf("pages.rota.page_title", { rota: t("nav.rota") })}</title></svelte:head>
 
 <h1>{t("nav.rota")}</h1>
-{#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
+{#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 {#if rotas === null}
   <p>{t("common.loading")}</p>

@@ -6,6 +6,8 @@
   and so does anyone the service will not show it to.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     money,
     workerContractorDetails,
@@ -47,7 +49,7 @@
       } catch (cause) {
         if (!current) return;
         engagement = null;
-        error = notTheirs(cause) ? null : cause instanceof Error ? cause.message : String(cause);
+        error = notTheirs(cause) ? null : errorText(cause);
       }
     })();
     return () => {
@@ -66,7 +68,7 @@
 </script>
 
 {#if error}
-  <p class="error" data-testid="engagement-error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="engagement-error" prefixed message={error} />
 {:else if engagement && watched}
   <section class="panel" data-testid="engagement">
     <h2>{t("engagement.title")}</h2>

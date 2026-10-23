@@ -6,6 +6,8 @@
   than the person are marked.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import {
     addPastRole,
@@ -47,7 +49,7 @@
   let asOf = $state("");
   let snapshot = $state<Awaited<ReturnType<typeof skillsAsOf>> | null>(null);
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   const day = (iso: string | null) => (iso ? iso.slice(0, 10) : "now");
 
   async function load() {
@@ -164,7 +166,7 @@
 
 <section class="panel" data-testid="career-history">
   <h2>{t("comp.careerHistory.career_history")}</h2>
-  {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="error" message={error} />{/if}
   {#if notice}<p data-testid="notice">{notice}</p>{/if}
 
   <h3>{t("comp.careerHistory.roles_over_time")}</h3>

@@ -6,6 +6,8 @@
   completed training enrolment). All server-derived; derivations shown.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     capabilityAnalysis,
     listPaths,
@@ -46,7 +48,7 @@
         }
         if (selectedPath) progress = await pathProgress(selectedPath);
       } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = errorText(cause);
       }
     })();
   });
@@ -55,7 +57,7 @@
     try {
       capability = await capabilityAnalysis({ minProficiency, minDepth });
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      error = errorText(cause);
     }
   }
 
@@ -66,7 +68,7 @@
       try {
         progress = await pathProgress(pid);
       } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = errorText(cause);
       }
     }
   }
@@ -148,7 +150,7 @@
 <svelte:head><title>{tf("pages.learning.page_title", { learning: t("nav.learning") })}</title></svelte:head>
 
 <h1>{t("nav.learning")}</h1>
-{#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if error}<ErrorNote testid="error" message={error} />{/if}
 
 {#if matrix}
   <h2>{t("pages.learning.skills_matrix")}</h2>

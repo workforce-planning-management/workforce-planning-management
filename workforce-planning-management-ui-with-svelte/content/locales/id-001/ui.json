@@ -2138,5 +2138,15 @@
       "due": "jatuh tempo {date}",
       "reminder": "Pengingat sudah jatuh tempo."
     }
+  },
+  "errors": {
+    "network": "Layanan tidak dapat dijangkau. Periksa koneksi Anda lalu coba lagi.",
+    "unauthorized": "Anda telah keluar. Masuk lagi untuk melanjutkan.",
+    "forbidden": "Anda tidak diizinkan melakukan ini.",
+    "notFound": "Catatan itu tidak ditemukan, atau Anda tidak dapat melihatnya.",
+    "conflict": "Itu bertentangan dengan keadaan saat ini",
+    "invalid": "Itu tidak diterima",
+    "server": "Terjadi masalah di pihak kami. Coba lagi; jika terus terjadi, beri tahu administrator Anda.",
+    "generic": "Terjadi kesalahan."
   }
 }

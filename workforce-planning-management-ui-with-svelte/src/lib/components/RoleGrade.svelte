@@ -4,6 +4,8 @@
   an equivalence WPM derives (no source says which level matches which band).
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     clearRoleGrade,
     getJobLevelFramework,
@@ -26,7 +28,7 @@
   let level = $state("");
   let band = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load() {
     try {
@@ -79,7 +81,7 @@
 <section class="panel" data-testid="role-grade">
   <h3>{t("grades.roleTitle")}</h3>
   <p class="muted">{t("grades.roleHint")}</p>
-  {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="error" message={error} />{/if}
   {#if grade?.job_level?.level || grade?.pay_band}
     <p data-testid="role-grade-held">
       {#if grade.job_level?.level}<strong>{grade.job_level.level.code}</strong> {grade.job_level.level.title}{/if}

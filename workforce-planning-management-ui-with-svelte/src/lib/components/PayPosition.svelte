@@ -6,6 +6,8 @@
   will happen.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     clearWorkerPayPosition,
     getPayScale,
@@ -28,7 +30,7 @@
   let step = $state("1");
   let since = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   const steps = $derived(scale?.bands.find((b) => b.code === band)?.steps.length ?? 0);
 
   async function load() {
@@ -84,7 +86,7 @@
   <section class="panel" data-testid="pay-position">
     <h2>{t("payPosition.title")}</h2>
     <p class="muted">{t("payPosition.hint")}</p>
-    {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+    {#if error}<ErrorNote testid="error" message={error} />{/if}
     {#if held}
       <p data-testid="pay-position-held">
         {tp("payPosition.current", {

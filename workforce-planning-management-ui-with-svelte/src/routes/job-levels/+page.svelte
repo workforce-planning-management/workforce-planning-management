@@ -5,6 +5,8 @@
   "—", never a guess.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { getJobLevelFramework, listJobLevelFrameworks } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
   import type { JobLevelFramework } from "#lib/api/types.js";
@@ -33,7 +35,7 @@
         const loaded = first ? await getJobLevelFramework(first.id) : null;
         if (!stale) framework = loaded;
       } catch (cause) {
-        if (!stale) error = cause instanceof Error ? cause.message : String(cause);
+        if (!stale) error = errorText(cause);
       }
     })();
     return () => {
@@ -45,7 +47,7 @@
 <svelte:head><title>{tf("pages.jobLevels.page_title", { jobLevels: t("nav.jobLevels") })}</title></svelte:head>
 
 <h1>{t("nav.jobLevels")}</h1>
-{#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
+{#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 {#if framework}
   <p data-testid="levels-source">

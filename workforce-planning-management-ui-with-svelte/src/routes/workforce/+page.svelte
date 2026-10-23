@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { decideLeave, ergonomicIssues, listWorkers, listLeaveRequests, listShifts, workingTime } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import { createLoader } from "#lib/loader.svelte.js";
@@ -47,7 +49,7 @@
       await decideLeave(request.pid, decision);
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -156,13 +158,13 @@
 <h1>{t("nav.workforce")}</h1>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if pending === null}
   <p>{t("common.loading")}</p>
 {:else}
   <h2>{t("wf.leaveRequests")}</h2>
   {#if actionError}
-    <p class="error" data-testid="action-error">{actionError}</p>
+    <ErrorNote testid="action-error" message={actionError} />
   {/if}
   <DataTable
     testid="pending-leave"

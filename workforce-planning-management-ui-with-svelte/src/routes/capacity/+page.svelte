@@ -4,7 +4,7 @@
   programmes draw on it. Pools and months, never people. An unknown month is shown as unknown.
 -->
 <script lang="ts">
-  import { ApiError } from "#lib/api/client.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     addSkillPoolMember,
     capacityView,
@@ -18,7 +18,7 @@
   import OrgPicker from "#lib/components/OrgPicker.svelte";
   import WriteResult from "#lib/components/WriteResult.svelte";
   import { t, tf } from "#lib/i18n.svelte.js";
-  import { failure, type Failure } from "#lib/write.js";
+  import { failure, type Failure, errorText } from "#lib/write.js";
 
   let org = $state("");
   let view = $state<CapacityView | null>(null);
@@ -81,8 +81,7 @@
       } catch (cause) {
         if (!current) return;
         view = null;
-        error =
-          cause instanceof ApiError || cause instanceof Error ? cause.message : String(cause);
+        error = errorText(cause);
       } finally {
         if (current) loading = false;
       }
@@ -105,7 +104,7 @@
 <div class="form"><OrgPicker bind:value={org} /></div>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if !org}
   <p class="muted">{t("common.noOrganization")}</p>
 {:else if view === null || loading}

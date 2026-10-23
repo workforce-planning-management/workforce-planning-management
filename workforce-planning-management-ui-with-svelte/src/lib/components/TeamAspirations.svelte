@@ -4,6 +4,8 @@
   private aspirations never appear here, and neither does how many there are.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import { downlineAspirations } from "#lib/api/wpm.js";
 
@@ -17,7 +19,7 @@
     void workerPid;
     void downlineAspirations(workerPid)
       .then((r) => (team = r.team))
-      .catch((cause) => (error = cause instanceof Error ? cause.message : String(cause)));
+      .catch((cause) => (error = errorText(cause)));
   });
 
   const direct = $derived(team.filter((p) => p.direct_report).length);
@@ -26,7 +28,7 @@
 </script>
 
 {#if error}
-  <p class="error">{error}</p>
+  <ErrorNote message={error} />
 {:else if team.length > 0}
   <section class="panel" data-testid="team-aspirations">
     <h2>{t("comp.teamAspirations.my_team_s_aspirations")}</h2>

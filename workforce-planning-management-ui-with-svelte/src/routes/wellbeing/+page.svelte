@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   // HR wellbeing admin: the configured health-entitlement rules
   // (non-clinical predicates only — age band, departments, job titles;
   // WPM-D17) and the aggregate-only uptake view (counts, never an
@@ -78,7 +80,7 @@
       kind = "health";
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -88,7 +90,7 @@
       await deleteWellbeingEntitlement(pid);
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -169,7 +171,7 @@
 <h1>{t("nav.wellbeing")}</h1>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else}
   <h2>{t("wb.rules")}</h2>
   <DataTable
@@ -194,7 +196,7 @@
     <input placeholder={t("pages.wellbeing.doses")} bind:value={doses} inputmode="numeric" />
     <button type="submit">+</button>
     {#if actionError}
-      <p class="error" data-testid="action-error">{actionError}</p>
+      <ErrorNote testid="action-error" message={actionError} />
     {/if}
   </form>
 

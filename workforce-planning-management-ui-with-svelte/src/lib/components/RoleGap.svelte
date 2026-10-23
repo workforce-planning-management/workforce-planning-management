@@ -4,6 +4,8 @@
   below. A development conversation starter, never a selection decision.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import { listRoleProfiles, workerRoleGap } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
@@ -28,7 +30,7 @@
       try {
         profiles = await listRoleProfiles();
       } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = errorText(cause);
       }
     })();
   });
@@ -41,7 +43,7 @@
     try {
       gap = await workerRoleGap(workerPid, id);
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      error = errorText(cause);
     }
   }
 
@@ -86,7 +88,7 @@
         {#each profiles as p (p.pid)}<option value={p.pid}>{p.job_title}</option>{/each}
       </select>
     </label>
-    {#if error}<p class="error">{error}</p>{/if}
+    {#if error}<ErrorNote message={error} />{/if}
     {#if gap}
       <p class="muted">{gap.derivation}</p>
       <p>

@@ -5,6 +5,8 @@
   says who is covering today, or that nobody can — never a guess.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     addBackup,
     listBackups,
@@ -26,7 +28,7 @@
   let until = $state("");
   let note = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   const candidates = $derived(
     everyone.filter((w) => w.pid !== workerPid && !backups.some((b) => b.backup_pid === w.pid)),
   );
@@ -65,7 +67,7 @@
 <section class="panel" data-testid="backups">
   <h2>{t("backups.title")}</h2>
   <p class="muted">{t("backups.hint")}</p>
-  {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="error" message={error} />{/if}
   {#if cover && backups.length > 0}
     <p data-testid="cover-today">
       {#if cover.covered_by_name}

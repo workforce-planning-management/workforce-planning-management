@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   // Privacy operations (WPM-R30): the retention report — what the
   // next sweep would remove, per table, under the floored horizon —
   // and the sweep itself (destructive; admin-only under enforcement).
@@ -33,7 +35,7 @@
       sweepResult = await retentionSweep();
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -46,7 +48,7 @@
 <h1>{t("nav.privacy")}</h1>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if report === null}
   <p>{t("common.loading")}</p>
 {:else}
@@ -68,7 +70,7 @@
     <p class="muted">{report.derivation}</p>
     <button onclick={() => void sweep()} data-testid="run-sweep">{t("pr.sweep")}</button>
     {#if actionError}
-      <p class="error" data-testid="action-error">{actionError}</p>
+      <ErrorNote testid="action-error" message={actionError} />
     {/if}
     {#if sweepResult}
       <p data-testid="sweep-result">

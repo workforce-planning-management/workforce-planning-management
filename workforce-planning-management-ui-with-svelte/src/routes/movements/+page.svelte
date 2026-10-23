@@ -5,6 +5,8 @@
   record to work its checklist and, for a leaver, hand over what they hold.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { goto } from "$app/navigation";
   import { listMovements, listWorkers, openMovement } from "#lib/api/wpm.js";
   import type { Movement } from "#lib/api/types.js";
@@ -32,7 +34,7 @@
   let date = $state("");
   let reason = $state("resignation");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load() {
     try {
@@ -86,7 +88,7 @@
 <svelte:head><title>{tf("pages.movements.page_title", { movements: t("nav.movements") })}</title></svelte:head>
 
 <h1>{t("nav.movements")}</h1>
-{#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
+{#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 {#snippet personCell({ row }: { row: DataGridRow })}
   {@const m = row as unknown as Movement}

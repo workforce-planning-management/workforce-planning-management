@@ -2138,5 +2138,15 @@
       "due": "fällig am {date}",
       "reminder": "Eine Erinnerung ist fällig."
     }
+  },
+  "errors": {
+    "network": "Der Dienst ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "unauthorized": "Sie sind abgemeldet. Melden Sie sich erneut an, um fortzufahren.",
+    "forbidden": "Das dürfen Sie nicht.",
+    "notFound": "Dieser Datensatz wurde nicht gefunden, oder Sie dürfen ihn nicht sehen.",
+    "conflict": "Das steht im Widerspruch zum aktuellen Stand",
+    "invalid": "Das wurde nicht akzeptiert",
+    "server": "Auf unserer Seite ist etwas schiefgelaufen. Versuchen Sie es erneut; wenn es weiter auftritt, informieren Sie Ihre Administration.",
+    "generic": "Etwas ist schiefgelaufen."
   }
 }

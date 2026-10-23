@@ -5,6 +5,8 @@
   grants no extra access. Ending one keeps it as history.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t } from "#lib/i18n.svelte.js";
   import {
     addDottedManager,
@@ -23,7 +25,7 @@
   let choice = $state("");
   let note = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   const candidates = $derived(
     everyone.filter((w) => w.pid !== workerPid && !managers.some((m) => m.pid === w.pid)),
   );
@@ -57,7 +59,7 @@
 
 <section class="panel" data-testid="dotted-line">
   <h2>{t("comp.dottedLinePanel.dotted_line_reporting")}</h2>
-  {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="error" message={error} />{/if}
   <h3>{t("comp.dottedLinePanel.dotted_line_managers")}</h3>
   <ul data-testid="dotted-managers">
     {#each managers as m (m.pid)}

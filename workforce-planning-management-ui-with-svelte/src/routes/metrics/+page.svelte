@@ -5,6 +5,8 @@
   a missing figure renders "—", never 0.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { workforceInsights, workforceMetrics } from "#lib/api/wpm.js";
   import { mean, rate } from "#lib/format.js";
   import { t, tp, tf } from "#lib/i18n.svelte.js";
@@ -36,7 +38,7 @@
       from = metrics.period.from;
       to = metrics.period.to;
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      error = errorText(cause);
     }
   }
 
@@ -134,7 +136,7 @@
 <svelte:head><title>{tf("pages.metrics.page_title", { metrics: t("nav.metrics") })}</title></svelte:head>
 
 <h1>{t("nav.metrics")}</h1>
-{#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
+{#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 <p>
   <label>

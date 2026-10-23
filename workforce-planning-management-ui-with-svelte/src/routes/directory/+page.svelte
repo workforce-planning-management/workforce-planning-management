@@ -5,6 +5,8 @@
   no pay, dates or person reference ever reach this page.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import { employeeDirectory } from "#lib/api/wpm.js";
   import { t, l, tf } from "#lib/i18n.svelte.js";
@@ -48,7 +50,7 @@
             ...new Set([...departments, ...found.map((e) => e.department)]),
           ].sort((a, b) => a.localeCompare(b));
         } catch (cause) {
-          error = cause instanceof Error ? cause.message : String(cause);
+          error = errorText(cause);
         }
       })();
     }, 200);
@@ -86,7 +88,7 @@
 <svelte:head><title>{tf("pages.directory.page_title", { directory: t("nav.directory") })}</title></svelte:head>
 
 <h1>{t("nav.directory")}</h1>
-{#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
+{#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 <p>
   <input

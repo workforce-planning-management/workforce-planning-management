@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import { benchmarkComparison, listBenchmarks, money } from "#lib/api/wpm.js";
   import { i18n, t, l } from "#lib/i18n.svelte.js";
@@ -38,7 +40,7 @@
         benchmarks = bands;
         rowsByOrganization = Object.fromEntries(entries);
       } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = errorText(cause);
       }
     })();
   });
@@ -78,7 +80,7 @@
 <h1>{t("nav.benchmarks")}</h1>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if benchmarks === null || rowsByOrganization === null}
   <p>{t("common.loading")}</p>
 {:else}

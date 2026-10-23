@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import LilyKanban from "#lib/components/LilyKanban.svelte";
   import { page } from "$app/state";
   import {
@@ -52,7 +54,7 @@
       programme = "";
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -60,7 +62,7 @@
     try {
       requisitions = await listRequisitions();
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      error = errorText(cause);
     }
   }
 
@@ -101,7 +103,7 @@
     actionError = null;
     void requisitionStatus(cardId, toColumnId)
       .catch((cause) => {
-        actionError = cause instanceof Error ? cause.message : String(cause);
+        actionError = errorText(cause);
       })
       .finally(load);
   }
@@ -142,12 +144,12 @@
 </form>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if requisitions === null}
   <p>{t("common.loading")}</p>
 {:else}
   {#if actionError}
-    <p class="error" data-testid="action-error">{actionError}</p>
+    <ErrorNote testid="action-error" message={actionError} />
   {/if}
   <div data-testid="requisition-board">
     <LilyKanban label={t("nav.requisitions")} {columns} {cards} {onMove} />

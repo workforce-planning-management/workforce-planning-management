@@ -7,6 +7,8 @@
   "Show who" opens the list behind a figure by worker number — a read the service audits.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { ApiError } from "#lib/api/client.js";
   import {
     contingentList,
@@ -42,7 +44,7 @@
     try {
       conversions = await openConversionPlans();
     } catch (cause) {
-      conversionsError = cause instanceof Error ? cause.message : String(cause);
+      conversionsError = errorText(cause);
     }
   }
 
@@ -60,7 +62,7 @@
         if (cause instanceof ApiError && (cause.status === 403 || cause.status === 401)) {
           forbidden = true;
         } else {
-          error = cause instanceof Error ? cause.message : String(cause);
+          error = errorText(cause);
         }
       }
     })();
@@ -82,7 +84,7 @@
       const result = await contingentList(list);
       if (open === list) people = result.people;
     } catch (cause) {
-      listError = cause instanceof Error ? cause.message : String(cause);
+      listError = errorText(cause);
     }
   }
 
@@ -194,7 +196,7 @@
 {#if forbidden}
   <p class="muted" data-testid="contingent-forbidden">{t("contingent.forbidden")}</p>
 {:else if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if view === null}
   <p>{t("common.loading")}</p>
 {:else}
@@ -245,7 +247,7 @@
       <div data-testid="contingent-who">
         <h3>{t("contingent.whoTitle")} — {tv(open)}</h3>
         {#if listError}
-          <p class="error">{t("common.error")}: {listError}</p>
+          <ErrorNote prefixed message={listError} />
         {:else if people === null}
           <p>{t("common.loading")}</p>
         {:else if people.length === 0}
@@ -273,7 +275,7 @@
     </button>
     {#if conversionsOpen}
       {#if conversionsError}
-        <p class="error">{t("common.error")}: {conversionsError}</p>
+        <ErrorNote prefixed message={conversionsError} />
       {:else if conversions === null}
         <p>{t("common.loading")}</p>
       {:else if conversions.length === 0}

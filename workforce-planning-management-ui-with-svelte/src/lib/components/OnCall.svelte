@@ -3,6 +3,8 @@
   rotas they can read, over the next four weeks.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { decideSwap, workerOnCall, workerSwapRequests } from "#lib/api/wpm.js";
   import type { SwapRequest } from "#lib/api/types.js";
   import { t, l } from "#lib/i18n.svelte.js";
@@ -41,7 +43,7 @@
       await decideSwap(pid, decision);
       await load();
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      error = errorText(cause);
     }
   }
 </script>
@@ -60,7 +62,7 @@
         {/each}
       </ul>
     {/if}
-    {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+    {#if error}<ErrorNote testid="error" message={error} />{/if}
     {#if incoming.length > 0}
       <h3>{t("rota.swapIncoming")}</h3>
       <ul data-testid="swap-incoming">

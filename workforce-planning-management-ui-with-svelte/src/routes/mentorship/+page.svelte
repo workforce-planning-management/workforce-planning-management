@@ -5,6 +5,7 @@
   All server-derived.
 -->
 <script lang="ts">
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { mentorshipOverview } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
   import { createLoader } from "#lib/loader.svelte.js";
@@ -37,7 +38,7 @@
 <svelte:head><title>{tf("pages.mentorship.page_title", { mentorship: t("nav.mentorship") })}</title></svelte:head>
 
 <h1>{t("nav.mentorship")}</h1>
-{#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if error}<ErrorNote testid="error" message={error} />{/if}
 
 {#if overview}
   <section class="tiles" data-testid="mentorship-tiles">

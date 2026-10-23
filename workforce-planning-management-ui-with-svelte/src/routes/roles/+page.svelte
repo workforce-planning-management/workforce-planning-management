@@ -5,6 +5,8 @@
   yardstick competency-gap analysis measures declared skills against.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     createRoleProfile,
     getRoleProfile,
@@ -82,7 +84,7 @@
   });
 
   const message = (cause: unknown) =>
-    cause instanceof Error ? cause.message : String(cause);
+    errorText(cause);
 
   async function loadProfiles() {
     try {
@@ -274,7 +276,7 @@
 <svelte:head><title>{tf("pages.roles.page_title", { roles: t("nav.roles") })}</title></svelte:head>
 
 <h1>{t("nav.roles")}</h1>
-{#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if error}<ErrorNote testid="error" message={error} />{/if}
 
 <p class="muted">
   {t("pages.roles.a_role_profile_says_what_a_job")}

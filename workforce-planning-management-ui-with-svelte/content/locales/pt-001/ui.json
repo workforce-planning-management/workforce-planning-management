@@ -2138,5 +2138,15 @@
       "due": "vence em {date}",
       "reminder": "Há um lembrete pendente."
     }
+  },
+  "errors": {
+    "network": "Não foi possível aceder ao serviço. Verifique a sua ligação e tente novamente.",
+    "unauthorized": "A sua sessão terminou. Inicie sessão novamente para continuar.",
+    "forbidden": "Não tem permissão para fazer isto.",
+    "notFound": "Esse registo não foi encontrado, ou não pode vê-lo.",
+    "conflict": "Isso entra em conflito com o estado atual",
+    "invalid": "Isso não foi aceite",
+    "server": "Algo correu mal do nosso lado. Tente novamente; se continuar, avise o seu administrador.",
+    "generic": "Algo correu mal."
   }
 }

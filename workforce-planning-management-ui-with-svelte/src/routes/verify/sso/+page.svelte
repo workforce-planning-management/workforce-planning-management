@@ -5,6 +5,7 @@
   renders ONLY on a missing/invalid code. Mirrors `../+page.svelte`.
 -->
 <script lang="ts">
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { l, t } from "#lib/i18n.svelte.js";
   import type { PageData } from "./$types";
 
@@ -25,6 +26,6 @@
 
 <h1>{t("pages.verifySso.sign_in_link")}</h1>
 <div class="panel">
-  <p class="error" role="alert">{message}</p>
+  <ErrorNote message={message} />
   <p><a href={l("/signin")}>{t("pages.verifySso.request_a_new_link")}</a></p>
 </div>

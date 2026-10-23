@@ -6,6 +6,7 @@
   runs a sweep (an administrator), which opens, closes and notifies.
 -->
 <script lang="ts">
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     acknowledgeEarlyWarning,
     listEarlyWarnings,
@@ -15,7 +16,7 @@
   import OrgPicker from "#lib/components/OrgPicker.svelte";
   import WriteResult from "#lib/components/WriteResult.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
-  import { failure, type Failure } from "#lib/write.js";
+  import { failure, type Failure, errorText } from "#lib/write.js";
 
   let org = $state("");
   let view = $state<EarlyWarnings | null>(null);
@@ -38,7 +39,7 @@
       .catch((cause) => {
         if (!current) return;
         view = null;
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = errorText(cause);
       });
     return () => {
       current = false;
@@ -72,7 +73,7 @@
 <div class="form"><OrgPicker bind:value={org} /></div>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if !org}
   <p class="muted">{t("common.noOrganization")}</p>
 {:else if view === null}

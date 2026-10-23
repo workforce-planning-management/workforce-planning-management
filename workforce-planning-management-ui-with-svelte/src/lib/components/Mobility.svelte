@@ -4,6 +4,8 @@
   Compares declarations; never ranks people. Others see only aggregate counts.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tv } from "#lib/i18n.svelte.js";
   import {
     expressMobilityInterest,
@@ -31,7 +33,7 @@
   let error = $state<string | null>(null);
 
   const message = (cause: unknown) =>
-    cause instanceof Error ? cause.message : String(cause);
+    errorText(cause);
 
   async function load() {
     try {
@@ -136,7 +138,7 @@
   <div class="panel" data-testid="mobility">
     <h3>{t("comp.mobility.roles_that_fit_my_skills")}</h3>
     <p class="muted">{matches.derivation}</p>
-    {#if error}<p class="error">{error}</p>{/if}
+    {#if error}<ErrorNote message={error} />{/if}
     <DataTable
       label={t("comp.mobility.roles_that_fit_my_skills")}
       columns={roleColumns}

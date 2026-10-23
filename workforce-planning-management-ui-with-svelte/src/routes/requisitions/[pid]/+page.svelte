@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import { applicationStage, getRequisition, listApplications } from "#lib/api/wpm.js";
   import { t, tv } from "#lib/i18n.svelte.js";
@@ -39,13 +41,13 @@
       });
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 </script>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if requisition === null}
   <p>{t("common.loading")}</p>
 {:else}
@@ -54,7 +56,7 @@
 
   <h2>{t("req.applications")}</h2>
   {#if actionError}
-    <p class="error" data-testid="action-error">{actionError}</p>
+    <ErrorNote testid="action-error" message={actionError} />
   {/if}
   <!-- Plain table: the offer row holds a hire-number input that must keep focus and its value. -->
   <table data-testid="applications">

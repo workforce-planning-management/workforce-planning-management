@@ -6,6 +6,8 @@
   framework imports match by reference first.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     SKILL_CATEGORIES,
     addSkillRef,
@@ -51,7 +53,7 @@
     }
   }
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   const shown = $derived(
     skills.filter(
@@ -105,7 +107,7 @@
 {/snippet}
 
 <h1>{t("nav.skills")}</h1>
-{#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if error}<ErrorNote testid="error" message={error} />{/if}
 {#if notice}<p data-testid="notice">{notice}</p>{/if}
 
 <p class="muted" data-testid="skill-counts">

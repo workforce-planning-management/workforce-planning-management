@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import CalendarPanel from "#lib/components/CalendarPanel.svelte";
   import RoleGap from "#lib/components/RoleGap.svelte";
@@ -185,7 +187,7 @@
       await changeStatus(pid, to);
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -195,7 +197,7 @@
       await completeItem(itemPid);
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -208,7 +210,7 @@
       await acknowledgeWellbeing(pid, entitlementPid, response);
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -218,7 +220,7 @@
       await submitPulse(surveyPid, pid, score);
       pulseThanks = new Set([...pulseThanks, surveyPid]);
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -236,7 +238,7 @@
       if (!colleagues.length) colleagues = await listWorkers();
       raterScores = Object.fromEntries(openAppraisal.competencies.map((c) => [c, 3]));
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -246,7 +248,7 @@
       await action();
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -324,11 +326,11 @@
 {/snippet}
 
 {#snippet panelError(name: string)}
-  {#if panelErrors[name]}<p class="error" data-testid="panel-error-{name}">{t("common.error")}: {panelErrors[name]}</p>{/if}
+  {#if panelErrors[name]}<ErrorNote testid="panel-error-{name}" prefixed message={panelErrors[name]} />{/if}
 {/snippet}
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if worker === null}
   <p>{t("common.loading")}</p>
 {:else}
@@ -352,7 +354,7 @@
       <button onclick={() => void transition("active")}>{tf("pages.workersPid.active", { actions: t("common.actions") })}</button>
     {/if}
     {#if actionError}
-      <p class="error" data-testid="action-error">{actionError}</p>
+      <ErrorNote testid="action-error" message={actionError} />
     {/if}
     <p>
       <a href={`/api/proxy/workers/${pid}/subject-access`} target="_blank" rel="noreferrer" data-testid="subject-access">

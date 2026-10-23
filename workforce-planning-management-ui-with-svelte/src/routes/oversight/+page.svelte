@@ -6,6 +6,7 @@
   administrator of the organization; anyone else gets the reason, not a silent failure.
 -->
 <script lang="ts">
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { ApiError } from "#lib/api/client.js";
   import {
     createOversightCriterion,
@@ -28,7 +29,7 @@
   import OversightCriteria from "#lib/components/OversightCriteria.svelte";
   import WriteResult from "#lib/components/WriteResult.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
-  import { failure, type Failure } from "#lib/write.js";
+  import { failure, type Failure, errorText } from "#lib/write.js";
 
   let org = $state("");
   let status = $state<OversightStatus | null>(null);
@@ -90,7 +91,7 @@
     ),
   );
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load(chosen: string) {
     try {
@@ -155,7 +156,7 @@
 <div class="form"><OrgPicker bind:value={org} /></div>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {/if}
 
 {#if !org}
@@ -194,7 +195,7 @@
       {t("ovs.freeze")}
     </button>
     {#if notAllowed}
-      <p class="error" data-testid="not-allowed">{t("ovs.notAllowed")}</p>
+      <ErrorNote testid="not-allowed" message={t("ovs.notAllowed")} />
     {/if}
     {#if packs.length === 0}
       <p class="muted" data-testid="no-packs">{t("ovs.noPacks")}</p>

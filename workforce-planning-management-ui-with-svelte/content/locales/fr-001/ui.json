@@ -2138,5 +2138,15 @@
       "due": "échéance le {date}",
       "reminder": "Un rappel est dû."
     }
+  },
+  "errors": {
+    "network": "Le service est injoignable. Vérifiez votre connexion et réessayez.",
+    "unauthorized": "Vous êtes déconnecté. Reconnectez-vous pour continuer.",
+    "forbidden": "Vous n'êtes pas autorisé à faire cela.",
+    "notFound": "Cet enregistrement est introuvable, ou vous ne pouvez pas le voir.",
+    "conflict": "Cela est en conflit avec l'état actuel",
+    "invalid": "Cela n'a pas été accepté",
+    "server": "Un problème est survenu de notre côté. Réessayez ; s'il persiste, prévenez votre administrateur.",
+    "generic": "Un problème est survenu."
   }
 }

@@ -5,6 +5,8 @@
   readiness is aggregate and no individual is named.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     CHANGE_IMPACTS,
     CHANGE_KINDS,
@@ -86,7 +88,7 @@
   }
 
   const message = (cause: unknown) =>
-    cause instanceof Error ? cause.message : String(cause);
+    errorText(cause);
 
   async function loadDetail() {
     initiative = null;
@@ -137,7 +139,7 @@
 <svelte:head><title>{tf("pages.change.page_title", { change: t("nav.change") })}</title></svelte:head>
 
 <h1>{t("nav.change")}</h1>
-{#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if error}<ErrorNote testid="error" message={error} />{/if}
 <p class="muted">
   {t("pages.change.track_an_automation_or_ai")}
 </p>

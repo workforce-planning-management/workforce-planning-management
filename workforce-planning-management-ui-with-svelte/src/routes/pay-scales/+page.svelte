@@ -5,6 +5,8 @@
   into the lookup is sent, answered and forgotten.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { getPayScale, listPayScales, money, moneyWhole, payPosition } from "#lib/api/wpm.js";
   import { t, tp, i18n, tf } from "#lib/i18n.svelte.js";
   import type { PayLookup, PayScale } from "#lib/api/types.js";
@@ -33,7 +35,7 @@
         const loaded = first ? await getPayScale(first.id) : null;
         if (!stale) scale = loaded;
       } catch (cause) {
-        if (!stale) error = cause instanceof Error ? cause.message : String(cause);
+        if (!stale) error = errorText(cause);
       }
     })();
     return () => {
@@ -95,7 +97,7 @@
         }),
       });
     } catch (cause) {
-      lookupError = cause instanceof Error ? cause.message : String(cause);
+      lookupError = errorText(cause);
     }
   }
 </script>
@@ -123,7 +125,7 @@
 <svelte:head><title>{tf("pages.payScales.page_title", { payScales: t("nav.payScales") })}</title></svelte:head>
 
 <h1>{t("nav.payScales")}</h1>
-{#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
+{#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 {#if scale}
   <p data-testid="pay-scale-source">
@@ -173,7 +175,7 @@
     <button type="submit" data-testid="pay-ask">{t("payScales.ask")}</button>
   </form>
 
-  {#if lookupError}<p class="error" data-testid="pay-lookup-error">{lookupError}</p>{/if}
+  {#if lookupError}<ErrorNote testid="pay-lookup-error" message={lookupError} />{/if}
   {#if lookup}
     <div data-testid="pay-lookup-result">
       {#if lookup.closed_to_new_entrants}

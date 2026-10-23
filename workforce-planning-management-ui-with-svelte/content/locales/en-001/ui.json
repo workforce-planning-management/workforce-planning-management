@@ -2138,5 +2138,15 @@
       "due": "due {date}",
       "reminder": "A reminder is due."
     }
+  },
+  "errors": {
+    "network": "Cannot reach the service. Check your connection and try again.",
+    "unauthorized": "You are signed out. Sign in again to continue.",
+    "forbidden": "You are not allowed to do this.",
+    "notFound": "That record was not found, or you cannot see it.",
+    "conflict": "That conflicts with the current state",
+    "invalid": "That was not accepted",
+    "server": "Something went wrong on our side. Try again; if it keeps happening, tell your administrator.",
+    "generic": "Something went wrong."
   }
 }

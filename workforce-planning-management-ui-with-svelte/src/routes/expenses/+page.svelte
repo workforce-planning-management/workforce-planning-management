@@ -4,6 +4,8 @@
   never lists a person's own claim here, and never lets them decide it.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { expenseQueue, money } from "#lib/api/wpm.js";
   import type { ExpenseClaimSummary } from "#lib/api/types.js";
   import ExpenseClaimView from "#lib/components/ExpenseClaimView.svelte";
@@ -19,7 +21,7 @@
       claims = await expenseQueue(current);
       error = null;
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      error = errorText(cause);
     }
   }
 
@@ -34,7 +36,7 @@
 
 <h1>{t("nav.expenseQueue")}</h1>
 <p class="muted">{t("expenses.queueHint")}</p>
-{#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
+{#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 <p>
   <label>

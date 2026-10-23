@@ -7,6 +7,8 @@
   aggregate and levers are suggestions, never decisions.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import {
     addPlanObjective,
@@ -128,7 +130,7 @@
     await run(() => setPlanStatus(pid, to));
   }
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   const editable = (p: Plan) => p.status !== "archived";
 
   async function loadDetail() {
@@ -298,7 +300,7 @@
 <svelte:head><title>{tf("pages.planning.page_title", { planning: t("nav.planning") })}</title></svelte:head>
 
 <h1>{t("nav.planning")}</h1>
-{#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if error}<ErrorNote testid="error" message={error} />{/if}
 <p class="muted">
   {t("pages.planning.a_plan_is_a_draft_world_of")}
 </p>

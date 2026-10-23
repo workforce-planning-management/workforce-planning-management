@@ -4,6 +4,8 @@
   The reason is the worker's own: a manager or HR is never shown it.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     getMyResignation,
     logMyResignation,
@@ -32,7 +34,7 @@
   let reason = $state("");
   let confirming = $state(false);
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load() {
     try {
@@ -58,7 +60,7 @@
 <section class="panel" data-testid="my-resignation">
   <h2>{t("details.resign.title")}</h2>
   <p class="muted">{t("details.resign.hint")}</p>
-  {#if error}<p class="error" data-testid="resign-error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="resign-error" message={error} />{/if}
   {#if resignation}
     <p data-testid="resign-status">
       {tv(resignation.status)} — {tf("details.resign.logged", { date: resignation.logged_on })}

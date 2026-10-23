@@ -6,6 +6,8 @@
   editor of the organization).
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import {
     listAnnouncements,
@@ -44,7 +46,7 @@
   ]);
 
   const org = $derived(organization || organizationRefs[0] || "");
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load() {
     try {
@@ -89,7 +91,7 @@
 
 <section class="panel" data-testid="announcements">
   <h2>{limit ? t("announcements.latest") : t("nav.announcements")}</h2>
-  {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="error" message={error} />{/if}
   {#if manage}
     <label>
       <input type="checkbox" bind:checked={showAll} data-testid="announcements-all" />

@@ -2885,3 +2885,18 @@ collections:
                   - { name: "recorded", label: "Recorded", widget: string, required: false, i18n: true }
                   - { name: "due", label: "Due", widget: string, required: false, i18n: true }
                   - { name: "reminder", label: "Reminder", widget: string, required: false, i18n: true }
+          - name: "errors"
+            label: "Errors"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "network", label: "Network", widget: string, required: false, i18n: true }
+              - { name: "unauthorized", label: "Unauthorized", widget: string, required: false, i18n: true }
+              - { name: "forbidden", label: "Forbidden", widget: string, required: false, i18n: true }
+              - { name: "notFound", label: "Not Found", widget: string, required: false, i18n: true }
+              - { name: "conflict", label: "Conflict", widget: string, required: false, i18n: true }
+              - { name: "invalid", label: "Invalid", widget: string, required: false, i18n: true }
+              - { name: "server", label: "Server", widget: text, required: false, i18n: true }
+              - { name: "generic", label: "Generic", widget: string, required: false, i18n: true }

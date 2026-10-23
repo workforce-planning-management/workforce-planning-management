@@ -4,6 +4,8 @@
   A request is made here and a person decides it; one awaiting a decision, or approved and not started, can be cancelled.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     cancelMyLeave,
     getMyTimeOff,
@@ -21,7 +23,7 @@
   let endOn = $state("");
   let reason = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   // Cancellable by the worker: awaiting a decision, or approved and not yet started (the service checks too).
   const cancellable = (r: MyTimeOff["requests"][number]) =>
     r.status === "requested" || (r.status === "approved" && view !== null && r.start_on > view.as_of);
@@ -48,7 +50,7 @@
 
 <section class="panel" data-testid="my-time-off">
   <h2>{t("details.time.title")}</h2>
-  {#if error}<p class="error" data-testid="time-error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="time-error" message={error} />{/if}
   {#if view}
     <div class="scroll">
     <table data-testid="time-balances">

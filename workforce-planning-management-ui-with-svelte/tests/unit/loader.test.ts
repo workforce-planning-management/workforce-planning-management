@@ -3,6 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 
+import { errorText } from "../../src/lib/write";
 import { createLoader, latestOnly, messageOf, settleEach } from "../../src/lib/loader.svelte";
 
 /** A promise settled by hand, so a test chooses the order responses arrive in. */
@@ -38,7 +39,8 @@ describe("createLoader", () => {
     expect(loader.error).toBeNull();
     expect(loader.loading).toBe(false);
     await loader.load();
-    expect(loader.error).toBe("down");
+    expect(loader.error).toBe(errorText(new Error("down")));
+    expect(loader.error).not.toContain("down");
     expect(loader.data).toBeNull();
     fail = false;
     await loader.load();
@@ -94,10 +96,10 @@ describe("settleEach", () => {
       },
     });
     expect(out.leave).toEqual({ value: [1, 2], error: null });
-    expect(out.payslips).toEqual({ value: null, error: "payslips down" });
+    expect(out.payslips).toEqual({ value: null, error: errorText(new Error("payslips down")) });
   });
 
-  it("says what a non-Error rejection was", () => {
-    expect(messageOf("plain")).toBe("plain");
+  it("describes a failure in the catalogue's words, never the raw exception", () => {
+    expect(messageOf("plain")).toBe(errorText("plain"));
   });
 });

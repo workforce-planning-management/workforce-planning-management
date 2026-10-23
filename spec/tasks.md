@@ -4172,9 +4172,19 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       one `error` variable (movements, metrics, groups, planning, roles, rota, skills, learning, cpd, change, kanban,
       requisitions, org-chart, benchmarks, and the `src/lib/components/` panels) and need that split first. No Playwright test
       races two slow responses; the guard is covered by the unit test only. Left open (`[~]`).
-- [ ] WPM-T261 **Errors are content.** Every catch goes through `failure()` (`src/lib/write.ts`); status codes 401, 403, 404,
+- [x] WPM-T261 **Errors are content.** Every catch goes through `failure()` (`src/lib/write.ts`); status codes 401, 403, 404,
       409, 422 and 5xx map to `t()` keys in the 13 locales (AI-written, marked unreviewed); one `<ErrorNote>` with
       `role="alert"` replaces the 85 `<p class="error">`. Extend `untranslated.test.ts` to script-side error strings.
+      Done: `errorKey`/`errorText` in `src/lib/write.ts` map 401, 403, 404, 409, 422, 5xx and a network failure to `errors.*` keys
+      in all 13 `-001` locales (AI-written, unreviewed: listed in `content/locales/REVIEW.md`). A 409 or 422 adds the service's own
+      message after the words; a 5xx adds nothing. All 77 catch sites now call `errorText`, `createLoader` too, and `failure()`
+      keeps the 403 "not allowed" apart. `ErrorNote.svelte` (`role="alert"`) replaced all 84 `<p class="error">` (and the one in
+      `WriteResult` and the sign-in page). `untranslated.test.ts` now fails on a script that turns an exception into text itself,
+      on an English sentence assigned to an error, on an error paragraph outside `ErrorNote`, and on a missing `errors.*` key.
+      Verified: 188 unit tests, `svelte-check` clean, prettier clean, 152 Playwright specs (one assertion changed: a refused write
+      now reads the catalogue's words and then the service's message). `pickers.spec.ts` failed once in the full run and passed on
+      rerun with the oversight spec. Not checked: the translations by a speaker of each language; no screenshots were looked at;
+      the pages still showing a raw service message for a 4xx other than 409/422 now show generic words, which loses detail by design.
 - [ ] WPM-T262 **Titles and labels.** `+page.ts` with `pageTitle(...)` for the twelve untitled pages; a label or
       `aria-label={t(...)}` for the about 20 unlabelled controls (`workers/[pid]`, `wellbeing`, `requisitions/[pid]`,
       `movements/[pid]`); move the wellbeing placeholder text into the catalogue. An axe check in Playwright on those pages.

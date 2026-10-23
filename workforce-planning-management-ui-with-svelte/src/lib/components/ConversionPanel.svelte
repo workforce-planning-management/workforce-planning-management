@@ -8,6 +8,8 @@
   plan back. The worker themselves, and a permanent worker with no plan, see nothing.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     CONVERSION_FUNDING_KINDS,
     CONVERSION_INTENTS,
@@ -61,7 +63,7 @@
         if (!current) return;
         plans = null;
         proposeOnly = cause instanceof ApiError && cause.status === 403;
-        error = notTheirs(cause) ? null : cause instanceof Error ? cause.message : String(cause);
+        error = notTheirs(cause) ? null : errorText(cause);
       }
     })();
     return () => {
@@ -83,7 +85,7 @@
       version += 1;
       sent = proposeOnly;
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -190,7 +192,7 @@
     <h2>{t("conversion.title")}</h2>
     <p class="muted">{t("conversion.proposeOnly")}</p>
     {#if actionError}
-      <p class="error" data-testid="conversion-action-error">{actionError}</p>
+      <ErrorNote testid="conversion-action-error" message={actionError} />
     {/if}
     {#if sent}
       <p data-testid="conversion-sent" role="status">{t("conversion.sent")}</p>
@@ -198,13 +200,13 @@
     {@render proposeForm()}
   </section>
 {:else if error}
-  <p class="error" data-testid="conversion-error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="conversion-error" prefixed message={error} />
 {:else if shown && plans}
   <section class="panel" data-testid="conversion">
     <h2>{t("conversion.title")}</h2>
     <p class="muted">{t("conversion.hint")}</p>
     {#if actionError}
-      <p class="error" data-testid="conversion-action-error">{actionError}</p>
+      <ErrorNote testid="conversion-action-error" message={actionError} />
     {/if}
 
     {#if open}

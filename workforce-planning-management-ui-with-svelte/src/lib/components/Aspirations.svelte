@@ -5,6 +5,8 @@
   they have declared today.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import {
     ASPIRATION_HORIZONS,
@@ -36,7 +38,7 @@
   let note = $state("");
   let visibility = $state<Visibility>("private");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load() {
     try {
@@ -80,7 +82,7 @@
 
 <section class="panel" data-testid="aspirations">
   <h2>{t("comp.aspirations.aspirations_and_growth_ideas")}</h2>
-  {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="error" message={error} />{/if}
   {#if !isPerson}
     <p class="muted">{t("comp.aspirations.you_see_only_what_this_person_has")}</p>
   {/if}

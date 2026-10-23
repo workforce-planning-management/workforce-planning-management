@@ -5,6 +5,8 @@
   read with 403). Nothing is derived: the level is what was recorded.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     clearWorkerJobLevel,
     getJobLevelFramework,
@@ -25,7 +27,7 @@
   let choice = $state("");
   let since = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load() {
     try {
@@ -76,7 +78,7 @@
   <section class="panel" data-testid="job-level">
     <h2>{t("grades.workerTitle")}</h2>
     <p class="muted">{t("grades.workerHint")}</p>
-    {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+    {#if error}<ErrorNote testid="error" message={error} />{/if}
     {#if held?.level}
       <p data-testid="job-level-held">
         <strong>{held.level.code}</strong> — {held.level.title}

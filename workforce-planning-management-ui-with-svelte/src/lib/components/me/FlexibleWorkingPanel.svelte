@@ -4,6 +4,8 @@
   computes the dates and never changes a contract (an agreed change of hours is for HR to apply).
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     actOnFlexibleRequest,
     listMyFlexibleRequests,
@@ -24,7 +26,7 @@
   let appealing = $state<string | null>(null);
   let appealNote = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   // States in which the worker can still take the request back (the service decides the rest).
   const withdrawable = (s: string) => s === "requested" || s === "counter_proposed";
 
@@ -51,7 +53,7 @@
 <section class="panel" data-testid="my-flexible-working">
   <h2>{t("details.flex.title")}</h2>
   <p class="muted">{t("details.flex.hint")}</p>
-  {#if error}<p class="error" data-testid="flex-error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="flex-error" message={error} />{/if}
   <ul data-testid="flex-requests">
     {#each requests as r (r.pid)}
       <li data-testid="flex-{r.pid}">

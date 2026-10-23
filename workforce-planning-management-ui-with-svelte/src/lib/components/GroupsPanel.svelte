@@ -5,6 +5,8 @@
   else's record acts on their behalf.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf } from "#lib/i18n.svelte.js";
   import {
     GROUP_KINDS,
@@ -28,7 +30,7 @@
   let name = $state("");
   let kind = $state<string>("practice");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   const kindLabel = (k: string) => (k === "practice" ? t("comp.groupsPanel.kind_practice") : k === "interest" ? t("comp.groupsPanel.kind_interest") : t("comp.groupsPanel.kind_group"));
   const joinable = $derived(all.filter((g) => !mine.some((m) => m.group_pid === g.pid)));
 
@@ -64,7 +66,7 @@
 <section class="panel" data-testid="groups">
   <h2>{t("comp.groupsPanel.groups")}</h2>
   <p class="muted">{tf("comp.groupsPanel.you_can_join_groups_in_and", { organization: organization ?? t("comp.groupsPanel.your_organization") })}</p>
-  {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="error" message={error} />{/if}
   <ul data-testid="my-groups">
     {#each mine as g (g.group_pid)}
       <li>

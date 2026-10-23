@@ -2138,5 +2138,15 @@
       "due": "yn ddyledus {date}",
       "reminder": "Mae nodyn atgoffa'n ddyledus."
     }
+  },
+  "errors": {
+    "network": "Methu cyrraedd y gwasanaeth. Gwiriwch eich cysylltiad a rhowch gynnig arall arni.",
+    "unauthorized": "Rydych wedi allgofnodi. Mewngofnodwch eto i barhau.",
+    "forbidden": "Does gennych ddim hawl i wneud hyn.",
+    "notFound": "Ni ddaethpwyd o hyd i'r cofnod hwnnw, neu ni allwch ei weld.",
+    "conflict": "Mae hynny'n gwrthdaro â'r cyflwr presennol",
+    "invalid": "Ni dderbyniwyd hynny",
+    "server": "Aeth rhywbeth o'i le ar ein hochr ni. Rhowch gynnig arall arni; os digwydd eto, dywedwch wrth eich gweinyddwr.",
+    "generic": "Aeth rhywbeth o'i le."
   }
 }

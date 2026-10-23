@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { expiringTraining, listSuccession, successionGaps } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
   import { createLoader } from "#lib/loader.svelte.js";
@@ -53,7 +54,7 @@
 <h1>{t("nav.development")}</h1>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if succession === null}
   <p>{t("common.loading")}</p>
 {:else}

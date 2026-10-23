@@ -3,6 +3,8 @@
   Replaced as a whole; HR and payroll can read them, a manager cannot; the previous value is not kept.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     clearMyContactDetails,
     getMyContactDetails,
@@ -32,7 +34,7 @@
   function blank(): Record<Field, string> {
     return Object.fromEntries(FIELDS.map((f) => [f, ""])) as Record<Field, string>;
   }
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   function fill(details: MyContactDetails | null) {
     held = details !== null;
@@ -76,7 +78,7 @@
 <section class="panel" data-testid="my-contact-details">
   <h2>{t("details.contact.title")}</h2>
   <p class="muted">{t("details.contact.hint")}</p>
-  {#if error}<p class="error" data-testid="contact-error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="contact-error" message={error} />{/if}
   <form
     onsubmit={(event) => {
       event.preventDefault();

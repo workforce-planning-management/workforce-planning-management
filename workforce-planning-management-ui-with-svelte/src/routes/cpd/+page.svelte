@@ -5,6 +5,8 @@
   units (hours or points).
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     CPD_CATEGORIES,
     CPD_UNITS,
@@ -64,7 +66,7 @@
   let entryUrl = $state("");
 
   const message = (cause: unknown) =>
-    cause instanceof Error ? cause.message : String(cause);
+    errorText(cause);
 
   async function loadShared() {
     try {
@@ -278,7 +280,7 @@
 {/snippet}
 
 <h1>{t("nav.cpd")}</h1>
-{#if error}<p class="error" data-testid="error">{error}</p>{/if}
+{#if error}<ErrorNote testid="error" message={error} />{/if}
 
 {#if overview}
   <h2>{t("pages.cpd.across_the_workforce")}</h2>

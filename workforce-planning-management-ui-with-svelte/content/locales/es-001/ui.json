@@ -2138,5 +2138,15 @@
       "due": "vence el {date}",
       "reminder": "Hay un recordatorio pendiente."
     }
+  },
+  "errors": {
+    "network": "No se puede acceder al servicio. Compruebe su conexión e inténtelo de nuevo.",
+    "unauthorized": "Ha cerrado sesión. Inicie sesión de nuevo para continuar.",
+    "forbidden": "No tiene permiso para hacer esto.",
+    "notFound": "No se encontró ese registro, o no puede verlo.",
+    "conflict": "Eso entra en conflicto con el estado actual",
+    "invalid": "Eso no fue aceptado",
+    "server": "Algo salió mal por nuestra parte. Inténtelo de nuevo; si sigue ocurriendo, avise a su administrador.",
+    "generic": "Algo salió mal."
   }
 }

@@ -163,3 +163,44 @@ describe("every server vocabulary token has a value entry", () => {
     expect(missing, missing.join(", ")).toEqual([]);
   });
 });
+
+describe("a failure is shown from the catalogue (WPM-T261)", () => {
+  const sources = walk(join(root, "src"), (f) => /\.(svelte|ts)$/.test(f)).filter(
+    (f) => !f.endsWith("write.ts"),
+  );
+
+  it("no script turns an exception into text itself", () => {
+    const offenders = sources.filter((file) =>
+      /instanceof Error \?|String\((cause|e|err|error)\)|\b(cause|err)\.message/.test(
+        readFileSync(file, "utf8"),
+      ),
+    );
+    expect(
+      offenders.map((f) => relative(root, f)),
+      "use errorText(cause) from #lib/write",
+    ).toEqual([]);
+  });
+
+  it("no script assigns an English sentence to an error", () => {
+    const offenders = sources.filter((file) =>
+      /\b\w*[eE]rror = ["'`][^"'`]*[ a-z][^"'`]*["'`]/.test(readFileSync(file, "utf8")),
+    );
+    expect(offenders.map((f) => relative(root, f))).toEqual([]);
+  });
+
+  it("only ErrorNote draws an error paragraph", () => {
+    const offenders = sources.filter(
+      (f) => !f.endsWith("ErrorNote.svelte") && /class="error"/.test(readFileSync(f, "utf8")),
+    );
+    expect(offenders.map((f) => relative(root, f))).toEqual([]);
+  });
+
+  it("every status the UI distinguishes has words in every -001 locale", () => {
+    const keys = ["network", "unauthorized", "forbidden", "notFound", "conflict", "invalid", "server", "generic"];
+    for (const locale of readdirSync(locales).filter((l) => l.endsWith("-001"))) {
+      const have = catalogue(locale);
+      const missing = keys.filter((k) => !have[`errors.${k}`]);
+      expect(missing, locale).toEqual([]);
+    }
+  });
+});

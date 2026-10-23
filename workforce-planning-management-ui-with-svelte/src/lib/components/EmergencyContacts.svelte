@@ -5,6 +5,8 @@
   the read with 403).
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     addEmergencyContact,
     listEmergencyContacts,
@@ -26,7 +28,7 @@
   let email = $state("");
   let note = $state("");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load() {
     try {
@@ -62,7 +64,7 @@
   <section class="panel" data-testid="emergency-contacts">
     <h2>{t("contacts.title")}</h2>
     <p class="muted">{t("contacts.hint")}</p>
-    {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+    {#if error}<ErrorNote testid="error" message={error} />{/if}
     <ol data-testid="contact-list">
       {#each contacts as c (c.pid)}
         <li>

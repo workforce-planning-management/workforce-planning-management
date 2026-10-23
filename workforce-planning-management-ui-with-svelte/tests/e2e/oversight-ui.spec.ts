@@ -682,8 +682,12 @@ test.describe("entering capacity", () => {
     await page.goto("/capacity");
     await page.getByTestId("pool-name").fill("x");
     await page.getByTestId("create-pool").click();
-    await expect(page.getByTestId("write-error")).toHaveText(
+    // The catalogue's words for a refusal, then the service's own message naming what was refused.
+    await expect(page.getByTestId("write-error")).toContainText(
       "name must not be blank",
+    );
+    await expect(page.getByTestId("write-error")).toContainText(
+      "That was not accepted",
     );
   });
 

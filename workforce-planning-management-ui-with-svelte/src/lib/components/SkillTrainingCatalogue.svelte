@@ -6,6 +6,8 @@
   catalogue (the service enforces it).
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     addSkillCourse,
     listSkills,
@@ -27,7 +29,7 @@
   let hours = $state<number | null>(null);
   let levels = $state(1);
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   $effect(() => {
     void (async () => {
@@ -69,7 +71,7 @@
 
 <section class="panel" data-testid="skill-catalogue">
   <h2>{t("training.catalogueTitle")}</h2>
-  {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="error" message={error} />{/if}
   <select bind:value={chosen} data-testid="catalogue-skill" aria-label={t("nav.skills")}>
     <option value="" disabled>{t("training.pickSkill")}</option>
     {#each skills as s (s.pid)}<option value={s.pid}>{s.name}</option>{/each}

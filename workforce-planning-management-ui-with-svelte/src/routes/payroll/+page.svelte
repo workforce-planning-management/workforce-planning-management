@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { listRuns } from "#lib/api/wpm.js";
   import { t, l, tv } from "#lib/i18n.svelte.js";
   import { createLoader } from "#lib/loader.svelte.js";
@@ -47,7 +48,7 @@
 <h1>{t("nav.payroll")}</h1>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if runs === null}
   <p>{t("common.loading")}</p>
 {:else}

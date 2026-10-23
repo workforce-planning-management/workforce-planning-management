@@ -4,6 +4,8 @@
   only whether I am cleared. No reason is held. Off unless a deployer enables it.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { getMyHealthRequirements, type MyHealthRequirements } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
 
@@ -15,7 +17,7 @@
       try {
         view = await getMyHealthRequirements();
       } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = errorText(cause);
       }
     })();
   });
@@ -23,7 +25,7 @@
 
 <section class="panel" data-testid="my-health">
   <h2>{t("details.health.title")}</h2>
-  {#if error}<p class="error" data-testid="health-error">{error}</p>{/if}
+  {#if error}<ErrorNote testid="health-error" message={error} />{/if}
   {#if view && !view.enabled}
     <p class="muted" data-testid="health-off">{t("details.health.off")}</p>
   {:else if view?.enabled}

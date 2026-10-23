@@ -5,6 +5,8 @@
   Counts only: nobody is named, and private aspirations are never included.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { trainingDemand, workforceSkillGaps } from "#lib/api/wpm.js";
   import type { TrainingDemand, WorkforceSkillGap } from "#lib/api/types.js";
   import SkillTrainingCatalogue from "#lib/components/SkillTrainingCatalogue.svelte";
@@ -38,7 +40,7 @@
           ...new Set([...departments, ...result.skills.flatMap((s) => s.departments.map((d) => d.department))]),
         ].sort((a, b) => a.localeCompare(b));
       } catch (cause) {
-        if (current) error = cause instanceof Error ? cause.message : String(cause);
+        if (current) error = errorText(cause);
       }
     })();
     return () => {
@@ -89,7 +91,7 @@
 
 <h1>{t("skillgaps.workforceTitle")}</h1>
 <p class="muted">{t("skillgaps.hint")}</p>
-{#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
+{#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 <p>
   <select bind:value={department} data-testid="gaps-department" aria-label={t("common.department")}>

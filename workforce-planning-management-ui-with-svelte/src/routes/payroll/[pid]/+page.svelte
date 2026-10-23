@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import { getRun, money, runAction, runPayslips } from "#lib/api/wpm.js";
   import { i18n, t, l, tv } from "#lib/i18n.svelte.js";
@@ -43,7 +45,7 @@
       await runAction(pid, action);
       await load();
     } catch (cause) {
-      actionError = cause instanceof Error ? cause.message : String(cause);
+      actionError = errorText(cause);
     }
   }
 
@@ -86,7 +88,7 @@
 {/snippet}
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if run === null}
   <p>{t("common.loading")}</p>
 {:else}
@@ -101,7 +103,7 @@
       </button>
     {/each}
     {#if actionError}
-      <p class="error" data-testid="action-error">{actionError}</p>
+      <ErrorNote testid="action-error" message={actionError} />
     {/if}
   </div>
 

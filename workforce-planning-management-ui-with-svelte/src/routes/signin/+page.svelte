@@ -5,6 +5,7 @@
   No token is held in the browser.
 -->
 <script lang="ts">
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { l, t } from "#lib/i18n.svelte.js";
   import type { ActionData } from "./$types";
   import { enhance } from "$app/forms";
@@ -31,9 +32,7 @@
       <button class="primary" type="submit">{t("pages.signin.send_magic_link")}</button>
     </form>
     {#if form?.error}
-      <p class="error" role="alert">
-        {t("pages.signin.could_not_send_the_sign_in_link")}
-      </p>
+      <ErrorNote message={t("pages.signin.could_not_send_the_sign_in_link")} />
     {/if}
     {#if data.demo}
       <p class="muted" data-testid="demo-hint">{t("demo.signinHint")}</p>

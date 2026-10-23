@@ -6,6 +6,8 @@
   here only as the absence of Approve.
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { createExpenseClaim, listExpenseClaims, money } from "#lib/api/wpm.js";
   import { ApiError } from "#lib/api/client.js";
   import type { ExpenseClaimSummary } from "#lib/api/types.js";
@@ -30,7 +32,7 @@
   let title = $state("");
   let currency = $state("GBP");
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   async function load() {
     try {
@@ -69,7 +71,7 @@
   <section class="panel" data-testid="expense-claims">
     <h2>{t("expenses.title")}</h2>
     <p class="muted">{t("expenses.panelHint")}</p>
-    {#if error}<p class="error" data-testid="error">{error}</p>{/if}
+    {#if error}<ErrorNote testid="error" message={error} />{/if}
     {#if claims.length === 0}
       <p class="muted" data-testid="expense-none">{t("expenses.none")}</p>
     {:else}

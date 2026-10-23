@@ -5,6 +5,8 @@
   skills are read for the chosen organization (a named read is a separate, audited route).
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     governanceLoad,
     keyPersonRisk,
@@ -25,7 +27,7 @@
   let peopleError = $state<string | null>(null);
   let loadError = $state<string | null>(null);
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
 
   $effect(() => {
     const chosen = org;
@@ -101,7 +103,7 @@
   {#if !org}
     <p class="muted">{t("common.noOrganization")}</p>
   {:else if peopleError}
-    <p class="error" data-testid="error">{t("common.error")}: {peopleError}</p>
+    <ErrorNote testid="error" prefixed message={peopleError} />
   {:else if people === null}
     <p>{t("common.loading")}</p>
   {:else}
@@ -135,7 +137,7 @@
   {#if !org}
     <p class="muted">{t("common.noOrganization")}</p>
   {:else if loadError}
-    <p class="error" data-testid="error">{t("common.error")}: {loadError}</p>
+    <ErrorNote testid="error" prefixed message={loadError} />
   {:else if load === null}
     <p>{t("common.loading")}</p>
   {:else if load.commitments === 0}

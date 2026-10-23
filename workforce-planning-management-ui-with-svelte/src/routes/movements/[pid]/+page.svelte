@@ -7,6 +7,8 @@
   says what is left).
 -->
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import {
     addMovementItem,
@@ -39,7 +41,7 @@
   // The chosen new holder per held item.
   let target = $state<Record<string, string>>({});
 
-  const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
+  const message = (cause: unknown) => (errorText(cause));
   const colleagues = $derived(
     people.filter((p) => p.organization_ref === movement?.organization_ref && p.pid !== movement?.worker_pid),
   );
@@ -102,7 +104,7 @@
 
 <svelte:head><title>{tf("pages.movementsPid.page_title", { movements: t("nav.movements") })}</title></svelte:head>
 
-{#if error}<p class="error" data-testid="error">{t("common.error")}: {error}</p>{/if}
+{#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 {#if movement}
   <h1>

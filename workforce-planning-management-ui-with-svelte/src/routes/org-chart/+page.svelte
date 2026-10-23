@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { errorText } from "#lib/write.js";
+  import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
   import { orgChart, orgChartSize } from "#lib/api/wpm.js";
   import { t, tf, l } from "#lib/i18n.svelte.js";
@@ -52,7 +54,7 @@
           ),
         );
       } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = errorText(cause);
       }
     })();
   });
@@ -61,7 +63,7 @@
 <h1>{t("nav.orgChart")}</h1>
 
 {#if error}
-  <p class="error" data-testid="error">{t("common.error")}: {error}</p>
+  <ErrorNote testid="error" prefixed message={error} />
 {:else if byOrganization === null}
   <p>{t("common.loading")}</p>
 {:else if organizationRefs.length === 0}
