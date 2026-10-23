@@ -4096,8 +4096,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       reads that follow its first read, so a plan could not be built before the transaction without changing what is locked.
       `catalogue.rs` is still the largest section at 709 lines.
       Verified: clippy pedantic clean, 621 unit tests, the `--ignored` suite (116), unchanged.
-- [ ] WPM-T256 **Dependency hygiene.** `reqwest` 0.13 to match the verifier; drop `sqlx-sqlite`; one `sha2` major if the
+- [x] WPM-T256 (2026-10-23) **Dependency hygiene.** `reqwest` 0.13 to match the verifier; drop `sqlx-sqlite`; one `sha2` major if the
       upstream allows. `cargo tree -d` before and after in the task note.
+      Done: `reqwest` is 0.13 (feature `rustls`, as the verifier uses), so the 0.12 copy is gone; `sqlx-sqlite` is dropped from
+      the `sea-orm` features and is out of the tree. `cargo tree -d`: 92 duplicate entries before, 90 after. `sha2` stays at two
+      majors (0.10 comes from `sqlx-core` and `ed25519-dalek`, which the service does not control); the service's own 0.11 stays.
+      Verified: clippy clean, 621 unit tests, the `--ignored` suite (116).
+      **Found, not fixed:** `cargo deny check advisories` fails on RUSTSEC-2026-0385 (`ctutils` 0.4.3, via `digest` 0.11; the
+      same version is in the committed lock, so a newly published advisory, not this change), and `deny.toml` carries about ten
+      ignore entries that no crate matches any more. Both want their own task.
 - [ ] WPM-T257 **The matcher follows the house lints and is built from the sibling.** `#![forbid(unsafe_code)]`,
       `#![warn(clippy::pedantic)]`, `#![deny(missing_docs)]` (or a `[lints]` table); annotate `scorer.rs:16`; unit tests for
       `record.rs` and `error.rs`; a `[patch.crates-io]` path override in the service for development.

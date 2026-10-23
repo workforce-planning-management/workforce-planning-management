@@ -53,7 +53,6 @@ tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 migration = { package = "workforce-planning-management-migration", path = "migration", version = "0.1.3" }
 sea-orm = { version = "2.0", features = [
-  "sqlx-sqlite",
   "sqlx-postgres",
   "runtime-tokio-rustls",
   "macros",
@@ -64,8 +63,8 @@ mimalloc = { version = "0.1.52" }
 prometheus = { version = "0.14" }
 # Upstream display-name lookups (`http` client mode only; stub is the
 # default). Same minimal reqwest configuration as the verifier's fetch.
-reqwest = { version = "0.12", default-features = false, features = [
-  "rustls-tls",
+reqwest = { version = "0.13", default-features = false, features = [
+  "rustls",
   "json",
 ] }
 
