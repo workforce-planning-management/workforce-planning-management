@@ -27,6 +27,8 @@ Read the long texts first: they carry meaning (an unknown is never a pass; the g
 
 The 2026-10-21 additions (86 keys for the My details page and eight status words) were written by the same assistant, also unreviewed. The equality and health notices on that page are the service's English text.
 
+The 2026-10-23 additions (the `errors.*` keys: eight sentences saying what a failed call means) were written by the same assistant, also unreviewed.
+
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.
 
