@@ -105,3 +105,39 @@ async fn benefit_plan_list_paginates() {
     })
     .await;
 }
+
+/// The whole-service and whole-organization lists page the same way (WPM-T254): the body stays
+/// a plain array, the headers say how many there are, and a deep offset is a `400`.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn org_lists_carry_paging_headers_and_refuse_a_deep_offset() {
+    crate::requests::request_open(|request, _ctx| async move {
+        for path in [
+            "/api/movements",
+            "/api/requisitions",
+            "/api/payroll-runs",
+            "/api/resignations",
+            "/api/expense-claims",
+            "/api/flexible-working",
+            "/api/conversion-plans",
+        ] {
+            let page = request.get(&format!("{path}?limit=1")).await;
+            assert_eq!(page.status_code(), 200, "{path}");
+            assert!(
+                page.json::<Value>().is_array(),
+                "{path} stays a plain array"
+            );
+            assert_eq!(header!(page, "x-limit"), "1", "{path}");
+            assert_eq!(header!(page, "x-offset"), "0", "{path}");
+            assert!(
+                header!(page, "x-total-count").parse::<u64>().is_ok(),
+                "{path}"
+            );
+
+            let deep = request.get(&format!("{path}?offset=10001")).await;
+            assert_eq!(deep.status_code(), 400, "{path}: offset past MAX_OFFSET");
+        }
+    })
+    .await;
+}

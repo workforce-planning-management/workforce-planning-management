@@ -245,7 +245,9 @@ async fn list_movements(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axum::extract::Query(q): axum::extract::Query<ListQuery>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     let wanted = q.status.unwrap_or_else(|| "open".to_string());
     let mut query = movements::Entity::find().filter(movements::Column::Status.eq(wanted));
     if let Some(kind) = &q.kind {
@@ -276,7 +278,7 @@ async fn list_movements(
             .collect();
         out.push(movement_json(&m, &worker, rules::progress(&states)));
     }
-    format::json(out)
+    super::paged_vec(out, window)
 }
 
 /// `GET /api/movements/{pid}` — a movement with its checklist.

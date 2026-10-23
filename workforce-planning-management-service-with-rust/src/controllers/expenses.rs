@@ -603,7 +603,9 @@ async fn queue(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axum::extract::Query(params): axum::extract::Query<QueueParams>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     let status = params.status.unwrap_or_else(|| "submitted".to_string());
     if !rules::STATUSES.contains(&status.as_str()) {
         return Err(unprocessable(&format!(
@@ -682,7 +684,7 @@ async fn queue(
         row["worker_name"] = json!(names.get(&c.worker_pid));
         out.push(row);
     }
-    format::json(out)
+    super::paged_vec(out, window)
 }
 
 /// The expense-claim routes.

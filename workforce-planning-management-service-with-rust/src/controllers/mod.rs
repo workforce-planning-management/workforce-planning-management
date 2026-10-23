@@ -308,9 +308,98 @@ pub fn with_page_headers(mut response: Response, total: u64, limit: u64, offset:
     response
 }
 
+/// Default page size of a whole-organization or whole-service list (WPM-T254). It matches the
+/// ceiling those lists already had, so a client that sends no `limit` sees what it saw; past it,
+/// `x-total-count` says how many there are.
+pub(crate) const LIST_DEFAULT_LIMIT: u64 = 500;
+
+/// The `(limit, offset)` of a list request, refusing an offset past [`MAX_OFFSET`].
+///
+/// # Errors
+///
+/// A `400` for an out-of-bound offset.
+pub(crate) fn window(page: Page) -> Result<(u64, u64)> {
+    page.check_offset()?;
+    Ok(page.resolve(LIST_DEFAULT_LIMIT))
+}
+
+/// One page of an already-built list, with the paging headers. For lists whose rows are
+/// filtered by a rule the database cannot apply.
+///
+/// # Errors
+///
+/// When the page does not serialize.
+pub(crate) fn paged_vec<T: serde::Serialize>(
+    items: Vec<T>,
+    (limit, offset): (u64, u64),
+) -> Result<Response> {
+    let total = items.len() as u64;
+    let page: Vec<T> = items
+        .into_iter()
+        .skip(usize::try_from(offset).unwrap_or(usize::MAX))
+        .take(usize::try_from(limit).unwrap_or(usize::MAX))
+        .collect();
+    Ok(with_page_headers(format::json(page)?, total, limit, offset))
+}
+
+/// One page of `select`, counted and cut by the database, each row shown by `show`. `select`
+/// must already be ordered, or a page is not stable.
+///
+/// # Errors
+///
+/// A database error.
+pub(crate) async fn paged_select<E, V>(
+    ctx: &AppContext,
+    select: sea_orm::Select<E>,
+    (limit, offset): (u64, u64),
+    show: impl Fn(&E::Model) -> Result<V>,
+) -> Result<Response>
+where
+    E: sea_orm::EntityTrait,
+    E::Model: Sync,
+    V: serde::Serialize,
+{
+    use sea_orm::{PaginatorTrait, QuerySelect};
+    let total = select.clone().count(&ctx.db).await?;
+    let rows = select.limit(limit).offset(offset).all(&ctx.db).await?;
+    let shown = rows.iter().map(show).collect::<Result<Vec<V>>>()?;
+    Ok(with_page_headers(
+        format::json(shown)?,
+        total,
+        limit,
+        offset,
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::row_json;
+
+    #[test]
+    fn a_window_clamps_and_refuses_a_deep_offset() {
+        use super::{Page, window};
+        let page = |limit, offset| Page { limit, offset };
+        assert_eq!(window(page(None, None)).unwrap(), (500, 0));
+        assert_eq!(window(page(Some(0), Some(5))).unwrap(), (500, 5));
+        assert_eq!(window(page(Some(9_999), None)).unwrap(), (500, 0));
+        assert_eq!(window(page(Some(20), Some(40))).unwrap(), (20, 40));
+        assert!(window(page(None, Some(u64::MAX))).is_err());
+    }
+
+    #[test]
+    fn a_vec_page_is_cut_after_the_total_is_counted() {
+        use axum::http::header::HeaderName;
+        let response = super::paged_vec(vec![1, 2, 3, 4, 5], (2, 1)).unwrap();
+        let header = |n: &'static str| {
+            response.headers()[HeaderName::from_static(n)]
+                .to_str()
+                .unwrap()
+                .to_string()
+        };
+        assert_eq!(header("x-total-count"), "5");
+        assert_eq!(header("x-limit"), "2");
+        assert_eq!(header("x-offset"), "1");
+    }
 
     #[test]
     fn a_row_answers_without_its_surrogate_key_or_deletion_mark() {

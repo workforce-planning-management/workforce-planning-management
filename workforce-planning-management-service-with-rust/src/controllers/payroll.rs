@@ -109,17 +109,23 @@ async fn create_run(
 
 /// `GET /api/payroll-runs`.
 #[debug_handler]
-async fn list_runs(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
+async fn list_runs(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
+) -> Result<Response> {
+    let window = super::window(page)?;
     let mut query = payroll_runs::Entity::find().filter(payroll_runs::Column::DeletedAt.is_null());
     if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
         query = query.filter(payroll_runs::Column::OrganizationRef.is_in(refs));
     }
-    let rows = query
-        .order_by_asc(payroll_runs::Column::Id)
-        .limit(200)
-        .all(&ctx.db)
-        .await?;
-    format::json(rows)
+    super::paged_select(
+        &ctx,
+        query.order_by_asc(payroll_runs::Column::Id),
+        window,
+        row_json,
+    )
+    .await
 }
 
 /// `GET /api/payroll-runs/{pid}`.

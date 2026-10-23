@@ -331,18 +331,18 @@ async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axum::extract::Query(q): axum::extract::Query<OrgQuery>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     let org = q
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
-    let rows = cutovers::Entity::find()
+    let select = cutovers::Entity::find()
         .filter(cutovers::Column::OrganizationRef.eq(&org))
         .order_by_asc(cutovers::Column::WindowStart)
-        .order_by_asc(cutovers::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    format::json(rows.iter().map(cutover_json).collect::<Vec<_>>())
+        .order_by_asc(cutovers::Column::Id);
+    super::paged_select(&ctx, select, window, |c| Ok(cutover_json(c))).await
 }
 
 /// The trained-staff check: for each required role, the people of the role at the site who completed

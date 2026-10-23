@@ -4074,10 +4074,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `GROUP BY` for `groups.rs:80 member_counts`; filtered reads for `intelligence.rs:653` and `:729`. Seed-200k measurement
       before and after, recorded in `BENCHMARKS.md` (WPM-R142).
       Part 1 done (2026-10-23): `groups.rs member_counts` is a `GROUP BY` in the database, not every membership row counted in Rust
-      (the three group request tests pass; clippy clean). **Still open:** `Page` and `check_offset` on the about 68 unpaged
-      lists (a default limit changes what each list returns, so each needs its UI caller checked), the filtered reads in
-      `intelligence.rs` (`succession`, `pipelines` load every candidate and member, then filter per plan in Rust), and the
-      seed-200k before/after in `BENCHMARKS.md`. This task stays open.
+      (the three group request tests pass; clippy clean).
+      Part 2 done (2026-10-23): the whole-service and whole-organization lists page: `controllers::{window, paged_select, paged_vec}`
+      with `LIST_DEFAULT_LIMIT` 500 (what the capped lists already returned), `x-total-count`/`x-limit`/`x-offset`, and a `400` past
+      `MAX_OFFSET`. Counted and cut in SQL: cutovers, requisitions, payroll runs, organization confederations, oversight packs,
+      a worker's notifications (unread first, then newest). Cut after the per-row scope or role filter, which the database cannot
+      apply: movements, resignations, flexible working, conversion plans, the expense queue. The body is still a plain array
+      (the object for packs), so no UI caller changes: the UI's `wpm.ts` calls pass no `limit` and read no headers, so each list
+      page shows its first 500. Verified: clippy clean, 619 unit tests, `--ignored` suite 116 incl. the new
+      `org_lists_carry_paging_headers_and_refuse_a_deep_offset`.
+      **Still open:** per-worker lists (bounded by one person's history, left unpaged on purpose); the early-warning list (its
+      totals cover all rows); the filtered reads in `intelligence.rs` (`succession`, `pipelines`); the UI has no "more" control past
+      500; the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run). This task stays open for those.
 - [ ] WPM-T255 **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
       plan-builder out of `handover::apply` (235 lines) and `lms::apply` (178).
 - [ ] WPM-T256 **Dependency hygiene.** `reqwest` 0.13 to match the verifier; drop `sqlx-sqlite`; one `sha2` major if the

@@ -327,7 +327,9 @@ async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     let status = query.status.unwrap_or_else(|| "logged".to_string());
     if Status::parse(&status).is_none() {
         return Err(unprocessable(
@@ -362,7 +364,7 @@ async fn list(
         item["department"] = json!(worker.department);
         out.push(item);
     }
-    format::json(out)
+    super::paged_vec(out, window)
 }
 
 /// `GET /api/resignations/summary` — resignations by department and, where every cell is large

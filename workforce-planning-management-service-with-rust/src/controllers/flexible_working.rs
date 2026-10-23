@@ -625,7 +625,9 @@ async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     if let Some(s) = &query.status
         && Status::parse(s).is_none()
     {
@@ -671,7 +673,7 @@ async fn list(
         item["department"] = json!(worker.department);
         out.push(item);
     }
-    format::json(out)
+    super::paged_vec(out, window)
 }
 
 /// `GET /api/workers/{pid}/flexible-working` — the worker's requests, for the worker, their line

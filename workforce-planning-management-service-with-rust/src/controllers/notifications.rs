@@ -4,6 +4,7 @@
 
 use super::row_json;
 use loco_rs::prelude::*;
+use sea_orm::sea_query::ExprTrait;
 use sea_orm::{ActiveValue, QueryOrder};
 
 use super::record_rejection;
@@ -18,7 +19,9 @@ async fn list_notifications(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
@@ -26,13 +29,12 @@ async fn list_notifications(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let mut rows = notifications::Entity::find()
+    // Unread first, then newest first.
+    let select = notifications::Entity::find()
         .filter(notifications::Column::WorkerPid.eq(worker.pid))
-        .order_by_desc(notifications::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    rows.sort_by_key(|n| n.read_at.is_some());
-    format::json(rows)
+        .order_by_asc(sea_orm::sea_query::Expr::col(notifications::Column::ReadAt).is_not_null())
+        .order_by_desc(notifications::Column::Id);
+    super::paged_select(&ctx, select, window, row_json).await
 }
 
 /// `POST /api/notifications/{pid}/read` — mark one notification read.

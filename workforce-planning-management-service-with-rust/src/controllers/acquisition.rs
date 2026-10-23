@@ -237,7 +237,9 @@ async fn list_requisitions(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Query(params): Query<RequisitionListParams>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     let mut query = requisitions::Entity::find().filter(requisitions::Column::DeletedAt.is_null());
     if let Some(status) = &params.status {
         query = query.filter(requisitions::Column::Status.eq(status));
@@ -245,12 +247,13 @@ async fn list_requisitions(
     if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
         query = query.filter(requisitions::Column::OrganizationRef.is_in(refs));
     }
-    let rows = query
-        .order_by_asc(requisitions::Column::Id)
-        .limit(500)
-        .all(&ctx.db)
-        .await?;
-    format::json(rows)
+    super::paged_select(
+        &ctx,
+        query.order_by_asc(requisitions::Column::Id),
+        window,
+        row_json,
+    )
+    .await
 }
 
 /// `GET /api/requisitions/{pid}`.

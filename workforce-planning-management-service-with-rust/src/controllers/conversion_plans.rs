@@ -113,7 +113,9 @@ async fn list_open(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     let as_of = Utc::now().date_naive();
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
     let in_scope = |w: &workers::Model| {
@@ -164,7 +166,7 @@ async fn list_open(
         None,
     )
     .await?;
-    format::json(out)
+    super::paged_vec(out, window)
 }
 
 /// `POST …/conversion-plans` body.

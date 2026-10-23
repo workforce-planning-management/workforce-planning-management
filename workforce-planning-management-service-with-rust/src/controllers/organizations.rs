@@ -435,7 +435,9 @@ struct ConfederationListQuery {
 async fn list_confederations(
     State(ctx): State<AppContext>,
     Query(query): Query<ConfederationListQuery>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     let mut find = organization_confederations::Entity::find()
         .filter(organization_confederations::Column::DeletedAt.is_null());
     match (
@@ -462,15 +464,13 @@ async fn list_confederations(
             }
         }
     }
-    let rows = find
-        .order_by_asc(organization_confederations::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    format::json(
-        rows.into_iter()
-            .map(ConfederationView::from)
-            .collect::<Vec<_>>(),
+    super::paged_select(
+        &ctx,
+        find.order_by_asc(organization_confederations::Column::Id),
+        window,
+        |row| Ok(ConfederationView::from(row.clone())),
     )
+    .await
 }
 
 /// `POST /api/organization-confederations` body.

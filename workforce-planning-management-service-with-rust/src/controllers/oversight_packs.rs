@@ -200,14 +200,19 @@ async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axum::extract::Query(q): axum::extract::Query<OrgQuery>,
+    axum::extract::Query(page): axum::extract::Query<super::Page>,
 ) -> Result<Response> {
+    let window = super::window(page)?;
     let org = q
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
-    let rows = packs::Entity::find()
+    let select = packs::Entity::find()
         .filter(packs::Column::OrganizationRef.eq(&org))
-        .order_by_desc(packs::Column::Id)
+        .order_by_desc(packs::Column::Id);
+    let total = sea_orm::PaginatorTrait::count(select.clone(), &ctx.db).await?;
+    let (limit, offset) = window;
+    let rows = sea_orm::QuerySelect::offset(sea_orm::QuerySelect::limit(select, limit), offset)
         .all(&ctx.db)
         .await?;
     let mut out = Vec::new();
@@ -217,7 +222,12 @@ async fn list(
             "pid": p.pid, "as_of": p.as_of, "month": p.month, "withdrawn": withdrawn_json(w.as_ref()),
         }));
     }
-    format::json(json!({ "organization_ref": org, "packs": out }))
+    Ok(super::with_page_headers(
+        format::json(json!({ "organization_ref": org, "packs": out }))?,
+        total,
+        limit,
+        offset,
+    ))
 }
 
 async fn pack_in_scope(
