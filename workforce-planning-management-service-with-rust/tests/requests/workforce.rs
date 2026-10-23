@@ -454,3 +454,57 @@ async fn working_time_window_edges_and_rollup_follow_the_entries() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn an_unassigned_shift_seat_and_an_ended_benefit_enrolment_leave_their_lists() {
+    use serde_json::{Value, json};
+
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = super::an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let worker = super::seed_worker!(&request, &org, format!("UN-{tag}"), None).await;
+        super::activate!(&request, &worker).await;
+
+        // A shift seat, then unassigned: a second delete is a 404.
+        let day = chrono::Utc::now().date_naive() + chrono::Duration::days(30);
+        let starts = day.and_hms_opt(9, 0, 0).unwrap().and_utc().to_rfc3339();
+        let ends = day.and_hms_opt(17, 0, 0).unwrap().and_utc().to_rfc3339();
+        let shift: Value = request
+            .post("/api/shifts")
+            .json(&json!({ "department": "engineering", "starts_at": starts, "ends_at": ends, "required_headcount": 1 }))
+            .await
+            .json();
+        let shift = shift["pid"].as_str().unwrap().to_string();
+        let seat: Value = request
+            .post(&format!("/api/shifts/{shift}/assignments"))
+            .json(&json!({ "worker_pid": worker }))
+            .await
+            .json();
+        let seat = seat["pid"].as_str().unwrap().to_string();
+        request.delete(&format!("/api/shift-assignments/{seat}")).await.assert_status_ok();
+        assert_eq!(request.delete(&format!("/api/shift-assignments/{seat}")).await.status_code(), 404);
+
+        // A benefit enrolment, then ended: it leaves the worker's list.
+        let plan: Value = request
+            .post("/api/benefit-plans")
+            .json(&json!({ "name": format!("Plan {tag}"), "kind": "pension", "provider": "Demo Provider",
+                           "worker_cost_minor": 100, "employer_cost_minor": 200, "currency": "GBP" }))
+            .await
+            .json();
+        let enrolled: Value = request
+            .post(&format!("/api/workers/{worker}/benefit-enrollments"))
+            .json(&json!({ "plan_pid": plan["pid"], "starts_on": "2026-01-01" }))
+            .await
+            .json();
+        let enrolment = enrolled["pid"].as_str().unwrap().to_string();
+        let listed: Vec<Value> = request.get(&format!("/api/workers/{worker}/benefit-enrollments")).await.json();
+        assert!(listed.iter().any(|e| e["pid"] == enrolment.as_str()));
+        request.delete(&format!("/api/benefit-enrollments/{enrolment}")).await.assert_status_ok();
+        let listed: Vec<Value> = request.get(&format!("/api/workers/{worker}/benefit-enrollments")).await.json();
+        assert!(!listed.iter().any(|e| e["pid"] == enrolment.as_str()));
+        assert_eq!(request.delete(&format!("/api/benefit-enrollments/{enrolment}")).await.status_code(), 404);
+    })
+    .await;
+}

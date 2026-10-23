@@ -4119,6 +4119,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `change.rs` ×3, `handover.rs`, `audits.rs`, `expenses.rs` withdraw, `hr_core.rs`, `workforce.rs`); a route-coverage test
       that fails on a route no request test calls; more unit tests for `benchmark.rs`, `tokens.rs`, `audit_export.rs`,
       `adjustments.rs`, `framework_roles.rs` and `job_levels.rs`.
+      **Part 1 (2026-10-23):** new request tests for `development.rs` (the review lifecycle, goals, feedback, redaction until
+      shared, expiring certificates, succession restate and gaps), `movements.rs` (add item, assign, reopen, cancel),
+      `change.rs` (initiative read-back, removing impacts and shifts, the department audit and event views),
+      `workforce.rs` (unassign a shift seat) and `hr_core.rs` (end a benefit enrolment). Request suite: 123 pass, clippy clean.
+      **Still open:** the route-coverage test (the route list needs a method-aware scan; my first path-only scan also gave false
+      positives where a test builds the URL from a variable); `framework_roles.rs` (5 routes), `health_requirements.rs` (put,
+      delete), `assessments.rs` (2 reads), `career.rs` past role, `mobility.rs` opportunities, skill-pool member delete, skill
+      framework-ref delete, `me` equality-category delete, demand-line delete, and the unit tests for `benchmark.rs`,
+      `tokens.rs`, `audit_export.rs`, `adjustments.rs`, `framework_roles.rs` and `job_levels.rs`.
 - [ ] WPM-T259 **One error vocabulary.** An internal-invariant helper (logs, answers 500 with no detail) for `Error::string`
       uses (`intelligence.rs:471`, `resignations.rs:59`); drop the bespoke 401 in `funding.rs:86`.
 - [ ] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the
