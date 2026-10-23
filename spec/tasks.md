@@ -4073,6 +4073,11 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
 - [ ] WPM-T254 **Paged lists and counts in SQL.** `Page` and `check_offset` on worker- and org-scoped lists (about 68 unpaged);
       `GROUP BY` for `groups.rs:80 member_counts`; filtered reads for `intelligence.rs:653` and `:729`. Seed-200k measurement
       before and after, recorded in `BENCHMARKS.md` (WPM-R142).
+      Part 1 done (2026-10-23): `groups.rs member_counts` is a `GROUP BY` in the database, not every membership row counted in Rust
+      (the three group request tests pass; clippy clean). **Still open:** `Page` and `check_offset` on the about 68 unpaged
+      lists (a default limit changes what each list returns, so each needs its UI caller checked), the filtered reads in
+      `intelligence.rs` (`succession`, `pipelines` load every candidate and member, then filter per plan in Rust), and the
+      seed-200k before/after in `BENCHMARKS.md`. This task stays open.
 - [ ] WPM-T255 **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
       plan-builder out of `handover::apply` (235 lines) and `lms::apply` (178).
 - [ ] WPM-T256 **Dependency hygiene.** `reqwest` 0.13 to match the verifier; drop `sqlx-sqlite`; one `sha2` major if the

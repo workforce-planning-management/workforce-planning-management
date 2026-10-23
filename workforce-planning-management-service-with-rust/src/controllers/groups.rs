@@ -10,7 +10,7 @@
 
 use chrono::Utc;
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, QuerySelect};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -76,17 +76,21 @@ async fn find_group(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Resu
     Ok(group)
 }
 
-/// Current member counts by group.
+/// Current member counts by group, counted by the database.
 async fn member_counts(ctx: &AppContext) -> Result<BTreeMap<Uuid, usize>> {
-    let mut counts = BTreeMap::new();
-    for m in group_members::Entity::find()
+    let rows: Vec<(Uuid, i64)> = group_members::Entity::find()
+        .select_only()
+        .column(group_members::Column::GroupPid)
+        .column_as(group_members::Column::Id.count(), "members")
         .filter(group_members::Column::LeftAt.is_null())
+        .group_by(group_members::Column::GroupPid)
+        .into_tuple()
         .all(&ctx.db)
-        .await?
-    {
-        *counts.entry(m.group_pid).or_insert(0) += 1;
-    }
-    Ok(counts)
+        .await?;
+    Ok(rows
+        .into_iter()
+        .map(|(group, members)| (group, usize::try_from(members).unwrap_or(0)))
+        .collect())
 }
 
 /// `POST /api/groups` and `PUT /api/groups/{pid}` body.
