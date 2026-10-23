@@ -191,7 +191,7 @@ pub(super) fn line_json(
         "job_title": l.role_profile_pid.and_then(|r| titles.get(&r)),
         "target_on": l.target_on,
         "target_headcount": l.target_headcount,
-        "target_fte": l.target_fte_percent.map(|f| f64::from(f) / 100.0),
+        "target_fte": l.target_fte_percent.map(|f| crate::rules::display::from_hundredths(i64::from(f))),
         "basis": l.basis,
         "expected_ends_on": l.expected_ends_on,
         "programme_ref": l.programme_ref,

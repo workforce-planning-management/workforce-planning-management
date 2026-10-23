@@ -375,12 +375,7 @@ pub fn is_single_point_of_failure(
 /// counts behind it.
 #[must_use]
 pub fn ratio(numerator: usize, denominator: usize) -> Option<(usize, usize, f64)> {
-    if denominator == 0 {
-        return None;
-    }
-    #[allow(clippy::cast_precision_loss)] // display ratio; the terms are returned alongside
-    let value = numerator as f64 / denominator as f64;
-    Some((numerator, denominator, value))
+    super::display::ratio(numerator, denominator).map(|value| (numerator, denominator, value))
 }
 
 /// Tenure bucket for a whole number of completed months of service —

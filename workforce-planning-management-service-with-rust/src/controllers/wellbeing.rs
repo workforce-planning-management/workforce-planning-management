@@ -508,23 +508,16 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
                     .iter()
                     .filter(|worker| live_enrollments.contains(&(plan, **worker)))
                     .count();
-                let value = if acknowledgers.is_empty() {
-                    serde_json::Value::Null
-                } else {
-                    serde_json::json!(enrolled as f64 / acknowledgers.len() as f64)
-                };
+                let value = crate::rules::display::ratio(enrolled, acknowledgers.len())
+                    .map_or(serde_json::Value::Null, |v| serde_json::json!(v));
                 serde_json::json!({
                     "numerator": enrolled, "denominator": acknowledgers.len(), "value": value,
                 })
             });
             let uptaken = by_response["booked"] + by_response["done"];
             let responded: usize = by_response.values().sum();
-            #[allow(clippy::cast_precision_loss)] // display ratio
-            let value = if responded == 0 {
-                serde_json::Value::Null
-            } else {
-                serde_json::json!(uptaken as f64 / responded as f64)
-            };
+            let value = crate::rules::display::ratio(uptaken, responded)
+                .map_or(serde_json::Value::Null, |v| serde_json::json!(v));
             serde_json::json!({
                 "entitlement_pid": entitlement.pid,
                 "name": entitlement.name,

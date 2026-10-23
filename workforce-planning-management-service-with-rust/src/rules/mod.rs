@@ -24,6 +24,7 @@ pub mod csv;
 pub mod cutover;
 pub mod derived;
 pub mod directory;
+pub mod display;
 pub mod duplicates;
 pub mod early_warning;
 pub mod emergency;

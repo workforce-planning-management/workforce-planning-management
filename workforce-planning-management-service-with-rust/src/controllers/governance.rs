@@ -16,14 +16,9 @@ use crate::auth::MaybeAuthUser;
 use crate::models::_entities::governance_commitments as table;
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
+use crate::rules::display;
 use crate::rules::governance as rules;
 use crate::validation::Problems;
-
-/// Tenths of an hour as hours with one decimal.
-#[allow(clippy::cast_precision_loss)] // a few thousand tenths at most
-fn hours(tenths: i64) -> f64 {
-    tenths as f64 / 10.0
-}
 
 fn view(row: &table::Model) -> serde_json::Value {
     let c = commitment(row);
@@ -37,7 +32,7 @@ fn view(row: &table::Model) -> serde_json::Value {
         "frequency": row.frequency,
         "minutes": row.minutes,
         "holders": row.holders,
-        "hours_per_month": hours(rules::tenth_hours_per_month(rules::minutes_per_year(&c))),
+        "hours_per_month": display::from_tenths(rules::tenth_hours_per_month(rules::minutes_per_year(&c))),
     })
 }
 
@@ -252,13 +247,13 @@ async fn load(
     format::json(json!({
         "organization_ref": org,
         "commitments": rows.len(),
-        "senior_hours_per_month": hours(total.senior_tenth_hours_per_month),
-        "all_hours_per_month": hours(total.all_tenth_hours_per_month),
+        "senior_hours_per_month": display::from_tenths(total.senior_tenth_hours_per_month),
+        "all_hours_per_month": display::from_tenths(total.all_tenth_hours_per_month),
         "roles": total.roles.iter().map(|r| json!({
             "role": r.role,
             "senior": r.senior,
             "commitments": r.commitments,
-            "hours_per_month": hours(r.tenth_hours_per_month),
+            "hours_per_month": display::from_tenths(r.tenth_hours_per_month),
         })).collect::<Vec<_>>(),
         "basis": "an estimate from the entered commitments: occurrences a year × minutes × people in \
                   the role, per month. A role, never a person; not a timesheet.",
@@ -276,8 +271,8 @@ pub(super) async fn pack_json(ctx: &AppContext, org: &str) -> Result<serde_json:
     let total = rules::load(&commitments);
     Ok(json!({
         "commitments": rows.len(),
-        "senior_hours_per_month": hours(total.senior_tenth_hours_per_month),
-        "all_hours_per_month": hours(total.all_tenth_hours_per_month),
+        "senior_hours_per_month": display::from_tenths(total.senior_tenth_hours_per_month),
+        "all_hours_per_month": display::from_tenths(total.all_tenth_hours_per_month),
         "basis": "An estimate from the commitments entered as at the freeze date; not a timesheet.",
     }))
 }

@@ -4064,6 +4064,12 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       fixed-point copies and the inline divisions (`learning.rs:1238`, `wellbeing.rs:497`, `cpd.rs:43`, `governance.rs:23`,
       `planning/forecast.rs:50`); pure `*_value` functions for `working_time`, `planning/forecast` and `planning/cost`, with unit
       tests.
+      Part 1 done (2026-10-23): `rules::display::{ratio, from_hundredths, from_tenths}` (with unit tests) replace the three
+      fixed-point copies (`governance::hours`, `cpd::units`, `forecast::centi`), `talent::ratio` now builds on `display::ratio`,
+      and the inline divisions in `learning.rs`, `wellbeing.rs` and `planning/plans.rs` call it. Verified: clippy clean,
+      617 unit tests, the `--ignored` request suite (115) against a local Postgres.
+      **Still open:** the pure `*_value` functions for `working_time`, `planning/forecast` and `planning/cost`. Those handlers
+      interleave queries with arithmetic across hundreds of lines, so the extraction is its own change; this task stays open for it.
 - [ ] WPM-T254 **Paged lists and counts in SQL.** `Page` and `check_offset` on worker- and org-scoped lists (about 68 unpaged);
       `GROUP BY` for `groups.rs:80 member_counts`; filtered reads for `intelligence.rs:653` and `:729`. Seed-200k measurement
       before and after, recorded in `BENCHMARKS.md` (WPM-R142).

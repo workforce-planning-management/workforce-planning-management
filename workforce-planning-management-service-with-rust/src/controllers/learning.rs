@@ -1254,12 +1254,8 @@ async fn training_analytics(
                 .filter(|(status, _)| status.as_str() != "failed")
                 .map(|(_, count)| *count)
                 .sum();
-            #[allow(clippy::cast_precision_loss)] // display ratio
-            let value = if denominator == 0 {
-                serde_json::Value::Null
-            } else {
-                serde_json::json!(completed as f64 / denominator as f64)
-            };
+            let value = crate::rules::display::ratio(completed, denominator)
+                .map_or(serde_json::Value::Null, |v| serde_json::json!(v));
             serde_json::json!({
                 "department": department,
                 "by_status": by_status,

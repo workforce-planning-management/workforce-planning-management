@@ -10,6 +10,7 @@
 //! `null`, never `0`.
 
 use super::ratio_json;
+use crate::rules::display;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, QuerySelect, QueryTrait, TransactionTrait};
 use serde::Deserialize;
@@ -32,19 +33,13 @@ struct PidRef {
     pid: String,
 }
 
-/// Hundredths → units for display.
-#[allow(clippy::cast_precision_loss)] // display value; the integer is returned alongside
-fn units(hundredths: i64) -> f64 {
-    hundredths as f64 / 100.0
-}
-
 /// A pace as the progress payload shows it: amounts in units, and the basis it rests on.
 fn pace_json(pace: &rules::Pace) -> serde_json::Value {
     serde_json::json!({
         "status": pace.status,
         "days_left": pace.days_left,
-        "needed_per_30_days": pace.needed_per_30_days_hundredths.map(units),
-        "expected_by_today": pace.expected_by_today_hundredths.map(units),
+        "needed_per_30_days": pace.needed_per_30_days_hundredths.map(display::from_hundredths),
+        "expected_by_today": pace.expected_by_today_hundredths.map(display::from_hundredths),
         "basis": rules::PACE_BASIS,
     })
 }
@@ -218,7 +213,7 @@ async fn list_requirements(State(ctx): State<AppContext>) -> Result<Response> {
                 "pid": r.pid,
                 "name": r.name,
                 "unit": r.unit,
-                "required": units(r.required_hundredths),
+                "required": display::from_hundredths(r.required_hundredths),
                 "required_hundredths": r.required_hundredths,
                 "period_start": r.period_start,
                 "period_end": r.period_end,
@@ -321,7 +316,7 @@ fn entry_json(e: &cpd_entries::Model) -> serde_json::Value {
         "activity": e.activity,
         "category": e.category,
         "unit": e.unit,
-        "amount": units(e.amount_hundredths),
+        "amount": display::from_hundredths(e.amount_hundredths),
         "amount_hundredths": e.amount_hundredths,
         "evidence_note": e.evidence_note,
         "evidence_url": e.evidence_url,
@@ -536,10 +531,10 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
                 "unit": r.unit,
                 "period_start": r.period_start,
                 "period_end": r.period_end,
-                "required": units(p.required),
-                "recorded": units(p.recorded),
-                "verified": units(p.verified),
-                "remaining": units(p.remaining()),
+                "required": display::from_hundredths(p.required),
+                "recorded": display::from_hundredths(p.recorded),
+                "verified": display::from_hundredths(p.verified),
+                "remaining": display::from_hundredths(p.remaining()),
                 "met": p.met(),
                 "met_verified": p.met_verified(),
                 "pace": pace_json(&rules::pace(

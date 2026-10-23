@@ -46,9 +46,8 @@ pub(super) async fn resolve_attrition(
 }
 
 /// Hundredths of a person as a number of people.
-#[allow(clippy::cast_precision_loss)]
 pub(super) fn centi(hundredths: i64) -> f64 {
-    hundredths as f64 / 100.0
+    crate::rules::display::from_hundredths(hundredths)
 }
 
 pub(super) fn supply_json(part: &rules::BasisSupply) -> serde_json::Value {
