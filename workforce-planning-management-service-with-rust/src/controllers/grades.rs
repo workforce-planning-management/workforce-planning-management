@@ -13,7 +13,7 @@
 
 use chrono::Utc;
 use loco_rs::prelude::*;
-use sea_orm::ActiveValue;
+use sea_orm::{ActiveValue, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -135,7 +135,9 @@ async fn set_worker_level(
     rules::validate_effective_on(effective_on, today).map_err(|e| unprocessable(&e))?;
     let recorded_by = caller.actor().map(ToString::to_string);
     let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
-    match current(&ctx, &worker).await? {
+    let existing = current(&ctx, &worker).await?;
+    let txn = ctx.db.begin().await?;
+    match existing {
         Some(row) => {
             let mut active: worker_job_levels::ActiveModel = row.into();
             active.framework = ActiveValue::set(framework.to_string());
@@ -143,7 +145,7 @@ async fn set_worker_level(
             active.effective_on = ActiveValue::set(effective_on);
             active.recorded_by = ActiveValue::set(recorded_by);
             active.on_behalf = ActiveValue::set(on_behalf);
-            active.update(&ctx.db).await?;
+            active.update(&txn).await?;
         }
         None => {
             worker_job_levels::ActiveModel {
@@ -155,13 +157,13 @@ async fn set_worker_level(
                 on_behalf: ActiveValue::set(on_behalf),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?;
         }
     }
     // No level in the audit entry: the level is the sensitive thing.
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "job_level_set",
@@ -169,6 +171,7 @@ async fn set_worker_level(
         None,
     )
     .await?;
+    txn.commit().await?;
     let mut view = level_view(framework, i32::from(number));
     view["effective_on"] = json!(effective_on);
     view["on_behalf"] = json!(on_behalf);
@@ -184,11 +187,12 @@ async fn clear_worker_level(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let row = current(&ctx, &worker).await?.ok_or(Error::NotFound)?;
+    let txn = ctx.db.begin().await?;
     worker_job_levels::Entity::delete_by_id(row.id)
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "job_level_cleared",
@@ -196,6 +200,7 @@ async fn clear_worker_level(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty()
 }
 
@@ -286,9 +291,10 @@ async fn set_role_grade(
     active.job_level = ActiveValue::set(level.map(|(_, n)| i32::from(n)));
     active.pay_scale_id = ActiveValue::set(band.map(|(s, _)| s.to_string()));
     active.pay_band = ActiveValue::set(band.map(|(_, b)| b.to_string()));
-    let saved = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "role_profile",
         saved.pid,
         "grade_set",
@@ -297,6 +303,7 @@ async fn set_role_grade(
                      "pay_band": band.map(|(s, b)| format!("{s}:{b}")) })),
     )
     .await?;
+    txn.commit().await?;
     format::json(grade_view(&saved))
 }
 
@@ -313,9 +320,10 @@ async fn clear_role_grade(
     active.job_level = ActiveValue::set(None);
     active.pay_scale_id = ActiveValue::set(None);
     active.pay_band = ActiveValue::set(None);
-    let saved = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "role_profile",
         saved.pid,
         "grade_cleared",
@@ -323,6 +331,7 @@ async fn clear_role_grade(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty()
 }
 

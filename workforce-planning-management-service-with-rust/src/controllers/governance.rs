@@ -6,7 +6,7 @@
 //! someone entered, not a measurement, and the answer says so.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -125,6 +125,7 @@ async fn create(
     ensure_valid(&problems.into_vec())?;
     check_payload(&payload)?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
+    let txn = ctx.db.begin().await?;
     let row = table::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(org),
@@ -138,10 +139,10 @@ async fn create(
         recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "governance_commitment",
         row.pid,
         "created",
@@ -149,6 +150,7 @@ async fn create(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(view(&row))
 }
 
@@ -171,9 +173,10 @@ async fn change(
     active.minutes = ActiveValue::set(payload.minutes);
     active.holders = ActiveValue::set(payload.holders);
     active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    let saved = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "governance_commitment",
         saved.pid,
         "changed",
@@ -181,6 +184,7 @@ async fn change(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(view(&saved))
 }
 
@@ -192,9 +196,10 @@ async fn remove(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let row = find(&ctx, &caller, &pid).await?;
-    table::Entity::delete_by_id(row.id).exec(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    table::Entity::delete_by_id(row.id).exec(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "governance_commitment",
         row.pid,
         "removed",
@@ -202,6 +207,7 @@ async fn remove(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(json!({ "removed": row.pid }))
 }
 

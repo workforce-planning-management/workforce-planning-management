@@ -6,7 +6,7 @@
 //! required, and the schema has nowhere to put one.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 
 use super::{ensure_valid, record_rejection, unprocessable};
@@ -60,6 +60,7 @@ async fn create_request(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
+    let txn = ctx.db.begin().await?;
     let row = adjustment_requests::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -73,11 +74,11 @@ async fn create_request(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     // The audit row records that a request was made — not its words.
     Audit::record(
-        &ctx.db,
+        &txn,
         "adjustment_request",
         row.pid,
         "created",
@@ -85,6 +86,7 @@ async fn create_request(
         Some(serde_json::json!({ "category": payload.category })),
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -185,9 +187,10 @@ async fn decide(
     if payload.note.is_some() {
         active.decision_note = ActiveValue::set(payload.note.clone());
     }
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "adjustment_request",
         row_pid,
         "status_changed",
@@ -198,13 +201,14 @@ async fn decide(
     // Tell the worker — the body names the category and the state,
     // never the words (WPM-D23 reference-only posture).
     Notification::push(
-        &ctx.db,
+        &txn,
         worker_pid,
         "adjustment_update",
         &format!("Adjustment request ({category}): {}", payload.to),
         serde_json::json!({ "adjustment_request_pid": row_pid }),
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 

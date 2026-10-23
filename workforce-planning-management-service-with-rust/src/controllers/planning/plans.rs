@@ -78,6 +78,7 @@ pub(super) async fn create_plan(
     )
     .map_err(|e| unprocessable(&e))?;
     validate_finance(&payload).map_err(|e| unprocessable(&e))?;
+    let txn = ctx.db.begin().await?;
     let row = workforce_plans::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.trim().to_string()),
@@ -93,10 +94,10 @@ pub(super) async fn create_plan(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "workforce_plan",
         row.pid,
         "created",
@@ -104,6 +105,7 @@ pub(super) async fn create_plan(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -309,9 +311,10 @@ pub(super) async fn set_status(
     let from = plan.status.clone();
     let mut active: workforce_plans::ActiveModel = plan.into();
     active.status = ActiveValue::set(payload.to.clone());
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "workforce_plan",
         row.pid,
         "status_changed",
@@ -319,6 +322,7 @@ pub(super) async fn set_status(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })

@@ -56,13 +56,14 @@ pub(super) async fn set_demand(
         .filter(programme_demands::Column::DeletedAt.is_null())
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let row = if let Some(row) = existing {
         let mut active = row.into_active_model();
         active.fte_centi = ActiveValue::set(payload.fte_centi);
         if let Some(status) = &payload.status {
             active.status = ActiveValue::set(status.clone());
         }
-        active.update(&ctx.db).await?
+        active.update(&txn).await?
     } else {
         programme_demands::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
@@ -74,11 +75,11 @@ pub(super) async fn set_demand(
             deleted_at: ActiveValue::set(None),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "programme_demand",
         row.pid,
         "set",
@@ -86,6 +87,7 @@ pub(super) async fn set_demand(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(pid_ref(row.pid))
 }
 
@@ -163,9 +165,10 @@ pub(super) async fn delete_demand(
     live_pool_by_pid(&ctx, &caller, row.pool_pid).await?;
     let mut active = row.into_active_model();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "programme_demand",
         row.pid,
         "deleted",
@@ -173,6 +176,7 @@ pub(super) async fn delete_demand(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(pid_ref(row.pid))
 }
 
@@ -216,11 +220,12 @@ pub(super) async fn set_commitment(
         .filter(partner_commitments::Column::DeletedAt.is_null())
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let row = if let Some(row) = existing {
         let mut active = row.into_active_model();
         active.fte_centi = ActiveValue::set(payload.fte_centi);
         active.status = ActiveValue::set(payload.status.clone());
-        active.update(&ctx.db).await?
+        active.update(&txn).await?
     } else {
         partner_commitments::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
@@ -232,11 +237,11 @@ pub(super) async fn set_commitment(
             deleted_at: ActiveValue::set(None),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "partner_commitment",
         row.pid,
         "set",
@@ -244,6 +249,7 @@ pub(super) async fn set_commitment(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(pid_ref(row.pid))
 }
 
@@ -296,9 +302,10 @@ pub(super) async fn delete_commitment(
     live_pool_by_pid(&ctx, &caller, row.pool_pid).await?;
     let mut active = row.into_active_model();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "partner_commitment",
         row.pid,
         "deleted",
@@ -306,5 +313,6 @@ pub(super) async fn delete_commitment(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(pid_ref(row.pid))
 }

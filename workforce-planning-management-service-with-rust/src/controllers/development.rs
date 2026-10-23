@@ -924,9 +924,10 @@ async fn update_succession_candidate(
     if let Some(rank) = payload.rank {
         active.rank = ActiveValue::set(rank);
     }
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "succession_candidate",
         candidate_pid,
         "updated",
@@ -934,6 +935,7 @@ async fn update_succession_candidate(
         Some(serde_json::json!({ "readiness_from": from, "readiness_to": payload.readiness })),
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 

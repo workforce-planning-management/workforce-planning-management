@@ -222,6 +222,7 @@ async fn propose(
         today,
     )
     .map_err(|e| unprocessable(&e))?;
+    let txn = ctx.db.begin().await?;
     let inserted = conversion_plans::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -237,12 +238,13 @@ async fn propose(
         review_on: ActiveValue::set(payload.review_on),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await;
     // Two proposals at once: the partial unique index lets one in and this one is told, not failed.
     let row = match inserted {
         Ok(row) => row,
         Err(e) => {
+            txn.rollback().await?;
             return if open_plan(&ctx, worker.pid).await?.is_some() {
                 Err(unprocessable(
                     "the worker already has an open plan; approve, carry out or abandon it first",
@@ -253,7 +255,7 @@ async fn propose(
         }
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "conversion_plan_proposed",
@@ -261,6 +263,7 @@ async fn propose(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(plan_json(&row, worker.engagement_ends_on, today))
 }
 
@@ -341,9 +344,8 @@ async fn approve(
             .await?;
         }
     }
-    txn.commit().await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "conversion_plan_approved",
@@ -351,6 +353,7 @@ async fn approve(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(plan_json(&updated, worker.engagement_ends_on, today))
 }
 
@@ -372,9 +375,10 @@ async fn abandon(
     let mut active: conversion_plans::ActiveModel = row.into();
     active.status = ActiveValue::set("abandoned".to_string());
     active.settled_on = ActiveValue::set(Some(today));
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "conversion_plan_abandoned",
@@ -382,6 +386,7 @@ async fn abandon(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(plan_json(&updated, worker.engagement_ends_on, today))
 }
 
@@ -420,9 +425,8 @@ async fn done(
     active.status = ActiveValue::set("done".to_string());
     active.settled_on = ActiveValue::set(Some(today));
     let updated = active.update(&txn).await?;
-    txn.commit().await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "conversion_plan_done",
@@ -430,6 +434,7 @@ async fn done(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(plan_json(&updated, None, today))
 }
 

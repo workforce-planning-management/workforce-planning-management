@@ -10,7 +10,7 @@
 //! `null`, never `0`.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, QuerySelect, QueryTrait};
+use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, QuerySelect, QueryTrait, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -111,6 +111,7 @@ async fn create_requirement(
     Json(payload): Json<RequirementPayload>,
 ) -> Result<Response> {
     let (name, required, job_title) = checked_requirement(&payload)?;
+    let txn = ctx.db.begin().await?;
     let row = cpd_requirements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(name),
@@ -122,10 +123,10 @@ async fn create_requirement(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "cpd_requirement",
         row.pid,
         "created",
@@ -133,6 +134,7 @@ async fn create_requirement(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -169,9 +171,10 @@ async fn update_requirement(
     active.period_start = ActiveValue::set(payload.period_start);
     active.period_end = ActiveValue::set(payload.period_end);
     active.job_title = ActiveValue::set(job_title);
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "cpd_requirement",
         row.pid,
         "updated",
@@ -179,6 +182,7 @@ async fn update_requirement(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -194,9 +198,10 @@ async fn delete_requirement(
     let existing = find_requirement(&ctx, &pid).await?;
     let mut active: cpd_requirements::ActiveModel = existing.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "cpd_requirement",
         row.pid,
         "withdrawn",
@@ -204,6 +209,7 @@ async fn delete_requirement(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -286,6 +292,7 @@ async fn create_entry(
         chrono::Utc::now().date_naive(),
     )
     .map_err(|e| unprocessable(&e))?;
+    let txn = ctx.db.begin().await?;
     let row = cpd_entries::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -304,17 +311,10 @@ async fn create_entry(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    Audit::record(
-        &ctx.db,
-        "cpd_entry",
-        row.pid,
-        "recorded",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    Audit::record(&txn, "cpd_entry", row.pid, "recorded", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -370,16 +370,10 @@ async fn verify_entry(
     let mut active: cpd_entries::ActiveModel = entry.into();
     active.verified_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
     active.verified_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    let row = active.update(&ctx.db).await?;
-    Audit::record(
-        &ctx.db,
-        "cpd_entry",
-        row.pid,
-        "verified",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
+    Audit::record(&txn, "cpd_entry", row.pid, "verified", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(entry_json(&row))
 }
 
@@ -393,9 +387,10 @@ async fn delete_entry(
     let entry = find_entry(&ctx, &pid).await?;
     let mut active: cpd_entries::ActiveModel = entry.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "cpd_entry",
         row.pid,
         "withdrawn",
@@ -403,6 +398,7 @@ async fn delete_entry(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -451,6 +447,7 @@ async fn create_registration(
         problems.push("expires_on must not be before registered_on");
     }
     ensure_valid(&problems.into_vec())?;
+    let txn = ctx.db.begin().await?;
     let row = professional_registrations::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -461,10 +458,10 @@ async fn create_registration(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "professional_registration",
         row.pid,
         "recorded",
@@ -472,6 +469,7 @@ async fn create_registration(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })

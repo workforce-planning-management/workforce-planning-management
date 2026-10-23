@@ -248,6 +248,7 @@ async fn express_interest(
     if live.one(&ctx.db).await?.is_some() {
         return Err(unprocessable("interest already expressed"));
     }
+    let txn = ctx.db.begin().await?;
     let row = mobility_interests::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -257,10 +258,10 @@ async fn express_interest(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "mobility_interest",
         row.pid,
         "expressed",
@@ -268,6 +269,7 @@ async fn express_interest(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -331,9 +333,10 @@ async fn withdraw_interest(
         .ok_or(Error::NotFound)?;
     let mut active: mobility_interests::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "mobility_interest",
         row.pid,
         "withdrawn",
@@ -341,6 +344,7 @@ async fn withdraw_interest(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

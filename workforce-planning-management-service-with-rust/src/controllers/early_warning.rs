@@ -286,9 +286,10 @@ async fn acknowledge(
     let today = chrono::Utc::now().date_naive();
     let mut a: warnings::ActiveModel = row.into();
     a.acknowledged_on = ActiveValue::set(Some(today));
-    let row = a.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = a.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "early_warning",
         row.pid,
         "acknowledged",
@@ -296,6 +297,7 @@ async fn acknowledge(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(warning_json(&row, today))
 }
 

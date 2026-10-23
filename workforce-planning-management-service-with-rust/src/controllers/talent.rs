@@ -396,9 +396,10 @@ async fn update_item(
     let item_pid = item.pid;
     let mut active: development_plan_items::ActiveModel = item.into();
     active.status = ActiveValue::set(payload.status.clone());
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "development_plan_item",
         item_pid,
         "status_changed",
@@ -406,6 +407,7 @@ async fn update_item(
         Some(serde_json::json!({ "to": payload.status })),
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 
@@ -437,6 +439,7 @@ async fn create_pipeline(
     problems.cap_opt("target_department", payload.target_department.as_deref());
     ensure_valid(&problems.into_vec())?;
 
+    let txn = ctx.db.begin().await?;
     let row = talent_pipelines::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -446,10 +449,10 @@ async fn create_pipeline(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "talent_pipeline",
         row.pid,
         "created",
@@ -457,6 +460,7 @@ async fn create_pipeline(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -549,6 +553,7 @@ async fn add_member(
         return Err(unprocessable("this subject is already in the pipeline"));
     }
 
+    let txn = ctx.db.begin().await?;
     let row = pipeline_members::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         pipeline_pid: ActiveValue::set(pipeline.pid),
@@ -560,10 +565,10 @@ async fn add_member(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "pipeline_member",
         row.pid,
         "created",
@@ -571,6 +576,7 @@ async fn add_member(
         Some(serde_json::json!({ "pipeline": pipeline.name })),
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -608,9 +614,10 @@ async fn move_member(
     if payload.readiness.is_some() {
         active.readiness = ActiveValue::set(payload.readiness.clone());
     }
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "pipeline_member",
         member_pid,
         "stage_changed",
@@ -618,6 +625,7 @@ async fn move_member(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 
@@ -722,6 +730,7 @@ async fn create_program(
     }
     ensure_valid(&problems.into_vec())?;
 
+    let txn = ctx.db.begin().await?;
     let row = early_career_programs::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -733,10 +742,10 @@ async fn create_program(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "early_career_program",
         row.pid,
         "created",
@@ -744,6 +753,7 @@ async fn create_program(
         Some(serde_json::json!({ "kind": payload.kind })),
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -953,9 +963,10 @@ async fn log_hours(
     let placement_pid = placement.pid;
     let mut active: program_placements::ActiveModel = placement.into();
     active.off_the_job_hours = ActiveValue::set(total);
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "program_placement",
         placement_pid,
         "hours_logged",
@@ -963,6 +974,7 @@ async fn log_hours(
         Some(serde_json::json!({ "added": payload.hours, "total": total })),
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 

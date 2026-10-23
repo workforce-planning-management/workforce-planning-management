@@ -168,6 +168,7 @@ async fn create_claim(
         problems.push(e);
     }
     ensure_valid(&problems.into_vec())?;
+    let txn = ctx.db.begin().await?;
     let row = expense_claims::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -185,10 +186,10 @@ async fn create_claim(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "expense_claim",
         row.pid,
         "expense_claim_created",
@@ -196,6 +197,7 @@ async fn create_claim(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(claim_row(&row, 0, 0))
 }
 

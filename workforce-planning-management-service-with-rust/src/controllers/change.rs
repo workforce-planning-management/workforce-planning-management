@@ -8,7 +8,7 @@
 //! affected role, and no individual is named or ranked.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
@@ -65,6 +65,7 @@ async fn create_initiative(
         problems.cap_text("description", text);
     }
     ensure_valid(&problems.into_vec())?;
+    let txn = ctx.db.begin().await?;
     let row = change_initiatives::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.trim().to_string()),
@@ -75,10 +76,10 @@ async fn create_initiative(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "change_initiative",
         row.pid,
         "created",
@@ -86,6 +87,7 @@ async fn create_initiative(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -212,9 +214,10 @@ async fn set_status(
     let from = initiative.status.clone();
     let mut active: change_initiatives::ActiveModel = initiative.into();
     active.status = ActiveValue::set(payload.to.clone());
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "change_initiative",
         row.pid,
         "status_changed",
@@ -222,6 +225,7 @@ async fn set_status(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -274,13 +278,14 @@ async fn set_role_impact(
         .filter(initiative_role_impacts::Column::RoleProfilePid.eq(payload.role_profile_pid))
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     match existing {
         Some(row) => {
             let mut active: initiative_role_impacts::ActiveModel = row.into();
             active.impact = ActiveValue::set(payload.impact.clone());
             active.timeframe = ActiveValue::set(payload.timeframe.clone());
             active.note = ActiveValue::set(payload.note.clone());
-            active.update(&ctx.db).await?;
+            active.update(&txn).await?;
         }
         None => {
             initiative_role_impacts::ActiveModel {
@@ -292,12 +297,12 @@ async fn set_role_impact(
                 note: ActiveValue::set(payload.note.clone()),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?;
         }
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "change_initiative",
         initiative.pid,
         "role_impact_set",
@@ -305,6 +310,7 @@ async fn set_role_impact(
         Some(serde_json::json!({ "role_profile_pid": payload.role_profile_pid, "impact": payload.impact })),
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -324,9 +330,10 @@ async fn remove_role_impact(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    row.delete(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    row.delete(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "change_initiative",
         initiative.pid,
         "role_impact_removed",
@@ -334,6 +341,7 @@ async fn remove_role_impact(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -374,12 +382,13 @@ async fn set_skill_shift(
         .filter(initiative_skill_shifts::Column::SkillPid.eq(payload.skill_pid))
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     match existing {
         Some(row) => {
             let mut active: initiative_skill_shifts::ActiveModel = row.into();
             active.direction = ActiveValue::set(payload.direction.clone());
             active.note = ActiveValue::set(payload.note.clone());
-            active.update(&ctx.db).await?;
+            active.update(&txn).await?;
         }
         None => {
             initiative_skill_shifts::ActiveModel {
@@ -390,12 +399,12 @@ async fn set_skill_shift(
                 note: ActiveValue::set(payload.note.clone()),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?;
         }
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "change_initiative",
         initiative.pid,
         "skill_shift_set",
@@ -403,6 +412,7 @@ async fn set_skill_shift(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -422,9 +432,10 @@ async fn remove_skill_shift(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    row.delete(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    row.delete(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "change_initiative",
         initiative.pid,
         "skill_shift_removed",
@@ -432,6 +443,7 @@ async fn remove_skill_shift(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

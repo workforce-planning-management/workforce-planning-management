@@ -184,7 +184,7 @@ async fn tell(
 
 /// Move a requested swap to `to`, once. Returns the request and its rota.
 async fn decide(
-    ctx: &AppContext,
+    db: &impl ConnectionTrait,
     request: &rota_swap_requests::Model,
     to: &str,
 ) -> Result<rota_swap_requests::Model> {
@@ -197,7 +197,7 @@ async fn decide(
     let mut active: rota_swap_requests::ActiveModel = request.clone().into();
     active.status = ActiveValue::set(to.to_string());
     active.decided_at = ActiveValue::set(Some(Utc::now().into()));
-    Ok(active.update(&ctx.db).await?)
+    Ok(active.update(db).await?)
 }
 
 /// `POST /api/rota-swap-requests/{pid}/accept` — the colleague takes it: the
@@ -282,9 +282,10 @@ async fn decline(
     let request = find_request(&ctx, &pid).await?;
     let taker = writable_worker(&ctx, &caller, request.taker_pid).await?;
     let rota = find_rota(&ctx, &caller, &request.rota_pid.to_string()).await?;
-    decide(&ctx, &request, "declined").await?;
+    let txn = ctx.db.begin().await?;
+    decide(&txn, &request, "declined").await?;
     tell(
-        &ctx.db,
+        &txn,
         request.requester_pid,
         &rota,
         request.pid,
@@ -295,7 +296,7 @@ async fn decline(
     )
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "rota",
         rota.pid,
         "swap_declined",
@@ -303,6 +304,7 @@ async fn decline(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "status": "declined" }))
 }
 
@@ -316,9 +318,10 @@ async fn cancel(
     let request = find_request(&ctx, &pid).await?;
     let requester = writable_worker(&ctx, &caller, request.requester_pid).await?;
     let rota = find_rota(&ctx, &caller, &request.rota_pid.to_string()).await?;
-    decide(&ctx, &request, "cancelled").await?;
+    let txn = ctx.db.begin().await?;
+    decide(&txn, &request, "cancelled").await?;
     tell(
-        &ctx.db,
+        &txn,
         request.taker_pid,
         &rota,
         request.pid,
@@ -329,7 +332,7 @@ async fn cancel(
     )
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "rota",
         rota.pid,
         "swap_cancelled",
@@ -337,6 +340,7 @@ async fn cancel(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "status": "cancelled" }))
 }
 

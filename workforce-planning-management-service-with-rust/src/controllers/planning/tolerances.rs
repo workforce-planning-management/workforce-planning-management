@@ -206,11 +206,12 @@ pub(super) async fn set_tolerance(
         .filter(plan_tolerances::Column::Dimension.eq(dimension.as_str()))
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let verb = if let Some(row) = existing {
         let mut active: plan_tolerances::ActiveModel = row.into();
         active.limit_value = ActiveValue::set(payload.limit);
         active.amber_percent = ActiveValue::set(amber);
-        active.update(&ctx.db).await?;
+        active.update(&txn).await?;
         "tolerance_changed"
     } else {
         plan_tolerances::ActiveModel {
@@ -221,12 +222,12 @@ pub(super) async fn set_tolerance(
             amber_percent: ActiveValue::set(amber),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?;
         "tolerance_set"
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "workforce_plan",
         plan.pid,
         verb,
@@ -236,6 +237,7 @@ pub(super) async fn set_tolerance(
         })),
     )
     .await?;
+    txn.commit().await?;
     list_tolerances(State(ctx), caller, Path(pid)).await
 }
 
@@ -248,16 +250,17 @@ pub(super) async fn delete_tolerance(
 ) -> Result<Response> {
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     let dimension = dimension_of(&dimension)?;
+    let txn = ctx.db.begin().await?;
     let removed = plan_tolerances::Entity::delete_many()
         .filter(plan_tolerances::Column::PlanPid.eq(plan.pid))
         .filter(plan_tolerances::Column::Dimension.eq(dimension.as_str()))
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
     if removed.rows_affected == 0 {
         return Err(Error::NotFound);
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "workforce_plan",
         plan.pid,
         "tolerance_removed",
@@ -265,5 +268,6 @@ pub(super) async fn delete_tolerance(
         Some(serde_json::json!({ "dimension": dimension })),
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }

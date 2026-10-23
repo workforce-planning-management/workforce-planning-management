@@ -39,14 +39,14 @@ async fn ensure_org_in_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str
     Ok(())
 }
 
-async fn audit(
-    ctx: &AppContext,
+async fn audit<C: ConnectionTrait>(
+    db: &C,
     caller: &MaybeAuthUser,
     kind: &str,
     pid: Uuid,
     action: &str,
 ) -> Result<()> {
-    Audit::record(&ctx.db, kind, pid, action, caller.actor(), None).await?;
+    Audit::record(db, kind, pid, action, caller.actor(), None).await?;
     Ok(())
 }
 
@@ -143,6 +143,7 @@ async fn create(
             ));
         }
     }
+    let txn = ctx.db.begin().await?;
     let row = cutovers::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(p.organization_ref),
@@ -155,9 +156,10 @@ async fn create(
         site_aliases: ActiveValue::set(json!(aliases)),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    audit(&ctx, &caller, "cutover", row.pid, "created").await?;
+    audit(&txn, &caller, "cutover", row.pid, "created").await?;
+    txn.commit().await?;
     format::json(cutover_json(&row))
 }
 
@@ -229,6 +231,7 @@ async fn add_role(
             "that role is already listed for this cutover",
         ));
     }
+    let txn = ctx.db.begin().await?;
     let row = cutover_roles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         cutover_pid: ActiveValue::set(c.pid),
@@ -237,9 +240,10 @@ async fn add_role(
         required_headcount: ActiveValue::set(p.required_headcount),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    audit(&ctx, &caller, "cutover_role", row.pid, "added").await?;
+    audit(&txn, &caller, "cutover_role", row.pid, "added").await?;
+    txn.commit().await?;
     format::json(json!({
         "pid": row.pid, "cutover_pid": row.cutover_pid, "role_profile_pid": row.role_profile_pid,
         "course_ref": row.course_ref, "lms_url": super::lms::course_url(&row.course_ref), "required_headcount": row.required_headcount,
@@ -283,15 +287,17 @@ async fn add_pool(
             "that pool is already listed for this cutover",
         ));
     }
+    let txn = ctx.db.begin().await?;
     let row = cutover_pools::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         cutover_pid: ActiveValue::set(c.pid),
         pool_pid: ActiveValue::set(p.pool_pid),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    audit(&ctx, &caller, "cutover_pool", row.pid, "added").await?;
+    audit(&txn, &caller, "cutover_pool", row.pid, "added").await?;
+    txn.commit().await?;
     format::json(
         json!({ "pid": row.pid, "cutover_pid": row.cutover_pid, "pool_pid": row.pool_pid }),
     )
@@ -306,16 +312,18 @@ async fn remove(
 ) -> Result<Response> {
     let c = cutover_in_scope(&ctx, &caller, &pid).await?;
     ensure_may_freeze(&ctx, &caller, &c.organization_ref).await?;
+    let txn = ctx.db.begin().await?;
     cutover_roles::Entity::delete_many()
         .filter(cutover_roles::Column::CutoverPid.eq(c.pid))
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
     cutover_pools::Entity::delete_many()
         .filter(cutover_pools::Column::CutoverPid.eq(c.pid))
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
-    cutovers::Entity::delete_by_id(c.id).exec(&ctx.db).await?;
-    audit(&ctx, &caller, "cutover", c.pid, "removed").await?;
+    cutovers::Entity::delete_by_id(c.id).exec(&txn).await?;
+    audit(&txn, &caller, "cutover", c.pid, "removed").await?;
+    txn.commit().await?;
     format::json(json!({ "removed": c.pid }))
 }
 

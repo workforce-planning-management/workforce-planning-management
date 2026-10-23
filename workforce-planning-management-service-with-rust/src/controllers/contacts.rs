@@ -17,7 +17,7 @@
 
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -161,6 +161,7 @@ pub(crate) async fn add_contact_for(
         priority,
     )
     .map_err(|e| unprocessable(&e))?;
+    let txn = ctx.db.begin().await?;
     let row = emergency_contacts::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -176,12 +177,12 @@ pub(crate) async fn add_contact_for(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     // The audit entry names no contact detail: that is the point of keeping it
     // to the worker and HR.
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "emergency_contact_added",
@@ -189,6 +190,7 @@ pub(crate) async fn add_contact_for(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 
@@ -273,9 +275,10 @@ pub(crate) async fn update_contact_for(
     active.email = ActiveValue::set(email);
     active.priority = ActiveValue::set(priority);
     active.note = ActiveValue::set(note);
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "emergency_contact_updated",
@@ -283,6 +286,7 @@ pub(crate) async fn update_contact_for(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(contact_row(&updated))
 }
 
@@ -307,9 +311,10 @@ pub(crate) async fn delete_contact_for(
 ) -> Result<Response> {
     let mut active: emergency_contacts::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "emergency_contact_removed",
@@ -317,6 +322,7 @@ pub(crate) async fn delete_contact_for(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -452,6 +458,7 @@ async fn add_backup(
     {
         return Err(unprocessable("that backup is outside your organizations"));
     }
+    let txn = ctx.db.begin().await?;
     let row = worker_backups::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -465,10 +472,10 @@ async fn add_backup(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "backup_added",
@@ -476,6 +483,7 @@ async fn add_backup(
         Some(serde_json::json!({ "backup_pid": backup.pid })),
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 
@@ -524,9 +532,10 @@ async fn update_backup(
     active.starts_on = ActiveValue::set(starts_on);
     active.ends_on = ActiveValue::set(ends_on);
     active.note = ActiveValue::set(note);
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "backup_updated",
@@ -534,6 +543,7 @@ async fn update_backup(
         None,
     )
     .await?;
+    txn.commit().await?;
     let who = records::find_worker(&ctx.db, updated.backup_pid).await.ok();
     format::json(backup_row(&updated, who.as_ref()))
 }
@@ -549,9 +559,10 @@ async fn delete_backup(
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
     let mut active: worker_backups::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "backup_removed",
@@ -559,6 +570,7 @@ async fn delete_backup(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

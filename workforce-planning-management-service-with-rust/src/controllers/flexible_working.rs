@@ -276,8 +276,10 @@ async fn move_to(
     let mut active: requests::ActiveModel = row.into();
     active.status = ActiveValue::set(to.as_str().to_string());
     apply(&mut active);
-    let saved = active.update(&ctx.db).await?;
-    Audit::record(&ctx.db, "worker", worker.pid, event, caller.actor(), None).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = active.update(&txn).await?;
+    Audit::record(&txn, "worker", worker.pid, event, caller.actor(), None).await?;
+    txn.commit().await?;
     Ok(saved)
 }
 

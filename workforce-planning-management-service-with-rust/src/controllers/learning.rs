@@ -58,6 +58,7 @@ async fn create_skill(
     problems.cap_text("name", &payload.name);
     problems.require_token("category", rules::SKILL_CATEGORIES, &payload.category);
     ensure_valid(&problems.into_vec())?;
+    let txn = ctx.db.begin().await?;
     let row = skills::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -65,9 +66,10 @@ async fn create_skill(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    Audit::record(&ctx.db, "skill", row.pid, "created", caller.actor(), None).await?;
+    Audit::record(&txn, "skill", row.pid, "created", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -150,9 +152,10 @@ async fn update_skill(
     if let Some(category) = &payload.category {
         active.category = ActiveValue::set(category.clone());
     }
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "skill",
         updated.pid,
         "updated",
@@ -160,6 +163,7 @@ async fn update_skill(
         Some(serde_json::json!({ "name": updated.name, "category": updated.category })),
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(updated.pid))
 }
 
@@ -221,11 +225,12 @@ async fn apply_suggestions(
     Json(payload): Json<ApplySuggestions>,
 ) -> Result<Response> {
     let (mut applied, mut skipped) = (0usize, 0usize);
+    let txn = ctx.db.begin().await?;
     for pid in &payload.skill_pids {
         let found = skills::Entity::find()
             .filter(skills::Column::Pid.eq(*pid))
             .filter(skills::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&txn)
             .await?;
         let suggestion = found
             .as_ref()
@@ -235,9 +240,9 @@ async fn apply_suggestions(
             (Some(row), Some((category, _))) => {
                 let mut active: skills::ActiveModel = row.into();
                 active.category = ActiveValue::set(category.to_string());
-                let updated = active.update(&ctx.db).await?;
+                let updated = active.update(&txn).await?;
                 Audit::record(
-                    &ctx.db,
+                    &txn,
                     "skill",
                     updated.pid,
                     "categorised",
@@ -250,6 +255,7 @@ async fn apply_suggestions(
             _ => skipped += 1,
         }
     }
+    txn.commit().await?;
     format::json(serde_json::json!({ "applied": applied, "skipped": skipped }))
 }
 
@@ -578,6 +584,7 @@ async fn add_skill_ref(
             "this skill already has a reference in that framework, or the reference names another skill",
         ));
     }
+    let txn = ctx.db.begin().await?;
     let row = skill_external_refs::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         skill_pid: ActiveValue::set(skill.pid),
@@ -587,10 +594,10 @@ async fn add_skill_ref(
         version: ActiveValue::set(payload.version.clone()),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "skill",
         skill.pid,
         "reference_added",
@@ -598,6 +605,7 @@ async fn add_skill_ref(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -615,9 +623,10 @@ async fn remove_skill_ref(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    row.delete(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    row.delete(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "skill",
         skill.pid,
         "reference_removed",
@@ -625,6 +634,7 @@ async fn remove_skill_ref(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -670,6 +680,7 @@ async fn declare_skill(
         .one(&ctx.db)
         .await?;
     let today = chrono::Utc::now().date_naive();
+    let txn = ctx.db.begin().await?;
     let row = match existing {
         Some(row) => {
             let mut active: worker_skills::ActiveModel = row.into();
@@ -677,7 +688,7 @@ async fn declare_skill(
             active.target = ActiveValue::set(payload.target);
             active.assessed_on = ActiveValue::set(today);
             active.deleted_at = ActiveValue::set(None);
-            active.update(&ctx.db).await?
+            active.update(&txn).await?
         }
         None => {
             worker_skills::ActiveModel {
@@ -690,12 +701,12 @@ async fn declare_skill(
                 deleted_at: ActiveValue::set(None),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?
         }
     };
     crate::models::skill_history::record(
-        &ctx.db,
+        &txn,
         worker.pid,
         skill.pid,
         Some(payload.proficiency),
@@ -705,7 +716,7 @@ async fn declare_skill(
     )
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker_skill",
         row.pid,
         "declared",
@@ -713,6 +724,7 @@ async fn declare_skill(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(row)
 }
 
@@ -851,6 +863,7 @@ async fn enroll_path(
     if existing.is_some() {
         return Err(unprocessable("worker is already enrolled in this path"));
     }
+    let txn = ctx.db.begin().await?;
     let row = path_enrollments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         path_pid: ActiveValue::set(path.pid),
@@ -859,10 +872,10 @@ async fn enroll_path(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "path_enrollment",
         row.pid,
         "created",
@@ -870,6 +883,7 @@ async fn enroll_path(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -953,6 +967,7 @@ async fn create_mentorship(
     ensure_valid(&problems.into_vec())?;
     records::find_worker(&ctx.db, payload.mentor_pid).await?;
     records::find_worker(&ctx.db, payload.mentee_pid).await?;
+    let txn = ctx.db.begin().await?;
     let row = mentorships::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         mentor_pid: ActiveValue::set(payload.mentor_pid),
@@ -964,17 +979,10 @@ async fn create_mentorship(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    Audit::record(
-        &ctx.db,
-        "mentorship",
-        row.pid,
-        "created",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    Audit::record(&txn, "mentorship", row.pid, "created", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -1012,9 +1020,10 @@ async fn mentorship_status(
     } else if matches!(payload.to.as_str(), "completed" | "ended") {
         active.ended_on = ActiveValue::set(Some(today));
     }
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "mentorship",
         row_pid,
         "status_changed",
@@ -1022,6 +1031,7 @@ async fn mentorship_status(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 
@@ -1056,6 +1066,7 @@ async fn log_session(
     problems.require_text("notes", &payload.notes);
     problems.cap_text("notes", &payload.notes);
     ensure_valid(&problems.into_vec())?;
+    let txn = ctx.db.begin().await?;
     let row = mentorship_sessions::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         mentorship_pid: ActiveValue::set(mentorship.pid),
@@ -1063,10 +1074,10 @@ async fn log_session(
         notes: ActiveValue::set(payload.notes.clone()),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "mentorship_session",
         row.pid,
         "created",
@@ -1074,6 +1085,7 @@ async fn log_session(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 

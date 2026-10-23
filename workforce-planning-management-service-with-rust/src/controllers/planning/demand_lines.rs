@@ -93,14 +93,16 @@ pub(super) async fn set_line(
         Some(role) => existing.filter(plan_demand_lines::Column::RoleProfilePid.eq(role)),
         None => existing.filter(plan_demand_lines::Column::RoleProfilePid.is_null()),
     };
-    let row = match existing.one(&ctx.db).await? {
+    let existing = existing.one(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = match existing {
         Some(row) => {
             let mut active: plan_demand_lines::ActiveModel = row.into();
             active.target_headcount = ActiveValue::set(payload.target_headcount);
             active.target_fte_percent = ActiveValue::set(payload.target_fte_percent);
             active.expected_ends_on = ActiveValue::set(payload.expected_ends_on);
             active.note = ActiveValue::set(payload.note.clone());
-            active.update(&ctx.db).await?
+            active.update(&txn).await?
         }
         None => {
             plan_demand_lines::ActiveModel {
@@ -117,12 +119,12 @@ pub(super) async fn set_line(
                 note: ActiveValue::set(payload.note.clone()),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?
         }
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "workforce_plan",
         plan.pid,
         "demand_line_set",
@@ -130,6 +132,7 @@ pub(super) async fn set_line(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -151,13 +154,14 @@ pub(super) async fn remove_line(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
+    let txn = ctx.db.begin().await?;
     demand_line_objectives::Entity::delete_many()
         .filter(demand_line_objectives::Column::LinePid.eq(line_pid))
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
-    row.delete(&ctx.db).await?;
+    row.delete(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "workforce_plan",
         plan.pid,
         "demand_line_removed",
@@ -165,5 +169,6 @@ pub(super) async fn remove_line(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }

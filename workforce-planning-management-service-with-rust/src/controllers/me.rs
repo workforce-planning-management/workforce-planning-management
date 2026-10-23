@@ -17,7 +17,7 @@
 use chrono::{Datelike, Utc};
 use loco_rs::controller::ErrorDetail;
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -155,7 +155,9 @@ async fn set_my_details(
     let details = payload.cleaned();
     contact_rules::validate(&details).map_err(|e| unprocessable(&e))?;
     let recorded_by = caller.actor().map(ToString::to_string);
-    let saved = if let Some(row) = details_of(&ctx, worker.pid).await? {
+    let existing = details_of(&ctx, worker.pid).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = if let Some(row) = existing {
         let mut active: worker_contact_details::ActiveModel = row.into();
         active.address_line1 = ActiveValue::set(details.address_line1);
         active.address_line2 = ActiveValue::set(details.address_line2);
@@ -168,7 +170,7 @@ async fn set_my_details(
         active.personal_email = ActiveValue::set(details.personal_email);
         active.recorded_by = ActiveValue::set(recorded_by);
         active.on_behalf = ActiveValue::set(false);
-        active.update(&ctx.db).await?
+        active.update(&txn).await?
     } else {
         worker_contact_details::ActiveModel {
             worker_pid: ActiveValue::set(worker.pid),
@@ -185,11 +187,11 @@ async fn set_my_details(
             on_behalf: ActiveValue::set(false),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "contact_details_set",
@@ -197,6 +199,7 @@ async fn set_my_details(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(json!({ "contact_details": details_json(&saved) }))
 }
 
@@ -208,11 +211,12 @@ async fn clear_my_details(
 ) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
     let row = details_of(&ctx, worker.pid).await?.ok_or(Error::NotFound)?;
+    let txn = ctx.db.begin().await?;
     worker_contact_details::Entity::delete_by_id(row.id)
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "contact_details_cleared",
@@ -220,6 +224,7 @@ async fn clear_my_details(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty()
 }
 

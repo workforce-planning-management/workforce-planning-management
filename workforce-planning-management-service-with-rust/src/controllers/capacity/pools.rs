@@ -69,6 +69,7 @@ pub(super) async fn create_pool(
     if pool_name_taken(&ctx, &org, &payload.name, None).await? {
         return Err(unprocessable("a pool with that name already exists"));
     }
+    let txn = ctx.db.begin().await?;
     let row = skill_pools::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(org),
@@ -78,17 +79,10 @@ pub(super) async fn create_pool(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    Audit::record(
-        &ctx.db,
-        "skill_pool",
-        row.pid,
-        "created",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    Audit::record(&txn, "skill_pool", row.pid, "created", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(pid_ref(row.pid))
 }
 
@@ -110,16 +104,10 @@ pub(super) async fn update_pool(
     active.description = ActiveValue::set(payload.description.clone());
     active.operations_reservation_bp =
         ActiveValue::set(payload.operations_reservation_bp.unwrap_or(0));
-    let row = active.update(&ctx.db).await?;
-    Audit::record(
-        &ctx.db,
-        "skill_pool",
-        row.pid,
-        "updated",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
+    Audit::record(&txn, "skill_pool", row.pid, "updated", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(pid_ref(row.pid))
 }
 
@@ -134,16 +122,10 @@ pub(super) async fn delete_pool(
     let pool = live_pool(&ctx, &caller, &pid).await?;
     let mut active = pool.into_active_model();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let row = active.update(&ctx.db).await?;
-    Audit::record(
-        &ctx.db,
-        "skill_pool",
-        row.pid,
-        "deleted",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
+    Audit::record(&txn, "skill_pool", row.pid, "deleted", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(pid_ref(row.pid))
 }
 
@@ -270,6 +252,7 @@ pub(super) async fn add_member(
     }) {
         return Err(unprocessable("that member is already in the pool"));
     }
+    let txn = ctx.db.begin().await?;
     let row = skill_pool_members::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         pool_pid: ActiveValue::set(pool.pid),
@@ -279,10 +262,10 @@ pub(super) async fn add_member(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "skill_pool",
         pool.pid,
         "member_added",
@@ -290,6 +273,7 @@ pub(super) async fn add_member(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(pid_ref(row.pid))
 }
 
@@ -310,9 +294,10 @@ pub(super) async fn remove_member(
         .ok_or(Error::NotFound)?;
     let mut active = member.into_active_model();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "skill_pool",
         pool.pid,
         "member_removed",
@@ -320,5 +305,6 @@ pub(super) async fn remove_member(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(pid_ref(row.pid))
 }

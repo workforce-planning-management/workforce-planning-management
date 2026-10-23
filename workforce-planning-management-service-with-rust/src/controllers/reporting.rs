@@ -361,10 +361,11 @@ async fn add_dotted_manager(
         .filter(dotted_line_reports::Column::EndedAt.is_null())
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let row = if let Some(existing) = current {
         let mut active: dotted_line_reports::ActiveModel = existing.into();
         active.note = ActiveValue::set(payload.note);
-        active.update(&ctx.db).await?
+        active.update(&txn).await?
     } else {
         dotted_line_reports::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
@@ -377,11 +378,11 @@ async fn add_dotted_manager(
             on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &report.person_ref)),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         report.pid,
         "dotted_line_added",
@@ -389,6 +390,7 @@ async fn add_dotted_manager(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(dotted_json(&row, staff.get(&row.manager_pid)))
 }
 
@@ -416,9 +418,10 @@ async fn end_dotted_manager(
         .ok_or(Error::NotFound)?;
     let mut active: dotted_line_reports::ActiveModel = current.into();
     active.ended_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         report.pid,
         "dotted_line_ended",
@@ -426,6 +429,7 @@ async fn end_dotted_manager(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

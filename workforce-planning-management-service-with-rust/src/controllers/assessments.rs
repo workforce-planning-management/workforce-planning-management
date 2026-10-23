@@ -108,6 +108,7 @@ async fn create_instrument(
     }
     ensure_valid(&problems.into_vec())?;
 
+    let txn = ctx.db.begin().await?;
     let row = assessment_instruments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -119,10 +120,10 @@ async fn create_instrument(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "assessment_instrument",
         row.pid,
         "created",
@@ -130,6 +131,7 @@ async fn create_instrument(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -442,6 +444,7 @@ async fn record_result(
         .filter(assessment_results::Column::Scale.eq(payload.scale.clone()))
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let row = match existing {
         Some(found) => {
             let mut active: assessment_results::ActiveModel = found.into();
@@ -450,7 +453,7 @@ async fn record_result(
             active.percentile = ActiveValue::set(payload.percentile);
             active.band = ActiveValue::set(band);
             active.narrative = ActiveValue::set(payload.narrative.clone());
-            active.update(&ctx.db).await?
+            active.update(&txn).await?
         }
         None => {
             assessment_results::ActiveModel {
@@ -464,13 +467,13 @@ async fn record_result(
                 narrative: ActiveValue::set(payload.narrative.clone()),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?
         }
     };
     // The scale is recorded; the score itself never enters the trail.
     Audit::record(
-        &ctx.db,
+        &txn,
         "assessment_result",
         row.pid,
         "recorded",
@@ -478,6 +481,7 @@ async fn record_result(
         Some(serde_json::json!({ "assessment": assessment.pid, "scale": payload.scale })),
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 

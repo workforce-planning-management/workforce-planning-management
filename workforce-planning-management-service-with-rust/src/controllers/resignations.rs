@@ -165,9 +165,10 @@ pub(crate) async fn withdraw_for(
     let to = rules::next(status_of(&row)?, Action::Withdraw).map_err(|e| unprocessable(&e))?;
     let mut active: resignations::ActiveModel = row.into();
     active.status = ActiveValue::set(to.as_str().to_string());
-    let saved = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "resignation_withdrawn",
@@ -175,6 +176,7 @@ pub(crate) async fn withdraw_for(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(own_json(&saved))
 }
 

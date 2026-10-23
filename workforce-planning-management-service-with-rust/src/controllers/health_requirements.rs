@@ -171,6 +171,7 @@ async fn create_requirement(
     if exists {
         return Err(unprocessable("a requirement with that name already exists"));
     }
+    let txn = ctx.db.begin().await?;
     let row = health_requirements::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         name: ActiveValue::set(payload.name.trim().to_string()),
@@ -192,10 +193,10 @@ async fn create_requirement(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "health_requirement",
         row.pid,
         "created",
@@ -203,6 +204,7 @@ async fn create_requirement(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(requirement_json(&row))
 }
 
@@ -251,9 +253,10 @@ async fn update_requirement(
         )
         .unwrap_or(60),
     );
-    let saved = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "health_requirement",
         saved.pid,
         "updated",
@@ -261,6 +264,7 @@ async fn update_requirement(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(requirement_json(&saved))
 }
 
@@ -275,9 +279,10 @@ async fn delete_requirement(
     let row = find_requirement(&ctx, &pid).await?;
     let mut active: health_requirements::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let saved = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "health_requirement",
         saved.pid,
         "deleted",
@@ -285,6 +290,7 @@ async fn delete_requirement(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(requirement_json(&saved))
 }
 
@@ -344,6 +350,7 @@ async fn record_status(
         .filter(worker_health_records::Column::RequirementPid.eq(requirement.pid))
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let recorded_by = caller.actor().map(ToString::to_string);
     if let Some(row) = existing {
         let mut active: worker_health_records::ActiveModel = row.into();
@@ -351,7 +358,7 @@ async fn record_status(
         active.recorded_on = ActiveValue::set(recorded_on);
         active.next_due = ActiveValue::set(next_due);
         active.recorded_by = ActiveValue::set(recorded_by);
-        active.update(&ctx.db).await?;
+        active.update(&txn).await?;
     } else {
         worker_health_records::ActiveModel {
             worker_pid: ActiveValue::set(worker.pid),
@@ -362,11 +369,11 @@ async fn record_status(
             recorded_by: ActiveValue::set(recorded_by),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?;
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "health_requirement_recorded",
@@ -374,6 +381,7 @@ async fn record_status(
         None,
     )
     .await?;
+    txn.commit().await?;
     // The answer to the caller is the same yes-or-no a manager would see, not an echo of the status.
     let standing = rules::standing(
         Some(&payload.status),
@@ -396,17 +404,18 @@ async fn remove_record(
     ensure_occupational_health(&caller)?;
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let requirement = find_requirement(&ctx, &req_pid).await?;
+    let txn = ctx.db.begin().await?;
     let removed = worker_health_records::Entity::delete_many()
         .filter(worker_health_records::Column::WorkerPid.eq(worker.pid))
         .filter(worker_health_records::Column::RequirementPid.eq(requirement.pid))
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?
         .rows_affected;
     if removed == 0 {
         return Err(Error::NotFound);
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "health_requirement_removed",
@@ -414,6 +423,7 @@ async fn remove_record(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty()
 }
 

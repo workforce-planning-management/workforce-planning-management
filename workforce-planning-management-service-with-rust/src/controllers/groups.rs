@@ -169,6 +169,7 @@ async fn create_group(
         ));
     }
     ensure_name_free(&ctx, &organization_ref, &payload.name, None).await?;
+    let txn = ctx.db.begin().await?;
     let row = groups::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(organization_ref),
@@ -179,9 +180,10 @@ async fn create_group(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    Audit::record(&ctx.db, "group", row.pid, "created", caller.actor(), None).await?;
+    Audit::record(&txn, "group", row.pid, "created", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(PidRef { pid: row.pid })
 }
 
@@ -241,16 +243,10 @@ async fn update_group(
     active.name = ActiveValue::set(payload.name.trim().to_string());
     active.kind = ActiveValue::set(payload.kind);
     active.description = ActiveValue::set(payload.description);
-    let updated = active.update(&ctx.db).await?;
-    Audit::record(
-        &ctx.db,
-        "group",
-        updated.pid,
-        "updated",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
+    Audit::record(&txn, "group", updated.pid, "updated", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(PidRef { pid: updated.pid })
 }
 
@@ -266,8 +262,10 @@ async fn delete_group(
     let group_pid = row.pid;
     let mut active: groups::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&ctx.db).await?;
-    Audit::record(&ctx.db, "group", group_pid, "retired", caller.actor(), None).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
+    Audit::record(&txn, "group", group_pid, "retired", caller.actor(), None).await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -381,10 +379,11 @@ async fn join_group(
         .filter(group_members::Column::LeftAt.is_null())
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let row = if let Some(existing) = current {
         let mut active: group_members::ActiveModel = existing.into();
         active.role = ActiveValue::set(role);
-        active.update(&ctx.db).await?
+        active.update(&txn).await?
     } else {
         group_members::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
@@ -397,11 +396,11 @@ async fn join_group(
             on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "group_joined",
@@ -409,6 +408,7 @@ async fn join_group(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(member_json(&row, Some(&worker)))
 }
 
@@ -431,9 +431,10 @@ async fn leave_group(
         .ok_or(Error::NotFound)?;
     let mut active: group_members::ActiveModel = current.into();
     active.left_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "group_left",
@@ -441,6 +442,7 @@ async fn leave_group(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

@@ -62,8 +62,9 @@ async fn administrators(ctx: &AppContext, org: &str) -> Result<Vec<Uuid>> {
 }
 
 /// Tell the administrators. The text names the plan, the dimension and the level; the note is never copied.
-async fn tell(
-    ctx: &AppContext,
+async fn tell<C: ConnectionTrait>(
+    administrators: &[Uuid],
+    db: &C,
     plan: &workforce_plans::Model,
     e: &plan_escalations::Model,
     what: &str,
@@ -77,9 +78,9 @@ async fn tell(
         "{what}: plan \"{}\", {} tolerance, now at level {level}.",
         plan.name, e.dimension
     );
-    for to in administrators(ctx, &plan.organization_ref).await? {
+    for &to in administrators {
         Notification::push(
-            &ctx.db,
+            db,
             to,
             "escalation",
             &text,
@@ -129,6 +130,8 @@ pub(super) async fn raise_escalation(
         ));
     }
     let today = chrono::Utc::now().date_naive();
+    let notify = administrators(&ctx, &plan.organization_ref).await?;
+    let txn = ctx.db.begin().await?;
     let row = plan_escalations::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         plan_pid: ActiveValue::set(plan.pid),
@@ -150,10 +153,10 @@ pub(super) async fn raise_escalation(
         limit_at_raise: ActiveValue::set(tolerance.limit_value),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "plan_escalation",
         row.pid,
         "escalation_raised",
@@ -164,7 +167,8 @@ pub(super) async fn raise_escalation(
         })),
     )
     .await?;
-    tell(&ctx, &plan, &row, "An escalation was raised").await?;
+    tell(&notify, &txn, &plan, &row, "An escalation was raised").await?;
+    txn.commit().await?;
     format::json(escalation_json(&row, today, None))
 }
 
@@ -201,9 +205,11 @@ pub(super) async fn raise_level(
     let mut active: plan_escalations::ActiveModel = e.into();
     active.level = ActiveValue::set(next.number());
     active.level_raised_on = ActiveValue::set(Some(today));
-    let row = active.update(&ctx.db).await?;
+    let notify = administrators(&ctx, &plan.organization_ref).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "plan_escalation",
         row.pid,
         "escalation_level_raised",
@@ -211,7 +217,8 @@ pub(super) async fn raise_level(
         Some(serde_json::json!({ "plan_pid": plan.pid, "dimension": row.dimension, "level": row.level })),
     )
     .await?;
-    tell(&ctx, &plan, &row, "An escalation went up a level").await?;
+    tell(&notify, &txn, &plan, &row, "An escalation went up a level").await?;
+    txn.commit().await?;
     format::json(escalation_json(&row, today, None))
 }
 
@@ -259,9 +266,10 @@ pub(super) async fn decide_escalation(
             .and_then(|v| v.as_str().map(ToString::to_string)),
     );
     active.deviation_at_decision = ActiveValue::set(now.and_then(|s| s.deviation));
-    let row = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let row = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "plan_escalation",
         row.pid,
         "escalation_decided",
@@ -272,6 +280,7 @@ pub(super) async fn decide_escalation(
         })),
     )
     .await?;
+    txn.commit().await?;
     format::json(escalation_json(&row, today, None))
 }
 

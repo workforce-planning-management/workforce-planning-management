@@ -170,9 +170,10 @@ async fn answer_item(
     let mut active: ergonomic_items::ActiveModel = item.into();
     active.ok = ActiveValue::set(Some(payload.ok));
     active.note = ActiveValue::set(payload.note.clone());
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "ergonomic_item",
         item_pid,
         "answered",
@@ -180,6 +181,7 @@ async fn answer_item(
         Some(serde_json::json!({ "ok": payload.ok })),
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 
@@ -212,9 +214,10 @@ async fn complete_assessment(
     let mut active: ergonomic_assessments::ActiveModel = assessment.into();
     active.status = ActiveValue::set("completed".to_string());
     active.assessed_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "ergonomic_assessment",
         assessment_pid,
         "completed",
@@ -222,6 +225,7 @@ async fn complete_assessment(
         Some(serde_json::json!({ "open_issues": issues })),
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 

@@ -383,6 +383,7 @@ async fn add_item(
         return Err(unprocessable("title is required (up to 200 characters)"));
     }
     let next = i32::try_from(items_of(&ctx, movement.pid).await?.len()).unwrap_or(i32::MAX);
+    let txn = ctx.db.begin().await?;
     let item = movement_items::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         movement_pid: ActiveValue::set(movement.pid),
@@ -398,10 +399,10 @@ async fn add_item(
         assignee_pid: ActiveValue::set(payload.assignee_pid),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "movement_item_added",
@@ -409,6 +410,7 @@ async fn add_item(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "pid": item.pid }))
 }
 
@@ -439,9 +441,10 @@ async fn item_done(
     active.done_on = ActiveValue::set(Some(Utc::now().date_naive()));
     active.done_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.skipped_reason = ActiveValue::set(None);
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "movement_item_done",
@@ -449,6 +452,7 @@ async fn item_done(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "state": "done" }))
 }
 
@@ -474,9 +478,10 @@ async fn item_skip(
     active.skipped_reason = ActiveValue::set(Some(payload.reason.trim().to_string()));
     active.done_on = ActiveValue::set(None);
     active.done_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "movement_item_skipped",
@@ -484,6 +489,7 @@ async fn item_skip(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "state": "skipped" }))
 }
 
@@ -499,9 +505,10 @@ async fn item_reopen(
     active.done_on = ActiveValue::set(None);
     active.done_by = ActiveValue::set(None);
     active.skipped_reason = ActiveValue::set(None);
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "movement_item_reopened",
@@ -509,6 +516,7 @@ async fn item_reopen(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "state": "reopened" }))
 }
 
@@ -535,9 +543,10 @@ async fn item_assign(
     }
     let mut active: movement_items::ActiveModel = item.into();
     active.assignee_pid = ActiveValue::set(payload.assignee_pid);
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "movement_item_assigned",
@@ -545,6 +554,7 @@ async fn item_assign(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "assignee_pid": payload.assignee_pid }))
 }
 
@@ -581,9 +591,10 @@ async fn complete(
     let mut active: movements::ActiveModel = movement.clone().into();
     active.status = ActiveValue::set("completed".to_string());
     active.completed_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         &format!("{}_completed", movement.kind),
@@ -591,6 +602,7 @@ async fn complete(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "status": "completed" }))
 }
 
@@ -611,9 +623,10 @@ async fn cancel(
     .map_err(record_rejection)?;
     let mut active: movements::ActiveModel = movement.clone().into();
     active.status = ActiveValue::set("cancelled".to_string());
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         &format!("{}_cancelled", movement.kind),
@@ -621,6 +634,7 @@ async fn cancel(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "status": "cancelled" }))
 }
 

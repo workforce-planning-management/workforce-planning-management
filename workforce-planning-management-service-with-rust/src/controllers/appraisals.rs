@@ -178,6 +178,7 @@ async fn nominate(
     if existing.len() >= rules::MAX_RATERS {
         return Err(unprocessable("at most 12 raters"));
     }
+    let txn = ctx.db.begin().await?;
     let row = appraisal_nominations::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         appraisal_pid: ActiveValue::set(appraisal.pid),
@@ -185,10 +186,10 @@ async fn nominate(
         rater_group: ActiveValue::set(payload.group.clone()),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "appraisal_nomination",
         row.pid,
         "created",
@@ -196,6 +197,7 @@ async fn nominate(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -240,20 +242,21 @@ async fn appraisal_status(
     if payload.to == "shared" {
         active.shared_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
     }
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     // Fan out the in-app notifications (WPM-R31): collecting tells
     // every rater; shared tells the subject. Reference-only bodies —
     // never scores or comments (WPM-D23).
     let rater_pids: Vec<Uuid> = appraisal_nominations::Entity::find()
         .filter(appraisal_nominations::Column::AppraisalPid.eq(row_pid))
-        .all(&ctx.db)
+        .all(&txn)
         .await?
         .iter()
         .map(|n| n.rater_pid)
         .collect();
     let subject = workers::Entity::find()
         .filter(workers::Column::Pid.eq(updated.worker_pid))
-        .one(&ctx.db)
+        .one(&txn)
         .await?;
     let subject_name = subject.map_or_else(String::new, |s| s.display_name);
     for (recipient, kind) in
@@ -265,7 +268,7 @@ async fn appraisal_status(
             format!("360\u{b0} feedback requested for {subject_name}")
         };
         Notification::push(
-            &ctx.db,
+            &txn,
             recipient,
             kind,
             &body,
@@ -274,7 +277,7 @@ async fn appraisal_status(
         .await?;
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "appraisal",
         row_pid,
         "status_changed",
@@ -282,6 +285,7 @@ async fn appraisal_status(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 
@@ -380,6 +384,7 @@ async fn respond(
     if already.is_some() {
         return Err(unprocessable("this rater has already responded"));
     }
+    let txn = ctx.db.begin().await?;
     let row = appraisal_responses::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         appraisal_pid: ActiveValue::set(appraisal.pid),
@@ -389,10 +394,10 @@ async fn respond(
         comment: ActiveValue::set(payload.comment.clone()),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "appraisal_response",
         row.pid,
         "submitted",
@@ -400,6 +405,7 @@ async fn respond(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "submitted": true }))
 }
 

@@ -17,7 +17,7 @@
 
 use chrono::Utc;
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -116,16 +116,17 @@ pub(crate) async fn declare_for(
             .validate(category, value)
             .map_err(|e| unprocessable(&e))?;
     }
+    let txn = ctx.db.begin().await?;
     for (category, value) in &payload.declarations {
         let existing = equality_declarations::Entity::find()
             .filter(equality_declarations::Column::WorkerPid.eq(worker.pid))
             .filter(equality_declarations::Column::Category.eq(category))
-            .one(&ctx.db)
+            .one(&txn)
             .await?;
         if let Some(row) = existing {
             let mut active: equality_declarations::ActiveModel = row.into();
             active.value = ActiveValue::set(value.clone());
-            active.update(&ctx.db).await?;
+            active.update(&txn).await?;
         } else {
             equality_declarations::ActiveModel {
                 worker_pid: ActiveValue::set(worker.pid),
@@ -133,13 +134,13 @@ pub(crate) async fn declare_for(
                 value: ActiveValue::set(value.clone()),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?;
         }
     }
     // The audit entry says that declarations changed, never which categories or what values.
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "equality_monitoring_declared",
@@ -147,6 +148,7 @@ pub(crate) async fn declare_for(
         None,
     )
     .await?;
+    txn.commit().await?;
     view_for(ctx, worker).await
 }
 
@@ -163,12 +165,13 @@ pub(crate) async fn withdraw_for(
     if let Some(c) = category {
         delete = delete.filter(equality_declarations::Column::Category.eq(c));
     }
-    let removed = delete.exec(&ctx.db).await?.rows_affected;
+    let txn = ctx.db.begin().await?;
+    let removed = delete.exec(&txn).await?.rows_affected;
     if removed == 0 {
         return Err(Error::NotFound);
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "equality_monitoring_withdrawn",
@@ -176,6 +179,7 @@ pub(crate) async fn withdraw_for(
         None,
     )
     .await?;
+    txn.commit().await?;
     view_for(ctx, worker).await
 }
 

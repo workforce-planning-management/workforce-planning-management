@@ -30,6 +30,7 @@ pub(super) async fn create_objective(
         problems.cap_text("owner", owner);
     }
     ensure_valid(&problems.into_vec())?;
+    let txn = ctx.db.begin().await?;
     let row = plan_objectives::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         plan_pid: ActiveValue::set(plan.pid),
@@ -37,10 +38,10 @@ pub(super) async fn create_objective(
         owner: ActiveValue::set(payload.owner.clone()),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "workforce_plan",
         plan.pid,
         "objective_added",
@@ -48,6 +49,7 @@ pub(super) async fn create_objective(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -87,9 +89,10 @@ pub(super) async fn set_line_objectives(
     if !wanted.is_subset(&known) {
         return Err(unprocessable("objective_pids must belong to this plan"));
     }
+    let txn = ctx.db.begin().await?;
     demand_line_objectives::Entity::delete_many()
         .filter(demand_line_objectives::Column::LinePid.eq(line.pid))
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
     for objective in &wanted {
         demand_line_objectives::ActiveModel {
@@ -98,11 +101,11 @@ pub(super) async fn set_line_objectives(
             objective_pid: ActiveValue::set(*objective),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?;
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "workforce_plan",
         plan.pid,
         "line_objectives_set",
@@ -110,5 +113,6 @@ pub(super) async fn set_line_objectives(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }

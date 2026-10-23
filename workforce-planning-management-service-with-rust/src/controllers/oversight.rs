@@ -47,14 +47,14 @@ fn org_problems(org: &str) -> Result<()> {
     ensure_valid(&problems.into_vec())
 }
 
-async fn audit(
-    ctx: &AppContext,
+async fn audit<C: ConnectionTrait>(
+    db: &C,
     caller: &MaybeAuthUser,
     kind: &str,
     pid: Uuid,
     action: &str,
 ) -> Result<()> {
-    Audit::record(&ctx.db, kind, pid, action, caller.actor(), None).await?;
+    Audit::record(db, kind, pid, action, caller.actor(), None).await?;
     Ok(())
 }
 
@@ -133,6 +133,7 @@ async fn create_level(
     if taken.is_some() {
         return Err(unprocessable("that ordinal is already on the scale"));
     }
+    let txn = ctx.db.begin().await?;
     let row = levels::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(p.organization_ref),
@@ -141,9 +142,10 @@ async fn create_level(
         synthetic: ActiveValue::set(false),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    audit(&ctx, &caller, "oversight_level", row.pid, "created").await?;
+    audit(&txn, &caller, "oversight_level", row.pid, "created").await?;
+    txn.commit().await?;
     format::json(level_json(&row))
 }
 
@@ -174,8 +176,10 @@ async fn delete_level(
             "a level with a recorded position or a criterion cannot be removed; remove the criteria first, and a recorded position stays on the record",
         ));
     }
-    levels::Entity::delete_by_id(level.id).exec(&ctx.db).await?;
-    audit(&ctx, &caller, "oversight_level", level.pid, "removed").await?;
+    let txn = ctx.db.begin().await?;
+    levels::Entity::delete_by_id(level.id).exec(&txn).await?;
+    audit(&txn, &caller, "oversight_level", level.pid, "removed").await?;
+    txn.commit().await?;
     format::json(json!({ "removed": level.pid }))
 }
 
@@ -211,6 +215,7 @@ async fn record_position(
             "that level is on another organization's scale",
         ));
     }
+    let txn = ctx.db.begin().await?;
     let row = positions::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(p.organization_ref),
@@ -221,9 +226,10 @@ async fn record_position(
         recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    audit(&ctx, &caller, "oversight_position", row.pid, "recorded").await?;
+    audit(&txn, &caller, "oversight_position", row.pid, "recorded").await?;
+    txn.commit().await?;
     format::json(position_json(&row, Some(&level)))
 }
 
@@ -255,6 +261,7 @@ async fn create_criterion(
     problems.require_text("name", &p.name);
     ensure_valid(&problems.into_vec())?;
     let level = level_in_scope(&ctx, &caller, p.level_pid).await?;
+    let txn = ctx.db.begin().await?;
     let row = criteria::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         level_pid: ActiveValue::set(level.pid),
@@ -262,9 +269,10 @@ async fn create_criterion(
         synthetic: ActiveValue::set(false),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    audit(&ctx, &caller, "oversight_criterion", row.pid, "created").await?;
+    audit(&txn, &caller, "oversight_criterion", row.pid, "created").await?;
+    txn.commit().await?;
     format::json(json!({ "pid": row.pid, "level_pid": row.level_pid, "name": row.name }))
 }
 
@@ -280,18 +288,20 @@ async fn delete_criterion(
         .filter(measures::Column::CriterionPid.eq(c.pid))
         .all(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     for m in &ms {
         readings::Entity::delete_many()
             .filter(readings::Column::MeasurePid.eq(m.pid))
-            .exec(&ctx.db)
+            .exec(&txn)
             .await?;
     }
     measures::Entity::delete_many()
         .filter(measures::Column::CriterionPid.eq(c.pid))
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
-    criteria::Entity::delete_by_id(c.id).exec(&ctx.db).await?;
-    audit(&ctx, &caller, "oversight_criterion", c.pid, "removed").await?;
+    criteria::Entity::delete_by_id(c.id).exec(&txn).await?;
+    audit(&txn, &caller, "oversight_criterion", c.pid, "removed").await?;
+    txn.commit().await?;
     format::json(json!({ "removed": c.pid }))
 }
 
@@ -330,6 +340,7 @@ async fn create_measure(
     }
     check_derivation(&p)?;
     let c = criterion_in_scope(&ctx, &caller, p.criterion_pid).await?;
+    let txn = ctx.db.begin().await?;
     let row = measures::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         criterion_pid: ActiveValue::set(c.pid),
@@ -342,9 +353,10 @@ async fn create_measure(
         sustain: ActiveValue::set(i32::try_from(p.sustain).unwrap_or(1)),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
-    audit(&ctx, &caller, "oversight_measure", row.pid, "created").await?;
+    audit(&txn, &caller, "oversight_measure", row.pid, "created").await?;
+    txn.commit().await?;
     format::json(measure_json(&row))
 }
 
@@ -403,12 +415,14 @@ async fn delete_measure(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let m = measure_in_scope(&ctx, &caller, records::parse_pid(&pid)?).await?;
+    let txn = ctx.db.begin().await?;
     readings::Entity::delete_many()
         .filter(readings::Column::MeasurePid.eq(m.pid))
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
-    measures::Entity::delete_by_id(m.id).exec(&ctx.db).await?;
-    audit(&ctx, &caller, "oversight_measure", m.pid, "removed").await?;
+    measures::Entity::delete_by_id(m.id).exec(&txn).await?;
+    audit(&txn, &caller, "oversight_measure", m.pid, "removed").await?;
+    txn.commit().await?;
     format::json(json!({ "removed": m.pid }))
 }
 
@@ -459,13 +473,14 @@ async fn put_reading(
         .filter(readings::Column::PeriodOn.eq(month))
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let row = if let Some(row) = existing {
         let mut a: readings::ActiveModel = row.into();
         a.value = ActiveValue::set(p.value);
         a.evidence = ActiveValue::set(p.evidence);
         a.source_document = ActiveValue::set(p.source_document);
         a.recorded_by = ActiveValue::set(by);
-        a.update(&ctx.db).await?
+        a.update(&txn).await?
     } else {
         readings::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
@@ -477,10 +492,11 @@ async fn put_reading(
             recorded_by: ActiveValue::set(by),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?
     };
-    audit(&ctx, &caller, "oversight_reading", row.pid, "entered").await?;
+    audit(&txn, &caller, "oversight_reading", row.pid, "entered").await?;
+    txn.commit().await?;
     format::json(json!({
         "pid": row.pid, "measure_pid": row.measure_pid, "period_on": row.period_on, "value": row.value,
         "evidence": row.evidence, "source_document": row.source_document,

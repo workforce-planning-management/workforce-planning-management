@@ -210,3 +210,67 @@ async fn concurrent_writers_make_one_chain() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_change_whose_audit_row_fails_is_not_kept() {
+    crate::requests::request_open(|request, ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        // The audit insert fails for anything named with this test's tag, and only that (WPM-T250).
+        ctx.db
+            .execute_unprepared(&format!(
+                "CREATE FUNCTION refuse_atom_{tag}() RETURNS trigger LANGUAGE plpgsql AS $$
+                 BEGIN
+                   IF NEW.entity = 'skill' AND EXISTS (SELECT 1 FROM skills WHERE pid = NEW.entity_pid AND name LIKE 'ATOM{tag}%')
+                      OR NEW.entity = 'skill_course' AND EXISTS (SELECT 1 FROM skill_courses WHERE pid = NEW.entity_pid AND title LIKE 'ATOM{tag}%')
+                   THEN RAISE EXCEPTION 'audit refused for the test';
+                   END IF;
+                   RETURN NEW;
+                 END $$;
+                 CREATE TRIGGER refuse_atom_{tag} BEFORE INSERT ON audit_logs
+                   FOR EACH ROW EXECUTE FUNCTION refuse_atom_{tag}();"
+            ))
+            .await
+            .unwrap();
+
+        // A new skill whose audit row fails is not created.
+        let refused = request
+            .post("/api/skills")
+            .json(&json!({ "name": format!("ATOM{tag}-skill"), "category": "technical" }))
+            .await;
+        assert!(refused.status_code().is_server_error(), "{}", refused.status_code());
+        let skills: Value = request.get("/api/skills").await.json();
+        assert!(
+            !skills.to_string().contains(&format!("ATOM{tag}-skill")),
+            "the skill was kept without its audit row"
+        );
+
+        // A catalogue course whose audit row fails is not added.
+        let skill: Value = request
+            .post("/api/skills")
+            .json(&json!({ "name": format!("Plain{tag}"), "category": "technical" }))
+            .await
+            .json();
+        let courses = format!("/api/skills/{}/courses", skill["pid"].as_str().unwrap());
+        let refused = request
+            .post(&courses)
+            .json(&json!({
+                "course_ref": "course:11111111-1111-4111-8111-1111111111c1",
+                "title": format!("ATOM{tag}-course"),
+                "hours": 5,
+            }))
+            .await;
+        assert!(refused.status_code().is_server_error(), "{}", refused.status_code());
+        let listed: Value = request.get(&courses).await.json();
+        assert_eq!(listed["courses"].as_array().unwrap().len(), 0, "the course was kept without its audit row");
+
+        ctx.db
+            .execute_unprepared(&format!(
+                "DROP TRIGGER refuse_atom_{tag} ON audit_logs; DROP FUNCTION refuse_atom_{tag}();"
+            ))
+            .await
+            .unwrap();
+    })
+    .await;
+}

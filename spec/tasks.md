@@ -4025,9 +4025,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       1 failed (`pickers.spec.ts:69`, a hover-position spec; it passed 3 of 3 alone, so it is flaky under load, not caused here).
       **Not checked:** signing in with GitHub, or editing and saving an entry, under the policy (no GitHub login was used), so
       a host the CMS needs only after sign-in may still be missing; Firefox and Safari.
-- [ ] WPM-T250 **Write and audit in one transaction.** `mutate(ctx, |txn| …)` in `controllers/mod.rs`; then move the about 154
+- [x] WPM-T250 (2026-10-23) **Write and audit in one transaction.** `mutate(ctx, |txn| …)` in `controllers/mod.rs`; then move the about 154
       `Audit::record(&ctx.db, …)` calls into the write's transaction, one controller per commit. Decide (plan.md section 6)
       whether `Audit::record` should stop accepting a bare connection. A test that a failing audit insert rolls back the change.
+      Done: every `Audit::record` of a change now takes the change's transaction; the 19 left on `&ctx.db` are audits of reads
+      (listed in `READ_AUDITS`, guarded by a source test in `models/audit_logs.rs` that fails on any new one outside a
+      transaction). Reads that used the pool were moved before `begin()` (the test pool has one connection, so a pool read
+      inside a transaction waits forever): `funding`, `grades`, `me`, `escalations`, `oversight_packs` (`pack_payload` then
+      `insert_pack`). `career::aspiration_target` split out for the line lint. `Audit::record` stays generic over the connection
+      (reads need it). Test: `a_change_whose_audit_row_fails_is_not_kept` (a trigger refuses the audit insert; the skill and
+      catalogue course are not kept).
+      Verified: clippy pedantic clean, 613 unit tests, the full `--ignored` request suite against a local Postgres, all passing.
+      **Not checked:** the UI suites (no UI change); concurrency under load beyond the existing chain test.
 - [ ] WPM-T251 **Shared controller helpers.** `writable_worker` (×9), `ensure_org_in_scope` (×6 plus 23 inline), `ratio_json`
       (×6), a `forbidden(msg)` beside `unprocessable` (about 9 hand-built 403s), and `find_in` in place of local `BATCH`
       constants (`workforce.rs:742`, `key_person.rs:50`). No behaviour change; the request suites pass unchanged.

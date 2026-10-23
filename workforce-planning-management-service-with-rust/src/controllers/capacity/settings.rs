@@ -35,10 +35,11 @@ pub(super) async fn set_settings(
         .filter(capacity_settings::Column::OrganizationRef.eq(&payload.organization_ref))
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     let row = if let Some(row) = existing {
         let mut active = row.into_active_model();
         active.wip_limit = ActiveValue::set(payload.wip_limit);
-        active.update(&ctx.db).await?
+        active.update(&txn).await?
     } else {
         capacity_settings::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
@@ -46,11 +47,11 @@ pub(super) async fn set_settings(
             wip_limit: ActiveValue::set(payload.wip_limit),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "capacity_settings",
         row.pid,
         "set",
@@ -58,6 +59,7 @@ pub(super) async fn set_settings(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(json!({ "organization_ref": row.organization_ref, "wip_limit": row.wip_limit }))
 }
 

@@ -551,6 +551,7 @@ async fn add_override(
         return Err(unprocessable("ends_on must not be before starts_on"));
     }
     check_members(&ctx, &rota.organization_ref, &[payload.worker_pid]).await?;
+    let txn = ctx.db.begin().await?;
     let row = rota_overrides::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         rota_pid: ActiveValue::set(rota.pid),
@@ -566,10 +567,10 @@ async fn add_override(
         created_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Notification::push(
-        &ctx.db,
+        &txn,
         payload.worker_pid,
         "on_call_swap",
         &format!(
@@ -583,15 +584,8 @@ async fn add_override(
         }),
     )
     .await?;
-    Audit::record(
-        &ctx.db,
-        "rota",
-        rota.pid,
-        "swap_added",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    Audit::record(&txn, "rota", rota.pid, "swap_added", caller.actor(), None).await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 
@@ -608,18 +602,12 @@ async fn delete_override(
         .await?
         .ok_or(Error::NotFound)?;
     let rota = find_rota(&ctx, &caller, &row.rota_pid.to_string()).await?;
+    let txn = ctx.db.begin().await?;
     rota_overrides::Entity::delete_by_id(row.id)
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
-    Audit::record(
-        &ctx.db,
-        "rota",
-        rota.pid,
-        "swap_removed",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    Audit::record(&txn, "rota", rota.pid, "swap_removed", caller.actor(), None).await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

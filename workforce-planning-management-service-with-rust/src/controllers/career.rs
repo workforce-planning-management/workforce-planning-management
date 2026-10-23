@@ -173,6 +173,7 @@ async fn add_past_role(
             existing[i].started_at.date_naive()
         )));
     }
+    let txn = ctx.db.begin().await?;
     let row = worker_framework_roles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -187,10 +188,10 @@ async fn add_past_role(
         on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "past_role_added",
@@ -198,6 +199,7 @@ async fn add_past_role(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(role_row(&row))
 }
 
@@ -309,6 +311,7 @@ async fn add_past_skill(
             "that overlaps another interval recorded for this skill",
         ));
     }
+    let txn = ctx.db.begin().await?;
     let row = worker_skill_history::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -321,10 +324,10 @@ async fn add_past_skill(
         on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "past_skill_added",
@@ -332,6 +335,7 @@ async fn add_past_skill(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 
@@ -402,6 +406,72 @@ async fn skills_as_of(
 
 // ─── Aspirations ────────────────────────────────────────────────────────────
 
+/// The role or skill an aspiration points at, checked against its catalogue:
+/// `(framework, profile, occupation, role label, skill)`.
+async fn aspiration_target(
+    ctx: &AppContext,
+    payload: &AspirationPayload,
+) -> Result<(
+    Option<String>,
+    Option<Uuid>,
+    Option<String>,
+    Option<String>,
+    Option<Uuid>,
+)> {
+    Ok(if payload.kind == "role" {
+        let framework = payload
+            .framework_slug
+            .clone()
+            .filter(|f| crate::rules::framework_roles::valid_framework(f))
+            .ok_or_else(|| unprocessable("a role aspiration needs a framework_slug"))?;
+        if framework == PCF_SLUG {
+            let id = payload
+                .role_profile_pid
+                .ok_or_else(|| unprocessable("role_profile_pid is required for the UK GDAD PCF"))?;
+            let profile = role_profiles::Entity::find()
+                .filter(role_profiles::Column::Pid.eq(id))
+                .filter(role_profiles::Column::DeletedAt.is_null())
+                .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
+                .one(&ctx.db)
+                .await?
+                .ok_or_else(|| unprocessable("that is not a UK GDAD PCF role level"))?;
+            (
+                Some(framework),
+                Some(profile.pid),
+                None,
+                Some(profile.job_title),
+                None,
+            )
+        } else {
+            let uri = payload
+                .occupation_uri
+                .clone()
+                .ok_or_else(|| unprocessable("occupation_uri is required for ESCO"))?;
+            let occupation = super::esco::find_occupation(ctx, &uri)
+                .await
+                .map_err(|_| unprocessable("that is not an ESCO occupation in the pinned copy"))?;
+            (
+                Some(framework),
+                None,
+                Some(occupation.uri),
+                Some(occupation.label),
+                None,
+            )
+        }
+    } else {
+        let id = payload
+            .skill_pid
+            .ok_or_else(|| unprocessable("a skill aspiration needs a skill_pid"))?;
+        skills::Entity::find()
+            .filter(skills::Column::Pid.eq(id))
+            .filter(skills::Column::DeletedAt.is_null())
+            .one(&ctx.db)
+            .await?
+            .ok_or(Error::NotFound)?;
+        (None, None, None, None, Some(id))
+    })
+}
+
 /// `POST /api/workers/{pid}/aspirations` body.
 #[derive(Debug, Deserialize)]
 struct AspirationPayload {
@@ -455,58 +525,9 @@ async fn add_aspiration(
         payload.note.as_deref(),
     )
     .map_err(|e| unprocessable(&e))?;
-    let (framework, profile, occupation, role_label, skill) = if payload.kind == "role" {
-        let framework = payload
-            .framework_slug
-            .clone()
-            .filter(|f| crate::rules::framework_roles::valid_framework(f))
-            .ok_or_else(|| unprocessable("a role aspiration needs a framework_slug"))?;
-        if framework == PCF_SLUG {
-            let id = payload
-                .role_profile_pid
-                .ok_or_else(|| unprocessable("role_profile_pid is required for the UK GDAD PCF"))?;
-            let profile = role_profiles::Entity::find()
-                .filter(role_profiles::Column::Pid.eq(id))
-                .filter(role_profiles::Column::DeletedAt.is_null())
-                .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-                .one(&ctx.db)
-                .await?
-                .ok_or_else(|| unprocessable("that is not a UK GDAD PCF role level"))?;
-            (
-                Some(framework),
-                Some(profile.pid),
-                None,
-                Some(profile.job_title),
-                None,
-            )
-        } else {
-            let uri = payload
-                .occupation_uri
-                .clone()
-                .ok_or_else(|| unprocessable("occupation_uri is required for ESCO"))?;
-            let occupation = super::esco::find_occupation(&ctx, &uri)
-                .await
-                .map_err(|_| unprocessable("that is not an ESCO occupation in the pinned copy"))?;
-            (
-                Some(framework),
-                None,
-                Some(occupation.uri),
-                Some(occupation.label),
-                None,
-            )
-        }
-    } else {
-        let id = payload
-            .skill_pid
-            .ok_or_else(|| unprocessable("a skill aspiration needs a skill_pid"))?;
-        skills::Entity::find()
-            .filter(skills::Column::Pid.eq(id))
-            .filter(skills::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
-            .ok_or(Error::NotFound)?;
-        (None, None, None, None, Some(id))
-    };
+    let (framework, profile, occupation, role_label, skill) =
+        aspiration_target(&ctx, &payload).await?;
+    let txn = ctx.db.begin().await?;
     let row = worker_aspirations::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -526,10 +547,10 @@ async fn add_aspiration(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "aspiration_added",
@@ -537,6 +558,7 @@ async fn add_aspiration(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 
@@ -850,9 +872,10 @@ async fn update_aspiration(
         rules::validate_visibility(&visibility).map_err(|e| unprocessable(&e))?;
         active.visibility = ActiveValue::set(visibility);
     }
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "aspiration_updated",
@@ -860,6 +883,7 @@ async fn update_aspiration(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(
         serde_json::json!({ "pid": updated.pid, "status": updated.status, "visibility": updated.visibility }),
     )
@@ -876,9 +900,10 @@ async fn delete_aspiration(
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
     let mut active: worker_aspirations::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "aspiration_dropped",
@@ -886,6 +911,7 @@ async fn delete_aspiration(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

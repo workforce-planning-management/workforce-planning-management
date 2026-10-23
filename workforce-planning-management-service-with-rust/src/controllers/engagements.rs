@@ -142,6 +142,7 @@ async fn decide(
     if worker.terminated_on.is_some() {
         return Err(unprocessable("the worker's employment has ended"));
     }
+    let txn = ctx.db.begin().await?;
     let row = engagement_decisions::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -151,11 +152,11 @@ async fn decide(
         decided_on: ActiveValue::set(Utc::now().date_naive()),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     // The audit entry names the event, not the decision.
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "engagement_decision_recorded",
@@ -163,6 +164,7 @@ async fn decide(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(json!({ "pid": row.pid, "ends_on": row.ends_on, "decision": row.decision }))
 }
 
@@ -323,7 +325,9 @@ async fn set_details(
     )
     .map_err(|e| unprocessable(&e))?;
     let recorded_by = caller.actor().map(ToString::to_string);
-    let saved = if let Some(row) = details_of(&ctx, worker.pid).await? {
+    let existing = details_of(&ctx, worker.pid).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = if let Some(row) = existing {
         let mut active: worker_contractor_details::ActiveModel = row.into();
         active.supplier_ref = ActiveValue::set(payload.supplier_ref.clone());
         active.route = ActiveValue::set(payload.route.clone());
@@ -331,7 +335,7 @@ async fn set_details(
         active.rate_currency = ActiveValue::set(payload.rate_currency.clone());
         active.rate_basis = ActiveValue::set(payload.rate_basis.clone());
         active.recorded_by = ActiveValue::set(recorded_by);
-        active.update(&ctx.db).await?
+        active.update(&txn).await?
     } else {
         worker_contractor_details::ActiveModel {
             worker_pid: ActiveValue::set(worker.pid),
@@ -343,11 +347,11 @@ async fn set_details(
             recorded_by: ActiveValue::set(recorded_by),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "contractor_details_set",
@@ -355,6 +359,7 @@ async fn set_details(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(json!({ "contractor_details": details_json(&saved, true) }))
 }
 
@@ -367,11 +372,12 @@ async fn clear_details(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let row = details_of(&ctx, worker.pid).await?.ok_or(Error::NotFound)?;
+    let txn = ctx.db.begin().await?;
     worker_contractor_details::Entity::delete_by_id(row.id)
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "contractor_details_cleared",
@@ -379,6 +385,7 @@ async fn clear_details(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty()
 }
 
@@ -417,6 +424,7 @@ async fn record_assessment(
     if on > today {
         return Err(unprocessable("assessed_on must not be in the future"));
     }
+    let txn = ctx.db.begin().await?;
     let row = engagement_status_assessments::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -425,10 +433,10 @@ async fn record_assessment(
         reviewed_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "status_assessed",
@@ -436,6 +444,7 @@ async fn record_assessment(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(json!({ "pid": row.pid }))
 }
 

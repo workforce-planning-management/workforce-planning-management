@@ -101,6 +101,16 @@ fn strip_deciding_body(status: &mut serde_json::Value) {
 ///
 /// A database error.
 pub async fn freeze(ctx: &AppContext, org: &str, today: chrono::NaiveDate) -> Result<packs::Model> {
+    let (month, payload) = pack_payload(ctx, org, today).await?;
+    insert_pack(&ctx.db, org, today, month, payload).await
+}
+
+/// The month and frozen payload for `org` as of `today`, read before any transaction opens.
+async fn pack_payload(
+    ctx: &AppContext,
+    org: &str,
+    today: chrono::NaiveDate,
+) -> Result<(chrono::NaiveDate, serde_json::Value)> {
     let this_month = today.with_day(1).unwrap_or(today);
     let month = this_month
         .checked_sub_months(chrono::Months::new(1))
@@ -119,6 +129,17 @@ pub async fn freeze(ctx: &AppContext, org: &str, today: chrono::NaiveDate) -> Re
                   audience. It holds aggregates only: no worker, no worker number, no role and no list of \
                   people. An unknown month is shown as unknown, never as a zero.",
     });
+    Ok((month, payload))
+}
+
+/// Store a frozen pack on `db` (a transaction, when the caller audits it in the same one).
+async fn insert_pack<C: ConnectionTrait>(
+    db: &C,
+    org: &str,
+    today: chrono::NaiveDate,
+    month: chrono::NaiveDate,
+    payload: serde_json::Value,
+) -> Result<packs::Model> {
     Ok(packs::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(org.to_string()),
@@ -127,7 +148,7 @@ pub async fn freeze(ctx: &AppContext, org: &str, today: chrono::NaiveDate) -> Re
         payload: ActiveValue::set(payload),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(db)
     .await?)
 }
 
@@ -161,9 +182,12 @@ async fn create(
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &p.organization_ref).await?;
     ensure_may_freeze(&ctx, &caller, &p.organization_ref).await?;
-    let row = freeze(&ctx, &p.organization_ref, chrono::Utc::now().date_naive()).await?;
+    let today = chrono::Utc::now().date_naive();
+    let (month, payload) = pack_payload(&ctx, &p.organization_ref, today).await?;
+    let txn = ctx.db.begin().await?;
+    let row = insert_pack(&txn, &p.organization_ref, today, month, payload).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "oversight_pack",
         row.pid,
         "frozen",
@@ -171,6 +195,7 @@ async fn create(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(pack_json(&row, None))
 }
 
@@ -256,6 +281,7 @@ async fn withdraw(
     if withdrawal_of(&ctx, row.pid).await?.is_some() {
         return Err(unprocessable("this pack is already withdrawn"));
     }
+    let txn = ctx.db.begin().await?;
     let w = withdrawals::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         pack_pid: ActiveValue::set(row.pid),
@@ -263,10 +289,10 @@ async fn withdraw(
         reason: ActiveValue::set(p.reason),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "oversight_pack",
         row.pid,
         "withdrawn",
@@ -274,6 +300,7 @@ async fn withdraw(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(pack_json(&row, Some(&w)))
 }
 

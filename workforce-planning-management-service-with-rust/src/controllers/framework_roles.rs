@@ -193,9 +193,10 @@ async fn clear_selection(
 ) -> Result<Response> {
     check_framework(&framework)?;
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    close_current(&ctx.db, worker.pid, &framework).await?;
+    let txn = ctx.db.begin().await?;
+    close_current(&txn, worker.pid, &framework).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "framework_role_cleared",
@@ -203,6 +204,7 @@ async fn clear_selection(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

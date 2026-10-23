@@ -110,7 +110,9 @@ async fn set_position(
     let step = i32::try_from(step).unwrap_or(i32::MAX);
     let recorded_by = caller.actor().map(ToString::to_string);
     let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
-    let saved = match current(&ctx, &worker).await? {
+    let existing = current(&ctx, &worker).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = match existing {
         Some(row) => {
             let mut active: worker_pay_positions::ActiveModel = row.into();
             active.scale_id = ActiveValue::set(scale.to_string());
@@ -119,7 +121,7 @@ async fn set_position(
             active.step_since = ActiveValue::set(step_since);
             active.recorded_by = ActiveValue::set(recorded_by);
             active.on_behalf = ActiveValue::set(on_behalf);
-            active.update(&ctx.db).await?
+            active.update(&txn).await?
         }
         None => {
             worker_pay_positions::ActiveModel {
@@ -132,13 +134,13 @@ async fn set_position(
                 on_behalf: ActiveValue::set(on_behalf),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?
         }
     };
     // No band, step or amount in the audit entry: the position is the sensitive thing.
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "pay_position_set",
@@ -146,6 +148,7 @@ async fn set_position(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(json!({ "pay_position": view(&saved, today) }))
 }
 
@@ -158,11 +161,12 @@ async fn clear_position(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let row = current(&ctx, &worker).await?.ok_or(Error::NotFound)?;
+    let txn = ctx.db.begin().await?;
     worker_pay_positions::Entity::delete_by_id(row.id)
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "pay_position_cleared",
@@ -170,6 +174,7 @@ async fn clear_position(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::empty()
 }
 

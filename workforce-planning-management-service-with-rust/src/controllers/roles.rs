@@ -6,7 +6,7 @@
 //! competency-gap analysis measures declared proficiency against.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -79,6 +79,7 @@ async fn create_profile(
             "a role profile for this job title already exists",
         ));
     }
+    let txn = ctx.db.begin().await?;
     let row = role_profiles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         job_title: ActiveValue::set(title),
@@ -87,10 +88,10 @@ async fn create_profile(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "role_profile",
         row.pid,
         "created",
@@ -98,6 +99,7 @@ async fn create_profile(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
     })
@@ -290,13 +292,14 @@ async fn set_requirement(
         .filter(role_skill_requirements::Column::SkillPid.eq(skill.pid))
         .one(&ctx.db)
         .await?;
+    let txn = ctx.db.begin().await?;
     match existing {
         Some(row) => {
             let mut active: role_skill_requirements::ActiveModel = row.into();
             active.min_proficiency = ActiveValue::set(payload.min_proficiency);
             active.importance = ActiveValue::set(payload.importance.clone());
             active.note = ActiveValue::set(payload.note.clone());
-            active.update(&ctx.db).await?;
+            active.update(&txn).await?;
         }
         None => {
             role_skill_requirements::ActiveModel {
@@ -308,12 +311,12 @@ async fn set_requirement(
                 note: ActiveValue::set(payload.note.clone()),
                 ..Default::default()
             }
-            .insert(&ctx.db)
+            .insert(&txn)
             .await?;
         }
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "role_profile",
         profile.pid,
         "requirement_set",
@@ -325,6 +328,7 @@ async fn set_requirement(
         })),
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 
@@ -344,9 +348,10 @@ async fn remove_requirement(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    row.delete(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    row.delete(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "role_profile",
         profile.pid,
         "requirement_removed",
@@ -354,6 +359,7 @@ async fn remove_requirement(
         Some(serde_json::json!({ "skill_pid": skill_pid })),
     )
     .await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

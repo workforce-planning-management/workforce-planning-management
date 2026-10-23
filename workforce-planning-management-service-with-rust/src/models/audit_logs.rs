@@ -191,3 +191,138 @@ impl Model {
         Ok(rows)
     }
 }
+
+/// A source guard (WPM-T250): an audit row commits with the change it records, so every
+/// `Audit::record` outside a transaction must be on [`READ_AUDITS`], the audits of reads.
+#[cfg(test)]
+mod tests {
+    /// `(file under src/, action)`: audits of a read, which have no write to share a transaction with.
+    const READ_AUDITS: &[(&str, &str)] = &[
+        ("controllers/engagements.rs", "rate_read"),
+        ("controllers/adjustments.rs", "adjustments_read"),
+        ("controllers/development.rs", "review_content_read"),
+        ("controllers/development.rs", "succession_read"),
+        ("controllers/conversion_plans.rs", "conversion_plans_read"),
+        ("controllers/conversion_plans.rs", "conversion_plans_listed"),
+        ("controllers/me.rs", "contact_details_read"),
+        ("controllers/appraisals.rs", "report_read"),
+        ("controllers/funding.rs", "contingent_list_read"),
+        ("controllers/funding.rs", "contingent_workforce_read"),
+        ("controllers/key_person.rs", "key_person_read"),
+        ("controllers/hr_core.rs", "salary_read"),
+        ("controllers/health_requirements.rs", "health_record_read"),
+        ("controllers/privacy.rs", "subject_access_exported"),
+        ("controllers/assessments.rs", "results_read"),
+        (
+            "controllers/equality_monitoring.rs",
+            "equality_monitoring_summary_read",
+        ),
+        ("controllers/programmes.rs", "programme_rollup_read"),
+        ("controllers/payroll.rs", "payslips_read"),
+        ("controllers/payroll.rs", "comparison_read"),
+    ];
+
+    /// The connection arguments that are, or are handed, a transaction.
+    const IN_TRANSACTION: &[&str] = &["&txn", "txn", "db"];
+
+    /// The top-level arguments of the call that opens at `open` (the index after its `(`).
+    fn arguments(source: &str, open: usize) -> Vec<String> {
+        let mut out = vec![String::new()];
+        let mut depth = 0usize;
+        let mut in_string = false;
+        let mut previous = '\0';
+        for c in source[open..].chars() {
+            if in_string {
+                out.last_mut().unwrap().push(c);
+                if c == '"' && previous != '\\' {
+                    in_string = false;
+                }
+            } else {
+                match c {
+                    '"' => {
+                        in_string = true;
+                        out.last_mut().unwrap().push(c);
+                    }
+                    '(' | '[' | '{' => {
+                        depth += 1;
+                        out.last_mut().unwrap().push(c);
+                    }
+                    ')' | ']' | '}' if depth == 0 => break,
+                    ')' | ']' | '}' => {
+                        depth -= 1;
+                        out.last_mut().unwrap().push(c);
+                    }
+                    ',' if depth == 0 => out.push(String::new()),
+                    _ => out.last_mut().unwrap().push(c),
+                }
+            }
+            previous = c;
+        }
+        out.into_iter().map(|a| a.trim().to_string()).collect()
+    }
+
+    fn sources(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                sources(&path, out);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                out.push(path);
+            }
+        }
+    }
+
+    #[test]
+    fn every_audit_of_a_change_is_in_its_transaction() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let mut files = Vec::new();
+        sources(&root, &mut files);
+        let mut outside = Vec::new();
+        let mut seen_reads = Vec::new();
+        for path in files {
+            let file = path
+                .strip_prefix(&root)
+                .unwrap()
+                .to_string_lossy()
+                .replace('\\', "/");
+            if file == "models/audit_logs.rs" {
+                continue;
+            }
+            let source = std::fs::read_to_string(&path).unwrap();
+            for (at, _) in source.match_indices("Audit::record(") {
+                let args = arguments(&source, at + "Audit::record(".len());
+                let action = args.get(3).map_or("", |a| a.trim_matches('"')).to_string();
+                if IN_TRANSACTION.contains(&args[0].as_str()) {
+                    continue;
+                }
+                if READ_AUDITS.contains(&(file.as_str(), action.as_str())) {
+                    seen_reads.push((file.clone(), action));
+                } else {
+                    let line = source[..at].lines().count();
+                    outside.push(format!("{file}:{line} {} {action}", args[0]));
+                }
+            }
+        }
+        assert!(
+            outside.is_empty(),
+            "audit rows written outside the change's transaction:\n{}",
+            outside.join("\n")
+        );
+        for (file, action) in READ_AUDITS {
+            assert!(
+                seen_reads.iter().any(|(f, a)| f == file && a == action),
+                "READ_AUDITS lists {file} {action}, which no longer exists"
+            );
+        }
+    }
+
+    #[test]
+    fn arguments_split_at_the_top_level_only() {
+        let source = r#"Audit::record(&ctx.db, "worker", w.pid, "moved, twice", caller.actor(), Some(json!({ "a": [1, 2] }))).await"#;
+        let args = arguments(source, "Audit::record(".len());
+        assert_eq!(args.len(), 6);
+        assert_eq!(args[0], "&ctx.db");
+        assert_eq!(args[3], "\"moved, twice\"");
+        assert_eq!(args[5], r#"Some(json!({ "a": [1, 2] }))"#);
+    }
+}

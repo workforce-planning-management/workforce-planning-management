@@ -6,7 +6,7 @@
 //! erased with them. Nothing here changes an engagement.
 
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, ExprTrait, QuerySelect, Select};
+use sea_orm::{ActiveValue, ExprTrait, QuerySelect, Select, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -122,13 +122,15 @@ async fn set_funding(
     rules::validate(&payload.kind, payload.ends_on, worker.hired_on)
         .map_err(|e| unprocessable(&e))?;
     let by = caller.actor().map(ToString::to_string);
-    let saved = if let Some(row) = find(&ctx, worker.pid).await? {
+    let existing = find(&ctx, worker.pid).await?;
+    let txn = ctx.db.begin().await?;
+    let saved = if let Some(row) = existing {
         let mut active: post_fundings::ActiveModel = row.into();
         active.kind = ActiveValue::set(payload.kind);
         active.programme_ref = ActiveValue::set(payload.programme_ref);
         active.ends_on = ActiveValue::set(payload.ends_on);
         active.recorded_by = ActiveValue::set(by);
-        active.update(&ctx.db).await?
+        active.update(&txn).await?
     } else {
         post_fundings::ActiveModel {
             worker_pid: ActiveValue::set(worker.pid),
@@ -138,11 +140,11 @@ async fn set_funding(
             recorded_by: ActiveValue::set(by),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&txn)
         .await?
     };
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "post_funding_set",
@@ -150,6 +152,7 @@ async fn set_funding(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(view(&worker, Some(&saved)))
 }
 
@@ -162,16 +165,17 @@ async fn clear_funding(
 ) -> Result<Response> {
     let worker = super::engagements::writable_worker(&ctx, &caller, &pid).await?;
     ensure_privileged(&ctx, &caller, &worker).await?;
+    let txn = ctx.db.begin().await?;
     let removed = post_fundings::Entity::delete_many()
         .filter(post_fundings::Column::WorkerPid.eq(worker.pid))
-        .exec(&ctx.db)
+        .exec(&txn)
         .await?
         .rows_affected;
     if removed == 0 {
         return Err(Error::NotFound);
     }
     Audit::record(
-        &ctx.db,
+        &txn,
         "worker",
         worker.pid,
         "post_funding_cleared",
@@ -179,6 +183,7 @@ async fn clear_funding(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(view(&worker, None))
 }
 

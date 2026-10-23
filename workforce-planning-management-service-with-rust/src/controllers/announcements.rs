@@ -15,7 +15,7 @@
 
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
@@ -318,6 +318,7 @@ async fn create(
     )
     .map_err(|e| unprocessable(&e))?;
     validate_links_payload(&payload.links)?;
+    let txn = ctx.db.begin().await?;
     let row = announcements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(payload.organization_ref),
@@ -337,10 +338,10 @@ async fn create(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "announcement",
         row.pid,
         "posted",
@@ -348,6 +349,7 @@ async fn create(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 
@@ -421,9 +423,10 @@ async fn update(
     active.pinned = ActiveValue::set(pinned);
     active.publish_on = ActiveValue::set(publish_on);
     active.expires_on = ActiveValue::set(expires_on);
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "announcement",
         updated.pid,
         "edited",
@@ -431,6 +434,7 @@ async fn update(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(row_json(&updated, Utc::now().date_naive()))
 }
 
@@ -446,16 +450,10 @@ async fn retire(
     let pid = row.pid;
     let mut active: announcements::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&ctx.db).await?;
-    Audit::record(
-        &ctx.db,
-        "announcement",
-        pid,
-        "retired",
-        caller.actor(),
-        None,
-    )
-    .await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
+    Audit::record(&txn, "announcement", pid, "retired", caller.actor(), None).await?;
+    txn.commit().await?;
     format::empty_json()
 }
 

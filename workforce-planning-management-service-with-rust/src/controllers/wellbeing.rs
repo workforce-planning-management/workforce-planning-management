@@ -124,6 +124,7 @@ async fn create_entitlement(
     if let Some(plan_pid) = payload.benefit_plan_pid {
         records::find_benefit_plan(&ctx.db, plan_pid).await?;
     }
+    let txn = ctx.db.begin().await?;
     let row = wellbeing_entitlements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -141,10 +142,10 @@ async fn create_entitlement(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "wellbeing_entitlement",
         row.pid,
         "created",
@@ -152,6 +153,7 @@ async fn create_entitlement(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -211,9 +213,10 @@ async fn update_entitlement(
     active.doses = ActiveValue::set(payload.doses);
     active.active_from = ActiveValue::set(payload.active_from);
     active.active_until = ActiveValue::set(payload.active_until);
-    let updated = active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "wellbeing_entitlement",
         row_pid,
         "updated",
@@ -221,6 +224,7 @@ async fn update_entitlement(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(updated)
 }
 
@@ -236,9 +240,10 @@ async fn delete_entitlement(
     let row_pid = row.pid;
     let mut active: wellbeing_entitlements::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    active.update(&ctx.db).await?;
+    let txn = ctx.db.begin().await?;
+    active.update(&txn).await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "wellbeing_entitlement",
         row_pid,
         "deleted",
@@ -246,6 +251,7 @@ async fn delete_entitlement(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "deleted": row_pid }))
 }
 
@@ -573,6 +579,7 @@ async fn create_survey(
         problems.push("active_from must not be after active_until");
     }
     ensure_valid(&problems.into_vec())?;
+    let txn = ctx.db.begin().await?;
     let row = pulse_surveys::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -582,10 +589,10 @@ async fn create_survey(
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     Audit::record(
-        &ctx.db,
+        &txn,
         "pulse_survey",
         row.pid,
         "created",
@@ -593,6 +600,7 @@ async fn create_survey(
         None,
     )
     .await?;
+    txn.commit().await?;
     format::json(PidRef::of(row.pid))
 }
 
@@ -667,6 +675,7 @@ async fn submit_response(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
+    let txn = ctx.db.begin().await?;
     let row = pulse_responses::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         survey_pid: ActiveValue::set(survey.pid),
@@ -675,11 +684,12 @@ async fn submit_response(
         submitted_on: ActiveValue::set(today),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&txn)
     .await?;
     // Deliberately actor-less (WPM-D20): the trail records that a
     // submission happened, never who made it.
-    Audit::record(&ctx.db, "pulse_response", row.pid, "submitted", None, None).await?;
+    Audit::record(&txn, "pulse_response", row.pid, "submitted", None, None).await?;
+    txn.commit().await?;
     format::json(serde_json::json!({ "submitted": true }))
 }
 
