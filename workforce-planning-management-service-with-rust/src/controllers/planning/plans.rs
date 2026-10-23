@@ -169,11 +169,7 @@ pub(super) async fn scoped_plan(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.contains(&plan.organization_ref)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(ctx, caller, &plan.organization_ref).await?;
     Ok(plan)
 }
 

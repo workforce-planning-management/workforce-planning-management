@@ -159,6 +159,61 @@ pub fn record_rejection((status, reason): (StatusCode, String)) -> Error {
     Error::CustomError(status, ErrorDetail::new(code, &reason))
 }
 
+/// A `403` with a single message, for a refusal the caller's role earns (WPM-T251).
+#[must_use]
+pub fn forbidden(message: &str) -> Error {
+    record_rejection((StatusCode::FORBIDDEN, message.to_string()))
+}
+
+/// A worker the caller may change: HR, or the worker themself.
+///
+/// # Errors
+///
+/// `404` for an unknown pid, `403` when the caller may not write the record.
+pub(crate) async fn writable_worker(
+    ctx: &AppContext,
+    caller: &crate::auth::MaybeAuthUser,
+    pid: &str,
+) -> Result<crate::models::_entities::workers::Model> {
+    let worker =
+        crate::models::records::find_worker(&ctx.db, crate::models::records::parse_pid(pid)?)
+            .await?;
+    crate::auth::authorize_record(
+        caller,
+        authentication_verifier::Action::Write,
+        &crate::auth::worker_resource_attrs(&worker),
+    )
+    .map_err(record_rejection)?;
+    Ok(worker)
+}
+
+/// `404` for an organization outside the caller's scope, as for every scoped read.
+///
+/// # Errors
+///
+/// `404` when out of scope; a database error.
+pub(crate) async fn ensure_org_in_scope(
+    ctx: &AppContext,
+    caller: &crate::auth::MaybeAuthUser,
+    org: &str,
+) -> Result<()> {
+    if let Some(refs) =
+        crate::models::memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
+        && !refs.iter().any(|r| r == org)
+    {
+        return Err(Error::NotFound);
+    }
+    Ok(())
+}
+
+/// Render a `(numerator, denominator, value)` triple as a terms-carrying ratio object, or
+/// `null` when there is nothing to divide.
+pub(crate) fn ratio_json(terms: Option<(usize, usize, f64)>) -> serde_json::Value {
+    terms.map_or(serde_json::Value::Null, |(numerator, denominator, value)| {
+        serde_json::json!({ "numerator": numerator, "denominator": denominator, "value": value })
+    })
+}
+
 // ─── Pagination (WPM-T40; agents/share/restful.md) ──────────────────────────
 
 /// Largest page any collection read will serve. A bigger `limit` is

@@ -4037,9 +4037,16 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       catalogue course are not kept).
       Verified: clippy pedantic clean, 613 unit tests, the full `--ignored` request suite against a local Postgres, all passing.
       **Not checked:** the UI suites (no UI change); concurrency under load beyond the existing chain test.
-- [ ] WPM-T251 **Shared controller helpers.** `writable_worker` (×9), `ensure_org_in_scope` (×6 plus 23 inline), `ratio_json`
+- [x] WPM-T251 (2026-10-23) **Shared controller helpers.** `writable_worker` (×9), `ensure_org_in_scope` (×6 plus 23 inline), `ratio_json`
       (×6), a `forbidden(msg)` beside `unprocessable` (about 9 hand-built 403s), and `find_in` in place of local `BATCH`
       constants (`workforce.rs:742`, `key_person.rs:50`). No behaviour change; the request suites pass unchanged.
+      Done: `controllers/mod.rs` now owns `writable_worker`, `ensure_org_in_scope`, `ratio_json` and `forbidden`; the local copies
+      (7, 6 and 7 files, and the planning and capacity modules) are gone, about 12 inline scope checks call the helper, 11
+      hand-built 403s call `forbidden`, and `workforce.rs` and `key_person.rs` use `IN_BATCH` rather than their own constant.
+      The two controllers that take a `Uuid` pid (`groups.rs`, `rota_swaps.rs`) keep their own `writable_worker`.
+      Verified: clippy pedantic clean, 613 unit tests, the full `--ignored` request suite (115) against a local Postgres, unchanged.
+      **Not checked:** inline scope checks that return something other than `NotFound` (`duplicates.rs`, `reporting.rs`,
+      `groups.rs`) were left as they are.
 - [ ] WPM-T252 **Responses are views, not rows.** About 46 `format::json(row)` responses (`development.rs`, `workforce.rs`,
       `ergonomics.rs`, `appraisals.rs`, `adjustments.rs`, `hr_core.rs`, `learning.rs`, `notifications.rs`) get `*_json` view
       functions. A guard test that no documented response schema carries `id` or `deleted_at`.

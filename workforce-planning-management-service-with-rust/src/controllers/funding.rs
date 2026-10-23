@@ -5,12 +5,13 @@
 //! A kind and a date only, never an amount. HR writes and reads it; it is exported with the worker and
 //! erased with them. Nothing here changes an engagement.
 
+use super::ensure_org_in_scope;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, ExprTrait, QuerySelect, Select, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
-use super::{ensure_valid, unprocessable};
+use super::{ensure_valid, forbidden, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
     engagement_decisions, engagement_extensions, headcount_snapshots, post_fundings, workers,
@@ -50,11 +51,7 @@ fn view(worker: &workers::Model, row: Option<&post_fundings::Model>) -> serde_js
 
 async fn scoped(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Result<workers::Model> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == &worker.organization_ref)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     Ok(worker)
 }
 
@@ -87,10 +84,7 @@ async fn ensure_privileged(
     if facts_for(ctx, claims, worker).await?.privileged {
         Ok(())
     } else {
-        Err(Error::CustomError(
-            axum::http::StatusCode::FORBIDDEN,
-            loco_rs::controller::ErrorDetail::new("forbidden", "only HR records a post's funding"),
-        ))
+        Err(forbidden("only HR records a post's funding"))
     }
 }
 
@@ -110,7 +104,7 @@ async fn set_funding(
     Path(pid): Path<String>,
     Json(payload): Json<FundingPayload>,
 ) -> Result<Response> {
-    let worker = super::engagements::writable_worker(&ctx, &caller, &pid).await?;
+    let worker = super::writable_worker(&ctx, &caller, &pid).await?;
     ensure_privileged(&ctx, &caller, &worker).await?;
     let mut problems = Problems::new();
     problems.ref_opt(
@@ -163,7 +157,7 @@ async fn clear_funding(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = super::engagements::writable_worker(&ctx, &caller, &pid).await?;
+    let worker = super::writable_worker(&ctx, &caller, &pid).await?;
     ensure_privileged(&ctx, &caller, &worker).await?;
     let txn = ctx.db.begin().await?;
     let removed = post_fundings::Entity::delete_many()

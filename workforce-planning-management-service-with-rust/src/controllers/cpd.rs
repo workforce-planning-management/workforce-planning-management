@@ -9,6 +9,7 @@
 //! against a *defined* requirement; ratios over an empty population are
 //! `null`, never `0`.
 
+use super::ratio_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, QuerySelect, QueryTrait, TransactionTrait};
 use serde::Deserialize;
@@ -29,13 +30,6 @@ use crate::validation::Problems;
 #[derive(serde::Serialize)]
 struct PidRef {
     pid: String,
-}
-
-/// Render a ratio triple as a terms-carrying object, or `null`.
-fn ratio_json(terms: Option<(usize, usize, f64)>) -> serde_json::Value {
-    terms.map_or(serde_json::Value::Null, |(numerator, denominator, value)| {
-        serde_json::json!({ "numerator": numerator, "denominator": denominator, "value": value })
-    })
 }
 
 /// Hundredths → units for display.

@@ -10,6 +10,7 @@
 //! Writes pass the worker-record authorization pass like any other change to
 //! a worker's own record.
 
+use super::writable_worker;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait, TransactionTrait};
 use serde::Deserialize;
@@ -17,7 +18,7 @@ use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::esco::{Resolution, occupation_skills, pinned_version, resolve_catalogue_skill};
-use super::{record_rejection, unprocessable};
+use super::unprocessable;
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     esco_occupations, esco_skills, role_profiles, role_skill_requirements, skill_external_refs,
@@ -29,22 +30,6 @@ use crate::rules::framework_roles::{self as rules, Choice};
 use crate::rules::learning::valid_proficiency;
 use crate::tasks::import_esco::ESCO_SLUG;
 use crate::tasks::import_framework::PCF_SLUG;
-
-/// A worker, authorized for a write to their own record.
-async fn writable_worker(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-    pid: &str,
-) -> Result<crate::models::_entities::workers::Model> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    auth::authorize_record(
-        caller,
-        authentication_verifier::Action::Write,
-        &auth::worker_resource_attrs(&worker),
-    )
-    .map_err(record_rejection)?;
-    Ok(worker)
-}
 
 fn check_framework(slug: &str) -> Result<()> {
     if rules::valid_framework(slug) {

@@ -21,7 +21,7 @@ use serde_json::json;
 use std::collections::{BTreeSet, HashMap};
 use uuid::Uuid;
 
-use super::{ensure_valid, record_rejection, unprocessable};
+use super::{ensure_valid, forbidden, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{expense_claims, expense_items, workers};
 use crate::models::audit_logs::Model as Audit;
@@ -86,10 +86,7 @@ async fn gate(ctx: &AppContext, caller: &MaybeAuthUser, claimant: &workers::Mode
 }
 
 fn denied() -> Error {
-    record_rejection((
-        axum::http::StatusCode::FORBIDDEN,
-        "not permitted on this expense claim".to_string(),
-    ))
+    forbidden("not permitted on this expense claim")
 }
 
 async fn find_claim(ctx: &AppContext, pid: &str) -> Result<expense_claims::Model> {

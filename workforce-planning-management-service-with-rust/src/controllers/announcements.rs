@@ -13,6 +13,7 @@
 //! and see which they have read, while editors see only *how many* have read
 //! it, never who.
 
+use super::ensure_org_in_scope;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -20,7 +21,7 @@ use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
-use super::{Page, record_rejection, unprocessable, with_page_headers};
+use super::{Page, forbidden, record_rejection, unprocessable, with_page_headers};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{announcement_reads, announcements, workers};
 use crate::models::audit_logs::Model as Audit;
@@ -43,10 +44,9 @@ async fn require_editor(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> 
     if can_edit(ctx, caller, org).await? {
         Ok(())
     } else {
-        Err(record_rejection((
-            axum::http::StatusCode::FORBIDDEN,
-            "only an editor of that organization may change its announcements".to_string(),
-        )))
+        Err(forbidden(
+            "only an editor of that organization may change its announcements",
+        ))
     }
 }
 
@@ -58,11 +58,7 @@ async fn find(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Result<ann
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == &row.organization_ref)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
 }
 
@@ -302,11 +298,7 @@ async fn create(
     caller: MaybeAuthUser,
     Json(payload): Json<AnnouncementPayload>,
 ) -> Result<Response> {
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == &payload.organization_ref)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(&ctx, &caller, &payload.organization_ref).await?;
     require_editor(&ctx, &caller, &payload.organization_ref).await?;
     let today = Utc::now().date_naive();
     let publish_on = payload.publish_on.unwrap_or(today);

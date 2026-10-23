@@ -9,6 +9,7 @@
 //! owners), as for shifts. Members must be employed workers of the rota's
 //! own organization.
 
+use super::ensure_org_in_scope;
 use chrono::{Duration, NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -51,11 +52,7 @@ pub(super) async fn require_scope(
     caller: &MaybeAuthUser,
     org: &str,
 ) -> Result<()> {
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == org)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(ctx, caller, org).await?;
     Ok(())
 }
 

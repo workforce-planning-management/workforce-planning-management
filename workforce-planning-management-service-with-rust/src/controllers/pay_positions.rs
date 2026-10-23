@@ -9,35 +9,19 @@
 //! and erased with the person. Progression is *eligibility by years on the step
 //! only*; nothing here says the employer will move anyone.
 
+use super::writable_worker;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::ActiveValue;
 use serde::Deserialize;
 use serde_json::json;
 
-use super::{record_rejection, unprocessable};
+use super::unprocessable;
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{worker_pay_positions, workers};
 use crate::models::audit_logs::Model as Audit;
-use crate::models::records;
 use crate::rules::pay_position as rules;
 use crate::rules::pay_scale as scale_rules;
-
-/// A worker, authorized for a write to their record: the worker themself or HR.
-async fn writable_worker(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-    pid: &str,
-) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    auth::authorize_record(
-        caller,
-        authentication_verifier::Action::Write,
-        &auth::worker_resource_attrs(&worker),
-    )
-    .map_err(record_rejection)?;
-    Ok(worker)
-}
 
 async fn current(
     ctx: &AppContext,

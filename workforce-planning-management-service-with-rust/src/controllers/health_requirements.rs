@@ -15,13 +15,12 @@
 //!   requirement; the only aggregate is a compliance count with small groups withheld.
 
 use chrono::Utc;
-use loco_rs::controller::ErrorDetail;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
 
-use super::{ensure_valid, unprocessable};
+use super::{ensure_valid, forbidden, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{health_requirements, worker_health_records, workers};
 use crate::models::audit_logs::Model as Audit;
@@ -68,12 +67,8 @@ fn ensure_occupational_health(caller: &MaybeAuthUser) -> Result<()> {
     if !auth::require_auth() || is_occupational_health(caller) {
         Ok(())
     } else {
-        Err(Error::CustomError(
-            axum::http::StatusCode::FORBIDDEN,
-            ErrorDetail::new(
-                "forbidden",
-                "only occupational health records or reads health requirement detail",
-            ),
+        Err(forbidden(
+            "only occupational health records or reads health requirement detail",
         ))
     }
 }
@@ -613,12 +608,8 @@ async fn compliance(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
     if auth::require_auth() {
         let privileged = caller.claims().is_some_and(has_privileged_attrs);
         if !privileged && !is_occupational_health(&caller) {
-            return Err(Error::CustomError(
-                axum::http::StatusCode::FORBIDDEN,
-                ErrorDetail::new(
-                    "forbidden",
-                    "compliance counts are for HR and occupational health",
-                ),
+            return Err(forbidden(
+                "compliance counts are for HR and occupational health",
             ));
         }
     }

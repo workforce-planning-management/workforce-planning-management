@@ -7,6 +7,7 @@
 //! personal and sensitive: it is masked like salary, and no audit entry carries it. Everything
 //! here is about one person, so it is exported with the worker and erased with them.
 
+use super::writable_worker;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -23,22 +24,6 @@ use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::engagement as rules;
 use crate::validation::Problems;
-
-/// A worker the caller may change: HR, or the worker themself.
-pub(crate) async fn writable_worker(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-    pid: &str,
-) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    auth::authorize_record(
-        caller,
-        authentication_verifier::Action::Write,
-        &auth::worker_resource_attrs(&worker),
-    )
-    .map_err(record_rejection)?;
-    Ok(worker)
-}
 
 fn extension_json(row: &engagement_extensions::Model) -> serde_json::Value {
     json!({

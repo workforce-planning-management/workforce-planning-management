@@ -322,11 +322,7 @@ pub(super) async fn list_open_escalations(
     let org = query
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.contains(&org)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(&ctx, &caller, &org).await?;
     let plans: BTreeMap<Uuid, String> = workforce_plans::Entity::find()
         .filter(workforce_plans::Column::OrganizationRef.eq(&org))
         .filter(workforce_plans::Column::DeletedAt.is_null())

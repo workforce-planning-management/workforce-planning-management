@@ -7,6 +7,7 @@
 //! `EntityRef` URNs owned by other services; WPM keeps no copy of them. A claim becomes
 //! **active** only through a recorded start decision (WPM-D50), never by a plain write.
 
+use super::ensure_org_in_scope;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, IntoActiveModel, QueryOrder, TransactionTrait};
@@ -38,16 +39,6 @@ fn today() -> NaiveDate {
 /// The organizations the caller may see: `None` when unrestricted.
 async fn scope(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<Option<Vec<String>>> {
     memberships::scope_organization_refs(&ctx.db, caller.claims()).await
-}
-
-/// `404` for an organization outside the caller's scope, as for every scoped read.
-async fn ensure_org_in_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
-    if let Some(refs) = scope(ctx, caller).await?
-        && !refs.iter().any(|r| r == org)
-    {
-        return Err(Error::NotFound);
-    }
-    Ok(())
 }
 
 async fn live_pool(

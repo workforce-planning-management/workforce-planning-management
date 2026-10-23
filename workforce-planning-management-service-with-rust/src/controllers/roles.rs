@@ -5,6 +5,7 @@
 //! A profile describes a *role*, never a person; it is the yardstick that
 //! competency-gap analysis measures declared proficiency against.
 
+use super::ratio_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -361,14 +362,6 @@ async fn remove_requirement(
     .await?;
     txn.commit().await?;
     format::empty_json()
-}
-
-/// Render a `(numerator, denominator, value)` triple as a terms-carrying
-/// ratio object, or `null` when there is nothing to divide.
-fn ratio_json(terms: Option<(usize, usize, f64)>) -> serde_json::Value {
-    terms.map_or(serde_json::Value::Null, |(numerator, denominator, value)| {
-        serde_json::json!({ "numerator": numerator, "denominator": denominator, "value": value })
-    })
 }
 
 /// Query for the worker-vs-role gap.

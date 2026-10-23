@@ -11,6 +11,8 @@
 //! is a write, so under the reference policy only HR can make one; a deployer who wants managers to
 //! decide grants them write access in their policy.
 
+use super::ensure_org_in_scope;
+use super::forbidden;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -418,12 +420,8 @@ pub(crate) async fn ensure_decider(
     if facts.privileged || facts.relation == Relation::Manager {
         Ok(())
     } else {
-        Err(Error::CustomError(
-            axum::http::StatusCode::FORBIDDEN,
-            loco_rs::controller::ErrorDetail::new(
-                "forbidden",
-                "only the worker's line manager or HR decides a request",
-            ),
+        Err(forbidden(
+            "only the worker's line manager or HR decides a request",
         ))
     }
 }
@@ -439,11 +437,7 @@ async fn request_and_worker(
         .await?
         .ok_or(Error::NotFound)?;
     let worker = records::find_worker(&ctx.db, row.worker_pid).await?;
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == &worker.organization_ref)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     Ok((row, worker))
 }
 

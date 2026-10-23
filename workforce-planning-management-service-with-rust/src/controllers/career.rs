@@ -13,6 +13,7 @@
 //!
 //! Past entries and aspirations are statements, not assessments.
 
+use super::writable_worker;
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
@@ -20,7 +21,7 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
-use super::{record_rejection, unprocessable};
+use super::unprocessable;
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     esco_occupation_skills, role_profiles, role_skill_requirements, skill_external_refs, skills,
@@ -38,22 +39,6 @@ fn utc(t: sea_orm::prelude::DateTimeWithTimeZone) -> DateTime<Utc> {
 
 fn start_of(day: NaiveDate) -> DateTime<Utc> {
     Utc.from_utc_datetime(&day.and_hms_opt(0, 0, 0).unwrap_or_default())
-}
-
-/// A worker, authorized for a write to their record.
-async fn writable_worker(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-    pid: &str,
-) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    auth::authorize_record(
-        caller,
-        authentication_verifier::Action::Write,
-        &auth::worker_resource_attrs(&worker),
-    )
-    .map_err(record_rejection)?;
-    Ok(worker)
 }
 
 // ─── Role history ───────────────────────────────────────────────────────────

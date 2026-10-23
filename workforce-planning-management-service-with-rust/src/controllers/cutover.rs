@@ -11,6 +11,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use super::ensure_org_in_scope;
 use chrono::NaiveDate;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
@@ -25,19 +26,10 @@ use crate::models::_entities::{
     skill_pool_members, skill_pools, training_enrollments, worker_framework_roles, workers,
 };
 use crate::models::audit_logs::Model as Audit;
-use crate::models::{memberships, records};
+use crate::models::records;
 use crate::rules::cutover as rules;
 use crate::rules::metrics::is_employed_on;
 use crate::validation::Problems;
-
-async fn ensure_org_in_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == org)
-    {
-        return Err(Error::NotFound);
-    }
-    Ok(())
-}
 
 async fn audit<C: ConnectionTrait>(
     db: &C,

@@ -5,6 +5,7 @@
 //! organization-scoped like the capacity records; every write is audited. The total is an estimate
 //! someone entered, not a measurement, and the answer says so.
 
+use super::ensure_org_in_scope;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
@@ -14,7 +15,7 @@ use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::governance_commitments as table;
 use crate::models::audit_logs::Model as Audit;
-use crate::models::{memberships, records};
+use crate::models::records;
 use crate::rules::governance as rules;
 use crate::validation::Problems;
 
@@ -22,16 +23,6 @@ use crate::validation::Problems;
 #[allow(clippy::cast_precision_loss)] // a few thousand tenths at most
 fn hours(tenths: i64) -> f64 {
     tenths as f64 / 10.0
-}
-
-/// `404` for an organization outside the caller's scope, as for every scoped read.
-async fn ensure_org_in_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == org)
-    {
-        return Err(Error::NotFound);
-    }
-    Ok(())
 }
 
 fn view(row: &table::Model) -> serde_json::Value {

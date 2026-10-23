@@ -9,6 +9,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::IN_BATCH;
 use loco_rs::prelude::*;
 use sea_orm::QueryTrait;
 use serde_json::json;
@@ -45,9 +46,6 @@ struct Loaded {
     backups_of: BTreeMap<Uuid, BTreeSet<Uuid>>,
     successors_of: BTreeMap<Uuid, BTreeSet<Uuid>>,
 }
-
-/// Ids per `IN (…)` list, well under the database's bind-parameter limit.
-const BATCH: usize = 5_000;
 
 /// Read the facts for the caller's scope. Only the people who hold a critical skill at its bar are
 /// loaded (they are the only ones the register counts), so a workforce with no critical skills reads
@@ -117,7 +115,7 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
     let mut staff: Vec<workers::Model> = Vec::with_capacity(staff_pids.len());
     let mut backups_of: BTreeMap<Uuid, BTreeSet<Uuid>> = BTreeMap::new();
     let mut plans: BTreeMap<Uuid, Uuid> = BTreeMap::new();
-    for pids in staff_pids.chunks(BATCH) {
+    for pids in staff_pids.chunks(IN_BATCH) {
         staff.extend(
             workers::Entity::find()
                 .filter(workers::Column::Pid.is_in(pids.to_vec()))
@@ -149,7 +147,7 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
     }
     let mut successors_of: BTreeMap<Uuid, BTreeSet<Uuid>> = BTreeMap::new();
     let plan_pids: Vec<Uuid> = plans.keys().copied().collect();
-    for pids in plan_pids.chunks(BATCH) {
+    for pids in plan_pids.chunks(IN_BATCH) {
         for c in succession_candidates::Entity::find()
             .filter(succession_candidates::Column::DeletedAt.is_null())
             .filter(succession_candidates::Column::Readiness.eq("ready_now"))

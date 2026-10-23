@@ -9,7 +9,7 @@ use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait};
 use uuid::Uuid;
 
-use super::{record_rejection, unprocessable};
+use super::{forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, announcement_reads, appraisal_nominations, appraisal_responses,
@@ -73,12 +73,10 @@ async fn subject_access(
     // subject access is for the subject (`$sub`) and unmasked-read
     // personas (payroll/admin/svc), never the masked fallback.
     if obligations.iter().any(|o| o == "mask") {
-        return Err(record_rejection((
-            axum::http::StatusCode::FORBIDDEN,
+        return Err(forbidden(
             "subject access requires an unmasked read (the export discloses \
-             salary and payslips; masked callers cannot receive it)"
-                .to_string(),
-        )));
+             salary and payslips; masked callers cannot receive it)",
+        ));
     }
     let db = &ctx.db;
     let epid = worker.pid;

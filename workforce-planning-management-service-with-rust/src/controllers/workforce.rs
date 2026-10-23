@@ -3,6 +3,7 @@
 //! (`FOR UPDATE`, WPM-D9); balances change in the decision's
 //! transaction.
 
+use super::IN_BATCH;
 use loco_rs::prelude::*;
 use sea_orm::{ExprTrait, PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -738,9 +739,6 @@ struct WorkingTimeQuery {
 /// recent turnarounds and the *planned* rota alike.
 const REST_WINDOW_DAYS: i64 = 28;
 
-/// Ids per `IN (…)` list, well under the database's bind-parameter limit.
-const BATCH: usize = 5_000;
-
 /// One shift's `(starts, ends)` in UTC, for the rest-gap check.
 type ShiftInterval = (chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>);
 
@@ -848,7 +846,7 @@ async fn working_time(
         .keys()
         .copied()
         .collect::<Vec<_>>()
-        .chunks(BATCH)
+        .chunks(IN_BATCH)
     {
         for assignment in shift_assignments::Entity::find()
             .filter(shift_assignments::Column::DeletedAt.is_null())
@@ -875,7 +873,7 @@ async fn working_time(
         .filter(|pid| !minutes_of.contains_key(pid))
         .copied()
         .collect();
-    for pids in rest_only.chunks(BATCH) {
+    for pids in rest_only.chunks(IN_BATCH) {
         minutes_of.extend(
             windowed_minutes()
                 .filter(time_entries::Column::WorkerPid.is_in(pids.to_vec()))
@@ -893,7 +891,7 @@ async fn working_time(
         .collect();
     candidates.sort_unstable();
     let mut flagged = Vec::new();
-    for pids in candidates.chunks(BATCH) {
+    for pids in candidates.chunks(IN_BATCH) {
         let people = live_workers()
             .filter(workers::Column::Pid.is_in(pids.to_vec()))
             .order_by_asc(workers::Column::Id)

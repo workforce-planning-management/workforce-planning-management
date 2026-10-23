@@ -6,12 +6,11 @@
 //! the answer names no one the directory would not. The comparison itself is
 //! [`crate::rules::duplicates`].
 
-use axum::http::StatusCode;
 use loco_rs::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::Deserialize;
 
-use super::{ensure_valid, record_rejection};
+use super::{ensure_valid, forbidden};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::workers;
 use crate::models::memberships;
@@ -46,10 +45,9 @@ async fn possible_duplicates(
     let mut query = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
     if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
         if !refs.contains(&payload.organization_ref) {
-            return Err(record_rejection((
-                StatusCode::FORBIDDEN,
-                "organization_ref is outside the organizations you can read".to_string(),
-            )));
+            return Err(forbidden(
+                "organization_ref is outside the organizations you can read",
+            ));
         }
         query = query.filter(workers::Column::OrganizationRef.is_in(refs));
     }

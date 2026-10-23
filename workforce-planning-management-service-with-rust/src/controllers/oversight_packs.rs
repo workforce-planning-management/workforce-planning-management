@@ -11,15 +11,14 @@
 //! nothing else (see [`crate::rules::access::partner_may`]). Freezing and withdrawing are for an
 //! administrator of the organization.
 
+use super::ensure_org_in_scope;
 use chrono::Datelike;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
 
-use super::{
-    capacity, ensure_valid, governance, key_person, oversight, record_rejection, unprocessable,
-};
+use super::{capacity, ensure_valid, forbidden, governance, key_person, oversight, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
     oversight_pack_withdrawals as withdrawals, oversight_packs as packs,
@@ -28,15 +27,6 @@ use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::need_to_know::has_privileged_attrs;
 use crate::validation::Problems;
-
-async fn ensure_org_in_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == org)
-    {
-        return Err(Error::NotFound);
-    }
-    Ok(())
-}
 
 /// Who may freeze or withdraw a pack: an HR or organization administrator of the organization, or a
 /// caller whose token carries HR, payroll, service or administrator rights. Reading is open to anyone
@@ -68,9 +58,8 @@ pub(crate) async fn ensure_org_administrator(
     {
         return Ok(());
     }
-    Err(record_rejection((
-        axum::http::StatusCode::FORBIDDEN,
-        format!("{what} is for an administrator of the organization"),
+    Err(forbidden(&format!(
+        "{what} is for an administrator of the organization"
     )))
 }
 

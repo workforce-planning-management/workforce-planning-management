@@ -8,6 +8,7 @@
 //! The pure rules live in [`crate::rules::mobility`] and
 //! [`crate::rules::gap`].
 
+use super::ratio_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::{Deserialize, Serialize};
@@ -30,12 +31,6 @@ use crate::validation::Problems;
 #[derive(Serialize)]
 struct PidRef {
     pid: String,
-}
-
-fn ratio_json(terms: Option<(usize, usize, f64)>) -> serde_json::Value {
-    terms.map_or(serde_json::Value::Null, |(numerator, denominator, value)| {
-        serde_json::json!({ "numerator": numerator, "denominator": denominator, "value": value })
-    })
 }
 
 /// A worker's readiness for one role profile, from their declarations.

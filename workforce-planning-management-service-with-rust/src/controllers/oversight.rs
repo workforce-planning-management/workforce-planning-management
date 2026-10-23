@@ -10,6 +10,7 @@
 
 use std::collections::BTreeMap;
 
+use super::ensure_org_in_scope;
 use chrono::Datelike;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
@@ -23,19 +24,10 @@ use crate::models::_entities::{
     oversight_positions as positions, oversight_readings as readings,
 };
 use crate::models::audit_logs::Model as Audit;
-use crate::models::{memberships, records};
+use crate::models::records;
 use crate::rules::derived;
 use crate::rules::oversight as rules;
 use crate::validation::Problems;
-
-async fn ensure_org_in_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == org)
-    {
-        return Err(Error::NotFound);
-    }
-    Ok(())
-}
 
 fn org_problems(org: &str) -> Result<()> {
     let mut problems = Problems::new();

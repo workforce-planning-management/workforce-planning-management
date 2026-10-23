@@ -15,6 +15,7 @@
 //! Both follow the aspirations pattern: edits record who made them and
 //! whether on the person's behalf, and write an audit entry.
 
+use super::writable_worker;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -30,22 +31,6 @@ use crate::models::{memberships, records};
 use crate::rules::cover::{self as cover_rules, Candidate};
 use crate::rules::emergency as rules;
 use crate::rules::metrics as metric_rules;
-
-/// A worker, authorized for a write to their record: the worker themself or HR.
-async fn writable_worker(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-    pid: &str,
-) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    auth::authorize_record(
-        caller,
-        authentication_verifier::Action::Write,
-        &auth::worker_resource_attrs(&worker),
-    )
-    .map_err(record_rejection)?;
-    Ok(worker)
-}
 
 /// Trimmed, with a blank treated as absent.
 fn clean(value: Option<String>) -> Option<String> {

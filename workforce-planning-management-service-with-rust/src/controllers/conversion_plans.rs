@@ -9,6 +9,7 @@
 //! transaction, and the plan, the extensions and the decisions stay as history. No audit entry
 //! carries the reason.
 
+use super::ensure_org_in_scope;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
@@ -53,11 +54,7 @@ async fn scoped_worker(
     caller: &MaybeAuthUser,
     worker: workers::Model,
 ) -> Result<workers::Model> {
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == &worker.organization_ref)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     Ok(worker)
 }
 

@@ -10,6 +10,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::ensure_org_in_scope;
 use chrono::NaiveDate;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
@@ -20,7 +21,6 @@ use super::{capacity, cutover, oversight, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{cutovers, early_warnings as warnings, organization_memberships};
 use crate::models::audit_logs::Model as Audit;
-use crate::models::memberships;
 use crate::models::notifications::Model as Notification;
 use crate::rules::capacity::CellStatus;
 use crate::rules::cutover as cutover_rules;
@@ -184,15 +184,6 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<Repo
         }
     }
     Ok(report)
-}
-
-async fn ensure_org_in_scope(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == org)
-    {
-        return Err(Error::NotFound);
-    }
-    Ok(())
 }
 
 /// Query naming the organization.

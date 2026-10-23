@@ -11,6 +11,8 @@
 //! or HR). Reading and ticking items is limited to organizations the caller
 //! can read.
 
+use super::ensure_org_in_scope;
+use super::writable_worker;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, DatabaseTransaction, QueryOrder, TransactionTrait};
@@ -26,22 +28,6 @@ use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::movements::{self as rules, ItemState};
 
-/// A worker, authorized for a write to their record: themself, or HR.
-async fn writable_worker(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-    pid: &str,
-) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    auth::authorize_record(
-        caller,
-        authentication_verifier::Action::Write,
-        &auth::worker_resource_attrs(&worker),
-    )
-    .map_err(record_rejection)?;
-    Ok(worker)
-}
-
 /// A movement whose worker's organization the caller can read.
 pub(super) async fn find_movement(
     ctx: &AppContext,
@@ -54,11 +40,7 @@ pub(super) async fn find_movement(
         .await?
         .ok_or(Error::NotFound)?;
     let worker = records::find_worker(&ctx.db, movement.worker_pid).await?;
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == &worker.organization_ref)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     Ok((movement, worker))
 }
 
@@ -323,11 +305,7 @@ async fn worker_movements(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.contains(&worker.organization_ref)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(&ctx, &caller, &worker.organization_ref).await?;
     let today = Utc::now().date_naive();
     let rows = movements::Entity::find()
         .filter(movements::Column::WorkerPid.eq(worker.pid))

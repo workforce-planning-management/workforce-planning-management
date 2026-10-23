@@ -26,6 +26,7 @@
 //! and the period metrics, WPM-D90), the same counts are made by the database, with the definitions
 //! (`is_employed_on`, starters, leavers) written once in SQL and a request test that pins the answers.
 
+use super::ratio_json;
 use loco_rs::prelude::*;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
@@ -47,15 +48,6 @@ use crate::rules::capability as capability_rules;
 use crate::rules::insights as insight_rules;
 use crate::rules::metrics as metric_rules;
 use crate::rules::talent as rules;
-
-/// Render a `(numerator, denominator, value)` triple as the family's
-/// terms-carrying ratio object, or `null` when there is nothing to
-/// divide.
-fn ratio_json(terms: Option<(usize, usize, f64)>) -> serde_json::Value {
-    terms.map_or(serde_json::Value::Null, |(numerator, denominator, value)| {
-        serde_json::json!({ "numerator": numerator, "denominator": denominator, "value": value })
-    })
-}
 
 /// Query accepted by every intelligence view.
 #[derive(Debug, Deserialize)]

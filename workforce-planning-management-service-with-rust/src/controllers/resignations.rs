@@ -9,6 +9,7 @@
 //! logged and when, never why; the reason appears to the worker and in aggregates that withhold
 //! small groups.
 
+use super::ensure_org_in_scope;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -191,11 +192,7 @@ async fn resignation_and_worker(
         .await?
         .ok_or(Error::NotFound)?;
     let worker = records::find_worker(&ctx.db, row.worker_pid).await?;
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
-        && !refs.iter().any(|r| r == &worker.organization_ref)
-    {
-        return Err(Error::NotFound);
-    }
+    ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     auth::authorize_record(
         caller,
         authentication_verifier::Action::Write,

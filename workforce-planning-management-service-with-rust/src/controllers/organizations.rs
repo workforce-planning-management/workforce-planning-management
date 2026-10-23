@@ -27,13 +27,12 @@
 //! `WPM_REQUIRE_AUTH` is off, matching every other authorization pass
 //! in this crate.
 
-use axum::http::StatusCode;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::{ensure_valid, record_rejection, unprocessable};
+use super::{ensure_valid, forbidden, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{organization_confederations, organization_memberships};
 use crate::models::audit_logs::Model as Audit;
@@ -81,10 +80,7 @@ async fn may_manage_membership(
 
 /// A `403` for [`may_manage_membership`] returning `false`.
 fn not_privileged() -> Error {
-    record_rejection((
-        StatusCode::FORBIDDEN,
-        "not privileged to manage this role in this organization".to_string(),
-    ))
+    forbidden("not privileged to manage this role in this organization")
 }
 
 /// Whether `caller` may declare or revoke a confederation edge naming
@@ -128,10 +124,7 @@ async fn may_manage_confederation(
 
 /// A `403` for [`may_manage_confederation`] returning `false`.
 fn not_privileged_for_confederation() -> Error {
-    record_rejection((
-        StatusCode::FORBIDDEN,
-        "not privileged to manage this organization's confederation edges".to_string(),
-    ))
+    forbidden("not privileged to manage this organization's confederation edges")
 }
 
 /// One membership row, as returned to a caller.
