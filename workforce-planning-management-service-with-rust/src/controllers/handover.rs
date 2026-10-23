@@ -33,7 +33,7 @@ use crate::models::audit_logs::Model as Audit;
 use crate::models::notifications::Model as Notification;
 use crate::models::records;
 use crate::rules::metrics::is_employed_on;
-use crate::rules::movements::{HandoverKind, validate_handover};
+use crate::rules::movements::{Disposition, HandoverKind, disposition, validate_handover};
 use crate::rules::org::would_create_cycle;
 
 /// One thing the leaver still holds.
@@ -333,8 +333,10 @@ async fn apply(
     manager_of: &HashMap<Uuid, Uuid>,
 ) -> Result<&'static str> {
     let now: chrono::DateTime<chrono::FixedOffset> = Utc::now().into();
-    let verb = match (held.kind, to) {
-        (HandoverKind::DirectReport, Some(new)) => {
+    let new = to.map(|w| w.pid);
+    match held.kind {
+        HandoverKind::DirectReport => {
+            let new = to.ok_or_else(|| unprocessable("a direct report needs a new manager"))?;
             if would_create_cycle(held.subject, new.pid, manager_of) {
                 return Err(unprocessable(
                     "that would put the new manager below their own report",
@@ -344,204 +346,33 @@ async fn apply(
             let mut a: workers::ActiveModel = w.into();
             a.manager_pid = ActiveValue::set(Some(new.pid));
             a.update(txn).await?;
-            "reassigned"
+            Ok("reassigned")
         }
-        (HandoverKind::DottedLine, to) => {
-            let row = dotted_line_reports::Entity::find()
-                .filter(dotted_line_reports::Column::Pid.eq(held.subject))
-                .one(txn)
-                .await?
-                .ok_or(Error::NotFound)?;
-            let report = row.report_pid;
-            let mut a: dotted_line_reports::ActiveModel = row.into();
-            match to {
-                Some(new) if new.pid != report => {
-                    let already = dotted_line_reports::Entity::find()
-                        .filter(dotted_line_reports::Column::ReportPid.eq(report))
-                        .filter(dotted_line_reports::Column::ManagerPid.eq(new.pid))
-                        .filter(dotted_line_reports::Column::EndedAt.is_null())
-                        .one(txn)
-                        .await?
-                        .is_some();
-                    if already {
-                        a.ended_at = ActiveValue::set(Some(now));
-                    } else {
-                        a.manager_pid = ActiveValue::set(new.pid);
-                    }
-                    a.update(txn).await?;
-                    "reassigned"
-                }
-                _ => {
-                    a.ended_at = ActiveValue::set(Some(now));
-                    a.update(txn).await?;
-                    "closed"
-                }
-            }
+        HandoverKind::DottedLine => hand_over_dotted_line(txn, held.subject, new, now).await,
+        HandoverKind::GroupLead => hand_over_group_lead(txn, held.subject, new, now).await,
+        HandoverKind::RotaMembership => {
+            hand_over_rota_membership(txn, held.subject, leaver.pid, new).await
         }
-        (HandoverKind::GroupLead, to) => {
-            let row = group_members::Entity::find()
-                .filter(group_members::Column::Pid.eq(held.subject))
-                .one(txn)
-                .await?
-                .ok_or(Error::NotFound)?;
-            let group = row.group_pid;
-            let mut leaving: group_members::ActiveModel = row.into();
-            leaving.left_at = ActiveValue::set(Some(now));
-            leaving.update(txn).await?;
-            if let Some(new) = to {
-                let theirs = group_members::Entity::find()
-                    .filter(group_members::Column::GroupPid.eq(group))
-                    .filter(group_members::Column::WorkerPid.eq(new.pid))
-                    .filter(group_members::Column::LeftAt.is_null())
-                    .one(txn)
-                    .await?
-                    .ok_or_else(|| {
-                        unprocessable("the new lead must already be a member of that group")
-                    })?;
-                let mut a: group_members::ActiveModel = theirs.into();
-                a.role = ActiveValue::set("lead".to_string());
-                a.update(txn).await?;
-                "reassigned"
-            } else {
-                "closed"
-            }
-        }
-        (HandoverKind::RotaMembership, to) => {
-            let mine = rota_members::Entity::find()
-                .filter(rota_members::Column::RotaPid.eq(held.subject))
-                .filter(rota_members::Column::WorkerPid.eq(leaver.pid))
-                .one(txn)
-                .await?
-                .ok_or(Error::NotFound)?;
-            let taken = match to {
-                Some(new) => rota_members::Entity::find()
-                    .filter(rota_members::Column::RotaPid.eq(held.subject))
-                    .filter(rota_members::Column::WorkerPid.eq(new.pid))
-                    .one(txn)
-                    .await?
-                    .is_some(),
-                None => true,
-            };
-            if let (Some(new), false) = (to, taken) {
-                let mut a: rota_members::ActiveModel = mine.into();
-                a.worker_pid = ActiveValue::set(new.pid);
-                a.update(txn).await?;
-                "reassigned"
-            } else {
-                rota_members::Entity::delete_by_id(mine.id)
-                    .exec(txn)
-                    .await?;
-                "closed"
-            }
-        }
-        (HandoverKind::RotaSwap, to) => {
-            let row = rota_overrides::Entity::find()
-                .filter(rota_overrides::Column::Pid.eq(held.subject))
-                .one(txn)
-                .await?
-                .ok_or(Error::NotFound)?;
-            if let Some(new) = to {
-                let mut a: rota_overrides::ActiveModel = row.into();
-                a.worker_pid = ActiveValue::set(new.pid);
-                a.update(txn).await?;
-                "reassigned"
-            } else {
-                rota_overrides::Entity::delete_by_id(row.id)
-                    .exec(txn)
-                    .await?;
-                "closed"
-            }
-        }
-        (HandoverKind::Backup, to) => {
-            let row = worker_backups::Entity::find()
-                .filter(worker_backups::Column::Pid.eq(held.subject))
-                .one(txn)
-                .await?
-                .ok_or(Error::NotFound)?;
-            let owner = row.worker_pid;
-            let replace = match to {
-                Some(new) if new.pid != owner => worker_backups::Entity::find()
-                    .filter(worker_backups::Column::WorkerPid.eq(owner))
-                    .filter(worker_backups::Column::BackupPid.eq(new.pid))
-                    .filter(worker_backups::Column::DeletedAt.is_null())
-                    .one(txn)
-                    .await?
-                    .is_none(),
-                _ => false,
-            };
-            let mut a: worker_backups::ActiveModel = row.into();
-            if let (Some(new), true) = (to, replace) {
-                a.backup_pid = ActiveValue::set(new.pid);
-                a.update(txn).await?;
-                "reassigned"
-            } else {
-                a.deleted_at = ActiveValue::set(Some(now));
-                a.update(txn).await?;
-                "closed"
-            }
-        }
-        (HandoverKind::Mentorship, to) => {
-            let row = mentorships::Entity::find()
-                .filter(mentorships::Column::Pid.eq(held.subject))
-                .one(txn)
-                .await?
-                .ok_or(Error::NotFound)?;
-            let mentee = row.mentee_pid;
-            let mut a: mentorships::ActiveModel = row.into();
-            match to {
-                Some(new) if new.pid != mentee => {
-                    a.mentor_pid = ActiveValue::set(new.pid);
-                    a.update(txn).await?;
-                    "reassigned"
-                }
-                _ => {
-                    a.status = ActiveValue::set("ended".to_string());
-                    a.ended_on = ActiveValue::set(Some(last_day));
-                    a.update(txn).await?;
-                    "closed"
-                }
-            }
-        }
-        (HandoverKind::Shift, to) => {
-            let row = shift_assignments::Entity::find()
-                .filter(shift_assignments::Column::Pid.eq(held.subject))
-                .one(txn)
-                .await?
-                .ok_or(Error::NotFound)?;
-            let shift = row.shift_pid;
-            let taken = match to {
-                Some(new) => shift_assignments::Entity::find()
-                    .filter(shift_assignments::Column::ShiftPid.eq(shift))
-                    .filter(shift_assignments::Column::WorkerPid.eq(new.pid))
-                    .filter(shift_assignments::Column::DeletedAt.is_null())
-                    .one(txn)
-                    .await?
-                    .is_some(),
-                None => true,
-            };
-            let mut a: shift_assignments::ActiveModel = row.into();
-            if let (Some(new), false) = (to, taken) {
-                a.worker_pid = ActiveValue::set(new.pid);
-                a.update(txn).await?;
-                "reassigned"
-            } else {
-                a.deleted_at = ActiveValue::set(Some(now));
-                a.update(txn).await?;
-                "closed"
-            }
-        }
-        (HandoverKind::Task, to) => {
+        HandoverKind::RotaSwap => hand_over_rota_swap(txn, held.subject, new).await,
+        HandoverKind::Backup => hand_over_backup(txn, held.subject, new, now).await,
+        HandoverKind::Mentorship => hand_over_mentorship(txn, held.subject, new, last_day).await,
+        HandoverKind::Shift => hand_over_shift(txn, held.subject, new, now).await,
+        HandoverKind::Task => {
             let row = movement_items::Entity::find()
                 .filter(movement_items::Column::Pid.eq(held.subject))
                 .one(txn)
                 .await?
                 .ok_or(Error::NotFound)?;
             let mut a: movement_items::ActiveModel = row.into();
-            a.assignee_pid = ActiveValue::set(to.map(|w| w.pid));
+            a.assignee_pid = ActiveValue::set(new);
             a.update(txn).await?;
-            if to.is_some() { "reassigned" } else { "closed" }
+            Ok(if new.is_some() {
+                "reassigned"
+            } else {
+                "closed"
+            })
         }
-        (HandoverKind::Access, _) => {
+        HandoverKind::Access => {
             let row = organization_memberships::Entity::find()
                 .filter(organization_memberships::Column::Pid.eq(held.subject))
                 .one(txn)
@@ -551,13 +382,250 @@ async fn apply(
             let mut a: organization_memberships::ActiveModel = row.into();
             a.ends_on = ActiveValue::set(Some(end));
             a.update(txn).await?;
-            "revoked"
+            Ok("revoked")
         }
-        (HandoverKind::DirectReport, None) => {
-            return Err(unprocessable("a direct report needs a new manager"));
+    }
+}
+
+/// The word a [`Disposition`] is reported as.
+fn verb_of(d: Disposition) -> &'static str {
+    match d {
+        Disposition::Reassign(_) => "reassigned",
+        Disposition::Close => "closed",
+    }
+}
+
+/// A dotted-line report: the line moves to the new manager, or ends when it would not move
+/// (nobody to take it, or the new manager is the report); if the new manager already has a live
+/// line to that report, this one ends.
+async fn hand_over_dotted_line(
+    txn: &impl ConnectionTrait,
+    subject: Uuid,
+    new: Option<Uuid>,
+    now: chrono::DateTime<chrono::FixedOffset>,
+) -> Result<&'static str> {
+    let row = dotted_line_reports::Entity::find()
+        .filter(dotted_line_reports::Column::Pid.eq(subject))
+        .one(txn)
+        .await?
+        .ok_or(Error::NotFound)?;
+    let report = row.report_pid;
+    let mut a: dotted_line_reports::ActiveModel = row.into();
+    match disposition(new, new == Some(report)) {
+        Disposition::Reassign(new) => {
+            let already = dotted_line_reports::Entity::find()
+                .filter(dotted_line_reports::Column::ReportPid.eq(report))
+                .filter(dotted_line_reports::Column::ManagerPid.eq(new))
+                .filter(dotted_line_reports::Column::EndedAt.is_null())
+                .one(txn)
+                .await?
+                .is_some();
+            if already {
+                a.ended_at = ActiveValue::set(Some(now));
+            } else {
+                a.manager_pid = ActiveValue::set(new);
+            }
+            a.update(txn).await?;
+            Ok("reassigned")
         }
+        Disposition::Close => {
+            a.ended_at = ActiveValue::set(Some(now));
+            a.update(txn).await?;
+            Ok("closed")
+        }
+    }
+}
+
+/// A group lead: the leaver leaves the group; the new lead, who must already be a member, takes
+/// the lead role.
+async fn hand_over_group_lead(
+    txn: &impl ConnectionTrait,
+    subject: Uuid,
+    new: Option<Uuid>,
+    now: chrono::DateTime<chrono::FixedOffset>,
+) -> Result<&'static str> {
+    let row = group_members::Entity::find()
+        .filter(group_members::Column::Pid.eq(subject))
+        .one(txn)
+        .await?
+        .ok_or(Error::NotFound)?;
+    let group = row.group_pid;
+    let mut leaving: group_members::ActiveModel = row.into();
+    leaving.left_at = ActiveValue::set(Some(now));
+    leaving.update(txn).await?;
+    let Some(new) = new else {
+        return Ok("closed");
     };
-    Ok(verb)
+    let theirs = group_members::Entity::find()
+        .filter(group_members::Column::GroupPid.eq(group))
+        .filter(group_members::Column::WorkerPid.eq(new))
+        .filter(group_members::Column::LeftAt.is_null())
+        .one(txn)
+        .await?
+        .ok_or_else(|| unprocessable("the new lead must already be a member of that group"))?;
+    let mut a: group_members::ActiveModel = theirs.into();
+    a.role = ActiveValue::set("lead".to_string());
+    a.update(txn).await?;
+    Ok("reassigned")
+}
+
+/// A seat on a rota: it passes to the new worker unless they already have one.
+async fn hand_over_rota_membership(
+    txn: &impl ConnectionTrait,
+    rota: Uuid,
+    leaver: Uuid,
+    new: Option<Uuid>,
+) -> Result<&'static str> {
+    let mine = rota_members::Entity::find()
+        .filter(rota_members::Column::RotaPid.eq(rota))
+        .filter(rota_members::Column::WorkerPid.eq(leaver))
+        .one(txn)
+        .await?
+        .ok_or(Error::NotFound)?;
+    let taken = match new {
+        Some(new) => rota_members::Entity::find()
+            .filter(rota_members::Column::RotaPid.eq(rota))
+            .filter(rota_members::Column::WorkerPid.eq(new))
+            .one(txn)
+            .await?
+            .is_some(),
+        None => false,
+    };
+    let d = disposition(new, taken);
+    match d {
+        Disposition::Reassign(new) => {
+            let mut a: rota_members::ActiveModel = mine.into();
+            a.worker_pid = ActiveValue::set(new);
+            a.update(txn).await?;
+        }
+        Disposition::Close => {
+            rota_members::Entity::delete_by_id(mine.id)
+                .exec(txn)
+                .await?;
+        }
+    }
+    Ok(verb_of(d))
+}
+
+/// A rota swap: it passes to the new worker, or is removed.
+async fn hand_over_rota_swap(
+    txn: &impl ConnectionTrait,
+    subject: Uuid,
+    new: Option<Uuid>,
+) -> Result<&'static str> {
+    let row = rota_overrides::Entity::find()
+        .filter(rota_overrides::Column::Pid.eq(subject))
+        .one(txn)
+        .await?
+        .ok_or(Error::NotFound)?;
+    let d = disposition(new, false);
+    match d {
+        Disposition::Reassign(new) => {
+            let mut a: rota_overrides::ActiveModel = row.into();
+            a.worker_pid = ActiveValue::set(new);
+            a.update(txn).await?;
+        }
+        Disposition::Close => {
+            rota_overrides::Entity::delete_by_id(row.id)
+                .exec(txn)
+                .await?;
+        }
+    }
+    Ok(verb_of(d))
+}
+
+/// A backup arrangement: the new worker backs up the owner instead, unless they are the owner or
+/// already back them up, in which case it is removed.
+async fn hand_over_backup(
+    txn: &impl ConnectionTrait,
+    subject: Uuid,
+    new: Option<Uuid>,
+    now: chrono::DateTime<chrono::FixedOffset>,
+) -> Result<&'static str> {
+    let row = worker_backups::Entity::find()
+        .filter(worker_backups::Column::Pid.eq(subject))
+        .one(txn)
+        .await?
+        .ok_or(Error::NotFound)?;
+    let owner = row.worker_pid;
+    let blocked = match new {
+        Some(new) if new == owner => true,
+        Some(new) => worker_backups::Entity::find()
+            .filter(worker_backups::Column::WorkerPid.eq(owner))
+            .filter(worker_backups::Column::BackupPid.eq(new))
+            .filter(worker_backups::Column::DeletedAt.is_null())
+            .one(txn)
+            .await?
+            .is_some(),
+        None => false,
+    };
+    let d = disposition(new, blocked);
+    let mut a: worker_backups::ActiveModel = row.into();
+    match d {
+        Disposition::Reassign(new) => a.backup_pid = ActiveValue::set(new),
+        Disposition::Close => a.deleted_at = ActiveValue::set(Some(now)),
+    }
+    a.update(txn).await?;
+    Ok(verb_of(d))
+}
+
+/// A mentorship: the new worker mentors instead, unless they are the mentee, in which case it ends.
+async fn hand_over_mentorship(
+    txn: &impl ConnectionTrait,
+    subject: Uuid,
+    new: Option<Uuid>,
+    last_day: NaiveDate,
+) -> Result<&'static str> {
+    let row = mentorships::Entity::find()
+        .filter(mentorships::Column::Pid.eq(subject))
+        .one(txn)
+        .await?
+        .ok_or(Error::NotFound)?;
+    let mentee = row.mentee_pid;
+    let d = disposition(new, new == Some(mentee));
+    let mut a: mentorships::ActiveModel = row.into();
+    match d {
+        Disposition::Reassign(new) => a.mentor_pid = ActiveValue::set(new),
+        Disposition::Close => {
+            a.status = ActiveValue::set("ended".to_string());
+            a.ended_on = ActiveValue::set(Some(last_day));
+        }
+    }
+    a.update(txn).await?;
+    Ok(verb_of(d))
+}
+
+/// A shift assignment: it passes to the new worker unless they are already on that shift.
+async fn hand_over_shift(
+    txn: &impl ConnectionTrait,
+    subject: Uuid,
+    new: Option<Uuid>,
+    now: chrono::DateTime<chrono::FixedOffset>,
+) -> Result<&'static str> {
+    let row = shift_assignments::Entity::find()
+        .filter(shift_assignments::Column::Pid.eq(subject))
+        .one(txn)
+        .await?
+        .ok_or(Error::NotFound)?;
+    let shift = row.shift_pid;
+    let taken = match new {
+        Some(new) => shift_assignments::Entity::find()
+            .filter(shift_assignments::Column::ShiftPid.eq(shift))
+            .filter(shift_assignments::Column::WorkerPid.eq(new))
+            .filter(shift_assignments::Column::DeletedAt.is_null())
+            .one(txn)
+            .await?
+            .is_some(),
+        None => false,
+    };
+    let d = disposition(new, taken);
+    let mut a: shift_assignments::ActiveModel = row.into();
+    match d {
+        Disposition::Reassign(new) => a.worker_pid = ActiveValue::set(new),
+        Disposition::Close => a.deleted_at = ActiveValue::set(Some(now)),
+    }
+    a.update(txn).await?;
+    Ok(verb_of(d))
 }
 
 /// The live `manager_of` map for the cycle check.

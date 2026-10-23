@@ -126,6 +126,131 @@ async fn completions(
 
 /// Apply one event in its own transaction.
 #[allow(clippy::too_many_lines)] // resolve learner → enrollment → CPD credit, linearly
+/// Complete or create the worker's enrollment for the event's course, auditing a change.
+async fn sync_enrollment(
+    txn: &impl ConnectionTrait,
+    caller: &MaybeAuthUser,
+    worker: &workers::Model,
+    event: &CompletionEvent,
+) -> Result<&'static str> {
+    let existing = training_enrollments::Entity::find()
+        .filter(training_enrollments::Column::WorkerPid.eq(worker.pid))
+        .filter(training_enrollments::Column::CourseRef.eq(&event.course_ref))
+        .filter(training_enrollments::Column::DeletedAt.is_null())
+        .one(txn)
+        .await?;
+    let snapshot = existing.as_ref().map(|e| rules::Existing {
+        status: e.status.as_str(),
+        completed_on: e.completed_on,
+        certificate_expires_on: e.certificate_expires_on,
+    });
+    let action = rules::enrollment_action(
+        snapshot.as_ref(),
+        event.completed_on,
+        event.certificate_expires_on,
+    );
+    Ok(match (action, existing) {
+        (rules::EnrollmentAction::Unchanged, _) => "unchanged",
+        (rules::EnrollmentAction::Complete, Some(row)) => {
+            let mut active: training_enrollments::ActiveModel = row.into();
+            active.status = ActiveValue::set("completed".to_string());
+            active.completed_on = ActiveValue::set(Some(event.completed_on));
+            active.certificate_expires_on = ActiveValue::set(event.certificate_expires_on);
+            let row = active.update(txn).await?;
+            Audit::record(
+                txn,
+                "training_enrollment",
+                row.pid,
+                "lms_completed",
+                caller.actor(),
+                None,
+            )
+            .await?;
+            "updated"
+        }
+        (_, _) => {
+            let row = training_enrollments::ActiveModel {
+                pid: ActiveValue::set(Uuid::new_v4()),
+                worker_pid: ActiveValue::set(worker.pid),
+                course_ref: ActiveValue::set(event.course_ref.clone()),
+                status: ActiveValue::set("completed".to_string()),
+                completed_on: ActiveValue::set(Some(event.completed_on)),
+                certificate_expires_on: ActiveValue::set(event.certificate_expires_on),
+                deleted_at: ActiveValue::set(None),
+                ..Default::default()
+            }
+            .insert(txn)
+            .await?;
+            Audit::record(
+                txn,
+                "training_enrollment",
+                row.pid,
+                "lms_created",
+                caller.actor(),
+                None,
+            )
+            .await?;
+            "created"
+        }
+    })
+}
+
+/// Record the CPD credit an event carries, once per `(worker, external_ref)`.
+async fn record_credit(
+    txn: &impl ConnectionTrait,
+    caller: &MaybeAuthUser,
+    worker: &workers::Model,
+    event: &CompletionEvent,
+    credit: Option<(&'static str, i64)>,
+) -> Result<&'static str> {
+    let reference = event.external_ref.trim();
+    Ok(if let Some((unit, hundredths)) = credit {
+        let already = cpd_entries::Entity::find()
+            .filter(cpd_entries::Column::WorkerPid.eq(worker.pid))
+            .filter(cpd_entries::Column::ExternalRef.eq(reference))
+            .filter(cpd_entries::Column::DeletedAt.is_null())
+            .one(txn)
+            .await?
+            .is_some();
+        if already {
+            "already_recorded"
+        } else {
+            let row = cpd_entries::ActiveModel {
+                pid: ActiveValue::set(Uuid::new_v4()),
+                worker_pid: ActiveValue::set(worker.pid),
+                entry_date: ActiveValue::set(event.completed_on),
+                activity: ActiveValue::set(format!("LMS completion: {}", event.course_ref)),
+                category: ActiveValue::set("course".to_string()),
+                unit: ActiveValue::set(unit.to_string()),
+                amount_hundredths: ActiveValue::set(hundredths),
+                evidence_note: ActiveValue::set(None),
+                evidence_url: ActiveValue::set(None),
+                source: ActiveValue::set("lms".to_string()),
+                external_ref: ActiveValue::set(Some(reference.to_string())),
+                course_ref: ActiveValue::set(Some(event.course_ref.clone())),
+                verified_on: ActiveValue::set(None),
+                verified_by: ActiveValue::set(None),
+                deleted_at: ActiveValue::set(None),
+                ..Default::default()
+            }
+            .insert(txn)
+            .await?;
+            Audit::record(
+                txn,
+                "cpd_entry",
+                row.pid,
+                "lms_recorded",
+                caller.actor(),
+                None,
+            )
+            .await?;
+            "recorded"
+        }
+    } else {
+        "none"
+    })
+}
+
 async fn apply(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
@@ -185,117 +310,11 @@ async fn apply(
     };
 
     let txn = ctx.db.begin().await?;
-    // Enrollment.
-    let existing = training_enrollments::Entity::find()
-        .filter(training_enrollments::Column::WorkerPid.eq(worker.pid))
-        .filter(training_enrollments::Column::CourseRef.eq(&event.course_ref))
-        .filter(training_enrollments::Column::DeletedAt.is_null())
-        .one(&txn)
-        .await?;
-    let snapshot = existing.as_ref().map(|e| rules::Existing {
-        status: e.status.as_str(),
-        completed_on: e.completed_on,
-        certificate_expires_on: e.certificate_expires_on,
-    });
-    let action = rules::enrollment_action(
-        snapshot.as_ref(),
-        event.completed_on,
-        event.certificate_expires_on,
-    );
-    let enrollment = match (action, existing) {
-        (rules::EnrollmentAction::Unchanged, _) => "unchanged",
-        (rules::EnrollmentAction::Complete, Some(row)) => {
-            let mut active: training_enrollments::ActiveModel = row.into();
-            active.status = ActiveValue::set("completed".to_string());
-            active.completed_on = ActiveValue::set(Some(event.completed_on));
-            active.certificate_expires_on = ActiveValue::set(event.certificate_expires_on);
-            let row = active.update(&txn).await?;
-            Audit::record(
-                &txn,
-                "training_enrollment",
-                row.pid,
-                "lms_completed",
-                caller.actor(),
-                None,
-            )
-            .await?;
-            "updated"
-        }
-        (_, _) => {
-            let row = training_enrollments::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                worker_pid: ActiveValue::set(worker.pid),
-                course_ref: ActiveValue::set(event.course_ref.clone()),
-                status: ActiveValue::set("completed".to_string()),
-                completed_on: ActiveValue::set(Some(event.completed_on)),
-                certificate_expires_on: ActiveValue::set(event.certificate_expires_on),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?;
-            Audit::record(
-                &txn,
-                "training_enrollment",
-                row.pid,
-                "lms_created",
-                caller.actor(),
-                None,
-            )
-            .await?;
-            "created"
-        }
-    };
-
-    // CPD credit, idempotent on (worker, external_ref).
-    let cpd = if let Some((unit, hundredths)) = credit {
-        let already = cpd_entries::Entity::find()
-            .filter(cpd_entries::Column::WorkerPid.eq(worker.pid))
-            .filter(cpd_entries::Column::ExternalRef.eq(reference))
-            .filter(cpd_entries::Column::DeletedAt.is_null())
-            .one(&txn)
-            .await?
-            .is_some();
-        if already {
-            "already_recorded"
-        } else {
-            let row = cpd_entries::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                worker_pid: ActiveValue::set(worker.pid),
-                entry_date: ActiveValue::set(event.completed_on),
-                activity: ActiveValue::set(format!("LMS completion: {}", event.course_ref)),
-                category: ActiveValue::set("course".to_string()),
-                unit: ActiveValue::set(unit.to_string()),
-                amount_hundredths: ActiveValue::set(hundredths),
-                evidence_note: ActiveValue::set(None),
-                evidence_url: ActiveValue::set(None),
-                source: ActiveValue::set("lms".to_string()),
-                external_ref: ActiveValue::set(Some(reference.to_string())),
-                course_ref: ActiveValue::set(Some(event.course_ref.clone())),
-                verified_on: ActiveValue::set(None),
-                verified_by: ActiveValue::set(None),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?;
-            Audit::record(
-                &txn,
-                "cpd_entry",
-                row.pid,
-                "lms_recorded",
-                caller.actor(),
-                None,
-            )
-            .await?;
-            "recorded"
-        }
-    } else {
-        "none"
-    };
+    let enrollment = sync_enrollment(&txn, caller, worker, event).await?;
+    let cpd = record_credit(&txn, caller, worker, event, credit).await?;
     txn.commit().await?;
 
-    let unchanged = enrollment == "unchanged" && matches!(cpd, "none" | "already_recorded");
+    let unchanged = rules::is_unchanged(enrollment, cpd);
     Ok(Outcome {
         external_ref: reference.to_string(),
         result: if unchanged { "unchanged" } else { "applied" },

@@ -170,6 +170,13 @@ pub fn course_url(template: &str, course_ref: &str) -> Option<String> {
     Some(template.replacen(PLACEHOLDER, &encoded, 1))
 }
 
+/// Whether an event changed nothing: its enrollment was `unchanged` and its CPD credit was
+/// `none` or `already_recorded`. A redelivery is always this.
+#[must_use]
+pub fn is_unchanged(enrollment: &str, cpd: &str) -> bool {
+    enrollment == "unchanged" && matches!(cpd, "none" | "already_recorded")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -295,5 +302,14 @@ mod tests {
             course_url(TEMPLATE, "course:a b/é"),
             Some("https://lms.example.org/course/a%20b%2F%C3%A9".to_string())
         );
+    }
+
+    #[test]
+    fn only_a_redelivery_changes_nothing() {
+        assert!(is_unchanged("unchanged", "none"));
+        assert!(is_unchanged("unchanged", "already_recorded"));
+        assert!(!is_unchanged("unchanged", "recorded"));
+        assert!(!is_unchanged("created", "none"));
+        assert!(!is_unchanged("updated", "already_recorded"));
     }
 }

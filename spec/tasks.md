@@ -4086,8 +4086,16 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       **Still open:** per-worker lists (bounded by one person's history, left unpaged on purpose); the early-warning list (its
       totals cover all rows); the filtered reads in `intelligence.rs` (`succession`, `pipelines`); the UI has no "more" control past
       500; the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run). This task stays open for those.
-- [ ] WPM-T255 **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
+- [x] WPM-T255 (2026-10-23) **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
       plan-builder out of `handover::apply` (235 lines) and `lms::apply` (178).
+      Done: `controllers/learning.rs` (1,433 lines) is the folder `learning/` (`catalogue` 709, `paths` 204, `mentoring` 171,
+      `views` 289, and `mod.rs` with the routes), routes and behaviour unchanged. `handover::apply` (235 lines) is a dispatcher
+      over one function per kind, with the pass-or-close decision a pure `rules::movements::disposition` (unit-tested);
+      `lms::apply` (178) calls `sync_enrollment` and `record_credit`, and `rules::lms::is_unchanged` is pure and tested.
+      The plan-builder is the per-kind function plus the pure decision, not a single plan value: each kind's facts come from
+      reads that follow its first read, so a plan could not be built before the transaction without changing what is locked.
+      `catalogue.rs` is still the largest section at 709 lines.
+      Verified: clippy pedantic clean, 621 unit tests, the `--ignored` suite (116), unchanged.
 - [ ] WPM-T256 **Dependency hygiene.** `reqwest` 0.13 to match the verifier; drop `sqlx-sqlite`; one `sha2` major if the
       upstream allows. `cargo tree -d` before and after in the task note.
 - [ ] WPM-T257 **The matcher follows the house lints and is built from the sibling.** `#![forbid(unsafe_code)]`,

@@ -416,3 +416,36 @@ mod tests {
         );
     }
 }
+
+/// What a handover does with one thing the leaver holds, once the facts are known (WPM-T255).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Disposition {
+    /// The thing passes to this worker.
+    Reassign(uuid::Uuid),
+    /// The thing is closed: there is nobody to take it, or the new holder already has it.
+    Close,
+}
+
+/// Pass a thing to `to`, or close it. `blocked` is true when `to` cannot take it: they already
+/// hold it, or they are the other party to it.
+#[must_use]
+pub fn disposition(to: Option<uuid::Uuid>, blocked: bool) -> Disposition {
+    match to {
+        Some(new) if !blocked => Disposition::Reassign(new),
+        _ => Disposition::Close,
+    }
+}
+
+#[cfg(test)]
+mod disposition_tests {
+    use super::*;
+
+    #[test]
+    fn a_free_taker_receives_it_and_anything_else_closes_it() {
+        let id = uuid::Uuid::from_u128(7);
+        assert_eq!(disposition(Some(id), false), Disposition::Reassign(id));
+        assert_eq!(disposition(Some(id), true), Disposition::Close);
+        assert_eq!(disposition(None, false), Disposition::Close);
+        assert_eq!(disposition(None, true), Disposition::Close);
+    }
+}
