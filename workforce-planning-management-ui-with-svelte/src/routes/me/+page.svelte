@@ -21,6 +21,7 @@
   import CareerHistory from "#lib/components/CareerHistory.svelte";
   import FrameworkRolePanel from "#lib/components/FrameworkRolePanel.svelte";
   import { l, t, tf } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
 
   type Org = { pid: string; organization_ref: string; worker_pid: string | null; employed: boolean };
   const memberships = $derived(((page.data.organizations ?? []) as Org[]).filter((m) => m.worker_pid));
@@ -28,16 +29,11 @@
   let chosen = $state("");
   const workerPid = $derived(chosen || memberships[0]?.worker_pid || "");
 
-  let frameworks = $state<Awaited<ReturnType<typeof listSelectableFrameworks>>>([]);
-  let error = $state<string | null>(null);
+  const loader = createLoader(() => listSelectableFrameworks());
+  const frameworks = $derived(loader.data ?? []);
+  const error = $derived(loader.error);
   $effect(() => {
-    void (async () => {
-      try {
-        frameworks = await listSelectableFrameworks();
-      } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
-      }
-    })();
+    void loader.load();
   });
   const available = (slug: string) => frameworks.find((f) => f.slug === slug);
 </script>

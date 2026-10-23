@@ -2,6 +2,7 @@
   import { page } from "$app/state";
   import { getRun, money, runAction, runPayslips } from "#lib/api/wpm.js";
   import { i18n, t, l, tv } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
   import type { Payslip, PayrollRun } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -17,21 +18,20 @@
     paid: [],
   };
 
-  let run = $state<PayrollRun | null>(null);
-  let payslips = $state<Payslip[]>([]);
-  let error = $state<string | null>(null);
   let actionError = $state<string | null>(null);
 
   const pid = $derived(page.params.pid ?? "");
 
-  async function load() {
-    try {
-      run = await getRun(pid);
-      payslips = run.status === "draft" ? [] : await runPayslips(pid);
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
-    }
-  }
+  // Going from one run to another drops a slow answer for the first.
+  const loader = createLoader(async () => {
+    const found = await getRun(pid);
+    const slips: Payslip[] = found.status === "draft" ? [] : await runPayslips(pid);
+    return { run: found as PayrollRun, payslips: slips };
+  });
+  const run = $derived(loader.data?.run ?? null);
+  const payslips = $derived(loader.data?.payslips ?? []);
+  const error = $derived(loader.error);
+  const load = () => loader.load();
 
   $effect(() => {
     if (pid) void load();

@@ -4157,9 +4157,21 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `app.rs` and `src/tasks/` stay: they are start-up and command-line errors read by an operator, not HTTP answers.
       Verified: 640 unit tests (one new), 130 request tests (Postgres 18, Podman), clippy clean. Not run: the `enforcement_*`
       binaries; no test drives an invariant failure through HTTP, so the 500 body is covered by the unit test only.
-- [ ] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the
+- [~] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the
       late-response guard; move the about 40 unguarded `$effect` loaders onto it. The worker page uses `Promise.allSettled` and
       an error per panel, so a failed secondary panel hides only itself. A unit test of the guard.
+      Part 1 (this commit): `src/lib/loader.svelte.ts` has `createLoader` (data, error, loading, and a late-response guard via
+      `latestOnly`) and `settleEach` (each panel's outcome kept apart). Moved onto it: `workers`, `payroll`, `payroll/[pid]`,
+      `requisitions/[pid]`, `mentorship`, `development`, `me`, `privacy`, `workforce`, `wellbeing`. `workers/[pid]` loads the worker
+      first (a failure there is the page's error), then the thirteen secondary panels with `settleEach` under the same guard;
+      a failed panel shows its own `panel-error-<name>` under its heading and the rest still shows.
+      Verified: 7 loader unit tests (stale answer and stale error both dropped), 177 unit tests, `svelte-check` 0 errors,
+      152 Playwright specs pass (two new in `loader.spec.ts`).
+      Not done: the remaining unguarded `$effect` loaders. Several already carry their own `current`/`stale` guard (capacity, ceo,
+      contingent, cutover, job-levels, pay-scales, skill-gaps, warnings, resilience); the rest mix load errors with action errors in
+      one `error` variable (movements, metrics, groups, planning, roles, rota, skills, learning, cpd, change, kanban,
+      requisitions, org-chart, benchmarks, and the `src/lib/components/` panels) and need that split first. No Playwright test
+      races two slow responses; the guard is covered by the unit test only. Left open (`[~]`).
 - [ ] WPM-T261 **Errors are content.** Every catch goes through `failure()` (`src/lib/write.ts`); status codes 401, 403, 404,
       409, 422 and 5xx map to `t()` keys in the 13 locales (AI-written, marked unreviewed); one `<ErrorNote>` with
       `role="alert"` replaces the 85 `<p class="error">`. Extend `untranslated.test.ts` to script-side error strings.

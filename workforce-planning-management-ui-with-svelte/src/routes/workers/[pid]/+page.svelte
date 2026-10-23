@@ -61,6 +61,7 @@
     type WellbeingPrompt,
   } from "#lib/api/wpm.js";
   import { mean } from "#lib/format.js";
+  import { latestOnly, messageOf, settleEach, type Settled } from "#lib/loader.svelte.js";
   import { i18n, t, tf, tv } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -113,29 +114,64 @@
 
   const pid = $derived(page.params.pid ?? "");
 
+  // A slow answer for the worker you just left never overwrites the one you are on, and a failed
+  // secondary panel says so in its own place while the rest still shows (WPM-T260).
+  const guard = latestOnly();
+  let panelErrors = $state<Record<string, string>>({});
+
   async function load() {
+    const current = guard.begin();
     try {
-      worker = await getWorker(pid);
-      let prompts: { prompts: WellbeingPrompt[] };
-      [onboarding, balances, leave, payslips, reviews, training, prompts] = await Promise.all([
-        listOnboarding(pid),
-        listEntitlements(pid),
-        listLeaveRequests(pid),
-        workerPayslips(pid),
-        listReviews(pid),
-        listTraining(pid),
-        workerWellbeingPrompts(pid),
-      ]);
-      wellbeing = prompts.prompts;
-      pulseSurveys = (await listPulseSurveys()).filter((s) => s.open);
-      appraisals = await listAppraisals(pid);
-      myRequests = await appraisalRequests(pid);
-      notifications = await listNotifications(pid);
-      ergonomics = await listErgonomicAssessments(pid);
-      adjustments = await listAdjustmentRequests(pid);
+      const found = await getWorker(pid);
+      if (!current()) return;
+      worker = found;
+      error = null;
+    } catch (cause) {
+      if (current()) error = messageOf(cause);
+      return;
+    }
+    const got = await settleEach({
+      onboarding: () => listOnboarding(pid),
+      balances: () => listEntitlements(pid),
+      leave: () => listLeaveRequests(pid),
+      payslips: () => workerPayslips(pid),
+      reviews: () => listReviews(pid),
+      training: () => listTraining(pid),
+      wellbeing: async () => (await workerWellbeingPrompts(pid)).prompts,
+      pulse: async () => (await listPulseSurveys()).filter((s) => s.open),
+      appraisals: () => listAppraisals(pid),
+      requests: () => appraisalRequests(pid),
+      notifications: () => listNotifications(pid),
+      ergonomics: () => listErgonomicAssessments(pid),
+      adjustments: () => listAdjustmentRequests(pid),
+    });
+    if (!current()) return;
+    const errors: Record<string, string> = {};
+    const take = <T,>(name: string, outcome: Settled<T>, empty: T): T => {
+      if (outcome.error !== null) {
+        errors[name] = outcome.error;
+        return empty;
+      }
+      return outcome.value as T;
+    };
+    onboarding = take("onboarding", got.onboarding, []);
+    balances = take("balances", got.balances, []);
+    leave = take("leave", got.leave, []);
+    payslips = take("payslips", got.payslips, []);
+    reviews = take("reviews", got.reviews, []);
+    training = take("training", got.training, []);
+    wellbeing = take("wellbeing", got.wellbeing, []);
+    pulseSurveys = take("pulse", got.pulse, []);
+    appraisals = take("appraisals", got.appraisals, []);
+    myRequests = take("requests", got.requests, []);
+    notifications = take("notifications", got.notifications, []);
+    ergonomics = take("ergonomics", got.ergonomics, []);
+    adjustments = take("adjustments", got.adjustments, []);
+    panelErrors = errors;
+    try {
       if (openAppraisal) await toggleAppraisal(openAppraisal.pid, true);
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      if (current()) actionError = messageOf(cause);
     }
   }
 
@@ -287,6 +323,10 @@
   <span class="chip">{tv(String(value))}</span>
 {/snippet}
 
+{#snippet panelError(name: string)}
+  {#if panelErrors[name]}<p class="error" data-testid="panel-error-{name}">{t("common.error")}: {panelErrors[name]}</p>{/if}
+{/snippet}
+
 {#if error}
   <p class="error" data-testid="error">{t("common.error")}: {error}</p>
 {:else if worker === null}
@@ -334,6 +374,10 @@
     </p>
   </div>
 
+  {#if panelErrors["wellbeing"]}
+    <h2>{t("wb.prompts")}</h2>
+    {@render panelError("wellbeing")}
+  {/if}
   {#if wellbeing.length}
     <h2>{t("wb.prompts")}</h2>
     <ul class="panel" data-testid="wellbeing-prompts">
@@ -357,6 +401,10 @@
     </ul>
   {/if}
 
+  {#if panelErrors["pulse"]}
+    <h2>{t("wb.pulse")}</h2>
+    {@render panelError("pulse")}
+  {/if}
   {#if pulseSurveys.length}
     <h2>{t("wb.pulse")}</h2>
     <ul class="panel" data-testid="pulse-surveys">
@@ -376,6 +424,10 @@
     </ul>
   {/if}
 
+  {#if panelErrors["onboarding"]}
+    <h2>{t("emp.onboarding")}</h2>
+    {@render panelError("onboarding")}
+  {/if}
   {#if onboarding.length}
     <h2>{t("emp.onboarding")}</h2>
     <ul class="panel">
@@ -393,6 +445,7 @@
   {/if}
 
   <h2>{t("emp.balances")}</h2>
+  {@render panelError("balances")}
   <DataTable
     label={t("emp.balances")}
     columns={balanceColumns}
@@ -401,6 +454,7 @@
   />
 
   <h2>{t("wf.leaveRequests")}</h2>
+  {@render panelError("leave")}
   <DataTable
     label={t("wf.leaveRequests")}
     columns={leaveColumns}
@@ -415,6 +469,7 @@
   />
 
   <h2>{t("emp.payslips")}</h2>
+  {@render panelError("payslips")}
   <DataTable
     label={t("emp.payslips")}
     columns={payslipColumns}
@@ -422,6 +477,10 @@
     rowId={(row) => String(row.pid)}
   />
 
+  {#if panelErrors["notifications"]}
+    <h2>{t("emp.notifications")}</h2>
+    {@render panelError("notifications")}
+  {/if}
   {#if notifications.length}
     <h2>{t("emp.notifications")}</h2>
     <ul class="panel" data-testid="notifications">
@@ -440,6 +499,10 @@
     </ul>
   {/if}
 
+  {#if panelErrors["requests"]}
+    <h2>{t("ap.requests")}</h2>
+    {@render panelError("requests")}
+  {/if}
   {#if myRequests.length}
     <h2>{t("ap.requests")}</h2>
     <ul class="panel" data-testid="appraisal-requests">
@@ -480,6 +543,7 @@
   {/if}
 
   <h2>{t("ap.title")}</h2>
+  {@render panelError("appraisals")}
   <div class="panel" data-testid="appraisals">
     <button onclick={() => void act(() => createAppraisal(pid, ["communication", "collaboration", "delivery"]))}>
       {t("ap.new")}
@@ -570,6 +634,7 @@
   </div>
 
   <h2>{t("adj.title")}</h2>
+  {@render panelError("adjustments")}
   <div class="panel" data-testid="adjustments">
     <p class="muted">{t("adj.hint")}</p>
     <select bind:value={adjCategory}>
@@ -618,6 +683,7 @@
   </div>
 
   <h2>{t("erg.title")}</h2>
+  {@render panelError("ergonomics")}
   <div class="panel" data-testid="ergonomics">
     <input placeholder={t("erg.workstation")} bind:value={workstation} />
     <button
@@ -660,6 +726,7 @@
   </div>
 
   <h2>{t("emp.reviews")}</h2>
+  {@render panelError("reviews")}
   <DataTable
     label={t("emp.reviews")}
     columns={reviewColumns}
@@ -668,6 +735,7 @@
   />
 
   <h2>{t("emp.training")}</h2>
+  {@render panelError("training")}
   <DataTable
     label={t("emp.training")}
     columns={trainingColumns}

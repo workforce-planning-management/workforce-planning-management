@@ -7,6 +7,7 @@
 <script lang="ts">
   import { mentorshipOverview } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,
@@ -14,17 +15,12 @@
   } from "@lilydesignsystem/svelte-data-grid";
 
   type Overview = Awaited<ReturnType<typeof mentorshipOverview>>;
-  let overview = $state<Overview | null>(null);
-  let error = $state<string | null>(null);
+  const loader = createLoader(() => mentorshipOverview());
+  const overview = $derived(loader.data);
+  const error = $derived(loader.error);
 
   $effect(() => {
-    void (async () => {
-      try {
-        overview = await mentorshipOverview();
-      } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
-      }
-    })();
+    void loader.load();
   });
 
   const loadColumns = $derived<DataGridColumn[]>([

@@ -5,6 +5,7 @@
   // Erasure lives on the worker profile (it is per-person).
   import { retentionReport, retentionSweep } from "#lib/api/wpm.js";
   import { t } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,
@@ -14,18 +15,13 @@
   type Report = Awaited<ReturnType<typeof retentionReport>>;
   type SweepResult = Awaited<ReturnType<typeof retentionSweep>>;
 
-  let report = $state<Report | null>(null);
   let sweepResult = $state<SweepResult | null>(null);
-  let error = $state<string | null>(null);
   let actionError = $state<string | null>(null);
 
-  async function load() {
-    try {
-      report = await retentionReport();
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
-    }
-  }
+  const loader = createLoader(() => retentionReport());
+  const report = $derived(loader.data);
+  const error = $derived(loader.error);
+  const load = () => loader.load();
 
   $effect(() => {
     void load();

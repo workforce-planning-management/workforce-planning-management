@@ -14,6 +14,7 @@
   } from "#lib/api/wpm.js";
   import { mean, percentWithWorkings } from "#lib/format.js";
   import { t } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,
@@ -23,10 +24,6 @@
   type Uptake = Awaited<ReturnType<typeof wellbeingUptake>>;
   type PulseResult = Awaited<ReturnType<typeof pulseResults>>;
 
-  let rules = $state<WellbeingEntitlement[]>([]);
-  let uptake = $state<Uptake | null>(null);
-  let pulse = $state<PulseResult[]>([]);
-  let error = $state<string | null>(null);
   let actionError = $state<string | null>(null);
 
   // Create form (kept as strings; parsed on submit).
@@ -39,15 +36,17 @@
   let departments = $state("");
   let doses = $state("1");
 
-  async function load() {
-    try {
-      [rules, uptake] = await Promise.all([listWellbeingEntitlements(), wellbeingUptake()]);
-      const surveys = await listPulseSurveys();
-      pulse = await Promise.all(surveys.map((survey) => pulseResults(survey.pid)));
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
-    }
-  }
+  const loader = createLoader(async () => {
+    const [rules, uptake] = await Promise.all([listWellbeingEntitlements(), wellbeingUptake()]);
+    const surveys = await listPulseSurveys();
+    const pulse = await Promise.all(surveys.map((survey) => pulseResults(survey.pid)));
+    return { rules: rules as WellbeingEntitlement[], uptake: uptake as Uptake, pulse: pulse as PulseResult[] };
+  });
+  const rules = $derived(loader.data?.rules ?? []);
+  const uptake = $derived(loader.data?.uptake ?? null);
+  const pulse = $derived(loader.data?.pulse ?? []);
+  const error = $derived(loader.error);
+  const load = () => loader.load();
 
   $effect(() => {
     void load();

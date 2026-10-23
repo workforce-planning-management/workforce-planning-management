@@ -2,6 +2,7 @@
   import { page } from "$app/state";
   import { applicationStage, getRequisition, listApplications } from "#lib/api/wpm.js";
   import { t, tv } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
   import type { Application, Requisition } from "#lib/api/types.js";
 
   /** The forward move an application offers per stage. */
@@ -11,22 +12,19 @@
     interviewing: "offer",
   };
 
-  let requisition = $state<Requisition | null>(null);
-  let applications = $state<Application[]>([]);
-  let error = $state<string | null>(null);
   let actionError = $state<string | null>(null);
   let hireNumber = $state("");
 
   const pid = $derived(page.params.pid ?? "");
 
-  async function load() {
-    try {
-      requisition = await getRequisition(pid);
-      applications = await listApplications(pid);
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
-    }
-  }
+  const loader = createLoader(async () => ({
+    requisition: (await getRequisition(pid)) as Requisition,
+    applications: (await listApplications(pid)) as Application[],
+  }));
+  const requisition = $derived(loader.data?.requisition ?? null);
+  const applications = $derived(loader.data?.applications ?? []);
+  const error = $derived(loader.error);
+  const load = () => loader.load();
 
   $effect(() => {
     if (pid) void load();

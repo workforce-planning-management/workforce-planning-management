@@ -1,6 +1,7 @@
 <script lang="ts">
   import { listRuns } from "#lib/api/wpm.js";
   import { t, l, tv } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
   import type { PayrollRun } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -8,17 +9,12 @@
     DataGridRow,
   } from "@lilydesignsystem/svelte-data-grid";
 
-  let runs = $state<PayrollRun[] | null>(null);
-  let error = $state<string | null>(null);
+  const loader = createLoader(() => listRuns());
+  const runs = $derived(loader.data);
+  const error = $derived(loader.error);
 
   $effect(() => {
-    void (async () => {
-      try {
-        runs = await listRuns();
-      } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
-      }
-    })();
+    void loader.load();
   });
 
   const columns = $derived<DataGridColumn[]>([

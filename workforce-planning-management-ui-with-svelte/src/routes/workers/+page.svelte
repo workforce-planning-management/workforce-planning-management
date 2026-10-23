@@ -1,6 +1,7 @@
 <script lang="ts">
   import { listWorkers, money } from "#lib/api/wpm.js";
   import { i18n, t, l } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
   import type { Worker } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -8,17 +9,12 @@
     DataGridRow,
   } from "@lilydesignsystem/svelte-data-grid";
 
-  let workers = $state<Worker[] | null>(null);
-  let error = $state<string | null>(null);
+  const loader = createLoader(() => listWorkers());
+  const workers = $derived(loader.data);
+  const error = $derived(loader.error);
 
   $effect(() => {
-    void (async () => {
-      try {
-        workers = await listWorkers();
-      } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
-      }
-    })();
+    void loader.load();
   });
 
   // A masked salary renders the translated "Hidden" token and sorts last, never as a fake zero.

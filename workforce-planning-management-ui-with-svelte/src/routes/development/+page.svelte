@@ -1,6 +1,7 @@
 <script lang="ts">
   import { expiringTraining, listSuccession, successionGaps } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
   import CalendarPanel from "#lib/components/CalendarPanel.svelte";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -9,26 +10,25 @@
   } from "@lilydesignsystem/svelte-data-grid";
   import type { SuccessionEntry, TrainingEnrollment } from "#lib/api/types.js";
 
-  let succession = $state<SuccessionEntry[] | null>(null);
-  let gaps = $state<SuccessionEntry["plan"][]>([]);
-  let expiring = $state<TrainingEnrollment[]>([]);
-  let error = $state<string | null>(null);
+  const loader = createLoader(async () => {
+    const [plans, gapReport, training] = await Promise.all([
+      listSuccession(),
+      successionGaps(),
+      expiringTraining(90),
+    ]);
+    return {
+      succession: plans as SuccessionEntry[],
+      gaps: gapReport.gaps as SuccessionEntry["plan"][],
+      expiring: training.expiring as TrainingEnrollment[],
+    };
+  });
+  const succession = $derived(loader.data?.succession ?? null);
+  const gaps = $derived(loader.data?.gaps ?? []);
+  const expiring = $derived(loader.data?.expiring ?? []);
+  const error = $derived(loader.error);
 
   $effect(() => {
-    void (async () => {
-      try {
-        const [plans, gapReport, training] = await Promise.all([
-          listSuccession(),
-          successionGaps(),
-          expiringTraining(90),
-        ]);
-        succession = plans;
-        gaps = gapReport.gaps;
-        expiring = training.expiring;
-      } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
-      }
-    })();
+    void loader.load();
   });
 
   const successionColumns = $derived<DataGridColumn[]>([

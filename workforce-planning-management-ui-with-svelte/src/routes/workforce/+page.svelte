@@ -1,6 +1,7 @@
 <script lang="ts">
   import { decideLeave, ergonomicIssues, listWorkers, listLeaveRequests, listShifts, workingTime } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { createLoader } from "#lib/loader.svelte.js";
   import CalendarPanel from "#lib/components/CalendarPanel.svelte";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -12,31 +13,29 @@
   type ShiftRow = Awaited<ReturnType<typeof listShifts>>[number];
   type WorkingTimeSignals = Awaited<ReturnType<typeof workingTime>>;
 
-  let pending = $state<(LeaveRequest & { worker?: Worker })[] | null>(null);
-  let shifts = $state<ShiftRow[]>([]);
-  let signals = $state<WorkingTimeSignals | null>(null);
-  let ergIssues = $state<Awaited<ReturnType<typeof ergonomicIssues>> | null>(null);
-  let error = $state<string | null>(null);
   let actionError = $state<string | null>(null);
 
-  async function load() {
-    try {
-      const workers = await listWorkers();
-      const byPid = new Map(workers.map((e) => [e.pid, e]));
-      const requestLists = await Promise.all(
-        workers.map((e) => listLeaveRequests(e.pid)),
-      );
-      pending = requestLists
-        .flat()
-        .filter((r) => r.status === "requested")
-        .map((r) => ({ ...r, worker: byPid.get(r.worker_pid) }));
-      shifts = await listShifts();
-      signals = await workingTime();
-      ergIssues = await ergonomicIssues();
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
-    }
-  }
+  const loader = createLoader(async () => {
+    const workers = await listWorkers();
+    const byPid = new Map(workers.map((e) => [e.pid, e]));
+    const requestLists = await Promise.all(workers.map((e) => listLeaveRequests(e.pid)));
+    const pending: (LeaveRequest & { worker?: Worker })[] = requestLists
+      .flat()
+      .filter((r) => r.status === "requested")
+      .map((r) => ({ ...r, worker: byPid.get(r.worker_pid) }));
+    return {
+      pending,
+      shifts: (await listShifts()) as ShiftRow[],
+      signals: (await workingTime()) as WorkingTimeSignals,
+      ergIssues: await ergonomicIssues(),
+    };
+  });
+  const pending = $derived(loader.data?.pending ?? null);
+  const shifts = $derived(loader.data?.shifts ?? []);
+  const signals = $derived(loader.data?.signals ?? null);
+  const ergIssues = $derived(loader.data?.ergIssues ?? null);
+  const error = $derived(loader.error);
+  const load = () => loader.load();
 
   $effect(() => {
     void load();
