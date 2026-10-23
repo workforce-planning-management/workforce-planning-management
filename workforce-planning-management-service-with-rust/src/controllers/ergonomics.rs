@@ -4,6 +4,7 @@
 //! a rota-tier department report. About the workstation, never the
 //! body: no symptom field exists anywhere on this surface.
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
@@ -182,7 +183,7 @@ async fn answer_item(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// `POST /api/ergonomic-assessments/{pid}/complete` — completing
@@ -226,7 +227,7 @@ async fn complete_assessment(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// `GET /api/ergonomics/issues` — every `issue`-flagged item on a

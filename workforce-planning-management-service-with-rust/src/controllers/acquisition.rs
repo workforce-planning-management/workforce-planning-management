@@ -2,6 +2,7 @@
 //! applications + interviews, and onboarding checklists. Hiring an
 //! application creates the Worker in one transaction (WPM-D9).
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -337,7 +338,7 @@ async fn requisition_status(
     )
     .await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `POST /api/candidates`.
@@ -738,7 +739,7 @@ async fn interview_outcome(
     )
     .await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `POST /api/workers/{pid}/onboarding` — add checklist items.
@@ -846,7 +847,7 @@ async fn finish_item(
     )
     .await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `POST /api/onboarding-items/{pid}/complete`.

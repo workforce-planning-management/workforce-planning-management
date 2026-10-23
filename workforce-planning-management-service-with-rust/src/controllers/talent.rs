@@ -21,6 +21,7 @@
 //!   training minimum** — completing one that has not met its hours
 //!   would be a false record of a regulated programme.
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
@@ -361,7 +362,7 @@ async fn plan_status(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// `PUT /api/development-plan-items/{pid}` body.
@@ -408,7 +409,7 @@ async fn update_item(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 // ─── Talent pipelines ────────────────────────────────────────────────────────
@@ -626,7 +627,7 @@ async fn move_member(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// `GET /api/talent-pipelines/{pid}` — one pipeline, its health, and
@@ -975,7 +976,7 @@ async fn log_hours(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// `POST /api/program-placements/{pid}/status` body.
@@ -1059,7 +1060,7 @@ async fn placement_status(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// `GET /api/workers/{pid}/placements` — one person's early-career

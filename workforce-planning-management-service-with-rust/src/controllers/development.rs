@@ -3,6 +3,7 @@
 //! succession plans with the gap report. Review content is
 //! high-sensitivity: reads are audited (WPM-D7).
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -321,7 +322,7 @@ async fn update_review(
     let row = active.update(&txn).await?;
     Audit::record(&txn, "review", row.pid, "updated", caller.actor(), None).await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `POST /api/reviews/{pid}/status` — one review transition
@@ -369,7 +370,7 @@ async fn review_status(
     )
     .await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `POST /api/reviews/{pid}/goals`.
@@ -433,7 +434,7 @@ async fn update_goal(
     let row = active.update(&txn).await?;
     Audit::record(&txn, "goal", row.pid, "updated", caller.actor(), None).await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `GET /api/reviews/{pid}/goals` (+ feedback list alongside).
@@ -638,7 +639,7 @@ async fn update_training(
     )
     .await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `GET /api/training/expiring?within_days=` — certificates expiring
@@ -887,7 +888,7 @@ async fn update_succession(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// `PUT /api/succession-candidates/{pid}` — move a successor's
@@ -936,7 +937,7 @@ async fn update_succession_candidate(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// The development routes.

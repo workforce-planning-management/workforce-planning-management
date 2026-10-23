@@ -214,6 +214,21 @@ pub(crate) fn ratio_json(terms: Option<(usize, usize, f64)>) -> serde_json::Valu
     })
 }
 
+/// A stored row as a response: the row's own fields without its internal `id` (a surrogate
+/// key, never an identifier a client may use; the `pid` is) or its `deleted_at` (WPM-T252).
+///
+/// # Errors
+///
+/// When the row does not serialize to a JSON object.
+pub(crate) fn row_json<T: serde::Serialize>(row: &T) -> Result<serde_json::Value> {
+    let mut value = serde_json::to_value(row).map_err(|e| Error::string(&e.to_string()))?;
+    if let Some(object) = value.as_object_mut() {
+        object.remove("id");
+        object.remove("deleted_at");
+    }
+    Ok(value)
+}
+
 // ─── Pagination (WPM-T40; agents/share/restful.md) ──────────────────────────
 
 /// Largest page any collection read will serve. A bigger `limit` is
@@ -291,4 +306,50 @@ pub fn with_page_headers(mut response: Response, total: u64, limit: u64, offset:
         }
     }
     response
+}
+
+#[cfg(test)]
+mod tests {
+    use super::row_json;
+
+    #[test]
+    fn a_row_answers_without_its_surrogate_key_or_deletion_mark() {
+        let row = serde_json::json!({ "id": 7, "pid": "p", "deleted_at": null, "note": "n" });
+        assert_eq!(
+            row_json(&row).unwrap(),
+            serde_json::json!({ "pid": "p", "note": "n" })
+        );
+    }
+
+    /// No handler answers with a bare stored row (WPM-T252): it goes through [`row_json`].
+    #[test]
+    fn no_handler_answers_with_a_bare_row() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/controllers");
+        let mut found = Vec::new();
+        let mut stack = vec![dir];
+        while let Some(d) = stack.pop() {
+            for entry in std::fs::read_dir(d).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    stack.push(path);
+                } else if path.extension().is_some_and(|e| e == "rs") {
+                    let source = std::fs::read_to_string(&path).unwrap();
+                    for (n, line) in source.lines().enumerate() {
+                        let t = line.trim();
+                        if t == "format::json(row)"
+                            || t == "format::json(updated)"
+                            || t == "format::json(saved)"
+                        {
+                            found.push(format!("{}:{}", path.display(), n + 1));
+                        }
+                    }
+                }
+            }
+        }
+        assert!(
+            found.is_empty(),
+            "bare rows answered:\n{}",
+            found.join("\n")
+        );
+    }
 }

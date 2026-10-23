@@ -4,6 +4,7 @@
 //! Payslip reads honour the `mask` obligation via the owning
 //! worker's record-level ABAC pass (WPM-R15).
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -302,7 +303,7 @@ async fn run_transition(
     )
     .await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `POST /api/payroll-runs/{pid}/approve`.

@@ -5,6 +5,7 @@
 //! views; the pure rules live in [`crate::rules::learning`], and the
 //! progress derivation counts only real course completions.
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, TransactionTrait};
 use serde::Deserialize;
@@ -725,7 +726,7 @@ async fn declare_skill(
     )
     .await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `GET /api/workers/{pid}/skills` — one worker's declared skills.
@@ -1032,7 +1033,7 @@ async fn mentorship_status(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// `POST /api/mentorships/{pid}/sessions` body.

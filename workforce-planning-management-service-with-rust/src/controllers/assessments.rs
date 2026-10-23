@@ -22,6 +22,7 @@
 //! rather than zero when nothing carries a percentile, and every
 //! payload names its derivation.
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
@@ -344,7 +345,7 @@ async fn assessment_status(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// The expiry date `months` after `from`, or `None` when the arithmetic

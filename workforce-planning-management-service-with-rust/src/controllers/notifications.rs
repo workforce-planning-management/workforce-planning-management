@@ -2,6 +2,7 @@
 //! list (unread first) and the mark-read action. Reference-only rows;
 //! the write side lives in the handlers that make the change.
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 
@@ -58,7 +59,7 @@ async fn mark_read(
     let mut active: notifications::ActiveModel = notification.into();
     active.read_at = ActiveValue::set(Some(chrono::Utc::now().into()));
     let updated = active.update(&ctx.db).await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// The notification routes.

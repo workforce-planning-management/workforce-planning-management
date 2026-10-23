@@ -4047,9 +4047,19 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       Verified: clippy pedantic clean, 613 unit tests, the full `--ignored` request suite (115) against a local Postgres, unchanged.
       **Not checked:** inline scope checks that return something other than `NotFound` (`duplicates.rs`, `reporting.rs`,
       `groups.rs`) were left as they are.
-- [ ] WPM-T252 **Responses are views, not rows.** About 46 `format::json(row)` responses (`development.rs`, `workforce.rs`,
+- [x] WPM-T252 (2026-10-23) **Responses are views, not rows.** About 46 `format::json(row)` responses (`development.rs`, `workforce.rs`,
       `ergonomics.rs`, `appraisals.rs`, `adjustments.rs`, `hr_core.rs`, `learning.rs`, `notifications.rs`) get `*_json` view
       functions. A guard test that no documented response schema carries `id` or `deleted_at`.
+      Done, with a deliberate narrowing: the 27 handlers that answered `format::json(row | updated)` (a bare stored row) now
+      answer `row_json(&row)?` (`controllers/mod.rs`), which drops the surrogate `id` and `deleted_at`. That is a deny-list of two
+      keys, not a per-entity allow-list of `*_json` views: the entities carry only domain fields the responses already
+      exposed, so the leak was those two keys. A new column that must not be disclosed still needs a view. Guards: a unit test
+      of `row_json`, and a source test that fails on any `format::json(row | updated | saved)`. The "documented schema" guard in
+      the task is not added: `openapi.rs` documents few response schemas and none carries those keys.
+      Verified: clippy clean, 615 unit tests, the `--ignored` suite (115): 114 first run, the one failure
+      (`engagements::contractor_details_and_assessments`) is a pre-existing flake (it asserts the audit JSON lacks "45000", which a
+      hex hash can contain) and passed 3 of 3 alone. **Not checked:** the UI against the changed bodies (it was grepped for `id` and
+      `deleted_at` reads: none found).
 - [ ] WPM-T253 **Arithmetic into the pure core.** `rules::display::{ratio, from_hundredths, from_tenths}` replaces the three
       fixed-point copies and the inline divisions (`learning.rs:1238`, `wellbeing.rs:497`, `cpd.rs:43`, `governance.rs:23`,
       `planning/forecast.rs:50`); pure `*_value` functions for `working_time`, `planning/forecast` and `planning/cost`, with unit

@@ -4,6 +4,7 @@
 //! transaction.
 
 use super::IN_BATCH;
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{ExprTrait, PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -221,7 +222,7 @@ async fn approve_time_entry(
     )
     .await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `POST /api/workers/{pid}/leave-entitlements` — grant.
@@ -502,7 +503,7 @@ pub(crate) async fn decide_leave(
     if to == "approved" || to == "rejected" {
         Metrics::global().leave_decided_total.inc();
     }
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 /// `POST /api/leave-requests/{pid}/approve`.

@@ -5,6 +5,7 @@
 //! category + status and withholds the words. No diagnosis is ever
 //! required, and the schema has nowhere to put one.
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
@@ -209,7 +210,7 @@ async fn decide(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// The adjustment routes.

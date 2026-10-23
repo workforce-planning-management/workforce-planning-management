@@ -13,6 +13,7 @@
 
 use std::str::FromStr;
 
+use super::row_json;
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
@@ -225,7 +226,7 @@ async fn update_entitlement(
     )
     .await?;
     txn.commit().await?;
-    format::json(updated)
+    format::json(row_json(&updated)?)
 }
 
 /// `DELETE /api/wellbeing-entitlements/{pid}` — soft-close a rule
@@ -454,7 +455,7 @@ async fn acknowledge(
     )
     .await?;
     txn.commit().await?;
-    format::json(row)
+    format::json(row_json(&row)?)
 }
 
 // ─── HR aggregate view ──────────────────────────────────────────────────────
