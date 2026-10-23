@@ -36,6 +36,10 @@
 //! assert_eq!(result.breakdown.date_of_birth, None); // unknown, not zero
 //! ```
 
+#![forbid(unsafe_code)]
+#![warn(clippy::pedantic)]
+#![deny(missing_docs)]
+
 pub mod error;
 pub mod matcher;
 pub mod nicknames;

@@ -55,21 +55,24 @@ pub struct NicknameTable {
 
 impl NicknameTable {
     /// No classes: only identical names are nicknames of each other.
+    #[must_use]
     pub fn empty() -> Self {
         Self::default()
     }
 
     /// The built-in English classes.
+    #[must_use]
     pub fn english() -> Self {
         Self {
             classes: ENGLISH
                 .iter()
-                .map(|c| c.iter().map(|n| n.to_string()).collect())
+                .map(|c| c.iter().map(std::string::ToString::to_string).collect())
                 .collect(),
         }
     }
 
     /// Add a class. Names are folded, so `"Siân"` and `"sian"` are the same entry.
+    #[must_use]
     pub fn with_class<I, S>(mut self, names: I) -> Self
     where
         I: IntoIterator<Item = S>,
@@ -83,6 +86,7 @@ impl NicknameTable {
     }
 
     /// Whether two *folded* given names are in a shared class and are not equal.
+    #[must_use]
     pub fn related(&self, a: &str, b: &str) -> bool {
         a != b
             && self

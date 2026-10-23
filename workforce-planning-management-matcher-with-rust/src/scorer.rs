@@ -3,20 +3,25 @@
 use strsim::{jaro_winkler, levenshtein};
 
 /// Jaro-Winkler: rewards a shared prefix; good for short names.
+#[must_use]
 pub fn jaro_winkler_similarity(a: &str, b: &str) -> f64 {
     jaro_winkler(a, b)
 }
 
 /// One minus edit distance over the longer length. Two empty strings are identical.
+#[must_use]
 pub fn levenshtein_similarity(a: &str, b: &str) -> f64 {
     let longest = a.chars().count().max(b.chars().count());
     if longest == 0 {
         return 1.0;
     }
-    1.0 - levenshtein(a, b) as f64 / longest as f64
+    #[allow(clippy::cast_precision_loss)] // string lengths are far below 2^52
+    let similarity = 1.0 - levenshtein(a, b) as f64 / longest as f64;
+    similarity
 }
 
 /// `0.7 × Jaro-Winkler + 0.3 × Levenshtein`: the default for names.
+#[must_use]
 pub fn combined_similarity(a: &str, b: &str) -> f64 {
     0.7 * jaro_winkler_similarity(a, b) + 0.3 * levenshtein_similarity(a, b)
 }

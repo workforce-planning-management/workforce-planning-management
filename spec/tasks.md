@@ -4105,9 +4105,16 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       **Found, not fixed:** `cargo deny check advisories` fails on RUSTSEC-2026-0385 (`ctutils` 0.4.3, via `digest` 0.11; the
       same version is in the committed lock, so a newly published advisory, not this change), and `deny.toml` carries about ten
       ignore entries that no crate matches any more. Both want their own task.
-- [ ] WPM-T257 **The matcher follows the house lints and is built from the sibling.** `#![forbid(unsafe_code)]`,
+- [x] WPM-T257 (2026-10-23) **The matcher follows the house lints and is built from the sibling.** `#![forbid(unsafe_code)]`,
       `#![warn(clippy::pedantic)]`, `#![deny(missing_docs)]` (or a `[lints]` table); annotate `scorer.rs:16`; unit tests for
       `record.rs` and `error.rs`; a `[patch.crates-io]` path override in the service for development.
+      Done: the matcher's `lib.rs` carries `#![forbid(unsafe_code)]`, `#![warn(clippy::pedantic)]` and `#![deny(missing_docs)]`;
+      the 28 pedantic findings and every undocumented field and method are fixed (`# Errors` sections, `#[must_use]`, an
+      associated function for `compare_worker_numbers`, one annotated cast in `scorer.rs`). `record.rs` and `error.rs` have unit
+      tests (builders, the impossible date, `Debug` showing counts and never values, messages). The service's `Cargo.toml` carries
+      the `[patch.crates-io]` path override as a commented block: committed live it would break the Containerfile build and
+      rewrite `Cargo.lock`.
+      Verified: matcher clippy clean, 50 tests; the override was switched on once and the service checked against the sibling.
 - [ ] WPM-T258 **Request tests for every route.** The about 32 routes in no test (`development.rs` ×8, `movements.rs` ×4,
       `change.rs` ×3, `handover.rs`, `audits.rs`, `expenses.rs` withdraw, `hr_core.rs`, `workforce.rs`); a route-coverage test
       that fails on a route no request test calls; more unit tests for `benchmark.rs`, `tokens.rs`, `audit_export.rs`,

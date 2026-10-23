@@ -32,10 +32,15 @@ use crate::scorer::combined_similarity;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Weights {
+    /// Weight of the given name.
     pub given_name: f64,
+    /// Weight of the family name.
     pub family_name: f64,
+    /// Weight of the date of birth.
     pub date_of_birth: f64,
+    /// Weight of the email addresses.
     pub email: f64,
+    /// Weight of the phone numbers.
     pub phone: f64,
 }
 
@@ -55,6 +60,7 @@ impl Default for Weights {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct MatchConfig {
+    /// Per-field weights.
     pub weights: Weights,
     /// Score at or above which two records are a [`Decision::Match`].
     pub match_threshold: f64,
@@ -89,6 +95,7 @@ impl Default for MatchConfig {
 
 impl MatchConfig {
     /// For a decision nobody will review: higher bar, no nickname leniency.
+    #[must_use]
     pub fn strict() -> Self {
         Self {
             match_threshold: 0.95,
@@ -100,6 +107,7 @@ impl MatchConfig {
     }
 
     /// For triage of a large candidate list, where a missed duplicate costs more than a look.
+    #[must_use]
     pub fn lenient() -> Self {
         Self {
             match_threshold: 0.82,
@@ -109,6 +117,10 @@ impl MatchConfig {
     }
 
     /// Refuse a configuration that cannot give a meaningful answer.
+    ///
+    /// # Errors
+    ///
+    /// A [`MatchError`] naming the first weight, threshold, minimum or country code that is unusable.
     pub fn validate(&self) -> Result<(), MatchError> {
         let w = &self.weights;
         let all = [
@@ -172,10 +184,15 @@ pub enum Basis {
 /// Every field's score, `None` where the field was unknown on either side.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Breakdown {
+    /// Given-name score.
     pub given_name: Option<f64>,
+    /// Family-name score.
     pub family_name: Option<f64>,
+    /// Date-of-birth score.
     pub date_of_birth: Option<f64>,
+    /// Email score.
     pub email: Option<f64>,
+    /// Phone score.
     pub phone: Option<f64>,
     /// `Some(true)`: a shared number. `Some(false)`: both have numbers from a
     /// common organization and none agree. `None`: no organization in common.
@@ -185,10 +202,13 @@ pub struct Breakdown {
 /// The explainable result of comparing two records.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MatchResult {
+    /// Match, review, no match or insufficient evidence.
     pub decision: Decision,
+    /// What the decision rests on.
     pub basis: Basis,
     /// Weighted average of the comparable fields; `None` for [`Decision::Insufficient`].
     pub score: Option<f64>,
+    /// Every field's score.
     pub breakdown: Breakdown,
     /// How many of the five scored fields could be compared.
     pub fields_compared: usize,
@@ -199,6 +219,7 @@ pub struct MatchResult {
 pub struct Ranked {
     /// Index into the candidate slice that was ranked.
     pub index: usize,
+    /// The comparison with that candidate.
     pub result: MatchResult,
 }
 
@@ -217,6 +238,10 @@ impl Default for MatchingEngine {
 
 impl MatchingEngine {
     /// Validates the configuration; nicknames are the built-in English table when enabled.
+    ///
+    /// # Errors
+    ///
+    /// The [`MatchError`] from [`MatchConfig::validate`].
     pub fn new(config: MatchConfig) -> Result<Self, MatchError> {
         config.validate()?;
         let nicknames = if config.use_nicknames {
@@ -228,6 +253,7 @@ impl MatchingEngine {
     }
 
     /// Replace the nickname table (used only when `use_nicknames` is on).
+    #[must_use]
     pub fn with_nicknames(mut self, table: NicknameTable) -> Self {
         if self.config.use_nicknames {
             self.nicknames = table;
@@ -235,13 +261,16 @@ impl MatchingEngine {
         self
     }
 
+    /// The configuration in use.
+    #[must_use]
     pub fn config(&self) -> &MatchConfig {
         &self.config
     }
 
     /// Compare two records.
+    #[must_use]
     pub fn match_workers(&self, a: &WorkerRecord, b: &WorkerRecord) -> MatchResult {
-        let numbers = self.compare_worker_numbers(a, b);
+        let numbers = Self::compare_worker_numbers(a, b);
         let breakdown = Breakdown {
             given_name: self.given_name(a, b),
             family_name: family_name(a, b),
@@ -309,6 +338,7 @@ impl MatchingEngine {
     }
 
     /// Score one query against many candidates; the output is parallel to the input.
+    #[must_use]
     pub fn match_one_to_many(
         &self,
         query: &WorkerRecord,
@@ -321,6 +351,7 @@ impl MatchingEngine {
     }
 
     /// The same results, best first: by descending score, unscored last, ties by input order.
+    #[must_use]
     pub fn rank_one_to_many(
         &self,
         query: &WorkerRecord,
@@ -404,7 +435,7 @@ impl MatchingEngine {
         })
     }
 
-    fn compare_worker_numbers(&self, a: &WorkerRecord, b: &WorkerRecord) -> Option<bool> {
+    fn compare_worker_numbers(a: &WorkerRecord, b: &WorkerRecord) -> Option<bool> {
         let key = |r: &WorkerRecord| -> BTreeSet<(String, String)> {
             r.worker_numbers
                 .iter()

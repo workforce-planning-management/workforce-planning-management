@@ -138,3 +138,10 @@ required-features = ["keycloak"]
 name = "oidc_entra"
 path = "tests/oidc_entra.rs"
 required-features = ["keycloak"]
+
+# Developing the matcher alongside the service: uncomment to build against the
+# sibling checkout instead of the published crate. Leave it commented in
+# commits; the Containerfile and CI build from the registry copy, and a path
+# override rewrites Cargo.lock.
+# [patch.crates-io]
+# workforce-planning-management-matcher = { path = "../workforce-planning-management-matcher-with-rust" }
