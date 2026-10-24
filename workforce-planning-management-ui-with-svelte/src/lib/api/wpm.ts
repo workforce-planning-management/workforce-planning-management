@@ -600,7 +600,7 @@ export const SKILL_CATEGORIES = [
 export function updateSkill(
   pid: string,
   body: { name?: string; category?: string },
-): Promise<unknown> {
+): Promise<Answer<"/api/skills/{pid}", "put">> {
   return api(`/skills/${pid}`, { method: "PUT", body });
 }
 
@@ -620,7 +620,9 @@ export function skillUsage(
 }
 
 /** Delete a skill nothing uses (the service refuses a skill in use). */
-export function deleteSkill(pid: string): Promise<unknown> {
+export function deleteSkill(
+  pid: string,
+): Promise<Answer<"/api/skills/{pid}", "delete">> {
   return api(`/skills/${pid}`, { method: "DELETE" });
 }
 
@@ -667,7 +669,7 @@ export function applyCategorySuggestions(
 export function declareSkill(
   workerPid: string,
   body: { skill_pid: string; proficiency: number; target?: number },
-): Promise<unknown> {
+): Promise<Answer<"/api/workers/{pid}/skills", "put">> {
   return api(`/workers/${workerPid}/skills`, { method: "PUT", body });
 }
 
@@ -1007,7 +1009,9 @@ export function createCpdEntry(
 }
 
 /** Verify a CPD entry's evidence. */
-export function verifyCpdEntry(pid: string): Promise<unknown> {
+export function verifyCpdEntry(
+  pid: string,
+): Promise<Answer<"/api/cpd-entries/{pid}/verify", "post">> {
   return api(`/cpd-entries/${pid}/verify`, { method: "POST" });
 }
 
@@ -1199,7 +1203,9 @@ export function addPastRole(
     started_on: string;
     ended_on: string;
   },
-): Promise<unknown> {
+): Promise<
+  Answer<"/api/workers/{pid}/framework-roles/{framework}/past", "post">
+> {
   return api(`/workers/${workerPid}/framework-roles/${framework}/past`, {
     method: "POST",
     body,
@@ -1520,7 +1526,7 @@ export function addDottedManager(
   workerPid: string,
   managerPid: string,
   note?: string,
-): Promise<unknown> {
+): Promise<Answer<"/api/workers/{pid}/dotted-line-managers", "post">> {
   return api(`/workers/${workerPid}/dotted-line-managers`, {
     method: "POST",
     body: { manager_pid: managerPid, ...(note ? { note } : {}) },
@@ -2066,7 +2072,7 @@ export function joinGroup(
   groupPid: string,
   workerPid: string,
   role: "member" | "lead" = "member",
-): Promise<unknown> {
+): Promise<Answer<"/api/groups/{pid}/members", "post">> {
   return api(`/groups/${groupPid}/members`, {
     method: "POST",
     body: { worker_pid: workerPid, role },
@@ -2174,7 +2180,7 @@ export function addSkillRef(
 export function removeSkillRef(
   skillPid: string,
   framework: string,
-): Promise<unknown> {
+): Promise<Answer<"/api/skills/{pid}/refs/{framework_slug}", "delete">> {
   return api(`/skills/${skillPid}/refs/${encodeURIComponent(framework)}`, {
     method: "DELETE",
   });
@@ -2425,7 +2431,12 @@ export function changeReadiness(
 }
 
 /** How a demand line is staffed. */
-export const PLAN_BASES = ["permanent", "fixed_term", "contractor", "intern"] as const;
+export const PLAN_BASES = [
+  "permanent",
+  "fixed_term",
+  "contractor",
+  "intern",
+] as const;
 
 /** Workforce plans (scenarios) in the caller's organizations. */
 export function listWorkforcePlans(init?: FetchLike): Promise<
@@ -2494,7 +2505,10 @@ export function createWorkforcePlan(body: {
 }
 
 /** draft → active → archived. */
-export function setPlanStatus(pid: string, to: string): Promise<unknown> {
+export function setPlanStatus(
+  pid: string,
+  to: string,
+): Promise<Answer<"/api/workforce-plans/{pid}/status", "post">> {
   return api(`/workforce-plans/${pid}/status`, {
     method: "POST",
     body: { to },
@@ -2523,7 +2537,9 @@ export function setDemandLine(
 export function removeDemandLine(
   pid: string,
   linePid: string,
-): Promise<unknown> {
+): Promise<
+  Answer<"/api/workforce-plans/{pid}/demand-lines/{line_pid}", "delete">
+> {
   return api(`/workforce-plans/${pid}/demand-lines/${linePid}`, {
     method: "DELETE",
   });
@@ -2542,7 +2558,9 @@ export function setLineObjectives(
   pid: string,
   linePid: string,
   objectivePids: string[],
-): Promise<unknown> {
+): Promise<
+  Answer<"/api/workforce-plans/{pid}/demand-lines/{line_pid}/objectives", "put">
+> {
   return api(`/workforce-plans/${pid}/demand-lines/${linePid}/objectives`, {
     method: "PUT",
     body: { objective_pids: objectivePids },
@@ -2763,7 +2781,7 @@ export function setPlanTolerance(
   pid: string,
   dimension: string,
   body: { limit: number; amber_percent?: number },
-): Promise<unknown> {
+): Promise<Answer<"/api/workforce-plans/{pid}/tolerances/{dimension}", "put">> {
   return api(`/workforce-plans/${pid}/tolerances/${dimension}`, {
     method: "PUT",
     body,
@@ -2774,7 +2792,9 @@ export function setPlanTolerance(
 export function removePlanTolerance(
   pid: string,
   dimension: string,
-): Promise<unknown> {
+): Promise<
+  Answer<"/api/workforce-plans/{pid}/tolerances/{dimension}", "delete">
+> {
   return api(`/workforce-plans/${pid}/tolerances/${dimension}`, {
     method: "DELETE",
   });
@@ -2944,7 +2964,10 @@ export function mentorshipOverview(
 }
 
 /** Change a mentorship's lifecycle status. */
-export function mentorshipStatus(pid: string, to: string): Promise<unknown> {
+export function mentorshipStatus(
+  pid: string,
+  to: string,
+): Promise<Answer<"/api/mentorships/{pid}/status", "post">> {
   return api(`/mentorships/${pid}/status`, { method: "POST", body: { to } });
 }
 
@@ -3245,7 +3268,10 @@ export function nominateRater(
 }
 
 /** Move the appraisal lifecycle (draft → collecting → shared). */
-export function appraisalStatus(pid: string, to: string): Promise<unknown> {
+export function appraisalStatus(
+  pid: string,
+  to: string,
+): Promise<Answer<"/api/appraisals/{pid}/status", "post">> {
   return api(`/appraisals/${pid}/status`, { method: "POST", body: { to } });
 }
 
@@ -3370,7 +3396,7 @@ export function acknowledgeWellbeing(
   workerPid: string,
   entitlementPid: string,
   response: "booked" | "done" | "declined" | "dismissed",
-): Promise<unknown> {
+): Promise<Answer<"/api/workers/{pid}/wellbeing-acknowledgements", "post">> {
   return api(`/workers/${workerPid}/wellbeing-acknowledgements`, {
     method: "POST",
     body: { entitlement_pid: entitlementPid, response },
@@ -3988,7 +4014,7 @@ export function withdrawOversightPack(
   pid: string,
   reason: string,
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/oversight/packs/{pid}/withdraw", "post">> {
   return api(`/oversight/packs/${pid}/withdraw`, {
     ...init,
     method: "POST",
@@ -4140,7 +4166,7 @@ export function addSkillPoolMember(
     min_proficiency?: number;
   },
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/skill-pools/{pid}/members", "post">> {
   return api(`/skill-pools/${pid}/members`, { ...init, method: "POST", body });
 }
 
@@ -4154,14 +4180,14 @@ export function setProgrammeDemand(
     status?: "proposed" | "closed";
   },
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/programme-demands", "put">> {
   return api("/programme-demands", { ...init, method: "PUT", body });
 }
 
 export function createOversightLevel(
   body: { organization_ref: string; ordinal: number; name: string },
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/oversight/levels", "post">> {
   return api("/oversight/levels", { ...init, method: "POST", body });
 }
 
@@ -4175,7 +4201,7 @@ export function recordOversightPosition(
     reason: string;
   },
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/oversight/positions", "post">> {
   return api("/oversight/positions", { ...init, method: "POST", body });
 }
 
@@ -4198,7 +4224,7 @@ export function createOversightMeasure(
     sustain: number;
   },
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/oversight/measures", "post">> {
   return api("/oversight/measures", { ...init, method: "POST", body });
 }
 
@@ -4314,7 +4340,7 @@ export function setDevelopmentItemStatus(
   itemPid: string,
   status: DevelopmentItem["status"],
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/development-plan-items/{pid}", "put">> {
   return api(`/development-plan-items/${itemPid}`, {
     ...init,
     method: "PUT",
@@ -4400,12 +4426,14 @@ export function requestMyLeave(body: {
   start_on: string;
   end_on: string;
   reason?: string;
-}): Promise<unknown> {
+}): Promise<Answer<"/api/me/leave-requests", "post">> {
   return api("/me/leave-requests", { method: "POST", body });
 }
 
 /** Cancel one of the caller's own requests. */
-export function cancelMyLeave(pid: string): Promise<unknown> {
+export function cancelMyLeave(
+  pid: string,
+): Promise<Answer<"/api/me/leave-requests/{pid}/cancel", "post">> {
   return api(`/me/leave-requests/${pid}/cancel`, { method: "POST" });
 }
 
@@ -4451,7 +4479,14 @@ export function actOnFlexibleRequest(
   pid: string,
   action: "withdraw" | "respond" | "appeal",
   body?: { response?: "accept" | "decline"; note?: string },
-): Promise<unknown> {
+): Promise<
+  Answer<
+    | "/api/me/flexible-working/{pid}/withdraw"
+    | "/api/me/flexible-working/{pid}/respond"
+    | "/api/me/flexible-working/{pid}/appeal",
+    "post"
+  >
+> {
   return api(`/me/flexible-working/${pid}/${action}`, {
     method: "POST",
     body: body ?? {},
@@ -4484,7 +4519,9 @@ export function logMyResignation(body: {
 }
 
 /** Take the resignation back while it awaits acceptance. */
-export function withdrawMyResignation(): Promise<unknown> {
+export function withdrawMyResignation(): Promise<
+  Answer<"/api/me/resignation/withdraw", "post">
+> {
   return api("/me/resignation/withdraw", { method: "POST" });
 }
 
@@ -4507,7 +4544,7 @@ export function getMyEquality(init?: FetchLike): Promise<MyEquality> {
 /** Declare or change answers for the categories given. */
 export function declareMyEquality(
   declarations: Record<string, string>,
-): Promise<unknown> {
+): Promise<Answer<"/api/me/equality-monitoring", "put">> {
   return api("/me/equality-monitoring", {
     method: "PUT",
     body: { declarations },
@@ -4515,7 +4552,14 @@ export function declareMyEquality(
 }
 
 /** Take back one answer, or every answer. */
-export function withdrawMyEquality(category?: string): Promise<unknown> {
+export function withdrawMyEquality(
+  category?: string,
+): Promise<
+  Answer<
+    "/api/me/equality-monitoring" | "/api/me/equality-monitoring/{category}",
+    "delete"
+  >
+> {
   return api(
     `/me/equality-monitoring${category ? `/${encodeURIComponent(category)}` : ""}`,
     { method: "DELETE" },

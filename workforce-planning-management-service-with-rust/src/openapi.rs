@@ -542,39 +542,307 @@ const ANSWERS: &[(&str, &str, Answer)] = &[
     ("/api/workers/{}/pay-position", "delete", Answer::NoBody),
     ("/api/role-profiles/{}/grade", "delete", Answer::NoBody),
     ("/api/me/contact-details", "delete", Answer::NoBody),
-    ("/api/role-profiles/{}/requirements", "put", Answer::Schema("EmptyObject")),
-    ("/api/role-profiles/{}/requirements/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/cpd-requirements/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/workers/{}/framework-roles/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/workers/{}/dotted-line-managers/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/emergency-contacts/{}", "delete", Answer::Schema("EmptyObject")),
+    (
+        "/api/role-profiles/{}/requirements",
+        "put",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/role-profiles/{}/requirements/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/cpd-requirements/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/workers/{}/framework-roles/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/workers/{}/dotted-line-managers/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/emergency-contacts/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
     ("/api/backups/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/announcements/{}", "delete", Answer::Schema("EmptyObject")),
+    (
+        "/api/announcements/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
     ("/api/rotas/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/rota-overrides/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/skill-courses/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/groups/{}/members/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/aspirations/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/mobility-interests/{}", "delete", Answer::Schema("EmptyObject")),
-    ("/api/change-initiatives/{}/role-impacts", "put", Answer::Schema("EmptyObject")),
-    ("/api/change-initiatives/{}/skill-shifts", "put", Answer::Schema("EmptyObject")),
-    ("/api/change-initiatives/{}/status", "post", Answer::Schema("PidRef")),
-    ("/api/workers/{}/skill-history/past", "post", Answer::Schema("PidRef")),
-    ("/api/announcements/{}/read", "post", Answer::Schema("ReadReceipt")),
-    ("/api/movement-items/{}/done", "post", Answer::Schema("ItemState")),
-    ("/api/movement-items/{}/reopen", "post", Answer::Schema("ItemState")),
-    ("/api/movement-items/{}/skip", "post", Answer::Schema("ItemState")),
-    ("/api/movements/{}/complete", "post", Answer::Schema("MovementClosed")),
-    ("/api/movements/{}/cancel", "post", Answer::Schema("MovementClosed")),
-    ("/api/wellbeing-entitlements/{}", "delete", Answer::Schema("Deleted")),
+    (
+        "/api/rota-overrides/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/skill-courses/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/groups/{}/members/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/aspirations/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/mobility-interests/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/change-initiatives/{}/role-impacts",
+        "put",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/change-initiatives/{}/skill-shifts",
+        "put",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/change-initiatives/{}/status",
+        "post",
+        Answer::Schema("PidRef"),
+    ),
+    (
+        "/api/workers/{}/skill-history/past",
+        "post",
+        Answer::Schema("PidRef"),
+    ),
+    (
+        "/api/announcements/{}/read",
+        "post",
+        Answer::Schema("ReadReceipt"),
+    ),
+    (
+        "/api/movement-items/{}/done",
+        "post",
+        Answer::Schema("ItemState"),
+    ),
+    (
+        "/api/movement-items/{}/reopen",
+        "post",
+        Answer::Schema("ItemState"),
+    ),
+    (
+        "/api/movement-items/{}/skip",
+        "post",
+        Answer::Schema("ItemState"),
+    ),
+    (
+        "/api/movements/{}/complete",
+        "post",
+        Answer::Schema("MovementClosed"),
+    ),
+    (
+        "/api/movements/{}/cancel",
+        "post",
+        Answer::Schema("MovementClosed"),
+    ),
+    (
+        "/api/wellbeing-entitlements/{}",
+        "delete",
+        Answer::Schema("Deleted"),
+    ),
     ("/api/cutovers/{}", "delete", Answer::Schema("Removed")),
-    ("/api/cutovers/{}/pools", "post", Answer::Schema("CutoverPool")),
-    ("/api/cutovers/{}/roles", "post", Answer::Schema("CutoverRole")),
-    ("/api/oversight/criteria", "post", Answer::Schema("OversightCriterionCreated")),
-    ("/api/oversight/measures/{}/readings", "put", Answer::Schema("OversightReading")),
-    ("/api/me/flexible-working", "post", Answer::Schema("FlexibleRequested")),
-    ("/api/me/resignation", "post", Answer::Schema("ResignationLogged")),
-    ("/api/aspirations/{}", "put", Answer::Schema("AspirationChanged")),
+    (
+        "/api/cutovers/{}/pools",
+        "post",
+        Answer::Schema("CutoverPool"),
+    ),
+    (
+        "/api/cutovers/{}/roles",
+        "post",
+        Answer::Schema("CutoverRole"),
+    ),
+    (
+        "/api/oversight/criteria",
+        "post",
+        Answer::Schema("OversightCriterionCreated"),
+    ),
+    (
+        "/api/oversight/measures/{}/readings",
+        "put",
+        Answer::Schema("OversightReading"),
+    ),
+    (
+        "/api/me/flexible-working",
+        "post",
+        Answer::Schema("FlexibleRequested"),
+    ),
+    (
+        "/api/me/resignation",
+        "post",
+        Answer::Schema("ResignationLogged"),
+    ),
+    (
+        "/api/aspirations/{}",
+        "put",
+        Answer::Schema("AspirationChanged"),
+    ),
+    ("/api/skills/{}", "put", Answer::Schema("PidRef")),
+    ("/api/skills/{}", "delete", Answer::Schema("EmptyObject")),
+    (
+        "/api/skills/{}/refs/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/workers/{}/skills",
+        "put",
+        Answer::Schema("WorkerSkill"),
+    ),
+    (
+        "/api/cpd-entries/{}/verify",
+        "post",
+        Answer::Schema("CpdEntry"),
+    ),
+    (
+        "/api/workers/{}/framework-roles/{}/past",
+        "post",
+        Answer::Schema("FrameworkRoleHeld"),
+    ),
+    (
+        "/api/workers/{}/dotted-line-managers",
+        "post",
+        Answer::Schema("DottedLineManager"),
+    ),
+    (
+        "/api/groups/{}/members",
+        "post",
+        Answer::Schema("GroupMember"),
+    ),
+    (
+        "/api/workforce-plans/{}/status",
+        "post",
+        Answer::Schema("PidRef"),
+    ),
+    (
+        "/api/workforce-plans/{}/demand-lines/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/workforce-plans/{}/demand-lines/{}/objectives",
+        "put",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/workforce-plans/{}/tolerances/{}",
+        "put",
+        Answer::Schema("PlanTolerances"),
+    ),
+    (
+        "/api/workforce-plans/{}/tolerances/{}",
+        "delete",
+        Answer::Schema("EmptyObject"),
+    ),
+    (
+        "/api/mentorships/{}/status",
+        "post",
+        Answer::Schema("Mentorship"),
+    ),
+    (
+        "/api/appraisals/{}/status",
+        "post",
+        Answer::Schema("Appraisal"),
+    ),
+    (
+        "/api/workers/{}/wellbeing-acknowledgements",
+        "post",
+        Answer::Schema("EntitlementAcknowledgement"),
+    ),
+    (
+        "/api/oversight/packs/{}/withdraw",
+        "post",
+        Answer::Schema("OversightPack"),
+    ),
+    (
+        "/api/skill-pools/{}/members",
+        "post",
+        Answer::Schema("PidRef"),
+    ),
+    ("/api/programme-demands", "put", Answer::Schema("PidRef")),
+    (
+        "/api/oversight/levels",
+        "post",
+        Answer::Schema("OversightLevel"),
+    ),
+    (
+        "/api/oversight/positions",
+        "post",
+        Answer::Schema("OversightPosition"),
+    ),
+    (
+        "/api/oversight/measures",
+        "post",
+        Answer::Schema("OversightMeasure"),
+    ),
+    (
+        "/api/development-plan-items/{}",
+        "put",
+        Answer::Schema("DevelopmentPlanItem"),
+    ),
+    (
+        "/api/me/leave-requests",
+        "post",
+        Answer::Schema("LeaveRequested"),
+    ),
+    (
+        "/api/me/leave-requests/{}/cancel",
+        "post",
+        Answer::Schema("LeaveRequest"),
+    ),
+    (
+        "/api/me/flexible-working/{}/withdraw",
+        "post",
+        Answer::Schema("FlexibleRequest"),
+    ),
+    (
+        "/api/me/flexible-working/{}/respond",
+        "post",
+        Answer::Schema("FlexibleRequest"),
+    ),
+    (
+        "/api/me/flexible-working/{}/appeal",
+        "post",
+        Answer::Schema("FlexibleRequest"),
+    ),
+    (
+        "/api/me/resignation/withdraw",
+        "post",
+        Answer::Schema("ResignationOwn"),
+    ),
+    (
+        "/api/me/equality-monitoring",
+        "put",
+        Answer::Schema("MyEquality"),
+    ),
+    (
+        "/api/me/equality-monitoring",
+        "delete",
+        Answer::Schema("MyEquality"),
+    ),
+    (
+        "/api/me/equality-monitoring/{}",
+        "delete",
+        Answer::Schema("MyEquality"),
+    ),
 ];
 
 /// `{name}` to `{}`, so a table can ignore what the document calls a parameter.
@@ -632,6 +900,187 @@ fn answer_schemas() -> Value {
     })
 }
 
+/// The answers that are a stored row, a record built by a helper, or a view: shapes read off the handlers (WPM-T263).
+/// A row from `row_json` is the `SeaORM` model without `id` and `deleted_at`, so it keeps both timestamps.
+#[allow(clippy::too_many_lines)] // one literal
+fn record_schemas() -> Value {
+    let uuid = json!({ "type": "string", "format": "uuid" });
+    let uuid_or_null = json!({ "type": "string", "format": "uuid", "nullable": true });
+    let date = json!({ "type": "string", "format": "date" });
+    let date_or_null = json!({ "type": "string", "format": "date", "nullable": true });
+    let time = json!({ "type": "string", "format": "date-time" });
+    let time_or_null = json!({ "type": "string", "format": "date-time", "nullable": true });
+    let text = json!({ "type": "string" });
+    let text_or_null = json!({ "type": "string", "nullable": true });
+    let int = json!({ "type": "integer" });
+    let int_or_null = json!({ "type": "integer", "nullable": true });
+    let int64 = json!({ "type": "integer", "format": "int64" });
+    let int64_or_null = json!({ "type": "integer", "format": "int64", "nullable": true });
+    let boolean = json!({ "type": "boolean" });
+    let rag = json!({ "type": "string", "enum": ["not_set", "green", "unknown", "amber", "red"] });
+    let rag_or_null = json!({ "type": "string", "nullable": true });
+    let escalation = json!({
+        "type": "object",
+        "required": ["pid", "plan_pid", "plan_name", "dimension", "status", "level", "level_number", "raised_by", "raised_on", "level_raised_on", "days_open", "note", "at_raise", "decision", "decided_by", "decided_on", "decision_note", "at_decision"],
+        "properties": {
+            "pid": uuid, "plan_pid": uuid, "plan_name": text_or_null, "dimension": text, "status": text,
+            "level": { "type": "string", "nullable": true, "enum": ["plan_owner", "board", "executive", null] },
+            "level_number": int, "raised_by": text_or_null, "raised_on": date, "level_raised_on": date_or_null,
+            "days_open": { "type": "integer", "format": "int64", "nullable": true, "description": "Only while the escalation is open." },
+            "note": text_or_null,
+            "at_raise": { "type": "object", "required": ["rag", "deviation", "limit"], "properties": { "rag": text, "deviation": int64_or_null, "limit": int64 } },
+            "decision": text_or_null, "decided_by": text_or_null, "decided_on": date_or_null, "decision_note": text_or_null,
+            "at_decision": { "type": "object", "nullable": true, "required": ["rag", "deviation"], "properties": { "rag": rag_or_null, "deviation": int64_or_null } }
+        }
+    });
+    let flexible = json!({
+        "type": "object",
+        "required": ["pid", "kind", "requested_on", "proposed_start", "proposed_fte_percent", "effect_on_team", "how_to_manage", "status", "decide_by", "overdue", "decided_on", "decision_reason", "decision_note", "counter_note", "counter_fte_percent", "trial_until", "appealed_on", "appeal_note", "can_appeal", "hr_to_apply_fte_percent"],
+        "properties": {
+            "pid": uuid, "kind": text, "requested_on": date, "proposed_start": date,
+            "proposed_fte_percent": int_or_null, "effect_on_team": text_or_null, "how_to_manage": text_or_null,
+            "status": text, "decide_by": date, "overdue": boolean, "decided_on": date_or_null,
+            "decision_reason": text_or_null, "decision_note": text_or_null, "counter_note": text_or_null,
+            "counter_fte_percent": int_or_null, "trial_until": date_or_null, "appealed_on": date_or_null,
+            "appeal_note": text_or_null, "can_appeal": boolean,
+            "hr_to_apply_fte_percent": { "type": "integer", "nullable": true, "description": "What HR applies once a change of hours is agreed; the software never changes a contract." }
+        }
+    });
+    json!({
+        "WorkerSkill": {
+            "type": "object",
+            "required": ["created_at", "updated_at", "pid", "worker_pid", "skill_pid", "proficiency", "target", "assessed_on"],
+            "properties": { "created_at": time, "updated_at": time, "pid": uuid, "worker_pid": uuid, "skill_pid": uuid, "proficiency": int, "target": int_or_null, "assessed_on": date }
+        },
+        "Mentorship": {
+            "type": "object",
+            "required": ["created_at", "updated_at", "pid", "mentor_pid", "mentee_pid", "focus", "status", "started_on", "ended_on"],
+            "properties": { "created_at": time, "updated_at": time, "pid": uuid, "mentor_pid": uuid, "mentee_pid": uuid, "focus": text, "status": text, "started_on": date_or_null, "ended_on": date_or_null }
+        },
+        "Appraisal": {
+            "type": "object",
+            "required": ["created_at", "updated_at", "pid", "worker_pid", "competencies", "status", "shared_on"],
+            "properties": { "created_at": time, "updated_at": time, "pid": uuid, "worker_pid": uuid, "competencies": { "type": "array", "items": text }, "status": text, "shared_on": date_or_null }
+        },
+        "EntitlementAcknowledgement": {
+            "type": "object",
+            "required": ["created_at", "updated_at", "pid", "entitlement_pid", "worker_pid", "response", "responded_on", "reminded_on"],
+            "properties": { "created_at": time, "updated_at": time, "pid": uuid, "entitlement_pid": uuid, "worker_pid": uuid, "response": text, "responded_on": date, "reminded_on": date_or_null }
+        },
+        "DevelopmentPlanItem": {
+            "type": "object",
+            "required": ["created_at", "updated_at", "pid", "plan_pid", "skill_pid", "current_level", "target_level", "method", "course_ref", "due_on", "status"],
+            "properties": { "created_at": time, "updated_at": time, "pid": uuid, "plan_pid": uuid, "skill_pid": uuid, "current_level": int, "target_level": int, "method": text, "course_ref": text_or_null, "due_on": date_or_null, "status": text }
+        },
+        "LeaveRequest": {
+            "type": "object",
+            "required": ["created_at", "updated_at", "pid", "worker_pid", "kind", "start_on", "end_on", "days", "status", "negative_balance", "reason", "decided_by", "decided_at"],
+            "properties": { "created_at": time, "updated_at": time, "pid": uuid, "worker_pid": uuid, "kind": text, "start_on": date, "end_on": date, "days": int, "status": text, "negative_balance": boolean, "reason": text_or_null, "decided_by": text_or_null, "decided_at": time_or_null }
+        },
+        "LeaveRequested": { "type": "object", "required": ["pid", "days", "negative_balance"], "properties": { "pid": uuid, "days": int, "negative_balance": boolean } },
+        "CpdEntry": {
+            "type": "object",
+            "required": ["pid", "entry_date", "activity", "category", "unit", "amount", "amount_hundredths", "evidence_note", "evidence_url", "source", "lms_url", "verified_on", "verified_by"],
+            "properties": {
+                "pid": uuid, "entry_date": date, "activity": text, "category": text, "unit": text,
+                "amount": { "type": "number", "format": "double", "description": "`amount_hundredths` as units." },
+                "amount_hundredths": int64, "evidence_note": text_or_null, "evidence_url": text_or_null, "source": text,
+                "lms_url": text_or_null, "verified_on": date_or_null, "verified_by": text_or_null
+            }
+        },
+        "FrameworkRoleHeld": {
+            "type": "object",
+            "required": ["pid", "framework", "role_label", "role_profile_pid", "occupation_uri", "started_at", "ended_at", "current", "recorded_by", "on_behalf"],
+            "properties": { "pid": uuid, "framework": text, "role_label": text, "role_profile_pid": uuid_or_null, "occupation_uri": text_or_null, "started_at": time, "ended_at": time_or_null, "current": boolean, "recorded_by": text_or_null, "on_behalf": boolean }
+        },
+        "DottedLineManager": {
+            "type": "object",
+            "description": "The manager's `pid`, `display_name`, `job_title` and `department` are present when the manager is known.",
+            "required": ["note", "started_at", "ended_at", "current", "on_behalf"],
+            "properties": {
+                "pid": uuid, "display_name": text, "job_title": text, "department": text,
+                "note": text_or_null, "started_at": time, "ended_at": time_or_null, "current": boolean, "on_behalf": boolean
+            }
+        },
+        "GroupMember": {
+            "type": "object",
+            "required": ["worker_pid", "display_name", "job_title", "department", "role", "joined_at", "left_at", "current", "recorded_by", "on_behalf"],
+            "properties": { "worker_pid": uuid, "display_name": text_or_null, "job_title": text_or_null, "department": text_or_null, "role": text, "joined_at": time, "left_at": time_or_null, "current": boolean, "recorded_by": text_or_null, "on_behalf": boolean }
+        },
+        "PlanTolerances": {
+            "type": "object",
+            "required": ["derivation", "plan", "as_of", "overall", "breaches_without_escalation", "dimensions"],
+            "properties": {
+                "derivation": text,
+                "plan": { "type": "object", "required": ["pid", "name", "status"], "properties": { "pid": uuid, "name": text, "status": text } },
+                "as_of": date, "overall": rag, "breaches_without_escalation": int64,
+                "dimensions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["dimension", "unit", "set", "limit", "amber_percent", "deviation", "rag", "basis", "reason", "escalation"],
+                        "properties": {
+                            "dimension": { "type": "string", "enum": ["time", "cost", "resources", "risk"] },
+                            "unit": text, "set": boolean, "limit": int64_or_null, "amber_percent": int_or_null,
+                            "deviation": { "type": "integer", "format": "int64", "nullable": true, "description": "Unknown is null, never zero." },
+                            "rag": rag, "basis": text,
+                            "reason": { "type": "string", "nullable": true, "description": "Why the deviation cannot be worked out, when it cannot." },
+                            "escalation": { "nullable": true, "allOf": [escalation] }
+                        }
+                    }
+                }
+            }
+        },
+        "OversightLevel": {
+            "type": "object",
+            "required": ["pid", "organization_ref", "ordinal", "name", "synthetic"],
+            "properties": { "pid": uuid, "organization_ref": text, "ordinal": int, "name": text, "synthetic": boolean }
+        },
+        "OversightPosition": {
+            "type": "object",
+            "required": ["pid", "level_pid", "level", "ordinal", "effective_on", "deciding_body", "reason"],
+            "properties": { "pid": uuid, "level_pid": uuid, "level": text_or_null, "ordinal": int_or_null, "effective_on": date, "deciding_body": text, "reason": text }
+        },
+        "OversightMeasure": {
+            "type": "object",
+            "required": ["pid", "criterion_pid", "name", "origin", "derivation", "unit", "threshold", "direction", "sustain"],
+            "properties": { "pid": uuid, "criterion_pid": uuid, "name": text, "origin": text, "derivation": text_or_null, "unit": text, "threshold": int64, "direction": text, "sustain": int }
+        },
+        "OversightPack": {
+            "type": "object",
+            "required": ["pid", "organization_ref", "as_of", "month", "withdrawn", "pack"],
+            "properties": {
+                "pid": uuid, "organization_ref": text, "as_of": date, "month": date,
+                "withdrawn": { "type": "object", "nullable": true, "required": ["on", "reason"], "properties": { "on": date, "reason": text }, "description": "Null unless the pack was withdrawn." },
+                "pack": { "type": "object", "description": "The frozen payload, as it was written." }
+            }
+        },
+        "FlexibleRequest": flexible,
+        "ResignationOwn": {
+            "type": "object",
+            "required": ["pid", "status", "logged_on", "proposed_last_day", "agreed_last_day", "reason", "notice_calendar_days"],
+            "properties": { "pid": uuid, "status": text, "logged_on": date, "proposed_last_day": date, "agreed_last_day": date_or_null, "reason": text_or_null, "notice_calendar_days": int64 }
+        },
+        "MyEquality": {
+            "oneOf": [
+                { "type": "object", "required": ["enabled"], "properties": { "enabled": { "type": "boolean", "enum": [false] } } },
+                {
+                    "type": "object",
+                    "required": ["enabled", "lawful_basis", "categories", "declarations", "small_group_floor", "notice"],
+                    "properties": {
+                        "enabled": { "type": "boolean", "enum": [true] },
+                        "lawful_basis": text,
+                        "categories": { "type": "object", "additionalProperties": { "type": "array", "items": text } },
+                        "declarations": { "type": "object", "additionalProperties": text },
+                        "small_group_floor": int64,
+                        "notice": text
+                    }
+                }
+            ]
+        },
+    })
+}
+
 /// Give the operations in `ANSWERS` their answer. The shapes are added to the components by `decorate`.
 fn typed_answers(document: &mut Value) {
     if let Some(paths) = document["paths"].as_object_mut() {
@@ -664,6 +1113,12 @@ fn decorate(document: &mut Value) {
     if let (Some(into), Some(from)) = (
         document["components"]["schemas"].as_object_mut(),
         answer_schemas().as_object(),
+    ) {
+        into.extend(from.iter().map(|(k, v)| (k.clone(), v.clone())));
+    }
+    if let (Some(into), Some(from)) = (
+        document["components"]["schemas"].as_object_mut(),
+        record_schemas().as_object(),
     ) {
         into.extend(from.iter().map(|(k, v)| (k.clone(), v.clone())));
     }
@@ -1010,7 +1465,10 @@ mod tests {
             match answer {
                 super::Answer::NoBody => assert!(ok.get("content").is_none(), "{name}"),
                 super::Answer::Schema(schema) => {
-                    assert!(doc["components"]["schemas"].get(*schema).is_some(), "{schema}");
+                    assert!(
+                        doc["components"]["schemas"].get(*schema).is_some(),
+                        "{schema}"
+                    );
                     assert_eq!(
                         ok["content"]["application/json"]["schema"]["$ref"],
                         format!("#/components/schemas/{schema}"),
@@ -1019,7 +1477,11 @@ mod tests {
                 }
             }
             // The key's replay header is still there.
-            assert!(item[*method]["responses"]["200"].get("headers").is_some() || !super::MUTATING.contains(method), "{name}");
+            assert!(
+                item[*method]["responses"]["200"].get("headers").is_some()
+                    || !super::MUTATING.contains(method),
+                "{name}"
+            );
         }
     }
 

@@ -55,6 +55,50 @@
       }
     },
     "schemas": {
+      "Appraisal": {
+        "properties": {
+          "competencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "shared_on": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "worker_pid": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "updated_at",
+          "pid",
+          "worker_pid",
+          "competencies",
+          "status",
+          "shared_on"
+        ],
+        "type": "object"
+      },
       "AspirationChanged": {
         "properties": {
           "pid": {
@@ -124,6 +168,76 @@
             "type": "object"
           }
         },
+        "type": "object"
+      },
+      "CpdEntry": {
+        "properties": {
+          "activity": {
+            "type": "string"
+          },
+          "amount": {
+            "description": "`amount_hundredths` as units.",
+            "format": "double",
+            "type": "number"
+          },
+          "amount_hundredths": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "category": {
+            "type": "string"
+          },
+          "entry_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "evidence_note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "evidence_url": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lms_url": {
+            "nullable": true,
+            "type": "string"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "verified_by": {
+            "nullable": true,
+            "type": "string"
+          },
+          "verified_on": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "pid",
+          "entry_date",
+          "activity",
+          "category",
+          "unit",
+          "amount",
+          "amount_hundredths",
+          "evidence_note",
+          "evidence_url",
+          "source",
+          "lms_url",
+          "verified_on",
+          "verified_by"
+        ],
         "type": "object"
       },
       "CutoverPool": {
@@ -215,9 +329,267 @@
         },
         "type": "object"
       },
+      "DevelopmentPlanItem": {
+        "properties": {
+          "course_ref": {
+            "nullable": true,
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "current_level": {
+            "type": "integer"
+          },
+          "due_on": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "plan_pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "skill_pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "target_level": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "updated_at",
+          "pid",
+          "plan_pid",
+          "skill_pid",
+          "current_level",
+          "target_level",
+          "method",
+          "course_ref",
+          "due_on",
+          "status"
+        ],
+        "type": "object"
+      },
+      "DottedLineManager": {
+        "description": "The manager's `pid`, `display_name`, `job_title` and `department` are present when the manager is known.",
+        "properties": {
+          "current": {
+            "type": "boolean"
+          },
+          "department": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "ended_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "job_title": {
+            "type": "string"
+          },
+          "note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "on_behalf": {
+            "type": "boolean"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note",
+          "started_at",
+          "ended_at",
+          "current",
+          "on_behalf"
+        ],
+        "type": "object"
+      },
       "EmptyObject": {
         "additionalProperties": false,
         "description": "An object with nothing in it (`{}`).",
+        "type": "object"
+      },
+      "EntitlementAcknowledgement": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "entitlement_pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reminded_on": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "responded_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "response": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "worker_pid": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "updated_at",
+          "pid",
+          "entitlement_pid",
+          "worker_pid",
+          "response",
+          "responded_on",
+          "reminded_on"
+        ],
+        "type": "object"
+      },
+      "FlexibleRequest": {
+        "properties": {
+          "appeal_note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "appealed_on": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "can_appeal": {
+            "type": "boolean"
+          },
+          "counter_fte_percent": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "counter_note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "decide_by": {
+            "format": "date",
+            "type": "string"
+          },
+          "decided_on": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "decision_note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "decision_reason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "effect_on_team": {
+            "nullable": true,
+            "type": "string"
+          },
+          "how_to_manage": {
+            "nullable": true,
+            "type": "string"
+          },
+          "hr_to_apply_fte_percent": {
+            "description": "What HR applies once a change of hours is agreed; the software never changes a contract.",
+            "nullable": true,
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "overdue": {
+            "type": "boolean"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "proposed_fte_percent": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "proposed_start": {
+            "format": "date",
+            "type": "string"
+          },
+          "requested_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "trial_until": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "pid",
+          "kind",
+          "requested_on",
+          "proposed_start",
+          "proposed_fte_percent",
+          "effect_on_team",
+          "how_to_manage",
+          "status",
+          "decide_by",
+          "overdue",
+          "decided_on",
+          "decision_reason",
+          "decision_note",
+          "counter_note",
+          "counter_fte_percent",
+          "trial_until",
+          "appealed_on",
+          "appeal_note",
+          "can_appeal",
+          "hr_to_apply_fte_percent"
+        ],
         "type": "object"
       },
       "FlexibleRequested": {
@@ -234,6 +606,61 @@
         "required": [
           "pid",
           "decide_by"
+        ],
+        "type": "object"
+      },
+      "FrameworkRoleHeld": {
+        "properties": {
+          "current": {
+            "type": "boolean"
+          },
+          "ended_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "framework": {
+            "type": "string"
+          },
+          "occupation_uri": {
+            "nullable": true,
+            "type": "string"
+          },
+          "on_behalf": {
+            "type": "boolean"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "recorded_by": {
+            "nullable": true,
+            "type": "string"
+          },
+          "role_label": {
+            "type": "string"
+          },
+          "role_profile_pid": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pid",
+          "framework",
+          "role_label",
+          "role_profile_pid",
+          "occupation_uri",
+          "started_at",
+          "ended_at",
+          "current",
+          "recorded_by",
+          "on_behalf"
         ],
         "type": "object"
       },
@@ -262,6 +689,61 @@
         ],
         "type": "object"
       },
+      "GroupMember": {
+        "properties": {
+          "current": {
+            "type": "boolean"
+          },
+          "department": {
+            "nullable": true,
+            "type": "string"
+          },
+          "display_name": {
+            "nullable": true,
+            "type": "string"
+          },
+          "job_title": {
+            "nullable": true,
+            "type": "string"
+          },
+          "joined_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "left_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "on_behalf": {
+            "type": "boolean"
+          },
+          "recorded_by": {
+            "nullable": true,
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "worker_pid": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "worker_pid",
+          "display_name",
+          "job_title",
+          "department",
+          "role",
+          "joined_at",
+          "left_at",
+          "current",
+          "recorded_by",
+          "on_behalf"
+        ],
+        "type": "object"
+      },
       "ItemState": {
         "properties": {
           "state": {
@@ -275,6 +757,147 @@
         },
         "required": [
           "state"
+        ],
+        "type": "object"
+      },
+      "LeaveRequest": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "days": {
+            "type": "integer"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "decided_by": {
+            "nullable": true,
+            "type": "string"
+          },
+          "end_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "negative_balance": {
+            "type": "boolean"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "start_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "worker_pid": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "updated_at",
+          "pid",
+          "worker_pid",
+          "kind",
+          "start_on",
+          "end_on",
+          "days",
+          "status",
+          "negative_balance",
+          "reason",
+          "decided_by",
+          "decided_at"
+        ],
+        "type": "object"
+      },
+      "LeaveRequested": {
+        "properties": {
+          "days": {
+            "type": "integer"
+          },
+          "negative_balance": {
+            "type": "boolean"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pid",
+          "days",
+          "negative_balance"
+        ],
+        "type": "object"
+      },
+      "Mentorship": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "ended_on": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "focus": {
+            "type": "string"
+          },
+          "mentee_pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mentor_pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "started_on": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "updated_at",
+          "pid",
+          "mentor_pid",
+          "mentee_pid",
+          "focus",
+          "status",
+          "started_on",
+          "ended_on"
         ],
         "type": "object"
       },
@@ -292,6 +915,68 @@
           "status"
         ],
         "type": "object"
+      },
+      "MyEquality": {
+        "oneOf": [
+          {
+            "properties": {
+              "enabled": {
+                "enum": [
+                  false
+                ],
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "enabled"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "categories": {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              "declarations": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              "enabled": {
+                "enum": [
+                  true
+                ],
+                "type": "boolean"
+              },
+              "lawful_basis": {
+                "type": "string"
+              },
+              "notice": {
+                "type": "string"
+              },
+              "small_group_floor": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "enabled",
+              "lawful_basis",
+              "categories",
+              "declarations",
+              "small_group_floor",
+              "notice"
+            ],
+            "type": "object"
+          }
+        ]
       },
       "OversightCriterionCreated": {
         "properties": {
@@ -311,6 +996,171 @@
           "pid",
           "level_pid",
           "name"
+        ],
+        "type": "object"
+      },
+      "OversightLevel": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "organization_ref": {
+            "type": "string"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "synthetic": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pid",
+          "organization_ref",
+          "ordinal",
+          "name",
+          "synthetic"
+        ],
+        "type": "object"
+      },
+      "OversightMeasure": {
+        "properties": {
+          "criterion_pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "derivation": {
+            "nullable": true,
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sustain": {
+            "type": "integer"
+          },
+          "threshold": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pid",
+          "criterion_pid",
+          "name",
+          "origin",
+          "derivation",
+          "unit",
+          "threshold",
+          "direction",
+          "sustain"
+        ],
+        "type": "object"
+      },
+      "OversightPack": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "type": "string"
+          },
+          "month": {
+            "format": "date",
+            "type": "string"
+          },
+          "organization_ref": {
+            "type": "string"
+          },
+          "pack": {
+            "description": "The frozen payload, as it was written.",
+            "type": "object"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "withdrawn": {
+            "description": "Null unless the pack was withdrawn.",
+            "nullable": true,
+            "properties": {
+              "on": {
+                "format": "date",
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "on",
+              "reason"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "pid",
+          "organization_ref",
+          "as_of",
+          "month",
+          "withdrawn",
+          "pack"
+        ],
+        "type": "object"
+      },
+      "OversightPosition": {
+        "properties": {
+          "deciding_body": {
+            "type": "string"
+          },
+          "effective_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "level": {
+            "nullable": true,
+            "type": "string"
+          },
+          "level_pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ordinal": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pid",
+          "level_pid",
+          "level",
+          "ordinal",
+          "effective_on",
+          "deciding_body",
+          "reason"
         ],
         "type": "object"
       },
@@ -368,6 +1218,270 @@
       "PlainTextError": {
         "description": "A sentence saying what to change",
         "type": "string"
+      },
+      "PlanTolerances": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "type": "string"
+          },
+          "breaches_without_escalation": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "derivation": {
+            "type": "string"
+          },
+          "dimensions": {
+            "items": {
+              "properties": {
+                "amber_percent": {
+                  "nullable": true,
+                  "type": "integer"
+                },
+                "basis": {
+                  "type": "string"
+                },
+                "deviation": {
+                  "description": "Unknown is null, never zero.",
+                  "format": "int64",
+                  "nullable": true,
+                  "type": "integer"
+                },
+                "dimension": {
+                  "enum": [
+                    "time",
+                    "cost",
+                    "resources",
+                    "risk"
+                  ],
+                  "type": "string"
+                },
+                "escalation": {
+                  "allOf": [
+                    {
+                      "properties": {
+                        "at_decision": {
+                          "nullable": true,
+                          "properties": {
+                            "deviation": {
+                              "format": "int64",
+                              "nullable": true,
+                              "type": "integer"
+                            },
+                            "rag": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "rag",
+                            "deviation"
+                          ],
+                          "type": "object"
+                        },
+                        "at_raise": {
+                          "properties": {
+                            "deviation": {
+                              "format": "int64",
+                              "nullable": true,
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "format": "int64",
+                              "type": "integer"
+                            },
+                            "rag": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "rag",
+                            "deviation",
+                            "limit"
+                          ],
+                          "type": "object"
+                        },
+                        "days_open": {
+                          "description": "Only while the escalation is open.",
+                          "format": "int64",
+                          "nullable": true,
+                          "type": "integer"
+                        },
+                        "decided_by": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "decided_on": {
+                          "format": "date",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "decision": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "decision_note": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "dimension": {
+                          "type": "string"
+                        },
+                        "level": {
+                          "enum": [
+                            "plan_owner",
+                            "board",
+                            "executive",
+                            null
+                          ],
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "level_number": {
+                          "type": "integer"
+                        },
+                        "level_raised_on": {
+                          "format": "date",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "note": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "pid": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "plan_name": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "plan_pid": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "raised_by": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "raised_on": {
+                          "format": "date",
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "pid",
+                        "plan_pid",
+                        "plan_name",
+                        "dimension",
+                        "status",
+                        "level",
+                        "level_number",
+                        "raised_by",
+                        "raised_on",
+                        "level_raised_on",
+                        "days_open",
+                        "note",
+                        "at_raise",
+                        "decision",
+                        "decided_by",
+                        "decided_on",
+                        "decision_note",
+                        "at_decision"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "nullable": true
+                },
+                "limit": {
+                  "format": "int64",
+                  "nullable": true,
+                  "type": "integer"
+                },
+                "rag": {
+                  "enum": [
+                    "not_set",
+                    "green",
+                    "unknown",
+                    "amber",
+                    "red"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "description": "Why the deviation cannot be worked out, when it cannot.",
+                  "nullable": true,
+                  "type": "string"
+                },
+                "set": {
+                  "type": "boolean"
+                },
+                "unit": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "dimension",
+                "unit",
+                "set",
+                "limit",
+                "amber_percent",
+                "deviation",
+                "rag",
+                "basis",
+                "reason",
+                "escalation"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "overall": {
+            "enum": [
+              "not_set",
+              "green",
+              "unknown",
+              "amber",
+              "red"
+            ],
+            "type": "string"
+          },
+          "plan": {
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "pid": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "pid",
+              "name",
+              "status"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "derivation",
+          "plan",
+          "as_of",
+          "overall",
+          "breaches_without_escalation",
+          "dimensions"
+        ],
+        "type": "object"
       },
       "PostFunding": {
         "description": "Where a post is funded from beside the contract end. Never an amount of money.",
@@ -554,6 +1668,94 @@
           "pid",
           "earliest_last_day",
           "notice_calendar_days"
+        ],
+        "type": "object"
+      },
+      "ResignationOwn": {
+        "properties": {
+          "agreed_last_day": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "logged_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "notice_calendar_days": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "proposed_last_day": {
+            "format": "date",
+            "type": "string"
+          },
+          "reason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pid",
+          "status",
+          "logged_on",
+          "proposed_last_day",
+          "agreed_last_day",
+          "reason",
+          "notice_calendar_days"
+        ],
+        "type": "object"
+      },
+      "WorkerSkill": {
+        "properties": {
+          "assessed_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "proficiency": {
+            "type": "integer"
+          },
+          "skill_pid": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "target": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "worker_pid": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "updated_at",
+          "pid",
+          "worker_pid",
+          "skill_pid",
+          "proficiency",
+          "target",
+          "assessed_on"
         ],
         "type": "object"
       }
@@ -920,7 +2122,14 @@
         ],
         "responses": {
           "200": {
-            "description": "The updated record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appraisal"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -1998,7 +3207,14 @@
         ],
         "responses": {
           "200": {
-            "description": "CpdEntry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CpdEntry"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -2304,7 +3520,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentPlanItem"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -3398,7 +4621,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMember"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4079,7 +5309,14 @@
         ],
         "responses": {
           "200": {
-            "description": "EqualityMonitoring",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyEquality"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4117,7 +5354,14 @@
         ],
         "responses": {
           "200": {
-            "description": "EqualityMonitoring",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyEquality"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4146,7 +5390,14 @@
         ],
         "responses": {
           "200": {
-            "description": "EqualityMonitoring",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyEquality"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4222,7 +5473,14 @@
         ],
         "responses": {
           "200": {
-            "description": "FlexibleRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlexibleRequest"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4251,7 +5509,14 @@
         ],
         "responses": {
           "200": {
-            "description": "FlexibleRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlexibleRequest"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4280,7 +5545,14 @@
         ],
         "responses": {
           "200": {
-            "description": "FlexibleRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlexibleRequest"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4322,7 +5594,14 @@
         ],
         "responses": {
           "200": {
-            "description": "LeaveRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequested"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4351,7 +5630,14 @@
         ],
         "responses": {
           "200": {
-            "description": "LeaveRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequest"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4453,7 +5739,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Resignation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResignationOwn"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -4566,7 +5859,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Mentorship",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mentorship"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -5319,7 +6619,14 @@
         ],
         "responses": {
           "200": {
-            "description": "The level",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OversightLevel"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -5377,7 +6684,14 @@
         ],
         "responses": {
           "200": {
-            "description": "The measure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OversightMeasure"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -5524,7 +6838,14 @@
         ],
         "responses": {
           "200": {
-            "description": "The pack with its mark",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OversightPack"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -5553,7 +6874,14 @@
         ],
         "responses": {
           "200": {
-            "description": "The position",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OversightPosition"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -5983,7 +7311,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Pid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PidRef"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -7387,7 +8722,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Pid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PidRef"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -7527,7 +8869,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyObject"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -7554,7 +8903,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Pid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PidRef"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -7681,7 +9037,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyObject"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -8775,7 +10138,14 @@
         ],
         "responses": {
           "200": {
-            "description": "DottedLineManager",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DottedLineManager"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -9215,7 +10585,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkRoleHeld"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -10041,7 +11418,14 @@
         ],
         "responses": {
           "200": {
-            "description": "WorkerSkill",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerSkill"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -10273,7 +11657,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Created: {pid}",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntitlementAcknowledgement"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -10619,7 +12010,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyObject"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -10648,7 +12046,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyObject"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -10759,7 +12164,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Pid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PidRef"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -10801,7 +12213,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyObject"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"
@@ -10828,7 +12247,14 @@
         ],
         "responses": {
           "200": {
-            "description": "The tolerances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanTolerances"
+                }
+              }
+            },
+            "description": "Done",
             "headers": {
               "Idempotent-Replayed": {
                 "$ref": "#/components/headers/IdempotentReplayed"

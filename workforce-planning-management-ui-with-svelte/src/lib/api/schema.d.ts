@@ -560,13 +560,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The updated record */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["Appraisal"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 /** @description Illegal transition (names the current state) */
@@ -2254,13 +2256,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description CpdEntry */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["CpdEntry"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -2669,13 +2673,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Item */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["DevelopmentPlanItem"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -4424,13 +4430,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Member */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["GroupMember"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -5539,13 +5547,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description EqualityMonitoring */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["MyEquality"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -5565,13 +5575,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description EqualityMonitoring */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["MyEquality"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -5605,13 +5617,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description EqualityMonitoring */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["MyEquality"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -5704,13 +5718,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description FlexibleRequest */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["FlexibleRequest"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -5744,13 +5760,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description FlexibleRequest */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["FlexibleRequest"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -5784,13 +5802,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description FlexibleRequest */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["FlexibleRequest"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -5858,13 +5878,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description LeaveRequest */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["LeaveRequested"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -5898,13 +5920,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description LeaveRequest */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["LeaveRequest"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -6066,13 +6090,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Resignation */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["ResignationOwn"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -6254,13 +6280,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Mentorship */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["Mentorship"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -7372,13 +7400,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The level */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["OversightLevel"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -7452,13 +7482,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The measure */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["OversightMeasure"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -7666,13 +7698,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The pack with its mark */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["OversightPack"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -7706,13 +7740,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The position */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["OversightPosition"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -8445,13 +8481,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Pid */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["PidRef"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -10574,13 +10612,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Pid */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["PidRef"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -10785,13 +10825,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Pid */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["PidRef"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -10811,13 +10853,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Ok */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["EmptyObject"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -10989,13 +11033,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Ok */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["EmptyObject"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -12742,13 +12788,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description DottedLineManager */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["DottedLineManager"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -13424,13 +13472,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Role */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["FrameworkRoleHeld"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -14743,13 +14793,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description WorkerSkill */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["WorkerSkill"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -15168,13 +15220,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Created: {pid} */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["EntitlementAcknowledgement"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 /** @description Validation failure */
@@ -15929,13 +15983,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Ok */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["EmptyObject"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -15967,13 +16023,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Ok */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["EmptyObject"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -16140,13 +16198,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Pid */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["PidRef"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -16213,13 +16273,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The tolerances */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["PlanTolerances"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -16239,13 +16301,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Removed */
+                /** @description Done */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["EmptyObject"];
+                    };
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
@@ -16328,6 +16392,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Appraisal: {
+            competencies: string[];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            pid: string;
+            /** Format: date */
+            shared_on: string | null;
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: uuid */
+            worker_pid: string;
+        };
         AspirationChanged: {
             /** Format: uuid */
             pid: string;
@@ -16353,6 +16431,29 @@ export interface components {
             trend?: {
                 [key: string]: unknown;
             };
+        };
+        CpdEntry: {
+            activity: string;
+            /**
+             * Format: double
+             * @description `amount_hundredths` as units.
+             */
+            amount: number;
+            /** Format: int64 */
+            amount_hundredths: number;
+            category: string;
+            /** Format: date */
+            entry_date: string;
+            evidence_note: string | null;
+            evidence_url: string | null;
+            lms_url: string | null;
+            /** Format: uuid */
+            pid: string;
+            source: string;
+            unit: string;
+            verified_by: string | null;
+            /** Format: date */
+            verified_on: string | null;
         };
         CutoverPool: {
             /** Format: uuid */
@@ -16383,13 +16484,110 @@ export interface components {
             fixed_term_percent_of_fte?: number | null;
             headcount?: number | null;
         };
+        DevelopmentPlanItem: {
+            course_ref: string | null;
+            /** Format: date-time */
+            created_at: string;
+            current_level: number;
+            /** Format: date */
+            due_on: string | null;
+            method: string;
+            /** Format: uuid */
+            pid: string;
+            /** Format: uuid */
+            plan_pid: string;
+            /** Format: uuid */
+            skill_pid: string;
+            status: string;
+            target_level: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description The manager's `pid`, `display_name`, `job_title` and `department` are present when the manager is known. */
+        DottedLineManager: {
+            current: boolean;
+            department?: string;
+            display_name?: string;
+            /** Format: date-time */
+            ended_at: string | null;
+            job_title?: string;
+            note: string | null;
+            on_behalf: boolean;
+            /** Format: uuid */
+            pid?: string;
+            /** Format: date-time */
+            started_at: string;
+        };
         /** @description An object with nothing in it (`{}`). */
         EmptyObject: Record<string, never>;
+        EntitlementAcknowledgement: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            entitlement_pid: string;
+            /** Format: uuid */
+            pid: string;
+            /** Format: date */
+            reminded_on: string | null;
+            /** Format: date */
+            responded_on: string;
+            response: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: uuid */
+            worker_pid: string;
+        };
+        FlexibleRequest: {
+            appeal_note: string | null;
+            /** Format: date */
+            appealed_on: string | null;
+            can_appeal: boolean;
+            counter_fte_percent: number | null;
+            counter_note: string | null;
+            /** Format: date */
+            decide_by: string;
+            /** Format: date */
+            decided_on: string | null;
+            decision_note: string | null;
+            decision_reason: string | null;
+            effect_on_team: string | null;
+            how_to_manage: string | null;
+            /** @description What HR applies once a change of hours is agreed; the software never changes a contract. */
+            hr_to_apply_fte_percent: number | null;
+            kind: string;
+            overdue: boolean;
+            /** Format: uuid */
+            pid: string;
+            proposed_fte_percent: number | null;
+            /** Format: date */
+            proposed_start: string;
+            /** Format: date */
+            requested_on: string;
+            status: string;
+            /** Format: date */
+            trial_until: string | null;
+        };
         FlexibleRequested: {
             /** Format: date */
             decide_by: string;
             /** Format: uuid */
             pid: string;
+        };
+        FrameworkRoleHeld: {
+            current: boolean;
+            /** Format: date-time */
+            ended_at: string | null;
+            framework: string;
+            occupation_uri: string | null;
+            on_behalf: boolean;
+            /** Format: uuid */
+            pid: string;
+            recorded_by: string | null;
+            role_label: string;
+            /** Format: uuid */
+            role_profile_pid: string | null;
+            /** Format: date-time */
+            started_at: string;
         };
         FundingMonth: {
             /** @description null when people is null */
@@ -16402,13 +16600,91 @@ export interface components {
             /** @description null when above zero and below the small-group floor */
             people: number | null;
         };
+        GroupMember: {
+            current: boolean;
+            department: string | null;
+            display_name: string | null;
+            job_title: string | null;
+            /** Format: date-time */
+            joined_at: string;
+            /** Format: date-time */
+            left_at: string | null;
+            on_behalf: boolean;
+            recorded_by: string | null;
+            role: string;
+            /** Format: uuid */
+            worker_pid: string;
+        };
         ItemState: {
             /** @enum {string} */
             state: "done" | "reopened" | "skipped";
         };
+        LeaveRequest: {
+            /** Format: date-time */
+            created_at: string;
+            days: number;
+            /** Format: date-time */
+            decided_at: string | null;
+            decided_by: string | null;
+            /** Format: date */
+            end_on: string;
+            kind: string;
+            negative_balance: boolean;
+            /** Format: uuid */
+            pid: string;
+            reason: string | null;
+            /** Format: date */
+            start_on: string;
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: uuid */
+            worker_pid: string;
+        };
+        LeaveRequested: {
+            days: number;
+            negative_balance: boolean;
+            /** Format: uuid */
+            pid: string;
+        };
+        Mentorship: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date */
+            ended_on: string | null;
+            focus: string;
+            /** Format: uuid */
+            mentee_pid: string;
+            /** Format: uuid */
+            mentor_pid: string;
+            /** Format: uuid */
+            pid: string;
+            /** Format: date */
+            started_on: string | null;
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
         MovementClosed: {
             /** @enum {string} */
             status: "completed" | "cancelled";
+        };
+        MyEquality: {
+            /** @enum {boolean} */
+            enabled: false;
+        } | {
+            categories: {
+                [key: string]: string[];
+            };
+            declarations: {
+                [key: string]: string;
+            };
+            /** @enum {boolean} */
+            enabled: true;
+            lawful_basis: string;
+            notice: string;
+            /** Format: int64 */
+            small_group_floor: number;
         };
         OversightCriterionCreated: {
             /** Format: uuid */
@@ -16416,6 +16692,57 @@ export interface components {
             name: string;
             /** Format: uuid */
             pid: string;
+        };
+        OversightLevel: {
+            name: string;
+            ordinal: number;
+            organization_ref: string;
+            /** Format: uuid */
+            pid: string;
+            synthetic: boolean;
+        };
+        OversightMeasure: {
+            /** Format: uuid */
+            criterion_pid: string;
+            derivation: string | null;
+            direction: string;
+            name: string;
+            origin: string;
+            /** Format: uuid */
+            pid: string;
+            sustain: number;
+            /** Format: int64 */
+            threshold: number;
+            unit: string;
+        };
+        OversightPack: {
+            /** Format: date */
+            as_of: string;
+            /** Format: date */
+            month: string;
+            organization_ref: string;
+            /** @description The frozen payload, as it was written. */
+            pack: Record<string, never>;
+            /** Format: uuid */
+            pid: string;
+            /** @description Null unless the pack was withdrawn. */
+            withdrawn: {
+                /** Format: date */
+                on: string;
+                reason: string;
+            } | null;
+        };
+        OversightPosition: {
+            deciding_body: string;
+            /** Format: date */
+            effective_on: string;
+            level: string | null;
+            /** Format: uuid */
+            level_pid: string;
+            ordinal: number | null;
+            /** Format: uuid */
+            pid: string;
+            reason: string;
         };
         OversightReading: {
             evidence: string | null;
@@ -16438,6 +16765,80 @@ export interface components {
         };
         /** @description A sentence saying what to change */
         PlainTextError: string;
+        PlanTolerances: {
+            /** Format: date */
+            as_of: string;
+            /** Format: int64 */
+            breaches_without_escalation: number;
+            derivation: string;
+            dimensions: {
+                amber_percent: number | null;
+                basis: string;
+                /**
+                 * Format: int64
+                 * @description Unknown is null, never zero.
+                 */
+                deviation: number | null;
+                /** @enum {string} */
+                dimension: "time" | "cost" | "resources" | "risk";
+                escalation: {
+                    at_decision: {
+                        /** Format: int64 */
+                        deviation: number | null;
+                        rag: string | null;
+                    } | null;
+                    at_raise: {
+                        /** Format: int64 */
+                        deviation: number | null;
+                        /** Format: int64 */
+                        limit: number;
+                        rag: string;
+                    };
+                    /**
+                     * Format: int64
+                     * @description Only while the escalation is open.
+                     */
+                    days_open: number | null;
+                    decided_by: string | null;
+                    /** Format: date */
+                    decided_on: string | null;
+                    decision: string | null;
+                    decision_note: string | null;
+                    dimension: string;
+                    /** @enum {string|null} */
+                    level: "plan_owner" | "board" | "executive" | null;
+                    level_number: number;
+                    /** Format: date */
+                    level_raised_on: string | null;
+                    note: string | null;
+                    /** Format: uuid */
+                    pid: string;
+                    plan_name: string | null;
+                    /** Format: uuid */
+                    plan_pid: string;
+                    raised_by: string | null;
+                    /** Format: date */
+                    raised_on: string;
+                    status: string;
+                } | null;
+                /** Format: int64 */
+                limit: number | null;
+                /** @enum {string} */
+                rag: "not_set" | "green" | "unknown" | "amber" | "red";
+                /** @description Why the deviation cannot be worked out, when it cannot. */
+                reason: string | null;
+                set: boolean;
+                unit: string;
+            }[];
+            /** @enum {string} */
+            overall: "not_set" | "green" | "unknown" | "amber" | "red";
+            plan: {
+                name: string;
+                /** Format: uuid */
+                pid: string;
+                status: string;
+            };
+        };
         /** @description Where a post is funded from beside the contract end. Never an amount of money. */
         PostFunding: {
             /**
@@ -16503,6 +16904,36 @@ export interface components {
             notice_calendar_days: number;
             /** Format: uuid */
             pid: string;
+        };
+        ResignationOwn: {
+            /** Format: date */
+            agreed_last_day: string | null;
+            /** Format: date */
+            logged_on: string;
+            /** Format: int64 */
+            notice_calendar_days: number;
+            /** Format: uuid */
+            pid: string;
+            /** Format: date */
+            proposed_last_day: string;
+            reason: string | null;
+            status: string;
+        };
+        WorkerSkill: {
+            /** Format: date */
+            assessed_on: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            pid: string;
+            proficiency: number;
+            /** Format: uuid */
+            skill_pid: string;
+            target: number | null;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: uuid */
+            worker_pid: string;
         };
     };
     responses: {
