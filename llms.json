@@ -14,14 +14,14 @@
     "api": "Rust, Loco (Axum + SeaORM), PostgreSQL 18",
     "ui": "SvelteKit 2, Svelte 5 runes, TypeScript",
     "tests": {
-      "service_unit_declared": 629,
-      "service_request_declared": 114,
-      "ui_unit_declared": 125,
-      "ui_e2e_declared": 117,
+      "service_unit_declared": 660,
+      "service_request_declared": 130,
+      "ui_unit_declared": 174,
+      "ui_e2e_declared": 163,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
     "migrations": 79,
-    "controllers": 62,
+    "controllers": 61,
     "pages": 46
   },
   "sections": {
@@ -385,6 +385,21 @@
         "title": "spec/tolerances.md",
         "path": "spec/tolerances.md",
         "description": "WPM-R140 and WPM-D93: tolerances on a workforce plan in time, cost, resources and risk, red, amber or green, an unknown is never green"
+      },
+      {
+        "title": "spec/pay-transparency.md",
+        "path": "spec/pay-transparency.md",
+        "description": "WPM-R144–R146 and WPM-D99: the EU Pay Transparency Directive: seven pay gap indicators with a floor, pay information for the worker and none asked of the candidate, the joint pay assessment trigger, and what the spec round checked"
+      },
+      {
+        "title": "spec/human-capital-reporting.md",
+        "path": "spec/human-capital-reporting.md",
+        "description": "WPM-R147 and WPM-D100: a dated read-only report mapped to ISO 30414:2025 and the revised ESRS S1 requirement numbers, a mapping and never a copy"
+      },
+      {
+        "title": "spec/positions.md",
+        "path": "spec/positions.md",
+        "description": "WPM-R152, WPM-R153 and WPM-D104: positions as budgeted seats, vacancy and over-establishment, and the current-versus-target organization diff"
       },
       {
         "title": "spec/worker-matching.md",

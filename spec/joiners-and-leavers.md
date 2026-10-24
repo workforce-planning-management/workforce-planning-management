@@ -62,3 +62,17 @@ reassign it, with a record of who did what.*
   every action is audited. Access is a role, not a possession: it is revoked.
   Completion is gated on nothing being left, so a leaver cannot be "closed"
   with live ownerships behind them.
+
+## Equipment issued and returned (WPM-R155, proposed; spec round WPM-T268)
+
+The open-source HR products all track company equipment (Frappe HRMS, Odoo, Horilla); WPM does the small part that matters to a
+joiner or a leaver.
+
+- **An asset** has a kind and a tag (a laptop, a phone, a pass) and an owner role; it is **not located**: WPM records no position, no
+  usage and no telemetry. **An issue** records the asset, the worker, the date issued and the date returned.
+- **Open issues are on the leaver checklist.** A leaver's record lists the equipment still out, as items to tick off like any other
+  (WPM-D34): `done` when returned, `skip` with a reason when written off. Completing the record is gated on nothing being out, as it is
+  for held work, and the handover trail shows who recorded the return.
+- **Access.** HR and the asset owner role write; a worker sees their own issued equipment; a manager sees a count of their team's
+  open issues, not the items (WPM-D35). Issues are in the subject-access export and erased with the worker (the asset stays).
+- **Not done.** No cost, depreciation or insurance; no tracking of where an asset is. Delivery: WPM-T282.

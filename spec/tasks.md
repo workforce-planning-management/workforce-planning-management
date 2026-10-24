@@ -4289,10 +4289,26 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
 
 ## Phase 23 — regulatory reporting, integration and planning depth (proposed WPM-R144–R158, WPM-D99–D106; [plan.md](plan.md) section N)
 
-- [ ] WPM-T268 **Spec round.** *(WPM-R144–R158, WPM-D99–D106)* Check every date and threshold in section N against primary
+- [x] (2026-10-24) WPM-T268 **Spec round.** *(WPM-R144–R158, WPM-D99–D106)* Check every date and threshold in section N against primary
       text (Directive 2023/970 and a chosen transposition, AI Act Article 26 and the Omnibus, ISO 30414:2025, ESRS S1);
       topic files `pay-transparency.md`, `human-capital-reporting.md`, `integrations.md` additions, `positions.md`; the domain
       model, auth, audit, regulatory, glossary, index and `llms.txt`; move the next-free-ids line.
+      Done: every date and threshold in plan section N was checked against the primary text where it could be reached, and the
+      corrections and the open items are tabled in [plan.md](plan.md) ("Spec round: what changed"). Corrected: the pay gap indicators
+      (seven in Article 9(1), no separate "benefits" share; a bonus is a complementary or variable component), the reporting tiers
+      (250 or more yearly from 7 June 2027, 150 to 249 every three years from 7 June 2027, 100 to 149 every three years from 7 June 2031),
+      the joint pay assessment trigger (at least 5% in a category, not justified, not remedied within six months of reporting), the ESRS
+      S1 requirement numbers (the revised set, Delegated Regulation 2026/1563: S1-5, S1-7, S1-12, S1-15) and the AI Act dates (Annex III from
+      2 December 2027, Annex I from 2 August 2028, in force 27 July 2026). New topic files: `pay-transparency.md`,
+      `human-capital-reporting.md`, `positions.md`; additions to `integrations.md` (R149–R151), `regulatory.md` (R148),
+      `payroll-compensation.md` (R154), `joiners-and-leavers.md` (R155), `communication-and-leadership.md` (R156),
+      `skills-and-training.md` (R157–R158), and to the domain model, auth sensitivity map, audit, glossary, index, `llms.json` and
+      `llms.txt`. The next-free-ids line was already R159, D107, T286 and is unchanged. Verified: `check-links`, `check-days`,
+      `llms.py --check` and `status.py` pass. Not checked, and said so in the files: the Directive and the AI Act were read as search
+      excerpts of their EUR-Lex text and the Commission's FAQ and AI Act Service Desk pages, not as whole documents, because EUR-Lex answers a
+      script with a bot challenge (not bypassed); no national transposition was read; the revised ESRS and ISO 30414:2025 detail is
+      secondary or paywalled; paragraph numbers inside Articles 5 and 7 and the rule for putting part-time pay on a comparable basis are
+      open for WPM-T269. This is a spec change only: no code, so no suite was run.
 - [ ] WPM-T269 **Pay gap indicators: pure core.** *(WPM-R144, WPM-D99)* `rules::pay_gap`: the seven indicators overall and per
       category, the floor, exclusion counts, `unknown` for one-sided cells. Exhaustive unit tests, including a cell of one.
 - [ ] WPM-T270 **Pay gap indicators: records, API and screen.** *(WPM-R144)* `pay_categories` with a stated basis; an HR-only

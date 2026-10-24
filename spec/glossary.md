@@ -48,3 +48,11 @@
 | **Subject access**  | The one-document export of everything WPM holds for an employee, exclusions named                |
 | **Tombstone URN**   | `person:00000000-…` — the valid-but-resolves-to-no-one ref an erased employee's identity becomes |
 | **Working-time guardrail** | Advisory 48 h-average / 11 h-rest flag (UK WTR shape); flags, never blocks                |
+| **Category of workers** | A group of roles an employer treats as doing the same work or work of equal value, with the basis stated; the unit of the pay gap and of a pay information answer ([pay-transparency.md](pay-transparency.md)) |
+| **Complementary or variable components** | The part of pay beyond the ordinary basic salary (a bonus, an allowance, a payment in kind); part of "pay" in the Pay Transparency Directive |
+| **Joint pay assessment** | The review of an unexplained pay gap of at least 5% in a category, done with workers' representatives, that the Directive requires when it is not justified or remedied in six months; WPM reports it is due and a person records the outcome |
+| **Human capital report** | The dated, read-only report of WPM's workforce measures set against ISO 30414 and ESRS S1 names; a mapping, not a disclosure ([human-capital-reporting.md](human-capital-reporting.md)) |
+| **Deployer register** | The record of who oversees each scoring feature, when workers were informed and how long its logs are kept, for an employer that deploys a high-risk AI system; it records, it does not certify ([regulatory.md](regulatory.md)) |
+| **Position** | A budgeted seat with FTE, cost centre and funding that exists whether or not someone holds it ([positions.md](positions.md)) |
+| **Establishment** | The approved number of positions; vacancy is budget minus FTE held, over-establishment is FTE held beyond budget |
+

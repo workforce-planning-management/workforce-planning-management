@@ -77,3 +77,19 @@ next.*
   It adds no figures of its own; it is tested at its target viewport(s) for
   page scroll **and** for any tile clipping its own content (tiles hide
   overflow, so a page-level check alone would miss it).
+
+## Policies and acknowledgements (WPM-R156, proposed; spec round WPM-T268)
+
+- **A policy** has versions; a **version** has a title, an effective date and an audience (all workers, a department, a role
+  profile, an organization). The text is held by reference (a document the deployer keeps); WPM stores no policy body.
+- **An acknowledgement** is one worker saying they have read one version, dated. A new version needs a new acknowledgement; the
+  worker sees what is waiting for them, and an overdue one is flagged, not forced.
+- **Counts for managers, the named record for HR** (WPM-D105): a manager sees how many of their team have acknowledged a version and
+  how many have not, with the floor; **HR sees who**, because evidence is sometimes required, and that read is audited. A worker sees
+  only their own.
+- **Not done.** No e-signature (an acknowledgement is not a signed contract term), no quiz, no policy authoring. Delivery: WPM-T283.
+
+### Design decision
+
+- **WPM-D105 — Acknowledgements are counted for managers.** Managers see how many have acknowledged a version; the named record is
+  HR-only and audited. This follows WPM-D35: a read or an acknowledgement is the worker's own data, and a count does not watch.

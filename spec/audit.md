@@ -19,6 +19,16 @@ counts) carry their detail in the snapshot.
 happened, never who made it, because an actor-stamped row would
 silently defeat the structural anonymity.
 
+## Audited by the Phase 23 proposals (spec round WPM-T268)
+
+Each of these, once built, writes an audit row on every change and on every read of what is named (WPM-T285 checks it): a
+**pay gap report read** (`pay_gap_report_read`, with the period and category count, no figure), a **pay category change**, a
+**pay information request** and its **answer** (`pay_information_answered`, who and when, no figure), a **joint pay assessment
+outcome** recorded, an **AI register entry** change, an **MCP tool call** (the tool name and the caller, not the arguments' values),
+a **SCIM push** and a **webhook delivery** (status and attempt, never the body), a **position state change**, an **equipment issue
+or return**, a **policy acknowledgement** and the HR read of the named record, and a **credential issued or revoked**. As elsewhere,
+an entry names no pay figure and no personal field in its snapshot.
+
 ## Event kinds
 
 `requisition_opened` / `requisition_filled`, `application_staged`,

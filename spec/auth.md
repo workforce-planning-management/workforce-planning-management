@@ -47,6 +47,16 @@ applied to HR.
 | scheduled / expired announcements; posting, editing | `hr_admin` / `org_admin` of that organization (when auth is on) |
 | announcement read receipts | the reader's own; editors see a count only |
 | joiner / leaver records, handover | HR and whoever may write the worker's record; scoped to organizations the caller can read |
+| pay gap report, pay categories (WPM-R144, proposed) | high — HR only; aggregates with the floor, no worker named; every read audited ([pay-transparency.md](pay-transparency.md)) |
+| a pay information request and its answer (WPM-R145, proposed) | high — the worker and HR only; the audit entry names no figure |
+| the human capital report (WPM-R147, proposed) | medium — HR and configured roles; aggregates only |
+| the AI and scoring register (WPM-R148, proposed) | medium — read by any signed-in caller (it is a notice of how people are scored); written by HR and administrators |
+| MCP tools, SCIM and webhook configuration (WPM-R149–R151, proposed) | high — administrators only; a secret is held by reference and never read back |
+| positions (WPM-R152, proposed) | medium — HR and planners; the holder link is HR only, a manager sees counts |
+| pay position analysis (WPM-R154, proposed) | highest — roles that may read salaries; groups under the floor withheld |
+| equipment issues (WPM-R155, proposed) | low — the worker, HR and the asset owner role; a manager sees a count |
+| policy acknowledgements (WPM-R156, proposed) | medium — the worker's own; a manager sees counts; HR sees names (audited) |
+| credential issuances, skill mappings (WPM-R157–R158, proposed) | low — the worker's own issuances; mappings are reference data |
 
 Every read of a highest/high-tier record is **audited** (see
 [audit.md](audit.md)).

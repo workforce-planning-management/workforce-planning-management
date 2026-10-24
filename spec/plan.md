@@ -469,31 +469,39 @@ enabled only with a recorded lawful basis.
 From a scan on 2026-10-21 of open-source HR (Frappe HRMS, Odoo, Horilla, OrangeHRM), commercial
 planning and HCM products (Workday Adaptive Planning, Orgvue, ChartHop, Lattice, HiBob, Rippling) and
 the standards and law that reach HR software in 2026 to 2027. Each item was checked against `spec/`
-first; none is built or already proposed. Most sources are secondary (vendor and law-firm summaries),
-so every date and threshold below must be checked against the primary text in the spec round
-(WPM-T268). Delivery is Phase 23 (WPM-T268–T285).
+first; none is built or already proposed. Most sources were secondary (vendor and law-firm summaries),
+so the spec round (WPM-T268, 2026-10-24) checked every date and threshold below against the primary text where it could be reached;
+what it changed and what it could not check is in [Spec round: what changed](#spec-round-what-changed-wpm-t268) at the end of this
+section. The details now live in topic files: [pay-transparency.md](pay-transparency.md) (R144–R146),
+[human-capital-reporting.md](human-capital-reporting.md) (R147), [regulatory.md](regulatory.md) (R148),
+[integrations.md](integrations.md) (R149–R151), [positions.md](positions.md) (R152–R153),
+[payroll-compensation.md](payroll-compensation.md) (R154), [joiners-and-leavers.md](joiners-and-leavers.md) (R155),
+[communication-and-leadership.md](communication-and-leadership.md) (R156) and [skills-and-training.md](skills-and-training.md)
+(R157–R158). Delivery is Phase 23 (WPM-T268–T285).
 
 **Regulatory set** (one thread: equality data, worker representatives, honest aggregates):
 
-- **WPM-R144 Pay gap indicators.** The seven indicators of the EU Pay Transparency Directive
-  (2023/970; transposition was due 7 June 2026, first reports June 2027 for 150 or more workers):
-  mean and median pay gap, mean and median bonus gap, the share of each sex receiving a bonus, the
-  share receiving benefits, and the pay quartiles, overall and per category of work of equal value.
+- **WPM-R144 Pay gap indicators.** The seven indicators of Article 9(1) of the EU Pay Transparency Directive
+  (2023/970; transposition was due 7 June 2026; first reports 7 June 2027 for 150 or more workers, 2031 for 100 to 149):
+  the mean and median gender pay gap, the mean and median gap in complementary or variable components, the share of
+  female and of male workers receiving them, the share in each pay quartile, and the gap by category of workers of equal
+  value. (The first draft listed a "share receiving benefits"; there is no such indicator.)
   Computed in the pure core from pay scales (WPM-R51) and the bounded, off-by-default equality data
   (WPM-R125, WPM-D74). Cells under the floor are withheld; workers with no recorded sex are excluded
   and counted (WPM-D99). Each category says the basis on which its roles count as equal value.
 - **WPM-R145 Pay transparency for the worker and the candidate.** A worker may ask for their own
   pay level and the average pay, by sex, for their category; the answer is due within a configured
-  period (two months in the directive) and the clock is computed, not assumed. A requisition carries
+  period (two months in the directive, Article 7) and the clock is computed, not assumed. A requisition carries
   a pay range before it is advertised, and the candidate record has no pay-history field.
 - **WPM-R146 Joint pay assessment trigger.** Where a category's unexplained gap is at or above a
-  configured threshold (5% in the directive) and is not corrected within the configured period, the
+  configured threshold (5% in the directive, Article 10) and is neither justified nor corrected within the configured period (six months from the report in the directive), the
   service reports that a joint assessment with worker representatives is due (links to section J).
   It reports; a person decides (WPM-D49 spirit).
 - **WPM-R147 Human capital report.** A dated, read-only report built from measures WPM already
-  holds, mapped to ISO 30414:2025 metric names and to the ESRS S1 own-workforce datapoints
-  (headcount and FTE by contract type, departures and turnover, collective-bargaining coverage,
-  training hours, time to fill, workforce cost). Every figure carries its definition, source and
+  holds, mapped to ISO 30414:2025 metric names and to the ESRS S1 own-workforce disclosure requirements as the
+  revised set (Delegated Regulation 2026/1563) numbers them (headcount and FTE by contract type, departures and turnover,
+  collective-bargaining coverage, training hours, remuneration; time to fill and workforce cost are ISO 30414 measures with no
+  ESRS S1 datapoint). Every figure carries its definition, source and
   exclusions; a measure WPM cannot compute is `unknown`, not zero. ISO text is licensed, so the
   repo maps names and copies no text (WPM-D100, as SFIA in section K).
 - **WPM-R148 AI and scoring deployer register.** Extends the scoring register (WPM-R99) with what a
@@ -501,7 +509,7 @@ so every date and threshold below must be checked against the primary text in th
   category, the person responsible for human oversight, the date workers and their representatives
   were informed, the log-retention period (at least six months), and a per-decision explanation the
   person concerned can read. A feature with no recorded overseer shows `unknown` (WPM-D103). The
-  Annex III date was reported as moved to 2 December 2027; confirm in the Official Journal.
+  Annex III date moved to 2 December 2027 (Digital Omnibus on AI, in force 27 July 2026); it is configuration, not code.
 
 **Integration:**
 
@@ -546,6 +554,31 @@ so every date and threshold below must be checked against the primary text in th
 - **WPM-R158 Skills framework crosswalk.** Mappings between ESCO, SFIA and other frameworks so a
   skill declared in one counts in gap analysis under another. Each mapping states its basis and
   confidence; a skill with no mapping is `unknown`. Licensed taxonomies are handled as SFIA is.
+
+#### Spec round: what changed (WPM-T268)
+
+Checked 2026-10-24 against the Directive's EUR-Lex text (as search excerpts: EUR-Lex refused scripted access), the Commission's FAQ on
+the Directive, the AI Act Service Desk's Articles 26 and 113, the EFRAG knowledge hub's list of the revised ESRS S1 requirements, and ISO's
+announcement of the 2025 edition.
+
+| Item | The proposal said | The sources say | Action |
+| --- | --- | --- | --- |
+| R144 indicators | seven, including a share receiving benefits | seven in Article 9(1): the share receiving *complementary or variable components*, no separate benefits share; (g) is the per-category gap | Corrected |
+| R144 first reports | "June 2027 for 150 or more" | 250 or more: yearly from 7 June 2027; 150 to 249: every three years from 7 June 2027; 100 to 149: every three years from 7 June 2031 | Corrected |
+| R145 answer period | two months | "a reasonable period and in any event within two months" (Article 7) | Confirmed, with the wording |
+| R145 pay history | no pay-history field | Article 5 forbids asking applicants about pay history; the range must be given in the notice or before the interview | Confirmed |
+| R146 trigger | 5% unexplained gap, not corrected in a configured period | at least 5% in a category, not justified, and not remedied within six months of reporting (Article 10(1)) | Corrected: justification is a recorded step; six months is the default |
+| R147 ESRS numbers | not given | revised set: S1-5, S1-7, S1-12, S1-15 (2023 set S1-6, S1-8, S1-13, S1-16) | Added to the mapping |
+| R147 ISO | ISO 30414:2025 | second edition, published 24 August 2025; metric lists paywalled | Confirmed; titles unconfirmed |
+| R148 Annex III date | "reported as moved to 2 December 2027" | Article 113 amended: Annex III 2 December 2027, Annex I 2 August 2028 | Confirmed; configuration |
+| R148 duties | oversight, six-month logs, informed workers | Article 26(2), (6) and (7); (11) informing the person subject to a decision | Confirmed; (11) added |
+| Transposition | "due 7 June 2026" | due 7 June 2026; four Member States in full by 30 June 2026, others partial or phased | Recorded as uneven; dates are configuration |
+| R150 Keycloak SCIM | "tested against Keycloak's SCIM or a stub server" | no SCIM endpoint in Keycloak's core found | Marked unconfirmed; stub server is the target |
+
+**Not checked** (open for the delivery tasks): the Directive's own rule on putting part-time pay on a comparable basis for the
+indicators; the paragraph numbers inside Articles 5 and 7; any national transposition; ISO 30414:2025's metric titles; the revised ESRS
+S1's datapoint detail, optionality and phase-in; AI Act Article 86 and Annex III point 4 as worded; the MCP revision to pin; and whether
+Keycloak can serve SCIM.
 
 ### O. Code quality (assessed 2026-10-21)
 

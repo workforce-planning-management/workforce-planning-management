@@ -100,3 +100,26 @@ get from WPM to the course, every place that names a course also carries a link 
 - **WPM-D33 — A recommendation states its basis.** Hours are planning
   estimates, not promises: catalogue hours where a course exists, a per-level
   figure otherwise, and the payload says which.
+
+## Verifiable credentials and a skills crosswalk (WPM-R157, WPM-R158, proposed; spec round WPM-T268)
+
+### WPM-R157 — Credentials out
+
+- **What.** A completed CPD record or a demonstrated skill can be **issued as a signed credential** in the Open Badges 3.0 format
+  (1EdTech; final in May 2024, expressed as a W3C Verifiable Credential in JSON-LD), carrying its ESCO or SFIA code where the skill has
+  one. WPM-T284 pins the Open Badges and Verifiable Credentials Data Model revisions it builds to and says which.
+- **The worker holds it.** WPM keeps the **issuance record only** (who, which credential kind, when issued, when revoked), not the
+  credential's content beyond what is needed to show it was issued, and a **revocation list** the verifier can read. A credential is
+  issued only on the worker's request and only for a record that exists and is verified (as CPD entries already are, WPM-T52–T55).
+- **Not done.** WPM is not a wallet and does not verify credentials from other issuers. SFIA codes are used as identifiers only
+  ([sfia.md](sfia.md), WPM-D69).
+
+### WPM-R158 — A crosswalk between skills frameworks
+
+- **What.** Mappings between ESCO, SFIA and other frameworks so a skill declared under one counts in gap analysis under another
+  (`skill_mappings`: from, to, basis, confidence). A mapping is a **statement with a stated basis** (an authority's published
+  crosswalk, or a person's judgement, with who and when) and a confidence (exact, close, broader, narrower); gap analysis counts a
+  mapped skill with its confidence shown.
+- **Unknown stays unknown.** A skill with no mapping is `unknown` under the other framework, not "not held"; the view says how many
+  skills were unmapped (WPM-D32). Licensed taxonomies are handled as SFIA is: identifiers and a deployer's own licensed import, no
+  shipped text. Delivery: WPM-T284.

@@ -353,3 +353,24 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
 - **Movement** (`movements`: kind, effective day, reason, status) →
   **MovementItem** (dated checklist item: assignee, done/skipped) and
   **HandoverAction** (the audit trail of a leaver's handover).
+
+**Proposed in Phase 23** (spec round WPM-T268; none is built, and each table's personal-data class is in [plan.md](plan.md)
+section 4)
+
+- **PayCategory** (`pay_categories`: name, the roles in it, the **stated basis** on which they count as equal value, who set it and
+  when) — configuration, not inferred ([pay-transparency.md](pay-transparency.md), WPM-R144).
+- **PayInformationRequest** (`pay_information_requests`: worker, asked on, **due on** computed from the configured period, answered on) —
+  no figure is stored (WPM-R145).
+- **AiRegisterEntry** (`ai_register_entries`: feature, Annex III category, overseer role, informed on, log retention, applies from) —
+  extends the scoring register ([regulatory.md](regulatory.md), WPM-R148, WPM-D103).
+- **WebhookSubscription**, **ScimTarget** (`webhook_subscriptions`, `scim_targets`: endpoint, a reference to the secret, event kinds) —
+  no secret value ([integrations.md](integrations.md), WPM-R150–R151).
+- **Position** (`positions`: cost centre, budgeted FTE, funding kind, state, a link to the holder) — a seat, not a person
+  ([positions.md](positions.md), WPM-R152, WPM-D104).
+- **Asset**, **AssetIssue** (`assets`, `asset_issues`: kind and tag; worker, issued on, returned on) — no location
+  ([joiners-and-leavers.md](joiners-and-leavers.md), WPM-R155).
+- **Policy**, **PolicyAcknowledgement** (`policies`, `policy_acknowledgements`: version and audience; worker, version, date) — text held
+  by reference ([communication-and-leadership.md](communication-and-leadership.md), WPM-R156, WPM-D105).
+- **CredentialIssuance** (`credential_issuances`: worker, credential kind, issued on, revoked on), **SkillMapping** (`skill_mappings`: from
+  skill, to skill, basis, confidence) ([skills-and-training.md](skills-and-training.md), WPM-R157–R158).
+

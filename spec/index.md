@@ -107,6 +107,9 @@ identities by `EntityRef` URN, never duplicating them.
 | [production-readiness.md](production-readiness.md) | Sign-in on by default, security headers, rate limiting, standalone build and CI, license texts, releases, generated status, chaos testing of the database (WPM-R72–R74, R77, R78, R87, R88, R137) |
 | [tolerances.md](tolerances.md) | Tolerance on a workforce plan: the largest deviation allowed in time, cost, resources and risk, and a red, amber or green status for each and for the plan, with the working shown; an unknown is never green (WPM-R140, WPM-D93) |
 | [worker-matching.md](worker-matching.md) | The worker matcher crate: decide whether two worker records are the same person, with the working shown; a score proposes, it never merges; the read-only possible-duplicates check (WPM-R134, WPM-D85, WPM-R136, WPM-D87) |
+| [pay-transparency.md](pay-transparency.md) | Proposed: the EU Pay Transparency Directive: the seven pay gap indicators and the floor, pay information for the worker and none asked of the candidate, and the joint pay assessment trigger, with what the spec round checked (WPM-R144–R146) |
+| [human-capital-reporting.md](human-capital-reporting.md) | Proposed: a dated, read-only report mapped to ISO 30414:2025 and the revised ESRS S1, a mapping and never a copy (WPM-R147) |
+| [positions.md](positions.md) | Proposed: positions as budgeted seats, vacancy and over-establishment, and the current-versus-target organization (WPM-R152–R153) |
 | [regulatory.md](regulatory.md)                     | Demo status; UK GDPR / employment-records posture; subject rights (WPM-R30)               |
 | [roadmap.md](roadmap.md)                           | Beyond the v1 queue                                                                       |
 | [glossary.md](glossary.md)                         | ATS, FTE, LMS, requisition, accrual, …                                                    |
