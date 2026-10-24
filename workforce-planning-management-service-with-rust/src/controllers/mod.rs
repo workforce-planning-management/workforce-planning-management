@@ -45,6 +45,7 @@ pub mod job_levels;
 pub mod key_person;
 pub mod learning;
 pub mod lms;
+pub mod mcp;
 pub mod me;
 pub mod metrics;
 pub mod mobility;

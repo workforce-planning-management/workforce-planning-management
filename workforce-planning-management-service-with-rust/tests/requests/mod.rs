@@ -35,6 +35,7 @@ mod job_levels;
 mod learning;
 mod lists;
 mod lms_links;
+mod mcp;
 mod mobility;
 mod movements;
 mod organizations;

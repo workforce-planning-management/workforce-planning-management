@@ -201,6 +201,7 @@ mod tests {
         ("controllers/engagements.rs", "rate_read"),
         ("controllers/pay_transparency.rs", "pay_gap_report_read"),
         ("controllers/human_capital.rs", "human_capital_report_read"),
+        ("controllers/mcp.rs", "mcp_tool_called"),
         ("controllers/pay_assessment.rs", "joint_assessment_read"),
         (
             "controllers/pay_information.rs",

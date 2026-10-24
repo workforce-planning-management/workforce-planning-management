@@ -36,6 +36,15 @@ use crate::{auth, controllers, models::_entities::prelude::*, rules, tasks};
 async fn require_auth_mw(req: Request, next: Next) -> Response {
     let path = req.uri().path().to_string();
     let method = req.method().clone();
+    // The MCP endpoint (WPM-R149): the caller must be signed in, and each tool call is then decided by the API's own policy,
+    // under the same token, so the endpoint adds no access (WPM-D101).
+    if auth::require_auth() && method == axum::http::Method::POST && path == "/mcp" {
+        let verifier = auth::verifier().current();
+        return match auth::bearer_claims(req.headers(), &verifier) {
+            Ok(_) => next.run(req).await,
+            Err((status, msg)) => (status, msg).into_response(),
+        };
+    }
     let policy = auth::policy().current();
     let verifier = auth::verifier().current();
     // A self-service write (WPM-R130, WPM-D76) skips the policy's action check, which lets only HR
@@ -190,6 +199,7 @@ impl Hooks for App {
         app_routes()
     }
 
+    #[allow(clippy::too_many_lines)] // boot checks first, then the layers
     async fn after_routes(router: AxumRouter, ctx: &AppContext) -> Result<AxumRouter> {
         // Seed the active backend's verifier (boot-time key/JWKS fetch;
         // env fallback — the service always boots), then keep keys +
@@ -278,6 +288,16 @@ impl Hooks for App {
         // Need-to-know (WPM-R114) sits inside the sign-in guard: a token is verified first.
         // The idempotency check (WPM-R132) is innermost: by then the caller is signed in and allowed
         // past need-to-know, so a replay is only ever of the caller's own earlier success.
+        // The MCP endpoint calls the API through a copy of it that has the sign-in and need-to-know layers, so a tool is
+        // refused exactly as the route is.
+        let api = router
+            .clone()
+            .layer(axum::middleware::from_fn_with_state(
+                ctx.clone(),
+                crate::need_to_know::need_to_know_mw,
+            ))
+            .layer(axum::middleware::from_fn(require_auth_mw));
+        let router = controllers::mcp::mount(router, api, ctx.clone());
         Ok(router
             .layer(axum::middleware::from_fn_with_state(
                 ctx.clone(),

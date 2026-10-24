@@ -244,6 +244,22 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         let recorded = request.put("/api/ai-register/S3").add_header("authorization", hr.clone()).json(&entry).await;
         assert_eq!(recorded.status_code(), 200, "HR records: {}", recorded.text());
 
+        // ── MCP: the endpoint needs a token, and a tool is refused exactly as its route is ──────────────
+        let tool = |name: &str, arguments: Value| json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": { "name": name, "arguments": arguments } });
+        let call = json!(tool("human_capital_report", json!({ "organization": org })));
+        assert_eq!(request.post("/mcp").json(&call).await.status_code(), 401, "no token");
+        let as_worker: Value = request.post("/mcp").add_header("authorization", worker.clone()).json(&call).await.json();
+        assert_eq!(as_worker["result"]["isError"], true, "a worker is refused the report by the API itself");
+        assert!(as_worker["result"]["content"][0]["text"].as_str().unwrap().contains("403"), "{as_worker}");
+        let as_hr: Value = request.post("/mcp").add_header("authorization", hr.clone()).json(&call).await.json();
+        assert_eq!(as_hr["result"]["isError"], false, "HR reads it: {as_hr}");
+        assert!(!as_hr.to_string().contains("Pay Gap Enforcement"), "no worker named");
+        let salary_free = request.post("/mcp").add_header("authorization", worker.clone()).json(&tool("ai_register", json!({}))).await.json::<Value>();
+        assert_eq!(salary_free["result"]["isError"], false, "a worker reads how people are scored");
+        // It cannot be steered to a route outside the table.
+        let steer = request.post("/mcp").add_header("authorization", worker.clone()).json(&tool("get_workforce_plan", json!({ "pid": "../workers" }))).await.json::<Value>();
+        assert_eq!(steer["result"]["isError"], true);
+
         // ── Take the sex answers away and there is nothing to compare ────────────────────
         ctx.db.execute_unprepared("DELETE FROM equality_declarations").await.unwrap();
         let none: Value = get(report.clone(), payroll.clone()).await.json();

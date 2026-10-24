@@ -4410,8 +4410,21 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       Not done: **the per-decision explanation** (the person's own factors, Article 86, which was not read); a screen; the link to the
       recognised body; the other `enforcement_*` binaries were not re-run. `cargo fmt` was not clean before this change, and only the
       files touched here were formatted.
-- [ ] WPM-T275 **Read-only MCP server.** *(WPM-R149, WPM-D101)* Tools over existing reads under the caller's token; a test that
+- [x] (2026-10-24) WPM-T275 **Read-only MCP server.** *(WPM-R149, WPM-D101)* Tools over existing reads under the caller's token; a test that
       every tool maps to a documented route and that a caller without access is refused; audit per call.
+      Done: `rules::mcp` (the pinned revision 2025-11-25, ten tools each one `GET` route, argument checking that lets only a date, a
+      UUID, a URN or a number through, the JSON-RPC plan for `initialize`, `ping`, `tools/list`, `tools/call`; 12 tests), and
+      `controllers/mcp.rs` (`POST /mcp`; the call is made through a copy of the API router that carries the sign-in and need-to-know
+      layers, with the caller's `Authorization`, so there is no service account; audit with the tool name first, refused if it cannot
+      be written). `tower` was added as a direct dependency for `oneshot` (already in the lock file). Setting
+      `WPM_MCP_ALLOWED_ORIGINS`. Verified (Postgres 18, Podman): 718 unit tests, 143 request tests (1 new: the answer equals the
+      route's own, a 404 stays a tool error, 202 / 405 / 403 / 400 on the transport, one audit row per call, and **no audit, no call**
+      with a trigger refusing every audit insert), `enforcement_pay_gap` (extended with real tokens: anonymous 401, a worker refused
+      the report by the API, HR given it, a path-traversal argument refused), `enforcement_pay_information`, `enforcement_equality`,
+      `enforcement`, `enforcement_need_to_know`, `security`, `route_coverage`, clippy pedantic clean, 209 UI unit tests. Not done:
+      OAuth protected-resource metadata and audience binding; resources, prompts and pagination; a client such as Claude or an MCP
+      inspector was **not** run against it (the shapes follow the revision's tools and transports pages, and only my own tests
+      exercised them); the `keycloak`, `chaos` and other `enforcement_*` binaries were not re-run.
 - [ ] WPM-T276 **SCIM 2.0 outbound.** *(WPM-R150, WPM-D102)* Pure mapping from worker to SCIM `User` with the Enterprise
       extension; a push task over the outbox; tested against Keycloak's SCIM or a stub server; a test that no contact field
       leaves.

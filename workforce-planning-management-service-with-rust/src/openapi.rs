@@ -550,6 +550,9 @@ fn add_governance_paths(document: &mut Value) {
         "/api/pay-transparency/gap-report/csv": {
             "get": { "tags": ["pay-transparency"], "summary": "The same report as CSV, one row per figure with the two figures each gap comes from; the export is audited", "responses": ok("A CSV file") }
         },
+        "/mcp": {
+            "post": { "tags": ["mcp"], "summary": "A read-only Model Context Protocol server (Streamable HTTP, revision 2025-11-25, JSON replies, no session): initialize, ping, tools/list and tools/call over ten existing reads. Each tool is one GET route called in process under the caller's own token, so the API's policy decides and a caller without access is refused as on the route. No write tool, no service account. Every tool call is audited with the tool name first; if the audit cannot be written the call is refused. A browser Origin must be listed in WPM_MCP_ALLOWED_ORIGINS", "responses": ok("A JSON-RPC reply") }
+        },
         "/api/ai-register": {
             "get": { "tags": ["ai-register"], "summary": "Every feature that scores or ranks people (S1 to S8) with what the deployer recorded under Article 26 of the AI Act: Annex III category, oversight role, when representatives and workers were informed, log retention. A field with nothing recorded is unknown. Records what is said; does not classify, certify or evidence compliance. Any signed-in caller", "responses": ok("The register") }
         },

@@ -55,6 +55,22 @@ carries a personal field outward (WPM-D101, WPM-D102, WPM-D106). Delivery: WPM-T
   a change, not a surprise.
 - **Not done.** No tool that returns what the API would mask; no cross-caller cache (a result is for one token).
 
+**Built (WPM-T275).** `POST /mcp`, Streamable HTTP of the pinned revision **2025-11-25** (the tools and transports pages were read
+on 2026-10-24): JSON replies, no session, no server-sent events (`GET` and `DELETE` answer 405), a notification answers 202, an
+`MCP-Protocol-Version` other than the pinned one answers 400, and an `Origin` header is refused (403) unless listed in
+`WPM_MCP_ALLOWED_ORIGINS` (an agent sends none). Methods: `initialize`, `ping`, `tools/list`, `tools/call`; the only capability is
+`tools`. Ten tools in `rules::mcp::TOOLS`, each one `GET` route (my contact details, my time off, plans and a plan's forecast, the
+workforce overview, metrics, headcount history, the human capital report, the AI register). A call goes **in process through the
+API's own router** with the caller's `Authorization` header and the same sign-in and need-to-know layers, so the API's refusal is the
+tool's (a tool error naming the status), and a value that is not a date, a UUID, a URN or a number is refused before any request
+is made, so no argument can steer a call to another route. Each call writes an audit row with the tool name before it is made; if
+that cannot be written the call is not made (WPM-D107). Tests: every tool is a documented `GET` of the OpenAPI document and is
+classified in the need-to-know table; no tool name reads like a write; an enforcement test with real tokens (anonymous 401, a worker
+refused the report by the API itself, HR given it, a worker given the AI register, a path-traversal argument refused).
+**Not built:** OAuth protected-resource metadata and token audience binding (the endpoint takes the deployment's existing bearer
+token, as every route does); resources, prompts, sampling and pagination; `outputSchema` for the tools; a rate limit of its own
+beyond the service's (a tool call is one request to the endpoint, not counted again inside).
+
 ### WPM-R150 — SCIM 2.0 outbound provisioning
 
 - **What.** Joiners, movers and leavers are pushed as SCIM 2.0 `User` resources (RFC 7643 and RFC 7644) with the **Enterprise User

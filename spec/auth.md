@@ -53,7 +53,7 @@ applied to HR.
 | pay categories (WPM-R144) | medium — read by privileged callers; written by those the policy lets write; no personal data |
 | a pay information request (WPM-R145) | high — the worker (their own, by `/api/me`) and privileged callers (who asked, when due: no figure); the answer is worked out only for a caller who may read salaries unmasked and recorded only by one who may write; the audit entry names no figure |
 | the AI and scoring register (WPM-R148) | medium — read by any signed-in caller (it is a notice of how people are scored); written by HR and administrators |
-| MCP tools, SCIM and webhook configuration (WPM-R149–R151, proposed) | high — administrators only; a secret is held by reference and never read back |
+| MCP tools (WPM-R149), SCIM and webhook configuration (WPM-R150, WPM-R151, proposed) | high — administrators only; a secret is held by reference and never read back |
 | positions (WPM-R152, proposed) | medium — HR and planners; the holder link is HR only, a manager sees counts |
 | pay position analysis (WPM-R154, proposed) | highest — roles that may read salaries; groups under the floor withheld |
 | equipment issues (WPM-R155, proposed) | low — the worker, HR and the asset owner role; a manager sees a count |

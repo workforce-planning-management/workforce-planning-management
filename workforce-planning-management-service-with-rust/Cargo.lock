@@ -7199,6 +7199,7 @@ dependencies = [
  "sha2 0.11.1",
  "testcontainers",
  "tokio",
+ "tower",
  "tracing",
  "tracing-subscriber",
  "uuid",
