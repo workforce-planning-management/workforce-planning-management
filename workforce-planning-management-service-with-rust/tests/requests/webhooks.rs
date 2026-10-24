@@ -110,7 +110,8 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         assert_eq!(log[0]["subject"], format!("worker:{w}"));
 
         // Send it: signed, with a reference and a kind only.
-        let now = Utc::now();
+        // The database clock and this one may differ by a moment; start the clock a minute on so the delivery is due.
+        let now = Utc::now() + Duration::seconds(60);
         assert_eq!(run(&ctx, now).await.unwrap(), Summary { delivered: 1, ..Summary::default() });
         {
             let received = stub.received.lock().unwrap();

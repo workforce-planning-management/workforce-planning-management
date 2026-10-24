@@ -99,6 +99,7 @@ mod m20261024_000083_ai_register_entries;
 mod m20261024_000084_scim_pushes;
 mod m20261024_000085_webhooks;
 mod m20261024_000086_positions;
+mod m20261024_000087_plan_org_nodes;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -197,6 +198,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261024_000084_scim_pushes::Migration),
             Box::new(m20261024_000085_webhooks::Migration),
             Box::new(m20261024_000086_positions::Migration),
+            Box::new(m20261024_000087_plan_org_nodes::Migration),
             // inject-above (do not remove this comment)
         ]
     }

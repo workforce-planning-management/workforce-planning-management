@@ -41,6 +41,7 @@ mod demand_lines;
 mod escalations;
 mod forecast;
 mod objectives;
+mod org_shape;
 mod plans;
 mod staff;
 mod tolerances;
@@ -57,6 +58,8 @@ use self::escalations::*;
 use self::forecast::*;
 #[allow(clippy::wildcard_imports)]
 use self::objectives::*;
+#[allow(clippy::wildcard_imports)]
+use self::org_shape::*;
 #[allow(clippy::wildcard_imports)]
 use self::plans::*;
 #[allow(clippy::wildcard_imports)]
@@ -85,6 +88,8 @@ pub fn routes() -> Routes {
         .add("/workforce-plans/{pid}/forecast", get(forecast))
         .add("/workforce-plans/{pid}/cost", get(cost))
         .add("/workforce-plans/{pid}/alignment", get(alignment))
+        .add("/workforce-plans/{pid}/target-organization", get(get_target).put(set_target))
+        .add("/workforce-plans/{pid}/organization-diff", get(organization_diff))
         .add("/workforce-plans/{pid}/tolerances", get(list_tolerances))
         .add(
             "/workforce-plans/{pid}/escalations",

@@ -70,6 +70,7 @@
 <svelte:head><title>{page.data.title}</title></svelte:head>
 
 <h1>{t("nav.orgChart")}</h1>
+<p><a href={l("/org-chart/shape")}>{t("pages.orgshape.link")}</a></p>
 
 {#if error}
   <ErrorNote testid="error" prefixed message={error} />

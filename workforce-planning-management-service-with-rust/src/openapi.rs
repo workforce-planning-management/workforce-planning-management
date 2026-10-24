@@ -591,6 +591,13 @@ fn add_integration_paths(document: &mut Value) {
         "/api/positions/{pid}/requisition": {
             "put": { "tags": ["positions"], "summary": "Link the requisition that fills the position (same organization), or null to unlink; an open position keeps its requisition", "responses": ok("The pid") }
         },
+        "/api/workforce-plans/{pid}/target-organization": {
+            "get": { "tags": ["planning"], "summary": "The roles a plan intends the organization to have: key, parent role, department, title and headcount. Roles, never people", "responses": ok("The target roles") },
+            "put": { "tags": ["planning"], "summary": "Replace the plan's target organization: 1 to 2000 roles, unique keys, present parents, no loop, headcount 1 to 10000. There is no way to name a person. Audited in the same transaction", "responses": ok("The plan pid") }
+        },
+        "/api/workforce-plans/{pid}/organization-diff": {
+            "get": { "tags": ["planning"], "summary": "The live structure of the plan's organization against its target: layers, span of control and each role added, removed, moved or resized. Counts of people under the floor are withheld with the change that would give them back; no person is named; cost and skills are not compared", "responses": ok("The comparison") }
+        },
         "/mcp": {
             "post": { "tags": ["mcp"], "summary": "A read-only Model Context Protocol server (Streamable HTTP, revision 2025-11-25, JSON replies, no session): initialize, ping, tools/list and tools/call over ten existing reads. Each tool is one GET route called in process under the caller's own token, so the API's policy decides and a caller without access is refused as on the route. No write tool, no service account. Every tool call is audited with the tool name first; if the audit cannot be written the call is refused. A browser Origin must be listed in WPM_MCP_ALLOWED_ORIGINS", "responses": ok("A JSON-RPC reply") }
         },

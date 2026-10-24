@@ -170,3 +170,27 @@ export async function stubPositions(page: Page) {
     }),
   );
 }
+
+/** The organization comparison page: one plan, a flatter target, a small role withheld and a role moved. */
+export async function stubOrgShape(page: Page) {
+  const plan = { pid: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "Flatten", organization_ref: WORKER.organization_ref, horizon_start: "2026-01-01", horizon_end: "2027-12-31", status: "draft", attrition_bp: null, demand_lines: 0 };
+  const role = (title: string, extra: Record<string, unknown>) => ({ title, current: { status: "shown", value: 0 }, target: 0, change: "same", delta: 0, moved: false, current_departments: [], target_departments: [], ...extra });
+  await page.route("**/api/proxy/workforce-plans", (route) => route.fulfill({ json: [plan] }));
+  await page.route(`**/api/proxy/workforce-plans/${plan.pid}/organization-diff`, (route) =>
+    route.fulfill({
+      json: {
+        plan: plan.pid, target_set: true, small_group_floor: 10, derivation: "",
+        diff: {
+          current: { layers: 3, headcount: 13, span: { managers: 3, mean_hundredths: 400, max: 5 } },
+          target: { layers: 3, headcount: 15, span: { managers: 2, mean_hundredths: 700, max: 12 } },
+          roles: [
+            role("Engineer", { current: { status: "shown", value: 10 }, target: 12, change: "larger", delta: 2 }),
+            role("Manager", { current: { status: "withheld" }, target: 1, change: "smaller", delta: null }),
+            role("Head", { current: { status: "withheld" }, target: 1, change: "same", delta: null, moved: true, current_departments: ["exec"], target_departments: ["leadership"] }),
+            role("Product Lead", { target: 1, change: "added", delta: 1 }),
+          ],
+        },
+      },
+    }),
+  );
+}

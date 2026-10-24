@@ -1469,7 +1469,7 @@ build on 3–5).
 
 ### Strategic planning, scenario modeling & forecasting
 
-- [~] **Workforce transformation.** *(the plan / demand / gap / alignment machinery is WPM-T47–T50; a current-vs-target org-shape diff view is not built.)* The umbrella discipline —
+- [x] **Workforce transformation.** *(the plan / demand / gap / alignment machinery is WPM-T47–T50; the current-vs-target org-shape diff is WPM-T280, 2026-10-24, by role without the cost and skills comparison.)* The umbrella discipline —
       redesigning structure, headcount, and skills around a strategic
       shift (a restructure, an M&A, an automation programme) rather
       than incremental headcount changes. Orgvue frames it as
@@ -4483,8 +4483,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       picks the demand line); **on a phone the two tables wrap letter by letter and the page scrolls sideways** (the shared table
       component and the long organization URN, as on other pages; not fixed here); the plan demand line is not shown on the screen; the
       `keycloak`, `chaos` and other `enforcement_*` binaries were not re-run.
-- [ ] WPM-T280 **Current versus target organization.** *(WPM-R153)* Pure diff over two trees; a screen beside the org chart.
+- [x] (2026-10-24) WPM-T280 **Current versus target organization.** *(WPM-R153)* Pure diff over two trees; a screen beside the org chart.
       Closes the `[~]` "Workforce transformation" item in Phase 9.
+      Done in part. The spec did not say where a plan's target lives, so it is a set of role nodes in `plan_org_nodes` (decision in
+      `spec/positions.md`). `rules::org_shape` (layers, span of control, roles added, removed, larger, smaller, same and moved; the
+      floor with the change that would give a small count back; a target check; 9 tests, **mutation-checked**: of five deliberate
+      faults four were caught and one was an equivalent mutant), migration `m20261024_000087_plan_org_nodes`, the three plan routes,
+      the read-only page `/org-chart/shape` with a link from the org chart, strings in the 13 locales (AI-written, unreviewed; Spanish
+      uses "Funciones" so it does not repeat English). Verified (Postgres 18, Podman): 759 unit tests, 147 request tests (1 new: no target,
+      faults refused, a flatter target compared with 13 live people over three layers: spans 4.00 against 7.00, ten engineers shown and
+      the manager and head withheld with their direction kept, a role moved, a role added, no worker pid or name in the answer,
+      replace, and an archived plan not edited), the enforcement binaries and `route_coverage` as for T279, clippy pedantic clean; UI: 209
+      unit tests, `svelte-check` clean, 5 new Playwright specs and the whole suite (215 passed, 19 skipped), light screenshot looked at.
+      **Not done:** the cost and skills difference (so the Phase 9 item is closed for the shape, not for those); no way to edit the
+      target on the screen (API only); one target per plan; the phone screenshot was taken and not looked at; the `keycloak`, `chaos`
+      and other `enforcement_*` binaries were not re-run. One earlier webhook request test turned out to depend on the host and
+      database clocks agreeing; it now starts its clock a minute on.
 - [ ] WPM-T281 **Pay position analysis.** *(WPM-R154)* Compa-ratio and range penetration per band, outliers by level,
       department and location, with the floor.
 - [ ] WPM-T282 **Equipment issued and returned.** *(WPM-R155)* Assets and issues; open issues on the leaver checklist.

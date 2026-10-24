@@ -40,6 +40,7 @@ mod mobility;
 mod movements;
 mod organizations;
 mod pagination;
+mod org_shape;
 mod pay_assessment;
 mod positions;
 mod pay_information;

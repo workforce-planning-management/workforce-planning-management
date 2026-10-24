@@ -12758,6 +12758,19 @@
         ]
       }
     },
+    "/api/workforce-plans/{pid}/organization-diff": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The comparison"
+          }
+        },
+        "summary": "The live structure of the plan's organization against its target: layers, span of control and each role added, removed, moved or resized. Counts of people under the floor are withheld with the change that would give them back; no person is named; cost and skills are not compared",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
     "/api/workforce-plans/{pid}/status": {
       "post": {
         "parameters": [
@@ -12789,6 +12802,46 @@
           }
         },
         "summary": "draft -> active -> archived (one active plan per organization)",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/workforce-plans/{pid}/target-organization": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The target roles"
+          }
+        },
+        "summary": "The roles a plan intends the organization to have: key, parent role, department, title and headcount. Roles, never people",
+        "tags": [
+          "planning"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The plan pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Replace the plan's target organization: 1 to 2000 roles, unique keys, present parents, no loop, headcount 1 to 10000. There is no way to name a person. Audited in the same transaction",
         "tags": [
           "planning"
         ]

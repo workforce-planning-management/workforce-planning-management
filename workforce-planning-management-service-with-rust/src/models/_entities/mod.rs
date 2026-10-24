@@ -91,6 +91,7 @@ pub mod pipeline_members;
 pub mod plan_demand_lines;
 pub mod plan_escalations;
 pub mod plan_objectives;
+pub mod plan_org_nodes;
 pub mod plan_tolerances;
 pub mod post_fundings;
 pub mod prelude;

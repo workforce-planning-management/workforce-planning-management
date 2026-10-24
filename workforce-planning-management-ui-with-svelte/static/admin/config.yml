@@ -1989,6 +1989,39 @@ collections:
                   - { name: "funding_ends", label: "Funding_ends", widget: string, required: false, i18n: true }
                   - { name: "programme", label: "Programme", widget: string, required: false, i18n: true }
                   - { name: "plan", label: "Plan", widget: string, required: false, i18n: true }
+              - name: "orgshape"
+                label: "Orgshape"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
+                  - { name: "heading", label: "Heading", widget: string, required: false, i18n: true }
+                  - { name: "intro", label: "Intro", widget: text, required: false, i18n: true }
+                  - { name: "link", label: "Link", widget: string, required: false, i18n: true }
+                  - { name: "plan", label: "Plan", widget: string, required: false, i18n: true }
+                  - { name: "no_plans", label: "No_plans", widget: string, required: false, i18n: true }
+                  - { name: "no_target", label: "No_target", widget: string, required: false, i18n: true }
+                  - { name: "now", label: "Now", widget: string, required: false, i18n: true }
+                  - { name: "planned", label: "Planned", widget: string, required: false, i18n: true }
+                  - { name: "layers", label: "Layers", widget: string, required: false, i18n: true }
+                  - { name: "headcount", label: "Headcount", widget: string, required: false, i18n: true }
+                  - { name: "manager_seats", label: "Manager_seats", widget: string, required: false, i18n: true }
+                  - { name: "mean_span", label: "Mean_span", widget: string, required: false, i18n: true }
+                  - { name: "widest_span", label: "Widest_span", widget: string, required: false, i18n: true }
+                  - { name: "roles", label: "Roles", widget: string, required: false, i18n: true }
+                  - { name: "floor_note", label: "Floor_note", widget: text, required: false, i18n: true }
+                  - { name: "role", label: "Role", widget: string, required: false, i18n: true }
+                  - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
+                  - { name: "change", label: "Change", widget: string, required: false, i18n: true }
+                  - { name: "departments", label: "Departments", widget: string, required: false, i18n: true }
+                  - { name: "moved_from_to", label: "Moved_from_to", widget: string, required: false, i18n: true }
+                  - { name: "change_added", label: "Change_added", widget: string, required: false, i18n: true }
+                  - { name: "change_removed", label: "Change_removed", widget: string, required: false, i18n: true }
+                  - { name: "change_larger", label: "Change_larger", widget: string, required: false, i18n: true }
+                  - { name: "change_smaller", label: "Change_smaller", widget: string, required: false, i18n: true }
+                  - { name: "change_same", label: "Change_same", widget: string, required: false, i18n: true }
           - name: "titles"
             label: "Titles"
             widget: object

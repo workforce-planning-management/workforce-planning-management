@@ -272,6 +272,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("workforce-plans/{}/forecast", Open),
     ("workforce-plans/{}/tolerances", Open),
     ("workforce-plans/{}/escalations", Open),
+    ("workforce-plans/{}/organization-diff", Open),
+    ("workforce-plans/{}/target-organization", Open),
     ("escalations", Open),
     ("workforce/working-time", Privileged),
 ];

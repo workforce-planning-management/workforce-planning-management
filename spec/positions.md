@@ -59,6 +59,18 @@ holder or a requisition is not on the screen** (API only).
   where the law requires one: [worker-unions.md](worker-unions.md)).
 - **A screen beside the org chart**, read-only, closing the open "Workforce transformation" item of Phase 9.
 
+**Built (WPM-T280).** `rules::org_shape` (the pure diff) and, in the planning controller, `GET` and `PUT
+/api/workforce-plans/{pid}/target-organization` and `GET /api/workforce-plans/{pid}/organization-diff`. **The spec did not say where
+a plan's target structure lives, so this decides:** a target is a set of **role nodes** (key, parent key, department, title, headcount)
+held in `plan_org_nodes`, replaced whole by `PUT`, checked for unique keys, present parents and no loop; there is no way to name a
+person. The live side is the workers employed today in the plan's organization, reduced to a manager link, a department and a title
+before comparing. Compared: **layers**; **span of control** (manager seats, mean and widest; in the target a node's headcount is
+its seats and its children's headcounts are its reports, so the widest is rounded up); and **roles by title** (case-insensitive):
+added, removed, larger, smaller or the same, and **moved** when the departments it is in now and in the plan differ. A count of people
+in a role under the floor (10) is withheld, and so is the change that would give it back, though its direction is not. **Not built:**
+the cost and skills difference of the roles added and removed (it needs a unit cost per role the plan cost view takes from other
+data); a way to draw or edit the target on the screen (it is set through the API); a target per scenario within one plan.
+
 ## Design decisions
 
 - **WPM-D104 — A position is a seat, not a person.** Positions hold budgeted FTE and a funding kind; the holder is a link. Moving a

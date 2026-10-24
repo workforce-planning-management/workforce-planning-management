@@ -2581,6 +2581,41 @@ export function getWorkforcePlan(
   return api(`/workforce-plans/${pid}`, init);
 }
 
+/** One side of the organization comparison. */
+export type ShapeSide = {
+  layers: number;
+  headcount: number;
+  span: { managers: number; mean_hundredths: number | null; max: number };
+};
+
+/** A role across the live structure and a plan's target. */
+export type ShapeRole = {
+  title: string;
+  current: { status: "shown"; value: number } | { status: "withheld" };
+  target: number;
+  change: "added" | "removed" | "larger" | "smaller" | "same";
+  delta: number | null;
+  moved: boolean;
+  current_departments: string[];
+  target_departments: string[];
+};
+
+/** The comparison, or `target_set: false` when the plan has no target organization yet. */
+export type OrganizationDiff =
+  | { plan: string; target_set: false; derivation: string }
+  | {
+      plan: string;
+      target_set: true;
+      small_group_floor: number;
+      diff: { current: ShapeSide; target: ShapeSide; roles: ShapeRole[] };
+      derivation: string;
+    };
+
+/** The live structure of a plan's organization against the plan's target, by role (WPM-R153). */
+export function organizationDiff(pid: string, init?: FetchLike): Promise<OrganizationDiff> {
+  return api(`/workforce-plans/${pid}/organization-diff`, init);
+}
+
 /** Open a draft plan. */
 export function createWorkforcePlan(body: {
   name: string;
