@@ -4249,8 +4249,23 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       (the aria-labels `Rename …`, `Category of …`, `Merge … into`, the `confirm()` texts and the merge and delete notices), and
       `/requisitions/[pid]` shows the raw stage in its button (`→ screened`), because the untranslated test scans template text
       and not template-literal attributes or script strings.
-- [ ] WPM-T267 **Split the largest pages.** Panels and forms of `workers/[pid]` (713 lines), `planning` (697) and `roles` (487)
+- [x] WPM-T267 **Split the largest pages.** Panels and forms of `workers/[pid]` (713 lines), `planning` (697) and `roles` (487)
       into components; screenshots before and after in light, dark and a phone width.
+      Done: `workers/[pid]` 785 to 470 lines (components `WellbeingPrompts`, `Appraisals`, `AdjustmentRequests`,
+      `ErgonomicAssessments` in `src/lib/components/worker/`), `planning` 699 to 399 (`PlanForecast`, `PlanTolerances` in
+      `.../planning/`), `roles` 489 to 231 (`EscoOccupationSeed`, `RoleProfileDetail` in `.../roles/`). Each component owns its
+      form state and its writes, and tells the page to read again (`onchange`) or what failed (`onfail`); `PlanTolerances` is given
+      the page's `run`. `PLAN_BASES` moved into `wpm.ts` since two components need it. Before and after: `tests/e2e/page-shots.spec.ts`
+      (runs only with `PAGE_SHOTS=<dir>`) writes a PNG and a text dump of the three pages in light, dark and a 390 px phone, from
+      shared stubs in `tests/e2e/fixtures.ts`; the nine before and nine after PNGs are byte-identical and the nine text dumps
+      identical. They are not committed (a run writes them). The moved code had almost no browser tests, so `worker-panels.spec.ts` (6)
+      and `roles.spec.ts` (4) were added: each write's body, a refused write shown, the disabled buttons. Verified: 206 Playwright
+      specs pass (13 skipped: the screenshot specs without their env var), 203 unit tests, `svelte-check` clean, all run after the
+      split. Not checked: that the new specs fail on a broken component; interaction states the stubs do not open (an open
+      appraisal's report, a shared appraisal, the tolerance forms beyond `tolerance.spec.ts`, the rest of `workers/[pid]`, still 470
+      lines, including the leave and payslip tables and the onboarding and notifications lists) look the same: the screenshots are
+      of the default state only. `Appraisals` re-reads the open appraisal whenever the page reads the list again (an `$effect`
+      with `untrack`), where before the page did it after `load`; that timing is the one behaviour I changed on purpose.
 
 ## Phase 23 — regulatory reporting, integration and planning depth (proposed WPM-R144–R158, WPM-D99–D106; [plan.md](plan.md) section N)
 

@@ -1,4 +1,8 @@
 <script lang="ts">
+  import WellbeingPrompts from "#lib/components/worker/WellbeingPrompts.svelte";
+  import Appraisals from "#lib/components/worker/Appraisals.svelte";
+  import AdjustmentRequests from "#lib/components/worker/AdjustmentRequests.svelte";
+  import ErgonomicAssessments from "#lib/components/worker/ErgonomicAssessments.svelte";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -20,27 +24,15 @@
   import CareerHistory from "#lib/components/CareerHistory.svelte";
   import FrameworkRolePanel from "#lib/components/FrameworkRolePanel.svelte";
   import {
-    ADJUSTMENT_CATEGORIES,
-    acknowledgeWellbeing,
-    answerErgonomicItem,
-    createAdjustmentRequest,
-    decideAdjustment,
     listAdjustmentRequests,
-    appraisalReport,
     appraisalRequests,
-    appraisalStatus,
-    completeErgonomicAssessment,
-    createErgonomicAssessment,
     changeStatus,
     completeItem,
-    createAppraisal,
     workerPayslips,
     eraseWorker,
     workerWellbeingPrompts,
-    getAppraisal,
     getWorker,
     listAppraisals,
-    listWorkers,
     listEntitlements,
     listErgonomicAssessments,
     listLeaveRequests,
@@ -51,9 +43,6 @@
     listTraining,
     markNotificationRead,
     money,
-    nominateRater,
-    respondAppraisal,
-    submitPulse,
     type AdjustmentRequest,
     type AppraisalRequest,
     type AppraisalSummary,
@@ -62,7 +51,6 @@
     type PulseSurvey,
     type WellbeingPrompt,
   } from "#lib/api/wpm.js";
-  import { mean } from "#lib/format.js";
   import { latestOnly, messageOf, settleEach, type Settled } from "#lib/loader.svelte.js";
   import { i18n, t, tf, tv } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
@@ -89,28 +77,11 @@
   let training = $state<TrainingEnrollment[]>([]);
   let wellbeing = $state<WellbeingPrompt[]>([]);
   let pulseSurveys = $state<PulseSurvey[]>([]);
-  let pulseThanks = $state<Set<string>>(new Set());
   let appraisals = $state<AppraisalSummary[]>([]);
   let myRequests = $state<AppraisalRequest[]>([]);
   let notifications = $state<Notification[]>([]);
   let ergonomics = $state<ErgonomicAssessment[]>([]);
-  let workstation = $state("");
   let adjustments = $state<AdjustmentRequest[]>([]);
-  let adjCategory = $state("quieter_workspace");
-  let adjBarrier = $state("");
-  let adjImpact = $state("");
-  let adjChange = $state("");
-  let requestScores = $state<Record<string, number>>({});
-  let requestComment = $state("");
-  let openRequest = $state<string | null>(null);
-  let openAppraisal = $state<Awaited<ReturnType<typeof getAppraisal>> | null>(null);
-  let openReport = $state<Awaited<ReturnType<typeof appraisalReport>> | null>(null);
-  let colleagues = $state<Worker[]>([]);
-  let nomineePid = $state("");
-  let nomineeGroup = $state<"manager" | "peer" | "report">("peer");
-  let raterPid = $state("");
-  let raterScores = $state<Record<string, number>>({});
-  let raterComment = $state("");
   let error = $state<string | null>(null);
   let actionError = $state<string | null>(null);
 
@@ -170,11 +141,6 @@
     ergonomics = take("ergonomics", got.ergonomics, []);
     adjustments = take("adjustments", got.adjustments, []);
     panelErrors = errors;
-    try {
-      if (openAppraisal) await toggleAppraisal(openAppraisal.pid, true);
-    } catch (cause) {
-      if (current()) actionError = messageOf(cause);
-    }
   }
 
   $effect(() => {
@@ -196,47 +162,6 @@
     try {
       await completeItem(itemPid);
       await load();
-    } catch (cause) {
-      actionError = errorText(cause);
-    }
-  }
-
-  async function respond(
-    entitlementPid: string,
-    response: "booked" | "done" | "declined" | "dismissed",
-  ) {
-    actionError = null;
-    try {
-      await acknowledgeWellbeing(pid, entitlementPid, response);
-      await load();
-    } catch (cause) {
-      actionError = errorText(cause);
-    }
-  }
-
-  async function sendPulse(surveyPid: string, score: number) {
-    actionError = null;
-    try {
-      await submitPulse(surveyPid, pid, score);
-      pulseThanks = new Set([...pulseThanks, surveyPid]);
-    } catch (cause) {
-      actionError = errorText(cause);
-    }
-  }
-
-  async function toggleAppraisal(appraisalPid: string, keepOpen = false) {
-    actionError = null;
-    if (!keepOpen && openAppraisal?.pid === appraisalPid) {
-      openAppraisal = null;
-      openReport = null;
-      return;
-    }
-    try {
-      openAppraisal = await getAppraisal(appraisalPid);
-      openReport =
-        openAppraisal.status === "shared" ? await appraisalReport(appraisalPid) : null;
-      if (!colleagues.length) colleagues = await listWorkers();
-      raterScores = Object.fromEntries(openAppraisal.competencies.map((c) => [c, 3]));
     } catch (cause) {
       actionError = errorText(cause);
     }
@@ -378,55 +303,15 @@
     </p>
   </div>
 
-  {#if panelErrors["wellbeing"]}
-    <h2>{t("wb.prompts")}</h2>
-    {@render panelError("wellbeing")}
-  {/if}
-  {#if wellbeing.length}
-    <h2>{t("wb.prompts")}</h2>
-    <ul class="panel" data-testid="wellbeing-prompts">
-      {#each wellbeing as prompt (prompt.entitlement_pid)}
-        <li>
-          <strong>{prompt.name}</strong>
-          <span class="chip">{prompt.entitlement_kind === "benefit" ? t("wb.kind.benefit") : t("wb.kind.health")}</span>
-          {#if prompt.kind === "reminder"}<span class="chip">{t("wb.reminder")}</span>{/if}
-          <br />
-          {prompt.description}
-          {#if prompt.info_url}
-            · <a href={prompt.info_url} target="_blank" rel="noreferrer">{t("wb.info")}</a>
-          {/if}
-          <br />
-          <button onclick={() => void respond(prompt.entitlement_pid, "booked")}>{t("wb.booked")}</button>
-          <button onclick={() => void respond(prompt.entitlement_pid, "done")}>{t("wb.done")}</button>
-          <button onclick={() => void respond(prompt.entitlement_pid, "declined")}>{t("wb.declined")}</button>
-          <button onclick={() => void respond(prompt.entitlement_pid, "dismissed")}>{t("wb.dismissed")}</button>
-        </li>
-      {/each}
-    </ul>
-  {/if}
-
-  {#if panelErrors["pulse"]}
-    <h2>{t("wb.pulse")}</h2>
-    {@render panelError("pulse")}
-  {/if}
-  {#if pulseSurveys.length}
-    <h2>{t("wb.pulse")}</h2>
-    <ul class="panel" data-testid="pulse-surveys">
-      {#each pulseSurveys as survey (survey.pid)}
-        <li>
-          <strong>{survey.name}</strong><br />
-          {survey.question}<br />
-          {#if pulseThanks.has(survey.pid)}
-            <span class="muted">{t("wb.pulseThanks")}</span>
-          {:else}
-            {#each [1, 2, 3, 4, 5] as score (score)}
-              <button onclick={() => void sendPulse(survey.pid, score)}>{score}</button>
-            {/each}
-          {/if}
-        </li>
-      {/each}
-    </ul>
-  {/if}
+  <WellbeingPrompts
+    {pid}
+    prompts={wellbeing}
+    surveys={pulseSurveys}
+    promptsError={panelErrors["wellbeing"] ?? null}
+    pulseError={panelErrors["pulse"] ?? null}
+    onchange={load}
+    onfail={(message) => (actionError = message)}
+  />
 
   {#if panelErrors["onboarding"]}
     <h2>{t("emp.onboarding")}</h2>
@@ -503,231 +388,31 @@
     </ul>
   {/if}
 
-  {#if panelErrors["requests"]}
-    <h2>{t("ap.requests")}</h2>
-    {@render panelError("requests")}
-  {/if}
-  {#if myRequests.length}
-    <h2>{t("ap.requests")}</h2>
-    <ul class="panel" data-testid="appraisal-requests">
-      {#each myRequests as request (request.appraisal_pid)}
-        <li>
-          <strong>{request.subject ?? request.subject_pid.slice(0, 8)}</strong>
-          <span class="chip">{request.group}</span>
-          {#if openRequest === request.appraisal_pid}
-            {#each request.competencies as competency (competency)}
-              <label>
-                {competency}
-                <select bind:value={requestScores[competency]}>
-                  {#each [1, 2, 3, 4, 5] as score (score)}
-                    <option value={score}>{score}</option>
-                  {/each}
-                </select>
-              </label>
-            {/each}
-            <input placeholder={t("labels.comment")} aria-label={t("labels.comment")} bind:value={requestComment} />
-            <button
-              onclick={() => void act(async () => {
-                await respondAppraisal(request.appraisal_pid, pid, requestScores, requestComment.trim() || undefined);
-                openRequest = null;
-              })}
-            >{t("ap.respond")}</button>
-          {:else}
-            <button
-              onclick={() => {
-                openRequest = request.appraisal_pid;
-                requestScores = Object.fromEntries(request.competencies.map((c) => [c, 3]));
-                requestComment = "";
-              }}
-            >{t("ap.respond")}</button>
-          {/if}
-        </li>
-      {/each}
-    </ul>
-  {/if}
+  <Appraisals
+    {pid}
+    {appraisals}
+    requests={myRequests}
+    requestsError={panelErrors["requests"] ?? null}
+    appraisalsError={panelErrors["appraisals"] ?? null}
+    onchange={load}
+    onfail={(message) => (actionError = message)}
+  />
 
-  <h2>{t("ap.title")}</h2>
-  {@render panelError("appraisals")}
-  <div class="panel" data-testid="appraisals">
-    <button onclick={() => void act(() => createAppraisal(pid, ["communication", "collaboration", "delivery"]))}>
-      {t("ap.new")}
-    </button>
-    {#each appraisals as appraisal (appraisal.pid)}
-      <div>
-        <button onclick={() => void toggleAppraisal(appraisal.pid)}>
-          <span class="chip">{tv(appraisal.status)}</span>
-          {appraisal.competencies.join(" · ")}
-          ({appraisal.responded}/{appraisal.nominated})
-        </button>
-        {#if appraisal.status === "draft"}
-          <button onclick={() => void act(() => appraisalStatus(appraisal.pid, "collecting"))}>{t("ap.start")}</button>
-        {:else if appraisal.status === "collecting"}
-          <button onclick={() => void act(() => appraisalStatus(appraisal.pid, "shared"))}>{t("ap.share")}</button>
-        {/if}
-        {#if openAppraisal?.pid === appraisal.pid}
-          <ul>
-            {#each openAppraisal.nominations as nomination (nomination.pid)}
-              <li>
-                {nomination.display_name ?? nomination.rater_pid.slice(0, 8)}
-                <span class="chip">{nomination.group}</span>
-                {#if nomination.responded}✓{/if}
-              </li>
-            {/each}
-          </ul>
-          {#if openAppraisal.status === "draft"}
-            <select aria-label={t("labels.nominee")} bind:value={nomineePid}>
-              <option value="">—</option>
-              {#each colleagues.filter((c) => c.pid !== pid) as colleague (colleague.pid)}
-                <option value={colleague.pid}>{colleague.display_name}</option>
-              {/each}
-            </select>
-            <select aria-label={t("labels.nomineeGroup")} bind:value={nomineeGroup}>
-              <option value="manager">{t("pages.workersPid.manager")}</option>
-              <option value="peer">{t("pages.workersPid.peer")}</option>
-              <option value="report">{t("pages.workersPid.report")}</option>
-            </select>
-            <button
-              disabled={!nomineePid}
-              onclick={() => void act(() => nominateRater(appraisal.pid, nomineePid, nomineeGroup))}
-            >{t("ap.nominate")}</button>
-          {:else if openAppraisal.status === "collecting"}
-            <select aria-label={t("labels.rater")} bind:value={raterPid}>
-              <option value="">—</option>
-              {#each openAppraisal.nominations.filter((n) => !n.responded) as nomination (nomination.pid)}
-                <option value={nomination.rater_pid}>{nomination.display_name ?? nomination.rater_pid.slice(0, 8)}</option>
-              {/each}
-            </select>
-            {#each openAppraisal.competencies as competency (competency)}
-              <label>
-                {competency}
-                <select bind:value={raterScores[competency]}>
-                  {#each [1, 2, 3, 4, 5] as score (score)}
-                    <option value={score}>{score}</option>
-                  {/each}
-                </select>
-              </label>
-            {/each}
-            <input placeholder={t("labels.comment")} aria-label={t("labels.comment")} bind:value={raterComment} />
-            <button
-              disabled={!raterPid}
-              onclick={() => void act(() => respondAppraisal(appraisal.pid, raterPid, raterScores, raterComment.trim() || undefined))}
-            >{t("ap.respond")}</button>
-          {/if}
-          {#if openReport}
-            <h3>{t("ap.report")}</h3>
-            {#each openReport.groups as group (group.group)}
-              <div>
-                <strong>{group.group}</strong>
-                {#if group.withheld}
-                  <span class="muted">{t("ap.withheld")}</span>
-                {:else}
-                  {#each Object.entries(group.competencies ?? {}) as [competency, cell] (competency)}
-                    <span class="chip">{competency}: {mean(cell.mean)} (n={cell.count})</span>
-                  {/each}
-                  {#each group.comments ?? [] as comment (comment)}
-                    <p class="muted">“{comment}”</p>
-                  {/each}
-                {/if}
-              </div>
-            {/each}
-            <p class="muted">{openReport.derivation}</p>
-          {/if}
-        {/if}
-      </div>
-    {/each}
-  </div>
+  <AdjustmentRequests
+    {pid}
+    requests={adjustments}
+    error={panelErrors["adjustments"] ?? null}
+    onchange={load}
+    onfail={(message) => (actionError = message)}
+  />
 
-  <h2>{t("adj.title")}</h2>
-  {@render panelError("adjustments")}
-  <div class="panel" data-testid="adjustments">
-    <p class="muted">{t("adj.hint")}</p>
-    <select aria-label={t("labels.adjustmentCategory")} bind:value={adjCategory}>
-      {#each ADJUSTMENT_CATEGORIES as category (category)}
-        <option value={category}>{tv(category)}</option>
-      {/each}
-    </select>
-    <input placeholder={t("adj.barrier")} aria-label={t("adj.barrier")} bind:value={adjBarrier} />
-    <input placeholder={t("adj.impact")} aria-label={t("adj.impact")} bind:value={adjImpact} />
-    <input placeholder={t("adj.change")} aria-label={t("adj.change")} bind:value={adjChange} />
-    <button
-      disabled={!adjBarrier.trim() || !adjImpact.trim() || !adjChange.trim()}
-      onclick={() => void act(async () => {
-        await createAdjustmentRequest(pid, {
-          category: adjCategory,
-          barrier: adjBarrier.trim(),
-          impact: adjImpact.trim(),
-          adjustment: adjChange.trim(),
-        });
-        adjBarrier = adjImpact = adjChange = "";
-      })}
-    >{t("adj.new")}</button>
-    <ul>
-      {#each adjustments as request (request.pid)}
-        <li>
-          <span class="chip">{tv(request.category)}</span>
-          <span class="chip">{tv(request.status)}</span>
-          {#if !request.words_withheld}
-            <br />{request.barrier} → {request.adjustment}
-            {#if request.decision_note}<br /><span class="muted">{request.decision_note}</span>{/if}
-          {/if}
-          {#if request.status === "requested"}
-            <button
-              onclick={() => {
-                const note = window.prompt(t("adj.note")) ?? "";
-                void act(() => decideAdjustment(request.pid, "agreed", note.trim() || undefined));
-              }}
-            >{t("adj.agree")}</button>
-            <button onclick={() => void act(() => decideAdjustment(request.pid, "declined"))}>{t("adj.decline")}</button>
-          {:else if request.status === "agreed"}
-            <button onclick={() => void act(() => decideAdjustment(request.pid, "in_place"))}>{t("adj.inPlace")}</button>
-          {/if}
-        </li>
-      {/each}
-    </ul>
-  </div>
-
-  <h2>{t("erg.title")}</h2>
-  {@render panelError("ergonomics")}
-  <div class="panel" data-testid="ergonomics">
-    <input placeholder={t("erg.workstation")} aria-label={t("erg.workstation")} bind:value={workstation} />
-    <button
-      disabled={!workstation.trim()}
-      onclick={() => void act(async () => {
-        await createErgonomicAssessment(pid, workstation.trim());
-        workstation = "";
-      })}
-    >{t("erg.new")}</button>
-    {#each ergonomics as assessment (assessment.pid)}
-      <div>
-        <strong>{assessment.workstation}</strong>
-        <span class="chip">{tv(assessment.status)}</span>
-        {#if assessment.status === "open"}
-          <button onclick={() => void act(() => completeErgonomicAssessment(assessment.pid))}>
-            {t("erg.complete")}
-          </button>
-        {:else if assessment.open_issues > 0}
-          <span class="chip">{assessment.open_issues} ⚠</span>
-        {/if}
-        <ul>
-          {#each assessment.items as item (item.pid)}
-            <li>
-              {item.name}
-              {#if item.ok === true}✓{:else if item.ok === false}✗ <span class="muted">{item.note}</span>{/if}
-              {#if assessment.status === "open" && item.ok === null}
-                <button onclick={() => void act(() => answerErgonomicItem(item.pid, true))}>{t("erg.ok")}</button>
-                <button
-                  onclick={() => {
-                    const note = window.prompt(t("erg.issue")) ?? "";
-                    void act(() => answerErgonomicItem(item.pid, false, note.trim() || undefined));
-                  }}
-                >{t("erg.issue")}</button>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/each}
-  </div>
+  <ErgonomicAssessments
+    {pid}
+    assessments={ergonomics}
+    error={panelErrors["ergonomics"] ?? null}
+    onchange={load}
+    onfail={(message) => (actionError = message)}
+  />
 
   <h2>{t("emp.reviews")}</h2>
   {@render panelError("reviews")}

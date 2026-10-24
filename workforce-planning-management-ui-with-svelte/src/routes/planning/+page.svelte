@@ -7,6 +7,8 @@
   aggregate and levers are suggestions, never decisions.
 -->
 <script lang="ts">
+  import PlanForecast from "#lib/components/planning/PlanForecast.svelte";
+  import PlanTolerances from "#lib/components/planning/PlanTolerances.svelte";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -16,24 +18,17 @@
     getWorkforcePlan,
     listRoleProfiles,
     listWorkforcePlans,
-    money,
     planAlignment,
     planCost,
     planForecast,
     planEscalations,
     planTolerances,
-    raiseEscalationLevel,
-    raisePlanEscalation,
-    decideEscalation,
     removeDemandLine,
-    removePlanTolerance,
     setDemandLine,
     setLineObjectives,
     setPlanStatus,
-    setPlanTolerance,
-    type Rag,
+    PLAN_BASES,
   } from "#lib/api/wpm.js";
-  import { percentWithWorkings } from "#lib/format.js";
   import LilyGantt from "#lib/components/LilyGantt.svelte";
   import LilyKanban from "#lib/components/LilyKanban.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
@@ -48,7 +43,6 @@
   type Tolerances = Awaited<ReturnType<typeof planTolerances>>;
   type Escalations = Awaited<ReturnType<typeof planEscalations>>;
 
-  const BASES = ["permanent", "fixed_term", "contractor", "intern"] as const;
   const NEXT: Record<string, string[]> = {
     draft: ["active", "archived"],
     active: ["archived"],
@@ -65,14 +59,6 @@
   let cost = $state<Cost | null>(null);
   let tolerances = $state<Tolerances | null>(null);
   let escalations = $state<Escalations>([]);
-  /** The dimension whose escalate or decide form is open, and what is typed in it. */
-  let escalating = $state<string | null>(null);
-  let deciding = $state<string | null>(null);
-  let escNote = $state("");
-  let decisionPick = $state("accept_deviation");
-  let decisionNote = $state("");
-  /** What is typed in each tolerance row, by dimension, before it is saved. */
-  let draft = $state<Record<string, { limit: string; amber: string }>>({});
   let roles = $state<Awaited<ReturnType<typeof listRoleProfiles>>>([]);
   let totals = $state<Record<string, number>>({});
   let details = $state<Plan[]>([]);
@@ -140,8 +126,6 @@
     cost = null;
     tolerances = null;
     escalations = [];
-    escalating = null;
-    deciding = null;
     if (!selected) return;
     try {
       [plan, forecast, alignment, cost, tolerances, escalations] = await Promise.all([
@@ -152,12 +136,6 @@
         planTolerances(selected),
         planEscalations(selected),
       ]);
-      draft = Object.fromEntries(
-        tolerances.dimensions.map((d) => [
-          d.dimension,
-          { limit: d.limit === null ? "" : String(d.limit), amber: String(d.amber_percent ?? 75) },
-        ]),
-      );
     } catch (cause) {
       error = message(cause);
     }
@@ -202,28 +180,6 @@
     }
   }
 
-  const RAG_SHAPE: Record<Rag, string> = { green: "●", amber: "▲", red: "■", unknown: "?", not_set: "–" };
-
-  async function saveTolerance(dimension: string) {
-    const row = draft[dimension];
-    if (!row || String(row.limit).trim() === "") return;
-    await run(() => setPlanTolerance(selected, dimension, { limit: Number(row.limit), amber_percent: Number(row.amber) }));
-  }
-
-  async function escalate(dimension: string) {
-    await run(() => raisePlanEscalation(selected, { dimension, ...(escNote.trim() ? { note: escNote.trim() } : {}) }));
-    escNote = "";
-  }
-
-  async function decide(pid: string) {
-    await run(() => decideEscalation(pid, { decision: decisionPick, note: decisionNote }));
-    decisionNote = "";
-  }
-
-  async function dropTolerance(dimension: string) {
-    await run(() => removePlanTolerance(selected, dimension));
-  }
-
   async function toggleObjective(lineId: string, current: string[], objective: string) {
     const next = current.includes(objective)
       ? current.filter((o) => o !== objective)
@@ -250,48 +206,7 @@
     },
   ]);
 
-  const programmeColumns = $derived<DataGridColumn[]>([
-    {
-      id: "programme_ref",
-      header: t("plan.programme"),
-      sortable: true,
-      accessor: (r) => r.programme_ref ?? t("plan.noProgramme"),
-    },
-    { id: "target_on", type: "date", header: t("pages.planning.date"), sortable: true },
-    { id: "headcount", header: t("pages.planning.headcount"), sortable: true, align: "end" },
-    { id: "fte", header: t("contingent.fte"), sortable: true, align: "end" },
-  ]);
-
-  const costColumns = (currency: string): DataGridColumn[] => [
-    { id: "department", header: t("pages.planning.department"), sortable: true },
-    { id: "target_on", type: "date", header: t("pages.planning.date"), sortable: true },
-    { id: "hires_needed", header: t("pages.planning.hires_needed"), sortable: true, align: "end" },
-    {
-      id: "unit_cost_minor",
-      header: t("pages.planning.unit_cost"),
-      sortable: true,
-      align: "end",
-      format: (v) => money(v as number | null, currency),
-    },
-    {
-      id: "unit_cost_source",
-      header: t("pages.planning.source"),
-      sortable: true,
-      accessor: (r) => tv(String(r.unit_cost_source ?? "")) || tv(String(r.reason ?? "")) || null,
-    },
-    {
-      id: "annual_cost_minor",
-      header: t("pages.planning.annual_cost"),
-      sortable: true,
-      align: "end",
-      format: (v) => money(v as number | null, currency),
-    },
-  ];
 </script>
-
-{#snippet ragChip(rag: Rag)}
-  <span class="chip rag rag-{rag}" data-rag={rag}><span class="shape" aria-hidden="true">{RAG_SHAPE[rag]}</span>{tv(rag === "unknown" ? "rag_unknown" : rag)}</span>
-{/snippet}
 
 {#snippet planCell({ row }: { row: DataGridRow })}
   <button type="button" onclick={() => { selected = String(row.pid); void loadDetail(); }}>{row.name}</button>
@@ -381,221 +296,16 @@
     <button type="button" onclick={() => void run(() => setPlanStatus(plan!.pid, next))}>{tf("pages.planning.mark", { next: tv(next) })}</button>
   {/each}
 
-  {#if forecast}
-    <p class="muted">{forecast.derivation}</p>
-    <p data-testid="plan-assumptions">
-      {t("pages.planning.attrition_assumption")}
-      {#if forecast.assumptions.attrition_bp !== null}
-        {tf("pages.planning.a_year", { attrition_bp: (forecast.assumptions.attrition_bp / 100).toFixed(1), attrition_source: tv(forecast.assumptions.attrition_source) })}
-      {:else}
-        <strong>{t("pages.planning.insufficient_history")}</strong> {t("pages.planning.no_projection_until_a_plan")}
-      {/if}
-      {tf("pages.planning.hires_assumed", { hires_assumed: forecast.assumptions.hires_assumed })}
-    </p>
-    <!-- Plain table: each row is followed by colspan note rows (basis split, assumptions, competency gaps), which the grid cannot hold. -->
-    <table data-testid="plan-forecast">
-      <thead>
-        <tr><th>{t("pages.planning.department")}</th><th>{t("pages.planning.date")}</th><th>{t("pages.planning.today")}</th><th>{t("pages.planning.planned")}</th><th>{t("pages.planning.projected_supply")}</th><th>{t("pages.planning.gap")}</th><th>{t("pages.planning.suggested_levers")}</th></tr>
-      </thead>
-      <tbody>
-        {#each forecast.departments as row (row.department + row.target_on)}
-          <tr>
-            <td>{row.department}</td><td>{row.target_on}</td>
-            <td>{row.opening_headcount}</td><td>{row.planned_demand}</td>
-            <td>{row.projected_supply ?? "—"}</td>
-            <td class:warn={(row.headcount_gap ?? 0) > 0}>{row.headcount_gap ?? "—"}</td>
-            <td>{row.levers?.map((lever) => tv(lever)).join(", ") ?? "—"}</td>
-          </tr>
-          <tr class="muted" data-testid="forecast-basis">
-            <td colspan="2">{t("plan.byBasis")}</td>
-            <td colspan="5">
-              {#each BASES as b (b)}
-                {@const supply = row.supply_by_basis[b]}
-                {@const demand = row.demand_by_basis.find((d) => d.basis === b)}
-                {#if supply?.headcount || demand}
-                  <span class="chip">
-                    {tv(b)}: {demand?.headcount ?? 0} → {supply?.headcount ?? "—"}
-                    {#if demand?.fte != null || supply?.fte != null}
-                      ({demand?.fte ?? "—"} → {supply?.fte ?? "—"} {t("contingent.fte")})
-                    {/if}
-                  </span>
-                {/if}
-              {/each}
-              {#if row.fte_gap !== null}
-                <span data-testid="forecast-fte-gap">· {t("plan.fteGap")}: {row.fte_gap}</span>
-              {/if}
-            </td>
-          </tr>
-          {#if row.conversions}
-            <tr class="muted" data-testid="forecast-conversions">
-              <td colspan="2">{t("plan.conversions")}</td>
-              <td colspan="5">
-                <span class="chip" data-testid="conversions-agreed">
-                  {t("plan.conversionsAgreed")}: {row.conversions.agreed.headcount}
-                  {#if row.conversions.agreed.fte !== null}({row.conversions.agreed.fte} {t("contingent.fte")}){/if}
-                </span>
-                <span class="chip" data-testid="conversions-hoped">
-                  {t("plan.conversionsHoped")}: {row.conversions.hoped.headcount}
-                  {#if row.conversions.hoped.fte !== null}({row.conversions.hoped.fte} {t("contingent.fte")}){/if}
-                </span>
-                {t("plan.conversionsNote")}
-              </td>
-            </tr>
-          {/if}
-          {#each row.supply_assumptions.slice(1) as note (note)}
-            <tr class="muted"><td colspan="7">{note}</td></tr>
-          {/each}
-          {#each row.competency_gaps as gap (gap.job_title + (gap.skill ?? ""))}
-            <tr class="muted">
-              <td colspan="2">{tf("pages.planning.needs", { job_title: gap.job_title, skill: gap.skill, importance: tv(gap.importance), min_proficiency: gap.min_proficiency })}</td>
-              <td colspan="5">
-                {tf("pages.planning.need_proficient_now_shortfall", { needed: gap.needed, proficient_now: gap.proficient_now, shortfall: gap.shortfall, reskill_pool: gap.reskill_pool })}
-              </td>
-            </tr>
-          {/each}
-        {:else}
-          <tr><td colspan="7" class="muted">{t("pages.planning.no_demand_lines_yet")}</td></tr>
-        {/each}
-      </tbody>
-    </table>
-    {#if forecast.programmes.some((p) => p.programme_ref)}
-      <h3>{t("plan.demandByProgramme")}</h3>
-      <DataTable
-        testid="plan-forecast-programmes"
-        label={t("plan.demandByProgramme")}
-        columns={programmeColumns}
-        rows={forecast.programmes as unknown as DataGridRow[]}
-        rowId={(row) => String(row.target_on) + String(row.programme_ref ?? "")}
-      />
-    {/if}
-  {/if}
-
-  {#if cost}
-    <h3>{t("pages.planning.cost_of_closing_the_gaps_by_hiring")}</h3>
-    <p class="muted">{cost.derivation}</p>
-    {#if !cost.salary_visible}
-      <p data-testid="plan-cost-hidden">{t("pages.planning.salary_figures_need_payroll_read")}</p>
-    {/if}
-    <DataTable
-      testid="plan-cost"
-      label={t("pages.planning.cost_of_closing_the_gaps_by_hiring")}
-      columns={costColumns(cost.currency)}
-      rows={cost.groups as unknown as DataGridRow[]}
-      rowId={(row) => String(row.department) + String(row.target_on)}
-    />
-    {#if cost.salary_visible}
-      <p data-testid="plan-cost-total">
-        {tf("pages.planning.total_annual_incl_on_cost", { on_cost_bp: (cost.assumptions.on_cost_bp / 100).toFixed(1), currency: money(cost.total_annual_cost_minor, cost.currency) })}
-        {#if cost.uncosted_groups > 0}<span class="muted">{tf("pages.planning.line_group_s_could_not_be_costed", { uncosted_groups: cost.uncosted_groups })}</span>{/if}
-        {#if cost.affordability}
-          {tf("pages.planning.budget", { currency: money(cost.affordability.budget_minor, cost.currency) })}
-          <span class:warn={!cost.affordability.within_budget}>
-            {tf("pages.planning.remaining", { within_budget: cost.affordability.within_budget ? t("pages.planning.within_budget") : t("pages.planning.over_budget"), currency: money(cost.affordability.remaining_minor, cost.currency) })}
-          </span>
-        {/if}
-      </p>
-    {/if}
-  {/if}
-
-  {#if alignment}
-    <h3>{t("pages.planning.alignment_with_strategy")}</h3>
-    <p data-testid="plan-alignment">
-      {tf("pages.planning.planned_headcount_tied_to_an", { aligned_share: percentWithWorkings(alignment.aligned_share), in_plan_departments: alignment.critical_roles_without_bench.in_plan_departments, all_departments: alignment.critical_roles_without_bench.all_departments })}
-    </p>
-    {#if alignment.unresourced_objectives.length > 0}
-      <p>{tf("pages.planning.objectives_with_no_demand_behind", { unresourced_objectives: alignment.unresourced_objectives.join("; ") })}</p>
-    {/if}
-    {#if alignment.unaligned_demand_lines.length > 0}
-      <p class="muted">{tf("pages.planning.demand_serving_no_objective", { target_headcount: alignment.unaligned_demand_lines.map((l) => `${l.department} ${l.target_on} (${l.target_headcount})`).join("; ") })}</p>
-    {/if}
-  {/if}
+  <PlanForecast {forecast} {cost} {alignment} />
 
   {#if tolerances}
-    <h3>{t("pages.planning.tolerances")} {@render ragChip(tolerances.overall)}</h3>
-    <p class="muted" data-testid="tolerance-derivation">{tolerances.derivation}</p>
-    {#if tolerances.breaches_without_escalation > 0}
-      <p class="warn" data-testid="breaches-without-escalation">
-        {tf("pages.planning.breaches_without_escalation", { count: tolerances.breaches_without_escalation })}
-      </p>
-    {/if}
-    <table class="tolerances" data-testid="plan-tolerances">
-      <thead>
-        <tr>
-          <th>{t("pages.planning.tolerances")}</th>
-          <th>{t("pages.planning.deviation_now")}</th>
-          <th>{t("pages.planning.tolerance_limit")}</th>
-          <th>{t("pages.planning.amber_from")}</th>
-          <th>{t("common.status")}</th>
-          <th>{t("pages.planning.escalation")}</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each tolerances.dimensions as d (d.dimension)}
-          <tr data-testid="tolerance-{d.dimension}">
-            <th scope="row" title={d.basis}>{tv(d.dimension)}</th>
-            <td>{#if d.deviation === null}<span class="muted" title={d.reason ?? ""}>{tv("unknown")}</span>{:else}{d.deviation} {tv(d.unit)}{/if}</td>
-            <td>
-              {#if draft[d.dimension]}
-                <input type="number" min="0" step="1" aria-label="{tv(d.dimension)}: {t('pages.planning.tolerance_limit')}" bind:value={draft[d.dimension]!.limit} /> {tv(d.unit)}
-              {/if}
-            </td>
-            <td>
-              {#if draft[d.dimension]}
-                <input type="number" min="1" max="99" step="1" aria-label="{tv(d.dimension)}: {t('pages.planning.amber_from')}" bind:value={draft[d.dimension]!.amber} />
-              {/if}
-            </td>
-            <td>{@render ragChip(d.rag)}</td>
-            <td data-testid="escalation-{d.dimension}">
-              {#if d.escalation}
-                <span class="chip">{t("pages.planning.level")} {d.escalation.level_number}: {tv(d.escalation.level)}</span>
-                <span class="muted">{tf("pages.planning.days_open_calendar", { days: d.escalation.days_open ?? 0 })}</span>
-                {#if d.escalation.level_number < 3}
-                  <button type="button" onclick={() => void run(() => raiseEscalationLevel(d.escalation!.pid))}>{t("pages.planning.raise_level")}</button>
-                {/if}
-                <button type="button" onclick={() => { deciding = d.dimension; decisionNote = ""; }}>{t("pages.planning.decide")}</button>
-                {#if deciding === d.dimension}
-                  <div>
-                    <label>{t("pages.planning.decision")}
-                      <select bind:value={decisionPick}>
-                        {#each ["accept_deviation", "change_plan", "stop"] as option (option)}<option value={option}>{tv(option)}</option>{/each}
-                      </select>
-                    </label>
-                    <label>{t("pages.planning.decision_note")} <input maxlength="500" bind:value={decisionNote} /></label>
-                    <button type="button" disabled={decisionNote.trim() === ""} onclick={() => void decide(d.escalation!.pid)}>{t("pages.planning.decide")}</button>
-                  </div>
-                {/if}
-              {:else if d.set && (d.rag === "amber" || d.rag === "red") && plan.status !== "archived"}
-                <button type="button" onclick={() => { escalating = d.dimension; escNote = ""; }}>{t("pages.planning.escalate")}</button>
-                {#if escalating === d.dimension}
-                  <div>
-                    <label>{t("pages.planning.escalation_note")} <input maxlength="500" bind:value={escNote} /></label>
-                    <button type="button" onclick={() => void escalate(d.dimension)}>{t("pages.planning.escalate")}</button>
-                  </div>
-                {/if}
-              {/if}
-            </td>
-            <td>
-              {#if plan.status !== "archived"}
-                <button type="button" onclick={() => void saveTolerance(d.dimension)}>{t("pages.planning.set_tolerance")}</button>
-                {#if d.set}<button type="button" onclick={() => void dropTolerance(d.dimension)}>{t("pages.planning.remove")}</button>{/if}
-              {/if}
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  {/if}
-
-  {#if escalations.some((e) => e.status === "decided")}
-    <h3>{t("pages.planning.escalation_history")}</h3>
-    <ul data-testid="escalation-history">
-      {#each escalations.filter((e) => e.status === "decided") as e (e.pid)}
-        <li>
-          {tv(e.dimension)} · {e.raised_on} → {e.decided_on} · {tv(e.decision)}{#if e.decision_note} — {e.decision_note}{/if}
-        </li>
-      {/each}
-    </ul>
+    <PlanTolerances
+      planPid={plan.pid}
+      {tolerances}
+      {escalations}
+      editable={editable(plan)}
+      {run}
+    />
   {/if}
 
   <h3>{t("pages.planning.demand_lines")}</h3>
@@ -663,7 +373,7 @@
       <label>
         {t("engagement.basis")}
         <select data-testid="line-basis" bind:value={lineBasis}>
-          {#each BASES as b (b)}<option value={b}>{tv(b)}</option>{/each}
+          {#each PLAN_BASES as b (b)}<option value={b}>{tv(b)}</option>{/each}
         </select>
       </label>
       {#if lineBasis !== "permanent"}
@@ -687,13 +397,3 @@
     </form>
   {/if}
 {/if}
-
-<style>
-  .tolerances th:first-child {
-    white-space: nowrap;
-  }
-  .tolerances td button {
-    margin-block: 0.1rem;
-  }
-  td.warn { color: #b45309; font-weight: 600; }
-</style>

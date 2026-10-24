@@ -5,6 +5,8 @@
   yardstick competency-gap analysis measures declared skills against.
 -->
 <script lang="ts">
+  import EscoOccupationSeed from "#lib/components/roles/EscoOccupationSeed.svelte";
+  import RoleProfileDetail from "#lib/components/roles/RoleProfileDetail.svelte";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -14,16 +16,11 @@
     listRoleProfiles,
     listSkills,
     mobilityInterestSummary,
-    removeRoleRequirement,
     roleGap,
     roleProgression,
     searchEscoOccupations,
     getEscoOccupation,
-    seedProfileFromEsco,
-    setRoleRequirement,
   } from "#lib/api/wpm.js";
-  import RoleGrade from "#lib/components/RoleGrade.svelte";
-  import { percentWithWorkings } from "#lib/format.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
@@ -35,10 +32,6 @@
   type Interest = Awaited<ReturnType<typeof mobilityInterestSummary>>;
   type Frameworks = Awaited<ReturnType<typeof listFrameworks>>;
   type Progression = Awaited<ReturnType<typeof roleProgression>>;
-  type EscoHits = Awaited<ReturnType<typeof searchEscoOccupations>>;
-  type EscoOccupation = Awaited<ReturnType<typeof getEscoOccupation>>;
-
-  const IMPORTANCES = ["critical", "important", "useful"] as const;
 
   let profiles = $state<Profiles>([]);
   let skills = $state<Skills>([]);
@@ -48,20 +41,11 @@
   let frameworks = $state<Frameworks>([]);
   let framework = $state("");
   let progression = $state<Progression | null>(null);
-  let escoQuery = $state("");
-  let escoHits = $state<EscoHits>([]);
-  let escoPicked = $state<EscoOccupation | null>(null);
-  let escoLevel = $state(3);
-  let escoOptional = $state(false);
-  let escoTitle = $state("");
   const escoLoaded = $derived(frameworks.some((f) => f.slug === "esco"));
   let profile = $state<Profile | null>(null);
   let error = $state<string | null>(null);
 
   let newTitle = $state("");
-  let reqSkill = $state("");
-  let reqLevel = $state(3);
-  let reqImportance = $state<string>("important");
 
   /** The group key for profiles with no profession (shown translated, sorted last). */
   const OTHER_PROFILES = "\u0000other";
@@ -129,46 +113,6 @@
     }
   }
 
-  async function searchEsco() {
-    error = null;
-    escoPicked = null;
-    try {
-      escoHits = escoQuery.trim().length >= 2 ? await searchEscoOccupations(escoQuery.trim()) : [];
-    } catch (cause) {
-      error = message(cause);
-    }
-  }
-
-  async function pickEsco(uri: string) {
-    error = null;
-    try {
-      escoPicked = await getEscoOccupation(uri);
-      escoTitle = "";
-    } catch (cause) {
-      error = message(cause);
-    }
-  }
-
-  async function seedEsco() {
-    if (!escoPicked) return;
-    error = null;
-    try {
-      const created = await seedProfileFromEsco({
-        occupation_uri: escoPicked.uri,
-        default_min_proficiency: escoLevel,
-        include_optional: escoOptional,
-        ...(escoTitle.trim() ? { job_title: escoTitle.trim() } : {}),
-      });
-      escoPicked = null;
-      escoHits = [];
-      escoQuery = "";
-      selected = created.pid;
-      await loadProfiles();
-    } catch (cause) {
-      error = message(cause);
-    }
-  }
-
   async function addProfile() {
     error = null;
     try {
@@ -181,97 +125,13 @@
     }
   }
 
-  async function addRequirement() {
-    if (!selected || !reqSkill) return;
-    error = null;
-    try {
-      await setRoleRequirement(selected, {
-        skill_pid: reqSkill,
-        min_proficiency: reqLevel,
-        importance: reqImportance,
-      });
-      await loadProfiles();
-    } catch (cause) {
-      error = message(cause);
-    }
-  }
-
-  async function dropRequirement(skillPid: string) {
-    error = null;
-    try {
-      await removeRoleRequirement(selected, skillPid);
-      await loadProfiles();
-    } catch (cause) {
-      error = message(cause);
-    }
-  }
-
-  type Requirement = Profile["requirements"][number];
-
   const interestColumns = $derived<DataGridColumn[]>([
     { id: "title", header: t("pages.roles.target"), sortable: true, accessor: (r) => r.title ?? r.target_pid },
     { id: "kind", header: t("pages.roles.kind"), sortable: true, format: (v) => tv(String(v)) },
     { id: "interested", header: t("pages.roles.interested"), sortable: true, align: "end" },
   ]);
 
-  const requirementColumns = $derived<DataGridColumn[]>([
-    { id: "skill", header: t("pages.roles.skill"), sortable: true, rowHeader: true, cell: skillCell,
-      accessor: (r) => r.skill ?? r.skill_pid },
-    { id: "category", header: t("pages.roles.category"), sortable: true },
-    {
-      id: "min_proficiency",
-      header: t("pages.roles.minimum"),
-      sortable: true,
-      align: "end",
-      format: (v) => `${v} / 5`,
-    },
-    {
-      id: "source_level",
-      header: t("pages.roles.framework_level"),
-      sortable: true,
-      align: "end",
-      format: (v, r) => (v !== null && v !== undefined ? `${v} of ${r.source_scale_max}` : "—"),
-    },
-    {
-      id: "importance",
-      header: t("pages.roles.importance"),
-      sortable: true,
-      format: (v) => tv(String(v)),
-      cellClass: ({ value }) => (value === "critical" ? "cx-warn" : ""),
-    },
-    { id: "remove", header: t("pages.roles.remove"), cell: removeCell },
-  ]);
-
-  const coverageColumns = $derived<DataGridColumn[]>([
-    { id: "skill", header: t("pages.roles.skill"), sortable: true },
-    { id: "min_proficiency", header: t("pages.roles.needs"), sortable: true, align: "end" },
-    { id: "meeting", header: t("pages.roles.meeting"), sortable: true, align: "end" },
-    { id: "below", header: t("pages.roles.below"), sortable: true, align: "end" },
-    { id: "undeclared", header: t("pages.roles.undeclared"), sortable: true, align: "end" },
-    {
-      id: "coverage",
-      header: t("pages.roles.coverage"),
-      sortable: true,
-      align: "end",
-      accessor: (r) => (r.coverage as { value: number | null } | null)?.value ?? null,
-      format: (_v, r) => percentWithWorkings(r.coverage as Parameters<typeof percentWithWorkings>[0]),
-    },
-  ]);
 </script>
-
-{#snippet skillCell({ row }: { row: DataGridRow })}
-  {@const req = row as unknown as Requirement}
-  {req.skill ?? req.skill_pid}
-  {#if req.note}
-    <details><summary class="muted">{t("pages.roles.what_the_framework_says")}</summary><p>{req.note}</p></details>
-  {/if}
-{/snippet}
-
-{#snippet removeCell({ row }: { row: DataGridRow })}
-  <button type="button" onclick={() => void dropRequirement(String(row.skill_pid))}>
-    {t("pages.roles.remove")}
-  </button>
-{/snippet}
 
 <svelte:head><title>{tf("pages.roles.page_title", { roles: t("nav.roles") })}</title></svelte:head>
 
@@ -346,142 +206,24 @@
 </form>
 
 {#if escoLoaded}
-  <h3>{t("pages.roles.start_from_an_esco_occupation")}</h3>
-  <p class="muted">
-    {t("pages.roles.esco_says_which_skills_an")}
-  </p>
-  <form
-    onsubmit={(event) => {
-      event.preventDefault();
-      void searchEsco();
+  <EscoOccupationSeed
+    onseeded={async (pid) => {
+      selected = pid;
+      await loadProfiles();
     }}
-  >
-    <label>{t("pages.roles.occupation")} <input data-testid="esco-query" bind:value={escoQuery} minlength="2" /></label>
-    <button type="submit" data-testid="esco-search">{t("pages.roles.search")}</button>
-  </form>
-  {#if escoHits.length > 0 && !escoPicked}
-    <ul data-testid="esco-hits">
-      {#each escoHits as hit (hit.uri)}
-        <li>
-          <button type="button" onclick={() => void pickEsco(hit.uri)}>{hit.label}</button>
-          <span class="muted">{tf("pages.roles.isco_essential_optional", { isco_code: hit.isco_code ?? "—", essential_skills: hit.essential_skills, optional_skills: hit.optional_skills })}</span>
-        </li>
-      {/each}
-    </ul>
-  {/if}
-  {#if escoPicked}
-    <p><strong>{escoPicked.label}</strong> <span class="muted">{tf("pages.roles.isco", { isco_code: escoPicked.isco_code ?? "—" })}</span></p>
-    {#if escoPicked.description}<p class="muted">{escoPicked.description}</p>{/if}
-    <ul>
-      {#each escoPicked.skills.slice(0, 12) as s (s.uri)}
-        <li>{s.label} <span class="muted">({s.relation}{s.catalogue_skill_pid ? ", in catalogue" : ""})</span></li>
-      {/each}
-    </ul>
-    {#if escoPicked.skills.length > 12}<p class="muted">{tf("pages.roles.and_more", { skills: escoPicked.skills.length - 12 })}</p>{/if}
-    <form
-      onsubmit={(event) => {
-        event.preventDefault();
-        void seedEsco();
-      }}
-    >
-      <label>
-        {t("pages.roles.starting_minimum_level")}
-        <select data-testid="esco-level" bind:value={escoLevel}>
-          {#each [1, 2, 3, 4, 5] as level (level)}<option value={level}>{level}</option>{/each}
-        </select>
-      </label>
-      <label><input type="checkbox" bind:checked={escoOptional} /> {t("pages.roles.include_optional_skills_as_useful")}</label>
-      <label>{t("pages.roles.job_title_optional")} <input bind:value={escoTitle} placeholder={escoPicked.label} /></label>
-      <button type="submit" data-testid="esco-create">{t("pages.roles.create_draft_profile")}</button>
-      <button type="button" onclick={() => (escoPicked = null)}>{t("pages.roles.back")}</button>
-    </form>
-  {/if}
+    onfail={(message) => (error = message)}
+  />
 {/if}
 
 {#if profile}
-  <h2>{profile.job_title}</h2>
-  {#if profile.framework}
-    <p class="muted" data-testid="framework-attribution">
-      {tf("pages.roles.level", { profession: profile.profession, role_name: profile.role_name, level_order: profile.level_order, name: profile.framework.name, licence: profile.framework.licence })}
-    </p>
-    <p class="muted">{profile.framework.attribution}</p>
-    <p class="muted">
-      {tf("pages.roles.required_levels_come_from_the", { scale_labels: profile.framework.scale_labels, note: profile.framework.note })}
-    </p>
-  {:else if profile.source_ref}<p class="muted">{tf("pages.roles.source", { source_ref: profile.source_ref })}</p>{/if}
-  {#if profile.description}<p>{profile.description}</p>{/if}
-  <RoleGrade profilePid={profile.pid} />
-  {#if profile.requirements.length === 0}
-    <p class="muted" data-testid="role-requirements">{t("pages.roles.no_required_skills_yet")}</p>
-  {:else}
-    <DataTable
-      testid="role-requirements"
-      label={t("pages.roles.profiles")}
-      columns={requirementColumns}
-      rows={profile.requirements as unknown as DataGridRow[]}
-      rowId={(row) => String(row.skill_pid)}
-    />
-  {/if}
-
-  {#if progression && typeof progression.profile !== "string"}
-    <h3>{t("pages.roles.next_level_up")}</h3>
-    {#each progression.next as step (step.pid)}
-      <p data-testid="role-progression">
-        <strong>{step.job_title}</strong>{tf("pages.roles.new_skill_s_raised_unchanged", { added: step.added.length, raised: step.raised.length, unchanged: step.unchanged })}
-      </p>
-      <ul>
-        {#each step.added as a (a.skill)}<li>{tf("pages.roles.new_needs", { skill: a.skill, min_proficiency: a.min_proficiency })}</li>{/each}
-        {#each step.raised as r (r.skill)}<li>{tf("pages.roles.raised", { skill: r.skill, from: r.from, to: r.to })}</li>{/each}
-      </ul>
-    {:else}
-      <p class="muted">{t("pages.roles.this_is_the_top_level_of_the_role")}</p>
-    {/each}
-  {/if}
-
-  {#if coverage}
-    <h3>{t("pages.roles.can_we_staff_this_role_today")}</h3>
-    <p class="muted">{coverage.derivation}</p>
-    <DataTable
-      testid="role-coverage"
-      label={t("pages.roles.can_we_staff_this_role_today")}
-      columns={coverageColumns}
-      rows={coverage.requirements as unknown as DataGridRow[]}
-      rowId={(row) => String(row.skill)}
-    />
-  {/if}
-
-  <h3>{t("pages.roles.require_a_skill")}</h3>
-  <form
-    onsubmit={(event) => {
-      event.preventDefault();
-      void addRequirement();
-    }}
-  >
-    <label>
-      {t("pages.roles.skill")}
-      <select data-testid="role-req-skill" bind:value={reqSkill} required>
-        <option value="" disabled>{t("pages.roles.choose")}</option>
-        {#each skills as skill (skill.pid)}
-          <option value={skill.pid}>{skill.name}</option>
-        {/each}
-      </select>
-    </label>
-    <label>
-      {t("pages.roles.minimum_proficiency")}
-      <select data-testid="role-req-level" bind:value={reqLevel}>
-        {#each [1, 2, 3, 4, 5] as level (level)}<option value={level}>{level}</option>{/each}
-      </select>
-    </label>
-    <label>
-      {t("pages.roles.importance")}
-      <select data-testid="role-req-importance" bind:value={reqImportance}>
-        {#each IMPORTANCES as importance (importance)}
-          <option value={importance}>{tv(importance)}</option>
-        {/each}
-      </select>
-    </label>
-    <button type="submit" data-testid="role-req-add">{t("pages.roles.add")}</button>
-  </form>
+  <RoleProfileDetail
+    {profile}
+    {skills}
+    {coverage}
+    {progression}
+    onchange={loadProfiles}
+    onfail={(message) => (error = message)}
+  />
 {/if}
 
 <style>

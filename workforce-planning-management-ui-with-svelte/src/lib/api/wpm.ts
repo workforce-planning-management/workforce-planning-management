@@ -2424,6 +2424,9 @@ export function changeReadiness(
   return api(`/change-initiatives/${pid}/readiness`, init);
 }
 
+/** How a demand line is staffed. */
+export const PLAN_BASES = ["permanent", "fixed_term", "contractor", "intern"] as const;
+
 /** Workforce plans (scenarios) in the caller's organizations. */
 export function listWorkforcePlans(init?: FetchLike): Promise<
   Array<{
