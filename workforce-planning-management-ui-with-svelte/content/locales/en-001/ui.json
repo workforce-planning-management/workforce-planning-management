@@ -1760,7 +1760,10 @@
     "pass": "pass",
     "key": "key",
     "returned": "returned",
-    "written_off": "written off"
+    "written_off": "written off",
+    "all": "everyone",
+    "department": "department",
+    "job_title": "job title"
   },
   "engagement": {
     "title": "Engagement",

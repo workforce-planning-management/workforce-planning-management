@@ -503,6 +503,26 @@ async fn ask_pay_information(
     ask_pay_information_for(&ctx, &caller, &worker).await
 }
 
+// ─── My policies ────────────────────────────────────────────────────────────
+
+/// `GET /api/me/policies` — the policies the caller is asked to acknowledge, and where they stand.
+#[debug_handler]
+async fn my_policies(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
+    let worker = me_worker(&ctx, &caller).await?;
+    super::policies::list_for(&ctx, &worker).await
+}
+
+/// `POST /api/me/policy-acknowledgements` — the caller says they have read the newest version in force aimed at them.
+#[debug_handler]
+async fn acknowledge_my_policy(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(payload): Json<super::policies::AckPayload>,
+) -> Result<Response> {
+    let worker = me_worker(&ctx, &caller).await?;
+    super::policies::acknowledge_for(&ctx, &caller, &worker, payload).await
+}
+
 // ─── My flexible working requests ───────────────────────────────────────────
 
 /// `GET /api/me/flexible-working` — the caller's own requests, newest first, each with its
@@ -645,6 +665,8 @@ pub fn routes() -> Routes {
             get(my_pay_information_requests),
         )
         .add("/me/pay-information-requests", post(ask_pay_information))
+        .add("/me/policies", get(my_policies))
+        .add("/me/policy-acknowledgements", post(acknowledge_my_policy))
         .add("/me/flexible-working", get(my_flexible_requests))
         .add("/me/flexible-working", post(request_flexible))
         .add(

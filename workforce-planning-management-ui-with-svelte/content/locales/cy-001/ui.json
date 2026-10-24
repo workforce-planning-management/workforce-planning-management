@@ -1760,7 +1760,10 @@
     "pass": "pàs",
     "key": "allwedd",
     "returned": "dychwelwyd",
-    "written_off": "dileu o'r cofnodion"
+    "written_off": "dileu o'r cofnodion",
+    "all": "pawb",
+    "department": "adran",
+    "job_title": "teitl swydd"
   },
   "engagement": {
     "title": "Ymgysylltiad",

@@ -1760,7 +1760,10 @@
     "pass": "داخلہ کارڈ",
     "key": "چابی",
     "returned": "واپس کر دیا گیا",
-    "written_off": "خارج کر دیا گیا"
+    "written_off": "خارج کر دیا گیا",
+    "all": "سب",
+    "department": "شعبہ",
+    "job_title": "عہدے کا نام"
   },
   "engagement": {
     "title": "تقرری",

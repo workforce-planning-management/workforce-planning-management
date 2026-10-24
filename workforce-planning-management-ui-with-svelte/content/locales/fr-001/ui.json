@@ -1760,7 +1760,10 @@
     "pass": "badge",
     "key": "clé",
     "returned": "restitué",
-    "written_off": "passé en perte"
+    "written_off": "passé en perte",
+    "all": "tous",
+    "department": "service",
+    "job_title": "intitulé de poste"
   },
   "engagement": {
     "title": "Engagement",

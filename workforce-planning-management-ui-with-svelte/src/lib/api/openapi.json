@@ -5863,6 +5863,48 @@
         ]
       }
     },
+    "/api/me/policies": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The policies"
+          }
+        },
+        "summary": "The caller's own policies to acknowledge, as /api/workers/{pid}/policies",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/me/policy-acknowledgements": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The day acknowledged",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "The caller says they have read the newest version in force aimed at them (body: version_pid). Their own act: the worker is the caller, so no one acknowledges for another, HR included. Idempotent: the first day is kept. Audited in the same transaction",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
     "/api/me/resignation": {
       "get": {
         "responses": {
@@ -7640,6 +7682,88 @@
         "summary": "Stage move; ready may regress to developing",
         "tags": [
           "talent"
+        ]
+      }
+    },
+    "/api/policies": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The policies"
+          }
+        },
+        "summary": "The organization's policies (?organization=) and their versions: title, a reference to the document (WPM holds no text), effective day, audience and calendar days to acknowledge",
+        "tags": [
+          "policies"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the policy",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Name a policy; a name is unique within the organization",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/policies/{pid}/versions": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid and number of the version",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add the next version (never an edit): title, document_ref with no spaces, effective_on, audience (all, department, job_title) with its value, acknowledge_within_days 1 to 365 (default 30). Every worker in its audience must acknowledge it again",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/policy-versions/{pid}/acknowledgements": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The record"
+          }
+        },
+        "summary": "The named record: everyone in the version's audience with the day they acknowledged or null. HR and the like only; the read is audited",
+        "tags": [
+          "policies"
         ]
       }
     },
@@ -11945,6 +12069,19 @@
         ]
       }
     },
+    "/api/workers/{pid}/policies": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The policies"
+          }
+        },
+        "summary": "The newest version in force of each policy aimed at the worker and where they stand: done, waiting or overdue (flagged, never forced), with a count waiting. The worker themself and HR",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
     "/api/workers/{pid}/registrations": {
       "get": {
         "responses": {
@@ -12237,6 +12374,19 @@
         "summary": "A person's open swap requests: incoming (asked of them) and outgoing",
         "tags": [
           "workforce"
+        ]
+      }
+    },
+    "/api/workers/{pid}/team-policy-counts": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The counts"
+          }
+        },
+        "summary": "For a manager (?version_pid=): how many of their direct reports in the audience have acknowledged and how many have not, from the floor; under it, nothing, since two numbers would name them",
+        "tags": [
+          "policies"
         ]
       }
     },

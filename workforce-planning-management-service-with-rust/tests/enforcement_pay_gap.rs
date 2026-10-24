@@ -256,6 +256,47 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(request.post("/api/assets").add_header("authorization", worker.clone()).json(&new_asset).await.status_code(), 403, "a worker adds none");
         assert_eq!(request.post("/api/assets").add_header("authorization", hr.clone()).json(&new_asset).await.status_code(), 200, "HR adds one");
 
+        // ── Policies: HR keeps them; the acknowledgement is the worker's own; the names are HR's ──
+        let me = request.post("/api/workers").add_header("authorization", svc.clone()).json(&json!({
+            "person_ref": format!("person:{worker_p}"), "organization_ref": org, "worker_number": "PGE-ME",
+            "display_name": "Pay Gap Enforcement Me", "employment_type": "permanent", "department": "engineering",
+            "job_title": "Engineer", "hired_on": "2020-01-05" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let policy_body = json!({ "organization_ref": org, "name": "Conduct" });
+        assert_eq!(request.post("/api/policies").json(&policy_body).await.status_code(), 401);
+        assert_eq!(request.post("/api/policies").add_header("authorization", worker.clone()).json(&policy_body).await.status_code(), 403, "a worker adds no policy");
+        let policy = request.post("/api/policies").add_header("authorization", hr.clone()).json(&policy_body).await;
+        assert_eq!(policy.status_code(), 200, "{}", policy.text());
+        let policy = policy.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let version = request.post(&format!("/api/policies/{policy}/versions")).add_header("authorization", hr.clone())
+            .json(&json!({ "title": "Conduct", "document_ref": "doc:conduct", "effective_on": "2026-01-01", "audience": "all" })).await;
+        assert_eq!(version.status_code(), 200, "{}", version.text());
+        let version = version.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let ack = "/api/me/policy-acknowledgements";
+        let ack_body = json!({ "version_pid": version });
+        assert_eq!(request.post(ack).json(&ack_body).await.status_code(), 401);
+        // It is the caller's own act: HR has no worker record of the audience here, and no route acknowledges for another.
+        assert_eq!(request.post(&format!("/api/workers/{me}/policy-acknowledgements")).add_header("authorization", hr.clone()).json(&ack_body).await.status_code(), 404, "there is no route to acknowledge for someone");
+        let own = request.post(ack).add_header("authorization", worker.clone()).json(&ack_body).await;
+        assert_eq!(own.status_code(), 200, "the worker's own: {}", own.text());
+        let again = request.post(ack).add_header("authorization", worker.clone()).json(&ack_body).await;
+        assert_eq!(again.json::<Value>()["acknowledged_on"], own.json::<Value>()["acknowledged_on"], "the first day is kept");
+        let mine = get("/api/me/policies".to_string(), worker.clone()).await;
+        assert_eq!(mine.json::<Value>()["waiting"], 0);
+        // A version that is not the newest in force cannot be acknowledged.
+        let newer = request.post(&format!("/api/policies/{policy}/versions")).add_header("authorization", hr.clone())
+            .json(&json!({ "title": "Conduct", "document_ref": "doc:conduct-2", "effective_on": "2026-02-01", "audience": "all" })).await;
+        assert_eq!(newer.status_code(), 200);
+        assert_eq!(request.post(ack).add_header("authorization", worker.clone()).json(&ack_body).await.status_code(), 422, "version 1 is superseded");
+        assert_eq!(get("/api/me/policies".to_string(), worker.clone()).await.json::<Value>()["waiting"], 1, "version 2 waits");
+        let named = format!("/api/policy-versions/{version}/acknowledgements");
+        assert_eq!(get(named.clone(), worker.clone()).await.status_code(), 403, "a worker does not read the names");
+        let record = get(named.clone(), hr.clone()).await;
+        assert_eq!(record.status_code(), 200, "{}", record.text());
+        assert!(record.text().contains("PGE-ME"), "HR sees who");
+        let counts = format!("/api/workers/{me}/team-policy-counts?version_pid={version}");
+        assert_eq!(get(counts.clone(), worker.clone()).await.status_code(), 200, "a manager (here, any worker as themself) reads counts, which are nothing under the floor");
+        assert_eq!(get(counts, hr.clone()).await.status_code(), 200);
+
         // ── The AI register: any signed-in caller reads it; HR records; nobody else ──────────────────
         assert_eq!(request.get("/api/ai-register").await.status_code(), 401);
         assert_eq!(get("/api/ai-register".to_string(), worker.clone()).await.status_code(), 200, "a worker reads how people are scored");
@@ -341,7 +382,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         ctx.db.execute_unprepared("DELETE FROM equality_declarations").await.unwrap();
         let none: Value = get(report.clone(), payroll.clone()).await.json();
         assert_eq!(none["report"]["categories"][0]["basic"], json!({ "status": "unknown", "value": "no_workers" }));
-        assert_eq!(none["report"]["exclusions"]["no_sex_declared"], json!({ "status": "exactly", "value": 14 }));
+        assert_eq!(none["report"]["exclusions"]["no_sex_declared"], json!({ "status": "exactly", "value": 15 })); // twelve engineers, HR, payroll and the policy test's worker
     })
     .await;
 }

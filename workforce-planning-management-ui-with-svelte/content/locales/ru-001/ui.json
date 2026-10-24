@@ -1760,7 +1760,10 @@
     "pass": "пропуск",
     "key": "ключ",
     "returned": "возвращено",
-    "written_off": "списано"
+    "written_off": "списано",
+    "all": "все",
+    "department": "отдел",
+    "job_title": "должность"
   },
   "engagement": {
     "title": "Трудовые отношения",

@@ -1760,7 +1760,10 @@
     "pass": "通行证",
     "key": "钥匙",
     "returned": "已归还",
-    "written_off": "已核销"
+    "written_off": "已核销",
+    "all": "所有人",
+    "department": "部门",
+    "job_title": "职位名称"
   },
   "engagement": {
     "title": "用工关系",

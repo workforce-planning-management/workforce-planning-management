@@ -1760,7 +1760,10 @@
     "pass": "kartu akses",
     "key": "kunci",
     "returned": "dikembalikan",
-    "written_off": "dihapusbukukan"
+    "written_off": "dihapusbukukan",
+    "all": "semua orang",
+    "department": "departemen",
+    "job_title": "jabatan"
   },
   "engagement": {
     "title": "Keterlibatan",

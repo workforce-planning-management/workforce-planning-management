@@ -1760,7 +1760,10 @@
     "pass": "tarjeta de acceso",
     "key": "llave",
     "returned": "devuelto",
-    "written_off": "dado de baja"
+    "written_off": "dado de baja",
+    "all": "todos",
+    "department": "departamento",
+    "job_title": "puesto"
   },
   "engagement": {
     "title": "Contratación",

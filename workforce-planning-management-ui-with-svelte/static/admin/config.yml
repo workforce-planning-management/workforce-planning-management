@@ -2408,6 +2408,9 @@ collections:
               - { name: "key", label: "Key", widget: string, required: false, i18n: true }
               - { name: "returned", label: "Returned", widget: string, required: false, i18n: true }
               - { name: "written_off", label: "Written_off", widget: string, required: false, i18n: true }
+              - { name: "all", label: "All", widget: string, required: false, i18n: true }
+              - { name: "department", label: "Department", widget: string, required: false, i18n: true }
+              - { name: "job_title", label: "Job_title", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

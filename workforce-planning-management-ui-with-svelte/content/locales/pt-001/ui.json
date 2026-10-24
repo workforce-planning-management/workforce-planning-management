@@ -1760,7 +1760,10 @@
     "pass": "cartão de acesso",
     "key": "chave",
     "returned": "devolvido",
-    "written_off": "abatido"
+    "written_off": "abatido",
+    "all": "todos",
+    "department": "departamento",
+    "job_title": "cargo"
   },
   "engagement": {
     "title": "Vínculo",

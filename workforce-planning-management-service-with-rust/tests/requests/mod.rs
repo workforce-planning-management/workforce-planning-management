@@ -43,6 +43,7 @@ mod organizations;
 mod pagination;
 mod org_shape;
 mod pay_assessment;
+mod policies;
 mod positions;
 mod pay_information;
 mod pay_positions;

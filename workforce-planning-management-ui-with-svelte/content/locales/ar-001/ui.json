@@ -1760,7 +1760,10 @@
     "pass": "بطاقة دخول",
     "key": "مفتاح",
     "returned": "أُعيد",
-    "written_off": "شُطب"
+    "written_off": "شُطب",
+    "all": "الجميع",
+    "department": "القسم",
+    "job_title": "المسمى الوظيفي"
   },
   "engagement": {
     "title": "التعاقد",

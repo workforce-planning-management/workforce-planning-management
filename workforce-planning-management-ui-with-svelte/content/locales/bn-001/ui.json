@@ -1760,7 +1760,10 @@
     "pass": "প্রবেশপত্র",
     "key": "চাবি",
     "returned": "ফেরত দেওয়া হয়েছে",
-    "written_off": "বাতিল করা হয়েছে"
+    "written_off": "বাতিল করা হয়েছে",
+    "all": "সবাই",
+    "department": "বিভাগ",
+    "job_title": "পদবি"
   },
   "engagement": {
     "title": "নিয়োগ",

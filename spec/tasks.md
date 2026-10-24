@@ -4528,8 +4528,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       **Not done:** a screen; the owner role as a permission of its own; the manager's count of open issues; equipment as items on the
       leaver checklist and in the handover trail (only the gate and a per-worker list); retiring or importing assets; Playwright and
       `svelte-check` (no UI change beyond strings and types); the `keycloak` and `chaos` binaries.
-- [ ] WPM-T283 **Policies and acknowledgements.** *(WPM-R156, WPM-D105)* Versioned policies by audience; acknowledgement per
+- [~] (2026-10-24) WPM-T283 **Policies and acknowledgements.** *(WPM-R156, WPM-D105)* Versioned policies by audience; acknowledgement per
       version; manager counts; HR's named, audited record.
+      Done in part: the API, no screen. Migration `m20261024_000089_policies` (no column for policy text), `rules::policy` (6 unit
+      tests; six deliberate faults tried, all caught), `controllers/policies.rs`, `GET /api/me/policies` and `POST
+      /api/me/policy-acknowledgements` (on the self-service write list), strings for the three audiences in the 13 locales (AI-written,
+      unreviewed). Found on the way: the reference policy gives a worker no write, so an acknowledgement through
+      `/api/workers/{pid}/...` would have been refused for everyone but the service; it is under `/api/me` instead, which also means no
+      route acknowledges for someone else. Verified (Postgres 18, Podman): 788 unit tests, 150 request tests (new: bad versions, a
+      duplicate name, a version aimed at one department, the newest version replacing the old, counts of 4 and 6 of ten, nothing for a
+      team of three, no pid in a count, HR's named list, the list by reference), `enforcement_pay_gap` (a worker adds no policy; HR has no
+      route to acknowledge for a worker; the worker's own acknowledgement; the first day kept; a superseded version 422; the named record
+      403 for a worker and 200 for HR; counts for the manager as themself), the other listed `enforcement_*` binaries, `security`,
+      `route_coverage` (it caught a missing call to the list, now added), clippy pedantic clean; UI 209 unit tests. **Not done:** a
+      screen; a reminder notification; role-profile audiences; a policy on the joiners' checklist; erasure and export were extended but
+      are not asserted by a test; a manager other than themself without HR access (403) is not asserted; Playwright and `svelte-check`
+      (no UI change beyond strings and types); the `keycloak` and `chaos` binaries.
 - [ ] WPM-T284 **Verifiable credentials and the skills crosswalk.** *(WPM-R157, WPM-R158)* Open Badges 3.0 issuance with a
       revocation list; `skill_mappings` with basis and confidence, read by gap analysis; `unknown` for an unmapped skill.
 - [ ] WPM-T285 **Verification and documents.** *(WPM-R144–R158)* Full suites, enforcement tests for every new route, strings

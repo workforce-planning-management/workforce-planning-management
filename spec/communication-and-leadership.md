@@ -78,7 +78,7 @@ next.*
   page scroll **and** for any tile clipping its own content (tiles hide
   overflow, so a page-level check alone would miss it).
 
-## Policies and acknowledgements (WPM-R156, proposed; spec round WPM-T268)
+## Policies and acknowledgements (WPM-R156; spec round WPM-T268, built WPM-T283)
 
 - **A policy** has versions; a **version** has a title, an effective date and an audience (all workers, a department, a role
   profile, an organization). The text is held by reference (a document the deployer keeps); WPM stores no policy body.
@@ -88,6 +88,33 @@ next.*
   how many have not, with the floor; **HR sees who**, because evidence is sometimes required, and that read is audited. A worker sees
   only their own.
 - **Not done.** No e-signature (an acknowledgement is not a signed contract term), no quiz, no policy authoring. Delivery: WPM-T283.
+
+**Built (WPM-T283).** Migration `m20261024_000089_policies` (`policies`, `policy_versions`, `policy_acknowledgements`; **no column for
+policy text**), `rules::policy` (pure), `controllers/policies.rs`.
+- **Policies and versions.** `GET|POST /api/policies`, `POST /api/policies/{pid}/versions` (HR and the like write; any signed-in
+  caller in the organization reads). A version is numbered by the service, never edited (a change is a new version), and holds a
+  title, a `document_ref` (a reference with no spaces, so a sentence cannot be pasted in), an effective day, an audience and the
+  calendar days allowed to acknowledge (1 to 365, default 30). **Audiences built:** `all`, `department` and `job_title` (matched
+  without regard to case). The spec's "role profile" and "organization" are not built: a policy belongs to one organization already,
+  and WPM has no worker-to-role-profile link to match on.
+- **What a worker is asked.** The **newest version in force** of each policy aimed at them (`current`); a version not yet in force
+  is not asked about, and an older one is superseded. Standing is `done` (with the day), `waiting` (with the day due) or `overdue`
+  (with calendar days late): flagged, never forced; a late acknowledgement is just `done`.
+- **The acknowledgement is the worker's own act.** `POST /api/me/policy-acknowledgements` (body `version_pid`) and `GET
+  /api/me/policies` resolve the worker from the caller's token; there is no route that acknowledges for someone else, so HR cannot.
+  Only the newest version in force can be acknowledged (422 otherwise); a version not aimed at them is 404; idempotent, the first day
+  kept; audited in the same transaction. `GET /api/workers/{pid}/policies` is the same list for the worker or HR to read.
+- **Counts for a manager (WPM-D105).** `GET /api/workers/{pid}/team-policy-counts?version_pid=`, read as the manager `{pid}`: of
+  their direct reports in the audience (employed today), how many have acknowledged and how many have not, from the floor (10); with
+  fewer in the audience, `withheld`, because two numbers would name them. Someone other than the manager needs HR's access. The
+  manager needs no organization membership to read their own team's counts.
+- **The named record, HR only.** `GET /api/policy-versions/{pid}/acknowledgements` lists everyone in the audience with the day they
+  acknowledged or null; it is need-to-know "privileged" and **every read is audited** (`policy_acknowledgements_read`, with the size of
+  the audience, not the names).
+- **Subject access and erasure.** The export lists the person's acknowledgements; erasure deletes them. Policies and versions stay.
+- **Not built:** a screen; a reminder notification; role-profile audiences; an acknowledgement requirement on joiners' checklists; the
+  document reached through WPM (only the reference is held).
+
 
 ### Design decision
 

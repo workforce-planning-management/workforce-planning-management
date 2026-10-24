@@ -1760,7 +1760,10 @@
     "pass": "Ausweis",
     "key": "Schlüssel",
     "returned": "zurückgegeben",
-    "written_off": "abgeschrieben"
+    "written_off": "abgeschrieben",
+    "all": "alle",
+    "department": "Abteilung",
+    "job_title": "Stellenbezeichnung"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

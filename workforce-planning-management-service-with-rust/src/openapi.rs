@@ -620,6 +620,28 @@ fn add_integration_paths(document: &mut Value) {
         "/api/workers/{pid}/equipment": {
             "get": { "tags": ["equipment"], "summary": "What a worker holds and has held, and how many pieces are still out. The worker themself and HR", "responses": ok("The issues") }
         },
+        "/api/policies": {
+            "get": { "tags": ["policies"], "summary": "The organization's policies (?organization=) and their versions: title, a reference to the document (WPM holds no text), effective day, audience and calendar days to acknowledge", "responses": ok("The policies") },
+            "post": { "tags": ["policies"], "summary": "Name a policy; a name is unique within the organization", "responses": ok("The pid of the policy") }
+        },
+        "/api/policies/{pid}/versions": {
+            "post": { "tags": ["policies"], "summary": "Add the next version (never an edit): title, document_ref with no spaces, effective_on, audience (all, department, job_title) with its value, acknowledge_within_days 1 to 365 (default 30). Every worker in its audience must acknowledge it again", "responses": ok("The pid and number of the version") }
+        },
+        "/api/workers/{pid}/policies": {
+            "get": { "tags": ["policies"], "summary": "The newest version in force of each policy aimed at the worker and where they stand: done, waiting or overdue (flagged, never forced), with a count waiting. The worker themself and HR", "responses": ok("The policies") }
+        },
+        "/api/me/policy-acknowledgements": {
+            "post": { "tags": ["policies"], "summary": "The caller says they have read the newest version in force aimed at them (body: version_pid). Their own act: the worker is the caller, so no one acknowledges for another, HR included. Idempotent: the first day is kept. Audited in the same transaction", "responses": ok("The day acknowledged") }
+        },
+        "/api/me/policies": {
+            "get": { "tags": ["policies"], "summary": "The caller's own policies to acknowledge, as /api/workers/{pid}/policies", "responses": ok("The policies") }
+        },
+        "/api/workers/{pid}/team-policy-counts": {
+            "get": { "tags": ["policies"], "summary": "For a manager (?version_pid=): how many of their direct reports in the audience have acknowledged and how many have not, from the floor; under it, nothing, since two numbers would name them", "responses": ok("The counts") }
+        },
+        "/api/policy-versions/{pid}/acknowledgements": {
+            "get": { "tags": ["policies"], "summary": "The named record: everyone in the version's audience with the day they acknowledged or null. HR and the like only; the read is audited", "responses": ok("The record") }
+        },
         "/api/reports/pay-range": {
             "get": { "tags": ["reports"], "summary": "Pay position analysis (?organization=&as_of=&cutoff=): compa-ratio (pay over the band midpoint) and range penetration per band, level, department and location, and the groups far from everyone (cut-off in percentage points, default 10). Aggregates: groups under the floor are withheld with no count, a total that would reveal one is not shown, workers with no pay or no band are counted not zeroed. Needs an unmasked salary read; proposes no pay change. Audited", "responses": ok("The analysis") }
         },

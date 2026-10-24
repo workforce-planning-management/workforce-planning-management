@@ -57,7 +57,7 @@ applied to HR.
 | positions (WPM-R152) | medium — HR and planners; the holder link is HR only, a manager sees counts |
 | pay position analysis (WPM-R154) | highest — roles that may read salaries; groups under the floor withheld |
 | equipment issues (WPM-R155) | low — HR writes and lists assets, the worker sees their own issues; no manager count yet |
-| policy acknowledgements (WPM-R156, proposed) | medium — the worker's own; a manager sees counts; HR sees names (audited) |
+| policy acknowledgements (WPM-R156) | medium — the worker's own; a manager sees counts; HR sees names (audited) |
 | credential issuances, skill mappings (WPM-R157–R158, proposed) | low — the worker's own issuances; mappings are reference data |
 
 Every read of a highest/high-tier record is **audited** (see
