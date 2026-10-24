@@ -43,7 +43,8 @@ Notification::push(&txn, worker_pid, "kind", "reference-only text", json!({…})
 - Validation errors: `unprocessable("message")` (422). Unknown pid / out of
   scope: `Error::NotFound` (404). `records::find_worker(db, pid)` etc. return 404.
 - Multi-step writes in one transaction (`ctx.db.begin()`); put the audit row and
-  any notification in it.
+  any notification in it. **No audit, no write** (WPM-D107): if the audit row cannot be written the
+  transaction rolls back and the request fails; never audit after the commit or ignore the audit error.
 - Lists: `Page { limit, offset }`, `check_offset()`, `with_page_headers(...)`
   (`x-total-count`).
 - Never put a sensitive detail in an audit snapshot or a notification body.

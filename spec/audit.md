@@ -19,6 +19,26 @@ counts) carry their detail in the snapshot.
 happened, never who made it, because an actor-stamped row would
 silently defeat the structural anonymity.
 
+## No audit, no write (WPM-D107)
+
+**When a write's audit row cannot be written, the write is refused.** A change that cannot say who made it and when is not made.
+
+- The audit row is written **in the same database transaction as the change** it records, so if the insert fails the transaction
+  rolls back, nothing of the change is kept, and the caller gets a failure (a `5xx`, never a success). No handler catches an audit
+  error and carries on, and none writes the audit row after the commit "best effort".
+- **A read that must be audited is refused too.** The audit of a sensitive read (salary, a pay gap report, a subject-access export) is
+  written before the answer is returned, and if it fails the answer is not given, so no one reads what the trail cannot show they
+  read.
+- **How it is held.** A source test (`every_audit_of_a_change_is_in_its_transaction`, WPM-T250) fails the build when an `Audit::record`
+  outside a transaction is not on its list of read audits, and each new controller's request tests assert the audit row exists for
+  each change. A deployment that cannot afford the refusal (the audit table full, its lock contended: see **Cost** below) has an
+  availability problem to fix, not a rule to relax.
+- **Not a reason to drop the row.** Audit rows are never skipped to keep a request fast, and a snapshot that would hold personal data
+  is shortened or left out, never the row.
+
+Rejected: writing the audit asynchronously after the change (a crash between the two leaves a change with no trail, which is the
+gap WPM-T250 closed), and refusing only "important" writes (every mutation is audited, so every mutation is refused alike).
+
 ## Audited by the Phase 23 proposals (spec round WPM-T268)
 
 Each of these, once built, writes an audit row on every change and on every read of what is named (WPM-T285 checks it): a
