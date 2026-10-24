@@ -196,6 +196,35 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
             }
         }
 
+        // ── The joint assessment signal: read like the report, recorded by those who may write ──────
+        let signal = format!("/api/pay-transparency/joint-assessment?organization={org}&currency=GBP&reported_on=2020-01-01");
+        assert_eq!(request.get(&signal).await.status_code(), 401);
+        assert_eq!(get(signal.clone(), worker.clone()).await.status_code(), 403, "a worker");
+        assert_eq!(get(signal.clone(), hr.clone()).await.status_code(), 403, "HR reads salaries masked");
+        let due: Value = get(signal.clone(), payroll.clone()).await.json();
+        assert_eq!(due["categories"][0]["signal"]["status"], "due", "ten percent, reported years ago, nothing recorded");
+        let record = json!({ "organization_ref": org, "category": "Engineering", "reported_on": "2020-01-01",
+            "justified": true, "justification": "Different grades under the published job evaluation scheme." });
+        let records = format!("/api/pay-transparency/assessment-records?organization={org}");
+        assert_eq!(request.put("/api/pay-transparency/assessment-records").json(&record).await.status_code(), 401);
+        assert_eq!(request.put("/api/pay-transparency/assessment-records").add_header("authorization", worker.clone()).json(&record).await.status_code(), 403, "a worker");
+        assert_eq!(request.put("/api/pay-transparency/assessment-records").add_header("authorization", payroll.clone()).json(&record).await.status_code(), 403, "payroll reads, it does not record");
+        let put = request.put("/api/pay-transparency/assessment-records").add_header("authorization", hr.clone()).json(&record).await;
+        assert_eq!(put.status_code(), 200, "HR records: {}", put.text());
+        assert_eq!(get(records.clone(), worker.clone()).await.status_code(), 403, "a worker does not read the records");
+        assert_eq!(get(records.clone(), hr.clone()).await.status_code(), 200);
+        let after: Value = get(signal.clone(), payroll.clone()).await.json();
+        assert_eq!(after["categories"][0]["signal"], json!({ "status": "not_due", "why": "justified" }));
+        assert!(!after.to_string().contains("Pay Gap Enforcement"), "no worker named");
+        let audits = ctx.db.query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
+            "SELECT snapshot::text AS snapshot FROM audit_logs WHERE action IN ('pay_assessment_recorded', 'joint_assessment_read')".to_string()))
+            .await.unwrap();
+        assert!(audits.len() >= 2);
+        for row in &audits {
+            let snapshot: Option<String> = row.try_get("", "snapshot").unwrap();
+            assert!(!snapshot.unwrap_or_default().contains("job evaluation"), "the words are not in the audit");
+        }
+
         // ── Take the sex answers away and there is nothing to compare ────────────────────
         ctx.db.execute_unprepared("DELETE FROM equality_declarations").await.unwrap();
         let none: Value = get(report.clone(), payroll.clone()).await.json();

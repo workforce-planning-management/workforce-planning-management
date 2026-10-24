@@ -46,6 +46,7 @@ pub mod health_requirements;
 pub mod idempotency;
 pub mod insights;
 pub mod job_levels;
+pub mod joint_assessment;
 pub mod key_person;
 pub mod learning;
 pub mod leave;

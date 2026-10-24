@@ -132,15 +132,31 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
 - **When.** Article 10(1): where the report shows an average pay gap of **at least 5%** between female and male workers in a
   category of workers, **and** the employer has not justified the gap on objective, gender-neutral criteria, **and** has not
   remedied it **within six months** of the date of reporting, the employer carries out a joint pay assessment with the workers'
-  representatives. Both the 5% and the six months are configuration with these defaults; the Commission is to review the 5%
-  trigger by 7 June 2033, as the Directive's review clause is summarised on EUR-Lex.
-- **What WPM does.** The pure rule (WPM-T272) takes the indicators, the threshold, the period and the recorded justification
-  and reports `due`, `not_due` or `unknown` per category; `unknown` where the gap itself is withheld or unknown. It reports; **a
-  person records** whether the gap was justified, whether it was remedied, and the assessment's outcome, with the date. It links to
-  the recognised body for that organization ([worker-unions.md](worker-unions.md), WPM-R102–R108) so the workers'
-  representatives are the ones the organization already recognises. It never concludes that anyone was paid unfairly.
-- **Not done.** No individual pay is compared, no remedy is calculated and no worker is told they are in an affected category by
-  the service.
+  representatives. Both the 5% (`WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, a whole number) and the six calendar months
+  (`WPM_JOINT_ASSESSMENT_MONTHS`) are configuration with these defaults, checked (1 to 50 percent, 1 to 24 months); the Commission is
+  to review the 5% trigger by 7 June 2033, as the Directive's review clause is summarised on EUR-Lex.
+- **What WPM does** (WPM-T272, `rules::joint_assessment`). For each category it takes the category's gap in **basic pay** (the one
+  gap WPM can show, see R144) and reports a signal: `unknown` (the gap is withheld under the floor, or cannot be worked out: never
+  "nothing due"), `not_due` (under the threshold, **either way**, or a justification, a remedy in time, or the assessment is recorded),
+  `pending` (at or over the threshold and still inside the period; before a report date is known the clock has not started and
+  `remedy_by` is empty) and `due` (the period ran out with the gap neither justified nor remedied in time). The last day is the
+  report date plus the period in calendar months (a month-end clamps; the last day itself is still in time). **A remedy dated after
+  the last day does not undo that the period ran out.** An assessment carried out outranks a justification.
+- **A person records** (`PUT /api/pay-transparency/assessment-records`, replacing what was there for that category and report date):
+  whether the gap is justified and **on what criteria, in words** (required, 10 to 1,000 characters, only with `justified: true`);
+  the day it was remedied; the day the joint assessment was carried out with its **outcome from a closed list**
+  (`no_unjustified_difference`, `difference_found_remedy_planned`, `difference_remedied`: never a verdict on a person); and the
+  **body or group of workers' representatives** it was done with, by name, at most 200 characters. Dates cannot precede the report.
+  `GET /api/pay-transparency/assessment-records` lists them. The signal is
+  `GET /api/pay-transparency/joint-assessment?organization=&reported_on=&as_of=&currency=` (the latest recorded report date for a
+  category when none is given); it reads salaries, so it needs the unmasked read of the report (payroll, administrators; HR is
+  refused), and the read is audited with the day and the number of categories, no figure. A write is audited without its words.
+- **The link to the recognised body is a name for now.** The recognised bodies of [worker-unions.md](worker-unions.md)
+  (WPM-R102 to R108, WPM-T173) are not built, so the representatives are recorded as a name; when they are, the name becomes a
+  reference to one. WPM-T272 says so rather than invent the table.
+- **Not done.** No individual pay is compared, no remedy is calculated, no worker is told they are in an affected category, and the
+  service does not decide whether a justification is objective or gender-neutral: a person records that it is, and the workers'
+  representatives may disagree (the Directive's own route to an assessment when they do) outside WPM.
 
 ## Design decisions
 

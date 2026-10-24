@@ -7213,6 +7213,46 @@
         ]
       }
     },
+    "/api/pay-transparency/assessment-records": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The records"
+          }
+        },
+        "summary": "What has been recorded for categories and report dates (?organization=), newest report first",
+        "tags": [
+          "pay-transparency"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the record",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record, for a category and a report date, whether the gap was justified (and on what), when it was remedied, and whether the joint assessment was carried out and how it ended (outcome from a closed list); replaces what was there; never a verdict on a person",
+        "tags": [
+          "pay-transparency"
+        ]
+      }
+    },
     "/api/pay-transparency/gap-report": {
       "get": {
         "responses": {
@@ -7234,6 +7274,19 @@
           }
         },
         "summary": "The same report as CSV, one row per figure with the two figures each gap comes from; the export is audited",
+        "tags": [
+          "pay-transparency"
+        ]
+      }
+    },
+    "/api/pay-transparency/joint-assessment": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The signals"
+          }
+        },
+        "summary": "For each category of workers, whether a joint pay assessment with workers' representatives is due, pending or not due (?organization=&reported_on=&as_of=&currency=): the category's gap in basic pay at or over the threshold (default 5%, either way), not justified, not remedied within the period (default six calendar months) from the date of reporting. Reports only; a person records. Needs unmasked salary read; audited with no figure",
         "tags": [
           "pay-transparency"
         ]

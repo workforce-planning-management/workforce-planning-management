@@ -48,6 +48,7 @@ applied to HR.
 | announcement read receipts | the reader's own; editors see a count only |
 | joiner / leaver records, handover | HR and whoever may write the worker's record; scoped to organizations the caller can read |
 | pay gap report (WPM-R144) | highest — callers who may read salaries unmasked (payroll, administrators; **HR, who reads them masked, is refused**), in the organization's scope; aggregates with the floor, no worker named, every read and export audited ([pay-transparency.md](pay-transparency.md)) |
+| joint pay assessment signal and records (WPM-R146) | highest for the signal (the same unmasked salary read as the report; HR is refused); the records are read by privileged callers and written by those the policy lets write; the audit holds the dates and whether, never the words or a figure |
 | pay categories (WPM-R144) | medium — read by privileged callers; written by those the policy lets write; no personal data |
 | a pay information request (WPM-R145) | high — the worker (their own, by `/api/me`) and privileged callers (who asked, when due: no figure); the answer is worked out only for a caller who may read salaries unmasked and recorded only by one who may write; the audit entry names no figure |
 | the human capital report (WPM-R147, proposed) | medium — HR and configured roles; aggregates only |

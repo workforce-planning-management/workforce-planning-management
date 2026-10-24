@@ -1685,7 +1685,10 @@
     "rescinded": "रद्द किया गया",
     "not_recorded": "दर्ज नहीं",
     "due_soon": "शीघ्र देय",
-    "overdue": "विलंबित"
+    "overdue": "विलंबित",
+    "no_unjustified_difference": "कोई अनुचित अंतर नहीं मिला",
+    "difference_found_remedy_planned": "अंतर मिला; सुधार की योजना है",
+    "difference_remedied": "अंतर दूर किया गया"
   },
   "engagement": {
     "title": "नियुक्ति",

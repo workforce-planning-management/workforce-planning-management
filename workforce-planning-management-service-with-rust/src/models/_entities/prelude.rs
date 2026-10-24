@@ -79,6 +79,7 @@ pub use super::pipeline_members::Entity as PipelineMembers;
 pub use super::plan_demand_lines::Entity as PlanDemandLines;
 pub use super::plan_escalations::Entity as PlanEscalations;
 pub use super::plan_objectives::Entity as PlanObjectives;
+pub use super::pay_assessment_records::Entity as PayAssessmentRecords;
 pub use super::pay_categories::Entity as PayCategories;
 pub use super::pay_information_requests::Entity as PayInformationRequests;
 pub use super::plan_tolerances::Entity as PlanTolerances;

@@ -2323,6 +2323,9 @@ collections:
               - { name: "not_recorded", label: "Not_recorded", widget: string, required: false, i18n: true }
               - { name: "due_soon", label: "Due_soon", widget: string, required: false, i18n: true }
               - { name: "overdue", label: "Overdue", widget: string, required: false, i18n: true }
+              - { name: "no_unjustified_difference", label: "No_unjustified_difference", widget: string, required: false, i18n: true }
+              - { name: "difference_found_remedy_planned", label: "Difference_found_remedy_planned", widget: string, required: false, i18n: true }
+              - { name: "difference_remedied", label: "Difference_remedied", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

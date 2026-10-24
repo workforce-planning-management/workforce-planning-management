@@ -540,6 +540,13 @@ fn add_governance_paths(document: &mut Value) {
         "/api/pay-information-requests/{pid}/answered": {
             "post": { "tags": ["pay-transparency"], "summary": "Record that the answer was given, and when; the figures are not recorded", "responses": ok("The request") }
         },
+        "/api/pay-transparency/joint-assessment": {
+            "get": { "tags": ["pay-transparency"], "summary": "For each category of workers, whether a joint pay assessment with workers' representatives is due, pending or not due (?organization=&reported_on=&as_of=&currency=): the category's gap in basic pay at or over the threshold (default 5%, either way), not justified, not remedied within the period (default six calendar months) from the date of reporting. Reports only; a person records. Needs unmasked salary read; audited with no figure", "responses": ok("The signals") }
+        },
+        "/api/pay-transparency/assessment-records": {
+            "get": { "tags": ["pay-transparency"], "summary": "What has been recorded for categories and report dates (?organization=), newest report first", "responses": ok("The records") },
+            "put": { "tags": ["pay-transparency"], "summary": "Record, for a category and a report date, whether the gap was justified (and on what), when it was remedied, and whether the joint assessment was carried out and how it ended (outcome from a closed list); replaces what was there; never a verdict on a person", "responses": ok("The pid of the record") }
+        },
         "/api/pay-transparency/gap-report/csv": {
             "get": { "tags": ["pay-transparency"], "summary": "The same report as CSV, one row per figure with the two figures each gap comes from; the export is audited", "responses": ok("A CSV file") }
         }

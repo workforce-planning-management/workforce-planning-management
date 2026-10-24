@@ -1685,7 +1685,10 @@
     "rescinded": "annulée",
     "not_recorded": "non enregistré",
     "due_soon": "échéance proche",
-    "overdue": "en retard"
+    "overdue": "en retard",
+    "no_unjustified_difference": "Aucune différence injustifiée constatée",
+    "difference_found_remedy_planned": "Différence constatée ; correction prévue",
+    "difference_remedied": "Différence corrigée"
   },
   "engagement": {
     "title": "Engagement",

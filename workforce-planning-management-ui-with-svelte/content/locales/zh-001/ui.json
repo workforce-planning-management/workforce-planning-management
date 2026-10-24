@@ -1685,7 +1685,10 @@
     "rescinded": "已撤销",
     "not_recorded": "未记录",
     "due_soon": "即将到期",
-    "overdue": "已逾期"
+    "overdue": "已逾期",
+    "no_unjustified_difference": "未发现不合理差异",
+    "difference_found_remedy_planned": "发现差异；已计划纠正",
+    "difference_remedied": "差异已纠正"
   },
   "engagement": {
     "title": "用工关系",

@@ -1685,7 +1685,10 @@
     "rescinded": "ملغى",
     "not_recorded": "غير مسجّل",
     "due_soon": "يستحق قريبًا",
-    "overdue": "متأخر"
+    "overdue": "متأخر",
+    "no_unjustified_difference": "لم يُعثر على فرق غير مبرَّر",
+    "difference_found_remedy_planned": "وُجد فرق؛ والمعالجة مخطَّط لها",
+    "difference_remedied": "تمت معالجة الفرق"
   },
   "engagement": {
     "title": "التعاقد",

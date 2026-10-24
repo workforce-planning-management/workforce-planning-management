@@ -4361,8 +4361,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `svelte-check` after regenerating the types. Not done: **HR's answer screen** (and the worker's own page for asking, with the
       13 locales of strings and screenshots), so the task stays open; the yearly notice; a worker's view of an answer (HR gives it to
       them; WPM keeps no copy); the other `enforcement_*` binaries were not re-run.
-- [ ] WPM-T272 **Joint pay assessment trigger.** *(WPM-R146)* Pure rule over the indicators and configured threshold and
+- [x] (2026-10-24) WPM-T272 **Joint pay assessment trigger.** *(WPM-R146)* Pure rule over the indicators and configured threshold and
       period; a "due" signal linked to the recognised body (Phase 18). It reports; a person records the decision.
+      Done: `rules::joint_assessment` (signal unknown, not due, pending or due; threshold either way; the last day in calendar months
+      with month-end clamping; a late remedy does not undo it; an assessment outranks a justification; record validation; checked
+      configuration; 9 tests), migration `m20261024_000082_pay_assessment_records` (one record per organization, category and report
+      date, with the closed outcome list and the justification-iff-justified and outcome-iff-assessed checks), and
+      `controllers/pay_assessment.rs` (`GET /api/pay-transparency/joint-assessment`, `GET` and `PUT /api/pay-transparency/assessment-records`).
+      It reports; a person records. The link to the recognised body is a recorded name, because Phase 18's bodies are not built.
+      Three `values.*` words for the outcomes in the 13 locales (AI-written, unreviewed). Verified (Postgres 18, Podman): 685 unit
+      tests, 140 request tests (3 new: the signal across the clock and every recording, a hidden gap and a missing setup, and
+      **no audit, no write** (WPM-D107): with an audit table that refuses every insert a category and an assessment record are both
+      refused and rolled back), `enforcement_pay_gap` (extended: a worker and HR refused the signal, payroll given it, a worker and
+      payroll refused the write, HR recording, no words in the audit), `enforcement_pay_information`, `enforcement_equality`,
+      `enforcement`, `route_coverage`, clippy pedantic clean, 209 UI unit tests and `svelte-check` after regenerating the types. Not
+      done: a screen for the signal and the records (with the pay gap and pay information screens, WPM-T270 and WPM-T271 part 2);
+      the other `enforcement_*` binaries were not re-run.
 - [ ] WPM-T273 **Human capital report.** *(WPM-R147, WPM-D100)* A dated, read-only report from existing measures, each with
       metric name, definition, source and exclusions; `unknown` where WPM cannot compute it; a test that no licensed text is in
       the repo.

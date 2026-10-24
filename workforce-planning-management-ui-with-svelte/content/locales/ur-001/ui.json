@@ -1685,7 +1685,10 @@
     "rescinded": "منسوخ شدہ",
     "not_recorded": "درج نہیں",
     "due_soon": "جلد واجب الادا",
-    "overdue": "تاخیر شدہ"
+    "overdue": "تاخیر شدہ",
+    "no_unjustified_difference": "کوئی غیر مناسب فرق نہیں ملا",
+    "difference_found_remedy_planned": "فرق ملا؛ اصلاح کا منصوبہ ہے",
+    "difference_remedied": "فرق دور کر دیا گیا"
   },
   "engagement": {
     "title": "تقرری",

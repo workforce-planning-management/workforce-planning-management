@@ -59,13 +59,13 @@ pub(crate) struct ListQuery {
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct ReportQuery {
-    organization: String,
+    pub(crate) organization: String,
     /// The day the workforce is taken on; default today.
-    as_of: Option<NaiveDate>,
+    pub(crate) as_of: Option<NaiveDate>,
     /// ISO-4217 currency; default the most common among workers with a salary.
-    currency: Option<String>,
+    pub(crate) currency: Option<String>,
     /// `all_known` (default) or `recipients_only`: who a gap in variable pay is taken over.
-    variable: Option<String>,
+    pub(crate) variable: Option<String>,
 }
 
 fn organization_problems(value: &str) -> Vec<String> {
@@ -256,14 +256,14 @@ pub(crate) async fn remove_category(
 }
 
 /// What the report and its CSV share.
-struct Built {
-    organization: String,
-    as_of: NaiveDate,
-    currency: Option<String>,
-    variable: VariableBasis,
-    report: Report,
-    headcount: usize,
-    category_count: usize,
+pub(crate) struct Built {
+    pub(crate) organization: String,
+    pub(crate) as_of: NaiveDate,
+    pub(crate) currency: Option<String>,
+    pub(crate) variable: VariableBasis,
+    pub(crate) report: Report,
+    pub(crate) headcount: usize,
+    pub(crate) category_count: usize,
 }
 
 fn declared(value: Option<&String>) -> Option<Declared> {
@@ -274,7 +274,7 @@ fn declared(value: Option<&String>) -> Option<Declared> {
     })
 }
 
-async fn build(ctx: &AppContext, caller: &MaybeAuthUser, query: &ReportQuery) -> Result<Built> {
+pub(crate) async fn build(ctx: &AppContext, caller: &MaybeAuthUser, query: &ReportQuery) -> Result<Built> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(ctx, caller, &query.organization).await?;
     // The same rule as the plan cost view: a figure made of salaries is for a caller who may read salaries.

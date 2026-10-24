@@ -1685,7 +1685,10 @@
     "rescinded": "zurückgenommen",
     "not_recorded": "nicht erfasst",
     "due_soon": "bald fällig",
-    "overdue": "überfällig"
+    "overdue": "überfällig",
+    "no_unjustified_difference": "Kein nicht gerechtfertigter Unterschied festgestellt",
+    "difference_found_remedy_planned": "Unterschied festgestellt; Abhilfe geplant",
+    "difference_remedied": "Unterschied behoben"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

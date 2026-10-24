@@ -1685,7 +1685,10 @@
     "rescinded": "wedi'i ddiddymu",
     "not_recorded": "heb ei gofnodi",
     "due_soon": "yn ddyledus cyn bo hir",
-    "overdue": "wedi mynd heibio'r dyddiad"
+    "overdue": "wedi mynd heibio'r dyddiad",
+    "no_unjustified_difference": "Ni chanfuwyd gwahaniaeth heb gyfiawnhad",
+    "difference_found_remedy_planned": "Canfuwyd gwahaniaeth; cynllunnir camau unioni",
+    "difference_remedied": "Cywirwyd y gwahaniaeth"
   },
   "engagement": {
     "title": "Ymgysylltiad",

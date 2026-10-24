@@ -1685,7 +1685,10 @@
     "rescinded": "বাতিল করা হয়েছে",
     "not_recorded": "নথিভুক্ত নয়",
     "due_soon": "শীঘ্রই প্রাপ্য",
-    "overdue": "মেয়াদোত্তীর্ণ"
+    "overdue": "মেয়াদোত্তীর্ণ",
+    "no_unjustified_difference": "কোনো অযৌক্তিক পার্থক্য পাওয়া যায়নি",
+    "difference_found_remedy_planned": "পার্থক্য পাওয়া গেছে; প্রতিকার পরিকল্পিত",
+    "difference_remedied": "পার্থক্যের প্রতিকার হয়েছে"
   },
   "engagement": {
     "title": "নিয়োগ",

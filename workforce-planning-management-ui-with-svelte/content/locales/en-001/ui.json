@@ -1685,7 +1685,10 @@
     "rescinded": "rescinded",
     "not_recorded": "not recorded",
     "due_soon": "due soon",
-    "overdue": "overdue"
+    "overdue": "overdue",
+    "no_unjustified_difference": "No unjustified difference found",
+    "difference_found_remedy_planned": "Difference found; remedy planned",
+    "difference_remedied": "Difference remedied"
   },
   "engagement": {
     "title": "Engagement",

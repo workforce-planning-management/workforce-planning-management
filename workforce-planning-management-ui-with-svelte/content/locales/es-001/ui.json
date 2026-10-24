@@ -1685,7 +1685,10 @@
     "rescinded": "anulada",
     "not_recorded": "no registrado",
     "due_soon": "vence pronto",
-    "overdue": "vencido"
+    "overdue": "vencido",
+    "no_unjustified_difference": "No se encontró ninguna diferencia injustificada",
+    "difference_found_remedy_planned": "Se encontró una diferencia; se planea corregirla",
+    "difference_remedied": "Diferencia corregida"
   },
   "engagement": {
     "title": "Contratación",

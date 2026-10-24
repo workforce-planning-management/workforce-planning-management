@@ -94,6 +94,7 @@ mod m20261021_000078_time_entry_weeks;
 mod m20261021_000079_soft_delete_indexes;
 mod m20261024_000080_pay_categories;
 mod m20261024_000081_pay_information_requests;
+mod m20261024_000082_pay_assessment_records;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -187,6 +188,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261021_000079_soft_delete_indexes::Migration),
             Box::new(m20261024_000080_pay_categories::Migration),
             Box::new(m20261024_000081_pay_information_requests::Migration),
+            Box::new(m20261024_000082_pay_assessment_records::Migration),
             // inject-above (do not remove this comment)
         ]
     }

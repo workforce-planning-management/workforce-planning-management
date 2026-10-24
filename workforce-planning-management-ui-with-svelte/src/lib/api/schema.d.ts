@@ -8282,6 +8282,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pay-transparency/assessment-records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What has been recorded for categories and report dates (?organization=), newest report first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The records */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /** Record, for a category and a report date, whether the gap was justified (and on what), when it was remedied, and whether the joint assessment was carried out and how it ended (outcome from a closed list); replaces what was there; never a verdict on a person */
+        put: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pid of the record */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pay-transparency/gap-report": {
         parameters: {
             query?: never;
@@ -8334,6 +8392,40 @@ export interface paths {
             requestBody?: never;
             responses: {
                 /** @description A CSV file */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pay-transparency/joint-assessment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** For each category of workers, whether a joint pay assessment with workers' representatives is due, pending or not due (?organization=&reported_on=&as_of=&currency=): the category's gap in basic pay at or over the threshold (default 5%, either way), not justified, not remedied within the period (default six calendar months) from the date of reporting. Reports only; a person records. Needs unmasked salary read; audited with no figure */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The signals */
                 200: {
                     headers: {
                         [name: string]: unknown;

@@ -1685,7 +1685,10 @@
     "rescinded": "dibatalkan",
     "not_recorded": "belum dicatat",
     "due_soon": "segera jatuh tempo",
-    "overdue": "terlambat"
+    "overdue": "terlambat",
+    "no_unjustified_difference": "Tidak ditemukan perbedaan yang tidak beralasan",
+    "difference_found_remedy_planned": "Perbedaan ditemukan; perbaikan direncanakan",
+    "difference_remedied": "Perbedaan telah diperbaiki"
   },
   "engagement": {
     "title": "Keterlibatan",

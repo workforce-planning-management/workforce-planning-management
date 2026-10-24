@@ -1685,7 +1685,10 @@
     "rescinded": "аннулировано",
     "not_recorded": "не записано",
     "due_soon": "скоро срок",
-    "overdue": "просрочено"
+    "overdue": "просрочено",
+    "no_unjustified_difference": "Необоснованных различий не выявлено",
+    "difference_found_remedy_planned": "Выявлено различие; исправление запланировано",
+    "difference_remedied": "Различие устранено"
   },
   "engagement": {
     "title": "Трудовые отношения",

@@ -37,6 +37,7 @@ mod mobility;
 mod movements;
 mod organizations;
 mod pagination;
+mod pay_assessment;
 mod pay_information;
 mod pay_positions;
 mod pay_transparency;

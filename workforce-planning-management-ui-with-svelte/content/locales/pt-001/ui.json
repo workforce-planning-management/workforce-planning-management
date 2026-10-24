@@ -1685,7 +1685,10 @@
     "rescinded": "anulado",
     "not_recorded": "não registado",
     "due_soon": "vence em breve",
-    "overdue": "em atraso"
+    "overdue": "em atraso",
+    "no_unjustified_difference": "Não foi encontrada diferença injustificada",
+    "difference_found_remedy_planned": "Diferença encontrada; correção planeada",
+    "difference_remedied": "Diferença corrigida"
   },
   "engagement": {
     "title": "Vínculo",
