@@ -60,6 +60,8 @@
   });
 </script>
 
+<svelte:head><title>{page.data.title}</title></svelte:head>
+
 <h1>{t("nav.orgChart")}</h1>
 
 {#if error}

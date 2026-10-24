@@ -140,7 +140,7 @@
               {#if item.state === "done" || item.state === "skipped"}
                 <button type="button" onclick={() => void run(() => movementItemAction(item.pid, "reopen"))}>{t("movements.reopen")}</button>
               {:else if skipping === item.pid}
-                <input bind:value={skipReason} placeholder={t("movements.skipReason")} data-testid="skip-reason" />
+                <input bind:value={skipReason} placeholder={t("movements.skipReason")} aria-label={t("movements.skipReason")} data-testid="skip-reason" />
                 <button
                   type="button"
                   onclick={() =>

@@ -4185,9 +4185,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       now reads the catalogue's words and then the service's message). `pickers.spec.ts` failed once in the full run and passed on
       rerun with the oversight spec. Not checked: the translations by a speaker of each language; no screenshots were looked at;
       the pages still showing a raw service message for a 4xx other than 409/422 now show generic words, which loses detail by design.
-- [ ] WPM-T262 **Titles and labels.** `+page.ts` with `pageTitle(...)` for the twelve untitled pages; a label or
+- [x] WPM-T262 **Titles and labels.** `+page.ts` with `pageTitle(...)` for the twelve untitled pages; a label or
       `aria-label={t(...)}` for the about 20 unlabelled controls (`workers/[pid]`, `wellbeing`, `requisitions/[pid]`,
       `movements/[pid]`); move the wellbeing placeholder text into the catalogue. An axe check in Playwright on those pages.
+      Done: the twelve untitled pages (`benchmarks`, `development`, `org-chart`, `payroll`, `payroll/[pid]`, `privacy`, `requisitions`,
+      `requisitions/[pid]`, `wellbeing`, `workers`, `workers/[pid]`, `workforce`) have a `+page.ts` using the new `navTitle()`
+      ("Workers — WPM", from the navigation name, in the locale of the address) and a `<title>` from `page.data.title`. The 21
+      unnamed controls on `workers/[pid]`, `wellbeing`, `requisitions/[pid]` and `movements/[pid]` have an `aria-label` from the
+      catalogue (eight new `labels.*` keys in 13 locales, AI-written, unreviewed); the wellbeing departments placeholder is now a
+      catalogue string. `tests/e2e/titles-and-labels.spec.ts` checks all twelve titles and one in German, and runs axe
+      (`@axe-core/playwright`, new dev dependency) on three form pages plus a stricter check that no control relies on a placeholder
+      as its name (axe accepts a placeholder; it also passed with a label removed, the strict check failed, so it earns its place).
+      Also changed: `errorText` now adds the service's message to a 403 as well as 409/422, because a 403's message names the rule
+      (a conversion-plan spec relied on it). Verified: 188 unit tests, `svelte-check` clean, prettier clean, 168 Playwright specs.
+      Not checked: axe on pages other than those three, colour contrast, or the keyboard order; `movements/[pid]` was changed
+      but is not in the axe spec; the new labels were not read by a speaker of each language. The `labels.*` additions are
+      recorded in `content/locales/REVIEW.md`.
 - [ ] WPM-T263 **Types from the OpenAPI document.** `openapi-typescript` into `src/lib/api/schema.d.ts`; the hand-written
       functions in `wpm.ts` typed from it, ending the 75 `Promise<unknown>`; a CI check that the generated file is current.
 - [ ] WPM-T264 **Cache the exchanged token.** Per session id until shortly before expiry, cleared on sign-out; a unit test that

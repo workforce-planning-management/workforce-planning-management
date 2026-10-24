@@ -15,3 +15,8 @@ export function pageTitle(key: StringKey, url: URL): string {
   const locale = splitLocale(url.pathname).locale ?? DEFAULT_LOCALE;
   return translate(key, locale);
 }
+
+/** A page whose title is its navigation name: "Workers — WPM", in the locale the address carries. */
+export function navTitle(key: StringKey, url: URL): string {
+  return `${pageTitle(key, url)} — WPM`;
+}

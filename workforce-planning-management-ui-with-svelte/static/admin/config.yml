@@ -2900,3 +2900,18 @@ collections:
               - { name: "invalid", label: "Invalid", widget: string, required: false, i18n: true }
               - { name: "server", label: "Server", widget: text, required: false, i18n: true }
               - { name: "generic", label: "Generic", widget: string, required: false, i18n: true }
+          - name: "labels"
+            label: "Labels"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "nominee", label: "Nominee", widget: string, required: false, i18n: true }
+              - { name: "nomineeGroup", label: "Nominee Group", widget: string, required: false, i18n: true }
+              - { name: "rater", label: "Rater", widget: string, required: false, i18n: true }
+              - { name: "comment", label: "Comment", widget: string, required: false, i18n: true }
+              - { name: "adjustmentCategory", label: "Adjustment Category", widget: string, required: false, i18n: true }
+              - { name: "entitlementKind", label: "Entitlement Kind", widget: string, required: false, i18n: true }
+              - { name: "hireNumber", label: "Hire Number", widget: string, required: false, i18n: true }
+              - { name: "departments", label: "Departments", widget: string, required: false, i18n: true }

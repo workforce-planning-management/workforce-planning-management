@@ -2148,5 +2148,15 @@
     "invalid": "Itu tidak diterima",
     "server": "Terjadi masalah di pihak kami. Coba lagi; jika terus terjadi, beri tahu administrator Anda.",
     "generic": "Terjadi kesalahan."
+  },
+  "labels": {
+    "nominee": "Rekan yang akan dinominasikan",
+    "nomineeGroup": "Hubungan dengan orang tersebut",
+    "rater": "Menjawab sebagai",
+    "comment": "Komentar (opsional)",
+    "adjustmentCategory": "Jenis penyesuaian",
+    "entitlementKind": "Jenis hak",
+    "hireNumber": "Nomor pekerja untuk perekrutan",
+    "departments": "Departemen, dipisahkan koma"
   }
 }

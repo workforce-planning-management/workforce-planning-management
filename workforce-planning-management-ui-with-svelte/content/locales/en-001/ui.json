@@ -2148,5 +2148,15 @@
     "invalid": "That was not accepted",
     "server": "Something went wrong on our side. Try again; if it keeps happening, tell your administrator.",
     "generic": "Something went wrong."
+  },
+  "labels": {
+    "nominee": "Colleague to nominate",
+    "nomineeGroup": "Relationship to the person",
+    "rater": "Respond as",
+    "comment": "Comment (optional)",
+    "adjustmentCategory": "Kind of adjustment",
+    "entitlementKind": "Kind of entitlement",
+    "hireNumber": "Worker number for the hire",
+    "departments": "Departments, separated by commas"
   }
 }

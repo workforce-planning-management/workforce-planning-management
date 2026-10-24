@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { listWorkers, money } from "#lib/api/wpm.js";
   import { i18n, t, l } from "#lib/i18n.svelte.js";
@@ -37,6 +38,8 @@
     },
   ]);
 </script>
+
+<svelte:head><title>{page.data.title}</title></svelte:head>
 
 {#snippet nameCell({ row }: { row: DataGridRow })}
   <a href={l(`/workers/${row.pid}`)}>{row.display_name}</a>

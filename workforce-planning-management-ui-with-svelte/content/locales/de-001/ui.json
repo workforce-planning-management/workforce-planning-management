@@ -2148,5 +2148,15 @@
     "invalid": "Das wurde nicht akzeptiert",
     "server": "Auf unserer Seite ist etwas schiefgelaufen. Versuchen Sie es erneut; wenn es weiter auftritt, informieren Sie Ihre Administration.",
     "generic": "Etwas ist schiefgelaufen."
+  },
+  "labels": {
+    "nominee": "Zu nominierende Kollegin oder Kollege",
+    "nomineeGroup": "Beziehung zur Person",
+    "rater": "Antworten als",
+    "comment": "Kommentar (optional)",
+    "adjustmentCategory": "Art der Anpassung",
+    "entitlementKind": "Art des Anspruchs",
+    "hireNumber": "Personalnummer für die Einstellung",
+    "departments": "Abteilungen, durch Kommas getrennt"
   }
 }

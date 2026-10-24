@@ -22,18 +22,20 @@ export function errorKey(cause: unknown): StringKey {
 
 /**
  * What to show for a failed call. The words come from the catalogue, so every locale reads them.
- * A `409` or `422` adds the service's own message after them, because it names the field or the state
- * that was refused; a `5xx` adds nothing, since the service gives no detail on purpose (WPM-T259).
+ * A `403`, `409` or `422` adds the service's own message after them, because it names the rule, the
+ * field or the state that was refused; a `401`, `404` or `5xx` adds nothing (a `5xx` gives no detail on
+ * purpose, WPM-T259).
  */
 export function errorText(cause: unknown): string {
   const lead = t(errorKey(cause));
   if (
     cause instanceof ApiError &&
-    (cause.status === 409 || cause.status === 422)
+    (cause.status === 403 || cause.status === 409 || cause.status === 422)
   ) {
     const detail = cause.message.trim();
-    if (detail && detail !== `API error ${cause.status}`)
-      return `${lead}: ${detail}`;
+    if (detail && detail !== `API error ${cause.status}`) {
+      return `${lead}${/[.!?。]$/.test(lead) ? " " : ": "}${detail}`;
+    }
   }
   return lead;
 }

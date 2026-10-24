@@ -46,6 +46,8 @@
   }
 </script>
 
+<svelte:head><title>{page.data.title}</title></svelte:head>
+
 {#if error}
   <ErrorNote testid="error" prefixed message={error} />
 {:else if requisition === null}
@@ -76,7 +78,7 @@
               </button>
             {/if}
             {#if application.stage === "offer"}
-              <input placeholder="E-0000" bind:value={hireNumber} size="8" />
+              <input placeholder="E-0000" aria-label={t("labels.hireNumber")} bind:value={hireNumber} size="8" />
               <button onclick={() => void move(application, "hired")}>{t("pages.requisitionsPid.hired")}</button>
             {/if}
           </td>

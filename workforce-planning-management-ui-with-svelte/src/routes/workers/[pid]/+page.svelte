@@ -313,6 +313,8 @@
   ]);
 </script>
 
+<svelte:head><title>{page.data.title}</title></svelte:head>
+
 {#snippet courseCell({ row, value }: { row: DataGridRow; value: unknown })}
   {#if row.lms_url}
     <a href={String(row.lms_url)} target="_blank" rel="noopener noreferrer" title={t("pages.cpd.lms_open")}>{String(value)} ↗</a>
@@ -523,7 +525,7 @@
                 </select>
               </label>
             {/each}
-            <input placeholder="…" bind:value={requestComment} />
+            <input placeholder={t("labels.comment")} aria-label={t("labels.comment")} bind:value={requestComment} />
             <button
               onclick={() => void act(async () => {
                 await respondAppraisal(request.appraisal_pid, pid, requestScores, requestComment.trim() || undefined);
@@ -573,13 +575,13 @@
             {/each}
           </ul>
           {#if openAppraisal.status === "draft"}
-            <select bind:value={nomineePid}>
+            <select aria-label={t("labels.nominee")} bind:value={nomineePid}>
               <option value="">—</option>
               {#each colleagues.filter((c) => c.pid !== pid) as colleague (colleague.pid)}
                 <option value={colleague.pid}>{colleague.display_name}</option>
               {/each}
             </select>
-            <select bind:value={nomineeGroup}>
+            <select aria-label={t("labels.nomineeGroup")} bind:value={nomineeGroup}>
               <option value="manager">{t("pages.workersPid.manager")}</option>
               <option value="peer">{t("pages.workersPid.peer")}</option>
               <option value="report">{t("pages.workersPid.report")}</option>
@@ -589,7 +591,7 @@
               onclick={() => void act(() => nominateRater(appraisal.pid, nomineePid, nomineeGroup))}
             >{t("ap.nominate")}</button>
           {:else if openAppraisal.status === "collecting"}
-            <select bind:value={raterPid}>
+            <select aria-label={t("labels.rater")} bind:value={raterPid}>
               <option value="">—</option>
               {#each openAppraisal.nominations.filter((n) => !n.responded) as nomination (nomination.pid)}
                 <option value={nomination.rater_pid}>{nomination.display_name ?? nomination.rater_pid.slice(0, 8)}</option>
@@ -605,7 +607,7 @@
                 </select>
               </label>
             {/each}
-            <input placeholder="…" bind:value={raterComment} />
+            <input placeholder={t("labels.comment")} aria-label={t("labels.comment")} bind:value={raterComment} />
             <button
               disabled={!raterPid}
               onclick={() => void act(() => respondAppraisal(appraisal.pid, raterPid, raterScores, raterComment.trim() || undefined))}
@@ -639,14 +641,14 @@
   {@render panelError("adjustments")}
   <div class="panel" data-testid="adjustments">
     <p class="muted">{t("adj.hint")}</p>
-    <select bind:value={adjCategory}>
+    <select aria-label={t("labels.adjustmentCategory")} bind:value={adjCategory}>
       {#each ADJUSTMENT_CATEGORIES as category (category)}
         <option value={category}>{tv(category)}</option>
       {/each}
     </select>
-    <input placeholder={t("adj.barrier")} bind:value={adjBarrier} />
-    <input placeholder={t("adj.impact")} bind:value={adjImpact} />
-    <input placeholder={t("adj.change")} bind:value={adjChange} />
+    <input placeholder={t("adj.barrier")} aria-label={t("adj.barrier")} bind:value={adjBarrier} />
+    <input placeholder={t("adj.impact")} aria-label={t("adj.impact")} bind:value={adjImpact} />
+    <input placeholder={t("adj.change")} aria-label={t("adj.change")} bind:value={adjChange} />
     <button
       disabled={!adjBarrier.trim() || !adjImpact.trim() || !adjChange.trim()}
       onclick={() => void act(async () => {
@@ -687,7 +689,7 @@
   <h2>{t("erg.title")}</h2>
   {@render panelError("ergonomics")}
   <div class="panel" data-testid="ergonomics">
-    <input placeholder={t("erg.workstation")} bind:value={workstation} />
+    <input placeholder={t("erg.workstation")} aria-label={t("erg.workstation")} bind:value={workstation} />
     <button
       disabled={!workstation.trim()}
       onclick={() => void act(async () => {

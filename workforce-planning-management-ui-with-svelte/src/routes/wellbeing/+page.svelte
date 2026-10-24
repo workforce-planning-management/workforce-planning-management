@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   // HR wellbeing admin: the configured health-entitlement rules
@@ -147,6 +148,8 @@
   ]);
 </script>
 
+<svelte:head><title>{page.data.title}</title></svelte:head>
+
 {#snippet ruleCell({ row }: { row: DataGridRow })}
   {@const rule = row as unknown as WellbeingEntitlement}
   <strong>{rule.name}</strong> <span class="chip">{kindLabel(rule.kind)}</span><br /><span class="muted">{rule.description}</span>
@@ -183,17 +186,17 @@
   />
 
   <form class="panel" onsubmit={(event) => void create(event)} data-testid="wellbeing-form">
-    <input placeholder={t("common.name")} bind:value={name} required />
-    <select bind:value={kind}>
+    <input placeholder={t("common.name")} aria-label={t("common.name")} bind:value={name} required />
+    <select aria-label={t("labels.entitlementKind")} bind:value={kind}>
       <option value="health">{t("wb.kind.health")}</option>
       <option value="benefit">{t("wb.kind.benefit")}</option>
     </select>
-    <input placeholder={t("pages.wellbeing.description")} bind:value={description} required />
-    <input placeholder={t("pages.wellbeing.info_url")} bind:value={infoUrl} />
-    <input placeholder={t("pages.wellbeing.min_age")} bind:value={minAge} inputmode="numeric" />
-    <input placeholder={t("pages.wellbeing.max_age")} bind:value={maxAge} inputmode="numeric" />
-    <input placeholder="{t('common.department')} (a, b)" bind:value={departments} />
-    <input placeholder={t("pages.wellbeing.doses")} bind:value={doses} inputmode="numeric" />
+    <input placeholder={t("pages.wellbeing.description")} aria-label={t("pages.wellbeing.description")} bind:value={description} required />
+    <input placeholder={t("pages.wellbeing.info_url")} aria-label={t("pages.wellbeing.info_url")} bind:value={infoUrl} />
+    <input placeholder={t("pages.wellbeing.min_age")} aria-label={t("pages.wellbeing.min_age")} bind:value={minAge} inputmode="numeric" />
+    <input placeholder={t("pages.wellbeing.max_age")} aria-label={t("pages.wellbeing.max_age")} bind:value={maxAge} inputmode="numeric" />
+    <input placeholder={t("labels.departments")} aria-label={t("labels.departments")} bind:value={departments} />
+    <input placeholder={t("pages.wellbeing.doses")} aria-label={t("pages.wellbeing.doses")} bind:value={doses} inputmode="numeric" />
     <button type="submit">+</button>
     {#if actionError}
       <ErrorNote testid="action-error" message={actionError} />

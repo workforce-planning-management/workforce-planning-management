@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   // Privacy operations (WPM-R30): the retention report — what the
@@ -44,6 +45,8 @@
     { id: "count", header: t("columns.rowCount"), sortable: true, align: "end" },
   ];
 </script>
+
+<svelte:head><title>{page.data.title}</title></svelte:head>
 
 <h1>{t("nav.privacy")}</h1>
 

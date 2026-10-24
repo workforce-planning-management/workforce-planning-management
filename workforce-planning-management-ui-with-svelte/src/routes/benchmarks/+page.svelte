@@ -65,6 +65,8 @@
   ]);
 </script>
 
+<svelte:head><title>{page.data.title}</title></svelte:head>
+
 {#snippet workerCell({ row }: { row: DataGridRow })}
   <a href={l(`/workers/${row.worker_pid}`)}>{String(row.worker_pid).slice(0, 8)}</a>
 {/snippet}

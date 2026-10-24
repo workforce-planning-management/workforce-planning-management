@@ -2148,5 +2148,15 @@
     "invalid": "Isso não foi aceite",
     "server": "Algo correu mal do nosso lado. Tente novamente; se continuar, avise o seu administrador.",
     "generic": "Algo correu mal."
+  },
+  "labels": {
+    "nominee": "Colega a nomear",
+    "nomineeGroup": "Relação com a pessoa",
+    "rater": "Responder como",
+    "comment": "Comentário (opcional)",
+    "adjustmentCategory": "Tipo de ajuste",
+    "entitlementKind": "Tipo de direito",
+    "hireNumber": "Número de trabalhador para a contratação",
+    "departments": "Departamentos, separados por vírgulas"
   }
 }

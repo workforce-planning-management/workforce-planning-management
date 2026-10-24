@@ -32,6 +32,9 @@ describe("errorText", () => {
     expect(errorText(invalid)).toMatch(/: end date is before start date$/);
     const conflict = new ApiError(409, { description: "already approved" });
     expect(errorText(conflict)).toMatch(/: already approved$/);
+    // A refusal for want of a role says which rule, after the words.
+    const forbidden = new ApiError(403, { description: "only the line manager decides" });
+    expect(errorText(forbidden)).toMatch(/ only the line manager decides$/);
     // No service message: just the words.
     expect(errorText(new ApiError(422, null))).not.toContain("API error");
   });

@@ -2148,5 +2148,15 @@
     "invalid": "该内容未被接受",
     "server": "我们这边出了问题。请重试；如果持续出现，请告知管理员。",
     "generic": "出了点问题。"
+  },
+  "labels": {
+    "nominee": "要提名的同事",
+    "nomineeGroup": "与此人的关系",
+    "rater": "以此身份回复",
+    "comment": "评论（可选）",
+    "adjustmentCategory": "调整类型",
+    "entitlementKind": "权益类型",
+    "hireNumber": "入职员工编号",
+    "departments": "部门，以逗号分隔"
   }
 }

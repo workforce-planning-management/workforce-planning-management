@@ -75,6 +75,8 @@
   ]);
 </script>
 
+<svelte:head><title>{page.data.title}</title></svelte:head>
+
 {#snippet workerCell({ row, formatted }: { row: DataGridRow; formatted: string })}
   {@const slip = row as unknown as Payslip}
   <a href={l(`/workers/${slip.worker_pid}`)}>{formatted}</a>

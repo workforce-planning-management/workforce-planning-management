@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { expiringTraining, listSuccession, successionGaps } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
@@ -43,6 +44,8 @@
     { id: "certificate_expires_on", type: "date", header: t("columns.certificateExpires"), sortable: true },
   ]);
 </script>
+
+<svelte:head><title>{page.data.title}</title></svelte:head>
 
 {#snippet candidatesCell({ row }: { row: DataGridRow })}
   {@const candidates = row.candidates as Array<{ pid: string; rank: number; readiness: string }>}

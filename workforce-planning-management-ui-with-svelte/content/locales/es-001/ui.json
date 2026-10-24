@@ -2148,5 +2148,15 @@
     "invalid": "Eso no fue aceptado",
     "server": "Algo salió mal por nuestra parte. Inténtelo de nuevo; si sigue ocurriendo, avise a su administrador.",
     "generic": "Algo salió mal."
+  },
+  "labels": {
+    "nominee": "Compañero que se nominará",
+    "nomineeGroup": "Relación con la persona",
+    "rater": "Responder como",
+    "comment": "Comentario (opcional)",
+    "adjustmentCategory": "Tipo de ajuste",
+    "entitlementKind": "Tipo de derecho",
+    "hireNumber": "Número de trabajador para la contratación",
+    "departments": "Departamentos, separados por comas"
   }
 }

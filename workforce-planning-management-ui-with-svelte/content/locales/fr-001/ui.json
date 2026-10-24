@@ -2148,5 +2148,15 @@
     "invalid": "Cela n'a pas été accepté",
     "server": "Un problème est survenu de notre côté. Réessayez ; s'il persiste, prévenez votre administrateur.",
     "generic": "Un problème est survenu."
+  },
+  "labels": {
+    "nominee": "Collègue à nommer",
+    "nomineeGroup": "Relation avec la personne",
+    "rater": "Répondre en tant que",
+    "comment": "Commentaire (facultatif)",
+    "adjustmentCategory": "Type d'aménagement",
+    "entitlementKind": "Type de droit",
+    "hireNumber": "Numéro de salarié pour l'embauche",
+    "departments": "Services, séparés par des virgules"
   }
 }

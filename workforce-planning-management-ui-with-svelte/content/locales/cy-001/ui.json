@@ -2148,5 +2148,15 @@
     "invalid": "Ni dderbyniwyd hynny",
     "server": "Aeth rhywbeth o'i le ar ein hochr ni. Rhowch gynnig arall arni; os digwydd eto, dywedwch wrth eich gweinyddwr.",
     "generic": "Aeth rhywbeth o'i le."
+  },
+  "labels": {
+    "nominee": "Cydweithiwr i'w enwebu",
+    "nomineeGroup": "Perthynas â'r person",
+    "rater": "Ymateb fel",
+    "comment": "Sylw (dewisol)",
+    "adjustmentCategory": "Math o addasiad",
+    "entitlementKind": "Math o hawl",
+    "hireNumber": "Rhif gweithiwr ar gyfer y penodiad",
+    "departments": "Adrannau, wedi'u gwahanu gan atalnodau"
   }
 }

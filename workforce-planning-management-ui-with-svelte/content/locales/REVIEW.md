@@ -29,6 +29,8 @@ The 2026-10-21 additions (86 keys for the My details page and eight status words
 
 The 2026-10-23 additions (the `errors.*` keys: eight sentences saying what a failed call means) were written by the same assistant, also unreviewed.
 
+The 2026-10-24 additions (the `labels.*` keys: eight accessible names for form controls) were written by the same assistant, also unreviewed.
+
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.
 

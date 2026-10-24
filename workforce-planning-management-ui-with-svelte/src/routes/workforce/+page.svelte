@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { decideLeave, ergonomicIssues, listWorkers, listLeaveRequests, listShifts, workingTime } from "#lib/api/wpm.js";
@@ -125,6 +126,8 @@
     { id: "rest", header: t("columns.restBreaks"), cell: restCell },
   ]);
 </script>
+
+<svelte:head><title>{page.data.title}</title></svelte:head>
 
 {#snippet decideCell({ row }: { row: DataGridRow })}
   {@const request = row as unknown as LeaveRequest & { worker?: Worker }}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { listRuns } from "#lib/api/wpm.js";
   import { t, l, tv } from "#lib/i18n.svelte.js";
@@ -35,6 +36,8 @@
     },
   ]);
 </script>
+
+<svelte:head><title>{page.data.title}</title></svelte:head>
 
 {#snippet periodCell({ row }: { row: DataGridRow })}
   {@const run = row as unknown as PayrollRun}
