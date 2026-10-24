@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "Supervisión y evaluación",
     "not_high_risk": "No es de alto riesgo (declaración del responsable del despliegue)",
     "frozen": "congelado",
-    "abolished": "suprimido"
+    "abolished": "suprimido",
+    "laptop": "portátil",
+    "phone": "teléfono",
+    "pass": "tarjeta de acceso",
+    "key": "llave",
+    "returned": "devuelto",
+    "written_off": "dado de baja"
   },
   "engagement": {
     "title": "Contratación",

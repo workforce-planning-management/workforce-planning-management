@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "Monitro a gwerthuso",
     "not_high_risk": "Ddim yn risg uchel (datganiad y defnyddiwr)",
     "frozen": "wedi'i rewi",
-    "abolished": "wedi'i ddileu"
+    "abolished": "wedi'i ddileu",
+    "laptop": "gliniadur",
+    "phone": "ffôn",
+    "pass": "pàs",
+    "key": "allwedd",
+    "returned": "dychwelwyd",
+    "written_off": "dileu o'r cofnodion"
   },
   "engagement": {
     "title": "Ymgysylltiad",

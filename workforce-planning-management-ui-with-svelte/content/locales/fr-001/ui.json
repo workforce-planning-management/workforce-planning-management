@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "Suivi et évaluation",
     "not_high_risk": "Pas à haut risque (déclaration du déployeur)",
     "frozen": "gelé",
-    "abolished": "supprimé"
+    "abolished": "supprimé",
+    "laptop": "ordinateur portable",
+    "phone": "téléphone",
+    "pass": "badge",
+    "key": "clé",
+    "returned": "restitué",
+    "written_off": "passé en perte"
   },
   "engagement": {
     "title": "Engagement",

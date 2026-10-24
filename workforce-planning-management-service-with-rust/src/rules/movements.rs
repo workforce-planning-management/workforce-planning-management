@@ -186,7 +186,11 @@ pub fn progress(states: &[ItemState]) -> Progress {
 ///
 /// A message naming what is still open: checklist items, and (for a leaver)
 /// things they hold that are not yet reassigned or closed.
-pub fn can_complete(open_items: usize, unassigned_handover: usize) -> Result<(), String> {
+pub fn can_complete(
+    open_items: usize,
+    unassigned_handover: usize,
+    equipment_out: usize,
+) -> Result<(), String> {
     let mut problems = Vec::new();
     if open_items > 0 {
         problems.push(format!("{open_items} checklist item(s) still open"));
@@ -194,6 +198,11 @@ pub fn can_complete(open_items: usize, unassigned_handover: usize) -> Result<(),
     if unassigned_handover > 0 {
         problems.push(format!(
             "{unassigned_handover} thing(s) the leaver holds not yet reassigned"
+        ));
+    }
+    if equipment_out > 0 {
+        problems.push(format!(
+            "{equipment_out} piece(s) of equipment still out (returned or written off first)"
         ));
     }
     if problems.is_empty() {
@@ -380,13 +389,16 @@ mod tests {
 
     #[test]
     fn completion_needs_a_closed_checklist_and_nothing_left_to_hand_over() {
-        assert!(can_complete(0, 0).is_ok());
+        assert!(can_complete(0, 0, 0).is_ok());
         assert_eq!(
-            can_complete(2, 0).unwrap_err(),
+            can_complete(2, 0, 0).unwrap_err(),
             "2 checklist item(s) still open"
         );
-        let both = can_complete(1, 3).unwrap_err();
+        let both = can_complete(1, 3, 0).unwrap_err();
         assert!(both.contains("1 checklist") && both.contains("3 thing(s)"));
+        let out = can_complete(0, 0, 2).unwrap_err();
+        assert!(out.contains("2 piece(s) of equipment still out"), "{out}");
+        assert!(can_complete(0, 0, 0).is_ok());
     }
 
     #[test]

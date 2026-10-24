@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "Monitoring and evaluation",
     "not_high_risk": "Not high-risk (the deployer's statement)",
     "frozen": "frozen",
-    "abolished": "abolished"
+    "abolished": "abolished",
+    "laptop": "laptop",
+    "phone": "phone",
+    "pass": "pass",
+    "key": "key",
+    "returned": "returned",
+    "written_off": "written off"
   },
   "engagement": {
     "title": "Engagement",

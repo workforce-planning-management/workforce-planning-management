@@ -4514,7 +4514,20 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       added and then caught it. **Not done:** a screen, a CSV, the intermediate step as a reference point, part-time normalisation
       (salary read as full-time-equivalent), the Playwright suite and `svelte-check` (no UI change beyond generated types), and the
       `keycloak` and `chaos` binaries. A lib test (`every_audit_of_a_change_is_in_its_transaction`) needed the read audit listed.
-- [ ] WPM-T282 **Equipment issued and returned.** *(WPM-R155)* Assets and issues; open issues on the leaver checklist.
+- [~] (2026-10-24) WPM-T282 **Equipment issued and returned.** *(WPM-R155)* Assets and issues; open issues on the leaver checklist.
+      Done in part: the API and the leaver gate, no screen. Migration `m20261024_000088_equipment` (`assets`, `asset_issues`; no
+      location, cost or value column), `rules::equipment` (5 unit tests; five deliberate faults tried, all caught; a source test
+      against location, cost and value words), `controllers/equipment.rs` (asset list and add, issue, return or write-off with a
+      reason, a worker's own issues), `POST /api/movements/{pid}/complete` refused while the leaver has equipment out, the subject
+      export lists the issues and erasure deletes them and keeps the asset, strings for the kinds and outcomes in the 13 locales
+      (AI-written, unreviewed). Verified (Postgres 18, Podman): 782 unit tests, 149 request tests (new: bad assets, a duplicate tag,
+      issue refused for the future and a stranger, one holder at a time, the list not naming the holder, the leaver refused with
+      equipment out and no longer for it once written off, return bounds, export and erasure), `enforcement_pay_gap` (assets: 401,
+      worker 403, HR 200), the other listed `enforcement_*` binaries, `security` and `route_coverage`, clippy pedantic clean; UI 209
+      unit tests. **One full request run showed 1 failure that I did not identify; two reruns of the same suite passed (149 of 149).**
+      **Not done:** a screen; the owner role as a permission of its own; the manager's count of open issues; equipment as items on the
+      leaver checklist and in the handover trail (only the gate and a per-worker list); retiring or importing assets; Playwright and
+      `svelte-check` (no UI change beyond strings and types); the `keycloak` and `chaos` binaries.
 - [ ] WPM-T283 **Policies and acknowledgements.** *(WPM-R156, WPM-D105)* Versioned policies by audience; acknowledgement per
       version; manager counts; HR's named, audited record.
 - [ ] WPM-T284 **Verifiable credentials and the skills crosswalk.** *(WPM-R157, WPM-R158)* Open Badges 3.0 issuance with a

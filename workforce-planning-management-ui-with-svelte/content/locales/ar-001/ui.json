@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "المراقبة والتقييم",
     "not_high_risk": "ليس عالي المخاطر (إقرار الجهة المشغِّلة)",
     "frozen": "مجمّد",
-    "abolished": "ملغى"
+    "abolished": "ملغى",
+    "laptop": "حاسوب محمول",
+    "phone": "هاتف",
+    "pass": "بطاقة دخول",
+    "key": "مفتاح",
+    "returned": "أُعيد",
+    "written_off": "شُطب"
   },
   "engagement": {
     "title": "التعاقد",

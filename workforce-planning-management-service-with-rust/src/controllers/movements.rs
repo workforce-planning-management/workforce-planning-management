@@ -567,7 +567,12 @@ async fn complete(
     } else {
         0
     };
-    rules::can_complete(open, held).map_err(|e| unprocessable(&e))?;
+    let equipment = if movement.kind == "leaver" {
+        super::equipment::out_count(&ctx, worker.pid).await?
+    } else {
+        0
+    };
+    rules::can_complete(open, held, equipment).map_err(|e| unprocessable(&e))?;
     let mut active: movements::ActiveModel = movement.clone().into();
     active.status = ActiveValue::set("completed".to_string());
     active.completed_at = ActiveValue::set(Some(Utc::now().into()));

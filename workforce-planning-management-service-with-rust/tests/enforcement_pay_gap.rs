@@ -247,6 +247,15 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(placed.status_code(), 200, "payroll reads it: {}", placed.text());
         assert!(!placed.text().contains("Pay Gap Enforcement"), "no worker named");
 
+        // ── Equipment: HR keeps the asset list and issues; a worker may not ──
+        let assets = format!("/api/assets?organization={org}");
+        assert_eq!(request.get(&assets).await.status_code(), 401);
+        assert_eq!(get(assets.clone(), worker.clone()).await.status_code(), 403, "a worker");
+        assert_eq!(get(assets.clone(), hr.clone()).await.status_code(), 200, "HR");
+        let new_asset = json!({ "organization_ref": org, "kind": "laptop", "tag": "ENF-1", "owner_role": "IT" });
+        assert_eq!(request.post("/api/assets").add_header("authorization", worker.clone()).json(&new_asset).await.status_code(), 403, "a worker adds none");
+        assert_eq!(request.post("/api/assets").add_header("authorization", hr.clone()).json(&new_asset).await.status_code(), 200, "HR adds one");
+
         // ── The AI register: any signed-in caller reads it; HR records; nobody else ──────────────────
         assert_eq!(request.get("/api/ai-register").await.status_code(), 401);
         assert_eq!(get("/api/ai-register".to_string(), worker.clone()).await.status_code(), 200, "a worker reads how people are scored");

@@ -28,6 +28,7 @@ pub mod engagements;
 pub mod equality_monitoring;
 pub mod ergonomics;
 pub mod esco;
+pub mod equipment;
 pub mod expenses;
 pub mod flexible_working;
 pub mod framework_roles;

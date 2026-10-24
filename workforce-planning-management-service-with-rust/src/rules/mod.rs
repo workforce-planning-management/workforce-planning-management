@@ -32,6 +32,7 @@ pub mod emergency;
 pub mod engagement;
 pub mod equality_monitoring;
 pub mod ergonomics;
+pub mod equipment;
 pub mod escalation;
 pub mod esco;
 pub mod expenses;

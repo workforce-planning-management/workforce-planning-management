@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "Pemantauan dan evaluasi",
     "not_high_risk": "Bukan berisiko tinggi (pernyataan penyelenggara)",
     "frozen": "dibekukan",
-    "abolished": "dihapus"
+    "abolished": "dihapus",
+    "laptop": "komputer jinjing",
+    "phone": "ponsel",
+    "pass": "kartu akses",
+    "key": "kunci",
+    "returned": "dikembalikan",
+    "written_off": "dihapusbukukan"
   },
   "engagement": {
     "title": "Keterlibatan",

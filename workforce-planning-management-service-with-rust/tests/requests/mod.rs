@@ -24,6 +24,7 @@ mod engagements;
 mod erasure_replay;
 mod ergonomics;
 mod escalations;
+mod equipment;
 mod expenses;
 mod grades;
 mod health_detail;

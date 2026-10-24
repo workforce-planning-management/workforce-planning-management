@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "निगरानी और मूल्यांकन",
     "not_high_risk": "उच्च जोखिम नहीं (उपयोगकर्ता संगठन का कथन)",
     "frozen": "रोका गया",
-    "abolished": "समाप्त"
+    "abolished": "समाप्त",
+    "laptop": "लैपटॉप",
+    "phone": "फ़ोन",
+    "pass": "प्रवेश पास",
+    "key": "चाबी",
+    "returned": "लौटाया गया",
+    "written_off": "बट्टे खाते में डाला गया"
   },
   "engagement": {
     "title": "नियुक्ति",

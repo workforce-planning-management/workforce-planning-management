@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "监控与评估",
     "not_high_risk": "非高风险（部署方的声明）",
     "frozen": "冻结",
-    "abolished": "已撤销"
+    "abolished": "已撤销",
+    "laptop": "笔记本电脑",
+    "phone": "手机",
+    "pass": "通行证",
+    "key": "钥匙",
+    "returned": "已归还",
+    "written_off": "已核销"
   },
   "engagement": {
     "title": "用工关系",

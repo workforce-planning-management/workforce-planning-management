@@ -2441,6 +2441,104 @@
         ]
       }
     },
+    "/api/asset-issues/{pid}/return": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The outcome",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Close an open issue as returned, or written_off with a reason, on a day not before it was issued and not in the future",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/assets": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The assets"
+          }
+        },
+        "summary": "The organization's assets (?organization=), each with whether it is out. Kind, tag and owner role only: no location, cost or reading is held",
+        "tags": [
+          "equipment"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the asset",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add an asset: kind (laptop, phone, pass, key, other), a tag unique within the organization, and the role that owns it",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/assets/{pid}/issue": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the issue",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Give an asset to a worker of its organization who is employed today, from a day not in the future and not before their first day. One holder at a time; audited in the same transaction",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
     "/api/audits": {
       "get": {
         "responses": {
@@ -10991,6 +11089,19 @@
         "summary": "Record an assessment (outcome contractor, employee or undetermined; assessed_on not in the future); the reviewer is the caller",
         "tags": [
           "engagements"
+        ]
+      }
+    },
+    "/api/workers/{pid}/equipment": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The issues"
+          }
+        },
+        "summary": "What a worker holds and has held, and how many pieces are still out. The worker themself and HR",
+        "tags": [
+          "equipment"
         ]
       }
     },

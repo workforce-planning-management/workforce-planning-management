@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "Monitorização e avaliação",
     "not_high_risk": "Não é de risco elevado (declaração do responsável pela implantação)",
     "frozen": "congelado",
-    "abolished": "extinto"
+    "abolished": "extinto",
+    "laptop": "portátil",
+    "phone": "telemóvel",
+    "pass": "cartão de acesso",
+    "key": "chave",
+    "returned": "devolvido",
+    "written_off": "abatido"
   },
   "engagement": {
     "title": "Vínculo",

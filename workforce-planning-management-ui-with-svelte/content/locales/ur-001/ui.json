@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "نگرانی اور جائزہ",
     "not_high_risk": "زیادہ خطرے والا نہیں (تعینات کرنے والے کا بیان)",
     "frozen": "منجمد",
-    "abolished": "ختم شدہ"
+    "abolished": "ختم شدہ",
+    "laptop": "لیپ ٹاپ",
+    "phone": "فون",
+    "pass": "داخلہ کارڈ",
+    "key": "چابی",
+    "returned": "واپس کر دیا گیا",
+    "written_off": "خارج کر دیا گیا"
   },
   "engagement": {
     "title": "تقرری",

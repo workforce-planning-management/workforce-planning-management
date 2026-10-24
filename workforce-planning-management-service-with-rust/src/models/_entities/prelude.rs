@@ -76,6 +76,8 @@ pub use super::oversight_readings::Entity as OversightReadings;
 pub use super::partner_commitments::Entity as PartnerCommitments;
 pub use super::plan_org_nodes::Entity as PlanOrgNodes;
 pub use super::positions::Entity as Positions;
+pub use super::assets::Entity as Assets;
+pub use super::asset_issues::Entity as AssetIssues;
 pub use super::pay_assessment_records::Entity as PayAssessmentRecords;
 pub use super::pay_categories::Entity as PayCategories;
 pub use super::pay_information_requests::Entity as PayInformationRequests;

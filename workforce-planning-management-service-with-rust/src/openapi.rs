@@ -607,6 +607,19 @@ fn add_integration_paths(document: &mut Value) {
         "/api/ai-register/{feature}": {
             "put": { "tags": ["ai-register"], "summary": "Replace what is recorded for a feature: category, oversight role (a role, not a person), the two informed dates (not in the future), log retention in months (under six needs a note naming the other law). A field left out is cleared. Audited in the same transaction", "responses": ok("The pid of the entry") }
         },
+        "/api/assets": {
+            "get": { "tags": ["equipment"], "summary": "The organization's assets (?organization=), each with whether it is out. Kind, tag and owner role only: no location, cost or reading is held", "responses": ok("The assets") },
+            "post": { "tags": ["equipment"], "summary": "Add an asset: kind (laptop, phone, pass, key, other), a tag unique within the organization, and the role that owns it", "responses": ok("The pid of the asset") }
+        },
+        "/api/assets/{pid}/issue": {
+            "post": { "tags": ["equipment"], "summary": "Give an asset to a worker of its organization who is employed today, from a day not in the future and not before their first day. One holder at a time; audited in the same transaction", "responses": ok("The pid of the issue") }
+        },
+        "/api/asset-issues/{pid}/return": {
+            "post": { "tags": ["equipment"], "summary": "Close an open issue as returned, or written_off with a reason, on a day not before it was issued and not in the future", "responses": ok("The outcome") }
+        },
+        "/api/workers/{pid}/equipment": {
+            "get": { "tags": ["equipment"], "summary": "What a worker holds and has held, and how many pieces are still out. The worker themself and HR", "responses": ok("The issues") }
+        },
         "/api/reports/pay-range": {
             "get": { "tags": ["reports"], "summary": "Pay position analysis (?organization=&as_of=&cutoff=): compa-ratio (pay over the band midpoint) and range penetration per band, level, department and location, and the groups far from everyone (cut-off in percentage points, default 10). Aggregates: groups under the floor are withheld with no count, a total that would reveal one is not shown, workers with no pay or no band are counted not zeroed. Needs an unmasked salary read; proposes no pay change. Audited", "responses": ok("The analysis") }
         },

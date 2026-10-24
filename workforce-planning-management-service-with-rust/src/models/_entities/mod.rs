@@ -83,6 +83,8 @@ pub mod partner_commitments;
 pub mod path_enrollments;
 pub mod pay_assessment_records;
 pub mod positions;
+pub mod assets;
+pub mod asset_issues;
 pub mod pay_categories;
 pub mod pay_information_requests;
 pub mod payroll_runs;

@@ -1754,7 +1754,13 @@
     "monitoring_evaluation": "Überwachung und Bewertung",
     "not_high_risk": "Nicht hochriskant (Angabe des Betreibers)",
     "frozen": "eingefroren",
-    "abolished": "aufgehoben"
+    "abolished": "aufgehoben",
+    "laptop": "Notebook",
+    "phone": "Telefon",
+    "pass": "Ausweis",
+    "key": "Schlüssel",
+    "returned": "zurückgegeben",
+    "written_off": "abgeschrieben"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

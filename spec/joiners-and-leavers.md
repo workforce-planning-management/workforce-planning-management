@@ -63,7 +63,7 @@ reassign it, with a record of who did what.*
   Completion is gated on nothing being left, so a leaver cannot be "closed"
   with live ownerships behind them.
 
-## Equipment issued and returned (WPM-R155, proposed; spec round WPM-T268)
+## Equipment issued and returned (WPM-R155; spec round WPM-T268, built WPM-T282)
 
 The open-source HR products all track company equipment (Frappe HRMS, Odoo, Horilla); WPM does the small part that matters to a
 joiner or a leaver.
@@ -76,3 +76,22 @@ joiner or a leaver.
 - **Access.** HR and the asset owner role write; a worker sees their own issued equipment; a manager sees a count of their team's
   open issues, not the items (WPM-D35). Issues are in the subject-access export and erased with the worker (the asset stays).
 - **Not done.** No cost, depreciation or insurance; no tracking of where an asset is. Delivery: WPM-T282.
+
+**Built (WPM-T282).** Migration `m20261024_000088_equipment` (`assets`: kind, tag unique per organization, owner role;
+`asset_issues`: asset, worker, issued on, returned on, outcome, note), `rules::equipment` (pure checks), `controllers/equipment.rs`:
+`GET|POST /api/assets`, `POST /api/assets/{pid}/issue`, `POST /api/asset-issues/{pid}/return`, `GET /api/workers/{pid}/equipment`.
+- **No location, cost or value column**; a source test fails if the rule file reaches for those words. Kinds: laptop, phone, pass,
+  key, other.
+- **One holder at a time** (a partial unique index on open issues, and a check before it). An issue goes to an employed worker of the
+  asset's organization, from a day that is not in the future and not before their first day. A return is `returned`, or
+  `written_off` with a reason (a check constraint as well); it cannot predate the issue. An issue is closed, never deleted. Each
+  write is audited in its transaction (`asset_created`, `asset_issued`, `asset_returned`, `asset_written_off`) with no tag.
+- **The leaver gate.** `POST /api/movements/{pid}/complete` is refused while the leaver has equipment out, and the 422 says how many
+  pieces; the existing "equipment returned" checklist item is unchanged and is still ticked by a person.
+- **Access.** Writes follow the policy (HR, payroll-excluded, service and administrators; a worker is refused); the asset list is
+  need-to-know "privileged"; the worker themself or HR reads a worker's issues. The subject-access export lists `asset_issues`;
+  erasure deletes them and keeps the asset.
+- **Not built:** the asset owner role as its own permission (HR and administrators write; the owner role is a label); the manager's
+  count of the team's open issues; the equipment as items on the leaver checklist itself and in the handover trail (only the gate
+  and the per-worker list exist); a screen; a bulk import; retiring an asset.
+
