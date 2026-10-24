@@ -4442,8 +4442,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `enforcement_me`, `security`, `route_coverage`, clippy pedantic clean. Not done: any real identity provider or Keycloak (none was
       run, so interoperability with Entra ID or Okta is **unverified**); a schedule; the handover's last day as the deprovision date
       (the termination date is used); `PATCH` and groups; the token by reference; a screen or status route for the push state.
-- [ ] WPM-T277 **Outbound webhooks.** *(WPM-R151, WPM-D106)* Subscriptions, HMAC signature, retry with back-off, a delivery
+- [x] (2026-10-24) WPM-T277 **Outbound webhooks.** *(WPM-R151, WPM-D106)* Subscriptions, HMAC signature, retry with back-off, a delivery
       log with no payload body; a test that payloads hold URNs and kinds only.
+      Done: `rules::webhook` (the offered events, the four payload fields, HMAC-SHA256 written out and checked against RFC 4231
+      vectors, a signature with a signed timestamp and its verifier, the retry decision, endpoint and secret-reference checks; 8
+      tests), migration `m20261024_000085_webhooks` (a delivery has no body column), `controllers/webhooks.rs` (administrators only;
+      audited in the transaction), `streaming::emit_on` queues deliveries on the change's own transaction, `tasks/webhook_deliver.rs`
+      sends them. Erasure removes the deliveries that name a worker. Verified (Postgres 18, Podman) **against a stub receiver that I
+      wrote**: 737 unit tests, 145 request tests (1 new: bad endpoints, internal addresses, a settings name and unoffered kinds
+      refused; the secret never returned; an unrequested event and an inactive subscription queue nothing; the signed delivery verifies
+      with the secret and fails with another; the body has exactly the four fields and no name or number; the log's columns; a `503`
+      retried only after its back-off; a `400` not repeated; **no audit, no subscription**; a rolled-back change queues nothing;
+      rename and switch off; removal takes the log), `enforcement_pay_gap` (extended with an administrator token: anonymous 401, a worker
+      and HR 403 on every route, the administrator 200), `enforcement_pay_information`, `enforcement_equality`, `enforcement`,
+      `enforcement_need_to_know`, `enforcement_me`, `security`, `route_coverage`, clippy pedantic clean, 209 UI unit tests. Not done: any
+      real receiver (none was run); a schedule; a "movement" event (none is emitted); protection against a host name that resolves to
+      an internal address; replay of a failed delivery; a screen; the other `enforcement_*` binaries were not re-run.
 - [ ] WPM-T278 **Positions: pure core.** *(WPM-R152, WPM-D104)* States and moves, vacancy and over-establishment arithmetic.
 - [ ] WPM-T279 **Positions: records, API and screen.** *(WPM-R152)* Links to plan demand lines, requisitions and post funding;
       an establishment view per cost centre.

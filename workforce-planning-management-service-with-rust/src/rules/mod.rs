@@ -85,6 +85,7 @@ pub mod time_off;
 pub mod tokens;
 pub mod tolerance;
 pub mod training;
+pub mod webhook;
 pub mod wellbeing;
 pub mod workforce;
 pub mod working_time;

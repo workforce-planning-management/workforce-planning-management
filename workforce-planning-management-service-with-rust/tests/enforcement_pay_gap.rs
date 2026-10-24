@@ -103,6 +103,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
     ));
     let worker_p = uuid::Uuid::new_v4();
     let worker = bearer(sign_as(&kid, &worker_p.to_string(), &[]));
+    let admin = bearer(sign_as(&kid, "admin-user", &[("access", &["admin"])]));
 
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
@@ -259,6 +260,24 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         // It cannot be steered to a route outside the table.
         let steer = request.post("/mcp").add_header("authorization", worker.clone()).json(&tool("get_workforce_plan", json!({ "pid": "../workers" }))).await.json::<Value>();
         assert_eq!(steer["result"]["isError"], true);
+
+        // ── Webhooks: administrators only, and the secret is a name, not a value ─────────────────────
+        let subs = "/api/webhook-subscriptions";
+        let new = json!({ "name": "Payroll", "url": "https://hooks.example/wpm", "kinds": ["worker_terminated"], "secret_ref": "WPM_WEBHOOK_SECRET_PAYROLL" });
+        assert_eq!(request.get(subs).await.status_code(), 401);
+        assert_eq!(get(subs.to_string(), worker.clone()).await.status_code(), 403, "a worker");
+        assert_eq!(get(subs.to_string(), hr.clone()).await.status_code(), 403, "HR is not an administrator");
+        assert_eq!(request.post(subs).add_header("authorization", hr.clone()).json(&new).await.status_code(), 403, "HR may not subscribe");
+        assert_eq!(request.post(subs).add_header("authorization", worker.clone()).json(&new).await.status_code(), 403);
+        let made = request.post(subs).add_header("authorization", admin.clone()).json(&new).await;
+        assert_eq!(made.status_code(), 200, "an administrator subscribes: {}", made.text());
+        let hook: Value = made.json();
+        assert_eq!(get(subs.to_string(), admin.clone()).await.status_code(), 200);
+        let log = format!("{subs}/{}/deliveries", hook["pid"].as_str().unwrap());
+        assert_eq!(get(log.clone(), hr.clone()).await.status_code(), 403);
+        assert_eq!(get(log, admin.clone()).await.status_code(), 200);
+        assert_eq!(request.delete(&format!("{subs}/{}", hook["pid"].as_str().unwrap())).add_header("authorization", hr.clone()).await.status_code(), 403);
+        assert_eq!(request.delete(&format!("{subs}/{}", hook["pid"].as_str().unwrap())).add_header("authorization", admin.clone()).await.status_code(), 200);
 
         // ── Take the sex answers away and there is nothing to compare ────────────────────
         ctx.db.execute_unprepared("DELETE FROM equality_declarations").await.unwrap();

@@ -108,6 +108,22 @@ endpoint in its core as far as this round found) or any real identity provider: 
 - **Payload.** URNs and event kinds only (`worker:<pid>`, `leave_approved`), **never a personal field** (WPM-D106). A subscriber that
   needs more reads it through the API under its own access. A test fails if a payload field outside the allow-list is added.
 
+**Built (WPM-T277).** Administrators (`access=admin`; HR is refused) manage `POST/GET /api/webhook-subscriptions`,
+`PUT/DELETE /api/webhook-subscriptions/{pid}` and read `GET .../{pid}/deliveries`. A subscription has an endpoint, kinds from the
+offered list (`worker_hired`, `worker_activated`, `worker_terminated`, `worker_retired`, `leave_approved`), a **secret reference**
+(the name of an environment variable, `WPM_WEBHOOK_SECRET_<NAME>`, so it cannot point at any other setting) and an on/off flag.
+The endpoint is `https` to a host that is not an internal address literal, or `http` to this machine, with no credentials, query or
+fragment. **Deliveries are queued in the transaction of the change** (`streaming::emit_on` writes one row per matching active
+subscription), so a change that rolls back tells nobody. The task `webhook_deliver` sends them: the payload is `{id, kind, subject,
+occurred_at}` where `subject` is the URN (`worker:<pid>`, `leave_request:<pid>`), signed `X-WPM-Signature: t=<unix>,v1=<HMAC-SHA256
+of "<t>.<body>">` with the timestamp inside the signature, no redirects followed, a 10 second timeout. 2xx is delivered; a network
+failure, `408`, `429` and `5xx` are retried with a back-off of one minute doubling to a day, ten tries in all; any other answer is a
+refusal and is not repeated. The log keeps the HTTP status and a short reason; **there is no column for a body**. Erasure deletes the
+deliveries that name the worker. Settings: the secret variables only. **Not built:** a schedule (run `cargo loco task
+webhook_deliver` every minute or so); the other events in the spec's list ("movement": WPM emits no movement event on the
+transport); DNS-rebinding protection (a host name that later resolves to an internal address is not caught, only address literals
+are); the secret rotated without a gap; a screen; a replay of a failed delivery.
+
 ### Decisions
 
 - **WPM-D101 — An agent sees what the caller sees.** The MCP server is an adapter over existing endpoints under the caller's token.

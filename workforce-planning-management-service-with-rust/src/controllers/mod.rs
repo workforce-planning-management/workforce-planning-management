@@ -73,6 +73,7 @@ pub mod skill_gaps;
 pub mod talent;
 pub mod training_plan;
 pub mod transfers;
+pub mod webhooks;
 pub mod wellbeing;
 pub mod workforce;
 

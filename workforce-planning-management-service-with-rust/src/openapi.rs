@@ -460,6 +460,7 @@ pub fn spec() -> Value {
         }
     });
     add_governance_paths(&mut document);
+    add_integration_paths(&mut document);
     typed_answers(&mut document);
     decorate(&mut document);
     document
@@ -549,6 +550,27 @@ fn add_governance_paths(document: &mut Value) {
         },
         "/api/pay-transparency/gap-report/csv": {
             "get": { "tags": ["pay-transparency"], "summary": "The same report as CSV, one row per figure with the two figures each gap comes from; the export is audited", "responses": ok("A CSV file") }
+        },
+    });
+    if let (Some(target), Some(extra)) = (document["paths"].as_object_mut(), paths.as_object()) {
+        target.extend(extra.clone());
+    }
+}
+
+/// The webhook, MCP, AI register and report paths (WPM-R147 to WPM-R151), in their own function for the same reason.
+fn add_integration_paths(document: &mut Value) {
+    let ok = |what: &str| json!({ "200": { "description": what } });
+    let paths = json!({
+        "/api/webhook-subscriptions": {
+            "get": { "tags": ["webhooks"], "summary": "Administrators only. The webhook subscriptions (endpoint, event kinds, the name of the environment variable holding the signing secret, whether that variable is set, whether on) with how many deliveries wait, were delivered or gave up, and the kinds on offer", "responses": ok("The subscriptions") },
+            "post": { "tags": ["webhooks"], "summary": "Administrators only. Subscribe an https endpoint (or http to this machine; no credentials, query or internal address) to event kinds, signing with the secret named by secret_ref (WPM_WEBHOOK_SECRET_<NAME>); the secret itself is never stored or returned. Audited in the same transaction", "responses": ok("The pid of the subscription") }
+        },
+        "/api/webhook-subscriptions/{pid}": {
+            "put": { "tags": ["webhooks"], "summary": "Administrators only. Replace a subscription's name, endpoint, kinds, secret reference and whether it is on", "responses": ok("The pid") },
+            "delete": { "tags": ["webhooks"], "summary": "Administrators only. Remove a subscription and its delivery log", "responses": ok("The pid") }
+        },
+        "/api/webhook-subscriptions/{pid}/deliveries": {
+            "get": { "tags": ["webhooks"], "summary": "Administrators only. The delivery log, newest first (?limit=): event id, kind, the URN of the record, status, attempts, last HTTP status and a short reason. No payload body is kept, so none is shown", "responses": ok("The deliveries") }
         },
         "/mcp": {
             "post": { "tags": ["mcp"], "summary": "A read-only Model Context Protocol server (Streamable HTTP, revision 2025-11-25, JSON replies, no session): initialize, ping, tools/list and tools/call over ten existing reads. Each tool is one GET route called in process under the caller's own token, so the API's policy decides and a caller without access is refused as on the route. No write tool, no service account. Every tool call is audited with the tool name first; if the audit cannot be written the call is refused. A browser Origin must be listed in WPM_MCP_ALLOWED_ORIGINS", "responses": ok("A JSON-RPC reply") }

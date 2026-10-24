@@ -272,6 +272,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM flexible_working_requests WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM pay_information_requests WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM scim_pushes WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM webhook_deliveries WHERE subject = 'worker:{epid}'"),
         format!("DELETE FROM engagement_extensions WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_contractor_details WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM engagement_status_assessments WHERE worker_pid = '{epid}'"),

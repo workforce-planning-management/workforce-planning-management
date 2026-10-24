@@ -56,6 +56,7 @@ mod shared_cache;
 mod skill_gaps;
 mod talent;
 mod tolerances;
+mod webhooks;
 mod wellbeing;
 mod workforce;
 

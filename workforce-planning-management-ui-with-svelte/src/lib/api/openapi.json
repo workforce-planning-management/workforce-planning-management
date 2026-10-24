@@ -9724,6 +9724,115 @@
         ]
       }
     },
+    "/api/webhook-subscriptions": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The subscriptions"
+          }
+        },
+        "summary": "Administrators only. The webhook subscriptions (endpoint, event kinds, the name of the environment variable holding the signing secret, whether that variable is set, whether on) with how many deliveries wait, were delivered or gave up, and the kinds on offer",
+        "tags": [
+          "webhooks"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the subscription",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Administrators only. Subscribe an https endpoint (or http to this machine; no credentials, query or internal address) to event kinds, signing with the secret named by secret_ref (WPM_WEBHOOK_SECRET_<NAME>); the secret itself is never stored or returned. Audited in the same transaction",
+        "tags": [
+          "webhooks"
+        ]
+      }
+    },
+    "/api/webhook-subscriptions/{pid}": {
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Administrators only. Remove a subscription and its delivery log",
+        "tags": [
+          "webhooks"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Administrators only. Replace a subscription's name, endpoint, kinds, secret reference and whether it is on",
+        "tags": [
+          "webhooks"
+        ]
+      }
+    },
+    "/api/webhook-subscriptions/{pid}/deliveries": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The deliveries"
+          }
+        },
+        "summary": "Administrators only. The delivery log, newest first (?limit=): event id, kind, the URN of the record, status, attempts, last HTTP status and a short reason. No payload body is kept, so none is shown",
+        "tags": [
+          "webhooks"
+        ]
+      }
+    },
     "/api/wellbeing-entitlements": {
       "get": {
         "responses": {

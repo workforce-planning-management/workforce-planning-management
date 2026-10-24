@@ -243,6 +243,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("workers/{}/payslips", Worker(SelfOnly)),
     ("workers/{}/placements", Worker(WithManagers)),
     ("workers/{}/registrations", Worker(WithManagers)),
+    ("webhook-subscriptions", ControllerDecides),
+    ("webhook-subscriptions/{}/deliveries", ControllerDecides),
     ("workers/{}/reports", Worker(InScope)),
     ("workers/{}/resignation", Worker(WithManagers)),
     ("workers/{}/reviews", Worker(WithManagers)),

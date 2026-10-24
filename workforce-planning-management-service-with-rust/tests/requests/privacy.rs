@@ -74,6 +74,13 @@ async fn subject_rights_round_trip() {
                 ))
                 .await
                 .unwrap();
+            ctx.db
+                .execute_unprepared(&format!(
+                    "WITH s AS (INSERT INTO webhook_subscriptions (pid, name, url, kinds, secret_ref) VALUES (gen_random_uuid(), 'x', 'https://hooks.example/x', ARRAY['worker_terminated'], 'WPM_WEBHOOK_SECRET_X') RETURNING pid)
+                     INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, occurred_at) SELECT gen_random_uuid(), pid, gen_random_uuid(), 'worker_terminated', 'worker:{worker}', now() FROM s"
+                ))
+                .await
+                .unwrap();
         }
 
         // ── Erasure is refused while employment is open.
@@ -111,6 +118,17 @@ async fn subject_rights_round_trip() {
                 .unwrap();
             let n: i64 = left.try_get("", "n").unwrap();
             assert_eq!(n, 0, "erasure removes the identity provider link");
+            let queued = ctx
+                .db
+                .query_one_raw(sea_orm::Statement::from_string(
+                    sea_orm::DatabaseBackend::Postgres,
+                    format!("SELECT count(*) AS n FROM webhook_deliveries WHERE subject = 'worker:{worker}'"),
+                ))
+                .await
+                .unwrap()
+                .unwrap();
+            let n: i64 = queued.try_get("", "n").unwrap();
+            assert_eq!(n, 0, "erasure removes the webhook deliveries that name the worker");
         }
         // The worker is gone from reads (soft-deleted) …
         assert_eq!(

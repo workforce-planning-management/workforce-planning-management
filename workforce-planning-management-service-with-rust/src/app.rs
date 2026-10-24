@@ -127,6 +127,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::pay_assessment::routes())
         .add_route(controllers::human_capital::routes())
         .add_route(controllers::ai_register::routes())
+        .add_route(controllers::webhooks::routes())
         .add_route(controllers::health_requirements::routes())
         .add_route(controllers::esco::routes())
         .add_route(controllers::framework_roles::routes())
@@ -329,6 +330,7 @@ impl Hooks for App {
     fn register_tasks(tasks: &mut Tasks) {
         tasks.register(tasks::seed::Seed);
         tasks.register(tasks::scim_push::ScimPush);
+        tasks.register(tasks::webhook_deliver::WebhookDeliver);
         tasks.register(tasks::rota_reminders::RotaReminders);
         tasks.register(tasks::pay_progression_reminders::PayProgressionReminders);
         tasks.register(tasks::snapshot::SnapshotHeadcount);

@@ -39,6 +39,7 @@ the compose file are written but were not built where this was written; try them
 | `WPM_SCIM_BASE_URL` | for `scim_push` | none | The identity provider's SCIM 2.0 base URL (`https`, or `http` to this machine). Run `cargo loco task scim_push` on a schedule |
 | `WPM_SCIM_TOKEN` | for `scim_push` | none | The bearer token for the SCIM service. Never logged or stored |
 | `WPM_SCIM_ORGANIZATION` | no | all | Only provision this organization's workers (`organization:<uuid>`) |
+| `WPM_WEBHOOK_SECRET_<NAME>` | for each webhook subscription | none | The signing secret of a webhook subscription whose `secret_ref` is this name. Held in the environment, never stored, returned or logged. Run `cargo loco task webhook_deliver` on a schedule |
 | `WPM_PAY_GAP_SEX_CATEGORY` | no | `sex` | The equality category the pay gap report reads as female or male (values `female` and `male`; any other value counts as left out). It must be one of `WPM_EQUALITY_CATEGORIES`, and the report needs equality monitoring on (WPM-R144) |
 | `WPM_HEALTH_REQUIREMENTS_BASIS` | no | off | **Workplace health requirements are off unless this is set** to the lawful basis you rely on, in your words. It is health data: do your own impact assessment and agree the role with your occupational health provider first. Only a token with the attribute `occupational_health=true` can record a status |
 | `WPM_HEALTH_FLOOR` | no | `10` | The smallest group the compliance counts may show (at least 5) |
