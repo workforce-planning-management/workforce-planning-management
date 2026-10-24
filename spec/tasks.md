@@ -4499,8 +4499,21 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       target on the screen (API only); one target per plan; the phone screenshot was taken and not looked at; the `keycloak`, `chaos`
       and other `enforcement_*` binaries were not re-run. One earlier webhook request test turned out to depend on the host and
       database clocks agreeing; it now starts its clock a minute on.
-- [ ] WPM-T281 **Pay position analysis.** *(WPM-R154)* Compa-ratio and range penetration per band, outliers by level,
-      department and location, with the floor.
+- [~] (2026-10-24) WPM-T281 **Pay position analysis.** *(WPM-R154, WPM-D108)* Compa-ratio and range penetration per band, outliers by
+      level, department and location, with the floor.
+      Done in part: the API, no screen. `rules::pay_range` (pure; compa-ratio and penetration in basis points, penetration not
+      clamped and unknown for a one-rate band; groups by band, level, department and location with the floor; a total held back when
+      it would give a withheld group away (WPM-D108); outliers as groups against the mean of everyone; 18 unit tests), the route
+      `GET /api/reports/pay-range` (payroll-level unmasked salary read, audited with the day only), no table or column. Decision and
+      definitions in `spec/payroll-compensation.md`. Verified (Postgres 18, Podman): 777 unit tests, 148 request tests (new: groups,
+      a group of three withheld with no count, the total unknown as `would_reveal`, then shown without it with an outlier above and
+      below at a 3-point cut-off and none at the default, nothing named, bad input 422), `enforcement_pay_gap` (401, worker 403, HR
+      403 masked, payroll 200), `enforcement`, `enforcement_pay_information`, `enforcement_equality`, `enforcement_need_to_know`,
+      `enforcement_me`, `security` and `route_coverage`, clippy pedantic clean; UI 209 unit tests (OpenAPI copy and types
+      regenerated). Mutation check: seven deliberate faults; one (the floor off by one on a group) survived, so a boundary test was
+      added and then caught it. **Not done:** a screen, a CSV, the intermediate step as a reference point, part-time normalisation
+      (salary read as full-time-equivalent), the Playwright suite and `svelte-check` (no UI change beyond generated types), and the
+      `keycloak` and `chaos` binaries. A lib test (`every_audit_of_a_change_is_in_its_transaction`) needed the read audit listed.
 - [ ] WPM-T282 **Equipment issued and returned.** *(WPM-R155)* Assets and issues; open issues on the leaver checklist.
 - [ ] WPM-T283 **Policies and acknowledgements.** *(WPM-R156, WPM-D105)* Versioned policies by audience; acknowledgement per
       version; manager counts; HR's named, audited record.

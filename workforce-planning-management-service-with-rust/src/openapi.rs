@@ -607,6 +607,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/ai-register/{feature}": {
             "put": { "tags": ["ai-register"], "summary": "Replace what is recorded for a feature: category, oversight role (a role, not a person), the two informed dates (not in the future), log retention in months (under six needs a note naming the other law). A field left out is cleared. Audited in the same transaction", "responses": ok("The pid of the entry") }
         },
+        "/api/reports/pay-range": {
+            "get": { "tags": ["reports"], "summary": "Pay position analysis (?organization=&as_of=&cutoff=): compa-ratio (pay over the band midpoint) and range penetration per band, level, department and location, and the groups far from everyone (cut-off in percentage points, default 10). Aggregates: groups under the floor are withheld with no count, a total that would reveal one is not shown, workers with no pay or no band are counted not zeroed. Needs an unmasked salary read; proposes no pay change. Audited", "responses": ok("The analysis") }
+        },
         "/api/reports/human-capital": {
             "get": { "tags": ["reports"], "summary": "The human capital report (?organization=&as_of=): headcount and FTE by employment type, starters, leavers, turnover, time to fill, training completion and succession coverage, each with its definition, source, period and exclusions, laid beside ISO 30414 areas and ESRS S1 requirements by name. Groups under the floor are withheld; what WPM cannot compute is unknown with a reason; the named metrics WPM does not cover are listed. Audited", "responses": ok("The report") }
         }

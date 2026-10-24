@@ -55,7 +55,7 @@ applied to HR.
 | the AI and scoring register (WPM-R148) | medium — read by any signed-in caller (it is a notice of how people are scored); written by HR and administrators |
 | MCP tools (WPM-R149), webhook subscriptions (WPM-R151), SCIM (WPM-R150, proposed) | high — administrators only; a secret is held by reference and never read back |
 | positions (WPM-R152) | medium — HR and planners; the holder link is HR only, a manager sees counts |
-| pay position analysis (WPM-R154, proposed) | highest — roles that may read salaries; groups under the floor withheld |
+| pay position analysis (WPM-R154) | highest — roles that may read salaries; groups under the floor withheld |
 | equipment issues (WPM-R155, proposed) | low — the worker, HR and the asset owner role; a manager sees a count |
 | policy acknowledgements (WPM-R156, proposed) | medium — the worker's own; a manager sees counts; HR sees names (audited) |
 | credential issuances, skill mappings (WPM-R157–R158, proposed) | low — the worker's own issuances; mappings are reference data |

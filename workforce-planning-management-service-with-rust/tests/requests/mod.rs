@@ -45,6 +45,7 @@ mod pay_assessment;
 mod positions;
 mod pay_information;
 mod pay_positions;
+mod pay_range;
 mod pay_scales;
 mod pay_transparency;
 mod payroll;

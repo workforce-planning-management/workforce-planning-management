@@ -67,6 +67,7 @@ pub mod pay_category;
 pub mod pay_gap;
 pub mod pay_information;
 pub mod pay_position;
+pub mod pay_range;
 pub mod pay_scale;
 pub mod payroll;
 pub mod planning;

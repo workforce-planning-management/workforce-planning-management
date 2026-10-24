@@ -9494,6 +9494,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reports/pay-range": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pay position analysis (?organization=&as_of=&cutoff=): compa-ratio (pay over the band midpoint) and range penetration per band, level, department and location, and the groups far from everyone (cut-off in percentage points, default 10). Aggregates: groups under the floor are withheld with no count, a total that would reveal one is not shown, workers with no pay or no band are counted not zeroed. Needs an unmasked salary read; proposes no pay change. Audited */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The analysis */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/requisitions": {
         parameters: {
             query?: never;

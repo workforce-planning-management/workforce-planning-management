@@ -7943,6 +7943,19 @@
         ]
       }
     },
+    "/api/reports/pay-range": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The analysis"
+          }
+        },
+        "summary": "Pay position analysis (?organization=&as_of=&cutoff=): compa-ratio (pay over the band midpoint) and range penetration per band, level, department and location, and the groups far from everyone (cut-off in percentage points, default 10). Aggregates: groups under the floor are withheld with no count, a total that would reveal one is not shown, workers with no pay or no band are counted not zeroed. Needs an unmasked salary read; proposes no pay change. Audited",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
     "/api/requisitions": {
       "get": {
         "responses": {

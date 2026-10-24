@@ -172,6 +172,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("resignations/summary", Privileged),
     ("retention", Privileged),
     ("reports/human-capital", Privileged),
+    ("reports/pay-range", Privileged),
     ("retention/schedule", Privileged),
     ("review-cycles", Open),
     ("reviews/{}", ReviewRecord),

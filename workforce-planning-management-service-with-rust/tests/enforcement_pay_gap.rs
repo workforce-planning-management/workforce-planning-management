@@ -236,6 +236,17 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert!(!hc.to_string().contains("Pay Gap Enforcement"), "no worker named");
         assert!(hc["report"]["figures"].as_array().unwrap().iter().any(|f| f["key"] == "headcount"));
 
+        // ── Pay position analysis: made of salaries, so payroll reads it; HR (masked) and a worker do not ──
+        let range = format!("/api/reports/pay-range?organization={org}");
+        assert_eq!(request.get(&range).await.status_code(), 401);
+        assert_eq!(get(range.clone(), worker.clone()).await.status_code(), 403, "a worker");
+        let masked = get(range.clone(), hr.clone()).await;
+        assert_eq!(masked.status_code(), 403, "HR reads salaries masked: {}", masked.text());
+        assert!(masked.text().contains("payroll read"), "{}", masked.text());
+        let placed = get(range.clone(), payroll.clone()).await;
+        assert_eq!(placed.status_code(), 200, "payroll reads it: {}", placed.text());
+        assert!(!placed.text().contains("Pay Gap Enforcement"), "no worker named");
+
         // ── The AI register: any signed-in caller reads it; HR records; nobody else ──────────────────
         assert_eq!(request.get("/api/ai-register").await.status_code(), 401);
         assert_eq!(get("/api/ai-register".to_string(), worker.clone()).await.status_code(), 200, "a worker reads how people are scored");
