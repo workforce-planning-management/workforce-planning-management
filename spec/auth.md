@@ -117,6 +117,11 @@ and refuses one meant to live for days. **Set it to what your provider actually 
   signing key or a mass compromise.
 - **Keep audience and issuer exact** (`WPM_TOKEN_AUDIENCE`, `WPM_TOKEN_ISSUER`), so a token for another application is refused.
 
+**The UI keeps the token it exchanged (WPM-T264).** The proxy exchanges a session for a token once and reuses it for every call
+until 30 seconds before its `exp`, in server memory only, with at most 1,000 sessions remembered. Sign-out forgets it at once, and
+so does a `401` from the API. It does not shorten the bound above, since the API checks every token itself; it means a session ended
+at the authentication service keeps working here for up to one token lifetime, as it already could with a token in hand.
+
 **Not done.** No revocation list or introspection call (they would make the provider a dependency of every request); no check of the
 `sid` against the provider; no refresh handling (that belongs to the UI's session, not the API).
 

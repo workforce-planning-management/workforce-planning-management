@@ -4215,8 +4215,16 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       the schema for each needs that helper read. The 65 were all writes; the reads were typed by hand already, so the
       hand-written response types in `types.ts` and inline in `wpm.ts` are still not generated, and the document has no schema for
       them. Left open (`[~]`).
-- [ ] WPM-T264 **Cache the exchanged token.** Per session id until shortly before expiry, cleared on sign-out; a unit test that
+- [x] WPM-T264 **Cache the exchanged token.** Per session id until shortly before expiry, cleared on sign-out; a unit test that
       one page load exchanges once.
+      Done: `src/lib/server/token-cache.ts` (`TokenCache`, `tokenExpiry`) keeps the exchanged token per session id in server memory
+      until 30 s before its `exp` (read from the PASETO message, not verified: the API still verifies every token), shares one
+      in-flight exchange among simultaneous calls, remembers at most 1,000 sessions, and does not keep a token whose expiry it cannot
+      read. The proxy uses it; sign-out and a `401` from the API forget the token. Verified: 12 new unit tests (nine on the cache,
+      three through the proxy handler: twenty calls exchange once with one bearer; a refused token is exchanged again; sign-out
+      forgets), 202 UI unit tests, `svelte-check` and prettier clean. Not checked: a real authentication service (the exchange is
+      stubbed), the effect on latency, more than one server process (each keeps its own cache; that is correct but untested), and
+      `spec/auth.md` now says a session ended elsewhere works for up to one token lifetime here.
 - [ ] WPM-T265 **UI dependency and config hygiene.** Drop the five unused Lily picker packages and align `share-picker` with
       `svelte-picker-bar`; `adapter-node` in place of `adapter-auto`; remove `apiConditional`; one shared `write()` for
       oversight, capacity and cutover.

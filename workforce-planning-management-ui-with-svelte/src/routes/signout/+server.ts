@@ -5,6 +5,7 @@
 import type { RequestHandler } from "./$types";
 import { redirect } from "@sveltejs/kit";
 import { signout } from "#lib/server/auth.js";
+import { tokens } from "#lib/server/token-cache.js";
 import { isDemoSession } from "#lib/server/demo.js";
 import { clearSessionCookie } from "#lib/server/session.js";
 
@@ -16,6 +17,7 @@ export const POST: RequestHandler = async ({ locals, cookies, fetch, url }) => {
     } catch {
       // The cookie below is cleared regardless.
     }
+    tokens.forget(locals.sessionId);
   }
   clearSessionCookie(cookies, url);
   redirect(303, "/");

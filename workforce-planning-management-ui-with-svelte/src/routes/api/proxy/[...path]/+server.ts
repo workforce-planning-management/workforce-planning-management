@@ -15,6 +15,7 @@ import type { RequestHandler } from "./$types";
 import { WPM_API_URL, WPM_DEMO_API_URL } from "#lib/server/config.js";
 import { demoMemberships, isDemoSession } from "#lib/server/demo.js";
 import { exchangeToken } from "#lib/server/auth.js";
+import { tokens } from "#lib/server/token-cache.js";
 import { forwardHeaders, isSafeApiPath } from "#lib/server/proxy.js";
 
 const proxy: RequestHandler = async ({
@@ -63,10 +64,11 @@ const proxy: RequestHandler = async ({
 
   // Session → short-lived PASETO, server-side only (WPM-T18). Only the allow-listed headers go with it: never the
   // browser's cookie, its own authorization or its x-forwarded-for (WPM-T248); a plain idempotency key does (WPM-R132).
-  const token =
-    locals.sessionId && !demo
-      ? await exchangeToken(fetch, locals.sessionId)
-      : null;
+  // One exchange serves every call of a page until shortly before the token expires (WPM-T264).
+  const sid = locals.sessionId && !demo ? locals.sessionId : null;
+  const token = sid
+    ? await tokens.get(sid, () => exchangeToken(fetch, sid))
+    : null;
   let clientAddress: string | null = null;
   try {
     clientAddress = getClientAddress();
@@ -81,6 +83,8 @@ const proxy: RequestHandler = async ({
   }
 
   const upstream = await fetch(target, init);
+  // A token the API refused is not kept: the next call exchanges again.
+  if (upstream.status === 401 && sid) tokens.forget(sid);
 
   const responseHeaders = new Headers();
   for (const name of ["content-type", "etag"]) {
