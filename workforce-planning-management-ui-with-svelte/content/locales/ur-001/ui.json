@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "ملازمت کے تعلق پر فیصلے",
     "task_allocation": "کاموں کی تقسیم",
     "monitoring_evaluation": "نگرانی اور جائزہ",
-    "not_high_risk": "زیادہ خطرے والا نہیں (تعینات کرنے والے کا بیان)"
+    "not_high_risk": "زیادہ خطرے والا نہیں (تعینات کرنے والے کا بیان)",
+    "frozen": "منجمد",
+    "abolished": "ختم شدہ"
   },
   "engagement": {
     "title": "تقرری",

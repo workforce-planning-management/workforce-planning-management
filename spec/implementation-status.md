@@ -10,13 +10,13 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Measure | Count |
 | --- | ---: |
 | Tasks done in `spec/tasks.md` | 226 |
-| Tasks not done (open or proposed) | 47 |
+| Tasks not done (open or proposed) | 46 |
 | Highest task number marked done | WPM-T267 |
 | Database migrations | 85 |
 | Controllers | 68 |
-| Pure rule modules | 85 |
+| Pure rule modules | 86 |
 | OpenAPI paths | 384 |
-| Rust unit tests (`#[test]` in `src/`) | 755 |
+| Rust unit tests (`#[test]` in `src/`) | 768 |
 | Rust request tests (`tests/requests/`) | 145 |
 | Rust test binaries beside the request suite | 22 |
 | Front-end unit test files | 27 |

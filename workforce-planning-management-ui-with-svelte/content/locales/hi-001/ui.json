@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "कार्य-संबंध पर निर्णय",
     "task_allocation": "कार्य का आवंटन",
     "monitoring_evaluation": "निगरानी और मूल्यांकन",
-    "not_high_risk": "उच्च जोखिम नहीं (उपयोगकर्ता संगठन का कथन)"
+    "not_high_risk": "उच्च जोखिम नहीं (उपयोगकर्ता संगठन का कथन)",
+    "frozen": "रोका गया",
+    "abolished": "समाप्त"
   },
   "engagement": {
     "title": "नियुक्ति",

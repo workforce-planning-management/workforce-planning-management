@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "القرارات المتعلقة بعلاقة العمل",
     "task_allocation": "توزيع المهام",
     "monitoring_evaluation": "المراقبة والتقييم",
-    "not_high_risk": "ليس عالي المخاطر (إقرار الجهة المشغِّلة)"
+    "not_high_risk": "ليس عالي المخاطر (إقرار الجهة المشغِّلة)",
+    "frozen": "مجمّد",
+    "abolished": "ملغى"
   },
   "engagement": {
     "title": "التعاقد",

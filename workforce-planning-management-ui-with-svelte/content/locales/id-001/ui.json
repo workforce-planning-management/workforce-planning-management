@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "Keputusan tentang hubungan kerja",
     "task_allocation": "Pembagian tugas",
     "monitoring_evaluation": "Pemantauan dan evaluasi",
-    "not_high_risk": "Bukan berisiko tinggi (pernyataan penyelenggara)"
+    "not_high_risk": "Bukan berisiko tinggi (pernyataan penyelenggara)",
+    "frozen": "dibekukan",
+    "abolished": "dihapus"
   },
   "engagement": {
     "title": "Keterlibatan",

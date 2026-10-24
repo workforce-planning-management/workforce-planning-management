@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "Decisiones sobre la relación laboral",
     "task_allocation": "Asignación de tareas",
     "monitoring_evaluation": "Supervisión y evaluación",
-    "not_high_risk": "No es de alto riesgo (declaración del responsable del despliegue)"
+    "not_high_risk": "No es de alto riesgo (declaración del responsable del despliegue)",
+    "frozen": "congelado",
+    "abolished": "suprimido"
   },
   "engagement": {
     "title": "Contratación",

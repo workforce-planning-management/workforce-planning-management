@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "Penderfyniadau ar y berthynas waith",
     "task_allocation": "Dyrannu tasgau",
     "monitoring_evaluation": "Monitro a gwerthuso",
-    "not_high_risk": "Ddim yn risg uchel (datganiad y defnyddiwr)"
+    "not_high_risk": "Ddim yn risg uchel (datganiad y defnyddiwr)",
+    "frozen": "wedi'i rewi",
+    "abolished": "wedi'i ddileu"
   },
   "engagement": {
     "title": "Ymgysylltiad",

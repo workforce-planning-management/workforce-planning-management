@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "Décisions sur la relation de travail",
     "task_allocation": "Répartition des tâches",
     "monitoring_evaluation": "Suivi et évaluation",
-    "not_high_risk": "Pas à haut risque (déclaration du déployeur)"
+    "not_high_risk": "Pas à haut risque (déclaration du déployeur)",
+    "frozen": "gelé",
+    "abolished": "supprimé"
   },
   "engagement": {
     "title": "Engagement",

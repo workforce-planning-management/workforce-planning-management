@@ -69,6 +69,7 @@ pub mod pay_position;
 pub mod pay_scale;
 pub mod payroll;
 pub mod planning;
+pub mod position;
 pub mod privacy;
 pub mod programmes;
 pub mod pulse;

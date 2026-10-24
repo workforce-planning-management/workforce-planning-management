@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "Decisões sobre a relação de trabalho",
     "task_allocation": "Atribuição de tarefas",
     "monitoring_evaluation": "Monitorização e avaliação",
-    "not_high_risk": "Não é de risco elevado (declaração do responsável pela implantação)"
+    "not_high_risk": "Não é de risco elevado (declaração do responsável pela implantação)",
+    "frozen": "congelado",
+    "abolished": "extinto"
   },
   "engagement": {
     "title": "Vínculo",

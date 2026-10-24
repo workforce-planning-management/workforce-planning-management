@@ -2331,6 +2331,8 @@ collections:
               - { name: "task_allocation", label: "Task_allocation", widget: string, required: false, i18n: true }
               - { name: "monitoring_evaluation", label: "Monitoring_evaluation", widget: string, required: false, i18n: true }
               - { name: "not_high_risk", label: "Not_high_risk", widget: string, required: false, i18n: true }
+              - { name: "frozen", label: "Frozen", widget: string, required: false, i18n: true }
+              - { name: "abolished", label: "Abolished", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

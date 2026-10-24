@@ -25,6 +25,18 @@ right ([strategic-workforce-planning.md](strategic-workforce-planning.md), [enga
 - **Not done.** No per-person time allocation across positions (WPM-D45, WPM-D59); no salary on a position; no automatic
   requisition on `open`.
 
+**Built, pure core only (WPM-T278).** `rules::position`: the six states and fifteen moves (`planned → approved → open → filled`, `frozen`
+and `abolished` as above; `abolished` is final; `filled` can go back to `open` or `approved` when the holder leaves). The
+facts a move needs: `open` needs a linked requisition, `filled` needs a linked holder, a held position is not made vacant or abolished
+until its holder is unlinked (so abolishing one settles what happens to the worker first, WPM-D104), and a frozen position may keep
+its holder. A position is one seat: **budget 1 to 100 FTE percent**. Funding is the post-funding kinds with the same end-date rule,
+and `programme` names a `thing:` URN. Per position, vacancy and over-establishment are `max(budget - held, 0)` and
+`max(held - budget, 0)`, and unknown when the holder's FTE is not recorded. Per cost centre they are **added over positions** and never
+netted. Only `approved`, `open`, `filled` and `frozen` positions make the establishment; a planned one is a proposal and an abolished one
+is gone; the vacancy that sits in frozen positions is shown apart. For a caller who may not see who holds what, a centre with
+fewer positions than the floor withholds held, vacant and over (the budget and the count name no one). Records, the API and the
+screen are WPM-T279.
+
 ## WPM-R153 — Current versus target organization
 
 - **A diff, not a record.** The pure core (WPM-T280) takes two trees, the live reporting structure (the cycle-safe manager forest,

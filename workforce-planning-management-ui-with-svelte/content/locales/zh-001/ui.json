@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "关于工作关系的决定",
     "task_allocation": "任务分配",
     "monitoring_evaluation": "监控与评估",
-    "not_high_risk": "非高风险（部署方的声明）"
+    "not_high_risk": "非高风险（部署方的声明）",
+    "frozen": "冻结",
+    "abolished": "已撤销"
   },
   "engagement": {
     "title": "用工关系",

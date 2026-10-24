@@ -4458,7 +4458,13 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `enforcement_need_to_know`, `enforcement_me`, `security`, `route_coverage`, clippy pedantic clean, 209 UI unit tests. Not done: any
       real receiver (none was run); a schedule; a "movement" event (none is emitted); protection against a host name that resolves to
       an internal address; replay of a failed delivery; a screen; the other `enforcement_*` binaries were not re-run.
-- [ ] WPM-T278 **Positions: pure core.** *(WPM-R152, WPM-D104)* States and moves, vacancy and over-establishment arithmetic.
+- [x] (2026-10-24) WPM-T278 **Positions: pure core.** *(WPM-R152, WPM-D104)* States and moves, vacancy and over-establishment arithmetic.
+      Done: `rules::position` (states, moves and the facts a move needs; validation of cost centre, budget and funding; the per-position
+      gap; the establishment per cost centre with the floor; 13 tests, **mutation-checked** with five deliberate faults, each caught).
+      Two decisions the spec left open are recorded in `spec/positions.md`: a position's budget is at most 100 FTE percent (one seat), and a
+      held position must have its holder unlinked before it is made vacant or abolished. Two `values.*` words (frozen, abolished) in the 13
+      locales, AI-written and unreviewed. Verified: 750 unit tests, clippy pedantic clean, 209 UI unit tests. Nothing is stored or
+      served yet (records, API and screen are WPM-T279), so no request test applies.
 - [ ] WPM-T279 **Positions: records, API and screen.** *(WPM-R152)* Links to plan demand lines, requisitions and post funding;
       an establishment view per cost centre.
 - [ ] WPM-T280 **Current versus target organization.** *(WPM-R153)* Pure diff over two trees; a screen beside the org chart.

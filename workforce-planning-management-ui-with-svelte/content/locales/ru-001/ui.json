@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "Решения о трудовых отношениях",
     "task_allocation": "Распределение задач",
     "monitoring_evaluation": "Мониторинг и оценка",
-    "not_high_risk": "Не высокого риска (заявление эксплуатанта)"
+    "not_high_risk": "Не высокого риска (заявление эксплуатанта)",
+    "frozen": "заморожена",
+    "abolished": "упразднена"
   },
   "engagement": {
     "title": "Трудовые отношения",

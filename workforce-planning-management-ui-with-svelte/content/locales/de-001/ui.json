@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "Entscheidungen über das Arbeitsverhältnis",
     "task_allocation": "Aufgabenzuteilung",
     "monitoring_evaluation": "Überwachung und Bewertung",
-    "not_high_risk": "Nicht hochriskant (Angabe des Betreibers)"
+    "not_high_risk": "Nicht hochriskant (Angabe des Betreibers)",
+    "frozen": "eingefroren",
+    "abolished": "aufgehoben"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

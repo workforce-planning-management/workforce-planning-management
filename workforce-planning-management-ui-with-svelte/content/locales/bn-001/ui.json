@@ -1693,7 +1693,9 @@
     "work_relationship_decisions": "কর্মসম্পর্কের সিদ্ধান্ত",
     "task_allocation": "কাজ বণ্টন",
     "monitoring_evaluation": "পর্যবেক্ষণ ও মূল্যায়ন",
-    "not_high_risk": "উচ্চ ঝুঁকির নয় (ব্যবহারকারী প্রতিষ্ঠানের বিবৃতি)"
+    "not_high_risk": "উচ্চ ঝুঁকির নয় (ব্যবহারকারী প্রতিষ্ঠানের বিবৃতি)",
+    "frozen": "স্থগিত",
+    "abolished": "বিলুপ্ত"
   },
   "engagement": {
     "title": "নিয়োগ",
