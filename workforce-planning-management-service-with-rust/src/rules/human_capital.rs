@@ -411,7 +411,8 @@ fn movement_figures(i: &Inputs, floor: usize, over: Period) -> Vec<Figure> {
             over,
             vec![
                 LEFT_OUT_SOFT.into(),
-                "Withheld when leavers are withheld or the mean headcount is under the floor.".into(),
+                "Withheld when leavers are withheld or the mean headcount is under the floor."
+                    .into(),
             ],
             TURNOVER,
             turnover,
@@ -425,11 +426,9 @@ fn practice_figures(i: &Inputs, floor: usize, on: Period, over: Period) -> Vec<F
         match i.fill_days.len() {
             0 => unknown(Reason::NothingToDivide),
             n if n < floor => Value::Withheld,
-            _ => f(&i.fill_days).map_or(unknown(Reason::NothingToDivide), |value| {
-                Value::Shown {
-                    value,
-                    unit: Unit::CalendarDays,
-                }
+            _ => f(&i.fill_days).map_or(unknown(Reason::NothingToDivide), |value| Value::Shown {
+                value,
+                unit: Unit::CalendarDays,
             }),
         }
     };
@@ -613,10 +612,22 @@ mod tests {
 
     #[test]
     fn a_count_under_the_floor_is_withheld_and_zero_is_shown() {
-        assert_eq!(count(0, 10), Value::Shown { value: 0, unit: Unit::Workers });
+        assert_eq!(
+            count(0, 10),
+            Value::Shown {
+                value: 0,
+                unit: Unit::Workers
+            }
+        );
         assert_eq!(count(1, 10), Value::Withheld);
         assert_eq!(count(9, 10), Value::Withheld);
-        assert_eq!(count(10, 10), Value::Shown { value: 10, unit: Unit::Workers });
+        assert_eq!(
+            count(10, 10),
+            Value::Shown {
+                value: 10,
+                unit: Unit::Workers
+            }
+        );
     }
 
     #[test]
@@ -659,7 +670,9 @@ mod tests {
         let r = report(&i, 10);
         assert_eq!(
             find(&r, "turnover_rate").value,
-            Value::Unknown { reason: Reason::NothingToDivide }
+            Value::Unknown {
+                reason: Reason::NothingToDivide
+            }
         );
     }
 
@@ -688,7 +701,9 @@ mod tests {
         i.fill_days.clear();
         assert_eq!(
             find(&report(&i, 10), "time_to_fill_median").value,
-            Value::Unknown { reason: Reason::NothingToDivide }
+            Value::Unknown {
+                reason: Reason::NothingToDivide
+            }
         );
     }
 
@@ -707,13 +722,17 @@ mod tests {
         assert_eq!(shown(find(&r, "training_completion")), 7_500);
         assert_eq!(
             find(&r, "training_hours").value,
-            Value::Unknown { reason: Reason::NotRecorded }
+            Value::Unknown {
+                reason: Reason::NotRecorded
+            }
         );
         let mut i = inputs();
         i.enrolments = 0;
         assert_eq!(
             find(&report(&i, 10), "training_completion").value,
-            Value::Unknown { reason: Reason::NothingToDivide }
+            Value::Unknown {
+                reason: Reason::NothingToDivide
+            }
         );
     }
 
@@ -793,7 +812,16 @@ mod tests {
     /// identifier: short, one line, no sentence. A licensed paragraph would fail this by its length alone.
     #[test]
     fn nothing_quoted_from_a_standard_is_more_than_a_name() {
-        for m in [EMPLOYEES, TURNOVER, RECRUITMENT, COLLECTIVE, TRAINING, COST, PAY, SUCCESSION] {
+        for m in [
+            EMPLOYEES,
+            TURNOVER,
+            RECRUITMENT,
+            COLLECTIVE,
+            TRAINING,
+            COST,
+            PAY,
+            SUCCESSION,
+        ] {
             for text in [Some(m.iso_area), m.esrs_topic, m.esrs_2023, m.esrs_2026]
                 .into_iter()
                 .flatten()

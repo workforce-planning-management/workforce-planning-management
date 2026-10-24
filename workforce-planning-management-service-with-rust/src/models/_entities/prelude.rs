@@ -1,6 +1,7 @@
 //! Re-exports of every entity for `use ..._entities::prelude::*`.
 
 pub use super::adjustment_requests::Entity as AdjustmentRequests;
+pub use super::ai_register_entries::Entity as AiRegisterEntries;
 pub use super::announcement_reads::Entity as AnnouncementReads;
 pub use super::announcements::Entity as Announcements;
 pub use super::applications::Entity as Applications;
@@ -73,15 +74,15 @@ pub use super::oversight_packs::Entity as OversightPacks;
 pub use super::oversight_positions::Entity as OversightPositions;
 pub use super::oversight_readings::Entity as OversightReadings;
 pub use super::partner_commitments::Entity as PartnerCommitments;
+pub use super::pay_assessment_records::Entity as PayAssessmentRecords;
+pub use super::pay_categories::Entity as PayCategories;
+pub use super::pay_information_requests::Entity as PayInformationRequests;
 pub use super::payroll_runs::Entity as PayrollRuns;
 pub use super::payslips::Entity as Payslips;
 pub use super::pipeline_members::Entity as PipelineMembers;
 pub use super::plan_demand_lines::Entity as PlanDemandLines;
 pub use super::plan_escalations::Entity as PlanEscalations;
 pub use super::plan_objectives::Entity as PlanObjectives;
-pub use super::pay_assessment_records::Entity as PayAssessmentRecords;
-pub use super::pay_categories::Entity as PayCategories;
-pub use super::pay_information_requests::Entity as PayInformationRequests;
 pub use super::plan_tolerances::Entity as PlanTolerances;
 pub use super::post_fundings::Entity as PostFundings;
 pub use super::professional_registrations::Entity as ProfessionalRegistrations;

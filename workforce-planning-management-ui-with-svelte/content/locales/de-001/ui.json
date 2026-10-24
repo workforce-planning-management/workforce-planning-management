@@ -1688,7 +1688,12 @@
     "overdue": "überfällig",
     "no_unjustified_difference": "Kein nicht gerechtfertigter Unterschied festgestellt",
     "difference_found_remedy_planned": "Unterschied festgestellt; Abhilfe geplant",
-    "difference_remedied": "Unterschied behoben"
+    "difference_remedied": "Unterschied behoben",
+    "recruitment_selection": "Einstellung und Auswahl",
+    "work_relationship_decisions": "Entscheidungen über das Arbeitsverhältnis",
+    "task_allocation": "Aufgabenzuteilung",
+    "monitoring_evaluation": "Überwachung und Bewertung",
+    "not_high_risk": "Nicht hochriskant (Angabe des Betreibers)"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

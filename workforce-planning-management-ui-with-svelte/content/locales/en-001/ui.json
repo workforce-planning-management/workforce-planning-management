@@ -1688,7 +1688,12 @@
     "overdue": "overdue",
     "no_unjustified_difference": "No unjustified difference found",
     "difference_found_remedy_planned": "Difference found; remedy planned",
-    "difference_remedied": "Difference remedied"
+    "difference_remedied": "Difference remedied",
+    "recruitment_selection": "Recruitment and selection",
+    "work_relationship_decisions": "Decisions on the work relationship",
+    "task_allocation": "Task allocation",
+    "monitoring_evaluation": "Monitoring and evaluation",
+    "not_high_risk": "Not high-risk (the deployer's statement)"
   },
   "engagement": {
     "title": "Engagement",

@@ -550,6 +550,12 @@ fn add_governance_paths(document: &mut Value) {
         "/api/pay-transparency/gap-report/csv": {
             "get": { "tags": ["pay-transparency"], "summary": "The same report as CSV, one row per figure with the two figures each gap comes from; the export is audited", "responses": ok("A CSV file") }
         },
+        "/api/ai-register": {
+            "get": { "tags": ["ai-register"], "summary": "Every feature that scores or ranks people (S1 to S8) with what the deployer recorded under Article 26 of the AI Act: Annex III category, oversight role, when representatives and workers were informed, log retention. A field with nothing recorded is unknown. Records what is said; does not classify, certify or evidence compliance. Any signed-in caller", "responses": ok("The register") }
+        },
+        "/api/ai-register/{feature}": {
+            "put": { "tags": ["ai-register"], "summary": "Replace what is recorded for a feature: category, oversight role (a role, not a person), the two informed dates (not in the future), log retention in months (under six needs a note naming the other law). A field left out is cleared. Audited in the same transaction", "responses": ok("The pid of the entry") }
+        },
         "/api/reports/human-capital": {
             "get": { "tags": ["reports"], "summary": "The human capital report (?organization=&as_of=): headcount and FTE by employment type, starters, leavers, turnover, time to fill, training completion and succession coverage, each with its definition, source, period and exclusions, laid beside ISO 30414 areas and ESRS S1 requirements by name. Groups under the floor are withheld; what WPM cannot compute is unknown with a reason; the named metrics WPM does not cover are listed. Audited", "responses": ok("The report") }
         }

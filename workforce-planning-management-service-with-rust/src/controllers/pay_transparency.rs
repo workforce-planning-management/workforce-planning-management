@@ -274,7 +274,11 @@ fn declared(value: Option<&String>) -> Option<Declared> {
     })
 }
 
-pub(crate) async fn build(ctx: &AppContext, caller: &MaybeAuthUser, query: &ReportQuery) -> Result<Built> {
+pub(crate) async fn build(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    query: &ReportQuery,
+) -> Result<Built> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(ctx, caller, &query.organization).await?;
     // The same rule as the plan cost view: a figure made of salaries is for a caller who may read salaries.
@@ -364,7 +368,9 @@ pub(crate) async fn build(ctx: &AppContext, caller: &MaybeAuthUser, query: &Repo
             });
         }
     }
-    report.categories.sort_by(|a, b| a.category.cmp(&b.category));
+    report
+        .categories
+        .sort_by(|a, b| a.category.cmp(&b.category));
     Ok(Built {
         organization: query.organization.clone(),
         as_of,

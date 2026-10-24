@@ -1688,7 +1688,12 @@
     "overdue": "em atraso",
     "no_unjustified_difference": "Não foi encontrada diferença injustificada",
     "difference_found_remedy_planned": "Diferença encontrada; correção planeada",
-    "difference_remedied": "Diferença corrigida"
+    "difference_remedied": "Diferença corrigida",
+    "recruitment_selection": "Recrutamento e seleção",
+    "work_relationship_decisions": "Decisões sobre a relação de trabalho",
+    "task_allocation": "Atribuição de tarefas",
+    "monitoring_evaluation": "Monitorização e avaliação",
+    "not_high_risk": "Não é de risco elevado (declaração do responsável pela implantação)"
   },
   "engagement": {
     "title": "Vínculo",

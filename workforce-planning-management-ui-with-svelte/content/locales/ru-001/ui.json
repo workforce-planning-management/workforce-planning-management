@@ -1688,7 +1688,12 @@
     "overdue": "просрочено",
     "no_unjustified_difference": "Необоснованных различий не выявлено",
     "difference_found_remedy_planned": "Выявлено различие; исправление запланировано",
-    "difference_remedied": "Различие устранено"
+    "difference_remedied": "Различие устранено",
+    "recruitment_selection": "Набор и отбор",
+    "work_relationship_decisions": "Решения о трудовых отношениях",
+    "task_allocation": "Распределение задач",
+    "monitoring_evaluation": "Мониторинг и оценка",
+    "not_high_risk": "Не высокого риска (заявление эксплуатанта)"
   },
   "engagement": {
     "title": "Трудовые отношения",

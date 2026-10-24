@@ -46,6 +46,7 @@ use WorkerLevel::{InScope, SelfOnly, WithManagers};
 /// Every `GET` route under `/api` (without the prefix), and who may read it. `{}` matches one
 /// path segment. Keep it sorted by route so a review is a diff.
 pub const READS: &[(&str, Audience)] = &[
+    ("ai-register", Open),
     ("announcements", ControllerDecides),
     ("announcements/{}", ControllerDecides),
     ("applications/{}/interviews", Privileged),

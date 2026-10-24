@@ -4395,8 +4395,21 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       pedantic clean, 209 UI unit tests after regenerating the types. Not done: a screen; the mapping was not compared with ISO's text
       (paywalled) or the revised ESRS datapoints; collective agreement coverage waits for the unions work; the other `enforcement_*`
       binaries were not re-run.
-- [ ] WPM-T274 **AI and scoring deployer register.** *(WPM-R148, WPM-D103)* Extends `rules::scoring::REGISTER` (WPM-T166):
+- [~] (2026-10-24) WPM-T274 **AI and scoring deployer register.** *(WPM-R148, WPM-D103)* Extends `rules::scoring::REGISTER` (WPM-T166):
       category, overseer role, informed-on date, log retention; per-decision explanation readable by the person concerned.
+      Done in part. `rules::scoring::REGISTER` does not exist (WPM-T166 is open), so the eight scoring features S1 to S8 are listed in
+      `rules::ai_register` and T166's lint test is still to do. Built: the rule (category from a closed list, an overseer role and not
+      a person, informed dates not in the future, retention with a note when under six months, unknown where nothing is recorded; 6
+      tests), migration `m20261024_000083_ai_register_entries`, `controllers/ai_register.rs` (`GET /api/ai-register` for any signed-in
+      caller, `PUT /api/ai-register/{feature}` for HR and administrators, audited in the transaction) and the setting
+      `WPM_AI_ACT_APPLIES_FROM`. Five `values.*` words for the categories in the 13 locales (AI-written, unreviewed) and the
+      regenerated CMS config. Verified (Postgres 18, Podman): 706 unit tests, 142 request tests (1 new: all unknown at first, a record,
+      replace and clear, each fault refused, a short retention explained, S9 not found, and **no audit, no write**), `enforcement_pay_gap`
+      (extended: anonymous refused, a worker reads and is refused the write, HR records), `enforcement_pay_information`,
+      `enforcement_equality`, `enforcement`, `enforcement_need_to_know`, `route_coverage`, clippy pedantic clean, 209 UI unit tests.
+      Not done: **the per-decision explanation** (the person's own factors, Article 86, which was not read); a screen; the link to the
+      recognised body; the other `enforcement_*` binaries were not re-run. `cargo fmt` was not clean before this change, and only the
+      files touched here were formatted.
 - [ ] WPM-T275 **Read-only MCP server.** *(WPM-R149, WPM-D101)* Tools over existing reads under the caller's token; a test that
       every tool maps to a documented route and that a caller without access is refused; audit per call.
 - [ ] WPM-T276 **SCIM 2.0 outbound.** *(WPM-R150, WPM-D102)* Pure mapping from worker to SCIM `User` with the Enterprise

@@ -1688,7 +1688,12 @@
     "overdue": "متأخر",
     "no_unjustified_difference": "لم يُعثر على فرق غير مبرَّر",
     "difference_found_remedy_planned": "وُجد فرق؛ والمعالجة مخطَّط لها",
-    "difference_remedied": "تمت معالجة الفرق"
+    "difference_remedied": "تمت معالجة الفرق",
+    "recruitment_selection": "التوظيف والاختيار",
+    "work_relationship_decisions": "القرارات المتعلقة بعلاقة العمل",
+    "task_allocation": "توزيع المهام",
+    "monitoring_evaluation": "المراقبة والتقييم",
+    "not_high_risk": "ليس عالي المخاطر (إقرار الجهة المشغِّلة)"
   },
   "engagement": {
     "title": "التعاقد",

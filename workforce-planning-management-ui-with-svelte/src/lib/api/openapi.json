@@ -1797,6 +1797,48 @@
         ]
       }
     },
+    "/api/ai-register": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The register"
+          }
+        },
+        "summary": "Every feature that scores or ranks people (S1 to S8) with what the deployer recorded under Article 26 of the AI Act: Annex III category, oversight role, when representatives and workers were informed, log retention. A field with nothing recorded is unknown. Records what is said; does not classify, certify or evidence compliance. Any signed-in caller",
+        "tags": [
+          "ai-register"
+        ]
+      }
+    },
+    "/api/ai-register/{feature}": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the entry",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Replace what is recorded for a feature: category, oversight role (a role, not a person), the two informed dates (not in the future), log retention in months (under six needs a note naming the other law). A field left out is cleared. Audited in the same transaction",
+        "tags": [
+          "ai-register"
+        ]
+      }
+    },
     "/api/announcements": {
       "get": {
         "responses": {

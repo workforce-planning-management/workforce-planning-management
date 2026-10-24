@@ -6,6 +6,7 @@
 //! pipelines, early careers, workforce intelligence) in [`talent`].
 
 mod adjustments;
+mod ai_register;
 mod announcements;
 mod appraisals;
 mod assessments;
@@ -27,6 +28,7 @@ mod expenses;
 mod grades;
 mod health_detail;
 mod hr;
+mod human_capital;
 mod idempotency;
 mod intelligence_overview;
 mod job_levels;
@@ -37,12 +39,11 @@ mod mobility;
 mod movements;
 mod organizations;
 mod pagination;
-mod human_capital;
 mod pay_assessment;
 mod pay_information;
 mod pay_positions;
-mod pay_transparency;
 mod pay_scales;
+mod pay_transparency;
 mod payroll;
 mod plan_views;
 mod privacy;

@@ -1688,7 +1688,12 @@
     "overdue": "মেয়াদোত্তীর্ণ",
     "no_unjustified_difference": "কোনো অযৌক্তিক পার্থক্য পাওয়া যায়নি",
     "difference_found_remedy_planned": "পার্থক্য পাওয়া গেছে; প্রতিকার পরিকল্পিত",
-    "difference_remedied": "পার্থক্যের প্রতিকার হয়েছে"
+    "difference_remedied": "পার্থক্যের প্রতিকার হয়েছে",
+    "recruitment_selection": "নিয়োগ ও বাছাই",
+    "work_relationship_decisions": "কর্মসম্পর্কের সিদ্ধান্ত",
+    "task_allocation": "কাজ বণ্টন",
+    "monitoring_evaluation": "পর্যবেক্ষণ ও মূল্যায়ন",
+    "not_high_risk": "উচ্চ ঝুঁকির নয় (ব্যবহারকারী প্রতিষ্ঠানের বিবৃতি)"
   },
   "engagement": {
     "title": "নিয়োগ",

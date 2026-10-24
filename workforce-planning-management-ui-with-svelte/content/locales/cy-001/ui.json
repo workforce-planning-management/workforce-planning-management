@@ -1688,7 +1688,12 @@
     "overdue": "wedi mynd heibio'r dyddiad",
     "no_unjustified_difference": "Ni chanfuwyd gwahaniaeth heb gyfiawnhad",
     "difference_found_remedy_planned": "Canfuwyd gwahaniaeth; cynllunnir camau unioni",
-    "difference_remedied": "Cywirwyd y gwahaniaeth"
+    "difference_remedied": "Cywirwyd y gwahaniaeth",
+    "recruitment_selection": "Recriwtio a dethol",
+    "work_relationship_decisions": "Penderfyniadau ar y berthynas waith",
+    "task_allocation": "Dyrannu tasgau",
+    "monitoring_evaluation": "Monitro a gwerthuso",
+    "not_high_risk": "Ddim yn risg uchel (datganiad y defnyddiwr)"
   },
   "engagement": {
     "title": "Ymgysylltiad",

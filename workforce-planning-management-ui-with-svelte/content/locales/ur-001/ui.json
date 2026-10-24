@@ -1688,7 +1688,12 @@
     "overdue": "تاخیر شدہ",
     "no_unjustified_difference": "کوئی غیر مناسب فرق نہیں ملا",
     "difference_found_remedy_planned": "فرق ملا؛ اصلاح کا منصوبہ ہے",
-    "difference_remedied": "فرق دور کر دیا گیا"
+    "difference_remedied": "فرق دور کر دیا گیا",
+    "recruitment_selection": "بھرتی اور انتخاب",
+    "work_relationship_decisions": "ملازمت کے تعلق پر فیصلے",
+    "task_allocation": "کاموں کی تقسیم",
+    "monitoring_evaluation": "نگرانی اور جائزہ",
+    "not_high_risk": "زیادہ خطرے والا نہیں (تعینات کرنے والے کا بیان)"
   },
   "engagement": {
     "title": "تقرری",

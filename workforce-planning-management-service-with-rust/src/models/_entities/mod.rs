@@ -1,6 +1,7 @@
 //! `SeaORM` entity definitions, one module per table.
 
 pub mod adjustment_requests;
+pub mod ai_register_entries;
 pub mod announcement_reads;
 pub mod announcements;
 pub mod applications;
@@ -80,15 +81,15 @@ pub mod oversight_positions;
 pub mod oversight_readings;
 pub mod partner_commitments;
 pub mod path_enrollments;
+pub mod pay_assessment_records;
+pub mod pay_categories;
+pub mod pay_information_requests;
 pub mod payroll_runs;
 pub mod payslips;
 pub mod pipeline_members;
 pub mod plan_demand_lines;
 pub mod plan_escalations;
 pub mod plan_objectives;
-pub mod pay_assessment_records;
-pub mod pay_categories;
-pub mod pay_information_requests;
 pub mod plan_tolerances;
 pub mod post_fundings;
 pub mod prelude;

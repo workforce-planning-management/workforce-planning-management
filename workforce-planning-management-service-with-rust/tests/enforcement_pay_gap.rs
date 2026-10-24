@@ -235,6 +235,15 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert!(!hc.to_string().contains("Pay Gap Enforcement"), "no worker named");
         assert!(hc["report"]["figures"].as_array().unwrap().iter().any(|f| f["key"] == "headcount"));
 
+        // ── The AI register: any signed-in caller reads it; HR records; nobody else ──────────────────
+        assert_eq!(request.get("/api/ai-register").await.status_code(), 401);
+        assert_eq!(get("/api/ai-register".to_string(), worker.clone()).await.status_code(), 200, "a worker reads how people are scored");
+        let entry = json!({ "overseer_role": "Head of Resourcing" });
+        assert_eq!(request.put("/api/ai-register/S3").json(&entry).await.status_code(), 401);
+        assert_eq!(request.put("/api/ai-register/S3").add_header("authorization", worker.clone()).json(&entry).await.status_code(), 403, "a worker");
+        let recorded = request.put("/api/ai-register/S3").add_header("authorization", hr.clone()).json(&entry).await;
+        assert_eq!(recorded.status_code(), 200, "HR records: {}", recorded.text());
+
         // ── Take the sex answers away and there is nothing to compare ────────────────────
         ctx.db.execute_unprepared("DELETE FROM equality_declarations").await.unwrap();
         let none: Value = get(report.clone(), payroll.clone()).await.json();

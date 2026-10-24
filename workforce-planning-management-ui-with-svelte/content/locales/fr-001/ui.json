@@ -1688,7 +1688,12 @@
     "overdue": "en retard",
     "no_unjustified_difference": "Aucune différence injustifiée constatée",
     "difference_found_remedy_planned": "Différence constatée ; correction prévue",
-    "difference_remedied": "Différence corrigée"
+    "difference_remedied": "Différence corrigée",
+    "recruitment_selection": "Recrutement et sélection",
+    "work_relationship_decisions": "Décisions sur la relation de travail",
+    "task_allocation": "Répartition des tâches",
+    "monitoring_evaluation": "Suivi et évaluation",
+    "not_high_risk": "Pas à haut risque (déclaration du déployeur)"
   },
   "engagement": {
     "title": "Engagement",

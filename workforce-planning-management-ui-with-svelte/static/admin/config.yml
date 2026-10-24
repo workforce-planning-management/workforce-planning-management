@@ -2326,6 +2326,11 @@ collections:
               - { name: "no_unjustified_difference", label: "No_unjustified_difference", widget: string, required: false, i18n: true }
               - { name: "difference_found_remedy_planned", label: "Difference_found_remedy_planned", widget: string, required: false, i18n: true }
               - { name: "difference_remedied", label: "Difference_remedied", widget: string, required: false, i18n: true }
+              - { name: "recruitment_selection", label: "Recruitment_selection", widget: string, required: false, i18n: true }
+              - { name: "work_relationship_decisions", label: "Work_relationship_decisions", widget: string, required: false, i18n: true }
+              - { name: "task_allocation", label: "Task_allocation", widget: string, required: false, i18n: true }
+              - { name: "monitoring_evaluation", label: "Monitoring_evaluation", widget: string, required: false, i18n: true }
+              - { name: "not_high_risk", label: "Not_high_risk", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

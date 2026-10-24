@@ -1688,7 +1688,12 @@
     "overdue": "terlambat",
     "no_unjustified_difference": "Tidak ditemukan perbedaan yang tidak beralasan",
     "difference_found_remedy_planned": "Perbedaan ditemukan; perbaikan direncanakan",
-    "difference_remedied": "Perbedaan telah diperbaiki"
+    "difference_remedied": "Perbedaan telah diperbaiki",
+    "recruitment_selection": "Perekrutan dan seleksi",
+    "work_relationship_decisions": "Keputusan tentang hubungan kerja",
+    "task_allocation": "Pembagian tugas",
+    "monitoring_evaluation": "Pemantauan dan evaluasi",
+    "not_high_risk": "Bukan berisiko tinggi (pernyataan penyelenggara)"
   },
   "engagement": {
     "title": "Keterlibatan",

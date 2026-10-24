@@ -34,6 +34,7 @@ the compose file are written but were not built where this was written; try them
 | `WPM_EQUALITY_FLOOR` | no | `10` | The smallest group an aggregate may show (at least 5) |
 | `WPM_PAY_INFORMATION_MONTHS` | no | `2` | Calendar months HR has to answer a worker's pay information request, 1 to 12 (the Directive's period is two months, WPM-R145) |
 | `WPM_REQUIRE_PAY_RANGE` | no | on | A vacancy must state its pay range (a minimum and a maximum) before it is opened. **On by default** (Article 5 of the Pay Transparency Directive); turn it off (`0`, `false`, `no`, `off`) only where the Directive does not apply |
+| `WPM_AI_ACT_APPLIES_FROM` | no | `2027-12-02` | The date the AI Act's Annex III duties apply to a deployer (`YYYY-MM-DD`); shown on the AI register. The date moved once already, so it is configuration, not code |
 | `WPM_PAY_GAP_SEX_CATEGORY` | no | `sex` | The equality category the pay gap report reads as female or male (values `female` and `male`; any other value counts as left out). It must be one of `WPM_EQUALITY_CATEGORIES`, and the report needs equality monitoring on (WPM-R144) |
 | `WPM_HEALTH_REQUIREMENTS_BASIS` | no | off | **Workplace health requirements are off unless this is set** to the lawful basis you rely on, in your words. It is health data: do your own impact assessment and agree the role with your occupational health provider first. Only a token with the attribute `occupational_health=true` can record a status |
 | `WPM_HEALTH_FLOOR` | no | `10` | The smallest group the compliance counts may show (at least 5) |

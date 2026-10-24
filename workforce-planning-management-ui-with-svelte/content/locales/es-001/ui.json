@@ -1688,7 +1688,12 @@
     "overdue": "vencido",
     "no_unjustified_difference": "No se encontró ninguna diferencia injustificada",
     "difference_found_remedy_planned": "Se encontró una diferencia; se planea corregirla",
-    "difference_remedied": "Diferencia corregida"
+    "difference_remedied": "Diferencia corregida",
+    "recruitment_selection": "Contratación y selección",
+    "work_relationship_decisions": "Decisiones sobre la relación laboral",
+    "task_allocation": "Asignación de tareas",
+    "monitoring_evaluation": "Supervisión y evaluación",
+    "not_high_risk": "No es de alto riesgo (declaración del responsable del despliegue)"
   },
   "engagement": {
     "title": "Contratación",

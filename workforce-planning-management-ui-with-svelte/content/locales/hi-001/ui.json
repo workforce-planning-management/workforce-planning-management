@@ -1688,7 +1688,12 @@
     "overdue": "विलंबित",
     "no_unjustified_difference": "कोई अनुचित अंतर नहीं मिला",
     "difference_found_remedy_planned": "अंतर मिला; सुधार की योजना है",
-    "difference_remedied": "अंतर दूर किया गया"
+    "difference_remedied": "अंतर दूर किया गया",
+    "recruitment_selection": "भर्ती और चयन",
+    "work_relationship_decisions": "कार्य-संबंध पर निर्णय",
+    "task_allocation": "कार्य का आवंटन",
+    "monitoring_evaluation": "निगरानी और मूल्यांकन",
+    "not_high_risk": "उच्च जोखिम नहीं (उपयोगकर्ता संगठन का कथन)"
   },
   "engagement": {
     "title": "नियुक्ति",

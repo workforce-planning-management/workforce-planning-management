@@ -14,14 +14,14 @@
     "api": "Rust, Loco (Axum + SeaORM), PostgreSQL 18",
     "ui": "SvelteKit 2, Svelte 5 runes, TypeScript",
     "tests": {
-      "service_unit_declared": 718,
-      "service_request_declared": 141,
+      "service_unit_declared": 724,
+      "service_request_declared": 142,
       "ui_unit_declared": 174,
       "ui_e2e_declared": 163,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
-    "migrations": 82,
-    "controllers": 65,
+    "migrations": 83,
+    "controllers": 66,
     "pages": 46
   },
   "sections": {

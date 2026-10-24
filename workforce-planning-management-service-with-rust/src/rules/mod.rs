@@ -6,6 +6,7 @@
 
 pub mod access;
 pub mod adjustments;
+pub mod ai_register;
 pub mod announcements;
 pub mod appraisal;
 pub mod assessment;
