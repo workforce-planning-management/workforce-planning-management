@@ -17,40 +17,6 @@ export class ApiError extends Error {
   }
 }
 
-/** A conditional GET's outcome: `body` is `null` on `304 Not Modified`. */
-export interface Conditional<T> {
-  status: number;
-  etag: string | null;
-  body: T | null;
-}
-
-/**
- * Conditional GET with `If-None-Match`: `304` yields `body: null` so
- * the caller keeps its current render; anything else parses as
- * usual. Carried over from the patient-flow BFF proxy this crate was
- * copy-adapted from (there the caller was its board-polling path,
- * PF-T17) — WPM has no polling view yet, so this helper is currently
- * unused; kept as ready-made infra rather than removed.
- */
-export async function apiConditional<T>(
-  path: string,
-  etag: string | null,
-  init?: { fetch?: typeof fetch },
-): Promise<Conditional<T>> {
-  const doFetch = init?.fetch ?? fetch;
-  const response = await doFetch(`${API_BASE_URL}${path}`, {
-    headers: etag ? { "if-none-match": etag } : {},
-  });
-  const nextEtag = response.headers.get("etag");
-  if (response.status === 304) {
-    return { status: 304, etag: nextEtag ?? etag, body: null };
-  }
-  const text = await response.text();
-  const parsed: unknown = text ? JSON.parse(text) : null;
-  if (!response.ok) throw new ApiError(response.status, parsed);
-  return { status: response.status, etag: nextEtag, body: parsed as T };
-}
-
 /** Methods that do not change anything, so need no idempotency key. */
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 

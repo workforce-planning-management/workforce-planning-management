@@ -4225,9 +4225,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       forgets), 202 UI unit tests, `svelte-check` and prettier clean. Not checked: a real authentication service (the exchange is
       stubbed), the effect on latency, more than one server process (each keeps its own cache; that is correct but untested), and
       `spec/auth.md` now says a session ended elsewhere works for up to one token lifetime here.
-- [ ] WPM-T265 **UI dependency and config hygiene.** Drop the five unused Lily picker packages and align `share-picker` with
+- [x] WPM-T265 **UI dependency and config hygiene.** Drop the five unused Lily picker packages and align `share-picker` with
       `svelte-picker-bar`; `adapter-node` in place of `adapter-auto`; remove `apiConditional`; one shared `write()` for
       oversight, capacity and cutover.
+      Done: the five Lily picker packages nothing imported (`link`, `locale`, `search`, `text-size`, `theme`) are gone from
+      `package.json`, and so is the direct `share-picker`; `+layout.svelte` now takes the `ShareTarget` type from `PickerBar`'s own
+      props, so the bar and its share picker cannot drift. They were duplicates: `picker-bar` brings its own, older copies, which
+      are what ran before and still do, so the page is unchanged. `adapter-node` replaces `adapter-auto` (`pnpm build` writes
+      `build/`; `spec/operations/deployment.md` says how to run it). `apiConditional` and its `Conditional` type are removed.
+      `attempt()` in `src/lib/write.ts` is the one place a failed write becomes a `Failure`; oversight (both its helpers), capacity
+      and cutover use it and keep their own after-success step. Verified: 203 UI unit tests (one new), `svelte-check` clean,
+      prettier clean, `pnpm build` with the Node adapter, 168 Playwright specs. Not checked: running `node build` against a real
+      API, a container image (still none for the UI), or the pickers' look beyond what `pickers.spec.ts` and the layout specs assert.
 - [ ] WPM-T266 **Specs for every area.** Playwright specs for `/change`, `/skills`, `/groups`, `/development`, `/workforce`,
       `/payroll` and `/requisitions/[pid]`; split `smoke.spec.ts` (2,659 lines) into one file per area.
 - [ ] WPM-T267 **Split the largest pages.** Panels and forms of `workers/[pid]` (713 lines), `planning` (697) and `roles` (487)

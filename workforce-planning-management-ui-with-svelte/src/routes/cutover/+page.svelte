@@ -23,7 +23,7 @@
   import OrgPicker from "#lib/components/OrgPicker.svelte";
   import WriteResult from "#lib/components/WriteResult.svelte";
   import { t, tf, tp } from "#lib/i18n.svelte.js";
-  import { failure, type Failure, errorText } from "#lib/write.js";
+  import { attempt, errorText, type Failure } from "#lib/write.js";
   import { stateLabel } from "#lib/stateLabel.js";
 
   let org = $state("");
@@ -78,13 +78,8 @@
 
   /** Run a planning write, then read everything again. */
   async function write(action: () => Promise<unknown>) {
-    failed = null;
-    try {
-      await action();
-      reload += 1;
-    } catch (cause) {
-      failed = failure(cause);
-    }
+    failed = await attempt(action);
+    if (!failed) reload += 1;
   }
 
   // The new-cutover form.

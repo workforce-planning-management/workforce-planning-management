@@ -13,9 +13,9 @@
 | Data | Synthetic | Whatever the deployer's own impact assessment permits |
 | Exposure | Bound to `127.0.0.1` only | Never expose the demo |
 
-The compose file starts PostgreSQL and the API. **The UI is not containerized**: it has
-only `adapter-auto`, so a deployer picks an adapter for their platform (for example
-`adapter-node`) and runs it with `WPM_API_URL` pointing at the API. The image build and
+The compose file starts PostgreSQL and the API. **The UI is not containerized**: it
+builds for Node (`adapter-node`, since WPM-T265): `pnpm build`, then `node build` with `WPM_API_URL` pointing at the API. A
+deployer on another platform swaps the adapter. The image build and
 the compose file are written but were not built where this was written; try them first.
 
 ## Required settings (production)

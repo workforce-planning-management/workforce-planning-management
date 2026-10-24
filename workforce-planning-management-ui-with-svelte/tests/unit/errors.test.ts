@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { ApiError } from "../../src/lib/api/client";
 import { i18n } from "../../src/lib/i18n.svelte";
-import { errorKey, errorText, failure } from "../../src/lib/write";
+import { attempt, errorKey, errorText, failure } from "../../src/lib/write";
 
 describe("errorKey", () => {
   it("maps each status the UI distinguishes", () => {
@@ -65,5 +65,18 @@ describe("failure", () => {
     const other = failure(new ApiError(404, null));
     expect(other.notAllowed).toBe(false);
     expect(other.message).toBe(errorText(new ApiError(404, null)));
+  });
+});
+
+describe("attempt", () => {
+  it("is null when the write went through, and says why when it did not", async () => {
+    expect(await attempt(async () => 1)).toBeNull();
+    expect(await attempt(() => Promise.reject(new ApiError(403, null)))).toEqual({
+      notAllowed: true,
+      message: null,
+    });
+    const refused = await attempt(() => Promise.reject(new ApiError(422, { description: "no" })));
+    expect(refused?.notAllowed).toBe(false);
+    expect(refused?.message).toContain("no");
   });
 });

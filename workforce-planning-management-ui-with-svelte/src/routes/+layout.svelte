@@ -16,9 +16,9 @@
     LOCALE_LABELS,
   } from "#lib/i18n.svelte.js";
   import PickerBar from "@lilydesignsystem/svelte-picker-bar";
+  import type { ComponentProps } from "svelte";
   import { stepAt } from "#lib/demoTour.js";
   import { Drawer } from "@lilydesignsystem/svelte-headless";
-  import type { ShareTarget } from "@lilydesignsystem/svelte-share-picker";
 
   let { children } = $props();
 
@@ -100,6 +100,8 @@
     })),
   );
 
+  // The type comes from the bar that uses it, so the two cannot drift apart.
+  type ShareTarget = NonNullable<ComponentProps<typeof PickerBar>["shareTargets"]>[number];
   const SHARE_TARGETS: ShareTarget[] = [
     {
       id: "email",

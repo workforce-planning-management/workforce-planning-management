@@ -18,7 +18,7 @@
   import OrgPicker from "#lib/components/OrgPicker.svelte";
   import WriteResult from "#lib/components/WriteResult.svelte";
   import { t, tf } from "#lib/i18n.svelte.js";
-  import { failure, type Failure, errorText } from "#lib/write.js";
+  import { attempt, errorText, type Failure } from "#lib/write.js";
 
   let org = $state("");
   let view = $state<CapacityView | null>(null);
@@ -44,13 +44,8 @@
   let claimFte = $state(1);
 
   async function write(action: () => Promise<unknown>) {
-    failed = null;
-    try {
-      await action();
-      reload += 1;
-    } catch (cause) {
-      failed = failure(cause);
-    }
+    failed = await attempt(action);
+    if (!failed) reload += 1;
   }
 
   $effect(() => {

@@ -7,7 +7,6 @@
 -->
 <script lang="ts">
   import ErrorNote from "#lib/components/ErrorNote.svelte";
-  import { ApiError } from "#lib/api/client.js";
   import {
     createOversightCriterion,
     createOversightLevel,
@@ -29,7 +28,7 @@
   import OversightCriteria from "#lib/components/OversightCriteria.svelte";
   import WriteResult from "#lib/components/WriteResult.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
-  import { failure, type Failure, errorText } from "#lib/write.js";
+  import { attempt, errorText, type Failure } from "#lib/write.js";
 
   let org = $state("");
   let status = $state<OversightStatus | null>(null);
@@ -66,13 +65,8 @@
 
   /** A write on the scale or the evidence, then read the status again. */
   async function change(action: () => Promise<unknown>) {
-    failed = null;
-    try {
-      await action();
-      await load(org);
-    } catch (cause) {
-      failed = failure(cause);
-    }
+    failed = await attempt(action);
+    if (!failed) await load(org);
   }
 
   $effect(() => {
@@ -118,13 +112,10 @@
   async function write(action: () => Promise<unknown>) {
     notAllowed = false;
     error = null;
-    try {
-      await action();
-      await load(org);
-    } catch (cause) {
-      if (cause instanceof ApiError && cause.status === 403) notAllowed = true;
-      else error = message(cause);
-    }
+    const failed = await attempt(action);
+    if (!failed) await load(org);
+    else if (failed.notAllowed) notAllowed = true;
+    else error = failed.message;
   }
 
   async function toggle(pid: string) {

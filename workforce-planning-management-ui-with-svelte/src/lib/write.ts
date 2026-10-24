@@ -53,3 +53,19 @@ export function failure(cause: unknown): Failure {
   }
   return { notAllowed: false, message: errorText(cause) };
 }
+
+/**
+ * Run a write and say how it went: `null` when it went through, otherwise why not (WPM-T265). The one
+ * place a page turns a failed write into something to show; what the page does after a success
+ * (read again, close a form) stays its own.
+ */
+export async function attempt(
+  action: () => Promise<unknown>,
+): Promise<Failure | null> {
+  try {
+    await action();
+    return null;
+  } catch (cause) {
+    return failure(cause);
+  }
+}
