@@ -37,6 +37,7 @@ pub mod grades;
 pub mod groups;
 pub mod handover;
 pub mod health_requirements;
+pub mod human_capital;
 pub mod hr_core;
 pub mod intelligence;
 pub mod job_levels;

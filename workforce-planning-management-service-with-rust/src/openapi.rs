@@ -549,6 +549,9 @@ fn add_governance_paths(document: &mut Value) {
         },
         "/api/pay-transparency/gap-report/csv": {
             "get": { "tags": ["pay-transparency"], "summary": "The same report as CSV, one row per figure with the two figures each gap comes from; the export is audited", "responses": ok("A CSV file") }
+        },
+        "/api/reports/human-capital": {
+            "get": { "tags": ["reports"], "summary": "The human capital report (?organization=&as_of=): headcount and FTE by employment type, starters, leavers, turnover, time to fill, training completion and succession coverage, each with its definition, source, period and exclusions, laid beside ISO 30414 areas and ESRS S1 requirements by name. Groups under the floor are withheld; what WPM cannot compute is unknown with a reason; the named metrics WPM does not cover are listed. Audited", "responses": ok("The report") }
         }
     });
     if let (Some(target), Some(extra)) = (document["paths"].as_object_mut(), paths.as_object()) {

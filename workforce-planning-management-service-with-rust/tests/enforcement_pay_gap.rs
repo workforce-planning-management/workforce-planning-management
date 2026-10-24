@@ -225,6 +225,16 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
             assert!(!snapshot.unwrap_or_default().contains("job evaluation"), "the words are not in the audit");
         }
 
+        // ── The human capital report: HR, payroll and the service read it; a worker does not; it names no one ──
+        let capital = format!("/api/reports/human-capital?organization={org}");
+        assert_eq!(request.get(&capital).await.status_code(), 401);
+        assert_eq!(get(capital.clone(), worker.clone()).await.status_code(), 403, "a worker");
+        let hc = get(capital.clone(), hr.clone()).await;
+        assert_eq!(hc.status_code(), 200, "HR reads it, and it holds no salary: {}", hc.text());
+        let hc: Value = hc.json();
+        assert!(!hc.to_string().contains("Pay Gap Enforcement"), "no worker named");
+        assert!(hc["report"]["figures"].as_array().unwrap().iter().any(|f| f["key"] == "headcount"));
+
         // ── Take the sex answers away and there is nothing to compare ────────────────────
         ctx.db.execute_unprepared("DELETE FROM equality_declarations").await.unwrap();
         let none: Value = get(report.clone(), payroll.clone()).await.json();

@@ -9134,6 +9134,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reports/human-capital": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The human capital report (?organization=&as_of=): headcount and FTE by employment type, starters, leavers, turnover, time to fill, training completion and succession coverage, each with its definition, source, period and exclusions, laid beside ISO 30414 areas and ESRS S1 requirements by name. Groups under the floor are withheld; what WPM cannot compute is unknown with a reason; the named metrics WPM does not cover are listed. Audited */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The report */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/requisitions": {
         parameters: {
             query?: never;

@@ -43,6 +43,7 @@ pub mod governance;
 pub mod grade;
 pub mod groups;
 pub mod health_requirements;
+pub mod human_capital;
 pub mod idempotency;
 pub mod insights;
 pub mod job_levels;

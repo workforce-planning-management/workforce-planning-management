@@ -58,7 +58,14 @@ workforce) (WPM-R147, WPM-D100). Proposed in [plan.md](plan.md) section N; the s
 
 - **A gap is shown as a gap.** The report lists the named metrics WPM does not cover, so an omission is visible rather than silent.
 - **Aggregates only.** Every figure is a count or a rate over a group at or above the floor (WPM-D32); no table in the report
-  names a person, and a cell under the floor is withheld.
+  names a person, and a cell under the floor is withheld. Built (WPM-T273): a count of 1 to 9 is withheld and **zero is shown** (it
+  says nobody, which names no one); the FTE of a withheld group is withheld too, since it would give the count back; a rate is
+  withheld when the count it is made from is, or when the mean headcount is under the floor.
+- **Built figures** (WPM-T273): headcount, and headcount and FTE (in hundredths) by employment type; starters, leavers, turnover
+  rate (basis points); time to fill, median and mean (whole calendar days, halves up); training completion; succession coverage
+  (criticality 4 or 5, a successor ready now, plans whose incumbent is employed in the organization). **Unknown with a reason:**
+  training hours (no source), collective agreement coverage (no record yet), and workforce cost and the pay gap (behind a stricter
+  read; the pay gap has `/api/pay-transparency/gap-report`).
 
 ## Design decisions
 

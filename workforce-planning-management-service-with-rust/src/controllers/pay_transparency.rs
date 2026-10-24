@@ -68,7 +68,7 @@ pub(crate) struct ReportQuery {
     pub(crate) variable: Option<String>,
 }
 
-fn organization_problems(value: &str) -> Vec<String> {
+pub(crate) fn organization_problems(value: &str) -> Vec<String> {
     let mut problems = Problems::new();
     problems.require_ref(
         "organization_ref",

@@ -4377,9 +4377,24 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `enforcement`, `route_coverage`, clippy pedantic clean, 209 UI unit tests and `svelte-check` after regenerating the types. Not
       done: a screen for the signal and the records (with the pay gap and pay information screens, WPM-T270 and WPM-T271 part 2);
       the other `enforcement_*` binaries were not re-run.
-- [ ] WPM-T273 **Human capital report.** *(WPM-R147, WPM-D100)* A dated, read-only report from existing measures, each with
+- [x] (2026-10-24) WPM-T273 **Human capital report.** *(WPM-R147, WPM-D100)* A dated, read-only report from existing measures, each with
       metric name, definition, source and exclusions; `unknown` where WPM cannot compute it; a test that no licensed text is in
       the repo.
+      Done: `rules::human_capital` (headcount, and headcount and FTE by employment type; starters, leavers and turnover; time to
+      fill, median and mean; training completion; succession coverage of critical roles; each with definition, source, period,
+      exclusions and its ISO area and ESRS S1 requirement for **both** the 2023 and the revised 2026/1563 sets; six named metrics WPM
+      does not cover listed as gaps; 15 tests), and `controllers/human_capital.rs` (`GET /api/reports/human-capital?organization=&as_of=`,
+      HR, payroll, service and administrator callers, in the organization's scope, audited). A count of 1 to 9 is withheld, zero is
+      shown, and a rate is withheld with the count that would give it back. Unknown, with a reason: training hours (no source),
+      collective agreement coverage (no record), and workforce cost and the pay gap (behind a stricter read, which has its own route).
+      The "no licensed text" test is a shape check: everything quoted from a standard is an area, a topic or an identifier of at most
+      60 characters with no sentence; it cannot prove that no paragraph was pasted elsewhere. Verified (Postgres 18, Podman): 700 unit
+      tests, 141 request tests (1 new: counts, FTE, a small type withheld, turnover from ten leavers, the unknowns, no name, another
+      organization empty, the future refused, the audit), `enforcement_pay_gap` (extended: anonymous refused, a worker refused, HR given
+      it), `enforcement_pay_information`, `enforcement_equality`, `enforcement`, `enforcement_need_to_know`, `route_coverage`, clippy
+      pedantic clean, 209 UI unit tests after regenerating the types. Not done: a screen; the mapping was not compared with ISO's text
+      (paywalled) or the revised ESRS datapoints; collective agreement coverage waits for the unions work; the other `enforcement_*`
+      binaries were not re-run.
 - [ ] WPM-T274 **AI and scoring deployer register.** *(WPM-R148, WPM-D103)* Extends `rules::scoring::REGISTER` (WPM-T166):
       category, overseer role, informed-on date, log retention; per-decision explanation readable by the person concerned.
 - [ ] WPM-T275 **Read-only MCP server.** *(WPM-R149, WPM-D101)* Tools over existing reads under the caller's token; a test that
