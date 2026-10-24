@@ -8,6 +8,7 @@ pub mod oversight_pack_freeze;
 pub mod pay_progression_reminders;
 pub mod replay_erasures;
 pub mod rota_reminders;
+pub mod scim_push;
 pub mod seed;
 pub mod snapshot;
 pub mod verify_audit_chain;

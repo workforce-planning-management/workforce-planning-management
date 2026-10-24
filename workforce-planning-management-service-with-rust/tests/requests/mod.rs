@@ -51,6 +51,7 @@ mod privacy;
 mod removals;
 mod rotas;
 mod scale;
+mod scim;
 mod shared_cache;
 mod skill_gaps;
 mod talent;

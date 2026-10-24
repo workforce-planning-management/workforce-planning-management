@@ -328,6 +328,7 @@ impl Hooks for App {
 
     fn register_tasks(tasks: &mut Tasks) {
         tasks.register(tasks::seed::Seed);
+        tasks.register(tasks::scim_push::ScimPush);
         tasks.register(tasks::rota_reminders::RotaReminders);
         tasks.register(tasks::pay_progression_reminders::PayProgressionReminders);
         tasks.register(tasks::snapshot::SnapshotHeadcount);

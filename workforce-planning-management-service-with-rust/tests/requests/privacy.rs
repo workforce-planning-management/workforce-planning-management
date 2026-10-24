@@ -13,7 +13,7 @@ use super::{activate, an_org, seed_worker};
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded life, the whole rights surface
 async fn subject_rights_round_trip() {
-    crate::requests::request_open(|request, _ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "SR-1", Some(3_600_000)).await;
         activate!(&request, &worker).await;
@@ -65,6 +65,17 @@ async fn subject_rights_round_trip() {
                 .contains("subject_access_exported")
         );
 
+        // The identity provider's link for the worker is held, and erasure removes it.
+        {
+            use sea_orm::ConnectionTrait;
+            ctx.db
+                .execute_unprepared(&format!(
+                    "INSERT INTO scim_pushes (pid, worker_pid, scim_id) VALUES (gen_random_uuid(), '{worker}', 'idp-1')"
+                ))
+                .await
+                .unwrap();
+        }
+
         // ── Erasure is refused while employment is open.
         assert_eq!(
             request
@@ -87,6 +98,20 @@ async fn subject_rights_round_trip() {
             .await
             .json();
         assert_eq!(erased["erased"], worker.as_str());
+        {
+            use sea_orm::ConnectionTrait;
+            let left = ctx
+                .db
+                .query_one_raw(sea_orm::Statement::from_string(
+                    sea_orm::DatabaseBackend::Postgres,
+                    format!("SELECT count(*) AS n FROM scim_pushes WHERE worker_pid = '{worker}'"),
+                ))
+                .await
+                .unwrap()
+                .unwrap();
+            let n: i64 = left.try_get("", "n").unwrap();
+            assert_eq!(n, 0, "erasure removes the identity provider link");
+        }
         // The worker is gone from reads (soft-deleted) …
         assert_eq!(
             request

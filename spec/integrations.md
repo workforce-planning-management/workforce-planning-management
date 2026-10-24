@@ -83,6 +83,23 @@ beyond the service's (a tool call is one request to the endpoint, not counted ag
 - **Testing.** Against a stub SCIM server. Whether Keycloak can be a SCIM target (it has no SCIM endpoint in its core as far as
   this round found; third-party extensions exist) is **unconfirmed**; WPM-T276 says what it tested.
 
+**Built (WPM-T276).** The task `scim_push` (`rules::scim` is the pure mapping, `tasks/scim_push.rs` the push). **It reconciles
+rather than replays the outbox**: for each worker it works out the `User` that should exist today, compares a SHA-256 fingerprint with
+what was last sent (`scim_pushes`: the provider's id, the fingerprint, the retry state, no body), and creates (`POST /Users`) or
+replaces (`PUT /Users/{id}`) only when it differs. That is idempotent, mends itself after an outage and does not depend on
+`WPM_EVENT_TRANSPORT` (the outbox exists under one transport only). A `409` is resolved by finding the provider's user by
+`externalId` and replacing it. A failure is recorded as `HTTP <status>` (never the provider's body) and retried with a back-off of
+one minute doubling to a day. Managers are sent first so the Enterprise `manager` carries the provider's own id. Mapping: `userName`
+and `employeeNumber` are the employee number (WPM holds no login), `externalId` is `worker:<pid>`, plus display name, title,
+`department` and `active`. **No `costCenter`** (WPM holds no cost centre) and **no `name` parts, emails, phone numbers or addresses**.
+`active` follows the headcount definition: not before the first day, and not on or after the termination date. A deleted
+record is deactivated if it was ever sent. Settings: `WPM_SCIM_BASE_URL` (https, or http to this machine), `WPM_SCIM_TOKEN`,
+`WPM_SCIM_ORGANIZATION`. Erasure deletes the `scim_pushes` row and the subject export lists it. **Not built:** a
+schedule (run `cargo loco task scim_push` from the deployment's scheduler); a deprovision on the handover's last day (WPM uses
+the termination date, by the headcount definition, so a leaver is deactivated from that date, which may be a day before the last
+day worked); `PATCH`; groups; the token held by reference (it is read from the environment); a test against Keycloak (it has no SCIM
+endpoint in its core as far as this round found) or any real identity provider: **only a stub server was used**.
+
 ### WPM-R151 — Outbound webhooks
 
 - **What.** Subscribers register an endpoint and the event kinds they want (hire, movement, leave approved, last day). Each delivery

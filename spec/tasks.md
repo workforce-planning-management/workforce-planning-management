@@ -4425,9 +4425,23 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       OAuth protected-resource metadata and audience binding; resources, prompts and pagination; a client such as Claude or an MCP
       inspector was **not** run against it (the shapes follow the revision's tools and transports pages, and only my own tests
       exercised them); the `keycloak`, `chaos` and other `enforcement_*` binaries were not re-run.
-- [ ] WPM-T276 **SCIM 2.0 outbound.** *(WPM-R150, WPM-D102)* Pure mapping from worker to SCIM `User` with the Enterprise
+- [x] (2026-10-24) WPM-T276 **SCIM 2.0 outbound.** *(WPM-R150, WPM-D102)* Pure mapping from worker to SCIM `User` with the Enterprise
       extension; a push task over the outbox; tested against Keycloak's SCIM or a stub server; a test that no contact field
       leaves.
+      Done, with one change: the task **reconciles from current state instead of reading the outbox** (the outbox exists under one
+      event transport only, and a reconcile is idempotent and self-healing). `rules::scim` (the mapping, the active rule, the step,
+      the back-off, the base-URL check, a source test that neither the mapping nor the push names a contact field; 11 tests),
+      migration `m20261024_000084_scim_pushes`, `tasks/scim_push.rs` (`cargo loco task scim_push`; managers first; `409` resolved by
+      `externalId`; failures kept as a status and retried), erasure and the subject export wired. Settings `WPM_SCIM_BASE_URL`,
+      `WPM_SCIM_TOKEN`, `WPM_SCIM_ORGANIZATION`. Verified (Postgres 18, Podman) **against a stub SCIM server that I wrote**: 729
+      unit tests, 144 request tests (1 new: three created with the manager first and its id carried, a joiner not sent before the
+      first day, nothing sent on a second run, a title change and a leaver replaced and deactivated, a `503` recorded as a status only
+      and not retried inside the back-off, retried after it, a `409` resolved by `externalId`, and the bearer token on every call; and
+      a worker with a personal email, phone and postcode whose bodies hold none of them; the privacy test now checks erasure removes
+      the link), `enforcement_pay_gap`, `enforcement_pay_information`, `enforcement_equality`, `enforcement`, `enforcement_need_to_know`,
+      `enforcement_me`, `security`, `route_coverage`, clippy pedantic clean. Not done: any real identity provider or Keycloak (none was
+      run, so interoperability with Entra ID or Okta is **unverified**); a schedule; the handover's last day as the deprovision date
+      (the termination date is used); `PATCH` and groups; the token by reference; a screen or status route for the push state.
 - [ ] WPM-T277 **Outbound webhooks.** *(WPM-R151, WPM-D106)* Subscriptions, HMAC signature, retry with back-off, a delivery
       log with no payload body; a test that payloads hold URNs and kinds only.
 - [ ] WPM-T278 **Positions: pure core.** *(WPM-R152, WPM-D104)* States and moves, vacancy and over-establishment arithmetic.

@@ -96,6 +96,7 @@ mod m20261024_000080_pay_categories;
 mod m20261024_000081_pay_information_requests;
 mod m20261024_000082_pay_assessment_records;
 mod m20261024_000083_ai_register_entries;
+mod m20261024_000084_scim_pushes;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -191,6 +192,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261024_000081_pay_information_requests::Migration),
             Box::new(m20261024_000082_pay_assessment_records::Migration),
             Box::new(m20261024_000083_ai_register_entries::Migration),
+            Box::new(m20261024_000084_scim_pushes::Migration),
             // inject-above (do not remove this comment)
         ]
     }

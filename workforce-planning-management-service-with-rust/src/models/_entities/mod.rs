@@ -82,6 +82,7 @@ pub mod oversight_readings;
 pub mod partner_commitments;
 pub mod path_enrollments;
 pub mod pay_assessment_records;
+pub mod scim_pushes;
 pub mod pay_categories;
 pub mod pay_information_requests;
 pub mod payroll_runs;
