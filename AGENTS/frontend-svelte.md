@@ -17,7 +17,7 @@ proxy. Stack-level agreements:
 4. **Nav link** in `NAV_LINKS` (`src/routes/+layout.svelte`) if it is a
    top-level area.
 5. **Strings** in every `-001` locale ([localization](localization.md)).
-6. **Playwright spec** over stubbed endpoints in `tests/e2e/smoke.spec.ts`.
+6. **Playwright spec** over stubbed endpoints, one file per area in `tests/e2e/` (shared fixtures in `support.ts`).
 
 ## Conventions
 

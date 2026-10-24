@@ -4237,8 +4237,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       and cutover use it and keep their own after-success step. Verified: 203 UI unit tests (one new), `svelte-check` clean,
       prettier clean, `pnpm build` with the Node adapter, 168 Playwright specs. Not checked: running `node build` against a real
       API, a container image (still none for the UI), or the pickers' look beyond what `pickers.spec.ts` and the layout specs assert.
-- [ ] WPM-T266 **Specs for every area.** Playwright specs for `/change`, `/skills`, `/groups`, `/development`, `/workforce`,
+- [x] WPM-T266 **Specs for every area.** Playwright specs for `/change`, `/skills`, `/groups`, `/development`, `/workforce`,
       `/payroll` and `/requisitions/[pid]`; split `smoke.spec.ts` (2,659 lines) into one file per area.
+      Done: `smoke.spec.ts` (2,659 lines) is split into fifteen area files plus `sign-in.spec.ts`, with the fixtures and the signed-in
+      stubs in `tests/e2e/support.ts` (`signIn`, `WORKER`, `MASKED_WORKER`, `chooseLocale`, `stubSignedIn`); the same 48 tests run,
+      the test bodies unchanged. New specs, 28 tests: `change` (6), `skills` (6), `groups` (3), `development` (3), `workforce` (4),
+      `payroll-list` (3), `requisition-detail` (3); each also checks the page title, a refusal in words and the empty state.
+      Verified: 196 Playwright specs pass (168 before, 4 skipped as before: the My details screenshots), nothing else changed.
+      Not checked: that each new spec fails when the page is broken, beyond the few assertions I saw fail first for the wrong
+      expected text; no screenshots were taken or looked at. Found, not fixed: `/skills` still has English in its script
+      (the aria-labels `Rename …`, `Category of …`, `Merge … into`, the `confirm()` texts and the merge and delete notices), and
+      `/requisitions/[pid]` shows the raw stage in its button (`→ screened`), because the untranslated test scans template text
+      and not template-literal attributes or script strings.
 - [ ] WPM-T267 **Split the largest pages.** Panels and forms of `workers/[pid]` (713 lines), `planning` (697) and `roles` (487)
       into components; screenshots before and after in light, dark and a phone width.
 
