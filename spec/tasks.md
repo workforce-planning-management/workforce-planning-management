@@ -4309,8 +4309,21 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       script with a bot challenge (not bypassed); no national transposition was read; the revised ESRS and ISO 30414:2025 detail is
       secondary or paywalled; paragraph numbers inside Articles 5 and 7 and the rule for putting part-time pay on a comparable basis are
       open for WPM-T269. This is a spec change only: no code, so no suite was run.
-- [ ] WPM-T269 **Pay gap indicators: pure core.** *(WPM-R144, WPM-D99)* `rules::pay_gap`: the seven indicators overall and per
+- [x] (2026-10-24) WPM-T269 **Pay gap indicators: pure core.** *(WPM-R144, WPM-D99)* `rules::pay_gap`: the seven indicators overall and per
       category, the floor, exclusion counts, `unknown` for one-sided cells. Exhaustive unit tests, including a cell of one.
+      Done: `src/rules/pay_gap.rs` (21 unit tests): `report(workers, floor, basis)` returns the seven indicators (mean and median gap
+      on total pay, mean and median gap in variable pay, the share of each sex receiving a variable component, four quartile
+      compositions, the mean gap per category in basic and in variable pay) as `Figure::{Shown, Withheld, Unknown(reason)}`, plus
+      `Exclusions` counted by first reason. Pinned: the signed gap in basis points, exact for a median of two middle values (kept
+      rational until one rounding, half away from zero, in `i128`); a cell under the floor on either side withheld, with a cell of one
+      woman never shown; a side with nobody `unknown` (`OneSided`), no one `NoWorkers`, a male figure of zero `NoBase`; a variable component
+      nobody recorded is not zero and the worker stays in basic pay only; an exclusion count under the floor shown as such; the floor
+      refused below the equality monitoring minimum; no worker key and no head count in the serialized report; amounts near the ends
+      of `i64` do not wrap; the Directive's three reporting tiers and `next_due` (including 29 February). Mutating the floor
+      comparison, the rounding and the no-base guard each made tests fail. Verified: `cargo test --lib` and clippy pedantic clean.
+      Not done and said so: the Directive's own rule for the comparable basis of pay is not read, so the module takes pay already on
+      one basis and WPM-T270 chooses and records it; the variable-gap basis is a parameter for the same reason; the median per category
+      is not computed; nothing reads the database yet. Spec change: a withheld cell carries no count (`spec/pay-transparency.md`).
 - [ ] WPM-T270 **Pay gap indicators: records, API and screen.** *(WPM-R144)* `pay_categories` with a stated basis; an HR-only
       report; enforcement test that it names no one; CSV export with workings.
 - [ ] WPM-T271 **Pay information for the worker and the candidate.** *(WPM-R145)* `POST /api/me/pay-information-requests` with a

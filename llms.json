@@ -14,7 +14,7 @@
     "api": "Rust, Loco (Axum + SeaORM), PostgreSQL 18",
     "ui": "SvelteKit 2, Svelte 5 runes, TypeScript",
     "tests": {
-      "service_unit_declared": 660,
+      "service_unit_declared": 681,
       "service_request_declared": 130,
       "ui_unit_declared": 174,
       "ui_e2e_declared": 163,

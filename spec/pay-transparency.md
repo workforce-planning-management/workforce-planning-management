@@ -50,15 +50,26 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
   WPM-D74, off until a deployer records a lawful basis). **WPM does not hold what it is not given**: a pay component it has no
   record of is `unknown` in that indicator, not zero (WPM-D99).
 - **Who counts.** Only workers with a declared sex of female or male enter the indicators, because that is what the Directive
-  compares. Everyone else is **excluded and counted**: the report says how many workers were left out and why (no declaration,
-  a declaration other than female or male, left the organization before the period). Nothing is inferred from a name or a title.
+  compares. Everyone else is **excluded and counted** (WPM-T269, `rules::pay_gap::Exclusions`), each worker under the first reason
+  that applies: no sex declared, a declaration other than female or male, or no basic pay recorded; and, still in the basic-pay
+  figures, a variable component not recorded, and no category. Nothing is inferred from a name or a title.
+- **Total pay is basic plus variable**, so a worker whose variable component is unknown is in the basic-pay figures and the
+  per-category basic gap only, and is counted as such. **A gap in variable components** is taken, by the deployer's choice
+  (`VariableBasis`), over every worker whose variable pay is known with none counting as zero (the default), or over recipients only;
+  the Directive's text for this was not read (open item). The share receiving a component does not depend on that choice. The
+  per-category gap (g) is the mean gap, and a median per category is not computed.
+- **The quartile bands** are four equal groups of workers ranked by total pay, lowest first; a tie across a boundary is split by the
+  worker key, so the same data gives the same bands in any input order.
 - **Categories of workers** are the employer's own grouping of roles that do the same work or work of equal value. They are
   **configuration with a stated basis** (`pay_categories`, WPM-T270): the criteria used (skills, effort, responsibility,
   working conditions, as the Directive requires them to be objective and gender-neutral), the roles in the category, and who
   set it and when. WPM never builds a category from job titles. A role in no category is listed, not guessed.
-- **The floor.** A cell with fewer workers than the floor on either side (female or male) is **withheld**, shown as such, with
-  its count of workers withheld and no figure. Withheld cells are not summed into a total that would reveal them (WPM-D32,
-  WPM-D99). The default floor is the equality monitoring floor; a deployer may raise it, never lower it below that.
+- **The floor.** A cell with fewer workers than the floor on either side (female or male) is **withheld**: no figure and no count.
+  A cell with nobody of one sex is `unknown` (a gap needs two sides), and a cell with nobody at all says so. **No figure in the
+  report is a head count**, and a band's composition is shown only when both sexes reach the floor in it, so a withheld cell cannot be
+  worked out from the others. An exclusion count (below) under the floor shows only as "under the floor". The floor can never be
+  below the equality monitoring minimum of five (`equality_monitoring::MIN_FLOOR`), and its default is that module's default of ten
+  (WPM-D32, WPM-D99).
 - **Period and basis.** A report is for a stated reporting period (the previous calendar year by default) and says what its pay
   is made of and how a part-time worker's pay is put on a comparable basis (the basis is recorded with the report). *The
   Directive's own rule on that basis (for example gross hourly pay) was not read in the spec round and is an open item for

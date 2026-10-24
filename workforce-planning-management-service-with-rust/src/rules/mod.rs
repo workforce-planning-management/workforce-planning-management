@@ -58,6 +58,7 @@ pub mod notify;
 pub mod org;
 pub mod org_access;
 pub mod oversight;
+pub mod pay_gap;
 pub mod pay_position;
 pub mod pay_scale;
 pub mod payroll;
