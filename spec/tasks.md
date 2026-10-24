@@ -4157,7 +4157,7 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `app.rs` and `src/tasks/` stay: they are start-up and command-line errors read by an operator, not HTTP answers.
       Verified: 640 unit tests (one new), 130 request tests (Postgres 18, Podman), clippy clean. Not run: the `enforcement_*`
       binaries; no test drives an invariant failure through HTTP, so the 500 body is covered by the unit test only.
-- [~] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the
+- [x] WPM-T260 **One loader with a stale guard.** `createLoader()` in `src/lib/` owning loading, error, data and the
       late-response guard; move the about 40 unguarded `$effect` loaders onto it. The worker page uses `Promise.allSettled` and
       an error per panel, so a failed secondary panel hides only itself. A unit test of the guard.
       Part 1 (this commit): `src/lib/loader.svelte.ts` has `createLoader` (data, error, loading, and a late-response guard via
@@ -4172,6 +4172,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       one `error` variable (movements, metrics, groups, planning, roles, rota, skills, learning, cpd, change, kanban,
       requisitions, org-chart, benchmarks, and the `src/lib/components/` panels) and need that split first. No Playwright test
       races two slow responses; the guard is covered by the unit test only. Left open (`[~]`).
+      Part 2 (closed): `guardedLoad(fetcher, apply, fail)` in `src/lib/loader.svelte.ts` is the guard without the state, for the
+      pages and panels that keep their own; it drops the answer or the failure of a load that a newer one overtook. 40 files
+      now use it (the My details panels, the worker's panels, `movements`, `metrics`, `groups`, `skills`, `requisitions`,
+      `kanban`, `expenses`, `rota`, `learning`, `cpd`, `change`, `planning`, `roles`, `org-chart`, `benchmarks`, `directory`, the
+      dashboard tiles and the rest), 10 use `createLoader`, and 12 keep a guard of their own (listed in
+      `tests/unit/loaders-are-guarded.test.ts`, which fails when a new `async function load…` has neither). Where a reset
+      comes first (`loadDetail`, `loadView`, `loadWorker`, `loadProgress`) the reset stays in a small wrapper and the read is
+      guarded. A multi-step read now applies all of its answer or none, so `JobLevel`, `PayPosition` and `RoleGrade`, which used to
+      show the level before the ladder arrived, show nothing new if the ladder fails. Verified: 209 unit tests (three new for
+      `guardedLoad`, three for the allowlist), `svelte-check` and prettier clean, 206 Playwright specs. Not done: the
+      one-shot mount loads (`RoleGap`, `ContactDetailsPanel`, `HealthPanel`, and the first read on `change`, `cpd`, `learning`,
+      `planning` and `roles`) are unguarded because nothing they read changes; still no browser test races two slow responses.
 - [x] WPM-T261 **Errors are content.** Every catch goes through `failure()` (`src/lib/write.ts`); status codes 401, 403, 404,
       409, 422 and 5xx map to `t()` keys in the 13 locales (AI-written, marked unreviewed); one `<ErrorNote>` with
       `role="alert"` replaces the 85 `<p class="error">`. Extend `untranslated.test.ts` to script-side error strings.
