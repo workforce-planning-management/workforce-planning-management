@@ -4,6 +4,7 @@
   an equivalence WPM derives (no source says which level matches which band).
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -30,19 +31,26 @@
 
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load() {
-    try {
-      grade = await getRoleGrade(profilePid);
-      level = grade.job_level?.level?.code ?? "";
-      band = grade.pay_band?.band ?? "";
+  const load = guardedLoad(
+    async () => {
+      const found = await getRoleGrade(profilePid);
       const [firstLadder] = await listJobLevelFrameworks();
-      ladder = firstLadder ? await getJobLevelFramework(firstLadder.id) : null;
+      const ladderFound = firstLadder ? await getJobLevelFramework(firstLadder.id) : null;
       const [firstScale] = await listPayScales();
-      scale = firstScale ? await getPayScale(firstScale.id) : null;
-    } catch (cause) {
+      const scaleFound = firstScale ? await getPayScale(firstScale.id) : null;
+      return { found, ladderFound, scaleFound };
+    },
+    ({ found, ladderFound, scaleFound }) => {
+      grade = found;
+      level = found.job_level?.level?.code ?? "";
+      band = found.pay_band?.band ?? "";
+      ladder = ladderFound;
+      scale = scaleFound;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void profilePid;

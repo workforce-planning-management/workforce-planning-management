@@ -5,6 +5,7 @@
   never sees Add item. A possible duplicate is flagged (▲), not refused.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -75,13 +76,15 @@
     { id: "remove", header: t("common.actions"), cell: removeCell },
   ]);
 
-  async function load() {
-    try {
-      claim = await getExpenseClaim(claimPid);
-    } catch (cause) {
+  const load = guardedLoad(
+    () => getExpenseClaim(claimPid),
+    (found) => {
+      claim = found;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void claimPid;

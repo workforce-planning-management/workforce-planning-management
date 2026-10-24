@@ -7,6 +7,7 @@
   as unavailable, never guessed. HR creates rotas and records swaps.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -65,25 +66,32 @@
   const viewWorkers = $derived(everyone.filter((w) => w.organization_ref === view?.organization_ref));
   const nameOf = (pid: string) => everyone.find((w) => w.pid === pid)?.display_name ?? pid;
 
-  async function loadList() {
-    try {
-      const [list, workers] = await Promise.all([listRotas(), listWorkers()]);
+  const loadList = guardedLoad(
+    () => Promise.all([listRotas(), listWorkers()]),
+    ([list, workers]) => {
       rotas = list;
       everyone = workers;
       if (!chosen || !list.some((r) => r.pid === chosen)) chosen = list[0]?.pid ?? "";
-    } catch (cause) {
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
+  const readView = guardedLoad(
+    () => Promise.all([getRota(chosen), listSwapRequests(chosen)]),
+    ([found, asked]) => {
+      view = found;
+      requests = asked;
+    },
+    (cause) => {
+      error = message(cause);
+    },
+  );
   async function loadView() {
     view = null;
     if (!chosen) return;
-    try {
-      [view, requests] = await Promise.all([getRota(chosen), listSwapRequests(chosen)]);
-    } catch (cause) {
-      error = message(cause);
-    }
+    await readView();
   }
 
   $effect(() => {

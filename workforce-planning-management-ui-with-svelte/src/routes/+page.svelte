@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import AnnouncementsFeed from "#lib/components/AnnouncementsFeed.svelte";
@@ -33,23 +34,22 @@
 
   // Only a signed-in visitor reaches the dashboard tiles; a signed-out
   // one gets the splash below and never touches the API.
+  const loadTiles = guardedLoad(
+    () => Promise.all([listWorkers({ status: "active" }), listRequisitions("open"), successionGaps()]),
+    ([workers, requisitions, gaps]) => {
+      active = workers;
+      open = requisitions;
+      gapCount = gaps.gaps.length;
+    },
+    (cause) => {
+      error = errorText(cause);
+    },
+  );
   $effect(() => {
     if (!signedIn) return;
-    void (async () => {
-      try {
-        const [workers, requisitions, gaps] = await Promise.all([
-          listWorkers({ status: "active" }),
-          listRequisitions("open"),
-          successionGaps(),
-        ]);
-        active = workers;
-        open = requisitions;
-        gapCount = gaps.gaps.length;
-      } catch (cause) {
-        error = errorText(cause);
-      }
-    })();
+    void loadTiles();
   });
+
 
   // Across every organization the person belongs to; one that cannot be read leaves the tile unknown.
   $effect(() => {

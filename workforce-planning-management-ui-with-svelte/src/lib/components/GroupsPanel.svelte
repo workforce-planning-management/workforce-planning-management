@@ -5,6 +5,7 @@
   else's record acts on their behalf.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf } from "#lib/i18n.svelte.js";
@@ -34,18 +35,24 @@
   const kindLabel = (k: string) => (k === "practice" ? t("comp.groupsPanel.kind_practice") : k === "interest" ? t("comp.groupsPanel.kind_interest") : t("comp.groupsPanel.kind_group"));
   const joinable = $derived(all.filter((g) => !mine.some((m) => m.group_pid === g.pid)));
 
-  async function load() {
-    try {
+  const load = guardedLoad(
+    async () => {
       const worker = await getWorker(workerPid);
-      organization = worker.organization_ref;
-      [mine, all] = await Promise.all([
+      const [theirs, everyGroup] = await Promise.all([
         workerGroups(workerPid).then((r) => r.groups),
         listGroups(worker.organization_ref),
       ]);
-    } catch (cause) {
+      return { worker, theirs, everyGroup };
+    },
+    ({ worker, theirs, everyGroup }) => {
+      organization = worker.organization_ref;
+      mine = theirs;
+      all = everyGroup;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

@@ -6,6 +6,7 @@
   completed training enrolment). All server-derived; derivations shown.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -53,24 +54,29 @@
     })();
   });
 
-  async function loadCapability() {
-    try {
-      capability = await capabilityAnalysis({ minProficiency, minDepth });
-    } catch (cause) {
+  const loadCapability = guardedLoad(
+    () => capabilityAnalysis({ minProficiency, minDepth }),
+    (found) => {
+      capability = found;
+    },
+    (cause) => {
       error = errorText(cause);
-    }
-  }
+    },
+  );
 
+  const readProgress = guardedLoad(
+    () => pathProgress(selectedPath),
+    (found) => {
+      progress = found;
+    },
+    (cause) => {
+      error = errorText(cause);
+    },
+  );
   async function loadProgress(pid: string) {
     selectedPath = pid;
     progress = null;
-    if (pid) {
-      try {
-        progress = await pathProgress(pid);
-      } catch (cause) {
-        error = errorText(cause);
-      }
-    }
+    if (pid) await readProgress();
   }
 
   const matrixColumns = $derived<DataGridColumn[]>([

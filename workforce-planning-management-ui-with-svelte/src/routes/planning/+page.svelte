@@ -7,6 +7,7 @@
   aggregate and levers are suggestions, never decisions.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import PlanForecast from "#lib/components/planning/PlanForecast.svelte";
   import PlanTolerances from "#lib/components/planning/PlanTolerances.svelte";
   import { errorText } from "#lib/write.js";
@@ -119,6 +120,23 @@
   const message = (cause: unknown) => (errorText(cause));
   const editable = (p: Plan) => p.status !== "archived";
 
+  const readDetail = guardedLoad(
+    () =>
+      Promise.all([
+        getWorkforcePlan(selected),
+        planForecast(selected),
+        planAlignment(selected),
+        planCost(selected),
+        planTolerances(selected),
+        planEscalations(selected),
+      ]),
+    (answer) => {
+      [plan, forecast, alignment, cost, tolerances, escalations] = answer;
+    },
+    (cause) => {
+      error = message(cause);
+    },
+  );
   async function loadDetail() {
     plan = null;
     forecast = null;
@@ -127,32 +145,30 @@
     tolerances = null;
     escalations = [];
     if (!selected) return;
-    try {
-      [plan, forecast, alignment, cost, tolerances, escalations] = await Promise.all([
-        getWorkforcePlan(selected),
-        planForecast(selected),
-        planAlignment(selected),
-        planCost(selected),
-        planTolerances(selected),
-        planEscalations(selected),
-      ]);
-    } catch (cause) {
-      error = message(cause);
-    }
+    await readDetail();
   }
 
-  async function loadAll() {
-    try {
-      plans = await listWorkforcePlans();
-      if (!selected && plans.length > 0) selected = plans[0]?.pid ?? "";
-      details = await Promise.all(plans.map((p) => getWorkforcePlan(p.pid)));
+  const readPlans = guardedLoad(
+    async () => {
+      const found = await listWorkforcePlans();
+      const full = await Promise.all(found.map((p) => getWorkforcePlan(p.pid)));
+      return { found, full };
+    },
+    ({ found, full }) => {
+      plans = found;
+      if (!selected && found.length > 0) selected = found[0]?.pid ?? "";
+      details = full;
       totals = Object.fromEntries(
-        details.map((d) => [d.pid, d.demand_lines.reduce((sum, l) => sum + l.target_headcount, 0)]),
+        full.map((d) => [d.pid, d.demand_lines.reduce((sum, l) => sum + l.target_headcount, 0)]),
       );
-      await loadDetail();
-    } catch (cause) {
+    },
+    (cause) => {
       error = message(cause);
-    }
+    },
+  );
+  async function loadAll() {
+    await readPlans();
+    await loadDetail();
   }
 
   $effect(() => {

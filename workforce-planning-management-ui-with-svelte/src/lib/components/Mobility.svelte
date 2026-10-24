@@ -4,6 +4,7 @@
   Compares declarations; never ranks people. Others see only aggregate counts.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tv } from "#lib/i18n.svelte.js";
@@ -35,17 +36,15 @@
   const message = (cause: unknown) =>
     errorText(cause);
 
-  async function load() {
-    try {
-      [matches, open, interests] = await Promise.all([
-        roleMatches(workerPid),
-        opportunities(workerPid),
-        listMobilityInterests(workerPid),
-      ]);
-    } catch (cause) {
+  const load = guardedLoad(
+    () => Promise.all([roleMatches(workerPid), opportunities(workerPid), listMobilityInterests(workerPid)]),
+    (answer) => {
+      [matches, open, interests] = answer;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void load();

@@ -5,6 +5,7 @@
   readiness is aggregate and no individual is named.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -90,28 +91,35 @@
   const message = (cause: unknown) =>
     errorText(cause);
 
+  const readDetail = guardedLoad(
+    () => Promise.all([getChangeInitiative(selected), changeReadiness(selected)]),
+    (answer) => {
+      [initiative, readiness] = answer;
+    },
+    (cause) => {
+      error = message(cause);
+    },
+  );
   async function loadDetail() {
     initiative = null;
     readiness = null;
     if (!selected) return;
-    try {
-      [initiative, readiness] = await Promise.all([
-        getChangeInitiative(selected),
-        changeReadiness(selected),
-      ]);
-    } catch (cause) {
-      error = message(cause);
-    }
+    await readDetail();
   }
 
-  async function loadAll() {
-    try {
-      initiatives = await listChangeInitiatives();
-      if (!selected && initiatives.length > 0) selected = initiatives[0]?.pid ?? "";
-      await loadDetail();
-    } catch (cause) {
+  const readInitiatives = guardedLoad(
+    () => listChangeInitiatives(),
+    (found) => {
+      initiatives = found;
+      if (!selected && found.length > 0) selected = found[0]?.pid ?? "";
+    },
+    (cause) => {
       error = message(cause);
-    }
+    },
+  );
+  async function loadAll() {
+    await readInitiatives();
+    await loadDetail();
   }
 
   $effect(() => {

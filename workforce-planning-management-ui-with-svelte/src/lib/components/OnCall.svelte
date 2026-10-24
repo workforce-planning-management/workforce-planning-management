@@ -3,6 +3,7 @@
   rotas they can read, over the next four weeks.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { decideSwap, workerOnCall, workerSwapRequests } from "#lib/api/wpm.js";
@@ -16,21 +17,19 @@
   let outgoing = $state<SwapRequest[]>([]);
   let error = $state<string | null>(null);
 
-  async function load() {
-    try {
-      const [mine, swaps] = await Promise.all([
-        workerOnCall(workerPid),
-        workerSwapRequests(workerPid),
-      ]);
+  const load = guardedLoad(
+    () => Promise.all([workerOnCall(workerPid), workerSwapRequests(workerPid)]),
+    ([mine, swaps]) => {
       stretches = mine;
       incoming = swaps.incoming;
       outgoing = swaps.outgoing;
-    } catch {
+    },
+    () => {
       // Not shown rather than an error: a person without rota access
       // simply has no on-call panel.
       stretches = null;
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

@@ -6,6 +6,7 @@
   framework imports match by reference first.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -73,13 +74,15 @@
     { id: "accept", header: t("pages.skills.accept"), cell: acceptCell },
   ]);
 
-  async function load() {
-    try {
-      [skills, suggestions] = await Promise.all([listSkills(), categorySuggestions()]);
-    } catch (cause) {
+  const load = guardedLoad(
+    () => Promise.all([listSkills(), categorySuggestions()]),
+    (answer) => {
+      [skills, suggestions] = answer;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void load();

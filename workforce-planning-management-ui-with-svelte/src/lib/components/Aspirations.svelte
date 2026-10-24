@@ -5,6 +5,7 @@
   they have declared today.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
@@ -40,16 +41,17 @@
 
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load() {
-    try {
-      const [list, skills] = await Promise.all([listAspirations(workerPid), listSkills()]);
+  const load = guardedLoad(
+    () => Promise.all([listAspirations(workerPid), listSkills()]),
+    ([list, skills]) => {
       items = list.aspirations;
       isPerson = list.viewer_is_the_person;
       catalogue = skills;
-    } catch (cause) {
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

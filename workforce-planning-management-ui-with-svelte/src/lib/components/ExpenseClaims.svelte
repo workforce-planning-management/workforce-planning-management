@@ -6,6 +6,7 @@
   here only as the absence of Approve.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { createExpenseClaim, listExpenseClaims, money } from "#lib/api/wpm.js";
@@ -34,19 +35,21 @@
 
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load() {
-    try {
-      claims = await listExpenseClaims(workerPid);
+  const load = guardedLoad(
+    () => listExpenseClaims(workerPid),
+    (rows) => {
+      claims = rows;
       allowed = true;
-    } catch (cause) {
+    },
+    (cause) => {
       // Not the claimant, their manager or HR: not an error, just not theirs to see.
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 401)) {
         allowed = false;
       } else {
         error = message(cause);
       }
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

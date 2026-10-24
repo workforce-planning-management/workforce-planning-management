@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { errorText } from "../../src/lib/write";
-import { createLoader, latestOnly, messageOf, settleEach } from "../../src/lib/loader.svelte";
+import { createLoader, guardedLoad, latestOnly, messageOf, settleEach } from "../../src/lib/loader.svelte";
 
 /** A promise settled by hand, so a test chooses the order responses arrive in. */
 function deferred<T>() {
@@ -101,5 +101,56 @@ describe("settleEach", () => {
 
   it("describes a failure in the catalogue's words, never the raw exception", () => {
     expect(messageOf("plain")).toBe(errorText("plain"));
+  });
+});
+
+describe("guardedLoad", () => {
+  it("applies the newest answer and drops one that was overtaken", async () => {
+    const calls = [deferred<string>(), deferred<string>()];
+    let n = 0;
+    const seen: string[] = [];
+    const load = guardedLoad(
+      () => calls[n++]!.promise,
+      (answer) => seen.push(answer),
+      () => seen.push("failed"),
+    );
+    const first = load();
+    const second = load();
+    calls[1]!.resolve("B");
+    await second;
+    calls[0]!.resolve("A");
+    await first;
+    expect(seen).toEqual(["B"]);
+  });
+
+  it("reports a failure of the newest, and drops the failure of an overtaken one", async () => {
+    const calls = [deferred<string>(), deferred<string>()];
+    let n = 0;
+    const seen: unknown[] = [];
+    const load = guardedLoad(
+      () => calls[n++]!.promise,
+      (answer) => seen.push(answer),
+      (cause) => seen.push(messageOf(cause)),
+    );
+    const first = load();
+    const second = load();
+    calls[0]!.reject(new Error("late"));
+    await first;
+    expect(seen).toEqual([]);
+    calls[1]!.reject(new Error("now"));
+    await second;
+    expect(seen).toHaveLength(1);
+  });
+
+  it("an error thrown while applying is a failure too", async () => {
+    const seen: string[] = [];
+    await guardedLoad(
+      async () => 1,
+      () => {
+        throw new Error("apply broke");
+      },
+      () => seen.push("failed"),
+    )();
+    expect(seen).toEqual(["failed"]);
   });
 });

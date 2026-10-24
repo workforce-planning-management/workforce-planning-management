@@ -6,6 +6,7 @@
   A development conversation starter, not a selection decision.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { workerSkillGaps, workerTrainingPlan } from "#lib/api/wpm.js";
@@ -25,16 +26,19 @@
   // Blank = the service's default pace for this person's FTE.
   let weekly = $state<number | null>(null);
 
+  const loadGaps = guardedLoad(
+    async () => (await workerSkillGaps(workerPid)).gaps,
+    (found) => {
+      gaps = found;
+      error = null;
+    },
+    (cause) => {
+      error = errorText(cause);
+    },
+  );
   $effect(() => {
     void workerPid;
-    void (async () => {
-      try {
-        gaps = (await workerSkillGaps(workerPid)).gaps;
-        error = null;
-      } catch (cause) {
-        error = errorText(cause);
-      }
-    })();
+    void loadGaps();
   });
 
   // The plan reloads when the pace changes; a late answer for an older pace is dropped.

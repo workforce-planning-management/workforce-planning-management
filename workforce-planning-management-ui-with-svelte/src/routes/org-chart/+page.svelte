@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -31,33 +32,39 @@
   let error = $state<string | null>(null);
   let view = $state<OrgView>("manager");
 
+  const load = guardedLoad(
+    async () => {
+      const refs = organizationRefs;
+      const charts = Object.fromEntries(
+        await Promise.all(refs.map(async (ref) => [ref, await orgChart(ref)] as const)),
+      );
+      // Only to say when the chart is part of the organization; a failure here hides nothing else.
+      const counted = Object.fromEntries(
+        await Promise.all(
+          refs.map(async (ref) => {
+            try {
+              return [ref, (await orgChartSize(ref)).people] as const;
+            } catch {
+              return [ref, 0] as const;
+            }
+          }),
+        ),
+      );
+      return { charts, counted };
+    },
+    ({ charts, counted }) => {
+      byOrganization = charts;
+      sizes = counted;
+    },
+    (cause) => {
+      error = errorText(cause);
+    },
+  );
   $effect(() => {
-    const refs = organizationRefs;
-    void (async () => {
-      try {
-        const entries = await Promise.all(
-          refs.map(
-            async (ref) => [ref, await orgChart(ref)] as const,
-          ),
-        );
-        byOrganization = Object.fromEntries(entries);
-        // Only to say when the chart is part of the organization; a failure here hides nothing else.
-        sizes = Object.fromEntries(
-          await Promise.all(
-            refs.map(async (ref) => {
-              try {
-                return [ref, (await orgChartSize(ref)).people] as const;
-              } catch {
-                return [ref, 0] as const;
-              }
-            }),
-          ),
-        );
-      } catch (cause) {
-        error = errorText(cause);
-      }
-    })();
+    void organizationRefs;
+    void load();
   });
+
 </script>
 
 <svelte:head><title>{page.data.title}</title></svelte:head>

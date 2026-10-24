@@ -5,6 +5,7 @@
   says who is covering today, or that nobody can — never a guess.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -33,20 +34,17 @@
     everyone.filter((w) => w.pid !== workerPid && !backups.some((b) => b.backup_pid === w.pid)),
   );
 
-  async function load() {
-    try {
-      const [rows, today, workers] = await Promise.all([
-        listBackups(workerPid),
-        workerCover(workerPid),
-        listWorkers(),
-      ]);
+  const load = guardedLoad(
+    () => Promise.all([listBackups(workerPid), workerCover(workerPid), listWorkers()]),
+    ([rows, today, workers]) => {
       backups = rows;
       cover = today;
       everyone = workers;
-    } catch (cause) {
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

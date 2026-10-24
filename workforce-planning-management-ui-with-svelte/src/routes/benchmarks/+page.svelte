@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -24,26 +25,30 @@
   let rowsByOrganization = $state<Record<string, ComparisonRow[]> | null>(null);
   let error = $state<string | null>(null);
 
+  const load = guardedLoad(
+    () =>
+      Promise.all([
+        listBenchmarks(),
+        Promise.all(
+          organizationRefs.map(async (ref) => {
+            const comparison = await benchmarkComparison(ref);
+            return [ref, comparison.rows] as const;
+          }),
+        ),
+      ]),
+    ([bands, entries]) => {
+      benchmarks = bands;
+      rowsByOrganization = Object.fromEntries(entries);
+    },
+    (cause) => {
+      error = errorText(cause);
+    },
+  );
   $effect(() => {
-    const refs = organizationRefs;
-    void (async () => {
-      try {
-        const [bands, entries] = await Promise.all([
-          listBenchmarks(),
-          Promise.all(
-            refs.map(async (ref) => {
-              const comparison = await benchmarkComparison(ref);
-              return [ref, comparison.rows] as const;
-            }),
-          ),
-        ]);
-        benchmarks = bands;
-        rowsByOrganization = Object.fromEntries(entries);
-      } catch (cause) {
-        error = errorText(cause);
-      }
-    })();
+    void organizationRefs;
+    void load();
   });
+
 
   const bandMoney = (field: "min_minor" | "median_minor" | "max_minor"): Pick<DataGridColumn, "accessor" | "format" | "exportValue"> => ({
     accessor: (r) => (r as unknown as Benchmark)[field],

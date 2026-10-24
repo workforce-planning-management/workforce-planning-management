@@ -5,6 +5,7 @@
   a missing figure renders "—", never 0.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { workforceInsights, workforceMetrics } from "#lib/api/wpm.js";
@@ -26,21 +27,21 @@
   let to = $state("");
   let error = $state<string | null>(null);
 
-  async function load() {
-    error = null;
-    try {
-      const [m, i] = await Promise.all([
-        workforceMetrics({ from, to }),
-        workforceInsights({ from, to }),
-      ]);
+  const load = guardedLoad(
+    async () => {
+      error = null;
+      return Promise.all([workforceMetrics({ from, to }), workforceInsights({ from, to })]);
+    },
+    ([m, i]) => {
       metrics = m;
       insights = i.insights;
-      from = metrics.period.from;
-      to = metrics.period.to;
-    } catch (cause) {
+      from = m.period.from;
+      to = m.period.to;
+    },
+    (cause) => {
       error = errorText(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void load();

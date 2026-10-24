@@ -6,6 +6,7 @@
   catalogue (the service enforces it).
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -41,17 +42,18 @@
     })();
   });
 
-  async function load() {
-    if (!chosen) return;
-    try {
-      const view = await skillCourses(chosen);
+  const load = guardedLoad(
+    async () => (chosen ? await skillCourses(chosen) : null),
+    (view) => {
+      if (!view) return;
       courses = view.courses;
       perLevel = view.hours_per_level;
       defaultPerLevel = view.default_hours_per_level;
-    } catch (cause) {
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void chosen;

@@ -4,6 +4,7 @@
   The reason is the worker's own: a manager or HR is never shown it.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -36,13 +37,15 @@
 
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load() {
-    try {
-      resignation = (await getMyResignation()).resignation;
-    } catch (cause) {
+  const load = guardedLoad(
+    async () => (await getMyResignation()).resignation,
+    (found) => {
+      resignation = found;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
   $effect(() => void load());
 
   async function run(action: () => Promise<unknown>) {

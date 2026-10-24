@@ -5,6 +5,7 @@
   their values are the deployer's own wording and are shown as the service sends them.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -21,14 +22,16 @@
 
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load() {
-    try {
-      view = await getMyEquality();
-      chosen = view.enabled ? { ...view.declarations } : {};
-    } catch (cause) {
+  const load = guardedLoad(
+    () => getMyEquality(),
+    (answer) => {
+      view = answer;
+      chosen = answer.enabled ? { ...answer.declarations } : {};
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
   $effect(() => void load());
 
   async function run(action: () => Promise<unknown>) {

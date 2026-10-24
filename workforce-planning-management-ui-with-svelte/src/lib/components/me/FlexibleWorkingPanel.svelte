@@ -4,6 +4,7 @@
   computes the dates and never changes a contract (an agreed change of hours is for HR to apply).
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -30,13 +31,15 @@
   // States in which the worker can still take the request back (the service decides the rest).
   const withdrawable = (s: string) => s === "requested" || s === "counter_proposed";
 
-  async function load() {
-    try {
-      requests = await listMyFlexibleRequests();
-    } catch (cause) {
+  const load = guardedLoad(
+    () => listMyFlexibleRequests(),
+    (rows) => {
+      requests = rows;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
   $effect(() => void load());
 
   async function run(action: () => Promise<unknown>) {

@@ -6,6 +6,7 @@
   than the person are marked.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
@@ -52,17 +53,15 @@
   const message = (cause: unknown) => (errorText(cause));
   const day = (iso: string | null) => (iso ? iso.slice(0, 10) : "now");
 
-  async function load() {
-    try {
-      [roles, history, catalogue] = await Promise.all([
-        roleHistory(workerPid),
-        skillHistory(workerPid),
-        listSkills(),
-      ]);
-    } catch (cause) {
+  const load = guardedLoad(
+    () => Promise.all([roleHistory(workerPid), skillHistory(workerPid), listSkills()]),
+    (answer) => {
+      [roles, history, catalogue] = answer;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

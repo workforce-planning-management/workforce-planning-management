@@ -5,6 +5,7 @@
   your level. Selected skills become ordinary skill declarations.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf } from "#lib/i18n.svelte.js";
@@ -66,28 +67,32 @@
       }));
   });
 
-  async function load() {
-    error = null;
-    try {
-      role = (await listFrameworkRoles(workerPid)).find((r) => r.framework === framework) ?? null;
+  const load = guardedLoad(
+    async () => {
+      const role = (await listFrameworkRoles(workerPid)).find((r) => r.framework === framework) ?? null;
+      const detail = role ? await frameworkRoleSkills(workerPid, framework) : null;
+      const pcf = framework === "uk-gdad-pcf" && profiles.length === 0 ? await listRoleProfiles("uk-gdad-pcf") : null;
+      return { role, detail, pcf };
+    },
+    ({ role: found, detail, pcf }) => {
+      error = null;
+      role = found;
       skills = [];
       rows = {};
       initial = {};
-      if (role) {
-        const detail = await frameworkRoleSkills(workerPid, framework);
+      if (detail) {
         skills = detail.skills;
         for (const s of detail.skills) {
           rows[s.ref] = { have: s.declared !== null, level: s.declared ?? s.role_expects ?? 3 };
           initial[s.ref] = s.declared;
         }
       }
-      if (framework === "uk-gdad-pcf" && profiles.length === 0) {
-        profiles = await listRoleProfiles("uk-gdad-pcf");
-      }
-    } catch (cause) {
+      if (pcf) profiles = pcf;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

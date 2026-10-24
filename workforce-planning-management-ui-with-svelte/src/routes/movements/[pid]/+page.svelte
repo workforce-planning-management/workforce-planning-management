@@ -7,6 +7,7 @@
   says what is left).
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -46,21 +47,27 @@
     people.filter((p) => p.organization_ref === movement?.organization_ref && p.pid !== movement?.worker_pid),
   );
 
-  async function load() {
-    try {
+  const load = guardedLoad(
+    async () => {
       const m = await getMovement(pid);
+      const everyone = await listWorkers();
+      const handover = m.kind === "leaver" ? await Promise.all([leaverHandover(pid), handoverTrail(pid)]) : null;
+      return { m, everyone, handover };
+    },
+    ({ m, everyone, handover }) => {
       movement = m;
-      people = await listWorkers();
-      if (m.kind === "leaver") {
-        const [h, tr] = await Promise.all([leaverHandover(pid), handoverTrail(pid)]);
+      people = everyone;
+      if (handover) {
+        const [h, tr] = handover;
         held = h.items;
         remaining = h.remaining;
         trail = tr;
       }
-    } catch (cause) {
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
   $effect(() => {
     void pid;
     void load();

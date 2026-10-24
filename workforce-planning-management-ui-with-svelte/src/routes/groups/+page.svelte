@@ -5,6 +5,7 @@
   fewer than the floor of people declare.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { createGroup, groupMembers, groupSkills, listGroups, GROUP_KINDS, type Group } from "#lib/api/wpm.js";
@@ -62,13 +63,15 @@
     ),
   ]);
 
-  async function load() {
-    try {
-      groups = organization ? await listGroups(organization) : [];
-    } catch (cause) {
+  const load = guardedLoad(
+    async () => (organization ? await listGroups(organization) : []),
+    (found) => {
+      groups = found;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
   $effect(() => {
     void organization;
     selected = null;

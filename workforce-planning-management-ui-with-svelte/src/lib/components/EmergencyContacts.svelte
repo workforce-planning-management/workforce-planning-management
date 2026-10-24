@@ -5,6 +5,7 @@
   the read with 403).
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -30,19 +31,21 @@
 
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load() {
-    try {
-      contacts = await listEmergencyContacts(workerPid);
+  const load = guardedLoad(
+    () => listEmergencyContacts(workerPid),
+    (rows) => {
+      contacts = rows;
       allowed = true;
-    } catch (cause) {
+    },
+    (cause) => {
       // Not the worker or HR: not an error, just not theirs to see.
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 401)) {
         allowed = false;
       } else {
         error = message(cause);
       }
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

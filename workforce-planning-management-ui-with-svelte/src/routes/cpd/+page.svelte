@@ -5,6 +5,7 @@
   units (hours or points).
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -68,23 +69,30 @@
   const message = (cause: unknown) =>
     errorText(cause);
 
-  async function loadShared() {
-    try {
-      [overview, requirements] = await Promise.all([cpdOverview(), listCpdRequirements()]);
-    } catch (cause) {
+  const loadShared = guardedLoad(
+    () => Promise.all([cpdOverview(), listCpdRequirements()]),
+    (answer) => {
+      [overview, requirements] = answer;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
+  const readWorker = guardedLoad(
+    () => Promise.all([cpdProgress(workerPid), listCpdEntries(workerPid)]),
+    (answer) => {
+      [progress, entries] = answer;
+    },
+    (cause) => {
+      error = message(cause);
+    },
+  );
   async function loadWorker() {
     progress = null;
     entries = [];
     if (!workerPid) return;
-    try {
-      [progress, entries] = await Promise.all([cpdProgress(workerPid), listCpdEntries(workerPid)]);
-    } catch (cause) {
-      error = message(cause);
-    }
+    await readWorker();
   }
 
   $effect(() => {

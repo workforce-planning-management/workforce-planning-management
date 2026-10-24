@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import LilyKanban from "#lib/components/LilyKanban.svelte";
@@ -58,13 +59,15 @@
     }
   }
 
-  async function load() {
-    try {
-      requisitions = await listRequisitions();
-    } catch (cause) {
+  const load = guardedLoad(
+    () => listRequisitions(),
+    (found) => {
+      requisitions = found;
+    },
+    (cause) => {
       error = errorText(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void load();

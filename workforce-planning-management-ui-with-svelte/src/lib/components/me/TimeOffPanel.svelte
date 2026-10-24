@@ -4,6 +4,7 @@
   A request is made here and a person decides it; one awaiting a decision, or approved and not started, can be cancelled.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -28,13 +29,15 @@
   const cancellable = (r: MyTimeOff["requests"][number]) =>
     r.status === "requested" || (r.status === "approved" && view !== null && r.start_on > view.as_of);
 
-  async function load() {
-    try {
-      view = await getMyTimeOff();
-    } catch (cause) {
+  const load = guardedLoad(
+    () => getMyTimeOff(),
+    (answer) => {
+      view = answer;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
   $effect(() => void load());
 
   async function run(action: () => Promise<unknown>) {

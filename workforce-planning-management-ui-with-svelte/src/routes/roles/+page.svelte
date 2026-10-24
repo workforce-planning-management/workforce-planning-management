@@ -5,6 +5,7 @@
   yardstick competency-gap analysis measures declared skills against.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import EscoOccupationSeed from "#lib/components/roles/EscoOccupationSeed.svelte";
   import RoleProfileDetail from "#lib/components/roles/RoleProfileDetail.svelte";
   import { errorText } from "#lib/write.js";
@@ -70,21 +71,28 @@
   const message = (cause: unknown) =>
     errorText(cause);
 
-  async function loadProfiles() {
-    try {
-      profiles = await listRoleProfiles(framework || undefined);
-      frameworks = await listFrameworks();
-      interest = await mobilityInterestSummary();
-      if (!selected && profiles.length > 0) selected = profiles[0]?.pid ?? "";
-      if (selected) {
-        profile = await getRoleProfile(selected);
-        coverage = await roleGap(selected);
-        progression = await roleProgression(selected);
-      }
-    } catch (cause) {
+  const loadProfiles = guardedLoad(
+    async () => {
+      const found = await listRoleProfiles(framework || undefined);
+      const known = await listFrameworks();
+      const wanted = await mobilityInterestSummary();
+      const pick = selected || found[0]?.pid || "";
+      const detail = pick
+        ? await Promise.all([getRoleProfile(pick), roleGap(pick), roleProgression(pick)])
+        : null;
+      return { found, known, wanted, pick, detail };
+    },
+    ({ found, known, wanted, pick, detail }) => {
+      profiles = found;
+      frameworks = known;
+      interest = wanted;
+      if (!selected) selected = pick;
+      if (detail) [profile, coverage, progression] = detail;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void (async () => {

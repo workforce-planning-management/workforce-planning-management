@@ -6,6 +6,7 @@
   editor of the organization).
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -48,23 +49,30 @@
   const org = $derived(organization || organizationRefs[0] || "");
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load() {
-    try {
-      posts = await listAnnouncements({ limit, includeAll: manage && showAll });
+  const load = guardedLoad(
+    async () => {
+      const found = await listAnnouncements({ limit, includeAll: manage && showAll });
+      let seen: Set<string> | null = null;
       if (workerPid) {
         try {
-          read = new Set(await myAnnouncementReads(workerPid));
+          seen = new Set(await myAnnouncementReads(workerPid));
         } catch {
           // No read state is not an error: nothing is flagged unread.
-          read = new Set();
+          seen = new Set();
         }
       }
-    } catch {
+      return { found, seen };
+    },
+    ({ found, seen }) => {
+      posts = found;
+      if (seen) read = seen;
+    },
+    () => {
       // The feed is an extra on the dashboard: a failure shows no feed
       // rather than an error over the page's real content.
       posts = manage ? posts : [];
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void showAll;

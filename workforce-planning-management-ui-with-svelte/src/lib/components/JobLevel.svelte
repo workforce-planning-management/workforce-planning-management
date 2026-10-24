@@ -5,6 +5,7 @@
   read with 403). Nothing is derived: the level is what was recorded.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -29,21 +30,27 @@
 
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load() {
-    try {
-      held = (await getWorkerJobLevel(workerPid)).job_level;
-      allowed = true;
+  const load = guardedLoad(
+    async () => {
+      const level = (await getWorkerJobLevel(workerPid)).job_level;
       const [first] = await listJobLevelFrameworks();
-      ladder = first ? await getJobLevelFramework(first.id) : null;
-    } catch (cause) {
+      const framework = first ? await getJobLevelFramework(first.id) : null;
+      return { level, framework };
+    },
+    ({ level, framework }) => {
+      held = level;
+      allowed = true;
+      ladder = framework;
+    },
+    (cause) => {
       // Not the worker or HR: not an error, just not theirs to see.
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 401)) {
         allowed = false;
       } else {
         error = message(cause);
       }
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

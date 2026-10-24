@@ -6,6 +6,7 @@
   will happen.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -33,21 +34,27 @@
   const message = (cause: unknown) => (errorText(cause));
   const steps = $derived(scale?.bands.find((b) => b.code === band)?.steps.length ?? 0);
 
-  async function load() {
-    try {
-      held = (await getWorkerPayPosition(workerPid)).pay_position;
-      allowed = true;
+  const load = guardedLoad(
+    async () => {
+      const position = (await getWorkerPayPosition(workerPid)).pay_position;
       const [first] = await listPayScales();
-      scale = first ? await getPayScale(first.id) : null;
-    } catch (cause) {
+      const found = first ? await getPayScale(first.id) : null;
+      return { position, found };
+    },
+    ({ position, found }) => {
+      held = position;
+      allowed = true;
+      scale = found;
+    },
+    (cause) => {
       // Not the worker or HR: not an error, just not theirs to see.
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 401)) {
         allowed = false;
       } else {
         error = message(cause);
       }
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

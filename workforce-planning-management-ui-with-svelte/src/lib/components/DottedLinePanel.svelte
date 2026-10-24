@@ -5,6 +5,7 @@
   grants no extra access. Ending one keeps it as history.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t } from "#lib/i18n.svelte.js";
@@ -30,16 +31,17 @@
     everyone.filter((w) => w.pid !== workerPid && !managers.some((m) => m.pid === w.pid)),
   );
 
-  async function load() {
-    try {
-      const [line, workers] = await Promise.all([dottedLine(workerPid), listWorkers()]);
+  const load = guardedLoad(
+    () => Promise.all([dottedLine(workerPid), listWorkers()]),
+    ([line, workers]) => {
       managers = line.dotted_line_managers;
       reports = line.dotted_line_reports;
       everyone = workers;
-    } catch (cause) {
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     void workerPid;

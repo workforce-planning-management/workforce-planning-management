@@ -20,6 +20,29 @@ export function latestOnly() {
 /** The message a person sees for a failed load: the catalogue's words for the status (WPM-T261). */
 export const messageOf = errorText;
 
+/**
+ * A load that cannot be overtaken: `fetcher` reads, `apply` puts the answer where the page keeps it, `fail`
+ * says what to do with a failure. If another call starts before this one answers, this one's answer or failure
+ * is dropped. Use it where a page or panel keeps its own state and only needs the guard; `createLoader` is the
+ * same thing with the state kept for you.
+ */
+export function guardedLoad<T>(
+  fetcher: () => Promise<T>,
+  apply: (answer: T) => void,
+  fail: (cause: unknown) => void,
+): () => Promise<void> {
+  const guard = latestOnly();
+  return async () => {
+    const current = guard.begin();
+    try {
+      const answer = await fetcher();
+      if (current()) apply(answer);
+    } catch (cause) {
+      if (current()) fail(cause);
+    }
+  };
+}
+
 export interface Loader<T> {
   /** The last answer that is still current; `null` until one arrives. */
   readonly data: T | null;

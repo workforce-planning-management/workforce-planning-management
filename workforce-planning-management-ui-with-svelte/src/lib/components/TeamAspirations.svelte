@@ -4,6 +4,7 @@
   private aspirations never appear here, and neither does how many there are.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
@@ -15,11 +16,18 @@
   let team = $state<Team>([]);
   let error = $state<string | null>(null);
 
+  const load = guardedLoad(
+    () => downlineAspirations(workerPid),
+    (r) => {
+      team = r.team;
+    },
+    (cause) => {
+      error = errorText(cause);
+    },
+  );
   $effect(() => {
     void workerPid;
-    void downlineAspirations(workerPid)
-      .then((r) => (team = r.team))
-      .catch((cause) => (error = errorText(cause)));
+    void load();
   });
 
   const direct = $derived(team.filter((p) => p.direct_report).length);

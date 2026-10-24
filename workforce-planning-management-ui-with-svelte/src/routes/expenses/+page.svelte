@@ -4,6 +4,7 @@
   never lists a person's own claim here, and never lets them decide it.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { expenseQueue, money } from "#lib/api/wpm.js";
@@ -16,19 +17,21 @@
   let error = $state<string | null>(null);
   let open = $state<string | null>(null);
 
-  async function load(current: string) {
-    try {
-      claims = await expenseQueue(current);
+  const load = guardedLoad(
+    () => expenseQueue(status),
+    (found) => {
+      claims = found;
       error = null;
-    } catch (cause) {
+    },
+    (cause) => {
       error = errorText(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
     // A different list is a different set of claims: close whichever was open.
     open = null;
-    void load(status);
+    void load();
   });
 </script>
 
@@ -63,7 +66,7 @@
           {open === c.pid ? t("expenses.close") : t("expenses.open")}
         </button>
         {#if open === c.pid}
-          <ExpenseClaimView claimPid={c.pid} onchange={() => load(status)} />
+          <ExpenseClaimView claimPid={c.pid} onchange={() => load()} />
         {/if}
       </li>
     {/each}

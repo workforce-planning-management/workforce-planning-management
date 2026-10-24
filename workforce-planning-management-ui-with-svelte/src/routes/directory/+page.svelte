@@ -5,6 +5,7 @@
   no pay, dates or person reference ever reach this page.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -32,30 +33,33 @@
   let departments = $state<string[]>([]);
   let error = $state<string | null>(null);
 
+  // What the next read asks for; the read starts after a pause in typing, and the latest one wins.
+  let asked = { q: "", dept: "" };
+  const search = guardedLoad(
+    () => employeeDirectory({ q: asked.q, department: asked.dept, limit: LIMIT }),
+    (found) => {
+      entries = found;
+      error = null;
+      departments = [...new Set([...departments, ...found.map((e) => e.department)])].sort((a, b) =>
+        a.localeCompare(b),
+      );
+    },
+    (cause) => {
+      error = errorText(cause);
+    },
+  );
+
   $effect(() => {
     const q = query.trim();
     const dept = department;
-    // Debounce typing: one request per pause, the latest wins.
+    // Debounce typing: one request per pause.
     const timer = setTimeout(() => {
-      void (async () => {
-        try {
-          const found = await employeeDirectory({
-            q,
-            department: dept,
-            limit: LIMIT,
-          });
-          entries = found;
-          error = null;
-          departments = [
-            ...new Set([...departments, ...found.map((e) => e.department)]),
-          ].sort((a, b) => a.localeCompare(b));
-        } catch (cause) {
-          error = errorText(cause);
-        }
-      })();
+      asked = { q, dept };
+      void search();
     }, 200);
     return () => clearTimeout(timer);
   });
+
 
   const columns = $derived<DataGridColumn[]>([
     { id: "display_name", header: t("common.name"), sortable: true, cell: nameCell },

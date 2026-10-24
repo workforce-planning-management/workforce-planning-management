@@ -5,6 +5,7 @@
   record to work its checklist and, for a leaver, hand over what they hold.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { goto } from "$app/navigation";
@@ -36,13 +37,15 @@
 
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load() {
-    try {
-      [rows, people] = await Promise.all([listMovements(), listWorkers()]);
-    } catch (cause) {
+  const load = guardedLoad(
+    () => Promise.all([listMovements(), listWorkers()]),
+    (answer) => {
+      [rows, people] = answer;
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
   $effect(() => {
     void load();
   });

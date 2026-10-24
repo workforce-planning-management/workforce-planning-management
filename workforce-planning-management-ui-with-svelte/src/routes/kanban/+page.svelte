@@ -5,6 +5,7 @@
   step achieved does not change the declared level of the skill: that is a separate, evidenced act.
 -->
 <script lang="ts">
+  import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import type { KanbanCard, KanbanColumn } from "@lilydesignsystem/svelte-kanban-board";
@@ -37,19 +38,20 @@
 
   const message = (cause: unknown) => (errorText(cause));
 
-  async function load(worker: string) {
-    try {
-      const [loaded, catalogue] = await Promise.all([listDevelopmentPlans(worker), listSkills()]);
+  const load = guardedLoad(
+    async () => Promise.all([listDevelopmentPlans(me ?? ""), listSkills()]),
+    ([loaded, catalogue]) => {
       plans = loaded.plans;
       skills = Object.fromEntries(catalogue.map((s) => [s.pid, s.name]));
       error = null;
-    } catch (cause) {
+    },
+    (cause) => {
       error = message(cause);
-    }
-  }
+    },
+  );
 
   $effect(() => {
-    if (me) void load(me);
+    if (me) void load();
   });
 
   const columns = $derived<KanbanColumn[]>(STATUSES.map((s) => ({ id: s, title: tv(s) })));
@@ -72,7 +74,7 @@
       moveError = message(cause);
     }
     // The service is the truth: read the board again, so a refused move is put back.
-    if (me) await load(me);
+    if (me) await load();
   }
 </script>
 
