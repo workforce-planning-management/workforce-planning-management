@@ -42,7 +42,8 @@
     "cutover": "Virada",
     "warnings": "Alertas precoces",
     "signout": "Terminar sessão",
-    "kanban": "O meu quadro"
+    "kanban": "O meu quadro",
+    "positions": "Posições"
   },
   "pr": {
     "retention": "Retenção",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "E-mail"
+    },
+    "positions": {
+      "page_title": "Posições — WPM",
+      "intro": "Uma posição é um lugar orçamentado que existe quer alguém o ocupe ou não. Tem um orçamento em ETC e nenhuma remuneração.",
+      "organization": "Organização",
+      "establishment": "Quadro por centro de custo",
+      "establishment_note": "Posições aprovadas, abertas, preenchidas e congeladas. O excesso de quadro nunca é compensado por uma vaga noutro lugar.",
+      "cost_centre": "Centro de custo",
+      "positions": "Posições",
+      "budgeted": "Orçamento (ETC)",
+      "held_fte": "Ocupado (ETC)",
+      "vacant": "Vago (ETC)",
+      "over": "Excesso (ETC)",
+      "frozen_vacant": "Vago em posições congeladas (ETC)",
+      "withheld": "ocultado",
+      "unknown": "desconhecido",
+      "no_positions": "Ainda não há posições.",
+      "title": "Título",
+      "funding": "Financiamento",
+      "state": "Estado",
+      "holder": "Titular",
+      "held": "Ocupado",
+      "not_held": "Não ocupado",
+      "move": "Mover",
+      "move_to": "Mover para",
+      "plan_a_seat": "Planear uma posição",
+      "budget_percent": "Orçamento (percentagem de ETC)",
+      "funding_ends": "Fim do financiamento",
+      "programme": "Programa (referência thing:)",
+      "plan": "Planear"
     }
   },
   "titles": {

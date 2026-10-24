@@ -41,6 +41,7 @@
     ["/org-chart", "nav.orgChart"],
     ["/groups", "nav.groups"],
     ["/requisitions", "nav.requisitions"],
+    ["/positions", "nav.positions"],
     ["/workforce", "nav.workforce"],
     ["/contingent", "nav.contingent"],
     ["/capacity", "nav.capacity"],

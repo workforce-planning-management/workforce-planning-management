@@ -155,6 +155,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("pay-transparency/gap-report", Privileged),
     ("pay-transparency/gap-report/csv", Privileged),
     ("pay-transparency/joint-assessment", Privileged),
+    ("positions", ControllerDecides),
+    ("positions/establishment", ControllerDecides),
     ("payroll-runs", Privileged),
     ("payroll-runs/{}", Privileged),
     ("payroll-runs/{}/payslips", Privileged),

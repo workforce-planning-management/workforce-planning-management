@@ -42,7 +42,8 @@
     "cutover": "Puestas en marcha",
     "warnings": "Alertas tempranas",
     "signout": "Cerrar sesión",
-    "kanban": "Mi tablero"
+    "kanban": "Mi tablero",
+    "positions": "Puestos"
   },
   "pr": {
     "retention": "Retención",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "Correo electrónico"
+    },
+    "positions": {
+      "page_title": "Puestos — WPM",
+      "intro": "Un puesto es una plaza presupuestada que existe aunque nadie la ocupe. Lleva un presupuesto en FTE y ninguna retribución.",
+      "organization": "Organización",
+      "establishment": "Plantilla por centro de coste",
+      "establishment_note": "Puestos aprobados, abiertos, cubiertos y congelados. El exceso de plantilla nunca se compensa con una vacante en otro lugar.",
+      "cost_centre": "Centro de coste",
+      "positions": "Puestos",
+      "budgeted": "Presupuesto (FTE)",
+      "held_fte": "Ocupado (FTE)",
+      "vacant": "Vacante (FTE)",
+      "over": "Exceso (FTE)",
+      "frozen_vacant": "Vacante en puestos congelados (FTE)",
+      "withheld": "oculto",
+      "unknown": "desconocido",
+      "no_positions": "Aún no hay puestos.",
+      "title": "Título",
+      "funding": "Financiación",
+      "state": "Estado",
+      "holder": "Titular",
+      "held": "Ocupado",
+      "not_held": "No ocupado",
+      "move": "Mover",
+      "move_to": "Mover a",
+      "plan_a_seat": "Planificar un puesto",
+      "budget_percent": "Presupuesto (porcentaje de FTE)",
+      "funding_ends": "Fin de la financiación",
+      "programme": "Programa (referencia thing:)",
+      "plan": "Planificar"
     }
   },
   "titles": {

@@ -279,6 +279,44 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(request.delete(&format!("{subs}/{}", hook["pid"].as_str().unwrap())).add_header("authorization", hr.clone()).await.status_code(), 403);
         assert_eq!(request.delete(&format!("{subs}/{}", hook["pid"].as_str().unwrap())).add_header("authorization", admin.clone()).await.status_code(), 200);
 
+        // ── Positions: HR plans and links; a reader sees that a seat is held, not by whom ───────────────
+        let seat = json!({ "organization_ref": org, "cost_centre": "CC-9", "title": "Engineer", "budget_fte_percent": 100, "funding_kind": "core" });
+        assert_eq!(request.post("/api/positions").json(&seat).await.status_code(), 401);
+        assert_eq!(request.post("/api/positions").add_header("authorization", worker.clone()).json(&seat).await.status_code(), 403, "a worker");
+        let made = request.post("/api/positions").add_header("authorization", hr.clone()).json(&seat).await;
+        assert_eq!(made.status_code(), 200, "HR plans a seat: {}", made.text());
+        let seat_pid = made.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let someone = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
+            format!("SELECT pid::text AS pid FROM workers WHERE organization_ref = '{org}' LIMIT 1"))).await.unwrap().unwrap();
+        let someone: String = someone.try_get("", "pid").unwrap();
+        for step in ["approved"] {
+            let moved = request.post(&format!("/api/positions/{seat_pid}/status")).add_header("authorization", hr.clone()).json(&json!({ "to": step })).await;
+            assert_eq!(moved.status_code(), 200, "{}", moved.text());
+        }
+        assert_eq!(request.put(&format!("/api/positions/{seat_pid}/holder")).add_header("authorization", worker.clone()).json(&json!({ "worker_pid": someone })).await.status_code(), 403);
+        let linked = request.put(&format!("/api/positions/{seat_pid}/holder")).add_header("authorization", hr.clone()).json(&json!({ "worker_pid": someone })).await;
+        assert_eq!(linked.status_code(), 200, "{}", linked.text());
+        let listing = format!("/api/positions?organization={org}");
+        let as_hr: Value = get(listing.clone(), hr.clone()).await.json();
+        assert_eq!(as_hr["positions"][0]["holder_worker_pid"], someone, "HR sees who holds it");
+        // Outside the organization the worker sees nothing; as a plain member of it they see the seat and not the holder.
+        assert_eq!(get(listing.clone(), worker.clone()).await.status_code(), 404);
+        ctx.db.execute_unprepared(&format!(
+            "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) VALUES ('{}', 'person:{worker_p}', '{org}', 'member', '2020-01-01')",
+            uuid::Uuid::new_v4())).await.unwrap();
+        let as_worker = get(listing.clone(), worker.clone()).await;
+        assert_eq!(as_worker.status_code(), 200, "{}", as_worker.text());
+        let as_worker: Value = as_worker.json();
+        assert!(!as_worker.to_string().contains(&someone), "a reader does not see the holder: {as_worker}");
+        assert_eq!(as_worker["positions"][0]["held"], true);
+        let est_worker: Value = get(format!("/api/positions/establishment?organization={org}"), worker.clone()).await.json();
+        assert_eq!(est_worker["small_group_floor"], 10, "a plain member gets the floor");
+        assert_eq!(est_worker["cost_centres"][0]["held"], json!({ "status": "withheld" }), "one seat is under it");
+        assert_eq!(est_worker["cost_centres"][0]["budgeted"]["status"], "known");
+        let est = format!("/api/positions/establishment?organization={org}");
+        let est_hr: Value = get(est.clone(), hr.clone()).await.json();
+        assert_eq!(est_hr["small_group_floor"], Value::Null, "HR sees the unfloored figures");
+
         // ── Take the sex answers away and there is nothing to compare ────────────────────
         ctx.db.execute_unprepared("DELETE FROM equality_declarations").await.unwrap();
         let none: Value = get(report.clone(), payroll.clone()).await.json();

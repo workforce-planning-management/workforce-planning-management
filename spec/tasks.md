@@ -4465,8 +4465,24 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       held position must have its holder unlinked before it is made vacant or abolished. Two `values.*` words (frozen, abolished) in the 13
       locales, AI-written and unreviewed. Verified: 750 unit tests, clippy pedantic clean, 209 UI unit tests. Nothing is stored or
       served yet (records, API and screen are WPM-T279), so no request test applies.
-- [ ] WPM-T279 **Positions: records, API and screen.** *(WPM-R152)* Links to plan demand lines, requisitions and post funding;
+- [x] (2026-10-24) WPM-T279 **Positions: records, API and screen.** *(WPM-R152)* Links to plan demand lines, requisitions and post funding;
       an establishment view per cost centre.
+      Done in part: migration `m20261024_000086_positions`, `controllers/positions.rs` (list, plan, change, move, link a holder, link a
+      requisition, establishment), the holder shown to privileged callers only, the establishment floored for others, erasure cutting
+      the holder link and the subject export listing seats held, and the `/positions` page (establishment, seats, plan a seat, move) in
+      the 13 locales (AI-written, unreviewed; German uses VZÄ so it does not repeat English). Verified (Postgres 18, Podman): 750 unit
+      tests, 146 request tests (1 new: faults refused; a seat cannot be filled or opened without its facts, and the 422 names the state;
+      a requisition or holder of another organization refused; a held seat not abolished or made vacant; the establishment with 50
+      over and 40 vacant not netted; planned seats outside it; an unknown holder FTE unknown; an abolished seat final; audit with no
+      worker; **no audit, no change**; the privacy test now checks erasure cuts the link and leaves the seat), `enforcement_pay_gap`
+      (extended: a worker refused every write, HR sees the holder, a member of the organization sees `held` and no holder, and the
+      floor applies to them), the other enforcement binaries listed for T276, `route_coverage`, clippy pedantic clean; UI: 209 unit tests,
+      `svelte-check` clean, 4 new Playwright specs and the whole suite (210 passed, 13 skipped; one unrelated test failed once under
+      load and passed alone and on the rerun), and light, dark and phone screenshots looked at. **Not done:** the screen has no control
+      to link a holder or a requisition (API only); a position is not created from a plan on approval (only recorded when a person
+      picks the demand line); **on a phone the two tables wrap letter by letter and the page scrolls sideways** (the shared table
+      component and the long organization URN, as on other pages; not fixed here); the plan demand line is not shown on the screen; the
+      `keycloak`, `chaos` and other `enforcement_*` binaries were not re-run.
 - [ ] WPM-T280 **Current versus target organization.** *(WPM-R153)* Pure diff over two trees; a screen beside the org chart.
       Closes the `[~]` "Workforce transformation" item in Phase 9.
 - [ ] WPM-T281 **Pay position analysis.** *(WPM-R154)* Compa-ratio and range penetration per band, outliers by level,

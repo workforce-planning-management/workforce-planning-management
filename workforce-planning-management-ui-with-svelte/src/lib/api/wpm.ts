@@ -1403,6 +1403,98 @@ export function downlineAspirations(
   return api(`/workers/${workerPid}/downline-aspirations`, init);
 }
 
+/** The states of a position (WPM-R152). */
+export const POSITION_STATES = [
+  "planned",
+  "approved",
+  "open",
+  "filled",
+  "frozen",
+  "abolished",
+] as const;
+
+/** A position: a budgeted seat (WPM-R152). `holder_worker_pid` is shown to HR only; others get `held`. */
+export type Position = {
+  pid: string;
+  organization_ref: string;
+  cost_centre: string;
+  title: string;
+  budget_fte_percent: number;
+  funding_kind: "core" | "time_limited" | "external" | "programme";
+  funding_ends_on: string | null;
+  programme_ref: string | null;
+  state: (typeof POSITION_STATES)[number];
+  holder_worker_pid?: string | null;
+  held?: boolean;
+  requisition_pid: string | null;
+  demand_line_pid: string | null;
+};
+
+/** An FTE figure in percent, or why there is none. */
+export type PositionFte =
+  | { status: "known"; percent: number }
+  | { status: "unknown" }
+  | { status: "withheld" };
+
+/** One cost centre of the establishment. */
+export type CostCentre = {
+  cost_centre: string;
+  positions: number;
+  budgeted: PositionFte;
+  held: PositionFte;
+  vacant: PositionFte;
+  over: PositionFte;
+  frozen_vacant: PositionFte;
+  by_state: Record<string, number>;
+};
+
+/** The positions of an organization. */
+export function listPositions(
+  organization: string,
+  init?: FetchLike,
+): Promise<{ states: string[]; positions: Position[] }> {
+  return api(
+    `/positions?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** The establishment per cost centre: no holder in it. */
+export function positionEstablishment(
+  organization: string,
+  init?: FetchLike,
+): Promise<{
+  small_group_floor: number | null;
+  cost_centres: CostCentre[];
+  derivation: string;
+}> {
+  return api(
+    `/positions/establishment?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** Plan a seat; it starts `planned`. */
+export function createPosition(body: {
+  organization_ref: string;
+  cost_centre: string;
+  title: string;
+  budget_fte_percent: number;
+  funding_kind: string;
+  funding_ends_on?: string;
+  programme_ref?: string;
+}): Promise<{ pid: string }> {
+  return api("/positions", { method: "POST", body });
+}
+
+/** Move a position; the service refuses a move its facts do not allow and says which state it is in. */
+export function movePosition(
+  pid: string,
+  to: string,
+): Promise<{ pid: string; state: string }> {
+  return api(`/positions/${pid}/status`, { method: "POST", body: { to } });
+}
+
 /** A group: community of practice, community of interest, or other. */
 export type Group = {
   pid: string;

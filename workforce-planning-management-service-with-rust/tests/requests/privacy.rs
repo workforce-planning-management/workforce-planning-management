@@ -83,6 +83,17 @@ async fn subject_rights_round_trip() {
                 .unwrap();
         }
 
+        {
+            use sea_orm::ConnectionTrait;
+            ctx.db
+                .execute_unprepared(&format!(
+                    "INSERT INTO positions (pid, organization_ref, cost_centre, title, budget_fte_percent, funding_kind, state, holder_worker_pid) \
+                     SELECT gen_random_uuid(), organization_ref, 'CC-ERASE', 'Seat', 100, 'core', 'filled', pid FROM workers WHERE pid = '{worker}'"
+                ))
+                .await
+                .unwrap();
+        }
+
         // ── Erasure is refused while employment is open.
         assert_eq!(
             request
@@ -129,6 +140,17 @@ async fn subject_rights_round_trip() {
                 .unwrap();
             let n: i64 = queued.try_get("", "n").unwrap();
             assert_eq!(n, 0, "erasure removes the webhook deliveries that name the worker");
+            let seat = ctx
+                .db
+                .query_one_raw(sea_orm::Statement::from_string(
+                    sea_orm::DatabaseBackend::Postgres,
+                    "SELECT count(*) AS seats, count(holder_worker_pid) AS held FROM positions WHERE cost_centre = 'CC-ERASE'".to_string(),
+                ))
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(seat.try_get::<i64>("", "seats").unwrap(), 1, "the seat outlives the person (WPM-D104)");
+            assert_eq!(seat.try_get::<i64>("", "held").unwrap(), 0, "only the link is cut");
         }
         // The worker is gone from reads (soft-deleted) …
         assert_eq!(

@@ -8,7 +8,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, type Page } from "@playwright/test";
 import { WORKER } from "./support";
-import { base, stubPlanning, stubRoles, stubWorkerPage } from "./fixtures";
+import { base, stubPlanning, stubPositions, stubRoles, stubWorkerPage } from "./fixtures";
 
 const dir = process.env.PAGE_SHOTS;
 
@@ -22,6 +22,7 @@ const PAGES: Array<{ name: string; path: string; stub: (p: Page) => Promise<void
   { name: "worker", path: `/workers/${WORKER.pid}`, stub: stubWorkerPage, ready: "adjustments" },
   { name: "planning", path: "/planning", stub: stubPlanning, ready: "" },
   { name: "roles", path: "/roles", stub: stubRoles, ready: "" },
+  { name: "positions", path: "/positions", stub: stubPositions, ready: "establishment" },
 ];
 
 test.describe("page shots (WPM-T267)", () => {

@@ -42,7 +42,8 @@
     "cutover": "切换",
     "warnings": "预警",
     "signout": "退出登录",
-    "kanban": "我的看板"
+    "kanban": "我的看板",
+    "positions": "岗位"
   },
   "pr": {
     "retention": "保留",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "电子邮件"
+    },
+    "positions": {
+      "page_title": "岗位 — WPM",
+      "intro": "岗位是有预算的席位，无论是否有人担任都存在。它带有以 FTE 计的预算，不含薪酬。",
+      "organization": "组织",
+      "establishment": "按成本中心的编制",
+      "establishment_note": "已批准、开放、已填补和冻结的岗位。超编从不与别处的空缺相抵。",
+      "cost_centre": "成本中心",
+      "positions": "岗位",
+      "budgeted": "预算（FTE）",
+      "held_fte": "在岗（FTE）",
+      "vacant": "空缺（FTE）",
+      "over": "超编（FTE）",
+      "frozen_vacant": "冻结岗位中的空缺（FTE）",
+      "withheld": "已隐藏",
+      "unknown": "未知",
+      "no_positions": "暂无岗位。",
+      "title": "职称",
+      "funding": "经费",
+      "state": "状态",
+      "holder": "任职者",
+      "held": "已任职",
+      "not_held": "未任职",
+      "move": "移动",
+      "move_to": "移动到",
+      "plan_a_seat": "规划岗位",
+      "budget_percent": "预算（FTE 百分比）",
+      "funding_ends": "经费结束",
+      "programme": "项目（thing: 引用）",
+      "plan": "规划"
     }
   },
   "titles": {

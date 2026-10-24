@@ -7545,6 +7545,175 @@
         ]
       }
     },
+    "/api/positions": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The positions"
+          }
+        },
+        "summary": "Positions of an organization (?organization=&state=&cost_centre=): cost centre, title, budget in FTE percent, funding kind and end, state, and links to the requisition and the plan demand line. The holder is shown only to HR, payroll, service and administrators; others see whether the seat is held. No pay",
+        "tags": [
+          "positions"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it",
+        "tags": [
+          "positions"
+        ]
+      }
+    },
+    "/api/positions/establishment": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The establishment"
+          }
+        },
+        "summary": "The establishment per cost centre (?organization=): positions, budget, held, vacant, over, the vacancy sitting in frozen positions and positions by state. Approved, open, filled and frozen positions count. Over-establishment is never netted against a vacancy elsewhere; an unknown holder FTE is unknown; no holder is named, and a caller who may not see holders gets held, vacant and over withheld for a centre under the floor",
+        "tags": [
+          "positions"
+        ]
+      }
+    },
+    "/api/positions/{pid}": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Change what a position is made of; not its organization, state or links. An abolished position is not changed",
+        "tags": [
+          "positions"
+        ]
+      }
+    },
+    "/api/positions/{pid}/holder": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Link the worker who holds the position (same organization), or null to unlink. Not for a planned or abolished position",
+        "tags": [
+          "positions"
+        ]
+      }
+    },
+    "/api/positions/{pid}/requisition": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Link the requisition that fills the position (same organization), or null to unlink; an open position keeps its requisition",
+        "tags": [
+          "positions"
+        ]
+      }
+    },
+    "/api/positions/{pid}/status": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new state",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Move a position (planned, approved, open, filled, frozen, abolished). Open needs a linked requisition, filled a linked holder; a held position is not made vacant or abolished until its holder is unlinked. 422 names the state it is in",
+        "tags": [
+          "positions"
+        ]
+      }
+    },
     "/api/program-placements/{pid}/hours": {
       "post": {
         "parameters": [

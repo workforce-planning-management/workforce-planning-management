@@ -42,7 +42,8 @@
     "cutover": "کٹ اوور",
     "warnings": "قبل از وقت انتباہات",
     "signout": "سائن آؤٹ",
-    "kanban": "میرا بورڈ"
+    "kanban": "میرا بورڈ",
+    "positions": "عہدے"
   },
   "pr": {
     "retention": "ڈیٹا برقراری",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "ای میل"
+    },
+    "positions": {
+      "page_title": "عہدے — WPM",
+      "intro": "عہدہ بجٹ شدہ نشست ہے جو کوئی اسے سنبھالے یا نہ سنبھالے موجود رہتی ہے۔ اس کا بجٹ FTE میں ہوتا ہے، تنخواہ نہیں۔",
+      "organization": "تنظیم",
+      "establishment": "لاگت مرکز کے مطابق اسٹیبلشمنٹ",
+      "establishment_note": "منظور شدہ، کھلے، پُر اور منجمد عہدے۔ زائد اسٹیبلشمنٹ کو کبھی کہیں اور خالی اسامی سے منہا نہیں کیا جاتا۔",
+      "cost_centre": "لاگت مرکز",
+      "positions": "عہدے",
+      "budgeted": "بجٹ (FTE)",
+      "held_fte": "پُر (FTE)",
+      "vacant": "خالی (FTE)",
+      "over": "زائد (FTE)",
+      "frozen_vacant": "منجمد عہدوں میں خالی (FTE)",
+      "withheld": "پوشیدہ",
+      "unknown": "نامعلوم",
+      "no_positions": "ابھی کوئی عہدہ نہیں۔",
+      "title": "عنوان",
+      "funding": "مالی معاونت",
+      "state": "حالت",
+      "holder": "حامل",
+      "held": "پُر",
+      "not_held": "پُر نہیں",
+      "move": "منتقل کریں",
+      "move_to": "میں منتقل کریں",
+      "plan_a_seat": "عہدے کی منصوبہ بندی",
+      "budget_percent": "بجٹ (FTE فیصد)",
+      "funding_ends": "مالی معاونت ختم",
+      "programme": "پروگرام (thing: حوالہ)",
+      "plan": "منصوبہ بندی"
     }
   },
   "titles": {

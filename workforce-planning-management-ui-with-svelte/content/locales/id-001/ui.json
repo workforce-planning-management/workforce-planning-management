@@ -42,7 +42,8 @@
     "cutover": "Alih operasi",
     "warnings": "Peringatan dini",
     "signout": "Keluar",
-    "kanban": "Papan saya"
+    "kanban": "Papan saya",
+    "positions": "Posisi"
   },
   "pr": {
     "retention": "Retensi",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "Email"
+    },
+    "positions": {
+      "page_title": "Posisi — WPM",
+      "intro": "Posisi adalah kursi beranggaran yang ada entah ada yang menempatinya atau tidak. Posisi memiliki anggaran dalam FTE dan tanpa gaji.",
+      "organization": "Organisasi",
+      "establishment": "Formasi per pusat biaya",
+      "establishment_note": "Posisi yang disetujui, terbuka, terisi, dan dibekukan. Kelebihan formasi tidak pernah dikompensasi dengan lowongan di tempat lain.",
+      "cost_centre": "Pusat biaya",
+      "positions": "Posisi",
+      "budgeted": "Anggaran (FTE)",
+      "held_fte": "Terisi (FTE)",
+      "vacant": "Lowong (FTE)",
+      "over": "Berlebih (FTE)",
+      "frozen_vacant": "Lowong di posisi dibekukan (FTE)",
+      "withheld": "disembunyikan",
+      "unknown": "tidak diketahui",
+      "no_positions": "Belum ada posisi.",
+      "title": "Judul",
+      "funding": "Pendanaan",
+      "state": "Status",
+      "holder": "Pemegang",
+      "held": "Terisi",
+      "not_held": "Tidak terisi",
+      "move": "Pindahkan",
+      "move_to": "Pindahkan ke",
+      "plan_a_seat": "Rencanakan posisi",
+      "budget_percent": "Anggaran (persen FTE)",
+      "funding_ends": "Pendanaan berakhir",
+      "programme": "Program (referensi thing:)",
+      "plan": "Rencanakan"
     }
   },
   "titles": {

@@ -42,7 +42,8 @@
     "cutover": "Newid drosodd",
     "warnings": "Rhybuddion cynnar",
     "signout": "Allgofnodi",
-    "kanban": "Fy mwrdd"
+    "kanban": "Fy mwrdd",
+    "positions": "Swyddi"
   },
   "pr": {
     "retention": "Cadw data",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "E-bost"
+    },
+    "positions": {
+      "page_title": "Swyddi — WPM",
+      "intro": "Sedd gyllidebedig yw swydd, sy'n bodoli p'un a oes unrhyw un yn ei dal ai peidio. Mae ganddi gyllideb mewn FTE a dim cyflog.",
+      "organization": "Sefydliad",
+      "establishment": "Sefydliad yn ôl canolfan gost",
+      "establishment_note": "Swyddi cymeradwy, agored, wedi'u llenwi a rhewedig. Ni chaiff gorsefydlu byth ei gyfrif yn erbyn swydd wag mewn man arall.",
+      "cost_centre": "Canolfan gost",
+      "positions": "Swyddi",
+      "budgeted": "Cyllideb (FTE)",
+      "held_fte": "Yn cael ei dal (FTE)",
+      "vacant": "Gwag (FTE)",
+      "over": "Dros (FTE)",
+      "frozen_vacant": "Gwag mewn swyddi rhewedig (FTE)",
+      "withheld": "wedi'i gadw'n ôl",
+      "unknown": "anhysbys",
+      "no_positions": "Dim swyddi eto.",
+      "title": "Teitl",
+      "funding": "Cyllido",
+      "state": "Cyflwr",
+      "holder": "Deiliad",
+      "held": "Wedi'i llenwi",
+      "not_held": "Heb ei llenwi",
+      "move": "Symud",
+      "move_to": "Symud i",
+      "plan_a_seat": "Cynllunio sedd",
+      "budget_percent": "Cyllideb (canran FTE)",
+      "funding_ends": "Diwedd cyllido",
+      "programme": "Rhaglen (cyfeirnod thing:)",
+      "plan": "Cynllunio"
     }
   },
   "titles": {

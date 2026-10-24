@@ -57,7 +57,7 @@ fn denied(audience: &str) -> Response {
 
 /// Whether the caller holds an HR or payroll role in `organization_ref` (or in an organization
 /// that contains it), or anywhere when `organization_ref` is `None`.
-async fn privileged_by_membership(
+pub(crate) async fn privileged_by_membership(
     ctx: &AppContext,
     claims: &Claims,
     organization_ref: Option<&str>,

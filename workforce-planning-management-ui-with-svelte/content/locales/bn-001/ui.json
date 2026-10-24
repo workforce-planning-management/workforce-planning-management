@@ -42,7 +42,8 @@
     "cutover": "কাটওভার",
     "warnings": "আগাম সতর্কতা",
     "signout": "সাইন আউট",
-    "kanban": "আমার বোর্ড"
+    "kanban": "আমার বোর্ড",
+    "positions": "পদসমূহ"
   },
   "pr": {
     "retention": "সংরক্ষণ",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "ইমেইল"
+    },
+    "positions": {
+      "page_title": "পদসমূহ — WPM",
+      "intro": "একটি পদ হলো বাজেটভুক্ত আসন, যা কেউ দখল করুক বা না করুক বিদ্যমান। এতে FTE-তে বাজেট থাকে, বেতন নয়।",
+      "organization": "সংস্থা",
+      "establishment": "খরচ কেন্দ্র অনুযায়ী পদসংখ্যা",
+      "establishment_note": "অনুমোদিত, খোলা, পূর্ণ ও স্থগিত পদ। অতিরিক্ত পদ কখনও অন্যত্র শূন্য পদের সঙ্গে সমন্বয় করা হয় না।",
+      "cost_centre": "খরচ কেন্দ্র",
+      "positions": "পদসমূহ",
+      "budgeted": "বাজেট (FTE)",
+      "held_fte": "পূর্ণ (FTE)",
+      "vacant": "শূন্য (FTE)",
+      "over": "অতিরিক্ত (FTE)",
+      "frozen_vacant": "স্থগিত পদে শূন্য (FTE)",
+      "withheld": "গোপন",
+      "unknown": "অজানা",
+      "no_positions": "এখনও কোনো পদ নেই।",
+      "title": "শিরোনাম",
+      "funding": "অর্থায়ন",
+      "state": "অবস্থা",
+      "holder": "ধারক",
+      "held": "পূর্ণ",
+      "not_held": "পূর্ণ নয়",
+      "move": "সরান",
+      "move_to": "সরান",
+      "plan_a_seat": "পদ পরিকল্পনা",
+      "budget_percent": "বাজেট (FTE শতাংশ)",
+      "funding_ends": "অর্থায়ন শেষ",
+      "programme": "কর্মসূচি (thing: রেফারেন্স)",
+      "plan": "পরিকল্পনা"
     }
   },
   "titles": {

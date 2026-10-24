@@ -42,7 +42,8 @@
     "cutover": "Cutovers",
     "warnings": "Early warnings",
     "signout": "Sign out",
-    "kanban": "My board"
+    "kanban": "My board",
+    "positions": "Positions"
   },
   "pr": {
     "retention": "Retention",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "Email"
+    },
+    "positions": {
+      "page_title": "Positions — WPM",
+      "intro": "A position is a budgeted seat that exists whether or not anyone holds it. It carries a budget in FTE and no pay.",
+      "organization": "Organization",
+      "establishment": "Establishment by cost centre",
+      "establishment_note": "Approved, open, filled and frozen positions. Over-establishment is never netted against a vacancy elsewhere.",
+      "cost_centre": "Cost centre",
+      "positions": "Positions",
+      "budgeted": "Budget (FTE)",
+      "held_fte": "Held (FTE)",
+      "vacant": "Vacant (FTE)",
+      "over": "Over (FTE)",
+      "frozen_vacant": "Vacant in frozen positions (FTE)",
+      "withheld": "withheld",
+      "unknown": "unknown",
+      "no_positions": "No positions yet.",
+      "title": "Title",
+      "funding": "Funding",
+      "state": "State",
+      "holder": "Holder",
+      "held": "Held",
+      "not_held": "Not held",
+      "move": "Move",
+      "move_to": "Move to",
+      "plan_a_seat": "Plan a seat",
+      "budget_percent": "Budget (FTE percent)",
+      "funding_ends": "Funding ends",
+      "programme": "Programme (thing: reference)",
+      "plan": "Plan"
     }
   },
   "titles": {

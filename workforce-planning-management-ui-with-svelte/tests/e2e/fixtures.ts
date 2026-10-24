@@ -127,3 +127,46 @@ export async function stubRoles(page: Page) {
   await json(page, "**/api/proxy/pay-scales", []);
 }
 
+
+/** The positions page: an establishment with an over-establishment beside a vacancy, and three seats. */
+export async function stubPositions(page: Page) {
+  const seat = (n: number, extra: Record<string, unknown>) => ({
+    pid: `aaaaaaaa-aaaa-4aaa-8aaa-00000000000${n}`,
+    organization_ref: WORKER.organization_ref,
+    cost_centre: "CC-100",
+    title: "Support Engineer",
+    budget_fte_percent: 100,
+    funding_kind: "core",
+    funding_ends_on: null,
+    programme_ref: null,
+    requisition_pid: null,
+    demand_line_pid: null,
+    ...extra,
+  });
+  const fig = (percent: number) => ({ status: "known", percent });
+  await page.route("**/api/proxy/positions/establishment?organization=*", (route) =>
+    route.fulfill({
+      json: {
+        small_group_floor: 10,
+        cost_centres: [
+          { cost_centre: "CC-100", positions: 3, budgeted: fig(250), held: fig(160), vacant: fig(140), over: fig(50), frozen_vacant: fig(0), by_state: { filled: 2, open: 1 } },
+          { cost_centre: "CC-200", positions: 1, budgeted: fig(100), held: { status: "withheld" }, vacant: { status: "withheld" }, over: { status: "withheld" }, frozen_vacant: { status: "withheld" }, by_state: { frozen: 1 } },
+        ],
+        derivation: "",
+      },
+    }),
+  );
+  await page.route("**/api/proxy/positions?organization=*", (route) =>
+    route.fulfill({
+      json: {
+        states: [],
+        positions: [
+          seat(1, { state: "filled", held: true, budget_fte_percent: 50 }),
+          seat(2, { state: "filled", held: true }),
+          seat(3, { state: "open", held: false, title: "Analyst" }),
+          seat(4, { state: "frozen", held: false, cost_centre: "CC-200", title: "Coordinator" }),
+        ],
+      },
+    }),
+  );
+}

@@ -42,7 +42,8 @@
     "cutover": "कटओवर",
     "warnings": "पूर्व चेतावनियाँ",
     "signout": "साइन आउट",
-    "kanban": "मेरा बोर्ड"
+    "kanban": "मेरा बोर्ड",
+    "positions": "पद"
   },
   "pr": {
     "retention": "प्रतिधारण",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "ईमेल"
+    },
+    "positions": {
+      "page_title": "पद — WPM",
+      "intro": "पद एक बजट-स्वीकृत स्थान है जो कोई उसे धारण करे या न करे, बना रहता है। उसमें FTE में बजट होता है, वेतन नहीं।",
+      "organization": "संगठन",
+      "establishment": "लागत केंद्र के अनुसार स्थापना",
+      "establishment_note": "स्वीकृत, खुले, भरे हुए और रोके गए पद। अधिक स्थापना को कभी अन्यत्र रिक्ति से समायोजित नहीं किया जाता।",
+      "cost_centre": "लागत केंद्र",
+      "positions": "पद",
+      "budgeted": "बजट (FTE)",
+      "held_fte": "भरा (FTE)",
+      "vacant": "रिक्त (FTE)",
+      "over": "अधिक (FTE)",
+      "frozen_vacant": "रोके गए पदों में रिक्त (FTE)",
+      "withheld": "छिपा हुआ",
+      "unknown": "अज्ञात",
+      "no_positions": "अभी कोई पद नहीं।",
+      "title": "शीर्षक",
+      "funding": "वित्तपोषण",
+      "state": "स्थिति",
+      "holder": "धारक",
+      "held": "भरा हुआ",
+      "not_held": "भरा नहीं",
+      "move": "स्थानांतरित करें",
+      "move_to": "इसमें स्थानांतरित करें",
+      "plan_a_seat": "पद की योजना बनाएँ",
+      "budget_percent": "बजट (FTE प्रतिशत)",
+      "funding_ends": "वित्तपोषण समाप्त",
+      "programme": "कार्यक्रम (thing: संदर्भ)",
+      "plan": "योजना बनाएँ"
     }
   },
   "titles": {

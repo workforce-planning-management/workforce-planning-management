@@ -572,6 +572,25 @@ fn add_integration_paths(document: &mut Value) {
         "/api/webhook-subscriptions/{pid}/deliveries": {
             "get": { "tags": ["webhooks"], "summary": "Administrators only. The delivery log, newest first (?limit=): event id, kind, the URN of the record, status, attempts, last HTTP status and a short reason. No payload body is kept, so none is shown", "responses": ok("The deliveries") }
         },
+        "/api/positions": {
+            "get": { "tags": ["positions"], "summary": "Positions of an organization (?organization=&state=&cost_centre=): cost centre, title, budget in FTE percent, funding kind and end, state, and links to the requisition and the plan demand line. The holder is shown only to HR, payroll, service and administrators; others see whether the seat is held. No pay", "responses": ok("The positions") },
+            "post": { "tags": ["positions"], "summary": "Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it", "responses": ok("The pid") }
+        },
+        "/api/positions/establishment": {
+            "get": { "tags": ["positions"], "summary": "The establishment per cost centre (?organization=): positions, budget, held, vacant, over, the vacancy sitting in frozen positions and positions by state. Approved, open, filled and frozen positions count. Over-establishment is never netted against a vacancy elsewhere; an unknown holder FTE is unknown; no holder is named, and a caller who may not see holders gets held, vacant and over withheld for a centre under the floor", "responses": ok("The establishment") }
+        },
+        "/api/positions/{pid}": {
+            "put": { "tags": ["positions"], "summary": "Change what a position is made of; not its organization, state or links. An abolished position is not changed", "responses": ok("The pid") }
+        },
+        "/api/positions/{pid}/status": {
+            "post": { "tags": ["positions"], "summary": "Move a position (planned, approved, open, filled, frozen, abolished). Open needs a linked requisition, filled a linked holder; a held position is not made vacant or abolished until its holder is unlinked. 422 names the state it is in", "responses": ok("The new state") }
+        },
+        "/api/positions/{pid}/holder": {
+            "put": { "tags": ["positions"], "summary": "Link the worker who holds the position (same organization), or null to unlink. Not for a planned or abolished position", "responses": ok("The pid") }
+        },
+        "/api/positions/{pid}/requisition": {
+            "put": { "tags": ["positions"], "summary": "Link the requisition that fills the position (same organization), or null to unlink; an open position keeps its requisition", "responses": ok("The pid") }
+        },
         "/mcp": {
             "post": { "tags": ["mcp"], "summary": "A read-only Model Context Protocol server (Streamable HTTP, revision 2025-11-25, JSON replies, no session): initialize, ping, tools/list and tools/call over ten existing reads. Each tool is one GET route called in process under the caller's own token, so the API's policy decides and a caller without access is refused as on the route. No write tool, no service account. Every tool call is audited with the tool name first; if the audit cannot be written the call is refused. A browser Origin must be listed in WPM_MCP_ALLOWED_ORIGINS", "responses": ok("A JSON-RPC reply") }
         },

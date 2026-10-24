@@ -37,6 +37,17 @@ is gone; the vacancy that sits in frozen positions is shown apart. For a caller 
 fewer positions than the floor withholds held, vacant and over (the budget and the count name no one). Records, the API and the
 screen are WPM-T279.
 
+**Built, records, API and screen (WPM-T279).** Table `positions` (no column for pay; a position is never deleted, it is abolished).
+Routes: `GET/POST /api/positions`, `PUT /api/positions/{pid}`, `POST .../{pid}/status`, `PUT .../{pid}/holder`, `PUT .../{pid}/requisition`,
+`GET /api/positions/establishment`. Writes are HR's (the policy's write action); every change is audited in the transaction with a
+state and never a worker. **The holder is shown to HR, payroll, service and administrators only**; a reader who is a member of the
+organization gets `held: true|false`, and the establishment withholds held, vacant and over for a centre under the floor (10) for
+them. A holder or a requisition must belong to the same organization. A plan demand line is recorded on a position (`demand_line_pid`)
+only when a person chooses it at creation: **no position is created from a plan on approval, silently or otherwise**, so that link is
+one-way for now. The link to the holder's post funding is derived through the holder, not stored. Erasure cuts the holder link and
+leaves the seat. The screen `/positions` shows the establishment, the seats, a form to plan a seat and a move control; **linking a
+holder or a requisition is not on the screen** (API only).
+
 ## WPM-R153 — Current versus target organization
 
 - **A diff, not a record.** The pure core (WPM-T280) takes two trees, the live reporting structure (the cycle-safe manager forest,

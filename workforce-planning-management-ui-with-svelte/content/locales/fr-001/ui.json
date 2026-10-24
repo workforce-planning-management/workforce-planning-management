@@ -42,7 +42,8 @@
     "cutover": "Bascules",
     "warnings": "Alertes précoces",
     "signout": "Se déconnecter",
-    "kanban": "Mon tableau"
+    "kanban": "Mon tableau",
+    "positions": "Postes"
   },
   "pr": {
     "retention": "Conservation",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "Adresse électronique"
+    },
+    "positions": {
+      "page_title": "Postes — WPM",
+      "intro": "Un poste est une place budgétée qui existe que quelqu'un l'occupe ou non. Il porte un budget en ETP et aucune rémunération.",
+      "organization": "Organisation",
+      "establishment": "Effectif autorisé par centre de coûts",
+      "establishment_note": "Postes approuvés, ouverts, pourvus et gelés. Un sureffectif n'est jamais compensé par une vacance ailleurs.",
+      "cost_centre": "Centre de coûts",
+      "positions": "Postes",
+      "budgeted": "Budget (ETP)",
+      "held_fte": "Occupé (ETP)",
+      "vacant": "Vacant (ETP)",
+      "over": "Excédent (ETP)",
+      "frozen_vacant": "Vacant dans les postes gelés (ETP)",
+      "withheld": "masqué",
+      "unknown": "inconnu",
+      "no_positions": "Aucun poste pour l'instant.",
+      "title": "Intitulé",
+      "funding": "Financement",
+      "state": "État",
+      "holder": "Titulaire",
+      "held": "Occupé",
+      "not_held": "Non occupé",
+      "move": "Déplacer",
+      "move_to": "Déplacer vers",
+      "plan_a_seat": "Planifier un poste",
+      "budget_percent": "Budget (pourcentage d'ETP)",
+      "funding_ends": "Fin du financement",
+      "programme": "Programme (référence thing:)",
+      "plan": "Planifier"
     }
   },
   "titles": {

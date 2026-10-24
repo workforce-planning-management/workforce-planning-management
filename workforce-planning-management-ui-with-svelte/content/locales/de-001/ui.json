@@ -42,7 +42,8 @@
     "cutover": "Umstellungen",
     "warnings": "Frühwarnungen",
     "signout": "Abmelden",
-    "kanban": "Mein Board"
+    "kanban": "Mein Board",
+    "positions": "Stellen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -1325,6 +1326,36 @@
     },
     "layout": {
       "share_email": "E-Mail"
+    },
+    "positions": {
+      "page_title": "Stellen — WPM",
+      "intro": "Eine Stelle ist ein budgetierter Platz, der besteht, ob ihn jemand innehat oder nicht. Sie hat ein Budget in FTE und kein Entgelt.",
+      "organization": "Organisation",
+      "establishment": "Stellenplan je Kostenstelle",
+      "establishment_note": "Genehmigte, offene, besetzte und eingefrorene Stellen. Eine Überbesetzung wird nie mit einer Vakanz anderswo verrechnet.",
+      "cost_centre": "Kostenstelle",
+      "positions": "Stellen",
+      "budgeted": "Budget (VZÄ)",
+      "held_fte": "Besetzt (VZÄ)",
+      "vacant": "Vakant (VZÄ)",
+      "over": "Über Plan (VZÄ)",
+      "frozen_vacant": "Vakant in eingefrorenen Stellen (VZÄ)",
+      "withheld": "zurückgehalten",
+      "unknown": "unbekannt",
+      "no_positions": "Noch keine Stellen.",
+      "title": "Bezeichnung",
+      "funding": "Finanzierung",
+      "state": "Status",
+      "holder": "Inhaber",
+      "held": "Besetzt",
+      "not_held": "Nicht besetzt",
+      "move": "Verschieben",
+      "move_to": "Verschieben nach",
+      "plan_a_seat": "Stelle planen",
+      "budget_percent": "Budget (VZÄ-Prozent)",
+      "funding_ends": "Finanzierung endet",
+      "programme": "Programm (thing:-Verweis)",
+      "plan": "Planen"
     }
   },
   "titles": {

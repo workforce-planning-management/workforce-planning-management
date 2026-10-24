@@ -56,6 +56,7 @@ pub mod oversight;
 mod oversight_derived;
 pub mod oversight_packs;
 pub mod pay_assessment;
+pub mod positions;
 pub mod pay_information;
 pub mod pay_positions;
 pub mod pay_scales;
