@@ -527,6 +527,19 @@ fn add_governance_paths(document: &mut Value) {
         "/api/pay-transparency/gap-report": {
             "get": { "tags": ["pay-transparency"], "summary": "The seven pay gap indicators of the EU Pay Transparency Directive for an organization (?organization=&as_of=&currency=&variable=): aggregates with a cell under the floor withheld, a side with nobody unknown, no head count and no name, and the workers left out counted. Needs unmasked salary read and equality monitoring switched on; the read is audited", "responses": ok("The report, its basis and the reporting tier") }
         },
+        "/api/me/pay-information-requests": {
+            "get": { "tags": ["pay-transparency"], "summary": "The caller's own pay information requests, newest first, each with its due date and standing (open, overdue or answered)", "responses": ok("The requests") },
+            "post": { "tags": ["pay-transparency"], "summary": "Ask for your own pay level and the average pay, by sex, of your category of workers (no body); the answer is due a configured number of calendar months later (default 2) and one request waits at a time", "responses": ok("The pid and the due date") }
+        },
+        "/api/pay-information-requests": {
+            "get": { "tags": ["pay-transparency"], "summary": "Requests to answer (?organization=&status=open|overdue|answered), oldest due first, with who asked and no figure", "responses": ok("The requests") }
+        },
+        "/api/pay-information-requests/{pid}/answer": {
+            "get": { "tags": ["pay-transparency"], "summary": "Work out the answer to give: the worker's own pay level and the average pay of their category by sex, each average withheld under the floor. Not stored. Needs unmasked salary read; the read is audited with no figure", "responses": ok("The answer") }
+        },
+        "/api/pay-information-requests/{pid}/answered": {
+            "post": { "tags": ["pay-transparency"], "summary": "Record that the answer was given, and when; the figures are not recorded", "responses": ok("The request") }
+        },
         "/api/pay-transparency/gap-report/csv": {
             "get": { "tags": ["pay-transparency"], "summary": "The same report as CSV, one row per figure with the two figures each gap comes from; the export is audited", "responses": ok("A CSV file") }
         }

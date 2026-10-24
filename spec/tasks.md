@@ -4341,9 +4341,26 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `enforcement`, clippy pedantic clean, `route_coverage`. Not done: the **screen** (an HR page for the categories and the report,
       with its 13 locales of strings and a screenshot), so the task stays open; a per-category median; the Directive's own rule for the
       comparable basis; the other `enforcement_*` binaries were not re-run.
-- [ ] WPM-T271 **Pay information for the worker and the candidate.** *(WPM-R145)* `POST /api/me/pay-information-requests` with a
+- [~] (2026-10-24) WPM-T271 **Pay information for the worker and the candidate.** *(WPM-R145)* `POST /api/me/pay-information-requests` with a
       computed due date; HR's answer screen; a pay range required before a requisition is advertised; a guard test that no
       candidate table has a pay-history column.
+      Part 1 (rules, records and API; the HR screen is not built): migration `m20261024_000081_pay_information_requests` (dates
+      only; one waiting request per worker as a unique partial index; the `deleted_at` index; in the retention sweep list, the
+      subject-access export and the erasure); `rules::pay_information` (due date in calendar months with month-end clamping,
+      standing open or overdue or answered, one at a time, the answer with each sex's average withheld under the floor, the pay range
+      rule; 8 tests); `controllers/pay_information.rs` and the two `/api/me/pay-information-requests` routes in `me.rs` (on the
+      self-service list); the answer works out figures on demand and stores none; the requisition `open` transition now refuses a
+      vacancy with no pay range (`WPM_REQUIRE_PAY_RANGE`, on by default), so six existing request-test requisitions were given a
+      range. Details and the corrections to the first draft (HR reads salaries masked, so working out the answer is payroll's or an
+      administrator's and recording it is HR's; the yearly notice is not built) are in [pay-transparency.md](pay-transparency.md).
+      Verified (Postgres 18, Podman): 676 unit tests, 137 request tests (4 new: HR's answer and queue, no equality monitoring, the
+      pay range gate, the candidate guard), `enforcement_pay_information` (new: a worker's own requests with the computed due date
+      and one at a time, a worker refused the queue, the answer and recording, HR refused the figures, payroll given them, payroll
+      refused the write, the answer names no one, the export and the audit hold no figure), `enforcement_pay_gap`, `enforcement_equality`,
+      `enforcement`, `enforcement_flexible`, `enforcement_me`, `route_coverage`, clippy pedantic clean, 209 UI unit tests and
+      `svelte-check` after regenerating the types. Not done: **HR's answer screen** (and the worker's own page for asking, with the
+      13 locales of strings and screenshots), so the task stays open; the yearly notice; a worker's view of an answer (HR gives it to
+      them; WPM keeps no copy); the other `enforcement_*` binaries were not re-run.
 - [ ] WPM-T272 **Joint pay assessment trigger.** *(WPM-R146)* Pure rule over the indicators and configured threshold and
       period; a "due" signal linked to the recognised body (Phase 18). It reports; a person records the decision.
 - [ ] WPM-T273 **Human capital report.** *(WPM-R147, WPM-D100)* A dated, read-only report from existing measures, each with

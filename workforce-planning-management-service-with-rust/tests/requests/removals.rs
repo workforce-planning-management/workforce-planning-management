@@ -177,7 +177,7 @@ async fn a_workers_appraisals_movements_and_onboarding_and_an_applications_reads
 
         let requisition: Value = request
             .post("/api/requisitions")
-            .json(&json!({ "organization_ref": org, "department": "engineering", "job_title": format!("Role {tag}"), "headcount": 1 }))
+            .json(&json!({ "organization_ref": org, "department": "engineering", "job_title": format!("Role {tag}"), "headcount": 1, "salary_min_minor": 3_000_000, "salary_max_minor": 4_000_000, "salary_currency": "GBP" }))
             .await
             .json();
         let requisition = requisition["pid"].as_str().unwrap().to_string();

@@ -25,6 +25,7 @@ pub const WRITES: &[(&str, &str)] = &[
     ("POST", "me/flexible-working/{}/withdraw"),
     ("POST", "me/flexible-working/{}/respond"),
     ("POST", "me/flexible-working/{}/appeal"),
+    ("POST", "me/pay-information-requests"),
 ];
 
 /// Routes whose write passes the policy's *action* check for a token that carries an attribute,

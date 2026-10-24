@@ -21,6 +21,7 @@ async fn hire_journey_end_to_end() {
             .json(&json!({
                 "organization_ref": org, "department": "engineering",
                 "job_title": "Platform Engineer", "headcount": 1,
+                "salary_min_minor": 3_000_000, "salary_max_minor": 4_000_000, "salary_currency": "GBP",
             }))
             .await
             .json();

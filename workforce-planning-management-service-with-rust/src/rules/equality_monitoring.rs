@@ -324,7 +324,7 @@ mod tests {
 
     /// Nothing else may read these declarations: no score, ranking or decision may take them as
     /// an input. Only the module, the entity, the subject-access export and the wiring may name them,
-    /// and the pay gap report (WPM-R144, WPM-D99), which reads the sex answer only to compare two groups
+    /// and the pay gap report and the answer to a pay information request (WPM-R144, WPM-R145, WPM-D99), which read the sex answer only to compare two groups
     /// in an aggregate with small cells withheld and decides nothing about a person.
     #[test]
     fn no_other_code_reads_the_declarations() {
@@ -333,6 +333,7 @@ mod tests {
             "controllers/equality_monitoring.rs",
             "controllers/privacy.rs",
             "controllers/pay_transparency.rs",
+            "controllers/pay_information.rs",
             "models/_entities/equality_declarations.rs",
             "models/_entities/mod.rs",
             "models/_entities/prelude.rs",

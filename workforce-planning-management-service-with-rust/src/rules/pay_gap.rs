@@ -78,6 +78,10 @@ pub enum Reason {
     OneSided,
     /// The male figure is zero or less, so a gap as a share of it has no meaning.
     NoBase,
+    /// The worker's job title is in no category of workers.
+    NoCategory,
+    /// No sex is recorded: equality monitoring is off, or nobody answered.
+    NoSexRecorded,
 }
 
 /// A figure, or why there is none.
@@ -381,6 +385,12 @@ impl Rational {
     fn rounded(self) -> Option<i64> {
         i64::try_from(round_div(self.numerator, self.denominator)).ok()
     }
+}
+
+/// The mean of some amounts, rounded half away from zero; `None` for no amounts or one that does not fit.
+#[must_use]
+pub fn mean_minor(values: &[i64]) -> Option<i64> {
+    Rational::of(values, Statistic::Mean)?.rounded()
 }
 
 /// Integer division rounding half away from zero.

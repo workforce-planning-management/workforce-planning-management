@@ -55,6 +55,7 @@ pub mod oversight_packs;
 pub mod pay_positions;
 pub mod pay_scales;
 pub mod payroll;
+pub mod pay_information;
 pub mod pay_transparency;
 pub mod planning;
 pub mod privacy;

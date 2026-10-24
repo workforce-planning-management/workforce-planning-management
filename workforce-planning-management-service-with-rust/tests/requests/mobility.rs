@@ -29,7 +29,7 @@ async fn opportunities_are_open_requisitions_elsewhere_in_the_organization_with_
             async move {
                 let r: Value = request
                     .post("/api/requisitions")
-                    .json(&json!({ "organization_ref": org, "department": "engineering", "job_title": title, "headcount": 1 }))
+                    .json(&json!({ "organization_ref": org, "department": "engineering", "job_title": title, "headcount": 1, "salary_min_minor": 3_000_000, "salary_max_minor": 4_000_000, "salary_currency": "GBP" }))
                     .await
                     .json();
                 let pid = r["pid"].as_str().unwrap().to_string();

@@ -114,6 +114,7 @@ pub fn kind_of(table: &str) -> Option<RecordKind> {
         | "benefit_plans"
         | "expense_claims"
         | "pay_categories"
+        | "pay_information_requests"
         | "payroll_runs"
         | "payslips" => Pay,
         "leave_entitlements" | "leave_requests" | "rotas" | "shift_assignments" | "shifts"
@@ -241,6 +242,7 @@ pub const SOFT_DELETED_TABLES: &[&str] = &[
     "onboarding_items",
     "path_enrollments",
     "pay_categories",
+    "pay_information_requests",
     "payroll_runs",
     "payslips",
     "pipeline_members",
@@ -394,7 +396,7 @@ mod tests {
         sorted.sort_unstable();
         sorted.dedup();
         assert_eq!(sorted, SOFT_DELETED_TABLES, "sorted and unique");
-        assert_eq!(SOFT_DELETED_TABLES.len(), 57);
+        assert_eq!(SOFT_DELETED_TABLES.len(), 58);
         for table in ["workers", "payslips", "candidates", "appraisals"] {
             assert!(SOFT_DELETED_TABLES.contains(&table));
         }

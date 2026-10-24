@@ -87,6 +87,7 @@ pub mod plan_demand_lines;
 pub mod plan_escalations;
 pub mod plan_objectives;
 pub mod pay_categories;
+pub mod pay_information_requests;
 pub mod plan_tolerances;
 pub mod post_fundings;
 pub mod prelude;

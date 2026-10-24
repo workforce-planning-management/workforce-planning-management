@@ -164,7 +164,8 @@ async fn the_end_date_follows_the_basis() {
             .post("/api/requisitions")
             .json(
                 &json!({ "organization_ref": org, "department": "engineering",
-                           "job_title": "Contract Engineer", "headcount": 1 }),
+                           "job_title": "Contract Engineer", "headcount": 1,
+                           "salary_min_minor": 3_000_000, "salary_max_minor": 4_000_000, "salary_currency": "GBP" }),
             )
             .await
             .json();
@@ -932,7 +933,7 @@ async fn a_requisition_carries_its_basis_and_programme_onto_the_hire() {
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let programme = format!("thing:{}", uuid::Uuid::new_v4());
         let body = |extra: Value| {
-            let mut b = json!({ "organization_ref": org, "department": "engineering", "job_title": "Fixed Engineer", "headcount": 1 });
+            let mut b = json!({ "organization_ref": org, "department": "engineering", "job_title": "Fixed Engineer", "headcount": 1, "salary_min_minor": 3_000_000, "salary_max_minor": 4_000_000, "salary_currency": "GBP" });
             b.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
             b
         };

@@ -49,7 +49,7 @@ applied to HR.
 | joiner / leaver records, handover | HR and whoever may write the worker's record; scoped to organizations the caller can read |
 | pay gap report (WPM-R144) | highest — callers who may read salaries unmasked (payroll, administrators; **HR, who reads them masked, is refused**), in the organization's scope; aggregates with the floor, no worker named, every read and export audited ([pay-transparency.md](pay-transparency.md)) |
 | pay categories (WPM-R144) | medium — read by privileged callers; written by those the policy lets write; no personal data |
-| a pay information request and its answer (WPM-R145, proposed) | high — the worker and HR only; the audit entry names no figure |
+| a pay information request (WPM-R145) | high — the worker (their own, by `/api/me`) and privileged callers (who asked, when due: no figure); the answer is worked out only for a caller who may read salaries unmasked and recorded only by one who may write; the audit entry names no figure |
 | the human capital report (WPM-R147, proposed) | medium — HR and configured roles; aggregates only |
 | the AI and scoring register (WPM-R148, proposed) | medium — read by any signed-in caller (it is a notice of how people are scored); written by HR and administrators |
 | MCP tools, SCIM and webhook configuration (WPM-R149–R151, proposed) | high — administrators only; a secret is held by reference and never read back |
@@ -95,7 +95,7 @@ The policy lets only HR, service and administrator callers write, and it cannot 
 record" because it sees an action and not the record. So a short list, `rules::self_service::WRITES`, names the
 routes under `/api/me` that skip the policy's action check (the caller must still hold a valid token), and each
 handler resolves the person from that token alone: there is no worker id in the path to change. Today the list is
-`PUT` and `DELETE /api/me/contact-details`, `POST`, `PUT`, `DELETE` on `/api/me/emergency-contacts`, `POST /api/me/leave-requests` with its `…/{pid}/cancel`, `POST /api/me/resignation` with its `…/withdraw`, and `POST /api/me/flexible-working` with its `…/withdraw`, `…/respond` and `…/appeal`. Deciding a flexible working request is an ordinary write: under the reference policy only HR can; a deployer gives line managers the power to decide with a policy rule, and the service then limits them to their own reports. A worker still cannot approve their own leave. A unit test
+`PUT` and `DELETE /api/me/contact-details`, `POST`, `PUT`, `DELETE` on `/api/me/emergency-contacts`, `POST /api/me/leave-requests` with its `…/{pid}/cancel`, `POST /api/me/resignation` with its `…/withdraw`, `POST /api/me/pay-information-requests` (WPM-R145), and `POST /api/me/flexible-working` with its `…/withdraw`, `…/respond` and `…/appeal`. Deciding a flexible working request is an ordinary write: under the reference policy only HR can; a deployer gives line managers the power to decide with a policy rule, and the service then limits them to their own reports. A worker still cannot approve their own leave. A unit test
 scans the `/api/me` controller so a write route not on the list, or a list entry with no route, fails the build.
 A second short list, `rules::self_service::ATTRIBUTE_WRITES`, names routes whose write passes the policy's action check for
 a token carrying a stated attribute, where the policy cannot name the role; today only `PUT` and `DELETE

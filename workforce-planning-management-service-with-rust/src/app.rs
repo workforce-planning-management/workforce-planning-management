@@ -114,6 +114,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::flexible_working::routes())
         .add_route(controllers::equality_monitoring::routes())
         .add_route(controllers::pay_transparency::routes())
+        .add_route(controllers::pay_information::routes())
         .add_route(controllers::health_requirements::routes())
         .add_route(controllers::esco::routes())
         .add_route(controllers::framework_roles::routes())

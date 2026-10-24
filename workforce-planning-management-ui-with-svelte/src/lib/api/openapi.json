@@ -5683,6 +5683,46 @@
         ]
       }
     },
+    "/api/me/pay-information-requests": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The requests"
+          }
+        },
+        "summary": "The caller's own pay information requests, newest first, each with its due date and standing (open, overdue or answered)",
+        "tags": [
+          "pay-transparency"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid and the due date",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Ask for your own pay level and the average pay, by sex, of your category of workers (no body); the answer is due a configured number of calendar months later (default 2) and one request waits at a time",
+        "tags": [
+          "pay-transparency"
+        ]
+      }
+    },
     "/api/me/resignation": {
       "get": {
         "responses": {
@@ -7074,6 +7114,61 @@
           }
         },
         "summary": "Replace a category's name, basis and job titles; the organization does not change",
+        "tags": [
+          "pay-transparency"
+        ]
+      }
+    },
+    "/api/pay-information-requests": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The requests"
+          }
+        },
+        "summary": "Requests to answer (?organization=&status=open|overdue|answered), oldest due first, with who asked and no figure",
+        "tags": [
+          "pay-transparency"
+        ]
+      }
+    },
+    "/api/pay-information-requests/{pid}/answer": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer"
+          }
+        },
+        "summary": "Work out the answer to give: the worker's own pay level and the average pay of their category by sex, each average withheld under the floor. Not stored. Needs unmasked salary read; the read is audited with no figure",
+        "tags": [
+          "pay-transparency"
+        ]
+      }
+    },
+    "/api/pay-information-requests/{pid}/answered": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record that the answer was given, and when; the figures are not recorded",
         "tags": [
           "pay-transparency"
         ]

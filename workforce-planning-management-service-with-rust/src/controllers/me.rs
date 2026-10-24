@@ -34,6 +34,9 @@ use super::flexible_working::{
     list_for as list_flexible_for, respond_for, withdraw_for as withdraw_flexible_for,
 };
 use super::health_requirements::view_for as view_health_for;
+use super::pay_information::{
+    ask_for as ask_pay_information_for, list_for as list_pay_information_for,
+};
 use super::resignations::{LogPayload, latest, log_for, own_json, withdraw_for};
 use super::workforce::{LeaveRequestPayload, create_leave_for, decide_leave};
 use super::{record_rejection, unprocessable};
@@ -48,7 +51,7 @@ use crate::rules::time_off as time_rules;
 
 /// The caller's own worker record. A person with several records (in several organizations) gets
 /// the earliest one still employed, else the earliest.
-async fn me_worker(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<workers::Model> {
+pub(crate) async fn me_worker(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<workers::Model> {
     let Some(claims) = caller.claims() else {
         return Err(Error::CustomError(
             axum::http::StatusCode::UNAUTHORIZED,
@@ -477,6 +480,29 @@ async fn withdraw_my_resignation(
     withdraw_for(&ctx, &caller, &worker).await
 }
 
+// ─── My pay information requests ────────────────────────────────────────────
+
+/// `GET /api/me/pay-information-requests` — the caller's own requests, newest first, each with its due date and standing.
+#[debug_handler]
+async fn my_pay_information_requests(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+) -> Result<Response> {
+    let worker = me_worker(&ctx, &caller).await?;
+    list_pay_information_for(&ctx, &worker).await
+}
+
+/// `POST /api/me/pay-information-requests` — ask for your own pay level and the average pay, by sex, of your category of
+/// workers. No body; the due date is computed.
+#[debug_handler]
+async fn ask_pay_information(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+) -> Result<Response> {
+    let worker = me_worker(&ctx, &caller).await?;
+    ask_pay_information_for(&ctx, &caller, &worker).await
+}
+
 // ─── My flexible working requests ───────────────────────────────────────────
 
 /// `GET /api/me/flexible-working` — the caller's own requests, newest first, each with its
@@ -614,6 +640,11 @@ pub fn routes() -> Routes {
             delete(withdraw_my_equality_category),
         )
         .add("/me/health-requirements", get(my_health_requirements))
+        .add(
+            "/me/pay-information-requests",
+            get(my_pay_information_requests),
+        )
+        .add("/me/pay-information-requests", post(ask_pay_information))
         .add("/me/flexible-working", get(my_flexible_requests))
         .add("/me/flexible-working", post(request_flexible))
         .add(

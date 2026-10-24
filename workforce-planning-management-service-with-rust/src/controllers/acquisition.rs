@@ -290,6 +290,15 @@ async fn requisition_status(
         &payload.to,
     )
     .map_err(|e| unprocessable(&e))?;
+    // Applicants are owed the pay range before the interview (Article 5 of the Pay Transparency Directive), so a
+    // vacancy states it before it is opened.
+    if payload.to == "open" && super::pay_information::pay_range_required() {
+        crate::rules::pay_information::require_range(
+            requisition.salary_min_minor,
+            requisition.salary_max_minor,
+        )
+        .map_err(|e| unprocessable(&e))?;
+    }
     if payload.to == "filled" {
         let hired = applications::Entity::find()
             .filter(applications::Column::RequisitionPid.eq(requisition.pid))

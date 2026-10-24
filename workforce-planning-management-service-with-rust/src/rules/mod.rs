@@ -60,6 +60,7 @@ pub mod org_access;
 pub mod oversight;
 pub mod pay_category;
 pub mod pay_gap;
+pub mod pay_information;
 pub mod pay_position;
 pub mod pay_scale;
 pub mod payroll;

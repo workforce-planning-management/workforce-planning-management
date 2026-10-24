@@ -100,21 +100,31 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
 ## WPM-R145 — Pay information for the worker, and none asked of the candidate
 
 - **A worker may ask** for their own pay level and for the average pay level, broken down by sex, of the category of workers
-  that does the same work or work of equal value (Article 7). `POST /api/me/pay-information-requests` records the request with its
-  date and a **computed due date**: the Directive's period for the answer is "a reasonable period and in any event within
-  **two months**" of the request, kept as a configured number of calendar months (default 2) so a national law can change it.
-  The due date is derived, shown to the worker and to HR, and a request past it is flagged, never silently closed.
-- **HR answers on a screen** that shows the worker's own figure and the category average by sex, with the floor: where fewer than
-  the floor of one sex are in the category, the average for that sex is withheld and the answer says so (WPM-D99). The answer is
-  recorded (who, when); the figures are not stored in the request, only that they were given.
+  that does the same work or work of equal value (Article 7). `POST /api/me/pay-information-requests` (no body) records the
+  request and a **computed due date**: the Directive's period for the answer is "a reasonable period and in any event within
+  **two months**" of the request, kept as a configured number of calendar months (`WPM_PAY_INFORMATION_MONTHS`, default 2, 1 to 12)
+  so a national law can change it. The due date is derived, a request past it shows as `overdue` and is never quietly closed, and a
+  worker has **one request waiting at a time**. `GET /api/me/pay-information-requests` lists a worker's own, newest first. The request
+  holds dates only (`pay_information_requests`); the figures are not stored.
+- **HR answers.** `GET /api/pay-information-requests?organization=&status=` lists the requests (oldest due first, with who asked and
+  no figure). `GET /api/pay-information-requests/{pid}/answer` **works out** the answer when asked: the worker's own pay on the
+  comparable basis (annual full-time-equivalent basic salary), and the average of each sex in the worker's category, **each average
+  withheld when fewer than the floor** of that sex are in it, `unknown` for a sex with nobody, `no_category` when the worker's job
+  title is in no category, and `no_sex_recorded` when equality monitoring is off. It names no other worker, needs the unmasked
+  salary read (payroll, administrators; HR, who reads salaries masked, is refused with a reason) and is audited with no figure.
+  `POST …/{pid}/answered` records that the answer was given and when (HR, a write). **The two rights are different roles under the
+  reference policy**, so the person who reads the figures and the person who records the answer may differ; a deployment that gives
+  one person both does both in one visit. A screen for HR is not built yet (WPM-T271 part 2).
 - **A worker is told they may ask**, in the sense of a notification at the start of each year (the Directive has the employer
-  inform workers of the right each year). It is a notice, not a request. *(Proposed; WPM-T271 decides whether the notice is in or
-  out of its first slice.)*
+  inform workers of the right each year). *(Not built; WPM-T271 leaves it out of its first slice and says so.)*
 - **A candidate gets the pay, not asked for theirs.** Article 5 gives an applicant the right to the initial pay or its range,
   based on objective gender-neutral criteria, in the vacancy notice or before the interview, and forbids the employer to ask
-  about their pay history. In WPM: a **requisition cannot move to open** without a pay range (minimum and maximum, or a
-  stated single figure); the candidate record has **no pay-history column** and a guard test fails the build if one is added
-  (WPM-R145; compare "what must not be stored gets no column"). WPM publishes no advert itself, so the range is what an
+  about their pay history. In WPM: **a requisition cannot move to `open` without a pay range** (a minimum above zero and a maximum
+  not below it; one stated figure is a minimum equal to the maximum), refused with `422` saying what to state; it is on by default
+  and `WPM_REQUIRE_PAY_RANGE` turns it off for a deployment the Directive does not reach. Only opening is gated: a draft can still be
+  edited or cancelled. The candidate record has **no pay-history column**, and a test (`no_candidate_table_has_a_pay_history_column`)
+  reads the database's own column list for every candidate table, applications and interviews and fails on a column whose name says
+  salary, pay, wage, remuneration, compensation, earnings, bonus or CTC. WPM publishes no advert itself, so the range is what an
   outbound feed or posting reads.
 
 ## WPM-R146 — A joint pay assessment is due
