@@ -3,6 +3,21 @@
 // Playwright suite stubs these exact paths, so drift fails loudly.
 
 import { api } from "#lib/api/client.js";
+import type { paths } from "./schema";
+
+/**
+ * What the service answers with on success, as the OpenAPI document states it (`schema.d.ts` is
+ * generated from `openapi.json`, which the service's own test keeps current): the JSON body, or
+ * `null` when the answer has no body. An operation the document does not describe yet is `unknown`.
+ */
+type Answer<
+  P extends keyof paths,
+  M extends keyof paths[P],
+> = paths[P][M] extends {
+  responses: { 200: { content: { "application/json": infer Body } } };
+}
+  ? Body
+  : null;
 import type {
   Application,
   JobLevelFramework,
@@ -179,7 +194,9 @@ export function setWorkerJobLevel(
 }
 
 /** Clear a worker's job level. */
-export function clearWorkerJobLevel(workerPid: string): Promise<unknown> {
+export function clearWorkerJobLevel(
+  workerPid: string,
+): Promise<Answer<"/api/workers/{pid}/job-level", "delete">> {
   return api(`/workers/${workerPid}/job-level`, { method: "DELETE" });
 }
 
@@ -231,7 +248,9 @@ export function addExpenseItem(
 }
 
 /** Remove an item from a draft claim. */
-export function removeExpenseItem(itemPid: string): Promise<unknown> {
+export function removeExpenseItem(
+  itemPid: string,
+): Promise<Answer<"/api/expense-items/{pid}", "delete">> {
   return api(`/expense-items/${itemPid}`, { method: "DELETE" });
 }
 
@@ -264,7 +283,9 @@ export function setWorkerPayPosition(
 }
 
 /** Clear a worker's pay position. */
-export function clearWorkerPayPosition(workerPid: string): Promise<unknown> {
+export function clearWorkerPayPosition(
+  workerPid: string,
+): Promise<Answer<"/api/workers/{pid}/pay-position", "delete">> {
   return api(`/workers/${workerPid}/pay-position`, { method: "DELETE" });
 }
 
@@ -288,7 +309,9 @@ export function setRoleGrade(
 }
 
 /** Clear a role's grade. */
-export function clearRoleGrade(profilePid: string): Promise<unknown> {
+export function clearRoleGrade(
+  profilePid: string,
+): Promise<Answer<"/api/role-profiles/{pid}/grade", "delete">> {
   return api(`/role-profiles/${profilePid}/grade`, { method: "DELETE" });
 }
 
@@ -863,7 +886,7 @@ export function setRoleRequirement(
     importance: string;
     note?: string;
   },
-): Promise<unknown> {
+): Promise<Answer<"/api/role-profiles/{pid}/requirements", "put">> {
   return api(`/role-profiles/${profilePid}/requirements`, {
     method: "PUT",
     body,
@@ -874,7 +897,9 @@ export function setRoleRequirement(
 export function removeRoleRequirement(
   profilePid: string,
   skillPid: string,
-): Promise<unknown> {
+): Promise<
+  Answer<"/api/role-profiles/{pid}/requirements/{skill_pid}", "delete">
+> {
   return api(`/role-profiles/${profilePid}/requirements/${skillPid}`, {
     method: "DELETE",
   });
@@ -935,7 +960,9 @@ export function updateCpdRequirement(
 }
 
 /** Withdraw a CPD requirement; recorded entries are kept. */
-export function withdrawCpdRequirement(pid: string): Promise<unknown> {
+export function withdrawCpdRequirement(
+  pid: string,
+): Promise<Answer<"/api/cpd-requirements/{pid}", "delete">> {
   return api(`/cpd-requirements/${pid}`, { method: "DELETE" });
 }
 
@@ -1090,7 +1117,7 @@ export function setFrameworkRole(
 export function clearFrameworkRole(
   workerPid: string,
   framework: string,
-): Promise<unknown> {
+): Promise<Answer<"/api/workers/{pid}/framework-roles/{framework}", "delete">> {
   return api(`/workers/${workerPid}/framework-roles/${framework}`, {
     method: "DELETE",
   });
@@ -1212,7 +1239,7 @@ export function addPastSkill(
     started_on: string;
     ended_on: string;
   },
-): Promise<unknown> {
+): Promise<Answer<"/api/workers/{pid}/skill-history/past", "post">> {
   return api(`/workers/${workerPid}/skill-history/past`, {
     method: "POST",
     body,
@@ -1313,7 +1340,7 @@ export function updateAspiration(
     note?: string;
     visibility?: Visibility;
   },
-): Promise<unknown> {
+): Promise<Answer<"/api/aspirations/{pid}", "put">> {
   return api(`/aspirations/${pid}`, { method: "PUT", body });
 }
 
@@ -1504,7 +1531,9 @@ export function addDottedManager(
 export function endDottedManager(
   workerPid: string,
   managerPid: string,
-): Promise<unknown> {
+): Promise<
+  Answer<"/api/workers/{pid}/dotted-line-managers/{manager_pid}", "delete">
+> {
   return api(`/workers/${workerPid}/dotted-line-managers/${managerPid}`, {
     method: "DELETE",
   });
@@ -1546,7 +1575,9 @@ export function updateEmergencyContact(
 }
 
 /** Remove an emergency contact. */
-export function removeEmergencyContact(pid: string): Promise<unknown> {
+export function removeEmergencyContact(
+  pid: string,
+): Promise<Answer<"/api/emergency-contacts/{pid}", "delete">> {
   return api(`/emergency-contacts/${pid}`, { method: "DELETE" });
 }
 
@@ -1573,7 +1604,9 @@ export function addBackup(
 }
 
 /** Stop naming a backup. */
-export function removeBackup(pid: string): Promise<unknown> {
+export function removeBackup(
+  pid: string,
+): Promise<Answer<"/api/backups/{pid}", "delete">> {
   return api(`/backups/${pid}`, { method: "DELETE" });
 }
 
@@ -1623,7 +1656,7 @@ export function postAnnouncement(post: {
 export function markAnnouncementRead(
   pid: string,
   workerPid: string,
-): Promise<unknown> {
+): Promise<Answer<"/api/announcements/{pid}/read", "post">> {
   return api(`/announcements/${pid}/read`, {
     method: "POST",
     body: { worker_pid: workerPid },
@@ -1639,7 +1672,9 @@ export function myAnnouncementReads(
 }
 
 /** Retire an announcement. */
-export function retireAnnouncement(pid: string): Promise<unknown> {
+export function retireAnnouncement(
+  pid: string,
+): Promise<Answer<"/api/announcements/{pid}", "delete">> {
   return api(`/announcements/${pid}`, { method: "DELETE" });
 }
 
@@ -1688,7 +1723,9 @@ export function updateRota(
 }
 
 /** Retire a rota. */
-export function retireRota(pid: string): Promise<unknown> {
+export function retireRota(
+  pid: string,
+): Promise<Answer<"/api/rotas/{pid}", "delete">> {
   return api(`/rotas/${pid}`, { method: "DELETE" });
 }
 
@@ -1706,7 +1743,9 @@ export function addRotaSwap(
 }
 
 /** Undo a swap. */
-export function removeRotaSwap(pid: string): Promise<unknown> {
+export function removeRotaSwap(
+  pid: string,
+): Promise<Answer<"/api/rota-overrides/{pid}", "delete">> {
   return api(`/rota-overrides/${pid}`, { method: "DELETE" });
 }
 
@@ -1788,7 +1827,9 @@ export function addSkillCourse(
 }
 
 /** Take a course off a skill. */
-export function removeSkillCourse(pid: string): Promise<unknown> {
+export function removeSkillCourse(
+  pid: string,
+): Promise<Answer<"/api/skill-courses/{pid}", "delete">> {
   return api(`/skill-courses/${pid}`, { method: "DELETE" });
 }
 
@@ -1851,14 +1892,19 @@ export function workerMovements(
 export function movementItemAction(
   pid: string,
   action: "done" | "reopen",
-): Promise<unknown> {
+): Promise<
+  Answer<
+    "/api/movement-items/{pid}/done" | "/api/movement-items/{pid}/reopen",
+    "post"
+  >
+> {
   return api(`/movement-items/${pid}/${action}`, { method: "POST" });
 }
 
 export function skipMovementItem(
   pid: string,
   reason: string,
-): Promise<unknown> {
+): Promise<Answer<"/api/movement-items/{pid}/skip", "post">> {
   return api(`/movement-items/${pid}/skip`, {
     method: "POST",
     body: { reason },
@@ -1882,7 +1928,12 @@ export function addMovementItem(
 export function closeMovement(
   pid: string,
   action: "complete" | "cancel",
-): Promise<unknown> {
+): Promise<
+  Answer<
+    "/api/movements/{pid}/complete" | "/api/movements/{pid}/cancel",
+    "post"
+  >
+> {
   return api(`/movements/${pid}/${action}`, { method: "POST" });
 }
 
@@ -2026,12 +2077,14 @@ export function joinGroup(
 export function leaveGroup(
   groupPid: string,
   workerPid: string,
-): Promise<unknown> {
+): Promise<Answer<"/api/groups/{pid}/members/{worker_pid}", "delete">> {
   return api(`/groups/${groupPid}/members/${workerPid}`, { method: "DELETE" });
 }
 
 /** Drop an aspiration. */
-export function deleteAspiration(pid: string): Promise<unknown> {
+export function deleteAspiration(
+  pid: string,
+): Promise<Answer<"/api/aspirations/{pid}", "delete">> {
   return api(`/aspirations/${pid}`, { method: "DELETE" });
 }
 
@@ -2198,7 +2251,9 @@ export function expressMobilityInterest(
 }
 
 /** Withdraw an expressed interest. */
-export function withdrawMobilityInterest(pid: string): Promise<unknown> {
+export function withdrawMobilityInterest(
+  pid: string,
+): Promise<Answer<"/api/mobility-interests/{pid}", "delete">> {
   return api(`/mobility-interests/${pid}`, { method: "DELETE" });
 }
 
@@ -2289,7 +2344,10 @@ export function createChangeInitiative(body: {
 }
 
 /** Move an initiative through its lifecycle. */
-export function setChangeStatus(pid: string, to: string): Promise<unknown> {
+export function setChangeStatus(
+  pid: string,
+  to: string,
+): Promise<Answer<"/api/change-initiatives/{pid}/status", "post">> {
   return api(`/change-initiatives/${pid}/status`, {
     method: "POST",
     body: { to },
@@ -2305,7 +2363,7 @@ export function setRoleImpact(
     timeframe: string;
     note?: string;
   },
-): Promise<unknown> {
+): Promise<Answer<"/api/change-initiatives/{pid}/role-impacts", "put">> {
   return api(`/change-initiatives/${pid}/role-impacts`, {
     method: "PUT",
     body,
@@ -2316,7 +2374,7 @@ export function setRoleImpact(
 export function setSkillShift(
   pid: string,
   body: { skill_pid: string; direction: string; note?: string },
-): Promise<unknown> {
+): Promise<Answer<"/api/change-initiatives/{pid}/skill-shifts", "put">> {
   return api(`/change-initiatives/${pid}/skill-shifts`, {
     method: "PUT",
     body,
@@ -3285,7 +3343,9 @@ export function createWellbeingEntitlement(
 }
 
 /** Soft-close an entitlement rule. */
-export function deleteWellbeingEntitlement(pid: string): Promise<unknown> {
+export function deleteWellbeingEntitlement(
+  pid: string,
+): Promise<Answer<"/api/wellbeing-entitlements/{pid}", "delete">> {
   return api(`/wellbeing-entitlements/${pid}`, { method: "DELETE" });
 }
 
@@ -4009,7 +4069,7 @@ export function addCutoverRole(
     required_headcount: number;
   },
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/cutovers/{pid}/roles", "post">> {
   return api(`/cutovers/${pid}/roles`, { ...init, method: "POST", body });
 }
 
@@ -4018,7 +4078,7 @@ export function addCutoverPool(
   pid: string,
   poolPid: string,
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/cutovers/{pid}/pools", "post">> {
   return api(`/cutovers/${pid}/pools`, {
     ...init,
     method: "POST",
@@ -4026,7 +4086,10 @@ export function addCutoverPool(
   });
 }
 
-export function removeCutover(pid: string, init?: FetchLike): Promise<unknown> {
+export function removeCutover(
+  pid: string,
+  init?: FetchLike,
+): Promise<Answer<"/api/cutovers/{pid}", "delete">> {
   return api(`/cutovers/${pid}`, { ...init, method: "DELETE" });
 }
 
@@ -4116,7 +4179,7 @@ export function recordOversightPosition(
 export function createOversightCriterion(
   body: { level_pid: string; name: string },
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/oversight/criteria", "post">> {
   return api("/oversight/criteria", { ...init, method: "POST", body });
 }
 
@@ -4146,7 +4209,7 @@ export function putOversightReading(
     source_document?: string;
   },
   init?: FetchLike,
-): Promise<unknown> {
+): Promise<Answer<"/api/oversight/measures/{pid}/readings", "put">> {
   return api(`/oversight/measures/${measurePid}/readings`, {
     ...init,
     method: "PUT",
@@ -4286,7 +4349,9 @@ export function setMyContactDetails(
 }
 
 /** Remove every contact detail held for the caller. */
-export function clearMyContactDetails(): Promise<unknown> {
+export function clearMyContactDetails(): Promise<
+  Answer<"/api/me/contact-details", "delete">
+> {
   return api("/me/contact-details", { method: "DELETE" });
 }
 
@@ -4374,7 +4439,7 @@ export function requestFlexibleWorking(body: {
   proposed_fte_percent?: number;
   effect_on_team?: string;
   how_to_manage?: string;
-}): Promise<unknown> {
+}): Promise<Answer<"/api/me/flexible-working", "post">> {
   return api("/me/flexible-working", { method: "POST", body });
 }
 
@@ -4411,7 +4476,7 @@ export function getMyResignation(
 export function logMyResignation(body: {
   proposed_last_day: string;
   reason?: string;
-}): Promise<unknown> {
+}): Promise<Answer<"/api/me/resignation", "post">> {
   return api("/me/resignation", { method: "POST", body });
 }
 

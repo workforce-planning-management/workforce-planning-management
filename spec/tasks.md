@@ -4201,8 +4201,20 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       Not checked: axe on pages other than those three, colour contrast, or the keyboard order; `movements/[pid]` was changed
       but is not in the axe spec; the new labels were not read by a speaker of each language. The `labels.*` additions are
       recorded in `content/locales/REVIEW.md`.
-- [ ] WPM-T263 **Types from the OpenAPI document.** `openapi-typescript` into `src/lib/api/schema.d.ts`; the hand-written
+- [~] WPM-T263 **Types from the OpenAPI document.** `openapi-typescript` into `src/lib/api/schema.d.ts`; the hand-written
       functions in `wpm.ts` typed from it, ending the 75 `Promise<unknown>`; a CI check that the generated file is current.
+      Part 1 (this commit): `openapi.json` (a copy of what the service serves, kept current by the service test
+      `the_ui_copy_is_current`; rewrite with `WPM_WRITE_OPENAPI=1 cargo test --lib the_ui_copy`) and `schema.d.ts`
+      (`pnpm api:types`, kept current by `tests/unit/schema-current.test.ts`). Both already run in CI (`cargo test --lib`,
+      `vitest run`), so no workflow change was needed. The service document now states the answer of 38 operations, read off
+      their handlers (`ANSWERS` in `src/openapi.rs`: no body, `{}`, `{pid}` and a dozen small objects), and `wpm.ts` types 36 calls
+      from it through `Answer<path, method>`; 65 `Promise<unknown>` became 29 (a `ts-expect-error` probe confirmed the types resolve).
+      Verified: 642 service unit tests, clippy clean, 190 UI unit tests, `svelte-check` clean, prettier clean, 168 Playwright specs.
+      Not done: 29 `Promise<unknown>` remain, all writes whose answer the page ignores and whose handler builds the body through
+      a row helper (`row_json`, `member_json`, `pack_json`, `level_json` and the like) or a shared function in another file:
+      the schema for each needs that helper read. The 65 were all writes; the reads were typed by hand already, so the
+      hand-written response types in `types.ts` and inline in `wpm.ts` are still not generated, and the document has no schema for
+      them. Left open (`[~]`).
 - [ ] WPM-T264 **Cache the exchanged token.** Per session id until shortly before expiry, cleared on sign-out; a unit test that
       one page load exchanges once.
 - [ ] WPM-T265 **UI dependency and config hygiene.** Drop the five unused Lily picker packages and align `share-picker` with

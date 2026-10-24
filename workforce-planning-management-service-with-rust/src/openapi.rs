@@ -460,6 +460,7 @@ pub fn spec() -> Value {
         }
     });
     add_governance_paths(&mut document);
+    typed_answers(&mut document);
     decorate(&mut document);
     document
 }
@@ -524,11 +525,148 @@ fn add_governance_paths(document: &mut Value) {
 /// The methods that change something, and so take an `Idempotency-Key` (WPM-R132).
 const MUTATING: [&str; 4] = ["post", "put", "patch", "delete"];
 
+/// What an answer is, for the operations whose handler was read to find out (WPM-T263).
+enum Answer {
+    /// `200` with no body at all (`format::empty()`).
+    NoBody,
+    /// `200` with a body of this component schema.
+    Schema(&'static str),
+}
+
+/// Operations whose answer shape is stated, so the UI can be typed from this document instead of by
+/// hand. Paths use `{}` for every parameter, whatever the document calls it. The rest still say only
+/// "200"; the UI types those as `unknown` until their handlers are read.
+const ANSWERS: &[(&str, &str, Answer)] = &[
+    ("/api/workers/{}/job-level", "delete", Answer::NoBody),
+    ("/api/expense-items/{}", "delete", Answer::NoBody),
+    ("/api/workers/{}/pay-position", "delete", Answer::NoBody),
+    ("/api/role-profiles/{}/grade", "delete", Answer::NoBody),
+    ("/api/me/contact-details", "delete", Answer::NoBody),
+    ("/api/role-profiles/{}/requirements", "put", Answer::Schema("EmptyObject")),
+    ("/api/role-profiles/{}/requirements/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/cpd-requirements/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/workers/{}/framework-roles/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/workers/{}/dotted-line-managers/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/emergency-contacts/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/backups/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/announcements/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/rotas/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/rota-overrides/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/skill-courses/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/groups/{}/members/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/aspirations/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/mobility-interests/{}", "delete", Answer::Schema("EmptyObject")),
+    ("/api/change-initiatives/{}/role-impacts", "put", Answer::Schema("EmptyObject")),
+    ("/api/change-initiatives/{}/skill-shifts", "put", Answer::Schema("EmptyObject")),
+    ("/api/change-initiatives/{}/status", "post", Answer::Schema("PidRef")),
+    ("/api/workers/{}/skill-history/past", "post", Answer::Schema("PidRef")),
+    ("/api/announcements/{}/read", "post", Answer::Schema("ReadReceipt")),
+    ("/api/movement-items/{}/done", "post", Answer::Schema("ItemState")),
+    ("/api/movement-items/{}/reopen", "post", Answer::Schema("ItemState")),
+    ("/api/movement-items/{}/skip", "post", Answer::Schema("ItemState")),
+    ("/api/movements/{}/complete", "post", Answer::Schema("MovementClosed")),
+    ("/api/movements/{}/cancel", "post", Answer::Schema("MovementClosed")),
+    ("/api/wellbeing-entitlements/{}", "delete", Answer::Schema("Deleted")),
+    ("/api/cutovers/{}", "delete", Answer::Schema("Removed")),
+    ("/api/cutovers/{}/pools", "post", Answer::Schema("CutoverPool")),
+    ("/api/cutovers/{}/roles", "post", Answer::Schema("CutoverRole")),
+    ("/api/oversight/criteria", "post", Answer::Schema("OversightCriterionCreated")),
+    ("/api/oversight/measures/{}/readings", "put", Answer::Schema("OversightReading")),
+    ("/api/me/flexible-working", "post", Answer::Schema("FlexibleRequested")),
+    ("/api/me/resignation", "post", Answer::Schema("ResignationLogged")),
+    ("/api/aspirations/{}", "put", Answer::Schema("AspirationChanged")),
+];
+
+/// `{name}` to `{}`, so a table can ignore what the document calls a parameter.
+fn blank_params(path: &str) -> String {
+    let mut out = String::new();
+    let mut depth = 0;
+    for c in path.chars() {
+        match c {
+            '{' => {
+                depth += 1;
+                out.push('{');
+            }
+            '}' => {
+                depth -= 1;
+                out.push('}');
+            }
+            _ if depth > 0 => {}
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
+/// The shapes `ANSWERS` points at.
+fn answer_schemas() -> Value {
+    let uuid = json!({ "type": "string", "format": "uuid" });
+    let date = json!({ "type": "string", "format": "date" });
+    json!({
+        "EmptyObject": { "type": "object", "description": "An object with nothing in it (`{}`).", "additionalProperties": false },
+        "PidRef": { "type": "object", "required": ["pid"], "properties": { "pid": uuid } },
+        "ReadReceipt": { "type": "object", "required": ["read"], "properties": { "read": { "type": "boolean", "enum": [true] } } },
+        "ItemState": { "type": "object", "required": ["state"], "properties": { "state": { "type": "string", "enum": ["done", "reopened", "skipped"] } } },
+        "MovementClosed": { "type": "object", "required": ["status"], "properties": { "status": { "type": "string", "enum": ["completed", "cancelled"] } } },
+        "Deleted": { "type": "object", "required": ["deleted"], "properties": { "deleted": uuid } },
+        "Removed": { "type": "object", "required": ["removed"], "properties": { "removed": uuid } },
+        "CutoverPool": { "type": "object", "required": ["pid", "cutover_pid", "pool_pid"], "properties": { "pid": uuid, "cutover_pid": uuid, "pool_pid": uuid } },
+        "CutoverRole": {
+            "type": "object",
+            "required": ["pid", "cutover_pid", "role_profile_pid", "course_ref", "lms_url", "required_headcount"],
+            "properties": { "pid": uuid, "cutover_pid": uuid, "role_profile_pid": uuid, "course_ref": { "type": "string" }, "lms_url": { "type": "string", "nullable": true }, "required_headcount": { "type": "integer" } }
+        },
+        "OversightCriterionCreated": { "type": "object", "required": ["pid", "level_pid", "name"], "properties": { "pid": uuid, "level_pid": uuid, "name": { "type": "string" } } },
+        "OversightReading": {
+            "type": "object",
+            "required": ["pid", "measure_pid", "period_on", "value", "evidence", "source_document"],
+            "properties": { "pid": uuid, "measure_pid": uuid, "period_on": date, "value": { "type": "integer", "format": "int64", "nullable": true, "description": "Unknown is null, never zero." }, "evidence": { "type": "string", "nullable": true }, "source_document": { "type": "string", "nullable": true } }
+        },
+        "FlexibleRequested": { "type": "object", "required": ["pid", "decide_by"], "properties": { "pid": uuid, "decide_by": date } },
+        "ResignationLogged": {
+            "type": "object",
+            "required": ["pid", "earliest_last_day", "notice_calendar_days"],
+            "properties": { "pid": uuid, "earliest_last_day": { "type": "string", "format": "date", "nullable": true }, "notice_calendar_days": { "type": "integer", "format": "int64" } }
+        },
+        "AspirationChanged": { "type": "object", "required": ["pid", "status", "visibility"], "properties": { "pid": uuid, "status": { "type": "string" }, "visibility": { "type": "string" } } },
+    })
+}
+
+/// Give the operations in `ANSWERS` their answer. The shapes are added to the components by `decorate`.
+fn typed_answers(document: &mut Value) {
+    if let Some(paths) = document["paths"].as_object_mut() {
+        for (path, item) in paths.iter_mut() {
+            let blank = blank_params(path);
+            for (table_path, method, answer) in ANSWERS {
+                if *table_path != blank {
+                    continue;
+                }
+                let Some(operation) = item.get_mut(*method) else {
+                    continue;
+                };
+                operation["responses"]["200"] = match answer {
+                    Answer::NoBody => json!({ "description": "Done. The answer has no body." }),
+                    Answer::Schema(name) => json!({
+                        "description": "Done",
+                        "content": { "application/json": { "schema": { "$ref": format!("#/components/schemas/{name}") } } }
+                    }),
+                };
+            }
+        }
+    }
+}
+
 /// Add `components` and give every operation that changes something the `Idempotency-Key`
 /// parameter and the two answers a key can earn. Done in one place, by code, so that no operation
 /// can be missed and a new one gets it without being edited.
 fn decorate(document: &mut Value) {
     document["components"] = components();
+    if let (Some(into), Some(from)) = (
+        document["components"]["schemas"].as_object_mut(),
+        answer_schemas().as_object(),
+    ) {
+        into.extend(from.iter().map(|(k, v)| (k.clone(), v.clone())));
+    }
     let Some(paths) = document["paths"].as_object_mut() else {
         return;
     };
@@ -839,6 +977,52 @@ mod tests {
 
     /// The document parses, declares `OpenAPI` 3, and covers the mounted
     /// API surface (spot-checked against the route table).
+    /// The UI types its calls from a copy of this document. `WPM_WRITE_OPENAPI=1 cargo test --lib
+    /// the_ui_copy` rewrites it; without that, the copy must match what the service serves now.
+    #[test]
+    fn the_ui_copy_is_current() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../workforce-planning-management-ui-with-svelte/src/lib/api/openapi.json");
+        let mut now = serde_json::to_string_pretty(&super::spec()).unwrap();
+        now.push('\n');
+        if std::env::var_os("WPM_WRITE_OPENAPI").is_some() {
+            std::fs::write(&path, &now).unwrap();
+            return;
+        }
+        let have = std::fs::read_to_string(&path).unwrap_or_default();
+        assert!(
+            have == now,
+            "the UI's openapi.json is out of date: run `WPM_WRITE_OPENAPI=1 cargo test --lib the_ui_copy` and then `pnpm api:types` in the UI"
+        );
+    }
+
+    /// Every stated answer names an operation that exists, and every schema it points at exists.
+    #[test]
+    fn the_stated_answers_name_real_operations() {
+        let doc = super::spec();
+        let paths = doc["paths"].as_object().unwrap();
+        for (path, method, answer) in super::ANSWERS {
+            let hit = paths
+                .iter()
+                .find(|(p, item)| super::blank_params(p) == *path && item.get(*method).is_some());
+            let (name, item) = hit.unwrap_or_else(|| panic!("{method} {path} is not documented"));
+            let ok = &item[*method]["responses"]["200"];
+            match answer {
+                super::Answer::NoBody => assert!(ok.get("content").is_none(), "{name}"),
+                super::Answer::Schema(schema) => {
+                    assert!(doc["components"]["schemas"].get(*schema).is_some(), "{schema}");
+                    assert_eq!(
+                        ok["content"]["application/json"]["schema"]["$ref"],
+                        format!("#/components/schemas/{schema}"),
+                        "{name}"
+                    );
+                }
+            }
+            // The key's replay header is still there.
+            assert!(item[*method]["responses"]["200"].get("headers").is_some() || !super::MUTATING.contains(method), "{name}");
+        }
+    }
+
     #[test]
     fn spec_shape() {
         let doc = super::spec();
