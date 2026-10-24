@@ -515,6 +515,20 @@ fn add_governance_paths(document: &mut Value) {
         "/api/governance-commitments/{pid}": {
             "put": { "tags": ["capacity"], "summary": "Change a commitment", "responses": ok("The commitment") },
             "delete": { "tags": ["capacity"], "summary": "Remove a commitment", "responses": ok("The pid removed") }
+        },
+        "/api/pay-categories": {
+            "get": { "tags": ["pay-transparency"], "summary": "The categories of workers an organization reports pay gaps by (?organization=), each with the basis on which its roles count as equal value and the job titles in it", "responses": ok("The categories") },
+            "post": { "tags": ["pay-transparency"], "summary": "Set up a category: name, the stated basis (required), and 1 to 50 job titles; a title is in one category per organization. Holds no personal data", "responses": ok("The pid of the category") }
+        },
+        "/api/pay-categories/{pid}": {
+            "put": { "tags": ["pay-transparency"], "summary": "Replace a category's name, basis and job titles; the organization does not change", "responses": ok("The pid of the category") },
+            "delete": { "tags": ["pay-transparency"], "summary": "Take a category away; later reports count its workers as in no category", "responses": ok("Removed") }
+        },
+        "/api/pay-transparency/gap-report": {
+            "get": { "tags": ["pay-transparency"], "summary": "The seven pay gap indicators of the EU Pay Transparency Directive for an organization (?organization=&as_of=&currency=&variable=): aggregates with a cell under the floor withheld, a side with nobody unknown, no head count and no name, and the workers left out counted. Needs unmasked salary read and equality monitoring switched on; the read is audited", "responses": ok("The report, its basis and the reporting tier") }
+        },
+        "/api/pay-transparency/gap-report/csv": {
+            "get": { "tags": ["pay-transparency"], "summary": "The same report as CSV, one row per figure with the two figures each gap comes from; the export is audited", "responses": ok("A CSV file") }
         }
     });
     if let (Some(target), Some(extra)) = (document["paths"].as_object_mut(), paths.as_object()) {

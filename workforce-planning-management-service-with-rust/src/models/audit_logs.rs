@@ -199,6 +199,8 @@ mod tests {
     /// `(file under src/, action)`: audits of a read, which have no write to share a transaction with.
     const READ_AUDITS: &[(&str, &str)] = &[
         ("controllers/engagements.rs", "rate_read"),
+        ("controllers/pay_transparency.rs", "pay_gap_report_read"),
+        ("controllers/pay_transparency.rs", "pay_gap_report_exported"),
         ("controllers/adjustments.rs", "adjustments_read"),
         ("controllers/development.rs", "review_content_read"),
         ("controllers/development.rs", "succession_read"),

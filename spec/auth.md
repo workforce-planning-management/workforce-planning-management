@@ -47,7 +47,8 @@ applied to HR.
 | scheduled / expired announcements; posting, editing | `hr_admin` / `org_admin` of that organization (when auth is on) |
 | announcement read receipts | the reader's own; editors see a count only |
 | joiner / leaver records, handover | HR and whoever may write the worker's record; scoped to organizations the caller can read |
-| pay gap report, pay categories (WPM-R144, proposed) | high — HR only; aggregates with the floor, no worker named; every read audited ([pay-transparency.md](pay-transparency.md)) |
+| pay gap report (WPM-R144) | highest — callers who may read salaries unmasked (payroll, administrators; **HR, who reads them masked, is refused**), in the organization's scope; aggregates with the floor, no worker named, every read and export audited ([pay-transparency.md](pay-transparency.md)) |
+| pay categories (WPM-R144) | medium — read by privileged callers; written by those the policy lets write; no personal data |
 | a pay information request and its answer (WPM-R145, proposed) | high — the worker and HR only; the audit entry names no figure |
 | the human capital report (WPM-R147, proposed) | medium — HR and configured roles; aggregates only |
 | the AI and scoring register (WPM-R148, proposed) | medium — read by any signed-in caller (it is a notice of how people are scored); written by HR and administrators |

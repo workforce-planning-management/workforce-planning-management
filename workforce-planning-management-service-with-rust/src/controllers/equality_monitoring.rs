@@ -46,7 +46,7 @@ pub fn gate_from_env() -> std::result::Result<Gate, String> {
 
 /// The gate for a request: the settings if monitoring is on, else `404`, because the feature does
 /// not exist on a deployment that has not recorded a basis.
-fn on() -> Result<(String, Config, usize)> {
+pub(crate) fn on() -> Result<(String, Config, usize)> {
     match gate_from_env() {
         Ok(Gate::On {
             basis,

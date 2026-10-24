@@ -45,7 +45,7 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
   is no separate "share receiving benefits" indicator**: the first draft of WPM-R144 listed one, and the spec round took it out.
 - **The gap** is the difference between the average pay of female and male workers, as a share of the average pay of male
   workers. WPM shows the two averages (or medians) and the gap, and the number of workers behind each, so a reader can redo it.
-- **Computed in the pure core** (`rules::pay_gap`, WPM-T269) from what WPM already holds: the salary on the worker record, the
+- **Computed in the pure core** (`rules::pay_gap`, WPM-T269, `rules::pay_category`, WPM-T270) from what WPM already holds: the salary on the worker record, the
   components on payslips ([payroll-compensation.md](payroll-compensation.md)) and the sex the worker has chosen to declare under equality monitoring (WPM-R125,
   WPM-D74, off until a deployer records a lawful basis). **WPM does not hold what it is not given**: a pay component it has no
   record of is `unknown` in that indicator, not zero (WPM-D99).
@@ -61,9 +61,13 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
 - **The quartile bands** are four equal groups of workers ranked by total pay, lowest first; a tie across a boundary is split by the
   worker key, so the same data gives the same bands in any input order.
 - **Categories of workers** are the employer's own grouping of roles that do the same work or work of equal value. They are
-  **configuration with a stated basis** (`pay_categories`, WPM-T270): the criteria used (skills, effort, responsibility,
-  working conditions, as the Directive requires them to be objective and gender-neutral), the roles in the category, and who
-  set it and when. WPM never builds a category from job titles. A role in no category is listed, not guessed.
+  **configuration with a stated basis** (`pay_categories`, WPM-T270): a name, the **basis** in the employer's words (required, 10 to 2,000
+  characters: the criteria used, such as skills, effort, responsibility and working conditions, which the Directive requires to be
+  objective and gender-neutral), the **job titles** in it (1 to 50, matched to the worker record's `job_title` ignoring case and
+  spacing, a title in one category per organization), and who last set it. `POST`, `PUT` and `DELETE /api/pay-categories` write them
+  (audited, no personal data), `GET /api/pay-categories?organization=` reads them. **WPM never builds a category from titles**:
+  the employer lists them. *(The first draft named role profiles; a worker has no role profile link yet, so titles are what can be
+  matched, as benchmarking does.)* A worker whose title is in no category is counted as such, not guessed.
 - **The floor.** A cell with fewer workers than the floor on either side (female or male) is **withheld**: no figure and no count.
   A cell with nobody of one sex is `unknown` (a gap needs two sides), and a cell with nobody at all says so. **No figure in the
   report is a head count**, and a band's composition is shown only when both sexes reach the floor in it, so a withheld cell cannot be
@@ -76,9 +80,22 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
   WPM-T269.*
 - **Reporting tier.** From the organization's headcount WPM says which tier of Article 9 applies and when the next report is due,
   using the configured dates. It reminds; it does not file.
-- **Read.** `GET /api/pay-transparency/gap-report?organization=&period=` for HR only, audited, named in no response (WPM-T270);
-  a CSV export carries the same cells with their workings. No endpoint returns a figure for fewer people than the floor, and
-  none names a worker.
+- **Read** (WPM-T270): `GET /api/pay-transparency/gap-report?organization=&as_of=&currency=&variable=` and the same as CSV at
+  `/gap-report/csv`. Both are audited (`pay_gap_report_read`, `pay_gap_report_exported`: the day and how many categories, no
+  figure) and name no one. **Who:** a caller who may read salaries unmasked, as for the plan cost view (payroll, administrators);
+  **HR, who reads salaries masked, is refused with a reason**, because a mean of salaries is made of them. (The first draft said
+  "HR only"; the policy decides it this way.) A caller outside the organization's scope gets a `404`.
+- **Where the data comes from.** Pay is the **annual full-time-equivalent basic salary** on the worker record (not scaled down for
+  part-time, standard hours taken as equal), in one currency (the `currency` asked for, else the most common among workers with a
+  salary); pay in another currency counts as "no pay recorded". Sex is the answer to the equality category named by
+  `WPM_PAY_GAP_SEX_CATEGORY` (default `sex`; values `female` and `male`, anything else is left out), so **the report does not exist
+  (`422`) where equality monitoring is off**. **WPM holds no bonus, allowance or payment in kind**, so every variable component is
+  unknown and (a) and (c) (total pay), (b), (d) and (e) are `unknown` until a source exists; (g) in basic pay is the one gap that
+  can be shown today. The report says so in its `basis`. A category the employer set up that has nobody eligible is listed as
+  `unknown`, not dropped.
+- **The privacy guard moves, narrowly.** The equality answers were readable only by the worker and an aggregate summary; the pay gap
+  report is the one other reader (the test `no_other_code_reads_the_declarations` names it), because comparing two groups is the
+  point of the Directive, and it decides nothing about a person.
 
 ## WPM-R145 — Pay information for the worker, and none asked of the candidate
 

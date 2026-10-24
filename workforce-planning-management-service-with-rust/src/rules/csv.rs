@@ -54,8 +54,47 @@ fn push_row(rows: &mut Vec<Vec<String>>, row: Vec<String>) {
     }
 }
 
+/// One CSV field for output (RFC 4180). A field that a spreadsheet would run as a formula (it begins with `=`, `+`,
+/// `-`, `@`, a tab or a carriage return) is prefixed with an apostrophe so it opens as text; a field with a comma, a
+/// quote or a line break is quoted, with quotes doubled. Use it for **text**: write a number with its own digits.
+#[must_use]
+pub fn field(text: &str) -> String {
+    let guarded = if text.starts_with(['=', '+', '-', '@', '\t', '\r']) {
+        format!("'{text}")
+    } else {
+        text.to_string()
+    };
+    if guarded.contains([',', '"', '\n', '\r']) {
+        format!("\"{}\"", guarded.replace('"', "\"\""))
+    } else {
+        guarded
+    }
+}
+
+/// A CSV row from fields already written with [`field`] (or as plain numbers), ending in `\r\n`.
+#[must_use]
+pub fn row(fields: &[String]) -> String {
+    let mut line = fields.join(",");
+    line.push_str("\r\n");
+    line
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn output_fields_are_quoted_and_a_formula_is_neutralised() {
+        assert_eq!(field("plain"), "plain");
+        assert_eq!(field("a,b"), "\"a,b\"");
+        assert_eq!(field("say \"hi\""), "\"say \"\"hi\"\"\"");
+        assert_eq!(field("line\nbreak"), "\"line\nbreak\"");
+        for formula in ["=1+1", "+1", "-1", "@SUM(A1)", "\tx", "\rx"] {
+            assert!(field(formula).trim_matches('"').starts_with('\''), "{formula:?}");
+        }
+        assert_eq!(field("=A,B"), "\"'=A,B\"");
+        assert_eq!(field(""), "");
+        assert_eq!(row(&["a".into(), "1".into()]), "a,1\r\n");
+    }
+
     use super::*;
 
     #[test]

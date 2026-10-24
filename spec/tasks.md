@@ -4324,8 +4324,23 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       Not done and said so: the Directive's own rule for the comparable basis of pay is not read, so the module takes pay already on
       one basis and WPM-T270 chooses and records it; the variable-gap basis is a parameter for the same reason; the median per category
       is not computed; nothing reads the database yet. Spec change: a withheld cell carries no count (`spec/pay-transparency.md`).
-- [ ] WPM-T270 **Pay gap indicators: records, API and screen.** *(WPM-R144)* `pay_categories` with a stated basis; an HR-only
+- [~] (2026-10-24) WPM-T270 **Pay gap indicators: records, API and screen.** *(WPM-R144)* `pay_categories` with a stated basis; an HR-only
       report; enforcement test that it names no one; CSV export with workings.
+      Part 1 (API and records; the screen is not built): migration `m20261024_000080_pay_categories` (`pay_categories`: name, basis,
+      job titles as JSONB, `set_by`, soft delete, a unique live name per organization, the `deleted_at` index the retention test
+      wants, in the sweep list as Pay); `rules::pay_category` (validate, clash, index; 4 tests) and `rules::csv::field`/`row` (RFC 4180
+      output with spreadsheet-formula neutralising); `controllers/pay_transparency.rs`: `GET/POST /api/pay-categories`, `PUT/DELETE
+      /api/pay-categories/{pid}`, `GET /api/pay-transparency/gap-report` and `/gap-report/csv`, all in OpenAPI and the need-to-know table.
+      What it reads and does is in [pay-transparency.md](pay-transparency.md) and corrects the first draft in three places: the
+      report needs unmasked salary read (payroll, administrators; HR is refused), categories match job titles (there is no role-profile
+      link on a worker), and WPM holds no variable pay, so only the basic-pay gap by category can be shown today. The guard that only
+      the equality module reads the declarations now names this controller. Verified (Postgres 18, Podman): 668 unit tests, 133
+      request tests (3 new: categories and their refusals, the report off and refusing bad input, and a full report with CSV and
+      audit), `enforcement_pay_gap` (new: a worker 403, HR 403 on the report and 200 on categories, payroll 200, outside scope 404,
+      no worker pid, name, number or head count in the report or CSV, no figure in an audit snapshot), `enforcement_equality` and
+      `enforcement`, clippy pedantic clean, `route_coverage`. Not done: the **screen** (an HR page for the categories and the report,
+      with its 13 locales of strings and a screenshot), so the task stays open; a per-category median; the Directive's own rule for the
+      comparable basis; the other `enforcement_*` binaries were not re-run.
 - [ ] WPM-T271 **Pay information for the worker and the candidate.** *(WPM-R145)* `POST /api/me/pay-information-requests` with a
       computed due date; HR's answer screen; a pay range required before a requisition is advertised; a guard test that no
       candidate table has a pay-history column.

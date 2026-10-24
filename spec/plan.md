@@ -735,7 +735,7 @@ reason; no Svelte 4 syntax, no `any`, no `{@html}`; strict TypeScript; strict `k
 | `conversion_plans` | Worker, intent, dates, post funding kind, reason, proposer, approver, status | Yes (HR-only; in export; erased; no pay figure) |
 | `plan_demand_lines`, `requisitions` (new columns) | Programme URN, FTE, basis, expected duration | No |
 | `headcount_snapshots` (new columns) | Headcount and FTE per basis | No (aggregate) |
-| `pay_categories` (section N) | Category of equal value, member role profiles, stated basis | No |
+| `pay_categories` (section N) | Category of equal value, member job titles, stated basis | No |
 | `pay_information_requests` | Worker, asked on, due on, answered on | Yes (HR-only; in export; erased) |
 | `ai_register_entries` | Feature, Annex III category, overseer role, informed on, log retention | No |
 | `webhook_subscriptions`, `scim_targets` | Endpoint, secret reference, event kinds | No (secrets by reference only) |

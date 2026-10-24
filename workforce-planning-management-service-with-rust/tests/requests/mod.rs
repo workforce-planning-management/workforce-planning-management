@@ -38,6 +38,7 @@ mod movements;
 mod organizations;
 mod pagination;
 mod pay_positions;
+mod pay_transparency;
 mod pay_scales;
 mod payroll;
 mod plan_views;

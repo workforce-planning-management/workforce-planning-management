@@ -6983,6 +6983,102 @@
         ]
       }
     },
+    "/api/pay-categories": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The categories"
+          }
+        },
+        "summary": "The categories of workers an organization reports pay gaps by (?organization=), each with the basis on which its roles count as equal value and the job titles in it",
+        "tags": [
+          "pay-transparency"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the category",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Set up a category: name, the stated basis (required), and 1 to 50 job titles; a title is in one category per organization. Holds no personal data",
+        "tags": [
+          "pay-transparency"
+        ]
+      }
+    },
+    "/api/pay-categories/{pid}": {
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Take a category away; later reports count its workers as in no category",
+        "tags": [
+          "pay-transparency"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the category",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Replace a category's name, basis and job titles; the organization does not change",
+        "tags": [
+          "pay-transparency"
+        ]
+      }
+    },
     "/api/pay-scales": {
       "get": {
         "responses": {
@@ -7019,6 +7115,32 @@
         "summary": "Where a full-time-equivalent salary sits on a band (?band=&salary_minor=), and whether a step up is due (?step=&months_on_step=); stateless, nothing stored",
         "tags": [
           "hr-core"
+        ]
+      }
+    },
+    "/api/pay-transparency/gap-report": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The report, its basis and the reporting tier"
+          }
+        },
+        "summary": "The seven pay gap indicators of the EU Pay Transparency Directive for an organization (?organization=&as_of=&currency=&variable=): aggregates with a cell under the floor withheld, a side with nobody unknown, no head count and no name, and the workers left out counted. Needs unmasked salary read and equality monitoring switched on; the read is audited",
+        "tags": [
+          "pay-transparency"
+        ]
+      }
+    },
+    "/api/pay-transparency/gap-report/csv": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "A CSV file"
+          }
+        },
+        "summary": "The same report as CSV, one row per figure with the two figures each gap comes from; the export is audited",
+        "tags": [
+          "pay-transparency"
         ]
       }
     },

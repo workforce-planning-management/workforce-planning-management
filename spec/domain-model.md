@@ -357,7 +357,7 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
 **Proposed in Phase 23** (spec round WPM-T268; none is built, and each table's personal-data class is in [plan.md](plan.md)
 section 4)
 
-- **PayCategory** (`pay_categories`: name, the roles in it, the **stated basis** on which they count as equal value, who set it and
+- **PayCategory** (`pay_categories`: name, the job titles in it, the **stated basis** on which they count as equal value, who set it and
   when) — configuration, not inferred ([pay-transparency.md](pay-transparency.md), WPM-R144).
 - **PayInformationRequest** (`pay_information_requests`: worker, asked on, **due on** computed from the configured period, answered on) —
   no figure is stored (WPM-R145).
