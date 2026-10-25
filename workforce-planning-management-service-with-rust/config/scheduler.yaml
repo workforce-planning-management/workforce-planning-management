@@ -1,0 +1,70 @@
+# The recurring tasks, for Loco's scheduler (WPM-T300). Start it next to the server:
+#
+#     cargo loco scheduler --config config/scheduler.yaml --tag wpm        # the tasks that need nothing configured
+#     cargo loco scheduler --config config/scheduler.yaml --tag scim       # only where WPM_SCIM_BASE_URL and WPM_SCIM_TOKEN are set
+#     cargo loco scheduler --config config/scheduler.yaml --list           # what is scheduled
+#
+# Run ONE scheduler per deployment: two would run every task twice. Every task here is idempotent (a second run in the same
+# window sends and records nothing new), so a double run is untidy, not harmful. A job runs as a child process of the scheduler,
+# so it needs the same environment as the server (DATABASE_URL, WPM_*). Times are the scheduler's clock (UTC unless the host says
+# otherwise). Cron fields: second minute hour day-of-month month day-of-week. A job's output goes to the scheduler's own output, so a
+# failure is visible; `webhook_deliver` writes a line a minute, which a log pipeline can filter.
+#
+# Not here, because they are not tasks: `POST /api/retention/sweep` (an admin action), `scripts/backup.sh` and
+# `scripts/export-erasure-ledger.sh`. `replay_erasures` is run by hand after a restore, never on a schedule.
+jobs:
+  # Webhooks: send what is queued. The delivery endpoint is rate-limited, so a minute is the finest sensible interval.
+  webhook_deliver:
+    run: webhook_deliver
+    schedule: "0 * * * * *"
+    tags: ["wpm"]
+
+  # Headcount history cannot be backfilled: a day missed is a day with no figure. Early in the morning, before the reminders.
+  snapshot_headcount:
+    run: snapshot_headcount
+    schedule: "0 30 1 * * *"
+    tags: ["wpm"]
+
+  # Open and close warnings; the date a condition is first true is the date of the first sweep that saw it.
+  early_warning_sweep:
+    run: early_warning_sweep
+    schedule: "0 0 2 * * *"
+    tags: ["wpm"]
+
+  # Freeze last month's oversight pack. Idempotent: an organization that already has a pack for the month is skipped, so the
+  # first days of the month are all tried and only the first one writes.
+  oversight_pack_freeze:
+    run: oversight_pack_freeze
+    schedule: "0 0 3 1-3 * *"
+    tags: ["wpm"]
+
+  # Reminders, once a day, in the morning. Each is idempotent per person and date or version.
+  engagement_end_reminders:
+    run: engagement_end_reminders
+    schedule: "0 0 7 * * *"
+    tags: ["wpm"]
+  rota_reminders:
+    run: rota_reminders
+    schedule: "0 5 7 * * *"
+    tags: ["wpm"]
+  pay_progression_reminders:
+    run: pay_progression_reminders
+    schedule: "0 10 7 * * *"
+    tags: ["wpm"]
+  policy_reminders:
+    run: policy_reminders
+    schedule: "0 15 7 * * *"
+    tags: ["wpm"]
+
+  # The audit chain: prints whether it holds and its head hash, and exits with an error when it is broken. Keep the output
+  # somewhere the database cannot reach (see backup-and-restore.md); this job only runs the check, it cannot keep that record.
+  verify_audit_chain:
+    run: verify_audit_chain
+    schedule: "0 0 4 * * *"
+    tags: ["wpm"]
+
+  # SCIM provisioning: needs WPM_SCIM_BASE_URL and WPM_SCIM_TOKEN, and fails every run without them, so it is not tagged `wpm`.
+  scim_push:
+    run: scim_push
+    schedule: "0 */15 * * * *"
+    tags: ["scim"]

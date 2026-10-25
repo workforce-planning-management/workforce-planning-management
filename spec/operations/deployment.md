@@ -156,10 +156,18 @@ limited as a sensitive route; poll every minute or so, not every second.
 
 ## Scheduled tasks
 
-Nothing runs these by itself; schedule each with cron, a timer or a Kubernetes CronJob.
+Nothing runs these by itself. [`config/scheduler.yaml`](../../workforce-planning-management-service-with-rust/config/scheduler.yaml) lists every
+recurring task for Loco's scheduler (`cargo loco scheduler --config config/scheduler.yaml --tag wpm`; `--tag scim` where SCIM is set up;
+`--list` shows the jobs). Run **one** scheduler per deployment; every task is idempotent, so a second one is untidy, not harmful. A
+test fails if a task is neither scheduled there nor named as run by hand. Or schedule each with cron, a timer or a Kubernetes CronJob.
 
 | Task | When | Why |
 | --- | --- | --- |
+| `task webhook_deliver` | every minute | Sends the queued webhook deliveries; retries are spaced by the task's own back-off |
+| `task scim_push` | every 15 minutes | Reconciles the SCIM provider; needs `WPM_SCIM_BASE_URL` and `WPM_SCIM_TOKEN`, and fails every run without them |
+| `task early_warning_sweep` | daily | Opens and closes early warnings; the day a condition is first true is the day of the first sweep that saw it |
+| `task oversight_pack_freeze` | first days of the month | Freezes last month's oversight pack, once per organization and month |
+| `task verify_audit_chain` | daily | Checks the audit hash chain; exits with an error when it is broken. Keep its head hash outside the database |
 | `task snapshot_headcount` | daily | Headcount history cannot be backfilled |
 | `task engagement_end_reminders` | daily | Tells the manager and HR about an engagement ending within 60 calendar days (`days_ahead:N`), or ended with no decision; once per end date |
 | `task rota_reminders` | daily | Tells whoever's on-call turn starts tomorrow |

@@ -94,8 +94,7 @@ and `employeeNumber` are the employee number (WPM holds no login), `externalId` 
 `department` and `active`. **No `costCenter`** (WPM holds no cost centre) and **no `name` parts, emails, phone numbers or addresses**.
 `active` follows the headcount definition: not before the first day, and not on or after the termination date. A deleted
 record is deactivated if it was ever sent. Settings: `WPM_SCIM_BASE_URL` (https, or http to this machine), `WPM_SCIM_TOKEN`,
-`WPM_SCIM_ORGANIZATION`. Erasure deletes the `scim_pushes` row and the subject export lists it. **Not built:** a
-schedule (run `cargo loco task scim_push` from the deployment's scheduler); a deprovision on the handover's last day (WPM uses
+`WPM_SCIM_ORGANIZATION`. Erasure deletes the `scim_pushes` row and the subject export lists it. **A schedule** is in `config/scheduler.yaml` (every 15 minutes, tag `scim`, WPM-T300). **Not built:** a deprovision on the handover's last day (WPM uses
 the termination date, by the headcount definition, so a leaver is deactivated from that date, which may be a day before the last
 day worked); `PATCH`; groups; the token held by reference (it is read from the environment); a test against Keycloak (it has no SCIM
 endpoint in its core as far as this round found) or any real identity provider: **only a stub server was used**.
@@ -119,8 +118,7 @@ occurred_at}` where `subject` is the URN (`worker:<pid>`, `leave_request:<pid>`)
 of "<t>.<body>">` with the timestamp inside the signature, no redirects followed, a 10 second timeout. 2xx is delivered; a network
 failure, `408`, `429` and `5xx` are retried with a back-off of one minute doubling to a day, ten tries in all; any other answer is a
 refusal and is not repeated. The log keeps the HTTP status and a short reason; **there is no column for a body**. Erasure deletes the
-deliveries that name the worker. Settings: the secret variables only. **Not built:** a schedule (run `cargo loco task
-webhook_deliver` every minute or so); the other events in the spec's list ("movement": WPM emits no movement event on the
+deliveries that name the worker. Settings: the secret variables only. **A schedule** is in `config/scheduler.yaml` (every minute, WPM-T300). **Not built:** the other events in the spec's list ("movement": WPM emits no movement event on the
 transport); DNS-rebinding protection (a host name that later resolves to an internal address is not caught, only address literals
 are); the secret rotated without a gap; a screen; a replay of a failed delivery.
 

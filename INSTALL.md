@@ -48,14 +48,18 @@ cargo test --test enforcement -- --ignored   # auth persona matrix
 
 ### Schedule the tasks
 
-Two loco tasks do nothing unless something runs them — schedule each **daily**
-(cron, a systemd timer, a Kubernetes CronJob):
+Several loco tasks do nothing unless something runs them. The job list is
+[`config/scheduler.yaml`](workforce-planning-management-service-with-rust/config/scheduler.yaml), for Loco's own scheduler;
+start **one** next to the server:
 
 ```sh
-cargo run -- task snapshot_headcount     # records aggregate headcount (cannot be backfilled)
-cargo run -- task rota_reminders         # tells whoever's on-call turn starts tomorrow (idempotent)
-cargo run -- task pay_progression_reminders  # tells who becomes eligible for a pay step within 30 calendar days (idempotent)
+cargo loco scheduler --config config/scheduler.yaml --tag wpm     # webhooks, headcount snapshot, warnings, reminders, audit-chain check
+cargo loco scheduler --config config/scheduler.yaml --tag scim    # only where WPM_SCIM_BASE_URL and WPM_SCIM_TOKEN are set
+cargo loco scheduler --config config/scheduler.yaml --list        # what is scheduled, and when
 ```
+
+Or schedule the same tasks yourself (cron, a systemd timer, a Kubernetes CronJob) with `cargo run -- task <name>`; the table in
+[spec/operations/deployment.md](spec/operations/deployment.md) says how often each one wants to run.
 
 Optional imports: `cargo run -- task import_framework` (UK GDAD PCF) and
 `import_esco` (ESCO occupations and skills) — see the task entries in

@@ -4834,3 +4834,23 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       rows, so a materialised or cached roll-up would be the next step if it is too slow; no load test of the endpoint was run; the
       first full run hung for an hour in `chaos` waiting on a package-cache lock held by another project's cargo, and passed when
       run alone.
+- [x] (2026-10-25) WPM-T300 **A schedule for the recurring tasks.** *(WPM-R151, WPM-D106)* `scim_push` and `webhook_deliver` were listed as having no schedule, and
+      the deployment page said to "schedule each with cron" with no file to start from. `config/scheduler.yaml` is now a job list for
+      Loco's own scheduler: `webhook_deliver` every minute, `snapshot_headcount`, `early_warning_sweep`, the four reminder tasks and
+      `verify_audit_chain` daily, `oversight_pack_freeze` on the first three days of the month (it is idempotent, so the first run
+      writes and the others skip), and `scim_push` every 15 minutes under its own tag `scim`, because it fails every run unless
+      `WPM_SCIM_BASE_URL` and `WPM_SCIM_TOKEN` are set. Start one with `cargo loco scheduler --config config/scheduler.yaml --tag
+      wpm` (or `--tag scim`; `--list` shows the jobs). A new test `tests/scheduler_config.rs` loads the file through Loco's own loader
+      (so every job names a real task), fails if a registered task is neither scheduled nor named as run by hand with a reason
+      (`seed`, `import_esco`, `import_framework`, `replay_erasures`), and checks every cron has six or seven fields, every job has a tag,
+      `scim_push` is not in the default tag, and the daily jobs leave day, month and weekday open; three faults tried and caught (a
+      job removed, a task name misspelt, `scim_push` given the default tag). INSTALL, the deployment table and the integrations spec are
+      updated; the old INSTALL text named only three tasks. **Seen working:** against a throwaway Postgres 18 migrated with `db
+      migrate`, `--list` printed the real file's ten jobs and a scheduler on a copy with three-to-five-second schedules ran
+      `webhook_deliver`, `policy_reminders` and `verify_audit_chain` as child processes, each exiting 0 (`{"delivered":0,...}`,
+      `{"ok":true,"entries":0,...}`). Verified: `scheduler_config` 2 passed; the rest of the suites were not touched (the change is a
+      config file, a test and documents). **Not done:** the real file's own times were not waited for (the check used a copy with
+      short ones); a delivery to a real receiver and a SCIM push to a real provider were not seen through the scheduler (their task
+      tests and stubs stand as before); the scheduler is not started by `compose.yaml` or any deployment manifest here (there is none
+      for the API), so a deployer must start it; two schedulers at once were not tried (the tasks are idempotent, by their tests);
+      job output goes to the scheduler's output, so `webhook_deliver` writes a line a minute; time zone is the host's.
