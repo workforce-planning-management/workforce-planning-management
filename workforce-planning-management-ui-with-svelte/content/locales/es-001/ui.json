@@ -2242,5 +2242,15 @@
     "entitlementKind": "Tipo de derecho",
     "hireNumber": "Número de trabajador para la contratación",
     "departments": "Departamentos, separados por comas"
+  },
+  "myPolicies": {
+    "title": "Políticas",
+    "hint": "La versión más reciente de cada política que le afecta. Confirmar que la ha leído es un acto personal; nadie puede hacerlo por usted.",
+    "none": "Ninguna política está pendiente.",
+    "version": "Versión {version}",
+    "done": "Confirmada el {day}",
+    "due": "Confirme antes del {day}",
+    "overdue": "Vencida: debía confirmarse el {day}, hace {days} días naturales",
+    "acknowledge": "He leído esto"
   }
 }

@@ -2242,5 +2242,15 @@
     "entitlementKind": "Math o hawl",
     "hireNumber": "Rhif gweithiwr ar gyfer y penodiad",
     "departments": "Adrannau, wedi'u gwahanu gan atalnodau"
+  },
+  "myPolicies": {
+    "title": "Polisïau",
+    "hint": "Fersiwn ddiweddaraf pob polisi sy'n berthnasol i chi. Cadarnhau eich bod wedi'i ddarllen yw eich gweithred eich hun; ni all neb ei wneud drosoch.",
+    "none": "Nid oes polisi'n aros amdanoch.",
+    "version": "Fersiwn {version}",
+    "done": "Cadarnhawyd ar {day}",
+    "due": "Cadarnhewch erbyn {day}",
+    "overdue": "Hwyr: yn ddyledus ar {day}, {days} diwrnod calendr yn ôl",
+    "acknowledge": "Rwyf wedi darllen hwn"
   }
 }

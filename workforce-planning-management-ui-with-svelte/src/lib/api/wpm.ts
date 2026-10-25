@@ -4714,3 +4714,44 @@ export function getMyHealthRequirements(
 ): Promise<MyHealthRequirements> {
   return api("/me/health-requirements", init);
 }
+
+/** Where the caller stands on one policy version (the service's `Standing`). */
+export type PolicyStanding =
+  | { kind: "done"; on: string }
+  | { kind: "waiting"; due_on: string }
+  | { kind: "overdue"; due_on: string; calendar_days_late: number };
+
+/** The caller's own policies: the newest version in force aimed at them, and where they stand. */
+export type MyPolicies = {
+  worker_pid: string;
+  waiting: number;
+  policies: Array<{
+    policy: string;
+    version: {
+      pid: string;
+      version: number;
+      title: string;
+      document_ref: string;
+      effective_on: string;
+      audience: string;
+      audience_value: string | null;
+      acknowledge_within_days: number;
+    };
+    standing: PolicyStanding;
+  }>;
+};
+
+/** The policies the caller is asked to acknowledge, and their own standing on each. */
+export function getMyPolicies(init?: FetchLike): Promise<MyPolicies> {
+  return api("/me/policies", init);
+}
+
+/** The caller says they have read a version. Their own act; the first day is kept. */
+export function acknowledgePolicy(
+  versionPid: string,
+): Promise<{ acknowledged_on: string }> {
+  return api("/me/policy-acknowledgements", {
+    method: "POST",
+    body: { version_pid: versionPid },
+  });
+}

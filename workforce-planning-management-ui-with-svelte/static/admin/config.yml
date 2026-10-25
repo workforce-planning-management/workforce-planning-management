@@ -3009,3 +3009,18 @@ collections:
               - { name: "entitlementKind", label: "Entitlement Kind", widget: string, required: false, i18n: true }
               - { name: "hireNumber", label: "Hire Number", widget: string, required: false, i18n: true }
               - { name: "departments", label: "Departments", widget: string, required: false, i18n: true }
+          - name: "myPolicies"
+            label: "My Policies"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "version", label: "Version", widget: string, required: false, i18n: true }
+              - { name: "done", label: "Done", widget: string, required: false, i18n: true }
+              - { name: "due", label: "Due", widget: string, required: false, i18n: true }
+              - { name: "overdue", label: "Overdue", widget: string, required: false, i18n: true }
+              - { name: "acknowledge", label: "Acknowledge", widget: string, required: false, i18n: true }

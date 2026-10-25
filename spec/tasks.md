@@ -4611,3 +4611,12 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       AI-written and unreviewed; the page-shot harness's "dark" shot is not dark (the app's theme comes from its own picker, not the
       browser's colour scheme), so no dark screenshot of a new screen was looked at; one earlier request-test run showed a failure that
       two reruns did not reproduce (WPM-T282); no load or soak run; no browser other than Chromium.
+- [x] (2026-10-25) WPM-T286 **A screen for policies: the worker's own panel on `/me`.** *(WPM-R156, WPM-D105)* `MyPolicies.svelte` lists the
+      newest version in force of each policy aimed at the worker (`GET /api/me/policies`): name, version, document reference, audience,
+      and where they stand (acknowledged on a day, due by a day, or overdue by whole calendar days), with a button that posts the
+      worker's own acknowledgement (`POST /api/me/policy-acknowledgements`). No one can acknowledge for another, so the panel has no
+      such control. Strings under `myPolicies.*` in the 13 locales (AI-written, unreviewed; French "Révision" because "Version" repeats
+      English). Verified: `svelte-check` 0 errors, 209 unit tests, Playwright 216 passed / 19 skipped (new: an overdue and a waiting
+      policy, the acknowledgement posts `{version_pid}` once and the row shows the day). **Not done:** the screens for the manager's
+      counts and HR's policy and version editor and named record (T283 stays `[~]` for those); I did not look at a screenshot of the
+      panel, on a phone or otherwise; the API is stubbed in the test, not run against the service; no reminder notification.

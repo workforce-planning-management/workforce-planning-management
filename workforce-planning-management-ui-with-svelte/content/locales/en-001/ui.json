@@ -2242,5 +2242,15 @@
     "entitlementKind": "Kind of entitlement",
     "hireNumber": "Worker number for the hire",
     "departments": "Departments, separated by commas"
+  },
+  "myPolicies": {
+    "title": "Policies",
+    "hint": "The newest version of each policy that applies to you. Saying you have read one is your own act; no one can do it for you.",
+    "none": "No policy is waiting for you.",
+    "version": "Version {version}",
+    "done": "Acknowledged on {day}",
+    "due": "Please acknowledge by {day}",
+    "overdue": "Overdue: due on {day}, {days} calendar days ago",
+    "acknowledge": "I have read this"
   }
 }

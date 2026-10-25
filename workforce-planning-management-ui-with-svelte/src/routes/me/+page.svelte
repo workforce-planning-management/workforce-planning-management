@@ -13,6 +13,7 @@
   import SkillGaps from "#lib/components/SkillGaps.svelte";
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
   import ExpenseClaims from "#lib/components/ExpenseClaims.svelte";
+  import MyPolicies from "#lib/components/MyPolicies.svelte";
   import PayPosition from "#lib/components/PayPosition.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
@@ -74,6 +75,7 @@
   <SkillGaps {workerPid} />
   <JobLevel {workerPid} />
   <PayPosition {workerPid} />
+  <MyPolicies {workerPid} />
   <ExpenseClaims {workerPid} />
   <EmergencyContacts {workerPid} />
   <Backups {workerPid} />

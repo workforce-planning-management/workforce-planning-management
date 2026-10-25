@@ -2242,5 +2242,15 @@
     "entitlementKind": "Type de droit",
     "hireNumber": "Numéro de salarié pour l'embauche",
     "departments": "Services, séparés par des virgules"
+  },
+  "myPolicies": {
+    "title": "Politiques",
+    "hint": "La version la plus récente de chaque politique qui vous concerne. Confirmer sa lecture est un acte personnel ; personne ne peut le faire à votre place.",
+    "none": "Aucune politique n'attend votre confirmation.",
+    "version": "Révision {version}",
+    "done": "Confirmée le {day}",
+    "due": "À confirmer avant le {day}",
+    "overdue": "En retard : échéance le {day}, il y a {days} jours calendaires",
+    "acknowledge": "J'ai lu ce document"
   }
 }

@@ -2242,5 +2242,15 @@
     "entitlementKind": "Jenis hak",
     "hireNumber": "Nomor pekerja untuk perekrutan",
     "departments": "Departemen, dipisahkan koma"
+  },
+  "myPolicies": {
+    "title": "Kebijakan",
+    "hint": "Versi terbaru setiap kebijakan yang berlaku bagi Anda. Menyatakan sudah membaca adalah tindakan Anda sendiri; tidak ada orang lain yang dapat melakukannya untuk Anda.",
+    "none": "Tidak ada kebijakan yang menunggu Anda.",
+    "version": "Versi {version}",
+    "done": "Diakui pada {day}",
+    "due": "Mohon akui sebelum {day}",
+    "overdue": "Terlambat: jatuh tempo {day}, {days} hari kalender yang lalu",
+    "acknowledge": "Saya sudah membaca ini"
   }
 }

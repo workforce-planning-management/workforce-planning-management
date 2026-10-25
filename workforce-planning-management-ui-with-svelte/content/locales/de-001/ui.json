@@ -2242,5 +2242,15 @@
     "entitlementKind": "Art des Anspruchs",
     "hireNumber": "Personalnummer für die Einstellung",
     "departments": "Abteilungen, durch Kommas getrennt"
+  },
+  "myPolicies": {
+    "title": "Richtlinien",
+    "hint": "Die neueste Fassung jeder Richtlinie, die für Sie gilt. Die Bestätigung ist Ihre eigene Handlung; niemand kann sie für Sie vornehmen.",
+    "none": "Keine Richtlinie wartet auf Sie.",
+    "version": "Fassung {version}",
+    "done": "Bestätigt am {day}",
+    "due": "Bitte bis {day} bestätigen",
+    "overdue": "Überfällig: fällig am {day}, vor {days} Kalendertagen",
+    "acknowledge": "Ich habe dies gelesen"
   }
 }

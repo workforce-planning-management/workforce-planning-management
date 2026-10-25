@@ -2242,5 +2242,15 @@
     "entitlementKind": "权益类型",
     "hireNumber": "入职员工编号",
     "departments": "部门，以逗号分隔"
+  },
+  "myPolicies": {
+    "title": "政策",
+    "hint": "适用于您的每项政策的最新版本。确认已阅读是您本人的行为，任何人都不能代替您。",
+    "none": "没有待您确认的政策。",
+    "version": "第 {version} 版",
+    "done": "已于 {day} 确认",
+    "due": "请在 {day} 前确认",
+    "overdue": "已逾期：应于 {day} 确认，已过 {days} 个日历日",
+    "acknowledge": "我已阅读"
   }
 }
