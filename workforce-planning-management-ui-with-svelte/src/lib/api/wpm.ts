@@ -5183,3 +5183,70 @@ export function markPayInformationAnswered(
 ): Promise<PayInformationRequest> {
   return api(`/pay-information-requests/${requestPid}/answered`, { method: "POST" });
 }
+
+/** The closed outcomes of a joint pay assessment (mirror `rules::joint_assessment::OUTCOMES`). */
+export const ASSESSMENT_OUTCOMES = [
+  "no_unjustified_difference",
+  "difference_found_remedy_planned",
+  "difference_remedied",
+] as const;
+
+export type AssessmentSignal =
+  | { status: "unknown"; why: "gap_withheld" | "gap_unknown" }
+  | { status: "not_due"; why: "below_threshold" | "justified" | "remedied" | "assessed" }
+  | { status: "pending"; remedy_by: string | null }
+  | { status: "due"; remedy_by: string };
+
+export type AssessmentRecord = {
+  pid: string;
+  organization_ref: string;
+  category: string;
+  reported_on: string;
+  justified: boolean;
+  justification: string | null;
+  remedied_on: string | null;
+  assessed_on: string | null;
+  outcome: string | null;
+  representatives: string | null;
+};
+
+export type JointAssessment = {
+  organization: string;
+  as_of: string;
+  threshold_bp: number;
+  remedy_months: number;
+  derivation: string;
+  categories: Array<{
+    category: string;
+    gap: GapFigure<Gap>;
+    reported_on: string | null;
+    signal: AssessmentSignal;
+    record: AssessmentRecord | null;
+  }>;
+};
+
+/** Whether a joint pay assessment is due for each category. Reports; a person records. Needs a payroll-level read; audited. */
+export function getJointAssessment(
+  organization: string,
+  options: GapQuery = {},
+  init?: FetchLike,
+): Promise<JointAssessment> {
+  return api(`/pay-transparency/joint-assessment?${gapQuery(organization, options)}`, init);
+}
+
+export type AssessmentRecordBody = {
+  organization_ref: string;
+  category: string;
+  reported_on: string;
+  justified: boolean;
+  justification?: string;
+  remedied_on?: string;
+  assessed_on?: string;
+  outcome?: string;
+  representatives?: string;
+};
+
+/** Record, for a category and a report date, the justification, the remedy and the assessment. Replaces what was there. */
+export function putAssessmentRecord(body: AssessmentRecordBody): Promise<{ pid: string }> {
+  return api("/pay-transparency/assessment-records", { method: "PUT", body });
+}

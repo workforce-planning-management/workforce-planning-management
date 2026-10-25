@@ -2448,5 +2448,33 @@
     "male_average": "Gaji rata-rata pria di kategori: {pay}",
     "withheld": "ditahan (kurang dari {floor} dari jenis kelamin itu)",
     "mark_answered": "Catat sebagai dijawab"
+  },
+  "jointAssessment": {
+    "title": "Penilaian gaji bersama",
+    "hint": "Penilaian gaji bersama jatuh tempo bila kesenjangan gaji pokok suatu kategori mencapai ambang, belum ada pembenaran berdasarkan kriteria objektif yang netral gender yang dicatat, dan kesenjangan belum diperbaiki pada akhir periode yang dihitung sejak tanggal pelaporan. Ini hanya melaporkan; seseorang yang mencatat. Tidak ada di sini yang menyatakan seseorang dibayar tidak adil.",
+    "config": "Ambang {threshold} di kedua arah; {months} bulan kalender untuk memperbaiki",
+    "reported": "Dilaporkan pada",
+    "signal": "Sinyal",
+    "not_reported": "Belum dilaporkan",
+    "due": "Penilaian bersama jatuh tempo: periode berakhir {day}",
+    "pending": "Menunggu: benarkan atau perbaiki sebelum {day}",
+    "pending_unreported": "Menunggu: periode mulai saat kesenjangan dilaporkan",
+    "not_due_below_threshold": "Belum jatuh tempo: kesenjangan di bawah ambang",
+    "not_due_justified": "Belum jatuh tempo: kesenjangan dibenarkan",
+    "not_due_remedied": "Belum jatuh tempo: kesenjangan diperbaiki",
+    "not_due_assessed": "Belum jatuh tempo: penilaian telah dilakukan",
+    "unknown_gap_withheld": "Tidak dapat dikatakan: kesenjangan ditahan (terlalu sedikit satu jenis kelamin)",
+    "unknown_gap_unknown": "Tidak dapat dikatakan: kesenjangan tidak dapat dihitung",
+    "record": "Catat",
+    "recording": "Pencatatan untuk {category}",
+    "justified": "Kesenjangan dibenarkan dengan kriteria objektif yang netral gender",
+    "justification": "Berdasarkan kriteria apa (10 hingga 1.000 karakter)",
+    "remedied_on": "Diperbaiki pada",
+    "assessed_on": "Penilaian bersama dilakukan pada",
+    "outcome": "Hasil",
+    "representatives": "Dilakukan bersama (badan atau perwakilan, menurut nama)",
+    "recorded_justified": "Dibenarkan.",
+    "recorded_remedied": "Diperbaiki {day}.",
+    "recorded_assessed": "Dinilai {day}:"
   }
 }

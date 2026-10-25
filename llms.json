@@ -17,7 +17,7 @@
       "service_unit_declared": 829,
       "service_request_declared": 153,
       "ui_unit_declared": 175,
-      "ui_e2e_declared": 189,
+      "ui_e2e_declared": 190,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
     "migrations": 91,

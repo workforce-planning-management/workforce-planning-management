@@ -2448,5 +2448,33 @@
     "male_average": "Remuneração média dos homens da categoria: {pay}",
     "withheld": "ocultada (menos de {floor} desse sexo)",
     "mark_answered": "Registar como respondido"
+  },
+  "jointAssessment": {
+    "title": "Avaliação conjunta das remunerações",
+    "hint": "Uma avaliação conjunta das remunerações é devida quando a disparidade no salário base de uma categoria atinge o limiar, não foi registada justificação com critérios objetivos e neutros em termos de género e a disparidade não foi corrigida no fim do prazo contado desde a data do relatório. Isto assinala; uma pessoa regista. Nada aqui diz que alguém foi pago injustamente.",
+    "config": "Limiar {threshold} nos dois sentidos; {months} meses de calendário para corrigir",
+    "reported": "Reportado em",
+    "signal": "Sinal",
+    "not_reported": "Ainda não reportado",
+    "due": "É devida uma avaliação conjunta: o prazo terminou em {day}",
+    "pending": "Pendente: justificar ou corrigir até {day}",
+    "pending_unreported": "Pendente: o prazo começa quando a disparidade é reportada",
+    "not_due_below_threshold": "Não devida: a disparidade está abaixo do limiar",
+    "not_due_justified": "Não devida: a disparidade está justificada",
+    "not_due_remedied": "Não devida: a disparidade foi corrigida",
+    "not_due_assessed": "Não devida: a avaliação foi realizada",
+    "unknown_gap_withheld": "Não se pode dizer: a disparidade está ocultada (poucas pessoas de um sexo)",
+    "unknown_gap_unknown": "Não se pode dizer: a disparidade não pode ser calculada",
+    "record": "Registar",
+    "recording": "Registo de {category}",
+    "justified": "A disparidade está justificada com critérios objetivos e neutros em termos de género",
+    "justification": "Com que critérios (10 a 1000 caracteres)",
+    "remedied_on": "Corrigida em",
+    "assessed_on": "Avaliação conjunta realizada em",
+    "outcome": "Resultado",
+    "representatives": "Realizada com (o órgão ou os representantes, por nome)",
+    "recorded_justified": "Justificada.",
+    "recorded_remedied": "Corrigida em {day}.",
+    "recorded_assessed": "Avaliada em {day}:"
   }
 }

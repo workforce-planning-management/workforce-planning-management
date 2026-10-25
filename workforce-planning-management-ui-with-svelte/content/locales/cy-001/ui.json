@@ -2448,5 +2448,33 @@
     "male_average": "Cyflog cyfartalog dynion yn y categori: {pay}",
     "withheld": "cuddiedig (llai na {floor} o'r rhyw hwnnw)",
     "mark_answered": "Cofnodi fel un a atebwyd"
+  },
+  "jointAssessment": {
+    "title": "Asesiad cyflog ar y cyd",
+    "hint": "Mae asesiad cyflog ar y cyd yn ddyledus pan fo bwlch cyflog sylfaenol categori ar neu dros y trothwy, na chofnodwyd cyfiawnhad ar sail meini prawf gwrthrychol a niwtral o ran rhywedd, ac na chywirwyd y bwlch erbyn diwedd y cyfnod a gyfrifir o ddyddiad yr adrodd. Mae hyn yn adrodd; mae person yn cofnodi. Nid oes dim yma'n dweud bod neb wedi'i dalu'n annheg.",
+    "config": "Trothwy {threshold} y naill ffordd neu'r llall; {months} mis calendr i'w gywiro",
+    "reported": "Adroddwyd ar",
+    "signal": "Arwydd",
+    "not_reported": "Heb adrodd eto",
+    "due": "Mae asesiad ar y cyd yn ddyledus: daeth y cyfnod i ben ar {day}",
+    "pending": "Yn aros: cyfiawnhewch neu cywirwch erbyn {day}",
+    "pending_unreported": "Yn aros: mae'r cyfnod yn dechrau pan adroddir y bwlch",
+    "not_due_below_threshold": "Ddim yn ddyledus: mae'r bwlch dan y trothwy",
+    "not_due_justified": "Ddim yn ddyledus: mae'r bwlch wedi'i gyfiawnhau",
+    "not_due_remedied": "Ddim yn ddyledus: cywirwyd y bwlch",
+    "not_due_assessed": "Ddim yn ddyledus: cynhaliwyd yr asesiad",
+    "unknown_gap_withheld": "Ni ellir dweud: mae'r bwlch yn guddiedig (rhy ychydig o un rhyw)",
+    "unknown_gap_unknown": "Ni ellir dweud: ni ellir cyfrifo'r bwlch",
+    "record": "Cofnodi",
+    "recording": "Cofnodi ar gyfer {category}",
+    "justified": "Mae'r bwlch wedi'i gyfiawnhau ar sail meini prawf gwrthrychol a niwtral o ran rhywedd",
+    "justification": "Ar ba feini prawf (10 i 1,000 nod)",
+    "remedied_on": "Cywirwyd ar",
+    "assessed_on": "Cynhaliwyd yr asesiad ar y cyd ar",
+    "outcome": "Canlyniad",
+    "representatives": "Gwnaed gyda (y corff neu'r cynrychiolwyr, wrth eu henw)",
+    "recorded_justified": "Cyfiawnhawyd.",
+    "recorded_remedied": "Cywirwyd {day}.",
+    "recorded_assessed": "Aseswyd {day}:"
   }
 }

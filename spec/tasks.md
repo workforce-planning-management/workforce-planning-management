@@ -4762,3 +4762,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       the queue was looked at; no real answer for a worker with no category or no pay was seen (the stubbed UI shows the wording only);
       the yearly notice and a worker's view of an answer are not built (HR gives it to them); `keycloak` and `shared_cache_upstream`
       not run; the new strings are AI-written and unreviewed.
+- [x] (2026-10-25) WPM-T296 **A screen for the joint pay assessment: a section of `/pay-gap`.** *(WPM-R146)* `JointAssessment.svelte`, under the indicators and
+      using the same organization, day, currency and variable-pay choice: the threshold and the calendar months to remedy; for each
+      category its gap in basic pay, the report date, and the signal in words (a joint assessment is due, with the day the period
+      ended; pending until a day, or until the gap is reported; not due because the gap is under the threshold, justified, remedied
+      or already assessed; cannot be said because the gap is withheld or cannot be worked out); what has been recorded; and a form
+      to record, for a category and a report date, a justification (10 to 1,000 characters, stopped by the form when too short), the
+      remedy day, the assessment day with its outcome (the closed list) and the representatives by name. It reports; a person
+      records. Strings under `jointAssessment.*` in the 13 locales (AI-written, unreviewed; German "Stand" and French "Indication"
+      because "Signal" repeats English). **Seen against a real service** (the T294 set-up: Care at a 5.00% gap, Legal withheld): a
+      live spec `tests/live/joint-assessment.spec.ts` asserts the real signal is pending until reported, due once a report date
+      eight months ago is recorded with nothing justified, and not due once a justification is recorded; the withheld category cannot
+      be said. I looked at the screenshot with the due signal. Verified: UI `svelte-check` 0 errors, 210 unit tests, Playwright 233
+      passed / 19 skipped (new: due, withheld, recording a justification and an assessment with the expected body and no remedy
+      day); the live spec 1 passed (a first attempt failed because its own earlier run had already recorded data, which is why the
+      README says to clear the records). **Not done:** the Rust side is unchanged, so its suites were not re-run; the screen was not
+      seen on a phone or in the dark; the service's refusals (a justification shorter than ten characters, a remedy dated before the
+      report) were not seen on screen: the form stops the first itself and the second was not tried; a remedy and a "remedied"
+      signal were not seen against the real service; the link to a recognised body is only a name typed in (Phase 18's bodies are not
+      built); the new strings are AI-written and unreviewed.

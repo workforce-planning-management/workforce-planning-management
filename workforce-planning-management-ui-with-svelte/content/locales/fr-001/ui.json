@@ -2448,5 +2448,33 @@
     "male_average": "Rémunération moyenne des hommes de la catégorie : {pay}",
     "withheld": "masquée (moins de {floor} de ce sexe)",
     "mark_answered": "Enregistrer comme répondu"
+  },
+  "jointAssessment": {
+    "title": "Évaluation conjointe des rémunérations",
+    "hint": "Une évaluation conjointe des rémunérations est due lorsque l'écart de salaire de base d'une catégorie atteint le seuil, qu'aucune justification fondée sur des critères objectifs et non sexistes n'a été enregistrée et que l'écart n'a pas été corrigé à la fin de la période comptée depuis la date de déclaration. Ceci signale ; une personne enregistre. Rien ici ne dit que quelqu'un a été payé injustement.",
+    "config": "Seuil {threshold} dans les deux sens ; {months} mois calendaires pour corriger",
+    "reported": "Déclaré le",
+    "signal": "Indication",
+    "not_reported": "Pas encore déclaré",
+    "due": "Une évaluation conjointe est due : la période a pris fin le {day}",
+    "pending": "En cours : justifier ou corriger avant le {day}",
+    "pending_unreported": "En cours : la période commence à la déclaration de l'écart",
+    "not_due_below_threshold": "Non due : l'écart est sous le seuil",
+    "not_due_justified": "Non due : l'écart est justifié",
+    "not_due_remedied": "Non due : l'écart a été corrigé",
+    "not_due_assessed": "Non due : l'évaluation a été menée",
+    "unknown_gap_withheld": "Impossible à dire : l'écart est masqué (trop peu de personnes d'un sexe)",
+    "unknown_gap_unknown": "Impossible à dire : l'écart ne peut pas être calculé",
+    "record": "Enregistrer",
+    "recording": "Enregistrement pour {category}",
+    "justified": "L'écart est justifié par des critères objectifs et non sexistes",
+    "justification": "Sur quels critères (10 à 1 000 caractères)",
+    "remedied_on": "Corrigé le",
+    "assessed_on": "Évaluation conjointe menée le",
+    "outcome": "Résultat",
+    "representatives": "Menée avec (l'organe ou les représentants, par nom)",
+    "recorded_justified": "Justifié.",
+    "recorded_remedied": "Corrigé le {day}.",
+    "recorded_assessed": "Évalué le {day} :"
   }
 }

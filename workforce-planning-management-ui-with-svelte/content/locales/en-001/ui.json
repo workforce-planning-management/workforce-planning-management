@@ -2448,5 +2448,33 @@
     "male_average": "Average pay of men in the category: {pay}",
     "withheld": "withheld (fewer than {floor} of that sex)",
     "mark_answered": "Record as answered"
+  },
+  "jointAssessment": {
+    "title": "Joint pay assessment",
+    "hint": "A joint pay assessment is due when a category's gap in basic pay is at or over the threshold, no justification on objective, gender-neutral criteria has been recorded, and the gap was not remedied by the end of the period counted from the date of reporting. This reports; a person records. Nothing here says anyone was paid unfairly.",
+    "config": "Threshold {threshold} either way; {months} calendar months to remedy",
+    "reported": "Reported on",
+    "signal": "Signal",
+    "not_reported": "Not reported yet",
+    "due": "A joint assessment is due: the period ended {day}",
+    "pending": "Pending: justify or remedy by {day}",
+    "pending_unreported": "Pending: the period starts when the gap is reported",
+    "not_due_below_threshold": "Not due: the gap is under the threshold",
+    "not_due_justified": "Not due: the gap is justified",
+    "not_due_remedied": "Not due: the gap was remedied",
+    "not_due_assessed": "Not due: the assessment was carried out",
+    "unknown_gap_withheld": "Cannot be said: the gap is withheld (too few of one sex)",
+    "unknown_gap_unknown": "Cannot be said: the gap cannot be worked out",
+    "record": "Record",
+    "recording": "Recording for {category}",
+    "justified": "The gap is justified on objective, gender-neutral criteria",
+    "justification": "On what criteria (10 to 1,000 characters)",
+    "remedied_on": "Remedied on",
+    "assessed_on": "Joint assessment carried out on",
+    "outcome": "Outcome",
+    "representatives": "Done with (the body or representatives, by name)",
+    "recorded_justified": "Justified.",
+    "recorded_remedied": "Remedied {day}.",
+    "recorded_assessed": "Assessed {day}:"
   }
 }

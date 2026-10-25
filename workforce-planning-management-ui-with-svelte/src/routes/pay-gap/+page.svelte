@@ -21,6 +21,7 @@
     removePayCategory,
   } from "#lib/api/wpm.js";
   import type { Excluded, Gap, GapFigure, PayCategory, PayGapReport } from "#lib/api/wpm.js";
+  import JointAssessment from "#lib/components/JointAssessment.svelte";
   import { basisPoints } from "#lib/format.js";
   import { i18n, t, tf } from "#lib/i18n.svelte.js";
 
@@ -289,4 +290,6 @@
   {:else if !reportError}
     <p>{t("common.loading")}</p>
   {/if}
+
+  <JointAssessment {organization} {options} />
 {/if}

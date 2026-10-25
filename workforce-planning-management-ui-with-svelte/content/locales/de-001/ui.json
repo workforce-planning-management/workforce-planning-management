@@ -2448,5 +2448,33 @@
     "male_average": "Durchschnittsentgelt der Männer in der Kategorie: {pay}",
     "withheld": "zurückgehalten (weniger als {floor} dieses Geschlechts)",
     "mark_answered": "Als beantwortet vermerken"
+  },
+  "jointAssessment": {
+    "title": "Gemeinsame Entgeltbewertung",
+    "hint": "Eine gemeinsame Entgeltbewertung ist fällig, wenn das Gefälle beim Grundgehalt einer Kategorie die Schwelle erreicht, keine Rechtfertigung nach objektiven, geschlechtsneutralen Kriterien erfasst ist und das Gefälle nicht bis zum Ende der ab dem Berichtsdatum gezählten Frist behoben wurde. Dies meldet nur; eine Person erfasst. Nichts hier besagt, dass jemand ungerecht bezahlt wurde.",
+    "config": "Schwelle {threshold} in beide Richtungen; {months} Kalendermonate zur Behebung",
+    "reported": "Berichtet am",
+    "signal": "Stand",
+    "not_reported": "Noch nicht berichtet",
+    "due": "Eine gemeinsame Bewertung ist fällig: Die Frist endete {day}",
+    "pending": "Offen: bis {day} rechtfertigen oder beheben",
+    "pending_unreported": "Offen: die Frist beginnt mit der Berichterstattung",
+    "not_due_below_threshold": "Nicht fällig: das Gefälle liegt unter der Schwelle",
+    "not_due_justified": "Nicht fällig: das Gefälle ist gerechtfertigt",
+    "not_due_remedied": "Nicht fällig: das Gefälle wurde behoben",
+    "not_due_assessed": "Nicht fällig: die Bewertung wurde durchgeführt",
+    "unknown_gap_withheld": "Nicht feststellbar: das Gefälle ist zurückgehalten (zu wenige eines Geschlechts)",
+    "unknown_gap_unknown": "Nicht feststellbar: das Gefälle ist nicht berechenbar",
+    "record": "Erfassen",
+    "recording": "Erfassung für {category}",
+    "justified": "Das Gefälle ist nach objektiven, geschlechtsneutralen Kriterien gerechtfertigt",
+    "justification": "Nach welchen Kriterien (10 bis 1.000 Zeichen)",
+    "remedied_on": "Behoben am",
+    "assessed_on": "Gemeinsame Bewertung durchgeführt am",
+    "outcome": "Ergebnis",
+    "representatives": "Durchgeführt mit (Gremium oder Vertretung, mit Namen)",
+    "recorded_justified": "Gerechtfertigt.",
+    "recorded_remedied": "Behoben {day}.",
+    "recorded_assessed": "Bewertet {day}:"
   }
 }

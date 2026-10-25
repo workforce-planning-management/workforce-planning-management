@@ -2448,5 +2448,33 @@
     "male_average": "该类别男性平均薪酬：{pay}",
     "withheld": "已隐藏（该性别少于 {floor} 人）",
     "mark_answered": "记为已答复"
+  },
+  "jointAssessment": {
+    "title": "联合薪酬评估",
+    "hint": "当某类别的基本工资差距达到阈值、未记录基于客观且性别中立标准的合理性说明、且自报告之日起算的期限结束时差距仍未消除时，需进行联合薪酬评估。此处仅作提示，由人员记录。此处任何内容都不表示有人被不公平地支付。",
+    "config": "阈值 {threshold}（双向）；{months} 个日历月内纠正",
+    "reported": "报告日期",
+    "signal": "信号",
+    "not_reported": "尚未报告",
+    "due": "需进行联合评估：期限已于 {day} 结束",
+    "pending": "待定：请在 {day} 前说明理由或纠正",
+    "pending_unreported": "待定：期限自报告差距时起算",
+    "not_due_below_threshold": "无需评估：差距低于阈值",
+    "not_due_justified": "无需评估：差距已说明理由",
+    "not_due_remedied": "无需评估：差距已纠正",
+    "not_due_assessed": "无需评估：评估已完成",
+    "unknown_gap_withheld": "无法判断：差距已隐藏（某一性别人数过少）",
+    "unknown_gap_unknown": "无法判断：无法计算差距",
+    "record": "记录",
+    "recording": "记录 {category}",
+    "justified": "该差距基于客观且性别中立的标准具有合理性",
+    "justification": "依据哪些标准（10 至 1,000 个字符）",
+    "remedied_on": "纠正日期",
+    "assessed_on": "联合评估完成日期",
+    "outcome": "结果",
+    "representatives": "与谁共同完成（机构或代表，按名称）",
+    "recorded_justified": "已说明理由。",
+    "recorded_remedied": "{day} 已纠正。",
+    "recorded_assessed": "{day} 已评估："
   }
 }

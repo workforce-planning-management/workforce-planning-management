@@ -28,3 +28,6 @@ light, a dark and a phone screenshot. Do not run the service's own request tests
 database), and two pay categories. A pay information request is made by the worker through `/api/me`, which needs a token, so the
 spec expects two rows inserted in the database: one overdue from a woman in a category with at least ten of each sex, one open from a
 man in a category with fewer than ten men. It answers one of them, so seed again to rerun.
+
+`joint-assessment.spec.ts` uses the same set-up as `pay-gap.spec.ts` (`PAY_GAP_ORG`; a category whose gap is at the threshold and one
+whose gap is withheld). It writes assessment records, so clear them (`DELETE FROM pay_assessment_records`) or seed again to rerun.

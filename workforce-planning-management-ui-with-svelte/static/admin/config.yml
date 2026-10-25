@@ -3280,3 +3280,36 @@ collections:
               - { name: "male_average", label: "Male_average", widget: string, required: false, i18n: true }
               - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
               - { name: "mark_answered", label: "Mark_answered", widget: string, required: false, i18n: true }
+          - name: "jointAssessment"
+            label: "Joint Assessment"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "config", label: "Config", widget: string, required: false, i18n: true }
+              - { name: "reported", label: "Reported", widget: string, required: false, i18n: true }
+              - { name: "signal", label: "Signal", widget: string, required: false, i18n: true }
+              - { name: "not_reported", label: "Not_reported", widget: string, required: false, i18n: true }
+              - { name: "due", label: "Due", widget: string, required: false, i18n: true }
+              - { name: "pending", label: "Pending", widget: string, required: false, i18n: true }
+              - { name: "pending_unreported", label: "Pending_unreported", widget: string, required: false, i18n: true }
+              - { name: "not_due_below_threshold", label: "Not_due_below_threshold", widget: string, required: false, i18n: true }
+              - { name: "not_due_justified", label: "Not_due_justified", widget: string, required: false, i18n: true }
+              - { name: "not_due_remedied", label: "Not_due_remedied", widget: string, required: false, i18n: true }
+              - { name: "not_due_assessed", label: "Not_due_assessed", widget: string, required: false, i18n: true }
+              - { name: "unknown_gap_withheld", label: "Unknown_gap_withheld", widget: string, required: false, i18n: true }
+              - { name: "unknown_gap_unknown", label: "Unknown_gap_unknown", widget: string, required: false, i18n: true }
+              - { name: "record", label: "Record", widget: string, required: false, i18n: true }
+              - { name: "recording", label: "Recording", widget: string, required: false, i18n: true }
+              - { name: "justified", label: "Justified", widget: string, required: false, i18n: true }
+              - { name: "justification", label: "Justification", widget: string, required: false, i18n: true }
+              - { name: "remedied_on", label: "Remedied_on", widget: string, required: false, i18n: true }
+              - { name: "assessed_on", label: "Assessed_on", widget: string, required: false, i18n: true }
+              - { name: "outcome", label: "Outcome", widget: string, required: false, i18n: true }
+              - { name: "representatives", label: "Representatives", widget: string, required: false, i18n: true }
+              - { name: "recorded_justified", label: "Recorded_justified", widget: string, required: false, i18n: true }
+              - { name: "recorded_remedied", label: "Recorded_remedied", widget: string, required: false, i18n: true }
+              - { name: "recorded_assessed", label: "Recorded_assessed", widget: string, required: false, i18n: true }
