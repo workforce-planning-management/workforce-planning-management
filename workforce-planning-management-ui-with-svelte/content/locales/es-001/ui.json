@@ -2252,5 +2252,20 @@
     "due": "Confirme antes del {day}",
     "overdue": "Vencida: debía confirmarse el {day}, hace {days} días naturales",
     "acknowledge": "He leído esto"
+  },
+  "equipment": {
+    "title": "Equipo",
+    "hint": "Lo que se ha entregado a esta persona: portátil, teléfono, pase, llave. No se guarda ubicación, coste ni valor.",
+    "none": "No se ha entregado nada.",
+    "out": "Aún en su poder: {count}",
+    "issued": "Entregado el {day}",
+    "note": "Nota (necesaria para dar de baja)",
+    "close": "Cerrar",
+    "give": "Entregar un artículo",
+    "issue": "Entregar",
+    "add": "Añadir un artículo",
+    "kind": "Tipo",
+    "tag": "Etiqueta",
+    "owner_role": "Rol responsable"
   }
 }

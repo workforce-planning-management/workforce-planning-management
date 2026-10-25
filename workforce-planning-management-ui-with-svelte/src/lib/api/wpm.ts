@@ -4755,3 +4755,73 @@ export function acknowledgePolicy(
     body: { version_pid: versionPid },
   });
 }
+
+/** Asset kinds and the two ways an issue closes (mirror `rules::equipment`). */
+export const ASSET_KINDS = ["laptop", "phone", "pass", "key", "other"] as const;
+export const ASSET_OUTCOMES = ["returned", "written_off"] as const;
+
+export type Asset = {
+  pid: string;
+  organization_ref: string;
+  kind: string;
+  tag: string;
+  owner_role: string;
+  out: boolean;
+};
+
+export type WorkerEquipment = {
+  worker_pid: string;
+  out: number;
+  issues: Array<{
+    issue_pid: string;
+    asset_pid: string;
+    kind: string | null;
+    tag: string | null;
+    issued_on: string;
+    returned_on: string | null;
+    outcome: string | null;
+    note: string | null;
+  }>;
+};
+
+/** What a worker holds and has held. The worker themself and HR. */
+export function getWorkerEquipment(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<WorkerEquipment> {
+  return api(`/workers/${workerPid}/equipment`, init);
+}
+
+/** The organization's assets and whether each is out (HR). */
+export function listAssets(
+  organization: string,
+  init?: FetchLike,
+): Promise<{ assets: Asset[] }> {
+  return api(`/assets?organization=${encodeURIComponent(organization)}`, init);
+}
+
+export function createAsset(body: {
+  organization_ref: string;
+  kind: string;
+  tag: string;
+  owner_role: string;
+}): Promise<{ pid: string }> {
+  return api("/assets", { method: "POST", body });
+}
+
+export function issueAsset(
+  assetPid: string,
+  workerPid: string,
+): Promise<{ pid: string }> {
+  return api(`/assets/${assetPid}/issue`, {
+    method: "POST",
+    body: { worker_pid: workerPid },
+  });
+}
+
+export function closeAssetIssue(
+  issuePid: string,
+  body: { outcome: string; note?: string },
+): Promise<{ pid: string; outcome: string }> {
+  return api(`/asset-issues/${issuePid}/return`, { method: "POST", body });
+}

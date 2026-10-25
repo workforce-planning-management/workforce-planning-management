@@ -3024,3 +3024,23 @@ collections:
               - { name: "due", label: "Due", widget: string, required: false, i18n: true }
               - { name: "overdue", label: "Overdue", widget: string, required: false, i18n: true }
               - { name: "acknowledge", label: "Acknowledge", widget: string, required: false, i18n: true }
+          - name: "equipment"
+            label: "Equipment"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "out", label: "Out", widget: string, required: false, i18n: true }
+              - { name: "issued", label: "Issued", widget: string, required: false, i18n: true }
+              - { name: "note", label: "Note", widget: string, required: false, i18n: true }
+              - { name: "close", label: "Close", widget: string, required: false, i18n: true }
+              - { name: "give", label: "Give", widget: string, required: false, i18n: true }
+              - { name: "issue", label: "Issue", widget: string, required: false, i18n: true }
+              - { name: "add", label: "Add", widget: string, required: false, i18n: true }
+              - { name: "kind", label: "Kind", widget: string, required: false, i18n: true }
+              - { name: "tag", label: "Tag", widget: string, required: false, i18n: true }
+              - { name: "owner_role", label: "Owner_role", widget: string, required: false, i18n: true }

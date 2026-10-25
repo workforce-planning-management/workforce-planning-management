@@ -4620,3 +4620,12 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       policy, the acknowledgement posts `{version_pid}` once and the row shows the day). **Not done:** the screens for the manager's
       counts and HR's policy and version editor and named record (T283 stays `[~]` for those); I did not look at a screenshot of the
       panel, on a phone or otherwise; the API is stubbed in the test, not run against the service; no reminder notification.
+- [x] (2026-10-25) WPM-T287 **A screen for equipment: a panel on a worker's page and on `/me`.** *(WPM-R155)* `EquipmentPanel.svelte` lists what the
+      worker holds and has held (`GET /api/workers/{pid}/equipment`). When the service lets the caller read the organization's assets
+      (HR), the panel also adds an asset, gives a free one to the worker, and closes an issue as returned or, with a note, written off.
+      A refusal on the asset list hides the controls and is not shown as an error. No location, cost or value is shown or sent.
+      Strings under `equipment.*` in the 13 locales (AI-written, unreviewed; Welsh "Label" because "Tag" repeats English). Verified:
+      `svelte-check` 0 errors, 209 unit tests, Playwright 218 passed / 19 skipped (new: give then write off with the note required
+      and posted; a caller refused the asset list sees no controls). **Not done:** no screenshot looked at, on a phone or otherwise; the
+      API is stubbed, not run against the service; the tests drive `/me` and the worker page was not exercised; a manager's count of
+      open equipment; the leaver checklist's equipment line on the movements screen; returned-on and issued-on date pickers (today is used).

@@ -2252,5 +2252,20 @@
     "due": "Confirme até {day}",
     "overdue": "Em atraso: devia ser confirmada em {day}, há {days} dias corridos",
     "acknowledge": "Li este documento"
+  },
+  "equipment": {
+    "title": "Equipamento",
+    "hint": "O que foi entregue a esta pessoa: portátil, telefone, cartão, chave. Não se guarda local, custo nem valor.",
+    "none": "Nada foi entregue.",
+    "out": "Ainda na posse: {count}",
+    "issued": "Entregue em {day}",
+    "note": "Nota (necessária para dar baixa)",
+    "close": "Encerrar",
+    "give": "Entregar um item",
+    "issue": "Entregar",
+    "add": "Adicionar um item",
+    "kind": "Tipo",
+    "tag": "Etiqueta",
+    "owner_role": "Função responsável"
   }
 }

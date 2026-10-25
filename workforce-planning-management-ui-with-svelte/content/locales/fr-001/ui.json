@@ -2252,5 +2252,20 @@
     "due": "À confirmer avant le {day}",
     "overdue": "En retard : échéance le {day}, il y a {days} jours calendaires",
     "acknowledge": "J'ai lu ce document"
+  },
+  "equipment": {
+    "title": "Matériel",
+    "hint": "Ce qui est remis à cette personne : ordinateur, téléphone, badge, clé. Aucun lieu, coût ou valeur n'est conservé.",
+    "none": "Rien n'a été remis.",
+    "out": "Encore détenus : {count}",
+    "issued": "Remis le {day}",
+    "note": "Note (requise pour une mise au rebut)",
+    "close": "Clôturer",
+    "give": "Remettre un objet",
+    "issue": "Remettre",
+    "add": "Ajouter un objet",
+    "kind": "Type",
+    "tag": "Étiquette",
+    "owner_role": "Rôle responsable"
   }
 }

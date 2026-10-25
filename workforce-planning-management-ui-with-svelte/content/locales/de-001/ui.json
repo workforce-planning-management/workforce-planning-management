@@ -2252,5 +2252,20 @@
     "due": "Bitte bis {day} bestätigen",
     "overdue": "Überfällig: fällig am {day}, vor {days} Kalendertagen",
     "acknowledge": "Ich habe dies gelesen"
+  },
+  "equipment": {
+    "title": "Ausrüstung",
+    "hint": "Was dieser Person ausgehändigt wurde: Notebook, Telefon, Ausweis, Schlüssel. Ort, Kosten und Wert werden nicht gespeichert.",
+    "none": "Nichts wurde ausgegeben.",
+    "out": "Noch in Besitz: {count}",
+    "issued": "Ausgegeben am {day}",
+    "note": "Notiz (für die Abschreibung nötig)",
+    "close": "Abschließen",
+    "give": "Gegenstand ausgeben",
+    "issue": "Ausgeben",
+    "add": "Gegenstand hinzufügen",
+    "kind": "Art",
+    "tag": "Kennung",
+    "owner_role": "Zuständige Rolle"
   }
 }

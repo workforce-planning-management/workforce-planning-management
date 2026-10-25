@@ -2252,5 +2252,20 @@
     "due": "Mohon akui sebelum {day}",
     "overdue": "Terlambat: jatuh tempo {day}, {days} hari kalender yang lalu",
     "acknowledge": "Saya sudah membaca ini"
+  },
+  "equipment": {
+    "title": "Peralatan",
+    "hint": "Apa yang diberikan kepada orang ini: komputer jinjing, ponsel, kartu akses, kunci. Lokasi, biaya, dan nilai tidak disimpan.",
+    "none": "Belum ada yang diberikan.",
+    "out": "Masih dipegang: {count}",
+    "issued": "Diberikan {day}",
+    "note": "Catatan (wajib untuk penghapusan)",
+    "close": "Tutup",
+    "give": "Berikan barang",
+    "issue": "Berikan",
+    "add": "Tambah barang",
+    "kind": "Jenis",
+    "tag": "Label",
+    "owner_role": "Peran pemilik"
   }
 }

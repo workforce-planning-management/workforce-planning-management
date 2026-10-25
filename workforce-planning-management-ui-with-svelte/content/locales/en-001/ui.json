@@ -2252,5 +2252,20 @@
     "due": "Please acknowledge by {day}",
     "overdue": "Overdue: due on {day}, {days} calendar days ago",
     "acknowledge": "I have read this"
+  },
+  "equipment": {
+    "title": "Equipment",
+    "hint": "What is issued to this person: a laptop, a phone, a pass, a key. No location, cost or value is kept.",
+    "none": "Nothing has been issued.",
+    "out": "Still held: {count}",
+    "issued": "Issued {day}",
+    "note": "Note (needed to write off)",
+    "close": "Close",
+    "give": "Give an item",
+    "issue": "Give",
+    "add": "Add an item",
+    "kind": "Kind",
+    "tag": "Tag",
+    "owner_role": "Owning role"
   }
 }

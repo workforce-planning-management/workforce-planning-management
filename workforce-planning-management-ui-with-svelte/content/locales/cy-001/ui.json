@@ -2252,5 +2252,20 @@
     "due": "Cadarnhewch erbyn {day}",
     "overdue": "Hwyr: yn ddyledus ar {day}, {days} diwrnod calendr yn ôl",
     "acknowledge": "Rwyf wedi darllen hwn"
+  },
+  "equipment": {
+    "title": "Offer",
+    "hint": "Yr hyn a roddwyd i'r person hwn: gliniadur, ffôn, pàs, allwedd. Ni chedwir lleoliad, cost na gwerth.",
+    "none": "Ni roddwyd dim.",
+    "out": "Yn dal ganddynt: {count}",
+    "issued": "Rhoddwyd ar {day}",
+    "note": "Nodyn (ei angen i ddileu)",
+    "close": "Cau",
+    "give": "Rhoi eitem",
+    "issue": "Rhoi",
+    "add": "Ychwanegu eitem",
+    "kind": "Math",
+    "tag": "Label",
+    "owner_role": "Rôl berchennog"
   }
 }
