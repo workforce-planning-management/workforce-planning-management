@@ -64,7 +64,11 @@ async fn skill_exists(ctx: &AppContext, pid: Uuid) -> Result<bool> {
 
 /// `POST /api/skill-mappings` — state a mapping. The pair is unique; both skills must exist.
 #[debug_handler]
-async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(payload): Json<Payload>) -> Result<Response> {
+async fn create(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(payload): Json<Payload>,
+) -> Result<Response> {
     ensure_valid(&rules::problems(
         payload.from_skill_pid,
         payload.to_skill_pid,
@@ -72,7 +76,9 @@ async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(paylo
         &payload.basis,
         &payload.source,
     ))?;
-    if !skill_exists(&ctx, payload.from_skill_pid).await? || !skill_exists(&ctx, payload.to_skill_pid).await? {
+    if !skill_exists(&ctx, payload.from_skill_pid).await?
+        || !skill_exists(&ctx, payload.to_skill_pid).await?
+    {
         return Err(unprocessable("both skills must exist"));
     }
     let clash = skill_mappings::Entity::find()
@@ -81,7 +87,9 @@ async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(paylo
         .count(&ctx.db)
         .await?;
     if clash > 0 {
-        return Err(unprocessable("this pair is already mapped; remove the mapping to state it again"));
+        return Err(unprocessable(
+            "this pair is already mapped; remove the mapping to state it again",
+        ));
     }
     let pid = Uuid::new_v4();
     let txn = ctx.db.begin().await?;
@@ -98,22 +106,44 @@ async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(paylo
     }
     .insert(&txn)
     .await?;
-    Audit::record(&txn, "skill_mapping", pid, "skill_mapping_stated", caller.actor(), Some(json!({ "confidence": payload.confidence }))).await?;
+    Audit::record(
+        &txn,
+        "skill_mapping",
+        pid,
+        "skill_mapping_stated",
+        caller.actor(),
+        Some(json!({ "confidence": payload.confidence })),
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
 /// `DELETE /api/skill-mappings/{pid}` — withdraw a mapping; gap analysis stops using it at once.
 #[debug_handler]
-async fn remove(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>) -> Result<Response> {
+async fn remove(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+) -> Result<Response> {
     let row = skill_mappings::Entity::find()
         .filter(skill_mappings::Column::Pid.eq(pid))
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
     let txn = ctx.db.begin().await?;
-    skill_mappings::Entity::delete_by_id(row.id).exec(&txn).await?;
-    Audit::record(&txn, "skill_mapping", pid, "skill_mapping_withdrawn", caller.actor(), None).await?;
+    skill_mappings::Entity::delete_by_id(row.id)
+        .exec(&txn)
+        .await?;
+    Audit::record(
+        &txn,
+        "skill_mapping",
+        pid,
+        "skill_mapping_withdrawn",
+        caller.actor(),
+        None,
+    )
+    .await?;
     txn.commit().await?;
     format::empty_json()
 }

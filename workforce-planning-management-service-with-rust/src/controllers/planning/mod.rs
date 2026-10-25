@@ -88,8 +88,14 @@ pub fn routes() -> Routes {
         .add("/workforce-plans/{pid}/forecast", get(forecast))
         .add("/workforce-plans/{pid}/cost", get(cost))
         .add("/workforce-plans/{pid}/alignment", get(alignment))
-        .add("/workforce-plans/{pid}/target-organization", get(get_target).put(set_target))
-        .add("/workforce-plans/{pid}/organization-diff", get(organization_diff))
+        .add(
+            "/workforce-plans/{pid}/target-organization",
+            get(get_target).put(set_target),
+        )
+        .add(
+            "/workforce-plans/{pid}/organization-diff",
+            get(organization_diff),
+        )
         .add("/workforce-plans/{pid}/tolerances", get(list_tolerances))
         .add(
             "/workforce-plans/{pid}/escalations",

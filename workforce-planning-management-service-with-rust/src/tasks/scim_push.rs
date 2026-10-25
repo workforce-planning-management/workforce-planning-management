@@ -61,7 +61,8 @@ pub fn config_from_env() -> std::result::Result<Config, String> {
     Ok(Config {
         base_url: scim::check_base_url(&base)?,
         token,
-        organization: crate::compat::env_var("WPM_SCIM_ORGANIZATION").filter(|o| !o.trim().is_empty()),
+        organization: crate::compat::env_var("WPM_SCIM_ORGANIZATION")
+            .filter(|o| !o.trim().is_empty()),
     })
 }
 
@@ -103,10 +104,12 @@ async fn create(http: &reqwest::Client, cfg: &Config, body: &Value, external_id:
         .send()
         .await;
     match sent {
-        Ok(r) if r.status().is_success() => match r.json::<Value>().await.ok().as_ref().and_then(scim_id_of) {
-            Some(id) => Outcome::Sent(id),
-            None => Outcome::Failed("no id in the answer".to_string()),
-        },
+        Ok(r) if r.status().is_success() => {
+            match r.json::<Value>().await.ok().as_ref().and_then(scim_id_of) {
+                Some(id) => Outcome::Sent(id),
+                None => Outcome::Failed("no id in the answer".to_string()),
+            }
+        }
         Ok(r) if r.status() == reqwest::StatusCode::CONFLICT => {
             let found = http
                 .get(format!("{url}?{}", scim::lookup_query(external_id)))
@@ -147,9 +150,21 @@ async fn replace(http: &reqwest::Client, cfg: &Config, id: &str, body: &Value) -
 }
 
 /// What to keep after a push: the provider's id, the fingerprint, when it was sent, the failures and the next try.
-type Saved = (Option<String>, Option<String>, Option<DateTime<chrono::FixedOffset>>, i32, Option<DateTime<chrono::FixedOffset>>, Option<String>);
+type Saved = (
+    Option<String>,
+    Option<String>,
+    Option<DateTime<chrono::FixedOffset>>,
+    i32,
+    Option<DateTime<chrono::FixedOffset>>,
+    Option<String>,
+);
 
-async fn save(ctx: &AppContext, worker: Uuid, held: Option<scim_pushes::Model>, saved: Saved) -> Result<scim_pushes::Model> {
+async fn save(
+    ctx: &AppContext,
+    worker: Uuid,
+    held: Option<scim_pushes::Model>,
+    saved: Saved,
+) -> Result<scim_pushes::Model> {
     let (scim_id, body_hash, pushed_at, attempts, next_attempt_at, last_error) = saved;
     Ok(if let Some(old) = held {
         let mut active: scim_pushes::ActiveModel = old.into();
@@ -182,13 +197,19 @@ async fn save(ctx: &AppContext, worker: Uuid, held: Option<scim_pushes::Model>, 
 /// # Errors
 ///
 /// A database error. A provider failure is recorded and counted, not returned.
-pub async fn run(ctx: &AppContext, cfg: &Config, today: NaiveDate, now: DateTime<Utc>) -> Result<Summary> {
+pub async fn run(
+    ctx: &AppContext,
+    cfg: &Config,
+    today: NaiveDate,
+    now: DateTime<Utc>,
+) -> Result<Summary> {
     let mut query = workers::Entity::find();
     if let Some(org) = &cfg.organization {
         query = query.filter(workers::Column::OrganizationRef.eq(org));
     }
     let everyone = query.all(&ctx.db).await?;
-    let manager_of: HashMap<Uuid, Option<Uuid>> = everyone.iter().map(|w| (w.pid, w.manager_pid)).collect();
+    let manager_of: HashMap<Uuid, Option<Uuid>> =
+        everyone.iter().map(|w| (w.pid, w.manager_pid)).collect();
     let mut ordered: Vec<&workers::Model> = everyone.iter().collect();
     ordered.sort_by_key(|w| (depth(w.pid, &manager_of), w.id));
 
@@ -216,7 +237,11 @@ pub async fn run(ctx: &AppContext, cfg: &Config, today: NaiveDate, now: DateTime
             deleted: w.deleted_at.is_some(),
         };
         let held = state.get(&w.pid).cloned();
-        if held.as_ref().and_then(|h| h.next_attempt_at).is_some_and(|at| at > now) {
+        if held
+            .as_ref()
+            .and_then(|h| h.next_attempt_at)
+            .is_some_and(|at| at > now)
+        {
             summary.waiting += 1;
             continue;
         }
@@ -244,7 +269,9 @@ pub async fn run(ctx: &AppContext, cfg: &Config, today: NaiveDate, now: DateTime
                 continue;
             }
             (Step::Replace, Some(id)) => replace(&http, cfg, id, &body).await,
-            (Step::Create | Step::Replace, _) => create(&http, cfg, &body, &scim::external_id(&employment.pid)).await,
+            (Step::Create | Step::Replace, _) => {
+                create(&http, cfg, &body, &scim::external_id(&employment.pid)).await
+            }
         };
         let stamp = now.fixed_offset();
         let saved = match outcome {
@@ -294,7 +321,10 @@ impl Task for ScimPush {
         let summary = run(ctx, &cfg, Utc::now().date_naive(), Utc::now()).await?;
         println!("{}", json!(summary));
         if summary.failed > 0 {
-            return Err(Error::string(&format!("{} push(es) failed and will be retried", summary.failed)));
+            return Err(Error::string(&format!(
+                "{} push(es) failed and will be retried",
+                summary.failed
+            )));
         }
         Ok(())
     }

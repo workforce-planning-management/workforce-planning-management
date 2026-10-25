@@ -89,45 +89,94 @@ mod tests {
         assert_eq!(asset_problems("drone", "LT-1", "IT").len(), 1);
         assert_eq!(asset_problems("laptop", "  ", "IT").len(), 1);
         assert_eq!(asset_problems("laptop", "LT-1", &"x".repeat(61)).len(), 1);
-        assert_eq!(asset_problems("laptop", &"x".repeat(60), "IT"), Vec::<String>::new());
+        assert_eq!(
+            asset_problems("laptop", &"x".repeat(60), "IT"),
+            Vec::<String>::new()
+        );
     }
 
     #[test]
     fn an_issue_is_not_in_the_future_or_before_the_first_day() {
         let today = d("2026-10-24");
-        assert_eq!(issue_problems(today, today, d("2026-10-24")), Vec::<String>::new());
-        assert_eq!(issue_problems(d("2026-10-25"), today, d("2020-01-01")).len(), 1);
-        assert_eq!(issue_problems(d("2026-10-01"), today, d("2026-10-02")).len(), 1);
+        assert_eq!(
+            issue_problems(today, today, d("2026-10-24")),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            issue_problems(d("2026-10-25"), today, d("2020-01-01")).len(),
+            1
+        );
+        assert_eq!(
+            issue_problems(d("2026-10-01"), today, d("2026-10-02")).len(),
+            1
+        );
     }
 
     #[test]
     fn a_return_sits_between_the_issue_and_today() {
         let today = d("2026-10-24");
         let issued = d("2026-10-01");
-        assert_eq!(return_problems("returned", issued, issued, today, None), Vec::<String>::new());
-        assert_eq!(return_problems("returned", today, issued, today, None), Vec::<String>::new());
-        assert_eq!(return_problems("returned", d("2026-09-30"), issued, today, None).len(), 1);
-        assert_eq!(return_problems("returned", d("2026-10-25"), issued, today, None).len(), 1);
+        assert_eq!(
+            return_problems("returned", issued, issued, today, None),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            return_problems("returned", today, issued, today, None),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            return_problems("returned", d("2026-09-30"), issued, today, None).len(),
+            1
+        );
+        assert_eq!(
+            return_problems("returned", d("2026-10-25"), issued, today, None).len(),
+            1
+        );
         assert_eq!(return_problems("lost", today, issued, today, None).len(), 1);
     }
 
     #[test]
     fn a_write_off_needs_a_reason_and_a_return_does_not() {
         let today = d("2026-10-24");
-        assert_eq!(return_problems("written_off", today, today, today, None).len(), 1);
-        assert_eq!(return_problems("written_off", today, today, today, Some("   ")).len(), 1);
-        assert_eq!(return_problems("written_off", today, today, today, Some("lost on a train")), Vec::<String>::new());
-        assert_eq!(return_problems("returned", today, today, today, None), Vec::<String>::new());
-        assert_eq!(return_problems("returned", today, today, today, Some(&"x".repeat(301))).len(), 1);
+        assert_eq!(
+            return_problems("written_off", today, today, today, None).len(),
+            1
+        );
+        assert_eq!(
+            return_problems("written_off", today, today, today, Some("   ")).len(),
+            1
+        );
+        assert_eq!(
+            return_problems("written_off", today, today, today, Some("lost on a train")),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            return_problems("returned", today, today, today, None),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            return_problems("returned", today, today, today, Some(&"x".repeat(301))).len(),
+            1
+        );
     }
 
     #[test]
     fn nothing_here_is_a_place_a_cost_or_a_reading() {
         let src = include_str!("equipment.rs");
         let code = &src[..src.find("#[cfg(test)]").unwrap()];
-        for word in ["location", "latitude", "cost", "value", "telemetry", "usage"] {
+        for word in [
+            "location",
+            "latitude",
+            "cost",
+            "value",
+            "telemetry",
+            "usage",
+        ] {
             assert!(
-                !code.lines().filter(|l| !l.trim_start().starts_with("//")).any(|l| l.contains(word)),
+                !code
+                    .lines()
+                    .filter(|l| !l.trim_start().starts_with("//"))
+                    .any(|l| l.contains(word)),
                 "{word}"
             );
         }

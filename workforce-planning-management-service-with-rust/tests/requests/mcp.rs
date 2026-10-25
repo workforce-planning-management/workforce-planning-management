@@ -59,14 +59,13 @@ async fn tools_are_the_api_reads_and_a_call_that_cannot_be_audited_is_not_made()
         }
 
         // No audit, no call (WPM-D107).
-        ctx.db.execute_unprepared(
-            "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
-             CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()").await.unwrap();
+        crate::requests::ddl(&ctx, "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
+             CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()").await;
         let (status, refused) = rpc(&request, json!({ "jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": { "name": "ai_register", "arguments": {} } })).await;
         assert_eq!(status, 500, "{refused}");
         assert_eq!(refused["error"]["code"], -32603);
         assert!(refused.get("result").is_none(), "nothing was read");
-        ctx.db.execute_unprepared("DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await.unwrap();
+        crate::requests::ddl(&ctx, "DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await;
     })
     .await;
 }

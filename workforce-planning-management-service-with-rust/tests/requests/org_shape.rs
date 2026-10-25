@@ -6,7 +6,14 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn hire(request: &loco_rs::TestServer, org: &str, number: &str, title: &str, dept: &str, manager: Option<&str>) -> String {
+async fn hire(
+    request: &loco_rs::TestServer,
+    org: &str,
+    number: &str,
+    title: &str,
+    dept: &str,
+    manager: Option<&str>,
+) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({
@@ -20,7 +27,12 @@ async fn hire(request: &loco_rs::TestServer, org: &str, number: &str, title: &st
 }
 
 fn role<'a>(body: &'a Value, title: &str) -> &'a Value {
-    body["diff"]["roles"].as_array().unwrap().iter().find(|r| r["title"] == title).unwrap_or_else(|| panic!("{title}"))
+    body["diff"]["roles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["title"] == title)
+        .unwrap_or_else(|| panic!("{title}"))
 }
 
 #[tokio::test]

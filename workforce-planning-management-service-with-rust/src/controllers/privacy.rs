@@ -13,15 +13,17 @@ use super::{forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, announcement_reads, appraisal_nominations, appraisal_responses,
-    appraisals, assessments, benefit_enrollments, candidates, conversion_plans, cpd_entries,
-    development_plans, dotted_line_reports, emergency_contacts, engagement_decisions,
-    engagement_extensions, engagement_reminders, engagement_status_assessments,
-    entitlement_acknowledgements, equality_declarations, ergonomic_assessments, expense_claims,
-    expense_items, flexible_working_requests, group_members, handover_actions, leave_entitlements,
-    leave_requests, mentorships, mobility_interests, movements, notifications, path_enrollments,
-    pay_information_requests, payslips, pipeline_members, post_fundings, professional_registrations, positions, program_placements, scim_pushes, asset_issues, policy_acknowledgements, credential_issuances,
-    resignations, reviews, rota_members, rota_overrides, rota_swap_requests, shift_assignments,
-    time_entries, training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
+    appraisals, assessments, asset_issues, benefit_enrollments, candidates, conversion_plans,
+    cpd_entries, credential_issuances, development_plans, dotted_line_reports, emergency_contacts,
+    engagement_decisions, engagement_extensions, engagement_reminders,
+    engagement_status_assessments, entitlement_acknowledgements, equality_declarations,
+    ergonomic_assessments, expense_claims, expense_items, flexible_working_requests, group_members,
+    handover_actions, leave_entitlements, leave_requests, mentorships, mobility_interests,
+    movements, notifications, path_enrollments, pay_information_requests, payslips,
+    pipeline_members, policy_acknowledgements, positions, post_fundings,
+    professional_registrations, program_placements, resignations, reviews, rota_members,
+    rota_overrides, rota_swap_requests, scim_pushes, shift_assignments, time_entries,
+    training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
     worker_contractor_details, worker_framework_roles, worker_health_records, worker_job_levels,
     worker_pay_positions, worker_skill_history, worker_skills, workers,
 };
@@ -281,7 +283,9 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM policy_acknowledgements WHERE worker_pid = '{epid}'"),
         // A credential the person holds cannot be taken back, so the issuance is revoked and cut from the person (its position in the
         // revocation list stays, or a later issuance would take the same place).
-        format!("UPDATE credential_issuances SET worker_pid = '00000000-0000-0000-0000-000000000000', source_pid = '00000000-0000-0000-0000-000000000000', revoked_at = COALESCE(revoked_at, now()), revoked_by = COALESCE(revoked_by, 'erasure') WHERE worker_pid = '{epid}'"),
+        format!(
+            "UPDATE credential_issuances SET worker_pid = '00000000-0000-0000-0000-000000000000', source_pid = '00000000-0000-0000-0000-000000000000', revoked_at = COALESCE(revoked_at, now()), revoked_by = COALESCE(revoked_by, 'erasure') WHERE worker_pid = '{epid}'"
+        ),
         // A seat outlives the person who held it (WPM-D104): only the link is cut.
         format!("UPDATE positions SET holder_worker_pid = NULL WHERE holder_worker_pid = '{epid}'"),
         format!("DELETE FROM webhook_deliveries WHERE subject = 'worker:{epid}'"),

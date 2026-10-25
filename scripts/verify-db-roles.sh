@@ -60,7 +60,11 @@ TAMPER="requests::audit_chain::removing_an_entry_from_the_middle_is_found_and_th
 passed=0; refused_ok=0; bad=0
 for t in $TESTS; do
   admin -c "DROP DATABASE IF EXISTS $RUN_DB WITH (FORCE)" -c "CREATE DATABASE $RUN_DB TEMPLATE $TEMPLATE"
-  out="$(LOCO_ENV=test DB_CONNECT_TIMEOUT=10000 WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false WPM_TEST_REDIS_URL="${WPM_TEST_REDIS_URL:-}" \
+  # A few tests install a trigger that refuses audit rows (WPM-D107). That is DDL, which wpm_app must not run, so the test sends it through
+  # WPM_TEST_DDL_URL, the schema owner's connection to this same clone; the service under test still runs as wpm_app. WPM_TEST_REDIS_URL, if
+  # you set it, passes through on its own; it is not set to an empty string here, which the Redis test would take as a (broken) URL.
+  out="$(LOCO_ENV=test DB_CONNECT_TIMEOUT=10000 WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false \
+    WPM_TEST_DDL_URL="postgres://wpm_migrator:$MIGRATOR_PW@$HOSTPORT/$RUN_DB" \
     DATABASE_URL="postgres://wpm_app:$APP_PW@$HOSTPORT/$RUN_DB" \
     cargo test --test mod -q -- --ignored --exact "$t" --test-threads=1 2>&1)" && rc=0 || rc=$?
   if [[ " $TAMPER " == *" $t "* ]]; then

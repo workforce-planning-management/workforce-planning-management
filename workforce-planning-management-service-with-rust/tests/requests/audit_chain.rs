@@ -218,8 +218,7 @@ async fn a_change_whose_audit_row_fails_is_not_kept() {
     crate::requests::request_open(|request, ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string();
         // The audit insert fails for anything named with this test's tag, and only that (WPM-T250).
-        ctx.db
-            .execute_unprepared(&format!(
+        crate::requests::ddl(&ctx, &format!(
                 "CREATE FUNCTION refuse_atom_{tag}() RETURNS trigger LANGUAGE plpgsql AS $$
                  BEGIN
                    IF NEW.entity = 'skill' AND EXISTS (SELECT 1 FROM skills WHERE pid = NEW.entity_pid AND name LIKE 'ATOM{tag}%')
@@ -230,9 +229,7 @@ async fn a_change_whose_audit_row_fails_is_not_kept() {
                  END $$;
                  CREATE TRIGGER refuse_atom_{tag} BEFORE INSERT ON audit_logs
                    FOR EACH ROW EXECUTE FUNCTION refuse_atom_{tag}();"
-            ))
-            .await
-            .unwrap();
+            )).await;
 
         // A new skill whose audit row fails is not created.
         let refused = request
@@ -265,12 +262,9 @@ async fn a_change_whose_audit_row_fails_is_not_kept() {
         let listed: Value = request.get(&courses).await.json();
         assert_eq!(listed["courses"].as_array().unwrap().len(), 0, "the course was kept without its audit row");
 
-        ctx.db
-            .execute_unprepared(&format!(
+        crate::requests::ddl(&ctx, &format!(
                 "DROP TRIGGER refuse_atom_{tag} ON audit_logs; DROP FUNCTION refuse_atom_{tag}();"
-            ))
-            .await
-            .unwrap();
+            )).await;
     })
     .await;
 }

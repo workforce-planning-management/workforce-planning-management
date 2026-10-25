@@ -13,7 +13,14 @@ use serde::Serialize;
 use crate::rules::lifecycle;
 
 /// The states of a position.
-pub const STATES: &[&str] = &["planned", "approved", "open", "filled", "frozen", "abolished"];
+pub const STATES: &[&str] = &[
+    "planned",
+    "approved",
+    "open",
+    "filled",
+    "frozen",
+    "abolished",
+];
 
 /// The legal moves. `abolished` has none out. `open` is a seat with a requisition, `filled` a seat with a holder.
 pub const MOVES: &[(&str, &str)] = &[
@@ -26,7 +33,7 @@ pub const MOVES: &[(&str, &str)] = &[
     ("open", "approved"), // the requisition was withdrawn
     ("open", "frozen"),
     ("open", "abolished"),
-    ("filled", "open"), // the holder left and the seat is being filled again
+    ("filled", "open"),     // the holder left and the seat is being filled again
     ("filled", "approved"), // the holder left and nothing is being done yet
     ("filled", "frozen"),
     ("filled", "abolished"),
@@ -57,9 +64,9 @@ pub fn check_move(from: &str, to: &str, facts: Facts) -> Result<(), String> {
         "filled" if !facts.has_holder => Err(format!(
             "position is {from:?}; it can be filled only once a worker is linked as its holder"
         )),
-        "open" | "approved" if from == "filled" && facts.has_holder => Err(
-            "position is \"filled\"; unlink its holder before it is made vacant".to_string(),
-        ),
+        "open" | "approved" if from == "filled" && facts.has_holder => {
+            Err("position is \"filled\"; unlink its holder before it is made vacant".to_string())
+        }
         "abolished" if facts.has_holder => Err(format!(
             "position is {from:?}; unlink its holder first, so abolishing it settles what happens to the worker (WPM-D104)"
         )),
@@ -96,9 +103,17 @@ pub fn validate(
             out.push(format!("a {funding_kind} funding needs the date it ends"));
         }
         match (funding_kind, programme_ref) {
-            ("programme", None) => out.push("a programme funding names the programme (a thing: reference)".to_string()),
-            ("programme", Some(p)) if !is_thing(p) => out.push("programme_ref is thing:<uuid>".to_string()),
-            (k, Some(_)) if k != "programme" => out.push("programme_ref is only for a programme funding".to_string()),
+            ("programme", None) => {
+                out.push(
+                    "a programme funding names the programme (a thing: reference)".to_string(),
+                );
+            }
+            ("programme", Some(p)) if !is_thing(p) => {
+                out.push("programme_ref is thing:<uuid>".to_string());
+            }
+            (k, Some(_)) if k != "programme" => {
+                out.push("programme_ref is only for a programme funding".to_string());
+            }
             _ => {}
         }
     }
@@ -106,7 +121,8 @@ pub fn validate(
 }
 
 fn is_thing(s: &str) -> bool {
-    s.strip_prefix("thing:").is_some_and(|id| uuid::Uuid::parse_str(id).is_ok())
+    s.strip_prefix("thing:")
+        .is_some_and(|id| uuid::Uuid::parse_str(id).is_ok())
 }
 
 /// Who holds a position, as far as the arithmetic needs to know.
@@ -162,15 +178,25 @@ pub struct Gap {
 pub fn gap(s: &Seat) -> Gap {
     let budget = i64::from(s.budget_fte_percent);
     match s.holding {
-        Holding::Vacant => Gap { vacant: Fte::Known { percent: budget }, over: Fte::Known { percent: 0 } },
+        Holding::Vacant => Gap {
+            vacant: Fte::Known { percent: budget },
+            over: Fte::Known { percent: 0 },
+        },
         Holding::Held(held) => {
             let held = i64::from(held);
             Gap {
-                vacant: Fte::Known { percent: (budget - held).max(0) },
-                over: Fte::Known { percent: (held - budget).max(0) },
+                vacant: Fte::Known {
+                    percent: (budget - held).max(0),
+                },
+                over: Fte::Known {
+                    percent: (held - budget).max(0),
+                },
             }
         }
-        Holding::HeldUnknown => Gap { vacant: Fte::Unknown, over: Fte::Unknown },
+        Holding::HeldUnknown => Gap {
+            vacant: Fte::Unknown,
+            over: Fte::Unknown,
+        },
     }
 }
 
@@ -228,15 +254,26 @@ pub fn establishment(seats: &[Seat], floor: Option<usize>) -> Vec<CostCentre> {
                 *by_state.entry(s.state.clone()).or_insert(0) += 1;
             }
             let zero = Fte::Known { percent: 0 };
-            let (mut budgeted, mut held, mut vacant, mut over, mut frozen_vacant) = (zero, zero, zero, zero, zero);
+            let (mut budgeted, mut held, mut vacant, mut over, mut frozen_vacant) =
+                (zero, zero, zero, zero, zero);
             for s in &counted {
                 let g = gap(s);
-                budgeted = add(budgeted, Fte::Known { percent: i64::from(s.budget_fte_percent) });
-                held = add(held, match s.holding {
-                    Holding::Vacant => zero,
-                    Holding::Held(f) => Fte::Known { percent: i64::from(f) },
-                    Holding::HeldUnknown => Fte::Unknown,
-                });
+                budgeted = add(
+                    budgeted,
+                    Fte::Known {
+                        percent: i64::from(s.budget_fte_percent),
+                    },
+                );
+                held = add(
+                    held,
+                    match s.holding {
+                        Holding::Vacant => zero,
+                        Holding::Held(f) => Fte::Known {
+                            percent: i64::from(f),
+                        },
+                        Holding::HeldUnknown => Fte::Unknown,
+                    },
+                );
                 vacant = add(vacant, g.vacant);
                 over = add(over, g.over);
                 if s.state == "frozen" {
@@ -263,10 +300,18 @@ pub fn establishment(seats: &[Seat], floor: Option<usize>) -> Vec<CostCentre> {
 mod tests {
     use super::*;
 
-    const NOTHING: Facts = Facts { has_requisition: false, has_holder: false };
+    const NOTHING: Facts = Facts {
+        has_requisition: false,
+        has_holder: false,
+    };
 
     fn seat(cc: &str, state: &str, budget: i32, holding: Holding) -> Seat {
-        Seat { cost_centre: cc.into(), state: state.into(), budget_fte_percent: budget, holding }
+        Seat {
+            cost_centre: cc.into(),
+            state: state.into(),
+            budget_fte_percent: budget,
+            holding,
+        }
     }
 
     #[test]
@@ -277,10 +322,16 @@ mod tests {
         }
         assert!(MOVES.iter().all(|(from, _)| *from != "abolished"));
         for s in STATES {
-            assert!(MOVES.iter().any(|(_, to)| to == s) || *s == "planned", "{s} can be reached");
+            assert!(
+                MOVES.iter().any(|(_, to)| to == s) || *s == "planned",
+                "{s} can be reached"
+            );
         }
         let mut seen = std::collections::BTreeSet::new();
-        assert!(MOVES.iter().all(|m| seen.insert(*m)), "no move is listed twice");
+        assert!(
+            MOVES.iter().all(|m| seen.insert(*m)),
+            "no move is listed twice"
+        );
     }
 
     #[test]
@@ -295,24 +346,51 @@ mod tests {
 
     #[test]
     fn open_needs_a_requisition_and_filled_needs_a_holder() {
-        let req = Facts { has_requisition: true, has_holder: false };
-        let held = Facts { has_requisition: true, has_holder: true };
-        assert!(check_move("approved", "open", NOTHING).unwrap_err().contains("requisition"));
+        let req = Facts {
+            has_requisition: true,
+            has_holder: false,
+        };
+        let held = Facts {
+            has_requisition: true,
+            has_holder: true,
+        };
+        assert!(
+            check_move("approved", "open", NOTHING)
+                .unwrap_err()
+                .contains("requisition")
+        );
         assert!(check_move("approved", "open", req).is_ok());
-        assert!(check_move("open", "filled", req).unwrap_err().contains("holder"));
+        assert!(
+            check_move("open", "filled", req)
+                .unwrap_err()
+                .contains("holder")
+        );
         assert!(check_move("open", "filled", held).is_ok());
     }
 
     #[test]
     fn a_held_seat_is_not_made_vacant_or_abolished_until_the_holder_is_unlinked() {
-        let held = Facts { has_requisition: true, has_holder: true };
-        let left = Facts { has_requisition: true, has_holder: false };
+        let held = Facts {
+            has_requisition: true,
+            has_holder: true,
+        };
+        let left = Facts {
+            has_requisition: true,
+            has_holder: false,
+        };
         assert!(check_move("filled", "approved", held).is_err());
         assert!(check_move("filled", "open", held).is_err());
         assert!(check_move("filled", "open", left).is_ok());
-        assert!(check_move("filled", "abolished", held).unwrap_err().contains("worker"));
+        assert!(
+            check_move("filled", "abolished", held)
+                .unwrap_err()
+                .contains("worker")
+        );
         assert!(check_move("filled", "abolished", left).is_ok());
-        assert!(check_move("filled", "frozen", held).is_ok(), "a frozen seat may keep its holder");
+        assert!(
+            check_move("filled", "frozen", held).is_ok(),
+            "a frozen seat may keep its holder"
+        );
     }
 
     #[test]
@@ -329,24 +407,59 @@ mod tests {
         assert!(bad(validate("CC", 50, "time_limited", None, None)).contains("date it ends"));
         assert!(bad(validate("CC", 50, "external", None, None)).contains("date it ends"));
         assert!(bad(validate("CC", 50, "programme", None, None)).contains("names the programme"));
-        assert!(bad(validate("CC", 50, "programme", None, Some("programme-7"))).contains("thing:<uuid>"));
-        assert!(bad(validate("CC", 50, "core", None, Some(thing))).contains("only for a programme"));
+        assert!(
+            bad(validate("CC", 50, "programme", None, Some("programme-7")))
+                .contains("thing:<uuid>")
+        );
+        assert!(
+            bad(validate("CC", 50, "core", None, Some(thing))).contains("only for a programme")
+        );
         assert!(bad(validate("CC", 50, "mystery", None, None)).contains("kind"));
     }
 
     #[test]
     fn vacancy_and_over_are_arithmetic_on_one_position() {
         let g = |s: &Seat| gap(s);
-        assert_eq!(g(&seat("A", "open", 80, Holding::Vacant)), Gap { vacant: Fte::Known { percent: 80 }, over: Fte::Known { percent: 0 } });
-        assert_eq!(g(&seat("A", "filled", 80, Holding::Held(50))), Gap { vacant: Fte::Known { percent: 30 }, over: Fte::Known { percent: 0 } });
-        assert_eq!(g(&seat("A", "filled", 50, Holding::Held(100))), Gap { vacant: Fte::Known { percent: 0 }, over: Fte::Known { percent: 50 } });
-        assert_eq!(g(&seat("A", "filled", 100, Holding::Held(100))), Gap { vacant: Fte::Known { percent: 0 }, over: Fte::Known { percent: 0 } });
+        assert_eq!(
+            g(&seat("A", "open", 80, Holding::Vacant)),
+            Gap {
+                vacant: Fte::Known { percent: 80 },
+                over: Fte::Known { percent: 0 }
+            }
+        );
+        assert_eq!(
+            g(&seat("A", "filled", 80, Holding::Held(50))),
+            Gap {
+                vacant: Fte::Known { percent: 30 },
+                over: Fte::Known { percent: 0 }
+            }
+        );
+        assert_eq!(
+            g(&seat("A", "filled", 50, Holding::Held(100))),
+            Gap {
+                vacant: Fte::Known { percent: 0 },
+                over: Fte::Known { percent: 50 }
+            }
+        );
+        assert_eq!(
+            g(&seat("A", "filled", 100, Holding::Held(100))),
+            Gap {
+                vacant: Fte::Known { percent: 0 },
+                over: Fte::Known { percent: 0 }
+            }
+        );
     }
 
     #[test]
     fn a_holder_with_no_fte_recorded_is_an_unknown_vacancy_not_the_whole_budget() {
         let g = gap(&seat("A", "filled", 100, Holding::HeldUnknown));
-        assert_eq!(g, Gap { vacant: Fte::Unknown, over: Fte::Unknown });
+        assert_eq!(
+            g,
+            Gap {
+                vacant: Fte::Unknown,
+                over: Fte::Unknown
+            }
+        );
     }
 
     #[test]
@@ -373,16 +486,27 @@ mod tests {
         let a = &establishment(&seats, None)[0];
         assert_eq!(a.positions, 2);
         assert_eq!(a.budgeted, Fte::Known { percent: 150 });
-        assert_eq!(a.frozen_vacant, Fte::Known { percent: 50 }, "not to be filled for now");
+        assert_eq!(
+            a.frozen_vacant,
+            Fte::Known { percent: 50 },
+            "not to be filled for now"
+        );
         assert_eq!(a.by_state["planned"], 1);
         assert_eq!(a.by_state["abolished"], 1);
     }
 
     #[test]
     fn one_unknown_holder_makes_the_centre_unknown_in_what_it_touches() {
-        let seats = vec![seat("A", "filled", 100, Holding::HeldUnknown), seat("A", "open", 100, Holding::Vacant)];
+        let seats = vec![
+            seat("A", "filled", 100, Holding::HeldUnknown),
+            seat("A", "open", 100, Holding::Vacant),
+        ];
         let a = &establishment(&seats, None)[0];
-        assert_eq!(a.budgeted, Fte::Known { percent: 200 }, "the budget does not depend on the holder");
+        assert_eq!(
+            a.budgeted,
+            Fte::Known { percent: 200 },
+            "the budget does not depend on the holder"
+        );
         assert_eq!(a.held, Fte::Unknown);
         assert_eq!(a.vacant, Fte::Unknown);
         assert_eq!(a.over, Fte::Unknown);
@@ -390,12 +514,22 @@ mod tests {
 
     #[test]
     fn a_small_centre_shows_no_holder_derived_figure_to_a_caller_under_the_floor() {
-        let seats = vec![seat("A", "filled", 100, Holding::Held(60)), seat("B", "open", 100, Holding::Vacant)];
+        let seats = vec![
+            seat("A", "filled", 100, Holding::Held(60)),
+            seat("B", "open", 100, Holding::Vacant),
+        ];
         let shown = establishment(&seats, Some(2));
         for c in &shown {
             assert_eq!(c.positions, 1);
-            assert_eq!(c.budgeted, Fte::Known { percent: 100 }, "the budget names no one");
-            assert_eq!((c.held, c.vacant, c.over), (Fte::Withheld, Fte::Withheld, Fte::Withheld));
+            assert_eq!(
+                c.budgeted,
+                Fte::Known { percent: 100 },
+                "the budget names no one"
+            );
+            assert_eq!(
+                (c.held, c.vacant, c.over),
+                (Fte::Withheld, Fte::Withheld, Fte::Withheld)
+            );
         }
         let hr = establishment(&seats, None);
         assert_eq!(hr[0].held, Fte::Known { percent: 60 });
@@ -413,10 +547,21 @@ mod tests {
 
     #[test]
     fn centres_come_out_in_order_and_the_output_names_no_one() {
-        let seats = vec![seat("B", "open", 100, Holding::Vacant), seat("A", "open", 100, Holding::Vacant)];
+        let seats = vec![
+            seat("B", "open", 100, Holding::Vacant),
+            seat("A", "open", 100, Holding::Vacant),
+        ];
         let all = establishment(&seats, None);
-        assert_eq!(all.iter().map(|c| c.cost_centre.as_str()).collect::<Vec<_>>(), ["A", "B"]);
+        assert_eq!(
+            all.iter()
+                .map(|c| c.cost_centre.as_str())
+                .collect::<Vec<_>>(),
+            ["A", "B"]
+        );
         let text = serde_json::to_string(&all).unwrap();
-        assert!(!text.contains("worker") && !text.contains("holder"), "{text}");
+        assert!(
+            !text.contains("worker") && !text.contains("holder"),
+            "{text}"
+        );
     }
 }

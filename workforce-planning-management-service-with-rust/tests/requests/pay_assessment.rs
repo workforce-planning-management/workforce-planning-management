@@ -231,20 +231,12 @@ async fn when_the_audit_row_cannot_be_written_the_write_is_refused_and_not_kept(
         let record = json!({ "organization_ref": org, "category": "Engineering", "reported_on": "2026-01-01", "remedied_on": "2026-02-01" });
         let category = json!({ "organization_ref": org, "name": "Engineering", "basis": "Same skills, effort, responsibility and conditions.", "job_titles": ["Engineer"] });
         // An audit table that refuses every insert.
-        ctx.db
-            .execute_unprepared(
-                "CREATE OR REPLACE FUNCTION wpm_refuse_audit() RETURNS trigger AS $$
+        crate::requests::ddl(&ctx, "CREATE OR REPLACE FUNCTION wpm_refuse_audit() RETURNS trigger AS $$
                  BEGIN RAISE EXCEPTION 'the audit trail is unavailable'; END; $$ LANGUAGE plpgsql;
-                 CREATE TRIGGER aa_refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION wpm_refuse_audit();",
-            )
-            .await
-            .unwrap();
+                 CREATE TRIGGER aa_refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION wpm_refuse_audit();",).await;
         let put = request.put("/api/pay-transparency/assessment-records").json(&record).await;
         let post = request.post("/api/pay-categories").json(&category).await;
-        ctx.db
-            .execute_unprepared("DROP TRIGGER IF EXISTS aa_refuse_audit ON audit_logs; DROP FUNCTION IF EXISTS wpm_refuse_audit();")
-            .await
-            .unwrap();
+        crate::requests::ddl(&ctx, "DROP TRIGGER IF EXISTS aa_refuse_audit ON audit_logs; DROP FUNCTION IF EXISTS wpm_refuse_audit();").await;
         assert!(put.status_code().is_server_error(), "refused, not accepted: {}", put.status_code());
         assert!(post.status_code().is_server_error(), "refused, not accepted: {}", post.status_code());
         // Nothing of either change was kept.

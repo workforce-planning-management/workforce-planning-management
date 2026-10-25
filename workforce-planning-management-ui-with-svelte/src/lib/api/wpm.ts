@@ -2615,7 +2615,10 @@ export type OrganizationDiff =
     };
 
 /** The live structure of a plan's organization against the plan's target, by role (WPM-R153). */
-export function organizationDiff(pid: string, init?: FetchLike): Promise<OrganizationDiff> {
+export function organizationDiff(
+  pid: string,
+  init?: FetchLike,
+): Promise<OrganizationDiff> {
   return api(`/workforce-plans/${pid}/organization-diff`, init);
 }
 
@@ -4847,9 +4850,12 @@ export function listMyCredentials(
 }
 
 /** Issue a credential for one of the caller's own verified CPD entries. The signed credential comes back once. */
-export function issueMyCredential(
-  cpdEntryPid: string,
-): Promise<{ pid: string; status_index: number; format: string; credential: string }> {
+export function issueMyCredential(cpdEntryPid: string): Promise<{
+  pid: string;
+  status_index: number;
+  format: string;
+  credential: string;
+}> {
   return api("/me/credentials", {
     method: "POST",
     body: { cpd_entry_pid: cpdEntryPid },
@@ -4864,7 +4870,12 @@ export function revokeMyCredential(
 }
 
 /** How sure a skills mapping is, and what it rests on (mirror `rules::crosswalk`). */
-export const MAPPING_CONFIDENCES = ["exact", "close", "broader", "narrower"] as const;
+export const MAPPING_CONFIDENCES = [
+  "exact",
+  "close",
+  "broader",
+  "narrower",
+] as const;
 export const MAPPING_BASES = ["authority", "judgement"] as const;
 
 export type SkillMapping = {
@@ -4903,14 +4914,21 @@ export function deleteSkillMapping(pid: string): Promise<unknown> {
 export const POLICY_AUDIENCES = ["all", "department", "job_title"] as const;
 
 export type PolicyVersion = MyPolicies["policies"][number]["version"];
-export type PolicyWithVersions = { pid: string; name: string; versions: PolicyVersion[] };
+export type PolicyWithVersions = {
+  pid: string;
+  name: string;
+  versions: PolicyVersion[];
+};
 
 /** The organization's policies and every version. */
 export function listPolicies(
   organization: string,
   init?: FetchLike,
 ): Promise<{ policies: PolicyWithVersions[] }> {
-  return api(`/policies?organization=${encodeURIComponent(organization)}`, init);
+  return api(
+    `/policies?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
 }
 
 export function createPolicy(body: {
@@ -4949,7 +4967,11 @@ export function getPolicyAcknowledgements(
   init?: FetchLike,
 ): Promise<{
   version: PolicyVersion;
-  people: Array<{ worker_pid: string; worker_number: string; acknowledged_on: string | null }>;
+  people: Array<{
+    worker_pid: string;
+    worker_number: string;
+    acknowledged_on: string | null;
+  }>;
 }> {
   return api(`/policy-versions/${versionPid}/acknowledgements`, init);
 }
@@ -4989,7 +5011,8 @@ export type PayRangeOutlier =
   | { kind: "below"; delta_bp: number }
   | { kind: "unknown" };
 
-export type PayRangeLeft = { kind: "exactly"; workers: number } | { kind: "under_floor" };
+export type PayRangeLeft =
+  { kind: "exactly"; workers: number } | { kind: "under_floor" };
 
 export type PayRange = {
   organization: string;
@@ -5003,7 +5026,11 @@ export type PayRange = {
     overall: PayRangeFigure<PayRangeStat>;
     groupings: Array<{
       by: "band" | "level" | "department" | "location";
-      groups: Array<{ key: string; figure: PayRangeFigure<PayRangeStat>; outlier: PayRangeOutlier }>;
+      groups: Array<{
+        key: string;
+        figure: PayRangeFigure<PayRangeStat>;
+        outlier: PayRangeOutlier;
+      }>;
     }>;
     excluded: { no_pay: PayRangeLeft; no_band: PayRangeLeft };
   };
@@ -5034,7 +5061,10 @@ export function listPayCategories(
   organization: string,
   init?: FetchLike,
 ): Promise<PayCategory[]> {
-  return api(`/pay-categories?organization=${encodeURIComponent(organization)}`, init);
+  return api(
+    `/pay-categories?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
 }
 
 export type PayCategoryBody = {
@@ -5044,11 +5074,16 @@ export type PayCategoryBody = {
   job_titles: string[];
 };
 
-export function createPayCategory(body: PayCategoryBody): Promise<{ pid: string }> {
+export function createPayCategory(
+  body: PayCategoryBody,
+): Promise<{ pid: string }> {
   return api("/pay-categories", { method: "POST", body });
 }
 
-export function changePayCategory(pid: string, body: PayCategoryBody): Promise<{ pid: string }> {
+export function changePayCategory(
+  pid: string,
+  body: PayCategoryBody,
+): Promise<{ pid: string }> {
   return api(`/pay-categories/${pid}`, { method: "PUT", body });
 }
 
@@ -5060,17 +5095,31 @@ export function removePayCategory(pid: string): Promise<unknown> {
 export type GapFigure<T> =
   | { status: "shown"; value: T }
   | { status: "withheld" }
-  | { status: "unknown"; value: "no_workers" | "one_sided" | "no_base" | "no_category" | "no_sex_recorded" | "variable_not_recorded" };
+  | {
+      status: "unknown";
+      value:
+        | "no_workers"
+        | "one_sided"
+        | "no_base"
+        | "no_category"
+        | "no_sex_recorded"
+        | "variable_not_recorded";
+    };
 
 export type Gap = { female_minor: number; male_minor: number; gap_bp: number };
-export type Excluded = { status: "exactly"; value: number } | { status: "under_floor" };
+export type Excluded =
+  { status: "exactly"; value: number } | { status: "under_floor" };
 
 export type PayGapReport = {
   organization: string;
   as_of: string;
   currency: string | null;
   basis: { pay: string; variable: string; variable_gap_taken_over: string };
-  reporting: { every_years: number; first_report_on: string; next_report_on: string } | null;
+  reporting: {
+    every_years: number;
+    first_report_on: string;
+    next_report_on: string;
+  } | null;
   derivation: string;
   report: {
     floor: number;
@@ -5080,7 +5129,11 @@ export type PayGapReport = {
     median_variable_gap: GapFigure<Gap>;
     receiving_variable: GapFigure<{ female_bp: number; male_bp: number }>;
     quartiles: Array<GapFigure<{ female_bp: number; male_bp: number }>>;
-    categories: Array<{ category: string; basic: GapFigure<Gap>; variable: GapFigure<Gap> }>;
+    categories: Array<{
+      category: string;
+      basic: GapFigure<Gap>;
+      variable: GapFigure<Gap>;
+    }>;
     exclusions: {
       no_sex_declared: Excluded;
       sex_not_female_or_male: Excluded;
@@ -5107,11 +5160,17 @@ export function getPayGapReport(
   options: GapQuery = {},
   init?: FetchLike,
 ): Promise<PayGapReport> {
-  return api(`/pay-transparency/gap-report?${gapQuery(organization, options)}`, init);
+  return api(
+    `/pay-transparency/gap-report?${gapQuery(organization, options)}`,
+    init,
+  );
 }
 
 /** Where the CSV of the same report is read (a link; the browser downloads it). */
-export function payGapCsvUrl(organization: string, options: GapQuery = {}): string {
+export function payGapCsvUrl(
+  organization: string,
+  options: GapQuery = {},
+): string {
   return `/api/proxy/pay-transparency/gap-report/csv?${gapQuery(organization, options)}`;
 }
 
@@ -5133,12 +5192,17 @@ export type PayInformationQueueItem = PayInformationRequest & {
   organization_ref: string;
 };
 
-export function listMyPayInformationRequests(init?: FetchLike): Promise<PayInformationRequest[]> {
+export function listMyPayInformationRequests(
+  init?: FetchLike,
+): Promise<PayInformationRequest[]> {
   return api("/me/pay-information-requests", init);
 }
 
 /** Ask for your own pay level and the average pay, by sex, of your category of workers. One request waits at a time. */
-export function askForPayInformation(): Promise<{ pid: string; due_on: string }> {
+export function askForPayInformation(): Promise<{
+  pid: string;
+  due_on: string;
+}> {
   return api("/me/pay-information-requests", { method: "POST" });
 }
 
@@ -5181,7 +5245,9 @@ export function getPayInformationAnswer(
 export function markPayInformationAnswered(
   requestPid: string,
 ): Promise<PayInformationRequest> {
-  return api(`/pay-information-requests/${requestPid}/answered`, { method: "POST" });
+  return api(`/pay-information-requests/${requestPid}/answered`, {
+    method: "POST",
+  });
 }
 
 /** The closed outcomes of a joint pay assessment (mirror `rules::joint_assessment::OUTCOMES`). */
@@ -5193,7 +5259,10 @@ export const ASSESSMENT_OUTCOMES = [
 
 export type AssessmentSignal =
   | { status: "unknown"; why: "gap_withheld" | "gap_unknown" }
-  | { status: "not_due"; why: "below_threshold" | "justified" | "remedied" | "assessed" }
+  | {
+      status: "not_due";
+      why: "below_threshold" | "justified" | "remedied" | "assessed";
+    }
   | { status: "pending"; remedy_by: string | null }
   | { status: "due"; remedy_by: string };
 
@@ -5231,7 +5300,10 @@ export function getJointAssessment(
   options: GapQuery = {},
   init?: FetchLike,
 ): Promise<JointAssessment> {
-  return api(`/pay-transparency/joint-assessment?${gapQuery(organization, options)}`, init);
+  return api(
+    `/pay-transparency/joint-assessment?${gapQuery(organization, options)}`,
+    init,
+  );
 }
 
 export type AssessmentRecordBody = {
@@ -5247,7 +5319,9 @@ export type AssessmentRecordBody = {
 };
 
 /** Record, for a category and a report date, the justification, the remedy and the assessment. Replaces what was there. */
-export function putAssessmentRecord(body: AssessmentRecordBody): Promise<{ pid: string }> {
+export function putAssessmentRecord(
+  body: AssessmentRecordBody,
+): Promise<{ pid: string }> {
   return api("/pay-transparency/assessment-records", { method: "PUT", body });
 }
 
@@ -5261,10 +5335,17 @@ export const AI_CATEGORIES = [
 ] as const;
 
 /** A recorded value, or the plain fact that nothing is recorded. */
-export type AiField<T> = { status: "unknown" } | { status: "recorded"; value: T };
+export type AiField<T> =
+  { status: "unknown" } | { status: "recorded"; value: T };
 
 export type AiFeatureRow = {
-  feature: { id: string; name: string; computed_by: string; informs: string; made_of: string };
+  feature: {
+    id: string;
+    name: string;
+    computed_by: string;
+    informs: string;
+    made_of: string;
+  };
   advisory: string;
   annex_category: AiField<string>;
   overseer_role: AiField<string>;
@@ -5298,6 +5379,9 @@ export type AiRegisterBody = {
 };
 
 /** Replace what is recorded for a feature; a field left out is cleared. HR and administrators. */
-export function putAiRegisterEntry(featureId: string, body: AiRegisterBody): Promise<{ pid: string; feature: string }> {
+export function putAiRegisterEntry(
+  featureId: string,
+  body: AiRegisterBody,
+): Promise<{ pid: string; feature: string }> {
   return api(`/ai-register/${featureId}`, { method: "PUT", body });
 }

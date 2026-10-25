@@ -45,7 +45,9 @@ pub fn version_problems(
             ("all", None) => {}
             (_, None) => out.push(format!("an audience of {audience_kind} needs a value")),
             (_, Some(v)) if v.chars().count() > TITLE_MAX => {
-                out.push(format!("the audience value must be at most {TITLE_MAX} characters"));
+                out.push(format!(
+                    "the audience value must be at most {TITLE_MAX} characters"
+                ));
             }
             _ => {}
         }
@@ -61,7 +63,8 @@ pub fn version_problems(
 /// Whether a worker is in an audience (case-insensitive, trimmed).
 #[must_use]
 pub fn in_audience(kind: &str, value: Option<&str>, department: &str, job_title: &str) -> bool {
-    let same = |a: &str, b: Option<&str>| b.is_some_and(|b| a.trim().eq_ignore_ascii_case(b.trim()));
+    let same =
+        |a: &str, b: Option<&str>| b.is_some_and(|b| a.trim().eq_ignore_ascii_case(b.trim()));
     match kind {
         "all" => true,
         "department" => same(department, value),
@@ -194,16 +197,27 @@ mod tests {
 
     #[test]
     fn a_version_needs_a_title_a_reference_without_spaces_an_audience_and_days() {
-        let ok = |t: &str, r: &str, k: &str, v: Option<&str>, n: i32| version_problems(t, r, k, v, n);
-        assert_eq!(ok("Code of conduct", "doc:conduct-v2", "all", None, 30), Vec::<String>::new());
+        let ok =
+            |t: &str, r: &str, k: &str, v: Option<&str>, n: i32| version_problems(t, r, k, v, n);
+        assert_eq!(
+            ok("Code of conduct", "doc:conduct-v2", "all", None, 30),
+            Vec::<String>::new()
+        );
         assert_eq!(ok("", "doc:x", "all", None, 30).len(), 1);
-        assert_eq!(ok("T", "has space", "all", None, 30).len(), 1, "no text is held, so no sentence fits");
+        assert_eq!(
+            ok("T", "has space", "all", None, 30).len(),
+            1,
+            "no text is held, so no sentence fits"
+        );
         assert_eq!(ok("T", "", "all", None, 30).len(), 1);
         assert_eq!(ok("T", "doc:x", "everyone", None, 30).len(), 1);
         assert_eq!(ok("T", "doc:x", "department", None, 30).len(), 1);
         assert_eq!(ok("T", "doc:x", "all", Some("care"), 30).len(), 1);
         assert_eq!(ok("T", "doc:x", "job_title", Some("Nurse"), 0).len(), 1);
-        assert_eq!(ok("T", "doc:x", "job_title", Some("Nurse"), 365), Vec::<String>::new());
+        assert_eq!(
+            ok("T", "doc:x", "job_title", Some("Nurse"), 365),
+            Vec::<String>::new()
+        );
         assert_eq!(ok("T", "doc:x", "job_title", Some("Nurse"), 366).len(), 1);
     }
 
@@ -211,11 +225,39 @@ mod tests {
     fn a_reminder_goes_to_someone_who_has_not_acknowledged_and_is_near_or_past_the_day() {
         let today = d("2026-10-10");
         let wait = |due: &str| Standing::Waiting { due_on: d(due) };
-        assert!(!remind_now(Standing::Done { on: d("2026-10-01") }, 3, today), "someone who has acknowledged is left alone");
-        assert!(!remind_now(wait("2026-10-14"), 3, today), "four calendar days left is outside three");
-        assert!(remind_now(wait("2026-10-13"), 3, today), "three calendar days left is inside three");
-        assert!(remind_now(wait("2026-10-10"), 0, today), "the day itself, with none ahead");
-        assert!(remind_now(Standing::Overdue { due_on: d("2026-10-01"), calendar_days_late: 9 }, 0, today), "overdue always");
+        assert!(
+            !remind_now(
+                Standing::Done {
+                    on: d("2026-10-01")
+                },
+                3,
+                today
+            ),
+            "someone who has acknowledged is left alone"
+        );
+        assert!(
+            !remind_now(wait("2026-10-14"), 3, today),
+            "four calendar days left is outside three"
+        );
+        assert!(
+            remind_now(wait("2026-10-13"), 3, today),
+            "three calendar days left is inside three"
+        );
+        assert!(
+            remind_now(wait("2026-10-10"), 0, today),
+            "the day itself, with none ahead"
+        );
+        assert!(
+            remind_now(
+                Standing::Overdue {
+                    due_on: d("2026-10-01"),
+                    calendar_days_late: 9
+                },
+                0,
+                today
+            ),
+            "overdue always"
+        );
     }
 
     #[test]
@@ -231,12 +273,29 @@ mod tests {
     #[test]
     fn the_newest_version_in_force_is_the_one_asked_about() {
         let facts = [
-            Fact { version: 1, effective_on: d("2026-01-01") },
-            Fact { version: 3, effective_on: d("2026-12-01") },
-            Fact { version: 2, effective_on: d("2026-06-01") },
+            Fact {
+                version: 1,
+                effective_on: d("2026-01-01"),
+            },
+            Fact {
+                version: 3,
+                effective_on: d("2026-12-01"),
+            },
+            Fact {
+                version: 2,
+                effective_on: d("2026-06-01"),
+            },
         ];
-        assert_eq!(current(&facts, d("2026-10-24")), Some(2), "version 2; version 3 is not in force yet");
-        assert_eq!(current(&facts, d("2026-12-01")), Some(1), "in force on its own day");
+        assert_eq!(
+            current(&facts, d("2026-10-24")),
+            Some(2),
+            "version 2; version 3 is not in force yet"
+        );
+        assert_eq!(
+            current(&facts, d("2026-12-01")),
+            Some(1),
+            "in force on its own day"
+        );
         assert_eq!(current(&facts, d("2025-12-31")), None);
         assert_eq!(current(&[], d("2026-10-24")), None);
     }
@@ -246,24 +305,57 @@ mod tests {
         let eff = d("2026-10-01");
         assert_eq!(
             standing(eff, 30, Some(d("2026-10-05")), d("2026-12-31")),
-            Standing::Done { on: d("2026-10-05") },
+            Standing::Done {
+                on: d("2026-10-05")
+            },
             "late and done is done"
         );
-        assert_eq!(standing(eff, 30, None, d("2026-10-31")), Standing::Waiting { due_on: d("2026-10-31") });
+        assert_eq!(
+            standing(eff, 30, None, d("2026-10-31")),
+            Standing::Waiting {
+                due_on: d("2026-10-31")
+            }
+        );
         assert_eq!(
             standing(eff, 30, None, d("2026-11-01")),
-            Standing::Overdue { due_on: d("2026-10-31"), calendar_days_late: 1 }
+            Standing::Overdue {
+                due_on: d("2026-10-31"),
+                calendar_days_late: 1
+            }
         );
-        assert_eq!(standing(eff, 30, None, d("2026-09-01")), Standing::Waiting { due_on: d("2026-10-31") });
+        assert_eq!(
+            standing(eff, 30, None, d("2026-09-01")),
+            Standing::Waiting {
+                due_on: d("2026-10-31")
+            }
+        );
     }
 
     #[test]
     fn a_manager_sees_both_numbers_from_the_floor_and_nothing_below_it() {
-        assert_eq!(team_count(10, 7, 10), Count::Shown { acknowledged: 7, waiting: 3 });
+        assert_eq!(
+            team_count(10, 7, 10),
+            Count::Shown {
+                acknowledged: 7,
+                waiting: 3
+            }
+        );
         assert_eq!(team_count(9, 7, 10), Count::Withheld, "one under");
         assert_eq!(team_count(0, 0, 10), Count::NoOne);
-        assert_eq!(team_count(10, 99, 10), Count::Shown { acknowledged: 10, waiting: 0 });
-        assert_eq!(team_count(10, 0, 10), Count::Shown { acknowledged: 0, waiting: 10 });
+        assert_eq!(
+            team_count(10, 99, 10),
+            Count::Shown {
+                acknowledged: 10,
+                waiting: 0
+            }
+        );
+        assert_eq!(
+            team_count(10, 0, 10),
+            Count::Shown {
+                acknowledged: 0,
+                waiting: 10
+            }
+        );
     }
 
     #[test]

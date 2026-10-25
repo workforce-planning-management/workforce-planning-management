@@ -54,24 +54,38 @@ pub fn validate_target(nodes: &[Node]) -> Result<(), Vec<String>> {
     let mut keys = BTreeSet::new();
     for n in nodes {
         if !(1..=60).contains(&n.key.chars().count()) || n.key.chars().any(char::is_whitespace) {
-            out.push(format!("key {:?} is 1 to 60 characters with no spaces", n.key));
+            out.push(format!(
+                "key {:?} is 1 to 60 characters with no spaces",
+                n.key
+            ));
         }
         if !keys.insert(n.key.as_str()) {
             out.push(format!("key {:?} is used twice", n.key));
         }
-        if !(1..=120).contains(&n.title.trim().chars().count()) || !(1..=80).contains(&n.department.trim().chars().count()) {
-            out.push(format!("{}: title is 1 to 120 and department 1 to 80 characters", n.key));
+        if !(1..=120).contains(&n.title.trim().chars().count())
+            || !(1..=80).contains(&n.department.trim().chars().count())
+        {
+            out.push(format!(
+                "{}: title is 1 to 120 and department 1 to 80 characters",
+                n.key
+            ));
         }
         if !(1..=10_000).contains(&n.headcount) {
             out.push(format!("{}: headcount is 1 to 10000", n.key));
         }
     }
-    let parent_of: HashMap<&str, &str> = nodes.iter().filter_map(|n| Some((n.key.as_str(), n.parent.as_deref()?))).collect();
+    let parent_of: HashMap<&str, &str> = nodes
+        .iter()
+        .filter_map(|n| Some((n.key.as_str(), n.parent.as_deref()?)))
+        .collect();
     for n in nodes {
         if let Some(p) = &n.parent
             && !keys.contains(p.as_str())
         {
-            out.push(format!("{}: parent {p:?} is not a role of this target", n.key));
+            out.push(format!(
+                "{}: parent {p:?} is not a role of this target",
+                n.key
+            ));
         }
         // A walk up that does not end within the number of nodes is a cycle.
         let mut at = n.key.as_str();
@@ -182,7 +196,14 @@ fn current_side(people: &[Person]) -> Side {
     let known: BTreeSet<&str> = people.iter().map(|p| p.key.as_str()).collect();
     let manager_of: HashMap<&str, &str> = people
         .iter()
-        .filter_map(|p| Some((p.key.as_str(), p.manager.as_deref().filter(|m| known.contains(m) && *m != p.key)?)))
+        .filter_map(|p| {
+            Some((
+                p.key.as_str(),
+                p.manager
+                    .as_deref()
+                    .filter(|m| known.contains(m) && *m != p.key)?,
+            ))
+        })
         .collect();
     let mut layers = 0;
     for p in people {
@@ -261,14 +282,24 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
         target: BTreeMap<String, i64>,
     }
     fn entry<'a>(roles: &'a mut BTreeMap<String, Agg>, title: &str) -> &'a mut Agg {
-        roles.entry(key_of(title)).or_insert_with(|| Agg { title: title.trim().to_string(), current: BTreeMap::new(), target: BTreeMap::new() })
+        roles.entry(key_of(title)).or_insert_with(|| Agg {
+            title: title.trim().to_string(),
+            current: BTreeMap::new(),
+            target: BTreeMap::new(),
+        })
     }
     let mut roles: BTreeMap<String, Agg> = BTreeMap::new();
     for p in people {
-        *entry(&mut roles, &p.title).current.entry(p.department.trim().to_string()).or_insert(0) += 1;
+        *entry(&mut roles, &p.title)
+            .current
+            .entry(p.department.trim().to_string())
+            .or_insert(0) += 1;
     }
     for n in target {
-        *entry(&mut roles, &n.title).target.entry(n.department.trim().to_string()).or_insert(0) += i64::from(n.headcount);
+        *entry(&mut roles, &n.title)
+            .target
+            .entry(n.department.trim().to_string())
+            .or_insert(0) += i64::from(n.headcount);
     }
     let floor = i64::try_from(floor).unwrap_or(i64::MAX);
     let roles = roles
@@ -287,7 +318,11 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
             let target_departments: Vec<String> = a.target.keys().cloned().collect();
             Role {
                 title: a.title,
-                current: if withheld { Count::Withheld } else { Count::Shown { value: now } },
+                current: if withheld {
+                    Count::Withheld
+                } else {
+                    Count::Shown { value: now }
+                },
                 target: plan,
                 change,
                 delta: (!withheld).then_some(plan - now),
@@ -297,7 +332,11 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
             }
         })
         .collect();
-    Diff { current: current_side(people), target: target_side(target), roles }
+    Diff {
+        current: current_side(people),
+        target: target_side(target),
+        roles,
+    }
 }
 
 #[cfg(test)]
@@ -305,16 +344,37 @@ mod tests {
     use super::*;
 
     fn person(key: &str, manager: Option<&str>, department: &str, title: &str) -> Person {
-        Person { key: key.into(), manager: manager.map(Into::into), department: department.into(), title: title.into() }
+        Person {
+            key: key.into(),
+            manager: manager.map(Into::into),
+            department: department.into(),
+            title: title.into(),
+        }
     }
 
-    fn node(key: &str, parent: Option<&str>, department: &str, title: &str, headcount: i32) -> Node {
-        Node { key: key.into(), parent: parent.map(Into::into), department: department.into(), title: title.into(), headcount }
+    fn node(
+        key: &str,
+        parent: Option<&str>,
+        department: &str,
+        title: &str,
+        headcount: i32,
+    ) -> Node {
+        Node {
+            key: key.into(),
+            parent: parent.map(Into::into),
+            department: department.into(),
+            title: title.into(),
+            headcount,
+        }
     }
 
     /// A head, two managers, six engineers: three layers, the managers' spans 3 and 3.
     fn now() -> Vec<Person> {
-        let mut v = vec![person("h", None, "exec", "Head"), person("m1", Some("h"), "eng", "Manager"), person("m2", Some("h"), "eng", "Manager")];
+        let mut v = vec![
+            person("h", None, "exec", "Head"),
+            person("m1", Some("h"), "eng", "Manager"),
+            person("m2", Some("h"), "eng", "Manager"),
+        ];
         for i in 0..3 {
             v.push(person(&format!("a{i}"), Some("m1"), "eng", "Engineer"));
             v.push(person(&format!("b{i}"), Some("m2"), "eng", "Engineer"));
@@ -327,7 +387,15 @@ mod tests {
         let s = diff(&now(), &[node("x", None, "exec", "Head", 1)], 1).current;
         assert_eq!(s.layers, 3);
         assert_eq!(s.headcount, 9);
-        assert_eq!(s.span, Span { managers: 3, mean_hundredths: Some(267), max: 3 }, "(2 + 3 + 3) / 3");
+        assert_eq!(
+            s.span,
+            Span {
+                managers: 3,
+                mean_hundredths: Some(267),
+                max: 3
+            },
+            "(2 + 3 + 3) / 3"
+        );
     }
 
     #[test]
@@ -364,47 +432,82 @@ mod tests {
         assert_eq!(role("Product Lead").change, Change::Added);
         assert_eq!(role("Product Lead").current, Count::Shown { value: 0 });
         let gone = diff(&now(), &[node("h", None, "exec", "Head", 1)], 1);
-        assert_eq!(gone.roles.iter().find(|r| r.title == "Engineer").unwrap().change, Change::Removed);
+        assert_eq!(
+            gone.roles
+                .iter()
+                .find(|r| r.title == "Engineer")
+                .unwrap()
+                .change,
+            Change::Removed
+        );
     }
 
     #[test]
     fn titles_match_without_regard_to_case_or_spaces() {
-        let d = diff(&[person("a", None, "eng", "Support Engineer")], &[node("x", None, "eng", "  support engineer ", 2)], 1);
+        let d = diff(
+            &[person("a", None, "eng", "Support Engineer")],
+            &[node("x", None, "eng", "  support engineer ", 2)],
+            1,
+        );
         assert_eq!(d.roles.len(), 1);
         assert_eq!(d.roles[0].change, Change::Larger);
     }
 
     #[test]
     fn a_role_in_other_departments_in_the_plan_is_moved() {
-        let d = diff(&[person("a", None, "support", "Analyst")], &[node("x", None, "operations", "Analyst", 1)], 1);
+        let d = diff(
+            &[person("a", None, "support", "Analyst")],
+            &[node("x", None, "operations", "Analyst", 1)],
+            1,
+        );
         assert!(d.roles[0].moved);
         assert_eq!(d.roles[0].change, Change::Same);
         assert_eq!(d.roles[0].current_departments, ["support"]);
-        let same = diff(&[person("a", None, "support", "Analyst")], &[node("x", None, "support", "Analyst", 1)], 1);
+        let same = diff(
+            &[person("a", None, "support", "Analyst")],
+            &[node("x", None, "support", "Analyst", 1)],
+            1,
+        );
         assert!(!same.roles[0].moved);
         let added = diff(&[], &[node("x", None, "operations", "Analyst", 1)], 1);
-        assert!(!added.roles[0].moved, "a role that did not exist has not moved");
+        assert!(
+            !added.roles[0].moved,
+            "a role that did not exist has not moved"
+        );
     }
 
     #[test]
     fn a_small_current_count_is_withheld_and_so_is_the_change_that_would_give_it_back() {
-        let people: Vec<Person> = (0..3).map(|i| person(&format!("p{i}"), None, "eng", "Architect")).collect();
+        let people: Vec<Person> = (0..3)
+            .map(|i| person(&format!("p{i}"), None, "eng", "Architect"))
+            .collect();
         let d = diff(&people, &[node("x", None, "eng", "Architect", 5)], 5);
         let r = &d.roles[0];
         assert_eq!(r.current, Count::Withheld);
         assert_eq!(r.delta, None, "5 - delta would reveal 3");
         assert_eq!(r.target, 5, "a plan's number is not about people");
-        let big: Vec<Person> = (0..5).map(|i| person(&format!("p{i}"), None, "eng", "Architect")).collect();
+        let big: Vec<Person> = (0..5)
+            .map(|i| person(&format!("p{i}"), None, "eng", "Architect"))
+            .collect();
         let r = &diff(&big, &[node("x", None, "eng", "Architect", 5)], 5).roles[0];
         assert_eq!(r.current, Count::Shown { value: 5 });
         assert_eq!(r.delta, Some(0));
         let none = &diff(&[], &[node("x", None, "eng", "Architect", 2)], 5).roles[0];
-        assert_eq!(none.current, Count::Shown { value: 0 }, "nobody is not a small group");
+        assert_eq!(
+            none.current,
+            Count::Shown { value: 0 },
+            "nobody is not a small group"
+        );
     }
 
     #[test]
     fn a_loop_or_a_manager_outside_the_set_cannot_hang_or_deepen_the_tree() {
-        let people = vec![person("a", Some("b"), "x", "T"), person("b", Some("a"), "x", "T"), person("c", Some("nobody"), "x", "T"), person("d", Some("d"), "x", "T")];
+        let people = vec![
+            person("a", Some("b"), "x", "T"),
+            person("b", Some("a"), "x", "T"),
+            person("c", Some("nobody"), "x", "T"),
+            person("d", Some("d"), "x", "T"),
+        ];
         let s = diff(&people, &[node("n", None, "x", "T", 1)], 1).current;
         assert!(s.layers <= 4);
         assert_eq!(s.headcount, 4);
@@ -421,13 +524,28 @@ mod tests {
 
     #[test]
     fn a_target_is_checked() {
-        let ok = vec![node("a", None, "x", "T", 1), node("b", Some("a"), "x", "U", 3)];
+        let ok = vec![
+            node("a", None, "x", "T", 1),
+            node("b", Some("a"), "x", "U", 3),
+        ];
         assert!(validate_target(&ok).is_ok());
         let bad = |nodes: Vec<Node>| validate_target(&nodes).unwrap_err().join("; ");
         assert!(bad(vec![]).contains("at least one"));
-        assert!(bad(vec![node("a", None, "x", "T", 1), node("a", None, "x", "U", 1)]).contains("twice"));
+        assert!(
+            bad(vec![
+                node("a", None, "x", "T", 1),
+                node("a", None, "x", "U", 1)
+            ])
+            .contains("twice")
+        );
         assert!(bad(vec![node("a", Some("zzz"), "x", "T", 1)]).contains("not a role"));
-        assert!(bad(vec![node("a", Some("b"), "x", "T", 1), node("b", Some("a"), "x", "U", 1)]).contains("loop"));
+        assert!(
+            bad(vec![
+                node("a", Some("b"), "x", "T", 1),
+                node("b", Some("a"), "x", "U", 1)
+            ])
+            .contains("loop")
+        );
         assert!(bad(vec![node("a", Some("a"), "x", "T", 1)]).contains("loop"));
         assert!(bad(vec![node("a", None, "x", "T", 0)]).contains("headcount"));
         assert!(bad(vec![node("a b", None, "x", "T", 1)]).contains("no spaces"));

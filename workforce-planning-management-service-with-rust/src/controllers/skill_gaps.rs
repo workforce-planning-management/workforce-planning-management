@@ -21,7 +21,8 @@ use uuid::Uuid;
 use super::record_rejection;
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    role_skill_requirements, skill_mappings, skills, worker_aspirations, worker_framework_roles, worker_skills,
+    role_skill_requirements, skill_mappings, skills, worker_aspirations, worker_framework_roles,
+    worker_skills,
 };
 use crate::models::{memberships, records};
 use crate::rules::crosswalk;
@@ -192,7 +193,11 @@ async fn worker_gaps(
     let mapping_rows = skill_mappings::Entity::find().all(&ctx.db).await?;
     let mappings: Vec<crosswalk::Mapping<'_>> = mapping_rows
         .iter()
-        .map(|m| crosswalk::Mapping { from: m.from_skill_pid, to: m.to_skill_pid, confidence: &m.confidence })
+        .map(|m| crosswalk::Mapping {
+            from: m.from_skill_pid,
+            to: m.to_skill_pid,
+            confidence: &m.confidence,
+        })
         .collect();
     let own: BTreeMap<Uuid, i32> = evidence
         .declared

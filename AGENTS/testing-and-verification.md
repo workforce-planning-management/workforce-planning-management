@@ -25,6 +25,12 @@ three are clean across the repo** — the service under both auth backends
 changelog. Keep them clean; if you cannot run one, say so rather than claiming a
 green gate. A justified `#[allow(clippy::…)]` carries a reason comment.
 
+**Run what CI runs before you push, not only the tests.** On 2026-10-25 a push of many commits turned CI red on four checks that no
+per-task test run had covered: `cargo fmt --check` (run `cargo fmt`, then clippy again: it can expose lints), `pnpm lint` (Prettier can need two
+`--write` passes), `gitleaks detect --redact` over the whole history (a reviewed test fixture goes in `.gitleaksignore` as
+`<commit>:<file>:<rule>:<line>` with a reason), and `scripts/verify-db-roles.sh` (the request suite as the least-privilege role: a test that
+runs DDL must go through `crate::requests::ddl`, which uses the schema owner's `WPM_TEST_DDL_URL` in that drill).
+
 ## Running the service tests
 
 The two shared crates (`entity-ref`, `authentication-verifier`) are vendored in

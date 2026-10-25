@@ -80,7 +80,9 @@ pub fn lookup_query(external_id: &str) -> String {
     let encoded: String = filter
         .bytes()
         .map(|b| match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => (b as char).to_string(),
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
             _ => format!("%{b:02X}"),
         })
         .collect();
@@ -115,7 +117,13 @@ pub enum Step {
 
 /// Decide the step from what is wanted, what was last sent and whether the identity provider has an id for the user.
 #[must_use]
-pub fn step(due: bool, deleted: bool, known_id: bool, sent_fingerprint: Option<&str>, wanted: &str) -> Step {
+pub fn step(
+    due: bool,
+    deleted: bool,
+    known_id: bool,
+    sent_fingerprint: Option<&str>,
+    wanted: &str,
+) -> Step {
     match (due, known_id) {
         (false, _) => Step::Skip,
         (true, false) if deleted => Step::Skip,
@@ -139,7 +147,9 @@ pub fn backoff_seconds(attempts: u32) -> i64 {
 /// A message when the URL is not acceptable.
 pub fn check_base_url(url: &str) -> Result<String, String> {
     let trimmed = url.trim().trim_end_matches('/');
-    let (scheme, rest) = trimmed.split_once("://").ok_or("the SCIM base URL needs a scheme")?;
+    let (scheme, rest) = trimmed
+        .split_once("://")
+        .ok_or("the SCIM base URL needs a scheme")?;
     let host = rest.split(['/', ':']).next().unwrap_or("");
     let local = matches!(host, "localhost" | "127.0.0.1" | "[::1]");
     match scheme {
@@ -174,32 +184,55 @@ mod tests {
     fn a_worker_maps_to_a_user_with_the_enterprise_extension() {
         let u = user(&worker(), d(2026, 10, 24), None);
         assert_eq!(u["schemas"], json!([USER_SCHEMA, ENTERPRISE_SCHEMA]));
-        assert_eq!(u["externalId"], "worker:11111111-2222-4333-8444-555555555555");
+        assert_eq!(
+            u["externalId"],
+            "worker:11111111-2222-4333-8444-555555555555"
+        );
         assert_eq!(u["userName"], "W-0042");
         assert_eq!(u["title"], "Engineer");
         assert_eq!(u["active"], true);
         assert_eq!(u[ENTERPRISE_SCHEMA]["employeeNumber"], "W-0042");
         assert_eq!(u[ENTERPRISE_SCHEMA]["department"], "engineering");
-        assert!(u[ENTERPRISE_SCHEMA].get("manager").is_none(), "unknown until the manager is provisioned");
-        assert!(u[ENTERPRISE_SCHEMA].get("costCenter").is_none(), "WPM holds no cost centre, so none is sent");
+        assert!(
+            u[ENTERPRISE_SCHEMA].get("manager").is_none(),
+            "unknown until the manager is provisioned"
+        );
+        assert!(
+            u[ENTERPRISE_SCHEMA].get("costCenter").is_none(),
+            "WPM holds no cost centre, so none is sent"
+        );
     }
 
     #[test]
     fn the_manager_is_the_identity_providers_id_when_known() {
         let u = user(&worker(), d(2026, 10, 24), Some("abc-123"));
-        assert_eq!(u[ENTERPRISE_SCHEMA]["manager"], json!({ "value": "abc-123" }));
+        assert_eq!(
+            u[ENTERPRISE_SCHEMA]["manager"],
+            json!({ "value": "abc-123" })
+        );
     }
 
     #[test]
     fn the_body_holds_only_employment_facts() {
         let u = user(&worker(), d(2026, 10, 24), Some("m"));
         let keys: Vec<&str> = u.as_object().unwrap().keys().map(String::as_str).collect();
-        let expected = ["schemas", "externalId", "userName", "displayName", "title", "active", ENTERPRISE_SCHEMA];
+        let expected = [
+            "schemas",
+            "externalId",
+            "userName",
+            "displayName",
+            "title",
+            "active",
+            ENTERPRISE_SCHEMA,
+        ];
         let mut sorted = keys.clone();
         sorted.sort_unstable();
         let mut want = expected.to_vec();
         want.sort_unstable();
-        assert_eq!(sorted, want, "a new field must be a decision, not an accident");
+        assert_eq!(
+            sorted, want,
+            "a new field must be a decision, not an accident"
+        );
     }
 
     /// WPM-D102: no contact field leaves. The input type has none; this makes the sources prove they never name one outside
@@ -218,7 +251,15 @@ mod tests {
                 .to_lowercase()
         };
         // The words are assembled so this test does not trip on itself.
-        let words = ["contact", &["em", "ail"].concat(), "phone", "address", "emergency", "postal", "mobile"];
+        let words = [
+            "contact",
+            &["em", "ail"].concat(),
+            "phone",
+            "address",
+            "emergency",
+            "postal",
+            "mobile",
+        ];
         for (name, source) in [
             ("rules/scim.rs", include_str!("scim.rs")),
             ("tasks/scim_push.rs", include_str!("../tasks/scim_push.rs")),
@@ -237,7 +278,10 @@ mod tests {
         assert!(!active_on(&w, d(2026, 1, 4)), "before the first day");
         w.terminated_on = Some(d(2026, 11, 1));
         assert!(active_on(&w, d(2026, 10, 31)));
-        assert!(!active_on(&w, d(2026, 11, 1)), "terminated on or before the date is not employed");
+        assert!(
+            !active_on(&w, d(2026, 11, 1)),
+            "terminated on or before the date is not employed"
+        );
         assert_eq!(user(&w, d(2026, 11, 2), None)["active"], false);
         w.terminated_on = None;
         w.deleted = true;
@@ -257,10 +301,18 @@ mod tests {
         let f = fingerprint(&body);
         assert_eq!(step(false, false, false, None, &f), Step::Skip);
         assert_eq!(step(true, false, false, None, &f), Step::Create);
-        assert_eq!(step(true, true, false, None, &f), Step::Skip, "deleted and never sent");
+        assert_eq!(
+            step(true, true, false, None, &f),
+            Step::Skip,
+            "deleted and never sent"
+        );
         assert_eq!(step(true, false, true, Some(&f), &f), Step::Unchanged);
         assert_eq!(step(true, false, true, Some("old"), &f), Step::Replace);
-        assert_eq!(step(true, true, true, Some("old"), &f), Step::Replace, "a deleted user already sent is deactivated");
+        assert_eq!(
+            step(true, true, true, Some("old"), &f),
+            Step::Replace,
+            "a deleted user already sent is deactivated"
+        );
         assert_eq!(step(true, false, true, None, &f), Step::Replace);
     }
 
@@ -270,13 +322,19 @@ mod tests {
         assert_eq!(fingerprint(&a), fingerprint(&a.clone()));
         let mut w = worker();
         w.job_title = "Senior Engineer".into();
-        assert_ne!(fingerprint(&a), fingerprint(&user(&w, d(2026, 10, 24), None)));
+        assert_ne!(
+            fingerprint(&a),
+            fingerprint(&user(&w, d(2026, 10, 24), None))
+        );
         assert_eq!(fingerprint(&a).len(), 64);
     }
 
     #[test]
     fn the_lookup_filter_is_encoded_and_cannot_carry_another_parameter() {
-        assert_eq!(lookup_query("worker:abc"), "filter=externalId%20eq%20%22worker%3Aabc%22");
+        assert_eq!(
+            lookup_query("worker:abc"),
+            "filter=externalId%20eq%20%22worker%3Aabc%22"
+        );
         assert!(!lookup_query("x&y=1\"").contains('&'));
     }
 
@@ -290,10 +348,19 @@ mod tests {
 
     #[test]
     fn a_token_is_never_sent_in_clear_across_a_network() {
-        assert_eq!(check_base_url("https://idp.example/scim/v2/").unwrap(), "https://idp.example/scim/v2");
+        assert_eq!(
+            check_base_url("https://idp.example/scim/v2/").unwrap(),
+            "https://idp.example/scim/v2"
+        );
         assert!(check_base_url("http://127.0.0.1:9000/scim").is_ok());
         assert!(check_base_url("http://localhost/scim").is_ok());
-        for bad in ["http://idp.example/scim", "ftp://x", "idp.example", "https://", "http://127.0.0.1.evil.example/"] {
+        for bad in [
+            "http://idp.example/scim",
+            "ftp://x",
+            "idp.example",
+            "https://",
+            "http://127.0.0.1.evil.example/",
+        ] {
             assert!(check_base_url(bad).is_err(), "{bad}");
         }
     }

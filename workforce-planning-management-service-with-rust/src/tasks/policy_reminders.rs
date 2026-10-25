@@ -13,7 +13,9 @@ use sea_orm::QueryOrder;
 use std::collections::BTreeSet;
 use uuid::Uuid;
 
-use crate::models::_entities::{notifications, policies, policy_acknowledgements, policy_versions, workers};
+use crate::models::_entities::{
+    notifications, policies, policy_acknowledgements, policy_versions, workers,
+};
 use crate::models::notifications::Model as Notification;
 use crate::rules::metrics as metric_rules;
 use crate::rules::policy as rules;
@@ -44,7 +46,9 @@ impl Task for PolicyReminders {
                 .parse::<i64>()
                 .ok()
                 .filter(|n| (0..=30).contains(n))
-                .ok_or_else(|| Error::string("days_ahead must be a number of calendar days from 0 to 30"))?,
+                .ok_or_else(|| {
+                    Error::string("days_ahead must be a number of calendar days from 0 to 30")
+                })?,
             Err(_) => rules::REMIND_DAYS,
         };
         let sent = send_reminders(ctx, as_of, days_ahead).await?;
@@ -66,16 +70,33 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
         .all(&ctx.db)
         .await?
         .into_iter()
-        .filter_map(|n| Some((n.worker_pid, n.data.get("version_pid")?.as_str()?.to_string())))
+        .filter_map(|n| {
+            Some((
+                n.worker_pid,
+                n.data.get("version_pid")?.as_str()?.to_string(),
+            ))
+        })
         .collect();
-    for policy in policies::Entity::find().order_by_asc(policies::Column::Id).all(&ctx.db).await? {
+    for policy in policies::Entity::find()
+        .order_by_asc(policies::Column::Id)
+        .all(&ctx.db)
+        .await?
+    {
         let versions = policy_versions::Entity::find()
             .filter(policy_versions::Column::PolicyPid.eq(policy.pid))
             .order_by_asc(policy_versions::Column::Version)
             .all(&ctx.db)
             .await?;
-        let facts: Vec<rules::Fact> = versions.iter().map(|v| rules::Fact { version: v.version, effective_on: v.effective_on }).collect();
-        let Some(i) = rules::current(&facts, as_of) else { continue };
+        let facts: Vec<rules::Fact> = versions
+            .iter()
+            .map(|v| rules::Fact {
+                version: v.version,
+                effective_on: v.effective_on,
+            })
+            .collect();
+        let Some(i) = rules::current(&facts, as_of) else {
+            continue;
+        };
         let version = &versions[i];
         let acknowledged: BTreeSet<Uuid> = policy_acknowledgements::Entity::find()
             .filter(policy_acknowledgements::Column::VersionPid.eq(version.pid))
@@ -91,7 +112,12 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
             .await?;
         for worker in staff {
             if !metric_rules::is_employed_on(as_of, worker.hired_on, worker.terminated_on)
-                || !rules::in_audience(&version.audience_kind, version.audience_value.as_deref(), &worker.department, &worker.job_title)
+                || !rules::in_audience(
+                    &version.audience_kind,
+                    version.audience_value.as_deref(),
+                    &worker.department,
+                    &worker.job_title,
+                )
                 || told.contains(&(worker.pid, version.pid.to_string()))
             {
                 continue;
@@ -106,14 +132,19 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
                 continue;
             }
             let due = match standing {
-                rules::Standing::Waiting { due_on } | rules::Standing::Overdue { due_on, .. } => due_on,
+                rules::Standing::Waiting { due_on } | rules::Standing::Overdue { due_on, .. } => {
+                    due_on
+                }
                 rules::Standing::Done { .. } => continue,
             };
             Notification::push(
                 &ctx.db,
                 worker.pid,
                 "policy_due",
-                &format!("Please acknowledge the policy \"{}\" by {due}.", policy.name),
+                &format!(
+                    "Please acknowledge the policy \"{}\" by {due}.",
+                    policy.name
+                ),
                 serde_json::json!({ "version_pid": version.pid, "due_on": due }),
             )
             .await?;

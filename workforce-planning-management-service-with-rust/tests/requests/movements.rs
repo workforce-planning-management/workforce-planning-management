@@ -271,7 +271,11 @@ async fn a_checklist_takes_extra_items_reassignment_and_reopening_until_it_is_ca
         // An ad-hoc item needs a title and a date; a blank title is refused.
         let items_url = format!("/api/movements/{mv}/items");
         assert_eq!(
-            request.post(&items_url).json(&json!({ "title": "  ", "due_on": today.to_string() })).await.status_code(),
+            request
+                .post(&items_url)
+                .json(&json!({ "title": "  ", "due_on": today.to_string() }))
+                .await
+                .status_code(),
             422
         );
         let added: Value = request
@@ -284,37 +288,93 @@ async fn a_checklist_takes_extra_items_reassignment_and_reopening_until_it_is_ca
         let items = after["items"].as_array().unwrap();
         assert_eq!(items.len(), count + 1);
         let new = items.iter().find(|i| i["pid"] == item.as_str()).unwrap();
-        assert_eq!(new["category"], "other", "a missing category falls back to other");
+        assert_eq!(
+            new["category"], "other",
+            "a missing category falls back to other"
+        );
 
         // Assign to a real worker, then to nobody; a stranger is refused.
         let assign = format!("/api/movement-items/{item}/assign");
-        let set: Value = request.post(&assign).json(&json!({ "assignee_pid": buddy })).await.json();
+        let set: Value = request
+            .post(&assign)
+            .json(&json!({ "assignee_pid": buddy }))
+            .await
+            .json();
         assert_eq!(set["assignee_pid"], buddy.as_str());
         assert_eq!(
-            request.post(&assign).json(&json!({ "assignee_pid": uuid::Uuid::new_v4() })).await.status_code(),
+            request
+                .post(&assign)
+                .json(&json!({ "assignee_pid": uuid::Uuid::new_v4() }))
+                .await
+                .status_code(),
             422
         );
-        let cleared: Value = request.post(&assign).json(&json!({ "assignee_pid": null })).await.json();
+        let cleared: Value = request
+            .post(&assign)
+            .json(&json!({ "assignee_pid": null }))
+            .await
+            .json();
         assert_eq!(cleared["assignee_pid"], Value::Null);
 
         // Done, then reopened: the item is open again.
-        request.post(&format!("/api/movement-items/{item}/done")).await.assert_status_ok();
-        let reopened: Value = request.post(&format!("/api/movement-items/{item}/reopen")).await.json();
+        request
+            .post(&format!("/api/movement-items/{item}/done"))
+            .await
+            .assert_status_ok();
+        let reopened: Value = request
+            .post(&format!("/api/movement-items/{item}/reopen"))
+            .await
+            .json();
         assert_eq!(reopened["state"], "reopened");
         let view: Value = request.get(&format!("/api/movements/{mv}")).await.json();
-        let item_now = view["items"].as_array().unwrap().iter().find(|i| i["pid"] == item.as_str()).unwrap().clone();
+        let item_now = view["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["pid"] == item.as_str())
+            .unwrap()
+            .clone();
         assert_ne!(item_now["state"], "done");
-        assert_eq!(request.post(&format!("/api/movement-items/{}/reopen", uuid::Uuid::new_v4())).await.status_code(), 404);
+        assert_eq!(
+            request
+                .post(&format!(
+                    "/api/movement-items/{}/reopen",
+                    uuid::Uuid::new_v4()
+                ))
+                .await
+                .status_code(),
+            404
+        );
 
         // Cancelled: the record closes and takes no more items.
-        let cancelled: Value = request.post(&format!("/api/movements/{mv}/cancel")).await.json();
+        let cancelled: Value = request
+            .post(&format!("/api/movements/{mv}/cancel"))
+            .await
+            .json();
         assert_eq!(cancelled["status"], "cancelled");
         assert_eq!(
-            request.post(&items_url).json(&json!({ "title": "Late", "due_on": today.to_string() })).await.status_code(),
+            request
+                .post(&items_url)
+                .json(&json!({ "title": "Late", "due_on": today.to_string() }))
+                .await
+                .status_code(),
             422
         );
-        assert_eq!(request.post(&format!("/api/movements/{mv}/cancel")).await.status_code(), 422);
-        assert_eq!(request.post(&assign).json(&json!({ "assignee_pid": null })).await.status_code(), 422);
+        assert_eq!(
+            request
+                .post(&format!("/api/movements/{mv}/cancel"))
+                .await
+                .status_code(),
+            422
+        );
+        assert_eq!(
+            request
+                .post(&assign)
+                .json(&json!({ "assignee_pid": null }))
+                .await
+                .status_code(),
+            422
+        );
     })
     .await;
 }

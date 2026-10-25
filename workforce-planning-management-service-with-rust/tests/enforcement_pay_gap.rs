@@ -91,7 +91,10 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         std::env::set_var("WPM_EQUALITY_CATEGORIES", CATEGORIES);
         std::env::set_var("WPM_EQUALITY_FLOOR", "5");
         std::env::set_var("WPM_CREDENTIAL_ISSUER", "http://localhost:5150");
-        std::env::set_var("WPM_CREDENTIAL_SIGNING_KEY", "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A");
+        std::env::set_var(
+            "WPM_CREDENTIAL_SIGNING_KEY",
+            "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",
+        );
     }
     let bearer = |t: String| format!("Bearer {t}");
     let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));

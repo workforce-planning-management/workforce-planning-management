@@ -3,9 +3,9 @@
 
 #[allow(clippy::wildcard_imports)] // the planning sections share their parent's imports
 use super::*;
+use crate::models::_entities::plan_org_nodes;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::org_shape::{self as shape, Node, Person};
-use crate::models::_entities::plan_org_nodes;
 use sea_orm::TransactionTrait;
 
 #[derive(Debug, Deserialize)]
@@ -25,7 +25,11 @@ pub(super) struct TargetPayload {
 fn node_of(n: &TargetNode) -> Node {
     Node {
         key: n.key.trim().to_string(),
-        parent: n.parent.as_ref().map(|p| p.trim().to_string()).filter(|p| !p.is_empty()),
+        parent: n
+            .parent
+            .as_ref()
+            .map(|p| p.trim().to_string())
+            .filter(|p| !p.is_empty()),
         department: n.department.trim().to_string(),
         title: n.title.trim().to_string(),
         headcount: n.headcount,
@@ -39,13 +43,23 @@ async fn target_of(ctx: &AppContext, plan: Uuid) -> Result<Vec<Node>> {
         .all(&ctx.db)
         .await?
         .into_iter()
-        .map(|n| Node { key: n.node_key, parent: n.parent_key, department: n.department, title: n.title, headcount: n.headcount })
+        .map(|n| Node {
+            key: n.node_key,
+            parent: n.parent_key,
+            department: n.department,
+            title: n.title,
+            headcount: n.headcount,
+        })
         .collect())
 }
 
 /// `GET /api/workforce-plans/{pid}/target-organization` — the roles the plan intends: key, parent, department, title and headcount.
 #[debug_handler]
-pub(super) async fn get_target(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<String>) -> Result<Response> {
+pub(super) async fn get_target(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     let nodes = target_of(&ctx, plan.pid).await?;
     format::json(serde_json::json!({
@@ -87,16 +101,30 @@ pub(super) async fn set_target(
         .insert(&txn)
         .await?;
     }
-    Audit::record(&txn, "workforce_plan", plan.pid, "plan_target_organization_set", caller.actor(), Some(serde_json::json!({ "roles": nodes.len() }))).await?;
+    Audit::record(
+        &txn,
+        "workforce_plan",
+        plan.pid,
+        "plan_target_organization_set",
+        caller.actor(),
+        Some(serde_json::json!({ "roles": nodes.len() })),
+    )
+    .await?;
     txn.commit().await?;
-    format::json(PidRef { pid: plan.pid.to_string() })
+    format::json(PidRef {
+        pid: plan.pid.to_string(),
+    })
 }
 
 /// `GET /api/workforce-plans/{pid}/organization-diff` — the live structure of the plan's organization against its target:
 /// layers, span of control, and each role added, removed, moved or resized. Counts of people under the floor are withheld; no
 /// person is named.
 #[debug_handler]
-pub(super) async fn organization_diff(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<String>) -> Result<Response> {
+pub(super) async fn organization_diff(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     let target = target_of(&ctx, plan.pid).await?;
     let today = chrono::Utc::now().date_naive();
@@ -112,7 +140,12 @@ pub(super) async fn organization_diff(State(ctx): State<AppContext>, caller: May
         .all(&ctx.db)
         .await?
         .into_iter()
-        .map(|w| Person { key: w.pid.to_string(), manager: w.manager_pid.map(|m| m.to_string()), department: w.department, title: w.job_title })
+        .map(|w| Person {
+            key: w.pid.to_string(),
+            manager: w.manager_pid.map(|m| m.to_string()),
+            department: w.department,
+            title: w.job_title,
+        })
         .collect();
     if target.is_empty() {
         return format::json(serde_json::json!({

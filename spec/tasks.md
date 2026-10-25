@@ -4967,3 +4967,20 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       variants of the shared-cache tests did not run (their variables are not set); `shared_cache_upstream` ran no test here (it is filtered out); the Keycloak and Entra binaries
       were not re-run; the CI workflow was not run, so the new action and Redis 8 service images are untested in CI; there is no `CLAUDE.md`, and no `*-skill` or `*.github.io`
       folder in this repository or beside it, so nothing was updated there; every agent file is already under 40 000 bytes (the largest is 7 382).
+- [x] (2026-10-25) WPM-T306 **CI red after the first push of the session's work: four checks, fixed.** *(WPM-R119, WPM-R123)* After the user asked for `main` to be pushed (71 commits), CI on `3c5755a`
+      failed in four jobs and I had closed Dependabot pull requests #14 to #16 naming that commit before its CI had finished. The failures were ours and
+      predate the dependency commit: (1) **`cargo fmt --check`**: a great many files across the crate had never been formatted (my earlier rule of not
+      running `cargo fmt` on the whole crate left the repository red against its own CI); `cargo fmt` now runs clean over 47 files, which exposed
+      three missing semicolons in `rules/position.rs` and a 126-line `issue` in `controllers/credentials.rs` (one `#[allow(clippy::too_many_lines)]`
+      with a reason), and one import left unused; clippy pedantic is clean again; (2) **`pnpm lint`**: `src/lib/api/wpm.ts` needed two Prettier
+      passes; (3) **gitleaks over the whole history**: two findings, both reviewed fixtures and now in `.gitleaksignore` with a reason (the throwaway Ed25519
+      seed in `enforcement_pay_gap.rs`, and a made-up idempotency key in a UI unit test); `gitleaks` 8.30.1 (checksum verified) finds nothing now;
+      (4) **`scripts/verify-db-roles.sh`**: seven request tests install a trigger that refuses audit rows (WPM-D107), which is DDL, and failed as the
+      least-privilege `wpm_app` (`permission denied for schema public`). They now send that DDL through `crate::requests::ddl`, which uses the schema owner's connection
+      `WPM_TEST_DDL_URL` when the drill sets it and the test's own connection otherwise; the tamper tests' `ALTER TABLE ... DISABLE TRIGGER` stay on the app role and are still
+      refused. Run locally against a throwaway Postgres 18: 151 passed and the 2 tamper tests refused by the database; the one other failure was the drill passing an
+      empty `WPM_TEST_REDIS_URL` (CI sets a real one), removed. Also run locally: `pnpm run lint`, `svelte-check`, 210 unit tests, the UI build, 814 Rust unit tests,
+      `route_coverage`, `scheduler_config`, the matcher's fmt and clippy, `check-links`, `check-days`, `check-actions-pinned`, `check-licenses`. **A lesson recorded in
+      `AGENTS/testing-and-verification.md`:** run what CI runs before pushing. **Not done:** CI has not yet run on the fix at the time of writing (see the next entry or the
+      CI page for the result); the pull requests were closed before CI finished and their comments say CI had not run, which was true then; the full enforcement binaries were not
+      re-run after `cargo fmt` (the request suite was, through the drill; the formatting is behaviour-neutral).

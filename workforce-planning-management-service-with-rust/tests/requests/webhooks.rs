@@ -165,12 +165,11 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         assert_eq!(payroll["deliveries"], json!({ "pending": 0, "delivered": 2, "failed": 1 }));
 
         // No audit, no subscription (WPM-D107).
-        ctx.db.execute_unprepared(
-            "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
-             CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()").await.unwrap();
+        crate::requests::ddl(&ctx, "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
+             CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()").await;
         let refused = request.post("/api/webhook-subscriptions").json(&sub(json!({ "name": "Never" }))).await;
         assert!(refused.status_code().is_server_error());
-        ctx.db.execute_unprepared("DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await.unwrap();
+        crate::requests::ddl(&ctx, "DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await;
         let names: Value = request.get("/api/webhook-subscriptions").await.json();
         assert!(!names.to_string().contains("Never"), "nothing was kept");
 

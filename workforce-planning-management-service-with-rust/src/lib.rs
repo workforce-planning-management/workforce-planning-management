@@ -75,17 +75,26 @@ mod source_text_guards {
     #[test]
     fn no_line_of_source_ends_in_a_doubled_backslash() {
         let mut files = Vec::new();
-        rust_files(&Path::new(env!("CARGO_MANIFEST_DIR")).join("src"), &mut files);
+        rust_files(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("src"),
+            &mut files,
+        );
         let mut found = Vec::new();
         for file in files {
             let text = std::fs::read_to_string(&file).expect("readable source");
             for (i, line) in text.lines().enumerate() {
                 // This test's own explanation and a lone escaped backslash in a char or short literal are not the fault.
-                if line.ends_with("\\\\") && !line.trim_start().starts_with("//") && !line.ends_with("'\\\\'") {
+                if line.ends_with("\\\\")
+                    && !line.trim_start().starts_with("//")
+                    && !line.ends_with("'\\\\'")
+                {
                     found.push(format!("{}:{}", file.display(), i + 1));
                 }
             }
         }
-        assert!(found.is_empty(), "a doubled backslash ends a line (use one for a continuation): {found:?}");
+        assert!(
+            found.is_empty(),
+            "a doubled backslash ends a line (use one for a continuation): {found:?}"
+        );
     }
 }

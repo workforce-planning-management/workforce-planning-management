@@ -10,8 +10,8 @@ use axum::Router;
 use axum::body::{Body, Bytes};
 use axum::extract::State;
 use axum::http::{HeaderMap, Request, StatusCode, header};
-use axum::response::{IntoResponse, Response};
 use axum::middleware::Next;
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use loco_rs::prelude::AppContext;
 use serde_json::{Value, json};
@@ -146,13 +146,19 @@ fn resource_settings() -> Option<(String, Vec<String>)> {
 /// verifier's key: it says where tokens come from, and holds nothing about a person. 404 until the deployer configures it.
 async fn protected_resource_metadata() -> Response {
     let Some((resource, servers)) = resource_settings() else {
-        return json_status(StatusCode::NOT_FOUND, &json!({ "error": "not_configured", "description": "this deployment has not set WPM_MCP_RESOURCE and WPM_MCP_AUTHORIZATION_SERVERS" }));
+        return json_status(
+            StatusCode::NOT_FOUND,
+            &json!({ "error": "not_configured", "description": "this deployment has not set WPM_MCP_RESOURCE and WPM_MCP_AUTHORIZATION_SERVERS" }),
+        );
     };
     match mcp::protected_resource(&resource, &servers) {
         Ok(document) => json_status(StatusCode::OK, &document),
         Err(why) => {
             tracing::error!(%why, "mcp: the protected-resource settings are not usable");
-            json_status(StatusCode::INTERNAL_SERVER_ERROR, &json!({ "error": "misconfigured", "description": "the protected-resource settings are not usable" }))
+            json_status(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &json!({ "error": "misconfigured", "description": "the protected-resource settings are not usable" }),
+            )
         }
     }
 }
@@ -162,12 +168,18 @@ async fn protected_resource_metadata() -> Response {
 pub async fn challenge_mw(request: Request<Body>, next: Next) -> Response {
     let on_mcp = request.uri().path() == "/mcp";
     let mut response = next.run(request).await;
-    if response.status() == StatusCode::UNAUTHORIZED && !response.headers().contains_key(header::WWW_AUTHENTICATE) {
+    if response.status() == StatusCode::UNAUTHORIZED
+        && !response.headers().contains_key(header::WWW_AUTHENTICATE)
+    {
         let url = on_mcp
-            .then(|| resource_settings().and_then(|(resource, _)| mcp::metadata_url(&resource).ok()))
+            .then(|| {
+                resource_settings().and_then(|(resource, _)| mcp::metadata_url(&resource).ok())
+            })
             .flatten();
         if let Ok(value) = header::HeaderValue::from_str(&mcp::challenge(url.as_deref())) {
-            response.headers_mut().insert(header::WWW_AUTHENTICATE, value);
+            response
+                .headers_mut()
+                .insert(header::WWW_AUTHENTICATE, value);
         }
     }
     response
@@ -179,8 +191,14 @@ pub fn mount(router: Router, api: Router, ctx: AppContext) -> Router {
     router.merge(
         Router::new()
             .route("/mcp", post(handle))
-            .route("/.well-known/oauth-protected-resource", get(protected_resource_metadata))
-            .route("/.well-known/oauth-protected-resource/mcp", get(protected_resource_metadata))
+            .route(
+                "/.well-known/oauth-protected-resource",
+                get(protected_resource_metadata),
+            )
+            .route(
+                "/.well-known/oauth-protected-resource/mcp",
+                get(protected_resource_metadata),
+            )
             .with_state(Mcp { api, ctx }),
     )
 }

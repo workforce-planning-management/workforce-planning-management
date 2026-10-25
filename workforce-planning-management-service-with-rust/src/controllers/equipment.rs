@@ -75,10 +75,18 @@ struct AssetPayload {
 
 /// `POST /api/assets` — add an asset. A tag is unique within the organization.
 #[debug_handler]
-async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(payload): Json<AssetPayload>) -> Result<Response> {
+async fn create(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(payload): Json<AssetPayload>,
+) -> Result<Response> {
     ensure_valid(&organization_problems(&payload.organization_ref))?;
     ensure_org_in_scope(&ctx, &caller, &payload.organization_ref).await?;
-    ensure_valid(&rules::asset_problems(&payload.kind, &payload.tag, &payload.owner_role))?;
+    ensure_valid(&rules::asset_problems(
+        &payload.kind,
+        &payload.tag,
+        &payload.owner_role,
+    ))?;
     let tag = payload.tag.trim().to_string();
     let clash = assets::Entity::find()
         .filter(assets::Column::OrganizationRef.eq(&payload.organization_ref))
@@ -86,7 +94,9 @@ async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(paylo
         .count(&ctx.db)
         .await?;
     if clash > 0 {
-        return Err(unprocessable("another asset in this organization has that tag"));
+        return Err(unprocessable(
+            "another asset in this organization has that tag",
+        ));
     }
     let pid = Uuid::new_v4();
     let txn = ctx.db.begin().await?;
@@ -101,7 +111,15 @@ async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(paylo
     }
     .insert(&txn)
     .await?;
-    Audit::record(&txn, "asset", pid, "asset_created", caller.actor(), Some(json!({ "kind": payload.kind }))).await?;
+    Audit::record(
+        &txn,
+        "asset",
+        pid,
+        "asset_created",
+        caller.actor(),
+        Some(json!({ "kind": payload.kind })),
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": pid }))
 }
@@ -152,7 +170,9 @@ async fn issue(
         .count(&ctx.db)
         .await?;
     if held > 0 {
-        return Err(unprocessable("the asset is already out; record its return first"));
+        return Err(unprocessable(
+            "the asset is already out; record its return first",
+        ));
     }
     let issue_pid = Uuid::new_v4();
     let txn = ctx.db.begin().await?;
@@ -166,7 +186,15 @@ async fn issue(
     }
     .insert(&txn)
     .await?;
-    Audit::record(&txn, "asset_issue", issue_pid, "asset_issued", caller.actor(), None).await?;
+    Audit::record(
+        &txn,
+        "asset_issue",
+        issue_pid,
+        "asset_issued",
+        caller.actor(),
+        None,
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": issue_pid }))
 }
@@ -204,12 +232,22 @@ async fn close(
         today,
         payload.note.as_deref(),
     ))?;
-    let action = if payload.outcome == "returned" { "asset_returned" } else { "asset_written_off" };
+    let action = if payload.outcome == "returned" {
+        "asset_returned"
+    } else {
+        "asset_written_off"
+    };
     let txn = ctx.db.begin().await?;
     let mut active: asset_issues::ActiveModel = issue.into();
     active.returned_on = ActiveValue::set(Some(returned_on));
     active.outcome = ActiveValue::set(Some(payload.outcome.clone()));
-    active.note = ActiveValue::set(payload.note.as_ref().map(|n| n.trim().to_string()).filter(|n| !n.is_empty()));
+    active.note = ActiveValue::set(
+        payload
+            .note
+            .as_ref()
+            .map(|n| n.trim().to_string())
+            .filter(|n| !n.is_empty()),
+    );
     active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.update(&txn).await?;
     Audit::record(&txn, "asset_issue", pid, action, caller.actor(), None).await?;
@@ -219,7 +257,11 @@ async fn close(
 
 /// `GET /api/workers/{pid}/equipment` — what the worker holds and has held. The worker themself and HR.
 #[debug_handler]
-async fn of_worker(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<String>) -> Result<Response> {
+async fn of_worker(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let issues = asset_issues::Entity::find()
         .filter(asset_issues::Column::WorkerPid.eq(worker.pid))

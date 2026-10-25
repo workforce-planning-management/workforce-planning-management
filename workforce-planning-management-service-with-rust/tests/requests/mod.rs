@@ -22,10 +22,10 @@ mod development;
 mod directory_paging;
 mod duplicates;
 mod engagements;
+mod equipment;
 mod erasure_replay;
 mod ergonomics;
 mod escalations;
-mod equipment;
 mod expenses;
 mod grades;
 mod health_detail;
@@ -40,12 +40,10 @@ mod lms_links;
 mod mcp;
 mod mobility;
 mod movements;
+mod org_shape;
 mod organizations;
 mod pagination;
-mod org_shape;
 mod pay_assessment;
-mod policies;
-mod positions;
 mod pay_information;
 mod pay_positions;
 mod pay_range;
@@ -53,6 +51,8 @@ mod pay_scales;
 mod pay_transparency;
 mod payroll;
 mod plan_views;
+mod policies;
+mod positions;
 mod privacy;
 mod removals;
 mod rotas;
@@ -162,4 +162,32 @@ where
     });
     loco_rs::testing::prelude::request::<workforce_planning_management::app::App, _, _>(callback)
         .await;
+}
+
+/// Run set-up DDL for a test (a trigger that refuses audit rows, and its removal). The runtime database role may not change the schema,
+/// so the least-privilege drill (`scripts/verify-db-roles.sh`, WPM-R123) sets `WPM_TEST_DDL_URL` to the schema owner's URL and the DDL
+/// goes through that connection; everywhere else it goes through the test's own connection.
+pub(crate) async fn ddl(ctx: &loco_rs::app::AppContext, sql: &str) {
+    use sea_orm::ConnectionTrait;
+    match std::env::var("WPM_TEST_DDL_URL")
+        .ok()
+        .filter(|u| !u.trim().is_empty())
+    {
+        Some(url) => {
+            let owner = sea_orm::Database::connect(&url)
+                .await
+                .expect("the schema owner's connection");
+            owner
+                .execute_unprepared(sql)
+                .await
+                .expect("the DDL runs as the schema owner");
+            owner
+                .close()
+                .await
+                .expect("the schema owner's connection closes");
+        }
+        None => {
+            ctx.db.execute_unprepared(sql).await.expect("the DDL runs");
+        }
+    }
 }

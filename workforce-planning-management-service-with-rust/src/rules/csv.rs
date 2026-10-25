@@ -88,7 +88,10 @@ mod tests {
         assert_eq!(field("say \"hi\""), "\"say \"\"hi\"\"\"");
         assert_eq!(field("line\nbreak"), "\"line\nbreak\"");
         for formula in ["=1+1", "+1", "-1", "@SUM(A1)", "\tx", "\rx"] {
-            assert!(field(formula).trim_matches('"').starts_with('\''), "{formula:?}");
+            assert!(
+                field(formula).trim_matches('"').starts_with('\''),
+                "{formula:?}"
+            );
         }
         assert_eq!(field("=A,B"), "\"'=A,B\"");
         assert_eq!(field(""), "");

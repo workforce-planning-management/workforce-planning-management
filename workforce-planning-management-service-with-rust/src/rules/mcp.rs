@@ -467,9 +467,15 @@ pub fn origin_allowed(origin: Option<&str>, allowed: &[String]) -> bool {
 ///
 /// A message when `resource` is not an acceptable URL (https, or http to this machine, no query, fragment or credentials).
 pub fn metadata_path(resource: &str) -> Result<String, String> {
-    let resource = crate::rules::webhook::check_url(resource).map_err(|e| format!("the resource: {e}"))?;
-    let (_, rest) = resource.split_once("://").ok_or("the resource needs a scheme")?;
-    let path = rest.find('/').map_or("", |i| &rest[i..]).trim_end_matches('/');
+    let resource =
+        crate::rules::webhook::check_url(resource).map_err(|e| format!("the resource: {e}"))?;
+    let (_, rest) = resource
+        .split_once("://")
+        .ok_or("the resource needs a scheme")?;
+    let path = rest
+        .find('/')
+        .map_or("", |i| &rest[i..])
+        .trim_end_matches('/');
     Ok(format!("/.well-known/oauth-protected-resource{path}"))
 }
 
@@ -481,7 +487,9 @@ pub fn metadata_path(resource: &str) -> Result<String, String> {
 pub fn metadata_url(resource: &str) -> Result<String, String> {
     let path = metadata_path(resource)?;
     let resource = resource.trim();
-    let (scheme, rest) = resource.split_once("://").ok_or("the resource needs a scheme")?;
+    let (scheme, rest) = resource
+        .split_once("://")
+        .ok_or("the resource needs a scheme")?;
     let authority = rest.split('/').next().unwrap_or("");
     Ok(format!("{scheme}://{authority}{path}"))
 }
@@ -500,7 +508,10 @@ pub fn protected_resource(resource: &str, servers: &[String]) -> Result<Value, S
     }
     let mut issuers = Vec::new();
     for server in servers {
-        issuers.push(crate::rules::webhook::check_url(server).map_err(|e| format!("authorization server {server}: {e}"))?);
+        issuers.push(
+            crate::rules::webhook::check_url(server)
+                .map_err(|e| format!("authorization server {server}: {e}"))?,
+        );
     }
     Ok(json!({
         "resource": resource.trim(),
@@ -513,7 +524,10 @@ pub fn protected_resource(resource: &str, servers: &[String]) -> Result<Value, S
 /// The `WWW-Authenticate` challenge of a `401`: a bearer token is needed, and where the metadata is when it is configured.
 #[must_use]
 pub fn challenge(metadata_url: Option<&str>) -> String {
-    metadata_url.map_or_else(|| "Bearer".to_string(), |url| format!("Bearer resource_metadata=\"{url}\""))
+    metadata_url.map_or_else(
+        || "Bearer".to_string(),
+        |url| format!("Bearer resource_metadata=\"{url}\""),
+    )
 }
 
 #[cfg(test)]
@@ -782,33 +796,99 @@ mod tests {
 
     #[test]
     fn the_metadata_path_follows_the_resource_path_as_rfc_9728_says() {
-        assert_eq!(metadata_path("https://wpm.example/mcp").unwrap(), "/.well-known/oauth-protected-resource/mcp");
-        assert_eq!(metadata_path("https://wpm.example/").unwrap(), "/.well-known/oauth-protected-resource");
-        assert_eq!(metadata_path("https://wpm.example").unwrap(), "/.well-known/oauth-protected-resource");
-        assert_eq!(metadata_path("https://wpm.example/a/mcp/").unwrap(), "/.well-known/oauth-protected-resource/a/mcp");
-        assert_eq!(metadata_url("https://wpm.example/mcp").unwrap(), "https://wpm.example/.well-known/oauth-protected-resource/mcp");
-        assert_eq!(metadata_url("http://localhost:5150/mcp").unwrap(), "http://localhost:5150/.well-known/oauth-protected-resource/mcp");
-        for bad in ["http://wpm.example/mcp", "https://wpm.example/mcp?x=1", "https://wpm.example/mcp#f", "wpm.example/mcp", "https://user@wpm.example/mcp"] {
+        assert_eq!(
+            metadata_path("https://wpm.example/mcp").unwrap(),
+            "/.well-known/oauth-protected-resource/mcp"
+        );
+        assert_eq!(
+            metadata_path("https://wpm.example/").unwrap(),
+            "/.well-known/oauth-protected-resource"
+        );
+        assert_eq!(
+            metadata_path("https://wpm.example").unwrap(),
+            "/.well-known/oauth-protected-resource"
+        );
+        assert_eq!(
+            metadata_path("https://wpm.example/a/mcp/").unwrap(),
+            "/.well-known/oauth-protected-resource/a/mcp"
+        );
+        assert_eq!(
+            metadata_url("https://wpm.example/mcp").unwrap(),
+            "https://wpm.example/.well-known/oauth-protected-resource/mcp"
+        );
+        assert_eq!(
+            metadata_url("http://localhost:5150/mcp").unwrap(),
+            "http://localhost:5150/.well-known/oauth-protected-resource/mcp"
+        );
+        for bad in [
+            "http://wpm.example/mcp",
+            "https://wpm.example/mcp?x=1",
+            "https://wpm.example/mcp#f",
+            "wpm.example/mcp",
+            "https://user@wpm.example/mcp",
+        ] {
             assert!(metadata_path(bad).is_err(), "{bad}");
         }
     }
 
     #[test]
-    fn the_metadata_names_the_resource_and_its_authorization_servers_and_nothing_it_does_not_know() {
-        let doc = protected_resource("https://wpm.example/mcp", &["https://login.example/realms/wpm".to_string()]).unwrap();
+    fn the_metadata_names_the_resource_and_its_authorization_servers_and_nothing_it_does_not_know()
+    {
+        let doc = protected_resource(
+            "https://wpm.example/mcp",
+            &["https://login.example/realms/wpm".to_string()],
+        )
+        .unwrap();
         assert_eq!(doc["resource"], "https://wpm.example/mcp");
-        assert_eq!(doc["authorization_servers"], json!(["https://login.example/realms/wpm"]));
+        assert_eq!(
+            doc["authorization_servers"],
+            json!(["https://login.example/realms/wpm"])
+        );
         assert_eq!(doc["bearer_methods_supported"], json!(["header"]));
-        let keys: Vec<&str> = doc.as_object().unwrap().keys().map(String::as_str).collect();
-        assert_eq!(keys, ["authorization_servers", "bearer_methods_supported", "resource", "resource_name"], "no scopes or keys WPM does not define");
-        assert!(protected_resource("https://wpm.example/mcp", &[]).is_err(), "a resource with no authorization server is not described");
-        assert!(protected_resource("https://wpm.example/mcp", &["http://login.example".to_string()]).is_err());
-        assert!(protected_resource("http://wpm.example/mcp", &["https://login.example".to_string()]).is_err());
+        let keys: Vec<&str> = doc
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(
+            keys,
+            [
+                "authorization_servers",
+                "bearer_methods_supported",
+                "resource",
+                "resource_name"
+            ],
+            "no scopes or keys WPM does not define"
+        );
+        assert!(
+            protected_resource("https://wpm.example/mcp", &[]).is_err(),
+            "a resource with no authorization server is not described"
+        );
+        assert!(
+            protected_resource(
+                "https://wpm.example/mcp",
+                &["http://login.example".to_string()]
+            )
+            .is_err()
+        );
+        assert!(
+            protected_resource(
+                "http://wpm.example/mcp",
+                &["https://login.example".to_string()]
+            )
+            .is_err()
+        );
     }
 
     #[test]
     fn a_challenge_points_at_the_metadata_when_there_is_some() {
         assert_eq!(challenge(None), "Bearer");
-        assert_eq!(challenge(Some("https://wpm.example/.well-known/oauth-protected-resource/mcp")), "Bearer resource_metadata=\"https://wpm.example/.well-known/oauth-protected-resource/mcp\"");
+        assert_eq!(
+            challenge(Some(
+                "https://wpm.example/.well-known/oauth-protected-resource/mcp"
+            )),
+            "Bearer resource_metadata=\"https://wpm.example/.well-known/oauth-protected-resource/mcp\""
+        );
     }
 }

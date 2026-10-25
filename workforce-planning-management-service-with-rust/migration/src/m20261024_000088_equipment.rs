@@ -69,7 +69,8 @@ impl MigrationTrait for Migration {
     /// Propagates any DDL error.
     async fn down(&self, m: &SchemaManager) -> Result<(), DbErr> {
         let db = m.get_connection();
-        db.execute_unprepared("DROP TABLE IF EXISTS asset_issues").await?;
+        db.execute_unprepared("DROP TABLE IF EXISTS asset_issues")
+            .await?;
         db.execute_unprepared("DROP TABLE IF EXISTS assets").await?;
         Ok(())
     }

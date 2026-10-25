@@ -73,7 +73,11 @@ struct PolicyPayload {
 
 /// `POST /api/policies` — name a policy. A name is unique within the organization.
 #[debug_handler]
-async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(payload): Json<PolicyPayload>) -> Result<Response> {
+async fn create(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(payload): Json<PolicyPayload>,
+) -> Result<Response> {
     ensure_valid(&organization_problems(&payload.organization_ref))?;
     ensure_org_in_scope(&ctx, &caller, &payload.organization_ref).await?;
     let name = payload.name.trim().to_string();
@@ -87,7 +91,9 @@ async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(paylo
         .count(&ctx.db)
         .await?;
     if clash > 0 {
-        return Err(unprocessable("another policy in this organization has that name"));
+        return Err(unprocessable(
+            "another policy in this organization has that name",
+        ));
     }
     let pid = Uuid::new_v4();
     let txn = ctx.db.begin().await?;
@@ -113,7 +119,12 @@ struct RenamePayload {
 /// `PATCH /api/policies/{pid}` — correct a policy's name. The name is unique within the organization; versions, their titles and every
 /// acknowledgement are unchanged. Audited in the same transaction.
 #[debug_handler]
-async fn rename(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>, Json(payload): Json<RenamePayload>) -> Result<Response> {
+async fn rename(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+    Json(payload): Json<RenamePayload>,
+) -> Result<Response> {
     let policy = find_policy(&ctx, &caller, pid).await?;
     let name = payload.name.trim().to_string();
     let n = name.chars().count();
@@ -127,7 +138,9 @@ async fn rename(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid):
         .count(&ctx.db)
         .await?;
     if clash > 0 {
-        return Err(unprocessable("another policy in this organization has that name"));
+        return Err(unprocessable(
+            "another policy in this organization has that name",
+        ));
     }
     let txn = ctx.db.begin().await?;
     let mut active: policies::ActiveModel = policy.into();
@@ -148,7 +161,11 @@ struct VersionPayload {
     acknowledge_within_days: Option<i32>,
 }
 
-async fn find_policy(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<policies::Model> {
+async fn find_policy(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    pid: Uuid,
+) -> Result<policies::Model> {
     let row = policies::Entity::find()
         .filter(policies::Column::Pid.eq(pid))
         .one(&ctx.db)
@@ -168,7 +185,9 @@ async fn add_version(
     Json(payload): Json<VersionPayload>,
 ) -> Result<Response> {
     let policy = find_policy(&ctx, &caller, pid).await?;
-    let days = payload.acknowledge_within_days.unwrap_or(rules::DEFAULT_DAYS);
+    let days = payload
+        .acknowledge_within_days
+        .unwrap_or(rules::DEFAULT_DAYS);
     ensure_valid(&rules::version_problems(
         &payload.title,
         &payload.document_ref,
@@ -176,7 +195,10 @@ async fn add_version(
         payload.audience_value.as_deref(),
         days,
     ))?;
-    let latest = versions_of(&ctx, pid).await?.last().map_or(0, |v| v.version);
+    let latest = versions_of(&ctx, pid)
+        .await?
+        .last()
+        .map_or(0, |v| v.version);
     let version_pid = Uuid::new_v4();
     let txn = ctx.db.begin().await?;
     policy_versions::ActiveModel {
@@ -187,14 +209,28 @@ async fn add_version(
         document_ref: ActiveValue::set(payload.document_ref.trim().to_string()),
         effective_on: ActiveValue::set(payload.effective_on),
         audience_kind: ActiveValue::set(payload.audience.clone()),
-        audience_value: ActiveValue::set(payload.audience_value.as_ref().map(|v| v.trim().to_string()).filter(|v| !v.is_empty())),
+        audience_value: ActiveValue::set(
+            payload
+                .audience_value
+                .as_ref()
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty()),
+        ),
         acknowledge_within_days: ActiveValue::set(days),
         recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         ..Default::default()
     }
     .insert(&txn)
     .await?;
-    Audit::record(&txn, "policy_version", version_pid, "policy_version_added", caller.actor(), Some(json!({ "version": latest + 1 }))).await?;
+    Audit::record(
+        &txn,
+        "policy_version",
+        version_pid,
+        "policy_version_added",
+        caller.actor(),
+        Some(json!({ "version": latest + 1 })),
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": version_pid, "version": latest + 1 }))
 }
@@ -202,7 +238,11 @@ async fn add_version(
 /// `GET /api/workers/{pid}/policies` — the newest version in force of each policy aimed at the worker, and where they stand on it.
 /// The worker themself and HR.
 #[debug_handler]
-async fn of_worker(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<String>) -> Result<Response> {
+async fn of_worker(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     list_for(&ctx, &worker).await
 }
@@ -226,13 +266,31 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
     let mut waiting = 0_usize;
     for p in &rows {
         let versions = versions_of(ctx, p.pid).await?;
-        let facts: Vec<Fact> = versions.iter().map(|v| Fact { version: v.version, effective_on: v.effective_on }).collect();
-        let Some(i) = rules::current(&facts, today) else { continue };
+        let facts: Vec<Fact> = versions
+            .iter()
+            .map(|v| Fact {
+                version: v.version,
+                effective_on: v.effective_on,
+            })
+            .collect();
+        let Some(i) = rules::current(&facts, today) else {
+            continue;
+        };
         let v = &versions[i];
-        if !rules::in_audience(&v.audience_kind, v.audience_value.as_deref(), &worker.department, &worker.job_title) {
+        if !rules::in_audience(
+            &v.audience_kind,
+            v.audience_value.as_deref(),
+            &worker.department,
+            &worker.job_title,
+        ) {
             continue;
         }
-        let standing = rules::standing(v.effective_on, v.acknowledge_within_days, acked.get(&v.pid).copied(), today);
+        let standing = rules::standing(
+            v.effective_on,
+            v.acknowledge_within_days,
+            acked.get(&v.pid).copied(),
+            today,
+        );
         if !matches!(standing, rules::Standing::Done { .. }) {
             waiting += 1;
         }
@@ -264,15 +322,28 @@ async fn applicable(
         .await?
         .ok_or(Error::NotFound)?;
     if policy.organization_ref != worker.organization_ref
-        || !rules::in_audience(&v.audience_kind, v.audience_value.as_deref(), &worker.department, &worker.job_title)
+        || !rules::in_audience(
+            &v.audience_kind,
+            v.audience_value.as_deref(),
+            &worker.department,
+            &worker.job_title,
+        )
     {
         return Err(Error::NotFound);
     }
     let versions = versions_of(ctx, policy.pid).await?;
-    let facts: Vec<Fact> = versions.iter().map(|x| Fact { version: x.version, effective_on: x.effective_on }).collect();
+    let facts: Vec<Fact> = versions
+        .iter()
+        .map(|x| Fact {
+            version: x.version,
+            effective_on: x.effective_on,
+        })
+        .collect();
     let newest = rules::current(&facts, today).map(|i| versions[i].pid);
     if newest != Some(v.pid) {
-        return Err(unprocessable("only the newest version in force can be acknowledged"));
+        return Err(unprocessable(
+            "only the newest version in force can be acknowledged",
+        ));
     }
     Ok(v)
 }
@@ -307,7 +378,15 @@ pub(crate) async fn acknowledge_for(
     }
     .insert(&txn)
     .await?;
-    Audit::record(&txn, "policy_acknowledgement", ack_pid, "policy_acknowledged", caller.actor(), None).await?;
+    Audit::record(
+        &txn,
+        "policy_acknowledgement",
+        ack_pid,
+        "policy_acknowledged",
+        caller.actor(),
+        None,
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "acknowledged_on": today }))
 }
@@ -322,12 +401,19 @@ async fn privileged(ctx: &AppContext, caller: &MaybeAuthUser, organization: &str
     if !auth::require_auth() {
         return Ok(true);
     }
-    let Some(claims) = caller.claims() else { return Ok(false) };
+    let Some(claims) = caller.claims() else {
+        return Ok(false);
+    };
     Ok(crate::need_to_know::has_privileged_attrs(claims)
         || crate::need_to_know::privileged_by_membership(ctx, claims, Some(organization)).await?)
 }
 
-async fn audience_workers(ctx: &AppContext, version: &policy_versions::Model, organization: &str, on: NaiveDate) -> Result<Vec<workers::Model>> {
+async fn audience_workers(
+    ctx: &AppContext,
+    version: &policy_versions::Model,
+    organization: &str,
+    on: NaiveDate,
+) -> Result<Vec<workers::Model>> {
     Ok(workers::Entity::find()
         .filter(workers::Column::OrganizationRef.eq(organization))
         .filter(workers::Column::DeletedAt.is_null())
@@ -336,13 +422,25 @@ async fn audience_workers(ctx: &AppContext, version: &policy_versions::Model, or
         .await?
         .into_iter()
         .filter(|w| is_employed_on(on, w.hired_on, w.terminated_on))
-        .filter(|w| rules::in_audience(&version.audience_kind, version.audience_value.as_deref(), &w.department, &w.job_title))
+        .filter(|w| {
+            rules::in_audience(
+                &version.audience_kind,
+                version.audience_value.as_deref(),
+                &w.department,
+                &w.job_title,
+            )
+        })
         .collect())
 }
 
 /// The version and its policy's organization. `scoped` applies the caller's organization scope; a manager reading their own team's
 /// counts has none to apply (a plain worker holds no membership), and the version must be of their own organization instead.
-async fn version_and_org(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid, scoped: bool) -> Result<(policy_versions::Model, String)> {
+async fn version_and_org(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    pid: Uuid,
+    scoped: bool,
+) -> Result<(policy_versions::Model, String)> {
     let v = policy_versions::Entity::find()
         .filter(policy_versions::Column::Pid.eq(pid))
         .one(&ctx.db)
@@ -372,7 +470,8 @@ async fn team_counts(
 ) -> Result<Response> {
     let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let someone_else = auth::acting_for_other(&caller, &manager.person_ref);
-    let (version, organization) = version_and_org(&ctx, &caller, query.version_pid, someone_else).await?;
+    let (version, organization) =
+        version_and_org(&ctx, &caller, query.version_pid, someone_else).await?;
     if organization != manager.organization_ref {
         return Err(Error::NotFound);
     }
@@ -390,14 +489,22 @@ async fn team_counts(
         .filter(policy_acknowledgements::Column::WorkerPid.is_in(team.clone()))
         .count(&ctx.db)
         .await?;
-    let count = rules::team_count(team.len(), usize::try_from(acknowledged).unwrap_or(0), DEFAULT_FLOOR);
+    let count = rules::team_count(
+        team.len(),
+        usize::try_from(acknowledged).unwrap_or(0),
+        DEFAULT_FLOOR,
+    );
     format::json(json!({ "version_pid": version.pid, "floor": DEFAULT_FLOOR, "count": count }))
 }
 
 /// `GET /api/policy-versions/{pid}/acknowledgements` — the named record: everyone in the audience, with the day they acknowledged
 /// or null. HR and the like only; the read is audited.
 #[debug_handler]
-async fn named_record(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>) -> Result<Response> {
+async fn named_record(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+) -> Result<Response> {
     let (version, organization) = version_and_org(&ctx, &caller, pid, true).await?;
     if !privileged(&ctx, &caller, &organization).await? {
         return Err(forbidden("the named record is for HR"));
@@ -410,7 +517,15 @@ async fn named_record(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path
         .into_iter()
         .map(|a| (a.worker_pid, a.acknowledged_on))
         .collect();
-    Audit::record(&ctx.db, "policy_version", version.pid, "policy_acknowledgements_read", caller.actor(), Some(json!({ "audience": people.len() }))).await?;
+    Audit::record(
+        &ctx.db,
+        "policy_version",
+        version.pid,
+        "policy_acknowledgements_read",
+        caller.actor(),
+        Some(json!({ "audience": people.len() })),
+    )
+    .await?;
     let rows: Vec<_> = people
         .iter()
         .map(|w| json!({ "worker_pid": w.pid, "worker_number": w.worker_number, "acknowledged_on": acked.get(&w.pid) }))

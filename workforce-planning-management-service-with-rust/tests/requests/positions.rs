@@ -30,12 +30,20 @@ async fn seat(request: &loco_rs::TestServer, org: &str, cost_centre: &str, budge
 }
 
 async fn go(request: &loco_rs::TestServer, pid: &str, to: &str) -> (u16, String) {
-    let r = request.post(&format!("/api/positions/{pid}/status")).json(&json!({ "to": to })).await;
+    let r = request
+        .post(&format!("/api/positions/{pid}/status"))
+        .json(&json!({ "to": to }))
+        .await;
     (r.status_code().as_u16(), r.text())
 }
 
 fn centre<'a>(body: &'a Value, name: &str) -> &'a Value {
-    body["cost_centres"].as_array().unwrap().iter().find(|c| c["cost_centre"] == name).unwrap()
+    body["cost_centres"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["cost_centre"] == name)
+        .unwrap()
 }
 
 #[tokio::test]
@@ -155,12 +163,11 @@ async fn a_seat_moves_with_its_facts_and_the_establishment_never_nets() {
         }
 
         // No audit, no change (WPM-D107).
-        ctx.db.execute_unprepared(
-            "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
-             CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()").await.unwrap();
+        crate::requests::ddl(&ctx, "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
+             CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()").await;
         let refused = request.post("/api/positions").json(&bad(json!({ "cost_centre": "CC-NEVER" }))).await;
         assert!(refused.status_code().is_server_error());
-        ctx.db.execute_unprepared("DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await.unwrap();
+        crate::requests::ddl(&ctx, "DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await;
         let after: Value = request.get(&format!("/api/positions?organization={org}")).await.json();
         assert!(!after.to_string().contains("CC-NEVER"));
     })

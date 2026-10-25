@@ -267,7 +267,11 @@ pub fn report(workers: &[WorkerPay], floor: usize, basis: VariableBasis) -> Resu
         report.median_gap = Figure::Unknown(said);
         report.median_variable_gap = Figure::Unknown(said);
         report.receiving_variable = Figure::Unknown(said);
-        report.quartiles = report.quartiles.iter().map(|_| Figure::Unknown(said)).collect();
+        report.quartiles = report
+            .quartiles
+            .iter()
+            .map(|_| Figure::Unknown(said))
+            .collect();
     }
     Ok(report)
 }
@@ -892,7 +896,8 @@ mod tests {
     }
 
     #[test]
-    fn with_no_variable_pay_recorded_every_figure_that_needs_it_says_so_but_basic_pay_by_category_still_shows() {
+    fn with_no_variable_pay_recorded_every_figure_that_needs_it_says_so_but_basic_pay_by_category_still_shows()
+     {
         let mut w = Vec::new();
         for i in 0..6 {
             let mut a = group(i, 1, Declared::Female, 3_800_000, 0).remove(0);
@@ -912,9 +917,15 @@ mod tests {
         assert_eq!(r.median_variable_gap, Figure::Unknown(said));
         assert_eq!(r.receiving_variable, Figure::Unknown(said));
         assert_eq!(r.quartiles, vec![Figure::Unknown(said); 4]);
-        assert!(matches!(r.categories[0].basic, Figure::Shown(_)), "basic pay by category needs no variable part");
+        assert!(
+            matches!(r.categories[0].basic, Figure::Shown(_)),
+            "basic pay by category needs no variable part"
+        );
         // Nobody at all is still "nobody", not "no variable pay".
-        assert_eq!(report(&[], 5, VariableBasis::AllKnown).unwrap().mean_gap, Figure::Unknown(Reason::NoWorkers));
+        assert_eq!(
+            report(&[], 5, VariableBasis::AllKnown).unwrap().mean_gap,
+            Figure::Unknown(Reason::NoWorkers)
+        );
     }
 
     #[test]

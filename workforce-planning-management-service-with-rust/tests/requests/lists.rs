@@ -27,7 +27,10 @@ async fn every_collection_read_answers_with_a_list() {
             assert_eq!(response.status_code(), 200, "{url}");
             let body: Value = response.json();
             assert!(
-                body.is_array() || body.as_object().is_some_and(|o| o.values().any(Value::is_array)),
+                body.is_array()
+                    || body
+                        .as_object()
+                        .is_some_and(|o| o.values().any(Value::is_array)),
                 "{url} should hold a list: {body}"
             );
         }

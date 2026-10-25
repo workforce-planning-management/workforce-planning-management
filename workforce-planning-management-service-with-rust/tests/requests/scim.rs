@@ -27,42 +27,79 @@ struct Stub {
 type Shared = Arc<Stub>;
 
 fn note(s: &Stub, headers: &HeaderMap, method: &str, path: &str, body: Value) {
-    s.tokens.lock().unwrap().push(headers.get("authorization").and_then(|v| v.to_str().ok()).unwrap_or("").to_string());
-    s.calls.lock().unwrap().push((method.to_string(), path.to_string(), body));
+    s.tokens.lock().unwrap().push(
+        headers
+            .get("authorization")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("")
+            .to_string(),
+    );
+    s.calls
+        .lock()
+        .unwrap()
+        .push((method.to_string(), path.to_string(), body));
 }
 
-async fn post_user(State(s): State<Shared>, headers: HeaderMap, Json(body): Json<Value>) -> (StatusCode, Json<Value>) {
+async fn post_user(
+    State(s): State<Shared>,
+    headers: HeaderMap,
+    Json(body): Json<Value>,
+) -> (StatusCode, Json<Value>) {
     note(&s, &headers, "POST", "/Users", body);
     if let Some(code) = *s.fail.lock().unwrap() {
-        return (StatusCode::from_u16(code).unwrap(), Json(json!({ "detail": "SECRET-BODY-FROM-IDP" })));
+        return (
+            StatusCode::from_u16(code).unwrap(),
+            Json(json!({ "detail": "SECRET-BODY-FROM-IDP" })),
+        );
     }
     if *s.conflict.lock().unwrap() {
         return (StatusCode::CONFLICT, Json(json!({})));
     }
     let mut n = s.next.lock().unwrap();
     *n += 1;
-    (StatusCode::CREATED, Json(json!({ "id": format!("idp-{n}") })))
+    (
+        StatusCode::CREATED,
+        Json(json!({ "id": format!("idp-{n}") })),
+    )
 }
 
-async fn put_user(State(s): State<Shared>, headers: HeaderMap, Path(id): Path<String>, Json(body): Json<Value>) -> (StatusCode, Json<Value>) {
+async fn put_user(
+    State(s): State<Shared>,
+    headers: HeaderMap,
+    Path(id): Path<String>,
+    Json(body): Json<Value>,
+) -> (StatusCode, Json<Value>) {
     note(&s, &headers, "PUT", &format!("/Users/{id}"), body);
     (StatusCode::OK, Json(json!({ "id": id })))
 }
 
-async fn find_user(State(s): State<Shared>, headers: HeaderMap, Query(q): Query<std::collections::HashMap<String, String>>) -> Json<Value> {
+async fn find_user(
+    State(s): State<Shared>,
+    headers: HeaderMap,
+    Query(q): Query<std::collections::HashMap<String, String>>,
+) -> Json<Value> {
     note(&s, &headers, "GET", "/Users", json!(q));
     Json(json!({ "Resources": [{ "id": "idp-existing" }] }))
 }
 
 async fn serve(stub: Shared) -> String {
-    let app = Router::new().route("/Users", post(post_user).get(find_user)).route("/Users/{id}", put(put_user)).with_state(stub);
+    let app = Router::new()
+        .route("/Users", post(post_user).get(find_user))
+        .route("/Users/{id}", put(put_user))
+        .with_state(stub);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let url = format!("http://{}", listener.local_addr().unwrap());
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     url
 }
 
-async fn hire(request: &loco_rs::TestServer, org: &str, number: &str, manager: Option<&str>, hired_on: &str) -> String {
+async fn hire(
+    request: &loco_rs::TestServer,
+    org: &str,
+    number: &str,
+    manager: Option<&str>,
+    hired_on: &str,
+) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({

@@ -29,7 +29,10 @@ pub fn problems(from: Uuid, to: Uuid, confidence: &str, basis: &str, source: &st
         out.push("a skill is not mapped to itself".to_string());
     }
     if !CONFIDENCES.contains(&confidence) {
-        out.push(format!("confidence must be one of: {}", CONFIDENCES.join(", ")));
+        out.push(format!(
+            "confidence must be one of: {}",
+            CONFIDENCES.join(", ")
+        ));
     }
     if !BASES.contains(&basis) {
         out.push(format!("basis must be one of: {}", BASES.join(", ")));
@@ -88,7 +91,11 @@ fn rank(confidence: &str) -> u8 {
 
 /// Grade the `undeclared` gaps through the mappings, in place. A direct declaration is never overridden. Of several counting
 /// mappings the most confident wins, then the highest declared level, then the smaller skill id, so the answer is stable.
-pub fn apply(gaps: &mut [Gap], declared: &BTreeMap<Uuid, i32>, mappings: &[Mapping<'_>]) -> Applied {
+pub fn apply(
+    gaps: &mut [Gap],
+    declared: &BTreeMap<Uuid, i32>,
+    mappings: &[Mapping<'_>],
+) -> Applied {
     let mut out = Applied::default();
     for gap in gaps.iter_mut().filter(|g| g.status == Status::Undeclared) {
         let reaching: Vec<&Mapping<'_>> = mappings
@@ -142,13 +149,21 @@ mod tests {
     }
 
     fn need(skill: Uuid, required: i32) -> Need {
-        Need { skill, required, importance: "important".to_string(), source: Source::Role }
+        Need {
+            skill,
+            required,
+            importance: "important".to_string(),
+            source: Source::Role,
+        }
     }
 
     #[test]
     fn a_mapping_needs_two_skills_a_known_confidence_and_basis_and_a_stated_source() {
         let ok = |c: &str, b: &str, s: &str| problems(id(1), id(2), c, b, s);
-        assert_eq!(ok("exact", "authority", "ESCO to SFIA crosswalk, 2025"), Vec::<String>::new());
+        assert_eq!(
+            ok("exact", "authority", "ESCO to SFIA crosswalk, 2025"),
+            Vec::<String>::new()
+        );
         assert_eq!(problems(id(1), id(1), "exact", "authority", "x").len(), 1);
         assert_eq!(ok("same", "authority", "x").len(), 1);
         assert_eq!(ok("exact", "hunch", "x").len(), 1);
@@ -167,18 +182,52 @@ mod tests {
         let (needed, held) = (id(10), id(20));
         let mut gaps = merge(&[need(needed, 3)], &BTreeMap::new());
         let declared = BTreeMap::from([(held, 4)]);
-        let applied = apply(&mut gaps, &declared, &[Mapping { from: held, to: needed, confidence: "close" }]);
+        let applied = apply(
+            &mut gaps,
+            &declared,
+            &[Mapping {
+                from: held,
+                to: needed,
+                confidence: "close",
+            }],
+        );
         assert_eq!(gaps[0].status, Status::Met);
         assert_eq!(gaps[0].declared, Some(4));
-        assert_eq!(applied.via, vec![Via { skill: needed, declared_skill: held, confidence: "close".to_string() }]);
+        assert_eq!(
+            applied.via,
+            vec![Via {
+                skill: needed,
+                declared_skill: held,
+                confidence: "close".to_string()
+            }]
+        );
         // Exactly the level needed is met, not short.
         let mut gaps = merge(&[need(needed, 4)], &BTreeMap::new());
-        apply(&mut gaps, &declared, &[Mapping { from: held, to: needed, confidence: "exact" }]);
+        apply(
+            &mut gaps,
+            &declared,
+            &[Mapping {
+                from: held,
+                to: needed,
+                confidence: "exact",
+            }],
+        );
         assert_eq!((gaps[0].status, gaps[0].shortfall), (Status::Met, None));
         // Below the need: a shortfall, graded the same way.
         let mut gaps = merge(&[need(needed, 5)], &BTreeMap::new());
-        apply(&mut gaps, &declared, &[Mapping { from: held, to: needed, confidence: "exact" }]);
-        assert_eq!((gaps[0].status, gaps[0].shortfall), (Status::Below, Some(1)));
+        apply(
+            &mut gaps,
+            &declared,
+            &[Mapping {
+                from: held,
+                to: needed,
+                confidence: "exact",
+            }],
+        );
+        assert_eq!(
+            (gaps[0].status, gaps[0].shortfall),
+            (Status::Below, Some(1))
+        );
     }
 
     #[test]
@@ -186,7 +235,15 @@ mod tests {
         let (needed, held) = (id(10), id(20));
         for confidence in ["broader", "narrower"] {
             let mut gaps = merge(&[need(needed, 1)], &BTreeMap::new());
-            let applied = apply(&mut gaps, &BTreeMap::from([(held, 5)]), &[Mapping { from: held, to: needed, confidence }]);
+            let applied = apply(
+                &mut gaps,
+                &BTreeMap::from([(held, 5)]),
+                &[Mapping {
+                    from: held,
+                    to: needed,
+                    confidence,
+                }],
+            );
             assert_eq!(gaps[0].status, Status::Undeclared, "{confidence}");
             assert_eq!(gaps[0].declared, None);
             assert_eq!(applied.via, Vec::<Via>::new());
@@ -200,8 +257,19 @@ mod tests {
         let mut gaps = merge(&[need(id(10), 3), need(id(11), 3)], &BTreeMap::new());
         let declared = BTreeMap::from([(id(20), 4)]);
         // A mapping whose declared side the person has not declared does not reach anything.
-        let applied = apply(&mut gaps, &declared, &[Mapping { from: id(99), to: id(10), confidence: "exact" }]);
-        assert!(gaps.iter().all(|g| g.status == Status::Undeclared && g.declared.is_none()));
+        let applied = apply(
+            &mut gaps,
+            &declared,
+            &[Mapping {
+                from: id(99),
+                to: id(10),
+                confidence: "exact",
+            }],
+        );
+        assert!(
+            gaps.iter()
+                .all(|g| g.status == Status::Undeclared && g.declared.is_none())
+        );
         assert_eq!(applied.unmapped, 2);
     }
 
@@ -210,7 +278,15 @@ mod tests {
         let (needed, held) = (id(10), id(20));
         let declared = BTreeMap::from([(needed, 1), (held, 5)]);
         let mut gaps = merge(&[need(needed, 3)], &declared);
-        apply(&mut gaps, &declared, &[Mapping { from: held, to: needed, confidence: "exact" }]);
+        apply(
+            &mut gaps,
+            &declared,
+            &[Mapping {
+                from: held,
+                to: needed,
+                confidence: "exact",
+            }],
+        );
         assert_eq!((gaps[0].status, gaps[0].declared), (Status::Below, Some(1)));
     }
 
@@ -219,13 +295,29 @@ mod tests {
         let needed = id(10);
         let declared = BTreeMap::from([(id(20), 5), (id(21), 2), (id(22), 3)]);
         let maps = [
-            Mapping { from: id(20), to: needed, confidence: "close" },
-            Mapping { from: id(21), to: needed, confidence: "exact" },
-            Mapping { from: id(22), to: needed, confidence: "exact" },
+            Mapping {
+                from: id(20),
+                to: needed,
+                confidence: "close",
+            },
+            Mapping {
+                from: id(21),
+                to: needed,
+                confidence: "exact",
+            },
+            Mapping {
+                from: id(22),
+                to: needed,
+                confidence: "exact",
+            },
         ];
         let mut gaps = merge(&[need(needed, 4)], &BTreeMap::new());
         let applied = apply(&mut gaps, &declared, &maps);
-        assert_eq!(applied.via[0].declared_skill, id(22), "exact beats close; of the exact, level 3 beats 2");
+        assert_eq!(
+            applied.via[0].declared_skill,
+            id(22),
+            "exact beats close; of the exact, level 3 beats 2"
+        );
         assert_eq!(gaps[0].declared, Some(3));
     }
 }

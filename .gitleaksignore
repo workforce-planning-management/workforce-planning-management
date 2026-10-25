@@ -15,3 +15,7 @@ fd02d154686d449edc8b6e67ba2c577957a4f777:workforce-planning-management-ui-with-s
 37bca1399ddc3178850a900782ef0b77fb8f1041:workforce-planning-management-service-with-rust/config/test.yaml:generic-api-key:93
 # loco default JWT secret for the development profile (production reads JWT_SECRET from the environment)
 37bca1399ddc3178850a900782ef0b77fb8f1041:workforce-planning-management-service-with-rust/config/development.yaml:generic-api-key:96
+# a throwaway Ed25519 seed that signs test credentials, set in a test process only (WPM-T284); it protects nothing
+6b5a33777af18f49f2e4dc448451e11027c6d637:workforce-planning-management-service-with-rust/tests/enforcement_pay_gap.rs:generic-api-key:94
+# a made-up idempotency key in a UI unit test
+46a026786fd9fbc58a0271551f82993b90279a64:workforce-planning-management-ui-with-svelte/tests/unit/proxy.test.ts:generic-api-key:11

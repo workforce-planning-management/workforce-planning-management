@@ -52,7 +52,13 @@ fn group<'a>(body: &'a Value, by: &str, key: &str) -> &'a Value {
         .unwrap()
         .iter()
         .find(|g| g["by"] == by)
-        .and_then(|g| g["groups"].as_array().unwrap().iter().find(|x| x["key"] == key))
+        .and_then(|g| {
+            g["groups"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|x| x["key"] == key)
+        })
         .unwrap_or_else(|| panic!("{by}/{key}"))
 }
 
@@ -74,13 +80,25 @@ async fn pay_is_placed_in_its_band_with_small_groups_withheld_and_a_total_that_g
 
         let care = group(&body, "department", "care");
         assert_eq!(care["figure"]["kind"], "shown");
-        assert_eq!(care["figure"]["value"]["workers"], 12, "the worker without pay is not in it");
+        assert_eq!(
+            care["figure"]["value"]["workers"], 12,
+            "the worker without pay is not in it"
+        );
         assert_eq!(care["figure"]["value"]["compa_mean_bp"], 10_000);
-        assert_eq!(care["figure"]["value"]["penetration"]["value"]["mean_bp"], 5_000);
+        assert_eq!(
+            care["figure"]["value"]["penetration"]["value"]["mean_bp"],
+            5_000
+        );
 
         let legal = group(&body, "department", "legal");
-        assert_eq!(legal["figure"]["value"]["compa_mean_bp"], 10_926, "4 884 100 over 4 470 000");
-        assert_eq!(legal["figure"]["value"]["penetration"]["value"]["mean_bp"], 10_000, "the top of the band");
+        assert_eq!(
+            legal["figure"]["value"]["compa_mean_bp"], 10_926,
+            "4 884 100 over 4 470 000"
+        );
+        assert_eq!(
+            legal["figure"]["value"]["penetration"]["value"]["mean_bp"], 10_000,
+            "the top of the band"
+        );
 
         // Three is under the floor of ten: withheld, with no count and no figure.
         let admin = group(&body, "department", "admin");
@@ -102,18 +120,55 @@ async fn pay_is_placed_in_its_band_with_small_groups_withheld_and_a_total_that_g
         let body: Value = request.get(&url2).await.json();
         assert_eq!(body["report"]["overall"]["value"]["workers"], 23);
         assert_eq!(body["report"]["overall"]["value"]["compa_mean_bp"], 10_443);
-        assert_eq!(group(&body, "department", "legal")["outlier"]["kind"], "above");
-        assert_eq!(group(&body, "department", "care")["outlier"]["kind"], "below");
-        let calm: Value = request.get(&format!("/api/reports/pay-range?organization={org2}&as_of=2026-10-24")).await.json();
-        assert_eq!(group(&calm, "department", "legal")["outlier"]["kind"], "no", "ten points is the default");
+        assert_eq!(
+            group(&body, "department", "legal")["outlier"]["kind"],
+            "above"
+        );
+        assert_eq!(
+            group(&body, "department", "care")["outlier"]["kind"],
+            "below"
+        );
+        let calm: Value = request
+            .get(&format!(
+                "/api/reports/pay-range?organization={org2}&as_of=2026-10-24"
+            ))
+            .await
+            .json();
+        assert_eq!(
+            group(&calm, "department", "legal")["outlier"]["kind"],
+            "no",
+            "ten points is the default"
+        );
 
         // Nobody is named, no pid or number is carried, and the cut-off is bounded.
         let text = body.to_string();
         assert!(!text.contains("Pay Range"), "no name");
         assert!(!text.contains("PR-"), "no worker number");
-        assert_eq!(request.get(&format!("/api/reports/pay-range?organization={org2}&cutoff=0")).await.status_code(), 422);
-        assert_eq!(request.get(&format!("/api/reports/pay-range?organization={org2}&as_of=2999-01-01")).await.status_code(), 422);
-        assert_eq!(request.get("/api/reports/pay-range?organization=nonsense").await.status_code(), 422);
+        assert_eq!(
+            request
+                .get(&format!(
+                    "/api/reports/pay-range?organization={org2}&cutoff=0"
+                ))
+                .await
+                .status_code(),
+            422
+        );
+        assert_eq!(
+            request
+                .get(&format!(
+                    "/api/reports/pay-range?organization={org2}&as_of=2999-01-01"
+                ))
+                .await
+                .status_code(),
+            422
+        );
+        assert_eq!(
+            request
+                .get("/api/reports/pay-range?organization=nonsense")
+                .await
+                .status_code(),
+            422
+        );
     })
     .await;
 }

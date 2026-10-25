@@ -29,14 +29,25 @@ struct Issuer {
 }
 
 fn issuer() -> Result<Issuer> {
-    let off = || unprocessable("credential issuing is not set up on this deployment (WPM_CREDENTIAL_ISSUER and WPM_CREDENTIAL_SIGNING_KEY)");
+    let off = || {
+        unprocessable(
+            "credential issuing is not set up on this deployment (WPM_CREDENTIAL_ISSUER and WPM_CREDENTIAL_SIGNING_KEY)",
+        )
+    };
     let id = crate::compat::env_var("WPM_CREDENTIAL_ISSUER").ok_or_else(off)?;
     let id = check_url(&id).map_err(|e| unprocessable(&format!("WPM_CREDENTIAL_ISSUER: {e}")))?;
     let id = id.trim_end_matches('/').to_string();
     let seed = crate::compat::env_var("WPM_CREDENTIAL_SIGNING_KEY").ok_or_else(off)?;
-    let seed = rules::parse_seed(&seed).map_err(|e| unprocessable(&format!("WPM_CREDENTIAL_SIGNING_KEY: {e}")))?;
+    let seed = rules::parse_seed(&seed)
+        .map_err(|e| unprocessable(&format!("WPM_CREDENTIAL_SIGNING_KEY: {e}")))?;
     let name = crate::compat::env_var("WPM_CREDENTIAL_ISSUER_NAME").unwrap_or_else(|| id.clone());
-    Ok(Issuer { kid: format!("{id}#key-1"), list_url: format!("{id}/api/credentials/status-list"), id, name, seed })
+    Ok(Issuer {
+        kid: format!("{id}#key-1"),
+        list_url: format!("{id}/api/credentials/status-list"),
+        id,
+        name,
+        seed,
+    })
 }
 
 fn stamp(at: DateTime<Utc>) -> String {
@@ -58,7 +69,12 @@ pub(crate) struct IssuePayload {
 /// `POST /api/me/credentials` — issue a credential for one of the caller's own CPD entries. Only on the worker's request, only for an
 /// entry that exists, is theirs and is verified, and once while it is live. The signed credential is returned here and nowhere else.
 #[debug_handler]
-pub(crate) async fn issue(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(payload): Json<IssuePayload>) -> Result<Response> {
+#[allow(clippy::too_many_lines)] // one transaction read top to bottom: check, claim a place, build, sign, record, audit
+pub(crate) async fn issue(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(payload): Json<IssuePayload>,
+) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
     let issuer = issuer()?;
     let entry = cpd_entries::Entity::find()
@@ -69,7 +85,9 @@ pub(crate) async fn issue(State(ctx): State<AppContext>, caller: MaybeAuthUser, 
         .await?
         .ok_or(Error::NotFound)?;
     let Some(verified_on) = entry.verified_on else {
-        return Err(unprocessable("only a verified CPD entry can be issued as a credential"));
+        return Err(unprocessable(
+            "only a verified CPD entry can be issued as a credential",
+        ));
     };
     let live = credential_issuances::Entity::find()
         .filter(credential_issuances::Column::Kind.eq("cpd_entry"))
@@ -78,7 +96,9 @@ pub(crate) async fn issue(State(ctx): State<AppContext>, caller: MaybeAuthUser, 
         .count(&ctx.db)
         .await?;
     if live > 0 {
-        return Err(unprocessable("a credential for this entry is already live; revoke it to issue another"));
+        return Err(unprocessable(
+            "a credential for this entry is already live; revoke it to issue another",
+        ));
     }
     let now = Utc::now();
     let pid = Uuid::new_v4();
@@ -96,9 +116,14 @@ pub(crate) async fn issue(State(ctx): State<AppContext>, caller: MaybeAuthUser, 
     .await?;
     let index = usize::try_from(created.id - 1).unwrap_or(usize::MAX);
     if index >= rules::STATUS_BITS {
-        return Err(unprocessable("the revocation list is full; a new list is needed before more can be issued"));
+        return Err(unprocessable(
+            "the revocation list is full; a new list is needed before more can be issued",
+        ));
     }
-    let description = format!("A continuing professional development activity ({}).", entry.category);
+    let description = format!(
+        "A continuing professional development activity ({}).",
+        entry.category
+    );
     let criteria = format!("Recorded by the person and verified by the employer on {verified_on}.");
     // (Read through the open transaction: with a pool of one connection a second one would wait for it for ever.)
     // The skill the entry names, if it names one, with every reference the catalogue holds for it (ESCO first, then SFIA, then the rest).
@@ -111,7 +136,17 @@ pub(crate) async fn issue(State(ctx): State<AppContext>, caller: MaybeAuthUser, 
         }
         None => Vec::new(),
     };
-    refs.sort_by_key(|r| (match r.framework_slug.as_str() { "esco" => 0, "sfia" => 1, _ => 2 }, r.framework_slug.clone(), r.reference.clone()));
+    refs.sort_by_key(|r| {
+        (
+            match r.framework_slug.as_str() {
+                "esco" => 0,
+                "sfia" => 1,
+                _ => 2,
+            },
+            r.framework_slug.clone(),
+            r.reference.clone(),
+        )
+    });
     let skill_name = match entry.skill_pid {
         Some(skill) => crate::models::_entities::skills::Entity::find()
             .filter(crate::models::_entities::skills::Column::Pid.eq(skill))
@@ -120,14 +155,21 @@ pub(crate) async fn issue(State(ctx): State<AppContext>, caller: MaybeAuthUser, 
             .map(|s| s.name),
         None => None,
     };
-    let names: Vec<String> = refs.iter().map(|r| rules::framework_name(&r.framework_slug)).collect();
+    let names: Vec<String> = refs
+        .iter()
+        .map(|r| rules::framework_name(&r.framework_slug))
+        .collect();
     let alignments: Vec<rules::Alignment<'_>> = refs
         .iter()
         .zip(&names)
         .map(|(r, framework)| rules::Alignment {
             framework,
             code: &r.reference,
-            label: r.label.as_deref().or(skill_name.as_deref()).unwrap_or(&entry.activity),
+            label: r
+                .label
+                .as_deref()
+                .or(skill_name.as_deref())
+                .unwrap_or(&entry.activity),
         })
         .collect();
     let credential = rules::badge(&rules::Badge {
@@ -146,9 +188,19 @@ pub(crate) async fn issue(State(ctx): State<AppContext>, caller: MaybeAuthUser, 
     let mut active: credential_issuances::ActiveModel = created.into();
     active.sha256 = ActiveValue::set(rules::sha256_hex(&token));
     active.update(&txn).await?;
-    Audit::record(&txn, "credential", pid, "credential_issued", caller.actor(), Some(json!({ "kind": "cpd_entry" }))).await?;
+    Audit::record(
+        &txn,
+        "credential",
+        pid,
+        "credential_issued",
+        caller.actor(),
+        Some(json!({ "kind": "cpd_entry" })),
+    )
+    .await?;
     txn.commit().await?;
-    format::json(json!({ "pid": pid, "status_index": index, "format": "vc+jwt", "credential": token }))
+    format::json(
+        json!({ "pid": pid, "status_index": index, "format": "vc+jwt", "credential": token }),
+    )
 }
 
 /// `GET /api/me/credentials` — the caller's issuances: that each was issued, and whether it is revoked. Not the credentials.
@@ -163,7 +215,11 @@ pub(crate) async fn mine(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
     format::json(json!({ "credentials": rows.iter().map(row).collect::<Vec<_>>() }))
 }
 
-async fn revoke_row(ctx: &AppContext, caller: &MaybeAuthUser, found: credential_issuances::Model) -> Result<Response> {
+async fn revoke_row(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    found: credential_issuances::Model,
+) -> Result<Response> {
     if found.revoked_at.is_some() {
         return Err(unprocessable("this credential is already revoked"));
     }
@@ -173,7 +229,15 @@ async fn revoke_row(ctx: &AppContext, caller: &MaybeAuthUser, found: credential_
     active.revoked_at = ActiveValue::set(Some(Utc::now().into()));
     active.revoked_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.update(&txn).await?;
-    Audit::record(&txn, "credential", pid, "credential_revoked", caller.actor(), None).await?;
+    Audit::record(
+        &txn,
+        "credential",
+        pid,
+        "credential_revoked",
+        caller.actor(),
+        None,
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": pid, "revoked": true }))
 }
@@ -188,7 +252,11 @@ async fn find(ctx: &AppContext, pid: Uuid) -> Result<credential_issuances::Model
 
 /// `POST /api/me/credentials/{pid}/revoke` — the worker withdraws one of their own credentials.
 #[debug_handler]
-pub(crate) async fn revoke_mine(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>) -> Result<Response> {
+pub(crate) async fn revoke_mine(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
     let found = find(&ctx, pid).await?;
     if found.worker_pid != worker.pid {
@@ -199,7 +267,11 @@ pub(crate) async fn revoke_mine(State(ctx): State<AppContext>, caller: MaybeAuth
 
 /// `POST /api/credentials/{pid}/revoke` — HR (or an administrator) revokes a credential, for instance when its CPD entry is withdrawn.
 #[debug_handler]
-async fn revoke(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>) -> Result<Response> {
+async fn revoke(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+) -> Result<Response> {
     let found = find(&ctx, pid).await?;
     revoke_row(&ctx, &caller, found).await
 }

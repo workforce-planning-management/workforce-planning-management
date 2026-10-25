@@ -1,7 +1,6 @@
 //! The AI and scoring deployer register (WPM-R148, WPM-D103): it records what a deployer says, shows `unknown` where nothing
 //! was said, and refuses a record whose audit cannot be written (WPM-D107).
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -69,16 +68,11 @@ async fn the_register_records_what_is_said_and_shows_unknown_for_the_rest() {
         assert_eq!(request.put("/api/ai-register/S9").json(&json!({})).await.status_code(), 404);
 
         // No audit, no write (WPM-D107).
-        ctx.db
-            .execute_unprepared(
-                "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
-                 CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()",
-            )
-            .await
-            .unwrap();
+        crate::requests::ddl(&ctx, "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
+                 CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()",).await;
         let refused = request.put("/api/ai-register/S5").json(&json!({ "overseer_role": "Head of Mobility" })).await;
         assert!(refused.status_code().is_server_error(), "refused: {}", refused.status_code());
-        ctx.db.execute_unprepared("DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await.unwrap();
+        crate::requests::ddl(&ctx, "DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await;
         let kept: Value = request.get("/api/ai-register").await.json();
         assert_eq!(feature(&kept, "S5")["overseer_role"]["status"], "unknown", "nothing was kept");
         request.put("/api/ai-register/S5").json(&json!({ "overseer_role": "Head of Mobility" })).await.assert_status_ok();

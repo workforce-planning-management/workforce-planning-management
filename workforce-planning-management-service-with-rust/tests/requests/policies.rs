@@ -3,13 +3,18 @@
 
 use chrono::{Duration, Utc};
 use sea_orm::{ConnectionTrait, Statement};
-use workforce_planning_management::tasks::policy_reminders::send_reminders;
 use serde_json::{Value, json};
 use serial_test::serial;
+use workforce_planning_management::tasks::policy_reminders::send_reminders;
 
 use super::{a_person, an_org};
 
-async fn hire(request: &loco_rs::TestServer, org: &str, department: &str, manager: Option<&str>) -> String {
+async fn hire(
+    request: &loco_rs::TestServer,
+    org: &str,
+    department: &str,
+    manager: Option<&str>,
+) -> String {
     let response = request
         .post("/api/workers")
         .json(&json!({
@@ -21,7 +26,10 @@ async fn hire(request: &loco_rs::TestServer, org: &str, department: &str, manage
         }))
         .await;
     assert_eq!(response.status_code(), 200, "{}", response.text());
-    response.json::<Value>()["pid"].as_str().unwrap().to_string()
+    response.json::<Value>()["pid"]
+        .as_str()
+        .unwrap()
+        .to_string()
 }
 
 #[tokio::test]
@@ -162,16 +170,11 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
         assert_eq!(row["versions"][0]["title"], "Conduct", "a version keeps its own title");
 
         // No audit, no write (WPM-D107).
-        ctx.db
-            .execute_unprepared(
-                "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
-                 CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()",
-            )
-            .await
-            .unwrap();
+        crate::requests::ddl(&ctx, "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
+                 CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()",).await;
         let refused = request.patch(&url).json(&json!({ "name": "Refused" })).await;
         assert!(refused.status_code().is_server_error(), "refused: {}", refused.status_code());
-        ctx.db.execute_unprepared("DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await.unwrap();
+        crate::requests::ddl(&ctx, "DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await;
         let kept: Value = request.get(&format!("/api/policies?organization={org}")).await.json();
         assert!(kept["policies"].as_array().unwrap().iter().any(|p| p["name"] == "Code of conduct"), "nothing was kept");
         let _ = travel;
@@ -220,7 +223,15 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
 }
 
 async fn listed_version(request: &loco_rs::TestServer, org: &str, policy: &str) -> String {
-    let listed: Value = request.get(&format!("/api/policies?organization={org}")).await.json();
-    let row = listed["policies"].as_array().unwrap().iter().find(|p| p["pid"] == policy).unwrap();
+    let listed: Value = request
+        .get(&format!("/api/policies?organization={org}"))
+        .await
+        .json();
+    let row = listed["policies"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["pid"] == policy)
+        .unwrap();
     row["versions"][0]["pid"].as_str().unwrap().to_string()
 }

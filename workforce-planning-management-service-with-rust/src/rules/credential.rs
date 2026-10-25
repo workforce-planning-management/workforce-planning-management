@@ -44,7 +44,11 @@ pub fn crc32(data: &[u8]) -> u32 {
     for byte in data {
         crc ^= u32::from(*byte);
         for _ in 0..8 {
-            crc = if crc & 1 == 1 { (crc >> 1) ^ 0xEDB8_8320 } else { crc >> 1 };
+            crc = if crc & 1 == 1 {
+                (crc >> 1) ^ 0xEDB8_8320
+            } else {
+                crc >> 1
+            };
         }
     }
     !crc
@@ -66,7 +70,11 @@ pub fn gzip_stored(data: &[u8]) -> Vec<u8> {
         out.extend_from_slice(chunk);
     }
     out.extend_from_slice(&crc32(data).to_le_bytes());
-    out.extend_from_slice(&u32::try_from(data.len() % (1 << 32)).unwrap_or(0).to_le_bytes());
+    out.extend_from_slice(
+        &u32::try_from(data.len() % (1 << 32))
+            .unwrap_or(0)
+            .to_le_bytes(),
+    );
     out
 }
 
@@ -85,7 +93,10 @@ pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
         if header & 0b110 != 0 {
             return Err("only stored blocks are read here".to_string());
         }
-        let len = usize::from(u16::from_le_bytes([*bytes.get(at + 1).ok_or("truncated")?, *bytes.get(at + 2).ok_or("truncated")?]));
+        let len = usize::from(u16::from_le_bytes([
+            *bytes.get(at + 1).ok_or("truncated")?,
+            *bytes.get(at + 2).ok_or("truncated")?,
+        ]));
         let body = bytes.get(at + 5..at + 5 + len).ok_or("truncated")?;
         out.extend_from_slice(body);
         at += 5 + len;
@@ -121,7 +132,9 @@ pub fn encoded_list(revoked: &[usize]) -> Result<String, String> {
 /// # Errors
 /// When the list is malformed, or the index is outside it.
 pub fn is_revoked(encoded: &str, index: usize) -> Result<bool, String> {
-    let body = encoded.strip_prefix('u').ok_or("a multibase base64url list starts with u")?;
+    let body = encoded
+        .strip_prefix('u')
+        .ok_or("a multibase base64url list starts with u")?;
     let bits = gunzip_stored(&unb64(body)?)?;
     let byte = bits.get(index / 8).ok_or("the index is outside the list")?;
     Ok(byte & (0x80 >> (index % 8)) != 0)
@@ -159,7 +172,11 @@ pub fn jwk(seed: &[u8; 32], kid: &str) -> Value {
 #[must_use]
 pub fn sign(seed: &[u8; 32], kid: &str, payload: &Value) -> String {
     let header = json!({ "alg": "EdDSA", "kid": kid, "typ": "vc+jwt", "cty": "vc" });
-    let input = format!("{}.{}", b64(header.to_string().as_bytes()), b64(payload.to_string().as_bytes()));
+    let input = format!(
+        "{}.{}",
+        b64(header.to_string().as_bytes()),
+        b64(payload.to_string().as_bytes())
+    );
     let signature = SigningKey::from_bytes(seed).sign(input.as_bytes());
     format!("{input}.{}", b64(&signature.to_bytes()))
 }
@@ -170,7 +187,9 @@ pub fn sign(seed: &[u8; 32], kid: &str, payload: &Value) -> String {
 /// When it is malformed, not `EdDSA`, or the signature does not verify.
 pub fn verify(public: &[u8; 32], token: &str) -> Result<Value, String> {
     let mut parts = token.split('.');
-    let (Some(h), Some(p), Some(s), None) = (parts.next(), parts.next(), parts.next(), parts.next()) else {
+    let (Some(h), Some(p), Some(s), None) =
+        (parts.next(), parts.next(), parts.next(), parts.next())
+    else {
         return Err("a compact JWS has three parts".to_string());
     };
     let header: Value = serde_json::from_slice(&unb64(h)?).map_err(|_| "bad header")?;
@@ -311,7 +330,11 @@ mod tests {
             valid_from: "2026-10-25T09:00:00Z",
             status_list_url: "https://hr.example.org/api/credentials/status-list",
             status_index: 7,
-            alignments: &[Alignment { framework: "ESCO", code: "http://data.europa.eu/esco/skill/abc", label: "safeguarding" }],
+            alignments: &[Alignment {
+                framework: "ESCO",
+                code: "http://data.europa.eu/esco/skill/abc",
+                label: "safeguarding",
+            }],
         }
     }
 
@@ -320,7 +343,10 @@ mod tests {
     fn ed25519_matches_the_rfc_8037_example() {
         let seed = parse_seed(SEED).unwrap();
         let key = SigningKey::from_bytes(&seed);
-        assert_eq!(b64(key.verifying_key().as_bytes()), "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo");
+        assert_eq!(
+            b64(key.verifying_key().as_bytes()),
+            "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"
+        );
         let input = "eyJhbGciOiJFZERTQSJ9.RXhhbXBsZSBvZiBFZDI1NTE5IHNpZ25pbmc";
         assert_eq!(
             b64(&key.sign(input.as_bytes()).to_bytes()),
@@ -330,7 +356,10 @@ mod tests {
 
     #[test]
     fn sha256_matches_the_fips_180_example() {
-        assert_eq!(sha256_hex("abc"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+        assert_eq!(
+            sha256_hex("abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
     }
 
     #[test]
@@ -350,7 +379,10 @@ mod tests {
         let mut z = gzip_stored(b"abc");
         let last = z.len() - 9;
         z[last] ^= 1;
-        assert!(gunzip_stored(&z).is_err(), "a changed byte fails the checksum");
+        assert!(
+            gunzip_stored(&z).is_err(),
+            "a changed byte fails the checksum"
+        );
     }
 
     #[test]
@@ -362,7 +394,15 @@ mod tests {
         assert_eq!(bits[0], 0b1000_0001, "positions 0 and 7");
         assert_eq!(bits[1], 0b1000_0000, "position 8");
         assert_eq!(bits[16_383], 0b0000_0001, "the last position");
-        for (i, want) in [(0, true), (1, false), (7, true), (8, true), (9, false), (131_071, true), (131_070, false)] {
+        for (i, want) in [
+            (0, true),
+            (1, false),
+            (7, true),
+            (8, true),
+            (9, false),
+            (131_071, true),
+            (131_070, false),
+        ] {
             assert_eq!(is_revoked(&encoded, i).unwrap(), want, "{i}");
         }
         assert!(encoded_list(&[131_072]).is_err());
@@ -387,48 +427,101 @@ mod tests {
     fn a_token_that_names_another_algorithm_is_refused_even_with_a_good_signature() {
         let seed = parse_seed(SEED).unwrap();
         let public = *SigningKey::from_bytes(&seed).verifying_key().as_bytes();
-        let input = format!("{}.{}", b64(json!({ "alg": "none" }).to_string().as_bytes()), b64(b"{}"));
+        let input = format!(
+            "{}.{}",
+            b64(json!({ "alg": "none" }).to_string().as_bytes()),
+            b64(b"{}")
+        );
         let signature = SigningKey::from_bytes(&seed).sign(input.as_bytes());
         let token = format!("{input}.{}", b64(&signature.to_bytes()));
-        assert_eq!(verify(&public, &token), Err("only EdDSA is accepted".to_string()));
+        assert_eq!(
+            verify(&public, &token),
+            Err("only EdDSA is accepted".to_string())
+        );
     }
 
     #[test]
     fn the_header_says_what_it_is() {
         let seed = parse_seed(SEED).unwrap();
         let token = sign(&seed, "k#1", &json!({}));
-        let header: Value = serde_json::from_slice(&unb64(token.split('.').next().unwrap()).unwrap()).unwrap();
-        assert_eq!(header, json!({ "alg": "EdDSA", "kid": "k#1", "typ": "vc+jwt", "cty": "vc" }));
+        let header: Value =
+            serde_json::from_slice(&unb64(token.split('.').next().unwrap()).unwrap()).unwrap();
+        assert_eq!(
+            header,
+            json!({ "alg": "EdDSA", "kid": "k#1", "typ": "vc+jwt", "cty": "vc" })
+        );
     }
 
     #[test]
     fn the_badge_follows_the_pinned_shape_and_names_no_person() {
         let v = badge(&sample());
         assert_eq!(v["@context"], json!([VC_CONTEXT, OB_CONTEXT]));
-        assert_eq!(v["type"], json!(["VerifiableCredential", "OpenBadgeCredential"]));
-        assert_eq!(v["credentialSubject"]["type"], json!(["AchievementSubject"]));
-        assert_eq!(v["credentialSubject"]["achievement"]["alignment"][0]["targetFramework"], "ESCO");
+        assert_eq!(
+            v["type"],
+            json!(["VerifiableCredential", "OpenBadgeCredential"])
+        );
+        assert_eq!(
+            v["credentialSubject"]["type"],
+            json!(["AchievementSubject"])
+        );
+        assert_eq!(
+            v["credentialSubject"]["achievement"]["alignment"][0]["targetFramework"],
+            "ESCO"
+        );
         assert_eq!(v["credentialStatus"]["type"], "BitstringStatusListEntry");
         assert_eq!(v["credentialStatus"]["statusListIndex"], "7");
         assert_eq!(v["credentialStatus"]["statusPurpose"], "revocation");
-        assert!(v["credentialSubject"].get("id").is_none(), "no subject identifier");
+        assert!(
+            v["credentialSubject"].get("id").is_none(),
+            "no subject identifier"
+        );
         assert!(v["credentialSubject"].get("identifier").is_none());
-        assert_eq!(v["credentialSubject"]["achievement"]["alignment"][0]["targetUrl"], "http://data.europa.eu/esco/skill/abc");
+        assert_eq!(
+            v["credentialSubject"]["achievement"]["alignment"][0]["targetUrl"],
+            "http://data.europa.eu/esco/skill/abc"
+        );
         let mut plain = sample();
         plain.alignments = &[];
-        assert!(badge(&plain)["credentialSubject"]["achievement"].get("alignment").is_none(), "none is not guessed");
-        let sfia = [Alignment { framework: "SFIA", code: "PROG", label: "Programming" }];
+        assert!(
+            badge(&plain)["credentialSubject"]["achievement"]
+                .get("alignment")
+                .is_none(),
+            "none is not guessed"
+        );
+        let sfia = [Alignment {
+            framework: "SFIA",
+            code: "PROG",
+            label: "Programming",
+        }];
         plain.alignments = &sfia;
         let a = &badge(&plain)["credentialSubject"]["achievement"]["alignment"][0];
-        assert_eq!((a["targetFramework"].as_str(), a["targetCode"].as_str()), (Some("SFIA"), Some("PROG")));
+        assert_eq!(
+            (a["targetFramework"].as_str(), a["targetCode"].as_str()),
+            (Some("SFIA"), Some("PROG"))
+        );
         assert!(a.get("targetUrl").is_none(), "a code is not a link");
-        assert_eq!((framework_name("esco"), framework_name("sfia"), framework_name("x")), ("ESCO".to_string(), "SFIA".to_string(), "x".to_string()));
+        assert_eq!(
+            (
+                framework_name("esco"),
+                framework_name("sfia"),
+                framework_name("x")
+            ),
+            ("ESCO".to_string(), "SFIA".to_string(), "x".to_string())
+        );
     }
 
     #[test]
     fn the_status_list_credential_has_the_required_properties() {
-        let v = status_list("https://hr.example.org/", "https://hr.example.org/l", "2026-10-25T09:00:00Z", "uAAA");
-        assert_eq!(v["type"], json!(["VerifiableCredential", "BitstringStatusListCredential"]));
+        let v = status_list(
+            "https://hr.example.org/",
+            "https://hr.example.org/l",
+            "2026-10-25T09:00:00Z",
+            "uAAA",
+        );
+        assert_eq!(
+            v["type"],
+            json!(["VerifiableCredential", "BitstringStatusListCredential"])
+        );
         assert_eq!(v["credentialSubject"]["type"], "BitstringStatusList");
         assert_eq!(v["credentialSubject"]["statusPurpose"], "revocation");
         assert_eq!(v["credentialSubject"]["encodedList"], "uAAA");

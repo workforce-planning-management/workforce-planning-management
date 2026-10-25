@@ -17,7 +17,11 @@ use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::position::{self as rules, Facts, Holding, Seat};
 
 /// Whether the caller may see who holds a position: HR, payroll, service and administrators, or anyone when sign-in is off.
-async fn sees_holders(ctx: &AppContext, caller: &MaybeAuthUser, organization: &str) -> Result<bool> {
+async fn sees_holders(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    organization: &str,
+) -> Result<bool> {
     if !crate::auth::require_auth() {
         return Ok(true);
     }
@@ -58,10 +62,14 @@ async fn list(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let mut find = positions::Entity::find().filter(positions::Column::OrganizationRef.eq(&query.organization));
+    let mut find = positions::Entity::find()
+        .filter(positions::Column::OrganizationRef.eq(&query.organization));
     if let Some(state) = &query.state {
         if !rules::STATES.contains(&state.as_str()) {
-            return Err(unprocessable(&format!("state is one of {}", rules::STATES.join(", "))));
+            return Err(unprocessable(&format!(
+                "state is one of {}",
+                rules::STATES.join(", ")
+            )));
         }
         find = find.filter(positions::Column::State.eq(state));
     }
@@ -95,9 +103,15 @@ pub(crate) struct Payload {
 }
 
 fn problems(p: &Payload) -> Vec<String> {
-    let mut out = rules::validate(&p.cost_centre, p.budget_fte_percent, &p.funding_kind, p.funding_ends_on, p.programme_ref.as_deref())
-        .err()
-        .unwrap_or_default();
+    let mut out = rules::validate(
+        &p.cost_centre,
+        p.budget_fte_percent,
+        &p.funding_kind,
+        p.funding_ends_on,
+        p.programme_ref.as_deref(),
+    )
+    .err()
+    .unwrap_or_default();
     if !(1..=120).contains(&p.title.trim().chars().count()) {
         out.push("title is 1 to 120 characters".to_string());
     }
@@ -119,7 +133,11 @@ async fn ensure_demand_line(ctx: &AppContext, pid: Option<Uuid>) -> Result<()> {
 
 /// `POST /api/positions` — plan a seat. It starts `planned`; a person approves it.
 #[debug_handler]
-async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(payload): Json<Payload>) -> Result<Response> {
+async fn create(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(payload): Json<Payload>,
+) -> Result<Response> {
     let organization = payload.organization_ref.clone().unwrap_or_default();
     ensure_valid(&organization_problems(&organization))?;
     ensure_org_in_scope(&ctx, &caller, &organization).await?;
@@ -143,7 +161,15 @@ async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(paylo
     }
     .insert(&txn)
     .await?;
-    Audit::record(&txn, "position", pid, "position_created", caller.actor(), Some(json!({ "from_demand_line": payload.demand_line_pid.is_some() }))).await?;
+    Audit::record(
+        &txn,
+        "position",
+        pid,
+        "position_created",
+        caller.actor(),
+        Some(json!({ "from_demand_line": payload.demand_line_pid.is_some() })),
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": pid }))
 }
@@ -160,14 +186,27 @@ async fn find(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<pos
 
 /// `PUT /api/positions/{pid}` — change what a position is made of. The organization, the state and the links do not change here.
 #[debug_handler]
-async fn update(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>, Json(payload): Json<Payload>) -> Result<Response> {
+async fn update(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+    Json(payload): Json<Payload>,
+) -> Result<Response> {
     let row = find(&ctx, &caller, pid).await?;
-    if payload.organization_ref.as_ref().is_some_and(|o| *o != row.organization_ref) {
-        return Err(unprocessable("a position cannot move to another organization"));
+    if payload
+        .organization_ref
+        .as_ref()
+        .is_some_and(|o| *o != row.organization_ref)
+    {
+        return Err(unprocessable(
+            "a position cannot move to another organization",
+        ));
     }
     ensure_valid(&problems(&payload))?;
     if row.state == "abolished" {
-        return Err(unprocessable("position is \"abolished\"; an ended position is not changed"));
+        return Err(unprocessable(
+            "position is \"abolished\"; an ended position is not changed",
+        ));
     }
     let txn = ctx.db.begin().await?;
     let mut active: positions::ActiveModel = row.into();
@@ -179,7 +218,15 @@ async fn update(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid):
     active.programme_ref = ActiveValue::set(payload.programme_ref.clone());
     active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.update(&txn).await?;
-    Audit::record(&txn, "position", pid, "position_updated", caller.actor(), None).await?;
+    Audit::record(
+        &txn,
+        "position",
+        pid,
+        "position_updated",
+        caller.actor(),
+        None,
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": pid }))
 }
@@ -192,16 +239,32 @@ struct MovePayload {
 /// `POST /api/positions/{pid}/status` — move a position. The rules refuse a move the table does not allow, an `open` with no
 /// requisition, a `filled` with no holder, and a held position being made vacant or abolished.
 #[debug_handler]
-async fn status(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>, Json(payload): Json<MovePayload>) -> Result<Response> {
+async fn status(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+    Json(payload): Json<MovePayload>,
+) -> Result<Response> {
     let row = find(&ctx, &caller, pid).await?;
-    let facts = Facts { has_requisition: row.requisition_pid.is_some(), has_holder: row.holder_worker_pid.is_some() };
+    let facts = Facts {
+        has_requisition: row.requisition_pid.is_some(),
+        has_holder: row.holder_worker_pid.is_some(),
+    };
     rules::check_move(&row.state, &payload.to, facts).map_err(|e| unprocessable(&e))?;
     let from = row.state.clone();
     let txn = ctx.db.begin().await?;
     let mut active: positions::ActiveModel = row.into();
     active.state = ActiveValue::set(payload.to.clone());
     active.update(&txn).await?;
-    Audit::record(&txn, "position", pid, "position_status_changed", caller.actor(), Some(json!({ "from": from, "to": payload.to }))).await?;
+    Audit::record(
+        &txn,
+        "position",
+        pid,
+        "position_status_changed",
+        caller.actor(),
+        Some(json!({ "from": from, "to": payload.to })),
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": pid, "state": payload.to }))
 }
@@ -215,10 +278,18 @@ struct HolderPayload {
 /// `PUT /api/positions/{pid}/holder` — link the worker who holds the position, or unlink. The worker must work in the same
 /// organization. HR only to read back; the link is the only place a person appears.
 #[debug_handler]
-async fn holder(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>, Json(payload): Json<HolderPayload>) -> Result<Response> {
+async fn holder(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+    Json(payload): Json<HolderPayload>,
+) -> Result<Response> {
     let row = find(&ctx, &caller, pid).await?;
     if row.state == "abolished" || row.state == "planned" {
-        return Err(unprocessable(&format!("position is {:?}; only an approved position can have a holder", row.state)));
+        return Err(unprocessable(&format!(
+            "position is {:?}; only an approved position can have a holder",
+            row.state
+        )));
     }
     if let Some(worker) = payload.worker_pid {
         let found = workers::Entity::find()
@@ -227,7 +298,9 @@ async fn holder(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid):
             .one(&ctx.db)
             .await?;
         if found.is_none_or(|w| w.organization_ref != row.organization_ref) {
-            return Err(unprocessable("worker_pid names no worker of this organization"));
+            return Err(unprocessable(
+                "worker_pid names no worker of this organization",
+            ));
         }
     }
     let txn = ctx.db.begin().await?;
@@ -235,7 +308,15 @@ async fn holder(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid):
     active.holder_worker_pid = ActiveValue::set(payload.worker_pid);
     active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.update(&txn).await?;
-    Audit::record(&txn, "position", pid, "position_holder_set", caller.actor(), Some(json!({ "linked": payload.worker_pid.is_some() }))).await?;
+    Audit::record(
+        &txn,
+        "position",
+        pid,
+        "position_holder_set",
+        caller.actor(),
+        Some(json!({ "linked": payload.worker_pid.is_some() })),
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": pid }))
 }
@@ -248,13 +329,22 @@ struct RequisitionPayload {
 
 /// `PUT /api/positions/{pid}/requisition` — link the requisition that fills the position, or unlink. Same organization.
 #[debug_handler]
-async fn requisition(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>, Json(payload): Json<RequisitionPayload>) -> Result<Response> {
+async fn requisition(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+    Json(payload): Json<RequisitionPayload>,
+) -> Result<Response> {
     let row = find(&ctx, &caller, pid).await?;
     if row.state == "abolished" {
-        return Err(unprocessable("position is \"abolished\"; an ended position is not changed"));
+        return Err(unprocessable(
+            "position is \"abolished\"; an ended position is not changed",
+        ));
     }
     if row.state == "open" && payload.requisition_pid.is_none() {
-        return Err(unprocessable("position is \"open\"; move it back before unlinking its requisition"));
+        return Err(unprocessable(
+            "position is \"open\"; move it back before unlinking its requisition",
+        ));
     }
     if let Some(r) = payload.requisition_pid {
         let found = requisitions::Entity::find()
@@ -263,7 +353,9 @@ async fn requisition(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(
             .one(&ctx.db)
             .await?;
         if found.is_none_or(|q| q.organization_ref != row.organization_ref) {
-            return Err(unprocessable("requisition_pid names no requisition of this organization"));
+            return Err(unprocessable(
+                "requisition_pid names no requisition of this organization",
+            ));
         }
     }
     let txn = ctx.db.begin().await?;
@@ -271,7 +363,15 @@ async fn requisition(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(
     active.requisition_pid = ActiveValue::set(payload.requisition_pid);
     active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.update(&txn).await?;
-    Audit::record(&txn, "position", pid, "position_requisition_set", caller.actor(), Some(json!({ "linked": payload.requisition_pid.is_some() }))).await?;
+    Audit::record(
+        &txn,
+        "position",
+        pid,
+        "position_requisition_set",
+        caller.actor(),
+        Some(json!({ "linked": payload.requisition_pid.is_some() })),
+    )
+    .await?;
     txn.commit().await?;
     format::json(json!({ "pid": pid }))
 }
@@ -297,11 +397,16 @@ async fn establishment(
         .all(&ctx.db)
         .await?;
     let held: Vec<Uuid> = rows.iter().filter_map(|r| r.holder_worker_pid).collect();
-    let fte: std::collections::HashMap<Uuid, i32> = super::find_in(&ctx, workers::Entity::find().filter(workers::Column::DeletedAt.is_null()), workers::Column::Pid, &held)
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w.fte_percent))
-        .collect();
+    let fte: std::collections::HashMap<Uuid, i32> = super::find_in(
+        &ctx,
+        workers::Entity::find().filter(workers::Column::DeletedAt.is_null()),
+        workers::Column::Pid,
+        &held,
+    )
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w.fte_percent))
+    .collect();
     let seats: Vec<Seat> = rows
         .iter()
         .map(|r| Seat {
@@ -311,11 +416,17 @@ async fn establishment(
             // A holder whose record is gone (erased or deleted) is held by someone whose FTE we cannot say.
             holding: match r.holder_worker_pid {
                 None => Holding::Vacant,
-                Some(w) => fte.get(&w).map_or(Holding::HeldUnknown, |f| Holding::Held(*f)),
+                Some(w) => fte
+                    .get(&w)
+                    .map_or(Holding::HeldUnknown, |f| Holding::Held(*f)),
             },
         })
         .collect();
-    let floor = if sees_holders(&ctx, &caller, &query.organization).await? { None } else { Some(DEFAULT_FLOOR) };
+    let floor = if sees_holders(&ctx, &caller, &query.organization).await? {
+        None
+    } else {
+        Some(DEFAULT_FLOOR)
+    };
     format::json(json!({
         "organization": query.organization,
         "small_group_floor": floor,
