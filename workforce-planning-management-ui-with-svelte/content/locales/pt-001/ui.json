@@ -44,7 +44,8 @@
     "signout": "Terminar sessão",
     "kanban": "O meu quadro",
     "positions": "Posições",
-    "policies": "Políticas"
+    "policies": "Políticas",
+    "payRange": "Posição salarial"
   },
   "pr": {
     "retention": "Retenção",
@@ -1390,6 +1391,9 @@
     },
     "policies": {
       "page_title": "{policies} — WPM"
+    },
+    "payRange": {
+      "page_title": "{payRange} — WPM"
     }
   },
   "titles": {
@@ -1425,7 +1429,8 @@
     "demo": "Percurso guiado pela demonstração — WPM",
     "kanban": "O meu quadro — WPM",
     "my_details": "Meus dados — WPM",
-    "policies": "Políticas — WPM"
+    "policies": "Políticas — WPM",
+    "payRange": "Posição salarial — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2331,5 +2336,33 @@
     "hint": "Quantos dos seus subordinados diretos confirmaram cada política que lhes é dirigida e quantos não. Só se mostra para uma equipa de {floor} ou mais; menos identificaria pessoas.",
     "shown": "{acknowledged} confirmadas, {waiting} pendentes",
     "withheld": "Menos de {floor} pessoas: nenhuma contagem é mostrada"
+  },
+  "payRange": {
+    "hint": "Onde a remuneração se situa na banda: o compa-ratio é a remuneração sobre o ponto médio da banda; a penetração mostra quanto da banda foi percorrido. Para uma revisão remuneratória: um grupo abaixo do limiar não mostra nada, ninguém é nomeado, um valor atípico é um grupo e nada aqui propõe uma alteração salarial.",
+    "as_of": "Em",
+    "cutoff": "Limiar de atípicos (pontos de compa-ratio)",
+    "currency": "Moeda {currency}",
+    "excluded_no_pay": "Sem remuneração registada: {count}",
+    "excluded_no_band": "Sem banda: {count}",
+    "under_floor": "menos de {floor}",
+    "overall": "Todos os analisados",
+    "overall_line": "{workers} trabalhadores, compa-ratio médio {compa}",
+    "withheld": "Ocultado",
+    "withheld_group": "Menos de {floor} trabalhadores: nada é mostrado",
+    "group": "Grupo",
+    "workers": "Trabalhadores",
+    "compa": "Compa-ratio (face ao ponto médio)",
+    "penetration": "Penetração na banda",
+    "outlier": "Atípico",
+    "outlier_unknown": "Não calculado",
+    "above": "Acima de todos em {by}",
+    "below": "Abaixo de todos em {by}",
+    "reason_no_pay": "Sem remuneração ou banda para comparar",
+    "reason_would_reveal": "Mostrá-lo revelaria um grupo ocultado",
+    "reason_no_width": "A banda tem uma só taxa, logo não há intervalo",
+    "by_band": "Por banda",
+    "by_level": "Por nível",
+    "by_department": "Por departamento",
+    "by_location": "Por localização"
   }
 }

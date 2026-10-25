@@ -44,7 +44,8 @@
     "signout": "Allgofnodi",
     "kanban": "Fy mwrdd",
     "positions": "Swyddi",
-    "policies": "Polisïau"
+    "policies": "Polisïau",
+    "payRange": "Safle cyflog"
   },
   "pr": {
     "retention": "Cadw data",
@@ -1390,6 +1391,9 @@
     },
     "policies": {
       "page_title": "{policies} — WPM"
+    },
+    "payRange": {
+      "page_title": "{payRange} — WPM"
     }
   },
   "titles": {
@@ -1425,7 +1429,8 @@
     "demo": "Taith dywys o'r demo — WPM",
     "kanban": "Fy mwrdd — WPM",
     "my_details": "Fy manylion — WPM",
-    "policies": "Polisïau — WPM"
+    "policies": "Polisïau — WPM",
+    "payRange": "Safle cyflog — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -2331,5 +2336,33 @@
     "hint": "Faint o'ch adrodd uniongyrchol sydd wedi cadarnhau pob polisi sy'n eu targedu, a faint sydd heb. Dim ond ar gyfer tîm o {floor} neu fwy; byddai llai yn enwi pobl.",
     "shown": "{acknowledged} wedi cadarnhau, {waiting} yn aros",
     "withheld": "Llai na {floor} o bobl: ni ddangosir cyfrif"
+  },
+  "payRange": {
+    "hint": "Ble mae cyflog o fewn ei fand: cymhareb compa yw'r cyflog dros ganol y band, treiddiad yr ystod yw pa mor bell drwy'r band. Ar gyfer adolygiad cydnabyddiaeth: nid yw grŵp o dan y trothwy yn dangos dim, ni enwir neb, grŵp yw allgynhwysydd, ac nid yw dim yma'n cynnig newid cyflog.",
+    "as_of": "O ddyddiad",
+    "cutoff": "Trothwy allgynhwysydd (pwyntiau cymhareb compa)",
+    "currency": "Arian {currency}",
+    "excluded_no_pay": "Dim cyflog wedi'i gofnodi: {count}",
+    "excluded_no_band": "Dim band: {count}",
+    "under_floor": "llai na {floor}",
+    "overall": "Pawb a ddadansoddwyd",
+    "overall_line": "{workers} gweithiwr, cymhareb compa cymedrig {compa}",
+    "withheld": "Cuddiedig",
+    "withheld_group": "Llai na {floor} gweithiwr: ni ddangosir dim",
+    "group": "Grŵp",
+    "workers": "Gweithwyr",
+    "compa": "Cymhareb compa",
+    "penetration": "Treiddiad yr ystod",
+    "outlier": "Allgynhwysydd",
+    "outlier_unknown": "Heb ei gyfrifo",
+    "above": "Uwchlaw pawb o {by}",
+    "below": "Islaw pawb o {by}",
+    "reason_no_pay": "Dim cyflog na band i'w gymharu",
+    "reason_would_reveal": "Byddai ei ddangos yn datgelu grŵp cuddiedig",
+    "reason_no_width": "Mae un gyfradd yn y band, felly dim ystod",
+    "by_band": "Yn ôl band",
+    "by_level": "Yn ôl lefel",
+    "by_department": "Yn ôl adran",
+    "by_location": "Yn ôl lleoliad"
   }
 }

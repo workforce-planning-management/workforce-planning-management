@@ -113,3 +113,15 @@ describe("rate", () => {
     expect(rate(undefined)).toBeNull();
   });
 });
+
+describe("basisPoints", () => {
+  it("places the point by digits and keeps the sign", async () => {
+    const { basisPoints } = await import("../../src/lib/format");
+    expect(basisPoints(10456)).toBe("104.56%");
+    expect(basisPoints(10000)).toBe("100.00%");
+    expect(basisPoints(5)).toBe("0.05%");
+    expect(basisPoints(0)).toBe("0.00%");
+    expect(basisPoints(-5)).toBe("-0.05%");
+    expect(basisPoints(-1250)).toBe("-12.50%");
+  });
+});

@@ -74,3 +74,13 @@ export function rate(value: number | null | undefined): string | null {
   if (value === null || value === undefined) return null;
   return `${(value * 100).toFixed(1)}%`;
 }
+
+/**
+ * Basis points (hundredths of a percent) as a percentage with two decimals, by digits only: `10456` is `104.56%`, `-5` is `-0.05%`.
+ * The service worked the figure out; this only places the point.
+ */
+export function basisPoints(bp: number): string {
+  const sign = bp < 0 ? "-" : "";
+  const abs = Math.abs(Math.trunc(bp));
+  return `${sign}${Math.trunc(abs / 100)}.${String(abs % 100).padStart(2, "0")}%`;
+}

@@ -44,7 +44,8 @@
     "signout": "Keluar",
     "kanban": "Papan saya",
     "positions": "Posisi",
-    "policies": "Kebijakan"
+    "policies": "Kebijakan",
+    "payRange": "Posisi gaji"
   },
   "pr": {
     "retention": "Retensi",
@@ -1390,6 +1391,9 @@
     },
     "policies": {
       "page_title": "{policies} — WPM"
+    },
+    "payRange": {
+      "page_title": "{payRange} — WPM"
     }
   },
   "titles": {
@@ -1425,7 +1429,8 @@
     "demo": "Tur berpemandu demo — WPM",
     "kanban": "Papan saya — WPM",
     "my_details": "Data saya — WPM",
-    "policies": "Kebijakan — WPM"
+    "policies": "Kebijakan — WPM",
+    "payRange": "Posisi gaji — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2331,5 +2336,33 @@
     "hint": "Berapa banyak bawahan langsung Anda yang sudah mengakui setiap kebijakan yang ditujukan kepada mereka dan berapa yang belum. Hanya ditampilkan untuk tim berisi {floor} orang atau lebih; lebih sedikit akan menyebut orang.",
     "shown": "{acknowledged} mengakui, {waiting} menunggu",
     "withheld": "Kurang dari {floor} orang: tidak ada hitungan ditampilkan"
+  },
+  "payRange": {
+    "hint": "Di mana gaji berada dalam bandnya: compa-ratio adalah gaji terhadap titik tengah band, penetrasi rentang adalah seberapa jauh melewati band. Untuk tinjauan kompensasi: kelompok di bawah ambang tidak menampilkan apa pun, tidak ada yang disebut namanya, pencilan adalah kelompok, dan tidak ada yang di sini mengusulkan perubahan gaji.",
+    "as_of": "Per tanggal",
+    "cutoff": "Ambang pencilan (poin compa-ratio)",
+    "currency": "Mata uang {currency}",
+    "excluded_no_pay": "Tanpa gaji tercatat: {count}",
+    "excluded_no_band": "Tanpa band: {count}",
+    "under_floor": "kurang dari {floor}",
+    "overall": "Semua yang dianalisis",
+    "overall_line": "{workers} pekerja, compa-ratio rata-rata {compa}",
+    "withheld": "Ditahan",
+    "withheld_group": "Kurang dari {floor} pekerja: tidak ada yang ditampilkan",
+    "group": "Kelompok",
+    "workers": "Pekerja",
+    "compa": "Compa-ratio (terhadap titik tengah)",
+    "penetration": "Penetrasi rentang",
+    "outlier": "Pencilan",
+    "outlier_unknown": "Belum dihitung",
+    "above": "Di atas semua sebesar {by}",
+    "below": "Di bawah semua sebesar {by}",
+    "reason_no_pay": "Tanpa gaji dan band untuk dibandingkan",
+    "reason_would_reveal": "Menampilkannya akan membuka kelompok yang ditahan",
+    "reason_no_width": "Band hanya punya satu tarif, jadi tidak ada rentang",
+    "by_band": "Menurut band",
+    "by_level": "Menurut tingkat",
+    "by_department": "Menurut departemen",
+    "by_location": "Menurut lokasi"
   }
 }

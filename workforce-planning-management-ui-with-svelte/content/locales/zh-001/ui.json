@@ -44,7 +44,8 @@
     "signout": "退出登录",
     "kanban": "我的看板",
     "positions": "岗位",
-    "policies": "政策"
+    "policies": "政策",
+    "payRange": "薪酬定位"
   },
   "pr": {
     "retention": "保留",
@@ -1390,6 +1391,9 @@
     },
     "policies": {
       "page_title": "{policies} — WPM"
+    },
+    "payRange": {
+      "page_title": "{payRange} — WPM"
     }
   },
   "titles": {
@@ -1425,7 +1429,8 @@
     "demo": "演示导览 — WPM",
     "kanban": "我的看板 — WPM",
     "my_details": "我的资料 — WPM",
-    "policies": "政策 — WPM"
+    "policies": "政策 — WPM",
+    "payRange": "薪酬定位 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -2331,5 +2336,33 @@
     "hint": "您的直接下属中有多少人已确认每项针对他们的政策，多少人尚未确认。仅当团队至少 {floor} 人时显示；更少会暴露个人。",
     "shown": "已确认 {acknowledged}，待确认 {waiting}",
     "withheld": "不足 {floor} 人：不显示数字"
+  },
+  "payRange": {
+    "hint": "薪酬在其薪档内的位置：比较比率是薪酬与薪档中点之比，区间渗透率表示在薪档中走了多远。用于薪酬评审：低于门槛的群体不显示任何内容，不点名，离群值是群体，这里不提议任何调薪。",
+    "as_of": "截至",
+    "cutoff": "离群阈值（比较比率百分点）",
+    "currency": "币种 {currency}",
+    "excluded_no_pay": "未记录薪酬：{count}",
+    "excluded_no_band": "无薪档：{count}",
+    "under_floor": "少于 {floor}",
+    "overall": "全部纳入分析者",
+    "overall_line": "{workers} 名员工，平均比较比率 {compa}",
+    "withheld": "已隐藏",
+    "withheld_group": "少于 {floor} 名员工：不显示任何内容",
+    "group": "群体",
+    "workers": "员工",
+    "compa": "比较比率",
+    "penetration": "区间渗透率",
+    "outlier": "离群",
+    "outlier_unknown": "未计算",
+    "above": "高于所有人 {by}",
+    "below": "低于所有人 {by}",
+    "reason_no_pay": "没有可比较的薪酬和薪档",
+    "reason_would_reveal": "显示会暴露被隐藏的群体",
+    "reason_no_width": "该薪档只有一个费率，因此没有区间",
+    "by_band": "按薪档",
+    "by_level": "按职级",
+    "by_department": "按部门",
+    "by_location": "按地点"
   }
 }

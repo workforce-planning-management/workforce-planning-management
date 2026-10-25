@@ -44,7 +44,8 @@
     "signout": "Abmelden",
     "kanban": "Mein Board",
     "positions": "Stellen",
-    "policies": "Richtlinien"
+    "policies": "Richtlinien",
+    "payRange": "Vergütungsposition"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -1390,6 +1391,9 @@
     },
     "policies": {
       "page_title": "{policies} — WPM"
+    },
+    "payRange": {
+      "page_title": "{payRange} — WPM"
     }
   },
   "titles": {
@@ -1425,7 +1429,8 @@
     "demo": "Geführter Rundgang durch die Demo — WPM",
     "kanban": "Mein Board — WPM",
     "my_details": "Meine Angaben — WPM",
-    "policies": "Richtlinien — WPM"
+    "policies": "Richtlinien — WPM",
+    "payRange": "Vergütungsposition — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2331,5 +2336,33 @@
     "hint": "Wie viele Ihrer direkt Unterstellten jede für sie bestimmte Richtlinie bestätigt haben und wie viele nicht. Nur ab einem Team von {floor} oder mehr; weniger würde Personen erkennbar machen.",
     "shown": "{acknowledged} bestätigt, {waiting} ausstehend",
     "withheld": "Weniger als {floor} Personen: keine Zahl angezeigt"
+  },
+  "payRange": {
+    "hint": "Wo die Vergütung im Band liegt: Compa-Ratio ist die Vergütung im Verhältnis zur Bandmitte, Bandausschöpfung zeigt, wie weit im Band. Für eine Vergütungsüberprüfung: Eine Gruppe unter der Untergrenze zeigt nichts, niemand wird genannt, ein Ausreißer ist eine Gruppe, und nichts hier schlägt eine Gehaltsänderung vor.",
+    "as_of": "Stichtag",
+    "cutoff": "Ausreißer-Schwelle (Punkte Compa-Ratio)",
+    "currency": "Währung {currency}",
+    "excluded_no_pay": "Ohne erfasste Vergütung: {count}",
+    "excluded_no_band": "Ohne Band: {count}",
+    "under_floor": "weniger als {floor}",
+    "overall": "Alle Analysierten",
+    "overall_line": "{workers} Beschäftigte, mittlere Compa-Ratio {compa}",
+    "withheld": "Zurückgehalten",
+    "withheld_group": "Weniger als {floor} Beschäftigte: nichts wird angezeigt",
+    "group": "Gruppe",
+    "workers": "Beschäftigte",
+    "compa": "Compa-Ratio",
+    "penetration": "Bandausschöpfung",
+    "outlier": "Ausreißer",
+    "outlier_unknown": "Nicht berechnet",
+    "above": "Über allen um {by}",
+    "below": "Unter allen um {by}",
+    "reason_no_pay": "Keine Vergütung oder kein Band zum Vergleichen",
+    "reason_would_reveal": "Die Anzeige würde eine zurückgehaltene Gruppe verraten",
+    "reason_no_width": "Das Band hat einen Satz, also keine Spanne",
+    "by_band": "Nach Band",
+    "by_level": "Nach Stufe",
+    "by_department": "Nach Abteilung",
+    "by_location": "Nach Standort"
   }
 }

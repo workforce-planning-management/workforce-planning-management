@@ -4970,3 +4970,53 @@ export function getTeamPolicyCount(
     init,
   );
 }
+
+/** A figure the service shows, withholds or cannot work out (mirror `rules::pay_range::Figure`). */
+export type PayRangeFigure<T> =
+  | { kind: "shown"; value: T }
+  | { kind: "withheld" }
+  | { kind: "unknown"; reason: "no_pay" | "would_reveal" | "no_width" };
+
+export type PayRangeStat = {
+  workers: number;
+  compa_mean_bp: number;
+  penetration: PayRangeFigure<{ workers: number; mean_bp: number }>;
+};
+
+export type PayRangeOutlier =
+  | { kind: "no" }
+  | { kind: "above"; delta_bp: number }
+  | { kind: "below"; delta_bp: number }
+  | { kind: "unknown" };
+
+export type PayRangeLeft = { kind: "exactly"; workers: number } | { kind: "under_floor" };
+
+export type PayRange = {
+  organization: string;
+  as_of: string;
+  currency: string | null;
+  basis: string;
+  derivation: string;
+  report: {
+    floor: number;
+    cutoff_bp: number;
+    overall: PayRangeFigure<PayRangeStat>;
+    groupings: Array<{
+      by: "band" | "level" | "department" | "location";
+      groups: Array<{ key: string; figure: PayRangeFigure<PayRangeStat>; outlier: PayRangeOutlier }>;
+    }>;
+    excluded: { no_pay: PayRangeLeft; no_band: PayRangeLeft };
+  };
+};
+
+/** Where pay sits inside its band, per band, level, department and location. Needs a payroll-level read; audited. */
+export function getPayRange(
+  organization: string,
+  options: { asOf?: string; cutoff?: number } = {},
+  init?: FetchLike,
+): Promise<PayRange> {
+  const query = new URLSearchParams({ organization });
+  if (options.asOf) query.set("as_of", options.asOf);
+  if (options.cutoff !== undefined) query.set("cutoff", String(options.cutoff));
+  return api(`/reports/pay-range?${query.toString()}`, init);
+}

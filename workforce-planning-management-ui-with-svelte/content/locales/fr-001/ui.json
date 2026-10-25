@@ -44,7 +44,8 @@
     "signout": "Se déconnecter",
     "kanban": "Mon tableau",
     "positions": "Postes",
-    "policies": "Politiques"
+    "policies": "Politiques",
+    "payRange": "Position salariale"
   },
   "pr": {
     "retention": "Conservation",
@@ -1390,6 +1391,9 @@
     },
     "policies": {
       "page_title": "{policies} — WPM"
+    },
+    "payRange": {
+      "page_title": "{payRange} — WPM"
     }
   },
   "titles": {
@@ -1425,7 +1429,8 @@
     "demo": "Visite guidée de la démo — WPM",
     "kanban": "Mon tableau — WPM",
     "my_details": "Mes informations — WPM",
-    "policies": "Politiques — WPM"
+    "policies": "Politiques — WPM",
+    "payRange": "Position salariale — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2331,5 +2336,33 @@
     "hint": "Combien de vos subordonnés directs ont confirmé chaque politique qui les concerne, et combien non. Affiché seulement pour une équipe de {floor} personnes ou plus ; moins reviendrait à les nommer.",
     "shown": "{acknowledged} confirmées, {waiting} en attente",
     "withheld": "Moins de {floor} personnes : aucun chiffre affiché"
+  },
+  "payRange": {
+    "hint": "Où se situe la rémunération dans sa fourchette : le compa-ratio est la rémunération sur le milieu de la fourchette, la pénétration dit où l'on en est dans la fourchette. Pour une revue des rémunérations : un groupe sous le seuil n'affiche rien, personne n'est nommé, une valeur atypique est un groupe, et rien ici ne propose de changement de salaire.",
+    "as_of": "À la date du",
+    "cutoff": "Seuil d'écart (points de compa-ratio)",
+    "currency": "Devise {currency}",
+    "excluded_no_pay": "Sans rémunération saisie : {count}",
+    "excluded_no_band": "Sans fourchette : {count}",
+    "under_floor": "moins de {floor}",
+    "overall": "Tous les analysés",
+    "overall_line": "{workers} salariés, compa-ratio moyen {compa}",
+    "withheld": "Masqué",
+    "withheld_group": "Moins de {floor} salariés : rien n'est affiché",
+    "group": "Groupe",
+    "workers": "Salariés",
+    "compa": "Compa-ratio (rapport au milieu)",
+    "penetration": "Pénétration de la fourchette",
+    "outlier": "Écart",
+    "outlier_unknown": "Non calculé",
+    "above": "Au-dessus de tous de {by}",
+    "below": "En dessous de tous de {by}",
+    "reason_no_pay": "Ni rémunération ni fourchette à comparer",
+    "reason_would_reveal": "L'afficher révélerait un groupe masqué",
+    "reason_no_width": "La fourchette n'a qu'un taux, donc pas d'étendue",
+    "by_band": "Par fourchette",
+    "by_level": "Par niveau",
+    "by_department": "Par service",
+    "by_location": "Par site"
   }
 }

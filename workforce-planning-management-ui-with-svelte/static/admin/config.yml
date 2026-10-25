@@ -77,6 +77,7 @@ collections:
               - { name: "kanban", label: "Kanban", widget: string, required: false, i18n: true }
               - { name: "positions", label: "Positions", widget: string, required: false, i18n: true }
               - { name: "policies", label: "Policies", widget: string, required: false, i18n: true }
+              - { name: "payRange", label: "Pay Range", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -2033,6 +2034,14 @@ collections:
                 i18n: true
                 fields:
                   - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
+              - name: "payRange"
+                label: "Pay Range"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
           - name: "titles"
             label: "Titles"
             widget: object
@@ -2073,6 +2082,7 @@ collections:
               - { name: "kanban", label: "Kanban", widget: string, required: false, i18n: true }
               - { name: "my_details", label: "My_details", widget: string, required: false, i18n: true }
               - { name: "policies", label: "Policies", widget: string, required: false, i18n: true }
+              - { name: "payRange", label: "Pay Range", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -3133,3 +3143,36 @@ collections:
               - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
               - { name: "shown", label: "Shown", widget: string, required: false, i18n: true }
               - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
+          - name: "payRange"
+            label: "Pay Range"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "as_of", label: "As_of", widget: string, required: false, i18n: true }
+              - { name: "cutoff", label: "Cutoff", widget: string, required: false, i18n: true }
+              - { name: "currency", label: "Currency", widget: string, required: false, i18n: true }
+              - { name: "excluded_no_pay", label: "Excluded_no_pay", widget: string, required: false, i18n: true }
+              - { name: "excluded_no_band", label: "Excluded_no_band", widget: string, required: false, i18n: true }
+              - { name: "under_floor", label: "Under_floor", widget: string, required: false, i18n: true }
+              - { name: "overall", label: "Overall", widget: string, required: false, i18n: true }
+              - { name: "overall_line", label: "Overall_line", widget: string, required: false, i18n: true }
+              - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
+              - { name: "withheld_group", label: "Withheld_group", widget: string, required: false, i18n: true }
+              - { name: "group", label: "Group", widget: string, required: false, i18n: true }
+              - { name: "workers", label: "Workers", widget: string, required: false, i18n: true }
+              - { name: "compa", label: "Compa", widget: string, required: false, i18n: true }
+              - { name: "penetration", label: "Penetration", widget: string, required: false, i18n: true }
+              - { name: "outlier", label: "Outlier", widget: string, required: false, i18n: true }
+              - { name: "outlier_unknown", label: "Outlier_unknown", widget: string, required: false, i18n: true }
+              - { name: "above", label: "Above", widget: string, required: false, i18n: true }
+              - { name: "below", label: "Below", widget: string, required: false, i18n: true }
+              - { name: "reason_no_pay", label: "Reason_no_pay", widget: string, required: false, i18n: true }
+              - { name: "reason_would_reveal", label: "Reason_would_reveal", widget: string, required: false, i18n: true }
+              - { name: "reason_no_width", label: "Reason_no_width", widget: string, required: false, i18n: true }
+              - { name: "by_band", label: "By_band", widget: string, required: false, i18n: true }
+              - { name: "by_level", label: "By_level", widget: string, required: false, i18n: true }
+              - { name: "by_department", label: "By_department", widget: string, required: false, i18n: true }
+              - { name: "by_location", label: "By_location", widget: string, required: false, i18n: true }

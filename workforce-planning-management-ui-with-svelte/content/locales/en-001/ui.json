@@ -44,7 +44,8 @@
     "signout": "Sign out",
     "kanban": "My board",
     "positions": "Positions",
-    "policies": "Policies"
+    "policies": "Policies",
+    "payRange": "Pay position"
   },
   "pr": {
     "retention": "Retention",
@@ -1390,6 +1391,9 @@
     },
     "policies": {
       "page_title": "{policies} — WPM"
+    },
+    "payRange": {
+      "page_title": "{payRange} — WPM"
     }
   },
   "titles": {
@@ -1425,7 +1429,8 @@
     "demo": "Guided tour of the demo — WPM",
     "kanban": "My board — WPM",
     "my_details": "My details — WPM",
-    "policies": "Policies — WPM"
+    "policies": "Policies — WPM",
+    "payRange": "Pay position — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -2331,5 +2336,33 @@
     "hint": "How many of your direct reports have acknowledged each policy aimed at them, and how many have not. Shown only for a team of {floor} or more; fewer would name people.",
     "shown": "{acknowledged} acknowledged, {waiting} waiting",
     "withheld": "Fewer than {floor} people: no count is shown"
+  },
+  "payRange": {
+    "hint": "Where pay sits inside its band: compa-ratio is pay over the band midpoint, range penetration is how far through the band. For a compensation review: a group under the floor shows nothing, no one is named, an outlier is a group, and nothing here proposes a pay change.",
+    "as_of": "As of",
+    "cutoff": "Outlier cut-off (points of compa-ratio)",
+    "currency": "Currency {currency}",
+    "excluded_no_pay": "No pay recorded: {count}",
+    "excluded_no_band": "No band: {count}",
+    "under_floor": "fewer than {floor}",
+    "overall": "Everyone analysed",
+    "overall_line": "{workers} workers, mean compa-ratio {compa}",
+    "withheld": "Withheld",
+    "withheld_group": "Fewer than {floor} workers: nothing is shown",
+    "group": "Group",
+    "workers": "Workers",
+    "compa": "Compa-ratio",
+    "penetration": "Range penetration",
+    "outlier": "Outlier",
+    "outlier_unknown": "Not worked out",
+    "above": "Above everyone by {by}",
+    "below": "Below everyone by {by}",
+    "reason_no_pay": "No pay and band to compare",
+    "reason_would_reveal": "Showing it would reveal a withheld group",
+    "reason_no_width": "The band has one rate, so no range",
+    "by_band": "By band",
+    "by_level": "By job level",
+    "by_department": "By department",
+    "by_location": "By location"
   }
 }

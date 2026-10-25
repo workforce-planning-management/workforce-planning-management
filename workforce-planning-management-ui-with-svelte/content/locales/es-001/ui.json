@@ -44,7 +44,8 @@
     "signout": "Cerrar sesión",
     "kanban": "Mi tablero",
     "positions": "Puestos",
-    "policies": "Políticas"
+    "policies": "Políticas",
+    "payRange": "Posición salarial"
   },
   "pr": {
     "retention": "Retención",
@@ -1390,6 +1391,9 @@
     },
     "policies": {
       "page_title": "{policies} — WPM"
+    },
+    "payRange": {
+      "page_title": "{payRange} — WPM"
     }
   },
   "titles": {
@@ -1425,7 +1429,8 @@
     "demo": "Recorrido guiado por la demostración — WPM",
     "kanban": "Mi tablero — WPM",
     "my_details": "Mis datos — WPM",
-    "policies": "Políticas — WPM"
+    "policies": "Políticas — WPM",
+    "payRange": "Posición salarial — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2331,5 +2336,33 @@
     "hint": "Cuántas de sus personas a cargo directo han confirmado cada política dirigida a ellas y cuántas no. Solo se muestra para un equipo de {floor} o más; menos las identificaría.",
     "shown": "{acknowledged} confirmadas, {waiting} pendientes",
     "withheld": "Menos de {floor} personas: no se muestra ningún recuento"
+  },
+  "payRange": {
+    "hint": "Dónde se sitúa el salario dentro de su banda: el compa-ratio es el salario sobre el punto medio de la banda; la penetración indica cuánto se ha recorrido de la banda. Para una revisión retributiva: un grupo por debajo del umbral no muestra nada, no se nombra a nadie, un valor atípico es un grupo y nada aquí propone un cambio salarial.",
+    "as_of": "A fecha de",
+    "cutoff": "Umbral de atípicos (puntos de compa-ratio)",
+    "currency": "Moneda {currency}",
+    "excluded_no_pay": "Sin salario registrado: {count}",
+    "excluded_no_band": "Sin banda: {count}",
+    "under_floor": "menos de {floor}",
+    "overall": "Todas las personas analizadas",
+    "overall_line": "{workers} personas, compa-ratio medio {compa}",
+    "withheld": "Oculto",
+    "withheld_group": "Menos de {floor} personas: no se muestra nada",
+    "group": "Grupo",
+    "workers": "Personas",
+    "compa": "Compa-ratio (frente al punto medio)",
+    "penetration": "Penetración en la banda",
+    "outlier": "Atípico",
+    "outlier_unknown": "No calculado",
+    "above": "Por encima de todos en {by}",
+    "below": "Por debajo de todos en {by}",
+    "reason_no_pay": "Sin salario o banda con que comparar",
+    "reason_would_reveal": "Mostrarlo revelaría un grupo oculto",
+    "reason_no_width": "La banda tiene una sola tarifa, así que no hay rango",
+    "by_band": "Por banda",
+    "by_level": "Por nivel",
+    "by_department": "Por departamento",
+    "by_location": "Por ubicación"
   }
 }

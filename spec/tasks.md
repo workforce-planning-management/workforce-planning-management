@@ -4678,3 +4678,17 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       no screenshot looked at; the notification was not looked at on screen; the `keycloak` binaries not re-run; a second reminder for a
       version still unacknowledged; a reminder to a manager about their team; the task is not scheduled; the rename was not run through
       a real client; `shared_cache_upstream` ran 0 tests here (filtered out).
+- [x] (2026-10-25) WPM-T292 **A screen for pay position analysis (`/pay-range`).** *(WPM-R154, WPM-D108)* A page in the navigation drawer that reads
+      `GET /api/reports/pay-range` for an organization, an optional "as of" day and an outlier cut-off in points of compa-ratio. It
+      shows the basis and derivation the service states, the currency, who was left out (an exact count only from the floor, else
+      "fewer than 10"), everyone analysed, and the four groupings (band, job level, department, location): workers, mean compa-ratio,
+      range penetration, and the outlier flag as a group. A group under the floor says "Fewer than 10 workers: nothing is shown" and
+      no count; a figure that cannot be worked out says why (no pay or band, would reveal a withheld group, a one-rate band). Basis
+      points are placed by `format.basisPoints` (digits only; the service did the arithmetic). A caller without a payroll-level read
+      sees the app's refusal and no figure. Strings under `payRange.*`, `nav.payRange`, `titles.payRange` in the 13 locales
+      (AI-written, unreviewed; four locales needed their own wording for "Compa-ratio"). Verified: `svelte-check` 0 errors, 210 unit
+      tests (new: `basisPoints`), Playwright 225 passed / 19 skipped (new: figures, a withheld group, an outlier below, the unknown
+      reason, the cut-off sent to the service; a refusal). I looked at a desktop and a 390-pixel screenshot of the page with stub
+      data: the table scrolls inside its box on the phone and nothing overflows. **Not done:** the API is stubbed, so the screen was not
+      seen with a real report; a grouping with no groups shows only its header row; no dark screenshot; the currency cannot be chosen
+      on screen (the service defaults to the most common); the read is audited by the service but the screen does not say so.
