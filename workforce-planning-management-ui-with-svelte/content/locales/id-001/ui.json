@@ -43,7 +43,8 @@
     "warnings": "Peringatan dini",
     "signout": "Keluar",
     "kanban": "Papan saya",
-    "positions": "Posisi"
+    "positions": "Posisi",
+    "policies": "Kebijakan"
   },
   "pr": {
     "retention": "Retensi",
@@ -1386,6 +1387,9 @@
       "change_larger": "lebih besar",
       "change_smaller": "lebih kecil",
       "change_same": "sama"
+    },
+    "policies": {
+      "page_title": "{policies} — WPM"
     }
   },
   "titles": {
@@ -1420,7 +1424,8 @@
     "warnings": "Peringatan dini — WPM",
     "demo": "Tur berpemandu demo — WPM",
     "kanban": "Papan saya — WPM",
-    "my_details": "Data saya — WPM"
+    "my_details": "Data saya — WPM",
+    "policies": "Kebijakan — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2297,5 +2302,31 @@
     "related": "Hanya terkait",
     "remove": "Tarik",
     "add": "Tambah pemetaan"
+  },
+  "policies": {
+    "hint": "Kebijakan dan versinya. Sebuah versi memuat rujukan ke dokumennya, bukan teksnya, dan tidak pernah diubah: perubahan adalah versi baru yang diakui lagi oleh semua sasarannya.",
+    "organization": "Organisasi",
+    "none": "Belum ada kebijakan.",
+    "version": "Versi",
+    "title_label": "Judul",
+    "document_ref": "Rujukan dokumen",
+    "effective_on": "Berlaku mulai",
+    "audience": "Sasaran",
+    "audience_value": "Departemen atau jabatan",
+    "within_days": "Batas waktu pengakuan (hari kalender)",
+    "record": "Siapa yang sudah mengakui",
+    "record_of": "{title}, versi {version}",
+    "record_hint": "Catatan bernama, menurut nomor pekerja. Membukanya dicatat.",
+    "not_yet": "Belum",
+    "add_policy": "Tambah kebijakan",
+    "name": "Nama",
+    "add_version": "Tambah versi",
+    "policy": "Kebijakan"
+  },
+  "teamPolicies": {
+    "title": "Kebijakan di tim saya",
+    "hint": "Berapa banyak bawahan langsung Anda yang sudah mengakui setiap kebijakan yang ditujukan kepada mereka dan berapa yang belum. Hanya ditampilkan untuk tim berisi {floor} orang atau lebih; lebih sedikit akan menyebut orang.",
+    "shown": "{acknowledged} mengakui, {waiting} menunggu",
+    "withheld": "Kurang dari {floor} orang: tidak ada hitungan ditampilkan"
   }
 }

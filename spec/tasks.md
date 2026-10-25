@@ -4648,3 +4648,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       has no `skill_pid`). **Not done:** no screenshot looked at; the API is stubbed, so the alignment in a real signed credential was
       not seen from the screen (it is asserted in the service tests, WPM-T285); the picker is a plain list of the whole catalogue with no
       search, so a large catalogue is long; an existing entry's skill cannot be changed or added after the fact.
+- [x] (2026-10-25) WPM-T290 **Screens for policies: HR's page and a manager's team counts.** *(WPM-R156, WPM-D105)* `/policies` (in the navigation
+      drawer): the organization's policies with every version (reference, effective day, audience, calendar days to acknowledge), a form
+      to name a policy, a form to add the next version (department and job-title audiences ask for the value), and the named record of a
+      version by worker number, which the service audits when it is opened. `TeamPolicies.svelte` on `/me`: for each policy aimed at the
+      manager, "N acknowledged, M waiting" from the floor and "Fewer than 10 people: no count is shown" under it; a version aimed at
+      nobody in the team is left out, and no name is listed. Strings under `policies.*`, `teamPolicies.*`, `nav.policies` and
+      `titles.policies` in the 13 locales (AI-written, unreviewed). Verified: `svelte-check` 0 errors, 209 unit tests, Playwright 223
+      passed / 19 skipped (new: HR adds a policy, a department version posts the expected body, the named record lists both people; a
+      manager's counts shown, withheld and absent). **Not done:** no screenshot looked at, on a phone or otherwise; the API is stubbed,
+      not run against the service; the manager's panel counts only versions aimed at the manager themself (it takes the version list from
+      `GET /api/me/policies`), so a policy aimed at the team but not at its manager is not counted there; the page does not hide itself
+      from a caller who cannot write (the service refuses and the words are shown); no way to correct a policy's name; no reminder.

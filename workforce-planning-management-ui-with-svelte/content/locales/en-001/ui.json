@@ -43,7 +43,8 @@
     "warnings": "Early warnings",
     "signout": "Sign out",
     "kanban": "My board",
-    "positions": "Positions"
+    "positions": "Positions",
+    "policies": "Policies"
   },
   "pr": {
     "retention": "Retention",
@@ -1386,6 +1387,9 @@
       "change_larger": "larger",
       "change_smaller": "smaller",
       "change_same": "same"
+    },
+    "policies": {
+      "page_title": "{policies} — WPM"
     }
   },
   "titles": {
@@ -1420,7 +1424,8 @@
     "warnings": "Early warnings — WPM",
     "demo": "Guided tour of the demo — WPM",
     "kanban": "My board — WPM",
-    "my_details": "My details — WPM"
+    "my_details": "My details — WPM",
+    "policies": "Policies — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -2297,5 +2302,31 @@
     "related": "Related only",
     "remove": "Withdraw",
     "add": "Add a mapping"
+  },
+  "policies": {
+    "hint": "Policies and their versions. A version holds a reference to its document, never the text, and is never edited: a change is a new version that everyone in its audience acknowledges again.",
+    "organization": "Organization",
+    "none": "No policy yet.",
+    "version": "Version",
+    "title_label": "Title",
+    "document_ref": "Document reference",
+    "effective_on": "Effective from",
+    "audience": "Audience",
+    "audience_value": "Department or job title",
+    "within_days": "Days to acknowledge (calendar days)",
+    "record": "Who has acknowledged",
+    "record_of": "{title}, version {version}",
+    "record_hint": "The named record, by worker number. Opening it is logged.",
+    "not_yet": "Not yet",
+    "add_policy": "Add a policy",
+    "name": "Name",
+    "add_version": "Add a version",
+    "policy": "Policy"
+  },
+  "teamPolicies": {
+    "title": "Policies in my team",
+    "hint": "How many of your direct reports have acknowledged each policy aimed at them, and how many have not. Shown only for a team of {floor} or more; fewer would name people.",
+    "shown": "{acknowledged} acknowledged, {waiting} waiting",
+    "withheld": "Fewer than {floor} people: no count is shown"
   }
 }

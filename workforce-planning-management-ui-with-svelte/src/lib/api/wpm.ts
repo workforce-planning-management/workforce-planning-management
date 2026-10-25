@@ -4898,3 +4898,67 @@ export function createSkillMapping(body: {
 export function deleteSkillMapping(pid: string): Promise<unknown> {
   return api(`/skill-mappings/${pid}`, { method: "DELETE" });
 }
+
+/** Who a policy version is aimed at (mirror `rules::policy`). */
+export const POLICY_AUDIENCES = ["all", "department", "job_title"] as const;
+
+export type PolicyVersion = MyPolicies["policies"][number]["version"];
+export type PolicyWithVersions = { pid: string; name: string; versions: PolicyVersion[] };
+
+/** The organization's policies and every version. */
+export function listPolicies(
+  organization: string,
+  init?: FetchLike,
+): Promise<{ policies: PolicyWithVersions[] }> {
+  return api(`/policies?organization=${encodeURIComponent(organization)}`, init);
+}
+
+export function createPolicy(body: {
+  organization_ref: string;
+  name: string;
+}): Promise<{ pid: string }> {
+  return api("/policies", { method: "POST", body });
+}
+
+/** Add the next version. A version is never edited; a change is a new version everyone in its audience acknowledges again. */
+export function addPolicyVersion(
+  policyPid: string,
+  body: {
+    title: string;
+    document_ref: string;
+    effective_on: string;
+    audience: string;
+    audience_value?: string;
+    acknowledge_within_days?: number;
+  },
+): Promise<{ pid: string; version: number }> {
+  return api(`/policies/${policyPid}/versions`, { method: "POST", body });
+}
+
+/** HR's named record for one version: everyone in its audience, with the day they acknowledged or null. Audited. */
+export function getPolicyAcknowledgements(
+  versionPid: string,
+  init?: FetchLike,
+): Promise<{
+  version: PolicyVersion;
+  people: Array<{ worker_pid: string; worker_number: string; acknowledged_on: string | null }>;
+}> {
+  return api(`/policy-versions/${versionPid}/acknowledgements`, init);
+}
+
+/** A manager's team count for one version: from the floor, else nothing. */
+export type TeamPolicyCount =
+  | { kind: "shown"; acknowledged: number; waiting: number }
+  | { kind: "withheld" }
+  | { kind: "no_one" };
+
+export function getTeamPolicyCount(
+  managerPid: string,
+  versionPid: string,
+  init?: FetchLike,
+): Promise<{ version_pid: string; floor: number; count: TeamPolicyCount }> {
+  return api(
+    `/workers/${managerPid}/team-policy-counts?version_pid=${encodeURIComponent(versionPid)}`,
+    init,
+  );
+}

@@ -43,7 +43,8 @@
     "warnings": "Rhybuddion cynnar",
     "signout": "Allgofnodi",
     "kanban": "Fy mwrdd",
-    "positions": "Swyddi"
+    "positions": "Swyddi",
+    "policies": "Polisïau"
   },
   "pr": {
     "retention": "Cadw data",
@@ -1386,6 +1387,9 @@
       "change_larger": "mwy",
       "change_smaller": "llai",
       "change_same": "yr un fath"
+    },
+    "policies": {
+      "page_title": "{policies} — WPM"
     }
   },
   "titles": {
@@ -1420,7 +1424,8 @@
     "warnings": "Rhybuddion cynnar — WPM",
     "demo": "Taith dywys o'r demo — WPM",
     "kanban": "Fy mwrdd — WPM",
-    "my_details": "Fy manylion — WPM"
+    "my_details": "Fy manylion — WPM",
+    "policies": "Polisïau — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -2297,5 +2302,31 @@
     "related": "Cysylltiedig yn unig",
     "remove": "Tynnu'n ôl",
     "add": "Ychwanegu cyfatebiaeth"
+  },
+  "policies": {
+    "hint": "Polisïau a'u fersiynau. Mae fersiwn yn cadw cyfeiriad at ei dogfen, byth y testun, ac ni chaiff ei golygu: mae newid yn fersiwn newydd y mae pawb yn ei chynulleidfa yn ei chadarnhau eto.",
+    "organization": "Sefydliad",
+    "none": "Dim polisi eto.",
+    "version": "Fersiwn",
+    "title_label": "Teitl",
+    "document_ref": "Cyfeirnod y ddogfen",
+    "effective_on": "Yn effeithiol o",
+    "audience": "Cynulleidfa",
+    "audience_value": "Adran neu deitl swydd",
+    "within_days": "Dyddiau i gadarnhau (diwrnodau calendr)",
+    "record": "Pwy sydd wedi cadarnhau",
+    "record_of": "{title}, fersiwn {version}",
+    "record_hint": "Y cofnod enwedig, yn ôl rhif gweithiwr. Cofnodir ei agor.",
+    "not_yet": "Ddim eto",
+    "add_policy": "Ychwanegu polisi",
+    "name": "Enw",
+    "add_version": "Ychwanegu fersiwn",
+    "policy": "Polisi"
+  },
+  "teamPolicies": {
+    "title": "Polisïau yn fy nhîm",
+    "hint": "Faint o'ch adrodd uniongyrchol sydd wedi cadarnhau pob polisi sy'n eu targedu, a faint sydd heb. Dim ond ar gyfer tîm o {floor} neu fwy; byddai llai yn enwi pobl.",
+    "shown": "{acknowledged} wedi cadarnhau, {waiting} yn aros",
+    "withheld": "Llai na {floor} o bobl: ni ddangosir cyfrif"
   }
 }

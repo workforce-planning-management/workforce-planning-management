@@ -43,7 +43,8 @@
     "warnings": "Frühwarnungen",
     "signout": "Abmelden",
     "kanban": "Mein Board",
-    "positions": "Stellen"
+    "positions": "Stellen",
+    "policies": "Richtlinien"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -1386,6 +1387,9 @@
       "change_larger": "größer",
       "change_smaller": "kleiner",
       "change_same": "gleich"
+    },
+    "policies": {
+      "page_title": "{policies} — WPM"
     }
   },
   "titles": {
@@ -1420,7 +1424,8 @@
     "warnings": "Frühwarnungen — WPM",
     "demo": "Geführter Rundgang durch die Demo — WPM",
     "kanban": "Mein Board — WPM",
-    "my_details": "Meine Angaben — WPM"
+    "my_details": "Meine Angaben — WPM",
+    "policies": "Richtlinien — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2297,5 +2302,31 @@
     "related": "Nur verwandt",
     "remove": "Zurückziehen",
     "add": "Zuordnung hinzufügen"
+  },
+  "policies": {
+    "hint": "Richtlinien und ihre Fassungen. Eine Fassung verweist auf ihr Dokument, enthält nie den Text und wird nie geändert: Eine Änderung ist eine neue Fassung, die alle Adressaten erneut bestätigen.",
+    "organization": "Organisation",
+    "none": "Noch keine Richtlinie.",
+    "version": "Fassung",
+    "title_label": "Titel",
+    "document_ref": "Dokumentverweis",
+    "effective_on": "Gültig ab",
+    "audience": "Adressaten",
+    "audience_value": "Abteilung oder Berufsbezeichnung",
+    "within_days": "Frist zur Bestätigung (Kalendertage)",
+    "record": "Wer bestätigt hat",
+    "record_of": "{title}, Fassung {version}",
+    "record_hint": "Die namentliche Liste nach Personalnummer. Das Öffnen wird protokolliert.",
+    "not_yet": "Noch nicht",
+    "add_policy": "Richtlinie hinzufügen",
+    "name": "Name",
+    "add_version": "Fassung hinzufügen",
+    "policy": "Richtlinie"
+  },
+  "teamPolicies": {
+    "title": "Richtlinien in meinem Team",
+    "hint": "Wie viele Ihrer direkt Unterstellten jede für sie bestimmte Richtlinie bestätigt haben und wie viele nicht. Nur ab einem Team von {floor} oder mehr; weniger würde Personen erkennbar machen.",
+    "shown": "{acknowledged} bestätigt, {waiting} ausstehend",
+    "withheld": "Weniger als {floor} Personen: keine Zahl angezeigt"
   }
 }

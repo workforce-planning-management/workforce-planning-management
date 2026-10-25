@@ -43,7 +43,8 @@
     "warnings": "预警",
     "signout": "退出登录",
     "kanban": "我的看板",
-    "positions": "岗位"
+    "positions": "岗位",
+    "policies": "政策"
   },
   "pr": {
     "retention": "保留",
@@ -1386,6 +1387,9 @@
       "change_larger": "增加",
       "change_smaller": "减少",
       "change_same": "不变"
+    },
+    "policies": {
+      "page_title": "{policies} — WPM"
     }
   },
   "titles": {
@@ -1420,7 +1424,8 @@
     "warnings": "预警 — WPM",
     "demo": "演示导览 — WPM",
     "kanban": "我的看板 — WPM",
-    "my_details": "我的资料 — WPM"
+    "my_details": "我的资料 — WPM",
+    "policies": "政策 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -2297,5 +2302,31 @@
     "related": "仅相关",
     "remove": "撤回",
     "add": "添加对应关系"
+  },
+  "policies": {
+    "hint": "政策及其版本。版本只保存文件的引用，不保存正文，且从不修改：变更即新版本，适用对象须重新确认。",
+    "organization": "组织",
+    "none": "尚无政策。",
+    "version": "版本",
+    "title_label": "标题",
+    "document_ref": "文件引用",
+    "effective_on": "生效日期",
+    "audience": "适用对象",
+    "audience_value": "部门或职位",
+    "within_days": "确认期限（日历日）",
+    "record": "谁已确认",
+    "record_of": "{title}，第 {version} 版",
+    "record_hint": "按工号列出的记名记录。打开会被记录。",
+    "not_yet": "尚未",
+    "add_policy": "添加政策",
+    "name": "名称",
+    "add_version": "添加版本",
+    "policy": "政策"
+  },
+  "teamPolicies": {
+    "title": "本团队的政策",
+    "hint": "您的直接下属中有多少人已确认每项针对他们的政策，多少人尚未确认。仅当团队至少 {floor} 人时显示；更少会暴露个人。",
+    "shown": "已确认 {acknowledged}，待确认 {waiting}",
+    "withheld": "不足 {floor} 人：不显示数字"
   }
 }

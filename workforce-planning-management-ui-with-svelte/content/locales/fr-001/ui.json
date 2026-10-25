@@ -43,7 +43,8 @@
     "warnings": "Alertes précoces",
     "signout": "Se déconnecter",
     "kanban": "Mon tableau",
-    "positions": "Postes"
+    "positions": "Postes",
+    "policies": "Politiques"
   },
   "pr": {
     "retention": "Conservation",
@@ -1386,6 +1387,9 @@
       "change_larger": "plus grand",
       "change_smaller": "plus petit",
       "change_same": "identique"
+    },
+    "policies": {
+      "page_title": "{policies} — WPM"
     }
   },
   "titles": {
@@ -1420,7 +1424,8 @@
     "warnings": "Alertes précoces — WPM",
     "demo": "Visite guidée de la démo — WPM",
     "kanban": "Mon tableau — WPM",
-    "my_details": "Mes informations — WPM"
+    "my_details": "Mes informations — WPM",
+    "policies": "Politiques — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2297,5 +2302,31 @@
     "related": "Liée seulement",
     "remove": "Retirer",
     "add": "Ajouter une correspondance"
+  },
+  "policies": {
+    "hint": "Les politiques et leurs révisions. Une révision renvoie à son document, jamais au texte, et n'est jamais modifiée : un changement est une nouvelle révision que tout le public visé confirme de nouveau.",
+    "organization": "Organisation",
+    "none": "Aucune politique pour l'instant.",
+    "version": "Révision",
+    "title_label": "Titre",
+    "document_ref": "Référence du document",
+    "effective_on": "En vigueur dès le",
+    "audience": "Public visé",
+    "audience_value": "Service ou intitulé de poste",
+    "within_days": "Délai de confirmation (jours calendaires)",
+    "record": "Qui a confirmé",
+    "record_of": "{title}, révision {version}",
+    "record_hint": "Le relevé nominatif, par numéro de salarié. Son ouverture est consignée.",
+    "not_yet": "Pas encore",
+    "add_policy": "Ajouter une politique",
+    "name": "Nom",
+    "add_version": "Ajouter une révision",
+    "policy": "Politique"
+  },
+  "teamPolicies": {
+    "title": "Politiques dans mon équipe",
+    "hint": "Combien de vos subordonnés directs ont confirmé chaque politique qui les concerne, et combien non. Affiché seulement pour une équipe de {floor} personnes ou plus ; moins reviendrait à les nommer.",
+    "shown": "{acknowledged} confirmées, {waiting} en attente",
+    "withheld": "Moins de {floor} personnes : aucun chiffre affiché"
   }
 }

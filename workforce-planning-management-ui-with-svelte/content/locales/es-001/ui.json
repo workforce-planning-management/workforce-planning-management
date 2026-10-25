@@ -43,7 +43,8 @@
     "warnings": "Alertas tempranas",
     "signout": "Cerrar sesión",
     "kanban": "Mi tablero",
-    "positions": "Puestos"
+    "positions": "Puestos",
+    "policies": "Políticas"
   },
   "pr": {
     "retention": "Retención",
@@ -1386,6 +1387,9 @@
       "change_larger": "mayor",
       "change_smaller": "menor",
       "change_same": "igual"
+    },
+    "policies": {
+      "page_title": "{policies} — WPM"
     }
   },
   "titles": {
@@ -1420,7 +1424,8 @@
     "warnings": "Alertas tempranas — WPM",
     "demo": "Recorrido guiado por la demostración — WPM",
     "kanban": "Mi tablero — WPM",
-    "my_details": "Mis datos — WPM"
+    "my_details": "Mis datos — WPM",
+    "policies": "Políticas — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2297,5 +2302,31 @@
     "related": "Solo relacionada",
     "remove": "Retirar",
     "add": "Añadir una equivalencia"
+  },
+  "policies": {
+    "hint": "Políticas y sus versiones. Una versión contiene una referencia a su documento, nunca el texto, y nunca se edita: un cambio es una versión nueva que todo su público confirma de nuevo.",
+    "organization": "Organización",
+    "none": "Aún no hay políticas.",
+    "version": "Versión",
+    "title_label": "Título",
+    "document_ref": "Referencia del documento",
+    "effective_on": "En vigor desde",
+    "audience": "Destinatarios",
+    "audience_value": "Departamento o puesto",
+    "within_days": "Plazo para confirmar (días naturales)",
+    "record": "Quién ha confirmado",
+    "record_of": "{title}, versión {version}",
+    "record_hint": "El registro nominal, por número de empleado. Abrirlo queda registrado.",
+    "not_yet": "Aún no",
+    "add_policy": "Añadir una política",
+    "name": "Nombre",
+    "add_version": "Añadir una versión",
+    "policy": "Política"
+  },
+  "teamPolicies": {
+    "title": "Políticas en mi equipo",
+    "hint": "Cuántas de sus personas a cargo directo han confirmado cada política dirigida a ellas y cuántas no. Solo se muestra para un equipo de {floor} o más; menos las identificaría.",
+    "shown": "{acknowledged} confirmadas, {waiting} pendientes",
+    "withheld": "Menos de {floor} personas: no se muestra ningún recuento"
   }
 }

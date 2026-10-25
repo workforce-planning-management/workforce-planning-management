@@ -43,7 +43,8 @@
     "warnings": "الإنذارات المبكرة",
     "signout": "تسجيل الخروج",
     "kanban": "لوحتي",
-    "positions": "المناصب"
+    "positions": "المناصب",
+    "policies": "السياسات"
   },
   "pr": {
     "retention": "الاحتفاظ",
@@ -1386,6 +1387,9 @@
       "change_larger": "أكبر",
       "change_smaller": "أصغر",
       "change_same": "كما هو"
+    },
+    "policies": {
+      "page_title": "{policies} — WPM"
     }
   },
   "titles": {
@@ -1420,7 +1424,8 @@
     "warnings": "الإنذارات المبكرة — WPM",
     "demo": "جولة موجَّهة في العرض التجريبي — WPM",
     "kanban": "لوحتي — WPM",
-    "my_details": "بياناتي — WPM"
+    "my_details": "بياناتي — WPM",
+    "policies": "السياسات — WPM"
   },
   "values": {
     "abandoned": "متروك",
@@ -2297,5 +2302,31 @@
     "related": "مرتبط فقط",
     "remove": "سحب",
     "add": "إضافة تطابق"
+  },
+  "policies": {
+    "hint": "السياسات ونسخها. تحتوي النسخة على مرجع لوثيقتها لا نصها، ولا تُعدَّل أبدًا: التغيير نسخة جديدة يُقرّ بها جميع المعنيين من جديد.",
+    "organization": "المؤسسة",
+    "none": "لا توجد سياسات بعد.",
+    "version": "النسخة",
+    "title_label": "العنوان",
+    "document_ref": "مرجع الوثيقة",
+    "effective_on": "سارية من",
+    "audience": "الفئة المعنية",
+    "audience_value": "القسم أو المسمى الوظيفي",
+    "within_days": "مهلة الإقرار (أيام تقويمية)",
+    "record": "من أقرّ",
+    "record_of": "{title}، النسخة {version}",
+    "record_hint": "السجل الاسمي حسب رقم العامل. فتحه يُسجَّل.",
+    "not_yet": "ليس بعد",
+    "add_policy": "إضافة سياسة",
+    "name": "الاسم",
+    "add_version": "إضافة نسخة",
+    "policy": "السياسة"
+  },
+  "teamPolicies": {
+    "title": "السياسات في فريقي",
+    "hint": "كم من مرؤوسيك المباشرين أقرّوا بكل سياسة موجَّهة إليهم وكم لم يقرّوا. يُعرض فقط لفريق من {floor} فأكثر؛ فالأقل يكشف الأشخاص.",
+    "shown": "أقرّ {acknowledged}، بانتظار {waiting}",
+    "withheld": "أقل من {floor} أشخاص: لا يُعرض أي عدد"
   }
 }
