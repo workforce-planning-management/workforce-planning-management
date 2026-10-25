@@ -94,7 +94,7 @@ and `employeeNumber` are the employee number (WPM holds no login), `externalId` 
 `department` and `active`. **No `costCenter`** (WPM holds no cost centre) and **no `name` parts, emails, phone numbers or addresses**.
 `active` follows the headcount definition: not before the first day, and not on or after the termination date. A deleted
 record is deactivated if it was ever sent. Settings: `WPM_SCIM_BASE_URL` (https, or http to this machine), `WPM_SCIM_TOKEN`,
-`WPM_SCIM_ORGANIZATION`. Erasure deletes the `scim_pushes` row and the subject export lists it. **A schedule** is in `config/scheduler.yaml` (every 15 minutes, tag `scim`, WPM-T300). **Not built:** a deprovision on the handover's last day (WPM uses
+`WPM_SCIM_ORGANIZATION`. Erasure deletes the `scim_pushes` row and the subject export lists it. **A schedule** is in `config/scheduler.yaml` (every 15 minutes, tag `scim`, WPM-T300). **Run against an independent SCIM server** (`scripts/check-scim-flow.py`, WPM-T302): managers first, an unchanged worker skipped, one `PUT` for a change, a `409` resolved by `externalId`, a `503` and a rejected token recorded and not leaked, and the first retry one minute after the first failure. **Not built:** a deprovision on the handover's last day (WPM uses
 the termination date, by the headcount definition, so a leaver is deactivated from that date, which may be a day before the last
 day worked); `PATCH`; groups; the token held by reference (it is read from the environment); a test against Keycloak (it has no SCIM
 endpoint in its core as far as this round found) or any real identity provider: **only a stub server was used**.

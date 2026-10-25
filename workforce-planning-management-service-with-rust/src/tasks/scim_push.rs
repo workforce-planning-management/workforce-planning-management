@@ -259,7 +259,8 @@ pub async fn run(ctx: &AppContext, cfg: &Config, today: NaiveDate, now: DateTime
             Outcome::Failed(why) => {
                 summary.failed += 1;
                 let attempts = held.as_ref().map_or(0, |h| h.attempts) + 1;
-                let wait = scim::backoff_seconds(u32::try_from(attempts).unwrap_or(10));
+                // `attempts` already counts this failure; the first retry is one minute away (the webhook task counts the same way).
+                let wait = scim::backoff_seconds(u32::try_from(attempts - 1).unwrap_or(0));
                 (
                     known,
                     held.as_ref().and_then(|h| h.body_hash.clone()),

@@ -161,6 +161,11 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
         assert!(!error.contains("SECRET"));
         let waiting = run(&ctx, &cfg, today() + Duration::days(30), now).await.unwrap();
         assert_eq!(waiting.waiting, 1, "inside the back-off nothing is sent");
+        // The first retry is one minute away, as the spec says ("one minute doubling"): not yet at 59 seconds, due at 61.
+        let early = run(&ctx, &cfg, today() + Duration::days(30), now + Duration::seconds(59)).await.unwrap();
+        assert_eq!(early.waiting, 1, "{early:?}");
+        let on_time = run(&ctx, &cfg, today() + Duration::days(30), now + Duration::seconds(61)).await.unwrap();
+        assert_eq!(on_time.failed, 1, "one minute after the first failure it is tried again (and fails again, as the provider is still down): {on_time:?}");
         *stub.fail.lock().unwrap() = None;
         let later = run(&ctx, &cfg, today() + Duration::days(30), now + Duration::minutes(5)).await.unwrap();
         assert_eq!(later.created, 1, "after the wait it is tried again and works: {later:?}");

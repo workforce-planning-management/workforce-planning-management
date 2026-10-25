@@ -4874,3 +4874,28 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       was not seen (only `worker_activated`); the script was not run against a database holding other subscriptions or real data; the
       receiver was not tried with a wrong secret (the unit tests of `rules::webhook` cover a tampered body and a wrong secret); a
       SCIM provider was not run (WPM-T276 used a stub; Keycloak has no SCIM endpoint), so that item stands.
+- [x] (2026-10-25) WPM-T302 **The SCIM push run against an independent SCIM server; a back-off one step too long fixed.** *(WPM-R150, WPM-D102)* The reports said, run after run, that no real SCIM
+      provider was ever run (WPM-T276 used a stub of the service's own making). `scripts/check-scim-flow.py` is a SCIM 2.0 server written from
+      RFC 7643 and RFC 7644 (bearer authentication; `POST /Users` giving 201 with an `id` and `meta`, and 409 `uniqueness` on a duplicate
+      `userName`; `GET /Users?filter=externalId eq "…"` giving a ListResponse; `PUT /Users/{id}` replacing, 404 for an unknown id) and a
+      driver for a running demo service; the server also records violations (an attribute outside the core and enterprise schemas that WPM is
+      meant to send, any contact or cost detail, an enterprise attribute without its schema URN, a `manager.value` it never issued, a wrong
+      content type). Run against the real service (`WPM_REQUIRE_AUTH=0`, Postgres 18 in Podman) through the real task `scim_push`, scoped to a
+      fresh organization by `WPM_SCIM_ORGANIZATION`: a manager and two reports were created **manager first**, a report's `manager.value` was the
+      id the provider gave the manager, `userName` and `employeeNumber` were the employee number, `externalId` a `worker:<pid>` URN, no
+      violation; a second push sent nothing (three unchanged); a job-title change gave one `PUT` to that user's own id and no extra user; a user the
+      provider already held was found after `POST` answered 409 (`POST`, `GET` by `externalId`, `PUT`) with no duplicate; a 503 was recorded
+      (non-zero exit, the next run waits and sends nothing); a rejected bearer token failed the push, created nothing and appeared in nothing the task
+      printed; and after the back-off the push went through (`--retry` waits it out). **A defect the real run showed, and its fix:** the spec says a
+      failure is retried "one minute doubling", but the task waited **two** minutes after the first failure (it passed the post-increment attempt
+      count to `backoff_seconds`, whose index 0 is one minute; the webhook task already subtracted one). The task now subtracts one; the request
+      test asserts the first retry is not due at 59 seconds and due at 61, and fails if the old line is put back (checked). The script's own
+      checks were proved able to fail by making the server refuse `title`: both "no violation" checks then fail. Verified (Postgres 18, Podman):
+      clippy pedantic clean; 811 unit tests; 154 request tests; every `enforcement_*` binary, `chaos`, `request_log`, `retention_schedule`
+      (re-run alone after a package-cache lock held by another project's cargo hid its line), `security`, `route_coverage`, `scheduler_config`;
+      the SCIM script passes, with the retry. **Not done:** one server I wrote, on `http://127.0.0.1` (the allowed local form), no third-party
+      identity provider (Keycloak has no SCIM endpoint; a real Entra or Okta tenant was not available); the server implements only what the task
+      calls (no `PATCH`, no `DELETE`, no `/ServiceProviderConfig`, no pagination beyond one page, no ETag or `If-Match`); a leaver's `active:
+      false` and a deleted record's deactivation were not run through it (the request test covers them); the manager-before-report ordering
+      was seen for one level only; the script was not run against a database holding other organizations (it scopes itself by organization);
+      the scheduler's own 15-minute schedule was not waited for.
