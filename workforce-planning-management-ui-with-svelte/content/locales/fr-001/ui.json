@@ -47,7 +47,8 @@
     "policies": "Politiques",
     "payRange": "Position salariale",
     "payGap": "Écart de rémunération",
-    "payInformation": "Demandes d'information salariale"
+    "payInformation": "Demandes d'information salariale",
+    "aiRegister": "Registre de l'IA et des scores"
   },
   "pr": {
     "retention": "Conservation",
@@ -1402,6 +1403,9 @@
     },
     "payInformation": {
       "page_title": "{payInformation} — WPM"
+    },
+    "aiRegister": {
+      "page_title": "{aiRegister} — WPM"
     }
   },
   "titles": {
@@ -1440,7 +1444,8 @@
     "policies": "Politiques — WPM",
     "payRange": "Position salariale — WPM",
     "payGap": "Écart de rémunération — WPM",
-    "payInformation": "Demandes d'information salariale — WPM"
+    "payInformation": "Demandes d'information salariale — WPM",
+    "aiRegister": "Registre de l'IA et des scores — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2476,5 +2481,25 @@
     "recorded_justified": "Justifié.",
     "recorded_remedied": "Corrigé le {day}.",
     "recorded_assessed": "Évalué le {day} :"
+  },
+  "aiRegister": {
+    "hint": "Ce que ce déployeur a consigné, pour chaque fonction qui calcule quelque chose sur des personnes, au titre de l'article 26 du règlement sur l'IA. Toute personne connectée peut le lire. Il consigne ce que dit le déployeur : il ne classe aucun système, ne certifie aucune conformité et ne vaut pas preuve de conformité.",
+    "applies_now": "Les obligations de l'annexe III s'appliquent depuis le {day}, et donc maintenant",
+    "applies_later": "Les obligations de l'annexe III s'appliquent à partir du {day}",
+    "computed_by": "Calculé par",
+    "informs": "Informe",
+    "made_of": "Composé de",
+    "category": "Catégorie choisie par le déployeur",
+    "overseer": "Rôle qui la supervise",
+    "reps_informed": "Représentants informés le",
+    "workers_informed": "Travailleurs informés le",
+    "retention": "Journaux conservés",
+    "months": "{months} mois",
+    "retention_note": "Pourquoi les journaux sont conservés moins longtemps",
+    "not_recorded": "Non renseigné",
+    "below_minimum": "Moins que les {months} mois de l'article 26, paragraphe 6 : une autre loi doit l'expliquer",
+    "record": "Renseigner",
+    "recording": "Saisie pour {feature}",
+    "replace_hint": "Ceci remplace ce qui est consigné ; un champ laissé vide est effacé."
   }
 }

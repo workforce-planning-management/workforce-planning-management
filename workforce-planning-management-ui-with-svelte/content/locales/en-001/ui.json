@@ -47,7 +47,8 @@
     "policies": "Policies",
     "payRange": "Pay position",
     "payGap": "Pay gap",
-    "payInformation": "Pay information requests"
+    "payInformation": "Pay information requests",
+    "aiRegister": "AI and scoring register"
   },
   "pr": {
     "retention": "Retention",
@@ -1402,6 +1403,9 @@
     },
     "payInformation": {
       "page_title": "{payInformation} — WPM"
+    },
+    "aiRegister": {
+      "page_title": "{aiRegister} — WPM"
     }
   },
   "titles": {
@@ -1440,7 +1444,8 @@
     "policies": "Policies — WPM",
     "payRange": "Pay position — WPM",
     "payGap": "Pay gap — WPM",
-    "payInformation": "Pay information requests — WPM"
+    "payInformation": "Pay information requests — WPM",
+    "aiRegister": "AI and scoring register — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -2476,5 +2481,25 @@
     "recorded_justified": "Justified.",
     "recorded_remedied": "Remedied {day}.",
     "recorded_assessed": "Assessed {day}:"
+  },
+  "aiRegister": {
+    "hint": "What this deployer has recorded, for each feature that works something out about people, under Article 26 of the AI Act. Anyone signed in may read it. It records what the deployer says: it does not classify a system, certify conformity or count as evidence of compliance.",
+    "applies_now": "The Annex III duties apply from {day}, and now do",
+    "applies_later": "The Annex III duties apply from {day}",
+    "computed_by": "Worked out by",
+    "informs": "Informs",
+    "made_of": "Made of",
+    "category": "Category the deployer chose",
+    "overseer": "Role that oversees it",
+    "reps_informed": "Representatives informed on",
+    "workers_informed": "Workers informed on",
+    "retention": "Logs kept for",
+    "months": "{months} months",
+    "retention_note": "Why logs are kept for less",
+    "not_recorded": "Not recorded",
+    "below_minimum": "Under the {months} months Article 26(6) names: other law must explain it",
+    "record": "Record",
+    "recording": "Recording for {feature}",
+    "replace_hint": "This replaces what is recorded; a field left empty is cleared."
   }
 }

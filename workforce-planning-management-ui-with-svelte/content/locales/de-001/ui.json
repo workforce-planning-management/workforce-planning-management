@@ -47,7 +47,8 @@
     "policies": "Richtlinien",
     "payRange": "Vergütungsposition",
     "payGap": "Entgeltlücke",
-    "payInformation": "Entgeltauskunftsanträge"
+    "payInformation": "Entgeltauskunftsanträge",
+    "aiRegister": "Register für KI und Bewertungen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -1402,6 +1403,9 @@
     },
     "payInformation": {
       "page_title": "{payInformation} — WPM"
+    },
+    "aiRegister": {
+      "page_title": "{aiRegister} — WPM"
     }
   },
   "titles": {
@@ -1440,7 +1444,8 @@
     "policies": "Richtlinien — WPM",
     "payRange": "Vergütungsposition — WPM",
     "payGap": "Entgeltlücke — WPM",
-    "payInformation": "Entgeltauskunftsanträge — WPM"
+    "payInformation": "Entgeltauskunftsanträge — WPM",
+    "aiRegister": "Register für KI und Bewertungen — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2476,5 +2481,25 @@
     "recorded_justified": "Gerechtfertigt.",
     "recorded_remedied": "Behoben {day}.",
     "recorded_assessed": "Bewertet {day}:"
+  },
+  "aiRegister": {
+    "hint": "Was dieser Betreiber für jede Funktion, die etwas über Menschen berechnet, nach Artikel 26 der KI-Verordnung erfasst hat. Alle Angemeldeten dürfen es lesen. Es hält fest, was der Betreiber sagt: Es stuft kein System ein, bescheinigt keine Konformität und gilt nicht als Nachweis der Einhaltung.",
+    "applies_now": "Die Pflichten nach Anhang III gelten ab {day} und gelten jetzt",
+    "applies_later": "Die Pflichten nach Anhang III gelten ab {day}",
+    "computed_by": "Berechnet von",
+    "informs": "Informiert",
+    "made_of": "Besteht aus",
+    "category": "Vom Betreiber gewählte Kategorie",
+    "overseer": "Aufsichtsrolle",
+    "reps_informed": "Vertretung informiert am",
+    "workers_informed": "Beschäftigte informiert am",
+    "retention": "Protokolle aufbewahrt",
+    "months": "{months} Monate",
+    "retention_note": "Warum Protokolle kürzer aufbewahrt werden",
+    "not_recorded": "Nicht erfasst",
+    "below_minimum": "Unter den {months} Monaten, die Artikel 26 Absatz 6 nennt: anderes Recht muss es begründen",
+    "record": "Erfassen",
+    "recording": "Erfassung für {feature}",
+    "replace_hint": "Dies ersetzt das Erfasste; ein leeres Feld wird gelöscht."
   }
 }

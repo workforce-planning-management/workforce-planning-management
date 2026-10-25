@@ -80,6 +80,7 @@ collections:
               - { name: "payRange", label: "Pay Range", widget: string, required: false, i18n: true }
               - { name: "payGap", label: "Pay Gap", widget: string, required: false, i18n: true }
               - { name: "payInformation", label: "Pay Information", widget: string, required: false, i18n: true }
+              - { name: "aiRegister", label: "Ai Register", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -2060,6 +2061,14 @@ collections:
                 i18n: true
                 fields:
                   - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
+              - name: "aiRegister"
+                label: "Ai Register"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
           - name: "titles"
             label: "Titles"
             widget: object
@@ -2103,6 +2112,7 @@ collections:
               - { name: "payRange", label: "Pay Range", widget: string, required: false, i18n: true }
               - { name: "payGap", label: "Pay Gap", widget: string, required: false, i18n: true }
               - { name: "payInformation", label: "Pay Information", widget: string, required: false, i18n: true }
+              - { name: "aiRegister", label: "Ai Register", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -3313,3 +3323,28 @@ collections:
               - { name: "recorded_justified", label: "Recorded_justified", widget: string, required: false, i18n: true }
               - { name: "recorded_remedied", label: "Recorded_remedied", widget: string, required: false, i18n: true }
               - { name: "recorded_assessed", label: "Recorded_assessed", widget: string, required: false, i18n: true }
+          - name: "aiRegister"
+            label: "Ai Register"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "applies_now", label: "Applies_now", widget: string, required: false, i18n: true }
+              - { name: "applies_later", label: "Applies_later", widget: string, required: false, i18n: true }
+              - { name: "computed_by", label: "Computed_by", widget: string, required: false, i18n: true }
+              - { name: "informs", label: "Informs", widget: string, required: false, i18n: true }
+              - { name: "made_of", label: "Made_of", widget: string, required: false, i18n: true }
+              - { name: "category", label: "Category", widget: string, required: false, i18n: true }
+              - { name: "overseer", label: "Overseer", widget: string, required: false, i18n: true }
+              - { name: "reps_informed", label: "Reps_informed", widget: string, required: false, i18n: true }
+              - { name: "workers_informed", label: "Workers_informed", widget: string, required: false, i18n: true }
+              - { name: "retention", label: "Retention", widget: string, required: false, i18n: true }
+              - { name: "months", label: "Months", widget: string, required: false, i18n: true }
+              - { name: "retention_note", label: "Retention_note", widget: string, required: false, i18n: true }
+              - { name: "not_recorded", label: "Not_recorded", widget: string, required: false, i18n: true }
+              - { name: "below_minimum", label: "Below_minimum", widget: string, required: false, i18n: true }
+              - { name: "record", label: "Record", widget: string, required: false, i18n: true }
+              - { name: "recording", label: "Recording", widget: string, required: false, i18n: true }
+              - { name: "replace_hint", label: "Replace_hint", widget: string, required: false, i18n: true }

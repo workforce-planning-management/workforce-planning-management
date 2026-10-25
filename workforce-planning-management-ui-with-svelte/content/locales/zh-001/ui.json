@@ -47,7 +47,8 @@
     "policies": "政策",
     "payRange": "薪酬定位",
     "payGap": "薪酬差距",
-    "payInformation": "薪酬信息请求"
+    "payInformation": "薪酬信息请求",
+    "aiRegister": "人工智能与评分登记册"
   },
   "pr": {
     "retention": "保留",
@@ -1402,6 +1403,9 @@
     },
     "payInformation": {
       "page_title": "{payInformation} — WPM"
+    },
+    "aiRegister": {
+      "page_title": "{aiRegister} — WPM"
     }
   },
   "titles": {
@@ -1440,7 +1444,8 @@
     "policies": "政策 — WPM",
     "payRange": "薪酬定位 — WPM",
     "payGap": "薪酬差距 — WPM",
-    "payInformation": "薪酬信息请求 — WPM"
+    "payInformation": "薪酬信息请求 — WPM",
+    "aiRegister": "人工智能与评分登记册 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -2476,5 +2481,25 @@
     "recorded_justified": "已说明理由。",
     "recorded_remedied": "{day} 已纠正。",
     "recorded_assessed": "{day} 已评估："
+  },
+  "aiRegister": {
+    "hint": "本部署方就每项对人员进行某种计算的功能，依据《人工智能法》第 26 条所作的记录。任何已登录者均可阅读。它记录部署方所述内容：不对系统分类，不证明合规，也不构成合规证据。",
+    "applies_now": "附件三的义务自 {day} 起适用，现已适用",
+    "applies_later": "附件三的义务自 {day} 起适用",
+    "computed_by": "计算方",
+    "informs": "影响",
+    "made_of": "构成",
+    "category": "部署方选择的类别",
+    "overseer": "监督角色",
+    "reps_informed": "通知代表的日期",
+    "workers_informed": "通知员工的日期",
+    "retention": "日志保存",
+    "months": "{months} 个月",
+    "retention_note": "日志保存较短的原因",
+    "not_recorded": "未记录",
+    "below_minimum": "低于第 26(6) 条所述的 {months} 个月：须由其他法律解释",
+    "record": "记录",
+    "recording": "记录 {feature}",
+    "replace_hint": "这将替换已记录的内容；留空的字段将被清除。"
   }
 }

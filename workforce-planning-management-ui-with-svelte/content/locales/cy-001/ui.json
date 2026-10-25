@@ -47,7 +47,8 @@
     "policies": "Polisïau",
     "payRange": "Safle cyflog",
     "payGap": "Bwlch cyflog",
-    "payInformation": "Ceisiadau am wybodaeth cyflog"
+    "payInformation": "Ceisiadau am wybodaeth cyflog",
+    "aiRegister": "Cofrestr AI a sgorio"
   },
   "pr": {
     "retention": "Cadw data",
@@ -1402,6 +1403,9 @@
     },
     "payInformation": {
       "page_title": "{payInformation} — WPM"
+    },
+    "aiRegister": {
+      "page_title": "{aiRegister} — WPM"
     }
   },
   "titles": {
@@ -1440,7 +1444,8 @@
     "policies": "Polisïau — WPM",
     "payRange": "Safle cyflog — WPM",
     "payGap": "Bwlch cyflog — WPM",
-    "payInformation": "Ceisiadau am wybodaeth cyflog — WPM"
+    "payInformation": "Ceisiadau am wybodaeth cyflog — WPM",
+    "aiRegister": "Cofrestr AI a sgorio — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -2476,5 +2481,25 @@
     "recorded_justified": "Cyfiawnhawyd.",
     "recorded_remedied": "Cywirwyd {day}.",
     "recorded_assessed": "Aseswyd {day}:"
+  },
+  "aiRegister": {
+    "hint": "Yr hyn y mae'r defnyddiwr hwn wedi'i gofnodi, ar gyfer pob nodwedd sy'n cyfrifo rhywbeth am bobl, o dan Erthygl 26 Deddf AI. Gall unrhyw un sydd wedi mewngofnodi ei darllen. Mae'n cofnodi'r hyn a ddywed y defnyddiwr: nid yw'n dosbarthu system, yn ardystio cydymffurfiaeth nac yn cyfrif fel tystiolaeth o gydymffurfio.",
+    "applies_now": "Mae dyletswyddau Atodiad III yn gymwys o {day}, ac yn gymwys nawr",
+    "applies_later": "Mae dyletswyddau Atodiad III yn gymwys o {day}",
+    "computed_by": "Cyfrifir gan",
+    "informs": "Yn hysbysu",
+    "made_of": "Wedi'i wneud o",
+    "category": "Y categori a ddewisodd y defnyddiwr",
+    "overseer": "Y rôl sy'n ei goruchwylio",
+    "reps_informed": "Hysbyswyd cynrychiolwyr ar",
+    "workers_informed": "Hysbyswyd gweithwyr ar",
+    "retention": "Cedwir cofnodion am",
+    "months": "{months} mis",
+    "retention_note": "Pam y cedwir cofnodion am lai",
+    "not_recorded": "Heb ei gofnodi",
+    "below_minimum": "Llai na'r {months} mis a nodir yn Erthygl 26(6): rhaid i gyfraith arall ei egluro",
+    "record": "Cofnodi",
+    "recording": "Cofnodi ar gyfer {feature}",
+    "replace_hint": "Mae hyn yn disodli'r hyn a gofnodwyd; caiff maes gwag ei glirio."
   }
 }

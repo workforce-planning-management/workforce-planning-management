@@ -47,7 +47,8 @@
     "policies": "السياسات",
     "payRange": "موقع الأجر",
     "payGap": "فجوة الأجور",
-    "payInformation": "طلبات معلومات الأجور"
+    "payInformation": "طلبات معلومات الأجور",
+    "aiRegister": "سجل الذكاء الاصطناعي والتقييمات"
   },
   "pr": {
     "retention": "الاحتفاظ",
@@ -1402,6 +1403,9 @@
     },
     "payInformation": {
       "page_title": "{payInformation} — WPM"
+    },
+    "aiRegister": {
+      "page_title": "{aiRegister} — WPM"
     }
   },
   "titles": {
@@ -1440,7 +1444,8 @@
     "policies": "السياسات — WPM",
     "payRange": "موقع الأجر — WPM",
     "payGap": "فجوة الأجور — WPM",
-    "payInformation": "طلبات معلومات الأجور — WPM"
+    "payInformation": "طلبات معلومات الأجور — WPM",
+    "aiRegister": "سجل الذكاء الاصطناعي والتقييمات — WPM"
   },
   "values": {
     "abandoned": "متروك",
@@ -2476,5 +2481,25 @@
     "recorded_justified": "مبرَّرة.",
     "recorded_remedied": "عولجت في {day}.",
     "recorded_assessed": "قُيِّمت في {day}:"
+  },
+  "aiRegister": {
+    "hint": "ما سجّله هذا الجهة المشغِّلة، لكل ميزة تحسب شيئًا عن الأشخاص، بموجب المادة 26 من قانون الذكاء الاصطناعي. يمكن لأي مستخدم مسجَّل الدخول قراءته. يسجّل ما تقوله الجهة المشغِّلة: لا يصنّف نظامًا ولا يشهد بالمطابقة ولا يُعدّ دليلًا على الامتثال.",
+    "applies_now": "تسري التزامات الملحق الثالث منذ {day}، وهي سارية الآن",
+    "applies_later": "تسري التزامات الملحق الثالث اعتبارًا من {day}",
+    "computed_by": "تُحسب بواسطة",
+    "informs": "تُبلغ",
+    "made_of": "تتكوّن من",
+    "category": "الفئة التي اختارتها الجهة المشغِّلة",
+    "overseer": "الدور المشرف عليها",
+    "reps_informed": "أُبلغ الممثلون في",
+    "workers_informed": "أُبلغ العاملون في",
+    "retention": "تُحفظ السجلات لمدة",
+    "months": "{months} شهرًا",
+    "retention_note": "سبب حفظ السجلات لمدة أقل",
+    "not_recorded": "غير مسجَّل",
+    "below_minimum": "أقل من {months} أشهر التي تذكرها المادة 26(6): يجب أن يبرّره قانون آخر",
+    "record": "سجّل",
+    "recording": "تسجيل لـ {feature}",
+    "replace_hint": "هذا يستبدل ما هو مسجَّل؛ والحقل الفارغ يُمسح."
   }
 }

@@ -47,7 +47,8 @@
     "policies": "Políticas",
     "payRange": "Posición salarial",
     "payGap": "Brecha salarial",
-    "payInformation": "Solicitudes de información salarial"
+    "payInformation": "Solicitudes de información salarial",
+    "aiRegister": "Registro de IA y puntuaciones"
   },
   "pr": {
     "retention": "Retención",
@@ -1402,6 +1403,9 @@
     },
     "payInformation": {
       "page_title": "{payInformation} — WPM"
+    },
+    "aiRegister": {
+      "page_title": "{aiRegister} — WPM"
     }
   },
   "titles": {
@@ -1440,7 +1444,8 @@
     "policies": "Políticas — WPM",
     "payRange": "Posición salarial — WPM",
     "payGap": "Brecha salarial — WPM",
-    "payInformation": "Solicitudes de información salarial — WPM"
+    "payInformation": "Solicitudes de información salarial — WPM",
+    "aiRegister": "Registro de IA y puntuaciones — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2476,5 +2481,25 @@
     "recorded_justified": "Justificada.",
     "recorded_remedied": "Corregida el {day}.",
     "recorded_assessed": "Evaluada el {day}:"
+  },
+  "aiRegister": {
+    "hint": "Lo que este responsable del despliegue ha registrado, para cada función que calcula algo sobre personas, conforme al artículo 26 del Reglamento de IA. Cualquier persona con sesión puede leerlo. Registra lo que dice el responsable: no clasifica ningún sistema, no certifica conformidad ni sirve de prueba de cumplimiento.",
+    "applies_now": "Las obligaciones del anexo III se aplican desde el {day}, y ya se aplican",
+    "applies_later": "Las obligaciones del anexo III se aplican desde el {day}",
+    "computed_by": "Calculado por",
+    "informs": "Informa",
+    "made_of": "Compuesto de",
+    "category": "Categoría elegida por el responsable",
+    "overseer": "Rol que la supervisa",
+    "reps_informed": "Representantes informados el",
+    "workers_informed": "Trabajadores informados el",
+    "retention": "Registros conservados",
+    "months": "{months} meses",
+    "retention_note": "Por qué los registros se conservan menos",
+    "not_recorded": "No registrado",
+    "below_minimum": "Menos de los {months} meses del artículo 26, apartado 6: otra ley debe explicarlo",
+    "record": "Registrar",
+    "recording": "Registro de {feature}",
+    "replace_hint": "Esto sustituye lo registrado; un campo vacío se borra."
   }
 }

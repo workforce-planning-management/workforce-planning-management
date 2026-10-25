@@ -39,6 +39,7 @@
     ["/pay-range", "nav.payRange"],
     ["/pay-gap", "nav.payGap"],
     ["/pay-information", "nav.payInformation"],
+    ["/ai-register", "nav.aiRegister"],
     ["/job-levels", "nav.jobLevels"],
     ["/expenses", "nav.expenseQueue"],
     ["/policies", "nav.policies"],

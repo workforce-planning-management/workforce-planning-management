@@ -31,3 +31,6 @@ man in a category with fewer than ten men. It answers one of them, so seed again
 
 `joint-assessment.spec.ts` uses the same set-up as `pay-gap.spec.ts` (`PAY_GAP_ORG`; a category whose gap is at the threshold and one
 whose gap is withheld). It writes assessment records, so clear them (`DELETE FROM pay_assessment_records`) or seed again to rerun.
+
+`ai-register.spec.ts` needs no organization or data, but it records a feature (S1), so clear the register
+(`DELETE FROM ai_register_entries`) or seed again to rerun.

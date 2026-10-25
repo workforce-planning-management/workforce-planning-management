@@ -47,7 +47,8 @@
     "policies": "Políticas",
     "payRange": "Posição salarial",
     "payGap": "Disparidade salarial",
-    "payInformation": "Pedidos de informação salarial"
+    "payInformation": "Pedidos de informação salarial",
+    "aiRegister": "Registo de IA e pontuações"
   },
   "pr": {
     "retention": "Retenção",
@@ -1402,6 +1403,9 @@
     },
     "payInformation": {
       "page_title": "{payInformation} — WPM"
+    },
+    "aiRegister": {
+      "page_title": "{aiRegister} — WPM"
     }
   },
   "titles": {
@@ -1440,7 +1444,8 @@
     "policies": "Políticas — WPM",
     "payRange": "Posição salarial — WPM",
     "payGap": "Disparidade salarial — WPM",
-    "payInformation": "Pedidos de informação salarial — WPM"
+    "payInformation": "Pedidos de informação salarial — WPM",
+    "aiRegister": "Registo de IA e pontuações — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2476,5 +2481,25 @@
     "recorded_justified": "Justificada.",
     "recorded_remedied": "Corrigida em {day}.",
     "recorded_assessed": "Avaliada em {day}:"
+  },
+  "aiRegister": {
+    "hint": "O que este responsável pela implantação registou, para cada funcionalidade que calcula algo sobre pessoas, nos termos do artigo 26.º do Regulamento da IA. Qualquer pessoa autenticada pode lê-lo. Regista o que o responsável diz: não classifica nenhum sistema, não certifica conformidade nem vale como prova de cumprimento.",
+    "applies_now": "As obrigações do anexo III aplicam-se desde {day}, e já se aplicam",
+    "applies_later": "As obrigações do anexo III aplicam-se a partir de {day}",
+    "computed_by": "Calculado por",
+    "informs": "Informa",
+    "made_of": "Composto por",
+    "category": "Categoria escolhida pelo responsável",
+    "overseer": "Função que a supervisiona",
+    "reps_informed": "Representantes informados em",
+    "workers_informed": "Trabalhadores informados em",
+    "retention": "Registos conservados",
+    "months": "{months} meses",
+    "retention_note": "Porque os registos são conservados menos tempo",
+    "not_recorded": "Não registado",
+    "below_minimum": "Abaixo dos {months} meses do artigo 26.º, n.º 6: outra lei tem de o explicar",
+    "record": "Registar",
+    "recording": "Registo de {feature}",
+    "replace_hint": "Isto substitui o que está registado; um campo vazio é apagado."
   }
 }

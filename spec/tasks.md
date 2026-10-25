@@ -4781,3 +4781,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       report) were not seen on screen: the form stops the first itself and the second was not tried; a remedy and a "remedied"
       signal were not seen against the real service; the link to a recognised body is only a name typed in (Phase 18's bodies are not
       built); the new strings are AI-written and unreviewed.
+- [x] (2026-10-25) WPM-T297 **A screen for the AI and scoring register (`/ai-register`).** *(WPM-R148, WPM-D103)* A page in the navigation drawer, readable
+      by anyone signed in (it is a notice of how people are scored): the date the Annex III duties apply and whether they now do;
+      each of the eight scoring features (S1 to S8) with what it is, who works it out, what it informs and what it is made of (the
+      service's own English wording, marked as such), and what the deployer recorded: the category chosen, the overseeing role, when
+      representatives and workers were informed, how long logs are kept and why when under six months. A field with nothing recorded
+      says "Not recorded", never "none"; a retention under the six months Article 26(6) names is flagged. HR and administrators record a
+      feature through a form that replaces what is there (an empty field is cleared); a refusal shows the service's words. The
+      service's note that the register is not a classification, a certification or evidence of compliance is shown. Strings under
+      `aiRegister.*`, `nav.aiRegister`, `titles.aiRegister` in the 13 locales (AI-written, unreviewed). **Seen against a real
+      service** (`WPM_REQUIRE_AUTH=0`, Postgres 18 in Podman): a live spec `tests/live/ai-register.spec.ts` asserts eight features
+      with six unknown fields each, that three months of retention with no reason is refused by the service in words and nothing is
+      recorded, and that with a reason it is recorded and flagged. I looked at light, dark and 390-pixel screenshots; the first
+      layout stacked nine label-value pairs per card into a very long page, so they now sit side by side on a wide screen (the page is
+      about a quarter shorter) and stack on a phone. Verified: UI `svelte-check` 0 errors, 210 unit tests, Playwright 235 passed / 19
+      skipped (new: what is recorded and unknown, the short-retention flag, recording with the expected body; a refusal in words); the
+      live spec 2 passed. **Not done:** the Rust side is unchanged, so its suites were not re-run; the per-decision explanation
+      (Article 86, not read) and the link to a recognised body are not built; the page is still long (eight cards) and was not given
+      a way to collapse them; only the new layout's dark and light shots were looked at after the change on the wide screen, not the
+      phone; the feature text is English only (it comes from the service); the new strings are AI-written and unreviewed.

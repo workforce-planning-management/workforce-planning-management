@@ -5250,3 +5250,54 @@ export type AssessmentRecordBody = {
 export function putAssessmentRecord(body: AssessmentRecordBody): Promise<{ pid: string }> {
   return api("/pay-transparency/assessment-records", { method: "PUT", body });
 }
+
+/** What a deployer may say a scoring feature is, under Annex III point 4 of the AI Act (mirror `rules::ai_register::CATEGORIES`). */
+export const AI_CATEGORIES = [
+  "recruitment_selection",
+  "work_relationship_decisions",
+  "task_allocation",
+  "monitoring_evaluation",
+  "not_high_risk",
+] as const;
+
+/** A recorded value, or the plain fact that nothing is recorded. */
+export type AiField<T> = { status: "unknown" } | { status: "recorded"; value: T };
+
+export type AiFeatureRow = {
+  feature: { id: string; name: string; computed_by: string; informs: string; made_of: string };
+  advisory: string;
+  annex_category: AiField<string>;
+  overseer_role: AiField<string>;
+  representatives_informed_on: AiField<string>;
+  workers_informed_on: AiField<string>;
+  log_retention_months: AiField<number>;
+  retention_note: AiField<string>;
+  retention_below_minimum: boolean;
+};
+
+export type AiRegister = {
+  applies_from: string;
+  applies_now: boolean;
+  features: AiFeatureRow[];
+  minimum_log_months: number;
+  note: string;
+};
+
+/** The AI and scoring deployer register: what the deployer recorded per scoring feature; unrecorded is unknown. */
+export function getAiRegister(init?: FetchLike): Promise<AiRegister> {
+  return api("/ai-register", init);
+}
+
+export type AiRegisterBody = {
+  annex_category?: string;
+  overseer_role?: string;
+  representatives_informed_on?: string;
+  workers_informed_on?: string;
+  log_retention_months?: number;
+  retention_note?: string;
+};
+
+/** Replace what is recorded for a feature; a field left out is cleared. HR and administrators. */
+export function putAiRegisterEntry(featureId: string, body: AiRegisterBody): Promise<{ pid: string; feature: string }> {
+  return api(`/ai-register/${featureId}`, { method: "PUT", body });
+}

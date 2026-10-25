@@ -47,7 +47,8 @@
     "policies": "Kebijakan",
     "payRange": "Posisi gaji",
     "payGap": "Kesenjangan gaji",
-    "payInformation": "Permintaan informasi gaji"
+    "payInformation": "Permintaan informasi gaji",
+    "aiRegister": "Register AI dan penilaian"
   },
   "pr": {
     "retention": "Retensi",
@@ -1402,6 +1403,9 @@
     },
     "payInformation": {
       "page_title": "{payInformation} — WPM"
+    },
+    "aiRegister": {
+      "page_title": "{aiRegister} — WPM"
     }
   },
   "titles": {
@@ -1440,7 +1444,8 @@
     "policies": "Kebijakan — WPM",
     "payRange": "Posisi gaji — WPM",
     "payGap": "Kesenjangan gaji — WPM",
-    "payInformation": "Permintaan informasi gaji — WPM"
+    "payInformation": "Permintaan informasi gaji — WPM",
+    "aiRegister": "Register AI dan penilaian — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2476,5 +2481,25 @@
     "recorded_justified": "Dibenarkan.",
     "recorded_remedied": "Diperbaiki {day}.",
     "recorded_assessed": "Dinilai {day}:"
+  },
+  "aiRegister": {
+    "hint": "Apa yang dicatat penyelenggara ini, untuk setiap fitur yang menghitung sesuatu tentang orang, menurut Pasal 26 Undang-Undang AI. Siapa pun yang masuk dapat membacanya. Ini mencatat apa yang dikatakan penyelenggara: tidak mengklasifikasikan sistem, tidak mensertifikasi kesesuaian, dan bukan bukti kepatuhan.",
+    "applies_now": "Kewajiban Lampiran III berlaku sejak {day}, dan kini berlaku",
+    "applies_later": "Kewajiban Lampiran III berlaku mulai {day}",
+    "computed_by": "Dihitung oleh",
+    "informs": "Menginformasikan",
+    "made_of": "Terdiri dari",
+    "category": "Kategori yang dipilih penyelenggara",
+    "overseer": "Peran yang mengawasinya",
+    "reps_informed": "Perwakilan diberi tahu pada",
+    "workers_informed": "Pekerja diberi tahu pada",
+    "retention": "Log disimpan selama",
+    "months": "{months} bulan",
+    "retention_note": "Mengapa log disimpan lebih singkat",
+    "not_recorded": "Tidak tercatat",
+    "below_minimum": "Kurang dari {months} bulan yang disebut Pasal 26(6): hukum lain harus menjelaskannya",
+    "record": "Catat",
+    "recording": "Pencatatan untuk {feature}",
+    "replace_hint": "Ini menggantikan yang tercatat; kolom kosong akan dihapus."
   }
 }
