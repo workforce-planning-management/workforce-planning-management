@@ -58,10 +58,8 @@ fn every_cron_has_six_or_seven_fields_and_a_job_that_needs_settings_is_not_in_th
         assert!(job.tags.as_ref().is_some_and(|t| !t.is_empty()), "{name} has no tag, so no `--tag` starts it");
     }
     // The tasks that fail unless the deployment has set something up must not start with the default tag.
-    for needs_settings in ["scim_push"] {
-        let job = scheduler.jobs.get(needs_settings).expect("scim_push is scheduled");
-        assert!(!job.tags.as_ref().expect("tags").iter().any(|t| t == "wpm"), "{needs_settings} fails without its settings");
-    }
+    let scim = scheduler.jobs.get("scim_push").expect("scim_push is scheduled");
+    assert!(!scim.tags.as_ref().expect("tags").iter().any(|t| t == "wpm"), "scim_push fails without its settings");
     // The ones that must be tried daily or more often are not accidentally weekly or monthly.
     let daily_or_more = ["webhook_deliver", "snapshot_headcount", "early_warning_sweep", "engagement_end_reminders", "rota_reminders", "pay_progression_reminders", "policy_reminders", "verify_audit_chain"];
     for name in daily_or_more {
