@@ -88,3 +88,90 @@ async fn a_mapping_lets_a_declared_skill_stand_in_for_a_need_only_when_it_is_exa
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_workforce_roll_up_grades_through_the_crosswalk_as_one_person_does() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut skills = Vec::new();
+        for n in 1..=4 {
+            let s: Value = request.post("/api/skills").json(&json!({ "name": format!("RU{tag}-{n}"), "category": "technical" })).await.json();
+            skills.push(s["pid"].as_str().unwrap().to_string());
+        }
+        // The role needs S1 at 3 and S3 at 5. Worker A declared S2 at 4. Worker B declared S2 at 4 and S4 at 2.
+        let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": format!("RU role {tag}") })).await.json();
+        let role = profile["pid"].as_str().unwrap().to_string();
+        for (skill, level) in [(&skills[0], 3), (&skills[2], 5)] {
+            request.put(&format!("/api/role-profiles/{role}/requirements"))
+                .json(&json!({ "skill_pid": skill, "min_proficiency": level, "importance": "important" })).await.assert_status_ok();
+        }
+        ctx.db.execute_unprepared(&format!("UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'")).await.unwrap();
+        let mut people = Vec::new();
+        for who in ["A", "B"] {
+            let w = seed_worker!(&request, &org, format!("RU-{tag}-{who}"), None).await;
+            activate!(&request, &w).await;
+            ctx.db.execute_unprepared(&format!(
+                "UPDATE workers SET department = 'ru{tag}' WHERE pid = '{w}'; \
+                 INSERT INTO worker_framework_roles (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
+                 VALUES (gen_random_uuid(), '{w}', 'uk-gdad-pcf', '{role}', 'RU role', CURRENT_DATE, now(), false)")).await.unwrap();
+            request.put(&format!("/api/workers/{w}/skills")).json(&json!({ "skill_pid": skills[1], "proficiency": 4 })).await.assert_status_ok();
+            people.push(w);
+        }
+        request.put(&format!("/api/workers/{}/skills", people[1])).json(&json!({ "skill_pid": skills[3], "proficiency": 2 })).await.assert_status_ok();
+
+        let roll = |skill: String| {
+            let request = &request;
+            let department = format!("ru{tag}");
+            async move {
+                let body: Value = request.get(&format!("/api/workforce-intelligence/skill-gaps?department={department}")).await.json();
+                body["skills"].as_array().unwrap().iter().find(|s| s["skill_pid"] == skill.as_str()).cloned().unwrap_or(Value::Null)
+            }
+        };
+        let counts = |row: &Value| (row["met"].as_i64(), row["below"].as_i64(), row["undeclared"].as_i64());
+
+        // No mapping: both needs are unknown for both people.
+        assert_eq!(counts(&roll(skills[0].clone()).await), (Some(0), Some(0), Some(2)));
+
+        // A broader mapping is never counted.
+        let post = |from: &str, to: &str, confidence: &str| {
+            let request = &request;
+            let body = json!({ "from_skill_pid": from, "to_skill_pid": to, "confidence": confidence, "basis": "authority", "source": "A published crosswalk, 2025" });
+            async move { request.post("/api/skill-mappings").json(&body).await }
+        };
+        let broader: Value = post(&skills[1], &skills[0], "broader").await.json();
+        assert_eq!(counts(&roll(skills[0].clone()).await), (Some(0), Some(0), Some(2)), "broader is shown by the person's view and counted by nobody's");
+        request.delete(&format!("/api/skill-mappings/{}", broader["pid"].as_str().unwrap())).await.assert_status_ok();
+
+        // S2 close to S1 (4 against 3) and exact to S3 (4 against 5): A is met on S1 and short on S3.
+        post(&skills[1], &skills[0], "close").await.assert_status_ok();
+        post(&skills[1], &skills[2], "exact").await.assert_status_ok();
+        // B also declared S4 at 2, exact to S1: the exact mapping outranks the close one, so B is short on S1 (2 against 3).
+        post(&skills[3], &skills[0], "exact").await.assert_status_ok();
+        let s1 = roll(skills[0].clone()).await;
+        assert_eq!(counts(&s1), (Some(1), Some(1), Some(0)), "A met through close; B below through exact");
+        let s3 = roll(skills[2].clone()).await;
+        assert_eq!(counts(&s3), (Some(0), Some(2), Some(0)), "both are short of 5 with 4");
+
+        // The same people, one at a time, say the same thing.
+        let one = |w: &str| {
+            let request = &request;
+            let url = format!("/api/workers/{w}/skill-gaps");
+            async move { request.get(&url).await.json::<Value>() }
+        };
+        let a = one(&people[0]).await;
+        assert_eq!(a["counts"], json!({ "met": 1, "below": 1, "undeclared": 0 }));
+        let b = one(&people[1]).await;
+        assert_eq!(b["counts"], json!({ "met": 0, "below": 2, "undeclared": 0 }));
+        let b_s1 = b["gaps"].as_array().unwrap().iter().find(|g| g["skill_pid"] == skills[0].as_str()).unwrap();
+        assert_eq!(b_s1["through_mapping"]["confidence"], "exact");
+        assert_eq!(b_s1["shortfall"], 1);
+
+        // A direct declaration is never overridden by a mapping: B declares S1 at 5 and is met on it.
+        request.put(&format!("/api/workers/{}/skills", people[1])).json(&json!({ "skill_pid": skills[0], "proficiency": 5 })).await.assert_status_ok();
+        assert_eq!(counts(&roll(skills[0].clone()).await), (Some(2), Some(0), Some(0)));
+    })
+    .await;
+}

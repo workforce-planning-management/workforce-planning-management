@@ -3,7 +3,7 @@
 //! [`crate::rules::skill_gap::merge`] says what one person's gaps are: their role's requirements and
 //! their own targets, merged per skill (highest level, strongest importance), graded against what they
 //! declared. These queries say the same thing for everyone employed in the caller's scope at once, without
-//! reading a row per worker into memory; a test grades the same people both ways. Aspirations are private
+//! reading a row per worker into memory; a test grades the same people both ways, with and without the skills crosswalk. Aspirations are private
 //! and are never part of a workforce view, so they are not here.
 
 use std::fmt::Write;
@@ -67,12 +67,24 @@ fn graded(
               WHERE deleted_at IS NULL AND target IS NOT NULL),
          graded AS (
              SELECT n.worker_pid, n.skill_pid, s.department, MAX(n.required) AS required,
-                    MAX(n.weight) AS weight, d.proficiency AS declared
+                    MAX(n.weight) AS weight, COALESCE(d.proficiency, v.level) AS declared
                FROM needs n
                JOIN staff s ON s.pid = n.worker_pid
                LEFT JOIN worker_skills d ON d.worker_pid = n.worker_pid AND d.skill_pid = n.skill_pid
                                         AND d.deleted_at IS NULL
-              GROUP BY n.worker_pid, n.skill_pid, s.department, d.proficiency)"
+               -- A need the person did not declare is graded through the best exact or close mapping from a skill they did
+               -- declare: the most confident, then the highest declared level (`rules::crosswalk::apply`). A direct
+               -- declaration is never overridden, and a broader or narrower mapping is never counted.
+               LEFT JOIN LATERAL (
+                   SELECT ds.proficiency AS level
+                     FROM skill_mappings m
+                     JOIN worker_skills ds ON ds.worker_pid = n.worker_pid AND ds.skill_pid = m.from_skill_pid
+                                          AND ds.deleted_at IS NULL
+                    WHERE d.proficiency IS NULL AND m.to_skill_pid = n.skill_pid
+                      AND m.confidence IN ('exact', 'close')
+                    ORDER BY (m.confidence = 'exact') DESC, ds.proficiency DESC, m.from_skill_pid
+                    LIMIT 1) v ON TRUE
+              GROUP BY n.worker_pid, n.skill_pid, s.department, d.proficiency, v.level)"
     );
     (sql, values)
 }

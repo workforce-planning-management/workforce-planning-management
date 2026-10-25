@@ -4800,3 +4800,19 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       (Article 86, not read) and the link to a recognised body are not built; the page is still long (eight cards) and was not given
       a way to collapse them; only the new layout's dark and light shots were looked at after the change on the wide screen, not the
       phone; the feature text is English only (it comes from the service); the new strings are AI-written and unreviewed.
+- [x] (2026-10-25) WPM-T298 **The workforce skill-gap roll-up reads the skills crosswalk.** *(WPM-R158, WPM-D109)* Listed as not built under WPM-T284: the
+      roll-up is counted in SQL (`controllers/gap_sql.rs`) and did not read mappings, so a person whose declared skill was mapped to a
+      need was graded as having declared nothing there, while their own view graded it. The SQL now grades a need the person did not
+      declare through the best `exact` or `close` mapping from a skill they did declare (a lateral join: the most confident, then the
+      highest declared level, as `rules::crosswalk::apply` does); a direct declaration is never overridden; `broader` and `narrower`
+      are never counted. This also reaches the other readers of the graded set (the staff below a need, for training hours). The
+      roll-up's derivation text says so. A new request test grades the same two people both ways: before any mapping both needs are
+      unknown; a broader mapping changes nothing; a close mapping puts one worker above a need and a worker whose exact mapping from a
+      lower declared level outranks a close one from a higher level is below it; the person's own view agrees (including
+      `through_mapping`); and a direct declaration is not overridden. Two faults tried and caught: the exact-first ordering removed,
+      and `broader` admitted. Verified (Postgres 18, Podman): clippy pedantic clean; 811 unit tests; 154 request tests; every
+      `enforcement_*` binary, `chaos`, `request_log`, `retention_schedule`, `security`, `route_coverage`. **Not done:** the roll-up does
+      not say how many of its figures went through a mapping (the per-person view does); no timing was taken, so the cost of the
+      lateral join on a large catalogue of mappings and workers is unmeasured (there is no index on `skill_mappings.to_skill_pid`
+      beyond the pair's unique index, which does not lead with it); the UI was not touched, so no screen was checked; the `keycloak`
+      and `shared_cache_upstream` binaries were not run.

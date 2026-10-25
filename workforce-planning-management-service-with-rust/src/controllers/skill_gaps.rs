@@ -309,7 +309,10 @@ async fn workforce_gaps(
     format::json(serde_json::json!({
         "derivation": "per skill, over employed workers: how many NEED it (their current role's \
                        requirement or their own target), meet it, are below it, or have not \
-                       declared it (unknown — no shortfall, no score). Ranked by Σ importance \
+                       declared it (unknown — no shortfall, no score). A need the person did \
+                       not declare is graded through an exact or close mapping from a skill \
+                       they did declare, as in their own view (the skills crosswalk); a broader \
+                       or narrower mapping is never counted. Ranked by Σ importance \
                        weight × levels short. Aggregate only: nobody is named, and private \
                        aspirations are never included.",
         "as_of": today,

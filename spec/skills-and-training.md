@@ -170,9 +170,13 @@ so no licensed text is shipped.
   and `narrower` are listed beside it (`related_not_counted`) and never counted. A direct declaration is never overridden. Of several
   mappings the most confident wins, then the highest declared level. A need no mapping reaches stays **undeclared (unknown)**, and the
   view counts them (`unmapped_undeclared`).
-- **Not built:** the **workforce roll-up** (`/api/workforce-intelligence/skill-gaps`) does not use the crosswalk, so it counts a mapped
-  skill as undeclared (it is computed in SQL; the per-person view is the one that reads mappings); a mapping import; a screen;
-  transitive mappings (A to B to C is not followed).
+- **The workforce roll-up reads it too** (WPM-T298): `GET /api/workforce-intelligence/skill-gaps` and the training-hours view grade in SQL
+  (`controllers/gap_sql.rs`) with the same rule: a need the person did not declare is graded through the best `exact` or `close`
+  mapping from a skill they did declare (the most confident, then the highest declared level); a direct declaration is never
+  overridden; `broader` and `narrower` are never counted. A request test grades the same people both ways, including a close
+  mapping outranked by an exact one at a lower level and a broader one counted by nobody.
+- **Not built:** the roll-up does not say how many of its figures went through a mapping (the per-person view does); a mapping
+  import; transitive mappings (A to B to C is not followed). The screen is a panel on `/skills` (WPM-T288).
 
 ### Decision
 
