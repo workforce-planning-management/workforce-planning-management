@@ -2,7 +2,8 @@
 //! acknowledgement, a manager's counts with the floor, and HR's named record.
 
 use chrono::{Duration, Utc};
-use sea_orm::ConnectionTrait;
+use sea_orm::{ConnectionTrait, Statement};
+use workforce_planning_management::tasks::policy_reminders::send_reminders;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -120,4 +121,106 @@ async fn a_version_is_acknowledged_by_its_audience_counted_for_managers_and_name
         assert_eq!(people.iter().filter(|p| !p["acknowledged_on"].is_null()).count(), 1);
     })
     .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_reminded_once() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let today = Utc::now().date_naive();
+        let make = |name: &'static str| {
+            let request = &request;
+            let org = org.clone();
+            async move {
+                let made: Value = request.post("/api/policies").json(&json!({ "organization_ref": org, "name": name })).await.json();
+                made["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let conduct = make("Conduct").await;
+        let travel = make("Travel").await;
+
+        // A rename: a clash, an empty name, a name too long and an unknown policy are refused; an unchanged name is not a clash.
+        let url = format!("/api/policies/{conduct}");
+        assert_eq!(request.patch(&url).json(&json!({ "name": "Travel" })).await.status_code(), 422, "another policy has that name");
+        assert_eq!(request.patch(&url).json(&json!({ "name": "  " })).await.status_code(), 422);
+        assert_eq!(request.patch(&url).json(&json!({ "name": "x".repeat(121) })).await.status_code(), 422);
+        assert_eq!(request.patch(&format!("/api/policies/{}", uuid::Uuid::new_v4())).json(&json!({ "name": "Q" })).await.status_code(), 404);
+        assert_eq!(request.patch(&url).json(&json!({ "name": "Conduct" })).await.status_code(), 200, "its own name is not a clash");
+        let version = request
+            .post(&format!("/api/policies/{conduct}/versions"))
+            .json(&json!({ "title": "Conduct", "document_ref": "doc:conduct", "effective_on": (today - Duration::days(1)).to_string(), "audience": "all", "acknowledge_within_days": 5 }))
+            .await;
+        assert_eq!(version.status_code(), 200, "{}", version.text());
+        let renamed = request.patch(&url).json(&json!({ "name": "  Code of conduct " })).await;
+        assert_eq!(renamed.status_code(), 200, "{}", renamed.text());
+        assert_eq!(renamed.json::<Value>()["name"], "Code of conduct", "trimmed");
+        let listed: Value = request.get(&format!("/api/policies?organization={org}")).await.json();
+        let row = listed["policies"].as_array().unwrap().iter().find(|p| p["pid"] == conduct.as_str()).unwrap();
+        assert_eq!(row["name"], "Code of conduct");
+        assert_eq!(row["versions"][0]["title"], "Conduct", "a version keeps its own title");
+
+        // No audit, no write (WPM-D107).
+        ctx.db
+            .execute_unprepared(
+                "CREATE FUNCTION refuse_audit() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'audit refused'; END $$ LANGUAGE plpgsql;
+                 CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_audit()",
+            )
+            .await
+            .unwrap();
+        let refused = request.patch(&url).json(&json!({ "name": "Refused" })).await;
+        assert!(refused.status_code().is_server_error(), "refused: {}", refused.status_code());
+        ctx.db.execute_unprepared("DROP TRIGGER refuse_audit ON audit_logs; DROP FUNCTION refuse_audit()").await.unwrap();
+        let kept: Value = request.get(&format!("/api/policies?organization={org}")).await.json();
+        assert!(kept["policies"].as_array().unwrap().iter().any(|p| p["name"] == "Code of conduct"), "nothing was kept");
+        let _ = travel;
+
+        // Reminders: due in 4 calendar days (effective yesterday + 5), so a window of 3 sends nothing and a window of 4 sends one each.
+        let a = hire(&request, &org, "care", None).await;
+        let b = hire(&request, &org, "care", None).await;
+        let told = |worker: String| {
+            let ctx = &ctx;
+            async move {
+                let row = ctx
+                    .db
+                    .query_one_raw(Statement::from_string(
+                        ctx.db.get_database_backend(),
+                        format!("SELECT count(*) FROM notifications WHERE worker_pid = '{worker}' AND kind = 'policy_due'"),
+                    ))
+                    .await
+                    .unwrap()
+                    .unwrap();
+                row.try_get_by_index::<i64>(0).unwrap()
+            }
+        };
+        send_reminders(&ctx, today, 3).await.unwrap();
+        assert_eq!(told(a.clone()).await, 0, "four calendar days left is outside a window of three");
+        send_reminders(&ctx, today, 4).await.unwrap();
+        assert_eq!(told(a.clone()).await, 1);
+        assert_eq!(told(b.clone()).await, 1);
+        assert_eq!(send_reminders(&ctx, today, 4).await.unwrap(), 0, "idempotent: nobody is told twice for a version");
+
+        // Someone who has acknowledged is left alone; a worker hired later is not told as of an earlier day.
+        let c = hire(&request, &org, "care", None).await;
+        let version_pid = listed_version(&request, &org, &conduct).await;
+        ctx.db
+            .execute_unprepared(&format!(
+                "INSERT INTO policy_acknowledgements (pid, version_pid, worker_pid, acknowledged_on) VALUES ('{}', '{version_pid}', '{c}', CURRENT_DATE)",
+                uuid::Uuid::new_v4()
+            ))
+            .await
+            .unwrap();
+        send_reminders(&ctx, today, 30).await.unwrap();
+        assert_eq!(told(c).await, 0, "already acknowledged");
+        let early = send_reminders(&ctx, today - Duration::days(400), 30).await.unwrap();
+        assert_eq!(early, 0, "no version was in force 400 days ago, and nobody was employed");
+    })
+    .await;
+}
+
+async fn listed_version(request: &loco_rs::TestServer, org: &str, policy: &str) -> String {
+    let listed: Value = request.get(&format!("/api/policies?organization={org}")).await.json();
+    let row = listed["policies"].as_array().unwrap().iter().find(|p| p["pid"] == policy).unwrap();
+    row["versions"][0]["pid"].as_str().unwrap().to_string()
 }

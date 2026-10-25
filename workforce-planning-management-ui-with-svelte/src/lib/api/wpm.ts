@@ -4920,6 +4920,14 @@ export function createPolicy(body: {
   return api("/policies", { method: "POST", body });
 }
 
+/** Correct a policy's name. Its versions and acknowledgements are unchanged. */
+export function renamePolicy(
+  policyPid: string,
+  name: string,
+): Promise<{ pid: string; name: string }> {
+  return api(`/policies/${policyPid}`, { method: "PATCH", body: { name } });
+}
+
 /** Add the next version. A version is never edited; a change is a new version everyone in its audience acknowledges again. */
 export function addPolicyVersion(
   policyPid: string,

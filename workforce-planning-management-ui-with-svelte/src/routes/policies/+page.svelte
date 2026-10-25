@@ -17,6 +17,7 @@
     createPolicy,
     getPolicyAcknowledgements,
     listPolicies,
+    renamePolicy,
   } from "#lib/api/wpm.js";
   import type { PolicyWithVersions } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
@@ -30,6 +31,8 @@
   let policies = $state<PolicyWithVersions[] | null>(null);
   let error = $state<string | null>(null);
   let newName = $state("");
+  let renaming = $state<string | null>(null);
+  let renameTo = $state("");
   let target = $state("");
   let title = $state("");
   let documentRef = $state("");
@@ -103,6 +106,13 @@
       {#each policies as p (p.pid)}
         <li data-testid="policy-admin-row">
           <strong>{p.name}</strong>
+          {#if renaming === p.pid}
+            <input data-testid="policy-rename-input" aria-label={t("policies.name")} bind:value={renameTo} maxlength="120" />
+            <button type="button" data-testid="policy-rename-save" disabled={!renameTo.trim()} onclick={() => void run(() => renamePolicy(p.pid, renameTo).then(() => { renaming = null; }))}>{t("policies.rename_save")}</button>
+            <button type="button" onclick={() => (renaming = null)}>{t("policies.rename_cancel")}</button>
+          {:else}
+            <button type="button" data-testid="policy-rename" onclick={() => { renaming = p.pid; renameTo = p.name; }}>{t("policies.rename")}</button>
+          {/if}
           <div class="data-grid-scroll">
             <table>
               <thead>

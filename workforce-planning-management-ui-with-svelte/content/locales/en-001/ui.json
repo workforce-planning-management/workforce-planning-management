@@ -2321,7 +2321,10 @@
     "add_policy": "Add a policy",
     "name": "Name",
     "add_version": "Add a version",
-    "policy": "Policy"
+    "policy": "Policy",
+    "rename": "Rename",
+    "rename_save": "Save",
+    "rename_cancel": "Cancel"
   },
   "teamPolicies": {
     "title": "Policies in my team",

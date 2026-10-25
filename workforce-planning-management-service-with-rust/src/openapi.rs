@@ -625,6 +625,9 @@ fn add_integration_paths(document: &mut Value) {
             "get": { "tags": ["policies"], "summary": "The organization's policies (?organization=) and their versions: title, a reference to the document (WPM holds no text), effective day, audience and calendar days to acknowledge", "responses": ok("The policies") },
             "post": { "tags": ["policies"], "summary": "Name a policy; a name is unique within the organization", "responses": ok("The pid of the policy") }
         },
+        "/api/policies/{pid}": {
+            "patch": { "tags": ["policies"], "summary": "Correct a policy's name (body: name); unique within the organization. Versions and acknowledgements are unchanged. Audited in the same transaction", "responses": ok("The pid and the new name") }
+        },
         "/api/policies/{pid}/versions": {
             "post": { "tags": ["policies"], "summary": "Add the next version (never an edit): title, document_ref with no spaces, effective_on, audience (all, department, job_title) with its value, acknowledge_within_days 1 to 365 (default 30). Every worker in its audience must acknowledge it again", "responses": ok("The pid and number of the version") }
         },

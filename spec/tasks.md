@@ -4660,3 +4660,21 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       not run against the service; the manager's panel counts only versions aimed at the manager themself (it takes the version list from
       `GET /api/me/policies`), so a policy aimed at the team but not at its manager is not counted there; the page does not hide itself
       from a caller who cannot write (the service refuses and the words are shown); no way to correct a policy's name; no reminder.
+- [x] (2026-10-25) WPM-T291 **A policy can be renamed, and workers are reminded.** *(WPM-R156, WPM-D105)* Both were listed as not built under WPM-T283
+      and WPM-T290; the user asked for them. `PATCH /api/policies/{pid}` corrects the name (unique in the organization, its own name is
+      no clash, versions and acknowledgements untouched, audited as `policy_renamed` in the same transaction); a rename control on
+      `/policies`. `rules::policy::remind_now` (pure) and the loco task `policy_reminders [days_ahead:0-30] [as_of]` push a
+      `policy_due` notification to a worker who has not acknowledged the newest version in force aimed at them once its day due is
+      within 3 calendar days or past, once per worker and version; the notification names the policy and the day, no text. Not
+      scheduled: the operator runs it daily (deployment table updated). Verified (Postgres 18, Podman): clippy pedantic clean; 808
+      unit tests (the closed list of notification kinds now has `policy_due`); 153 request tests (new: a clash, an empty and a too-long
+      name, an unknown policy, the policy's own name, trimming, a version keeping its title, no audit no write, a window of 3 sends
+      nothing for a due day 4 calendar days away and a window of 4 sends one each, idempotent, an acknowledged worker left alone,
+      nothing sent for a day when no version was in force); every `enforcement_*` binary, `chaos`, `request_log`, `retention_schedule`,
+      `security` and `route_coverage` pass; `enforcement_pay_gap` also asserts 401 unauthenticated, 403 for a worker and 200 for HR on
+      the rename. Two faults tried and caught: the window comparison `<=` made `<` (unit test), the `pid != this` filter removed (the
+      own-name case). UI: `svelte-check` 0 errors, 209 unit tests, Playwright 223 passed / 19 skipped (rename on `/policies`); one
+      earlier full run failed `pickers.spec.ts` once ("locale") and passed three reruns and a full rerun, not explained. **Not done:**
+      no screenshot looked at; the notification was not looked at on screen; the `keycloak` binaries not re-run; a second reminder for a
+      version still unacknowledged; a reminder to a manager about their team; the task is not scheduled; the rename was not run through
+      a real client; `shared_cache_upstream` ran 0 tests here (filtered out).

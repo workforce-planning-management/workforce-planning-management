@@ -7849,6 +7849,35 @@
         ]
       }
     },
+    "/api/policies/{pid}": {
+      "patch": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid and the new name",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Correct a policy's name (body: name); unique within the organization. Versions and acknowledgements are unchanged. Audited in the same transaction",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
     "/api/policies/{pid}/versions": {
       "post": {
         "parameters": [

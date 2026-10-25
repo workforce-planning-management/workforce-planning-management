@@ -112,8 +112,16 @@ policy text**), `rules::policy` (pure), `controllers/policies.rs`.
   acknowledged or null; it is need-to-know "privileged" and **every read is audited** (`policy_acknowledgements_read`, with the size of
   the audience, not the names).
 - **Subject access and erasure.** The export lists the person's acknowledgements; erasure deletes them. Policies and versions stay.
-- **Not built:** a screen; a reminder notification; role-profile audiences; an acknowledgement requirement on joiners' checklists; the
-  document reached through WPM (only the reference is held).
+- **Renaming (WPM-T291).** `PATCH /api/policies/{pid}` (body `name`) corrects a policy's name: 1 to 120 characters after trimming, unique
+  within the organization (its own name is not a clash). Versions, their titles and every acknowledgement are unchanged. HR only;
+  audited (`policy_renamed`) in the same transaction, and refused if the audit cannot be written.
+- **The reminder (WPM-T291).** The loco task `policy_reminders [days_ahead:0-30] [as_of:YYYY-MM-DD]` (default 3 calendar days) tells a
+  worker, by an in-app notification of kind `policy_due`, that the newest version in force aimed at them is waiting, once its day due
+  is within the window or has passed (`rules::policy::remind_now`). Once per worker and version: a re-run sends nothing twice. Nobody
+  who has acknowledged, was not employed that day or has been erased is told. The message names the policy and the day due and holds
+  no policy text; it forces nothing. The task is **not scheduled**: the operator runs it daily (`spec/operations/deployment.md`).
+- **Not built:** role-profile audiences; an acknowledgement requirement on joiners' checklists; the document reached through WPM (only
+  the reference is held); a second reminder for a version that stays unacknowledged; a manager's reminder about their team.
 
 
 ### Design decision

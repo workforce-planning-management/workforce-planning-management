@@ -17,6 +17,12 @@ test.describe("Policies", () => {
     const policies: Array<Record<string, unknown>> = [{ pid: "p1", name: "Acceptable use", versions: [VERSION("v1", 1)] }];
     let versionBody: unknown = null;
     await page.route("**/api/proxy/policies?*", (route) => route.fulfill({ json: { policies } }));
+    let renamed: unknown = null;
+    await page.route("**/api/proxy/policies/p1", (route) => {
+      renamed = route.request().postDataJSON();
+      policies[0] = { ...policies[0], name: (renamed as { name: string }).name };
+      return route.fulfill({ json: { pid: "p1", name: (renamed as { name: string }).name } });
+    });
     await page.route("**/api/proxy/policies", (route) => {
       const body = route.request().postDataJSON();
       policies.push({ pid: "p2", name: body.name, versions: [] });
@@ -43,6 +49,12 @@ test.describe("Policies", () => {
     await page.getByTestId("policy-name").fill("Travel");
     await page.getByTestId("policy-add").click();
     await expect(page.getByTestId("policy-admin-row")).toHaveCount(2);
+
+    await page.getByTestId("policy-rename").first().click();
+    await page.getByTestId("policy-rename-input").fill("Code of conduct");
+    await page.getByTestId("policy-rename-save").click();
+    await expect(page.getByTestId("policy-admin-row").first()).toContainText("Code of conduct");
+    expect(renamed).toEqual({ name: "Code of conduct" });
 
     await page.getByTestId("policy-target").selectOption("p1");
     await page.getByTestId("policy-title").fill("Acceptable use v2");

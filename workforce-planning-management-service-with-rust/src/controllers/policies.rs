@@ -106,6 +106,39 @@ async fn create(State(ctx): State<AppContext>, caller: MaybeAuthUser, Json(paylo
 }
 
 #[derive(Debug, Deserialize)]
+struct RenamePayload {
+    name: String,
+}
+
+/// `PATCH /api/policies/{pid}` — correct a policy's name. The name is unique within the organization; versions, their titles and every
+/// acknowledgement are unchanged. Audited in the same transaction.
+#[debug_handler]
+async fn rename(State(ctx): State<AppContext>, caller: MaybeAuthUser, Path(pid): Path<Uuid>, Json(payload): Json<RenamePayload>) -> Result<Response> {
+    let policy = find_policy(&ctx, &caller, pid).await?;
+    let name = payload.name.trim().to_string();
+    let n = name.chars().count();
+    if n == 0 || n > 120 {
+        return Err(unprocessable("name must be 1 to 120 characters"));
+    }
+    let clash = policies::Entity::find()
+        .filter(policies::Column::OrganizationRef.eq(&policy.organization_ref))
+        .filter(policies::Column::Name.eq(&name))
+        .filter(policies::Column::Pid.ne(pid))
+        .count(&ctx.db)
+        .await?;
+    if clash > 0 {
+        return Err(unprocessable("another policy in this organization has that name"));
+    }
+    let txn = ctx.db.begin().await?;
+    let mut active: policies::ActiveModel = policy.into();
+    active.name = ActiveValue::set(name.clone());
+    active.update(&txn).await?;
+    Audit::record(&txn, "policy", pid, "policy_renamed", caller.actor(), None).await?;
+    txn.commit().await?;
+    format::json(json!({ "pid": pid, "name": name }))
+}
+
+#[derive(Debug, Deserialize)]
 struct VersionPayload {
     title: String,
     document_ref: String,
@@ -391,6 +424,7 @@ pub fn routes() -> Routes {
         .prefix("/api")
         .add("/policies", get(list))
         .add("/policies", post(create))
+        .add("/policies/{pid}", patch(rename))
         .add("/policies/{pid}/versions", post(add_version))
         .add("/workers/{pid}/policies", get(of_worker))
         .add("/workers/{pid}/team-policy-counts", get(team_counts))

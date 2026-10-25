@@ -9354,6 +9354,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/policies/{pid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Correct a policy's name (body: name); unique within the organization. Versions and acknowledgements are unchanged. Audited in the same transaction */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pid and the new name */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+            };
+        };
+        trace?: never;
+    };
     "/api/policies/{pid}/versions": {
         parameters: {
             query?: never;

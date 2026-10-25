@@ -3119,6 +3119,9 @@ collections:
               - { name: "name", label: "Name", widget: string, required: false, i18n: true }
               - { name: "add_version", label: "Add_version", widget: string, required: false, i18n: true }
               - { name: "policy", label: "Policy", widget: string, required: false, i18n: true }
+              - { name: "rename", label: "Rename", widget: string, required: false, i18n: true }
+              - { name: "rename_save", label: "Rename_save", widget: string, required: false, i18n: true }
+              - { name: "rename_cancel", label: "Rename_cancel", widget: string, required: false, i18n: true }
           - name: "teamPolicies"
             label: "Team Policies"
             widget: object

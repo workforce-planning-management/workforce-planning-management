@@ -278,6 +278,11 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         let policy = request.post("/api/policies").add_header("authorization", hr.clone()).json(&policy_body).await;
         assert_eq!(policy.status_code(), 200, "{}", policy.text());
         let policy = policy.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let rename = format!("/api/policies/{policy}");
+        let new_name = json!({ "name": "Code of conduct" });
+        assert_eq!(request.patch(&rename).json(&new_name).await.status_code(), 401);
+        assert_eq!(request.patch(&rename).add_header("authorization", worker.clone()).json(&new_name).await.status_code(), 403, "a worker renames no policy");
+        assert_eq!(request.patch(&rename).add_header("authorization", hr.clone()).json(&new_name).await.status_code(), 200, "HR renames");
         let version = request.post(&format!("/api/policies/{policy}/versions")).add_header("authorization", hr.clone())
             .json(&json!({ "title": "Conduct", "document_ref": "doc:conduct", "effective_on": "2026-01-01", "audience": "all" })).await;
         assert_eq!(version.status_code(), 200, "{}", version.text());

@@ -2321,7 +2321,10 @@
     "add_policy": "Richtlinie hinzufügen",
     "name": "Name",
     "add_version": "Fassung hinzufügen",
-    "policy": "Richtlinie"
+    "policy": "Richtlinie",
+    "rename": "Umbenennen",
+    "rename_save": "Speichern",
+    "rename_cancel": "Abbrechen"
   },
   "teamPolicies": {
     "title": "Richtlinien in meinem Team",

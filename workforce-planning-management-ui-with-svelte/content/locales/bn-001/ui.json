@@ -2321,7 +2321,10 @@
     "add_policy": "নীতি যোগ করুন",
     "name": "নাম",
     "add_version": "সংস্করণ যোগ করুন",
-    "policy": "নীতি"
+    "policy": "নীতি",
+    "rename": "নাম বদলান",
+    "rename_save": "সংরক্ষণ",
+    "rename_cancel": "বাতিল"
   },
   "teamPolicies": {
     "title": "আমার দলের নীতি",

@@ -2321,7 +2321,10 @@
     "add_policy": "Adicionar uma política",
     "name": "Nome",
     "add_version": "Adicionar uma versão",
-    "policy": "Política"
+    "policy": "Política",
+    "rename": "Mudar o nome",
+    "rename_save": "Guardar",
+    "rename_cancel": "Cancelar"
   },
   "teamPolicies": {
     "title": "Políticas na minha equipa",

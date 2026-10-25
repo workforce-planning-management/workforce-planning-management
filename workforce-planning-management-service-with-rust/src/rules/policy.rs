@@ -137,6 +137,20 @@ pub fn standing(
     }
 }
 
+/// How many calendar days before the day due a worker is reminded, when none is given.
+pub const REMIND_DAYS: i64 = 3;
+
+/// Whether to remind a worker now: they have not acknowledged and the day due is within `days_ahead` calendar days (or has passed).
+/// Someone who has acknowledged is never reminded. A reminder is sent once per version, so a late reminder is not repeated.
+#[must_use]
+pub fn remind_now(standing: Standing, days_ahead: i64, today: NaiveDate) -> bool {
+    match standing {
+        Standing::Done { .. } => false,
+        Standing::Overdue { .. } => true,
+        Standing::Waiting { due_on } => (due_on - today).num_days() <= days_ahead,
+    }
+}
+
 /// A team's count for a manager.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -191,6 +205,17 @@ mod tests {
         assert_eq!(ok("T", "doc:x", "job_title", Some("Nurse"), 0).len(), 1);
         assert_eq!(ok("T", "doc:x", "job_title", Some("Nurse"), 365), Vec::<String>::new());
         assert_eq!(ok("T", "doc:x", "job_title", Some("Nurse"), 366).len(), 1);
+    }
+
+    #[test]
+    fn a_reminder_goes_to_someone_who_has_not_acknowledged_and_is_near_or_past_the_day() {
+        let today = d("2026-10-10");
+        let wait = |due: &str| Standing::Waiting { due_on: d(due) };
+        assert!(!remind_now(Standing::Done { on: d("2026-10-01") }, 3, today), "someone who has acknowledged is left alone");
+        assert!(!remind_now(wait("2026-10-14"), 3, today), "four calendar days left is outside three");
+        assert!(remind_now(wait("2026-10-13"), 3, today), "three calendar days left is inside three");
+        assert!(remind_now(wait("2026-10-10"), 0, today), "the day itself, with none ahead");
+        assert!(remind_now(Standing::Overdue { due_on: d("2026-10-01"), calendar_days_late: 9 }, 0, today), "overdue always");
     }
 
     #[test]

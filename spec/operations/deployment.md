@@ -164,6 +164,7 @@ Nothing runs these by itself; schedule each with cron, a timer or a Kubernetes C
 | `task engagement_end_reminders` | daily | Tells the manager and HR about an engagement ending within 60 calendar days (`days_ahead:N`), or ended with no decision; once per end date |
 | `task rota_reminders` | daily | Tells whoever's on-call turn starts tomorrow |
 | `task pay_progression_reminders` | daily | Tells who becomes eligible for a pay step within 30 calendar days |
+| `task policy_reminders` | daily | Reminds workers who have not acknowledged a policy aimed at them, once the day due is within 3 calendar days (or past); once per version |
 | `POST /api/retention/sweep` | daily or weekly | Hard-deletes rows past their kind's retention horizon (an admin action) |
 | `scripts/backup.sh` | nightly or more often | [backup-and-restore.md](backup-and-restore.md) |
 | `scripts/export-erasure-ledger.sh` | every few minutes | Keeps erasures safe across a restore |

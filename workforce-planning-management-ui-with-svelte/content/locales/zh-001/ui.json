@@ -2321,7 +2321,10 @@
     "add_policy": "添加政策",
     "name": "名称",
     "add_version": "添加版本",
-    "policy": "政策"
+    "policy": "政策",
+    "rename": "重命名",
+    "rename_save": "保存",
+    "rename_cancel": "取消"
   },
   "teamPolicies": {
     "title": "本团队的政策",
