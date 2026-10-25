@@ -4813,6 +4813,24 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       and `broader` admitted. Verified (Postgres 18, Podman): clippy pedantic clean; 811 unit tests; 154 request tests; every
       `enforcement_*` binary, `chaos`, `request_log`, `retention_schedule`, `security`, `route_coverage`. **Not done:** the roll-up does
       not say how many of its figures went through a mapping (the per-person view does); no timing was taken, so the cost of the
-      lateral join on a large catalogue of mappings and workers is unmeasured (there is no index on `skill_mappings.to_skill_pid`
-      beyond the pair's unique index, which does not lead with it); the UI was not touched, so no screen was checked; the `keycloak`
+      lateral join on a large catalogue of mappings and workers was unmeasured (WPM-T299 measured it and replaced the join; the
+      index on `skill_mappings.to_skill_pid` I said was missing is there, `skill_mappings_by_target`); the UI was not touched, so no screen was checked; the `keycloak`
       and `shared_cache_upstream` binaries were not run.
+- [x] (2026-10-25) WPM-T299 **The roll-up's crosswalk lookup measured, and made a quarter of the cost.** *(WPM-R158, WPM-R142)* WPM-T298 left the cost unmeasured. On a
+      throwaway Postgres 18 (Podman) with 20 000 workers, 500 skills, 40 roles of 12 needs, 500 000 declarations and 3 000 mappings
+      (240 000 needs after merging), the grading query alone took **195 ms** before the crosswalk, **1 854 ms** with the per-need
+      lateral lookup of T298, and the endpoint answered in **about 3.1 s**. The lookup is now driven from the declarations and joined
+      to the merged needs once (`controllers/gap_sql.rs`): **803 ms** for the query and **about 1.1 s** for the endpoint, with the
+      same answer (every group's count of met, below and undeclared, 240 000 people over 1 536 groups, 273 skills ranked identically,
+      compared against the lateral form), and the "workers with needs" count no longer evaluates the mapping work at all. Two
+      intermediate forms were tried and timed (a join per need, 2.0 s; the declaration-driven join with an extra direct-level
+      join, 1.4 s) and gave the same results. The T298 request test still grades the same people both ways and its two faults are
+      still caught by it. Verified (Postgres 18, Podman): clippy pedantic clean; 811 unit tests; 154 request tests; every
+      `enforcement_*` binary, `chaos`, `request_log`, `retention_schedule`, `security`, `route_coverage`. **Not done:** this is one
+      dataset on one laptop under heavy load from other processes (the machine's load average was above 70 during the later runs),
+      so the numbers say "about a quarter of the cost", not a guarantee; it is still about four times the 195 ms of the query
+      without the crosswalk, and no larger dataset (or a department-filtered call) was timed apart from one early department read
+      (0.2 s on the lateral form); the roll-up runs the grading twice (rows, and "workers with needs") and the plan still sorts 240 000
+      rows, so a materialised or cached roll-up would be the next step if it is too slow; no load test of the endpoint was run; the
+      first full run hung for an hour in `chaos` waiting on a package-cache lock held by another project's cargo, and passed when
+      run alone.

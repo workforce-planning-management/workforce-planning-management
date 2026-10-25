@@ -65,26 +65,28 @@ fn graded(
              UNION ALL
              SELECT worker_pid, skill_pid, target, 2 FROM worker_skills
               WHERE deleted_at IS NULL AND target IS NOT NULL),
+         merged AS (
+             SELECT n.worker_pid, n.skill_pid, s.department, MAX(n.required) AS required, MAX(n.weight) AS weight
+               FROM needs n JOIN staff s ON s.pid = n.worker_pid
+              GROUP BY n.worker_pid, n.skill_pid, s.department),
+         -- The skills crosswalk (`rules::crosswalk::apply`): a need the person did not declare is graded through the best
+         -- exact or close mapping from a skill they did declare, the most confident first, then the highest declared level.
+         -- Driven from the declarations and joined to the needs once, which measured about a quarter of the cost of looking a
+         -- mapping up for every need. A direct declaration wins below; a broader or narrower mapping is never counted.
+         via AS (
+             SELECT DISTINCT ON (mg.worker_pid, mg.skill_pid) mg.worker_pid, mg.skill_pid, ds.proficiency AS level
+               FROM worker_skills ds
+               JOIN skill_mappings m ON m.from_skill_pid = ds.skill_pid AND m.confidence IN ('exact', 'close')
+               JOIN merged mg ON mg.worker_pid = ds.worker_pid AND mg.skill_pid = m.to_skill_pid
+              WHERE ds.deleted_at IS NULL
+              ORDER BY mg.worker_pid, mg.skill_pid, (m.confidence = 'exact') DESC, ds.proficiency DESC, m.from_skill_pid),
          graded AS (
-             SELECT n.worker_pid, n.skill_pid, s.department, MAX(n.required) AS required,
-                    MAX(n.weight) AS weight, COALESCE(d.proficiency, v.level) AS declared
-               FROM needs n
-               JOIN staff s ON s.pid = n.worker_pid
-               LEFT JOIN worker_skills d ON d.worker_pid = n.worker_pid AND d.skill_pid = n.skill_pid
+             SELECT mg.worker_pid, mg.skill_pid, mg.department, mg.required, mg.weight,
+                    COALESCE(d.proficiency, v.level) AS declared
+               FROM merged mg
+               LEFT JOIN worker_skills d ON d.worker_pid = mg.worker_pid AND d.skill_pid = mg.skill_pid
                                         AND d.deleted_at IS NULL
-               -- A need the person did not declare is graded through the best exact or close mapping from a skill they did
-               -- declare: the most confident, then the highest declared level (`rules::crosswalk::apply`). A direct
-               -- declaration is never overridden, and a broader or narrower mapping is never counted.
-               LEFT JOIN LATERAL (
-                   SELECT ds.proficiency AS level
-                     FROM skill_mappings m
-                     JOIN worker_skills ds ON ds.worker_pid = n.worker_pid AND ds.skill_pid = m.from_skill_pid
-                                          AND ds.deleted_at IS NULL
-                    WHERE d.proficiency IS NULL AND m.to_skill_pid = n.skill_pid
-                      AND m.confidence IN ('exact', 'close')
-                    ORDER BY (m.confidence = 'exact') DESC, ds.proficiency DESC, m.from_skill_pid
-                    LIMIT 1) v ON TRUE
-              GROUP BY n.worker_pid, n.skill_pid, s.department, d.proficiency, v.level)"
+               LEFT JOIN via v ON v.worker_pid = mg.worker_pid AND v.skill_pid = mg.skill_pid)"
     );
     (sql, values)
 }
@@ -173,7 +175,8 @@ pub(crate) async fn gap_rows(
         .db
         .query_one_raw(Statement::from_sql_and_values(
             DbBackend::Postgres,
-            format!("{sql} SELECT COUNT(DISTINCT worker_pid)::bigint AS total FROM graded"),
+            // Who has a need does not depend on the crosswalk, so this leaves the mapping work (`via`) unevaluated.
+            format!("{sql} SELECT COUNT(DISTINCT worker_pid)::bigint AS total FROM merged"),
             values,
         ))
         .await?;
