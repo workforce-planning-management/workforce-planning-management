@@ -4825,3 +4825,73 @@ export function closeAssetIssue(
 ): Promise<{ pid: string; outcome: string }> {
   return api(`/asset-issues/${issuePid}/return`, { method: "POST", body });
 }
+
+/** One credential issuance: that it was issued and whether it is revoked. The credential itself is not kept. */
+export type CredentialIssuance = {
+  pid: string;
+  kind: string;
+  source_pid: string;
+  issued_at: string;
+  revoked_at: string | null;
+  status_index: number;
+};
+
+/** The caller's own credential issuances. */
+export function listMyCredentials(
+  init?: FetchLike,
+): Promise<{ credentials: CredentialIssuance[] }> {
+  return api("/me/credentials", init);
+}
+
+/** Issue a credential for one of the caller's own verified CPD entries. The signed credential comes back once. */
+export function issueMyCredential(
+  cpdEntryPid: string,
+): Promise<{ pid: string; status_index: number; format: string; credential: string }> {
+  return api("/me/credentials", {
+    method: "POST",
+    body: { cpd_entry_pid: cpdEntryPid },
+  });
+}
+
+/** The caller revokes one of their own credentials. */
+export function revokeMyCredential(
+  pid: string,
+): Promise<{ pid: string; revoked: boolean }> {
+  return api(`/me/credentials/${pid}/revoke`, { method: "POST" });
+}
+
+/** How sure a skills mapping is, and what it rests on (mirror `rules::crosswalk`). */
+export const MAPPING_CONFIDENCES = ["exact", "close", "broader", "narrower"] as const;
+export const MAPPING_BASES = ["authority", "judgement"] as const;
+
+export type SkillMapping = {
+  pid: string;
+  from_skill_pid: string;
+  to_skill_pid: string;
+  from_skill: string | null;
+  to_skill: string | null;
+  confidence: string;
+  basis: string;
+  source: string;
+  counts: boolean;
+};
+
+export function listSkillMappings(
+  init?: FetchLike,
+): Promise<{ note: string; mappings: SkillMapping[] }> {
+  return api("/skill-mappings", init);
+}
+
+export function createSkillMapping(body: {
+  from_skill_pid: string;
+  to_skill_pid: string;
+  confidence: string;
+  basis: string;
+  source: string;
+}): Promise<{ pid: string }> {
+  return api("/skill-mappings", { method: "POST", body });
+}
+
+export function deleteSkillMapping(pid: string): Promise<unknown> {
+  return api(`/skill-mappings/${pid}`, { method: "DELETE" });
+}

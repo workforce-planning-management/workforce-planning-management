@@ -4629,3 +4629,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       and posted; a caller refused the asset list sees no controls). **Not done:** no screenshot looked at, on a phone or otherwise; the
       API is stubbed, not run against the service; the tests drive `/me` and the worker page was not exercised; a manager's count of
       open equipment; the leaver checklist's equipment line on the movements screen; returned-on and issued-on date pickers (today is used).
+- [x] (2026-10-25) WPM-T288 **Screens for credentials and the skills crosswalk.** *(WPM-R157, WPM-R158, WPM-D109)* `MyCredentials.svelte` on `/me`: the
+      worker's verified CPD entries, each with "issue a credential"; the signed credential is shown once in a read-only box with a
+      download link and is not kept; the worker sees when it was issued or revoked and can revoke it. `SkillCrosswalk.svelte` on `/skills`:
+      every mapping with its two skills, confidence, basis, source and whether it counts in gap analysis ("Counted" or "Related only"),
+      with a form to add one and a button to withdraw one (HR; a refusal is shown in words). Strings under `credentials.*` and
+      `crosswalk.*` in the 13 locales (AI-written, unreviewed). Verified: `svelte-check` 0 errors, 209 unit tests, Playwright 220 passed
+      / 19 skipped (new: issue, see the credential once, revoke, issue again; a broader mapping shown as related, adding one posts the
+      expected body); the existing skills tests needed a stub for the new read, and the panel's error has its own test id so the page's
+      does not clash. **Not done:** no screenshot looked at, on a phone or otherwise; the API is stubbed, not run against the service,
+      so the credential download and a real verifier were not exercised; HR's revoke of someone else's credential has no screen; the
+      crosswalk form does not hide itself from a caller who cannot write; the skill picker on a CPD entry (the API takes `skill_pid`).

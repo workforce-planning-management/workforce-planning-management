@@ -2267,5 +2267,33 @@
     "kind": "Tipo",
     "tag": "Etiqueta",
     "owner_role": "Rol responsable"
+  },
+  "credentials": {
+    "title": "Credenciales",
+    "hint": "Para una entrada de DPC verificada puede pedir una credencial Open Badges firmada por esta organización. Se muestra una vez y no se conserva; solo se registra que se emitió. Usted decide quién la ve. Al revocarla queda marcada como revocada para quien la compruebe.",
+    "none": "Aún no hay ninguna entrada de DPC verificada.",
+    "issued": "Emitida el {day}",
+    "revoked": "Revocada el {day}",
+    "issue": "Emitir una credencial",
+    "revoke": "Revocar",
+    "once": "Cópiela ahora: solo se muestra una vez.",
+    "token": "La credencial firmada",
+    "download": "Descargar",
+    "hide": "Ocultar"
+  },
+  "crosswalk": {
+    "title": "Equivalencias de competencias",
+    "hint": "Una declaración de que una competencia declarada en un registro cuenta como otra. Va de la competencia declarada a la necesaria. Solo «exacta» y «cercana» cuentan en el análisis de brechas; «más amplia» y «más estrecha» se muestran como relacionadas y no cuentan.",
+    "none": "No se ha declarado ninguna equivalencia.",
+    "from": "Competencia declarada",
+    "to": "Cuenta como",
+    "confidence": "Confianza",
+    "basis": "Fundamento",
+    "source": "Fuente",
+    "counts": "En el análisis de brechas",
+    "counted": "Contada",
+    "related": "Solo relacionada",
+    "remove": "Retirar",
+    "add": "Añadir una equivalencia"
   }
 }

@@ -2267,5 +2267,33 @@
     "kind": "Kind",
     "tag": "Tag",
     "owner_role": "Owning role"
+  },
+  "credentials": {
+    "title": "Credentials",
+    "hint": "For a CPD entry that has been verified you may ask for an Open Badges credential, signed by this organization. It is shown once and not kept; only that it was issued is recorded. You choose who sees it. Revoking it marks it revoked for anyone who checks.",
+    "none": "No verified CPD entry yet.",
+    "issued": "Issued {day}",
+    "revoked": "Revoked {day}",
+    "issue": "Issue a credential",
+    "revoke": "Revoke",
+    "once": "Copy it now: it is shown only once.",
+    "token": "The signed credential",
+    "download": "Download",
+    "hide": "Hide"
+  },
+  "crosswalk": {
+    "title": "Skills crosswalk",
+    "hint": "A statement that a skill declared under one record counts as another. It runs from the skill a person declares to the skill that is needed. Only exact and close count in gap analysis; broader and narrower are shown as related and counted for nothing.",
+    "none": "No mapping has been stated.",
+    "from": "Declared skill",
+    "to": "Counts as",
+    "confidence": "Confidence",
+    "basis": "Basis",
+    "source": "Source",
+    "counts": "In gap analysis",
+    "counted": "Counted",
+    "related": "Related only",
+    "remove": "Withdraw",
+    "add": "Add a mapping"
   }
 }

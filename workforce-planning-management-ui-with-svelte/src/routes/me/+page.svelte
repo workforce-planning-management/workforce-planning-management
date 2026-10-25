@@ -15,6 +15,7 @@
   import ExpenseClaims from "#lib/components/ExpenseClaims.svelte";
   import MyPolicies from "#lib/components/MyPolicies.svelte";
   import EquipmentPanel from "#lib/components/EquipmentPanel.svelte";
+  import MyCredentials from "#lib/components/MyCredentials.svelte";
   import PayPosition from "#lib/components/PayPosition.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
@@ -78,6 +79,7 @@
   <PayPosition {workerPid} />
   <MyPolicies {workerPid} />
   <EquipmentPanel {workerPid} organizationRef={memberships.find((m) => m.worker_pid === workerPid)?.organization_ref ?? ""} />
+  <MyCredentials {workerPid} />
   <ExpenseClaims {workerPid} />
   <EmergencyContacts {workerPid} />
   <Backups {workerPid} />

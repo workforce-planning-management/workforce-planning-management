@@ -2267,5 +2267,33 @@
     "kind": "Tipo",
     "tag": "Etiqueta",
     "owner_role": "Função responsável"
+  },
+  "credentials": {
+    "title": "Credenciais",
+    "hint": "Para uma entrada de DPC verificada pode pedir uma credencial Open Badges assinada por esta organização. É mostrada uma só vez e não é guardada; só se regista que foi emitida. Você decide quem a vê. Revogá-la marca-a como revogada para quem a verificar.",
+    "none": "Ainda não há nenhuma entrada de DPC verificada.",
+    "issued": "Emitida em {day}",
+    "revoked": "Revogada em {day}",
+    "issue": "Emitir uma credencial",
+    "revoke": "Revogar",
+    "once": "Copie-a agora: só é mostrada uma vez.",
+    "token": "A credencial assinada",
+    "download": "Transferir",
+    "hide": "Ocultar"
+  },
+  "crosswalk": {
+    "title": "Equivalências de competências",
+    "hint": "Uma declaração de que uma competência declarada num registo conta como outra. Vai da competência declarada para a necessária. Só «exata» e «próxima» contam na análise de lacunas; «mais ampla» e «mais estreita» aparecem como relacionadas e não contam.",
+    "none": "Nenhuma equivalência declarada.",
+    "from": "Competência declarada",
+    "to": "Conta como",
+    "confidence": "Confiança",
+    "basis": "Fundamento",
+    "source": "Fonte",
+    "counts": "Na análise de lacunas",
+    "counted": "Contada",
+    "related": "Só relacionada",
+    "remove": "Retirar",
+    "add": "Adicionar uma equivalência"
   }
 }

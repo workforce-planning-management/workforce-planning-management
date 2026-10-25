@@ -27,6 +27,7 @@ async function stubSkills(page: Page, writes: string[]) {
     }
     return route.fulfill({ json: {} });
   });  await page.route("**/api/proxy/skills", (route) => route.fulfill({ json: SKILLS }));
+  await page.route("**/api/proxy/skill-mappings", (route) => route.fulfill({ json: { note: "", mappings: [] } }));
   await page.route("**/api/proxy/skills/*/merge", (route) => {
     writes.push(`POST ${new URL(route.request().url()).pathname.split("/proxy")[1]} ${route.request().postData()}`);
     return route.fulfill({ json: { merged_into: SKILLS[0]?.pid, records_moved: 3, records_merged: 1 } });

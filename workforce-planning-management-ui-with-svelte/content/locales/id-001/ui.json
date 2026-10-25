@@ -2267,5 +2267,33 @@
     "kind": "Jenis",
     "tag": "Label",
     "owner_role": "Peran pemilik"
+  },
+  "credentials": {
+    "title": "Kredensial",
+    "hint": "Untuk entri PKB yang sudah diverifikasi, Anda dapat meminta kredensial Open Badges yang ditandatangani organisasi ini. Kredensial ditampilkan sekali dan tidak disimpan; yang dicatat hanya bahwa kredensial telah diterbitkan. Anda yang menentukan siapa yang melihatnya. Pencabutan menandainya dicabut bagi siapa pun yang memeriksa.",
+    "none": "Belum ada entri PKB yang diverifikasi.",
+    "issued": "Diterbitkan {day}",
+    "revoked": "Dicabut {day}",
+    "issue": "Terbitkan kredensial",
+    "revoke": "Cabut",
+    "once": "Salin sekarang: hanya ditampilkan sekali.",
+    "token": "Kredensial bertanda tangan",
+    "download": "Unduh",
+    "hide": "Sembunyikan"
+  },
+  "crosswalk": {
+    "title": "Pemetaan keterampilan",
+    "hint": "Pernyataan bahwa keterampilan yang dinyatakan pada satu catatan dihitung sebagai keterampilan lain. Arahnya dari keterampilan yang dinyatakan orang ke keterampilan yang dibutuhkan. Hanya «tepat» dan «dekat» yang dihitung dalam analisis kesenjangan; «lebih luas» dan «lebih sempit» ditampilkan sebagai terkait dan tidak dihitung.",
+    "none": "Belum ada pemetaan yang dinyatakan.",
+    "from": "Keterampilan dinyatakan",
+    "to": "Dihitung sebagai",
+    "confidence": "Tingkat keyakinan",
+    "basis": "Dasar",
+    "source": "Sumber",
+    "counts": "Dalam analisis kesenjangan",
+    "counted": "Dihitung",
+    "related": "Hanya terkait",
+    "remove": "Tarik",
+    "add": "Tambah pemetaan"
   }
 }

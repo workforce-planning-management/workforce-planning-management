@@ -22,6 +22,7 @@
     updateSkill,
   } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import SkillCrosswalk from "#lib/components/SkillCrosswalk.svelte";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,
@@ -276,3 +277,4 @@
   </tbody>
 </table>
 {#if shown.length > 200}<p class="muted">{tf("pages.skills.showing_200_of_narrow_the_search", { shown: shown.length })}</p>{/if}
+<SkillCrosswalk />

@@ -3044,3 +3044,41 @@ collections:
               - { name: "kind", label: "Kind", widget: string, required: false, i18n: true }
               - { name: "tag", label: "Tag", widget: string, required: false, i18n: true }
               - { name: "owner_role", label: "Owner_role", widget: string, required: false, i18n: true }
+          - name: "credentials"
+            label: "Credentials"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "issued", label: "Issued", widget: string, required: false, i18n: true }
+              - { name: "revoked", label: "Revoked", widget: string, required: false, i18n: true }
+              - { name: "issue", label: "Issue", widget: string, required: false, i18n: true }
+              - { name: "revoke", label: "Revoke", widget: string, required: false, i18n: true }
+              - { name: "once", label: "Once", widget: string, required: false, i18n: true }
+              - { name: "token", label: "Token", widget: string, required: false, i18n: true }
+              - { name: "download", label: "Download", widget: string, required: false, i18n: true }
+              - { name: "hide", label: "Hide", widget: string, required: false, i18n: true }
+          - name: "crosswalk"
+            label: "Crosswalk"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "from", label: "From", widget: string, required: false, i18n: true }
+              - { name: "to", label: "To", widget: string, required: false, i18n: true }
+              - { name: "confidence", label: "Confidence", widget: string, required: false, i18n: true }
+              - { name: "basis", label: "Basis", widget: string, required: false, i18n: true }
+              - { name: "source", label: "Source", widget: string, required: false, i18n: true }
+              - { name: "counts", label: "Counts", widget: string, required: false, i18n: true }
+              - { name: "counted", label: "Counted", widget: string, required: false, i18n: true }
+              - { name: "related", label: "Related", widget: string, required: false, i18n: true }
+              - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
+              - { name: "add", label: "Add", widget: string, required: false, i18n: true }

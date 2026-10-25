@@ -2267,5 +2267,33 @@
     "kind": "Art",
     "tag": "Kennung",
     "owner_role": "Zuständige Rolle"
+  },
+  "credentials": {
+    "title": "Nachweise",
+    "hint": "Für einen geprüften CPD-Eintrag können Sie einen von dieser Organisation signierten Open-Badges-Nachweis anfordern. Er wird einmal angezeigt und nicht gespeichert; vermerkt wird nur, dass er ausgestellt wurde. Sie bestimmen, wer ihn sieht. Ein Widerruf gilt für alle, die ihn prüfen.",
+    "none": "Noch kein geprüfter CPD-Eintrag.",
+    "issued": "Ausgestellt am {day}",
+    "revoked": "Widerrufen am {day}",
+    "issue": "Nachweis ausstellen",
+    "revoke": "Widerrufen",
+    "once": "Jetzt kopieren: Er wird nur einmal angezeigt.",
+    "token": "Der signierte Nachweis",
+    "download": "Herunterladen",
+    "hide": "Ausblenden"
+  },
+  "crosswalk": {
+    "title": "Kompetenz-Zuordnung",
+    "hint": "Eine Aussage, dass eine unter einem Eintrag angegebene Kompetenz als eine andere zählt. Sie führt von der angegebenen zur benötigten Kompetenz. Nur „genau“ und „eng“ zählen in der Lückenanalyse; „weiter“ und „enger“ werden als verwandt gezeigt und nicht gezählt.",
+    "none": "Keine Zuordnung angegeben.",
+    "from": "Angegebene Kompetenz",
+    "to": "Zählt als",
+    "confidence": "Sicherheit",
+    "basis": "Grundlage",
+    "source": "Quelle",
+    "counts": "In der Lückenanalyse",
+    "counted": "Gezählt",
+    "related": "Nur verwandt",
+    "remove": "Zurückziehen",
+    "add": "Zuordnung hinzufügen"
   }
 }

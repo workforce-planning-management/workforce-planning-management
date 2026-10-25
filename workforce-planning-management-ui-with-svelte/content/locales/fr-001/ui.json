@@ -2267,5 +2267,33 @@
     "kind": "Type",
     "tag": "Étiquette",
     "owner_role": "Rôle responsable"
+  },
+  "credentials": {
+    "title": "Attestations",
+    "hint": "Pour une entrée de DPC vérifiée, vous pouvez demander une attestation Open Badges signée par cette organisation. Elle est affichée une seule fois et n'est pas conservée ; seul le fait qu'elle a été émise est consigné. Vous choisissez qui la voit. La révoquer la marque comme révoquée pour quiconque la vérifie.",
+    "none": "Aucune entrée de DPC vérifiée pour l'instant.",
+    "issued": "Émise le {day}",
+    "revoked": "Révoquée le {day}",
+    "issue": "Émettre une attestation",
+    "revoke": "Révoquer",
+    "once": "Copiez-la maintenant : elle n'est affichée qu'une fois.",
+    "token": "L'attestation signée",
+    "download": "Télécharger",
+    "hide": "Masquer"
+  },
+  "crosswalk": {
+    "title": "Correspondance des compétences",
+    "hint": "Une déclaration selon laquelle une compétence déclarée sous une fiche compte pour une autre. Elle va de la compétence déclarée à la compétence requise. Seules « précis » et « proche » comptent dans l'analyse des écarts ; « plus large » et « plus étroit » sont montrés comme liés et ne comptent pour rien.",
+    "none": "Aucune correspondance déclarée.",
+    "from": "Compétence déclarée",
+    "to": "Compte comme",
+    "confidence": "Confiance",
+    "basis": "Fondement",
+    "source": "Source",
+    "counts": "Dans l'analyse des écarts",
+    "counted": "Comptée",
+    "related": "Liée seulement",
+    "remove": "Retirer",
+    "add": "Ajouter une correspondance"
   }
 }

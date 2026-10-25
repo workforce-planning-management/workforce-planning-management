@@ -2267,5 +2267,33 @@
     "kind": "Math",
     "tag": "Label",
     "owner_role": "Rôl berchennog"
+  },
+  "credentials": {
+    "title": "Credydau",
+    "hint": "Ar gyfer cofnod DPP sydd wedi'i wirio gallwch ofyn am gymhwyster Open Badges wedi'i lofnodi gan y sefydliad hwn. Fe'i dangosir unwaith ac nid yw'n cael ei gadw; dim ond y ffaith iddo gael ei roi a gofnodir. Chi sy'n dewis pwy sy'n ei weld. Mae ei ddirymu yn ei nodi fel un wedi'i ddirymu i unrhyw un sy'n gwirio.",
+    "none": "Dim cofnod DPP wedi'i wirio eto.",
+    "issued": "Cyhoeddwyd {day}",
+    "revoked": "Dirymwyd {day}",
+    "issue": "Cyhoeddi credyd",
+    "revoke": "Dirymu",
+    "once": "Copïwch ef nawr: dim ond unwaith y'i dangosir.",
+    "token": "Y credyd wedi'i lofnodi",
+    "download": "Lawrlwytho",
+    "hide": "Cuddio"
+  },
+  "crosswalk": {
+    "title": "Croesgyfeirio sgiliau",
+    "hint": "Datganiad bod sgil a ddatganwyd o dan un cofnod yn cyfrif fel un arall. Mae'n mynd o'r sgil y mae person yn ei datgan i'r sgil sydd ei hangen. Dim ond «union» a «agos» sy'n cyfrif wrth ddadansoddi bylchau; dangosir «ehangach» a «culach» fel rhai cysylltiedig heb eu cyfrif.",
+    "none": "Ni ddatganwyd unrhyw gyfatebiaeth.",
+    "from": "Sgil a ddatganwyd",
+    "to": "Yn cyfrif fel",
+    "confidence": "Hyder",
+    "basis": "Sail",
+    "source": "Ffynhonnell",
+    "counts": "Wrth ddadansoddi bylchau",
+    "counted": "Wedi'i gyfrif",
+    "related": "Cysylltiedig yn unig",
+    "remove": "Tynnu'n ôl",
+    "add": "Ychwanegu cyfatebiaeth"
   }
 }
