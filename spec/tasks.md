@@ -4899,3 +4899,24 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       false` and a deleted record's deactivation were not run through it (the request test covers them); the manager-before-report ordering
       was seen for one level only; the script was not run against a database holding other organizations (it scopes itself by organization);
       the scheduler's own 15-minute schedule was not waited for.
+- [x] (2026-10-25) WPM-T303 **The credential flow run against an independent verifier.** *(WPM-R157, WPM-D109)* "No Open Badges or Verifiable Credentials verifier was ever run" stood in every
+      report. `scripts/check-credential-flow.mjs` is a verifier written from RFC 7515 and RFC 8037 (the JWS), the W3C VC Data Model 2.0, Open Badges 3.0
+      and the Bitstring Status List v1.0, using only Node's crypto, zlib and fetch; it shares no code with the service. It mints its own test tokens (PASETO
+      v4.public with a throwaway key; `--print-env` prints the settings to start a service with) so a worker acts as themself through `/api/me`, which needs sign-in on.
+      Run against the real service (sign-in on, the reference ABAC policy, Postgres 18 in Podman, a throwaway signing key): an entry nobody verified is
+      refused (422) and with no token 401; the issuer's key is public and is the public half of the key the service was started with; the
+      credential is a compact JWS, `alg` EdDSA, `typ` `vc+jwt`, with the issuer's `kid`, **and verifies against the published key**; the contexts are VC 2.0
+      then Open Badges 3.0.3; the types are `VerifiableCredential` and `OpenBadgeCredential`; an `AchievementSubject` with no subject id; the alignments carry the
+      skill's ESCO (with `targetUrl`) and SFIA references; **no name, employee number, token subject or email** is in it; the status entry is a
+      `BitstringStatusListEntry` for revocation; the public list is itself a signed `BitstringStatusListCredential`, purpose revocation, multibase `u`, 131 072
+      bits, this credential's bit **0**; another person cannot revoke it (404); after the worker revokes it the bit is **1** on a list that still verifies, and the
+      credential's own signature is unchanged; it can be issued again as a new one; a credential with its payload changed, a credential under another key
+      and a header saying `alg: none` are all refused. The checks were proved able to fail with two mutants (signatures not checked: both tamper checks fail; a
+      wrong expected issuer key: the key check fails). **Found on the way, in the script and not the service:** my first "nothing about the person" check also
+      forbade the activity title, but the service names the achievement by it, as the spec says (a badge needs a name); the check now asserts that explicitly.
+      **A property worth knowing, not a defect:** the title is free text the worker typed, so personal detail in it would travel in the credential they share.
+      Verified: the script passes (and is repeatable: its skill references are unique per run); no Rust or UI file was changed, so the suites were not re-run.
+      **Not done:** one verifier I wrote, over `http://localhost`; no third-party Open Badges or wallet verifier (for example the 1EdTech validator) was run, so
+      interoperability beyond the standards as I read them is unproven; the Data Integrity proof form and key rotation are not built; status list
+      caching and its time-to-live were not checked; a credential for a skill assessment is not built; the worker's `/me` credentials panel was not run
+      against this sign-in-on service (the UI needs a session, not a token).

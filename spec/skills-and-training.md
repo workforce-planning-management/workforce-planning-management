@@ -134,7 +134,10 @@ Migration `m20261024_000090_credentials_and_crosswalk` (`credential_issuances`, 
 `OpenBadgeCredential`, `AchievementSubject`, `Achievement` and `Alignment`), the Verifiable Credentials Data Model 2.0 context, the
 **Bitstring Status List v1.0** (W3C Recommendation, 15 May 2025: 131 072 bits minimum, left-most bit first, GZIP, multibase `u`
 base64url), and the credential secured as a compact **JWS with EdDSA** (`typ` `vc+jwt`, RFC 7515 and RFC 8037; the RFC 8037 example is
-a unit test).
+a unit test). **Checked by an independent verifier** (`scripts/check-credential-flow.mjs`, WPM-T303), written from the standards with Node's own
+crypto and sharing no code with the service: the signature against the published key, the contexts and types, the ESCO and SFIA alignments, no
+person detail, the status entry, the revocation list (its own signature, size, bit 0 then 1 after revoking), an altered credential and another key
+refused. The achievement is **named by the activity title the worker typed**, so a title with personal detail would carry it.
 - `POST /api/me/credentials {cpd_entry_pid}` issues from the caller's **own, verified** CPD entry; once while one is live; returned
   once and **not stored**. It carries the activity, the category, when it was verified, the issuer and its place on the revocation list
   and **no name, number, email or identifier of the worker**. `GET /api/me/credentials` lists the issuances (when, place, revoked),
