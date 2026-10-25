@@ -377,6 +377,15 @@ body.kiosk button {
    direction marker are styled here. Direction is shown as a glyph, never by colour alone. */
 .data-grid-scroll {
   overflow-x: auto;
+  max-width: 100%;
+}
+/* A table never squeezes below what its words need: on a phone it scrolls inside its own box instead of breaking words
+   letter by letter or pushing the page sideways. */
+.data-grid-scroll table {
+  min-width: max-content;
+}
+select {
+  max-width: 100%;
 }
 .data-grid-sort-button {
   all: unset;

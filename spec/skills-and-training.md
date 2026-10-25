@@ -147,7 +147,14 @@ a unit test).
 - Subject access lists the issuances. Erasure revokes a live credential and cuts the row from the person (worker and entry set to the
   nil id), keeping its place on the list.
 - Settings: `WPM_CREDENTIAL_ISSUER`, `WPM_CREDENTIAL_SIGNING_KEY`, `WPM_CREDENTIAL_ISSUER_NAME` (deployment.md).
-- **Not built:** a credential from a demonstrated skill (CPD entries carry no skill link, so there is no `alignment` yet); the
+- **Skill alignment (WPM-T285, 2026-10-25).** A CPD entry may name the skill it developed (`skill_pid` on `POST
+  /api/workers/{pid}/cpd-entries`, checked against the catalogue; migration `m20261025_000091_cpd_entry_skill`; optional). A
+  credential issued from such an entry carries an Open Badges `alignment` for **every external reference the catalogue holds for that
+  skill**, ESCO first (its URI is also given as `targetUrl`), then SFIA (a code, so no link), then any other; the name is the
+  reference's label, else the skill's name. An entry with no skill has no `alignment`: none is guessed. SFIA codes are carried as
+  identifiers only, as elsewhere (WPM-D69). A skill that is only **self-declared** (a `worker_skills` row) is deliberately not
+  issued as a credential: nobody has verified it, and an employer's credential is a statement that someone checked.
+- **Not built:** a credential from a verified skill assessment (there is none to issue from); the
   Data Integrity proof form (`eddsa-rdfc-2022`, which needs RDF canonicalization; JWT is a form Open Badges 3.0 allows); a key
   rotation (one `kid`, `#key-1`); a separate key per organization; a wallet or a presentation; verifying credentials from other issuers
   (by design); a real verifier tried (the unit and enforcement tests verify with the published key; **no third-party OB or VC verifier

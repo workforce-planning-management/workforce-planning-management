@@ -14,7 +14,7 @@ use uuid::Uuid;
 use super::me::me_worker;
 use super::unprocessable;
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{cpd_entries, credential_issuances};
+use crate::models::_entities::{cpd_entries, credential_issuances, skill_external_refs};
 use crate::models::audit_logs::Model as Audit;
 use crate::rules::credential as rules;
 use crate::rules::webhook::check_url;
@@ -100,6 +100,36 @@ pub(crate) async fn issue(State(ctx): State<AppContext>, caller: MaybeAuthUser, 
     }
     let description = format!("A continuing professional development activity ({}).", entry.category);
     let criteria = format!("Recorded by the person and verified by the employer on {verified_on}.");
+    // (Read through the open transaction: with a pool of one connection a second one would wait for it for ever.)
+    // The skill the entry names, if it names one, with every reference the catalogue holds for it (ESCO first, then SFIA, then the rest).
+    let mut refs = match entry.skill_pid {
+        Some(skill) => {
+            skill_external_refs::Entity::find()
+                .filter(skill_external_refs::Column::SkillPid.eq(skill))
+                .all(&txn)
+                .await?
+        }
+        None => Vec::new(),
+    };
+    refs.sort_by_key(|r| (match r.framework_slug.as_str() { "esco" => 0, "sfia" => 1, _ => 2 }, r.framework_slug.clone(), r.reference.clone()));
+    let skill_name = match entry.skill_pid {
+        Some(skill) => crate::models::_entities::skills::Entity::find()
+            .filter(crate::models::_entities::skills::Column::Pid.eq(skill))
+            .one(&txn)
+            .await?
+            .map(|s| s.name),
+        None => None,
+    };
+    let names: Vec<String> = refs.iter().map(|r| rules::framework_name(&r.framework_slug)).collect();
+    let alignments: Vec<rules::Alignment<'_>> = refs
+        .iter()
+        .zip(&names)
+        .map(|(r, framework)| rules::Alignment {
+            framework,
+            code: &r.reference,
+            label: r.label.as_deref().or(skill_name.as_deref()).unwrap_or(&entry.activity),
+        })
+        .collect();
     let credential = rules::badge(&rules::Badge {
         issuer_id: &issuer.id,
         issuer_name: &issuer.name,
@@ -110,7 +140,7 @@ pub(crate) async fn issue(State(ctx): State<AppContext>, caller: MaybeAuthUser, 
         valid_from: &stamp(now),
         status_list_url: &issuer.list_url,
         status_index: index,
-        alignment: None,
+        alignments: &alignments,
     });
     let token = rules::sign(&issuer.seed, &issuer.kid, &credential);
     let mut active: credential_issuances::ActiveModel = created.into();

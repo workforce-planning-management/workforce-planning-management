@@ -27,6 +27,7 @@ pub struct Model {
     pub course_ref: Option<String>,
     pub verified_on: Option<Date>,
     pub verified_by: Option<String>,
+    pub skill_pid: Option<Uuid>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

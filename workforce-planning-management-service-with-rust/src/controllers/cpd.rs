@@ -247,6 +247,9 @@ struct EntryPayload {
     evidence_note: Option<String>,
     #[serde(default)]
     evidence_url: Option<String>,
+    /// The skill the activity developed. Optional; a credential issued from the entry carries the skill's ESCO or SFIA reference.
+    #[serde(default)]
+    skill_pid: Option<Uuid>,
 }
 
 /// `POST /api/workers/{pid}/cpd-entries` — record a CPD activity.
@@ -281,10 +284,21 @@ async fn create_entry(
         chrono::Utc::now().date_naive(),
     )
     .map_err(|e| unprocessable(&e))?;
+    if let Some(skill) = payload.skill_pid {
+        let known = crate::models::_entities::skills::Entity::find()
+            .filter(crate::models::_entities::skills::Column::Pid.eq(skill))
+            .filter(crate::models::_entities::skills::Column::DeletedAt.is_null())
+            .count(&ctx.db)
+            .await?;
+        if known == 0 {
+            return Err(unprocessable("skill_pid is not a skill in the catalogue"));
+        }
+    }
     let txn = ctx.db.begin().await?;
     let row = cpd_entries::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
+        skill_pid: ActiveValue::set(payload.skill_pid),
         entry_date: ActiveValue::set(payload.entry_date),
         activity: ActiveValue::set(payload.activity.trim().to_string()),
         category: ActiveValue::set(payload.category.clone()),
@@ -324,6 +338,7 @@ fn entry_json(e: &cpd_entries::Model) -> serde_json::Value {
         "lms_url": e.course_ref.as_deref().and_then(super::lms::course_url),
         "verified_on": e.verified_on,
         "verified_by": e.verified_by,
+        "skill_pid": e.skill_pid,
     })
 }
 

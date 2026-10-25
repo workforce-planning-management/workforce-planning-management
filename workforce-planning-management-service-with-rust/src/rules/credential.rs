@@ -205,8 +205,29 @@ pub struct Badge<'a> {
     pub status_list_url: &'a str,
     /// The position in it.
     pub status_index: usize,
-    /// The skill's framework, code and label, when it has one.
-    pub alignment: Option<(&'a str, &'a str, &'a str)>,
+    /// The skill's references in other frameworks (ESCO, SFIA), when it has any. None are guessed.
+    pub alignments: &'a [Alignment<'a>],
+}
+
+/// A reference to a skill in another framework.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Alignment<'a> {
+    /// The framework as people name it (`ESCO`, `SFIA`).
+    pub framework: &'a str,
+    /// Its identifier: a URI for ESCO, a code for SFIA.
+    pub code: &'a str,
+    /// Its label.
+    pub label: &'a str,
+}
+
+/// The framework's name as it is shown: the slugs WPM stores for the two it knows, else the slug itself.
+#[must_use]
+pub fn framework_name(slug: &str) -> String {
+    match slug {
+        "esco" => "ESCO".to_string(),
+        "sfia" => "SFIA".to_string(),
+        other => other.to_string(),
+    }
 }
 
 /// The Open Badges 3.0 credential. It carries no name, number, email or id of the worker.
@@ -220,10 +241,22 @@ pub fn badge(b: &Badge<'_>) -> Value {
         "description": b.description,
         "criteria": { "narrative": b.criteria },
     });
-    if let Some((framework, code, label)) = b.alignment {
-        achievement["alignment"] = json!([{
-            "type": ["Alignment"], "targetName": label, "targetFramework": framework, "targetCode": code,
-        }]);
+    if !b.alignments.is_empty() {
+        achievement["alignment"] = Value::Array(
+            b.alignments
+                .iter()
+                .map(|a| {
+                    let mut one = json!({
+                        "type": ["Alignment"], "targetName": a.label, "targetFramework": a.framework, "targetCode": a.code,
+                    });
+                    // An ESCO reference is a URI; Open Badges has a place for a target that is a link.
+                    if a.code.starts_with("http://") || a.code.starts_with("https://") {
+                        one["targetUrl"] = json!(a.code);
+                    }
+                    one
+                })
+                .collect(),
+        );
     }
     json!({
         "@context": [VC_CONTEXT, OB_CONTEXT],
@@ -278,7 +311,7 @@ mod tests {
             valid_from: "2026-10-25T09:00:00Z",
             status_list_url: "https://hr.example.org/api/credentials/status-list",
             status_index: 7,
-            alignment: Some(("ESCO", "S1.2.3", "safeguarding")),
+            alignments: &[Alignment { framework: "ESCO", code: "http://data.europa.eu/esco/skill/abc", label: "safeguarding" }],
         }
     }
 
@@ -380,9 +413,16 @@ mod tests {
         assert_eq!(v["credentialStatus"]["statusPurpose"], "revocation");
         assert!(v["credentialSubject"].get("id").is_none(), "no subject identifier");
         assert!(v["credentialSubject"].get("identifier").is_none());
+        assert_eq!(v["credentialSubject"]["achievement"]["alignment"][0]["targetUrl"], "http://data.europa.eu/esco/skill/abc");
         let mut plain = sample();
-        plain.alignment = None;
-        assert!(badge(&plain)["credentialSubject"]["achievement"].get("alignment").is_none());
+        plain.alignments = &[];
+        assert!(badge(&plain)["credentialSubject"]["achievement"].get("alignment").is_none(), "none is not guessed");
+        let sfia = [Alignment { framework: "SFIA", code: "PROG", label: "Programming" }];
+        plain.alignments = &sfia;
+        let a = &badge(&plain)["credentialSubject"]["achievement"]["alignment"][0];
+        assert_eq!((a["targetFramework"].as_str(), a["targetCode"].as_str()), (Some("SFIA"), Some("PROG")));
+        assert!(a.get("targetUrl").is_none(), "a code is not a link");
+        assert_eq!((framework_name("esco"), framework_name("sfia"), framework_name("x")), ("ESCO".to_string(), "SFIA".to_string(), "x".to_string()));
     }
 
     #[test]

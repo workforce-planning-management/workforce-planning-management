@@ -257,6 +257,15 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         let new_asset = json!({ "organization_ref": org, "kind": "laptop", "tag": "ENF-1", "owner_role": "IT" });
         assert_eq!(request.post("/api/assets").add_header("authorization", worker.clone()).json(&new_asset).await.status_code(), 403, "a worker adds none");
         assert_eq!(request.post("/api/assets").add_header("authorization", hr.clone()).json(&new_asset).await.status_code(), 200, "HR adds one");
+        let asset = request.post("/api/assets").add_header("authorization", hr.clone()).json(&json!({ "organization_ref": org, "kind": "phone", "tag": "ENF-2", "owner_role": "IT" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
+        assert_eq!(request.post(&format!("/api/assets/{asset}/issue")).add_header("authorization", worker.clone()).json(&json!({ "worker_pid": pids[0] })).await.status_code(), 403, "a worker issues nothing");
+        let issue = request.post(&format!("/api/assets/{asset}/issue")).add_header("authorization", hr.clone()).json(&json!({ "worker_pid": pids[0] })).await;
+        assert_eq!(issue.status_code(), 200, "HR issues: {}", issue.text());
+        let issue = issue.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let back = format!("/api/asset-issues/{issue}/return");
+        assert_eq!(request.post(&back).json(&json!({ "outcome": "returned" })).await.status_code(), 401);
+        assert_eq!(request.post(&back).add_header("authorization", worker.clone()).json(&json!({ "outcome": "returned" })).await.status_code(), 403, "a worker records no return");
+        assert_eq!(request.post(&back).add_header("authorization", hr.clone()).json(&json!({ "outcome": "returned" })).await.status_code(), 200, "HR does");
 
         // ── Policies: HR keeps them; the acknowledgement is the worker's own; the names are HR's ──
         let me = request.post("/api/workers").add_header("authorization", svc.clone()).json(&json!({
@@ -347,6 +356,26 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_ne!(again.json::<Value>()["status_index"], issued["status_index"], "with a place of its own on the list");
         let second = again.json::<Value>()["pid"].as_str().unwrap().to_string();
         assert_eq!(request.post(&format!("/api/me/credentials/{second}/revoke")).add_header("authorization", worker.clone()).await.status_code(), 200, "the worker withdraws their own");
+
+        // ── A credential from an entry that names a skill carries the skill's ESCO and SFIA references ──
+        let skill = uuid::Uuid::new_v4();
+        ctx.db.execute_unprepared(&format!("INSERT INTO skills (pid, name, category) VALUES ('{skill}', 'Safeguarding practice', 'technical')")).await.unwrap();
+        for (slug, reference, label) in [("esco", "http://data.europa.eu/esco/skill/safeguarding", "safeguard vulnerable people"), ("sfia", "SAFE", "Safeguarding")] {
+            ctx.db.execute_unprepared(&format!("INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, ref, label) VALUES (gen_random_uuid(), '{skill}', '{slug}', '{reference}', '{label}')")).await.unwrap();
+        }
+        let tagged = uuid::Uuid::new_v4();
+        ctx.db.execute_unprepared(&format!(
+            "INSERT INTO cpd_entries (pid, worker_pid, entry_date, activity, category, unit, amount_hundredths, source, verified_on, verified_by, skill_pid) \
+             VALUES ('{tagged}', '{me}', '2026-09-03', 'Safeguarding level 3', 'course', 'hours', 300, 'self', '2026-09-04', 'hr', '{skill}')")).await.unwrap();
+        let with_skill = issue(tagged).await;
+        assert_eq!(with_skill.status_code(), 200, "{}", with_skill.text());
+        let with_skill: Value = with_skill.json();
+        let aligned = cred::verify(&x, with_skill["credential"].as_str().unwrap()).unwrap();
+        let alignment = aligned["credentialSubject"]["achievement"]["alignment"].as_array().expect("an alignment").clone();
+        assert_eq!(alignment.len(), 2);
+        assert_eq!((alignment[0]["targetFramework"].as_str(), alignment[0]["targetUrl"].as_str()), (Some("ESCO"), Some("http://data.europa.eu/esco/skill/safeguarding")), "ESCO first, as a link");
+        assert_eq!((alignment[1]["targetFramework"].as_str(), alignment[1]["targetCode"].as_str()), (Some("SFIA"), Some("SAFE")));
+        assert!(aligned["credentialSubject"]["achievement"].get("alignment").is_some() && payload["credentialSubject"]["achievement"].get("alignment").is_none(), "an entry with no skill has none, not a guess");
 
         // ── The crosswalk: anyone signed in reads it; HR states it; a worker does not ──
         let mapping = json!({ "from_skill_pid": uuid::Uuid::new_v4(), "to_skill_pid": uuid::Uuid::new_v4(), "confidence": "exact", "basis": "authority", "source": "x" });

@@ -715,6 +715,11 @@ reason; no Svelte 4 syntax, no `any`, no `{@html}`; strict TypeScript; strict `k
   a version; the named record is HR-only and audited.
 - **WPM-D106 Events leave as references.** Webhooks and SCIM payloads carry URNs and kinds; a
   subscriber that needs more reads it through the API with its own access.
+- **WPM-D108 A total is not shown when it would give a withheld group away.** Pay position
+  analysis shows a total only when, in every grouping, the withheld groups together reach the floor.
+- **WPM-D109 A verifier needs no account, and learns nothing about a person.** The issuer key and
+  the revocation list are public; a credential names no person; the signing key is held outside
+  the database.
 
 ## 4. Data and privacy summary
 
@@ -738,12 +743,15 @@ reason; no Svelte 4 syntax, no `any`, no `{@html}`; strict TypeScript; strict `k
 | `pay_categories` (section N) | Category of equal value, member job titles, stated basis | No |
 | `pay_information_requests` | Worker, asked on, due on, answered on | Yes (HR-only; in export; erased) |
 | `ai_register_entries` | Feature, Annex III category, overseer role, informed on, log retention | No |
-| `webhook_subscriptions`, `scim_targets` | Endpoint, secret reference, event kinds | No (secrets by reference only) |
+| `webhook_subscriptions`, `webhook_deliveries` | Endpoint, secret reference, event kinds; a delivery's subject URN, status and attempts, **no body** | No for subscriptions (secrets by reference only); a delivery names a worker URN (erased) |
+| `scim_pushes` | Worker, the provider's id, a fingerprint, retry state; no body | Yes (a link; erased) |
+| `plan_org_nodes` | A plan's target structure: role key, parent role, department, title, headcount | No (roles, never people) |
 | `positions` | Cost centre, budgeted FTE, funding kind, state, holder link | Holder link only (HR-only) |
 | `assets`, `asset_issues` | Asset kind and tag; worker, issued on, returned on | Yes (in export; erased) |
-| `policies`, `policy_acknowledgements` | Version, audience; worker, version, date | Yes (HR-only by name; in export) |
-| `credential_issuances` | Worker, credential kind, issued on, revoked on | Yes (in export; erased) |
-| `skill_mappings` | From skill, to skill, basis, confidence | No |
+| `policies`, `policy_versions`, `policy_acknowledgements` | Name; version, title, document reference (no text), audience; worker, version, date | Acknowledgements yes (HR-only by name; in export; erased) |
+| `credential_issuances` | Worker, kind, source entry, issued on, revoked on, SHA-256 of the credential; **not the credential** | Yes (in export; on erasure revoked and cut from the person) |
+| `skill_mappings` | From skill, to skill, confidence, basis, source, who and when | No |
+| `cpd_entries` (new column `skill_pid`) | The skill an entry developed, optional | No (the entry already is personal and is handled as before) |
 
 Every one of these updates [domain-model.md](domain-model.md). The named
 key-person list and `post_fundings` update [auth.md](auth.md) and

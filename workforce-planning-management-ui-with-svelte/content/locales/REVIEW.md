@@ -31,6 +31,8 @@ The 2026-10-23 additions (the `errors.*` keys: eight sentences saying what a fai
 
 The 2026-10-24 additions (the `labels.*` keys: eight accessible names for form controls; three `values.*` words for the outcome of a joint pay assessment; five `values.*` words for the Annex III categories of the AI register; two `values.*` words for position states, 2026-10-24) were written by the same assistant, also unreviewed.
 
+The 2026-10-25 additions (`values.*` words for the kinds of equipment and how an issue ends, the three audiences of a policy, the four confidences and two bases of a skill mapping, written by the same assistant, also unreviewed): laptop, phone, pass, key, returned, written_off, all, department, job_title, exact, close, broader, narrower, authority, judgement. The German "Notebook", the Indonesian "komputer jinjing" and the French "précis" were chosen so as not to repeat the English word.
+
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.
 

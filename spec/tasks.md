@@ -4562,9 +4562,52 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       issued and **verified with the published key**; no name or pid in it; one live per entry; the list bit false, then true after HR
       revokes; a worker 403 on the HR route; reissue gets a new place; a worker states no mapping), the other `enforcement_*`
       binaries, `security`, `route_coverage` (it caught an uncalled DELETE, now called), clippy pedantic clean; UI 209 unit tests.
-      **Not done:** a screen; credentials from a demonstrated skill and the ESCO or SFIA `alignment` (CPD entries carry no skill link);
-      the Data Integrity proof form; key rotation; **no third-party Open Badges or VC verifier was run against a credential**; the
+      Added on 2026-10-25 at the user's request, during WPM-T285: a CPD entry may name its skill (`skill_pid`, migration
+      `m20261025_000091_cpd_entry_skill`), and a credential from it carries an Open Badges `alignment` for each ESCO and SFIA reference the
+      skill has (ESCO first, as a link too); one without a skill has none. Tested: a unit test for the shape, the request test for
+      the entry, and the enforcement test (a skill with an ESCO and a SFIA reference: both in the signed credential, in order; an
+      entry with no skill: none). A pool of one connection made the first version hang on a second query inside the issuing
+      transaction (a 500, `ConnectionAcquire(Timeout)`); the lookups now use the transaction. A self-declared skill is not issued from.
+      **Not done:** a screen; the Data Integrity proof form; key rotation; **no third-party Open Badges or VC verifier was run against a credential**; the
       workforce roll-up does not read the crosswalk; transitive mappings; erasure's revocation and the export are not asserted by a test;
       Playwright and `svelte-check`; the `keycloak` and `chaos` binaries.
-- [ ] WPM-T285 **Verification and documents.** *(WPM-R144–R158)* Full suites, enforcement tests for every new route, strings
+- [x] (2026-10-25) WPM-T285 **Verification and documents.** *(WPM-R144–R158)* Full suites, enforcement tests for every new route, strings
       in the 13 locales, screenshots of new screens, and what was not checked.
+      Verified (Postgres 18, Podman; only the container I started, `wpm-t285-pg`, was stopped): clippy pedantic clean; **807 unit
+      tests**, **152 request tests**, and every ignored integration binary: `chaos`, `enforcement`, `enforcement_conversion`,
+      `enforcement_cutover`, `enforcement_engagements`, `enforcement_equality`, `enforcement_escalations`, `enforcement_expenses`,
+      `enforcement_flexible`, `enforcement_health`, `enforcement_me`, `enforcement_need_to_know`, `enforcement_oversight_pack`,
+      `enforcement_pay_gap`, `enforcement_pay_information`, `request_log`, `retention_schedule`, `security`,
+      `shared_cache_upstream` and `route_coverage`; and, with the `keycloak` feature, **`oidc_entra` and `keycloak` against a real
+      Keycloak container**. UI: `svelte-check` 0 errors and 0 warnings, 209 unit tests, Playwright 215 passed and 19 skipped.
+      **Found and fixed here:** (1) `retention_schedule` had been failing since WPM-T270 and WPM-T271: two soft-deleted tables
+      (`pay_categories`, `pay_information_requests`) were added to the sweep and a count in that test still said 56 (now 58), which
+      no earlier run had caught because that binary had not been re-run; (2) `oidc_entra` and `keycloak` **did not compile** under the
+      `keycloak` feature, and did not at commit `046028d` either (checked in a throwaway worktree): reqwest's `query` and `form`
+      features are not on in that build, so a dev-dependency now turns them on for tests only; both now pass; (3) the positions page
+      on a phone broke words letter by letter and scrolled the page sideways, a defect recorded in WPM-T279: tables now scroll inside
+      their own box and never narrow below their words, and a `select` is no wider than its container (one rule in `app.css`, so
+      every table gains it; the whole Playwright suite was re-run); the phone screenshots of positions and the organization shape were
+      looked at after the change.
+      **Enforcement tests for every new route.** The 52 routes added in Phase 23 (from commit `046028d`) were listed from the diff and
+      searched for in the enforcement binaries by path: all but one were named in one; the exception, `POST
+      /api/asset-issues/{pid}/return`, now has a test (anonymous 401, worker 403, HR 200). **That is a search by path, not a proof that
+      each has a refusal test of each kind**; the tasks say which refusals each asserts, and a few are not asserted (named in their
+      entries: erasure and the export for equipment, policies and credentials; a non-manager reading a team count).
+      **Also done on 2026-10-25 at the user's request:** a CPD entry may name its skill and a credential from it carries the ESCO and
+      SFIA references (see WPM-T284).
+      Documents: `plan.md` data summary (the tables as built), WPM-D108 and WPM-D109 added there, `AGENTS/spec-driven-delivery.md` next
+      free ids now **WPM-R159, WPM-D110, WPM-T286**, the locale review record, `llms.txt` and `llms.json` regenerated, `check-links`,
+      `check-days` and `status.py` pass.
+      **What Phase 23 left unbuilt or only partly built** (each is in its task): screens for the pay categories and gap report (T270),
+      pay information (T271), the joint assessment (T272), the AI register (T274), pay position analysis (T281), equipment (T282),
+      policies (T283), credentials and the crosswalk (T284); the per-decision explanation of a score (T274); the cost and skills
+      comparison and editing a target on screen (T280); the holder and requisition links on screen (T279); a schedule for `scim_push`
+      and `webhook_deliver`; OAuth protected-resource metadata for MCP; the workforce skill-gap roll-up reading the crosswalk; manager
+      counts of open equipment.
+      **Not checked, in this task or any:** no real SCIM provider, webhook receiver, MCP client, or Open Badges or Verifiable
+      Credentials verifier was run against the service (stubs, and the published key, only); the Directive 2023/970, the AI Act and the
+      revised ESRS were read as excerpts and a national transposition not at all (WPM-T268); every new string in the 13 locales is
+      AI-written and unreviewed; the page-shot harness's "dark" shot is not dark (the app's theme comes from its own picker, not the
+      browser's colour scheme), so no dark screenshot of a new screen was looked at; one earlier request-test run showed a failure that
+      two reruns did not reproduce (WPM-T282); no load or soak run; no browser other than Chromium.

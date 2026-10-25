@@ -128,6 +128,8 @@ serial_test = { version = "4.0.1" }
 rusty_paseto = { version = "0.10", default-features = false, features = ["v4_public", "serde_json"] }
 # Real Keycloak in a container for `tests/keycloak.rs` (Podman via DOCKER_HOST).
 testcontainers = { version = "0.28" }
+# The `keycloak` and `oidc_entra` tests build requests with `.query` and `.form`; the service itself needs neither feature.
+reqwest = { version = "0.13", default-features = false, features = ["query", "form"] }
 
 # Needs the `keycloak` backend (mutually exclusive with the default `paseto`).
 [[test]]

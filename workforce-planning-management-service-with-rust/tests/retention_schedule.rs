@@ -60,7 +60,7 @@ async fn each_kind_is_swept_at_its_own_horizon() {
             .iter()
             .map(|k| k["tables"].as_array().unwrap().len())
             .sum();
-        assert_eq!(tables, 56, "every swept table is in exactly one kind");
+        assert_eq!(tables, 58, "every swept table is in exactly one kind");
 
         // ── Two candidates (recruitment, 180) and two announcements (planning,
         // 100), each pair deleted 150 and 200 calendar days ago.
