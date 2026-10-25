@@ -4640,3 +4640,11 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       does not clash. **Not done:** no screenshot looked at, on a phone or otherwise; the API is stubbed, not run against the service,
       so the credential download and a real verifier were not exercised; HR's revoke of someone else's credential has no screen; the
       crosswalk form does not hide itself from a caller who cannot write; the skill picker on a CPD entry (the API takes `skill_pid`).
+- [x] (2026-10-25) WPM-T289 **A skill picker on the CPD entry form.** *(WPM-R157)* `/cpd` loads the catalogue and offers an optional "Skill
+      developed" choice; the entry is posted with `skill_pid` only when one is chosen, and an entry that names a skill shows its name in
+      the list. A credential issued from such an entry carries the skill's ESCO and SFIA alignments (WPM-T285). Two strings
+      (`pages.cpd.skill`, `pages.cpd.no_skill`) in the 13 locales (AI-written, unreviewed). Verified: `svelte-check` 0 errors, 209 unit
+      tests, Playwright 221 passed / 19 skipped (new: the body carries `skill_pid`, the row shows the name; with none chosen the body
+      has no `skill_pid`). **Not done:** no screenshot looked at; the API is stubbed, so the alignment in a real signed credential was
+      not seen from the screen (it is asserted in the service tests, WPM-T285); the picker is a plain list of the whole catalogue with no
+      search, so a large catalogue is long; an existing entry's skill cannot be changed or added after the fact.

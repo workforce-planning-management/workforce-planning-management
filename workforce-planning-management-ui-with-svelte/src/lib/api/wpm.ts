@@ -987,6 +987,8 @@ export function listCpdEntries(
     lms_url: string | null;
     verified_on: string | null;
     verified_by: string | null;
+    /** The catalogue skill this entry developed, if named; a credential issued from it carries its ESCO and SFIA references. */
+    skill_pid: string | null;
   }>
 > {
   return api(`/workers/${workerPid}/cpd-entries`, init);
@@ -1003,6 +1005,7 @@ export function createCpdEntry(
     amount: number;
     evidence_note?: string;
     evidence_url?: string;
+    skill_pid?: string;
   },
 ): Promise<{ pid: string }> {
   return api(`/workers/${workerPid}/cpd-entries`, { method: "POST", body });

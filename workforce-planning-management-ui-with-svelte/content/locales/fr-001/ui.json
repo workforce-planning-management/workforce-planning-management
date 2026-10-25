@@ -994,7 +994,9 @@
       "cancel": "Annuler",
       "withdraw": "Retirer",
       "confirm_withdraw": "Confirmer le retrait (les entrées enregistrées sont conservées)",
-      "requirements": "Exigences"
+      "requirements": "Exigences",
+      "skill": "Compétence développée (facultatif)",
+      "no_skill": "Aucune compétence indiquée"
     },
     "development": {
       "criticality": "— {department} (criticité {criticality})"

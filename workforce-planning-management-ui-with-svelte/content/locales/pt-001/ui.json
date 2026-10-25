@@ -994,7 +994,9 @@
       "cancel": "Cancelar",
       "withdraw": "Retirar",
       "confirm_withdraw": "Confirmar retirada (os registos são mantidos)",
-      "requirements": "Requisitos"
+      "requirements": "Requisitos",
+      "skill": "Competência desenvolvida (opcional)",
+      "no_skill": "Nenhuma competência indicada"
     },
     "development": {
       "criticality": "— {department} (criticidade {criticality})"

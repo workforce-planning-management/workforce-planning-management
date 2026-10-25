@@ -994,7 +994,9 @@
       "cancel": "منسوخ",
       "withdraw": "واپس لیں",
       "confirm_withdraw": "واپسی کی تصدیق کریں (درج اندراجات برقرار رہتے ہیں)",
-      "requirements": "تقاضے"
+      "requirements": "تقاضے",
+      "skill": "پروان چڑھنے والی مہارت (اختیاری)",
+      "no_skill": "کوئی مہارت نہیں بتائی گئی"
     },
     "development": {
       "criticality": "— {department} (اہمیت {criticality})"

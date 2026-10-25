@@ -17,6 +17,7 @@
     createCpdRequirement,
     listCpdEntries,
     listCpdRequirements,
+    listSkills,
     listWorkers,
     updateCpdRequirement,
     verifyCpdEntry,
@@ -65,6 +66,9 @@
   let entryUnit = $state<string>("hours");
   let entryAmount = $state(1);
   let entryUrl = $state("");
+  let entrySkill = $state("");
+  let skills = $state<Array<{ pid: string; name: string }>>([]);
+  const skillName = (pid: unknown) => skills.find((s) => s.pid === pid)?.name;
 
   const message = (cause: unknown) =>
     errorText(cause);
@@ -99,6 +103,7 @@
     void (async () => {
       try {
         workers = await listWorkers();
+        skills = await listSkills();
       } catch (cause) {
         error = message(cause);
       }
@@ -175,9 +180,11 @@
         unit: entryUnit,
         amount: entryAmount,
         ...(entryUrl ? { evidence_url: entryUrl } : {}),
+        ...(entrySkill ? { skill_pid: entrySkill } : {}),
       });
       entryActivity = "";
       entryUrl = "";
+      entrySkill = "";
       await loadWorker();
       await loadShared();
     } catch (cause) {
@@ -262,7 +269,7 @@
 {/snippet}
 
 {#snippet activityCell({ row }: { row: DataGridRow })}
-  {row.activity}{#if row.source === "lms"}
+  {row.activity}{#if skillName(row.skill_pid)}<span class="muted" data-testid="cpd-entry-skill"> · {skillName(row.skill_pid)}</span>{/if}{#if row.source === "lms"}
     {#if row.lms_url}
       <a class="chip" href={String(row.lms_url)} target="_blank" rel="noopener noreferrer" title={t("pages.cpd.lms_open")}
         >{t("pages.cpd.lms")} ↗</a
@@ -444,6 +451,13 @@
       <select bind:value={entryUnit}>{#each CPD_UNITS as u (u)}<option value={u}>{tv(u)}</option>{/each}</select>
     </label>
     <label>{t("pages.cpd.amount")} <input type="number" min="0.01" step="any" bind:value={entryAmount} required /></label>
+    <label>
+      {t("pages.cpd.skill")}
+      <select data-testid="cpd-entry-skill-pick" bind:value={entrySkill}>
+        <option value="">{t("pages.cpd.no_skill")}</option>
+        {#each skills as s (s.pid)}<option value={s.pid}>{s.name}</option>{/each}
+      </select>
+    </label>
     <label>{t("pages.cpd.evidence_link")} <input type="url" bind:value={entryUrl} placeholder={t("pages.cpd.https")} /></label>
     <button type="submit" data-testid="cpd-entry-add">{t("pages.cpd.add")}</button>
   </form>

@@ -1498,6 +1498,8 @@ collections:
                   - { name: "withdraw", label: "Withdraw", widget: string, required: false, i18n: true }
                   - { name: "confirm_withdraw", label: "Confirm_withdraw", widget: string, required: false, i18n: true }
                   - { name: "requirements", label: "Requirements", widget: string, required: false, i18n: true }
+                  - { name: "skill", label: "Skill", widget: string, required: false, i18n: true }
+                  - { name: "no_skill", label: "No_skill", widget: string, required: false, i18n: true }
               - name: "development"
                 label: "Development"
                 widget: object

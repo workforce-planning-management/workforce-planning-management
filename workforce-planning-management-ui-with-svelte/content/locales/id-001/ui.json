@@ -994,7 +994,9 @@
       "cancel": "Batal",
       "withdraw": "Tarik",
       "confirm_withdraw": "Konfirmasi penarikan (entri yang tercatat tetap ada)",
-      "requirements": "Persyaratan"
+      "requirements": "Persyaratan",
+      "skill": "Keterampilan yang dikembangkan (opsional)",
+      "no_skill": "Tidak ada keterampilan disebut"
     },
     "development": {
       "criticality": "— {department} (kekritisan {criticality})"

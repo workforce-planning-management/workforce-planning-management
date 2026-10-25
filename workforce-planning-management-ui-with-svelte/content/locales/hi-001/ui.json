@@ -994,7 +994,9 @@
       "cancel": "रद्द करें",
       "withdraw": "वापस लें",
       "confirm_withdraw": "वापसी की पुष्टि करें (दर्ज प्रविष्टियाँ बनी रहती हैं)",
-      "requirements": "आवश्यकताएँ"
+      "requirements": "आवश्यकताएँ",
+      "skill": "विकसित कौशल (वैकल्पिक)",
+      "no_skill": "कोई कौशल नहीं बताया"
     },
     "development": {
       "criticality": "— {department} (महत्त्व {criticality})"

@@ -994,7 +994,9 @@
       "cancel": "Canslo",
       "withdraw": "Tynnu'n ôl",
       "confirm_withdraw": "Cadarnhau tynnu'n ôl (cedwir y cofnodion)",
-      "requirements": "Gofynion"
+      "requirements": "Gofynion",
+      "skill": "Sgil a ddatblygwyd (dewisol)",
+      "no_skill": "Dim sgil wedi'i henwi"
     },
     "development": {
       "criticality": "— {department} (hollbwysigrwydd {criticality})"

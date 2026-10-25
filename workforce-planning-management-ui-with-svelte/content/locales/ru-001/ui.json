@@ -994,7 +994,9 @@
       "cancel": "Отмена",
       "withdraw": "Отозвать",
       "confirm_withdraw": "Подтвердить отзыв (записи сохраняются)",
-      "requirements": "Требования"
+      "requirements": "Требования",
+      "skill": "Развитый навык (необязательно)",
+      "no_skill": "Навык не указан"
     },
     "development": {
       "criticality": "— {department} (критичность {criticality})"

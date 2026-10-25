@@ -994,7 +994,9 @@
       "cancel": "Cancel",
       "withdraw": "Withdraw",
       "confirm_withdraw": "Confirm withdraw (recorded entries are kept)",
-      "requirements": "Requirements"
+      "requirements": "Requirements",
+      "skill": "Skill developed (optional)",
+      "no_skill": "No skill named"
     },
     "development": {
       "criticality": "— {department} (criticality {criticality})"

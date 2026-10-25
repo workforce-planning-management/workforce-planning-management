@@ -994,7 +994,9 @@
       "cancel": "বাতিল",
       "withdraw": "প্রত্যাহার",
       "confirm_withdraw": "প্রত্যাহার নিশ্চিত করুন (নথিভুক্ত এন্ট্রি থাকবে)",
-      "requirements": "প্রয়োজনীয়তা"
+      "requirements": "প্রয়োজনীয়তা",
+      "skill": "বিকশিত দক্ষতা (ঐচ্ছিক)",
+      "no_skill": "কোনো দক্ষতা উল্লেখ নেই"
     },
     "development": {
       "criticality": "— {department} (জরুরিত্ব {criticality})"

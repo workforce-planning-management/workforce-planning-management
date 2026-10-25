@@ -994,7 +994,9 @@
       "cancel": "Abbrechen",
       "withdraw": "Zurückziehen",
       "confirm_withdraw": "Rückzug bestätigen (erfasste Einträge bleiben erhalten)",
-      "requirements": "Anforderungen"
+      "requirements": "Anforderungen",
+      "skill": "Entwickelte Kompetenz (optional)",
+      "no_skill": "Keine Kompetenz genannt"
     },
     "development": {
       "criticality": "— {department} (Kritikalität {criticality})"

@@ -994,7 +994,9 @@
       "cancel": "取消",
       "withdraw": "撤销",
       "confirm_withdraw": "确认撤销（已记录的条目将保留）",
-      "requirements": "要求"
+      "requirements": "要求",
+      "skill": "所培养的技能（可选）",
+      "no_skill": "未指明技能"
     },
     "development": {
       "criticality": "— {department}（关键度 {criticality}）"

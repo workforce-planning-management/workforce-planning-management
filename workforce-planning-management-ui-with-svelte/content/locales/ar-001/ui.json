@@ -994,7 +994,9 @@
       "cancel": "إلغاء",
       "withdraw": "سحب",
       "confirm_withdraw": "تأكيد السحب (تبقى الإدخالات المسجلة)",
-      "requirements": "المتطلبات"
+      "requirements": "المتطلبات",
+      "skill": "المهارة المطوَّرة (اختياري)",
+      "no_skill": "لم تُحدَّد مهارة"
     },
     "development": {
       "criticality": "— {department} (الأهمية الحرجة {criticality})"
