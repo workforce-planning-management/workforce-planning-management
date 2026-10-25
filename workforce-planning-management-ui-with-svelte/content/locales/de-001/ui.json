@@ -46,7 +46,8 @@
     "positions": "Stellen",
     "policies": "Richtlinien",
     "payRange": "Vergütungsposition",
-    "payGap": "Entgeltlücke"
+    "payGap": "Entgeltlücke",
+    "payInformation": "Entgeltauskunftsanträge"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -1398,6 +1399,9 @@
     },
     "payGap": {
       "page_title": "{payGap} — WPM"
+    },
+    "payInformation": {
+      "page_title": "{payInformation} — WPM"
     }
   },
   "titles": {
@@ -1435,7 +1439,8 @@
     "my_details": "Meine Angaben — WPM",
     "policies": "Richtlinien — WPM",
     "payRange": "Vergütungsposition — WPM",
-    "payGap": "Entgeltlücke — WPM"
+    "payGap": "Entgeltlücke — WPM",
+    "payInformation": "Entgeltauskunftsanträge — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2416,5 +2421,32 @@
     "reason_variable_not_recorded": "Keine variable Vergütung erfasst, daher nicht berechenbar",
     "quartile_note": "Quartil 1 ist das am niedrigsten bezahlte.",
     "edit": "Bearbeiten"
+  },
+  "payInfo": {
+    "title": "Entgeltinformation",
+    "hint": "Sie können Ihr eigenes Entgeltniveau und das durchschnittliche Entgelt der Beschäftigten Ihrer Kategorie, nach Geschlecht, erfragen. Die Personalabteilung antwortet innerhalb der gesetzlichen Frist. Die Auskunft wird bei Erteilung berechnet und nicht gespeichert. Es wartet immer nur ein Antrag.",
+    "none": "Sie haben nicht angefragt.",
+    "asked": "Angefragt am {day}",
+    "due": "Antwort fällig bis {day}",
+    "overdue": "Überfällig: fällig war {day}",
+    "answered": "Beantwortet am {day}",
+    "ask": "Entgeltinformation anfragen",
+    "queue_hint": "Anträge von Beschäftigten auf ihr eigenes Entgeltniveau und das Durchschnittsentgelt ihrer Kategorie nach Geschlecht, nach Fälligkeit. Die Berechnung erfordert Gehaltszugriff und wird protokolliert; die Zahlen werden angezeigt, um sie der Person zu geben, und nicht gespeichert.",
+    "status": "Status",
+    "status_open": "Wartend",
+    "status_overdue": "Überfällig",
+    "status_answered": "Beantwortet",
+    "queue_none": "Keine Anträge.",
+    "work_out": "Auskunft berechnen",
+    "answer": "Die zu erteilende Auskunft",
+    "answer_hint": "Einmal hier angezeigt, um sie der Person zu geben. Sie wird nicht gespeichert; als beantwortet vermerkt wird nur der Tag.",
+    "own_pay": "Eigenes Entgelt: {pay}",
+    "none_recorded": "nicht erfasst",
+    "category": "Kategorie: {name}",
+    "no_category": "In keiner Kategorie: kein Durchschnitt möglich",
+    "female_average": "Durchschnittsentgelt der Frauen in der Kategorie: {pay}",
+    "male_average": "Durchschnittsentgelt der Männer in der Kategorie: {pay}",
+    "withheld": "zurückgehalten (weniger als {floor} dieses Geschlechts)",
+    "mark_answered": "Als beantwortet vermerken"
   }
 }

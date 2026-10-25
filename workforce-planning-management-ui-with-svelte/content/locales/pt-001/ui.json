@@ -46,7 +46,8 @@
     "positions": "Posições",
     "policies": "Políticas",
     "payRange": "Posição salarial",
-    "payGap": "Disparidade salarial"
+    "payGap": "Disparidade salarial",
+    "payInformation": "Pedidos de informação salarial"
   },
   "pr": {
     "retention": "Retenção",
@@ -1398,6 +1399,9 @@
     },
     "payGap": {
       "page_title": "{payGap} — WPM"
+    },
+    "payInformation": {
+      "page_title": "{payInformation} — WPM"
     }
   },
   "titles": {
@@ -1435,7 +1439,8 @@
     "my_details": "Meus dados — WPM",
     "policies": "Políticas — WPM",
     "payRange": "Posição salarial — WPM",
-    "payGap": "Disparidade salarial — WPM"
+    "payGap": "Disparidade salarial — WPM",
+    "payInformation": "Pedidos de informação salarial — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2416,5 +2421,32 @@
     "reason_variable_not_recorded": "Não há remuneração variável registada, por isso não se pode calcular",
     "quartile_note": "O quartil 1 é o menos bem pago.",
     "edit": "Editar"
+  },
+  "payInfo": {
+    "title": "Informação salarial",
+    "hint": "Pode pedir o seu nível remuneratório e a remuneração média, por sexo, dos trabalhadores da sua categoria. Os RH respondem no prazo que a lei fixa. A resposta é calculada quando é dada e não se guarda cópia. Só um pedido aguarda de cada vez.",
+    "none": "Não fez nenhum pedido.",
+    "asked": "Pedido em {day}",
+    "due": "Resposta até {day}",
+    "overdue": "Em atraso: devia ser respondido em {day}",
+    "answered": "Respondido em {day}",
+    "ask": "Pedir informação salarial",
+    "queue_hint": "Pedidos dos trabalhadores sobre o seu nível remuneratório e a média por sexo da sua categoria, por prazo. Calcular a resposta exige acesso à folha de pagamento e fica auditado; os valores são mostrados para serem dados ao trabalhador e não são guardados.",
+    "status": "Estado",
+    "status_open": "Em espera",
+    "status_overdue": "Em atraso",
+    "status_answered": "Respondido",
+    "queue_none": "Sem pedidos.",
+    "work_out": "Calcular a resposta",
+    "answer": "A resposta a dar",
+    "answer_hint": "Mostrada uma vez, aqui, para ser dada ao trabalhador. Não é guardada; registar como respondido guarda só o dia.",
+    "own_pay": "A sua remuneração: {pay}",
+    "none_recorded": "não registada",
+    "category": "Categoria: {name}",
+    "no_category": "Em nenhuma categoria: não se pode dar média",
+    "female_average": "Remuneração média das mulheres da categoria: {pay}",
+    "male_average": "Remuneração média dos homens da categoria: {pay}",
+    "withheld": "ocultada (menos de {floor} desse sexo)",
+    "mark_answered": "Registar como respondido"
   }
 }

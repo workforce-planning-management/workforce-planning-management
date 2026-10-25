@@ -38,6 +38,7 @@
     ["/pay-scales", "nav.payScales"],
     ["/pay-range", "nav.payRange"],
     ["/pay-gap", "nav.payGap"],
+    ["/pay-information", "nav.payInformation"],
     ["/job-levels", "nav.jobLevels"],
     ["/expenses", "nav.expenseQueue"],
     ["/policies", "nav.policies"],

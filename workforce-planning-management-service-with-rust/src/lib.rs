@@ -54,3 +54,38 @@ pub mod tasks;
 pub mod validation;
 /// Header-based API versioning (`Accepts-version`) for the REST surface.
 pub mod version;
+
+#[cfg(test)]
+mod source_text_guards {
+    use std::path::Path;
+
+    fn rust_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
+        for entry in std::fs::read_dir(dir).expect("source directory") {
+            let path = entry.expect("entry").path();
+            if path.is_dir() {
+                rust_files(&path, out);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                out.push(path);
+            }
+        }
+    }
+
+    /// A line ending in two backslashes inside a string literal is a literal backslash and a line break in the text a client
+    /// reads, not a line continuation (which is one backslash). It showed in a derivation as "in the same \ category".
+    #[test]
+    fn no_line_of_source_ends_in_a_doubled_backslash() {
+        let mut files = Vec::new();
+        rust_files(&Path::new(env!("CARGO_MANIFEST_DIR")).join("src"), &mut files);
+        let mut found = Vec::new();
+        for file in files {
+            let text = std::fs::read_to_string(&file).expect("readable source");
+            for (i, line) in text.lines().enumerate() {
+                // This test's own explanation and a lone escaped backslash in a char or short literal are not the fault.
+                if line.ends_with("\\\\") && !line.trim_start().starts_with("//") && !line.ends_with("'\\\\'") {
+                    found.push(format!("{}:{}", file.display(), i + 1));
+                }
+            }
+        }
+        assert!(found.is_empty(), "a doubled backslash ends a line (use one for a continuation): {found:?}");
+    }
+}

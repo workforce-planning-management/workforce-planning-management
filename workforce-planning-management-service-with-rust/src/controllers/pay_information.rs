@@ -339,8 +339,8 @@ pub(crate) async fn answer(
         "category": basis,
         "answer": given,
         "small_group_floor": floor,
-        "derivation": "Annual full-time-equivalent basic salary on the worker record. An average is of the workers in the same \\
-                       category who declared female or male, in the same currency, and is withheld for a sex with fewer \\
+        "derivation": "Annual full-time-equivalent basic salary on the worker record. An average is of the workers in the same \
+                       category who declared female or male, in the same currency, and is withheld for a sex with fewer \
                        than the floor. Nothing here is stored.",
     }))
 }

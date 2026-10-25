@@ -46,7 +46,8 @@
     "positions": "Posisi",
     "policies": "Kebijakan",
     "payRange": "Posisi gaji",
-    "payGap": "Kesenjangan gaji"
+    "payGap": "Kesenjangan gaji",
+    "payInformation": "Permintaan informasi gaji"
   },
   "pr": {
     "retention": "Retensi",
@@ -1398,6 +1399,9 @@
     },
     "payGap": {
       "page_title": "{payGap} — WPM"
+    },
+    "payInformation": {
+      "page_title": "{payInformation} — WPM"
     }
   },
   "titles": {
@@ -1435,7 +1439,8 @@
     "my_details": "Data saya — WPM",
     "policies": "Kebijakan — WPM",
     "payRange": "Posisi gaji — WPM",
-    "payGap": "Kesenjangan gaji — WPM"
+    "payGap": "Kesenjangan gaji — WPM",
+    "payInformation": "Permintaan informasi gaji — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2416,5 +2421,32 @@
     "reason_variable_not_recorded": "Tidak ada gaji variabel yang tercatat, sehingga tidak dapat dihitung",
     "quartile_note": "Kuartil 1 adalah yang terendah gajinya.",
     "edit": "Ubah"
+  },
+  "payInfo": {
+    "title": "Informasi gaji",
+    "hint": "Anda dapat meminta tingkat gaji Anda sendiri dan gaji rata-rata pekerja di kategori Anda menurut jenis kelamin. HR menjawab dalam waktu yang ditetapkan hukum. Jawaban dihitung saat diberikan dan tidak ada salinan yang disimpan. Hanya satu permintaan yang menunggu sekaligus.",
+    "none": "Anda belum meminta.",
+    "asked": "Diminta {day}",
+    "due": "Jawaban jatuh tempo {day}",
+    "overdue": "Terlambat: jatuh tempo {day}",
+    "answered": "Dijawab {day}",
+    "ask": "Minta informasi gaji",
+    "queue_hint": "Permintaan pekerja atas tingkat gaji mereka sendiri dan rata-rata gaji kategorinya menurut jenis kelamin, menurut jatuh tempo. Menghitung jawaban memerlukan akses penggajian dan diaudit; angka ditampilkan untuk diberikan kepada pekerja dan tidak disimpan.",
+    "status": "Status",
+    "status_open": "Menunggu",
+    "status_overdue": "Terlambat",
+    "status_answered": "Dijawab",
+    "queue_none": "Tidak ada permintaan.",
+    "work_out": "Hitung jawaban",
+    "answer": "Jawaban yang diberikan",
+    "answer_hint": "Ditampilkan sekali di sini untuk diberikan kepada pekerja. Tidak disimpan; mencatat sebagai dijawab hanya menyimpan harinya.",
+    "own_pay": "Gajinya sendiri: {pay}",
+    "none_recorded": "tidak tercatat",
+    "category": "Kategori: {name}",
+    "no_category": "Tidak dalam kategori: rata-rata tidak dapat diberikan",
+    "female_average": "Gaji rata-rata wanita di kategori: {pay}",
+    "male_average": "Gaji rata-rata pria di kategori: {pay}",
+    "withheld": "ditahan (kurang dari {floor} dari jenis kelamin itu)",
+    "mark_answered": "Catat sebagai dijawab"
   }
 }

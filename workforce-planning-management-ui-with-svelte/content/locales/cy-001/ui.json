@@ -46,7 +46,8 @@
     "positions": "Swyddi",
     "policies": "Polisïau",
     "payRange": "Safle cyflog",
-    "payGap": "Bwlch cyflog"
+    "payGap": "Bwlch cyflog",
+    "payInformation": "Ceisiadau am wybodaeth cyflog"
   },
   "pr": {
     "retention": "Cadw data",
@@ -1398,6 +1399,9 @@
     },
     "payGap": {
       "page_title": "{payGap} — WPM"
+    },
+    "payInformation": {
+      "page_title": "{payInformation} — WPM"
     }
   },
   "titles": {
@@ -1435,7 +1439,8 @@
     "my_details": "Fy manylion — WPM",
     "policies": "Polisïau — WPM",
     "payRange": "Safle cyflog — WPM",
-    "payGap": "Bwlch cyflog — WPM"
+    "payGap": "Bwlch cyflog — WPM",
+    "payInformation": "Ceisiadau am wybodaeth cyflog — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -2416,5 +2421,32 @@
     "reason_variable_not_recorded": "Nid oes tâl newidiol neb wedi'i gofnodi, felly ni ellir ei gyfrifo",
     "quartile_note": "Chwartel 1 yw'r tâl isaf.",
     "edit": "Golygu"
+  },
+  "payInfo": {
+    "title": "Gwybodaeth cyflog",
+    "hint": "Gallwch ofyn am eich lefel cyflog eich hun a chyflog cyfartalog gweithwyr yn eich categori, yn ôl rhyw. Mae AD yn ateb o fewn yr amser a roddir gan y gyfraith. Cyfrifir yr ateb pan roddir ef ac ni cheidw neb gopi. Dim ond un cais sy'n aros ar y tro.",
+    "none": "Nid ydych wedi gofyn.",
+    "asked": "Gofynnwyd {day}",
+    "due": "Ateb yn ddyledus erbyn {day}",
+    "overdue": "Hwyr: yn ddyledus ar {day}",
+    "answered": "Atebwyd {day}",
+    "ask": "Gofyn am wybodaeth cyflog",
+    "queue_hint": "Ceisiadau gan weithwyr am eu lefel cyflog eu hunain a chyflog cyfartalog eu categori yn ôl rhyw, yn ôl dyddiad dyledus. Mae cyfrifo ateb angen mynediad at gyflogres ac fe'i harchwilir; dangosir y ffigurau i'w rhoi i'r gweithiwr ac ni chânt eu cadw.",
+    "status": "Statws",
+    "status_open": "Yn aros",
+    "status_overdue": "Hwyr",
+    "status_answered": "Atebwyd",
+    "queue_none": "Dim ceisiadau.",
+    "work_out": "Cyfrifo'r ateb",
+    "answer": "Yr ateb i'w roi",
+    "answer_hint": "Dangosir unwaith, yma, i'w roi i'r gweithiwr. Ni chaiff ei gadw; dim ond y diwrnod a gedwir wrth ei gofnodi fel un a atebwyd.",
+    "own_pay": "Eu cyflog eu hunain: {pay}",
+    "none_recorded": "heb ei gofnodi",
+    "category": "Categori: {name}",
+    "no_category": "Mewn dim categori: ni ellir rhoi cyfartaledd",
+    "female_average": "Cyflog cyfartalog menywod yn y categori: {pay}",
+    "male_average": "Cyflog cyfartalog dynion yn y categori: {pay}",
+    "withheld": "cuddiedig (llai na {floor} o'r rhyw hwnnw)",
+    "mark_answered": "Cofnodi fel un a atebwyd"
   }
 }

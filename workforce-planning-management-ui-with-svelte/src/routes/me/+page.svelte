@@ -17,6 +17,7 @@
   import EquipmentPanel from "#lib/components/EquipmentPanel.svelte";
   import MyCredentials from "#lib/components/MyCredentials.svelte";
   import TeamPolicies from "#lib/components/TeamPolicies.svelte";
+  import MyPayInformation from "#lib/components/MyPayInformation.svelte";
   import PayPosition from "#lib/components/PayPosition.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
@@ -78,6 +79,7 @@
   <SkillGaps {workerPid} />
   <JobLevel {workerPid} />
   <PayPosition {workerPid} />
+  <MyPayInformation {workerPid} />
   <MyPolicies {workerPid} />
   <TeamPolicies {workerPid} />
   <EquipmentPanel {workerPid} organizationRef={memberships.find((m) => m.worker_pid === workerPid)?.organization_ref ?? ""} />

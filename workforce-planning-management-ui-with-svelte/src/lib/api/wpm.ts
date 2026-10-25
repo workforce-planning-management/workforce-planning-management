@@ -5114,3 +5114,72 @@ export function getPayGapReport(
 export function payGapCsvUrl(organization: string, options: GapQuery = {}): string {
   return `/api/proxy/pay-transparency/gap-report/csv?${gapQuery(organization, options)}`;
 }
+
+export type PayInformationStanding = "open" | "overdue" | "answered";
+
+export type PayInformationRequest = {
+  pid: string;
+  asked_on: string;
+  due_on: string;
+  answered_on: string | null;
+  standing: PayInformationStanding;
+};
+
+/** A request as HR sees it: who asked is needed to answer it, and no figure. */
+export type PayInformationQueueItem = PayInformationRequest & {
+  worker_pid: string;
+  worker_number: string;
+  display_name: string;
+  organization_ref: string;
+};
+
+export function listMyPayInformationRequests(init?: FetchLike): Promise<PayInformationRequest[]> {
+  return api("/me/pay-information-requests", init);
+}
+
+/** Ask for your own pay level and the average pay, by sex, of your category of workers. One request waits at a time. */
+export function askForPayInformation(): Promise<{ pid: string; due_on: string }> {
+  return api("/me/pay-information-requests", { method: "POST" });
+}
+
+export function listPayInformationRequests(
+  options: { organization?: string; status?: string } = {},
+  init?: FetchLike,
+): Promise<PayInformationQueueItem[]> {
+  const q = new URLSearchParams();
+  if (options.organization) q.set("organization", options.organization);
+  if (options.status) q.set("status", options.status);
+  const text = q.toString();
+  return api(`/pay-information-requests${text ? `?${text}` : ""}`, init);
+}
+
+export type PayInformationAnswer = {
+  request_pid: string;
+  asked_on: string;
+  due_on: string;
+  standing: PayInformationStanding;
+  currency: string | null;
+  category: { name: string; basis: string } | null;
+  answer: {
+    own_pay_minor: number | null;
+    female_average_minor: GapFigure<number>;
+    male_average_minor: GapFigure<number>;
+  };
+  small_group_floor: number;
+  derivation: string;
+};
+
+/** Work out the answer to give. Computed now, never stored; needs a payroll-level read, audited. */
+export function getPayInformationAnswer(
+  requestPid: string,
+  init?: FetchLike,
+): Promise<PayInformationAnswer> {
+  return api(`/pay-information-requests/${requestPid}/answer`, init);
+}
+
+/** Record that the answer was given, and when. The figures are not recorded. */
+export function markPayInformationAnswered(
+  requestPid: string,
+): Promise<PayInformationRequest> {
+  return api(`/pay-information-requests/${requestPid}/answered`, { method: "POST" });
+}

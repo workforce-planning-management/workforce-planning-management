@@ -46,7 +46,8 @@
     "positions": "Positions",
     "policies": "Policies",
     "payRange": "Pay position",
-    "payGap": "Pay gap"
+    "payGap": "Pay gap",
+    "payInformation": "Pay information requests"
   },
   "pr": {
     "retention": "Retention",
@@ -1398,6 +1399,9 @@
     },
     "payGap": {
       "page_title": "{payGap} — WPM"
+    },
+    "payInformation": {
+      "page_title": "{payInformation} — WPM"
     }
   },
   "titles": {
@@ -1435,7 +1439,8 @@
     "my_details": "My details — WPM",
     "policies": "Policies — WPM",
     "payRange": "Pay position — WPM",
-    "payGap": "Pay gap — WPM"
+    "payGap": "Pay gap — WPM",
+    "payInformation": "Pay information requests — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -2416,5 +2421,32 @@
     "reason_variable_not_recorded": "Nobody's variable pay is recorded, so this cannot be worked out",
     "quartile_note": "Quartile 1 is the lowest paid.",
     "edit": "Edit"
+  },
+  "payInfo": {
+    "title": "Pay information",
+    "hint": "You may ask for your own pay level and the average pay, by sex, of workers in your category. HR answers within the time the law gives. The answer is worked out when it is given and no copy is kept. One request waits at a time.",
+    "none": "You have not asked.",
+    "asked": "Asked {day}",
+    "due": "Answer due by {day}",
+    "overdue": "Overdue: was due {day}",
+    "answered": "Answered {day}",
+    "ask": "Ask for pay information",
+    "queue_hint": "Requests workers have made for their own pay level and the average pay, by sex, of their category, oldest due first. Working out an answer needs payroll access and is audited; the figures are shown to be given to the worker and are not stored.",
+    "status": "Status",
+    "status_open": "Waiting",
+    "status_overdue": "Overdue",
+    "status_answered": "Answered",
+    "queue_none": "No requests.",
+    "work_out": "Work out the answer",
+    "answer": "The answer to give",
+    "answer_hint": "Shown once, here, to be given to the worker. It is not stored; recording it as answered keeps only the day.",
+    "own_pay": "Their own pay: {pay}",
+    "none_recorded": "none recorded",
+    "category": "Category: {name}",
+    "no_category": "In no category: no average can be given",
+    "female_average": "Average pay of women in the category: {pay}",
+    "male_average": "Average pay of men in the category: {pay}",
+    "withheld": "withheld (fewer than {floor} of that sex)",
+    "mark_answered": "Record as answered"
   }
 }

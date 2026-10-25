@@ -126,9 +126,9 @@ pub(super) async fn organization_diff(State(ctx): State<AppContext>, caller: May
         "target_set": true,
         "small_group_floor": DEFAULT_FLOOR,
         "diff": diff,
-        "derivation": "The live side is the workers employed today in the plan's organization, reduced to a manager link, a department and a title before anything is \\
-                       compared. The target side is the plan's roles and their headcounts. Roles match on title, ignoring case. A count of people under the floor \\
-                       is withheld, and so is the change that would give it back. Span of control is reports per manager seat, rounded up for the widest. No person is \\
+        "derivation": "The live side is the workers employed today in the plan's organization, reduced to a manager link, a department and a title before anything is \
+                       compared. The target side is the plan's roles and their headcounts. Roles match on title, ignoring case. A count of people under the floor \
+                       is withheld, and so is the change that would give it back. Span of control is reports per manager seat, rounded up for the widest. No person is \
                        named, and cost and skills are not compared here.",
     }))
 }

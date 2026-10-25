@@ -46,7 +46,8 @@
     "positions": "岗位",
     "policies": "政策",
     "payRange": "薪酬定位",
-    "payGap": "薪酬差距"
+    "payGap": "薪酬差距",
+    "payInformation": "薪酬信息请求"
   },
   "pr": {
     "retention": "保留",
@@ -1398,6 +1399,9 @@
     },
     "payGap": {
       "page_title": "{payGap} — WPM"
+    },
+    "payInformation": {
+      "page_title": "{payInformation} — WPM"
     }
   },
   "titles": {
@@ -1435,7 +1439,8 @@
     "my_details": "我的资料 — WPM",
     "policies": "政策 — WPM",
     "payRange": "薪酬定位 — WPM",
-    "payGap": "薪酬差距 — WPM"
+    "payGap": "薪酬差距 — WPM",
+    "payInformation": "薪酬信息请求 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -2416,5 +2421,32 @@
     "reason_variable_not_recorded": "没有人的可变薪酬被记录，因此无法计算",
     "quartile_note": "四分位 1 为薪酬最低。",
     "edit": "编辑"
+  },
+  "payInfo": {
+    "title": "薪酬信息",
+    "hint": "您可以询问自己的薪酬水平，以及您所属类别员工按性别划分的平均薪酬。人力资源部门在法定期限内答复。答复在给出时计算，不保存副本。同一时间只有一个请求在等待。",
+    "none": "您尚未提出请求。",
+    "asked": "{day} 提出",
+    "due": "请在 {day} 前答复",
+    "overdue": "已逾期：应于 {day} 答复",
+    "answered": "{day} 已答复",
+    "ask": "询问薪酬信息",
+    "queue_hint": "员工就自己的薪酬水平及所属类别按性别的平均薪酬提出的请求，按到期先后排列。计算答复需要薪资访问权限并会被审计；数字仅用于告知员工，不予保存。",
+    "status": "状态",
+    "status_open": "等待中",
+    "status_overdue": "已逾期",
+    "status_answered": "已答复",
+    "queue_none": "没有请求。",
+    "work_out": "计算答复",
+    "answer": "应给出的答复",
+    "answer_hint": "在此显示一次，用于告知员工。不予保存；记为已答复只保存日期。",
+    "own_pay": "本人薪酬：{pay}",
+    "none_recorded": "未记录",
+    "category": "类别：{name}",
+    "no_category": "不在任何类别：无法给出平均值",
+    "female_average": "该类别女性平均薪酬：{pay}",
+    "male_average": "该类别男性平均薪酬：{pay}",
+    "withheld": "已隐藏（该性别少于 {floor} 人）",
+    "mark_answered": "记为已答复"
   }
 }

@@ -320,8 +320,8 @@ async fn establishment(
         "organization": query.organization,
         "small_group_floor": floor,
         "cost_centres": rules::establishment(&seats, floor),
-        "derivation": "The establishment is the positions that are approved, open, filled or frozen. Held is the FTE of the workers linked as holders; \\
-                       vacant is budget not held; over is FTE held beyond budget. Over-establishment on one position is never netted against a \\
+        "derivation": "The establishment is the positions that are approved, open, filled or frozen. Held is the FTE of the workers linked as holders; \
+                       vacant is budget not held; over is FTE held beyond budget. Over-establishment on one position is never netted against a \
                        vacancy on another. A holder whose FTE cannot be read makes held, vacant and over unknown for that cost centre.",
     }))
 }

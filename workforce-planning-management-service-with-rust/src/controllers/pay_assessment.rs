@@ -123,9 +123,9 @@ pub(crate) async fn signals(
         "threshold_bp": config.threshold_bp,
         "remedy_months": config.remedy_months,
         "categories": out,
-        "derivation": "A joint pay assessment is due when a category's average pay gap in basic pay is at or over the threshold, \\
-                       either way, the employer has not recorded a justification on objective, gender-neutral criteria, and has \\
-                       not remedied the gap by the last day of the period counted from the date of reporting. This reports; a \\
+        "derivation": "A joint pay assessment is due when a category's average pay gap in basic pay is at or over the threshold, \
+                       either way, the employer has not recorded a justification on objective, gender-neutral criteria, and has \
+                       not remedied the gap by the last day of the period counted from the date of reporting. This reports; a \
                        person records the justification, the remedy and the assessment, and nothing here says anyone was paid unfairly.",
     }))
 }

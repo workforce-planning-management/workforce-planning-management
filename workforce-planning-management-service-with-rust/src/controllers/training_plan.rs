@@ -373,11 +373,11 @@ async fn worker_plan(
         })
         .collect();
     format::json(serde_json::json!({
-        "derivation": "For each skill the person is BELOW (declared, under the need), in priority \\
-                       order: catalogue courses they have not completed, cheapest per level \\
-                       first, and — for any levels the courses leave — the skill's hours-per-level \\
-                       planning figure (or the service default). Scheduled one after another at \\
-                       the weekly pace. A skill they have not declared gets no hours: it is listed \\
+        "derivation": "For each skill the person is BELOW (declared, under the need), in priority \
+                       order: catalogue courses they have not completed, cheapest per level \
+                       first, and — for any levels the courses leave — the skill's hours-per-level \
+                       planning figure (or the service default). Scheduled one after another at \
+                       the weekly pace. A skill they have not declared gets no hours: it is listed \
                        under assess_first. Planning estimates, not promises.",
         "worker_pid": worker.pid,
         "includes_aspirations": own_view,
@@ -461,10 +461,10 @@ async fn training_demand(
     #[allow(clippy::cast_precision_loss)] // small counts
     let average = (people_with_gaps > 0).then(|| f64::from(total_hours) / people_with_gaps as f64);
     format::json(serde_json::json!({
-        "derivation": "Hours to close each person's BELOW skill gaps (declared, under the need), \\
-                       from catalogue courses they have not completed and the per-level planning \\
-                       figure for what those leave; summed. Skills people have not declared are \\
-                       unknown and add no hours. Planning estimates; counts and hours only — \\
+        "derivation": "Hours to close each person's BELOW skill gaps (declared, under the need), \
+                       from catalogue courses they have not completed and the per-level planning \
+                       figure for what those leave; summed. Skills people have not declared are \
+                       unknown and add no hours. Planning estimates; counts and hours only — \
                        nobody is named.",
         "as_of": today,
         "workers_considered": considered,

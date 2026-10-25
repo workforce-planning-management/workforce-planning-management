@@ -22,3 +22,9 @@ fewer than ten on another (pay is set in the database; there is no API to set a 
 organization scope, so the spec stubs that one call to name the organization; the report is real. `PAGE_SHOTS=<dir>` also writes a
 light, a dark and a phone screenshot. Do not run the service's own request tests against the same database while you work: they truncate its tables
 (`cargo run -- start` itself does not).
+
+`pay-gap.spec.ts` (`PAY_GAP_ORG`) and `pay-information.spec.ts` (`PAY_INFO_ORG`) need the service started with
+`WPM_EQUALITY_MONITORING_BASIS` and `WPM_EQUALITY_CATEGORIES='{"sex":["female","male"]}'`, workers with pay and a sex answer (set in the
+database), and two pay categories. A pay information request is made by the worker through `/api/me`, which needs a token, so the
+spec expects two rows inserted in the database: one overdue from a woman in a category with at least ten of each sex, one open from a
+man in a category with fewer than ten men. It answers one of them, so seed again to rerun.

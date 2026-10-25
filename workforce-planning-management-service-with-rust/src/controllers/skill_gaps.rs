@@ -234,11 +234,11 @@ async fn worker_gaps(
         })
         .collect();
     format::json(serde_json::json!({
-        "derivation": "compares the person's DECLARED proficiency with each need: the minimum of \\
-                       their current role's requirement, their own skill targets and — for them \\
-                       alone — their aspirations, merged per skill at the highest level. \\
-                       `undeclared` means unknown: no shortfall and no priority, a prompt to \\
-                       assess. Priority = importance weight (critical 3, important 2, useful 1) \\
+        "derivation": "compares the person's DECLARED proficiency with each need: the minimum of \
+                       their current role's requirement, their own skill targets and — for them \
+                       alone — their aspirations, merged per skill at the highest level. \
+                       `undeclared` means unknown: no shortfall and no priority, a prompt to \
+                       assess. Priority = importance weight (critical 3, important 2, useful 1) \
                        × levels short.",
         "worker_pid": worker.pid,
         "includes_aspirations": own_view,
@@ -307,10 +307,10 @@ async fn workforce_gaps(
         })
         .collect();
     format::json(serde_json::json!({
-        "derivation": "per skill, over employed workers: how many NEED it (their current role's \\
-                       requirement or their own target), meet it, are below it, or have not \\
-                       declared it (unknown — no shortfall, no score). Ranked by Σ importance \\
-                       weight × levels short. Aggregate only: nobody is named, and private \\
+        "derivation": "per skill, over employed workers: how many NEED it (their current role's \
+                       requirement or their own target), meet it, are below it, or have not \
+                       declared it (unknown — no shortfall, no score). Ranked by Σ importance \
+                       weight × levels short. Aggregate only: nobody is named, and private \
                        aspirations are never included.",
         "as_of": today,
         "workers_considered": considered,

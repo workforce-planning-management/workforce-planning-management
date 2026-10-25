@@ -46,7 +46,8 @@
     "positions": "Postes",
     "policies": "Politiques",
     "payRange": "Position salariale",
-    "payGap": "Écart de rémunération"
+    "payGap": "Écart de rémunération",
+    "payInformation": "Demandes d'information salariale"
   },
   "pr": {
     "retention": "Conservation",
@@ -1398,6 +1399,9 @@
     },
     "payGap": {
       "page_title": "{payGap} — WPM"
+    },
+    "payInformation": {
+      "page_title": "{payInformation} — WPM"
     }
   },
   "titles": {
@@ -1435,7 +1439,8 @@
     "my_details": "Mes informations — WPM",
     "policies": "Politiques — WPM",
     "payRange": "Position salariale — WPM",
-    "payGap": "Écart de rémunération — WPM"
+    "payGap": "Écart de rémunération — WPM",
+    "payInformation": "Demandes d'information salariale — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2416,5 +2421,32 @@
     "reason_variable_not_recorded": "Aucune part variable enregistrée : impossible à calculer",
     "quartile_note": "Le quartile 1 est le moins bien rémunéré.",
     "edit": "Modifier"
+  },
+  "payInfo": {
+    "title": "Information salariale",
+    "hint": "Vous pouvez demander votre propre niveau de rémunération et la rémunération moyenne, par sexe, des travailleurs de votre catégorie. Les RH répondent dans le délai fixé par la loi. La réponse est calculée au moment où elle est donnée et aucune copie n'est conservée. Une seule demande attend à la fois.",
+    "none": "Vous n'avez rien demandé.",
+    "asked": "Demandé le {day}",
+    "due": "Réponse due avant le {day}",
+    "overdue": "En retard : échéance le {day}",
+    "answered": "Répondu le {day}",
+    "ask": "Demander l'information salariale",
+    "queue_hint": "Demandes des travailleurs pour leur propre niveau de rémunération et la moyenne par sexe de leur catégorie, par échéance. Le calcul exige l'accès à la paie et est consigné ; les chiffres sont affichés pour être donnés au travailleur et ne sont pas conservés.",
+    "status": "Statut",
+    "status_open": "En attente",
+    "status_overdue": "En retard",
+    "status_answered": "Répondu",
+    "queue_none": "Aucune demande.",
+    "work_out": "Calculer la réponse",
+    "answer": "La réponse à donner",
+    "answer_hint": "Affichée une fois, ici, pour être donnée au travailleur. Elle n'est pas conservée ; enregistrer « répondu » ne garde que le jour.",
+    "own_pay": "Sa propre rémunération : {pay}",
+    "none_recorded": "non enregistrée",
+    "category": "Catégorie : {name}",
+    "no_category": "Dans aucune catégorie : aucune moyenne possible",
+    "female_average": "Rémunération moyenne des femmes de la catégorie : {pay}",
+    "male_average": "Rémunération moyenne des hommes de la catégorie : {pay}",
+    "withheld": "masquée (moins de {floor} de ce sexe)",
+    "mark_answered": "Enregistrer comme répondu"
   }
 }

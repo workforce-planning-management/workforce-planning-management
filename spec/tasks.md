@@ -4739,3 +4739,26 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       binaries were not re-run for this change; no real variable-pay figure has been seen (WPM holds none); a real figure with a
       negative gap was not seen; the category editor was not seen against the real service (the live run only lists); a median per
       category is not computed (a service gap); sign-in and scope were not exercised (the live run stubs the scope).
+- [x] (2026-10-25) WPM-T295 **Screens for pay information: the worker's request and HR's queue and answer.** *(WPM-R145)* `MyPayInformation.svelte` on
+      `/me`: the worker's own requests with the day asked and the day due (or overdue, or answered) and a button to ask, disabled while one
+      waits (the service also refuses a second); no figure is shown there. `/pay-information` (in the navigation drawer): the queue
+      with who asked, a status filter, "Work out the answer" (payroll-level read, audited by the service) showing the worker's own
+      pay, their category and its stated basis, and each sex's average, a withheld one saying so with the floor; shown once and not
+      stored; "Record as answered" keeps only the day. Strings under `payInfo.*`, `nav.payInformation`, `titles.payInformation` in
+      the 13 locales (AI-written, unreviewed). **Seen against a real service** (`WPM_REQUIRE_AUTH=0`, equality monitoring on, Postgres
+      18 in Podman, 48 workers, two categories; two requests inserted in the database because asking needs a token): a live spec
+      `tests/live/pay-information.spec.ts` asserts the overdue request leads the queue, the answer for a woman in a category with
+      both sexes over the floor shows pay and both averages, the answer for a man in a category with three men withholds his sex's
+      average, only the two askers are named, and recording it as answered shows "Answered". I looked at light, dark and the answer
+      screenshots. **A defect the real run showed, and its fix:** the derivation text had a stray backslash ("in the same \
+      category"): a string continuation written as two backslashes is a literal backslash and a line break. 28 lines in six
+      controllers had it (`pay_information`, `positions`, `skill_gaps`, `pay_assessment`, `planning/org_shape`, `training_plan`),
+      some from earlier phases; all now use a single backslash, and a unit test (`source_text_guards`) fails if any source line ends
+      in a doubled backslash (checked by putting one back). Verified: clippy pedantic clean; 811 unit tests; 153 request tests;
+      every `enforcement_*` binary, `chaos`, `request_log`, `retention_schedule`, `security`, `route_coverage`; UI `svelte-check` 0
+      errors, 210 unit tests, Playwright 232 passed / 19 skipped (new: ask once and no figure; HR's answer with a withheld average and
+      recording; a refusal in words); the live spec 2 passed; a real derivation read with `curl` after the fix. **Not done:** the
+      worker's panel was not run against the real service (asking needs a token, and enforcement is off there); no phone screenshot of
+      the queue was looked at; no real answer for a worker with no category or no pay was seen (the stubbed UI shows the wording only);
+      the yearly notice and a worker's view of an answer are not built (HR gives it to them); `keycloak` and `shared_cache_upstream`
+      not run; the new strings are AI-written and unreviewed.
