@@ -2363,6 +2363,9 @@
     "by_band": "Par fourchette",
     "by_level": "Par niveau",
     "by_department": "Par service",
-    "by_location": "Par site"
+    "by_location": "Par site",
+    "no_groups": "Personne n'est placé dans ce regroupement.",
+    "choose_currency": "Devise (code ISO, facultatif)",
+    "audited": "L'ouverture de ce rapport est consignée dans le journal d'audit, avec le jour couvert et la personne qui l'a ouvert, mais sans aucun chiffre."
   }
 }

@@ -4692,3 +4692,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       data: the table scrolls inside its box on the phone and nothing overflows. **Not done:** the API is stubbed, so the screen was not
       seen with a real report; a grouping with no groups shows only its header row; no dark screenshot; the currency cannot be chosen
       on screen (the service defaults to the most common); the read is audited by the service but the screen does not say so.
+- [x] (2026-10-25) WPM-T293 **Pay position screen: the five limits recorded under WPM-T292, and a defect the real run found.** *(WPM-R154, WPM-D108)*
+      Asked for by the user. (1) **Seen with a real report:** a real service (`WPM_REQUIRE_AUTH=0`, Postgres 18 in Podman) with 54
+      seeded workers (four groups on band 6, four on band 4; salary set in the database, since no API sets one) and the built UI
+      through the proxy; a new live spec `tests/live/pay-range.spec.ts` (skipped without `WPM_LIVE_API=1`) asserts a small band is
+      withheld, a total that would reveal it is withheld, no worker is named, and a currency nobody is paid in leaves the page saying
+      so. With enforcement off the service reports no organization scope, so the spec stubs that one call; the report is real.
+      (2) **An empty grouping** says "No one is placed in this grouping." instead of a lone header. (3) **Dark screenshot:** looked
+      at, in the real dark theme chosen through the theme store (earlier "dark" shots were not dark); the page reads cleanly, as does
+      the 390-pixel one. (4) **Currency** can be chosen: a three-letter code, sent upper-cased only when whole. (5) **The page says the
+      read is audited** (the day it covers and who opened it, no figure). **Defect found by the real run and fixed:** the service said
+      "fewer than 10" left out when nobody was left out, because `rules::pay_range::left(0, floor)` returned `UnderFloor`; my own unit
+      test had enshrined it. Zero now says `exactly 0` (it names no one); one to nine is still not counted. A new unit test; spec
+      line in `payroll-compensation.md` corrected. Verified: clippy pedantic clean; 809 unit tests; 153 request tests;
+      `enforcement_pay_gap`, `enforcement_need_to_know`, `security`; UI `svelte-check` 0 errors, 210 unit tests, Playwright 226
+      passed / 19 skipped (new: empty groupings, the audit line, the currency sent only when whole); the live spec 2 passed.
+      **Not done:** the rest of the live suite and the other `enforcement_*`, `chaos`, `retention_schedule` binaries were not re-run
+      for this change (only the listed ones); the outlier flag was seen only as "not worked out" in the real run, because the
+      seeded data withholds the total, so a real "above" or "below" has not been seen on screen (the stubbed test shows it); the
+      locale text of the new strings is AI-written; the app's sign-in and scope were not exercised (the live run stubs the scope).

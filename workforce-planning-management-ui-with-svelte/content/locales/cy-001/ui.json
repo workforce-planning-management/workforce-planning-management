@@ -2363,6 +2363,9 @@
     "by_band": "Yn ôl band",
     "by_level": "Yn ôl lefel",
     "by_department": "Yn ôl adran",
-    "by_location": "Yn ôl lleoliad"
+    "by_location": "Yn ôl lleoliad",
+    "no_groups": "Nid oes neb yn y grwpio hwn.",
+    "choose_currency": "Arian (cod ISO, dewisol)",
+    "audited": "Cofnodir agor yr adroddiad hwn yn y cofnod archwilio, gyda'r diwrnod y mae'n ei gwmpasu a phwy a'i agorodd, ond heb unrhyw ffigur."
   }
 }

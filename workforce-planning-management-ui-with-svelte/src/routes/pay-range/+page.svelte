@@ -21,6 +21,9 @@
   let organization = $state("");
   let asOf = $state("");
   let cutoff = $state(10);
+  let currencyCode = $state("");
+  // Only a whole ISO-4217 shape is sent; anything shorter is still being typed.
+  const currencyChosen = $derived(/^[A-Za-z]{3}$/.test(currencyCode) ? currencyCode.toUpperCase() : "");
   $effect(() => {
     if (!organization && organizations.length > 0) organization = organizations[0] ?? "";
   });
@@ -29,7 +32,7 @@
   let error = $state<string | null>(null);
 
   const load = guardedLoad(
-    () => getPayRange(organization, { ...(asOf ? { asOf } : {}), cutoff }),
+    () => getPayRange(organization, { ...(asOf ? { asOf } : {}), cutoff, ...(currencyChosen ? { currency: currencyChosen } : {}) }),
     (found) => {
       answer = found;
       error = null;
@@ -44,6 +47,7 @@
     void organization;
     void asOf;
     void cutoff;
+    void currencyChosen;
     if (organization) void load();
   });
 
@@ -98,12 +102,14 @@
     </label>
     <label>{t("payRange.as_of")} <input type="date" bind:value={asOf} data-testid="pay-range-as-of" /></label>
     <label>{t("payRange.cutoff")} <input type="number" min="1" max="100" bind:value={cutoff} data-testid="pay-range-cutoff" /></label>
+    <label>{t("payRange.choose_currency")} <input bind:value={currencyCode} maxlength="3" size="4" data-testid="pay-range-currency" /></label>
   </p>
 
   {#if answer}
     <section class="panel" data-testid="pay-range-basis">
       <p>{answer.basis}</p>
       <p class="muted">{answer.derivation}</p>
+      <p class="muted" data-testid="pay-range-audited">{t("payRange.audited")}</p>
       <p>
         {tf("payRange.currency", { currency: answer.currency ?? "—" })} ·
         {tf("payRange.excluded_no_pay", { count: left(answer.report.excluded.no_pay) })} ·
@@ -125,6 +131,9 @@
 
     {#each answer.report.groupings as g (g.by)}
       <h2>{t(`payRange.by_${g.by}` as "payRange.by_band")}</h2>
+      {#if g.groups.length === 0}
+        <p class="muted" data-testid="pay-range-no-groups-{g.by}">{t("payRange.no_groups")}</p>
+      {:else}
       <div class="data-grid-scroll">
         <table data-testid="pay-range-{g.by}">
           <thead>
@@ -147,6 +156,7 @@
           </tbody>
         </table>
       </div>
+      {/if}
     {/each}
   {:else if !error}
     <p>{t("common.loading")}</p>

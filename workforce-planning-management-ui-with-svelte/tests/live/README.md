@@ -16,3 +16,9 @@ organization reference, typed in because enforcement is off. The service rate-li
 `429` (the page shows it); wait about forty seconds and rerun that spec.
 
 The fake session cookie only passes the UI's sign-in gate; with enforcement off the API ignores it.
+
+`pay-range.spec.ts` needs `PAY_RANGE_ORG=<organization ref>` naming an organization with at least ten workers on one band with pay and
+fewer than ten on another (pay is set in the database; there is no API to set a salary). With enforcement off the service reports no
+organization scope, so the spec stubs that one call to name the organization; the report is real. `PAGE_SHOTS=<dir>` also writes a
+light, a dark and a phone screenshot. Note that `cargo run -- start` with the development configuration empties the database on every
+start, so seed after the service is up.

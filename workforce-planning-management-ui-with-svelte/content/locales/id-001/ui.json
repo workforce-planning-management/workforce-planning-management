@@ -2363,6 +2363,9 @@
     "by_band": "Menurut band",
     "by_level": "Menurut tingkat",
     "by_department": "Menurut departemen",
-    "by_location": "Menurut lokasi"
+    "by_location": "Menurut lokasi",
+    "no_groups": "Tidak ada orang dalam pengelompokan ini.",
+    "choose_currency": "Mata uang (kode ISO, opsional)",
+    "audited": "Membuka laporan ini dicatat dalam log audit, beserta hari yang dicakup dan siapa yang membukanya, tetapi tanpa angka apa pun."
   }
 }

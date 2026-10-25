@@ -2363,6 +2363,9 @@
     "by_band": "By band",
     "by_level": "By job level",
     "by_department": "By department",
-    "by_location": "By location"
+    "by_location": "By location",
+    "no_groups": "No one is placed in this grouping.",
+    "choose_currency": "Currency (ISO code, optional)",
+    "audited": "Opening this report is recorded in the audit log, with the day it covers and who opened it, but no figure."
   }
 }

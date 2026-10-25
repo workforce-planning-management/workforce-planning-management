@@ -145,7 +145,7 @@ pub struct Grouping {
     pub groups: Vec<Group>,
 }
 
-/// Workers left out, each shown only when it reaches the floor.
+/// Workers left out, shown exactly when there are none or at least the floor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Left {
@@ -154,7 +154,7 @@ pub enum Left {
         /// The count.
         workers: usize,
     },
-    /// At least one and fewer than the floor.
+    /// At least one and fewer than the floor: no count, so none of them can be picked out.
     UnderFloor,
 }
 
@@ -275,7 +275,8 @@ fn stat(points: &[Point], floor: usize) -> Figure<Stat> {
 }
 
 fn left(count: usize, floor: usize) -> Left {
-    if count >= floor {
+    // Nobody left out names no one, so it is said as it is; one or a few are not counted, or they could be picked out.
+    if count == 0 || count >= floor {
         Left::Exactly { workers: count }
     } else {
         Left::UnderFloor
@@ -587,6 +588,13 @@ mod tests {
         assert_eq!(value.compa_mean_bp, 10_000);
         assert_eq!(r.excluded.no_pay, Left::UnderFloor);
         assert_eq!(r.excluded.no_band, Left::UnderFloor);
+    }
+
+    #[test]
+    fn nobody_left_out_is_said_as_none_not_as_a_few() {
+        let r = analyse(&many(10, 5_000_000, "Care"), 10, DEFAULT_CUTOFF_BP);
+        assert_eq!(r.excluded.no_pay, Left::Exactly { workers: 0 });
+        assert_eq!(r.excluded.no_band, Left::Exactly { workers: 0 });
     }
 
     #[test]

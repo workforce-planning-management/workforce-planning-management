@@ -72,7 +72,7 @@ Nothing is stored: no table, no column, no export or erasure wiring.
 - **Floor and the total (WPM-D108).** A group under the floor (10, `DEFAULT_FLOOR`) is `withheld` with no count. The total is shown
   only when no grouping has withheld groups that together are fewer than the floor (one small group would otherwise be the total less
   the others); else it is `unknown` with the reason `would_reveal`, and no outlier is called, since there is nothing to compare with.
-  Workers left out (no pay; pay but no band on a known scale) are counted by reason and the count shows only from the floor.
+  Workers left out (no pay; pay but no band on a known scale) are counted by reason and the count shows only from the floor, except that none is said as none (nobody is picked out by it).
 - **Outliers.** A shown group whose mean compa-ratio is more than the cut-off from the mean of everyone analysed: `above` or `below`
   with the distance, else `no`. The cut-off is a query in whole percentage points, 1 to 50, default 10, and is stated in the payload.
   Groups only; no worker is named and no worker's pay is compared with another's.

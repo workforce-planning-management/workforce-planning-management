@@ -69,3 +69,26 @@ test.describe("Pay position", () => {
     await expect(page.getByTestId("pay-range-band")).toHaveCount(0);
   });
 });
+
+test.describe("Pay position: the rest of the page", () => {
+  test.beforeEach(async ({ page }) => {
+    await stubSignedIn(page);
+  });
+
+  test("an empty grouping says so, the audit is said, and a whole currency code is sent upper-cased", async ({ page }) => {
+    const urls: string[] = [];
+    await page.route("**/api/proxy/reports/pay-range?*", (route) => {
+      urls.push(route.request().url());
+      return route.fulfill({ json: REPORT });
+    });
+    await page.goto("/pay-range");
+    await expect(page.getByTestId("pay-range-no-groups-level")).toBeVisible();
+    await expect(page.getByTestId("pay-range-no-groups-location")).toBeVisible();
+    await expect(page.getByTestId("pay-range-audited")).toContainText("audit log");
+    await page.getByTestId("pay-range-currency").fill("us");
+    await page.waitForTimeout(300);
+    expect(urls.some((u) => u.includes("currency="))).toBe(false); // two letters is still being typed
+    await page.getByTestId("pay-range-currency").fill("usd");
+    await expect.poll(() => urls.some((u) => u.includes("currency=USD"))).toBe(true);
+  });
+});

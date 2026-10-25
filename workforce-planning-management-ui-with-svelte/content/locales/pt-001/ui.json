@@ -2363,6 +2363,9 @@
     "by_band": "Por banda",
     "by_level": "Por nível",
     "by_department": "Por departamento",
-    "by_location": "Por localização"
+    "by_location": "Por localização",
+    "no_groups": "Ninguém está colocado neste agrupamento.",
+    "choose_currency": "Moeda (código ISO, opcional)",
+    "audited": "A abertura deste relatório fica registada no registo de auditoria, com o dia que cobre e quem o abriu, mas sem qualquer valor."
   }
 }

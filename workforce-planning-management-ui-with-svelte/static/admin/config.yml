@@ -3176,3 +3176,6 @@ collections:
               - { name: "by_level", label: "By_level", widget: string, required: false, i18n: true }
               - { name: "by_department", label: "By_department", widget: string, required: false, i18n: true }
               - { name: "by_location", label: "By_location", widget: string, required: false, i18n: true }
+              - { name: "no_groups", label: "No_groups", widget: string, required: false, i18n: true }
+              - { name: "choose_currency", label: "Choose_currency", widget: string, required: false, i18n: true }
+              - { name: "audited", label: "Audited", widget: text, required: false, i18n: true }

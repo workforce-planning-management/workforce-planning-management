@@ -2363,6 +2363,9 @@
     "by_band": "Nach Band",
     "by_level": "Nach Stufe",
     "by_department": "Nach Abteilung",
-    "by_location": "Nach Standort"
+    "by_location": "Nach Standort",
+    "no_groups": "Niemand ist in dieser Gruppierung eingeordnet.",
+    "choose_currency": "Währung (ISO-Code, optional)",
+    "audited": "Das Öffnen dieses Berichts wird im Prüfprotokoll festgehalten, mit dem abgedeckten Tag und der öffnenden Person, aber ohne Zahlen."
   }
 }

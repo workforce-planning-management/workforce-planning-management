@@ -2363,6 +2363,9 @@
     "by_band": "按薪档",
     "by_level": "按职级",
     "by_department": "按部门",
-    "by_location": "按地点"
+    "by_location": "按地点",
+    "no_groups": "此分组中没有人。",
+    "choose_currency": "币种（ISO 代码，可选）",
+    "audited": "打开此报告会记入审计日志，记录其涵盖的日期和打开者，但不记录任何数字。"
   }
 }

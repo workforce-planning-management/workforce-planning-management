@@ -5012,11 +5012,12 @@ export type PayRange = {
 /** Where pay sits inside its band, per band, level, department and location. Needs a payroll-level read; audited. */
 export function getPayRange(
   organization: string,
-  options: { asOf?: string; cutoff?: number } = {},
+  options: { asOf?: string; cutoff?: number; currency?: string } = {},
   init?: FetchLike,
 ): Promise<PayRange> {
   const query = new URLSearchParams({ organization });
   if (options.asOf) query.set("as_of", options.asOf);
   if (options.cutoff !== undefined) query.set("cutoff", String(options.cutoff));
+  if (options.currency) query.set("currency", options.currency);
   return api(`/reports/pay-range?${query.toString()}`, init);
 }
