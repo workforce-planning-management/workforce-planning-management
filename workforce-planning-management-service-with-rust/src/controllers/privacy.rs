@@ -19,7 +19,7 @@ use crate::models::_entities::{
     entitlement_acknowledgements, equality_declarations, ergonomic_assessments, expense_claims,
     expense_items, flexible_working_requests, group_members, handover_actions, leave_entitlements,
     leave_requests, mentorships, mobility_interests, movements, notifications, path_enrollments,
-    pay_information_requests, payslips, pipeline_members, post_fundings, professional_registrations, positions, program_placements, scim_pushes, asset_issues, policy_acknowledgements,
+    pay_information_requests, payslips, pipeline_members, post_fundings, professional_registrations, positions, program_placements, scim_pushes, asset_issues, policy_acknowledgements, credential_issuances,
     resignations, reviews, rota_members, rota_overrides, rota_swap_requests, shift_assignments,
     time_entries, training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
     worker_contractor_details, worker_framework_roles, worker_health_records, worker_job_levels,
@@ -144,6 +144,7 @@ async fn subject_access(
         "scim_pushes": rows_for!(db, scim_pushes, WorkerPid, epid),
         "asset_issues": rows_for!(db, asset_issues, WorkerPid, epid),
         "policy_acknowledgements": rows_for!(db, policy_acknowledgements, WorkerPid, epid),
+        "credential_issuances": rows_for!(db, credential_issuances, WorkerPid, epid),
         "positions_held": rows_for!(db, positions, HolderWorkerPid, epid),
         "engagement_extensions": rows_for!(db, engagement_extensions, WorkerPid, epid),
         "contractor_details": rows_for!(db, worker_contractor_details, WorkerPid, epid),
@@ -278,6 +279,9 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         // The asset stays (it is the employer's); only who held it is erased.
         format!("DELETE FROM asset_issues WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM policy_acknowledgements WHERE worker_pid = '{epid}'"),
+        // A credential the person holds cannot be taken back, so the issuance is revoked and cut from the person (its position in the
+        // revocation list stays, or a later issuance would take the same place).
+        format!("UPDATE credential_issuances SET worker_pid = '00000000-0000-0000-0000-000000000000', source_pid = '00000000-0000-0000-0000-000000000000', revoked_at = COALESCE(revoked_at, now()), revoked_by = COALESCE(revoked_by, 'erasure') WHERE worker_pid = '{epid}'"),
         // A seat outlives the person who held it (WPM-D104): only the link is cut.
         format!("UPDATE positions SET holder_worker_pid = NULL WHERE holder_worker_pid = '{epid}'"),
         format!("DELETE FROM webhook_deliveries WHERE subject = 'worker:{epid}'"),

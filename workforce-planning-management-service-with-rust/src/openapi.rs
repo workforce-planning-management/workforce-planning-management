@@ -558,6 +558,7 @@ fn add_governance_paths(document: &mut Value) {
 }
 
 /// The webhook, MCP, AI register and report paths (WPM-R147 to WPM-R151), in their own function for the same reason.
+#[allow(clippy::too_many_lines)] // one literal of paths; splitting it would only move the lines
 fn add_integration_paths(document: &mut Value) {
     let ok = |what: &str| json!({ "200": { "description": what } });
     let paths = json!({
@@ -641,6 +642,29 @@ fn add_integration_paths(document: &mut Value) {
         },
         "/api/policy-versions/{pid}/acknowledgements": {
             "get": { "tags": ["policies"], "summary": "The named record: everyone in the version's audience with the day they acknowledged or null. HR and the like only; the read is audited", "responses": ok("The record") }
+        },
+        "/api/me/credentials": {
+            "get": { "tags": ["credentials"], "summary": "The caller's credential issuances: that each was issued, when, its place on the revocation list and whether it is revoked. Not the credentials", "responses": ok("The issuances") },
+            "post": { "tags": ["credentials"], "summary": "Issue an Open Badges 3.0 credential (signed vc+jwt, EdDSA) from the caller's own verified CPD entry (body: cpd_entry_pid). Returned once and not stored; it names no person. One live credential per entry", "responses": ok("The pid, its status index and the signed credential") }
+        },
+        "/api/me/credentials/{pid}/revoke": {
+            "post": { "tags": ["credentials"], "summary": "The worker withdraws one of their own credentials; the revocation list changes at once", "responses": ok("Revoked") }
+        },
+        "/api/credentials/{pid}/revoke": {
+            "post": { "tags": ["credentials"], "summary": "HR or an administrator revokes a credential, for instance when its CPD entry is withdrawn", "responses": ok("Revoked") }
+        },
+        "/api/credentials/issuer": {
+            "get": { "tags": ["credentials"], "summary": "PUBLIC (no sign-in): who issues, and the Ed25519 public key (JWK) to check a credential against. Holds no personal data", "responses": ok("The issuer and key") }
+        },
+        "/api/credentials/status-list": {
+            "get": { "tags": ["credentials"], "summary": "PUBLIC (no sign-in): the revocation list as a signed Bitstring Status List credential (131 072 bits). Positions only; holds no personal data", "responses": ok("The list") }
+        },
+        "/api/skill-mappings": {
+            "get": { "tags": ["skills"], "summary": "The skills crosswalk: each mapping from a declared skill to a needed one, with its confidence (exact, close, broader, narrower), its basis and source, who stated it and when, and whether it counts in gap analysis (exact and close do)", "responses": ok("The mappings") },
+            "post": { "tags": ["skills"], "summary": "State a mapping: from_skill_pid, to_skill_pid, confidence, basis (authority or judgement) and a source naming the published crosswalk or whose judgement. The pair is unique; audited", "responses": ok("The pid of the mapping") }
+        },
+        "/api/skill-mappings/{pid}": {
+            "delete": { "tags": ["skills"], "summary": "Withdraw a mapping; gap analysis stops using it at once", "responses": ok("Removed") }
         },
         "/api/reports/pay-range": {
             "get": { "tags": ["reports"], "summary": "Pay position analysis (?organization=&as_of=&cutoff=): compa-ratio (pay over the band midpoint) and range penetration per band, level, department and location, and the groups far from everyone (cut-off in percentage points, default 10). Aggregates: groups under the floor are withheld with no count, a total that would reveal one is not shown, workers with no pay or no band are counted not zeroed. Needs an unmasked salary read; proposes no pay change. Audited", "responses": ok("The analysis") }

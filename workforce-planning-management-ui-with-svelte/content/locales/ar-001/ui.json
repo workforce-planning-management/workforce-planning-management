@@ -1763,7 +1763,13 @@
     "written_off": "شُطب",
     "all": "الجميع",
     "department": "القسم",
-    "job_title": "المسمى الوظيفي"
+    "job_title": "المسمى الوظيفي",
+    "exact": "مطابق",
+    "close": "قريب",
+    "broader": "أوسع",
+    "narrower": "أضيق",
+    "authority": "جهة مرجعية",
+    "judgement": "تقدير شخصي"
   },
   "engagement": {
     "title": "التعاقد",

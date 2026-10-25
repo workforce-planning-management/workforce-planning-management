@@ -101,7 +101,7 @@ get from WPM to the course, every place that names a course also carries a link 
   estimates, not promises: catalogue hours where a course exists, a per-level
   figure otherwise, and the payload says which.
 
-## Verifiable credentials and a skills crosswalk (WPM-R157, WPM-R158, proposed; spec round WPM-T268)
+## Verifiable credentials and a skills crosswalk (WPM-R157, WPM-R158; spec round WPM-T268, built WPM-T284)
 
 ### WPM-R157 — Credentials out
 
@@ -123,3 +123,54 @@ get from WPM to the course, every place that names a course also carries a link 
 - **Unknown stays unknown.** A skill with no mapping is `unknown` under the other framework, not "not held"; the view says how many
   skills were unmapped (WPM-D32). Licensed taxonomies are handled as SFIA is: identifiers and a deployer's own licensed import, no
   shipped text. Delivery: WPM-T284.
+
+### Built (WPM-T284)
+
+Migration `m20261024_000090_credentials_and_crosswalk` (`credential_issuances`, `skill_mappings`), `rules::credential` and
+`rules::crosswalk` (pure), `controllers/credentials.rs`, `controllers/skill_mappings.rs`, and gap analysis reading the mappings.
+`ed25519-dalek` and `base64` moved from dev-dependencies to dependencies (both were already in the build).
+
+**Credentials (WPM-R157).** Pinned on 2026-10-25: Open Badges 3.0 context `context-3.0.3.json` (the file was read: it defines
+`OpenBadgeCredential`, `AchievementSubject`, `Achievement` and `Alignment`), the Verifiable Credentials Data Model 2.0 context, the
+**Bitstring Status List v1.0** (W3C Recommendation, 15 May 2025: 131 072 bits minimum, left-most bit first, GZIP, multibase `u`
+base64url), and the credential secured as a compact **JWS with EdDSA** (`typ` `vc+jwt`, RFC 7515 and RFC 8037; the RFC 8037 example is
+a unit test).
+- `POST /api/me/credentials {cpd_entry_pid}` issues from the caller's **own, verified** CPD entry; once while one is live; returned
+  once and **not stored**. It carries the activity, the category, when it was verified, the issuer and its place on the revocation list
+  and **no name, number, email or identifier of the worker**. `GET /api/me/credentials` lists the issuances (when, place, revoked),
+  `POST /api/me/credentials/{pid}/revoke` withdraws one, and HR or an administrator can `POST /api/credentials/{pid}/revoke`.
+- The issuance record is: worker, kind, source entry, when, when revoked and by whom, and the SHA-256 of the signed credential. A
+  place on the list is the row's id less one (`status_index`), so it is never reused; at 131 072 issuances a new list is needed (issuing
+  refuses).
+- `GET /api/credentials/issuer` (the public key as a JWK, the issuer, the list's address) and `GET /api/credentials/status-list` (the
+  list as a signed credential) are **public**: see WPM-D109.
+- Subject access lists the issuances. Erasure revokes a live credential and cuts the row from the person (worker and entry set to the
+  nil id), keeping its place on the list.
+- Settings: `WPM_CREDENTIAL_ISSUER`, `WPM_CREDENTIAL_SIGNING_KEY`, `WPM_CREDENTIAL_ISSUER_NAME` (deployment.md).
+- **Not built:** a credential from a demonstrated skill (CPD entries carry no skill link, so there is no `alignment` yet); the
+  Data Integrity proof form (`eddsa-rdfc-2022`, which needs RDF canonicalization; JWT is a form Open Badges 3.0 allows); a key
+  rotation (one `kid`, `#key-1`); a separate key per organization; a wallet or a presentation; verifying credentials from other issuers
+  (by design); a real verifier tried (the unit and enforcement tests verify with the published key; **no third-party OB or VC verifier
+  was run against it**); a screen.
+
+**Crosswalk (WPM-R158).** `GET|POST /api/skill-mappings`, `DELETE /api/skill-mappings/{pid}`: a mapping runs from the skill a person
+declares to the skill that is needed, with a confidence (`exact`, `close`, `broader`, `narrower`), a basis (`authority` or
+`judgement`), a **source** that says which published crosswalk or whose judgement (required), and who stated it and when. Any signed-in
+caller reads; HR writes; every write is audited. Mappings are between WPM skill records (which carry their ESCO or SFIA references),
+so no licensed text is shipped.
+- **How gap analysis uses it** (`GET /api/workers/{pid}/skill-gaps`): a need the person has not declared is graded through an `exact`
+  or `close` mapping from a skill they did declare, and says so (`through_mapping`: the declared skill and the confidence). `broader`
+  and `narrower` are listed beside it (`related_not_counted`) and never counted. A direct declaration is never overridden. Of several
+  mappings the most confident wins, then the highest declared level. A need no mapping reaches stays **undeclared (unknown)**, and the
+  view counts them (`unmapped_undeclared`).
+- **Not built:** the **workforce roll-up** (`/api/workforce-intelligence/skill-gaps`) does not use the crosswalk, so it counts a mapped
+  skill as undeclared (it is computed in SQL; the per-person view is the one that reads mappings); a mapping import; a screen;
+  transitive mappings (A to B to C is not followed).
+
+### Decision
+
+- **WPM-D109 — A verifier needs no account, and learns nothing about a person.** The issuer's public key and the revocation list are
+  the only unauthenticated routes added for this (`is_public_path`). They hold keys and bit positions: no worker, no entry, no
+  credential. A credential names no person, so a verifier learns that an employer vouches for an achievement, not for whom. The signing
+  key lives outside the database. A mapping counts only when it is `exact` or `close`, and a skill no mapping reaches is unknown, never
+  "not held" (WPM-D32).

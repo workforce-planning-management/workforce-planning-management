@@ -1763,7 +1763,13 @@
     "written_off": "abgeschrieben",
     "all": "alle",
     "department": "Abteilung",
-    "job_title": "Stellenbezeichnung"
+    "job_title": "Stellenbezeichnung",
+    "exact": "genau",
+    "close": "nah",
+    "broader": "weiter gefasst",
+    "narrower": "enger gefasst",
+    "authority": "Behörde",
+    "judgement": "Einschätzung"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

@@ -129,6 +129,8 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::pay_range::routes())
         .add_route(controllers::equipment::routes())
         .add_route(controllers::policies::routes())
+        .add_route(controllers::credentials::routes())
+        .add_route(controllers::skill_mappings::routes())
         .add_route(controllers::ai_register::routes())
         .add_route(controllers::webhooks::routes())
         .add_route(controllers::positions::routes())

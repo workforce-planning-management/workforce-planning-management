@@ -1763,7 +1763,13 @@
     "written_off": "written off",
     "all": "everyone",
     "department": "department",
-    "job_title": "job title"
+    "job_title": "job title",
+    "exact": "exact",
+    "close": "close",
+    "broader": "broader",
+    "narrower": "narrower",
+    "authority": "authority",
+    "judgement": "judgement"
   },
   "engagement": {
     "title": "Engagement",

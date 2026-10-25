@@ -84,6 +84,8 @@ pub mod path_enrollments;
 pub mod pay_assessment_records;
 pub mod positions;
 pub mod policies;
+pub mod credential_issuances;
+pub mod skill_mappings;
 pub mod policy_versions;
 pub mod policy_acknowledgements;
 pub mod assets;

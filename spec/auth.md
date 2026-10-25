@@ -58,7 +58,7 @@ applied to HR.
 | pay position analysis (WPM-R154) | highest — roles that may read salaries; groups under the floor withheld |
 | equipment issues (WPM-R155) | low — HR writes and lists assets, the worker sees their own issues; no manager count yet |
 | policy acknowledgements (WPM-R156) | medium — the worker's own; a manager sees counts; HR sees names (audited) |
-| credential issuances, skill mappings (WPM-R157–R158, proposed) | low — the worker's own issuances; mappings are reference data |
+| credential issuances, skill mappings (WPM-R157–R158) | low — the worker's own issuances; HR or an administrator may revoke; the issuer key and the revocation list are public by design (WPM-D109); mappings are reference data, read by any signed-in caller, written by HR |
 
 Every read of a highest/high-tier record is **audited** (see
 [audit.md](audit.md)).

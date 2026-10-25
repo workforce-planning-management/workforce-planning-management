@@ -4544,7 +4544,27 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       screen; a reminder notification; role-profile audiences; a policy on the joiners' checklist; erasure and export were extended but
       are not asserted by a test; a manager other than themself without HR access (403) is not asserted; Playwright and `svelte-check`
       (no UI change beyond strings and types); the `keycloak` and `chaos` binaries.
-- [ ] WPM-T284 **Verifiable credentials and the skills crosswalk.** *(WPM-R157, WPM-R158)* Open Badges 3.0 issuance with a
-      revocation list; `skill_mappings` with basis and confidence, read by gap analysis; `unknown` for an unmapped skill.
+- [~] (2026-10-25) WPM-T284 **Verifiable credentials and the skills crosswalk.** *(WPM-R157, WPM-R158, WPM-D109)* Open Badges 3.0
+      issuance with a revocation list; `skill_mappings` with basis and confidence, read by gap analysis; `unknown` for an unmapped skill.
+      Done in part: the API, no screen. Pinned and read on 2026-10-25: the Open Badges 3.0.3 context, VC Data Model 2.0, Bitstring
+      Status List v1.0 (W3C Recommendation, 15 May 2025). `rules::credential` (Open Badges credential; compact JWS with EdDSA, whose
+      key and signature are checked against the RFC 8037 example; CRC-32 and SHA-256 against their standard values; the status list
+      as 131 072 bits, left-most first, in a gzip made of stored blocks, which is allowed; 12 tests) and `rules::crosswalk` (7 tests);
+      mutation-checked: 13 deliberate faults, 11 caught at first and two found weak (a level boundary and the algorithm check), fixed by
+      a test each, now caught. Migration `m20261024_000090_credentials_and_crosswalk`, `controllers/credentials.rs` (issue from the
+      caller's own verified CPD entry, list, revoke by the worker or HR, the issuer key and the signed status list), `controllers/
+      skill_mappings.rs`, the per-person skill-gap view reading the mappings (`through_mapping`, `related_not_counted`,
+      `unmapped_undeclared`), subject access and erasure, the three credential settings, strings in the 13 locales (AI-written,
+      unreviewed). The credential names no person and is not stored. Two routes are public (WPM-D109), the only new ones; the
+      enforcement test calls them with no token. Verified (Postgres 18, Podman): 807 unit tests, 151 request tests (new: mappings with bad
+      input, a duplicate pair, a broader mapping shown and not counted, exact and close grading a met need and a short one, unmapped
+      counted, the list), `enforcement_pay_gap` (the issuer key and list with no token; 401; an unverified entry 422; a verified one
+      issued and **verified with the published key**; no name or pid in it; one live per entry; the list bit false, then true after HR
+      revokes; a worker 403 on the HR route; reissue gets a new place; a worker states no mapping), the other `enforcement_*`
+      binaries, `security`, `route_coverage` (it caught an uncalled DELETE, now called), clippy pedantic clean; UI 209 unit tests.
+      **Not done:** a screen; credentials from a demonstrated skill and the ESCO or SFIA `alignment` (CPD entries carry no skill link);
+      the Data Integrity proof form; key rotation; **no third-party Open Badges or VC verifier was run against a credential**; the
+      workforce roll-up does not read the crosswalk; transitive mappings; erasure's revocation and the export are not asserted by a test;
+      Playwright and `svelte-check`; the `keycloak` and `chaos` binaries.
 - [ ] WPM-T285 **Verification and documents.** *(WPM-R144–R158)* Full suites, enforcement tests for every new route, strings
       in the 13 locales, screenshots of new screens, and what was not checked.

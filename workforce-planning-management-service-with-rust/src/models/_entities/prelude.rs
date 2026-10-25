@@ -77,6 +77,8 @@ pub use super::partner_commitments::Entity as PartnerCommitments;
 pub use super::plan_org_nodes::Entity as PlanOrgNodes;
 pub use super::positions::Entity as Positions;
 pub use super::policies::Entity as Policies;
+pub use super::credential_issuances::Entity as CredentialIssuances;
+pub use super::skill_mappings::Entity as SkillMappings;
 pub use super::policy_versions::Entity as PolicyVersions;
 pub use super::policy_acknowledgements::Entity as PolicyAcknowledgements;
 pub use super::assets::Entity as Assets;

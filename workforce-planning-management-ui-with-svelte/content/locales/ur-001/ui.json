@@ -1763,7 +1763,13 @@
     "written_off": "خارج کر دیا گیا",
     "all": "سب",
     "department": "شعبہ",
-    "job_title": "عہدے کا نام"
+    "job_title": "عہدے کا نام",
+    "exact": "عین",
+    "close": "قریب",
+    "broader": "زیادہ وسیع",
+    "narrower": "زیادہ تنگ",
+    "authority": "مستند ادارہ",
+    "judgement": "ذاتی رائے"
   },
   "engagement": {
     "title": "تقرری",

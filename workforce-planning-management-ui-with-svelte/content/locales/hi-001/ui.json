@@ -1763,7 +1763,13 @@
     "written_off": "बट्टे खाते में डाला गया",
     "all": "सभी",
     "department": "विभाग",
-    "job_title": "पदनाम"
+    "job_title": "पदनाम",
+    "exact": "सटीक",
+    "close": "निकट",
+    "broader": "अधिक व्यापक",
+    "narrower": "अधिक संकीर्ण",
+    "authority": "प्राधिकरण",
+    "judgement": "व्यक्तिगत निर्णय"
   },
   "engagement": {
     "title": "नियुक्ति",

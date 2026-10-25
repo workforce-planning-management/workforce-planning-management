@@ -41,6 +41,9 @@ keycloak = ["dep:jsonwebtoken", "dep:aws-lc-rs"]
 [dependencies]
 # Request fingerprints for idempotency keys (WPM-R132).
 sha2 = { version = "0.11" }
+# Credential signing (WPM-R157): EdDSA over a JWS, and base64url for its parts. Both were already in the build (dev and via PASETO).
+ed25519-dalek = { version = "3.0.0" }
+base64 = { version = "0.23" }
 loco-rs = { workspace = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precision"] }
@@ -122,9 +125,7 @@ tokio = { version = "1.53", default-features = false, features = [
 serial_test = { version = "4.0.1" }
 # Mint PASETO v4.public tokens + a matching Ed25519 key set in-process so
 # the auth path is verified without the auth service or a network.
-ed25519-dalek = { version = "3.0.0" }
 rusty_paseto = { version = "0.10", default-features = false, features = ["v4_public", "serde_json"] }
-base64 = { version = "0.23" }
 # Real Keycloak in a container for `tests/keycloak.rs` (Podman via DOCKER_HOST).
 testcontainers = { version = "0.28" }
 

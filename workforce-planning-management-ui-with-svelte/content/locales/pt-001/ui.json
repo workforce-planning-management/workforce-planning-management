@@ -1763,7 +1763,13 @@
     "written_off": "abatido",
     "all": "todos",
     "department": "departamento",
-    "job_title": "cargo"
+    "job_title": "cargo",
+    "exact": "exato",
+    "close": "próximo",
+    "broader": "mais amplo",
+    "narrower": "mais estreito",
+    "authority": "autoridade",
+    "judgement": "juízo"
   },
   "engagement": {
     "title": "Vínculo",

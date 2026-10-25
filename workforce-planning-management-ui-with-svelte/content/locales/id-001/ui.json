@@ -1763,7 +1763,13 @@
     "written_off": "dihapusbukukan",
     "all": "semua orang",
     "department": "departemen",
-    "job_title": "jabatan"
+    "job_title": "jabatan",
+    "exact": "persis",
+    "close": "dekat",
+    "broader": "lebih luas",
+    "narrower": "lebih sempit",
+    "authority": "otoritas",
+    "judgement": "penilaian"
   },
   "engagement": {
     "title": "Keterlibatan",

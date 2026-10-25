@@ -90,6 +90,8 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         );
         std::env::set_var("WPM_EQUALITY_CATEGORIES", CATEGORIES);
         std::env::set_var("WPM_EQUALITY_FLOOR", "5");
+        std::env::set_var("WPM_CREDENTIAL_ISSUER", "http://localhost:5150");
+        std::env::set_var("WPM_CREDENTIAL_SIGNING_KEY", "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A");
     }
     let bearer = |t: String| format!("Bearer {t}");
     let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
@@ -296,6 +298,62 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         let counts = format!("/api/workers/{me}/team-policy-counts?version_pid={version}");
         assert_eq!(get(counts.clone(), worker.clone()).await.status_code(), 200, "a manager (here, any worker as themself) reads counts, which are nothing under the floor");
         assert_eq!(get(counts, hr.clone()).await.status_code(), 200);
+
+        // ── Credentials: the worker issues from their own verified entry; the issuer key and the list are public ──
+        use workforce_planning_management::rules::credential as cred;
+        let public = request.get("/api/credentials/issuer").await;
+        assert_eq!(public.status_code(), 200, "a verifier needs no account: {}", public.text());
+        let public: Value = public.json();
+        assert_eq!(public["jwk"]["x"], "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo");
+        assert!(public["jwk"].get("d").is_none(), "the private half never leaves");
+        let x: [u8; 32] = base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, public["jwk"]["x"].as_str().unwrap()).unwrap().try_into().unwrap();
+        assert_eq!(request.post("/api/me/credentials").json(&json!({ "cpd_entry_pid": uuid::Uuid::new_v4() })).await.status_code(), 401);
+        let entry = uuid::Uuid::new_v4();
+        ctx.db.execute_unprepared(&format!(
+            "INSERT INTO cpd_entries (pid, worker_pid, entry_date, activity, category, unit, amount_hundredths, source) \
+             VALUES ('{entry}', '{me}', '2026-09-01', 'Safeguarding refresher', 'course', 'hours', 600, 'self')")).await.unwrap();
+        let issue = |entry: uuid::Uuid| {
+            let (request, worker) = (&request, worker.clone());
+            async move { request.post("/api/me/credentials").add_header("authorization", worker).json(&json!({ "cpd_entry_pid": entry })).await }
+        };
+        assert_eq!(issue(entry).await.status_code(), 422, "an unverified entry is not issued");
+        ctx.db.execute_unprepared(&format!("UPDATE cpd_entries SET verified_on = '2026-09-02', verified_by = 'hr' WHERE pid = '{entry}'")).await.unwrap();
+        assert_eq!(issue(uuid::Uuid::new_v4()).await.status_code(), 404, "an entry that is not there");
+        let issued = issue(entry).await;
+        assert_eq!(issued.status_code(), 200, "{}", issued.text());
+        let issued: Value = issued.json();
+        let payload = cred::verify(&x, issued["credential"].as_str().unwrap()).expect("the credential verifies against the published key");
+        assert_eq!(payload["type"][1], "OpenBadgeCredential");
+        assert_eq!(payload["credentialSubject"]["achievement"]["name"], "Safeguarding refresher");
+        assert!(!payload.to_string().contains("Pay Gap Enforcement"), "no person is named in it");
+        assert!(!payload.to_string().contains(&me), "nor is a worker pid");
+        assert_eq!(issue(entry).await.status_code(), 422, "one live credential per entry");
+        let index = issued["status_index"].as_u64().unwrap() as usize;
+        let list: Value = request.get("/api/credentials/status-list").await.json();
+        let signed = cred::verify(&x, list["jwt"].as_str().unwrap()).expect("the list verifies too");
+        assert_eq!(cred::is_revoked(signed["credentialSubject"]["encodedList"].as_str().unwrap(), index), Ok(false));
+        let mine: Value = get("/api/me/credentials".to_string(), worker.clone()).await.json();
+        assert!(!mine.to_string().contains(issued["credential"].as_str().unwrap()), "the credential is not kept");
+        // A worker cannot revoke through the HR route; HR can; and then the list says so and the entry can be issued again.
+        let pid = issued["pid"].as_str().unwrap().to_string();
+        assert_eq!(request.post(&format!("/api/credentials/{pid}/revoke")).add_header("authorization", worker.clone()).await.status_code(), 403);
+        assert_eq!(request.post(&format!("/api/credentials/{pid}/revoke")).add_header("authorization", hr.clone()).await.status_code(), 200);
+        assert_eq!(request.post(&format!("/api/me/credentials/{pid}/revoke")).add_header("authorization", worker.clone()).await.status_code(), 422, "already revoked");
+        let list: Value = request.get("/api/credentials/status-list").await.json();
+        let signed = cred::verify(&x, list["jwt"].as_str().unwrap()).unwrap();
+        assert_eq!(cred::is_revoked(signed["credentialSubject"]["encodedList"].as_str().unwrap(), index), Ok(true));
+        let again = issue(entry).await;
+        assert_eq!(again.status_code(), 200, "a revoked credential can be replaced");
+        assert_ne!(again.json::<Value>()["status_index"], issued["status_index"], "with a place of its own on the list");
+        let second = again.json::<Value>()["pid"].as_str().unwrap().to_string();
+        assert_eq!(request.post(&format!("/api/me/credentials/{second}/revoke")).add_header("authorization", worker.clone()).await.status_code(), 200, "the worker withdraws their own");
+
+        // ── The crosswalk: anyone signed in reads it; HR states it; a worker does not ──
+        let mapping = json!({ "from_skill_pid": uuid::Uuid::new_v4(), "to_skill_pid": uuid::Uuid::new_v4(), "confidence": "exact", "basis": "authority", "source": "x" });
+        assert_eq!(request.get("/api/skill-mappings").await.status_code(), 401);
+        assert_eq!(get("/api/skill-mappings".to_string(), worker.clone()).await.status_code(), 200);
+        assert_eq!(request.post("/api/skill-mappings").add_header("authorization", worker.clone()).json(&mapping).await.status_code(), 403, "a worker states no mapping");
+        assert_eq!(request.post("/api/skill-mappings").add_header("authorization", hr.clone()).json(&mapping).await.status_code(), 422, "HR may; these skills do not exist");
 
         // ── The AI register: any signed-in caller reads it; HR records; nobody else ──────────────────
         assert_eq!(request.get("/api/ai-register").await.status_code(), 401);

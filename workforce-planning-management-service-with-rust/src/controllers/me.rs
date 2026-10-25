@@ -665,6 +665,9 @@ pub fn routes() -> Routes {
             get(my_pay_information_requests),
         )
         .add("/me/pay-information-requests", post(ask_pay_information))
+        .add("/me/credentials", post(super::credentials::issue))
+        .add("/me/credentials", get(super::credentials::mine))
+        .add("/me/credentials/{pid}/revoke", post(super::credentials::revoke_mine))
         .add("/me/policies", get(my_policies))
         .add("/me/policy-acknowledgements", post(acknowledge_my_policy))
         .add("/me/flexible-working", get(my_flexible_requests))

@@ -3490,6 +3490,61 @@
         ]
       }
     },
+    "/api/credentials/issuer": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The issuer and key"
+          }
+        },
+        "summary": "PUBLIC (no sign-in): who issues, and the Ed25519 public key (JWK) to check a credential against. Holds no personal data",
+        "tags": [
+          "credentials"
+        ]
+      }
+    },
+    "/api/credentials/status-list": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The list"
+          }
+        },
+        "summary": "PUBLIC (no sign-in): the revocation list as a signed Bitstring Status List credential (131 072 bits). Positions only; holds no personal data",
+        "tags": [
+          "credentials"
+        ]
+      }
+    },
+    "/api/credentials/{pid}/revoke": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "HR or an administrator revokes a credential, for instance when its CPD entry is withdrawn",
+        "tags": [
+          "credentials"
+        ]
+      }
+    },
     "/api/cutovers": {
       "get": {
         "responses": {
@@ -5341,6 +5396,75 @@
         "summary": "Replace the caller's own contact details (a field left out is cleared; shapes validated, nothing verified); a self-service write allowed past the HR-only write policy; the audit entry says they changed, never what they were",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/api/me/credentials": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The issuances"
+          }
+        },
+        "summary": "The caller's credential issuances: that each was issued, when, its place on the revocation list and whether it is revoked. Not the credentials",
+        "tags": [
+          "credentials"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid, its status index and the signed credential",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Issue an Open Badges 3.0 credential (signed vc+jwt, EdDSA) from the caller's own verified CPD entry (body: cpd_entry_pid). Returned once and not stored; it names no person. One live credential per entry",
+        "tags": [
+          "credentials"
+        ]
+      }
+    },
+    "/api/me/credentials/{pid}/revoke": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "The worker withdraws one of their own credentials; the revocation list changes at once",
+        "tags": [
+          "credentials"
         ]
       }
     },
@@ -9332,6 +9456,75 @@
         "summary": "Take a course off a skill",
         "tags": [
           "development"
+        ]
+      }
+    },
+    "/api/skill-mappings": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The mappings"
+          }
+        },
+        "summary": "The skills crosswalk: each mapping from a declared skill to a needed one, with its confidence (exact, close, broader, narrower), its basis and source, who stated it and when, and whether it counts in gap analysis (exact and close do)",
+        "tags": [
+          "skills"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the mapping",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "State a mapping: from_skill_pid, to_skill_pid, confidence, basis (authority or judgement) and a source naming the published crosswalk or whose judgement. The pair is unique; audited",
+        "tags": [
+          "skills"
+        ]
+      }
+    },
+    "/api/skill-mappings/{pid}": {
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Withdraw a mapping; gap analysis stops using it at once",
+        "tags": [
+          "skills"
         ]
       }
     },

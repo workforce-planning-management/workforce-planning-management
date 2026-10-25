@@ -1763,7 +1763,13 @@
     "written_off": "списано",
     "all": "все",
     "department": "отдел",
-    "job_title": "должность"
+    "job_title": "должность",
+    "exact": "точное",
+    "close": "близкое",
+    "broader": "шире",
+    "narrower": "уже",
+    "authority": "авторитетный источник",
+    "judgement": "суждение"
   },
   "engagement": {
     "title": "Трудовые отношения",

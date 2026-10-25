@@ -2411,6 +2411,12 @@ collections:
               - { name: "all", label: "All", widget: string, required: false, i18n: true }
               - { name: "department", label: "Department", widget: string, required: false, i18n: true }
               - { name: "job_title", label: "Job_title", widget: string, required: false, i18n: true }
+              - { name: "exact", label: "Exact", widget: string, required: false, i18n: true }
+              - { name: "close", label: "Close", widget: string, required: false, i18n: true }
+              - { name: "broader", label: "Broader", widget: string, required: false, i18n: true }
+              - { name: "narrower", label: "Narrower", widget: string, required: false, i18n: true }
+              - { name: "authority", label: "Authority", widget: string, required: false, i18n: true }
+              - { name: "judgement", label: "Judgement", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

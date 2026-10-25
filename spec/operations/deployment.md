@@ -37,6 +37,9 @@ the compose file are written but were not built where this was written; try them
 | `WPM_AI_ACT_APPLIES_FROM` | no | `2027-12-02` | The date the AI Act's Annex III duties apply to a deployer (`YYYY-MM-DD`); shown on the AI register. The date moved once already, so it is configuration, not code |
 | `WPM_MCP_ALLOWED_ORIGINS` | no | none | Comma-separated `Origin` values that may call `POST /mcp` from a browser. An agent sends no `Origin` and is unaffected; any other `Origin` is refused (DNS-rebinding protection) |
 | `WPM_SCIM_BASE_URL` | for `scim_push` | none | The identity provider's SCIM 2.0 base URL (`https`, or `http` to this machine). Run `cargo loco task scim_push` on a schedule |
+| `WPM_CREDENTIAL_ISSUER` | for credentials | none | The issuer's public URL (`https`, or `http` to this machine), the id in each credential and the base of the revocation list's address |
+| `WPM_CREDENTIAL_SIGNING_KEY` | for credentials | none | The Ed25519 signing key: 32 bytes, base64url. Held outside the database; never logged or returned. Without it issuing answers 422 |
+| `WPM_CREDENTIAL_ISSUER_NAME` | no | the issuer URL | The issuer's name as a verifier shows it |
 | `WPM_SCIM_TOKEN` | for `scim_push` | none | The bearer token for the SCIM service. Never logged or stored |
 | `WPM_SCIM_ORGANIZATION` | no | all | Only provision this organization's workers (`organization:<uuid>`) |
 | `WPM_WEBHOOK_SECRET_<NAME>` | for each webhook subscription | none | The signing secret of a webhook subscription whose `secret_ref` is this name. Held in the environment, never stored, returned or logged. Run `cargo loco task webhook_deliver` on a schedule |

@@ -2646,6 +2646,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/credentials/issuer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PUBLIC (no sign-in): who issues, and the Ed25519 public key (JWK) to check a credential against. Holds no personal data */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The issuer and key */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/credentials/status-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PUBLIC (no sign-in): the revocation list as a signed Bitstring Status List credential (131 072 bits). Positions only; holds no personal data */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The list */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/credentials/{pid}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** HR or an administrator revokes a credential, for instance when its CPD entry is withdrawn */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Revoked */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cutovers": {
         parameters: {
             query?: never;
@@ -5593,6 +5701,104 @@ export interface paths {
                 422: components["responses"]["IdempotencyRefused"];
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's credential issuances: that each was issued, when, its place on the revocation list and whether it is revoked. Not the credentials */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The issuances */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /** Issue an Open Badges 3.0 credential (signed vc+jwt, EdDSA) from the caller's own verified CPD entry (body: cpd_entry_pid). Returned once and not stored; it names no person. One live credential per entry */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pid, its status index and the signed credential */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/credentials/{pid}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The worker withdraws one of their own credentials; the revocation list changes at once */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Revoked */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+            };
+        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -11626,6 +11832,104 @@ export interface paths {
                     content: {
                         "application/json": components["schemas"]["EmptyObject"];
                     };
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skill-mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The skills crosswalk: each mapping from a declared skill to a needed one, with its confidence (exact, close, broader, narrower), its basis and source, who stated it and when, and whether it counts in gap analysis (exact and close do) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The mappings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /** State a mapping: from_skill_pid, to_skill_pid, confidence, basis (authority or judgement) and a source naming the published crosswalk or whose judgement. The pair is unique; audited */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pid of the mapping */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skill-mappings/{pid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Withdraw a mapping; gap analysis stops using it at once */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];

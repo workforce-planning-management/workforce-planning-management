@@ -1763,7 +1763,13 @@
     "written_off": "已核销",
     "all": "所有人",
     "department": "部门",
-    "job_title": "职位名称"
+    "job_title": "职位名称",
+    "exact": "完全一致",
+    "close": "相近",
+    "broader": "更宽泛",
+    "narrower": "更狭窄",
+    "authority": "权威来源",
+    "judgement": "个人判断"
   },
   "engagement": {
     "title": "用工关系",

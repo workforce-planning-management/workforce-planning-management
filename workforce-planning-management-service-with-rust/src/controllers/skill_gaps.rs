@@ -21,9 +21,10 @@ use uuid::Uuid;
 use super::record_rejection;
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    role_skill_requirements, skills, worker_aspirations, worker_framework_roles, worker_skills,
+    role_skill_requirements, skill_mappings, skills, worker_aspirations, worker_framework_roles, worker_skills,
 };
 use crate::models::{memberships, records};
+use crate::rules::crosswalk;
 use crate::rules::skill_gap::{self as rules, Gap, Need, Source, Status};
 use crate::tasks::import_framework::PCF_SLUG;
 
@@ -187,8 +188,26 @@ async fn worker_gaps(
     .is_ok();
     let evidence = load_evidence(&ctx, &[worker.pid], own_view).await?;
     let mut gaps = evidence.gaps_for(worker.pid);
+    // The crosswalk (WPM-R158): an undeclared need is graded through an exact or close mapping from a skill the person did declare.
+    let mapping_rows = skill_mappings::Entity::find().all(&ctx.db).await?;
+    let mappings: Vec<crosswalk::Mapping<'_>> = mapping_rows
+        .iter()
+        .map(|m| crosswalk::Mapping { from: m.from_skill_pid, to: m.to_skill_pid, confidence: &m.confidence })
+        .collect();
+    let own: BTreeMap<Uuid, i32> = evidence
+        .declared
+        .get(&worker.pid)
+        .map(|m| m.iter().map(|(s, (p, _))| (*s, *p)).collect())
+        .unwrap_or_default();
+    let applied = crosswalk::apply(&mut gaps, &own, &mappings);
     rules::rank(&mut gaps);
     let index = skill_index(&ctx).await?;
+    let name_of = |s: Uuid| index.get(&s).map(|v| v.0.clone());
+    let through = |s: Uuid| {
+        applied.via.iter().find(|v| v.skill == s).map(|v| {
+            serde_json::json!({ "declared_skill_pid": v.declared_skill, "declared_skill": name_of(v.declared_skill), "confidence": v.confidence })
+        })
+    };
     let count = |s: Status| gaps.iter().filter(|g| g.status == s).count();
     let (met, below, undeclared) = (
         count(Status::Met),
@@ -210,6 +229,7 @@ async fn worker_gaps(
                 "status": g.status,
                 "shortfall": g.shortfall,
                 "priority": rules::priority(g),
+                "through_mapping": through(g.skill),
             })
         })
         .collect();
@@ -223,6 +243,15 @@ async fn worker_gaps(
         "worker_pid": worker.pid,
         "includes_aspirations": own_view,
         "counts": { "met": met, "below": below, "undeclared": undeclared },
+        "crosswalk": {
+            "note": "An undeclared need is graded through an exact or close mapping from a skill the person did declare, and says so. \
+                     A broader or narrower mapping is shown and never counted. A need no mapping reaches stays unknown.",
+            "graded_through_a_mapping": applied.via.len(),
+            "related_not_counted": applied.related.iter().map(|v| serde_json::json!({
+                "skill_pid": v.skill, "skill": name_of(v.skill), "declared_skill": name_of(v.declared_skill), "confidence": v.confidence,
+            })).collect::<Vec<_>>(),
+            "unmapped_undeclared": applied.unmapped,
+        },
         "gaps": listed,
     }))
 }

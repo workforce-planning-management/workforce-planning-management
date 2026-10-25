@@ -1763,7 +1763,13 @@
     "written_off": "passé en perte",
     "all": "tous",
     "department": "service",
-    "job_title": "intitulé de poste"
+    "job_title": "intitulé de poste",
+    "exact": "précis",
+    "close": "proche",
+    "broader": "plus large",
+    "narrower": "plus étroit",
+    "authority": "autorité",
+    "judgement": "jugement"
   },
   "engagement": {
     "title": "Engagement",

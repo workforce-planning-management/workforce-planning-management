@@ -1763,7 +1763,13 @@
     "written_off": "dileu o'r cofnodion",
     "all": "pawb",
     "department": "adran",
-    "job_title": "teitl swydd"
+    "job_title": "teitl swydd",
+    "exact": "union",
+    "close": "agos",
+    "broader": "ehangach",
+    "narrower": "culach",
+    "authority": "awdurdod",
+    "judgement": "barn"
   },
   "engagement": {
     "title": "Ymgysylltiad",

@@ -1763,7 +1763,13 @@
     "written_off": "বাতিল করা হয়েছে",
     "all": "সবাই",
     "department": "বিভাগ",
-    "job_title": "পদবি"
+    "job_title": "পদবি",
+    "exact": "হুবহু",
+    "close": "কাছাকাছি",
+    "broader": "আরও বিস্তৃত",
+    "narrower": "আরও সংকীর্ণ",
+    "authority": "কর্তৃপক্ষ",
+    "judgement": "ব্যক্তিগত বিবেচনা"
   },
   "engagement": {
     "title": "নিয়োগ",

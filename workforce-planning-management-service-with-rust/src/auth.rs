@@ -249,6 +249,9 @@ pub(crate) fn is_public_path(path: &str) -> bool {
         || path == "/_ping"
         || path == "/_posture"
         || path == "/api-docs/openapi.json"
+        // A verifier has no account here: the issuer's public key and the revocation list (WPM-R157, WPM-D109).
+        || path == "/api/credentials/issuer"
+        || path == "/api/credentials/status-list"
         || path.starts_with("/swagger-ui")
 }
 

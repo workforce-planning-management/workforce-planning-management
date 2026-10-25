@@ -1763,7 +1763,13 @@
     "written_off": "dado de baja",
     "all": "todos",
     "department": "departamento",
-    "job_title": "puesto"
+    "job_title": "puesto",
+    "exact": "exacto",
+    "close": "cercano",
+    "broader": "más amplio",
+    "narrower": "más estrecho",
+    "authority": "autoridad",
+    "judgement": "criterio"
   },
   "engagement": {
     "title": "Contratación",

@@ -17,6 +17,7 @@ mod change;
 mod contacts;
 mod cpd_overview;
 mod cpd_requirements;
+mod crosswalk;
 mod development;
 mod directory_paging;
 mod duplicates;
