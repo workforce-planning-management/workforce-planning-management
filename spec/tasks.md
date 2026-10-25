@@ -4711,3 +4711,31 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       for this change (only the listed ones); the outlier flag was seen only as "not worked out" in the real run, because the
       seeded data withholds the total, so a real "above" or "below" has not been seen on screen (the stubbed test shows it); the
       locale text of the new strings is AI-written; the app's sign-in and scope were not exercised (the live run stubs the scope).
+- [x] (2026-10-25) WPM-T294 **A screen for pay categories and the gap report (`/pay-gap`), seen against a real service; a misleading reason fixed.**
+      *(WPM-R144)* A page in the navigation drawer: the categories of workers (name, stated basis, job titles one per line; add, edit,
+      remove, with the service's words on a refusal) and the seven indicators for an organization, an optional day, an optional
+      currency and the choice of how variable pay is taken. Each figure shows women's and men's pay and the gap (positive means men
+      are paid more), or says withheld ("fewer than 10 of one sex") or why it is unknown; quartiles, the gap by category, who was left
+      out (exact only from the floor or when none), the reporting tier and next due day, the audit line, and a link to the CSV. Pay is
+      formatted with `Intl` in the page's locale and the gap by `basisPoints`. Strings under `payGap.*`, `nav.payGap`,
+      `titles.payGap` in the 13 locales (AI-written, unreviewed). **Seen against a real service** (`WPM_REQUIRE_AUTH=0`, equality
+      monitoring on with a recorded basis, Postgres 18 in Podman, 48 seeded workers with sex answers and two categories; salary and
+      sex set in the database): a live spec `tests/live/pay-gap.spec.ts` (skipped without `WPM_LIVE_API=1`) asserts the category with
+      both sexes over the floor shows a figure and the one with three men is withheld, no worker is named on the page or in the
+      CSV, and the CSV link answers. I looked at light, dark and 390-pixel screenshots. **The real run found, and I fixed:** the
+      overall indicators said "Nobody in the group" when the truth is that WPM holds no variable pay; `rules::pay_gap` now gives the
+      reason `variable_not_recorded` when workers can be compared but nobody's variable pay is recorded (a unit test; two faults
+      tried and caught: the override removed, and its non-empty guard removed; one older test's expectation updated). It also showed
+      the quartile label repeating "(1 lowest)" on every row and an "Edit" button labelled "Rename"; both fixed. I wrongly wrote in
+      the live README that the service empties its database on start; it does not, the Rust request tests do, and the README is
+      corrected. Verified: clippy pedantic clean; 810 unit tests; 153 request tests; `enforcement`, `enforcement_equality`,
+      `enforcement_pay_gap`, `enforcement_pay_information`, `enforcement_need_to_know`, `enforcement_me`, `security`,
+      `retention_schedule`, `route_coverage`; UI `svelte-check` 0 errors, 210 unit tests, Playwright 229 passed / 19 skipped (new: the
+      indicators with their reasons, withheld cells, the CSV link; creating a category from titles one per line and removing it; a
+      refusal), the live spec 2 passed. A first full Playwright run failed many tests by timeout while another process on the machine
+      saturated it; with two workers and a longer timeout they all passed. One request test
+      (`pay_assessment` audit-refusal) failed in one full run, with a panic inside the loco test harness, and passed alone and in
+      the next full run: not explained. **Not done:** `chaos`, `request_log`, `shared_cache_upstream` and the other `enforcement_*`
+      binaries were not re-run for this change; no real variable-pay figure has been seen (WPM holds none); a real figure with a
+      negative gap was not seen; the category editor was not seen against the real service (the live run only lists); a median per
+      category is not computed (a service gap); sign-in and scope were not exercised (the live run stubs the scope).

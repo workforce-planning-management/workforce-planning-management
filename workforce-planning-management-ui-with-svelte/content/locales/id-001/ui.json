@@ -45,7 +45,8 @@
     "kanban": "Papan saya",
     "positions": "Posisi",
     "policies": "Kebijakan",
-    "payRange": "Posisi gaji"
+    "payRange": "Posisi gaji",
+    "payGap": "Kesenjangan gaji"
   },
   "pr": {
     "retention": "Retensi",
@@ -1394,6 +1395,9 @@
     },
     "payRange": {
       "page_title": "{payRange} — WPM"
+    },
+    "payGap": {
+      "page_title": "{payGap} — WPM"
     }
   },
   "titles": {
@@ -1430,7 +1434,8 @@
     "kanban": "Papan saya — WPM",
     "my_details": "Data saya — WPM",
     "policies": "Kebijakan — WPM",
-    "payRange": "Posisi gaji — WPM"
+    "payRange": "Posisi gaji — WPM",
+    "payGap": "Kesenjangan gaji — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2367,5 +2372,49 @@
     "no_groups": "Tidak ada orang dalam pengelompokan ini.",
     "choose_currency": "Mata uang (kode ISO, opsional)",
     "audited": "Membuka laporan ini dicatat dalam log audit, beserta hari yang dicakup dan siapa yang membukanya, tetapi tanpa angka apa pun."
+  },
+  "payGap": {
+    "hint": "Indikator kesenjangan gaji gender menurut Direktif Transparansi Gaji UE. Angka hanya muncul bila kedua jenis kelamin mencapai ambang; tidak ada yang disebut namanya dan tidak ada jumlah kepala. HR menetapkan kategori pekerja; laporan membutuhkan akses penggajian.",
+    "categories": "Kategori pekerja",
+    "categories_none": "Belum ada kategori. Tanpa itu, kesenjangan per kategori tidak dapat ditampilkan.",
+    "basis": "Mengapa pekerjaan ini sebanding (dasar yang dinyatakan)",
+    "job_titles": "Jabatan, satu per baris",
+    "add_category": "Tambah kategori",
+    "indicators": "Indikator",
+    "variable_basis": "Gaji variabel dihitung atas",
+    "all_known": "Semua yang gaji variabelnya diketahui",
+    "recipients_only": "Hanya yang pernah menerimanya",
+    "reporting": "Laporan setiap {years} tahun: pertama {first}, berikutnya {next}",
+    "no_reporting": "Di bawah jumlah pekerja yang wajib melapor",
+    "csv": "Unduh sebagai CSV",
+    "gap_note": "Kesenjangan positif berarti pria dibayar lebih; negatif, wanita.",
+    "female": "Wanita",
+    "male": "Pria",
+    "gap": "Kesenjangan",
+    "category": "Kategori",
+    "basic": "Gaji pokok",
+    "mean_gap": "Kesenjangan rata-rata, total gaji",
+    "mean_variable_gap": "Kesenjangan rata-rata, gaji variabel",
+    "median_gap": "Kesenjangan median, total gaji",
+    "median_variable_gap": "Kesenjangan median, gaji variabel",
+    "receiving_variable": "Proporsi penerima gaji variabel",
+    "quartile": "Kuartil gaji {n}",
+    "by_category": "Kesenjangan menurut kategori pekerja",
+    "withheld": "Ditahan: kurang dari {floor} dari satu jenis kelamin",
+    "reason_no_workers": "Tidak ada orang di kelompok",
+    "reason_one_sided": "Hanya satu jenis kelamin",
+    "reason_no_base": "Angka pria nol atau kurang",
+    "reason_no_category": "Tidak ada jabatan dalam kategori",
+    "reason_no_sex_recorded": "Jenis kelamin tidak dinyatakan",
+    "exclusions": "Dikeluarkan dari indikator",
+    "excl_no_sex_declared": "Jenis kelamin tidak dinyatakan",
+    "excl_sex_not_female_or_male": "Pernyataan selain wanita atau pria",
+    "excl_no_pay_recorded": "Gaji pokok tidak tercatat",
+    "excl_variable_unknown": "Gaji variabel tidak tercatat",
+    "excl_uncategorised": "Tidak dalam kategori mana pun",
+    "under_floor": "kurang dari {floor}",
+    "reason_variable_not_recorded": "Tidak ada gaji variabel yang tercatat, sehingga tidak dapat dihitung",
+    "quartile_note": "Kuartil 1 adalah yang terendah gajinya.",
+    "edit": "Ubah"
   }
 }

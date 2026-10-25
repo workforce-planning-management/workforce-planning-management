@@ -57,7 +57,9 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
   per-category basic gap only, and is counted as such. **A gap in variable components** is taken, by the deployer's choice
   (`VariableBasis`), over every worker whose variable pay is known with none counting as zero (the default), or over recipients only;
   the Directive's text for this was not read (open item). The share receiving a component does not depend on that choice. The
-  per-category gap (g) is the mean gap, and a median per category is not computed.
+  per-category gap (g) is the mean gap, and a median per category is not computed. **When workers can be compared but nobody's
+  variable pay is recorded** (today, always: WPM holds none), indicators (a) to (f) are unknown with the reason
+  `variable_not_recorded`, not `no_workers`, which means nobody was in the group (WPM-T294).
 - **The quartile bands** are four equal groups of workers ranked by total pay, lowest first; a tie across a boundary is split by the
   worker key, so the same data gives the same bands in any input order.
 - **Categories of workers** are the employer's own grouping of roles that do the same work or work of equal value. They are

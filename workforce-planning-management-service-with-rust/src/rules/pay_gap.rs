@@ -82,6 +82,8 @@ pub enum Reason {
     NoCategory,
     /// No sex is recorded: equality monitoring is off, or nobody answered.
     NoSexRecorded,
+    /// Workers could be compared, but nobody's variable pay is recorded, so no figure that needs it can be worked out.
+    VariableNotRecorded,
 }
 
 /// A figure, or why there is none.
@@ -246,7 +248,7 @@ pub fn report(workers: &[WorkerPay], floor: usize, basis: VariableBasis) -> Resu
     // (e) is over everyone whose variable pay is known, however the gap is taken.
     let all_known = variable_pairs(eligible.iter(), VariableBasis::AllKnown);
 
-    Ok(Report {
+    let mut report = Report {
         floor,
         mean_gap: gap_figure(&total_f, &total_m, floor, Statistic::Mean),
         mean_variable_gap: gap_figure(&var_f, &var_m, floor, Statistic::Mean),
@@ -256,7 +258,18 @@ pub fn report(workers: &[WorkerPay], floor: usize, basis: VariableBasis) -> Resu
         quartiles: quartile_figures(&total, floor),
         categories: category_gaps(&eligible, floor, basis),
         exclusions: tally.exclusions(floor),
-    })
+    };
+    // Workers are there but none has a variable part recorded: say that, rather than "nobody in the group".
+    if all_known.is_empty() && !eligible.is_empty() {
+        let said = Reason::VariableNotRecorded;
+        report.mean_gap = Figure::Unknown(said);
+        report.mean_variable_gap = Figure::Unknown(said);
+        report.median_gap = Figure::Unknown(said);
+        report.median_variable_gap = Figure::Unknown(said);
+        report.receiving_variable = Figure::Unknown(said);
+        report.quartiles = report.quartiles.iter().map(|_| Figure::Unknown(said)).collect();
+    }
+    Ok(report)
 }
 
 /// Female and male amounts apart.
@@ -873,8 +886,35 @@ mod tests {
             report(&unknown, 5, VariableBasis::AllKnown)
                 .unwrap()
                 .receiving_variable,
-            Figure::Unknown(Reason::NoWorkers)
+            Figure::Unknown(Reason::VariableNotRecorded),
+            "workers are there, but nobody's variable pay is recorded: say that, not 'nobody'"
         );
+    }
+
+    #[test]
+    fn with_no_variable_pay_recorded_every_figure_that_needs_it_says_so_but_basic_pay_by_category_still_shows() {
+        let mut w = Vec::new();
+        for i in 0..6 {
+            let mut a = group(i, 1, Declared::Female, 3_800_000, 0).remove(0);
+            a.variable = Variable::Unknown;
+            a.category = Some("Care".to_string());
+            let mut b = group(100 + i, 1, Declared::Male, 4_000_000, 0).remove(0);
+            b.variable = Variable::Unknown;
+            b.category = Some("Care".to_string());
+            w.push(a);
+            w.push(b);
+        }
+        let r = report(&w, 5, VariableBasis::AllKnown).unwrap();
+        let said = Reason::VariableNotRecorded;
+        assert_eq!(r.mean_gap, Figure::Unknown(said));
+        assert_eq!(r.median_gap, Figure::Unknown(said));
+        assert_eq!(r.mean_variable_gap, Figure::Unknown(said));
+        assert_eq!(r.median_variable_gap, Figure::Unknown(said));
+        assert_eq!(r.receiving_variable, Figure::Unknown(said));
+        assert_eq!(r.quartiles, vec![Figure::Unknown(said); 4]);
+        assert!(matches!(r.categories[0].basic, Figure::Shown(_)), "basic pay by category needs no variable part");
+        // Nobody at all is still "nobody", not "no variable pay".
+        assert_eq!(report(&[], 5, VariableBasis::AllKnown).unwrap().mean_gap, Figure::Unknown(Reason::NoWorkers));
     }
 
     #[test]

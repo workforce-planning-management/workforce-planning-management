@@ -45,7 +45,8 @@
     "kanban": "Mi tablero",
     "positions": "Puestos",
     "policies": "Políticas",
-    "payRange": "Posición salarial"
+    "payRange": "Posición salarial",
+    "payGap": "Brecha salarial"
   },
   "pr": {
     "retention": "Retención",
@@ -1394,6 +1395,9 @@
     },
     "payRange": {
       "page_title": "{payRange} — WPM"
+    },
+    "payGap": {
+      "page_title": "{payGap} — WPM"
     }
   },
   "titles": {
@@ -1430,7 +1434,8 @@
     "kanban": "Mi tablero — WPM",
     "my_details": "Mis datos — WPM",
     "policies": "Políticas — WPM",
-    "payRange": "Posición salarial — WPM"
+    "payRange": "Posición salarial — WPM",
+    "payGap": "Brecha salarial — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2367,5 +2372,49 @@
     "no_groups": "Nadie está ubicado en esta agrupación.",
     "choose_currency": "Moneda (código ISO, opcional)",
     "audited": "Abrir este informe queda registrado en el registro de auditoría, con el día que cubre y quién lo abrió, pero sin ninguna cifra."
+  },
+  "payGap": {
+    "hint": "Los indicadores de brecha salarial de género de la Directiva de transparencia retributiva de la UE. Una cifra aparece solo si ambos sexos alcanzan el umbral; no se nombra a nadie ni se da un recuento. RR. HH. define las categorías de trabajadores; el informe requiere acceso a nómina.",
+    "categories": "Categorías de trabajadores",
+    "categories_none": "Aún no hay categorías. Sin ellas, no se puede mostrar la brecha por categoría.",
+    "basis": "Por qué estos puestos son comparables (fundamento declarado)",
+    "job_titles": "Puestos, uno por línea",
+    "add_category": "Añadir una categoría",
+    "indicators": "Los indicadores",
+    "variable_basis": "La retribución variable se toma sobre",
+    "all_known": "Todos cuya retribución variable se conoce",
+    "recipients_only": "Solo quienes recibieron alguna",
+    "reporting": "Informe cada {years} año(s): el primero el {first}, el siguiente el {next}",
+    "no_reporting": "Por debajo de la plantilla obligada a informar",
+    "csv": "Descargar como CSV",
+    "gap_note": "Una brecha positiva significa que los hombres cobran más; una negativa, las mujeres.",
+    "female": "Mujeres",
+    "male": "Hombres",
+    "gap": "Brecha",
+    "category": "Categoría",
+    "basic": "Salario base",
+    "mean_gap": "Brecha media, retribución total",
+    "mean_variable_gap": "Brecha media, retribución variable",
+    "median_gap": "Brecha mediana, retribución total",
+    "median_variable_gap": "Brecha mediana, retribución variable",
+    "receiving_variable": "Proporción que recibe retribución variable",
+    "quartile": "Cuartil retributivo {n}",
+    "by_category": "Brecha por categoría de trabajadores",
+    "withheld": "Oculto: menos de {floor} de un sexo",
+    "reason_no_workers": "Nadie en el grupo",
+    "reason_one_sided": "Solo hay un sexo",
+    "reason_no_base": "La cifra de los hombres es cero o menos",
+    "reason_no_category": "Ningún puesto en una categoría",
+    "reason_no_sex_recorded": "Sexo no declarado",
+    "exclusions": "Excluidos de los indicadores",
+    "excl_no_sex_declared": "Sexo no declarado",
+    "excl_sex_not_female_or_male": "Una declaración distinta de mujer u hombre",
+    "excl_no_pay_recorded": "Sin salario base registrado",
+    "excl_variable_unknown": "Retribución variable no registrada",
+    "excl_uncategorised": "En ninguna categoría",
+    "under_floor": "menos de {floor}",
+    "reason_variable_not_recorded": "No hay retribución variable registrada, así que no puede calcularse",
+    "quartile_note": "El cuartil 1 es el peor pagado.",
+    "edit": "Editar"
   }
 }

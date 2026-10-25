@@ -45,7 +45,8 @@
     "kanban": "Mein Board",
     "positions": "Stellen",
     "policies": "Richtlinien",
-    "payRange": "Vergütungsposition"
+    "payRange": "Vergütungsposition",
+    "payGap": "Entgeltlücke"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -1394,6 +1395,9 @@
     },
     "payRange": {
       "page_title": "{payRange} — WPM"
+    },
+    "payGap": {
+      "page_title": "{payGap} — WPM"
     }
   },
   "titles": {
@@ -1430,7 +1434,8 @@
     "kanban": "Mein Board — WPM",
     "my_details": "Meine Angaben — WPM",
     "policies": "Richtlinien — WPM",
-    "payRange": "Vergütungsposition — WPM"
+    "payRange": "Vergütungsposition — WPM",
+    "payGap": "Entgeltlücke — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2367,5 +2372,49 @@
     "no_groups": "Niemand ist in dieser Gruppierung eingeordnet.",
     "choose_currency": "Währung (ISO-Code, optional)",
     "audited": "Das Öffnen dieses Berichts wird im Prüfprotokoll festgehalten, mit dem abgedeckten Tag und der öffnenden Person, aber ohne Zahlen."
+  },
+  "payGap": {
+    "hint": "Die Kennzahlen zum geschlechtsspezifischen Entgeltgefälle nach der EU-Entgelttransparenzrichtlinie. Eine Zahl erscheint nur, wenn beide Geschlechter die Untergrenze erreichen; niemand wird genannt, keine Kopfzahl angegeben. Die Personalabteilung legt die Beschäftigtenkategorien fest; der Bericht erfordert Gehaltszugriff.",
+    "categories": "Beschäftigtenkategorien",
+    "categories_none": "Noch keine Kategorie. Ohne sie lässt sich das Gefälle je Kategorie nicht zeigen.",
+    "basis": "Warum diese Tätigkeiten vergleichbar sind (angegebene Grundlage)",
+    "job_titles": "Berufsbezeichnungen, eine je Zeile",
+    "add_category": "Kategorie hinzufügen",
+    "indicators": "Die Kennzahlen",
+    "variable_basis": "Variable Vergütung bezogen auf",
+    "all_known": "Alle, deren variable Vergütung bekannt ist",
+    "recipients_only": "Nur diejenigen, die welche erhielten",
+    "reporting": "Bericht alle {years} Jahr(e): erstmals am {first}, nächster am {next}",
+    "no_reporting": "Unter der Beschäftigtenzahl, ab der berichtet werden muss",
+    "csv": "Als CSV herunterladen",
+    "gap_note": "Ein positives Gefälle heißt: Männer verdienen mehr; ein negatives: Frauen.",
+    "female": "Frauen",
+    "male": "Männer",
+    "gap": "Gefälle",
+    "category": "Kategorie",
+    "basic": "Grundgehalt",
+    "mean_gap": "Mittleres Gefälle, Gesamtvergütung",
+    "mean_variable_gap": "Mittleres Gefälle, variable Vergütung",
+    "median_gap": "Mediangefälle, Gesamtvergütung",
+    "median_variable_gap": "Mediangefälle, variable Vergütung",
+    "receiving_variable": "Anteil mit variabler Vergütung",
+    "quartile": "Entgeltquartil {n}",
+    "by_category": "Gefälle nach Beschäftigtenkategorie",
+    "withheld": "Zurückgehalten: weniger als {floor} eines Geschlechts",
+    "reason_no_workers": "Niemand in der Gruppe",
+    "reason_one_sided": "Nur ein Geschlecht vertreten",
+    "reason_no_base": "Der Wert der Männer ist null oder weniger",
+    "reason_no_category": "Keine Berufsbezeichnung in einer Kategorie",
+    "reason_no_sex_recorded": "Kein Geschlecht angegeben",
+    "exclusions": "Aus den Kennzahlen ausgenommen",
+    "excl_no_sex_declared": "Kein Geschlecht angegeben",
+    "excl_sex_not_female_or_male": "Eine andere Angabe als weiblich oder männlich",
+    "excl_no_pay_recorded": "Kein Grundgehalt erfasst",
+    "excl_variable_unknown": "Variable Vergütung nicht erfasst",
+    "excl_uncategorised": "In keiner Kategorie",
+    "under_floor": "weniger als {floor}",
+    "reason_variable_not_recorded": "Keine variable Vergütung erfasst, daher nicht berechenbar",
+    "quartile_note": "Quartil 1 ist das am niedrigsten bezahlte.",
+    "edit": "Bearbeiten"
   }
 }

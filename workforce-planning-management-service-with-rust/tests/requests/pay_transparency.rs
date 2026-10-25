@@ -304,7 +304,7 @@ async fn the_report_is_an_aggregate_that_names_no_one_and_withholds_a_small_cell
             "{csv_text}"
         );
         assert!(csv_text.contains("(g) gap in basic pay,Facilities,withheld,,,,,,minor_units_per_year\r\n"));
-        assert!(csv_text.contains("(a) mean gender pay gap,organization,unknown,no_workers"));
+        assert!(csv_text.contains("(a) mean gender pay gap,organization,unknown,variable_not_recorded"));
         for pid in &everyone {
             assert!(!csv_text.contains(pid.as_str()));
         }

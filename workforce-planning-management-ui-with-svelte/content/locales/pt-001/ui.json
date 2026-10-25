@@ -45,7 +45,8 @@
     "kanban": "O meu quadro",
     "positions": "Posições",
     "policies": "Políticas",
-    "payRange": "Posição salarial"
+    "payRange": "Posição salarial",
+    "payGap": "Disparidade salarial"
   },
   "pr": {
     "retention": "Retenção",
@@ -1394,6 +1395,9 @@
     },
     "payRange": {
       "page_title": "{payRange} — WPM"
+    },
+    "payGap": {
+      "page_title": "{payGap} — WPM"
     }
   },
   "titles": {
@@ -1430,7 +1434,8 @@
     "kanban": "O meu quadro — WPM",
     "my_details": "Meus dados — WPM",
     "policies": "Políticas — WPM",
-    "payRange": "Posição salarial — WPM"
+    "payRange": "Posição salarial — WPM",
+    "payGap": "Disparidade salarial — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2367,5 +2372,49 @@
     "no_groups": "Ninguém está colocado neste agrupamento.",
     "choose_currency": "Moeda (código ISO, opcional)",
     "audited": "A abertura deste relatório fica registada no registo de auditoria, com o dia que cobre e quem o abriu, mas sem qualquer valor."
+  },
+  "payGap": {
+    "hint": "Os indicadores de disparidade salarial de género da Diretiva de transparência salarial da UE. Um valor só aparece se ambos os sexos atingirem o limiar; ninguém é nomeado nem se indica número de pessoas. Os RH definem as categorias de trabalhadores; o relatório exige acesso à folha de pagamento.",
+    "categories": "Categorias de trabalhadores",
+    "categories_none": "Ainda não há categorias. Sem elas, não se mostra a disparidade por categoria.",
+    "basis": "Porque estas funções são comparáveis (fundamento declarado)",
+    "job_titles": "Cargos, um por linha",
+    "add_category": "Adicionar uma categoria",
+    "indicators": "Os indicadores",
+    "variable_basis": "A remuneração variável é calculada sobre",
+    "all_known": "Todos os que têm remuneração variável conhecida",
+    "recipients_only": "Só os que receberam alguma",
+    "reporting": "Relatório de {years} em {years} ano(s): o primeiro em {first}, o seguinte em {next}",
+    "no_reporting": "Abaixo do efetivo obrigado a reportar",
+    "csv": "Transferir em CSV",
+    "gap_note": "Uma disparidade positiva significa que os homens ganham mais; negativa, as mulheres.",
+    "female": "Mulheres",
+    "male": "Homens",
+    "gap": "Disparidade",
+    "category": "Categoria",
+    "basic": "Salário base",
+    "mean_gap": "Disparidade média, remuneração total",
+    "mean_variable_gap": "Disparidade média, remuneração variável",
+    "median_gap": "Disparidade mediana, remuneração total",
+    "median_variable_gap": "Disparidade mediana, remuneração variável",
+    "receiving_variable": "Proporção que recebe remuneração variável",
+    "quartile": "Quartil remuneratório {n}",
+    "by_category": "Disparidade por categoria de trabalhadores",
+    "withheld": "Ocultado: menos de {floor} de um sexo",
+    "reason_no_workers": "Ninguém no grupo",
+    "reason_one_sided": "Só há um sexo",
+    "reason_no_base": "O valor dos homens é zero ou menos",
+    "reason_no_category": "Nenhum cargo numa categoria",
+    "reason_no_sex_recorded": "Sexo não declarado",
+    "exclusions": "Fora dos indicadores",
+    "excl_no_sex_declared": "Sexo não declarado",
+    "excl_sex_not_female_or_male": "Uma declaração diferente de feminino ou masculino",
+    "excl_no_pay_recorded": "Sem salário base registado",
+    "excl_variable_unknown": "Remuneração variável não registada",
+    "excl_uncategorised": "Em nenhuma categoria",
+    "under_floor": "menos de {floor}",
+    "reason_variable_not_recorded": "Não há remuneração variável registada, por isso não se pode calcular",
+    "quartile_note": "O quartil 1 é o menos bem pago.",
+    "edit": "Editar"
   }
 }

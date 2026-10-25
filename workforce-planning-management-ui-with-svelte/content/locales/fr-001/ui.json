@@ -45,7 +45,8 @@
     "kanban": "Mon tableau",
     "positions": "Postes",
     "policies": "Politiques",
-    "payRange": "Position salariale"
+    "payRange": "Position salariale",
+    "payGap": "Écart de rémunération"
   },
   "pr": {
     "retention": "Conservation",
@@ -1394,6 +1395,9 @@
     },
     "payRange": {
       "page_title": "{payRange} — WPM"
+    },
+    "payGap": {
+      "page_title": "{payGap} — WPM"
     }
   },
   "titles": {
@@ -1430,7 +1434,8 @@
     "kanban": "Mon tableau — WPM",
     "my_details": "Mes informations — WPM",
     "policies": "Politiques — WPM",
-    "payRange": "Position salariale — WPM"
+    "payRange": "Position salariale — WPM",
+    "payGap": "Écart de rémunération — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2367,5 +2372,49 @@
     "no_groups": "Personne n'est placé dans ce regroupement.",
     "choose_currency": "Devise (code ISO, facultatif)",
     "audited": "L'ouverture de ce rapport est consignée dans le journal d'audit, avec le jour couvert et la personne qui l'a ouvert, mais sans aucun chiffre."
+  },
+  "payGap": {
+    "hint": "Les indicateurs d'écart de rémunération entre femmes et hommes de la directive européenne sur la transparence salariale. Un chiffre n'apparaît que si les deux sexes atteignent le seuil ; personne n'est nommé et aucun effectif n'est donné. Les RH définissent les catégories de travailleurs ; le rapport exige l'accès à la paie.",
+    "categories": "Catégories de travailleurs",
+    "categories_none": "Aucune catégorie pour l'instant. Sans elle, l'écart par catégorie ne peut pas être montré.",
+    "basis": "Pourquoi ces emplois sont comparables (fondement indiqué)",
+    "job_titles": "Intitulés de poste, un par ligne",
+    "add_category": "Ajouter une catégorie",
+    "indicators": "Les indicateurs",
+    "variable_basis": "La part variable est calculée sur",
+    "all_known": "Tous ceux dont la part variable est connue",
+    "recipients_only": "Seulement ceux qui en ont reçu une",
+    "reporting": "Rapport tous les {years} an(s) : le premier le {first}, le prochain le {next}",
+    "no_reporting": "Sous l'effectif qui doit publier",
+    "csv": "Télécharger en CSV",
+    "gap_note": "Un écart positif signifie que les hommes sont mieux payés ; un écart négatif, les femmes.",
+    "female": "Femmes",
+    "male": "Hommes",
+    "gap": "Écart",
+    "category": "Catégorie",
+    "basic": "Salaire de base",
+    "mean_gap": "Écart moyen, rémunération totale",
+    "mean_variable_gap": "Écart moyen, part variable",
+    "median_gap": "Écart médian, rémunération totale",
+    "median_variable_gap": "Écart médian, part variable",
+    "receiving_variable": "Part des bénéficiaires d'une part variable",
+    "quartile": "Quartile de rémunération {n}",
+    "by_category": "Écart par catégorie de travailleurs",
+    "withheld": "Masqué : moins de {floor} d'un des sexes",
+    "reason_no_workers": "Personne dans le groupe",
+    "reason_one_sided": "Un seul sexe est présent",
+    "reason_no_base": "Le chiffre des hommes est nul ou négatif",
+    "reason_no_category": "Aucun intitulé de poste dans une catégorie",
+    "reason_no_sex_recorded": "Aucun sexe déclaré",
+    "exclusions": "Exclus des indicateurs",
+    "excl_no_sex_declared": "Aucun sexe déclaré",
+    "excl_sex_not_female_or_male": "Une déclaration autre que féminin ou masculin",
+    "excl_no_pay_recorded": "Aucun salaire de base enregistré",
+    "excl_variable_unknown": "Part variable non enregistrée",
+    "excl_uncategorised": "Dans aucune catégorie",
+    "under_floor": "moins de {floor}",
+    "reason_variable_not_recorded": "Aucune part variable enregistrée : impossible à calculer",
+    "quartile_note": "Le quartile 1 est le moins bien rémunéré.",
+    "edit": "Modifier"
   }
 }

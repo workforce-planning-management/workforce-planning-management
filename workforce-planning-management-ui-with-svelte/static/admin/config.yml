@@ -78,6 +78,7 @@ collections:
               - { name: "positions", label: "Positions", widget: string, required: false, i18n: true }
               - { name: "policies", label: "Policies", widget: string, required: false, i18n: true }
               - { name: "payRange", label: "Pay Range", widget: string, required: false, i18n: true }
+              - { name: "payGap", label: "Pay Gap", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -2042,6 +2043,14 @@ collections:
                 i18n: true
                 fields:
                   - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
+              - name: "payGap"
+                label: "Pay Gap"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
           - name: "titles"
             label: "Titles"
             widget: object
@@ -2083,6 +2092,7 @@ collections:
               - { name: "my_details", label: "My_details", widget: string, required: false, i18n: true }
               - { name: "policies", label: "Policies", widget: string, required: false, i18n: true }
               - { name: "payRange", label: "Pay Range", widget: string, required: false, i18n: true }
+              - { name: "payGap", label: "Pay Gap", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -3179,3 +3189,52 @@ collections:
               - { name: "no_groups", label: "No_groups", widget: string, required: false, i18n: true }
               - { name: "choose_currency", label: "Choose_currency", widget: string, required: false, i18n: true }
               - { name: "audited", label: "Audited", widget: text, required: false, i18n: true }
+          - name: "payGap"
+            label: "Pay Gap"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "categories", label: "Categories", widget: string, required: false, i18n: true }
+              - { name: "categories_none", label: "Categories_none", widget: string, required: false, i18n: true }
+              - { name: "basis", label: "Basis", widget: string, required: false, i18n: true }
+              - { name: "job_titles", label: "Job_titles", widget: string, required: false, i18n: true }
+              - { name: "add_category", label: "Add_category", widget: string, required: false, i18n: true }
+              - { name: "indicators", label: "Indicators", widget: string, required: false, i18n: true }
+              - { name: "variable_basis", label: "Variable_basis", widget: string, required: false, i18n: true }
+              - { name: "all_known", label: "All_known", widget: string, required: false, i18n: true }
+              - { name: "recipients_only", label: "Recipients_only", widget: string, required: false, i18n: true }
+              - { name: "reporting", label: "Reporting", widget: string, required: false, i18n: true }
+              - { name: "no_reporting", label: "No_reporting", widget: string, required: false, i18n: true }
+              - { name: "csv", label: "Csv", widget: string, required: false, i18n: true }
+              - { name: "gap_note", label: "Gap_note", widget: string, required: false, i18n: true }
+              - { name: "female", label: "Female", widget: string, required: false, i18n: true }
+              - { name: "male", label: "Male", widget: string, required: false, i18n: true }
+              - { name: "gap", label: "Gap", widget: string, required: false, i18n: true }
+              - { name: "category", label: "Category", widget: string, required: false, i18n: true }
+              - { name: "basic", label: "Basic", widget: string, required: false, i18n: true }
+              - { name: "mean_gap", label: "Mean_gap", widget: string, required: false, i18n: true }
+              - { name: "mean_variable_gap", label: "Mean_variable_gap", widget: string, required: false, i18n: true }
+              - { name: "median_gap", label: "Median_gap", widget: string, required: false, i18n: true }
+              - { name: "median_variable_gap", label: "Median_variable_gap", widget: string, required: false, i18n: true }
+              - { name: "receiving_variable", label: "Receiving_variable", widget: string, required: false, i18n: true }
+              - { name: "quartile", label: "Quartile", widget: string, required: false, i18n: true }
+              - { name: "by_category", label: "By_category", widget: string, required: false, i18n: true }
+              - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
+              - { name: "reason_no_workers", label: "Reason_no_workers", widget: string, required: false, i18n: true }
+              - { name: "reason_one_sided", label: "Reason_one_sided", widget: string, required: false, i18n: true }
+              - { name: "reason_no_base", label: "Reason_no_base", widget: string, required: false, i18n: true }
+              - { name: "reason_no_category", label: "Reason_no_category", widget: string, required: false, i18n: true }
+              - { name: "reason_no_sex_recorded", label: "Reason_no_sex_recorded", widget: string, required: false, i18n: true }
+              - { name: "exclusions", label: "Exclusions", widget: string, required: false, i18n: true }
+              - { name: "excl_no_sex_declared", label: "Excl_no_sex_declared", widget: string, required: false, i18n: true }
+              - { name: "excl_sex_not_female_or_male", label: "Excl_sex_not_female_or_male", widget: string, required: false, i18n: true }
+              - { name: "excl_no_pay_recorded", label: "Excl_no_pay_recorded", widget: string, required: false, i18n: true }
+              - { name: "excl_variable_unknown", label: "Excl_variable_unknown", widget: string, required: false, i18n: true }
+              - { name: "excl_uncategorised", label: "Excl_uncategorised", widget: string, required: false, i18n: true }
+              - { name: "under_floor", label: "Under_floor", widget: string, required: false, i18n: true }
+              - { name: "reason_variable_not_recorded", label: "Reason_variable_not_recorded", widget: string, required: false, i18n: true }
+              - { name: "quartile_note", label: "Quartile_note", widget: string, required: false, i18n: true }
+              - { name: "edit", label: "Edit", widget: string, required: false, i18n: true }

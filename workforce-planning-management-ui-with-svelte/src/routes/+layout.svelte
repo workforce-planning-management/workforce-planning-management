@@ -37,6 +37,7 @@
     ["/directory", "nav.directory"],
     ["/pay-scales", "nav.payScales"],
     ["/pay-range", "nav.payRange"],
+    ["/pay-gap", "nav.payGap"],
     ["/job-levels", "nav.jobLevels"],
     ["/expenses", "nav.expenseQueue"],
     ["/policies", "nav.policies"],

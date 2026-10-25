@@ -45,7 +45,8 @@
     "kanban": "My board",
     "positions": "Positions",
     "policies": "Policies",
-    "payRange": "Pay position"
+    "payRange": "Pay position",
+    "payGap": "Pay gap"
   },
   "pr": {
     "retention": "Retention",
@@ -1394,6 +1395,9 @@
     },
     "payRange": {
       "page_title": "{payRange} — WPM"
+    },
+    "payGap": {
+      "page_title": "{payGap} — WPM"
     }
   },
   "titles": {
@@ -1430,7 +1434,8 @@
     "kanban": "My board — WPM",
     "my_details": "My details — WPM",
     "policies": "Policies — WPM",
-    "payRange": "Pay position — WPM"
+    "payRange": "Pay position — WPM",
+    "payGap": "Pay gap — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -2367,5 +2372,49 @@
     "no_groups": "No one is placed in this grouping.",
     "choose_currency": "Currency (ISO code, optional)",
     "audited": "Opening this report is recorded in the audit log, with the day it covers and who opened it, but no figure."
+  },
+  "payGap": {
+    "hint": "The gender pay gap indicators of the EU Pay Transparency Directive. A figure shows only when both sexes reach the floor in it; no one is named and no head count is given. HR sets up the categories of workers; the report needs payroll access.",
+    "categories": "Categories of workers",
+    "categories_none": "No category yet. Without one, the gap by category cannot be shown.",
+    "basis": "Why these jobs are comparable (stated basis)",
+    "job_titles": "Job titles, one per line",
+    "add_category": "Add a category",
+    "indicators": "The indicators",
+    "variable_basis": "Variable pay is taken over",
+    "all_known": "Everyone whose variable pay is known",
+    "recipients_only": "Only those who received some",
+    "reporting": "Report due every {years} year(s): first on {first}, next on {next}",
+    "no_reporting": "Below the headcount that must report",
+    "csv": "Download as CSV",
+    "gap_note": "A positive gap means men are paid more; a negative one, women.",
+    "female": "Women",
+    "male": "Men",
+    "gap": "Gap",
+    "category": "Category",
+    "basic": "Basic pay",
+    "mean_gap": "Mean gap, total pay",
+    "mean_variable_gap": "Mean gap, variable pay",
+    "median_gap": "Median gap, total pay",
+    "median_variable_gap": "Median gap, variable pay",
+    "receiving_variable": "Share receiving variable pay",
+    "quartile": "Pay quartile {n}",
+    "by_category": "Gap by category of workers",
+    "withheld": "Withheld: fewer than {floor} of one sex",
+    "reason_no_workers": "Nobody in the group",
+    "reason_one_sided": "Only one sex is present",
+    "reason_no_base": "The men's figure is zero or less",
+    "reason_no_category": "No job title in a category",
+    "reason_no_sex_recorded": "No sex declared",
+    "exclusions": "Left out of the indicators",
+    "excl_no_sex_declared": "No sex declared",
+    "excl_sex_not_female_or_male": "A declaration other than female or male",
+    "excl_no_pay_recorded": "No basic pay recorded",
+    "excl_variable_unknown": "Variable pay not recorded",
+    "excl_uncategorised": "In no category",
+    "under_floor": "fewer than {floor}",
+    "reason_variable_not_recorded": "Nobody's variable pay is recorded, so this cannot be worked out",
+    "quartile_note": "Quartile 1 is the lowest paid.",
+    "edit": "Edit"
   }
 }

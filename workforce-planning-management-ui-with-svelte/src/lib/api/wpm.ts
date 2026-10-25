@@ -5021,3 +5021,96 @@ export function getPayRange(
   if (options.currency) query.set("currency", options.currency);
   return api(`/reports/pay-range?${query.toString()}`, init);
 }
+
+export type PayCategory = {
+  pid: string;
+  organization_ref: string;
+  name: string;
+  basis: string;
+  job_titles: string[];
+};
+
+export function listPayCategories(
+  organization: string,
+  init?: FetchLike,
+): Promise<PayCategory[]> {
+  return api(`/pay-categories?organization=${encodeURIComponent(organization)}`, init);
+}
+
+export type PayCategoryBody = {
+  organization_ref: string;
+  name: string;
+  basis: string;
+  job_titles: string[];
+};
+
+export function createPayCategory(body: PayCategoryBody): Promise<{ pid: string }> {
+  return api("/pay-categories", { method: "POST", body });
+}
+
+export function changePayCategory(pid: string, body: PayCategoryBody): Promise<{ pid: string }> {
+  return api(`/pay-categories/${pid}`, { method: "PUT", body });
+}
+
+export function removePayCategory(pid: string): Promise<unknown> {
+  return api(`/pay-categories/${pid}`, { method: "DELETE" });
+}
+
+/** A figure of the gap report: shown, withheld, or unknown with its reason (mirror `rules::pay_gap::Figure`). */
+export type GapFigure<T> =
+  | { status: "shown"; value: T }
+  | { status: "withheld" }
+  | { status: "unknown"; value: "no_workers" | "one_sided" | "no_base" | "no_category" | "no_sex_recorded" | "variable_not_recorded" };
+
+export type Gap = { female_minor: number; male_minor: number; gap_bp: number };
+export type Excluded = { status: "exactly"; value: number } | { status: "under_floor" };
+
+export type PayGapReport = {
+  organization: string;
+  as_of: string;
+  currency: string | null;
+  basis: { pay: string; variable: string; variable_gap_taken_over: string };
+  reporting: { every_years: number; first_report_on: string; next_report_on: string } | null;
+  derivation: string;
+  report: {
+    floor: number;
+    mean_gap: GapFigure<Gap>;
+    mean_variable_gap: GapFigure<Gap>;
+    median_gap: GapFigure<Gap>;
+    median_variable_gap: GapFigure<Gap>;
+    receiving_variable: GapFigure<{ female_bp: number; male_bp: number }>;
+    quartiles: Array<GapFigure<{ female_bp: number; male_bp: number }>>;
+    categories: Array<{ category: string; basic: GapFigure<Gap>; variable: GapFigure<Gap> }>;
+    exclusions: {
+      no_sex_declared: Excluded;
+      sex_not_female_or_male: Excluded;
+      no_pay_recorded: Excluded;
+      variable_unknown: Excluded;
+      uncategorised: Excluded;
+    };
+  };
+};
+
+export type GapQuery = { asOf?: string; currency?: string; variable?: string };
+
+function gapQuery(organization: string, o: GapQuery): string {
+  const q = new URLSearchParams({ organization });
+  if (o.asOf) q.set("as_of", o.asOf);
+  if (o.currency) q.set("currency", o.currency);
+  if (o.variable) q.set("variable", o.variable);
+  return q.toString();
+}
+
+/** The seven pay-gap indicators. Needs a payroll-level read; audited. */
+export function getPayGapReport(
+  organization: string,
+  options: GapQuery = {},
+  init?: FetchLike,
+): Promise<PayGapReport> {
+  return api(`/pay-transparency/gap-report?${gapQuery(organization, options)}`, init);
+}
+
+/** Where the CSV of the same report is read (a link; the browser downloads it). */
+export function payGapCsvUrl(organization: string, options: GapQuery = {}): string {
+  return `/api/proxy/pay-transparency/gap-report/csv?${gapQuery(organization, options)}`;
+}

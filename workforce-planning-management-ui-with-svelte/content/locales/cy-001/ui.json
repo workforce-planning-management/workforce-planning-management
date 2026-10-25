@@ -45,7 +45,8 @@
     "kanban": "Fy mwrdd",
     "positions": "Swyddi",
     "policies": "Polisïau",
-    "payRange": "Safle cyflog"
+    "payRange": "Safle cyflog",
+    "payGap": "Bwlch cyflog"
   },
   "pr": {
     "retention": "Cadw data",
@@ -1394,6 +1395,9 @@
     },
     "payRange": {
       "page_title": "{payRange} — WPM"
+    },
+    "payGap": {
+      "page_title": "{payGap} — WPM"
     }
   },
   "titles": {
@@ -1430,7 +1434,8 @@
     "kanban": "Fy mwrdd — WPM",
     "my_details": "Fy manylion — WPM",
     "policies": "Polisïau — WPM",
-    "payRange": "Safle cyflog — WPM"
+    "payRange": "Safle cyflog — WPM",
+    "payGap": "Bwlch cyflog — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -2367,5 +2372,49 @@
     "no_groups": "Nid oes neb yn y grwpio hwn.",
     "choose_currency": "Arian (cod ISO, dewisol)",
     "audited": "Cofnodir agor yr adroddiad hwn yn y cofnod archwilio, gyda'r diwrnod y mae'n ei gwmpasu a phwy a'i agorodd, ond heb unrhyw ffigur."
+  },
+  "payGap": {
+    "hint": "Dangosyddion bwlch cyflog rhwng y rhywiau yng Nghyfarwyddeb tryloywder cyflog yr UE. Dim ond pan fydd y ddau ryw yn cyrraedd y trothwy y dangosir ffigur; ni enwir neb ac ni roddir nifer pennau. Mae AD yn gosod categorïau gweithwyr; mae'r adroddiad angen mynediad at gyflogres.",
+    "categories": "Categorïau gweithwyr",
+    "categories_none": "Dim categori eto. Hebddo, ni ellir dangos y bwlch yn ôl categori.",
+    "basis": "Pam mae'r swyddi hyn yn gymharol (sail a nodwyd)",
+    "job_titles": "Teitlau swyddi, un fesul llinell",
+    "add_category": "Ychwanegu categori",
+    "indicators": "Y dangosyddion",
+    "variable_basis": "Cymerir tâl newidiol dros",
+    "all_known": "Pawb y gwyddys eu tâl newidiol",
+    "recipients_only": "Dim ond y rhai a gafodd rywfaint",
+    "reporting": "Adroddiad bob {years} blynedd: y cyntaf ar {first}, y nesaf ar {next}",
+    "no_reporting": "O dan y nifer pennau sy'n gorfod adrodd",
+    "csv": "Lawrlwytho fel CSV",
+    "gap_note": "Mae bwlch positif yn golygu bod dynion yn cael mwy; un negyddol, menywod.",
+    "female": "Menywod",
+    "male": "Dynion",
+    "gap": "Bwlch",
+    "category": "Categori",
+    "basic": "Cyflog sylfaenol",
+    "mean_gap": "Bwlch cymedrig, cyfanswm tâl",
+    "mean_variable_gap": "Bwlch cymedrig, tâl newidiol",
+    "median_gap": "Bwlch canolrif, cyfanswm tâl",
+    "median_variable_gap": "Bwlch canolrif, tâl newidiol",
+    "receiving_variable": "Cyfran sy'n cael tâl newidiol",
+    "quartile": "Chwartel tâl {n}",
+    "by_category": "Bwlch yn ôl categori gweithwyr",
+    "withheld": "Cuddiedig: llai na {floor} o un rhyw",
+    "reason_no_workers": "Neb yn y grŵp",
+    "reason_one_sided": "Dim ond un rhyw sy'n bresennol",
+    "reason_no_base": "Mae ffigur y dynion yn sero neu lai",
+    "reason_no_category": "Dim teitl swydd mewn categori",
+    "reason_no_sex_recorded": "Heb ddatgan rhyw",
+    "exclusions": "Wedi'u gadael allan o'r dangosyddion",
+    "excl_no_sex_declared": "Heb ddatgan rhyw",
+    "excl_sex_not_female_or_male": "Datganiad heblaw benyw neu wryw",
+    "excl_no_pay_recorded": "Dim cyflog sylfaenol wedi'i gofnodi",
+    "excl_variable_unknown": "Tâl newidiol heb ei gofnodi",
+    "excl_uncategorised": "Mewn dim categori",
+    "under_floor": "llai na {floor}",
+    "reason_variable_not_recorded": "Nid oes tâl newidiol neb wedi'i gofnodi, felly ni ellir ei gyfrifo",
+    "quartile_note": "Chwartel 1 yw'r tâl isaf.",
+    "edit": "Golygu"
   }
 }

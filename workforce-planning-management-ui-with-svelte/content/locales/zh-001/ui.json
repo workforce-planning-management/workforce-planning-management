@@ -45,7 +45,8 @@
     "kanban": "我的看板",
     "positions": "岗位",
     "policies": "政策",
-    "payRange": "薪酬定位"
+    "payRange": "薪酬定位",
+    "payGap": "薪酬差距"
   },
   "pr": {
     "retention": "保留",
@@ -1394,6 +1395,9 @@
     },
     "payRange": {
       "page_title": "{payRange} — WPM"
+    },
+    "payGap": {
+      "page_title": "{payGap} — WPM"
     }
   },
   "titles": {
@@ -1430,7 +1434,8 @@
     "kanban": "我的看板 — WPM",
     "my_details": "我的资料 — WPM",
     "policies": "政策 — WPM",
-    "payRange": "薪酬定位 — WPM"
+    "payRange": "薪酬定位 — WPM",
+    "payGap": "薪酬差距 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -2367,5 +2372,49 @@
     "no_groups": "此分组中没有人。",
     "choose_currency": "币种（ISO 代码，可选）",
     "audited": "打开此报告会记入审计日志，记录其涵盖的日期和打开者，但不记录任何数字。"
+  },
+  "payGap": {
+    "hint": "欧盟薪酬透明度指令要求的性别薪酬差距指标。只有两种性别都达到门槛时才显示数字；不点名，也不给出人数。人力资源设置员工类别；报告需要薪资访问权限。",
+    "categories": "员工类别",
+    "categories_none": "尚无类别。没有类别就无法显示按类别的差距。",
+    "basis": "为何这些岗位可比（声明的依据）",
+    "job_titles": "职位名称，每行一个",
+    "add_category": "添加类别",
+    "indicators": "指标",
+    "variable_basis": "可变薪酬按以下范围计算",
+    "all_known": "所有可变薪酬已知者",
+    "recipients_only": "仅领取过可变薪酬者",
+    "reporting": "每 {years} 年报告一次：首次 {first}，下次 {next}",
+    "no_reporting": "低于须报告的人数",
+    "csv": "下载 CSV",
+    "gap_note": "正差距表示男性薪酬更高；负差距表示女性更高。",
+    "female": "女性",
+    "male": "男性",
+    "gap": "差距",
+    "category": "类别",
+    "basic": "基本工资",
+    "mean_gap": "平均差距，总薪酬",
+    "mean_variable_gap": "平均差距，可变薪酬",
+    "median_gap": "中位数差距，总薪酬",
+    "median_variable_gap": "中位数差距，可变薪酬",
+    "receiving_variable": "领取可变薪酬的比例",
+    "quartile": "薪酬四分位 {n}",
+    "by_category": "按员工类别的差距",
+    "withheld": "已隐藏：某一性别少于 {floor}",
+    "reason_no_workers": "该组无人",
+    "reason_one_sided": "只有一种性别",
+    "reason_no_base": "男性数字为零或更低",
+    "reason_no_category": "职位不在任何类别中",
+    "reason_no_sex_recorded": "未声明性别",
+    "exclusions": "未纳入指标",
+    "excl_no_sex_declared": "未声明性别",
+    "excl_sex_not_female_or_male": "声明为女性或男性以外的类别",
+    "excl_no_pay_recorded": "未记录基本工资",
+    "excl_variable_unknown": "未记录可变薪酬",
+    "excl_uncategorised": "不在任何类别",
+    "under_floor": "少于 {floor}",
+    "reason_variable_not_recorded": "没有人的可变薪酬被记录，因此无法计算",
+    "quartile_note": "四分位 1 为薪酬最低。",
+    "edit": "编辑"
   }
 }
