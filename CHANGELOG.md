@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — dependencies and Redis 8 (WPM-T305)
+
+The Lily design system packages are on their latest releases (`svelte-headless` 0.6.1, `svelte-locale-translations` 0.3.0, `themes` 0.6.0), with `vite` 8.3.5; the Rust lockfile took 26 compatible updates (`tokio` 1.54.1, `redis` 1.8.0, `uuid` 1.29.0 and others). The three Dependabot changes are applied (`pnpm/action-setup` 6.1.0; Redis 8 in both compose files, and in CI, which Dependabot does not read). Eleven stale advisory ignores are gone from `deny.toml`. TypeScript 7 was tried and is not adopted: `svelte-check` and SvelteKit do not load it yet.
+
+
 ### Added — request log without personal data, and an audit export (WPM-R122, WPM-T197)
 
 One log line per request with a request id and a route such as `/api/workers/{}`: no query string, header, body or caller. Loco's own logger, which wrote the whole URI, is off. `GET /api/audits/export` returns the audit trail as resumable JSON Lines for a security monitoring system, without snapshots.

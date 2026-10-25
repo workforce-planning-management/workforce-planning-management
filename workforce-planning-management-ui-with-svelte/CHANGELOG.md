@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Lily packages and vite (WPM-T305)
+
+`@lilydesignsystem/svelte-headless` 0.6.1, `svelte-locale-translations` 0.3.0 and `themes` 0.6.0; `vite` 8.3.5. `svelte-check`, the unit tests and the Playwright suite pass unchanged. TypeScript stays on 6.0.3: version 7 breaks `svelte-check` and the SvelteKit loader. `pnpm audit` reports no known vulnerabilities.
+
+
 ### Security — the content manager's script is pinned and its page has a policy (WPM-T249)
 
 `/admin` loaded Sveltia CMS from unpkg at whatever version was newest, with no integrity hash and no content security policy. It now loads 0.230.0 with its `sha384` hash, and the page sends a policy that lets only that script and its own hashed inline script run. Updating the CMS means changing the version and the hash in `src/lib/server/admin-page.ts`.

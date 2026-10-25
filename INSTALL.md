@@ -24,7 +24,7 @@ data: a demo session reaches only that service, with no authentication.
 - **Rust** — MSRV is declared as `rust-version = "1.99"` in
   `workforce-planning-management-service-with-rust/Cargo.toml`.
 - **Podman** (not Docker) — for the service's test database and Redis.
-- **PostgreSQL 18 and Redis 7** — provided by
+- **PostgreSQL 18 and Redis 8** — provided by
   `workforce-planning-management-service-with-rust/compose.test.yaml`;
   no host install needed for development.
 - **Node.js 26** and **pnpm** — for the SvelteKit front-end

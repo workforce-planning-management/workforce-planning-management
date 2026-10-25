@@ -4947,3 +4947,23 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       token issuance was exercised; no third-party MCP client (an IDE or an agent SDK) was run, so interoperability beyond my reading of the specification is
       unproven; the audience of a token is not checked; resources, prompts, sampling, `outputSchema` and pagination are not built; `WWW-Authenticate` has no
       `error` or `scope` parameters; the DELETE difference above.
+- [x] (2026-10-25) WPM-T305 **Dependencies, the Lily design system, the Dependabot changes and the advisory policy updated.** *(WPM-R119)* **UI:** `@lilydesignsystem/svelte-headless`
+      0.5.1 to 0.6.1, `svelte-locale-translations` 0.1.0 to 0.3.0, `themes` 0.5.0 to 0.6.0 and `vite` 8.3.4 to 8.3.5 (exact pins, as before; the
+      other Lily packages were already latest; the theme stylesheets regenerate, 57). `svelte-check` 0 errors, 210 unit tests and Playwright 235 passed / 19 skipped,
+      unchanged. **TypeScript 7.0.2 was tried and is not adopted:** `svelte-check` 4.7.7 and SvelteKit 3.1.0 fail to load it; TypeScript stays on 6.0.3 and
+      the package files were restored. `pnpm audit`: no known vulnerabilities. **Rust:** `cargo update` took 26 compatible updates (`tokio` 1.53.3 to
+      1.54.1, `redis` 1.7.1 to 1.8.0, `uuid` 1.28 to 1.29, `brotli`, `cc`, the ICU crates and others); a lookup of every direct dependency of the service and the matcher
+      against crates.io found none with a newer breaking line, and the matcher's lockfile had nothing to update. **The three open Dependabot pull requests
+      (#14, #15, #16) were applied by hand** (their checks were green): `pnpm/action-setup` 6.1.0 in CI, and Redis 7 to 8 in `compose.yaml` and
+      `compose.test.yaml`; the five Redis 7 service images in `ci.yml`, which Dependabot does not read, were moved to the same Redis 8 digest, and INSTALL and
+      `spec/testing.md` now say Redis 8. **Advisory policy:** `cargo deny check` warned that eleven of the twelve ignored advisories were "not encountered"; those
+      eleven are removed from `deny.toml`, so each fails the build again if it returns, and the one that still matches (RUSTSEC-2024-0449, `unsafe-libyaml`,
+      unmaintained, via Loco) stays with its note. `cargo deny check` passes (advisories, bans, licences, sources) and `cargo audit` reports no vulnerability for the service or the
+      matcher (one allowed warning: the same crate). `scripts/check-actions-pinned.py`: all pinned. Verified (Postgres 18 and **Redis 8.10.2** in Podman, `WPM_TEST_REDIS_URL` set):
+      clippy pedantic clean on the new lockfile; 814 unit tests; 154 request tests, including `redis_is_shared_between_instances_and_fails_open` against Redis 8 (it skips
+      without the variable; checked both ways); every `enforcement_*` binary, `chaos`, `request_log`, `retention_schedule`, `security`, `route_coverage`, `scheduler_config`.
+      **Not done:** the GitHub pull requests are not closed and nothing is pushed: the changes are committed locally only (this repository's `origin` pushes to Codeberg and fetches
+      from GitHub), so closing #14 to #16 now would point at nothing; the GitHub notifications listed were for other repositories and were left alone; the Redis password and TLS
+      variants of the shared-cache tests did not run (their variables are not set); `shared_cache_upstream` ran no test here (it is filtered out); the Keycloak and Entra binaries
+      were not re-run; the CI workflow was not run, so the new action and Redis 8 service images are untested in CI; there is no `CLAUDE.md`, and no `*-skill` or `*.github.io`
+      folder in this repository or beside it, so nothing was updated there; every agent file is already under 40 000 bytes (the largest is 7 382).

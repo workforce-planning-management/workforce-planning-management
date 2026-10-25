@@ -4,26 +4,13 @@
 [advisories]
 version = 2
 yanked = "warn"
-# Transitive advisories carried by the shared Rust/Loco dependency tree
-# (mostly via loco-rs -> opendal / sqlx / async deps). They are not
-# fixable at the service/library level without an upstream loco-rs bump,
-# so they are accepted here WITH this note and revisited on the next
-# loco-rs upgrade. Matcher / library crates with small trees do not pull
-# these (an unused ignore is a harmless warning). Real, actionable
-# advisories NOT on this list still fail the build.
+# Advisories accepted WITH a note. An entry is added only for a transitive advisory that cannot be fixed at this level without an
+# upstream bump, and is removed once `cargo deny check` says it was "not encountered" (it then warns). On 2026-10-25 eleven earlier
+# entries (proc-macro-error, instant, paste, protobuf, quick-xml and six more from the loco tree) no longer matched anything in the
+# lockfile and were removed, so each of those advisories now fails the build again if a dependency brings it back. Real, actionable
+# advisories NOT on this list fail the build.
 ignore = [
-    "RUSTSEC-2024-0370", # proc-macro-error (unmaintained), transitive
-    "RUSTSEC-2024-0384", # instant (unmaintained), transitive
-    "RUSTSEC-2024-0436", # paste (unmaintained), transitive
-    "RUSTSEC-2024-0437", # protobuf recursion, transitive
-    "RUSTSEC-2025-0052", # transitive advisory (loco tree)
-    "RUSTSEC-2026-0173", # transitive advisory (loco tree)
-    "RUSTSEC-2026-0190", # transitive advisory (loco tree)
-    "RUSTSEC-2026-0194", # transitive advisory (loco tree)
-    "RUSTSEC-2026-0195", # quick-xml namespace-declaration DoS, transitive (opendal)
-    "RUSTSEC-2026-0204", # transitive advisory (loco tree)
-    "RUSTSEC-2025-0057", # transitive advisory (loco tree)
-    "RUSTSEC-2024-0449", # unsafe-libyaml (unmaintained), transitive (loco tree)
+    "RUSTSEC-2024-0449", # unsafe-libyaml (unmaintained), transitive (loco tree: serde_yaml); no fixed release to move to
 ]
 
 [licenses]

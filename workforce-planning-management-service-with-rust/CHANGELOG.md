@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — lockfile and advisory policy (WPM-T305)
+
+`cargo update` (26 compatible updates, including `tokio`, `redis` and `uuid`); `compose.test.yaml` starts Redis 8. `deny.toml` keeps one accepted advisory (`unsafe-libyaml`, unmaintained, via Loco) and drops eleven that no longer match anything, so they fail the build again if they return. `cargo deny check` and `cargo audit` pass.
+
+
 ### Changed — the wellbeing reminder stays until it is answered (WPM-T247)
 
 `GET /api/workers/{pid}/wellbeing-prompts` no longer writes: it used to mark the one multi-dose reminder as sent while serving it, so a prefetch or retry used it up. The reminder now stays on the list until the worker answers it, and answering it marks it sent.

@@ -88,7 +88,7 @@ State as of 2026-10-07 (WPM-T97).
 `entity-ref` is vendored in `workforce-planning-management-service-with-rust/crates/`
 (WPM-T123) and `authentication-verifier` comes from crates.io, so a fresh clone
 builds and tests with no scratch workspace. Start a throwaway Postgres 18 and a
-Redis 7 under **Podman** (`podman compose -f compose.test.yaml up -d --wait`, which
+Redis 8 under **Podman** (`podman compose -f compose.test.yaml up -d --wait`, which
 mounts `postgres-init/`; set `WPM_TEST_REDIS_URL=redis://localhost:6379` so the
 Redis-backed shared-cache tests run instead of skipping), then run `cargo test --lib`,
 `cargo test --test mod -- --ignored --test-threads=1` (serial — the tests share

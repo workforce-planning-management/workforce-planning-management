@@ -9,7 +9,7 @@
 #
 # The connection details deliberately match what CI provides
 # (.github/workflows/ci.yml, job `api-db`): superuser `loco`/`loco` on 5432,
-# Redis 7 on 6379.
+# Redis 8 on 6379.
 # A database a test passes against locally but CI cannot reproduce is
 # worse than no local database.
 services:
@@ -49,7 +49,7 @@ services:
       start_period: 5s
 
   redis:
-    image: docker.io/library/redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    image: docker.io/library/redis:8-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
     container_name: wpm-test-redis
     # A cache: nothing to keep, so no snapshots and no append-only file.
     command: ["redis-server", "--save", "", "--appendonly", "no"]
