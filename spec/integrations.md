@@ -67,8 +67,11 @@ is made, so no argument can steer a call to another route. Each call writes an a
 that cannot be written the call is not made (WPM-D107). Tests: every tool is a documented `GET` of the OpenAPI document and is
 classified in the need-to-know table; no tool name reads like a write; an enforcement test with real tokens (anonymous 401, a worker
 refused the report by the API itself, HR given it, a worker given the AI register, a path-traversal argument refused).
-**Not built:** OAuth protected-resource metadata and token audience binding (the endpoint takes the deployment's existing bearer
-token, as every route does); resources, prompts, sampling and pagination; `outputSchema` for the tools; a rate limit of its own
+**OAuth protected-resource metadata is built** (WPM-T304, RFC 9728): `GET /.well-known/oauth-protected-resource` and `.../mcp`, public, from
+`WPM_MCP_RESOURCE` and `WPM_MCP_AUTHORIZATION_SERVERS` (404 until both are set, 500 if they are unusable); every `401` carries
+`WWW-Authenticate: Bearer`, and on `/mcp` `resource_metadata="<the metadata URL>"`. **Run against an independent client** (`scripts/check-mcp-flow.mjs`).
+**Not built:** token audience binding (the endpoint takes the deployment's existing bearer token, as every route does; WPM is not an
+authorization server and does not check that a token was issued for this resource); resources, prompts, sampling and pagination; `outputSchema` for the tools; a rate limit of its own
 beyond the service's (a tool call is one request to the endpoint, not counted again inside).
 
 ### WPM-R150 — SCIM 2.0 outbound provisioning

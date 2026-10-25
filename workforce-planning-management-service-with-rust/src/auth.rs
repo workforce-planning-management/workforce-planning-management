@@ -252,6 +252,9 @@ pub(crate) fn is_public_path(path: &str) -> bool {
         // A verifier has no account here: the issuer's public key and the revocation list (WPM-R157, WPM-D109).
         || path == "/api/credentials/issuer"
         || path == "/api/credentials/status-list"
+        // The MCP endpoint's OAuth protected-resource metadata (RFC 9728): where tokens come from, no person (WPM-T304).
+        || path == "/.well-known/oauth-protected-resource"
+        || path == "/.well-known/oauth-protected-resource/mcp"
         || path.starts_with("/swagger-ui")
 }
 

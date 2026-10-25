@@ -315,6 +315,8 @@ impl Hooks for App {
                 crate::need_to_know::need_to_know_mw,
             ))
             .layer(axum::middleware::from_fn(require_auth_mw))
+            // A 401 says it wants a bearer token (RFC 6750) and, on /mcp, where the OAuth metadata is (WPM-T304).
+            .layer(axum::middleware::from_fn(controllers::mcp::challenge_mw))
             .layer(axum::middleware::from_fn(
                 crate::version::require_version_mw,
             ))

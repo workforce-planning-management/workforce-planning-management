@@ -4920,3 +4920,30 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       interoperability beyond the standards as I read them is unproven; the Data Integrity proof form and key rotation are not built; status list
       caching and its time-to-live were not checked; a credential for a skill assessment is not built; the worker's `/me` credentials panel was not run
       against this sign-in-on service (the UI needs a session, not a token).
+- [x] (2026-10-25) WPM-T304 **OAuth protected-resource metadata for the MCP endpoint, and the MCP server run against an independent client.** *(WPM-R149, WPM-D101)* "OAuth
+      protected-resource metadata" stood as not built, and no real MCP client had been run. **Built:** `GET /.well-known/oauth-protected-resource` and
+      `.../mcp` (RFC 9728), public (in `is_public_path`), from the new settings `WPM_MCP_RESOURCE` (the endpoint's URL as clients reach it) and
+      `WPM_MCP_AUTHORIZATION_SERVERS` (comma-separated `https` issuers): 404 until both are set, 500 if they are unusable, never a made-up document. The pure rules
+      are in `rules::mcp` (`metadata_path`, `metadata_url`, `protected_resource`, `challenge`; 3 new unit tests: the path-aware well-known path, the document and
+      its exact keys, the challenge). Every `401` now carries `WWW-Authenticate: Bearer` (RFC 6750; none did before) and on `/mcp`
+      `Bearer resource_metadata="<the metadata URL>"`, as the MCP authorization section asks (`challenge_mw`, outside the sign-in layer). Token audience
+      binding is not built: WPM is not an authorization server and does not check that a token was issued for this resource. **Tests:**
+      `enforcement_pay_gap` asserts the document is public once configured and 404 before, both well-known paths, the 401 challenge with and without
+      the pointer, an API route's 401 without the pointer, and a 500 for an `http` authorization server; two faults tried and caught (the `/mcp`
+      path made non-public; the challenge layer removed). **The independent client** `scripts/check-mcp-flow.mjs` is written from the MCP specification
+      revision 2025-11-25, JSON-RPC 2.0 and RFC 9728 with Node's fetch, sharing no code with the service, with test tokens minted from a throwaway key
+      (`--print-env` prints the settings; sign-in must be on). Against the real service (sign-in on, the reference policy, Postgres 18 in Podman) all its checks
+      pass: the 401 challenge and the metadata it points at (public, `resource` equal to the endpoint URL, https authorization servers, header bearer
+      method, nothing about anyone); `initialize` echoing the request id and the pinned revision, capability `tools` only, `serverInfo`; the initialized
+      notification answered 202 with no body; ping; `tools/list` (ten tools, each with a name, description and object input schema, unique names, none
+      read like a write, none declared not read-only); a call the caller may make returning text content; a call the API refuses the caller returning a
+      **tool error** (`isError`, saying 403) and not a protocol error; an unknown tool, -32602; a route-steering argument refused; the same tool for another caller
+      answering for that caller; an unknown method, -32601; a body that is not JSON, 400 with -32700; a protocol version the server does not speak, 400; an
+      `Origin` not listed, 403; `GET` 405; the token echoed nowhere. A mutant client expecting another revision fails four checks. **Found, not fixed:** a worker's
+      `DELETE /mcp` is refused 403 by the access policy before the route can answer 405 (a service caller gets 405); the spec allows a refusal and the script
+      accepts either. Verified (Postgres 18, Podman): clippy pedantic clean; 814 unit tests; 154 request tests; every `enforcement_*` binary, `chaos`,
+      `request_log`, `retention_schedule`, `security`, `route_coverage`, `scheduler_config`. **Not done:** one client I wrote, over `http://localhost`, with no real
+      authorization server behind the metadata (its `https://login.example.org/...` is a placeholder), so no real OAuth discovery, dynamic client registration or
+      token issuance was exercised; no third-party MCP client (an IDE or an agent SDK) was run, so interoperability beyond my reading of the specification is
+      unproven; the audience of a token is not checked; resources, prompts, sampling, `outputSchema` and pagination are not built; `WWW-Authenticate` has no
+      `error` or `scope` parameters; the DELETE difference above.

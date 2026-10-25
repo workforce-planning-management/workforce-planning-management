@@ -401,7 +401,40 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         // ── MCP: the endpoint needs a token, and a tool is refused exactly as its route is ──────────────
         let tool = |name: &str, arguments: Value| json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": { "name": name, "arguments": arguments } });
         let call = json!(tool("human_capital_report", json!({ "organization": org })));
-        assert_eq!(request.post("/mcp").json(&call).await.status_code(), 401, "no token");
+        let denied = request.post("/mcp").json(&call).await;
+        assert_eq!(denied.status_code(), 401, "no token");
+        assert_eq!(denied.header("www-authenticate").to_str().unwrap(), "Bearer", "a 401 names its scheme; there is no metadata until it is configured");
+        assert_eq!(request.get("/.well-known/oauth-protected-resource").await.status_code(), 404, "not configured: not described");
+        // OAuth protected-resource metadata (RFC 9728, WPM-T304): public once configured, and the 401 on /mcp points at it.
+        unsafe {
+            std::env::set_var("WPM_MCP_RESOURCE", "http://localhost:5150/mcp");
+            std::env::set_var("WPM_MCP_AUTHORIZATION_SERVERS", "https://login.example/realms/wpm, https://other.example");
+        }
+        for path in ["/.well-known/oauth-protected-resource/mcp", "/.well-known/oauth-protected-resource"] {
+            let meta = if path.ends_with("/mcp") { request.get("/.well-known/oauth-protected-resource/mcp").await } else { request.get("/.well-known/oauth-protected-resource").await };
+            assert_eq!(meta.status_code(), 200, "{path} is public: {}", meta.text());
+            let doc: Value = meta.json();
+            assert_eq!(doc["resource"], "http://localhost:5150/mcp");
+            assert_eq!(doc["authorization_servers"], json!(["https://login.example/realms/wpm", "https://other.example"]));
+            assert_eq!(doc["bearer_methods_supported"], json!(["header"]));
+        }
+        let pointed = request.post("/mcp").json(&call).await;
+        assert_eq!(pointed.status_code(), 401);
+        assert_eq!(
+            pointed.header("www-authenticate").to_str().unwrap(),
+            "Bearer resource_metadata=\"http://localhost:5150/.well-known/oauth-protected-resource/mcp\""
+        );
+        let other = request.get("/api/workers").await;
+        assert_eq!(other.status_code(), 401);
+        assert_eq!(other.header("www-authenticate").to_str().unwrap(), "Bearer", "an API route's 401 names the scheme without the MCP pointer");
+        unsafe {
+            std::env::set_var("WPM_MCP_AUTHORIZATION_SERVERS", "http://not-https.example");
+        }
+        assert_eq!(request.get("/.well-known/oauth-protected-resource").await.status_code(), 500, "unusable settings are an error, not a made-up document");
+        unsafe {
+            std::env::remove_var("WPM_MCP_RESOURCE");
+            std::env::remove_var("WPM_MCP_AUTHORIZATION_SERVERS");
+        }
         let as_worker: Value = request.post("/mcp").add_header("authorization", worker.clone()).json(&call).await.json();
         assert_eq!(as_worker["result"]["isError"], true, "a worker is refused the report by the API itself");
         assert!(as_worker["result"]["content"][0]["text"].as_str().unwrap().contains("403"), "{as_worker}");
