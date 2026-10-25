@@ -118,7 +118,7 @@ occurred_at}` where `subject` is the URN (`worker:<pid>`, `leave_request:<pid>`)
 of "<t>.<body>">` with the timestamp inside the signature, no redirects followed, a 10 second timeout. 2xx is delivered; a network
 failure, `408`, `429` and `5xx` are retried with a back-off of one minute doubling to a day, ten tries in all; any other answer is a
 refusal and is not repeated. The log keeps the HTTP status and a short reason; **there is no column for a body**. Erasure deletes the
-deliveries that name the worker. Settings: the secret variables only. **A schedule** is in `config/scheduler.yaml` (every minute, WPM-T300). **Not built:** the other events in the spec's list ("movement": WPM emits no movement event on the
+deliveries that name the worker. Settings: the secret variables only. **A schedule** is in `config/scheduler.yaml` (every minute, WPM-T300). **Run against an independent receiver** (`scripts/check-webhook-flow.py`, WPM-T301): a signed, fresh delivery whose body holds exactly the four fields, a 5xx retried after the back-off and a 4xx not repeated. **Not built:** the other events in the spec's list ("movement": WPM emits no movement event on the
 transport); DNS-rebinding protection (a host name that later resolves to an internal address is not caught, only address literals
 are); the secret rotated without a gap; a screen; a replay of a failed delivery.
 

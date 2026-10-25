@@ -4854,3 +4854,23 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       tests and stubs stand as before); the scheduler is not started by `compose.yaml` or any deployment manifest here (there is none
       for the API), so a deployer must start it; two schedulers at once were not tried (the tasks are idempotent, by their tests);
       job output goes to the scheduler's output, so `webhook_deliver` writes a line a minute; time zone is the host's.
+- [x] (2026-10-25) WPM-T301 **The outbound webhook flow run against an independent receiver.** *(WPM-R151, WPM-D106)* "No real webhook receiver was ever run" had stood in every
+      report. `scripts/check-webhook-flow.py` is a receiver written from the spec alone (it shares no code with the service: it recomputes
+      `X-WPM-Signature: t=<unix>,v1=<HMAC-SHA256 of "<t>.<body>">` from the shared secret and checks the timestamp) and a driver for a
+      running demo service. Run against the real service (`WPM_REQUIRE_AUTH=0`, Postgres 18 in Podman, `WPM_WEBHOOK_SECRET_E2E` set on
+      both sides) and, for the first delivery, through the real Loco scheduler running `webhook_deliver` as a child process: a worker
+      moved to active queued one delivery with **no body** (the log row has no column for one); the receiver verified the signature, the
+      timestamp was fresh, the body was exactly `{id, kind, subject, occurred_at}` with a `worker:<pid>` URN and no name or number, and
+      the log said delivered, status 200, attempt 1. A receiver answering **503**: the delivery stayed pending with status 503,
+      attempt 1, and the next try one minute later; an immediate second run sent nothing; after the minute, with the receiver answering
+      200, the same delivery went through on **attempt 2**. A receiver answering **400**: the delivery was marked failed, status 400,
+      and was not sent again. The script passes (`--retry` includes the wait) and is repeatable. Found on the way, in my own use, not in
+      the service: a subscription's `secret_ref` must be the whole variable name (`WPM_WEBHOOK_SECRET_<NAME>`), which the service says
+      in words; the task's one-line summary counts every delivery due, including other subscriptions', so the script checks the log of
+      its own subscription and not that summary. Verified: the script's checks pass (200, 503 then retry, 400); no Rust or UI file was
+      changed, so the suites were not re-run. **Not done:** one receiver, one machine, plain `http` to `127.0.0.1` (the allowed local
+      form); `https` and a real third-party receiver were not used; the scheduler's own one-minute schedule was not waited for (a
+      copy with a three-second schedule delivered the first); a delivery of `worker_terminated`, `worker_retired` or `leave_approved`
+      was not seen (only `worker_activated`); the script was not run against a database holding other subscriptions or real data; the
+      receiver was not tried with a wrong secret (the unit tests of `rules::webhook` cover a tampered body and a wrong secret); a
+      SCIM provider was not run (WPM-T276 used a stub; Keycloak has no SCIM endpoint), so that item stands.
