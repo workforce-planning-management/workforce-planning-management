@@ -1,9 +1,10 @@
 <script lang="ts">
   import { page } from "$app/state";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
-  import { listRuns } from "#lib/api/wpm.js";
+  import { listRunsPage } from "#lib/api/wpm.js";
   import { t, l, tv } from "#lib/i18n.svelte.js";
-  import { createLoader } from "#lib/loader.svelte.js";
+  import { createPagedLoader } from "#lib/paged.svelte.js";
+  import LoadMore from "#lib/components/LoadMore.svelte";
   import type { PayrollRun } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -11,8 +12,8 @@
     DataGridRow,
   } from "@lilydesignsystem/svelte-data-grid";
 
-  const loader = createLoader(() => listRuns());
-  const runs = $derived(loader.data);
+  const loader = createPagedLoader<PayrollRun>(() => listRunsPage);
+  const runs = $derived(loader.items);
   const error = $derived(loader.error);
 
   $effect(() => {
@@ -63,4 +64,6 @@
     rowId={(row) => String(row.pid)}
     pageSize={25}
   />
+  <LoadMore shown={runs.length} total={loader.total} more={loader.more} loading={loader.loadingMore} onmore={() => loader.showMore()} />
+  {#if loader.moreError}<ErrorNote testid="more-error" message={loader.moreError} />{/if}
 {/if}

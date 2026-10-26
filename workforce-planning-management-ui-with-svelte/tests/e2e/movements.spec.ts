@@ -85,7 +85,7 @@ test.describe("Joiners and leavers", () => {
       },
     ];
     const trail: Array<Record<string, unknown>> = [];
-    await page.route("**/api/proxy/movements", (route) =>
+    await page.route("**/api/proxy/movements?limit=500", (route) =>
       route.fulfill({ json: [movement] }),
     );
     await page.route(`**/api/proxy/movements/${mv}`, (route) =>

@@ -4098,9 +4098,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       every page already loaded. Verified: svelte-check 0 errors, 213 unit tests (3 new for `apiPage`), `pnpm run lint`, Playwright 238 passed / 19 skipped
       (new: a long list pages, a short list has no control; two existing stubs adjusted for the `?limit=500` query). **Not verified:** no screenshot
       looked at; the proxy header forwarding has no test of its own (the stub supplies the headers); only requisitions is wired.
-      **Still open:** the other paged lists in the UI (cutovers, payroll runs, movements, resignations, flexible working, conversion plans,
-      expenses, notifications) still show their first 500 with no control; per-worker lists (bounded by one person's history, left unpaged
-      on purpose); the early-warning list (its totals cover all rows); the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run).
+      Part 5 done (2026-10-26): the control is shared. `lib/paged.ts` (pure: `readPages`, `readNext`, `hasMore`; unit-tested, 5 tests) and
+      `lib/paged.svelte.ts` (`createPagedLoader`: the rows, total, more flag, a guard against an older answer, a failed "show more"
+      kept apart from a failed load so the rows stay). On `/requisitions` (now using it), `/expenses`, `/payroll` and `/movements`;
+      `/expenses` starts again from page one when the status changes. Verified: svelte-check 0 errors, lint, 218 unit tests, Playwright 239
+      passed / 19 skipped (new: payroll pages, and a failed second page keeps the first). **Not verified:** no screenshot looked at;
+      expenses and movements have no paging test of their own (the shared control and loader are tested through requisitions and payroll).
+      **Still open:** cutovers, resignations, flexible working, conversion plans and notifications in the UI still show their first 500
+      with no control (they are not simple arrays, or are per-person); per-worker lists (bounded by one person's history, left unpaged on
+      purpose); the early-warning list (its totals cover all rows); the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run).
       This task stays open for those.
 - [x] WPM-T255 (2026-10-23) **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
       plan-builder out of `handover::apply` (235 lines) and `lms::apply` (178).

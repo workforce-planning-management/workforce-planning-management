@@ -67,6 +67,22 @@ import type {
 
 type FetchLike = { fetch?: typeof fetch };
 
+/** The query string of a paged list: the filters that are set, then `limit` and `offset` (the first page sends no offset). */
+function pageQuery(
+  filters: Record<string, string | undefined>,
+  limit?: number,
+  offset?: number,
+): string {
+  const query = new URLSearchParams();
+  for (const [name, value] of Object.entries(filters)) {
+    if (value) query.set(name, value);
+  }
+  if (limit !== undefined) query.set("limit", String(limit));
+  if (offset) query.set("offset", String(offset));
+  const qs = query.toString();
+  return qs ? `?${qs}` : "";
+}
+
 /**
  * Format minor units + ISO-4217 as a locale-aware money string.
  * `null` renders as an em dash (the masked/absent state) — never 0,
@@ -214,6 +230,19 @@ export function createExpenseClaim(
   body: { title: string; currency: string; description?: string },
 ): Promise<ExpenseClaimSummary> {
   return api(`/workers/${workerPid}/expense-claims`, { method: "POST", body });
+}
+
+/** One page of the claims the caller may decide, with the total. */
+export function expenseQueuePage(
+  status: string | undefined,
+  limit: number,
+  offset: number,
+  init?: FetchLike,
+): Promise<Page<ExpenseClaimSummary>> {
+  return apiPage(
+    `/expense-claims${pageQuery({ status }, limit, offset)}`,
+    init,
+  );
 }
 
 /** Claims the caller may decide, by status (default `submitted`). */
@@ -383,12 +412,10 @@ export function listRequisitionsPage(
   opts: { status?: string; limit?: number; offset?: number } = {},
   init?: FetchLike,
 ): Promise<Page<Requisition>> {
-  const query = new URLSearchParams();
-  if (opts.status) query.set("status", opts.status);
-  if (opts.limit !== undefined) query.set("limit", String(opts.limit));
-  if (opts.offset) query.set("offset", String(opts.offset));
-  const qs = query.toString();
-  return apiPage(`/requisitions${qs ? `?${qs}` : ""}`, init);
+  return apiPage(
+    `/requisitions${pageQuery({ status: opts.status }, opts.limit, opts.offset)}`,
+    init,
+  );
 }
 
 /** One requisition. */
@@ -532,6 +559,15 @@ export function successionGaps(
   init?: FetchLike,
 ): Promise<{ gaps: SuccessionEntry["plan"][] }> {
   return api("/succession-plans/gaps", init);
+}
+
+/** One page of payroll runs, with the total. */
+export function listRunsPage(
+  limit: number,
+  offset: number,
+  init?: FetchLike,
+): Promise<Page<PayrollRun>> {
+  return apiPage(`/payroll-runs${pageQuery({}, limit, offset)}`, init);
 }
 
 /** Payroll runs. */
@@ -1956,6 +1992,16 @@ export function setSkillTrainingHours(
     method: "PUT",
     body: { hours_per_level: hoursPerLevel },
   });
+}
+
+/** One page of joiner and leaver records, with the total. */
+export function listMovementsPage(
+  options: { kind?: "joiner" | "leaver"; status?: string } | undefined,
+  limit: number,
+  offset: number,
+  init?: FetchLike,
+): Promise<Page<Movement>> {
+  return apiPage(`/movements${pageQuery({ ...options }, limit, offset)}`, init);
 }
 
 /** Joiner and leaver records (default open), soonest first. */

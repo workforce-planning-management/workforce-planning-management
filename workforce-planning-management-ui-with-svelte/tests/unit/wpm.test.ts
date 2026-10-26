@@ -115,6 +115,7 @@ describe("api path map", () => {
     await wpm.listRequisitions("open");
     await wpm.listRequisitionsPage({ status: "open", limit: 500, offset: 500 });
     await wpm.listRuns();
+    await wpm.listRunsPage(500, 500);
     await wpm.runPayslips("r1");
     await wpm.benchmarkComparison("organization:abc");
     await wpm.listSkills();
@@ -235,6 +236,7 @@ describe("api path map", () => {
     await wpm.setSkillTrainingHours("k1", 20);
     await wpm.listMovements();
     await wpm.listMovements({ kind: "leaver", status: "completed" });
+    await wpm.listMovementsPage({ kind: "leaver" }, 500, 500);
     await wpm.getMovement("m1");
     await wpm.openMovement("w1", {
       kind: "leaver",
@@ -275,6 +277,7 @@ describe("api path map", () => {
     await wpm.createExpenseClaim("w1", { title: "Trip", currency: "GBP" });
     await wpm.expenseQueue();
     await wpm.expenseQueue("approved");
+    await wpm.expenseQueuePage("approved", 500, 500);
     await wpm.getExpenseClaim("c1");
     await wpm.addExpenseItem("c1", {
       incurred_on: "2026-10-01",
@@ -424,6 +427,7 @@ describe("api path map", () => {
       "/api/proxy/requisitions?status=open",
       "/api/proxy/requisitions?status=open&limit=500&offset=500",
       "/api/proxy/payroll-runs",
+      "/api/proxy/payroll-runs?limit=500&offset=500",
       "/api/proxy/payroll-runs/r1/payslips",
       "/api/proxy/benchmarks/comparison?organization=organization%3Aabc",
       "/api/proxy/skills",
@@ -518,6 +522,7 @@ describe("api path map", () => {
       "/api/proxy/skills/k1/training-hours",
       "/api/proxy/movements",
       "/api/proxy/movements?kind=leaver&status=completed",
+      "/api/proxy/movements?kind=leaver&limit=500&offset=500",
       "/api/proxy/movements/m1",
       "/api/proxy/workers/w1/movements",
       "/api/proxy/workers/w1/movements",
@@ -542,6 +547,7 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/expense-claims",
       "/api/proxy/expense-claims",
       "/api/proxy/expense-claims?status=approved",
+      "/api/proxy/expense-claims?status=approved&limit=500&offset=500",
       "/api/proxy/expense-claims/c1",
       "/api/proxy/expense-claims/c1/items",
       "/api/proxy/expense-items/i1",

@@ -6,10 +6,12 @@
 -->
 <script lang="ts">
   import { guardedLoad } from "#lib/loader.svelte.js";
+  import { createPagedLoader } from "#lib/paged.svelte.js";
+  import LoadMore from "#lib/components/LoadMore.svelte";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { goto } from "$app/navigation";
-  import { listMovements, listWorkers, openMovement } from "#lib/api/wpm.js";
+  import { listMovementsPage, listWorkers, openMovement } from "#lib/api/wpm.js";
   import type { Movement } from "#lib/api/types.js";
   import { t, l, tf } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
@@ -27,9 +29,11 @@
     ["other", "movements.reasonOther"],
   ] as const;
 
-  let rows = $state<Movement[] | null>(null);
+  const list = createPagedLoader<Movement>(() => (limit, offset) => listMovementsPage(undefined, limit, offset));
+  const rows = $derived(list.items);
   let people = $state<Array<{ pid: string; display_name: string }>>([]);
-  let error = $state<string | null>(null);
+  let startError = $state<string | null>(null);
+  const error = $derived(startError ?? list.error);
   let kind = $state<"joiner" | "leaver">("leaver");
   let person = $state("");
   let date = $state("");
@@ -38,16 +42,17 @@
   const message = (cause: unknown) => (errorText(cause));
 
   const load = guardedLoad(
-    () => Promise.all([listMovements(), listWorkers()]),
+    () => listWorkers(),
     (answer) => {
-      [rows, people] = answer;
+      people = answer;
     },
     (cause) => {
-      error = message(cause);
+      startError = message(cause);
     },
   );
   $effect(() => {
     void load();
+    void list.load();
   });
 
   const movementColumns = (dateLabel: string): DataGridColumn[] => [
@@ -74,7 +79,7 @@
   const leavers = $derived((rows ?? []).filter((m) => m.kind === "leaver"));
 
   async function start() {
-    error = null;
+    startError = null;
     try {
       const made = await openMovement(person, {
         kind,
@@ -83,7 +88,7 @@
       });
       await goto(l(`/movements/${made.pid}`));
     } catch (cause) {
-      error = message(cause);
+      startError = message(cause);
     }
   }
 </script>
@@ -128,6 +133,8 @@
   {@render table(leavers, "leavers-table", t("movements.lastDay"))}
   <h2>{t("movements.joiners")}</h2>
   {@render table(joiners, "joiners-table", t("movements.startDay"))}
+  <LoadMore shown={rows.length} total={list.total} more={list.more} loading={list.loadingMore} onmore={() => list.showMore()} />
+  {#if list.moreError}<ErrorNote testid="more-error" message={list.moreError} />{/if}
 {/if}
 
 <details>

@@ -4,33 +4,29 @@
   never lists a person's own claim here, and never lets them decide it.
 -->
 <script lang="ts">
-  import { guardedLoad } from "#lib/loader.svelte.js";
-  import { errorText } from "#lib/write.js";
+  import { createPagedLoader } from "#lib/paged.svelte.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
-  import { expenseQueue, money } from "#lib/api/wpm.js";
+  import LoadMore from "#lib/components/LoadMore.svelte";
+  import { expenseQueuePage, money } from "#lib/api/wpm.js";
   import type { ExpenseClaimSummary } from "#lib/api/types.js";
   import ExpenseClaimView from "#lib/components/ExpenseClaimView.svelte";
   import { t, tp, i18n, tf } from "#lib/i18n.svelte.js";
 
   let status = $state("submitted");
-  let claims = $state<ExpenseClaimSummary[] | null>(null);
-  let error = $state<string | null>(null);
   let open = $state<string | null>(null);
 
-  const load = guardedLoad(
-    () => expenseQueue(status),
-    (found) => {
-      claims = found;
-      error = null;
-    },
-    (cause) => {
-      error = errorText(cause);
-    },
+  const list = createPagedLoader<ExpenseClaimSummary>(
+    () => (limit, offset) => expenseQueuePage(status, limit, offset),
   );
+  const claims = $derived(list.items);
+  const error = $derived(list.error);
+  const load = () => list.load();
 
   $effect(() => {
     // A different list is a different set of claims: close whichever was open.
     open = null;
+    void status;
+    list.reset();
     void load();
   });
 </script>
@@ -71,4 +67,6 @@
       </li>
     {/each}
   </ul>
+  <LoadMore shown={claims.length} total={list.total} more={list.more} loading={list.loadingMore} onmore={() => list.showMore()} />
+  {#if list.moreError}<ErrorNote testid="more-error" message={list.moreError} />{/if}
 {/if}

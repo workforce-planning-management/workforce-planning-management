@@ -15,7 +15,7 @@ test.describe("Payroll runs", () => {
   });
 
   test("lists the runs with their period and status, each linking to its page", async ({ page }) => {
-    await page.route("**/api/proxy/payroll-runs", (route) => route.fulfill({ json: RUNS }));
+    await page.route("**/api/proxy/payroll-runs?limit=500", (route) => route.fulfill({ json: RUNS }));
     await page.goto("/payroll");
     await expect(page).toHaveTitle("Payroll — WPM");
     const table = page.getByTestId("runs");
@@ -26,7 +26,7 @@ test.describe("Payroll runs", () => {
   });
 
   test("a caller who may not read payroll sees the error, not an empty list", async ({ page }) => {
-    await page.route("**/api/proxy/payroll-runs", (route) =>
+    await page.route("**/api/proxy/payroll-runs?limit=500", (route) =>
       route.fulfill({ status: 403, json: { description: "payroll is for HR" } }),
     );
     await page.goto("/payroll");
@@ -35,9 +35,32 @@ test.describe("Payroll runs", () => {
   });
 
   test("no runs yet is an empty table, not an error", async ({ page }) => {
-    await page.route("**/api/proxy/payroll-runs", (route) => route.fulfill({ json: [] }));
+    await page.route("**/api/proxy/payroll-runs?limit=500", (route) => route.fulfill({ json: [] }));
     await page.goto("/payroll");
     await expect(page.getByTestId("runs")).toBeVisible();
     await expect(page.getByTestId("error")).toHaveCount(0);
+  });
+
+  test("more runs than a page are said so, and the next page is asked for, a failure of it keeping the first", async ({ page }) => {
+    const run = (n: number) => ({ ...RUNS[0], pid: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`, period_start: `2020-01-${String((n % 28) + 1).padStart(2, "0")}` });
+    let failNext = true;
+    await page.route(/\/api\/proxy\/payroll-runs\?/, (route) => {
+      const offset = Number(new URL(route.request().url()).searchParams.get("offset") ?? 0);
+      const headers = { "x-total-count": "501", "x-limit": "500", "x-offset": String(offset) };
+      if (offset === 0) return route.fulfill({ json: Array.from({ length: 500 }, (_, i) => run(i)), headers });
+      if (failNext) {
+        failNext = false;
+        return route.fulfill({ status: 500, json: { description: "try again" } });
+      }
+      return route.fulfill({ json: [run(500)], headers });
+    });
+    await page.goto("/payroll");
+    await expect(page.getByTestId("load-more-count")).toHaveText("Showing 500 of 501");
+    await page.getByTestId("load-more-button").click();
+    await expect(page.getByTestId("more-error")).toBeVisible();
+    await expect(page.getByTestId("runs")).toBeVisible();
+    await expect(page.getByTestId("load-more-count")).toHaveText("Showing 500 of 501");
+    await page.getByTestId("load-more-button").click();
+    await expect(page.getByTestId("load-more")).toHaveCount(0);
   });
 });
