@@ -109,7 +109,7 @@ async fn equipment_is_issued_to_one_holder_returned_or_written_off_and_holds_a_l
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 async fn a_manager_sees_how_many_of_their_team_hold_equipment_only_from_the_floor() {
-    crate::requests::request_open(|request, _ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let hire = |number: String, manager: Option<String>| {
             let request = &request;
@@ -184,6 +184,33 @@ async fn a_manager_sees_how_many_of_their_team_hold_equipment_only_from_the_floo
         // Three reports are under the floor: nothing, whoever holds what; and a worker with no team has no one.
         assert_eq!(count(small_boss).await["count"]["kind"], "withheld");
         assert_eq!(count(team[5].clone()).await["count"]["kind"], "no_one");
+
+        // A report who has left, or whose record is deleted, is not on the team: twelve reports, one holds, then two go.
+        let lead = hire(format!("TE-{tag}-L"), None).await;
+        let mut crew = Vec::new();
+        for n in 0..12 {
+            crew.push(hire(format!("TE-{tag}-C{n}"), Some(lead.clone())).await);
+        }
+        let asset: Value = request
+            .post("/api/assets")
+            .json(&json!({ "organization_ref": org, "kind": "laptop", "tag": format!("TE-{tag}-C"), "owner_role": "IT" }))
+            .await
+            .json();
+        request
+            .post(&format!("/api/assets/{}/issue", asset["pid"].as_str().unwrap()))
+            .json(&json!({ "worker_pid": crew[0] }))
+            .await
+            .assert_status_ok();
+        assert_eq!(count(lead.clone()).await["count"], json!({ "kind": "shown", "holding": 1, "none": 11 }));
+        ctx.db
+            .execute_unprepared(&format!("UPDATE workers SET terminated_on = '2020-06-01' WHERE pid = '{}'::uuid", crew[1]))
+            .await
+            .unwrap();
+        ctx.db
+            .execute_unprepared(&format!("UPDATE workers SET deleted_at = now() WHERE pid = '{}'::uuid", crew[2]))
+            .await
+            .unwrap();
+        assert_eq!(count(lead).await["count"], json!({ "kind": "shown", "holding": 1, "none": 9 }));
     })
     .await;
 }
