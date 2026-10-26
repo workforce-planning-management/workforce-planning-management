@@ -554,6 +554,9 @@ section. The details now live in topic files: [pay-transparency.md](pay-transpar
 - **WPM-R158 Skills framework crosswalk.** Mappings between ESCO, SFIA and other frameworks so a
   skill declared in one counts in gap analysis under another. Each mapping states its basis and
   confidence; a skill with no mapping is `unknown`. Licensed taxonomies are handled as SFIA is.
+- **WPM-R159 The MCP endpoint takes only tokens meant for it.** When `WPM_MCP_RESOURCE` is set, `POST /mcp` accepts a bearer token only if
+  its audience is that URL (RFC 8707 and the MCP authorization section); a token for another audience is a `401` that points at the
+  metadata. Unset, nothing is bound and the token only has to verify.
 
 #### Spec round: what changed (WPM-T268)
 
@@ -720,6 +723,12 @@ reason; no Svelte 4 syntax, no `any`, no `{@html}`; strict TypeScript; strict `k
 - **WPM-D109 A verifier needs no account, and learns nothing about a person.** The issuer key and
   the revocation list are public; a credential names no person; the signing key is held outside
   the database.
+- **WPM-D110 One audience for the service, equal to the MCP resource.** The token verifier checks one audience, so the MCP
+  endpoint is bound by requiring that audience to be the resource URL, not by a second verifier. The deployer sets
+  `WPM_TOKEN_AUDIENCE` (or the Keycloak audience) to the `WPM_MCP_RESOURCE` URL; a token for any other audience is refused on
+  `/mcp` (and by the verifier on the API). Rejected: a second audience for `/mcp` only (a second verifier to keep in step through key
+  rotation on both backends, and the call inside the service would then need the caller's claims passed in rather than the token,
+  which touches every extractor).
 
 ## 4. Data and privacy summary
 

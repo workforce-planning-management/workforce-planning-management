@@ -142,6 +142,15 @@ fn resource_settings() -> Option<(String, Vec<String>)> {
     (!servers.is_empty()).then_some((resource, servers))
 }
 
+/// Whether the caller's token was issued for this MCP resource. With `WPM_MCP_RESOURCE` unset nothing is bound (the token only has to
+/// verify); set, its `aud` must be that URL, so the deployer sets `WPM_TOKEN_AUDIENCE` (or the Keycloak audience) to the same URL.
+#[must_use]
+pub fn token_is_for_this_resource(aud: &str) -> bool {
+    crate::compat::env_var("WPM_MCP_RESOURCE")
+        .filter(|r| !r.trim().is_empty())
+        .is_none_or(|resource| mcp::audience_ok(&resource, aud))
+}
+
 /// `GET /.well-known/oauth-protected-resource` and `.../mcp` — the OAuth protected-resource metadata of RFC 9728. Public, like a
 /// verifier's key: it says where tokens come from, and holds nothing about a person. 404 until the deployer configures it.
 async fn protected_resource_metadata() -> Response {

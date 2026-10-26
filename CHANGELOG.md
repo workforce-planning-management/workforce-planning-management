@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — MCP audience binding (WPM-T307)
+
+With `WPM_MCP_RESOURCE` set, `POST /mcp` refuses a bearer token whose audience is not that URL (`401`, with the metadata pointer). Set `WPM_TOKEN_AUDIENCE`
+(or the Keycloak audience) to the same URL. Unset, nothing changes.
+
 ### Changed — dependencies and Redis 8 (WPM-T305)
 
 The Lily design system packages are on their latest releases (`svelte-headless` 0.6.1, `svelte-locale-translations` 0.3.0, `themes` 0.6.0), with `vite` 8.3.5; the Rust lockfile took 26 compatible updates (`tokio` 1.54.1, `redis` 1.8.0, `uuid` 1.29.0 and others). The three Dependabot changes are applied (`pnpm/action-setup` 6.1.0; Redis 8 in both compose files, and in CI, which Dependabot does not read). Eleven stale advisory ignores are gone from `deny.toml`. TypeScript 7 was tried and is not adopted: `svelte-check` and SvelteKit do not load it yet.

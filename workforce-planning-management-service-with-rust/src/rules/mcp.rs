@@ -496,7 +496,7 @@ pub fn metadata_url(resource: &str) -> Result<String, String> {
 
 /// The OAuth protected-resource metadata of RFC 9728 for the MCP endpoint: which resource this is and which authorization servers
 /// issue tokens for it. Bearer tokens are accepted in the `Authorization` header only. It states what the deployer configured; WPM is
-/// not an authorization server and does not bind a token to this resource (see the spec).
+/// not an authorization server; `/mcp` itself refuses a token whose audience is not this resource ([`audience_ok`]).
 ///
 /// # Errors
 ///
@@ -519,6 +519,15 @@ pub fn protected_resource(resource: &str, servers: &[String]) -> Result<Value, S
         "bearer_methods_supported": ["header"],
         "resource_name": "WPM MCP server",
     }))
+}
+
+/// Whether a token was issued for this resource (RFC 8707, and the MCP authorization section: a server accepts only tokens meant for
+/// it, so a token another service holds cannot be replayed here). The two URLs are compared as written, after trimming spaces and one
+/// trailing `/`; nothing is lower-cased or resolved, so a deployer must write the same URL in the token audience and in the resource.
+#[must_use]
+pub fn audience_ok(resource: &str, aud: &str) -> bool {
+    let plain = |u: &str| u.trim().trim_end_matches('/').to_string();
+    !plain(resource).is_empty() && plain(resource) == plain(aud)
 }
 
 /// The `WWW-Authenticate` challenge of a `401`: a bearer token is needed, and where the metadata is when it is configured.
@@ -777,6 +786,31 @@ mod tests {
                 t.name
             );
         }
+    }
+
+    #[test]
+    fn a_token_is_for_this_resource_only_when_its_audience_is_the_resource() {
+        let r = "https://wpm.example/mcp";
+        assert!(audience_ok(r, "https://wpm.example/mcp"));
+        assert!(
+            audience_ok(r, " https://wpm.example/mcp/ "),
+            "spaces and one trailing slash"
+        );
+        assert!(audience_ok("https://wpm.example/mcp/", r));
+        for other in [
+            "main-x-service",
+            "https://wpm.example",
+            "https://wpm.example/api",
+            "https://other.example/mcp",
+            "HTTPS://WPM.EXAMPLE/mcp",
+            "",
+        ] {
+            assert!(!audience_ok(r, other), "{other:?}");
+        }
+        assert!(
+            !audience_ok("", ""),
+            "no resource and no audience is not a match"
+        );
     }
 
     #[test]

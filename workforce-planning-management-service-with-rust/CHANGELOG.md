@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — MCP audience binding (WPM-T307)
+
+With `WPM_MCP_RESOURCE` set, `POST /mcp` refuses a bearer token whose audience is not that URL (`401`, with the metadata pointer). Set `WPM_TOKEN_AUDIENCE`
+(or the Keycloak audience) to the same URL. Unset, nothing changes.
+
 ### Changed — lockfile and advisory policy (WPM-T305)
 
 `cargo update` (26 compatible updates, including `tokio`, `redis` and `uuid`); `compose.test.yaml` starts Redis 8. `deny.toml` keeps one accepted advisory (`unsafe-libyaml`, unmaintained, via Loco) and drops eleven that no longer match anything, so they fail the build again if they return. `cargo deny check` and `cargo audit` pass.

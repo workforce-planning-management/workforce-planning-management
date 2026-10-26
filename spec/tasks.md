@@ -4983,3 +4983,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `route_coverage`, `scheduler_config`, the matcher's fmt and clippy, `check-links`, `check-days`, `check-actions-pinned`, `check-licenses`. **A lesson recorded in
       `AGENTS/testing-and-verification.md`:** run what CI runs before pushing. **CI result:** run 40232083345 on `42f58b4` passed all 12 jobs. **Not done:** the pull requests were closed before CI finished and their comments say CI had not run, which was true then; the full enforcement binaries were not
       re-run after `cargo fmt` (the request suite was, through the drill; the formatting is behaviour-neutral).
+- [x] (2026-10-26) WPM-T307 **The MCP endpoint refuses a token that was not issued for it.** *(WPM-R159, WPM-D110)* Pure rule `rules::mcp::audience_ok` (the two URLs compared as written
+      after trimming spaces and one trailing `/`; nothing lower-cased or resolved; an empty resource never matches). `controllers::mcp::token_is_for_this_resource` reads `WPM_MCP_RESOURCE`; with it
+      unset nothing is bound. In `app.rs`'s `/mcp` branch a token that verifies but whose `aud` is not the resource is a `401` ("not issued for this MCP resource"), which `challenge_mw`
+      gives the `resource_metadata` pointer. The service has one audience (the verifier checks one), so the deployer sets `WPM_TOKEN_AUDIENCE` (or the Keycloak audience) to the resource URL;
+      WPM-D110 records why there is no second audience. `scripts/check-mcp-flow.mjs --print-env` now prints `WPM_TOKEN_AUDIENCE` and the script mints tokens for the resource.
+      **Verified:** a unit test of the rule (equal, trailing slash and spaces, other path, other host, case, empty); `enforcement_pay_gap` with real tokens (a token for `main-x-service` is a `401` on `/mcp`
+      with the metadata pointer once the resource is set; the earlier cases are unchanged) and a **mutation check** (the binding made always-true: that test failed, then restored); clippy pedantic clean;
+      the independent client run against a real service started with the printed settings: all checks passed. **Not verified:** the positive case in Rust (a token whose audience equals the
+      resource passes the binding), because that binary's verifier is a process global with the default audience: the client run covers it, with the audience set to the resource; the check that a
+      token for another audience is refused ran in the client by the verifier, and the binding's own refusal only in the Rust test; the Keycloak backend (the binding reads the same `aud` claim, but no Keycloak suite was run);
+      a deployment that sets `WPM_MCP_RESOURCE` and leaves the audience at its default now gets `401` on `/mcp` until it sets the audience (documented in `deployment.md`).

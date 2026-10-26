@@ -421,6 +421,11 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
             assert_eq!(doc["authorization_servers"], json!(["https://login.example/realms/wpm", "https://other.example"]));
             assert_eq!(doc["bearer_methods_supported"], json!(["header"]));
         }
+        // Audience binding (WPM-D110): a valid token whose audience is not the resource is refused at /mcp, and still works on the API.
+        let wrong_audience = request.post("/mcp").add_header("authorization", hr.clone()).json(&call).await;
+        assert_eq!(wrong_audience.status_code(), 401, "a token for \"{AUDIENCE}\" is not for this resource: {}", wrong_audience.text());
+        assert!(wrong_audience.text().contains("not issued for this MCP resource"));
+        assert!(wrong_audience.header("www-authenticate").to_str().unwrap().starts_with("Bearer resource_metadata="));
         let pointed = request.post("/mcp").json(&call).await;
         assert_eq!(pointed.status_code(), 401);
         assert_eq!(

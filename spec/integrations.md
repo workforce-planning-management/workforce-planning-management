@@ -70,8 +70,10 @@ refused the report by the API itself, HR given it, a worker given the AI registe
 **OAuth protected-resource metadata is built** (WPM-T304, RFC 9728): `GET /.well-known/oauth-protected-resource` and `.../mcp`, public, from
 `WPM_MCP_RESOURCE` and `WPM_MCP_AUTHORIZATION_SERVERS` (404 until both are set, 500 if they are unusable); every `401` carries
 `WWW-Authenticate: Bearer`, and on `/mcp` `resource_metadata="<the metadata URL>"`. **Run against an independent client** (`scripts/check-mcp-flow.mjs`).
-**Not built:** token audience binding (the endpoint takes the deployment's existing bearer token, as every route does; WPM is not an
-authorization server and does not check that a token was issued for this resource); resources, prompts, sampling and pagination; `outputSchema` for the tools; a rate limit of its own
+**Audience binding is built** (WPM-R159, WPM-D110, WPM-T307): with `WPM_MCP_RESOURCE` set, `/mcp` refuses a token whose `aud` is not that URL (`401`, "not
+issued for this MCP resource"), compared as written after trimming spaces and one trailing `/`. The service has one audience, so the deployer sets
+`WPM_TOKEN_AUDIENCE` (or the Keycloak audience) to the same URL. **Not built:** a separate audience for `/mcp` and the API; WPM is not an
+authorization server and issues no token; resources, prompts, sampling and pagination; `outputSchema` for the tools; a rate limit of its own
 beyond the service's (a tool call is one request to the endpoint, not counted again inside).
 
 ### WPM-R150 — SCIM 2.0 outbound provisioning

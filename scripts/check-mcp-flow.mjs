@@ -31,15 +31,16 @@ if (process.argv.includes("--print-env")) {
   console.log(`export WPM_PASETO_KEYS='${JSON.stringify(jwks)}'`);
   console.log(`export WPM_ABAC_POLICY_FILE='${path.join(HERE, "../workforce-planning-management-service-with-rust/config/abac-policy.reference.json")}'`);
   console.log(`export WPM_MCP_RESOURCE='${API}/mcp'`);
+  console.log(`export WPM_TOKEN_AUDIENCE='${API}/mcp'`); // a token is for the MCP resource (RFC 8707), so this is its audience
   console.log("export WPM_MCP_AUTHORIZATION_SERVERS='https://login.example.org/realms/wpm'");
   process.exit(0);
 }
 
 const le64 = (n) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(n)); return b; };
 const pae = (...pieces) => Buffer.concat([le64(pieces.length), ...pieces.flatMap((p) => [le64(p.length), p])]);
-function mint(sub, attrs = {}) {
+function mint(sub, attrs = {}, aud = `${API}/mcp`) {
   const iat = Math.floor(Date.now() / 1000);
-  const m = Buffer.from(JSON.stringify({ sub, email: "person@example.com", name: "Test Person", iss: "authentication-service", aud: "main-x-service", exp: iat + 3600, iat, sid: "check", attrs }));
+  const m = Buffer.from(JSON.stringify({ sub, email: "person@example.com", name: "Test Person", iss: "authentication-service", aud, exp: iat + 3600, iat, sid: "check", attrs }));
   const f = Buffer.from(JSON.stringify({ kid: tokenKid }));
   const h = Buffer.from("v4.public.");
   return `v4.public.${b64u(Buffer.concat([m, sign(null, pae(h, m, f, Buffer.alloc(0)), privateOf(TOKEN_SEED))]))}.${b64u(f)}`;
@@ -69,6 +70,11 @@ async function main() {
   const challenge = anon.headers.get("www-authenticate") ?? "";
   const pointer = /^Bearer resource_metadata="([^"]+)"$/.exec(challenge)?.[1];
   check(Boolean(pointer), `the 401 says it wants a bearer token and where the metadata is (${challenge})`);
+  // Audience binding (RFC 8707): a token minted for another audience never gets in. With the service set to this resource's audience the
+  // service itself refuses it (a bad audience); this is the check that a deployment that left the audience at its default is also caught.
+  const foreign = mint(randomUUID(), {}, "https://some-other-service.example/api");
+  const foreignRefused = await http("POST", "/mcp", { token: foreign, body: { jsonrpc: "2.0", id: 1, method: "initialize", params: {} }, headers: hdr });
+  check(foreignRefused.status === 401, "a token whose audience is another service: 401");
   const meta = await http("GET", new URL(pointer ?? `${API}/x`).pathname);
   check(meta.status === 200 && pointer === `${API}${new URL(pointer).pathname}`, "the metadata is public and is at the URL the challenge gave");
   check(meta.json?.resource === `${API}/mcp`, "its `resource` is the MCP endpoint's own URL, as RFC 9728 requires");

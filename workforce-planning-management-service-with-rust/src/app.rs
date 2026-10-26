@@ -41,7 +41,14 @@ async fn require_auth_mw(req: Request, next: Next) -> Response {
     if auth::require_auth() && method == axum::http::Method::POST && path == "/mcp" {
         let verifier = auth::verifier().current();
         return match auth::bearer_claims(req.headers(), &verifier) {
-            Ok(_) => next.run(req).await,
+            Ok(claims) if controllers::mcp::token_is_for_this_resource(&claims.aud) => {
+                next.run(req).await
+            }
+            Ok(_) => (
+                axum::http::StatusCode::UNAUTHORIZED,
+                "the token was not issued for this MCP resource".to_string(),
+            )
+                .into_response(),
             Err((status, msg)) => (status, msg).into_response(),
         };
     }
