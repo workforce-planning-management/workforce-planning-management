@@ -3372,12 +3372,24 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
 - [ ] WPM-T171 **Guard first.** *(WPM-D68)* Tests that fail if any table, column, export, audit entry, label or time
       kind could reveal membership or representative status; update the impact assessment, record of
       processing and data-flow diagram to say WPM holds none and where a deployer's own check-off sits.
-- [ ] WPM-T172 **Pure core: consultation obligations.** *(WPM-R104)* Thresholds and periods as **configuration with a
+- [x] (2026-10-26) WPM-T172 **Pure core: consultation obligations.** *(WPM-R104)* Thresholds and periods as **configuration with a
       named source** (a Great Britain profile and an EU-directive profile as examples, marked as the
       deployer's to confirm); from a proposal (headcount reduction at an establishment, planned
       termination date) say whether a duty may apply, the latest start for consultation, and the checklist of
       notices; the period counted in calendar days. Unit tests at each threshold edge, the 90-calendar-day window,
       and a proposal that crosses it.
+      Done: `rules::consultation` (pure, no clock: `today` is an input). A `Profile` is data with a named source: `great_britain()` (20 in 90 days;
+      consultation and authority notice 30 days for 20–99 and 45 for 100 or more) and `eu_directive_98_59()` (10 / 10% rounded up / 30 by
+      establishment size over 30 days, or 20 in 90 days at any size; notice to the authority 30 days ahead; no invented fixed consultation
+      period), each marked for the deployer to confirm. `assess(profile, proposal, today)` returns a suggestion with its evidence (counted against
+      needed, window), the latest start and notice dates, days remaining, whether late, the checklist as tokens, `deployer_to_confirm: true`;
+      a count under every threshold is `may_apply: false`, not "clear", with no dates and no checklist. Dismissals count together in the best
+      window that includes the proposal's date, never summed across windows. An agreed procedure only lengthens the period. A proposal is counts
+      and dates; nothing names a person. **Verified:** 10 unit tests (each threshold edge, the 89/90-day boundary both ways, windows not summed, the
+      percentage rounded up, the agreed period, lateness, extreme values); two **mutation checks** (`>=` made `>`, and the window length off by one:
+      both failed tests, then restored); clippy pedantic clean. **Not verified:** the thresholds and periods against the statutes (taken from the
+      concept note's sources and the assistant's own knowledge of the directive, no lawyer has read them); nothing calls it yet (no endpoint,
+      no table: T173–T175 do that). **Note:** the phase lists T171 (the guard tests) first; this was done ahead of it, at the user's choice, and T171 is still open.
 - [ ] WPM-T173 **Recognised bodies and bargaining units.** *(WPM-R102)* Tables and API for bodies and units (rules over
       department, role profile, location, employment basis, grade); the coverage count as a floored
       aggregate; contact is a role. Request tests and enforcement for who may edit.
