@@ -4981,6 +4981,5 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       refused. Run locally against a throwaway Postgres 18: 151 passed and the 2 tamper tests refused by the database; the one other failure was the drill passing an
       empty `WPM_TEST_REDIS_URL` (CI sets a real one), removed. Also run locally: `pnpm run lint`, `svelte-check`, 210 unit tests, the UI build, 814 Rust unit tests,
       `route_coverage`, `scheduler_config`, the matcher's fmt and clippy, `check-links`, `check-days`, `check-actions-pinned`, `check-licenses`. **A lesson recorded in
-      `AGENTS/testing-and-verification.md`:** run what CI runs before pushing. **Not done:** CI has not yet run on the fix at the time of writing (see the next entry or the
-      CI page for the result); the pull requests were closed before CI finished and their comments say CI had not run, which was true then; the full enforcement binaries were not
+      `AGENTS/testing-and-verification.md`:** run what CI runs before pushing. **CI result:** run 40232083345 on `42f58b4` passed all 12 jobs. **Not done:** the pull requests were closed before CI finished and their comments say CI had not run, which was true then; the full enforcement binaries were not
       re-run after `cargo fmt` (the request suite was, through the drill; the formatting is behaviour-neutral).
