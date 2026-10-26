@@ -252,6 +252,26 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(placed.status_code(), 200, "payroll reads it: {}", placed.text());
         assert!(!placed.text().contains("Pay Gap Enforcement"), "no worker named");
 
+        // ── Recognised bodies and bargaining units: HR only, and no member or representative anywhere ──
+        let bodies = format!("/api/recognised-bodies?organization={org}");
+        assert_eq!(request.get(&bodies).await.status_code(), 401);
+        assert_eq!(get(bodies.clone(), worker.clone()).await.status_code(), 403, "a worker");
+        assert_eq!(get(bodies.clone(), hr.clone()).await.status_code(), 200, "HR");
+        let new_body = json!({ "organization_ref": org, "name": "Enforcement Forum", "kind": "staff_forum", "basis": "voluntary_agreement", "recognised_on": "2020-01-01", "contact_role": "Head of Employee Relations" });
+        assert_eq!(request.post("/api/recognised-bodies").json(&new_body).await.status_code(), 401);
+        assert_eq!(request.post("/api/recognised-bodies").add_header("authorization", worker.clone()).json(&new_body).await.status_code(), 403, "a worker records none");
+        let made = request.post("/api/recognised-bodies").add_header("authorization", hr.clone()).json(&new_body).await;
+        assert_eq!(made.status_code(), 200, "HR records one: {}", made.text());
+        let body_pid = made.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let unit = json!({ "name": "Everyone in engineering", "department": "engineering" });
+        let units = format!("/api/recognised-bodies/{body_pid}/units");
+        assert_eq!(request.post(&units).add_header("authorization", worker.clone()).json(&unit).await.status_code(), 403, "a worker adds no unit");
+        assert_eq!(request.post(&units).add_header("authorization", hr.clone()).json(&unit).await.status_code(), 200, "HR adds one");
+        assert_eq!(get(units.clone(), worker.clone()).await.status_code(), 403, "a worker reads no coverage");
+        let covered = get(units.clone(), hr.clone()).await;
+        assert_eq!(covered.status_code(), 200, "HR reads coverage: {}", covered.text());
+        assert!(!covered.text().contains("Pay Gap Enforcement"), "no worker named: {}", covered.text());
+
         // ── Equipment: HR keeps the asset list and issues; a worker may not ──
         let assets = format!("/api/assets?organization={org}");
         assert_eq!(request.get(&assets).await.status_code(), 401);

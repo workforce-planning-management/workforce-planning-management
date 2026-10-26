@@ -8305,6 +8305,86 @@
         ]
       }
     },
+    "/api/recognised-bodies": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The bodies"
+          }
+        },
+        "summary": "The bodies the organization recognises (?organization=): a union, works council or staff forum, with a kind, a basis, a date and a contact role, and how many units each has. HR. No member or representative is held",
+        "tags": [
+          "bargaining"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the body",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record a recognised body: a name unique within the organization, a kind (union, works_council, staff_forum), a basis, the date recognised and a contact role (never a person)",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
+    "/api/recognised-bodies/{pid}/units": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The units"
+          }
+        },
+        "summary": "A body's bargaining units with their rules and how many workers in work today they cover: a count from the floor, nothing under it, never a list of who. HR",
+        "tags": [
+          "bargaining"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the unit",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add a bargaining unit: a name and rules over department, location, employment_type and job_title (at least one). Nothing is recorded about who is covered",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
     "/api/reports/human-capital": {
       "get": {
         "responses": {

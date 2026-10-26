@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — recognised bodies and bargaining units (WPM-T173), consultation rules (WPM-T172), a guard (WPM-T171)
+
+`GET/POST /api/recognised-bodies` and `GET/POST /api/recognised-bodies/{pid}/units` (HR): a union, works council or staff forum the organization recognises, with a contact **role**, and the units it covers as rules over department, location, employment type and job title. Coverage is a count from the floor and never a list; no member or representative is held (WPM-D68). `rules::consultation` (pure, GB and EU example profiles) is not called by anything yet. `tests/no_union_membership.rs` fails the build if anything names membership or representative status.
+
 ### Added — a manager's count of team equipment (WPM-T308)
 
 `GET /api/workers/{pid}/team-equipment-count`: how many direct reports hold equipment, from the floor, never which items or who. A panel on `/me`.

@@ -608,6 +608,14 @@ fn add_integration_paths(document: &mut Value) {
         "/api/ai-register/{feature}": {
             "put": { "tags": ["ai-register"], "summary": "Replace what is recorded for a feature: category, oversight role (a role, not a person), the two informed dates (not in the future), log retention in months (under six needs a note naming the other law). A field left out is cleared. Audited in the same transaction", "responses": ok("The pid of the entry") }
         },
+        "/api/recognised-bodies": {
+            "get": { "tags": ["bargaining"], "summary": "The bodies the organization recognises (?organization=): a union, works council or staff forum, with a kind, a basis, a date and a contact role, and how many units each has. HR. No member or representative is held", "responses": ok("The bodies") },
+            "post": { "tags": ["bargaining"], "summary": "Record a recognised body: a name unique within the organization, a kind (union, works_council, staff_forum), a basis, the date recognised and a contact role (never a person)", "responses": ok("The pid of the body") }
+        },
+        "/api/recognised-bodies/{pid}/units": {
+            "get": { "tags": ["bargaining"], "summary": "A body's bargaining units with their rules and how many workers in work today they cover: a count from the floor, nothing under it, never a list of who. HR", "responses": ok("The units") },
+            "post": { "tags": ["bargaining"], "summary": "Add a bargaining unit: a name and rules over department, location, employment_type and job_title (at least one). Nothing is recorded about who is covered", "responses": ok("The pid of the unit") }
+        },
         "/api/assets": {
             "get": { "tags": ["equipment"], "summary": "The organization's assets (?organization=), each with whether it is out. Kind, tag and owner role only: no location, cost or reading is held", "responses": ok("The assets") },
             "post": { "tags": ["equipment"], "summary": "Add an asset: kind (laptop, phone, pass, key, other), a tag unique within the organization, and the role that owns it", "responses": ok("The pid of the asset") }

@@ -12,6 +12,7 @@ mod appraisals;
 mod assessments;
 mod audit_chain;
 mod audit_export;
+mod bargaining;
 mod capacity;
 mod change;
 mod contacts;

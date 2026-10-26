@@ -3399,9 +3399,22 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       both failed tests, then restored); clippy pedantic clean. **Not verified:** the thresholds and periods against the statutes (taken from the
       concept note's sources and the assistant's own knowledge of the directive, no lawyer has read them); nothing calls it yet (no endpoint,
       no table: T173–T175 do that). **Note:** the phase lists T171 (the guard tests) first; this was done ahead of it, at the user's choice, and T171 is still open.
-- [ ] WPM-T173 **Recognised bodies and bargaining units.** *(WPM-R102)* Tables and API for bodies and units (rules over
+- [x] (2026-10-26) WPM-T173 **Recognised bodies and bargaining units.** *(WPM-R102)* Tables and API for bodies and units (rules over
       department, role profile, location, employment basis, grade); the coverage count as a floored
       aggregate; contact is a role. Request tests and enforcement for who may edit.
+      Done (service only): migration 92 `recognised_bodies` (name, kind union/works_council/staff_forum, basis, recognised_on, `contact_role`) and `bargaining_units`
+      (name and rules over department, location, employment_type, job_title; at least one, enforced by a CHECK); no column for a member, a representative,
+      a contact person or who is covered. `rules::bargaining` (pure: validation, `covers`, `coverage`: shown from the floor, withheld under it, `no_one` for a
+      rule that matches nobody). `GET/POST /api/recognised-bodies`, `GET/POST /api/recognised-bodies/{pid}/units` (HR; audited without names; in the
+      need-to-know table, the OpenAPI document and the UI's copy of it). **Verified:** 6 unit tests; a request test against Postgres 18 (twelve carers in Leeds,
+      three in York, a nurse: case and edge spaces do not matter, three and one are withheld, a rule matching nobody is `no_one`, a leaver and a deleted record
+      stop being counted, the answer names no worker or number); an enforcement test with real tokens (anonymous 401, a worker 403 on every route, HR 200);
+      `route_coverage`; the T171 guard still passes; two **mutation checks** (the floor off by one, caught by the unit test; the controller's floor set to 0,
+      caught by the request test) and a third (a location rule matching a worker with no location, caught); clippy pedantic; the full `--ignored` suite (156).
+      **Not verified:** no UI (screens belong with T178); **role profile and grade are not unit rules** because the worker record holds neither (only
+      department, location, employment type and job title), so the spec's list is narrower here; no way to edit or retire a body or unit; coverage reads the
+      four facts of every worker in the organization per request (no 200k timing taken); the floor is the equality-monitoring default (10), not set per
+      body; a difference between two units' counts can still hint at a few people (a floor stops a count, not every comparison).
 - [ ] WPM-T174 **Collective agreements as reference data.** *(WPM-R103)* Dated, sourced, versioned agreements linked to a
       unit and to pay-scale and working-time references; "applies to a worker" derived, HR and payroll only,
       never shown as membership. Tests.
