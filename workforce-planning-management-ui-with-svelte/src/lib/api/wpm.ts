@@ -2,7 +2,7 @@
 // formatter. Paths mirror the service routes one-to-one — the
 // Playwright suite stubs these exact paths, so drift fails loudly.
 
-import { api } from "#lib/api/client.js";
+import { api, apiPage, type Page } from "#lib/api/client.js";
 import type { paths } from "./schema";
 
 /**
@@ -376,6 +376,19 @@ export function listRequisitions(
   init?: FetchLike,
 ): Promise<Requisition[]> {
   return api(`/requisitions${status ? `?status=${status}` : ""}`, init);
+}
+
+/** One page of requisitions, with the total (the service serves 500 at most per call). */
+export function listRequisitionsPage(
+  opts: { status?: string; limit?: number; offset?: number } = {},
+  init?: FetchLike,
+): Promise<Page<Requisition>> {
+  const query = new URLSearchParams();
+  if (opts.status) query.set("status", opts.status);
+  if (opts.limit !== undefined) query.set("limit", String(opts.limit));
+  if (opts.offset) query.set("offset", String(opts.offset));
+  const qs = query.toString();
+  return apiPage(`/requisitions${qs ? `?${qs}` : ""}`, init);
 }
 
 /** One requisition. */

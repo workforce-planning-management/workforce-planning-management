@@ -771,7 +771,7 @@ test.describe("requisitions by basis and programme", () => {
       route.fulfill({ json: [ORG] }),
     );
     const made: Array<Record<string, unknown>> = [];
-    await page.route("**/api/proxy/requisitions", (route) => {
+    await page.route(/\/api\/proxy\/requisitions(\?limit=500)?$/, (route) => {
       if (route.request().method() === "POST") {
         const body = route.request().postDataJSON();
         made.push(body);

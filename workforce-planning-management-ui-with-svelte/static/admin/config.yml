@@ -3359,3 +3359,12 @@ collections:
               - { name: "record", label: "Record", widget: string, required: false, i18n: true }
               - { name: "recording", label: "Recording", widget: string, required: false, i18n: true }
               - { name: "replace_hint", label: "Replace_hint", widget: string, required: false, i18n: true }
+          - name: "paging"
+            label: "Paging"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "showing", label: "Showing", widget: string, required: false, i18n: true }
+              - { name: "more", label: "More", widget: string, required: false, i18n: true }

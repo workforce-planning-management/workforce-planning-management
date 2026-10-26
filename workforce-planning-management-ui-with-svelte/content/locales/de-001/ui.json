@@ -2507,5 +2507,9 @@
     "record": "Erfassen",
     "recording": "Erfassung für {feature}",
     "replace_hint": "Dies ersetzt das Erfasste; ein leeres Feld wird gelöscht."
+  },
+  "paging": {
+    "showing": "{shown} von {total} angezeigt",
+    "more": "Mehr anzeigen"
   }
 }

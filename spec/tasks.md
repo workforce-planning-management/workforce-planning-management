@@ -4087,13 +4087,21 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       (the object for packs), so no UI caller changes: the UI's `wpm.ts` calls pass no `limit` and read no headers, so each list
       page shows its first 500. Verified: clippy clean, 619 unit tests, `--ignored` suite 116 incl. the new
       `org_lists_carry_paging_headers_and_refuse_a_deep_offset`.
-      **Still open:** per-worker lists (bounded by one person's history, left unpaged on purpose); the early-warning list (its
-      totals cover all rows); the UI has no "more" control past
       Part 3 done (2026-10-26): `intelligence.rs` `succession` and `pipelines` read only the columns they use (plan and readiness; pipeline and
       stage; programme, status and outcome) and group them once, instead of loading every candidate, member and placement row and
       re-filtering the whole list per plan. Verified: clippy pedantic clean, the `--ignored` suite (155, incl. `talent.rs`) against
       Postgres 18. **Not measured:** no timing; the gain is by construction, not by a benchmark.
-      500; the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run). This task stays open for those.
+      Part 4 done (2026-10-26): the UI's "more" control, on one list. The proxy forwards `x-total-count`, `x-limit` and `x-offset`;
+      `apiPage` in the client returns the rows with them (a missing or non-numeric header is `null`, never 0);
+      `listRequisitionsPage`; `LoadMore.svelte` ("Showing 500 of 501" and a button, nothing when there is no more; `paging.*` in the 13 locales,
+      AI-written, unreviewed); `/requisitions` loads 500, shows the control, appends the next page, and a reload after a move or a create re-reads
+      every page already loaded. Verified: svelte-check 0 errors, 213 unit tests (3 new for `apiPage`), `pnpm run lint`, Playwright 238 passed / 19 skipped
+      (new: a long list pages, a short list has no control; two existing stubs adjusted for the `?limit=500` query). **Not verified:** no screenshot
+      looked at; the proxy header forwarding has no test of its own (the stub supplies the headers); only requisitions is wired.
+      **Still open:** the other paged lists in the UI (cutovers, payroll runs, movements, resignations, flexible working, conversion plans,
+      expenses, notifications) still show their first 500 with no control; per-worker lists (bounded by one person's history, left unpaged
+      on purpose); the early-warning list (its totals cover all rows); the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run).
+      This task stays open for those.
 - [x] WPM-T255 (2026-10-23) **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
       plan-builder out of `handover::apply` (235 lines) and `lms::apply` (178).
       Done: `controllers/learning.rs` (1,433 lines) is the folder `learning/` (`catalogue` 709, `paths` 204, `mentoring` 171,

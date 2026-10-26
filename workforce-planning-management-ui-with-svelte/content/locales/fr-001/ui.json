@@ -2507,5 +2507,9 @@
     "record": "Renseigner",
     "recording": "Saisie pour {feature}",
     "replace_hint": "Ceci remplace ce qui est consigné ; un champ laissé vide est effacé."
+  },
+  "paging": {
+    "showing": "{shown} affichés sur {total}",
+    "more": "Afficher plus"
   }
 }

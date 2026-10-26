@@ -3,10 +3,11 @@
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import LilyKanban from "#lib/components/LilyKanban.svelte";
+  import LoadMore from "#lib/components/LoadMore.svelte";
   import { page } from "$app/state";
   import {
     createRequisition,
-    listRequisitions,
+    listRequisitionsPage,
     money,
     requisitionStatus,
   } from "#lib/api/wpm.js";
@@ -17,7 +18,14 @@
    * the board; the state machine still owns which drags are legal). */
   const COLUMNS = ["draft", "open", "interviewing", "offer", "filled"] as const;
 
+  /** The service serves a page at a time (500 at most); the board shows what has been read so far. */
+  const PAGE = 500;
   let requisitions = $state<Requisition[] | null>(null);
+  let total = $state<number | null>(null);
+  let more = $state(false);
+  let loadingMore = $state(false);
+  /** How many pages the board holds, so a reload after a move or a create keeps them all. */
+  let pages = 1;
   let error = $state<string | null>(null);
   let actionError = $state<string | null>(null);
 
@@ -60,14 +68,41 @@
   }
 
   const load = guardedLoad(
-    () => listRequisitions(),
+    async () => {
+      const rows: Requisition[] = [];
+      let last = await listRequisitionsPage({ limit: PAGE });
+      rows.push(...last.items);
+      for (let n = 1; n < pages && last.items.length === PAGE; n++) {
+        last = await listRequisitionsPage({ limit: PAGE, offset: n * PAGE });
+        rows.push(...last.items);
+      }
+      return { rows, total: last.total, full: last.items.length === PAGE };
+    },
     (found) => {
-      requisitions = found;
+      requisitions = found.rows;
+      total = found.total;
+      more = found.total !== null ? found.rows.length < found.total : found.full;
     },
     (cause) => {
       error = errorText(cause);
     },
   );
+
+  async function showMore() {
+    loadingMore = true;
+    actionError = null;
+    try {
+      const next = await listRequisitionsPage({ limit: PAGE, offset: requisitions?.length ?? 0 });
+      requisitions = [...(requisitions ?? []), ...next.items];
+      total = next.total;
+      pages += 1;
+      more = next.total !== null ? requisitions.length < next.total : next.items.length === PAGE;
+    } catch (cause) {
+      actionError = errorText(cause);
+    } finally {
+      loadingMore = false;
+    }
+  }
 
   $effect(() => {
     void load();
@@ -159,4 +194,5 @@
   <div data-testid="requisition-board">
     <LilyKanban label={t("nav.requisitions")} {columns} {cards} {onMove} />
   </div>
+  <LoadMore shown={requisitions.length} {total} {more} loading={loadingMore} onmore={showMore} />
 {/if}

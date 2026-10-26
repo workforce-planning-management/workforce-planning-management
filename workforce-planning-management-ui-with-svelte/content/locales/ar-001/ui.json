@@ -2507,5 +2507,9 @@
     "record": "سجّل",
     "recording": "تسجيل لـ {feature}",
     "replace_hint": "هذا يستبدل ما هو مسجَّل؛ والحقل الفارغ يُمسح."
+  },
+  "paging": {
+    "showing": "عرض {shown} من {total}",
+    "more": "عرض المزيد"
   }
 }

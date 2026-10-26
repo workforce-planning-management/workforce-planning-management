@@ -87,7 +87,13 @@ const proxy: RequestHandler = async ({
   if (upstream.status === 401 && sid) tokens.forget(sid);
 
   const responseHeaders = new Headers();
-  for (const name of ["content-type", "etag"]) {
+  for (const name of [
+    "content-type",
+    "etag",
+    "x-total-count",
+    "x-limit",
+    "x-offset",
+  ]) {
     const value = upstream.headers.get(name);
     if (value) responseHeaders.set(name, value);
   }

@@ -2507,5 +2507,9 @@
     "record": "Catat",
     "recording": "Pencatatan untuk {feature}",
     "replace_hint": "Ini menggantikan yang tercatat; kolom kosong akan dihapus."
+  },
+  "paging": {
+    "showing": "Menampilkan {shown} dari {total}",
+    "more": "Tampilkan lebih banyak"
   }
 }

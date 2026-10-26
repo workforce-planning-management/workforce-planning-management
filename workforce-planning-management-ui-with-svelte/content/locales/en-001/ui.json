@@ -2507,5 +2507,9 @@
     "record": "Record",
     "recording": "Recording for {feature}",
     "replace_hint": "This replaces what is recorded; a field left empty is cleared."
+  },
+  "paging": {
+    "showing": "Showing {shown} of {total}",
+    "more": "Show more"
   }
 }

@@ -113,6 +113,7 @@ describe("api path map", () => {
     await wpm.getWorker("p1");
     await wpm.orgChart("organization:abc");
     await wpm.listRequisitions("open");
+    await wpm.listRequisitionsPage({ status: "open", limit: 500, offset: 500 });
     await wpm.listRuns();
     await wpm.runPayslips("r1");
     await wpm.benchmarkComparison("organization:abc");
@@ -421,6 +422,7 @@ describe("api path map", () => {
       "/api/proxy/workers/p1",
       "/api/proxy/org-chart?organization=organization%3Aabc",
       "/api/proxy/requisitions?status=open",
+      "/api/proxy/requisitions?status=open&limit=500&offset=500",
       "/api/proxy/payroll-runs",
       "/api/proxy/payroll-runs/r1/payslips",
       "/api/proxy/benchmarks/comparison?organization=organization%3Aabc",

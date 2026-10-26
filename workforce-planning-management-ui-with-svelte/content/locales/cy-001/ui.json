@@ -2507,5 +2507,9 @@
     "record": "Cofnodi",
     "recording": "Cofnodi ar gyfer {feature}",
     "replace_hint": "Mae hyn yn disodli'r hyn a gofnodwyd; caiff maes gwag ei glirio."
+  },
+  "paging": {
+    "showing": "Yn dangos {shown} o {total}",
+    "more": "Dangos mwy"
   }
 }

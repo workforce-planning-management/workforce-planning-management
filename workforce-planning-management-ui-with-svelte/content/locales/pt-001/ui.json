@@ -2507,5 +2507,9 @@
     "record": "Registar",
     "recording": "Registo de {feature}",
     "replace_hint": "Isto substitui o que está registado; um campo vazio é apagado."
+  },
+  "paging": {
+    "showing": "A mostrar {shown} de {total}",
+    "more": "Mostrar mais"
   }
 }

@@ -2507,5 +2507,9 @@
     "record": "记录",
     "recording": "记录 {feature}",
     "replace_hint": "这将替换已记录的内容；留空的字段将被清除。"
+  },
+  "paging": {
+    "showing": "显示 {shown} / {total}",
+    "more": "显示更多"
   }
 }

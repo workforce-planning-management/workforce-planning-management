@@ -2507,5 +2507,9 @@
     "record": "Registrar",
     "recording": "Registro de {feature}",
     "replace_hint": "Esto sustituye lo registrado; un campo vacío se borra."
+  },
+  "paging": {
+    "showing": "Mostrando {shown} de {total}",
+    "more": "Mostrar más"
   }
 }
