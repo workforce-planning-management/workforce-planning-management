@@ -4088,7 +4088,11 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       page shows its first 500. Verified: clippy clean, 619 unit tests, `--ignored` suite 116 incl. the new
       `org_lists_carry_paging_headers_and_refuse_a_deep_offset`.
       **Still open:** per-worker lists (bounded by one person's history, left unpaged on purpose); the early-warning list (its
-      totals cover all rows); the filtered reads in `intelligence.rs` (`succession`, `pipelines`); the UI has no "more" control past
+      totals cover all rows); the UI has no "more" control past
+      Part 3 done (2026-10-26): `intelligence.rs` `succession` and `pipelines` read only the columns they use (plan and readiness; pipeline and
+      stage; programme, status and outcome) and group them once, instead of loading every candidate, member and placement row and
+      re-filtering the whole list per plan. Verified: clippy pedantic clean, the `--ignored` suite (155, incl. `talent.rs`) against
+      Postgres 18. **Not measured:** no timing; the gain is by construction, not by a benchmark.
       500; the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run). This task stays open for those.
 - [x] WPM-T255 (2026-10-23) **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
       plan-builder out of `handover::apply` (235 lines) and `lms::apply` (178).

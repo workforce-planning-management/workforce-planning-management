@@ -646,10 +646,19 @@ async fn succession(State(ctx): State<AppContext>) -> Result<Response> {
         .filter(succession_plans::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    let all_candidates = succession_candidates::Entity::find()
+    // Only the plan and the rating are needed, so only those two columns are read, grouped once.
+    let mut readiness_of: BTreeMap<Uuid, Vec<String>> = BTreeMap::new();
+    for (plan_pid, readiness) in succession_candidates::Entity::find()
+        .select_only()
+        .column(succession_candidates::Column::PlanPid)
+        .column(succession_candidates::Column::Readiness)
         .filter(succession_candidates::Column::DeletedAt.is_null())
+        .into_tuple::<(Uuid, String)>()
         .all(&ctx.db)
-        .await?;
+        .await?
+    {
+        readiness_of.entry(plan_pid).or_default().push(readiness);
+    }
 
     let mut by_coverage: BTreeMap<&str, usize> = BTreeMap::new();
     let mut per_plan = Vec::with_capacity(plans.len());
@@ -657,11 +666,7 @@ async fn succession(State(ctx): State<AppContext>) -> Result<Response> {
     let mut covered_now = 0usize;
 
     for plan in &plans {
-        let readiness: Vec<String> = all_candidates
-            .iter()
-            .filter(|c| c.plan_pid == plan.pid)
-            .map(|c| c.readiness.clone())
-            .collect();
+        let readiness: Vec<String> = readiness_of.remove(&plan.pid).unwrap_or_default();
         let coverage = rules::bench_coverage(&readiness);
         *by_coverage.entry(coverage).or_default() += 1;
         if coverage == "covered_now" {
@@ -722,10 +727,18 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
         .filter(talent_pipelines::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    let members = pipeline_members::Entity::find()
+    let mut stages_of: BTreeMap<Uuid, Vec<String>> = BTreeMap::new();
+    for (pipeline_pid, stage) in pipeline_members::Entity::find()
+        .select_only()
+        .column(pipeline_members::Column::PipelinePid)
+        .column(pipeline_members::Column::Stage)
         .filter(pipeline_members::Column::DeletedAt.is_null())
+        .into_tuple::<(Uuid, String)>()
         .all(&ctx.db)
-        .await?;
+        .await?
+    {
+        stages_of.entry(pipeline_pid).or_default().push(stage);
+    }
 
     let mut by_purpose: BTreeMap<String, usize> = BTreeMap::new();
     let mut per_pipeline = Vec::with_capacity(pipelines.len());
@@ -733,11 +746,7 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
     let mut live_total = 0usize;
     for pipeline in &pipelines {
         *by_purpose.entry(pipeline.purpose.clone()).or_default() += 1;
-        let stages: Vec<String> = members
-            .iter()
-            .filter(|m| m.pipeline_pid == pipeline.pid)
-            .map(|m| m.stage.clone())
-            .collect();
+        let stages: Vec<String> = stages_of.remove(&pipeline.pid).unwrap_or_default();
         let health = rules::pipeline_health(&stages);
         ready_total += health.ready;
         live_total += health.live;
@@ -755,25 +764,34 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
         .filter(early_career_programs::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    let placements = program_placements::Entity::find()
+    let mut placements_of: BTreeMap<Uuid, Vec<(String, String)>> = BTreeMap::new();
+    for (program_pid, status, outcome) in program_placements::Entity::find()
+        .select_only()
+        .column(program_placements::Column::ProgramPid)
+        .column(program_placements::Column::Status)
+        .column(program_placements::Column::Outcome)
         .filter(program_placements::Column::DeletedAt.is_null())
+        .into_tuple::<(Uuid, String, String)>()
         .all(&ctx.db)
-        .await?;
+        .await?
+    {
+        placements_of
+            .entry(program_pid)
+            .or_default()
+            .push((status, outcome));
+    }
 
     let mut per_kind: BTreeMap<&str, (usize, Vec<String>, usize)> = BTreeMap::new();
     for program in &programs {
-        let mine: Vec<&program_placements::Model> = placements
-            .iter()
-            .filter(|p| p.program_pid == program.pid)
-            .collect();
+        let mine: Vec<(String, String)> = placements_of.remove(&program.pid).unwrap_or_default();
         let entry = per_kind.entry(program.kind.as_str()).or_default();
         entry.0 += 1;
         entry.1.extend(
             mine.iter()
-                .filter(|p| p.status == "completed")
-                .map(|p| p.outcome.clone()),
+                .filter(|(status, _)| status == "completed")
+                .map(|(_, outcome)| outcome.clone()),
         );
-        entry.2 += mine.iter().filter(|p| p.status == "active").count();
+        entry.2 += mine.iter().filter(|(status, _)| status == "active").count();
     }
     let early_careers: Vec<serde_json::Value> = per_kind
         .iter()
