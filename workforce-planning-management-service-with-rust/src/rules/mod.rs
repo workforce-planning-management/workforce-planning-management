@@ -19,6 +19,7 @@ pub mod capacity;
 pub mod career;
 pub mod change;
 pub mod consultation;
+pub mod consultation_register;
 pub mod contact_details;
 pub mod conversion;
 pub mod cost;

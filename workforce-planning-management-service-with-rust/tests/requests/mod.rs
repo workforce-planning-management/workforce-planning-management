@@ -15,6 +15,7 @@ mod audit_export;
 mod bargaining;
 mod capacity;
 mod change;
+mod consultations;
 mod contacts;
 mod cpd_overview;
 mod cpd_requirements;

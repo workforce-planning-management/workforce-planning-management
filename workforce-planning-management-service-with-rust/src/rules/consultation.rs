@@ -153,6 +153,19 @@ pub fn eu_directive_98_59() -> Profile {
     }
 }
 
+/// The profiles this service knows, by id.
+pub const PROFILES: &[&str] = &["great_britain", "eu_directive_98_59"];
+
+/// The profile with this id, if it is one of [`PROFILES`].
+#[must_use]
+pub fn profile(id: &str) -> Option<Profile> {
+    match id {
+        "great_britain" => Some(great_britain()),
+        "eu_directive_98_59" => Some(eu_directive_98_59()),
+        _ => None,
+    }
+}
+
 /// A proposal to dismiss people at one establishment: counts and dates, no names.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Proposal {

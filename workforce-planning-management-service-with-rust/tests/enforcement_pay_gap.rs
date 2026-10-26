@@ -287,6 +287,22 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(get(of_worker.clone(), payroll.clone()).await.status_code(), 200, "payroll");
 
 
+        // ── The consultation register: HR only ──
+        let register = format!("/api/consultations?organization={org}");
+        assert_eq!(request.get(&register).await.status_code(), 401);
+        assert_eq!(get(register.clone(), worker.clone()).await.status_code(), 403, "a worker");
+        assert_eq!(get(register.clone(), hr.clone()).await.status_code(), 200, "HR");
+        let proposal = json!({ "body_pid": body_pid, "establishment": "Enforcement site", "profile": "great_britain", "establishment_size": 100, "dismissals": 20, "earliest_termination_on": "2030-01-31", "topics": ["redundancy"] });
+        assert_eq!(request.post("/api/consultations").add_header("authorization", worker.clone()).json(&proposal).await.status_code(), 403, "a worker opens none");
+        let opened = request.post("/api/consultations").add_header("authorization", hr.clone()).json(&proposal).await;
+        assert_eq!(opened.status_code(), 200, "HR opens one: {}", opened.text());
+        let consult = opened.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let timeline = format!("/api/consultations/{consult}/timeline");
+        assert_eq!(get(timeline.clone(), worker.clone()).await.status_code(), 403, "a worker reads no timeline");
+        assert_eq!(get(timeline.clone(), hr.clone()).await.status_code(), 200, "HR");
+        assert_eq!(request.post(&format!("/api/consultations/{consult}/begin")).add_header("authorization", worker.clone()).json(&json!({ "started_on": "2020-01-01" })).await.status_code(), 403);
+        assert_eq!(request.post(&format!("/api/consultations/{consult}/close")).add_header("authorization", worker.clone()).json(&json!({ "outcome": "withdrawn", "ended_on": "2020-01-01" })).await.status_code(), 403);
+
         // ── Equipment: HR keeps the asset list and issues; a worker may not ──
         let assets = format!("/api/assets?organization={org}");
         assert_eq!(request.get(&assets).await.status_code(), 401);

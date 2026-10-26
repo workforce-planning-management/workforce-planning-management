@@ -23,6 +23,7 @@ pub use super::capability_frameworks::Entity as CapabilityFrameworks;
 pub use super::capacity_settings::Entity as CapacitySettings;
 pub use super::change_initiatives::Entity as ChangeInitiatives;
 pub use super::collective_agreements::Entity as CollectiveAgreements;
+pub use super::consultations::Entity as Consultations;
 pub use super::conversion_plans::Entity as ConversionPlans;
 pub use super::cpd_entries::Entity as CpdEntries;
 pub use super::cpd_requirements::Entity as CpdRequirements;

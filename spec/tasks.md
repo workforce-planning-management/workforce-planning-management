@@ -3431,8 +3431,25 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       **Not verified:** nothing reads `consultation_days` yet (T172's `agreed_period_days` is not fed from it: that wiring belongs with T175); working-time
       limits are stored but not applied to the working-time guardrails; `max_weekly_hours` and the pay scale are not checked against each other or against
       pay; no UI (T178); no way to retire or correct an agreement except by a new version; a worker covered by units of two bodies gets both agreements.
-- [ ] WPM-T175 **Consultation register and timeline.** *(WPM-R105)* Per proposal: body, dates, topics, document references,
+- [x] (2026-10-26) WPM-T175 **Consultation register and timeline.** *(WPM-R105)* Per proposal: body, dates, topics, document references,
       outcome; roles not names; audited without text; a timeline view that uses T172.
+      Done (service only): migration 94 `consultations` (the body, an optional plan of the organization, the establishment, the threshold profile, size,
+      dismissals and earliest termination as counts and dates, topics from a closed list, one document reference with no spaces, begun and ended days, the
+      outcome open/agreed/no_agreement/withdrawn, an optional agreement; CHECKs tie "open" to "no end day" and an agreement to "agreed"). **No column for an
+      attendee, a representative or what was said.** `rules::consultation_register` (pure: topics cleaned, opening, beginning once, closing, and `timeliness`
+      against the latest start: nothing due, no fixed period, not begun with days left, not begun and late, begun in time (the last day counts), begun late).
+      `GET/POST /api/consultations`, `POST .../{pid}/begin`, `POST .../{pid}/close`, `GET .../{pid}/timeline` (HR; writes audited without text). The timeline
+      runs `rules::consultation::assess` over the record, with the other proposals at the same establishment counted into the window and the longest
+      `consultation_days` of the body's agreements in force today as the agreed period, so T174's term is now used. **Verified:** 12 unit tests; a request
+      test against Postgres 18 (bad profile, topic, reference, dismissals, plan and body; topics cleaned and ordered; a 60-day agreed period beating the law's
+      30; 25 and 5 at one site counted as 30 while a proposal at another site is not; under the threshold nothing is due; begin once and not in the future;
+      closing with a foreign agreement, a mismatched outcome, an unknown outcome and a future day all refused; closed means closed; never begun can only be
+      withdrawn; the register holds no attendee, representative, minute or member); an enforcement test with real tokens (anonymous 401, a worker 403 on
+      list, open, begin, close and timeline, HR 200); `route_coverage`; the T171 guard; **three mutation checks** (the last-day boundary, the establishment
+      filter, the agreed period dropped: each caught); clippy pedantic; the full `--ignored` suite (158). **Not verified:** no UI (T178); the thresholds are
+      still the deployer's to confirm (T172); a record cannot be corrected, only closed and a new one opened; the proposal is typed in, not read from a
+      workforce plan's demand lines (`plan_pid` is only a link); the authority notice is shown as a date, not tracked as given; no reminder when a latest day
+      approaches.
 - [ ] WPM-T176 **Information pack for bargaining.** *(WPM-R106)* On-request aggregates for a unit with the floor, no names, no
       individual pay; each disclosure logged. Tests that a small group is withheld.
 - [ ] WPM-T177 **Facility time as an aggregate; decision gates.** *(WPM-R107, WPM-R108)* Hours per body per period (no per-person

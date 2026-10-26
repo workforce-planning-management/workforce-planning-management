@@ -623,6 +623,19 @@ fn add_integration_paths(document: &mut Value) {
         "/api/workers/{pid}/collective-agreements": {
             "get": { "tags": ["bargaining"], "summary": "The agreements in force on a day (?on=, default today) for the units whose rules cover this worker's job facts. HR and payroll, audited. Derived, and says nothing about membership: no body or unit is named", "responses": ok("The agreements") }
         },
+        "/api/consultations": {
+            "get": { "tags": ["bargaining"], "summary": "The consultation register (?organization=): one record per proposal, newest termination date first. HR. No attendee, representative or minute is held", "responses": ok("The consultations") },
+            "post": { "tags": ["bargaining"], "summary": "Open a record for a proposal: the body, the establishment, the threshold profile (great_britain or eu_directive_98_59), establishment size, dismissals, the earliest termination date, topics and a document reference (no spaces). Counts and dates only", "responses": ok("The pid") }
+        },
+        "/api/consultations/{pid}/begin": {
+            "post": { "tags": ["bargaining"], "summary": "Record the day consultation began (once, not in the future), and optionally the reference to the documents shared", "responses": ok("The pid") }
+        },
+        "/api/consultations/{pid}/close": {
+            "post": { "tags": ["bargaining"], "summary": "End a consultation as agreed (optionally linking an agreement of the body's units), no_agreement or withdrawn, on a day not in the future and not before it began", "responses": ok("The pid") }
+        },
+        "/api/consultations/{pid}/timeline": {
+            "get": { "tags": ["bargaining"], "summary": "The record with the consultation rules read over it: whether a duty may apply and the evidence, the latest days to begin consultation and notify the authority, any longer period an agreement in force sets, the checklist, and whether consultation began in time. A suggestion, not a verdict; the thresholds are the deployer's to confirm", "responses": ok("The timeline") }
+        },
         "/api/assets": {
             "get": { "tags": ["equipment"], "summary": "The organization's assets (?organization=), each with whether it is out. Kind, tag and owner role only: no location, cost or reading is held", "responses": ok("The assets") },
             "post": { "tags": ["equipment"], "summary": "Add an asset: kind (laptop, phone, pass, key, other), a tag unique within the organization, and the role that owns it", "responses": ok("The pid of the asset") }

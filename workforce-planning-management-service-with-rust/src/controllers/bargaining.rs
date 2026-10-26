@@ -125,7 +125,7 @@ async fn create(
     format::json(json!({ "pid": pid }))
 }
 
-async fn find_body(
+pub(super) async fn find_body(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     pid: Uuid,

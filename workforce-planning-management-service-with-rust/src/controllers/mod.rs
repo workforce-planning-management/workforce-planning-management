@@ -16,6 +16,7 @@ pub mod bargaining;
 pub mod capacity;
 pub mod career;
 pub mod change;
+pub mod consultations;
 pub mod contacts;
 pub mod conversion_plans;
 pub mod cpd;

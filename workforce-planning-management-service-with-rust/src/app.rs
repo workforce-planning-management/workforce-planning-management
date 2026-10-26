@@ -135,6 +135,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::human_capital::routes())
         .add_route(controllers::pay_range::routes())
         .add_route(controllers::bargaining::routes())
+        .add_route(controllers::consultations::routes())
         .add_route(controllers::equipment::routes())
         .add_route(controllers::policies::routes())
         .add_route(controllers::credentials::routes())

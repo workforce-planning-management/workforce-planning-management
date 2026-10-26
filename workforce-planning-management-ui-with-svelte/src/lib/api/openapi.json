@@ -3249,6 +3249,117 @@
         ]
       }
     },
+    "/api/consultations": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The consultations"
+          }
+        },
+        "summary": "The consultation register (?organization=): one record per proposal, newest termination date first. HR. No attendee, representative or minute is held",
+        "tags": [
+          "bargaining"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Open a record for a proposal: the body, the establishment, the threshold profile (great_britain or eu_directive_98_59), establishment size, dismissals, the earliest termination date, topics and a document reference (no spaces). Counts and dates only",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
+    "/api/consultations/{pid}/begin": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record the day consultation began (once, not in the future), and optionally the reference to the documents shared",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
+    "/api/consultations/{pid}/close": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "End a consultation as agreed (optionally linking an agreement of the body's units), no_agreement or withdrawn, on a day not in the future and not before it began",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
+    "/api/consultations/{pid}/timeline": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The timeline"
+          }
+        },
+        "summary": "The record with the consultation rules read over it: whether a duty may apply and the evidence, the latest days to begin consultation and notify the authority, any longer period an agreement in force sets, the checklist, and whether consultation began in time. A suggestion, not a verdict; the thresholds are the deployer's to confirm",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
     "/api/conversion-plans": {
       "get": {
         "responses": {

@@ -23,6 +23,7 @@ pub mod capability_frameworks;
 pub mod capacity_settings;
 pub mod change_initiatives;
 pub mod collective_agreements;
+pub mod consultations;
 pub mod conversion_plans;
 pub mod cpd_entries;
 pub mod cpd_requirements;
