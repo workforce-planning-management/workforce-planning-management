@@ -3369,9 +3369,18 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       proposed capabilities and what is deliberately left out. **Researched from web sources with
       the limits stated in the note, partly from the assistant's own knowledge marked unverified; no
       employment lawyer or union has reviewed it.**
-- [ ] WPM-T171 **Guard first.** *(WPM-D68)* Tests that fail if any table, column, export, audit entry, label or time
+- [x] (2026-10-26) WPM-T171 **Guard first.** *(WPM-D68)* Tests that fail if any table, column, export, audit entry, label or time
       kind could reveal membership or representative status; update the impact assessment, record of
       processing and data-flow diagram to say WPM holds none and where a deployer's own check-off sits.
+      Done: `tests/no_union_membership.rs`, DB-free. It reads the service and migration sources, the config, the API document and the English
+      catalogue and fails on a name that would hold membership or representative status (`union_member*`, `trade_union*`, `steward`, `check_off`,
+      `is_representative`, `union_activity` and the like, as whole identifiers or parts of one) or a phrase that would say it ("union member", "shop
+      steward", "check-off", "representative status"...). `check_offset` and "Trade Union and Labour Relations Act" pass. DPIA R15, the data-flow
+      "does not flow" list and the record of processing now say WPM holds none and that check-off stays in the deployer's payroll. **Verified:** 4 tests
+      (the guard flags and passes the right examples; it reads the files it claims to); two **mutation checks** (a `union_member_id` name in a rules file,
+      and "Shop steward" in the English catalogue: each failed the right test, then restored). **Not verified:** the deny-list is a floor, not a proof
+      (a field that reveals membership under another name passes; a reviewer must catch it); locales other than English are not scanned; no time
+      kind, leave kind or deduction label list exists yet to check by value.
 - [x] (2026-10-26) WPM-T172 **Pure core: consultation obligations.** *(WPM-R104)* Thresholds and periods as **configuration with a
       named source** (a Great Britain profile and an EU-directive profile as examples, marked as the
       deployer's to confirm); from a proposal (headcount reduction at an establishment, planned

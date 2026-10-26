@@ -25,6 +25,7 @@ complete; the other columns describe what this software does.
 | 14 | Equality and diversity monitoring (**off unless the deployer records a lawful basis**) | Workers | Voluntary self-declared answers to the categories the deployer defines; aggregates only | **Yes** (as the deployer defines the categories: ethnic origin, religion or belief, sexual orientation, disability, sex …) | The worker alone for their own answers; privileged callers see aggregates with small groups withheld | not in the sweep; erased with the worker | deployer to complete (an Article 9 condition) |
 | 13 | A worker's own contact details | Workers | Home address, telephone numbers, personal e-mail, kept by the worker; the previous value is not kept | No (personal, not special category) | The worker, HR, payroll (reads by HR and payroll are audited) | not in the sweep; erased with the worker | deployer to complete |
 
+**Not processed**: trade-union membership and representative status. No activity above holds them, and none may (WPM-D68; `tests/no_union_membership.rs`). Where a deployer deducts union subscriptions (check-off), that stays in the deployer's own payroll process.
 **Transfers outside the controller's country**: none made by the software; follow the
 hosting, identity-provider and backup choices ([data-flow](data-flow.md)).
 **Automated decisions with legal or similarly significant effect**: none. Forecasts and

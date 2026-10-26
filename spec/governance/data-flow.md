@@ -54,6 +54,7 @@ flowchart LR
 - **Pulse survey responses** carry no author (WPM-D20): they cannot be tied to a person even by an administrator.
 - **360 raters' comments** are not shown at rater level (WPM-D21).
 - **Diagnoses, symptoms and health cohorts** have no column (WPM-D17, D24, D25).
+- **Trade-union membership and representative status** have no column, field, export, audit entry, label or kind of time (WPM-D68); a test fails the build if one appears. A deployer's check-off and any per-person facility time stay in the deployer's own payroll and HR process, outside WPM.
 - **Aggregates** name no one and withhold counts below a floor (WPM-D32).
 - **No analytics, advertising or third-party scripts** are loaded by the UI (its content security policy would block them).
 
