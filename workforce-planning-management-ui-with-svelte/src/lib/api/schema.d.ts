@@ -16716,6 +16716,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workers/{pid}/team-equipment-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** For a manager: how many of their direct reports in work hold equipment and how many hold none, from the floor; under it, nothing. No item, kind or name */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The count */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workers/{pid}/team-policy-counts": {
         parameters: {
             query?: never;

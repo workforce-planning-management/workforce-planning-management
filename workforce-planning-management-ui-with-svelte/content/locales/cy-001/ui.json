@@ -2352,6 +2352,12 @@
     "shown": "{acknowledged} wedi cadarnhau, {waiting} yn aros",
     "withheld": "Llai na {floor} o bobl: ni ddangosir cyfrif"
   },
+  "teamEquipment": {
+    "title": "Offer yn fy nhîm",
+    "hint": "Faint o'ch adroddwyr uniongyrchol sy'n dal offer o hyd, a faint sydd heb ddim. Dim ond ar gyfer tîm o {floor} neu fwy y dangosir; byddai llai yn enwi pobl. Byth pa eitemau.",
+    "shown": "{holding} yn dal offer, {none} heb ddim",
+    "withheld": "Llai na {floor} o bobl: ni ddangosir cyfrif"
+  },
   "payRange": {
     "hint": "Ble mae cyflog o fewn ei fand: cymhareb compa yw'r cyflog dros ganol y band, treiddiad yr ystod yw pa mor bell drwy'r band. Ar gyfer adolygiad cydnabyddiaeth: nid yw grŵp o dan y trothwy yn dangos dim, ni enwir neb, grŵp yw allgynhwysydd, ac nid yw dim yma'n cynnig newid cyflog.",
     "as_of": "O ddyddiad",

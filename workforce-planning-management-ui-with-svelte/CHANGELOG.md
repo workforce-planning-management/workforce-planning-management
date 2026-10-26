@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — team equipment on `/me` (WPM-T308)
+
+A manager sees how many of their direct reports hold equipment, from the floor; `teamEquipment.*` in the 13 locales.
+
 ### Changed — Lily packages and vite (WPM-T305)
 
 `@lilydesignsystem/svelte-headless` 0.6.1, `svelte-locale-translations` 0.3.0 and `themes` 0.6.0; `vite` 8.3.5. `svelte-check`, the unit tests and the Playwright suite pass unchanged. TypeScript stays on 6.0.3: version 7 breaks `svelte-check` and the SvelteKit loader. `pnpm audit` reports no known vulnerabilities.

@@ -643,6 +643,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/workers/{pid}/team-policy-counts": {
             "get": { "tags": ["policies"], "summary": "For a manager (?version_pid=): how many of their direct reports in the audience have acknowledged and how many have not, from the floor; under it, nothing, since two numbers would name them", "responses": ok("The counts") }
         },
+        "/api/workers/{pid}/team-equipment-count": {
+            "get": { "tags": ["equipment"], "summary": "For a manager: how many of their direct reports in work hold equipment and how many hold none, from the floor; under it, nothing. No item, kind or name", "responses": ok("The count") }
+        },
         "/api/policy-versions/{pid}/acknowledgements": {
             "get": { "tags": ["policies"], "summary": "The named record: everyone in the version's audience with the day they acknowledged or null. HR and the like only; the read is audited", "responses": ok("The record") }
         },

@@ -56,7 +56,7 @@ applied to HR.
 | MCP tools (WPM-R149), webhook subscriptions (WPM-R151), SCIM (WPM-R150, proposed) | high — administrators only; a secret is held by reference and never read back |
 | positions (WPM-R152) | medium — HR and planners; the holder link is HR only, a manager sees counts |
 | pay position analysis (WPM-R154) | highest — roles that may read salaries; groups under the floor withheld |
-| equipment issues (WPM-R155) | low — HR writes and lists assets, the worker sees their own issues; no manager count yet |
+| equipment issues (WPM-R155) | low — HR writes and lists assets, the worker sees their own issues; a manager sees how many of their team hold equipment, from the floor, never which (WPM-R160) |
 | policy acknowledgements (WPM-R156) | medium — the worker's own; a manager sees counts; HR sees names (audited) |
 | credential issuances, skill mappings (WPM-R157–R158) | low — the worker's own issuances; HR or an administrator may revoke; the issuer key and the revocation list are public by design (WPM-D109); mappings are reference data, read by any signed-in caller, written by HR |
 

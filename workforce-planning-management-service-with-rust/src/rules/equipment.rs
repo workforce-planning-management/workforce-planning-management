@@ -75,6 +75,40 @@ pub fn return_problems(
     out
 }
 
+/// What a manager sees of their team's equipment: how many of their direct reports still hold some, from the floor; under it, nothing,
+/// since a count of two or three would name them. Never a list, an item or a kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum TeamHolding {
+    /// Shown.
+    Shown {
+        /// Reports holding at least one item.
+        holding: usize,
+        /// Reports holding none.
+        none: usize,
+    },
+    /// The team is under the floor: no count.
+    Withheld,
+    /// The manager has no direct reports in work.
+    NoOne,
+}
+
+/// The count for a team of `team` people, `holding` of whom hold equipment.
+#[must_use]
+pub fn team_holding(team: usize, holding: usize, floor: usize) -> TeamHolding {
+    if team == 0 {
+        TeamHolding::NoOne
+    } else if team < floor.max(1) {
+        TeamHolding::Withheld
+    } else {
+        let holding = holding.min(team);
+        TeamHolding::Shown {
+            holding,
+            none: team - holding,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,5 +214,47 @@ mod tests {
                 "{word}"
             );
         }
+    }
+
+    #[test]
+    fn a_manager_sees_a_count_only_from_the_floor() {
+        assert_eq!(team_holding(0, 0, 10), TeamHolding::NoOne);
+        for team in 1..10 {
+            assert_eq!(
+                team_holding(team, team, 10),
+                TeamHolding::Withheld,
+                "{team}"
+            );
+        }
+        assert_eq!(
+            team_holding(10, 3, 10),
+            TeamHolding::Shown {
+                holding: 3,
+                none: 7
+            }
+        );
+        assert_eq!(
+            team_holding(10, 0, 10),
+            TeamHolding::Shown {
+                holding: 0,
+                none: 10
+            }
+        );
+        assert_eq!(
+            team_holding(10, 99, 10),
+            TeamHolding::Shown {
+                holding: 10,
+                none: 0
+            },
+            "never more than the team"
+        );
+        assert_eq!(
+            team_holding(1, 1, 0),
+            TeamHolding::Shown {
+                holding: 1,
+                none: 0
+            },
+            "a floor of 0 is read as 1"
+        );
     }
 }

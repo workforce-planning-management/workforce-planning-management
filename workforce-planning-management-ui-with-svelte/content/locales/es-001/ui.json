@@ -2352,6 +2352,12 @@
     "shown": "{acknowledged} confirmadas, {waiting} pendientes",
     "withheld": "Menos de {floor} personas: no se muestra ningún recuento"
   },
+  "teamEquipment": {
+    "title": "Equipo en mi equipo",
+    "hint": "Cuántos de sus subordinados directos aún tienen equipo y cuántos no tienen ninguno. Solo se muestra para un equipo de {floor} o más; menos identificaría a personas. Nunca qué objetos.",
+    "shown": "{holding} tienen equipo, {none} ninguno",
+    "withheld": "Menos de {floor} personas: no se muestra ningún recuento"
+  },
   "payRange": {
     "hint": "Dónde se sitúa el salario dentro de su banda: el compa-ratio es el salario sobre el punto medio de la banda; la penetración indica cuánto se ha recorrido de la banda. Para una revisión retributiva: un grupo por debajo del umbral no muestra nada, no se nombra a nadie, un valor atípico es un grupo y nada aquí propone un cambio salarial.",
     "as_of": "A fecha de",

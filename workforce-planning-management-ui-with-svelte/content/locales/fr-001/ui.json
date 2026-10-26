@@ -2352,6 +2352,12 @@
     "shown": "{acknowledged} confirmées, {waiting} en attente",
     "withheld": "Moins de {floor} personnes : aucun chiffre affiché"
   },
+  "teamEquipment": {
+    "title": "Équipement dans mon équipe",
+    "hint": "Combien de vos subordonnés directs détiennent encore du matériel, et combien n’en ont aucun. Affiché seulement pour une équipe de {floor} personnes ou plus ; moins reviendrait à les nommer. Jamais quels objets.",
+    "shown": "{holding} détiennent du matériel, {none} aucun",
+    "withheld": "Moins de {floor} personnes : aucun chiffre affiché"
+  },
   "payRange": {
     "hint": "Où se situe la rémunération dans sa fourchette : le compa-ratio est la rémunération sur le milieu de la fourchette, la pénétration dit où l'on en est dans la fourchette. Pour une revue des rémunérations : un groupe sous le seuil n'affiche rien, personne n'est nommé, une valeur atypique est un groupe, et rien ici ne propose de changement de salaire.",
     "as_of": "À la date du",

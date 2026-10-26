@@ -2352,6 +2352,12 @@
     "shown": "{acknowledged} acknowledged, {waiting} waiting",
     "withheld": "Fewer than {floor} people: no count is shown"
   },
+  "teamEquipment": {
+    "title": "Equipment in my team",
+    "hint": "How many of your direct reports still hold equipment, and how many hold none. Shown only for a team of {floor} or more; fewer would name people. Never which items.",
+    "shown": "{holding} hold equipment, {none} hold none",
+    "withheld": "Fewer than {floor} people: no count is shown"
+  },
   "payRange": {
     "hint": "Where pay sits inside its band: compa-ratio is pay over the band midpoint, range penetration is how far through the band. For a compensation review: a group under the floor shows nothing, no one is named, an outlier is a group, and nothing here proposes a pay change.",
     "as_of": "As of",

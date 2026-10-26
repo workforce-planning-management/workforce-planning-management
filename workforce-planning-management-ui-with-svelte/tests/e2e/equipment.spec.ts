@@ -8,7 +8,9 @@ test.describe("Equipment", () => {
     await stubSignedIn(page);
   });
 
-  test("HR gives a laptop, then writes it off with a reason", async ({ page }) => {
+  test("HR gives a laptop, then writes it off with a reason", async ({
+    page,
+  }) => {
     let issued = false;
     let closed: Record<string, unknown> | null = null;
     const issues = () =>
@@ -28,14 +30,25 @@ test.describe("Equipment", () => {
         : [];
     await page.route(`**/api/proxy/workers/${WORKER.pid}/equipment`, (route) =>
       route.fulfill({
-        json: { worker_pid: WORKER.pid, out: issued && !closed ? 1 : 0, issues: issues() },
+        json: {
+          worker_pid: WORKER.pid,
+          out: issued && !closed ? 1 : 0,
+          issues: issues(),
+        },
       }),
     );
     await page.route("**/api/proxy/assets?*", (route) =>
       route.fulfill({
         json: {
           assets: [
-            { pid: "a1", organization_ref: "org-1", kind: "laptop", tag: "LT-1", owner_role: "IT", out: issued && !closed },
+            {
+              pid: "a1",
+              organization_ref: "org-1",
+              kind: "laptop",
+              tag: "LT-1",
+              owner_role: "IT",
+              out: issued && !closed,
+            },
           ],
         },
       }),
@@ -54,16 +67,22 @@ test.describe("Equipment", () => {
     await expect(panel.getByTestId("equipment-none")).toBeVisible();
     await panel.getByTestId("equipment-pick").selectOption("a1");
     await panel.getByTestId("equipment-issue").click();
-    await expect(panel.getByTestId("equipment-out")).toContainText("Still held: 1");
+    await expect(panel.getByTestId("equipment-out")).toContainText(
+      "Still held: 1",
+    );
     await panel.getByTestId("equipment-close").click();
     await expect(panel.getByTestId("equipment-write-off")).toBeDisabled();
     await panel.getByTestId("equipment-note").fill("lost");
     await panel.getByTestId("equipment-write-off").click();
-    await expect(panel.getByTestId("equipment-out")).toContainText("Still held: 0");
+    await expect(panel.getByTestId("equipment-out")).toContainText(
+      "Still held: 0",
+    );
     expect(closed).toEqual({ outcome: "written_off", note: "lost" });
   });
 
-  test("a worker without HR access sees the list and no controls", async ({ page }) => {
+  test("a worker without HR access sees the list and no controls", async ({
+    page,
+  }) => {
     await page.route(`**/api/proxy/workers/${WORKER.pid}/equipment`, (route) =>
       route.fulfill({ json: { worker_pid: WORKER.pid, out: 0, issues: [] } }),
     );
@@ -74,5 +93,39 @@ test.describe("Equipment", () => {
     const panel = page.getByTestId("equipment");
     await expect(panel.getByTestId("equipment-none")).toBeVisible();
     await expect(panel.getByTestId("equipment-issue")).toHaveCount(0);
+  });
+
+  test("a manager sees how many of their team hold equipment, and nothing under the floor", async ({
+    page,
+  }) => {
+    let answer: Record<string, unknown> = {
+      kind: "shown",
+      holding: 3,
+      none: 7,
+    };
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/team-equipment-count`,
+      (route) =>
+        route.fulfill({
+          json: { manager_pid: WORKER.pid, floor: 10, count: answer },
+        }),
+    );
+    await page.goto("/me");
+    await expect(page.getByTestId("team-equipment-count")).toHaveText(
+      "3 hold equipment, 7 hold none",
+    );
+    await expect(page.getByTestId("team-equipment")).not.toContainText(
+      "laptop",
+    );
+
+    answer = { kind: "withheld" };
+    await page.goto("/me");
+    await expect(page.getByTestId("team-equipment-count")).toHaveText(
+      "Fewer than 10 people: no count is shown",
+    );
+
+    answer = { kind: "no_one" };
+    await page.goto("/me");
+    await expect(page.getByTestId("team-equipment")).toHaveCount(0); // no team, no panel
   });
 });

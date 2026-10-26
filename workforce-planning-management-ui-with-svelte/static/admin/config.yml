@@ -3173,6 +3173,17 @@ collections:
               - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
               - { name: "shown", label: "Shown", widget: string, required: false, i18n: true }
               - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
+          - name: "teamEquipment"
+            label: "Team Equipment"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "shown", label: "Shown", widget: string, required: false, i18n: true }
+              - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
           - name: "payRange"
             label: "Pay Range"
             widget: object

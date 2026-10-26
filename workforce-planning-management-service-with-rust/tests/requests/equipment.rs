@@ -104,3 +104,86 @@ async fn equipment_is_issued_to_one_holder_returned_or_written_off_and_holds_a_l
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_manager_sees_how_many_of_their_team_hold_equipment_only_from_the_floor() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let hire = |number: String, manager: Option<String>| {
+            let request = &request;
+            let org = org.clone();
+            async move {
+                let made = request
+                    .post("/api/workers")
+                    .json(&json!({
+                        "person_ref": crate::requests::a_person(), "organization_ref": org, "worker_number": number,
+                        "display_name": "Team Person", "employment_type": "permanent", "department": "care",
+                        "job_title": "Carer", "hired_on": "2020-01-05", "manager_pid": manager,
+                    }))
+                    .await;
+                assert_eq!(made.status_code(), 200, "{}", made.text());
+                made.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let boss = hire(format!("TE-{tag}-M"), None).await;
+        let mut team = Vec::new();
+        for n in 0..10 {
+            team.push(hire(format!("TE-{tag}-{n}"), Some(boss.clone())).await);
+        }
+        let small_boss = hire(format!("TE-{tag}-S"), None).await;
+        for n in 0..3 {
+            hire(format!("TE-{tag}-S{n}"), Some(small_boss.clone())).await;
+        }
+
+        let count = |who: String| {
+            let request = &request;
+            async move { request.get(&format!("/api/workers/{who}/team-equipment-count")).await.json::<Value>() }
+        };
+        assert_eq!(count(boss.clone()).await["count"], json!({ "kind": "shown", "holding": 0, "none": 10 }));
+
+        // Three people hold a laptop; one of them also holds a phone, which does not make them two people.
+        let mut issues = Vec::new();
+        for (n, (who, kind)) in [(0, "laptop"), (1, "laptop"), (2, "laptop"), (2, "phone")].iter().map(|(i, k)| (&team[*i], *k)).enumerate() {
+            let asset: Value = request
+                .post("/api/assets")
+                .json(&json!({ "organization_ref": org, "kind": kind, "tag": format!("TE-{tag}-{n}"), "owner_role": "IT" }))
+                .await
+                .json();
+            let issued: Value = request
+                .post(&format!("/api/assets/{}/issue", asset["pid"].as_str().unwrap()))
+                .json(&json!({ "worker_pid": who }))
+                .await
+                .json();
+            issues.push(issued["pid"].as_str().unwrap().to_string());
+        }
+        let shown = count(boss.clone()).await;
+        assert_eq!(shown["count"], json!({ "kind": "shown", "holding": 3, "none": 7 }), "{shown}");
+        let text = shown.to_string();
+        assert!(!text.contains("laptop") && !text.contains("phone") && !text.contains(&format!("TE-{tag}")), "a count names no item: {text}");
+        for who in &team {
+            assert!(!text.contains(who.as_str()), "a count names no one");
+        }
+
+        // Returned equipment stops counting; a person who returns one of two items still holds the other.
+        let closed = request
+            .post(&format!("/api/asset-issues/{}/return", issues[3]))
+            .json(&json!({ "outcome": "returned" }))
+            .await;
+        assert_eq!(closed.status_code(), 200, "{}", closed.text());
+        assert_eq!(count(boss.clone()).await["count"]["holding"], 3);
+        let closed = request
+            .post(&format!("/api/asset-issues/{}/return", issues[0]))
+            .json(&json!({ "outcome": "returned" }))
+            .await;
+        assert_eq!(closed.status_code(), 200, "{}", closed.text());
+        assert_eq!(count(boss.clone()).await["count"]["holding"], 2);
+
+        // Three reports are under the floor: nothing, whoever holds what; and a worker with no team has no one.
+        assert_eq!(count(small_boss).await["count"]["kind"], "withheld");
+        assert_eq!(count(team[5].clone()).await["count"]["kind"], "no_one");
+    })
+    .await;
+}

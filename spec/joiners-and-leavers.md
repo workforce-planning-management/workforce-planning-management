@@ -91,7 +91,10 @@ joiner or a leaver.
 - **Access.** Writes follow the policy (HR, payroll-excluded, service and administrators; a worker is refused); the asset list is
   need-to-know "privileged"; the worker themself or HR reads a worker's issues. The subject-access export lists `asset_issues`;
   erasure deletes them and keeps the asset.
-- **Not built:** the asset owner role as its own permission (HR and administrators write; the owner role is a label); the manager's
-  count of the team's open issues; the equipment as items on the leaver checklist itself and in the handover trail (only the gate
-  and the per-worker list exist); a screen; a bulk import; retiring an asset.
+- **The manager's count is built** (WPM-R160, WPM-D111, WPM-T308): `GET /api/workers/{pid}/team-equipment-count` says how many of
+  the manager's direct reports in work hold equipment and how many hold none, from the floor (`DEFAULT_FLOOR`); under it, `withheld`; with no
+  such reports, `no_one`. It counts **people, not items** (a person with a laptop and a phone is one), and names no item, kind or person. Read as the
+  manager themself or by HR. A `/me` panel shows it.
+- **Not built:** the asset owner role as its own permission (HR and administrators write; the owner role is a label); the equipment as items on the leaver checklist itself and in the handover trail (only the gate
+  and the per-worker list exist); a bulk import; retiring an asset.
 

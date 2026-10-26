@@ -397,7 +397,11 @@ pub(crate) struct CountQuery {
 }
 
 /// Whether the caller may see more than their own: HR, payroll, service and administrators, or anyone when sign-in is off.
-async fn privileged(ctx: &AppContext, caller: &MaybeAuthUser, organization: &str) -> Result<bool> {
+pub(crate) async fn privileged(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    organization: &str,
+) -> Result<bool> {
     if !auth::require_auth() {
         return Ok(true);
     }

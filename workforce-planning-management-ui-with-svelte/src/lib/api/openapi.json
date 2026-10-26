@@ -12599,6 +12599,19 @@
         ]
       }
     },
+    "/api/workers/{pid}/team-equipment-count": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The count"
+          }
+        },
+        "summary": "For a manager: how many of their direct reports in work hold equipment and how many hold none, from the floor; under it, nothing. No item, kind or name",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
     "/api/workers/{pid}/team-policy-counts": {
       "get": {
         "responses": {

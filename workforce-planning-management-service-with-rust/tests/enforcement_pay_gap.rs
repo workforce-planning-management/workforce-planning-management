@@ -316,6 +316,17 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(get(counts.clone(), worker.clone()).await.status_code(), 200, "a manager (here, any worker as themself) reads counts, which are nothing under the floor");
         assert_eq!(get(counts, hr.clone()).await.status_code(), 200);
 
+        // A manager's count of team equipment is for that manager (or HR); no item is named.
+        let other = request.post("/api/workers").add_header("authorization", svc.clone()).json(&json!({
+            "person_ref": format!("person:{}", uuid::Uuid::new_v4()), "organization_ref": org, "worker_number": "PGE-OTHER",
+            "display_name": "Pay Gap Enforcement Other", "employment_type": "permanent", "department": "engineering",
+            "job_title": "Engineer", "hired_on": "2020-01-05" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let team_equipment = |who: &str| format!("/api/workers/{who}/team-equipment-count");
+        assert_eq!(request.get(&team_equipment(&me)).await.status_code(), 401);
+        assert_eq!(get(team_equipment(&me), worker.clone()).await.status_code(), 200, "a manager reads their own");
+        assert_eq!(get(team_equipment(&other), worker.clone()).await.status_code(), 403, "not another manager's");
+        assert_eq!(get(team_equipment(&other), hr.clone()).await.status_code(), 200, "HR may");
+
         // ── Credentials: the worker issues from their own verified entry; the issuer key and the list are public ──
         use workforce_planning_management::rules::credential as cred;
         let public = request.get("/api/credentials/issuer").await;
@@ -515,7 +526,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         ctx.db.execute_unprepared("DELETE FROM equality_declarations").await.unwrap();
         let none: Value = get(report.clone(), payroll.clone()).await.json();
         assert_eq!(none["report"]["categories"][0]["basic"], json!({ "status": "unknown", "value": "no_workers" }));
-        assert_eq!(none["report"]["exclusions"]["no_sex_declared"], json!({ "status": "exactly", "value": 15 })); // twelve engineers, HR, payroll and the policy test's worker
+        assert_eq!(none["report"]["exclusions"]["no_sex_declared"], json!({ "status": "exactly", "value": 16 })); // twelve engineers, HR, payroll and the policy and equipment tests' workers
     })
     .await;
 }

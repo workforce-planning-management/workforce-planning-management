@@ -2352,6 +2352,12 @@
     "shown": "{acknowledged} bestätigt, {waiting} ausstehend",
     "withheld": "Weniger als {floor} Personen: keine Zahl angezeigt"
   },
+  "teamEquipment": {
+    "title": "Ausstattung in meinem Team",
+    "hint": "Wie viele Ihrer direkt Unterstellten noch Ausstattung haben und wie viele keine. Nur ab einem Team von {floor} oder mehr; weniger würde Personen erkennbar machen. Nie, welche Gegenstände.",
+    "shown": "{holding} haben Ausstattung, {none} keine",
+    "withheld": "Weniger als {floor} Personen: keine Zahl angezeigt"
+  },
   "payRange": {
     "hint": "Wo die Vergütung im Band liegt: Compa-Ratio ist die Vergütung im Verhältnis zur Bandmitte, Bandausschöpfung zeigt, wie weit im Band. Für eine Vergütungsüberprüfung: Eine Gruppe unter der Untergrenze zeigt nichts, niemand wird genannt, ein Ausreißer ist eine Gruppe, und nichts hier schlägt eine Gehaltsänderung vor.",
     "as_of": "Stichtag",

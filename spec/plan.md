@@ -557,6 +557,8 @@ section. The details now live in topic files: [pay-transparency.md](pay-transpar
 - **WPM-R159 The MCP endpoint takes only tokens meant for it.** When `WPM_MCP_RESOURCE` is set, `POST /mcp` accepts a bearer token only if
   its audience is that URL (RFC 8707 and the MCP authorization section); a token for another audience is a `401` that points at the
   metadata. Unset, nothing is bound and the token only has to verify.
+- **WPM-R160 A manager sees how many of their team hold equipment.** The count of direct reports in work who hold equipment, and of those who
+  hold none, from the equality-monitoring floor; under it nothing. No item, kind or name.
 
 #### Spec round: what changed (WPM-T268)
 
@@ -729,6 +731,10 @@ reason; no Svelte 4 syntax, no `any`, no `{@html}`; strict TypeScript; strict `k
   `/mcp` (and by the verifier on the API). Rejected: a second audience for `/mcp` only (a second verifier to keep in step through key
   rotation on both backends, and the call inside the service would then need the caller's claims passed in rather than the token,
   which touches every extractor).
+
+- **WPM-D111 A manager's equipment count is of people, not items.** WPM-D35 said "a count of their team's open issues"; the count is of
+  reports holding at least one item, so a count cannot say how much one person holds. The floor and the withheld answer are the policy
+  counts' (WPM-D105).
 
 ## 4. Data and privacy summary
 

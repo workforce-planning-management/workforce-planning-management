@@ -10,10 +10,14 @@ use serde_json::json;
 use uuid::Uuid;
 
 use super::pay_transparency::organization_problems;
-use super::{ensure_org_in_scope, ensure_valid, row_json, unprocessable, writable_worker};
-use crate::auth::MaybeAuthUser;
+use super::{
+    ensure_org_in_scope, ensure_valid, forbidden, row_json, unprocessable, writable_worker,
+};
+use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{asset_issues, assets, workers};
 use crate::models::audit_logs::Model as Audit;
+use crate::models::records;
+use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::equipment as rules;
 use crate::rules::metrics::is_employed_on;
 
@@ -289,6 +293,43 @@ async fn of_worker(
     format::json(json!({ "worker_pid": worker.pid, "out": still_out, "issues": out }))
 }
 
+/// `GET /api/workers/{pid}/team-equipment-count` — for a manager: how many of their direct reports in work hold equipment, from the floor;
+/// under it, nothing. No item, kind or name. Read as the manager `{pid}`; anyone else needs HR's access.
+#[debug_handler]
+async fn team_count(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    if auth::acting_for_other(&caller, &manager.person_ref)
+        && !super::policies::privileged(&ctx, &caller, &manager.organization_ref).await?
+    {
+        return Err(forbidden("a manager's team count is for that manager"));
+    }
+    let today = Utc::now().date_naive();
+    let team: Vec<Uuid> = workers::Entity::find()
+        .filter(workers::Column::ManagerPid.eq(manager.pid))
+        .filter(workers::Column::OrganizationRef.eq(manager.organization_ref.clone()))
+        .filter(workers::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+        .map(|w| w.pid)
+        .collect();
+    let holders = asset_issues::Entity::find()
+        .filter(asset_issues::Column::WorkerPid.is_in(team.clone()))
+        .filter(asset_issues::Column::ReturnedOn.is_null())
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|i| i.worker_pid)
+        .collect::<std::collections::BTreeSet<_>>();
+    let count = rules::team_holding(team.len(), holders.len(), DEFAULT_FLOOR);
+    format::json(json!({ "manager_pid": manager.pid, "floor": DEFAULT_FLOOR, "count": count }))
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -298,4 +339,5 @@ pub fn routes() -> Routes {
         .add("/assets/{pid}/issue", post(issue))
         .add("/asset-issues/{pid}/return", post(close))
         .add("/workers/{pid}/equipment", get(of_worker))
+        .add("/workers/{pid}/team-equipment-count", get(team_count))
 }

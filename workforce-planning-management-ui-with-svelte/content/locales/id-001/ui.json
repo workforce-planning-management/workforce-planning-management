@@ -2352,6 +2352,12 @@
     "shown": "{acknowledged} mengakui, {waiting} menunggu",
     "withheld": "Kurang dari {floor} orang: tidak ada hitungan ditampilkan"
   },
+  "teamEquipment": {
+    "title": "Peralatan di tim saya",
+    "hint": "Berapa bawahan langsung Anda yang masih memegang peralatan dan berapa yang tidak. Hanya ditampilkan untuk tim berjumlah {floor} atau lebih; lebih sedikit akan menyebut orangnya. Tidak pernah menyebut barangnya.",
+    "shown": "{holding} memegang peralatan, {none} tidak",
+    "withheld": "Kurang dari {floor} orang: jumlah tidak ditampilkan"
+  },
   "payRange": {
     "hint": "Di mana gaji berada dalam bandnya: compa-ratio adalah gaji terhadap titik tengah band, penetrasi rentang adalah seberapa jauh melewati band. Untuk tinjauan kompensasi: kelompok di bawah ambang tidak menampilkan apa pun, tidak ada yang disebut namanya, pencilan adalah kelompok, dan tidak ada yang di sini mengusulkan perubahan gaji.",
     "as_of": "Per tanggal",

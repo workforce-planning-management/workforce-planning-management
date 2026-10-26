@@ -4798,6 +4798,20 @@ export function getWorkerEquipment(
   return api(`/workers/${workerPid}/equipment`, init);
 }
 
+/** A manager's count of direct reports holding equipment (mirror `rules::equipment::TeamHolding`). No item, kind or name. */
+export type TeamHolding =
+  | { kind: "shown"; holding: number; none: number }
+  | { kind: "withheld" }
+  | { kind: "no_one" };
+
+/** For a manager: how many direct reports hold equipment, from the floor; under it, nothing. */
+export function getTeamEquipmentCount(
+  managerPid: string,
+  init?: FetchLike,
+): Promise<{ manager_pid: string; floor: number; count: TeamHolding }> {
+  return api(`/workers/${managerPid}/team-equipment-count`, init);
+}
+
 /** The organization's assets and whether each is out (HR). */
 export function listAssets(
   organization: string,

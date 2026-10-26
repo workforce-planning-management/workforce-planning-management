@@ -2352,6 +2352,12 @@
     "shown": "{acknowledged} confirmadas, {waiting} pendentes",
     "withheld": "Menos de {floor} pessoas: nenhuma contagem é mostrada"
   },
+  "teamEquipment": {
+    "title": "Equipamento na minha equipa",
+    "hint": "Quantos dos seus subordinados diretos ainda têm equipamento e quantos não têm nenhum. Mostrado apenas para uma equipa de {floor} ou mais; menos identificaria pessoas. Nunca quais os itens.",
+    "shown": "{holding} têm equipamento, {none} nenhum",
+    "withheld": "Menos de {floor} pessoas: nenhuma contagem é mostrada"
+  },
   "payRange": {
     "hint": "Onde a remuneração se situa na banda: o compa-ratio é a remuneração sobre o ponto médio da banda; a penetração mostra quanto da banda foi percorrido. Para uma revisão remuneratória: um grupo abaixo do limiar não mostra nada, ninguém é nomeado, um valor atípico é um grupo e nada aqui propõe uma alteração salarial.",
     "as_of": "Em",
