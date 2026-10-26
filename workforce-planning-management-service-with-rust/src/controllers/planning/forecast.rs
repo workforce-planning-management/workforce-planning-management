@@ -173,18 +173,13 @@ pub(super) async fn forecast_value(
                         .iter()
                         .filter(move |r| r.role_profile_pid == role)
                         .map(|r| {
-                            let (mut proficient, mut reskill_pool) = (0usize, 0usize);
-                            for (level, n) in declared
-                                .get(&(department.clone(), r.skill_pid))
-                                .into_iter()
-                                .flatten()
-                            {
-                                if *level >= r.min_proficiency {
-                                    proficient += n;
-                                } else {
-                                    reskill_pool += n;
-                                }
-                            }
+                            let (proficient, reskill_pool) = rules::proficiency_split(
+                                declared
+                                    .get(&(department.clone(), r.skill_pid))
+                                    .into_iter()
+                                    .flatten(),
+                                r.min_proficiency,
+                            );
                             serde_json::json!({
                                 "job_title": titles.get(&role),
                                 "skill": skill_names.get(&r.skill_pid),

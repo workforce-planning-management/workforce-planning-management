@@ -118,15 +118,8 @@ pub(super) async fn cost_value(
             let salaries: &[i64] = salaries_in.get(department).map_or(&[], Vec::as_slice);
             let unit =
                 cost_rules::pick_unit_cost(benchmark, cost_rules::cohort_average_minor(salaries));
-            let (annual, reason) = match (hires, unit, salary_visible) {
-                (_, _, false) => (None, Some("salary_not_visible")),
-                (None, _, _) => (None, Some("insufficient_history")),
-                (Some(_), None, _) => (None, Some("no_unit_cost")),
-                (Some(h), Some((unit_cost, _)), true) => (
-                    Some(cost_rules::annual_cost(h, unit_cost, on_cost_bp)),
-                    None,
-                ),
-            };
+            let (annual, reason) =
+                cost_rules::group_annual(hires, unit, salary_visible, on_cost_bp);
             match annual {
                 Some(amount) => {
                     let entry = latest
@@ -151,10 +144,11 @@ pub(super) async fn cost_value(
         .collect();
 
     let total: i64 = latest.values().map(|(_, amount)| amount).sum();
-    let budget = match (plan.budget_minor, plan.budget_currency.as_deref()) {
-        (Some(minor), Some(code)) if code == currency => Some(minor),
-        _ => None,
-    };
+    let budget = cost_rules::budget_in(
+        plan.budget_minor,
+        plan.budget_currency.as_deref(),
+        &currency,
+    );
     let affordability = if salary_visible {
         budget.map(|b| {
             let (remaining, within) = cost_rules::against_budget(total, b);

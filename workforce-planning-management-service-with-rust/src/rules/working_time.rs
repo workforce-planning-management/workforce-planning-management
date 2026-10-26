@@ -75,9 +75,63 @@ pub fn rest_breaches(intervals: &[(DateTime<Utc>, DateTime<Utc>)]) -> Vec<RestBr
         .collect()
 }
 
+/// One shift's `(starts, ends)`.
+pub type Shift = (DateTime<Utc>, DateTime<Utc>);
+
+/// Rest breaches per worker from `(worker, (starts, ends))` assignments; a worker with none is left out.
+#[must_use]
+pub fn breaches_by_worker<K: Ord + Copy>(
+    assignments: &[(K, Shift)],
+) -> std::collections::BTreeMap<K, Vec<RestBreach>> {
+    let mut intervals: std::collections::BTreeMap<K, Vec<Shift>> =
+        std::collections::BTreeMap::new();
+    for (worker, interval) in assignments {
+        intervals.entry(*worker).or_default().push(*interval);
+    }
+    intervals
+        .into_iter()
+        .map(|(worker, list)| (worker, rest_breaches(&list)))
+        .filter(|(_, breaches)| !breaches.is_empty())
+        .collect()
+}
+
+/// Whether a worker is flagged at all: over the 48-hour average, or with a rest breach.
+#[must_use]
+pub fn is_flagged(total_minutes: i64, rest_breach_count: usize) -> bool {
+    over_average(total_minutes, REFERENCE_WEEKS) || rest_breach_count > 0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Intervals are grouped per worker, so one worker's shifts never breach another's rest.
+    #[test]
+    fn breaches_are_found_within_a_worker_not_across_workers() {
+        let found = breaches_by_worker(&[
+            (1_u8, (at(1, 8), at(1, 20))),
+            (2, (at(1, 23), at(1, 23) + chrono::Duration::hours(8))),
+            (1, (at(2, 5), at(2, 13))),
+            (3, (at(1, 8), at(1, 16))),
+            (3, (at(3, 8), at(3, 16))),
+        ]);
+        assert_eq!(
+            found.keys().copied().collect::<Vec<_>>(),
+            [1],
+            "worker 1 had 9 hours of rest; 2 and 3 none short"
+        );
+        assert_eq!(found[&1][0].gap_minutes, 9 * 60);
+        assert!(breaches_by_worker::<u8>(&[]).is_empty());
+    }
+
+    /// Exactly 48 hours on average is not over; a rest breach alone flags.
+    #[test]
+    fn a_worker_is_flagged_for_hours_or_for_rest() {
+        let ceiling = MAX_AVG_WEEKLY_MINUTES * REFERENCE_WEEKS;
+        assert!(!is_flagged(ceiling, 0));
+        assert!(is_flagged(ceiling + 1, 0));
+        assert!(is_flagged(0, 1));
+    }
 
     /// The migration's partial index is `WHERE minutes >= 2720`; a changed rule needs a new index,
     /// and until then the query is correct but cannot use it.

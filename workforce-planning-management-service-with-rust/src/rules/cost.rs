@@ -97,6 +97,40 @@ pub fn annual_cost(hires: usize, unit_annual_minor: i64, on_cost_bp: i32) -> i64
     i64::try_from(hires * each).unwrap_or(i64::MAX)
 }
 
+/// The annual cost of one demand group, or why there is none: the reason is
+/// `salary_not_visible` first (money is withheld whatever else is known), then
+/// `insufficient_history` (no gap to cost), then `no_unit_cost`.
+#[must_use]
+pub fn group_annual(
+    hires: Option<usize>,
+    unit: Option<(i64, CostSource)>,
+    salary_visible: bool,
+    on_cost_bp: i32,
+) -> (Option<i64>, Option<&'static str>) {
+    match (hires, unit, salary_visible) {
+        (_, _, false) => (None, Some("salary_not_visible")),
+        (None, _, _) => (None, Some("insufficient_history")),
+        (Some(_), None, _) => (None, Some("no_unit_cost")),
+        (Some(h), Some((unit_cost, _)), true) => {
+            (Some(annual_cost(h, unit_cost, on_cost_bp)), None)
+        }
+    }
+}
+
+/// The plan's budget when it is stated in the currency being costed; budgets
+/// are never converted.
+#[must_use]
+pub fn budget_in(
+    budget_minor: Option<i64>,
+    budget_currency: Option<&str>,
+    currency: &str,
+) -> Option<i64> {
+    match (budget_minor, budget_currency) {
+        (Some(minor), Some(code)) if code == currency => Some(minor),
+        _ => None,
+    }
+}
+
 /// Budget remaining after `cost`, and whether the cost fits.
 #[must_use]
 pub fn against_budget(cost_minor: i64, budget_minor: i64) -> (i64, bool) {
@@ -185,5 +219,45 @@ mod tests {
         assert_eq!(against_budget(120, 100), (-20, false));
         assert!(valid_currency("GBP"));
         assert!(!valid_currency("gbp") && !valid_currency("GB") && !valid_currency("GBPP"));
+    }
+
+    /// Money is withheld before anything else is considered; a missing gap or unit cost says why.
+    #[test]
+    fn a_group_cost_names_the_reason_it_has_none() {
+        let unit = Some((5_000_000, CostSource::Benchmark));
+        assert_eq!(
+            group_annual(Some(2), unit, false, 0),
+            (None, Some("salary_not_visible"))
+        );
+        assert_eq!(
+            group_annual(None, unit, false, 0),
+            (None, Some("salary_not_visible"))
+        );
+        assert_eq!(
+            group_annual(None, unit, true, 0),
+            (None, Some("insufficient_history"))
+        );
+        assert_eq!(
+            group_annual(Some(2), None, true, 0),
+            (None, Some("no_unit_cost"))
+        );
+        assert_eq!(
+            group_annual(Some(2), unit, true, 2_000),
+            (Some(12_000_000), None)
+        );
+        assert_eq!(
+            group_annual(Some(0), unit, true, 2_000),
+            (Some(0), None),
+            "no hires costs nothing, it is not unknown"
+        );
+    }
+
+    /// A budget in another currency is not compared, never converted.
+    #[test]
+    fn a_budget_applies_only_in_its_own_currency() {
+        assert_eq!(budget_in(Some(9), Some("GBP"), "GBP"), Some(9));
+        assert_eq!(budget_in(Some(9), Some("GBP"), "EUR"), None);
+        assert_eq!(budget_in(Some(9), None, "GBP"), None);
+        assert_eq!(budget_in(None, Some("GBP"), "GBP"), None);
     }
 }

@@ -4060,7 +4060,7 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       (`engagements::contractor_details_and_assessments`) is a pre-existing flake (it asserts the audit JSON lacks "45000", which a
       hex hash can contain) and passed 3 of 3 alone. **Not checked:** the UI against the changed bodies (it was grepped for `id` and
       `deleted_at` reads: none found).
-- [ ] WPM-T253 **Arithmetic into the pure core.** `rules::display::{ratio, from_hundredths, from_tenths}` replaces the three
+- [x] WPM-T253 **Arithmetic into the pure core.** `rules::display::{ratio, from_hundredths, from_tenths}` replaces the three
       fixed-point copies and the inline divisions (`learning.rs:1238`, `wellbeing.rs:497`, `cpd.rs:43`, `governance.rs:23`,
       `planning/forecast.rs:50`); pure `*_value` functions for `working_time`, `planning/forecast` and `planning/cost`, with unit
       tests.
@@ -4068,8 +4068,12 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       fixed-point copies (`governance::hours`, `cpd::units`, `forecast::centi`), `talent::ratio` now builds on `display::ratio`,
       and the inline divisions in `learning.rs`, `wellbeing.rs` and `planning/plans.rs` call it. Verified: clippy clean,
       617 unit tests, the `--ignored` request suite (115) against a local Postgres.
-      **Still open:** the pure `*_value` functions for `working_time`, `planning/forecast` and `planning/cost`. Those handlers
-      interleave queries with arithmetic across hundreds of lines, so the extraction is its own change; this task stays open for it.
+      Part 2 done (2026-10-26): the decisions inside those handlers are pure and tested, the handlers keep only reads and JSON:
+      `rules::cost::{group_annual, budget_in}` (the reason a group has no cost, in order; a budget only in its own currency),
+      `rules::planning::proficiency_split` (the bar is inclusive), `rules::working_time::{breaches_by_worker, is_flagged}`.
+      The handlers were not split into whole `*_value` functions: the queries stay where they are. Verified: clippy pedantic clean
+      on the lib and bins, 821 unit tests, the `--ignored` request suite (155) against Postgres 18. **Not verified:** no mutation
+      check on the new rules; responses were not diffed byte for byte before and after (the request tests pass).
 - [ ] WPM-T254 **Paged lists and counts in SQL.** `Page` and `check_offset` on worker- and org-scoped lists (about 68 unpaged);
       `GROUP BY` for `groups.rs:80 member_counts`; filtered reads for `intelligence.rs:653` and `:729`. Seed-200k measurement
       before and after, recorded in `BENCHMARKS.md` (WPM-R142).

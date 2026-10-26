@@ -591,6 +591,24 @@ pub fn competency_shortfall(needed: usize, proficient: usize) -> usize {
     needed.saturating_sub(proficient)
 }
 
+/// Split `(declared level, people)` counts at a requirement's bar: those at or
+/// above it are proficient, those declared below it are the reskill pool.
+#[must_use]
+pub fn proficiency_split<'a>(
+    declared: impl IntoIterator<Item = &'a (i32, usize)>,
+    min_proficiency: i32,
+) -> (usize, usize) {
+    declared
+        .into_iter()
+        .fold((0, 0), |(proficient, pool), (level, n)| {
+            if *level >= min_proficiency {
+                (proficient + n, pool)
+            } else {
+                (proficient, pool + n)
+            }
+        })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -867,6 +885,21 @@ mod tests {
         );
         assert_eq!(competency_shortfall(10, 4), 6);
         assert_eq!(competency_shortfall(3, 8), 0);
+    }
+
+    /// The bar is inclusive; no declarations is nobody, not an error.
+    #[test]
+    fn declared_levels_split_at_the_bar() {
+        assert_eq!(
+            proficiency_split(&[(2, 3), (3, 4), (4, 1), (1, 6)], 3),
+            (5, 9)
+        );
+        assert_eq!(proficiency_split(&[], 3), (0, 0));
+        assert_eq!(
+            proficiency_split(&[(3, 2)], 3),
+            (2, 0),
+            "at the bar is proficient"
+        );
     }
 
     #[test]

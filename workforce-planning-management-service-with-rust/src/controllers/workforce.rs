@@ -841,8 +841,7 @@ async fn working_time(
             )
         })
         .collect();
-    let mut intervals_of: std::collections::BTreeMap<Uuid, Vec<ShiftInterval>> =
-        std::collections::BTreeMap::new();
+    let mut assigned: Vec<(Uuid, ShiftInterval)> = Vec::new();
     for shift_pids in window_shifts
         .keys()
         .copied()
@@ -856,18 +855,11 @@ async fn working_time(
             .await?
         {
             if let Some(interval) = window_shifts.get(&assignment.shift_pid) {
-                intervals_of
-                    .entry(assignment.worker_pid)
-                    .or_default()
-                    .push(*interval);
+                assigned.push((assignment.worker_pid, *interval));
             }
         }
     }
-    let breaches_of: std::collections::BTreeMap<Uuid, Vec<working_time::RestBreach>> = intervals_of
-        .iter()
-        .map(|(pid, intervals)| (*pid, working_time::rest_breaches(intervals)))
-        .filter(|(_, breaches)| !breaches.is_empty())
-        .collect();
+    let breaches_of = working_time::breaches_by_worker(&assigned);
     // A worker flagged only for rest still shows their total: read just those.
     let rest_only: Vec<Uuid> = breaches_of
         .keys()
@@ -902,7 +894,7 @@ async fn working_time(
             let total_minutes = minutes_of.get(&worker.pid).copied().unwrap_or(0);
             let over = working_time::over_average(total_minutes, working_time::REFERENCE_WEEKS);
             let breaches = breaches_of.get(&worker.pid).map_or(&[][..], Vec::as_slice);
-            if !over && breaches.is_empty() {
+            if !working_time::is_flagged(total_minutes, breaches.len()) {
                 continue;
             }
             flagged.push(serde_json::json!({
