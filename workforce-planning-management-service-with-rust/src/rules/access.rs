@@ -177,6 +177,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("assets", Privileged),
     ("recognised-bodies", Privileged),
     ("recognised-bodies/{}/units", Privileged),
+    ("bargaining-units/{}/agreements", Privileged),
+    ("workers/{}/collective-agreements", Privileged),
     ("policies", Open),
     ("skill-mappings", Open),
     ("credentials/issuer", Open),

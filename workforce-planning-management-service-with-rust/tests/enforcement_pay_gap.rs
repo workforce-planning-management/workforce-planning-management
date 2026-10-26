@@ -271,6 +271,21 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         let covered = get(units.clone(), hr.clone()).await;
         assert_eq!(covered.status_code(), 200, "HR reads coverage: {}", covered.text());
         assert!(!covered.text().contains("Pay Gap Enforcement"), "no worker named: {}", covered.text());
+        // Collective agreements: HR keeps them; HR and payroll read what applies to a worker; a worker reads neither.
+        let unit_pid = request.get(&units).add_header("authorization", hr.clone()).await.json::<Value>()["units"][0]["pid"].as_str().unwrap().to_string();
+        let agreements = format!("/api/bargaining-units/{unit_pid}/agreements");
+        let agreement = json!({ "title": "Enforcement terms", "source": "Test agreement", "effective_from": "2020-01-01" });
+        assert_eq!(request.post(&agreements).add_header("authorization", worker.clone()).json(&agreement).await.status_code(), 403, "a worker records none");
+        assert_eq!(request.post(&agreements).add_header("authorization", hr.clone()).json(&agreement).await.status_code(), 200, "HR records one");
+        assert_eq!(request.get(&agreements).await.status_code(), 401);
+        assert_eq!(get(agreements.clone(), worker.clone()).await.status_code(), 403, "a worker");
+        assert_eq!(get(agreements.clone(), hr.clone()).await.status_code(), 200, "HR");
+        let of_worker = format!("/api/workers/{}/collective-agreements", pids[0]);
+        assert_eq!(request.get(&of_worker).await.status_code(), 401);
+        assert_eq!(get(of_worker.clone(), worker.clone()).await.status_code(), 403, "a worker reads no one's, not even their own");
+        assert_eq!(get(of_worker.clone(), hr.clone()).await.status_code(), 200, "HR");
+        assert_eq!(get(of_worker.clone(), payroll.clone()).await.status_code(), 200, "payroll");
+
 
         // ── Equipment: HR keeps the asset list and issues; a worker may not ──
         let assets = format!("/api/assets?organization={org}");

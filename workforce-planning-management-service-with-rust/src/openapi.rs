@@ -616,6 +616,13 @@ fn add_integration_paths(document: &mut Value) {
             "get": { "tags": ["bargaining"], "summary": "A body's bargaining units with their rules and how many workers in work today they cover: a count from the floor, nothing under it, never a list of who. HR", "responses": ok("The units") },
             "post": { "tags": ["bargaining"], "summary": "Add a bargaining unit: a name and rules over department, location, employment_type and job_title (at least one). Nothing is recorded about who is covered", "responses": ok("The pid of the unit") }
         },
+        "/api/bargaining-units/{pid}/agreements": {
+            "get": { "tags": ["bargaining"], "summary": "Every version of every collective agreement of a unit, oldest first, saying which is in force today. HR", "responses": ok("The agreements") },
+            "post": { "tags": ["bargaining"], "summary": "Record a collective agreement for a unit, or a new version of one by giving the same title: dated, sourced and transcribed, with optional terms (a known pay scale id, max weekly hours, notice weeks, an agreed consultation period in days). A new version must take effect after the newest", "responses": ok("The pid and version") }
+        },
+        "/api/workers/{pid}/collective-agreements": {
+            "get": { "tags": ["bargaining"], "summary": "The agreements in force on a day (?on=, default today) for the units whose rules cover this worker's job facts. HR and payroll, audited. Derived, and says nothing about membership: no body or unit is named", "responses": ok("The agreements") }
+        },
         "/api/assets": {
             "get": { "tags": ["equipment"], "summary": "The organization's assets (?organization=), each with whether it is out. Kind, tag and owner role only: no location, cost or reading is held", "responses": ok("The assets") },
             "post": { "tags": ["equipment"], "summary": "Add an asset: kind (laptop, phone, pass, key, other), a tag unique within the organization, and the role that owns it", "responses": ok("The pid of the asset") }

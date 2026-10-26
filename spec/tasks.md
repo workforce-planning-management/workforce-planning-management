@@ -3415,9 +3415,22 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       department, location, employment type and job title), so the spec's list is narrower here; no way to edit or retire a body or unit; coverage reads the
       four facts of every worker in the organization per request (no 200k timing taken); the floor is the equality-monitoring default (10), not set per
       body; a difference between two units' counts can still hint at a few people (a floor stops a count, not every comparison).
-- [ ] WPM-T174 **Collective agreements as reference data.** *(WPM-R103)* Dated, sourced, versioned agreements linked to a
+- [x] (2026-10-26) WPM-T174 **Collective agreements as reference data.** *(WPM-R103)* Dated, sourced, versioned agreements linked to a
       unit and to pay-scale and working-time references; "applies to a worker" derived, HR and payroll only,
       never shown as membership. Tests.
+      Done (service only): migration 93 `collective_agreements` (title, version, effective_from/to, `source`, and four optional terms: a pay scale id the
+      service knows, max weekly hours 1–168, notice weeks 0–104, an agreed consultation period 1–365 days), tied to a bargaining unit, with no column for who it
+      applies to. `rules::agreement` (pure: validation, a new version must take effect after the newest, `in_force` = the newest version whose dates include the
+      day). `POST/GET /api/bargaining-units/{pid}/agreements` (HR; the same title is a new version) and `GET /api/workers/{pid}/collective-agreements?on=`
+      (HR and payroll; **derived** from the unit rules over the worker's department, location, employment type and job title; audited in a transaction; the answer
+      names no body, unit or membership and says so). **Verified:** 4 unit tests; a request test against Postgres 18 (versioning, a lapsed agreement, a
+      version in force today and on an earlier day, none before the first, a worker the rules do not cover gets none, nothing in the answer names the body, the
+      unit or "member"); an enforcement test with real tokens (anonymous 401, a worker 403 on all three routes including their own, HR 200, payroll 200 on the
+      worker read); `route_coverage`; the T171 guard; **three mutation checks** (`>=` made `>` on the last day, "covers" made always true, "in force" inverted:
+      each caught); clippy pedantic; the audit-in-transaction test caught my first version of the audit write, and it is fixed; full `--ignored` suite (157).
+      **Not verified:** nothing reads `consultation_days` yet (T172's `agreed_period_days` is not fed from it: that wiring belongs with T175); working-time
+      limits are stored but not applied to the working-time guardrails; `max_weekly_hours` and the pay scale are not checked against each other or against
+      pay; no UI (T178); no way to retire or correct an agreement except by a new version; a worker covered by units of two bodies gets both agreements.
 - [ ] WPM-T175 **Consultation register and timeline.** *(WPM-R105)* Per proposal: body, dates, topics, document references,
       outcome; roles not names; audited without text; a timeline view that uses T172.
 - [ ] WPM-T176 **Information pack for bargaining.** *(WPM-R106)* On-request aggregates for a unit with the floor, no names, no

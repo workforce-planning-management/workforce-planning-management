@@ -2667,6 +2667,46 @@
         ]
       }
     },
+    "/api/bargaining-units/{pid}/agreements": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The agreements"
+          }
+        },
+        "summary": "Every version of every collective agreement of a unit, oldest first, saying which is in force today. HR",
+        "tags": [
+          "bargaining"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid and version",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record a collective agreement for a unit, or a new version of one by giving the same title: dated, sourced and transcribed, with optional terms (a known pay scale id, max weekly hours, notice weeks, an agreed consultation period in days). A new version must take effect after the newest",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
     "/api/benchmarks": {
       "get": {
         "responses": {
@@ -11027,6 +11067,19 @@
         "summary": "Enrol (double-enrolment refused)",
         "tags": [
           "benefits"
+        ]
+      }
+    },
+    "/api/workers/{pid}/collective-agreements": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The agreements"
+          }
+        },
+        "summary": "The agreements in force on a day (?on=, default today) for the units whose rules cover this worker's job facts. HR and payroll, audited. Derived, and says nothing about membership: no body or unit is named",
+        "tags": [
+          "bargaining"
         ]
       }
     },

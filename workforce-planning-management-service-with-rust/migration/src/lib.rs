@@ -105,6 +105,7 @@ mod m20261024_000089_policies;
 mod m20261024_000090_credentials_and_crosswalk;
 mod m20261025_000091_cpd_entry_skill;
 mod m20261026_000092_recognised_bodies;
+mod m20261026_000093_collective_agreements;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -209,6 +210,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261024_000090_credentials_and_crosswalk::Migration),
             Box::new(m20261025_000091_cpd_entry_skill::Migration),
             Box::new(m20261026_000092_recognised_bodies::Migration),
+            Box::new(m20261026_000093_collective_agreements::Migration),
             // inject-above (do not remove this comment)
         ]
     }

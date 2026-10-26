@@ -118,3 +118,89 @@ async fn a_unit_is_counted_by_its_rules_from_the_floor_and_names_no_one() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn agreements_are_versioned_and_apply_to_a_worker_by_their_job_facts_without_naming_a_body() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let dept = format!("ag-{tag}");
+        let hire = |number: String, title: &'static str| {
+            let request = &request;
+            let org = org.clone();
+            let dept = dept.clone();
+            async move {
+                let made = request
+                    .post("/api/workers")
+                    .json(&json!({
+                        "person_ref": crate::requests::a_person(), "organization_ref": org, "worker_number": number,
+                        "display_name": "Agreement Person", "employment_type": "permanent", "department": dept,
+                        "job_title": title, "hired_on": "2020-01-05",
+                    }))
+                    .await;
+                assert_eq!(made.status_code(), 200, "{}", made.text());
+                made.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let carer = hire(format!("AG-{tag}-C"), "Carer").await;
+        let nurse = hire(format!("AG-{tag}-N"), "Nurse").await;
+
+        let body: Value = request
+            .post("/api/recognised-bodies")
+            .json(&json!({ "organization_ref": org, "name": format!("Agreement Forum {tag}"), "kind": "works_council", "basis": "statutory", "recognised_on": "2019-03-01", "contact_role": "Head of Employee Relations" }))
+            .await
+            .json();
+        let units = format!("/api/recognised-bodies/{}/units", body["pid"].as_str().unwrap());
+        let unit: Value = request.post(&units).json(&json!({ "name": "Carers", "department": dept, "job_title": "Carer" })).await.json();
+        let agreements = format!("/api/bargaining-units/{}/agreements", unit["pid"].as_str().unwrap());
+        assert_eq!(request.post("/api/bargaining-units/00000000-0000-4000-8000-000000000000/agreements").json(&json!({ "title": "T", "source": "s", "effective_from": "2024-04-01" })).await.status_code(), 404);
+
+        // Bad: no source, an unknown pay scale, an hours limit out of range, an end before the start.
+        let ok = json!({ "title": "Pay and conditions", "source": "Agreement of 2024-04-01, schedule 2", "effective_from": "2024-04-01", "effective_to": "2026-03-31", "pay_scale_id": "national-2026-27", "max_weekly_hours": 40, "notice_weeks": 4, "consultation_days": 60 });
+        for (field, value) in [("source", json!(" ")), ("pay_scale_id", json!("made-up")), ("max_weekly_hours", json!(200)), ("effective_to", json!("2024-03-31"))] {
+            let mut bad = ok.clone();
+            bad[field] = value;
+            assert_eq!(request.post(&agreements).json(&bad).await.status_code(), 422, "{field}");
+        }
+        let first = request.post(&agreements).json(&ok).await;
+        assert_eq!(first.status_code(), 200, "{}", first.text());
+        assert_eq!(first.json::<Value>()["version"], 1);
+        let mut same_day = ok.clone();
+        same_day["effective_to"] = Value::Null;
+        assert_eq!(request.post(&agreements).json(&same_day).await.status_code(), 422, "a new version must take effect after the newest");
+        let mut second = ok.clone();
+        second["effective_from"] = json!("2026-04-01");
+        second["effective_to"] = Value::Null;
+        second["max_weekly_hours"] = json!(37);
+        assert_eq!(request.post(&agreements).json(&second).await.json::<Value>()["version"], 2);
+        // A second agreement that has lapsed.
+        let lapsed = json!({ "title": "Old allowance", "source": "Side letter 2019", "effective_from": "2019-01-01", "effective_to": "2020-12-31" });
+        assert_eq!(request.post(&agreements).json(&lapsed).await.status_code(), 200);
+
+        let listed: Value = request.get(&agreements).await.json();
+        let rows = listed["agreements"].as_array().unwrap();
+        assert_eq!(rows.len(), 3);
+        let state: Vec<(String, i64, bool)> = rows.iter().map(|r| (r["title"].as_str().unwrap().to_string(), r["version"].as_i64().unwrap(), r["in_force"].as_bool().unwrap())).collect();
+        assert_eq!(state, [("Old allowance".to_string(), 1, false), ("Pay and conditions".to_string(), 1, false), ("Pay and conditions".to_string(), 2, true)]);
+
+        // The carer's job facts match the unit: the version in force today, with its terms, and no body, unit or membership named.
+        let now: Value = request.get(&format!("/api/workers/{carer}/collective-agreements")).await.json();
+        let applying = now["agreements"].as_array().unwrap();
+        assert_eq!(applying.len(), 1, "{now}");
+        assert_eq!((applying[0]["version"].as_i64(), applying[0]["terms"]["max_weekly_hours"].as_i64()), (Some(2), Some(37)));
+        let text = now.to_string();
+        for named in [format!("Agreement Forum {tag}"), "Carers".to_string(), body["pid"].as_str().unwrap().to_string(), unit["pid"].as_str().unwrap().to_string(), "member".to_string()] {
+            assert!(!text.to_lowercase().contains(&named.to_lowercase()), "names no {named}: {text}");
+        }
+        // On an earlier day it is the earlier version; before any, none; and the nurse is never covered.
+        let earlier: Value = request.get(&format!("/api/workers/{carer}/collective-agreements?on=2025-01-01")).await.json();
+        assert_eq!(earlier["agreements"][0]["version"], 1);
+        let before: Value = request.get(&format!("/api/workers/{carer}/collective-agreements?on=2023-01-01")).await.json();
+        assert_eq!(before["agreements"].as_array().unwrap().len(), 0);
+        let none: Value = request.get(&format!("/api/workers/{nurse}/collective-agreements")).await.json();
+        assert_eq!(none["agreements"].as_array().unwrap().len(), 0);
+    })
+    .await;
+}
