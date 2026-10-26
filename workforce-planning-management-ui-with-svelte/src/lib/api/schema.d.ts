@@ -1454,6 +1454,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bargaining-units/{pid}/information-pack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The aggregates a body is given to bargain on, for the people a unit's rules cover: headcount and FTE by department and employment type, pay bands, starters and leavers in the last year, those not permanent, and open vacancy posts. Counts from the floor, complementary suppression, a unit under the floor gives nothing; no name, salary or individual band. Reading it is logged. HR */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pack */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/benchmarks": {
         parameters: {
             query?: never;

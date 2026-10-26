@@ -2707,6 +2707,19 @@
         ]
       }
     },
+    "/api/bargaining-units/{pid}/information-pack": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The pack"
+          }
+        },
+        "summary": "The aggregates a body is given to bargain on, for the people a unit's rules cover: headcount and FTE by department and employment type, pay bands, starters and leavers in the last year, those not permanent, and open vacancy posts. Counts from the floor, complementary suppression, a unit under the floor gives nothing; no name, salary or individual band. Reading it is logged. HR",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
     "/api/benchmarks": {
       "get": {
         "responses": {

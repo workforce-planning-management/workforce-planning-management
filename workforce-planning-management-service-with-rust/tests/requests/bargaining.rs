@@ -204,3 +204,115 @@ async fn agreements_are_versioned_and_apply_to_a_worker_by_their_job_facts_witho
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_information_pack_gives_floored_counts_hides_what_could_be_subtracted_and_logs_the_disclosure()
+ {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let dept = format!("pk-{tag}");
+        let small = format!("pk-small-{tag}");
+        let hire = |number: String, department: String, kind: &'static str| {
+            let request = &request;
+            let org = org.clone();
+            async move {
+                let mut worker = json!({
+                    "person_ref": crate::requests::a_person(), "organization_ref": org, "worker_number": number,
+                    "display_name": "Pack Person", "employment_type": kind, "department": department,
+                    "job_title": "Carer", "hired_on": "2020-01-05",
+                });
+                if kind != "permanent" {
+                    worker["engagement_ends_on"] = json!("2035-01-01");
+                }
+                let made = request.post("/api/workers").json(&worker).await;
+                assert_eq!(made.status_code(), 200, "{}", made.text());
+                made.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        // 22 permanent and 3 contractors in one department; 4 people in another.
+        let mut permanent = Vec::new();
+        for n in 0..22 {
+            permanent.push(hire(format!("PK-{tag}-P{n}"), dept.clone(), "permanent").await);
+        }
+        for n in 0..3 {
+            hire(format!("PK-{tag}-C{n}"), dept.clone(), "contractor").await;
+        }
+        for n in 0..4 {
+            hire(format!("PK-{tag}-S{n}"), small.clone(), "permanent").await;
+        }
+        // Twelve of the permanent staff sit in band 5.
+        for pid in permanent.iter().take(12) {
+            ctx.db
+                .execute_unprepared(&format!("INSERT INTO worker_pay_positions (worker_pid, scale_id, band, step, step_since) VALUES ('{pid}', 'national-2026-27', 'B5', 1, '2024-01-01')"))
+                .await
+                .unwrap();
+        }
+        // Two open posts in the department.
+        for n in 0..2 {
+            let made: Value = request
+                .post("/api/requisitions")
+                .json(&json!({ "organization_ref": org, "department": dept, "job_title": format!("Carer {n}"), "headcount": 2, "salary_min_minor": 2_000_000, "salary_max_minor": 3_000_000, "salary_currency": "GBP" }))
+                .await
+                .json();
+            let status = request.post(&format!("/api/requisitions/{}/status", made["pid"].as_str().unwrap())).json(&json!({ "to": "open" })).await;
+            assert_eq!(status.status_code(), 200, "{}", status.text());
+        }
+
+        let body: Value = request
+            .post("/api/recognised-bodies")
+            .json(&json!({ "organization_ref": org, "name": format!("Pack Union {tag}"), "kind": "union", "basis": "statutory", "recognised_on": "2019-03-01", "contact_role": "Head of Employee Relations" }))
+            .await
+            .json();
+        let units = format!("/api/recognised-bodies/{}/units", body["pid"].as_str().unwrap());
+        let whole: Value = request.post(&units).json(&json!({ "name": "Whole department", "department": dept })).await.json();
+        let tiny: Value = request.post(&units).json(&json!({ "name": "Small department", "department": small })).await.json();
+        let located: Value = request.post(&units).json(&json!({ "name": "By location", "department": dept, "location": "Leeds" })).await.json();
+        let pack_of = |unit: &Value| format!("/api/bargaining-units/{}/information-pack", unit["pid"].as_str().unwrap());
+
+        let full: Value = request.get(&pack_of(&whole)).await.json();
+        assert_eq!(full["pack"]["headcount"], 25);
+        let by = |section: &str, group: &str| full["pack"][section].as_array().unwrap().iter().find(|g| g["group"] == group).unwrap().clone();
+        assert_eq!(by("by_department", &dept)["headcount"], json!({ "kind": "shown", "count": 25 }));
+        assert_eq!(by("by_department", &dept)["fte_hundredths"], 2500);
+        // Three contractors are under the floor; the 22 permanent would give the three away, so they are hidden too.
+        assert_eq!(by("by_employment_type", "contractor")["headcount"], json!({ "kind": "withheld" }));
+        assert_eq!(by("by_employment_type", "permanent")["headcount"], json!({ "kind": "withheld" }), "hidden so the total does not give the three away");
+        // Twelve in band 5 and thirteen with none recorded: both shown, and none is called zero.
+        assert_eq!(by("by_pay_band", "B5")["headcount"], json!({ "kind": "shown", "count": 12 }));
+        assert_eq!(by("by_pay_band", "not_recorded")["headcount"], json!({ "kind": "shown", "count": 13 }));
+        assert_eq!(full["vacancies"], json!({ "kind": "shown", "open_posts": 4 }));
+        assert_eq!(full["pack"]["starters_last_year"], json!({ "kind": "withheld" }), "nobody started in the last year, which is under the floor, not a nought");
+
+        // A unit of four people gives nothing; a unit defined by location cannot be matched to vacancies and says so.
+        let none: Value = request.get(&pack_of(&tiny)).await.json();
+        assert!(none["pack"]["headcount"].is_null(), "{none}");
+        assert_eq!(none["pack"]["by_department"], json!([]));
+        let by_location: Value = request.get(&pack_of(&located)).await.json();
+        assert_eq!(by_location["vacancies"]["kind"], "unknown");
+
+        // Nothing names a worker, a number, a pay figure or the body.
+        let text = json!({ "pack": full["pack"], "vacancies": full["vacancies"] }).to_string();
+        for banned in [format!("PK-{tag}"), "Pack Person".to_string(), "salary".to_string(), format!("Pack Union {tag}")] {
+            assert!(!text.contains(&banned), "no {banned}: {text}");
+        }
+        for who in &permanent {
+            assert!(!text.contains(who.as_str()));
+        }
+
+        // Each read is a disclosure, logged against the unit with who and when.
+        let logged = ctx
+            .db
+            .query_one_raw(sea_orm::Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'information_pack_disclosed' AND entity_pid = '{}'::uuid", whole["pid"].as_str().unwrap()),
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(logged.try_get::<i64>("", "n").unwrap(), 1);
+    })
+    .await;
+}

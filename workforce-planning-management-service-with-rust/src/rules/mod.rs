@@ -13,6 +13,7 @@ pub mod appraisal;
 pub mod assessment;
 pub mod audit_export;
 pub mod bargaining;
+pub mod bargaining_pack;
 pub mod benchmark;
 pub mod capability;
 pub mod capacity;

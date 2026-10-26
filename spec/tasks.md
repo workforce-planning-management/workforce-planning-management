@@ -3450,8 +3450,22 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       still the deployer's to confirm (T172); a record cannot be corrected, only closed and a new one opened; the proposal is typed in, not read from a
       workforce plan's demand lines (`plan_pid` is only a link); the authority notice is shown as a date, not tracked as given; no reminder when a latest day
       approaches.
-- [ ] WPM-T176 **Information pack for bargaining.** *(WPM-R106)* On-request aggregates for a unit with the floor, no names, no
+- [x] (2026-10-26) WPM-T176 **Information pack for bargaining.** *(WPM-R106)* On-request aggregates for a unit with the floor, no names, no
       individual pay; each disclosure logged. Tests that a small group is withheld.
+      Done (service only): `rules::bargaining_pack` (pure) and `GET /api/bargaining-units/{pid}/information-pack` (HR). For the people the unit's rules cover: headcount and
+      FTE by department and by employment type, the pay bands people sit in (no band recorded is its own group, never zero), starters and leavers in the 365 days to
+      today, those on a basis other than permanent, and open vacancy posts (a unit defined by location or employment type cannot be matched to a vacancy, and says
+      `unknown`). Every count is shown from the floor (10) or withheld; **when exactly one group of a breakdown is withheld the smallest shown one is withheld too**,
+      because the total would otherwise give it away; a unit under the floor gives nothing at all. No name, no number, no salary, no one's band, no pid.
+      **Reading it is the disclosure and is logged** (`information_pack_disclosed`: who, which unit, when) in a transaction. **Verified:** 8 unit tests; a request
+      test against Postgres 18 (25 people, 3 of them contractors: both groups withheld; 12 in band B5 and 13 with none, both shown; 4 open posts; a unit of four gives
+      nothing; the location unit says `unknown`; nothing in the pack names a worker, number, salary, or the body; exactly one disclosure logged); an enforcement test
+      with real tokens (anonymous 401, a worker 403, HR 200); `route_coverage`; the T171 guard; **three mutation checks** (secondary suppression off, the whole-unit
+      floor off, the disclosure not logged under its name: each caught); clippy pedantic; the full `--ignored` suite (159). **Not verified:** no UI (T178); no
+      monthly schedule (on request only; "monthly" in WPM-R106 is not built); no read of the disclosure log through the API; complementary suppression is
+      within one breakdown, not across breakdowns or across two reads of nearby days (someone who asks on consecutive days and compares can still infer a change);
+      the facts of every worker in the organization are read per request (no 200k timing); starters and leavers are matched by the worker's current department
+      and title, not the ones they had then; the pack gives FTE per pay band, which is a count of people times their hours, not pay.
 - [ ] WPM-T177 **Facility time as an aggregate; decision gates.** *(WPM-R107, WPM-R108)* Hours per body per period (no per-person
       record); a configurable list of changes that need consultation, shown when someone makes such a change,
       including a new or changed score (link to the equality impact template, section 11).

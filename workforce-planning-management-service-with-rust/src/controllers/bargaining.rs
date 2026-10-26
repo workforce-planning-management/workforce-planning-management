@@ -16,12 +16,14 @@ use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    bargaining_units, collective_agreements, recognised_bodies, workers,
+    bargaining_units, collective_agreements, recognised_bodies, requisitions, worker_pay_positions,
+    workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::agreement as agreement_rules;
 use crate::rules::bargaining as rules;
+use crate::rules::bargaining_pack as pack_rules;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::metrics::is_employed_on;
 
@@ -522,6 +524,141 @@ async fn of_worker(
     }))
 }
 
+/// `GET /api/bargaining-units/{pid}/information-pack` — the aggregates a body is given to bargain on, for the people the unit's rules cover:
+/// headcount and FTE by department and by employment type, the pay bands people sit in, starters and leavers in the last year, those on a
+/// basis other than permanent, and the open vacancies. Counts from the floor; when exactly one group is withheld another is withheld too, so
+/// none can be worked out; a unit under the floor gives nothing. No name, no salary, no one's band. **Reading it is the disclosure, and it
+/// is logged** (who asked, which unit, when) in the same transaction. HR.
+#[debug_handler]
+#[allow(clippy::too_many_lines)] // facts → who is covered → bands → vacancies → the pack, linearly
+async fn information_pack(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+) -> Result<Response> {
+    let (unit, body) = find_unit(&ctx, &caller, pid).await?;
+    let today = Utc::now().date_naive();
+    let rule = rules::UnitRule {
+        department: unit.department.as_deref(),
+        location: unit.location.as_deref(),
+        employment_type: unit.employment_type.as_deref(),
+        job_title: unit.job_title.as_deref(),
+    };
+    // The facts of every worker of the organization, nothing that names or pays them; who the rules cover is decided here and not kept.
+    let everyone = workers::Entity::find()
+        .select_only()
+        .column(workers::Column::Pid)
+        .column(workers::Column::Department)
+        .column(workers::Column::Location)
+        .column(workers::Column::EmploymentType)
+        .column(workers::Column::JobTitle)
+        .column(workers::Column::FtePercent)
+        .column(workers::Column::HiredOn)
+        .column(workers::Column::TerminatedOn)
+        .filter(workers::Column::OrganizationRef.eq(&body.organization_ref))
+        .filter(workers::Column::DeletedAt.is_null())
+        .into_tuple::<(
+            Uuid,
+            String,
+            Option<String>,
+            String,
+            String,
+            i32,
+            NaiveDate,
+            Option<NaiveDate>,
+        )>()
+        .all(&ctx.db)
+        .await?;
+    let covered: Vec<_> = everyone
+        .into_iter()
+        .filter(
+            |(_, department, location, employment_type, job_title, _, _, _)| {
+                rules::covers(
+                    &rule,
+                    &rules::Facts {
+                        department,
+                        location: location.as_deref(),
+                        employment_type,
+                        job_title,
+                    },
+                )
+            },
+        )
+        .collect();
+    let pids: Vec<Uuid> = covered.iter().map(|c| c.0).collect();
+    let bands: std::collections::BTreeMap<Uuid, String> = super::find_in(
+        &ctx,
+        worker_pay_positions::Entity::find(),
+        worker_pay_positions::Column::WorkerPid,
+        &pids,
+    )
+    .await?
+    .into_iter()
+    .map(|p| (p.worker_pid, p.band))
+    .collect();
+    let pack_rows: Vec<pack_rules::Row> = covered
+        .into_iter()
+        .map(
+            |(worker, department, _, employment_type, _, fte_percent, hired_on, terminated_on)| {
+                pack_rules::Row {
+                    department,
+                    employment_type,
+                    fte_percent,
+                    band: bands.get(&worker).cloned(),
+                    hired_on,
+                    terminated_on,
+                }
+            },
+        )
+        .collect();
+    let pack = pack_rules::pack(&pack_rows, today, DEFAULT_FLOOR);
+    // Vacancies are posts, not people. A requisition carries a department and a job title only, so a unit defined by anything else cannot
+    // be matched to them: that is said, not shown as nought.
+    let vacancies = if unit.location.is_some() || unit.employment_type.is_some() {
+        json!({ "kind": "unknown", "reason": "this unit is defined by location or employment type, which a vacancy does not carry" })
+    } else {
+        let open = requisitions::Entity::find()
+            .filter(requisitions::Column::OrganizationRef.eq(&body.organization_ref))
+            .filter(requisitions::Column::DeletedAt.is_null())
+            .filter(requisitions::Column::Status.is_in(["open", "interviewing", "offer"]))
+            .all(&ctx.db)
+            .await?;
+        let posts: i64 = open
+            .iter()
+            .filter(|r| {
+                unit.department
+                    .as_deref()
+                    .is_none_or(|d| d.trim().eq_ignore_ascii_case(r.department.trim()))
+                    && unit
+                        .job_title
+                        .as_deref()
+                        .is_none_or(|t| t.trim().eq_ignore_ascii_case(r.job_title.trim()))
+            })
+            .map(|r| i64::from(r.headcount))
+            .sum();
+        json!({ "kind": "shown", "open_posts": posts })
+    };
+    // Reading it is the disclosure: who asked, which unit and when, written with the answer.
+    let txn = ctx.db.begin().await?;
+    Audit::record(
+        &txn,
+        "bargaining_unit",
+        unit.pid,
+        "information_pack_disclosed",
+        caller.actor(),
+        Some(json!({ "as_of": today })),
+    )
+    .await?;
+    txn.commit().await?;
+    format::json(json!({
+        "unit_pid": unit.pid,
+        "floor": DEFAULT_FLOOR,
+        "derivation": "counts of the people the unit's rules cover, from the floor; when exactly one group is withheld another is withheld too, so none can be worked out. A unit under the floor gives nothing. No name, no salary and no one's band. Reading it is logged. It says nothing about who belongs to the body.",
+        "pack": pack,
+        "vacancies": vacancies,
+    }))
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -532,5 +669,9 @@ pub fn routes() -> Routes {
         .add("/recognised-bodies/{pid}/units", post(add_unit))
         .add("/bargaining-units/{pid}/agreements", get(unit_agreements))
         .add("/bargaining-units/{pid}/agreements", post(add_agreement))
+        .add(
+            "/bargaining-units/{pid}/information-pack",
+            get(information_pack),
+        )
         .add("/workers/{pid}/collective-agreements", get(of_worker))
 }

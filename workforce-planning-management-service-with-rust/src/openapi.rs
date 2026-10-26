@@ -620,6 +620,9 @@ fn add_integration_paths(document: &mut Value) {
             "get": { "tags": ["bargaining"], "summary": "Every version of every collective agreement of a unit, oldest first, saying which is in force today. HR", "responses": ok("The agreements") },
             "post": { "tags": ["bargaining"], "summary": "Record a collective agreement for a unit, or a new version of one by giving the same title: dated, sourced and transcribed, with optional terms (a known pay scale id, max weekly hours, notice weeks, an agreed consultation period in days). A new version must take effect after the newest", "responses": ok("The pid and version") }
         },
+        "/api/bargaining-units/{pid}/information-pack": {
+            "get": { "tags": ["bargaining"], "summary": "The aggregates a body is given to bargain on, for the people a unit's rules cover: headcount and FTE by department and employment type, pay bands, starters and leavers in the last year, those not permanent, and open vacancy posts. Counts from the floor, complementary suppression, a unit under the floor gives nothing; no name, salary or individual band. Reading it is logged. HR", "responses": ok("The pack") }
+        },
         "/api/workers/{pid}/collective-agreements": {
             "get": { "tags": ["bargaining"], "summary": "The agreements in force on a day (?on=, default today) for the units whose rules cover this worker's job facts. HR and payroll, audited. Derived, and says nothing about membership: no body or unit is named", "responses": ok("The agreements") }
         },

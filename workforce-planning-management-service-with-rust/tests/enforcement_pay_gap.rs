@@ -280,6 +280,12 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(request.get(&agreements).await.status_code(), 401);
         assert_eq!(get(agreements.clone(), worker.clone()).await.status_code(), 403, "a worker");
         assert_eq!(get(agreements.clone(), hr.clone()).await.status_code(), 200, "HR");
+        let pack = format!("/api/bargaining-units/{unit_pid}/information-pack");
+        assert_eq!(request.get(&pack).await.status_code(), 401);
+        assert_eq!(get(pack.clone(), worker.clone()).await.status_code(), 403, "a worker is given no pack");
+        let given = get(pack.clone(), hr.clone()).await;
+        assert_eq!(given.status_code(), 200, "HR reads it: {}", given.text());
+        assert!(!given.text().contains("Pay Gap Enforcement"), "no worker named: {}", given.text());
         let of_worker = format!("/api/workers/{}/collective-agreements", pids[0]);
         assert_eq!(request.get(&of_worker).await.status_code(), 401);
         assert_eq!(get(of_worker.clone(), worker.clone()).await.status_code(), 403, "a worker reads no one's, not even their own");

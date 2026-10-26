@@ -180,6 +180,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("recognised-bodies", Privileged),
     ("recognised-bodies/{}/units", Privileged),
     ("bargaining-units/{}/agreements", Privileged),
+    ("bargaining-units/{}/information-pack", Privileged),
     ("workers/{}/collective-agreements", Privileged),
     ("policies", Open),
     ("skill-mappings", Open),
