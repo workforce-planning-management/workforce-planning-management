@@ -4104,10 +4104,12 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `/expenses` starts again from page one when the status changes. Verified: svelte-check 0 errors, lint, 218 unit tests, Playwright 239
       passed / 19 skipped (new: payroll pages, and a failed second page keeps the first). **Not verified:** no screenshot looked at;
       expenses and movements have no paging test of their own (the shared control and loader are tested through requisitions and payroll).
-      **Still open:** cutovers, resignations, flexible working, conversion plans and notifications in the UI still show their first 500
-      with no control (they are not simple arrays, or are per-person); per-worker lists (bounded by one person's history, left unpaged on
-      purpose); the early-warning list (its totals cover all rows); the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run).
-      This task stays open for those.
+      Part 6 done (2026-10-26): the open conversion plans on `/contingent` page the same way (each page read is audited, and a page is read
+      only when asked for). The other lists have no UI caller (cutovers, org-wide resignations and flexible working, a worker's notifications),
+      so there is nothing to wire until a screen reads them. Verified: svelte-check 0, lint, 218 unit tests, Playwright all passing.
+      **Not verified:** no screenshot; no paging test on `/contingent` (the shared control is tested on requisitions and payroll).
+      **Still open:** per-worker lists (bounded by one person's history, left unpaged on purpose); the early-warning list (its totals
+      cover all rows); the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run). This task stays open for those.
 - [x] WPM-T255 (2026-10-23) **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
       plan-builder out of `handover::apply` (235 lines) and `lms::apply` (178).
       Done: `controllers/learning.rs` (1,433 lines) is the folder `learning/` (`catalogue` 709, `paths` 204, `mentoring` 171,

@@ -347,6 +347,7 @@ describe("api path map", () => {
     await wpm.moveConversionPlan("c1", "approve");
     await wpm.openConversionPlans();
     await wpm.openConversionPlans("organization:abc");
+    await wpm.openConversionPlansPage("organization:abc", 500, 500);
     await wpm.contingentWorkforce();
     await wpm.contingentList("ending_31_to_60");
     await wpm.programmeRollup();
@@ -593,6 +594,7 @@ describe("api path map", () => {
       "/api/proxy/conversion-plans/c1/approve",
       "/api/proxy/conversion-plans",
       "/api/proxy/conversion-plans?organization=organization%3Aabc",
+      "/api/proxy/conversion-plans?organization=organization%3Aabc&limit=500&offset=500",
       "/api/proxy/workforce-intelligence/contingent",
       "/api/proxy/engagements/contingent-list?list=ending_31_to_60",
       "/api/proxy/workforce-intelligence/programmes",

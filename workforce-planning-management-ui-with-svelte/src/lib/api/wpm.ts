@@ -3796,6 +3796,19 @@ export function openConversionPlans(
   return api(`/conversion-plans${qs}`, init);
 }
 
+/** One page of the same, with the total. Each page read is audited. */
+export function openConversionPlansPage(
+  organization: string | undefined,
+  limit: number,
+  offset: number,
+  init?: FetchLike,
+): Promise<Page<OpenConversionRow>> {
+  return apiPage(
+    `/conversion-plans${pageQuery({ organization }, limit, offset)}`,
+    init,
+  );
+}
+
 /** A contractor's details; the rate is masked unless the caller may see it. */
 export interface ContractorDetails {
   supplier_ref: string | null;

@@ -1101,7 +1101,7 @@ test.describe("conversion plans (WPM-T164)", () => {
       (route) => route.fulfill({ json: ROLLUP }),
     );
     let asked = 0;
-    await page.route("**/api/proxy/conversion-plans", (route) => {
+    await page.route("**/api/proxy/conversion-plans?limit=500", (route) => {
       asked += 1;
       return route.fulfill({
         json: [

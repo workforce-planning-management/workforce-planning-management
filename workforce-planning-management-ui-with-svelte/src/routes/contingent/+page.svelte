@@ -9,11 +9,13 @@
 <script lang="ts">
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
+  import LoadMore from "#lib/components/LoadMore.svelte";
+  import { createPagedLoader } from "#lib/paged.svelte.js";
   import { ApiError } from "#lib/api/client.js";
   import {
     contingentList,
     contingentWorkforce,
-    openConversionPlans,
+    openConversionPlansPage,
     type OpenConversionRow,
     programmeRollup,
     type ContingentList,
@@ -32,20 +34,20 @@
   let open = $state<ContingentList | null>(null);
   let people = $state<Awaited<ReturnType<typeof contingentList>>["people"] | null>(null);
   let listError = $state<string | null>(null);
-  let conversions = $state<OpenConversionRow[] | null>(null);
+  const plans = createPagedLoader<OpenConversionRow>(
+    () => (limit, offset) => openConversionPlansPage(undefined, limit, offset),
+  );
+  const conversions = $derived(plans.items);
   let conversionsOpen = $state(false);
-  let conversionsError = $state<string | null>(null);
+  let asked = false;
 
-  /** Open plans and engagements past their end with none: names workers by number, and the service audits the read. */
+  /** Open plans and engagements past their end with none: names workers by number, and the service audits each page read. */
   async function showConversions() {
     conversionsOpen = !conversionsOpen;
-    if (!conversionsOpen || conversions !== null) return;
-    conversionsError = null;
-    try {
-      conversions = await openConversionPlans();
-    } catch (cause) {
-      conversionsError = errorText(cause);
-    }
+    if (!conversionsOpen || asked) return;
+    asked = true;
+    await plans.load();
+    if (plans.error !== null) asked = false;
   }
 
   $effect(() => {
@@ -274,8 +276,8 @@
       {conversionsOpen ? t("conversion.hidePlans") : t("conversion.showPlans")}
     </button>
     {#if conversionsOpen}
-      {#if conversionsError}
-        <ErrorNote prefixed message={conversionsError} />
+      {#if plans.error}
+        <ErrorNote prefixed message={plans.error} />
       {:else if conversions === null}
         <p>{t("common.loading")}</p>
       {:else if conversions.length === 0}
@@ -289,6 +291,8 @@
           rowId={(row) => String(row.worker_pid)}
           pageSize={25}
         />
+        <LoadMore shown={conversions.length} total={plans.total} more={plans.more} loading={plans.loadingMore} onmore={() => plans.showMore()} />
+        {#if plans.moreError}<ErrorNote testid="more-error" message={plans.moreError} />{/if}
       {/if}
     {/if}
   </section>
