@@ -3870,6 +3870,59 @@
         ]
       }
     },
+    "/api/decision-gates": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The gates"
+          }
+        },
+        "summary": "The kinds of change that need consultation with a recognised body (?organization=), and with which. HR",
+        "tags": [
+          "bargaining"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Say that a kind of change (redundancy_proposal, shift_pattern_change, new_monitoring, new_or_changed_score, pay_structure_change, other) needs consultation with a body of the organization",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
+    "/api/decision-gates/check": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The pointer"
+          }
+        },
+        "summary": "What a change would be pointed at (?organization=&change=&consultation_pid=): the bodies to consult and whether a consultation reference is still needed. Advice, not a block. HR",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
     "/api/development-plan-items/{pid}": {
       "put": {
         "parameters": [
@@ -8504,6 +8557,46 @@
           }
         },
         "summary": "Record a recognised body: a name unique within the organization, a kind (union, works_council, staff_forum), a basis, the date recognised and a contact role (never a person)",
+        "tags": [
+          "bargaining"
+        ]
+      }
+    },
+    "/api/recognised-bodies/{pid}/facility-time": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The periods"
+          }
+        },
+        "summary": "The time released for representative duties for a body, per period, newest first, with any budget and whether it was exceeded (unknown without a budget), and the total in minutes. Per body, never per person. HR",
+        "tags": [
+          "bargaining"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record minutes released for representative duties for the body over a period (at most 366 days, not overlapping another), with an optional budget in minutes. No person and no time-entry kind",
         "tags": [
           "bargaining"
         ]

@@ -16,14 +16,15 @@ use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    bargaining_units, collective_agreements, recognised_bodies, requisitions, worker_pay_positions,
-    workers,
+    bargaining_units, collective_agreements, facility_time_periods, recognised_bodies,
+    requisitions, worker_pay_positions, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::agreement as agreement_rules;
 use crate::rules::bargaining as rules;
 use crate::rules::bargaining_pack as pack_rules;
+use crate::rules::decision_gate as gate_rules;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::metrics::is_employed_on;
 
@@ -659,6 +660,92 @@ async fn information_pack(
     }))
 }
 
+#[derive(Debug, Deserialize)]
+struct FacilityPayload {
+    period_start: NaiveDate,
+    period_end: NaiveDate,
+    minutes: i32,
+    budget_minutes: Option<i32>,
+}
+
+/// `POST /api/recognised-bodies/{pid}/facility-time` — record the time released for representative duties **for the body** over a period, in
+/// minutes, with an optional budget. Never a person, and there is no kind of time entry for it. Periods of one body do not overlap.
+#[debug_handler]
+async fn add_facility_time(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+    Json(payload): Json<FacilityPayload>,
+) -> Result<Response> {
+    let body = find_body(&ctx, &caller, pid).await?;
+    let held: Vec<(NaiveDate, NaiveDate)> = facility_time_periods::Entity::find()
+        .filter(facility_time_periods::Column::BodyPid.eq(body.pid))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|p| (p.period_start, p.period_end))
+        .collect();
+    ensure_valid(&gate_rules::facility_problems(
+        payload.period_start,
+        payload.period_end,
+        payload.minutes,
+        payload.budget_minutes,
+        &held,
+    ))?;
+    let new_pid = Uuid::new_v4();
+    let txn = ctx.db.begin().await?;
+    facility_time_periods::ActiveModel {
+        pid: ActiveValue::set(new_pid),
+        body_pid: ActiveValue::set(body.pid),
+        period_start: ActiveValue::set(payload.period_start),
+        period_end: ActiveValue::set(payload.period_end),
+        minutes: ActiveValue::set(payload.minutes),
+        budget_minutes: ActiveValue::set(payload.budget_minutes),
+        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
+        ..Default::default()
+    }
+    .insert(&txn)
+    .await?;
+    Audit::record(
+        &txn,
+        "facility_time",
+        new_pid,
+        "facility_time_recorded",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    txn.commit().await?;
+    format::json(json!({ "pid": new_pid }))
+}
+
+/// `GET /api/recognised-bodies/{pid}/facility-time` — the periods, newest first, with the budget and whether it was exceeded (unknown when no
+/// budget was agreed), and the total. Per body: it says nothing about who took the time.
+#[debug_handler]
+async fn facility_time(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+) -> Result<Response> {
+    let body = find_body(&ctx, &caller, pid).await?;
+    let rows = facility_time_periods::Entity::find()
+        .filter(facility_time_periods::Column::BodyPid.eq(body.pid))
+        .order_by_desc(facility_time_periods::Column::PeriodStart)
+        .all(&ctx.db)
+        .await?;
+    let total: i64 = rows.iter().map(|r| i64::from(r.minutes)).sum();
+    format::json(json!({
+        "body_pid": body.pid,
+        "derivation": "minutes released for representative duties, per body per period. Not per person: no one is named and no person's time is held.",
+        "periods": rows.iter().map(|r| json!({
+            "pid": r.pid, "period_start": r.period_start, "period_end": r.period_end,
+            "minutes": r.minutes, "hours": crate::rules::display::ratio(usize::try_from(r.minutes).unwrap_or(0), 60),
+            "budget_minutes": r.budget_minutes, "over_budget": gate_rules::over_budget(r.minutes, r.budget_minutes),
+        })).collect::<Vec<_>>(),
+        "total_minutes": total,
+    }))
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -667,6 +754,11 @@ pub fn routes() -> Routes {
         .add("/recognised-bodies", post(create))
         .add("/recognised-bodies/{pid}/units", get(units))
         .add("/recognised-bodies/{pid}/units", post(add_unit))
+        .add("/recognised-bodies/{pid}/facility-time", get(facility_time))
+        .add(
+            "/recognised-bodies/{pid}/facility-time",
+            post(add_facility_time),
+        )
         .add("/bargaining-units/{pid}/agreements", get(unit_agreements))
         .add("/bargaining-units/{pid}/agreements", post(add_agreement))
         .add(

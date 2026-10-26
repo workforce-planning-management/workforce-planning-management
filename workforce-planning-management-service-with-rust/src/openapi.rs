@@ -620,6 +620,17 @@ fn add_integration_paths(document: &mut Value) {
             "get": { "tags": ["bargaining"], "summary": "Every version of every collective agreement of a unit, oldest first, saying which is in force today. HR", "responses": ok("The agreements") },
             "post": { "tags": ["bargaining"], "summary": "Record a collective agreement for a unit, or a new version of one by giving the same title: dated, sourced and transcribed, with optional terms (a known pay scale id, max weekly hours, notice weeks, an agreed consultation period in days). A new version must take effect after the newest", "responses": ok("The pid and version") }
         },
+        "/api/recognised-bodies/{pid}/facility-time": {
+            "get": { "tags": ["bargaining"], "summary": "The time released for representative duties for a body, per period, newest first, with any budget and whether it was exceeded (unknown without a budget), and the total in minutes. Per body, never per person. HR", "responses": ok("The periods") },
+            "post": { "tags": ["bargaining"], "summary": "Record minutes released for representative duties for the body over a period (at most 366 days, not overlapping another), with an optional budget in minutes. No person and no time-entry kind", "responses": ok("The pid") }
+        },
+        "/api/decision-gates": {
+            "get": { "tags": ["bargaining"], "summary": "The kinds of change that need consultation with a recognised body (?organization=), and with which. HR", "responses": ok("The gates") },
+            "post": { "tags": ["bargaining"], "summary": "Say that a kind of change (redundancy_proposal, shift_pattern_change, new_monitoring, new_or_changed_score, pay_structure_change, other) needs consultation with a body of the organization", "responses": ok("The pid") }
+        },
+        "/api/decision-gates/check": {
+            "get": { "tags": ["bargaining"], "summary": "What a change would be pointed at (?organization=&change=&consultation_pid=): the bodies to consult and whether a consultation reference is still needed. Advice, not a block. HR", "responses": ok("The pointer") }
+        },
         "/api/bargaining-units/{pid}/information-pack": {
             "get": { "tags": ["bargaining"], "summary": "The aggregates a body is given to bargain on, for the people a unit's rules cover: headcount and FTE by department and employment type, pay bands, starters and leavers in the last year, those not permanent, and open vacancy posts. Counts from the floor, complementary suppression, a unit under the floor gives nothing; no name, salary or individual band. Reading it is logged. HR", "responses": ok("The pack") }
         },

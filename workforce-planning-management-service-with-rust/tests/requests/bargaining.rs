@@ -316,3 +316,124 @@ async fn the_information_pack_gives_floored_counts_hides_what_could_be_subtracte
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn facility_time_is_minutes_per_body_per_period_and_never_a_person() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let body: Value = request
+            .post("/api/recognised-bodies")
+            .json(&json!({ "organization_ref": org, "name": format!("Facility Union {tag}"), "kind": "union", "basis": "voluntary_agreement", "recognised_on": "2019-03-01", "contact_role": "Head of Employee Relations" }))
+            .await
+            .json();
+        let url = format!("/api/recognised-bodies/{}/facility-time", body["pid"].as_str().unwrap());
+        let year = |from: &str, to: &str, minutes: i64, budget: Option<i64>| json!({ "period_start": from, "period_end": to, "minutes": minutes, "budget_minutes": budget });
+
+        for bad in [
+            year("2026-04-01", "2026-03-31", 10, None),
+            year("2026-01-01", "2027-01-02", 10, None),
+            year("2026-04-01", "2026-06-30", -5, None),
+            year("2026-04-01", "2026-06-30", 10, Some(7_000_000)),
+        ] {
+            assert_eq!(request.post(&url).json(&bad).await.status_code(), 422, "{bad}");
+        }
+        assert_eq!(request.post(&url).json(&year("2025-04-01", "2026-03-31", 120_000, Some(150_000))).await.status_code(), 200);
+        assert_eq!(request.post(&url).json(&year("2026-04-01", "2027-03-31", 90_000, Some(60_000))).await.status_code(), 200);
+        assert_eq!(request.post(&url).json(&year("2027-04-01", "2028-03-31", 1_000, None)).await.status_code(), 200);
+        assert_eq!(request.post(&url).json(&year("2026-03-31", "2026-04-30", 5, None)).await.status_code(), 422, "overlaps both neighbours");
+        assert_eq!(request.post("/api/recognised-bodies/00000000-0000-4000-8000-000000000000/facility-time").json(&year("2025-04-01", "2026-03-31", 1, None)).await.status_code(), 404);
+
+        let read: Value = request.get(&url).await.json();
+        let periods = read["periods"].as_array().unwrap();
+        assert_eq!(periods.len(), 3);
+        assert_eq!(periods[0]["period_start"], "2027-04-01", "newest first");
+        assert_eq!(periods[0]["over_budget"], Value::Null, "no budget agreed: unknown, not within");
+        assert_eq!(periods[1]["over_budget"], true);
+        assert_eq!(periods[2]["over_budget"], false);
+        assert_eq!(periods[2]["hours"], 2000.0);
+        assert_eq!(read["total_minutes"], 211_000);
+        let text = read["periods"].to_string().to_lowercase();
+        for banned in ["worker", "person", "representative", "name"] {
+            assert!(!text.contains(banned), "no {banned} in a period: {text}");
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_decision_gate_points_a_change_at_the_body_to_consult_and_asks_for_the_reference_without_blocking()
+ {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let body: Value = request
+            .post("/api/recognised-bodies")
+            .json(&json!({ "organization_ref": org, "name": format!("Gate Council {tag}"), "kind": "works_council", "basis": "statutory", "recognised_on": "2019-03-01", "contact_role": "Head of Employee Relations" }))
+            .await
+            .json();
+        let body_pid = body["pid"].as_str().unwrap().to_string();
+
+        // Bad gates: an unknown change, a body that is not the organization's.
+        assert_eq!(request.post("/api/decision-gates").json(&json!({ "organization_ref": org, "change_kind": "coffee", "body_pid": body_pid })).await.status_code(), 422);
+        assert_eq!(request.post("/api/decision-gates").json(&json!({ "organization_ref": "organization:00000000-0000-4000-8000-0000000000aa", "change_kind": "new_monitoring", "body_pid": body_pid })).await.status_code(), 422);
+        let gate = json!({ "organization_ref": org, "change_kind": "new_or_changed_score", "body_pid": body_pid, "note": "Scores that rank or advise on people" });
+        // A previous run may have left this gate in the shared test database; either way one exists after this.
+        let first = request.post("/api/decision-gates").json(&gate).await.status_code();
+        assert!(first == 200 || first == 422, "{first}");
+        assert_eq!(request.post("/api/decision-gates").json(&gate).await.status_code(), 422, "one gate per change and body");
+
+        let listed: Value = request.get(&format!("/api/decision-gates?organization={org}")).await.json();
+        assert!(listed["changes"].as_array().unwrap().iter().any(|c| c == "new_or_changed_score"));
+        assert!(listed["gates"].as_array().unwrap().iter().any(|g| g["body_pid"] == body_pid.as_str()));
+
+        // A change with no gate is not pointed anywhere; one with a gate asks for the reference.
+        let ungated: Value = request.get(&format!("/api/decision-gates/check?organization={org}&change=shift_pattern_change")).await.json();
+        assert_eq!(ungated["standing"], json!({ "kind": "no_gate" }));
+        let asked: Value = request.get(&format!("/api/decision-gates/check?organization={org}&change=new_or_changed_score")).await.json();
+        assert_eq!(asked["standing"]["kind"], "reference_needed");
+        assert!(asked["equality_impact_template"].as_str().unwrap().contains("section 11"));
+        assert!(asked["consult"].as_array().unwrap().iter().any(|c| c["body_pid"] == body_pid.as_str()));
+        assert_eq!(request.get(&format!("/api/decision-gates/check?organization={org}&change=coffee")).await.status_code(), 422);
+
+        // A reference must be a real consultation record; then the standing is "given".
+        let stray = "00000000-0000-4000-8000-000000000000";
+        assert_eq!(request.get(&format!("/api/decision-gates/check?organization={org}&change=new_or_changed_score&consultation_pid={stray}")).await.status_code(), 422);
+        let consultation: Value = request
+            .post("/api/consultations")
+            .json(&json!({ "body_pid": body_pid, "establishment": "Whole organization", "profile": "great_britain", "establishment_size": 100, "dismissals": 1, "earliest_termination_on": "2030-01-31", "topics": ["other"] }))
+            .await
+            .json();
+        let consultation_pid = consultation["pid"].as_str().unwrap().to_string();
+        let given: Value = request.get(&format!("/api/decision-gates/check?organization={org}&change=new_or_changed_score&consultation_pid={consultation_pid}")).await.json();
+        assert_eq!(given["standing"], json!({ "kind": "reference_given" }));
+
+        // The change that is gated: recording a scoring feature. It is never refused for want of a reference; it is pointed at the gate.
+        let record = |extra: Value| {
+            let request = &request;
+            async move {
+                let mut payload = json!({ "overseer_role": "Head of Resourcing" });
+                if let (Some(map), Some(more)) = (payload.as_object_mut(), extra.as_object()) {
+                    map.extend(more.clone());
+                }
+                request.put("/api/ai-register/S4").json(&payload).await
+            }
+        };
+        let without = record(json!({})).await;
+        assert_eq!(without.status_code(), 200, "advice, not a block: {}", without.text());
+        let pointed = without.json::<Value>()["decision_gate"].clone();
+        assert_eq!(pointed["standing"]["kind"], "reference_needed");
+        assert_eq!(pointed["change"], "new_or_changed_score", "a score is pointed at the score gate, not another");
+        assert!(pointed["consult"].as_array().unwrap().iter().any(|c| c["body_pid"] == body_pid.as_str()), "{pointed}");
+        assert!(pointed["equality_impact_template"].as_str().unwrap().contains("section 11"));
+        let with = record(json!({ "consultation_pid": consultation_pid })).await;
+        assert_eq!(with.status_code(), 200);
+        assert_eq!(with.json::<Value>()["decision_gate"]["standing"], json!({ "kind": "reference_given" }));
+        assert_eq!(record(json!({ "consultation_pid": stray })).await.status_code(), 422, "a reference that is no record is refused");
+    })
+    .await;
+}

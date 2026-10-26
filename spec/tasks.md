@@ -3466,9 +3466,18 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       within one breakdown, not across breakdowns or across two reads of nearby days (someone who asks on consecutive days and compares can still infer a change);
       the facts of every worker in the organization are read per request (no 200k timing); starters and leavers are matched by the worker's current department
       and title, not the ones they had then; the pack gives FTE per pay band, which is a count of people times their hours, not pay.
-- [ ] WPM-T177 **Facility time as an aggregate; decision gates.** *(WPM-R107, WPM-R108)* Hours per body per period (no per-person
+- [x] (2026-10-26) WPM-T177 **Facility time as an aggregate; decision gates.** *(WPM-R107, WPM-R108)* Hours per body per period (no per-person
       record); a configurable list of changes that need consultation, shown when someone makes such a change,
       including a new or changed score (link to the equality impact template, section 11).
+      Done (service only): migration `m20261026_000095` (`facility_time_periods`: minutes per body per period, optional budget, no column for a person;
+      `decision_gates`: change kind + body, unique per organization), `rules::decision_gate` (pure), `controllers::decision_gates` (`GET/POST /api/decision-gates`,
+      `GET /api/decision-gates/check`) and facility-time routes in `controllers::bargaining`. Recording an AI-register feature (`PUT /api/ai-register/{feature}`)
+      now returns a `decision_gate` pointer for `new_or_changed_score`: the bodies to consult and the equality impact template (section 11), asking for a
+      `consultation_pid` and **advising, never blocking**; a reference that is no record is refused (422). **Verified:** 5 new unit tests (860 in all);
+      request tests against Postgres 18 for facility time and for the gate (the full `--ignored` suite, 161); enforcement tests with real tokens; the T171 guard
+      (5); clippy pedantic clean on the new files. **Not verified:** no mutation checks run for this task; no UI (T178); `cargo fmt` was run but `pnpm lint`,
+      gitleaks and `scripts/verify-db-roles.sh` were not; the gate list is data, so which changes the deployer gates is theirs to set; a gate is not
+      checked against the body's recognition dates.
 - [ ] WPM-T178 **Verification and documents.** *(WPM-R102–R108)* Full suites, screenshots of new screens, strings in the 13
       locales, DPIA and record-of-processing updates; record what was not verified.
 

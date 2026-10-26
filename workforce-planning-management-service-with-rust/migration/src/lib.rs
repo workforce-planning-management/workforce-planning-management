@@ -107,6 +107,7 @@ mod m20261025_000091_cpd_entry_skill;
 mod m20261026_000092_recognised_bodies;
 mod m20261026_000093_collective_agreements;
 mod m20261026_000094_consultations;
+mod m20261026_000095_facility_time_and_gates;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -213,6 +214,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261026_000092_recognised_bodies::Migration),
             Box::new(m20261026_000093_collective_agreements::Migration),
             Box::new(m20261026_000094_consultations::Migration),
+            Box::new(m20261026_000095_facility_time_and_gates::Migration),
             // inject-above (do not remove this comment)
         ]
     }

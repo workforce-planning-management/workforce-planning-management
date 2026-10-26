@@ -210,3 +210,49 @@ fn the_api_document_and_the_catalogue_say_nothing_about_membership() {
         found.join("\n")
     );
 }
+
+/// Facility time (WPM-R107) is minutes per **body** per period: its table has no column that could name or point at a person, and no
+/// kind of leave or time names representative duties.
+#[test]
+fn facility_time_has_no_person_and_no_time_entry_kind() {
+    let migration = fs::read_dir(root().join("migration/src"))
+        .unwrap()
+        .flatten()
+        .map(|e| e.path())
+        .find(|p| p.to_string_lossy().contains("facility_time"))
+        .expect("the facility-time migration");
+    let sql = fs::read_to_string(migration).unwrap().to_lowercase();
+    let start = sql
+        .find("create table if not exists facility_time_periods")
+        .expect("the table");
+    let table = &sql[start..sql[start..].find(")\",").map_or(sql.len(), |n| start + n)];
+    for column in [
+        "worker",
+        "person",
+        "representative",
+        "employee",
+        "user",
+        "member",
+        "steward",
+    ] {
+        assert!(
+            !table.contains(column),
+            "facility time is per body, never per person: `{column}` in\n{table}"
+        );
+    }
+    for file in [
+        "src/rules/leave.rs",
+        "src/rules/time_off.rs",
+        "src/rules/working_time.rs",
+    ] {
+        let text = fs::read_to_string(root().join(file))
+            .unwrap()
+            .to_lowercase();
+        for word in ["facility", "representative", "union"] {
+            assert!(
+                !text.contains(word),
+                "no kind of time or leave may name representative duties: `{word}` in {file}"
+            );
+        }
+    }
+}

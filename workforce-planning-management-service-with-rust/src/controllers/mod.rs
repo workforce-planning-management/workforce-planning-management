@@ -22,6 +22,7 @@ pub mod conversion_plans;
 pub mod cpd;
 pub mod credentials;
 pub mod cutover;
+pub mod decision_gates;
 pub mod development;
 pub mod directory;
 pub mod docs;

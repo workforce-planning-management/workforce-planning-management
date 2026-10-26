@@ -64,6 +64,8 @@ struct Payload {
     workers_informed_on: Option<NaiveDate>,
     log_retention_months: Option<i32>,
     retention_note: Option<String>,
+    /// A consultation record for this change, when a decision gate asks for one (WPM-R108).
+    consultation_pid: Option<Uuid>,
 }
 
 /// `PUT /api/ai-register/{feature}` — replace what is recorded for a feature (`S1` to `S8`). A field left out is cleared.
@@ -88,6 +90,14 @@ async fn record(
     if !problems.is_empty() {
         return Err(unprocessable(&problems.join("; ")));
     }
+    // A new or changed score may need consultation (WPM-R108): point at the gate and ask for the reference; it advises, it does not block.
+    let gate = super::decision_gates::pointer(
+        &ctx,
+        None,
+        "new_or_changed_score",
+        payload.consultation_pid,
+    )
+    .await?;
     let actor = caller.actor().map(ToString::to_string);
     let txn = ctx.db.begin().await?;
     let existing = ai_register_entries::Entity::find()
@@ -130,11 +140,11 @@ async fn record(
         pid,
         "ai_register_recorded",
         caller.actor(),
-        Some(json!({ "feature": feature.id })),
+        Some(json!({ "feature": feature.id, "consultation_pid": payload.consultation_pid })),
     )
     .await?;
     txn.commit().await?;
-    format::json(json!({ "pid": pid, "feature": feature.id }))
+    format::json(json!({ "pid": pid, "feature": feature.id, "decision_gate": gate }))
 }
 
 /// The routes.
