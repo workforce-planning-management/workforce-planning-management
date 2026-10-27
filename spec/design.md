@@ -378,6 +378,18 @@ tasks, durations, dependencies, estimates, buffers or schedule progress.
 - The integration point is a capacity contract between the two services (the
   roadmap's "WPM ↔ PPM bridge").
 
+## WPM-D112–D133 — Staff records, absence, disability, succession, deputies and acting up (proposed)
+
+An assignment is a contract, not a timesheet; a person is followed by `person_ref`; date of birth is held for pay and pension
+only; bank details and the national insurance number get no column; codes are configuration and uncoded is unknown; payroll
+arithmetic is dated configuration with its source; a deduction says nothing about why
+([staff-records-and-pay.md](staff-records-and-pay.md), D112–D120). Stress is assessed in the work; a review point starts a
+conversation and there is no Bradford factor; certificates and occupational health advice are held elsewhere; a manager gets a
+to-do list, not a file ([absence-and-line-managers.md](absence-and-line-managers.md), D121–D124). No label, ever; the person
+owns disclosure; adjust the rule, not the record ([disability-and-adjustments.md](disability-and-adjustments.md), D125–D127). Readiness is a judgement shown with its evidence;
+a successor is told, by the software, every time; a deputy holds named authority, not confidences; acting cover does not fill a
+vacancy; who acts up is counted; the holder, or HR while the holder is unavailable, lets a deputy decide flexible working, and the default is no ([succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md), D128–D133).
+
 ## WPM-D52, WPM-D54 — Secure by default; rate limits keep no history
 
 Sign-in is enforced unless explicitly turned off, production refuses an open or

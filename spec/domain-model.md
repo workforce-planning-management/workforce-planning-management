@@ -374,3 +374,34 @@ section 4)
 - **CredentialIssuance** (`credential_issuances`: worker, credential kind, issued on, revoked on), **SkillMapping** (`skill_mappings`: from
   skill, to skill, basis, confidence) ([skills-and-training.md](skills-and-training.md), WPM-R157–R158).
 
+**Proposed in Phase 24** (spec round WPM-T309; none is built; each table's personal-data class is in [plan.md](plan.md) section 4)
+
+- **Assignment** (`assignments`: worker, optional position, job title, site, area of work, job role, staff group, occupation code,
+  cost centre, FTE percent, start, end, primary). A worker has one or more; exactly one current primary, written through to the
+  worker row's department, title, location and FTE (WPM-R161, WPM-D112). **CategoryVocabulary** entries (code, label, the standard and
+  its code) (WPM-R162). `positions.holder` becomes the holding assignment, and positions gain a `number`.
+- **CostCentre** (`cost_centres`: code, name, parent, valid from and to), **CodingStructure** (ordered segments), **SubjectiveRule**
+  (match fields and the code) (WPM-R163–R165, WPM-D116). **PriorServicePeriod** (person, dates, basis) (WPM-R166).
+- `workers.date_of_birth` (WPM-R169, WPM-D114). **LearningRequirement** (subject, basis `statutory | mandatory`, source, refresher
+  months, courses, audience) and **LearningCompletion** (worker, requirement, date, source organization) (WPM-R170). **Qualification**
+  (worker, kind, title, awarding body, framework level, awarded, expires, `declared | verified`, verifier, evidence reference; no
+  certificate) (WPM-R171). Reviews gain a `kind` (`performance | padr`) and two sign-offs, with **PadrVersion** (WPM-R172).
+  **FormalProcessFlag** (worker, live, date; no detail) (WPM-R173, WPM-D120).
+- **PayrollDetails** (`payroll_details`: payroll number, frequency, tax code, NI category, starter declaration, provider reference; **no
+  bank details, no national insurance number**, WPM-D115), **DeductionInstruction**, **PensionScheme** + **PensionTier** +
+  **PensionMembership**, **StudentLoanPlan** + **StudentLoanThreshold** (plan, tax year, threshold, rate, source), **PayslipQuery**
+  (WPM-R174–R178, WPM-D118, WPM-D119). Payslip deduction kinds gain `student_loan` and `voluntary`, and a held deduction is a line
+  marked held with amount zero.
+- **SicknessCertificate** (episode dates covered; may be fit with adjustments yes/no; no content), **ReturnToWorkConversation**,
+  **AbsenceReview** (review point reached, outcome), **KeepingInTouchPlan** + contact dates, **PhasedReturnPlan** + weeks,
+  **OhReferral** (status, consent, dates; no advice), **StressRiskAssessment** (six areas, concern, actions) and an episode's
+  `related_to_work` (`yes | no | not_said`) (WPM-R179–R184, WPM-D121–D123). Episodes are derived from sick-leave requests, not stored.
+- **AdjustmentPassport** + entries + **PassportShare** (keyed by `person_ref`), **WorkingWithMeProfile** (visibility `private | manager |
+  team`), **CandidateAdjustment** (the three WPM-R33 fields; never read by scoring), **SupportSchemeApplication** (status, dates,
+  reference; no amount), adjustment `review_on` and the kind `absence_review_points` (WPM-R190–R195, WPM-D125–D127). **No column for a
+  condition, diagnosis, label or disability flag exists in any of them.**
+- **SuccessionPlan** gains `position_pid` or `role_profile_pid` and `review_on`; **SuccessionCandidate** gains `emergency_cover`.
+  **Deputyship** (position or assignment, deputy, rank, standing or window, accepted on, and `may_decide_flexible_working`: set by the holder, or by HR on their behalf while they are unavailable with `granted_by` and a lapse on their return, `null` by default and read as no, WPM-D133) with **DeputyScope** (the closed list) and
+  **Unavailability** (a holder's dated hand-over). An **Assignment** of kind `acting` (into a position or role, `full | partial`, pay
+  treatment, planned end) holds the substantive assignment `on_hold`; **ActingExtension**, **ActingOpportunity** and
+  **ActingInterest** (WPM-R197–R205, WPM-D128–D133).

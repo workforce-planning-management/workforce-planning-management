@@ -55,4 +55,14 @@
 | **Deployer register** | The record of who oversees each scoring feature, when workers were informed and how long its logs are kept, for an employer that deploys a high-risk AI system; it records, it does not certify ([regulatory.md](regulatory.md)) |
 | **Position** | A budgeted seat with FTE, cost centre and funding that exists whether or not someone holds it ([positions.md](positions.md)) |
 | **Establishment** | The approved number of positions; vacancy is budget minus FTE held, over-establishment is FTE held beyond budget |
-
+| **Assignment** | One job a worker holds in their organization, with its categories, cost centre and FTE; a worker may hold several, one primary ([staff-records-and-pay.md](staff-records-and-pay.md)) |
+| **Subjective code** | The ledger's expense category for an assignment's pay, derived by configured rules; none matching is uncoded, never a default |
+| **Annual service** | The union of a person's employment periods across every role and organization, with continuous service by a configured break tolerance |
+| **PADR** | Personal development review: the annual review of objectives, development needs and values, complete when both people have signed |
+| **Statutory and mandatory learning** | Training required by law or a regulator (statutory, the source named) or by the organization (mandatory), with a refresher period |
+| **Review point** | A configured absence threshold over a rolling window that makes a supportive conversation due; it never acts ([absence-and-line-managers.md](absence-and-line-managers.md)) |
+| **Stress risk assessment** | An assessment of the work (demands, control, support, relationships, role, change), not of the person |
+| **Adjustments passport** | The person's own record of the adjustments that help them, which follows them and which they share ([disability-and-adjustments.md](disability-and-adjustments.md)) |
+| **Deputy** | Someone named to hold a role's authority, within closed scopes, while its holder is away; a backup covers the work, a deputy the decisions ([succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md)) |
+| **Acting up** | Temporarily doing a higher-graded role, as an acting assignment, with the substantive one kept on hold; acting cover does not fill a vacancy |
+| **Emergency cover** | A successor who could step into a role tomorrow, even if not ready to take it on for good |

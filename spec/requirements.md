@@ -569,6 +569,18 @@ acceptance criteria and traces to the tasks that delivered it:
   CORS, rate limiting, a standalone build with CI, license texts, releases and
   generated status — [production-readiness.md](production-readiness.md)
   (WPM-T123–T128, T144, T145).
+- **WPM-R161–R178** the electronic staff record: assignments, categories, cost centres, financial and subjective coding,
+  annual service, the person-centric record, date of birth, statutory and mandatory learning, qualifications, the PADR, step
+  readiness, payroll information, deductions, pensions, student loans and my payslips —
+  [staff-records-and-pay.md](staff-records-and-pay.md) (proposed; WPM-T309–T325).
+- **WPM-R179–R189** sickness absence, return-to-work, review points, long-term absence, occupational health, work-related
+  stress, absence measures and help for line managers — [absence-and-line-managers.md](absence-and-line-managers.md)
+  (proposed; WPM-T326–T333).
+- **WPM-R190–R196** the adjustments passport, "working with me", adjustment reviews, absence rules that adjust, candidate
+  adjustments, support schemes and disability equality measures — [disability-and-adjustments.md](disability-and-adjustments.md)
+  (proposed; WPM-T334–T337).
+- **WPM-R197–R205** succession on positions with evidence beside readiness, deputies, and acting up —
+  [succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md) (proposed; WPM-T338–T344). Extends WPM-R12.
 - **WPM-R51, R54** a national public-sector pay scale, a
   salary-placement lookup, and a worker's band and step with eligibility reminders —
   [pay-scales.md](pay-scales.md) (WPM-T92, T96).

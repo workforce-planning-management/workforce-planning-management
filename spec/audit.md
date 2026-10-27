@@ -49,7 +49,21 @@ a **SCIM push** and a **webhook delivery** (status and attempt, never the body),
 or return**, a **policy acknowledgement** and the HR read of the named record, and a **credential issued or revoked**. As elsewhere,
 an entry names no pay figure and no personal field in its snapshot.
 
+## Audited by the Phase 24 proposals (spec round WPM-T309)
+
+Once built, each writes an audit row without values: an **assignment** started, changed or ended; a **cost centre**, **coding
+structure** or **subjective rule** change; **recognised prior service** recorded; a **date of birth** written or read by HR or
+payroll; a **learning completion** recorded by HR; a **qualification verified**; a **PADR signed** or versioned; a **formal-process
+flag** set; **payroll details**, a **deduction instruction**, a **pension membership** or a **student loan plan** changed; a **payslip
+query** raised or closed; a **certificate** recorded; a **return-to-work conversation** or **absence review outcome** recorded; a
+**keeping-in-touch** or **phased return** plan agreed; an **OH referral** consented, sent or closed; a **stress risk assessment** read
+or changed; a **passport share** given or withdrawn (who and with whom, never the words); a **candidate adjustment** read. As
+elsewhere, no entry holds a pay figure, a tax code, a reason, a condition or anyone's words. Section S adds: a succession plan linked, reviewed or a readiness changed (each also notifies the successor); a **deputyship** named, accepted or
+ended; a **flexible-working grant** to a deputy given (by the holder, or by HR on their behalf), confirmed, lapsed or withdrawn; a **decision taken as deputy for** someone (the decision's own action, with the holder named); an **acting assignment**
+started, extended or ended; an acting opportunity's choice recorded.
+
 ## Event kinds
+
 
 `requisition_opened` / `requisition_filled`, `application_staged`,
 `worker_hired` / `worker_activated` / `worker_terminated`,

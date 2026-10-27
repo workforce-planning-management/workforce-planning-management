@@ -397,6 +397,26 @@
         "description": "WPM-R147 and WPM-D100: a dated read-only report mapped to ISO 30414:2025 and the revised ESRS S1 requirement numbers, a mapping and never a copy"
       },
       {
+        "title": "spec/staff-records-and-pay.md",
+        "path": "spec/staff-records-and-pay.md",
+        "description": "Proposed WPM-R161–R178, WPM-D112–D120: the electronic staff record, assignments and coding, annual service, the person-centric record, statutory and mandatory learning, the PADR, payroll information, deductions, pensions and student loans"
+      },
+      {
+        "title": "spec/absence-and-line-managers.md",
+        "path": "spec/absence-and-line-managers.md",
+        "description": "Proposed WPM-R179–R189, WPM-D121–D124: sickness absence without reasons, return-to-work, review points, occupational health, stress assessed in the work, and the manager's action list"
+      },
+      {
+        "title": "spec/disability-and-adjustments.md",
+        "path": "spec/disability-and-adjustments.md",
+        "description": "Proposed WPM-R190–R196, WPM-D125–D127: an adjustments passport the person owns, working with me, absence rules that adjust, candidate adjustments, disability measures from monitoring only"
+      },
+      {
+        "title": "spec/succession-deputies-and-acting-up.md",
+        "path": "spec/succession-deputies-and-acting-up.md",
+        "description": "Proposed WPM-R197–R205, WPM-D128–D133: succession on positions with evidence beside readiness, deputies with scoped authority, acting up with its pay, limits and fairness"
+      },
+      {
         "title": "spec/positions.md",
         "path": "spec/positions.md",
         "description": "WPM-R152, WPM-R153 and WPM-D104: positions as budgeted seats, vacancy and over-establishment, and the current-versus-target organization diff"

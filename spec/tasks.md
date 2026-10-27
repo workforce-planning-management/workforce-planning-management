@@ -5149,3 +5149,104 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       only item drops them, three reports are withheld, no reports is `no_one`, and the answer holds no item, tag or pid) which also caught my wrong argument order for `is_employed_on` (the compiler's suggested swap was wrong too); an
       enforcement test with real tokens (anonymous 401, a manager reads their own, a worker is refused another manager's with 403, HR reads); `route_coverage`; clippy pedantic; `svelte-check` 0 errors, 210 unit tests, `pnpm run lint`, Playwright 236 passed / 19 skipped
       (new: shown, withheld and no panel for no team). **Not verified:** no screenshot looked at; the API is stubbed in the UI test and the panel was not run against the service; the translations. **Added later (2026-10-26):** the request test now also covers twelve reports where one holds, then one has left and one is soft-deleted: the count goes from 11 to 9 not holding, the holder stays counted (ran against Postgres 18).
+
+## Phase 24 — the electronic staff record, absence and line managers, disability and adjustments, succession, deputies and acting up (proposed WPM-R161–R205, WPM-D112–D133; [plan.md](plan.md) sections P to S)
+
+- [x] (2026-10-27) WPM-T309 **Spec round.** *(WPM-R161–R205, WPM-D112–D133)* Four requests on one day, specified together:
+      the electronic staff record and pay deductions ([staff-records-and-pay.md](staff-records-and-pay.md), R161–R178, D112–D120),
+      absence, sickness absence, work-related stress and help for line managers ([absence-and-line-managers.md](absence-and-line-managers.md),
+      R179–R189, D121–D124), and disability, non-visible disability, neurodivergence and reasonable adjustments
+      ([disability-and-adjustments.md](disability-and-adjustments.md), R190–R196, D125–D127), and succession, deputies and acting up
+      ([succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md), R197–R205, D128–D133; succession extends WPM-R12,
+      and it found that succession entries are missing from the subject-access export). Each asked-for item was checked against `spec/`
+      first: contact details (R124), emergency contacts (R41), voluntary equality monitoring (R125), payroll runs and payslips (R13), skills
+      (R43), positions (R152), review cycles, band and step (R54), the compliance view over training enrolments and reasonable
+      adjustments (R33) exist and are referenced, not rebuilt. Plan sections P, Q and R, the domain model, auth, audit, regulatory,
+      glossary, index, `llms.txt`, `llms.json`, the requirements and design pointers, and the next-free-ids line updated.
+      **Checked against sources** (tabled in [staff-records-and-pay.md](staff-records-and-pay.md)): UK student loan thresholds and
+      rates for 2026 to 2027 and the multiple-plan and default-plan rules (GOV.UK page fetched); NHS Pension Scheme member tiers from 1
+      April 2026 and the 23.7% employer rate (NHSBSA and NHS Employers, through search results, not the page itself); ESR's staff
+      group, job role and area of work coding (NHS England guide, search excerpts); Agenda for Change pay progression standards
+      (Annex 23 and employers' policies, search excerpts); the Core Skills Training Framework's eleven subjects (Skills for Health,
+      search excerpts). **Kept, not reopened:** WPM-D73 (no sick-leave reason: stress is assessed in the work instead, D121), WPM-D25
+      (no condition or label: extended by D125), the union stance (no check-off deduction, D119), and WPM-D45/D59/D104 (refined, not
+      reversed, by D112). **Not checked:** the student loan rounding rule; the Scottish and Northern Irish pension tiers; the current
+      NHS Data Dictionary staff group list; the CSTF's per-subject refresher periods; the break in service agreements disregard; the
+      seven-day fit note rule beyond common knowledge (it is configuration, none shipped); the HSE Management Standards text (named,
+      not quoted); WDES metric wording; any non-UK jurisdiction. No code, migration, test or string changed, so no suite was run.
+
+**Section P — the electronic staff record and pay deductions**
+
+- [ ] WPM-T310 **Assignments and categories, pure core.** *(WPM-R161, WPM-R162, WPM-D112, WPM-D116)* The FTE total rule, one primary,
+      effective-dated change as end-and-start, job role and staff group agreement, unknown categories.
+- [ ] WPM-T311 **Assignments and categories, records, API and screen.** *(WPM-R161, WPM-R162)* Migration creating one primary assignment
+      per worker from its columns; write-through to the worker row; `positions.holder` to the holding assignment; vocabulary import;
+      aggregates with the floor; export and erasure.
+- [ ] WPM-T312 **Cost centres, financial and subjective coding.** *(WPM-R163–R165, WPM-D116)* Register, unmatched free-text list,
+      segment assembly and most-specific-rule derivation in the pure core, position numbers, the coding view.
+- [ ] WPM-T313 **Annual service and the person-centric record.** *(WPM-R166, WPM-R167, WPM-D113)* Interval union with a break tolerance
+      (pure, clock-free), recognised prior service, `/api/me/record` and the privileged view with other employers reduced to a total.
+- [ ] WPM-T314 **Statutory and mandatory learning, pure core.** *(WPM-R170, WPM-D117)* Audience matching, the six statuses, refresher
+      arithmetic, transferred completions.
+- [ ] WPM-T315 **Statutory and mandatory learning, records, API and screens.** *(WPM-R170)* Requirements, recorded completions, the
+      person's, manager's and HR's views, roll-ups with the floor; extends the existing compliance view.
+- [ ] WPM-T316 **Qualifications.** *(WPM-R171)* Declared and verified, role requirements and the qualification gap beside the skill gap.
+- [ ] WPM-T317 **The PADR.** *(WPM-R172)* Review kind, two sign-offs, frozen versions, the due date (pure).
+- [ ] WPM-T318 **Readiness for the next pay step.** *(WPM-R173, WPM-D120)* Configured standards, the formal-process flag, `unknown` where a
+      standard cannot be evaluated.
+- [ ] WPM-T319 **Date of birth and age bands.** *(WPM-R169, WPM-D114)* Column, access, the test that no scoring code names it, aggregates.
+- [ ] WPM-T320 **Payroll information.** *(WPM-R174, WPM-D115)* No bank or national insurance number column; refusal of look-alikes in free text.
+- [ ] WPM-T321 **Deductions.** *(WPM-R175, WPM-D119)* Order, the net-pay floor and held deductions in the pure core; no union check-off.
+- [ ] WPM-T322 **Pensions.** *(WPM-R176, WPM-D118)* Schemes, tiers by annualised pensionable pay, memberships, eligibility reporting.
+- [ ] WPM-T323 **Student loans.** *(WPM-R177, WPM-D118)* Plans, dated thresholds with source, one undergraduate plan plus postgraduate,
+      the default-plan setting, refusal without configuration.
+- [ ] WPM-T324 **My payslips.** *(WPM-R178)* Approved and paid only, year to date per tax year, print stylesheet, payslip queries.
+- [ ] WPM-T325 **The staff record screen.** *(WPM-R168)* Assembles the sections; not visible, none recorded and unknown shown apart.
+
+**Section Q — absence, sickness absence, work-related stress, and help for line managers**
+
+- [ ] WPM-T326 **Sickness episodes, certificates and return-to-work conversations.** *(WPM-R179, WPM-R180, WPM-D123)* Episodes derived
+      from requests (pure), certificate due, fit note as dates and one answer, the conversation record with versions.
+- [ ] WPM-T327 **Review points, long-term absence, keeping in touch, phased return.** *(WPM-R181, WPM-R182, WPM-D122)* Rolling-window
+      thresholds (pure), outcomes, contact plans that can pause, phased return weeks.
+- [ ] WPM-T328 **Occupational health referrals.** *(WPM-R183, WPM-D123)* Consent before sending; advice not stored; the OH attribute.
+- [ ] WPM-T329 **Stress risk assessments.** *(WPM-R184, WPM-D121)* Six areas, actions, "related to work" on an episode, pulse mapping.
+- [ ] WPM-T330 **Absence measures.** *(WPM-R185)* Rate, short- and long-term, work-related share, conversations on time; feeds R147.
+- [ ] WPM-T331 **The manager's action list.** *(WPM-R186, WPM-R189, WPM-D124)* Derived items (pure, as-of date), own reports by name, HR
+      counts per manager with the floor, the people-manager audience, asking HR for help.
+- [ ] WPM-T332 **Guidance pages.** *(WPM-R187)* CMS content per locale, labelled generic, linked from each action.
+- [ ] WPM-T333 **Changing manager.** *(WPM-R188)* The "getting to know your team" item; no handover of adjustment words.
+
+**Section R — disability, non-visible disability, neurodivergence and reasonable adjustments**
+
+- [ ] WPM-T334 **The adjustments passport and "working with me".** *(WPM-R190, WPM-R191, WPM-D125, WPM-D126)* Person-owned, keyed by
+      `person_ref`, shares by entry and person, withdrawal, re-agreement with a new manager.
+- [ ] WPM-T335 **Adjustment reviews, movements, change impact and absence adjustments.** *(WPM-R192, WPM-R193, WPM-D127)* Review dates,
+      the movement checklist item, the HR-only count from the floor, `absence_review_points` adjustments, disability leave.
+- [ ] WPM-T336 **Candidate adjustments and support schemes.** *(WPM-R194, WPM-R195)* Kept from scorers (a test fails if scoring names the
+      table), retention with the application, guaranteed interview opt-in, Access to Work status.
+- [ ] WPM-T337 **Disability equality measures.** *(WPM-R196)* From equality monitoring only; `unknown` without it; WDES mapping by number.
+
+**Section S — succession, deputies and acting up**
+
+- [ ] WPM-T338 **Succession on positions and roles.** *(WPM-R197)* Plans linked to a position or role profile, derived incumbent,
+      `vacant`, emergency cover, the unlinked free-text plans listed for HR.
+- [ ] WPM-T339 **Readiness evidence, review dates, the successor's view.** *(WPM-R198, WPM-R199, WPM-D128, WPM-D129)* Evidence beside
+      readiness (no score), development items linked, `not_reviewed`. Notify the successor when they are named, changed or removed
+      (role and date only); add `/api/me/succession` showing their own entry without the rank, the other candidates or the incumbent's
+      risk; add succession to the subject-access export, with a test of the export round-trip and a test that no setting suppresses the
+      notice; interested people from mobility interests.
+- [ ] WPM-T340 **Slate equality.** *(WPM-R200)* From equality monitoring only, across critical roles, with the floor.
+- [ ] WPM-T341 **Deputies, pure core.** *(WPM-R201, WPM-R202, WPM-D130)* Eligibility, acceptance, when a deputyship is active, routing
+      to the first available deputy, the closed scopes, no self-dealing, never-delegated items, and the flexible-working grant (WPM-D133):
+      the holder sets it; HR may set it only while the holder is unavailable, and it lapses on their return unless they confirm it;
+      the deputy never can; `null`, missing and `false` deny. Tests cover each of these, including HR refused while the holder is
+      available.
+- [ ] WPM-T342 **Deputies, records, API and screens.** *(WPM-R201, WPM-R202)* Routing in leave, time, expenses (closes the expense
+      claims' "approval delegation"), training and return-to-work; `flexible_working:decide` as an ABAC operation with
+      `resource.deputy_may_decide_flexible_working`, the holder's grant, HR's grant on their behalf with the notice to the holder and the lapse, confirmation and withdrawal (audited), and an enforcement test that a deputy without the
+      grant is refused; "as deputy for" in the audit and on the record; the action list.
+- [ ] WPM-T343 **Acting assignments and pay.** *(WPM-R203, WPM-R204, WPM-D131)* Kind `acting`, substantive on hold, acting cover kept
+      vacant in the establishment, extensions, pay treatments as configuration, the earnings line and arrears.
+- [ ] WPM-T344 **Acting up limits and fairness.** *(WPM-R205, WPM-D132)* Maximum duration on the action lists, expressions of interest,
+      open versus direct counts, the equality share from monitoring.

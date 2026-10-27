@@ -1,7 +1,7 @@
 # Plan — delivery capacity, oversight readiness and production readiness
 
-Status: **proposed** (2026-10-09; sections N and O added 2026-10-21). Some sections have since
-been built; sections N and O are not. Delivery is queued as
+Status: **proposed** (2026-10-09; sections N and O added 2026-10-21; sections P to S added 2026-10-27). Some sections have since
+been built; sections P to S are not. Delivery is queued as
 Phase 12 (WPM-T103–T118), Phase 13 (WPM-T123–T132, WPM-T144–T145) and Phase 14
 (WPM-T133–T143) in [tasks.md](tasks.md). When the work starts, the requirements and decisions
 below move into topic files (`delivery-capacity-and-oversight.md` for sections
@@ -650,6 +650,62 @@ no role check either. That was wrong: the request-level policy in `require_auth_
 document; money is `i64` minor units; casts are few and annotated; every `too_many_lines` allow has a
 reason; no Svelte 4 syntax, no `any`, no `{@html}`; strict TypeScript; strict `kit.csp`.
 
+### P. The electronic staff record and pay deductions (proposed 2026-10-27)
+
+Requested together: electronic staff records, payroll information, assignment categories (where you work, what you do, areas of
+work), demographics, contact information, emergency contacts, statutory and mandatory learning, qualifications and skills, cost
+centres, financial coding, subjective coding, assignments, a person-centric view across roles and organizations, annual reviews,
+the PADR, payslips, deductions, pensions and student loan deductions. Each was checked against `spec/` first: contact details,
+emergency contacts, voluntary equality monitoring, payroll runs and payslips, skills, positions and review cycles exist, and are
+referenced rather than rebuilt. The full text is in [staff-records-and-pay.md](staff-records-and-pay.md).
+
+- **WPM-R161 Assignments** (a worker holds one or more; FTE is a contract fact). **WPM-R162 Assignment categories** (site, area
+  of work, job role, staff group, occupation code; national lists imported). **WPM-R163 Cost centres**, **WPM-R164 Financial
+  coding**, **WPM-R165 Subjective coding** (derived by rules; uncoded is unknown). **WPM-R166 Annual service across all roles**.
+  **WPM-R167 The person-centric record**. **WPM-R168 The staff record screen** (assembles; adds no read). **WPM-R169 Date of
+  birth** for pay and pension, and age bands in aggregate. **WPM-R170 Statutory and mandatory learning**. **WPM-R171
+  Qualifications**. **WPM-R172 Annual reviews and the PADR**. **WPM-R173 Readiness for the next pay step**. **WPM-R174 Payroll
+  information**. **WPM-R175 Deductions**. **WPM-R176 Pensions** (tiered member contributions). **WPM-R177 Student loan
+  deductions**. **WPM-R178 Managing your payslips**.
+- **WPM-D112–D120**: see section 3.
+
+### Q. Absence, sickness absence, work-related stress, and help for line managers (proposed 2026-10-27)
+
+Requested after section P: better management of absences, sickness absence and stress absence, and better help for line managers.
+Full text in [absence-and-line-managers.md](absence-and-line-managers.md). It keeps WPM-D73 (a sick-leave request has no reason).
+
+- **WPM-R179 Sickness episodes and fit notes** (dates and one answer, no content). **WPM-R180 Return-to-work conversations**.
+  **WPM-R181 Absence review points** (configured; start a conversation; no Bradford factor). **WPM-R182 Long-term absence,
+  keeping in touch and phased return**. **WPM-R183 Occupational health referrals** (consent first; advice stays with OH).
+  **WPM-R184 Stress risk assessments about the work** (the six Management Standards areas). **WPM-R185 Absence measures**
+  (never by reason). **WPM-R186 The manager's action list** (derived, what is due, never why). **WPM-R187 Guidance at the point
+  of need** (content per locale). **WPM-R188 Changing manager**. **WPM-R189 Managers' own learning and support**.
+- **WPM-D121–D124**: see section 3.
+
+### R. Disability, non-visible disability, neurodivergence and reasonable adjustments (proposed 2026-10-27)
+
+Requested after section Q. Full text in [disability-and-adjustments.md](disability-and-adjustments.md). It extends WPM-R33 and
+keeps WPM-D25 (no condition, no label, no evidence flag).
+
+- **WPM-R190 An adjustments passport the person owns** (follows the person; shared by them). **WPM-R191 "Working with me"**
+  (offered to everyone; visibility the person's). **WPM-R192 Reviewing adjustments, and keeping them through change**.
+  **WPM-R193 Absence rules that adjust** (disregard episodes or raise a threshold; disability leave). **WPM-R194 Adjustments for
+  candidates** (never seen by a scorer). **WPM-R195 Government support schemes** (Access to Work in Great Britain; status and
+  dates only). **WPM-R196 Disability equality measures, from voluntary monitoring only** (WDES mapped, not copied).
+- **WPM-D125–D127**: see section 3.
+
+### S. Succession, deputies and acting up (proposed 2026-10-27)
+
+Requested after section R. Succession exists (WPM-R12); deputies and acting up do not. Full text in
+[succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md).
+
+- **WPM-R197 Succession on positions and roles** (incumbent derived; emergency cover). **WPM-R198 Readiness with its evidence
+  beside it**. **WPM-R199 Review dates, and the successor's own view** (the successor is notified when named, changed or removed; their entry in self-service and the export).
+  **WPM-R200 The equality of slates** (voluntary monitoring only). **WPM-R201 Naming a deputy**. **WPM-R202 Authority while
+  deputising** (closed scopes; never confidences or pay; flexible working only with the holder's grant, or HR's while the holder is unavailable; default no). **WPM-R203 Acting assignments** (substantive kept; cover does not fill a
+  vacancy). **WPM-R204 Pay while acting up**. **WPM-R205 Limits and fairness**.
+- **WPM-D128–D133**: see section 3.
+
 ## 3. Design decisions (proposed)
 
 - **WPM-D45 Capacity is planned by pool, not by person.** Supply comes from
@@ -736,6 +792,34 @@ reason; no Svelte 4 syntax, no `any`, no `{@html}`; strict TypeScript; strict `k
   reports holding at least one item, so a count cannot say how much one person holds. The floor and the withheld answer are the policy
   counts' (WPM-D105).
 
+- **WPM-D112 An assignment is a contract, not a timesheet.** Refines D45, D59 and D104: two jobs are two assignments, never a
+  split of one person's time ([staff-records-and-pay.md](staff-records-and-pay.md), as are D113 to D120).
+- **WPM-D113 A person is followed by `person_ref`; another employer's record stays with that employer.**
+- **WPM-D114 Date of birth is held for pay and pension, and never scores anyone.** A bounded exception, like D74.
+- **WPM-D115 Bank details and the national insurance number get no column.**
+- **WPM-D116 Codes are configuration, and uncoded is unknown.**
+- **WPM-D117 Statutory is not mandatory, and an unknown audience is not compliance.**
+- **WPM-D118 Payroll arithmetic is dated configuration with its source.**
+- **WPM-D119 A deduction says nothing about why, and none reveals union membership.**
+- **WPM-D120 Progression readiness reports evidence; a person moves the step.**
+- **WPM-D121 Stress is assessed in the work, not recorded in the person** ([absence-and-line-managers.md](absence-and-line-managers.md),
+  as are D122 to D124).
+- **WPM-D122 A review point starts a conversation and never acts; no Bradford factor.**
+- **WPM-D123 A certificate and an occupational health report are evidence held elsewhere.**
+- **WPM-D124 A manager gets a to-do list, not a file.** No free-text notes about a person.
+- **WPM-D125 No label, ever** ([disability-and-adjustments.md](disability-and-adjustments.md), as are D126 and D127).
+- **WPM-D126 The person owns disclosure.**
+- **WPM-D127 Adjust the rule, not the record.**
+- **WPM-D128 Readiness is a judgement shown with its evidence, never a computed score**
+  ([succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md), as are D129 to D132).
+- **WPM-D129 A successor is told, by the software, every time.** No confidential plans; the person sees their own entry, not the rank, the other candidates or the incumbent's risk.
+- **WPM-D130 A deputy holds named authority, not the manager's confidences.**
+- **WPM-D131 Acting cover does not fill a vacancy.**
+- **WPM-D132 Acting up is a door to promotion, so who walks through it is counted.**
+- **WPM-D133 The holder, or HR while the holder is unavailable, lets a deputy decide flexible working, and the default is no.**
+  The ABAC operation `flexible_working:decide` permits a deputy only when the grant is `true`; `null`, missing and `false` deny.
+  HR's grant lapses when the holder is available again.
+
 ## 4. Data and privacy summary
 
 | New table | Holds | Personal data? |
@@ -767,6 +851,32 @@ reason; no Svelte 4 syntax, no `any`, no `{@html}`; strict TypeScript; strict `k
 | `credential_issuances` | Worker, kind, source entry, issued on, revoked on, SHA-256 of the credential; **not the credential** | Yes (in export; on erasure revoked and cut from the person) |
 | `skill_mappings` | From skill, to skill, confidence, basis, source, who and when | No |
 | `cpd_entries` (new column `skill_pid`) | The skill an entry developed, optional | No (the entry already is personal and is handled as before) |
+| `assignments` (section P) | Worker, position, categories, cost centre, FTE, dates, primary | Yes (employment data; in export; erased) |
+| `category_vocabularies`, `cost_centres`, `coding_structures`, `subjective_rules` | Codes, labels, sources, rules | No |
+| `positions` (new column `number`) | A position number | No |
+| `prior_service_periods` | Person, dates, basis, recorded by | Yes (HR; in export; erased) |
+| `workers` (new column `date_of_birth`) | Date of birth | Yes (person, HR and payroll; never scored; in export; erased) |
+| `learning_requirements`, `learning_completions` | Subject, basis, refresher, audience; worker, requirement, date, source | Completions yes (in export; erased) |
+| `qualifications` | Worker, kind, title, body, level, dates, verified by, evidence reference; no certificate | Yes (in export; erased) |
+| `reviews` (new columns `kind`, sign-offs), `padr_versions` | PADR content and signatures | Yes (high; in export; scrubbed on erasure) |
+| `formal_process_flags` | Worker, live yes/no, date; no detail | Yes (HR-only; in export; erased) |
+| `payroll_details` | Payroll number, frequency, tax code, NI category, starter declaration, provider reference; **no bank details or NI number** | Yes (highest; payroll, HR, self) |
+| `deduction_instructions` | Worker, kind, amount or rate, dates, cap, reference; no reason | Yes (highest; in export; erased) |
+| `pension_schemes`, `pension_tiers`, `pension_memberships` | Scheme and tiers; worker, scheme, status, dates; no opt-out reason | Memberships yes (highest) |
+| `student_loan_plans`, `student_loan_thresholds` | Worker, plan, notice dates; plan, year, threshold, rate, source | Plans yes (highest) |
+| `payslip_queries` | Payslip, comment, status | Yes (self and payroll) |
+| `sickness_certificates` (section Q) | Episode, dates covered, may-be-fit-with-adjustments yes/no; **no content** | Yes (health-adjacent; in export; erased) |
+| `return_to_work_conversations`, `absence_reviews` | Dates, held by, support offered, actions, outcome | Yes (in export; scrubbed on erasure) |
+| `keeping_in_touch_plans`, `phased_return_plans` | Frequency, method, contact dates; weekly pattern | Yes (in export; erased) |
+| `oh_referrals` | Status, consent, dates, work questions; **no advice** | Yes (in export; erased) |
+| `stress_risk_assessments` | Six areas, concern level, actions; no symptom | Yes (content-tier; scrubbed on erasure) |
+| `adjustment_passports`, `passport_shares` (section R) | The person's words; who it is shared with, when | Yes (person-owned; content-tier; in export; erased) |
+| `working_with_me_profiles` | Preferences and words; visibility | Yes (person-controlled; in export; erased) |
+| `candidate_adjustments` | Three fields as WPM-R33; never scored | Yes (deleted with the application) |
+| `succession_plans` (section S; new columns position, role profile, review date), `succession_candidates` (emergency cover flag) | Links and flags | Yes (as now; **now in the subject-access export**) |
+| `deputyships`, `deputy_scopes`, `unavailability` | Position, deputy, rank, standing or window, accepted, scopes, the holder's flexible-working grant (`null` = no); a holder's day unavailable | Yes (employment data; in export; erased) |
+| `assignments` (kind `acting`, on-hold), `acting_extensions`, `acting_opportunities`, `acting_interests` | Acting period, extent, pay treatment; extensions; an opportunity, who expressed interest, the basis of the choice | Yes (in export; erased) |
+| `support_scheme_applications` | Scheme, status, dates, reference; no amount or report | Yes (person-owned; in export; erased) |
 
 Every one of these updates [domain-model.md](domain-model.md). The named
 key-person list and `post_fundings` update [auth.md](auth.md) and
@@ -801,6 +911,12 @@ else, because the later phases add controllers that should start from the shared
 scope helpers. Then Phase 23 (section N): the regulatory set (R144–R148), then integration
 (R149–R151), then planning depth (R152–R154), then the rest.
 
+For sections P, Q and R (2026-10-27): the spec round (WPM-T309) first; then section P from assignments and categories outward,
+because coding, learning audiences, the action list and pensions read them; then section Q, whose action list (R186) reads P's
+learning, PADR and step readiness; then section R, whose absence adjustment (R193) needs Q's review points. The two screens that
+assemble others, the staff record (R168) and the action list (R186), come last in their sections. Section S follows: succession
+on positions needs assignments (R161); deputies need the action list (R186); acting up needs assignments and pay (R175–R176).
+
 ## 6. Open questions
 
 - Should oversight readiness (C) live in WPM, or in project-portfolio-management
@@ -830,6 +946,17 @@ scope helpers. Then Phase 23 (section N): the regulatory set (R144–R148), then
   SCIM also accept the identity provider's inbound feed, or only push?
 - Section O: should audit writes outside a transaction be fixed controller by controller, or should
   `Audit::record` stop accepting a bare connection so the compiler finds every one?
+
+- Sections P to R: is date of birth in WPM (WPM-D114) acceptable, or should pension eligibility be a recorded fact from the payroll
+  provider so WPM holds no date of birth at all? Should a payslip query allow attachments? Which jurisdictions beyond the UK should
+  the deduction configuration be checked against first?
+- Section P: should a costing split of one assignment across cost centres be added (it is a split of pay, not of time), and
+  should the worker row's department, title and FTE columns later be retired in favour of the primary assignment?
+- Section Q: should "related to work" on an episode be offered at all, or should the stress risk assessment simply be offered
+  after every episode? Who writes the generic guidance pages, and who reviews them before a deployer relies on them?
+- Section R: is the HR-only count of in-place adjustments in a change's impact view (WPM-D127) the right exception to WPM-D25, or
+  should a change only prompt HR to ask the people in scope?
+
 
 ## 7. Out of scope
 

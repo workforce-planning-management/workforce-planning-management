@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — specification: the electronic staff record, absence and line managers, disability and adjustments, succession, deputies and acting up (WPM-T309)
+
+Proposed, not built: four topic files and Phase 24 (WPM-T310–T344). [`spec/staff-records-and-pay.md`](spec/staff-records-and-pay.md)
+(assignments, coding, annual service, the person-centric record, statutory and mandatory learning, qualifications, the PADR,
+payroll information, deductions, pensions, student loans, my payslips), [`spec/absence-and-line-managers.md`](spec/absence-and-line-managers.md)
+(sickness absence without reasons, return-to-work, review points, occupational health, stress assessed in the work, the manager's
+action list) and [`spec/disability-and-adjustments.md`](spec/disability-and-adjustments.md) (an adjustments passport the person owns,
+absence rules that adjust, candidate adjustments, disability measures from voluntary monitoring only) and [`spec/succession-deputies-and-acting-up.md`](spec/succession-deputies-and-acting-up.md)
+(succession on positions with evidence beside readiness, deputies with scoped authority, acting up with its pay, limits and fairness).
+
 ### Added — a manager's count of team equipment (WPM-T308)
 
 `GET /api/workers/{pid}/team-equipment-count`: how many direct reports hold equipment, from the floor, never which items or who. A panel on `/me`.

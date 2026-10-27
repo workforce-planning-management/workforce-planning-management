@@ -57,6 +57,10 @@ criticality / risk / vacancy date / incumbent, and
 or rank. Readiness may move **down** — a bench that can only improve
 on paper would overstate the organisation's cover.
 
+**Proposed (WPM-R197–R200):** plans on positions and role profiles, evidence beside readiness, emergency cover, review dates,
+succession entries in the subject-access export, and slate equality —
+[succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md).
+
 ## Assessments — aptitude, personality, psychometric, selection
 
 WPM records the tests people sit, for hiring and for development.

@@ -59,6 +59,23 @@ applied to HR.
 | equipment issues (WPM-R155) | low — HR writes and lists assets, the worker sees their own issues; a manager sees how many of their team hold equipment, from the floor, never which (WPM-R160) |
 | policy acknowledgements (WPM-R156) | medium — the worker's own; a manager sees counts; HR sees names (audited) |
 | credential issuances, skill mappings (WPM-R157–R158) | low — the worker's own issuances; HR or an administrator may revoke; the issuer key and the revocation list are public by design (WPM-D109); mappings are reference data, read by any signed-in caller, written by HR |
+| assignments, categories, coding, cost centres (WPM-R161–R165) | medium — employment facts; vocabularies and coding rules are reference data; cost per cost centre only to callers who may read salaries |
+| the person-centric record (WPM-R167) | high — the person sees all; a privileged caller sees rows in organizations they can read and, for others, only the service total and that another employment exists (WPM-D113) |
+| date of birth (WPM-R169) | high — the person, HR and payroll; never a manager; never read by scoring (WPM-D114) |
+| statutory and mandatory learning, qualifications (WPM-R170–R171) | medium — the person, their managers by name, HR; roll-ups with the floor |
+| PADR content (WPM-R172) | high — as review content |
+| a formal-process flag (WPM-R173) | high — HR only; yes or no and a date, never what (WPM-D120) |
+| payroll details, deductions, pension membership, student loan plans, payslip queries (WPM-R174–R178) | highest — payroll, HR and the person; no bank details or NI number exist (WPM-D115) |
+| certificates, return-to-work, review points, keeping in touch, phased return (WPM-R179–R182) | high — the person, their managers up the chain, HR; never a reason |
+| occupational health referrals (WPM-R183) | high — the person, the manager who referred, HR; the OH steps need the `occupational_health` attribute; advice is not stored |
+| stress risk assessments (WPM-R184) | high, content-tier — the person, their managers up the chain, HR; reads audited |
+| the manager's action list (WPM-R186) | the manager's own direct reports by name, what is due never why; HR sees counts per manager with the floor |
+| adjustments passport, "working with me" (WPM-R190–R191) | highest for the passport — the person, and only those they share it with, entry by entry (WPM-D126); the profile at the visibility the person sets |
+| candidate adjustments (WPM-R194) | high — the arranging recruiter and HR; **never a scorer** |
+| the count of in-place adjustments in a change's impact (WPM-R192) | HR only, from the floor, no name, no words (WPM-D127) |
+| succession plans and evidence (WPM-R197–R199) | high — HR, as now; the successor reads their own entry (role, readiness, emergency cover, dates, linked development) through `/api/me/succession` and their export, and is notified of it, never the rank, other candidates or the incumbent's risk (WPM-D129); slate equality aggregate with the floor |
+| deputyships (WPM-R201) | low — anyone who can see the position's holder; a deputy's decisions are scoped (WPM-R202) and never reach confidences or pay (WPM-D130); deciding flexible working is the ABAC operation `flexible_working:decide`, permitted to a deputy only when `resource.deputy_may_decide_flexible_working` is `true`, which the holder sets, or HR on the holder's behalf while the holder is unavailable, lapsing on their return (default `null`, denied; WPM-D133) |
+| acting assignments (WPM-R203–R205) | medium — as assignments; the pay treatment is salary-tier; fairness counts with the floor |
 
 Every read of a highest/high-tier record is **audited** (see
 [audit.md](audit.md)).

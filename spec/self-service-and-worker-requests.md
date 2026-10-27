@@ -74,6 +74,9 @@ A worker asks for a different working arrangement; a person decides.
 - The request, its decision and its reasons are the worker's and their manager's and HR's; the audit
   names the event, not the text.
 
+**Proposed (WPM-R202, WPM-D133):** a deputy may decide a flexible working request only when the manager they deputise for has
+granted it, or HR has while that manager is unavailable; the default is no ([succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md)).
+
 ## WPM-R127 — Resignations
 
 A worker logs their intent to resign; a person accepts it.

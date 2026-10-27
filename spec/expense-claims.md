@@ -80,6 +80,6 @@ it; nobody decides their own.*
   nothing pays anyone. Adding approved claims to a payroll run is the natural next step
   and needs a decision on tax treatment per category.
 - **Receipts as files** (only a reference is stored); mileage and per-diem rates;
-  per-category policy limits or budgets; multi-level approval; approval delegation.
+  per-category policy limits or budgets; multi-level approval; approval delegation (proposed as deputies, WPM-R202).
 - A **team view of spend** (a count of one names someone); exports to accounting.
 - Currency conversion: a claim has one currency.

@@ -58,7 +58,21 @@
 - The retention sweep list (`rules::privacy::SOFT_DELETED_TABLES`, 55 tables)
   covers every soft-deleting table, new ones included.
 
+## Proposed data classes (Phase 24, WPM-T309)
+
+- **Date of birth** (WPM-D114) is held for pay and pension only: the person, HR and payroll; aggregate only as age bands with the floor;
+  never an input to a score, a match or a ranking (a test fails if other code names the column); in the export; erased.
+- **Bank details and the national insurance number** are not held (WPM-D115). Tax code, NI category and the other payroll details
+  are highest sensitivity: payroll, HR and the person.
+- **Sickness absence** stays reasonless (WPM-D73). A **fit note** is its dates and one yes/no; an **occupational health referral** is
+  status and consent, and the advice stays with occupational health (WPM-D123). Work-related **stress** is assessed in the work, never
+  recorded as a label (WPM-D121). These are health-adjacent: high sensitivity, in the export, erased or scrubbed with the worker.
+- **Disability** is held nowhere except voluntary equality monitoring (WPM-D74, WPM-D125). The adjustments passport and "working with
+  me" are the person's own, shared only by them (WPM-D126); candidate adjustments are kept from scoring and deleted with the
+  application.
+
 ## AI Act duties of an employer that deploys a high-risk system (WPM-R148, WPM-D103)
+ that deploys a high-risk system (WPM-R148, WPM-D103)
 
 WPM scores people in a few places (the scoring register, [equality-impact/register.md](equality-impact/register.md), WPM-R99).
 Where a deployer uses such a feature as an AI system in employment (Annex III point 4 of Regulation (EU) 2024/1689: recruitment,
