@@ -81,6 +81,9 @@ collections:
               - { name: "payGap", label: "Pay Gap", widget: string, required: false, i18n: true }
               - { name: "payInformation", label: "Pay Information", widget: string, required: false, i18n: true }
               - { name: "aiRegister", label: "Ai Register", widget: string, required: false, i18n: true }
+              - { name: "bargaining", label: "Bargaining", widget: string, required: false, i18n: true }
+              - { name: "consultations", label: "Consultations", widget: string, required: false, i18n: true }
+              - { name: "decisionGates", label: "Decision Gates", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -2069,6 +2072,30 @@ collections:
                 i18n: true
                 fields:
                   - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
+              - name: "bargaining"
+                label: "Bargaining"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
+              - name: "consultations"
+                label: "Consultations"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
+              - name: "decisionGates"
+                label: "Decision Gates"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
           - name: "titles"
             label: "Titles"
             widget: object
@@ -2113,6 +2140,9 @@ collections:
               - { name: "payGap", label: "Pay Gap", widget: string, required: false, i18n: true }
               - { name: "payInformation", label: "Pay Information", widget: string, required: false, i18n: true }
               - { name: "aiRegister", label: "Ai Register", widget: string, required: false, i18n: true }
+              - { name: "bargaining", label: "Bargaining", widget: string, required: false, i18n: true }
+              - { name: "consultations", label: "Consultations", widget: string, required: false, i18n: true }
+              - { name: "decisionGates", label: "Decision Gates", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -3377,6 +3407,7 @@ collections:
               - { name: "record", label: "Record", widget: string, required: false, i18n: true }
               - { name: "recording", label: "Recording", widget: string, required: false, i18n: true }
               - { name: "replace_hint", label: "Replace_hint", widget: string, required: false, i18n: true }
+              - { name: "consultation_ref", label: "Consultation_ref", widget: string, required: false, i18n: true }
           - name: "paging"
             label: "Paging"
             widget: object
@@ -3386,3 +3417,144 @@ collections:
             fields:
               - { name: "showing", label: "Showing", widget: string, required: false, i18n: true }
               - { name: "more", label: "More", widget: string, required: false, i18n: true }
+          - name: "bargaining"
+            label: "Bargaining"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "intro", label: "Intro", widget: text, required: false, i18n: true }
+              - { name: "organization", label: "Organization", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "since", label: "Since", widget: string, required: false, i18n: true }
+              - { name: "contact", label: "Contact", widget: string, required: false, i18n: true }
+              - { name: "unit_count", label: "Unit_count", widget: string, required: false, i18n: true }
+              - { name: "units", label: "Units", widget: string, required: false, i18n: true }
+              - { name: "floor_note", label: "Floor_note", widget: text, required: false, i18n: true }
+              - { name: "units_none", label: "Units_none", widget: string, required: false, i18n: true }
+              - { name: "unit_rules", label: "Unit_rules", widget: text, required: false, i18n: true }
+              - { name: "location", label: "Location", widget: string, required: false, i18n: true }
+              - { name: "employment_type", label: "Employment_type", widget: string, required: false, i18n: true }
+              - { name: "add_unit", label: "Add_unit", widget: string, required: false, i18n: true }
+              - { name: "add_body", label: "Add_body", widget: string, required: false, i18n: true }
+              - { name: "contact_note", label: "Contact_note", widget: string, required: false, i18n: true }
+              - { name: "kind", label: "Kind", widget: string, required: false, i18n: true }
+              - { name: "basis", label: "Basis", widget: string, required: false, i18n: true }
+              - { name: "recognised_on", label: "Recognised_on", widget: string, required: false, i18n: true }
+              - { name: "contact_role", label: "Contact_role", widget: string, required: false, i18n: true }
+              - { name: "covered", label: "Covered", widget: string, required: false, i18n: true }
+              - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
+              - { name: "no_one", label: "No_one", widget: string, required: false, i18n: true }
+              - { name: "pack", label: "Pack", widget: string, required: false, i18n: true }
+              - { name: "pack_logged", label: "Pack_logged", widget: string, required: false, i18n: true }
+              - { name: "pack_under_floor", label: "Pack_under_floor", widget: string, required: false, i18n: true }
+              - { name: "pack_headcount", label: "Pack_headcount", widget: string, required: false, i18n: true }
+              - { name: "pack_withheld", label: "Pack_withheld", widget: string, required: false, i18n: true }
+              - { name: "by_department", label: "By_department", widget: string, required: false, i18n: true }
+              - { name: "by_employment_type", label: "By_employment_type", widget: string, required: false, i18n: true }
+              - { name: "by_pay_band", label: "By_pay_band", widget: string, required: false, i18n: true }
+              - { name: "contingent", label: "Contingent", widget: string, required: false, i18n: true }
+              - { name: "starters", label: "Starters", widget: string, required: false, i18n: true }
+              - { name: "leavers", label: "Leavers", widget: string, required: false, i18n: true }
+              - { name: "vacancies", label: "Vacancies", widget: string, required: false, i18n: true }
+              - { name: "vacancies_unknown", label: "Vacancies_unknown", widget: text, required: false, i18n: true }
+              - { name: "facility", label: "Facility", widget: string, required: false, i18n: true }
+              - { name: "facility_note", label: "Facility_note", widget: text, required: false, i18n: true }
+              - { name: "facility_none", label: "Facility_none", widget: string, required: false, i18n: true }
+              - { name: "minutes_hours", label: "Minutes_hours", widget: string, required: false, i18n: true }
+              - { name: "budget", label: "Budget", widget: string, required: false, i18n: true }
+              - { name: "over_budget", label: "Over_budget", widget: string, required: false, i18n: true }
+              - { name: "facility_total", label: "Facility_total", widget: string, required: false, i18n: true }
+              - { name: "period_start", label: "Period_start", widget: string, required: false, i18n: true }
+              - { name: "period_end", label: "Period_end", widget: string, required: false, i18n: true }
+              - { name: "minutes", label: "Minutes", widget: string, required: false, i18n: true }
+              - { name: "budget_label", label: "Budget_label", widget: string, required: false, i18n: true }
+              - { name: "add_period", label: "Add_period", widget: string, required: false, i18n: true }
+          - name: "consultations"
+            label: "Consultations"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - name: "timeliness"
+                label: "Timeliness"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "nothing_due", label: "Nothing_due", widget: string, required: false, i18n: true }
+                  - { name: "no_fixed_period", label: "No_fixed_period", widget: string, required: false, i18n: true }
+                  - { name: "begun_in_time", label: "Begun_in_time", widget: string, required: false, i18n: true }
+                  - { name: "not_begun", label: "Not_begun", widget: string, required: false, i18n: true }
+                  - { name: "not_begun_and_late", label: "Not_begun_and_late", widget: string, required: false, i18n: true }
+                  - { name: "begun_late", label: "Begun_late", widget: string, required: false, i18n: true }
+              - name: "check"
+                label: "Check"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "inform_representatives_in_writing", label: "Inform_representatives_in_writing", widget: string, required: false, i18n: true }
+                  - { name: "consult_with_a_view_to_agreement", label: "Consult_with_a_view_to_agreement", widget: string, required: false, i18n: true }
+                  - { name: "notify_the_authority", label: "Notify_the_authority", widget: string, required: false, i18n: true }
+                  - { name: "keep_a_record_of_the_consultation", label: "Keep_a_record_of_the_consultation", widget: string, required: false, i18n: true }
+                  - { name: "consult_in_good_time_with_a_view_to_agreement", label: "Consult_in_good_time_with_a_view_to_agreement", widget: string, required: false, i18n: true }
+                  - { name: "give_representatives_the_relevant_information", label: "Give_representatives_the_relevant_information", widget: string, required: false, i18n: true }
+              - { name: "intro", label: "Intro", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "counts", label: "Counts", widget: string, required: false, i18n: true }
+              - { name: "earliest", label: "Earliest", widget: string, required: false, i18n: true }
+              - { name: "began", label: "Began", widget: string, required: false, i18n: true }
+              - { name: "ended", label: "Ended", widget: string, required: false, i18n: true }
+              - { name: "timeline", label: "Timeline", widget: string, required: false, i18n: true }
+              - { name: "may_apply", label: "May_apply", widget: string, required: false, i18n: true }
+              - { name: "nothing_met", label: "Nothing_met", widget: string, required: false, i18n: true }
+              - { name: "evidence", label: "Evidence", widget: string, required: false, i18n: true }
+              - { name: "latest_start", label: "Latest_start", widget: string, required: false, i18n: true }
+              - { name: "latest_notice", label: "Latest_notice", widget: string, required: false, i18n: true }
+              - { name: "confirm_note", label: "Confirm_note", widget: text, required: false, i18n: true }
+              - { name: "began_on", label: "Began_on", widget: string, required: false, i18n: true }
+              - { name: "record_begin", label: "Record_begin", widget: string, required: false, i18n: true }
+              - { name: "outcome", label: "Outcome", widget: string, required: false, i18n: true }
+              - { name: "ended_on", label: "Ended_on", widget: string, required: false, i18n: true }
+              - { name: "record_close", label: "Record_close", widget: string, required: false, i18n: true }
+              - { name: "need_body", label: "Need_body", widget: string, required: false, i18n: true }
+              - { name: "open", label: "Open", widget: string, required: false, i18n: true }
+              - { name: "open_note", label: "Open_note", widget: string, required: false, i18n: true }
+              - { name: "body", label: "Body", widget: string, required: false, i18n: true }
+              - { name: "establishment", label: "Establishment", widget: string, required: false, i18n: true }
+              - { name: "profile", label: "Profile", widget: string, required: false, i18n: true }
+              - { name: "size", label: "Size", widget: string, required: false, i18n: true }
+              - { name: "dismissals", label: "Dismissals", widget: string, required: false, i18n: true }
+              - { name: "termination", label: "Termination", widget: string, required: false, i18n: true }
+              - { name: "topics", label: "Topics", widget: string, required: false, i18n: true }
+              - { name: "document_ref", label: "Document_ref", widget: string, required: false, i18n: true }
+          - name: "gates"
+            label: "Gates"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "intro", label: "Intro", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "check", label: "Check", widget: string, required: false, i18n: true }
+              - { name: "template", label: "Template", widget: string, required: false, i18n: true }
+              - { name: "advice", label: "Advice", widget: string, required: false, i18n: true }
+              - { name: "add", label: "Add", widget: string, required: false, i18n: true }
+              - { name: "change", label: "Change", widget: string, required: false, i18n: true }
+              - { name: "note", label: "Note", widget: string, required: false, i18n: true }
+              - name: "standing"
+                label: "Standing"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "no_gate", label: "No_gate", widget: string, required: false, i18n: true }
+                  - { name: "reference_needed", label: "Reference_needed", widget: text, required: false, i18n: true }
+                  - { name: "reference_given", label: "Reference_given", widget: string, required: false, i18n: true }

@@ -5462,12 +5462,349 @@ export type AiRegisterBody = {
   workers_informed_on?: string;
   log_retention_months?: number;
   retention_note?: string;
+  /** The consultation record for a new or changed score, if there is one. */
+  consultation_pid?: string;
 };
 
 /** Replace what is recorded for a feature; a field left out is cleared. HR and administrators. */
 export function putAiRegisterEntry(
   featureId: string,
   body: AiRegisterBody,
-): Promise<{ pid: string; feature: string }> {
+): Promise<{ pid: string; feature: string; decision_gate: GateCheck }> {
   return api(`/ai-register/${featureId}`, { method: "PUT", body });
+}
+
+export const BODY_KINDS = ["union", "works_council", "staff_forum"] as const;
+export const BODY_BASES = [
+  "voluntary_agreement",
+  "statutory",
+  "other",
+] as const;
+
+/** A body the organization recognises. It has a contact role and no members, representatives or contact person. */
+export type RecognisedBody = {
+  pid: string;
+  organization_ref: string;
+  name: string;
+  kind: string;
+  basis: string;
+  recognised_on: string;
+  contact_role: string;
+  units: number;
+};
+
+/** How many a unit covers: a count from the floor, nothing under it, or no one. */
+export type UnitCoverage =
+  | { kind: "shown"; covered: number }
+  | { kind: "withheld" }
+  | { kind: "no_one" };
+
+export type BargainingUnit = {
+  pid: string;
+  name: string;
+  department: string | null;
+  location: string | null;
+  employment_type: string | null;
+  job_title: string | null;
+  coverage: UnitCoverage;
+};
+
+/** The bodies an organization recognises (HR). */
+export function listRecognisedBodies(
+  organization: string,
+  init?: FetchLike,
+): Promise<{ bodies: RecognisedBody[] }> {
+  return api(
+    `/recognised-bodies?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+export type RecognisedBodyBody = {
+  organization_ref: string;
+  name: string;
+  kind: string;
+  basis: string;
+  recognised_on: string;
+  contact_role: string;
+};
+
+/** Record a recognised body; the contact is a role, never a person. HR. */
+export function createRecognisedBody(
+  body: RecognisedBodyBody,
+): Promise<{ pid: string }> {
+  return api("/recognised-bodies", { method: "POST", body });
+}
+
+/** A body's bargaining units, each with its coverage counted from the floor. HR. */
+export function listBargainingUnits(
+  bodyPid: string,
+  init?: FetchLike,
+): Promise<{
+  body_pid: string;
+  floor: number;
+  derivation: string;
+  units: BargainingUnit[];
+}> {
+  return api(`/recognised-bodies/${bodyPid}/units`, init);
+}
+
+export type BargainingUnitBody = {
+  name: string;
+  department?: string;
+  location?: string;
+  employment_type?: string;
+  job_title?: string;
+};
+
+/** Add a unit: a name and rules over department, location, employment type and job title (at least one). HR. */
+export function addBargainingUnit(
+  bodyPid: string,
+  body: BargainingUnitBody,
+): Promise<{ pid: string }> {
+  return api(`/recognised-bodies/${bodyPid}/units`, { method: "POST", body });
+}
+
+export const CONSULTATION_PROFILES = [
+  "great_britain",
+  "eu_directive_98_59",
+] as const;
+export const CONSULTATION_TOPICS = [
+  "redundancy",
+  "restructuring",
+  "transfer",
+  "pay",
+  "working_time",
+  "other",
+] as const;
+export const CONSULTATION_OUTCOMES = [
+  "agreed",
+  "no_agreement",
+  "withdrawn",
+] as const;
+
+/** A consultation record: counts, dates and a document reference. No attendee, representative or minutes. */
+export type Consultation = {
+  pid: string;
+  organization_ref: string;
+  body_pid: string;
+  plan_pid: string | null;
+  establishment: string;
+  profile: string;
+  establishment_size: number;
+  dismissals: number;
+  earliest_termination_on: string;
+  topics: string[];
+  document_ref: string | null;
+  started_on: string | null;
+  ended_on: string | null;
+  outcome: string;
+  agreement_pid: string | null;
+};
+
+export type Timeliness =
+  | { kind: "nothing_due" | "no_fixed_period" | "begun_in_time" }
+  | { kind: "not_begun"; days_left: number }
+  | { kind: "not_begun_and_late" | "begun_late"; days_late: number };
+
+export type ConsultationTimeline = {
+  consultation: Consultation;
+  assessment: {
+    profile: string;
+    source: string;
+    may_apply: boolean;
+    evidence: { counted: number; needed: number; window_days: number };
+    consultation_days: number | null;
+    latest_consultation_start: string | null;
+    latest_authority_notice: string | null;
+    days_remaining: number | null;
+    already_late: boolean;
+    checklist: string[];
+    agreed_period_days: number | null;
+    deployer_to_confirm: string;
+  };
+  timeliness: Timeliness;
+  derivation: string;
+};
+
+/** The consultation register (HR). */
+export function listConsultations(
+  organization: string,
+  init?: FetchLike,
+): Promise<{ consultations: Consultation[] }> {
+  return api(
+    `/consultations?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+export type ConsultationBody = {
+  body_pid: string;
+  establishment: string;
+  profile: string;
+  establishment_size: number;
+  dismissals: number;
+  earliest_termination_on: string;
+  topics: string[];
+  document_ref?: string;
+};
+
+/** Open a record for a proposal: counts, a date, topics and a document reference. HR. */
+export function openConsultation(
+  body: ConsultationBody,
+): Promise<{ pid: string }> {
+  return api("/consultations", { method: "POST", body });
+}
+
+/** Record the day consultation began (once, not in the future). HR. */
+export function beginConsultation(
+  pid: string,
+  body: { started_on: string; document_ref?: string },
+): Promise<{ pid: string }> {
+  return api(`/consultations/${pid}/begin`, { method: "POST", body });
+}
+
+/** End a consultation: agreed, no agreement or withdrawn. HR. */
+export function closeConsultation(
+  pid: string,
+  body: { outcome: string; ended_on: string },
+): Promise<{ pid: string }> {
+  return api(`/consultations/${pid}/close`, { method: "POST", body });
+}
+
+/** The record with the pure rules read over it: a suggestion with its evidence, never a verdict. HR. */
+export function consultationTimeline(
+  pid: string,
+  init?: FetchLike,
+): Promise<ConsultationTimeline> {
+  return api(`/consultations/${pid}/timeline`, init);
+}
+
+/** A count from the floor, or withheld (under it, or hidden so another cannot be worked out). */
+export type PackCell = { kind: "shown"; count: number } | { kind: "withheld" };
+
+export type PackGroup = {
+  group: string;
+  headcount: PackCell;
+  fte_hundredths: number | null;
+};
+
+export type InformationPack = {
+  unit_pid: string;
+  floor: number;
+  derivation: string;
+  pack: {
+    as_of: string;
+    headcount: number | null;
+    by_department: PackGroup[];
+    by_employment_type: PackGroup[];
+    by_pay_band: PackGroup[];
+    starters_last_year: PackCell;
+    leavers_last_year: PackCell;
+    contingent: PackGroup[];
+  };
+  vacancies:
+    { kind: "shown"; open_posts: number } | { kind: "unknown"; reason: string };
+};
+
+/** The aggregates a body bargains on. Reading it is the disclosure, and the service logs it. HR. */
+export function readInformationPack(
+  unitPid: string,
+  init?: FetchLike,
+): Promise<InformationPack> {
+  return api(`/bargaining-units/${unitPid}/information-pack`, init);
+}
+
+export type FacilityPeriod = {
+  pid: string;
+  period_start: string;
+  period_end: string;
+  minutes: number;
+  hours: number | string;
+  budget_minutes: number | null;
+  over_budget: boolean;
+};
+
+/** Facility time released for a body, per period. Not per person. HR. */
+export function listFacilityTime(
+  bodyPid: string,
+  init?: FetchLike,
+): Promise<{
+  body_pid: string;
+  periods: FacilityPeriod[];
+  total_minutes: number;
+}> {
+  return api(`/recognised-bodies/${bodyPid}/facility-time`, init);
+}
+
+/** Record minutes released for a body over a period; the budget is optional. HR. */
+export function addFacilityTime(
+  bodyPid: string,
+  body: {
+    period_start: string;
+    period_end: string;
+    minutes: number;
+    budget_minutes?: number;
+  },
+): Promise<{ pid: string }> {
+  return api(`/recognised-bodies/${bodyPid}/facility-time`, {
+    method: "POST",
+    body,
+  });
+}
+
+export type DecisionGate = {
+  pid: string;
+  change_kind: string;
+  body_pid: string;
+  note: string | null;
+};
+
+export type GateStanding =
+  | { kind: "no_gate" | "reference_given" }
+  | { kind: "reference_needed"; bodies: number };
+
+export type GateCheck = {
+  change: string;
+  standing: GateStanding;
+  consult: {
+    organization_ref: string;
+    body_pid: string;
+    note: string | null;
+  }[];
+  equality_impact_template: string | null;
+  note: string;
+};
+
+/** The changes that may be gated, and the gates an organization has set. HR. */
+export function listDecisionGates(
+  organization: string,
+  init?: FetchLike,
+): Promise<{ changes: string[]; gates: DecisionGate[] }> {
+  return api(
+    `/decision-gates?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** Point a kind of change at a body to consult. HR. */
+export function createDecisionGate(body: {
+  organization_ref: string;
+  change_kind: string;
+  body_pid: string;
+  note?: string;
+}): Promise<{ pid: string }> {
+  return api("/decision-gates", { method: "POST", body });
+}
+
+/** What a change needs: the bodies to consult, advice and never a block. HR. */
+export function checkDecisionGate(
+  organization: string,
+  change: string,
+  init?: FetchLike,
+): Promise<GateCheck> {
+  return api(
+    `/decision-gates/check?organization=${encodeURIComponent(organization)}&change=${encodeURIComponent(change)}`,
+    init,
+  );
 }

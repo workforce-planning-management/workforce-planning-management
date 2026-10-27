@@ -3486,6 +3486,37 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       `enforcement_expenses` (1 each); `pnpm check` (0/0), `pnpm lint`, `pnpm test` (218). **Not done:** there is no UI for T173–T177 yet, so no screens,
       screenshots or Playwright specs; record-of-processing not updated (the DPIA R15 row already covers bodies and units); `gitleaks` is not installed
       here, `scripts/verify-db-roles.sh`, the Keycloak suite and Playwright were not run; the new locale strings are machine-drafted and need a native review.
+      **Part done (2026-10-27, UI):** `/bargaining` (recognised bodies, a contact role, units as rules, coverage shown as a count, withheld under the floor or
+      "no one"), API client functions, nav entry, 22 strings + title in the 12 full locales (machine-drafted, unreviewed), Playwright spec `bargaining.spec.ts`
+      (2 passed, stubbed API). Ran `pnpm check` (0/0), `pnpm lint`, `pnpm test` (218), `cms-config`. **Still not done:** UI for the consultation register,
+      information pack, facility time and decision gates (T175–T177); no screenshots looked at; the page was not run against the real service; the full
+      Playwright suite, Keycloak suite and `gitleaks` were not run.
+      **Part done (2026-10-27, UI, consultation register):** `/consultations` (open a record, the timeline as a suggestion with its evidence and whether
+      consultation began in time, record the start, close with an outcome), client functions, nav entry, ~45 strings in the 12 full locales (machine-drafted,
+      unreviewed), `consultations.spec.ts` (2 passed, stubbed API). `pnpm check` (0/0), `pnpm lint`, `pnpm test` (218) pass. **Not done:** closing a
+      consultation does not link an agreement from the UI; no plan link; information pack, facility time and decision gates (T176, T177) still have no UI;
+      not run against the real service; no screenshots looked at.
+      **Part done (2026-10-27, UI, information pack, facility time, decision gates):** on `/bargaining` the information pack per unit (withheld cells
+      say so; vacancies say "not shown" for a unit defined by location or employment type; the page says reading is logged) and facility time per body per
+      period with an over-budget flag; new `/decision-gates` (set a gate; a check that advises and names what the change needs). Client functions, nav
+      entry, 38 strings in the 12 full locales (machine-drafted, unreviewed), Playwright specs (7 for the three pages, stubbed API). **Ran:** `pnpm check`
+      (0/0), `pnpm lint`, `pnpm test` (218), the full Playwright suite (246 passed, 19 skipped). **Not done:** not run against the real service; no
+      screenshots looked at; no axe check on the new pages; Keycloak suite and `gitleaks` not run; a native review of the
+      locale strings.
+      **Then:** the AI-register page shows the `decision_gate` pointer after recording a feature and takes an optional consultation record reference (spec extended, 2 passed).
+      Looked at one screenshot (`/bargaining` with a pack and facility time, stubbed data): empty pack sections printed a bare heading, fixed. Known small fault left: the unit count reads "1 units" (no plural forms in the catalogue). Then ran the real service (a throwaway Postgres 18 under Podman, `WPM_REQUIRE_AUTH=0`, auto-migrated) with the new live spec
+      `tests/live/bargaining.spec.ts`: a body, a unit under the floor with its pack, facility time over budget, a consultation with its timeline and its start,
+      and a gate with its check, all against the real API: **passed**. Looked at live screenshots of `/consultations` and `/decision-gates`: the "Body consulted"
+      select showed blank (nothing preselected), fixed and re-run (live and stubbed both pass). **Still not done:** the AI-register pointer was not run live;
+      a pack over a unit with real workers (the floor met) was not exercised live; `/bargaining` live screenshot not looked at; Keycloak
+      (enforcement on, so the HR-only reads are not exercised with real tokens from the UI) and `gitleaks` not run.
+      **Live, second run (2026-10-27):** `tests/live/bargaining-pack.spec.ts` against the real service (throwaway Postgres 18 under Podman, enforcement off):
+      12 workers made through the API, a body, a unit and a gate; the unit shows "12 covered", its pack shows 12 people and "Care: 12" and no name; recording
+      a score on the AI register shows the gate to consult and the equality impact template: **passed**. This closes the live gaps for the pack above the floor
+      and the AI-register pointer. Still not run live: enforcement on (real tokens, Keycloak).
+      **Record of processing (2026-10-27):** row 16 added to `spec/governance/record-of-processing.md` (retention: none, checked by searching the sweep code for these tables; the lawful basis is the deployer's to fill). Not reviewed by a data protection officer.
+      **Accessibility (2026-10-27):** `bargaining-a11y.spec.ts` runs axe (WCAG 2 A and AA) on the three pages with data, a pack, a timeline and a check on screen:
+      no violations. Automated rules only: no keyboard walk-through and no screen reader, and not in dark mode or at phone width.
 
 ## Phase 19 — SFIA and SFIAplus (proposed WPM-R109–R113, WPM-D69, WPM-D70)
 

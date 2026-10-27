@@ -48,7 +48,10 @@
     "payRange": "Posisi gaji",
     "payGap": "Kesenjangan gaji",
     "payInformation": "Permintaan informasi gaji",
-    "aiRegister": "Register AI dan penilaian"
+    "aiRegister": "Register AI dan penilaian",
+    "bargaining": "Perundingan bersama",
+    "consultations": "Konsultasi",
+    "decisionGates": "Gerbang keputusan"
   },
   "pr": {
     "retention": "Retensi",
@@ -1406,6 +1409,15 @@
     },
     "aiRegister": {
       "page_title": "{aiRegister} — WPM"
+    },
+    "bargaining": {
+      "page_title": "{bargaining} — WPM"
+    },
+    "consultations": {
+      "page_title": "{consultations} — WPM"
+    },
+    "decisionGates": {
+      "page_title": "{decisionGates} — WPM"
     }
   },
   "titles": {
@@ -1445,7 +1457,10 @@
     "payRange": "Posisi gaji — WPM",
     "payGap": "Kesenjangan gaji — WPM",
     "payInformation": "Permintaan informasi gaji — WPM",
-    "aiRegister": "Register AI dan penilaian — WPM"
+    "aiRegister": "Register AI dan penilaian — WPM",
+    "bargaining": "Perundingan bersama — WPM",
+    "consultations": "Konsultasi — WPM",
+    "decisionGates": "Gerbang keputusan — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2524,10 +2539,122 @@
     "below_minimum": "Kurang dari {months} bulan yang disebut Pasal 26(6): hukum lain harus menjelaskannya",
     "record": "Catat",
     "recording": "Pencatatan untuk {feature}",
-    "replace_hint": "Ini menggantikan yang tercatat; kolom kosong akan dihapus."
+    "replace_hint": "Ini menggantikan yang tercatat; kolom kosong akan dihapus.",
+    "consultation_ref": "Catatan konsultasi untuk skor baru atau yang diubah (opsional)"
   },
   "paging": {
     "showing": "Menampilkan {shown} dari {total}",
     "more": "Tampilkan lebih banyak"
+  },
+  "bargaining": {
+    "intro": "Serikat pekerja, dewan pekerja, dan forum karyawan yang diakui organisasi ini, beserta kelompok peran yang mereka cakup. Sebuah badan memiliki peran kontak, tidak pernah orang bernama. Tidak ada di sini yang menyebut siapa yang menjadi anggota atau mewakili sebuah badan.",
+    "organization": "Organisasi",
+    "none": "Belum ada badan yang tercatat.",
+    "since": "diakui pada {day}",
+    "contact": "peran kontak: {role}",
+    "unit_count": "{n} unit",
+    "units": "Unit",
+    "floor_note": "Cakupan sebuah unit hanya ditampilkan jika setidaknya {floor} orang tercakup; di bawah itu, tidak ada yang ditampilkan.",
+    "units_none": "Belum ada unit.",
+    "unit_rules": "Unit adalah aturan, bukan daftar orang: isi setidaknya satu dari departemen, lokasi, jenis pekerjaan, atau jabatan.",
+    "location": "Lokasi",
+    "employment_type": "Jenis pekerjaan",
+    "add_unit": "Tambah unit",
+    "add_body": "Catat badan yang diakui",
+    "contact_note": "Isi peran seperti “kepala hubungan karyawan”, bukan nama orang.",
+    "kind": "Jenis",
+    "basis": "Dasar",
+    "recognised_on": "Diakui pada",
+    "contact_role": "Peran kontak",
+    "covered": "{n} tercakup",
+    "withheld": "kurang dari {floor} tercakup: tidak ditampilkan",
+    "no_one": "tidak ada yang tercakup",
+    "pack": "Paket informasi",
+    "pack_logged": "Membacanya adalah pengungkapan dan dicatat: siapa, unit mana, kapan.",
+    "pack_under_floor": "Unit ini mencakup kurang dari {floor} orang, jadi tidak ada yang ditampilkan.",
+    "pack_headcount": "{n} orang tercakup, per {day}",
+    "pack_withheld": "disembunyikan (di bawah {floor})",
+    "by_department": "Menurut departemen",
+    "by_employment_type": "Menurut jenis pekerjaan",
+    "by_pay_band": "Menurut pita gaji",
+    "contingent": "Bukan tetap",
+    "starters": "Karyawan baru setahun terakhir",
+    "leavers": "Karyawan keluar setahun terakhir",
+    "vacancies": "{n} posisi terbuka",
+    "vacancies_unknown": "Tidak ditampilkan: unit ini ditentukan oleh lokasi atau jenis pekerjaan, yang tidak dimiliki lowongan.",
+    "facility": "Waktu fasilitas",
+    "facility_note": "Menit yang dibebaskan bagi badan untuk tugas perwakilan, per periode. Bukan per orang: tidak ada yang disebut namanya.",
+    "facility_none": "Belum ada waktu fasilitas tercatat.",
+    "minutes_hours": "{minutes} mnt ({hours} jam)",
+    "budget": "anggaran {minutes} mnt",
+    "over_budget": "melebihi anggaran",
+    "facility_total": "Total: {minutes} menit",
+    "period_start": "Awal periode",
+    "period_end": "Akhir periode",
+    "minutes": "Menit yang dibebaskan",
+    "budget_label": "Anggaran dalam menit (opsional)",
+    "add_period": "Catat periode"
+  },
+  "consultations": {
+    "timeliness": {
+      "nothing_due": "Tidak ada yang jatuh tempo: tidak ada ambang terpenuhi",
+      "no_fixed_period": "Profil tidak menetapkan jangka waktu: lihat tanggal pemberitahuan",
+      "begun_in_time": "Konsultasi dimulai tepat waktu",
+      "not_begun": "Belum dimulai: sisa {n} hari untuk memulai",
+      "not_begun_and_late": "Belum dimulai dan terlambat {n} hari",
+      "begun_late": "Dimulai terlambat {n} hari"
+    },
+    "check": {
+      "inform_representatives_in_writing": "Beri tahu perwakilan secara tertulis",
+      "consult_with_a_view_to_agreement": "Berkonsultasi dengan tujuan mencapai kesepakatan",
+      "notify_the_authority": "Beri tahu otoritas",
+      "keep_a_record_of_the_consultation": "Simpan catatan konsultasi",
+      "consult_in_good_time_with_a_view_to_agreement": "Berkonsultasi tepat waktu dengan tujuan mencapai kesepakatan",
+      "give_representatives_the_relevant_information": "Berikan perwakilan informasi yang relevan"
+    },
+    "intro": "Satu catatan per usulan yang dapat memicu kewajiban kolektif: badan yang dikonsultasikan, angka dan tanggal, topik, rujukan ke dokumen, serta kapan konsultasi dimulai dan berakhir. Tidak pernah siapa yang hadir, siapa mewakili siapa, atau apa yang dikatakan.",
+    "none": "Belum ada konsultasi yang tercatat.",
+    "counts": "{size} di lokasi kerja, {dismissals} diusulkan",
+    "earliest": "pemutusan paling awal {day}",
+    "began": "dimulai {day}",
+    "ended": "berakhir {day}",
+    "timeline": "Lini masa",
+    "may_apply": "Kewajiban kolektif mungkin berlaku",
+    "nothing_met": "Tidak ada ambang yang terpenuhi",
+    "evidence": "bukti: {counted} terhitung, {needed} diperlukan dalam {days} hari",
+    "latest_start": "Hari terakhir untuk memulai konsultasi: {day}",
+    "latest_notice": "Hari terakhir untuk memberi tahu otoritas: {day}",
+    "confirm_note": "Saran beserta buktinya, bukan putusan. Penyelenggara mengonfirmasi ambang yang berlaku.",
+    "began_on": "Konsultasi dimulai pada",
+    "record_begin": "Catat dimulainya",
+    "outcome": "Hasil",
+    "ended_on": "Konsultasi berakhir pada",
+    "record_close": "Tutup konsultasi",
+    "need_body": "Catat dahulu badan yang diakui (lihat Perundingan bersama).",
+    "open": "Buka konsultasi",
+    "open_note": "Hanya angka dan tanggal: tidak ada tentang siapa yang terdampak atau hadir.",
+    "body": "Badan yang dikonsultasikan",
+    "establishment": "Lokasi kerja",
+    "profile": "Ambang yang dipakai",
+    "size": "Biasanya dipekerjakan di lokasi kerja",
+    "dismissals": "Pemutusan yang diusulkan",
+    "termination": "Tanggal pemutusan paling awal",
+    "topics": "Topik",
+    "document_ref": "Rujukan ke dokumen yang dibagikan"
+  },
+  "gates": {
+    "intro": "Jenis perubahan mana yang menunjuk badan mana untuk dikonsultasikan. Pemeriksaan hanya menyarankan; tidak pernah memblokir. Apakah konsultasi wajib ditentukan oleh hukum dan perjanjian Anda.",
+    "none": "Belum ada gerbang.",
+    "check": "Periksa",
+    "template": "Lihat templat dampak kesetaraan: {section}",
+    "advice": "Saran, bukan pemblokiran.",
+    "add": "Tetapkan gerbang",
+    "change": "Jenis perubahan",
+    "note": "Catatan (opsional)",
+    "standing": {
+      "no_gate": "Tidak ada gerbang untuk jenis perubahan ini.",
+      "reference_needed": "{n} badan untuk dikonsultasikan: catat rujukan konsultasi bersama perubahan.",
+      "reference_given": "Rujukan konsultasi telah diberikan. WPM tidak menilai apakah itu cukup."
+    }
   }
 }

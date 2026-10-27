@@ -48,7 +48,10 @@
     "payRange": "Position salariale",
     "payGap": "Écart de rémunération",
     "payInformation": "Demandes d'information salariale",
-    "aiRegister": "Registre de l'IA et des scores"
+    "aiRegister": "Registre de l'IA et des scores",
+    "bargaining": "Négociation collective",
+    "consultations": "Procédures de consultation",
+    "decisionGates": "Points de décision"
   },
   "pr": {
     "retention": "Conservation",
@@ -1406,6 +1409,15 @@
     },
     "aiRegister": {
       "page_title": "{aiRegister} — WPM"
+    },
+    "bargaining": {
+      "page_title": "{bargaining} — WPM"
+    },
+    "consultations": {
+      "page_title": "{consultations} — WPM"
+    },
+    "decisionGates": {
+      "page_title": "{decisionGates} — WPM"
     }
   },
   "titles": {
@@ -1445,7 +1457,10 @@
     "payRange": "Position salariale — WPM",
     "payGap": "Écart de rémunération — WPM",
     "payInformation": "Demandes d'information salariale — WPM",
-    "aiRegister": "Registre de l'IA et des scores — WPM"
+    "aiRegister": "Registre de l'IA et des scores — WPM",
+    "bargaining": "Négociation collective — WPM",
+    "consultations": "Procédures de consultation — WPM",
+    "decisionGates": "Points de décision — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2524,10 +2539,122 @@
     "below_minimum": "Moins que les {months} mois de l'article 26, paragraphe 6 : une autre loi doit l'expliquer",
     "record": "Renseigner",
     "recording": "Saisie pour {feature}",
-    "replace_hint": "Ceci remplace ce qui est consigné ; un champ laissé vide est effacé."
+    "replace_hint": "Ceci remplace ce qui est consigné ; un champ laissé vide est effacé.",
+    "consultation_ref": "Fiche de consultation pour un score nouveau ou modifié (facultatif)"
   },
   "paging": {
     "showing": "{shown} affichés sur {total}",
     "more": "Afficher plus"
+  },
+  "bargaining": {
+    "intro": "Les syndicats, comités d'entreprise et forums du personnel que cette organisation reconnaît, et les groupes de postes qu'ils couvrent. Une instance a un rôle de contact, jamais une personne nommée. Rien ici n'indique qui appartient à une instance ou la représente.",
+    "organization": "Organisation",
+    "none": "Aucune instance enregistrée pour l'instant.",
+    "since": "reconnue le {day}",
+    "contact": "rôle de contact : {role}",
+    "unit_count": "{n} unités",
+    "units": "Unités",
+    "floor_note": "La couverture d'une unité n'est affichée que si au moins {floor} personnes sont couvertes ; en dessous, rien n'est affiché.",
+    "units_none": "Aucune unité pour l'instant.",
+    "unit_rules": "Une unité est une règle, pas une liste de personnes : indiquez au moins le service, le lieu, le type d'emploi ou l'intitulé du poste.",
+    "location": "Lieu",
+    "employment_type": "Type d'emploi",
+    "add_unit": "Ajouter une unité",
+    "add_body": "Enregistrer une instance reconnue",
+    "contact_note": "Indiquez un rôle, par exemple « responsable des relations sociales », pas le nom d'une personne.",
+    "kind": "Type",
+    "basis": "Fondement",
+    "recognised_on": "Reconnue le",
+    "contact_role": "Rôle de contact",
+    "covered": "{n} couvertes",
+    "withheld": "moins de {floor} couvertes : non affiché",
+    "no_one": "personne n'est couvert",
+    "pack": "Dossier d'information",
+    "pack_logged": "Le lire est une divulgation, et elle est consignée : qui, quelle unité, quand.",
+    "pack_under_floor": "Cette unité couvre moins de {floor} personnes : rien n'est affiché.",
+    "pack_headcount": "{n} personnes couvertes, au {day}",
+    "pack_withheld": "masqué (sous {floor})",
+    "by_department": "Par service",
+    "by_employment_type": "Par type d'emploi",
+    "by_pay_band": "Par échelon de rémunération",
+    "contingent": "Non permanents",
+    "starters": "Arrivées sur la dernière année",
+    "leavers": "Départs sur la dernière année",
+    "vacancies": "{n} postes ouverts",
+    "vacancies_unknown": "Non affiché : cette unité est définie par le lieu ou le type d'emploi, que ne porte pas un poste vacant.",
+    "facility": "Heures de délégation",
+    "facility_note": "Minutes accordées à l'instance pour ses fonctions de représentation, par période. Pas par personne : personne n'est nommé.",
+    "facility_none": "Aucune heure de délégation enregistrée.",
+    "minutes_hours": "{minutes} minutes ({hours} h)",
+    "budget": "budget : {minutes} minutes",
+    "over_budget": "dépassement du budget",
+    "facility_total": "Total : {minutes} minutes",
+    "period_start": "Début de la période",
+    "period_end": "Fin de la période",
+    "minutes": "Minutes accordées",
+    "budget_label": "Budget en minutes (facultatif)",
+    "add_period": "Enregistrer la période"
+  },
+  "consultations": {
+    "timeliness": {
+      "nothing_due": "Rien à échéance : aucun seuil atteint",
+      "no_fixed_period": "Le profil ne fixe pas de délai : voir la date de notification",
+      "begun_in_time": "La consultation a commencé à temps",
+      "not_begun": "Non commencée : {n} jours restants pour commencer",
+      "not_begun_and_late": "Non commencée et en retard de {n} jours",
+      "begun_late": "Commencée avec {n} jours de retard"
+    },
+    "check": {
+      "inform_representatives_in_writing": "Informer les représentants par écrit",
+      "consult_with_a_view_to_agreement": "Consulter en vue de parvenir à un accord",
+      "notify_the_authority": "Notifier l'autorité",
+      "keep_a_record_of_the_consultation": "Conserver une trace de la consultation",
+      "consult_in_good_time_with_a_view_to_agreement": "Consulter en temps utile en vue de parvenir à un accord",
+      "give_representatives_the_relevant_information": "Fournir aux représentants les informations pertinentes"
+    },
+    "intro": "Une fiche par projet pouvant déclencher une obligation collective : l'instance consultée, des chiffres et des dates, les sujets, une référence aux documents, et le début et la fin de la consultation. Jamais qui a assisté, qui représentait qui, ni ce qui a été dit.",
+    "none": "Aucune consultation enregistrée pour l'instant.",
+    "counts": "{size} dans l'établissement, {dismissals} prévus",
+    "earliest": "première rupture {day}",
+    "began": "commencée le {day}",
+    "ended": "terminée le {day}",
+    "timeline": "Chronologie",
+    "may_apply": "Une obligation collective peut s'appliquer",
+    "nothing_met": "Aucun seuil n'est atteint",
+    "evidence": "preuve : {counted} comptés, {needed} requis sur {days} jours",
+    "latest_start": "Dernier jour pour commencer la consultation : {day}",
+    "latest_notice": "Dernier jour pour notifier l'autorité : {day}",
+    "confirm_note": "Une suggestion avec sa preuve, pas un verdict. L'exploitant confirme les seuils applicables.",
+    "began_on": "La consultation a commencé le",
+    "record_begin": "Enregistrer le début",
+    "outcome": "Issue",
+    "ended_on": "La consultation s'est terminée le",
+    "record_close": "Clore la consultation",
+    "need_body": "Enregistrez d'abord une instance reconnue (voir Négociation collective).",
+    "open": "Ouvrir une consultation",
+    "open_note": "Seulement des chiffres et des dates : rien sur les personnes concernées ou présentes.",
+    "body": "Instance consultée",
+    "establishment": "Établissement",
+    "profile": "Seuils utilisés",
+    "size": "Effectif habituel de l'établissement",
+    "dismissals": "Licenciements prévus",
+    "termination": "Date de rupture la plus proche",
+    "topics": "Sujets",
+    "document_ref": "Référence aux documents communiqués"
+  },
+  "gates": {
+    "intro": "Quel type de changement renvoie à quelle instance à consulter. Un contrôle conseille, il ne bloque jamais. La loi et vos accords disent si la consultation est obligatoire.",
+    "none": "Aucun point de décision défini.",
+    "check": "Contrôler",
+    "template": "Voir le modèle d'analyse d'impact sur l'égalité : {section}",
+    "advice": "Un conseil, pas un blocage.",
+    "add": "Définir un point de décision",
+    "change": "Type de changement",
+    "note": "Note (facultatif)",
+    "standing": {
+      "no_gate": "Aucun point de décision n'est défini pour ce type de changement.",
+      "reference_needed": "{n} instance(s) à consulter : joignez la référence de la consultation au changement.",
+      "reference_given": "Une référence de consultation a été fournie. WPM ne juge pas si elle suffit."
+    }
   }
 }

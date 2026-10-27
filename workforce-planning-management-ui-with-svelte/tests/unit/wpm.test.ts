@@ -421,6 +421,21 @@ describe("api path map", () => {
     await wpm.acknowledgeEarlyWarning("w1");
     await wpm.listDevelopmentPlans("w1");
     await wpm.setDevelopmentItemStatus("i1", "achieved");
+    await wpm.listRecognisedBodies("organization:abc");
+    await wpm.createRecognisedBody({ organization_ref: "organization:abc", name: "n", kind: "union", basis: "other", recognised_on: "2026-01-01", contact_role: "r" });
+    await wpm.listBargainingUnits("b1");
+    await wpm.addBargainingUnit("b1", { name: "u", department: "Care" });
+    await wpm.listConsultations("organization:abc");
+    await wpm.openConsultation({ body_pid: "b1", establishment: "e", profile: "great_britain", establishment_size: 100, dismissals: 20, earliest_termination_on: "2027-01-01", topics: ["pay"] });
+    await wpm.beginConsultation("c1", { started_on: "2026-10-01" });
+    await wpm.closeConsultation("c1", { outcome: "agreed", ended_on: "2026-10-20" });
+    await wpm.consultationTimeline("c1");
+    await wpm.readInformationPack("u1");
+    await wpm.listFacilityTime("b1");
+    await wpm.addFacilityTime("b1", { period_start: "2026-01-01", period_end: "2026-03-31", minutes: 600 });
+    await wpm.listDecisionGates("organization:abc");
+    await wpm.createDecisionGate({ organization_ref: "organization:abc", change_kind: "other", body_pid: "b1" });
+    await wpm.checkDecisionGate("organization:abc", "other");
     expect(calls).toEqual([
       "/api/proxy/workers?department=engineering",
       "/api/proxy/workers/p1",
@@ -628,6 +643,21 @@ describe("api path map", () => {
       "/api/proxy/early-warnings/w1/acknowledge",
       "/api/proxy/workers/w1/development-plans",
       "/api/proxy/development-plan-items/i1",
+      "/api/proxy/recognised-bodies?organization=organization%3Aabc",
+      "/api/proxy/recognised-bodies",
+      "/api/proxy/recognised-bodies/b1/units",
+      "/api/proxy/recognised-bodies/b1/units",
+      "/api/proxy/consultations?organization=organization%3Aabc",
+      "/api/proxy/consultations",
+      "/api/proxy/consultations/c1/begin",
+      "/api/proxy/consultations/c1/close",
+      "/api/proxy/consultations/c1/timeline",
+      "/api/proxy/bargaining-units/u1/information-pack",
+      "/api/proxy/recognised-bodies/b1/facility-time",
+      "/api/proxy/recognised-bodies/b1/facility-time",
+      "/api/proxy/decision-gates?organization=organization%3Aabc",
+      "/api/proxy/decision-gates",
+      "/api/proxy/decision-gates/check?organization=organization%3Aabc&change=other",
     ]);
     vi.unstubAllGlobals();
   });

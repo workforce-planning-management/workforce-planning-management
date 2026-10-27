@@ -48,7 +48,10 @@
     "payRange": "薪酬定位",
     "payGap": "薪酬差距",
     "payInformation": "薪酬信息请求",
-    "aiRegister": "人工智能与评分登记册"
+    "aiRegister": "人工智能与评分登记册",
+    "bargaining": "集体谈判",
+    "consultations": "磋商",
+    "decisionGates": "决策关口"
   },
   "pr": {
     "retention": "保留",
@@ -1406,6 +1409,15 @@
     },
     "aiRegister": {
       "page_title": "{aiRegister} — WPM"
+    },
+    "bargaining": {
+      "page_title": "{bargaining} — WPM"
+    },
+    "consultations": {
+      "page_title": "{consultations} — WPM"
+    },
+    "decisionGates": {
+      "page_title": "{decisionGates} — WPM"
     }
   },
   "titles": {
@@ -1445,7 +1457,10 @@
     "payRange": "薪酬定位 — WPM",
     "payGap": "薪酬差距 — WPM",
     "payInformation": "薪酬信息请求 — WPM",
-    "aiRegister": "人工智能与评分登记册 — WPM"
+    "aiRegister": "人工智能与评分登记册 — WPM",
+    "bargaining": "集体谈判 — WPM",
+    "consultations": "磋商 — WPM",
+    "decisionGates": "决策关口 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -2524,10 +2539,122 @@
     "below_minimum": "低于第 26(6) 条所述的 {months} 个月：须由其他法律解释",
     "record": "记录",
     "recording": "记录 {feature}",
-    "replace_hint": "这将替换已记录的内容；留空的字段将被清除。"
+    "replace_hint": "这将替换已记录的内容；留空的字段将被清除。",
+    "consultation_ref": "新增或变更评分的磋商记录（可选）"
   },
   "paging": {
     "showing": "显示 {shown} / {total}",
     "more": "显示更多"
+  },
+  "bargaining": {
+    "intro": "本组织承认的工会、职工委员会和员工论坛，以及它们所覆盖的岗位群体。每个机构只有联系角色，绝不记录具名个人。此处不显示谁属于某个机构或代表它。",
+    "organization": "组织",
+    "none": "尚未记录任何机构。",
+    "since": "承认日期：{day}",
+    "contact": "联系角色：{role}",
+    "unit_count": "{n} 个单元",
+    "units": "单元",
+    "floor_note": "仅当至少覆盖 {floor} 人时才显示单元的覆盖人数；低于此数则不显示任何内容。",
+    "units_none": "暂无单元。",
+    "unit_rules": "单元是一条规则，而不是人员名单：请至少填写部门、地点、雇佣类型或职位之一。",
+    "location": "地点",
+    "employment_type": "雇佣类型",
+    "add_unit": "添加单元",
+    "add_body": "记录已承认的机构",
+    "contact_note": "请填写角色，例如“员工关系负责人”，而不是个人姓名。",
+    "kind": "类型",
+    "basis": "依据",
+    "recognised_on": "承认日期",
+    "contact_role": "联系角色",
+    "covered": "覆盖 {n} 人",
+    "withheld": "覆盖少于 {floor} 人：不显示",
+    "no_one": "无人被覆盖",
+    "pack": "信息包",
+    "pack_logged": "读取即披露，并会被记录：谁、哪个单元、何时。",
+    "pack_under_floor": "该单元覆盖不足 {floor} 人，因此不显示任何内容。",
+    "pack_headcount": "覆盖 {n} 人，截至 {day}",
+    "pack_withheld": "已隐藏（少于 {floor}）",
+    "by_department": "按部门",
+    "by_employment_type": "按雇佣类型",
+    "by_pay_band": "按薪级",
+    "contingent": "非长期",
+    "starters": "过去一年入职",
+    "leavers": "过去一年离职",
+    "vacancies": "{n} 个空缺岗位",
+    "vacancies_unknown": "不显示：该单元按地点或雇佣类型定义，而空缺岗位不含这些信息。",
+    "facility": "工会工时",
+    "facility_note": "每个期间释放给该机构履行代表职责的分钟数。不按个人：不点名任何人。",
+    "facility_none": "尚无工会工时记录。",
+    "minutes_hours": "{minutes} 分钟（{hours} 小时）",
+    "budget": "预算 {minutes} 分钟",
+    "over_budget": "超出预算",
+    "facility_total": "合计：{minutes} 分钟",
+    "period_start": "期间开始",
+    "period_end": "期间结束",
+    "minutes": "释放的分钟数",
+    "budget_label": "预算分钟数（可选）",
+    "add_period": "记录该期间"
+  },
+  "consultations": {
+    "timeliness": {
+      "nothing_due": "无到期事项：未达到任何门槛",
+      "no_fixed_period": "该规则未设固定期限：请看通知日期",
+      "begun_in_time": "磋商按时开始",
+      "not_begun": "尚未开始：距开始还剩 {n} 天",
+      "not_begun_and_late": "尚未开始，已逾期 {n} 天",
+      "begun_late": "迟 {n} 天开始"
+    },
+    "check": {
+      "inform_representatives_in_writing": "书面通知代表",
+      "consult_with_a_view_to_agreement": "以达成协议为目的进行磋商",
+      "notify_the_authority": "通知主管机关",
+      "keep_a_record_of_the_consultation": "保存磋商记录",
+      "consult_in_good_time_with_a_view_to_agreement": "及时以达成协议为目的进行磋商",
+      "give_representatives_the_relevant_information": "向代表提供相关信息"
+    },
+    "intro": "每项可能引发集体义务的提案一条记录：被磋商的机构、数字与日期、主题、文件的引用，以及磋商的开始和结束。绝不记录谁出席、谁代表谁或谈了什么。",
+    "none": "尚无磋商记录。",
+    "counts": "场所内 {size} 人，拟裁 {dismissals} 人",
+    "earliest": "最早终止日期 {day}",
+    "began": "开始于 {day}",
+    "ended": "结束于 {day}",
+    "timeline": "时间线",
+    "may_apply": "可能适用集体义务",
+    "nothing_met": "未达到任何门槛",
+    "evidence": "依据：已计 {counted}，{days} 天内需 {needed}",
+    "latest_start": "开始磋商的最后一天：{day}",
+    "latest_notice": "通知主管机关的最后一天：{day}",
+    "confirm_note": "这是附带依据的建议，不是裁决。适用哪些门槛由部署方确认。",
+    "began_on": "磋商开始于",
+    "record_begin": "记录开始",
+    "outcome": "结果",
+    "ended_on": "磋商结束于",
+    "record_close": "结束磋商",
+    "need_body": "请先记录一个已承认的机构（见“集体谈判”）。",
+    "open": "开启磋商",
+    "open_note": "仅有数字和日期：不涉及谁受影响或谁出席。",
+    "body": "被磋商的机构",
+    "establishment": "场所",
+    "profile": "所用门槛",
+    "size": "场所通常雇用人数",
+    "dismissals": "拟裁人数",
+    "termination": "最早终止日期",
+    "topics": "主题",
+    "document_ref": "所提供文件的引用"
+  },
+  "gates": {
+    "intro": "哪类变更指向哪个需磋商的机构。检查只提供建议，从不阻止。是否必须磋商由法律和你们的协议决定。",
+    "none": "尚未设置关口。",
+    "check": "检查",
+    "template": "参见平等影响模板：{section}",
+    "advice": "建议，而非阻止。",
+    "add": "设置关口",
+    "change": "变更类型",
+    "note": "备注（可选）",
+    "standing": {
+      "no_gate": "此类变更未设置关口。",
+      "reference_needed": "需磋商 {n} 个机构：请将磋商引用与变更一并记录。",
+      "reference_given": "已提供磋商引用。WPM 不判断其是否足够。"
+    }
   }
 }

@@ -48,7 +48,10 @@
     "payRange": "Safle cyflog",
     "payGap": "Bwlch cyflog",
     "payInformation": "Ceisiadau am wybodaeth cyflog",
-    "aiRegister": "Cofrestr AI a sgorio"
+    "aiRegister": "Cofrestr AI a sgorio",
+    "bargaining": "Bargeinio ar y cyd",
+    "consultations": "Ymgynghoriadau",
+    "decisionGates": "Pyrth penderfynu"
   },
   "pr": {
     "retention": "Cadw data",
@@ -1406,6 +1409,15 @@
     },
     "aiRegister": {
       "page_title": "{aiRegister} — WPM"
+    },
+    "bargaining": {
+      "page_title": "{bargaining} — WPM"
+    },
+    "consultations": {
+      "page_title": "{consultations} — WPM"
+    },
+    "decisionGates": {
+      "page_title": "{decisionGates} — WPM"
     }
   },
   "titles": {
@@ -1445,7 +1457,10 @@
     "payRange": "Safle cyflog — WPM",
     "payGap": "Bwlch cyflog — WPM",
     "payInformation": "Ceisiadau am wybodaeth cyflog — WPM",
-    "aiRegister": "Cofrestr AI a sgorio — WPM"
+    "aiRegister": "Cofrestr AI a sgorio — WPM",
+    "bargaining": "Bargeinio ar y cyd — WPM",
+    "consultations": "Ymgynghoriadau — WPM",
+    "decisionGates": "Pyrth penderfynu — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -2524,10 +2539,122 @@
     "below_minimum": "Llai na'r {months} mis a nodir yn Erthygl 26(6): rhaid i gyfraith arall ei egluro",
     "record": "Cofnodi",
     "recording": "Cofnodi ar gyfer {feature}",
-    "replace_hint": "Mae hyn yn disodli'r hyn a gofnodwyd; caiff maes gwag ei glirio."
+    "replace_hint": "Mae hyn yn disodli'r hyn a gofnodwyd; caiff maes gwag ei glirio.",
+    "consultation_ref": "Cofnod ymgynghori ar gyfer sgôr newydd neu wedi'i newid (dewisol)"
   },
   "paging": {
     "showing": "Yn dangos {shown} o {total}",
     "more": "Dangos mwy"
+  },
+  "bargaining": {
+    "intro": "Yr undebau, y cynghorau gwaith a'r fforymau staff y mae'r sefydliad hwn yn eu cydnabod, a'r grwpiau o rolau y maent yn eu cwmpasu. Mae gan gorff rôl gyswllt, byth unigolyn a enwir. Nid oes dim yma yn dweud pwy sy'n perthyn i gorff neu'n ei gynrychioli.",
+    "organization": "Sefydliad",
+    "none": "Nid oes corff wedi'i gofnodi eto.",
+    "since": "cydnabuwyd ar {day}",
+    "contact": "rôl gyswllt: {role}",
+    "unit_count": "{n} uned",
+    "units": "Unedau",
+    "floor_note": "Dim ond pan fydd o leiaf {floor} o bobl yn cael eu cwmpasu y dangosir cwmpas uned; o dan hynny, ni ddangosir dim.",
+    "units_none": "Dim unedau eto.",
+    "unit_rules": "Rheol yw uned, nid rhestr o bobl: rhowch o leiaf un o adran, lleoliad, math o gyflogaeth neu deitl swydd.",
+    "location": "Lleoliad",
+    "employment_type": "Math o gyflogaeth",
+    "add_unit": "Ychwanegu uned",
+    "add_body": "Cofnodi corff cydnabyddedig",
+    "contact_note": "Rhowch rôl fel “arweinydd cysylltiadau gweithwyr”, nid enw person.",
+    "kind": "Math",
+    "basis": "Sail",
+    "recognised_on": "Cydnabuwyd ar",
+    "contact_role": "Rôl gyswllt",
+    "covered": "{n} dan sylw",
+    "withheld": "llai na {floor} dan sylw: heb ei ddangos",
+    "no_one": "neb dan sylw",
+    "pack": "Pecyn gwybodaeth",
+    "pack_logged": "Mae ei ddarllen yn ddatgeliad ac fe'i cofnodir: pwy, pa uned, pryd.",
+    "pack_under_floor": "Mae'r uned hon yn cwmpasu llai na {floor} o bobl, felly ni ddangosir dim.",
+    "pack_headcount": "{n} o bobl dan sylw, ar {day}",
+    "pack_withheld": "cuddiwyd (o dan {floor})",
+    "by_department": "Yn ôl adran",
+    "by_employment_type": "Yn ôl math o gyflogaeth",
+    "by_pay_band": "Yn ôl band cyflog",
+    "contingent": "Ddim yn barhaol",
+    "starters": "Dechreuwyr yn y flwyddyn ddiwethaf",
+    "leavers": "Gadawyr yn y flwyddyn ddiwethaf",
+    "vacancies": "{n} swydd agored",
+    "vacancies_unknown": "Heb ei ddangos: diffinnir yr uned hon gan leoliad neu fath o gyflogaeth, nad yw swydd wag yn eu cynnwys.",
+    "facility": "Amser cyfleuster",
+    "facility_note": "Munudau a ryddhawyd i'r corff ar gyfer dyletswyddau cynrychiolu, fesul cyfnod. Nid fesul person: ni enwir neb.",
+    "facility_none": "Dim amser cyfleuster wedi'i gofnodi.",
+    "minutes_hours": "{minutes} munud ({hours} awr)",
+    "budget": "cyllideb {minutes} munud",
+    "over_budget": "dros y gyllideb",
+    "facility_total": "Cyfanswm: {minutes} munud",
+    "period_start": "Dechrau'r cyfnod",
+    "period_end": "Diwedd y cyfnod",
+    "minutes": "Munudau a ryddhawyd",
+    "budget_label": "Cyllideb mewn munudau (dewisol)",
+    "add_period": "Cofnodi'r cyfnod"
+  },
+  "consultations": {
+    "timeliness": {
+      "nothing_due": "Dim yn ddyledus: ni chyrhaeddwyd unrhyw drothwy",
+      "no_fixed_period": "Nid yw'r proffil yn rhoi cyfnod penodol: gweler dyddiad yr hysbysiad",
+      "begun_in_time": "Dechreuodd yr ymgynghoriad mewn pryd",
+      "not_begun": "Heb ddechrau: {n} diwrnod ar ôl i ddechrau",
+      "not_begun_and_late": "Heb ddechrau a {n} diwrnod yn hwyr",
+      "begun_late": "Dechreuodd {n} diwrnod yn hwyr"
+    },
+    "check": {
+      "inform_representatives_in_writing": "Hysbysu'r cynrychiolwyr yn ysgrifenedig",
+      "consult_with_a_view_to_agreement": "Ymgynghori gyda'r nod o gytuno",
+      "notify_the_authority": "Hysbysu'r awdurdod",
+      "keep_a_record_of_the_consultation": "Cadw cofnod o'r ymgynghoriad",
+      "consult_in_good_time_with_a_view_to_agreement": "Ymgynghori mewn pryd gyda'r nod o gytuno",
+      "give_representatives_the_relevant_information": "Rhoi'r wybodaeth berthnasol i'r cynrychiolwyr"
+    },
+    "intro": "Un cofnod ar gyfer pob cynnig a all sbarduno dyletswydd ar y cyd: y corff y ymgynghorir ag ef, niferoedd a dyddiadau, pynciau, cyfeiriad at y dogfennau, a phryd y dechreuodd ac y daeth yr ymgynghoriad i ben. Byth pwy a fynychodd, pwy a gynrychiolodd bwy, na'r hyn a ddywedwyd.",
+    "none": "Dim ymgynghoriad wedi'i gofnodi eto.",
+    "counts": "{size} yn y sefydliad, {dismissals} wedi'u cynnig",
+    "earliest": "terfynu cynharaf {day}",
+    "began": "dechreuodd {day}",
+    "ended": "daeth i ben {day}",
+    "timeline": "Llinell amser",
+    "may_apply": "Gall dyletswydd ar y cyd fod yn berthnasol",
+    "nothing_met": "Ni chyrhaeddwyd unrhyw drothwy",
+    "evidence": "tystiolaeth: {counted} wedi'u cyfrif, {needed} eu hangen o fewn {days} diwrnod",
+    "latest_start": "Y diwrnod olaf i ddechrau ymgynghori: {day}",
+    "latest_notice": "Y diwrnod olaf i hysbysu'r awdurdod: {day}",
+    "confirm_note": "Awgrym gyda'i dystiolaeth, nid dyfarniad. Mae'r defnyddiwr yn cadarnhau pa drothwyon sy'n berthnasol.",
+    "began_on": "Dechreuodd yr ymgynghoriad ar",
+    "record_begin": "Cofnodi'r dechrau",
+    "outcome": "Canlyniad",
+    "ended_on": "Daeth yr ymgynghoriad i ben ar",
+    "record_close": "Cau'r ymgynghoriad",
+    "need_body": "Cofnodwch gorff cydnabyddedig yn gyntaf (gweler Bargeinio ar y cyd).",
+    "open": "Agor ymgynghoriad",
+    "open_note": "Niferoedd a dyddiadau yn unig: dim byd am bwy yr effeithir arnynt na phwy sy'n mynychu.",
+    "body": "Y corff y ymgynghorir ag ef",
+    "establishment": "Sefydliad",
+    "profile": "Trothwyon a ddefnyddir",
+    "size": "Wedi'u cyflogi fel arfer yn y sefydliad",
+    "dismissals": "Diswyddiadau a gynigir",
+    "termination": "Dyddiad terfynu cynharaf",
+    "topics": "Pynciau",
+    "document_ref": "Cyfeiriad at y dogfennau a rannwyd"
+  },
+  "gates": {
+    "intro": "Pa fath o newid sy'n pwyntio at ba gorff i ymgynghori ag ef. Mae gwiriad yn cynghori; nid yw byth yn rhwystro. Y gyfraith a'ch cytundebau sy'n dweud a oes angen ymgynghori.",
+    "none": "Dim pyrth wedi'u gosod.",
+    "check": "Gwirio",
+    "template": "Gweler y templed effaith ar gydraddoldeb: {section}",
+    "advice": "Cyngor, nid rhwystr.",
+    "add": "Gosod porth",
+    "change": "Math o newid",
+    "note": "Nodyn (dewisol)",
+    "standing": {
+      "no_gate": "Nid oes porth wedi'i osod ar gyfer y math hwn o newid.",
+      "reference_needed": "{n} corff i ymgynghori â nhw: cofnodwch gyfeirnod yr ymgynghoriad gyda'r newid.",
+      "reference_given": "Rhoddwyd cyfeirnod ymgynghori. Nid yw WPM yn barnu a yw'n ddigon."
+    }
   }
 }

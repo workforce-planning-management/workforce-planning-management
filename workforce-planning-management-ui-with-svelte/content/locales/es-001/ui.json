@@ -48,7 +48,10 @@
     "payRange": "Posición salarial",
     "payGap": "Brecha salarial",
     "payInformation": "Solicitudes de información salarial",
-    "aiRegister": "Registro de IA y puntuaciones"
+    "aiRegister": "Registro de IA y puntuaciones",
+    "bargaining": "Negociación colectiva",
+    "consultations": "Consultas",
+    "decisionGates": "Puertas de decisión"
   },
   "pr": {
     "retention": "Retención",
@@ -1406,6 +1409,15 @@
     },
     "aiRegister": {
       "page_title": "{aiRegister} — WPM"
+    },
+    "bargaining": {
+      "page_title": "{bargaining} — WPM"
+    },
+    "consultations": {
+      "page_title": "{consultations} — WPM"
+    },
+    "decisionGates": {
+      "page_title": "{decisionGates} — WPM"
     }
   },
   "titles": {
@@ -1445,7 +1457,10 @@
     "payRange": "Posición salarial — WPM",
     "payGap": "Brecha salarial — WPM",
     "payInformation": "Solicitudes de información salarial — WPM",
-    "aiRegister": "Registro de IA y puntuaciones — WPM"
+    "aiRegister": "Registro de IA y puntuaciones — WPM",
+    "bargaining": "Negociación colectiva — WPM",
+    "consultations": "Consultas — WPM",
+    "decisionGates": "Puertas de decisión — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2524,10 +2539,122 @@
     "below_minimum": "Menos de los {months} meses del artículo 26, apartado 6: otra ley debe explicarlo",
     "record": "Registrar",
     "recording": "Registro de {feature}",
-    "replace_hint": "Esto sustituye lo registrado; un campo vacío se borra."
+    "replace_hint": "Esto sustituye lo registrado; un campo vacío se borra.",
+    "consultation_ref": "Registro de consulta para una puntuación nueva o modificada (opcional)"
   },
   "paging": {
     "showing": "Mostrando {shown} de {total}",
     "more": "Mostrar más"
+  },
+  "bargaining": {
+    "intro": "Los sindicatos, comités de empresa y foros de personal que esta organización reconoce, y los grupos de puestos que cubren. Un órgano tiene un rol de contacto, nunca una persona con nombre. Nada aquí indica quién pertenece a un órgano o lo representa.",
+    "organization": "Organización",
+    "none": "Aún no hay ningún órgano registrado.",
+    "since": "reconocido el {day}",
+    "contact": "rol de contacto: {role}",
+    "unit_count": "{n} unidades",
+    "units": "Unidades",
+    "floor_note": "La cobertura de una unidad solo se muestra cuando hay al menos {floor} personas cubiertas; por debajo, no se muestra nada.",
+    "units_none": "Aún no hay unidades.",
+    "unit_rules": "Una unidad es una regla, no una lista de personas: indica al menos departamento, ubicación, tipo de empleo o cargo.",
+    "location": "Ubicación",
+    "employment_type": "Tipo de empleo",
+    "add_unit": "Añadir unidad",
+    "add_body": "Registrar un órgano reconocido",
+    "contact_note": "Indica un rol, como «responsable de relaciones laborales», no el nombre de una persona.",
+    "kind": "Tipo",
+    "basis": "Base",
+    "recognised_on": "Reconocido el",
+    "contact_role": "Rol de contacto",
+    "covered": "{n} cubiertas",
+    "withheld": "menos de {floor} cubiertas: no se muestra",
+    "no_one": "nadie cubierto",
+    "pack": "Paquete de información",
+    "pack_logged": "Leerlo es una divulgación y queda registrada: quién, qué unidad, cuándo.",
+    "pack_under_floor": "Esta unidad abarca menos de {floor} personas, así que no se muestra nada.",
+    "pack_headcount": "{n} personas cubiertas, a {day}",
+    "pack_withheld": "oculto (menos de {floor})",
+    "by_department": "Por departamento",
+    "by_employment_type": "Por tipo de empleo",
+    "by_pay_band": "Por banda salarial",
+    "contingent": "No indefinidos",
+    "starters": "Altas en el último año",
+    "leavers": "Bajas en el último año",
+    "vacancies": "{n} puestos abiertos",
+    "vacancies_unknown": "No se muestra: esta unidad se define por ubicación o tipo de empleo, que una vacante no incluye.",
+    "facility": "Crédito horario",
+    "facility_note": "Minutos liberados al órgano para funciones de representación, por periodo. No por persona: no se nombra a nadie.",
+    "facility_none": "No hay crédito horario registrado.",
+    "minutes_hours": "{minutes} minutos ({hours} h)",
+    "budget": "presupuesto {minutes} min",
+    "over_budget": "por encima del presupuesto",
+    "facility_total": "Total: {minutes} minutos",
+    "period_start": "Inicio del periodo",
+    "period_end": "Fin del periodo",
+    "minutes": "Minutos liberados",
+    "budget_label": "Presupuesto en minutos (opcional)",
+    "add_period": "Registrar el periodo"
+  },
+  "consultations": {
+    "timeliness": {
+      "nothing_due": "Nada vence: no se alcanza ningún umbral",
+      "no_fixed_period": "El perfil no fija un plazo: véase la fecha de notificación",
+      "begun_in_time": "La consulta empezó a tiempo",
+      "not_begun": "No iniciada: faltan {n} días para empezar",
+      "not_begun_and_late": "No iniciada y con {n} días de retraso",
+      "begun_late": "Empezó con {n} días de retraso"
+    },
+    "check": {
+      "inform_representatives_in_writing": "Informar por escrito a los representantes",
+      "consult_with_a_view_to_agreement": "Consultar con el fin de llegar a un acuerdo",
+      "notify_the_authority": "Notificar a la autoridad",
+      "keep_a_record_of_the_consultation": "Conservar un registro de la consulta",
+      "consult_in_good_time_with_a_view_to_agreement": "Consultar a tiempo con el fin de llegar a un acuerdo",
+      "give_representatives_the_relevant_information": "Dar a los representantes la información pertinente"
+    },
+    "intro": "Un registro por propuesta que pueda activar un deber colectivo: el órgano consultado, cifras y fechas, temas, una referencia a los documentos y cuándo empezó y terminó la consulta. Nunca quién asistió, a quién representó alguien ni qué se dijo.",
+    "none": "Aún no hay consultas registradas.",
+    "counts": "{size} en el centro, {dismissals} previstos",
+    "earliest": "primera extinción {day}",
+    "began": "empezó {day}",
+    "ended": "terminó {day}",
+    "timeline": "Cronología",
+    "may_apply": "Puede aplicarse un deber colectivo",
+    "nothing_met": "No se alcanza ningún umbral",
+    "evidence": "evidencia: {counted} contados, {needed} necesarios en {days} días",
+    "latest_start": "Último día para iniciar la consulta: {day}",
+    "latest_notice": "Último día para notificar a la autoridad: {day}",
+    "confirm_note": "Una sugerencia con su evidencia, no un veredicto. El responsable confirma qué umbrales se aplican.",
+    "began_on": "La consulta empezó el",
+    "record_begin": "Registrar el inicio",
+    "outcome": "Resultado",
+    "ended_on": "La consulta terminó el",
+    "record_close": "Cerrar la consulta",
+    "need_body": "Registra primero un órgano reconocido (véase Negociación colectiva).",
+    "open": "Abrir una consulta",
+    "open_note": "Solo cifras y fechas: nada sobre quién se ve afectado o asiste.",
+    "body": "Órgano consultado",
+    "establishment": "Centro de trabajo",
+    "profile": "Umbrales en uso",
+    "size": "Empleados habitualmente en el centro",
+    "dismissals": "Despidos previstos",
+    "termination": "Fecha más temprana de extinción",
+    "topics": "Temas",
+    "document_ref": "Referencia a los documentos entregados"
+  },
+  "gates": {
+    "intro": "Qué tipo de cambio apunta a qué órgano consultar. Una comprobación aconseja; nunca bloquea. Si la consulta es obligatoria lo dicen la ley y sus acuerdos.",
+    "none": "No hay puertas definidas.",
+    "check": "Comprobar",
+    "template": "Véase la plantilla de impacto en la igualdad: {section}",
+    "advice": "Consejo, no un bloqueo.",
+    "add": "Definir una puerta",
+    "change": "Tipo de cambio",
+    "note": "Nota (opcional)",
+    "standing": {
+      "no_gate": "No hay puerta definida para este tipo de cambio.",
+      "reference_needed": "{n} órgano(s) a consultar: registra la referencia de la consulta con el cambio.",
+      "reference_given": "Se dio una referencia de consulta. WPM no juzga si es suficiente."
+    }
   }
 }

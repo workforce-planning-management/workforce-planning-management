@@ -48,7 +48,10 @@
     "payRange": "Vergütungsposition",
     "payGap": "Entgeltlücke",
     "payInformation": "Entgeltauskunftsanträge",
-    "aiRegister": "Register für KI und Bewertungen"
+    "aiRegister": "Register für KI und Bewertungen",
+    "bargaining": "Tarifverhandlungen",
+    "consultations": "Konsultationen",
+    "decisionGates": "Entscheidungsschranken"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -1406,6 +1409,15 @@
     },
     "aiRegister": {
       "page_title": "{aiRegister} — WPM"
+    },
+    "bargaining": {
+      "page_title": "{bargaining} — WPM"
+    },
+    "consultations": {
+      "page_title": "{consultations} — WPM"
+    },
+    "decisionGates": {
+      "page_title": "{decisionGates} — WPM"
     }
   },
   "titles": {
@@ -1445,7 +1457,10 @@
     "payRange": "Vergütungsposition — WPM",
     "payGap": "Entgeltlücke — WPM",
     "payInformation": "Entgeltauskunftsanträge — WPM",
-    "aiRegister": "Register für KI und Bewertungen — WPM"
+    "aiRegister": "Register für KI und Bewertungen — WPM",
+    "bargaining": "Tarifverhandlungen — WPM",
+    "consultations": "Konsultationen — WPM",
+    "decisionGates": "Entscheidungsschranken — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2524,10 +2539,122 @@
     "below_minimum": "Unter den {months} Monaten, die Artikel 26 Absatz 6 nennt: anderes Recht muss es begründen",
     "record": "Erfassen",
     "recording": "Erfassung für {feature}",
-    "replace_hint": "Dies ersetzt das Erfasste; ein leeres Feld wird gelöscht."
+    "replace_hint": "Dies ersetzt das Erfasste; ein leeres Feld wird gelöscht.",
+    "consultation_ref": "Konsultationseintrag für einen neuen oder geänderten Score (optional)"
   },
   "paging": {
     "showing": "{shown} von {total} angezeigt",
     "more": "Mehr anzeigen"
+  },
+  "bargaining": {
+    "intro": "Die Gewerkschaften, Betriebsräte und Belegschaftsforen, die diese Organisation anerkennt, und die Gruppen von Stellen, die sie abdecken. Eine Stelle hat eine Kontaktrolle, nie eine namentlich genannte Person. Nichts hier sagt, wer zu einer Vertretung gehört oder sie vertritt.",
+    "organization": "Organisation",
+    "none": "Noch keine Vertretung erfasst.",
+    "since": "anerkannt am {day}",
+    "contact": "Kontaktrolle: {role}",
+    "unit_count": "{n} Einheiten",
+    "units": "Einheiten",
+    "floor_note": "Die Abdeckung einer Einheit wird nur gezeigt, wenn mindestens {floor} Personen erfasst sind; darunter wird nichts angezeigt.",
+    "units_none": "Noch keine Einheiten.",
+    "unit_rules": "Eine Einheit ist eine Regel, keine Personenliste: Gib mindestens Abteilung, Standort, Beschäftigungsart oder Stellenbezeichnung an.",
+    "location": "Standort",
+    "employment_type": "Beschäftigungsart",
+    "add_unit": "Einheit hinzufügen",
+    "add_body": "Anerkannte Vertretung erfassen",
+    "contact_note": "Gib eine Rolle an, etwa „Leitung Arbeitnehmerbeziehungen“, keinen Personennamen.",
+    "kind": "Art",
+    "basis": "Grundlage",
+    "recognised_on": "Anerkannt am",
+    "contact_role": "Kontaktrolle",
+    "covered": "{n} erfasst",
+    "withheld": "weniger als {floor} erfasst: nicht angezeigt",
+    "no_one": "niemand erfasst",
+    "pack": "Informationspaket",
+    "pack_logged": "Das Lesen ist eine Offenlegung und wird protokolliert: wer, welche Einheit, wann.",
+    "pack_under_floor": "Diese Einheit umfasst weniger als {floor} Personen, daher wird nichts gezeigt.",
+    "pack_headcount": "{n} Personen erfasst, Stand {day}",
+    "pack_withheld": "zurückgehalten (unter {floor})",
+    "by_department": "Nach Abteilung",
+    "by_employment_type": "Nach Beschäftigungsart",
+    "by_pay_band": "Nach Gehaltsband",
+    "contingent": "Nicht unbefristet",
+    "starters": "Eintritte im letzten Jahr",
+    "leavers": "Austritte im letzten Jahr",
+    "vacancies": "{n} offene Stellen",
+    "vacancies_unknown": "Nicht gezeigt: Diese Einheit ist über Standort oder Beschäftigungsart definiert, die eine offene Stelle nicht enthält.",
+    "facility": "Freistellungszeit",
+    "facility_note": "Minuten, die der Vertretung je Zeitraum für Vertretungsaufgaben freigegeben wurden. Nicht je Person: niemand wird genannt.",
+    "facility_none": "Keine Freistellungszeit erfasst.",
+    "minutes_hours": "{minutes} Min. ({hours} Std.)",
+    "budget": "Budget {minutes} Min.",
+    "over_budget": "über Budget",
+    "facility_total": "Gesamt: {minutes} Minuten",
+    "period_start": "Beginn des Zeitraums",
+    "period_end": "Ende des Zeitraums",
+    "minutes": "Freigegebene Minuten",
+    "budget_label": "Budget in Minuten (optional)",
+    "add_period": "Zeitraum erfassen"
+  },
+  "consultations": {
+    "timeliness": {
+      "nothing_due": "Nichts fällig: keine Schwelle erreicht",
+      "no_fixed_period": "Das Profil nennt keine feste Frist: siehe Meldedatum",
+      "begun_in_time": "Konsultation begann rechtzeitig",
+      "not_begun": "Nicht begonnen: noch {n} Tage bis zum Beginn",
+      "not_begun_and_late": "Nicht begonnen und {n} Tage verspätet",
+      "begun_late": "Begann {n} Tage zu spät"
+    },
+    "check": {
+      "inform_representatives_in_writing": "Die Vertretung schriftlich informieren",
+      "consult_with_a_view_to_agreement": "Mit dem Ziel einer Einigung beraten",
+      "notify_the_authority": "Die Behörde benachrichtigen",
+      "keep_a_record_of_the_consultation": "Die Konsultation dokumentieren",
+      "consult_in_good_time_with_a_view_to_agreement": "Rechtzeitig mit dem Ziel einer Einigung beraten",
+      "give_representatives_the_relevant_information": "Der Vertretung die nötigen Informationen geben"
+    },
+    "intro": "Ein Eintrag je Vorhaben, das eine kollektive Pflicht auslösen kann: die konsultierte Vertretung, Zahlen und Daten, Themen, ein Verweis auf die Unterlagen sowie Beginn und Ende der Konsultation. Nie, wer teilnahm, wen jemand vertrat oder was gesagt wurde.",
+    "none": "Noch keine Konsultation erfasst.",
+    "counts": "{size} im Betrieb, {dismissals} vorgesehen",
+    "earliest": "frühestes Ende {day}",
+    "began": "begann {day}",
+    "ended": "endete {day}",
+    "timeline": "Zeitachse",
+    "may_apply": "Eine kollektive Pflicht kann gelten",
+    "nothing_met": "Keine Schwelle erreicht",
+    "evidence": "Beleg: {counted} gezählt, {needed} nötig innerhalb von {days} Tagen",
+    "latest_start": "Spätester Tag für den Beginn der Konsultation: {day}",
+    "latest_notice": "Spätester Tag für die Meldung an die Behörde: {day}",
+    "confirm_note": "Ein Vorschlag mit Beleg, kein Urteil. Der Betreiber bestätigt, welche Schwellen gelten.",
+    "began_on": "Konsultation begann am",
+    "record_begin": "Beginn erfassen",
+    "outcome": "Ergebnis",
+    "ended_on": "Konsultation endete am",
+    "record_close": "Konsultation abschließen",
+    "need_body": "Erfasse zuerst eine anerkannte Vertretung (siehe Tarifverhandlungen).",
+    "open": "Konsultation eröffnen",
+    "open_note": "Nur Zahlen und Daten: nichts darüber, wer betroffen ist oder teilnimmt.",
+    "body": "Konsultierte Vertretung",
+    "establishment": "Betrieb",
+    "profile": "Verwendete Schwellen",
+    "size": "Normalerweise im Betrieb beschäftigt",
+    "dismissals": "Vorgesehene Entlassungen",
+    "termination": "Frühestes Ende des Arbeitsverhältnisses",
+    "topics": "Themen",
+    "document_ref": "Verweis auf die übergebenen Unterlagen"
+  },
+  "gates": {
+    "intro": "Welche Art von Änderung auf welche Vertretung verweist. Eine Prüfung rät, sie blockiert nie. Ob eine Konsultation erforderlich ist, bestimmen Gesetz und Vereinbarungen.",
+    "none": "Keine Schranken gesetzt.",
+    "check": "Prüfen",
+    "template": "Siehe Vorlage zur Gleichstellungsfolgenabschätzung: {section}",
+    "advice": "Rat, keine Sperre.",
+    "add": "Schranke setzen",
+    "change": "Art der Änderung",
+    "note": "Notiz (optional)",
+    "standing": {
+      "no_gate": "Für diese Art von Änderung ist keine Schranke gesetzt.",
+      "reference_needed": "{n} Vertretung(en) zu konsultieren: Erfasse den Konsultationsverweis bei der Änderung.",
+      "reference_given": "Ein Konsultationsverweis wurde angegeben. WPM beurteilt nicht, ob er genügt."
+    }
   }
 }

@@ -48,7 +48,10 @@
     "payRange": "Pay position",
     "payGap": "Pay gap",
     "payInformation": "Pay information requests",
-    "aiRegister": "AI and scoring register"
+    "aiRegister": "AI and scoring register",
+    "bargaining": "Bargaining",
+    "consultations": "Consultations",
+    "decisionGates": "Decision gates"
   },
   "pr": {
     "retention": "Retention",
@@ -1406,6 +1409,15 @@
     },
     "aiRegister": {
       "page_title": "{aiRegister} — WPM"
+    },
+    "bargaining": {
+      "page_title": "{bargaining} — WPM"
+    },
+    "consultations": {
+      "page_title": "{consultations} — WPM"
+    },
+    "decisionGates": {
+      "page_title": "{decisionGates} — WPM"
     }
   },
   "titles": {
@@ -1445,7 +1457,10 @@
     "payRange": "Pay position — WPM",
     "payGap": "Pay gap — WPM",
     "payInformation": "Pay information requests — WPM",
-    "aiRegister": "AI and scoring register — WPM"
+    "aiRegister": "AI and scoring register — WPM",
+    "bargaining": "Bargaining — WPM",
+    "consultations": "Consultations — WPM",
+    "decisionGates": "Decision gates — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -2524,10 +2539,122 @@
     "below_minimum": "Under the {months} months Article 26(6) names: other law must explain it",
     "record": "Record",
     "recording": "Recording for {feature}",
-    "replace_hint": "This replaces what is recorded; a field left empty is cleared."
+    "replace_hint": "This replaces what is recorded; a field left empty is cleared.",
+    "consultation_ref": "Consultation record for a new or changed score (optional)"
   },
   "paging": {
     "showing": "Showing {shown} of {total}",
     "more": "Show more"
+  },
+  "bargaining": {
+    "intro": "The unions, works councils and staff forums this organization recognises, and the groups of roles they cover. A body has a contact role, never a named person. Nothing here says who belongs to a body or represents one.",
+    "organization": "Organization",
+    "none": "No body is recorded yet.",
+    "since": "recognised {day}",
+    "contact": "contact role: {role}",
+    "unit_count": "{n} units",
+    "units": "Units",
+    "floor_note": "A unit's coverage is shown only when at least {floor} people are covered; under that, nothing is shown.",
+    "units_none": "No units yet.",
+    "unit_rules": "A unit is a rule, not a list of people: give at least one of department, location, employment type or job title.",
+    "location": "Location",
+    "employment_type": "Employment type",
+    "add_unit": "Add unit",
+    "add_body": "Record a recognised body",
+    "contact_note": "Give a role such as “HR relations lead”, not a person's name.",
+    "kind": "Kind",
+    "basis": "Basis",
+    "recognised_on": "Recognised on",
+    "contact_role": "Contact role",
+    "covered": "{n} covered",
+    "withheld": "fewer than {floor} covered: not shown",
+    "no_one": "no one covered",
+    "pack": "Information pack",
+    "pack_logged": "Reading this is a disclosure and it is logged: who asked, which unit, when.",
+    "pack_under_floor": "This unit covers fewer than {floor} people, so nothing is shown.",
+    "pack_headcount": "{n} people covered, as of {day}",
+    "pack_withheld": "withheld (under {floor})",
+    "by_department": "By department",
+    "by_employment_type": "By employment type",
+    "by_pay_band": "By pay band",
+    "contingent": "Not permanent",
+    "starters": "Starters in the last year",
+    "leavers": "Leavers in the last year",
+    "vacancies": "{n} open posts",
+    "vacancies_unknown": "Not shown: this unit is defined by location or employment type, which a vacancy does not carry.",
+    "facility": "Facility time",
+    "facility_note": "Minutes released to the body for representative duties, per period. Not per person: no one is named.",
+    "facility_none": "No facility time recorded.",
+    "minutes_hours": "{minutes} min ({hours} h)",
+    "budget": "budget {minutes} min",
+    "over_budget": "over budget",
+    "facility_total": "Total: {minutes} minutes",
+    "period_start": "Period start",
+    "period_end": "Period end",
+    "minutes": "Minutes released",
+    "budget_label": "Budget in minutes (optional)",
+    "add_period": "Record the period"
+  },
+  "consultations": {
+    "timeliness": {
+      "nothing_due": "Nothing is due: no threshold is met",
+      "no_fixed_period": "The profile gives no fixed period: see the notice date",
+      "begun_in_time": "Consultation began in time",
+      "not_begun": "Not begun: {n} days left to begin",
+      "not_begun_and_late": "Not begun and {n} days late",
+      "begun_late": "Began {n} days late"
+    },
+    "check": {
+      "inform_representatives_in_writing": "Inform the representatives in writing",
+      "consult_with_a_view_to_agreement": "Consult with a view to reaching agreement",
+      "notify_the_authority": "Notify the authority",
+      "keep_a_record_of_the_consultation": "Keep a record of the consultation",
+      "consult_in_good_time_with_a_view_to_agreement": "Consult in good time with a view to reaching agreement",
+      "give_representatives_the_relevant_information": "Give the representatives the relevant information"
+    },
+    "intro": "One record per proposal that may trigger a collective duty: the body consulted, counts and dates, topics, a reference to the documents, and when consultation began and ended. Never who attended, who represented anyone, or what was said.",
+    "none": "No consultation recorded yet.",
+    "counts": "{size} at the establishment, {dismissals} proposed",
+    "earliest": "earliest termination {day}",
+    "began": "began {day}",
+    "ended": "ended {day}",
+    "timeline": "Timeline",
+    "may_apply": "A collective duty may apply",
+    "nothing_met": "No threshold is met",
+    "evidence": "evidence: {counted} counted, {needed} needed within {days} days",
+    "latest_start": "Latest day to begin consultation: {day}",
+    "latest_notice": "Latest day to notify the authority: {day}",
+    "confirm_note": "A suggestion with its evidence, not a verdict. The deployer confirms which thresholds apply.",
+    "began_on": "Consultation began on",
+    "record_begin": "Record the start",
+    "outcome": "Outcome",
+    "ended_on": "Consultation ended on",
+    "record_close": "Close the consultation",
+    "need_body": "Record a recognised body first (see Bargaining).",
+    "open": "Open a consultation",
+    "open_note": "Counts and dates only: nothing about who is affected or who attends.",
+    "body": "Body consulted",
+    "establishment": "Establishment",
+    "profile": "Thresholds in use",
+    "size": "Normally employed at the establishment",
+    "dismissals": "Dismissals proposed",
+    "termination": "Earliest termination date",
+    "topics": "Topics",
+    "document_ref": "Reference to the documents shared"
+  },
+  "gates": {
+    "intro": "Which kind of change points at which body to consult. A check advises; it never blocks. Whether consultation is required is for the law and your agreements to say.",
+    "none": "No gates set.",
+    "check": "Check",
+    "template": "See the equality impact template: {section}",
+    "advice": "Advice, not a block.",
+    "add": "Set a gate",
+    "change": "Kind of change",
+    "note": "Note (optional)",
+    "standing": {
+      "no_gate": "No gate is set for this kind of change.",
+      "reference_needed": "{n} body or bodies to consult: record the consultation reference with the change.",
+      "reference_given": "A consultation reference was given. WPM does not judge whether it is enough."
+    }
   }
 }

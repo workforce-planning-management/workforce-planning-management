@@ -13,7 +13,7 @@
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { AI_CATEGORIES, getAiRegister, putAiRegisterEntry } from "#lib/api/wpm.js";
-  import type { AiField, AiFeatureRow, AiRegister } from "#lib/api/wpm.js";
+  import type { AiField, AiFeatureRow, AiRegister, GateCheck } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
 
   let answer = $state<AiRegister | null>(null);
@@ -25,6 +25,8 @@
   let workersOn = $state("");
   let months = $state<number | null>(null);
   let note = $state("");
+  let consultation = $state("");
+  let gate = $state<GateCheck | null>(null);
 
   const load = guardedLoad(
     () => getAiRegister(),
@@ -56,14 +58,17 @@
     if (!editing) return;
     error = null;
     try {
-      await putAiRegisterEntry(editing, {
+      const saved = await putAiRegisterEntry(editing, {
         ...(category ? { annex_category: category } : {}),
         ...(overseer ? { overseer_role: overseer } : {}),
         ...(repsOn ? { representatives_informed_on: repsOn } : {}),
         ...(workersOn ? { workers_informed_on: workersOn } : {}),
         ...(months !== null && months !== undefined ? { log_retention_months: months } : {}),
         ...(note ? { retention_note: note } : {}),
+        ...(consultation ? { consultation_pid: consultation } : {}),
       });
+      gate = saved.decision_gate;
+      consultation = "";
       editing = null;
       await load();
     } catch (cause) {
@@ -115,6 +120,14 @@
   <p>{t("common.loading")}</p>
 {/if}
 
+{#if gate && gate.standing.kind !== "no_gate"}
+  <div class="panel" data-testid="ai-gate">
+    <p>{tf(`gates.standing.${gate.standing.kind}`, { n: gate.standing.kind === "reference_needed" ? gate.standing.bodies : 0 })}</p>
+    {#if gate.equality_impact_template}<p>{tf("gates.template", { section: gate.equality_impact_template })}</p>{/if}
+    <p class="muted">{t("gates.advice")}</p>
+  </div>
+{/if}
+
 {#if editing}
   <form
     class="panel"
@@ -138,6 +151,7 @@
     <label>{t("aiRegister.workers_informed")} <input type="date" bind:value={workersOn} data-testid="ai-workers" /></label>
     <label>{t("aiRegister.retention")} <input type="number" min="1" max="240" bind:value={months} data-testid="ai-months" /></label>
     <label>{t("aiRegister.retention_note")} <textarea rows="2" bind:value={note} maxlength="500" data-testid="ai-note"></textarea></label>
+    <label>{t("aiRegister.consultation_ref")} <input bind:value={consultation} data-testid="ai-consultation" /></label>
     <button type="submit" data-testid="ai-save">{t("common.save")}</button>
     <button type="button" onclick={() => (editing = null)}>{t("policies.rename_cancel")}</button>
   </form>

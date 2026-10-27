@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — bargaining, consultations and decision gates (WPM-T178, part)
+
+`/bargaining` (recognised bodies with a contact role, units as rules, coverage from the floor, the information pack with each reading logged by the service, facility time per body per period), `/consultations` (the register, a timeline that is a suggestion with its evidence, begin and close) and `/decision-gates` (set a gate, check a change: advice, never a block). The AI register shows the decision-gate pointer after a feature is recorded. Nothing names a member or a representative (WPM-D68). `bargaining.*`, `consultations.*`, `gates.*` in the 12 full locales (machine-drafted, unreviewed). Stubbed, axe and live specs.
+
 ### Added — team equipment on `/me` (WPM-T308)
 
 A manager sees how many of their direct reports hold equipment, from the floor; `teamEquipment.*` in the 13 locales.
