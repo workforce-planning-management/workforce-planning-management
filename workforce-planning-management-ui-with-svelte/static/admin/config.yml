@@ -2469,6 +2469,24 @@ collections:
               - { name: "narrower", label: "Narrower", widget: string, required: false, i18n: true }
               - { name: "authority", label: "Authority", widget: string, required: false, i18n: true }
               - { name: "judgement", label: "Judgement", widget: string, required: false, i18n: true }
+              - { name: "union", label: "Union", widget: string, required: false, i18n: true }
+              - { name: "works_council", label: "Works_council", widget: string, required: false, i18n: true }
+              - { name: "staff_forum", label: "Staff_forum", widget: string, required: false, i18n: true }
+              - { name: "voluntary_agreement", label: "Voluntary_agreement", widget: string, required: false, i18n: true }
+              - { name: "statutory", label: "Statutory", widget: string, required: false, i18n: true }
+              - { name: "great_britain", label: "Great_britain", widget: string, required: false, i18n: true }
+              - { name: "eu_directive_98_59", label: "Eu_directive_98_59", widget: string, required: false, i18n: true }
+              - { name: "restructuring", label: "Restructuring", widget: string, required: false, i18n: true }
+              - { name: "transfer", label: "Transfer", widget: string, required: false, i18n: true }
+              - { name: "pay", label: "Pay", widget: string, required: false, i18n: true }
+              - { name: "working_time", label: "Working_time", widget: string, required: false, i18n: true }
+              - { name: "agreed", label: "Agreed", widget: string, required: false, i18n: true }
+              - { name: "no_agreement", label: "No_agreement", widget: string, required: false, i18n: true }
+              - { name: "redundancy_proposal", label: "Redundancy_proposal", widget: string, required: false, i18n: true }
+              - { name: "shift_pattern_change", label: "Shift_pattern_change", widget: string, required: false, i18n: true }
+              - { name: "new_monitoring", label: "New_monitoring", widget: string, required: false, i18n: true }
+              - { name: "new_or_changed_score", label: "New_or_changed_score", widget: string, required: false, i18n: true }
+              - { name: "pay_structure_change", label: "Pay_structure_change", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

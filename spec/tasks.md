@@ -3480,6 +3480,12 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       checked against the body's recognition dates.
 - [ ] WPM-T178 **Verification and documents.** *(WPM-R102–R108)* Full suites, screenshots of new screens, strings in the 13
       locales, DPIA and record-of-processing updates; record what was not verified.
+      **Part done (2026-10-27):** the 18 new server vocabulary tokens (body kinds, agreement bases, consultation topics, gate kinds) had no `values.*`
+      entry, so `untranslated.test.ts` failed; added to all 13 locales and regenerated `static/admin/config.yml`. Ran: `cargo fmt --check`, `cargo clippy
+      --all-targets -- -D warnings` (clean), `cargo test --lib` (860), request suite `--test mod -- --ignored --test-threads=1` (161), `enforcement` and
+      `enforcement_expenses` (1 each); `pnpm check` (0/0), `pnpm lint`, `pnpm test` (218). **Not done:** there is no UI for T173–T177 yet, so no screens,
+      screenshots or Playwright specs; record-of-processing not updated (the DPIA R15 row already covers bodies and units); `gitleaks` is not installed
+      here, `scripts/verify-db-roles.sh`, the Keycloak suite and Playwright were not run; the new locale strings are machine-drafted and need a native review.
 
 ## Phase 19 — SFIA and SFIAplus (proposed WPM-R109–R113, WPM-D69, WPM-D70)
 
