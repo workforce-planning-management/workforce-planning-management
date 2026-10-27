@@ -34,3 +34,9 @@ whose gap is withheld). It writes assessment records, so clear them (`DELETE FRO
 
 `ai-register.spec.ts` needs no organization or data, but it records a feature (S1), so clear the register
 (`DELETE FROM ai_register_entries`) or seed again to rerun.
+
+`bargaining.spec.ts` (bargaining, consultations, decision gates) needs no seed data: it uses its own organization reference (the scope call is
+stubbed to name it) and creates a body, a unit, facility time, a consultation and a gate, so a rerun adds a new organization's records.
+
+`bargaining-pack.spec.ts` makes twelve workers, a body, a unit and a gate through the API (port 5150, enforcement off) in its own organization, then reads
+the pack in the UI and records AI-register feature S1 to see the gate pointer. Clear `ai_register_entries` or seed again to rerun.

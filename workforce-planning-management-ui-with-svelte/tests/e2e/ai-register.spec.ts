@@ -34,7 +34,7 @@ test.describe("AI register", () => {
     await page.route("**/api/proxy/ai-register/S1", (route) => {
       put = route.request().postDataJSON();
       features = [row("S1", "Skill match score", { annex_category: recorded(put?.annex_category), overseer_role: recorded(put?.overseer_role) }), features[1]!];
-      return route.fulfill({ json: { pid: "p", feature: "S1" } });
+      return route.fulfill({ json: { pid: "p", feature: "S1", decision_gate: { change: "new_or_changed_score", standing: { kind: "reference_needed", bodies: 2 }, consult: [], equality_impact_template: "section 11", note: "advice" } } });
     });
     await page.goto("/ai-register");
     await expect(page.getByTestId("ai-applies")).toContainText("The Annex III duties apply from 2027-12-02");
@@ -50,6 +50,8 @@ test.describe("AI register", () => {
     await page.getByTestId("ai-save").click();
     await expect(cards.nth(0)).toContainText("Head of Mobility");
     expect(put).toEqual({ annex_category: "task_allocation", overseer_role: "Head of Mobility" });
+    await expect(page.getByTestId("ai-gate")).toContainText("2 body or bodies to consult");
+    await expect(page.getByTestId("ai-gate")).toContainText("Advice, not a block.");
   });
 
   test("a refusal to record is shown in the service's words", async ({ page }) => {
