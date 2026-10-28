@@ -198,7 +198,7 @@ pub enum Rollup {
 /// Roll a group up. A group smaller than `floor` (0 is read as 1) shows nothing.
 #[must_use]
 pub fn rollup(statuses: &[Status], floor: usize) -> Rollup {
-    if statuses.len() < floor.max(1) {
+    if !super::suppression::visible(statuses.len(), floor) || statuses.is_empty() {
         return Rollup::Hidden;
     }
     let n = |s: Status| statuses.iter().filter(|x| **x == s).count();

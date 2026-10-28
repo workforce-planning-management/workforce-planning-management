@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — small-cell suppression as one rule (WPM-T349)
+
+`rules::suppression::{visible, with_total}`: the floor written once, with complementary suppression so a hidden cell cannot be found by subtracting from a shown total (checked on about 78,000 small tables), and a test that fails when another rule file writes its own floor comparison. Seventeen files still hold their own copy and are listed to be moved.
+
 ### Added — single-use link tokens (WPM-T348)
 
 Migration `000105`, `rules::link_token` and `models::link_tokens::{issue, consume, purge_expired}`: a link token is 32 random bytes shown once, stored only as its SHA-256 hash, bound to a purpose, expiring, and consumed by one atomic update. Every refusal looks the same to the caller; the reason goes to the audit trail. No consumer yet.

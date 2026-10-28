@@ -5477,4 +5477,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       dropped), all caught; a fourth (the length test in `well_formed`) is an equivalent mutant because the base64 decode already fixes the length. `cargo test --lib` 967, clippy clean.
       **Not done:** any consumer or endpoint; rate limiting; a scheduled purge; two simultaneous consumes were not tested (the test pool holds one connection), the atomicity rests on the
       single statement. **Not verified:** the full `--ignored` suite was not re-run for this change.
+- [x] (2026-10-28) WPM-T349 **Small-cell suppression as one rule, with a guard.** *(WPM-D35)* The floor comparison was written by hand in 17 rule files (about 40 places), with
+      different handling of zero, and nothing stopped a table from giving a hidden cell away by subtraction.
+      **Done:** `rules/suppression.rs`: `visible(count, floor)` (a zero is shown, a floor of 0 is read as 1) and `with_total(cells, floor)` (hides the cells under the floor and then
+      protects the total: if exactly one cell is hidden, the smallest other non-zero cell is hidden too, or the total itself when there is none). An exhaustive test over every table of up
+      to five cells with counts 0 to 6 and floors 1 to 4 (about 78,000 tables) checks that a shown count is the real one, that every small cell is hidden, and that a shown total never
+      leaves exactly one hidden cell. `assignment::breakdown` and `mandatory_learning::rollup` (the two newest) use `visible`. A guard test fails when any other file under `src/rules/`
+      writes its own floor comparison (`< floor`, `>= floor`, `floor.max(1)`, `>= GROUP_FLOOR`) or when a file listed in `OWN_COPY` no longer does, so the list of 17 can only shrink.
+      **Verified:** the guard fails for a probe file with `n >= floor` and fails with a stale entry (`appraisal.rs` rewritten); the probe was removed. `cargo test --lib` 976.
+      **Not done:** the 17 existing files are not moved to the shared rule (`bargaining_pack` and `pay_range` already do their own complementary suppression and `human_capital`,
+      `funding`, `equality_monitoring` and `resignation` do more than a count; each needs its own care and tests); the helper handles counts, not rates or means; it does not defend
+      against two overlapping tables read together or against a reader narrowing a hidden count to a range; no controller was changed.
 

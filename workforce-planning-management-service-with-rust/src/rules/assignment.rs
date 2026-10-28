@@ -253,7 +253,7 @@ pub fn breakdown<W: Ord + Clone>(rows: &[(W, Option<String>, i32)], floor: usize
     }
     by.into_iter()
         .map(|(category, (workers, fte))| {
-            let shown = workers.len() >= floor.max(1);
+            let shown = super::suppression::visible(workers.len(), floor);
             Cell {
                 category,
                 headcount: shown.then_some(workers.len()),
