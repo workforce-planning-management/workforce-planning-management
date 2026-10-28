@@ -10,6 +10,11 @@ use chrono::{Days, NaiveDate};
 /// The most FTE a worker's current assignments can add up to in one organization.
 pub const FTE_MAX: i32 = 100;
 
+/// The longest job title, department or location.
+pub const TEXT_MAX: usize = 120;
+/// The longest category code.
+pub const CODE_MAX: usize = 60;
+
 /// The word for a category nobody recorded.
 pub const UNKNOWN: &str = "unknown";
 
@@ -53,6 +58,33 @@ pub fn assignment_problems(a: &Assignment) -> Vec<String> {
     }
     if a.ends_on.is_some_and(|e| e < a.starts_on) {
         out.push("ends_on must not be before starts_on".to_string());
+    }
+    out
+}
+
+/// Problems with the words of an assignment: a job title and department of 1 to [`TEXT_MAX`] characters, and a location and each
+/// category code, where given, of 1 to [`TEXT_MAX`] and [`CODE_MAX`]. A category left out is unknown and is not a problem.
+#[must_use]
+pub fn text_problems(
+    job_title: &str,
+    department: &str,
+    location: Option<&str>,
+    codes: &[(&str, Option<&str>)],
+) -> Vec<String> {
+    let mut out = Vec::new();
+    let len = |t: &str| t.trim().chars().count();
+    for (name, text) in [("job_title", job_title), ("department", department)] {
+        if !(1..=TEXT_MAX).contains(&len(text)) {
+            out.push(format!("{name} must be 1 to {TEXT_MAX} characters"));
+        }
+    }
+    if location.is_some_and(|l| !(1..=TEXT_MAX).contains(&len(l))) {
+        out.push(format!("location must be 1 to {TEXT_MAX} characters"));
+    }
+    for (name, code) in codes {
+        if code.is_some_and(|c| !(1..=CODE_MAX).contains(&len(c))) {
+            out.push(format!("{name} must be 1 to {CODE_MAX} characters"));
+        }
     }
     out
 }
@@ -211,6 +243,28 @@ mod tests {
         );
         let backwards = a(50, d(2026, 2, 1), Some(d(2026, 1, 1)), true);
         assert_eq!(assignment_problems(&backwards).len(), 1);
+    }
+
+    #[test]
+    fn the_words_of_an_assignment_are_bounded_and_a_missing_category_is_fine() {
+        let ok = |t: &str, dpt: &str, l: Option<&str>, c: &[(&str, Option<&str>)]| {
+            text_problems(t, dpt, l, c)
+        };
+        assert_eq!(
+            ok("Nurse", "Ward 4", None, &[("job_role", None)]),
+            Vec::<String>::new()
+        );
+        assert_eq!(ok(" ", "Ward 4", None, &[]).len(), 1);
+        assert_eq!(ok("Nurse", &"x".repeat(121), None, &[]).len(), 1);
+        assert_eq!(ok("Nurse", "Ward 4", Some(" "), &[]).len(), 1);
+        assert_eq!(
+            ok("Nurse", "Ward 4", None, &[("staff_group", Some(" "))]).len(),
+            1
+        );
+        assert_eq!(
+            ok("Nurse", "Ward 4", None, &[("site", Some(&"y".repeat(61)))]).len(),
+            1
+        );
     }
 
     #[test]

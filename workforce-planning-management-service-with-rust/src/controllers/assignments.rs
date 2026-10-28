@@ -1,0 +1,316 @@
+//! Assignments (WPM-R161, WPM-D112): the jobs a worker holds. HR writes; the worker reads their own. A change of title, department,
+//! location, categories or FTE **ends one assignment and starts another** on the effective day, so the record answers "what did they
+//! do on that day". The worker row stays the record of the primary assignment and is written through when the primary changes.
+//! Spec: `spec/staff-records-and-pay.md`.
+
+use chrono::{NaiveDate, Utc};
+use loco_rs::prelude::*;
+use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
+use serde::Deserialize;
+use serde_json::json;
+use uuid::Uuid;
+
+use super::{
+    ensure_org_in_scope, ensure_valid, forbidden, row_json, unprocessable, writable_worker,
+};
+use crate::auth::MaybeAuthUser;
+use crate::models::_entities::{assignments, workers};
+use crate::models::audit_logs::Model as Audit;
+use crate::models::records;
+use crate::rules::assignment as rules;
+
+fn as_rule(a: &assignments::Model) -> rules::Assignment {
+    rules::Assignment {
+        fte_percent: a.fte_percent,
+        starts_on: a.starts_on,
+        ends_on: a.ends_on,
+        primary: a.is_primary,
+    }
+}
+
+async fn of(ctx: &AppContext, worker: Uuid) -> Result<Vec<assignments::Model>> {
+    Ok(assignments::Entity::find()
+        .filter(assignments::Column::WorkerPid.eq(worker))
+        .order_by_desc(assignments::Column::StartsOn)
+        .all(&ctx.db)
+        .await?)
+}
+
+/// The worker `pid` for a write: in the caller's scope and HR's to change, not the worker's own.
+async fn hr_worker(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<workers::Model> {
+    let worker = records::find_worker(&ctx.db, pid).await?;
+    ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
+    if !super::policies::privileged(ctx, caller, &worker.organization_ref).await? {
+        return Err(forbidden("assignments are changed by HR"));
+    }
+    Ok(worker)
+}
+
+/// `GET /api/workers/{pid}/assignments` — what the worker holds and has held, newest first. The worker themself and HR.
+#[debug_handler]
+async fn list(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let worker = writable_worker(&ctx, &caller, &pid).await?;
+    let today = Utc::now().date_naive();
+    let rows = of(&ctx, worker.pid).await?;
+    let all: Vec<rules::Assignment> = rows.iter().map(as_rule).collect();
+    let mut out = Vec::new();
+    for row in &rows {
+        let mut v = row_json(row)?;
+        if let Some(o) = v.as_object_mut() {
+            o.remove("recorded_by");
+            for key in [
+                "site",
+                "area_of_work",
+                "job_role",
+                "staff_group",
+                "occupation_code",
+            ] {
+                let shown = rules::category_or_unknown(row_str(row, key));
+                o.insert(key.into(), json!(shown));
+            }
+            o.insert("current".into(), json!(as_rule(row).current_on(today)));
+        }
+        out.push(v);
+    }
+    format::json(json!({
+        "worker_pid": worker.pid,
+        "fte_total": rules::fte_total(&all, today),
+        "assignments": out,
+    }))
+}
+
+fn row_str<'a>(row: &'a assignments::Model, key: &str) -> Option<&'a str> {
+    match key {
+        "site" => row.site.as_deref(),
+        "area_of_work" => row.area_of_work.as_deref(),
+        "job_role" => row.job_role.as_deref(),
+        "staff_group" => row.staff_group.as_deref(),
+        _ => row.occupation_code.as_deref(),
+    }
+}
+
+fn clean(v: Option<String>) -> Option<String> {
+    v.map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+}
+
+#[derive(Debug, Deserialize)]
+struct AddPayload {
+    job_title: String,
+    department: String,
+    location: Option<String>,
+    site: Option<String>,
+    area_of_work: Option<String>,
+    job_role: Option<String>,
+    staff_group: Option<String>,
+    occupation_code: Option<String>,
+    fte_percent: i32,
+    starts_on: Option<NaiveDate>,
+    ends_on: Option<NaiveDate>,
+}
+
+/// `POST /api/workers/{pid}/assignments` — add a further (not primary) assignment. The FTE of the assignments in force may not go
+/// over 100 on any day; the `422` names the total. HR.
+#[debug_handler]
+async fn add(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+    Json(p): Json<AddPayload>,
+) -> Result<Response> {
+    let worker = hr_worker(&ctx, &caller, pid).await?;
+    let today = Utc::now().date_naive();
+    let new = rules::Assignment {
+        fte_percent: p.fte_percent,
+        starts_on: p.starts_on.unwrap_or(today),
+        ends_on: p.ends_on,
+        primary: false,
+    };
+    let mut problems = rules::text_problems(
+        &p.job_title,
+        &p.department,
+        p.location.as_deref(),
+        &[
+            ("site", p.site.as_deref()),
+            ("area_of_work", p.area_of_work.as_deref()),
+            ("job_role", p.job_role.as_deref()),
+            ("staff_group", p.staff_group.as_deref()),
+            ("occupation_code", p.occupation_code.as_deref()),
+        ],
+    );
+    problems.extend(rules::assignment_problems(&new));
+    if new.starts_on < worker.hired_on {
+        problems.push("starts_on must not be before the worker's first day".to_string());
+    }
+    ensure_valid(&problems)?;
+    let existing: Vec<rules::Assignment> =
+        of(&ctx, worker.pid).await?.iter().map(as_rule).collect();
+    ensure_valid(&rules::fte_problems(&existing, &new))?;
+    let pid = Uuid::new_v4();
+    let txn = ctx.db.begin().await?;
+    assignments::ActiveModel {
+        pid: ActiveValue::set(pid),
+        worker_pid: ActiveValue::set(worker.pid),
+        job_title: ActiveValue::set(p.job_title.trim().to_string()),
+        department: ActiveValue::set(p.department.trim().to_string()),
+        location: ActiveValue::set(clean(p.location)),
+        site: ActiveValue::set(clean(p.site)),
+        area_of_work: ActiveValue::set(clean(p.area_of_work)),
+        job_role: ActiveValue::set(clean(p.job_role)),
+        staff_group: ActiveValue::set(clean(p.staff_group)),
+        occupation_code: ActiveValue::set(clean(p.occupation_code)),
+        fte_percent: ActiveValue::set(new.fte_percent),
+        is_primary: ActiveValue::set(false),
+        starts_on: ActiveValue::set(new.starts_on),
+        ends_on: ActiveValue::set(new.ends_on),
+        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
+        ..Default::default()
+    }
+    .insert(&txn)
+    .await?;
+    Audit::record(
+        &txn,
+        "assignment",
+        pid,
+        "assignment_added",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    txn.commit().await?;
+    format::json(json!({ "pid": pid }))
+}
+
+#[derive(Debug, Deserialize)]
+struct ChangePayload {
+    effective_on: Option<NaiveDate>,
+    job_title: Option<String>,
+    department: Option<String>,
+    location: Option<String>,
+    site: Option<String>,
+    area_of_work: Option<String>,
+    job_role: Option<String>,
+    staff_group: Option<String>,
+    occupation_code: Option<String>,
+    fte_percent: Option<i32>,
+}
+
+/// `POST /api/assignments/{pid}/change` — end this assignment the day before `effective_on` and start another from it, with the
+/// fields given changed and the rest kept. `effective_on` is today or earlier. A primary change writes through to the worker row. HR.
+#[debug_handler]
+async fn change(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+    Json(p): Json<ChangePayload>,
+) -> Result<Response> {
+    let old = assignments::Entity::find()
+        .filter(assignments::Column::Pid.eq(pid))
+        .one(&ctx.db)
+        .await?
+        .ok_or(Error::NotFound)?;
+    let worker = hr_worker(&ctx, &caller, old.worker_pid).await?;
+    let today = Utc::now().date_naive();
+    let effective_on = p.effective_on.unwrap_or(today);
+    if effective_on > today {
+        return Err(unprocessable("effective_on must not be in the future"));
+    }
+    let end = rules::end_for_change(&as_rule(&old), effective_on).map_err(|m| unprocessable(&m))?;
+    let job_title = p.job_title.unwrap_or_else(|| old.job_title.clone());
+    let department = p.department.unwrap_or_else(|| old.department.clone());
+    let location = clean(p.location).or_else(|| old.location.clone());
+    let site = clean(p.site).or_else(|| old.site.clone());
+    let area_of_work = clean(p.area_of_work).or_else(|| old.area_of_work.clone());
+    let job_role = clean(p.job_role).or_else(|| old.job_role.clone());
+    let staff_group = clean(p.staff_group).or_else(|| old.staff_group.clone());
+    let occupation_code = clean(p.occupation_code).or_else(|| old.occupation_code.clone());
+    let new = rules::Assignment {
+        fte_percent: p.fte_percent.unwrap_or(old.fte_percent),
+        starts_on: effective_on,
+        ends_on: old.ends_on,
+        primary: old.is_primary,
+    };
+    let mut problems = rules::text_problems(
+        &job_title,
+        &department,
+        location.as_deref(),
+        &[
+            ("site", site.as_deref()),
+            ("area_of_work", area_of_work.as_deref()),
+            ("job_role", job_role.as_deref()),
+            ("staff_group", staff_group.as_deref()),
+            ("occupation_code", occupation_code.as_deref()),
+        ],
+    );
+    problems.extend(rules::assignment_problems(&new));
+    ensure_valid(&problems)?;
+    let others: Vec<rules::Assignment> = of(&ctx, worker.pid)
+        .await?
+        .iter()
+        .map(|a| {
+            let mut r = as_rule(a);
+            if a.pid == old.pid {
+                r.ends_on = Some(end);
+            }
+            r
+        })
+        .collect();
+    ensure_valid(&rules::fte_problems(&others, &new))?;
+
+    let new_pid = Uuid::new_v4();
+    let txn = ctx.db.begin().await?;
+    let mut ended: assignments::ActiveModel = old.clone().into();
+    ended.ends_on = ActiveValue::set(Some(end));
+    ended.update(&txn).await?;
+    assignments::ActiveModel {
+        pid: ActiveValue::set(new_pid),
+        worker_pid: ActiveValue::set(worker.pid),
+        job_title: ActiveValue::set(job_title.trim().to_string()),
+        department: ActiveValue::set(department.trim().to_string()),
+        location: ActiveValue::set(location.clone()),
+        site: ActiveValue::set(site),
+        area_of_work: ActiveValue::set(area_of_work),
+        job_role: ActiveValue::set(job_role),
+        staff_group: ActiveValue::set(staff_group),
+        occupation_code: ActiveValue::set(occupation_code),
+        fte_percent: ActiveValue::set(new.fte_percent),
+        is_primary: ActiveValue::set(old.is_primary),
+        starts_on: ActiveValue::set(effective_on),
+        ends_on: ActiveValue::set(old.ends_on),
+        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
+        ..Default::default()
+    }
+    .insert(&txn)
+    .await?;
+    if old.is_primary {
+        let mut w: workers::ActiveModel = worker.into();
+        w.job_title = ActiveValue::set(job_title.trim().to_string());
+        w.department = ActiveValue::set(department.trim().to_string());
+        w.location = ActiveValue::set(location);
+        w.fte_percent = ActiveValue::set(new.fte_percent);
+        w.update(&txn).await?;
+    }
+    Audit::record(
+        &txn,
+        "assignment",
+        new_pid,
+        "assignment_changed",
+        caller.actor(),
+        Some(json!({ "replaces": pid })),
+    )
+    .await?;
+    txn.commit().await?;
+    format::json(json!({ "pid": new_pid, "replaces": pid, "previous_ends_on": end }))
+}
+
+/// The routes.
+pub fn routes() -> Routes {
+    Routes::new()
+        .prefix("/api")
+        .add("/workers/{pid}/assignments", get(list))
+        .add("/workers/{pid}/assignments", post(add))
+        .add("/assignments/{pid}/change", post(change))
+}

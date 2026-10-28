@@ -11,6 +11,7 @@ pub mod ai_register;
 pub mod announcements;
 pub mod appraisals;
 pub mod assessments;
+pub mod assignments;
 pub mod audits;
 pub mod bargaining;
 pub mod capacity;

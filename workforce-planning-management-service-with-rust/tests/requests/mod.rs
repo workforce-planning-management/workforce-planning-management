@@ -10,6 +10,7 @@ mod ai_register;
 mod announcements;
 mod appraisals;
 mod assessments;
+mod assignments;
 mod audit_chain;
 mod audit_export;
 mod bargaining;

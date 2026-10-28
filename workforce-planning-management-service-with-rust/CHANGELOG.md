@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — assignments (WPM-T310, WPM-T311 in part)
+
+Migration `000101`: `assignments` (title, department, location, optional categories where `NULL` is unknown, the FTE the contract says, the days it runs; one open primary per
+worker by a partial unique index), one primary back-filled per existing worker, and two triggers on `workers` so older writers keep working (a new worker gets a primary; an edit to
+title, department, location or FTE corrects the open primary in place; a termination date ends what is open). `GET` and `POST /api/workers/{pid}/assignments` and
+`POST /api/assignments/{pid}/change` (ends one the day before and starts another; a primary change writes through to the worker row). `rules::assignment`, `rules::service`,
+`rules::mandatory_learning` and `rules::padr` are the pure cores for T310, T313, T314 and T317. Assignments are in the subject-access export and erased with the person.
+
 ### Added — SFIA and SFIAplus imports, native levels and pointers (WPM-T180 to T185)
 
 Migrations `000096` to `000100`: framework licence record (`version`, `redistribution` open/internal_only/unknown, holder, reference, check date; `rules::framework::publishable`),

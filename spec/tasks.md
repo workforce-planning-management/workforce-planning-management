@@ -5287,9 +5287,23 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `cargo fmt`, `cargo clippy --all-targets -- -D warnings` clean. **Not verified:** nothing is wired in (T311); the full `--ignored`
       request suite was not re-run, as no controller or migration changed. **Choice to confirm:** the cross-organization total
       (R161) is advisory and is not in this module; it belongs with the person-centric record (T313).
-- [ ] WPM-T311 **Assignments and categories, records, API and screen.** *(WPM-R161, WPM-R162)* Migration creating one primary assignment
+- [~] (2026-10-28) WPM-T311 **Assignments and categories, records, API and screen.** *(WPM-R161, WPM-R162)* Migration creating one primary assignment
       per worker from its columns; write-through to the worker row; `positions.holder` to the holding assignment; vocabulary import;
       aggregates with the floor; export and erasure.
+      **Part done (2026-10-28), records and API:** migration `000101` (`assignments`; a partial unique index for one open primary; one primary back-filled per
+      worker; triggers so a new worker gets a primary, an edit of the worker row's title, department, location or FTE corrects the open primary **in place**, and a
+      termination date ends what is open); entity; `GET`/`POST /api/workers/{pid}/assignments` (the worker themself and HR read; HR adds a further assignment; a total over 100
+      is a `422` naming it) and `POST /api/assignments/{pid}/change` (end and start; a primary change writes through; `effective_on` today or earlier); categories read
+      `unknown` when not recorded; subject-access export and erasure; OpenAPI and the UI's types. **Verified** against Postgres 18 (throwaway, Podman): a request test
+      (back-fill and trigger, over-100 refusal, change, write-through, one open primary, trigger correction without history, export, erasure), **mutation-checked** (write-through
+      disabled: fails); the full `--ignored` request suite (166), `enforcement`, `enforcement_need_to_know`, `cargo test --lib` (927), clippy clean, `pnpm check` (0/0).
+      **Not done:** the category vocabularies and their import, and the job role and staff group agreement check on write (the pure rule exists; with no vocabulary there is nothing
+      to ask); `positions.holder` to the holding assignment and `positions.number`; aggregates by staff group, job role and area of work with the floor; ending a non-primary
+      assignment; clearing a category; a future-dated change (refused, as nothing would write it through on the day); the screen. **Not verified:** the migration on a database with
+      real worker rows (only the back-fill SQL on an empty one, plus the trigger on new rows); a worker whose title or department is over 120 characters is trimmed by the
+      trigger, not refused; the UI; the Keycloak suite. **Finding:** a worker edit through the older route changes the open primary in place, so history is made only by
+      a change; a deployer who edits the worker row directly loses "what they did on that day".
+
 - [ ] WPM-T312 **Cost centres, financial and subjective coding.** *(WPM-R163–R165, WPM-D116)* Register, unmatched free-text list,
       segment assembly and most-specific-rule derivation in the pure core, position numbers, the coding view.
 - [~] (2026-10-28) WPM-T313 **Annual service and the person-centric record.** *(WPM-R166, WPM-R167, WPM-D113)* Interval union with a break tolerance

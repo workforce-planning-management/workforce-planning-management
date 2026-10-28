@@ -2539,6 +2539,35 @@
         ]
       }
     },
+    "/api/assignments/{pid}/change": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new assignment, and the day the old one ended",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "End this assignment the day before effective_on (today or earlier) and start another from it, with the fields given changed. A primary change is written through to the worker row. HR",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
     "/api/audits": {
       "get": {
         "responses": {
@@ -11259,6 +11288,46 @@
         "summary": "A worker's profile (authorized + masked at the worker level)",
         "tags": [
           "assessments"
+        ]
+      }
+    },
+    "/api/workers/{pid}/assignments": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The assignments"
+          }
+        },
+        "summary": "The jobs a worker holds and has held, newest first, with the FTE in force today. A category nobody recorded reads unknown. The worker themself and HR",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the assignment",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add a further (not primary) assignment. The FTE of the assignments in force may not go over 100 on any day; the 422 names the total. HR",
+        "tags": [
+          "assignments"
         ]
       }
     },

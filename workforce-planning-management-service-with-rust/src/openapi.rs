@@ -663,6 +663,13 @@ fn add_integration_paths(document: &mut Value) {
         "/api/asset-issues/{pid}/return": {
             "post": { "tags": ["equipment"], "summary": "Close an open issue as returned, or written_off with a reason, on a day not before it was issued and not in the future", "responses": ok("The outcome") }
         },
+        "/api/workers/{pid}/assignments": {
+            "get": { "tags": ["assignments"], "summary": "The jobs a worker holds and has held, newest first, with the FTE in force today. A category nobody recorded reads unknown. The worker themself and HR", "responses": ok("The assignments") },
+            "post": { "tags": ["assignments"], "summary": "Add a further (not primary) assignment. The FTE of the assignments in force may not go over 100 on any day; the 422 names the total. HR", "responses": ok("The pid of the assignment") }
+        },
+        "/api/assignments/{pid}/change": {
+            "post": { "tags": ["assignments"], "summary": "End this assignment the day before effective_on (today or earlier) and start another from it, with the fields given changed. A primary change is written through to the worker row. HR", "responses": ok("The new assignment, and the day the old one ended") }
+        },
         "/api/workers/{pid}/equipment": {
             "get": { "tags": ["equipment"], "summary": "What a worker holds and has held, and how many pieces are still out. The worker themself and HR", "responses": ok("The issues") }
         },

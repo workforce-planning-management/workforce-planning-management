@@ -13,6 +13,7 @@ pub mod assessment_results;
 pub mod assessments;
 pub mod asset_issues;
 pub mod assets;
+pub mod assignments;
 pub mod audit_logs;
 pub mod bargaining_units;
 pub mod benchmarks;

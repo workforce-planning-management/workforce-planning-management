@@ -13,6 +13,7 @@ pub use super::assessment_results::Entity as AssessmentResults;
 pub use super::assessments::Entity as Assessments;
 pub use super::asset_issues::Entity as AssetIssues;
 pub use super::assets::Entity as Assets;
+pub use super::assignments::Entity as Assignments;
 pub use super::audit_logs::Entity as AuditLogs;
 pub use super::bargaining_units::Entity as BargainingUnits;
 pub use super::benchmarks::Entity as Benchmarks;

@@ -13,9 +13,9 @@ use super::{forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, announcement_reads, appraisal_nominations, appraisal_responses,
-    appraisals, assessments, asset_issues, benefit_enrollments, candidates, conversion_plans,
-    cpd_entries, credential_issuances, development_plans, dotted_line_reports, emergency_contacts,
-    engagement_decisions, engagement_extensions, engagement_reminders,
+    appraisals, assessments, asset_issues, assignments, benefit_enrollments, candidates,
+    conversion_plans, cpd_entries, credential_issuances, development_plans, dotted_line_reports,
+    emergency_contacts, engagement_decisions, engagement_extensions, engagement_reminders,
     engagement_status_assessments, entitlement_acknowledgements, equality_declarations,
     ergonomic_assessments, expense_claims, expense_items, flexible_working_requests, group_members,
     handover_actions, leave_entitlements, leave_requests, mentorships, mobility_interests,
@@ -145,6 +145,7 @@ async fn subject_access(
         "pay_information_requests": rows_for!(db, pay_information_requests, WorkerPid, epid),
         "scim_pushes": rows_for!(db, scim_pushes, WorkerPid, epid),
         "asset_issues": rows_for!(db, asset_issues, WorkerPid, epid),
+        "assignments": rows_for!(db, assignments, WorkerPid, epid),
         "policy_acknowledgements": rows_for!(db, policy_acknowledgements, WorkerPid, epid),
         "credential_issuances": rows_for!(db, credential_issuances, WorkerPid, epid),
         "positions_held": rows_for!(db, positions, HolderWorkerPid, epid),
@@ -280,6 +281,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM scim_pushes WHERE worker_pid = '{epid}'"),
         // The asset stays (it is the employer's); only who held it is erased.
         format!("DELETE FROM asset_issues WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM assignments WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM policy_acknowledgements WHERE worker_pid = '{epid}'"),
         // A credential the person holds cannot be taken back, so the issuance is revoked and cut from the person (its position in the
         // revocation list stays, or a later issuance would take the same place).
