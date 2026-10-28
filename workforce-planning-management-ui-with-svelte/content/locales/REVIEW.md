@@ -29,6 +29,8 @@ The 2026-10-21 additions (86 keys for the My details page and eight status words
 
 The 2026-10-23 additions (the `errors.*` keys: eight sentences saying what a failed call means) were written by the same assistant, also unreviewed.
 
+The 2026-10-28 additions (nine value words in all 12 translated locales: the leave kind `public_holiday`, and `site`, `area_of_work`, `job_role`, `staff_group`, `occupation_code`, `mandatory`, `performance`, `padr`) were written by the same assistant, also unreviewed. `padr` ("personal development review") and the three staff-record words (`job_role`, `staff_group`, `occupation_code`) are terms of art that differ between health, government and commercial employers; a reviewer should check them against the employer's own vocabulary. Two French words equal the English and are allow-listed (`site`, `performance`) in `tests/unit/untranslated.allow.json`.
+
 The 2026-10-24 additions (the `labels.*` keys: eight accessible names for form controls; three `values.*` words for the outcome of a joint pay assessment; five `values.*` words for the Annex III categories of the AI register; two `values.*` words for position states, 2026-10-24) were written by the same assistant, also unreviewed.
 
 The 2026-10-25 additions (`values.*` words for the kinds of equipment and how an issue ends, the three audiences of a policy, the four confidences and two bases of a skill mapping, written by the same assistant, also unreviewed): laptop, phone, pass, key, returned, written_off, all, department, job_title, exact, close, broader, narrower, authority, judgement. The German "Notebook", the Indonesian "komputer jinjing" and the French "précis" were chosen so as not to repeat the English word.

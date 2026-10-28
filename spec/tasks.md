@@ -5488,4 +5488,31 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       **Not done:** the 17 existing files are not moved to the shared rule (`bargaining_pack` and `pay_range` already do their own complementary suppression and `human_capital`,
       `funding`, `equality_monitoring` and `resignation` do more than a count; each needs its own care and tests); the helper handles counts, not rates or means; it does not defend
       against two overlapping tables read together or against a reader narrowing a hidden count to a range; no controller was changed.
+- [x] (2026-10-28) WPM-T350 **No UI page shows API error text.** *(WPM-R94 spirit, WPM-T259, WPM-T261, WPM-T265)* `errorText` added the service's message after the catalogue's words
+      for a `403`, `409` or `422`. That text is English whatever the locale, written for developers, and can name a table or a rule.
+      **Done:** `errorText` returns the catalogue's words for the status and nothing the service said; `tests/unit/no-api-error-text.test.ts` scans all of `src` (exempting the
+      API client, `write.ts`, server code and `+server.ts` routes) and fails when a catch block, a promise `.catch`, or a file that handles `ApiError` reads an error's `message`,
+      `body`, `description` or `detail`, or puts the error in a template string; the detector has its own tests. The two Playwright specs that expected the service's words (the payroll `403`,
+      the skill-delete `409`) now expect the catalogue's words and that the service's text is absent. **Verified:** the guard fails for a page that reads `cause.message` and for
+      a template string of a caught error, and passes on the real source; `pnpm test` 225, `pnpm lint`, `pnpm check` 0/0; the two changed specs pass in Chromium.
+      **A cost, stated:** a refusal no longer says *which* field or rule (`"end date is before start date"`); a person sees "That was not accepted". The remedy is a structured error code the
+      page maps to its own catalogue sentence, which the service does not return yet. The `invalid` and `conflict` sentences end without a full stop because they used to be followed by a
+      colon and the detail; they read as short statements and were not reworded in 12 locales. **Not done:** the service's error bodies are unchanged; server logs still carry the detail.
+- [x] (2026-10-28) WPM-T351 **An accessibility (axe) check that covers every route.** *(WPM-R94 spirit, accessibility statement)* Only three specs ran axe and nothing said which pages they missed.
+      **Done:** `tests/e2e/axe-routes.ts` (all 56 page routes and the URL visited for each; an `EXCLUDED` table, empty, for any route left out with its reason);
+      `tests/e2e/a11y-routes.spec.ts` (axe's WCAG 2 A and AA rules on each route, the report naming the rule, the elements and axe's own explanation with the contrast ratio);
+      `tests/unit/axe-covers-every-route.test.ts` (fails when a `src/routes/**/+page.svelte` is in neither table, when a table names a route that is gone, when a route is in both, and when a
+      URL does not belong to its route). **It found three real defects, now fixed:** the `ok` chip (4.0:1), the kanban column count (3.98:1, faded with `opacity`) and, by the same
+      arithmetic, the `warn` chip (4.18:1); the chip text is darker (`#156a3a`, `#a8480f`, 6.1:1 and 5.3:1) with the border unchanged, and the count uses the muted colour.
+      **Verified:** 56 of 56 pass in Chromium; the coverage test passes (5). **Not verified, and what this does not prove:** axe finds some problems, not all (it does not judge reading
+      order, focus handling, meaning of text or alternatives that are present but wrong); each route is checked in the state the stubbed API gives it (loading, empty or refused),
+      so a page with data on screen is covered only where a specific spec does that (SFIA, bargaining); light theme and the default locale only; no dark theme, no right-to-left locale,
+      no phone width; a screen reader was not used; the independent accessibility audit (WPM-T202) remains a person's task.
+- [x] (2026-10-28) WPM-T352 **A translation-review register that cannot lie, beside the key-parity test.** *(WPM-R94, WPM-D64)* Key parity (every `-001` locale holds every key, a regional one invents none)
+      was already pinned in `wpm.test.ts`; the register (`content/locales/REVIEW.md`) was prose with no test behind it.
+      **Done:** `tests/unit/translation-review-register.test.ts` fails when a translated locale has no row or a row names a locale that does not exist, when a locale appears twice, when a row does
+      not say who wrote it, when a review is claimed in part (a reviewer without a date, scope and outcome) or with a date that is not a date, and when every row is unreviewed but the page stops
+      saying so. The checker has its own tests. The register records today's nine value words as machine-drafted and unreviewed, and names the terms of art a reviewer should check.
+      **Verified:** passes on the register; fails with a row removed and with a review claimed in part (restored). **Not done:** no translation was reviewed by a person (WPM-T155 stays open);
+      the test checks the register's form, not that a named reviewer exists.
 
