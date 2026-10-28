@@ -1103,6 +1103,15 @@ async fn a_contractors_supplier_has_a_contact_that_is_a_person_ref_and_nothing_m
         assert_eq!(shown["contractor_details"]["supplier_contact_ref"], contact.as_str(), "{shown}");
         assert_eq!(shown["contractor_details"]["supplier_ref"], supplier.as_str());
 
+        // Names are best-effort (WPM-T358): none known reads null, never an error; a known one is shown; the write's answer carries none.
+        assert_eq!((&shown["contractor_details"]["supplier_name"], &shown["contractor_details"]["supplier_contact_name"]), (&Value::Null, &Value::Null), "{shown}");
+        workforce_planning_management::clients::prime(&supplier, "Acme Staffing");
+        workforce_planning_management::clients::prime(&contact, "Sam Example");
+        let named: Value = request.get(&url).await.json();
+        assert_eq!(named["contractor_details"]["supplier_name"], "Acme Staffing", "{named}");
+        assert_eq!(named["contractor_details"]["supplier_contact_name"], "Sam Example");
+        assert!(!saved.text().contains("Sam Example") && !saved.text().contains("Acme"), "a write's answer holds no name");
+
         // Leaving it out clears it: the contact is optional, and the response holds nothing about the contact but the ref.
         let cleared = request.put(&url).json(&json!({ "supplier_ref": supplier, "route": "agency" })).await;
         assert_eq!(cleared.status_code(), 200);

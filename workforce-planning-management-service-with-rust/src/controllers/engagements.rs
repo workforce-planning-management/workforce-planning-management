@@ -283,7 +283,19 @@ async fn get_details(
         )
         .await?;
     }
-    format::json(json!({ "contractor_details": row.map(|r| details_json(&r, masked)) }))
+    let mut shown = row.as_ref().map(|r| details_json(r, masked));
+    if let (Some(shown), Some(row)) = (shown.as_mut(), row.as_ref()) {
+        shown["supplier_name"] = json!(name_of(row.supplier_ref.as_deref()).await);
+        shown["supplier_contact_name"] = json!(name_of(row.supplier_contact_ref.as_deref()).await);
+    }
+    format::json(json!({ "contractor_details": shown }))
+}
+
+/// The name behind a reference, best-effort (WPM-T358): from the owning service or a cache, `None` when neither has it. A lookup
+/// that fails is not an error, and nothing is stored; a person's name is only ever held in the process cache, never shared.
+async fn name_of(urn: Option<&str>) -> Option<String> {
+    let parsed = urn?.parse::<entity_ref::EntityRef>().ok()?;
+    crate::clients::display_name(&parsed).await
 }
 
 /// `PUT /api/workers/{pid}/contractor-details` — set or change them. Only a contractor has
