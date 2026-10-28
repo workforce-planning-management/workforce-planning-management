@@ -3312,19 +3312,34 @@ tasks are the capacity answer and the contract, below.
       change-request requirement, agree the call that WPM answers (programme URN plus proposed deltas),
       and record the agreed contract here. **Outside this repository**: it is not done until that
       repository holds them.
-- [ ] WPM-T158 **What-if capacity answer.** *(WPM-R97, WPM-D46, WPM-D50)* Pure `rules::capacity` addition: given
+- [x] (2026-10-28) WPM-T158 **What-if capacity answer.** *(WPM-R97, WPM-D46, WPM-D50)* Pure `rules::capacity` addition: given
       the current demand and a set of proposed FTE deltas per pool per month, return the pool-months
       that become or stop being over-committed, the constraint pool before and after, and the
       earliest fitting start; `unknown` where supply or partner commitments are unknown. A
       `POST /api/capacity/what-if` that reads, computes and **stores nothing**. Depends on the
       capacity model (WPM-T104–T107). Unit tests (a delta that fits, one that breaks a pool-month,
       one in an unknown month) and a request test.
+      **Done (2026-10-28):** `rules::capacity::{what_if, change_problems, Change, WhatIf, Answer}` over the existing pool views (the cell rule is now one function, `classify`, shared by the view and the what-if):
+      a proposal of changes (pool, month, centi-FTE, negative to give back) is applied to the programme's **active** claim, never below what the programme holds; the answer lists only the touched pool-months
+      (before and after status and balance), counts those that become or stop being over-committed, names the constraint pool before and after, and finds the **earliest start that fits** by moving the
+      whole proposal later a month at a time (an unknown month is not a fit). `unknown` where a partner has not answered; with **no skill pools at all** the answer is `unknown` with its reason, never "no impact".
+      `POST /api/capacity/what-if` reads the view, computes and **stores nothing** (`stored: false`); the audit entry holds counts and the answer, never a figure or the programme. 11 unit tests (a change that fits,
+      one that breaks a pool-month, one in an unknown month, giving capacity back, the programme floor, not-worse-than-before, the earliest start, none within the horizon, validation, the view unchanged, and the
+      view and what-if agreeing on a cell) and a request test (fits; breaks and the constraint pool; the earliest start; giving back more than held; nothing stored; no name, number, partner or other programme
+      in the answer; five refusals; an organization with no pools; the audit trail). **Mutation-checked** eight ways (the worse-than-before rule; the programme floor, first with a test that could not tell it from
+      the zero clamp, now fixed; an unknown month counted as a fit, likewise; the programme filter; the empty-organization branch), all caught. `cargo test --lib` 991, full `--ignored` suite 176, clippy clean.
+      **Not done:** the contingent effect (T159); the proposal's horizon starts at its earliest month and spans at most 24 months; programme demand is read from claims with status `active` (a claim becomes
+      active only through a start decision); no UI; PPM's side of the call is unverified.
 - [ ] WPM-T159 **Contingent effect in the what-if answer.** *(WPM-R97)* Where a proposed change moves a
       programme's end date, list the fixed-term and contractor engagements (counts per pool, no names)
       that would end before it. Depends on WPM-T135 and WPM-T142.
-- [ ] WPM-T160 **Verification and documents.** *(WPM-R97)* Enforcement test that the what-if answer names no
+- [~] (2026-10-28) WPM-T160 **Verification and documents.** *(WPM-R97)* Enforcement test that the what-if answer names no
       one and that a manager sees counts only; update the DPIA (`spec/governance/dpia.md`), the record of
       processing and the data-flow diagram if WPM stores anything new (it should not).
+      **Part done (2026-10-28):** a request test checks the answer names no one (no worker, number, name, partner or other programme) and stores nothing (the same rows before and after); the DPIA and the
+      record of processing need no new row because the what-if holds nothing and carries no personal data, and the data-flow diagram is unchanged. **Not done:** the persona enforcement test ("a manager sees counts
+      only"): the endpoint answers every caller in the organization's scope with the same pool-month figures, and no persona-matrix test was written; whether that is the right audience is a decision for the
+      product owner, because pool supply and demand are planning figures and not a person's data.
 
 ## Phase 17 — equality impact for scoring (proposed WPM-R99–R101, WPM-D67)
 

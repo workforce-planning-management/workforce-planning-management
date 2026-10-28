@@ -2160,6 +2160,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/capacity/what-if": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** What a proposed change to a programme's demand (organization_ref, programme_ref and changes of pool, month and centi-FTE, negative to give capacity back) does to the plan: which pool-months become over-committed or stop being so, the constraint pool before and after, and the earliest start that fits. Reads, computes and stores nothing; names no one (a pool is a skill, and no worker, member, partner or other programme appears). Unknown where the model has no pools or a partner has not answered, never 'no impact' */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The answer */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/category-vocabulary": {
         parameters: {
             query?: never;

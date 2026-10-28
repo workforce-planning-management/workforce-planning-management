@@ -472,6 +472,22 @@ pub struct PoolView {
     pub unknown_months: usize,
 }
 
+/// What a pool-month comes to, from its balance (`supply - active demand`), the firm partner capacity and whether a partner has not
+/// answered. Also the shortfall left after firm partner capacity. The one place the rule is written, used by the view and the what-if.
+fn classify(balance: i64, firm: i64, any_unknown: bool) -> (CellStatus, i64) {
+    let remaining = (-(balance + firm)).max(0);
+    let status = if balance >= 0 {
+        CellStatus::Fits
+    } else if remaining == 0 {
+        CellStatus::FitsWithPartners
+    } else if any_unknown {
+        CellStatus::Unknown
+    } else {
+        CellStatus::Over
+    };
+    (status, remaining)
+}
+
 /// Build a pool's view over `months`, given its supply in each (same order), the demand
 /// claims and the partner commitments. Where a partner has two commitments for one month
 /// the later in the list wins.
@@ -517,16 +533,7 @@ pub fn build_pool(
             .sum();
         let any_unknown = partner_cells.iter().any(|p| p.commitment.is_none());
         let balance = supply - active;
-        let remaining = (-(balance + firm)).max(0);
-        let status = if balance >= 0 {
-            CellStatus::Fits
-        } else if remaining == 0 {
-            CellStatus::FitsWithPartners
-        } else if any_unknown {
-            CellStatus::Unknown
-        } else {
-            CellStatus::Over
-        };
+        let (status, remaining) = classify(balance, firm, any_unknown);
         match status {
             CellStatus::Over => {
                 over_total += remaining;
@@ -777,6 +784,284 @@ pub fn start_check(
         earliest_shift_months,
         wip,
         derivation,
+    }
+}
+
+// ─── What-if ────────────────────────────────────────────────────────────────
+
+/// A proposed change to one programme's **active** claim on one pool in one month. Positive asks for more FTE, negative gives some back.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Change {
+    /// The pool's key.
+    pub pool: String,
+    /// The month (its first day).
+    pub month: NaiveDate,
+    /// The change, in centi-FTE.
+    pub fte_centi: i64,
+}
+
+/// A pool-month the proposal touches, before and after.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CellChange {
+    /// The pool's key.
+    pub pool: String,
+    /// The month.
+    pub month: NaiveDate,
+    /// Status now.
+    pub before: CellStatus,
+    /// Status with the proposal.
+    pub after: CellStatus,
+    /// `supply - demand` now, in centi-FTE.
+    pub before_balance_centi: i64,
+    /// `supply - demand` with the proposal.
+    pub after_balance_centi: i64,
+}
+
+/// The overall answer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Answer {
+    /// Nothing the proposal touches is over-committed or made worse.
+    Fits,
+    /// At least one pool-month becomes over-committed or more so.
+    Breaks,
+    /// A pool-month it touches cannot be said, because a partner has made no commitment.
+    Unknown,
+}
+
+impl Answer {
+    /// The token.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Fits => "fits",
+            Self::Breaks => "breaks",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
+/// What a proposal does to the plan. Computed from the current view and **stored nowhere**.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WhatIf {
+    /// The overall answer.
+    pub answer: Answer,
+    /// Every pool-month the proposal touches, by pool then month.
+    pub cells: Vec<CellChange>,
+    /// Pool-months that were not over-committed and become so.
+    pub becomes_over: usize,
+    /// Pool-months that were over-committed and stop being so.
+    pub stops_over: usize,
+    /// Touched pool-months that cannot be said with the proposal.
+    pub unknown: usize,
+    /// The constraint pool now.
+    pub constraint_before: Option<String>,
+    /// The constraint pool with the proposal.
+    pub constraint_after: Option<String>,
+    /// The fewest months to put the whole proposal back for it to fit, `0` if it fits as asked; `None` if no start inside the horizon fits.
+    pub earliest_shift_months: Option<u32>,
+}
+
+/// Problems with a proposal: some changes, each to a pool and a month in the view, none of more than [`MAX_FTE_CENTI`].
+#[must_use]
+pub fn change_problems(
+    views: &BTreeMap<String, PoolView>,
+    months: &[NaiveDate],
+    changes: &[Change],
+) -> Vec<String> {
+    let mut out = Vec::new();
+    if changes.is_empty() {
+        out.push("propose at least one change".to_string());
+    }
+    for (i, c) in changes.iter().enumerate() {
+        let n = i + 1;
+        if !views.contains_key(&c.pool) {
+            out.push(format!("change {n}: no such pool"));
+        }
+        if !months.contains(&c.month) {
+            out.push(format!(
+                "change {n}: the month is outside the view (start each month on its first day)"
+            ));
+        }
+        if c.fte_centi == 0 || c.fte_centi.abs() > MAX_FTE_CENTI {
+            out.push(format!(
+                "change {n}: the change must be non-zero and within {MAX_FTE_CENTI} centi-FTE"
+            ));
+        }
+    }
+    out
+}
+
+/// The view with each month's active demand moved by `moves` (month, centi-FTE), never below zero.
+fn moved(view: &PoolView, moves: &BTreeMap<NaiveDate, i64>) -> PoolView {
+    let mut cells = Vec::with_capacity(view.cells.len());
+    let (mut over_total, mut over_months, mut unknown_months) = (0, 0, 0);
+    for cell in &view.cells {
+        let active = (cell.demand_centi + moves.get(&cell.month).copied().unwrap_or(0)).max(0);
+        let balance = cell.supply_centi - active;
+        let any_unknown = cell.partners.iter().any(|p| p.commitment.is_none());
+        let (status, remaining) = classify(balance, cell.firm_partner_centi, any_unknown);
+        match status {
+            CellStatus::Over => {
+                over_total += remaining;
+                over_months += 1;
+            }
+            CellStatus::Unknown => unknown_months += 1,
+            _ => {}
+        }
+        cells.push(Cell {
+            demand_centi: active,
+            own_balance_centi: balance,
+            remaining_shortfall_centi: remaining,
+            status,
+            ..cell.clone()
+        });
+    }
+    PoolView {
+        cells,
+        over_total_centi: over_total,
+        over_months,
+        unknown_months,
+    }
+}
+
+fn pools_of(views: &BTreeMap<String, PoolView>) -> Vec<(&str, &PoolView)> {
+    views.iter().map(|(k, v)| (k.as_str(), v)).collect()
+}
+
+/// Apply a proposal to the current views and say what changes. `programme_active` is the programme's own active claim by
+/// `(pool, month)`: a change cannot take back more than the programme holds. `shift` moves every change later by that many months
+/// (used to find the earliest start that fits); a change moved past the last month of the view is dropped and the answer is then `None`
+/// for it in [`what_if`].
+/// A proposal applied: the views with it, and the `(pool, month)` cells it touches.
+type Applied = (BTreeMap<String, PoolView>, Vec<(String, NaiveDate)>);
+
+fn apply(
+    views: &BTreeMap<String, PoolView>,
+    programme_active: &BTreeMap<(String, NaiveDate), i64>,
+    changes: &[Change],
+    shift: u32,
+) -> Option<Applied> {
+    let mut by_pool: BTreeMap<&str, BTreeMap<NaiveDate, i64>> = BTreeMap::new();
+    let mut touched = Vec::new();
+    for c in changes {
+        let month = shift_month(c.month, shift)?;
+        let have = programme_active
+            .get(&(c.pool.clone(), c.month))
+            .copied()
+            .unwrap_or(0);
+        let delta = c.fte_centi.max(-have);
+        *by_pool
+            .entry(&c.pool)
+            .or_default()
+            .entry(month)
+            .or_insert(0) += delta;
+        touched.push((c.pool.clone(), month));
+    }
+    touched.sort();
+    touched.dedup();
+    let after = views
+        .iter()
+        .map(|(k, v)| {
+            let view = by_pool
+                .get(k.as_str())
+                .map_or_else(|| v.clone(), |m| moved(v, m));
+            (k.clone(), view)
+        })
+        .collect();
+    Some((after, touched))
+}
+
+fn cell_at<'a>(
+    views: &'a BTreeMap<String, PoolView>,
+    pool: &str,
+    month: NaiveDate,
+) -> Option<&'a Cell> {
+    views.get(pool)?.cells.iter().find(|c| c.month == month)
+}
+
+/// How a shifted or unshifted proposal comes out: breaks if a touched cell becomes over-committed or more so; otherwise unknown if a
+/// touched cell cannot be said; otherwise fits.
+fn judge(
+    before: &BTreeMap<String, PoolView>,
+    after: &BTreeMap<String, PoolView>,
+    touched: &[(String, NaiveDate)],
+) -> Answer {
+    let mut unknown = false;
+    for (pool, month) in touched {
+        let (Some(b), Some(a)) = (cell_at(before, pool, *month), cell_at(after, pool, *month))
+        else {
+            continue;
+        };
+        let worse = a.status == CellStatus::Over
+            && (b.status != CellStatus::Over
+                || a.remaining_shortfall_centi > b.remaining_shortfall_centi);
+        if worse {
+            return Answer::Breaks;
+        }
+        if a.status == CellStatus::Unknown && a.demand_centi > b.demand_centi {
+            unknown = true;
+        }
+    }
+    if unknown {
+        Answer::Unknown
+    } else {
+        Answer::Fits
+    }
+}
+
+/// What a proposal does: which pool-months become over-committed or stop being so, the constraint pool before and after, and the
+/// earliest start that fits. Reads the current views; changes nothing.
+#[must_use]
+pub fn what_if(
+    views: &BTreeMap<String, PoolView>,
+    programme_active: &BTreeMap<(String, NaiveDate), i64>,
+    changes: &[Change],
+) -> WhatIf {
+    let (after, touched) =
+        apply(views, programme_active, changes, 0).unwrap_or_else(|| (views.clone(), Vec::new()));
+    let mut cells = Vec::new();
+    let (mut becomes_over, mut stops_over, mut unknown) = (0, 0, 0);
+    for (pool, month) in &touched {
+        let (Some(b), Some(a)) = (cell_at(views, pool, *month), cell_at(&after, pool, *month))
+        else {
+            continue;
+        };
+        if a.status == CellStatus::Over && b.status != CellStatus::Over {
+            becomes_over += 1;
+        }
+        if b.status == CellStatus::Over && a.status != CellStatus::Over {
+            stops_over += 1;
+        }
+        if a.status == CellStatus::Unknown {
+            unknown += 1;
+        }
+        cells.push(CellChange {
+            pool: pool.clone(),
+            month: *month,
+            before: b.status,
+            after: a.status,
+            before_balance_centi: b.own_balance_centi,
+            after_balance_centi: a.own_balance_centi,
+        });
+    }
+    let answer = judge(views, &after, &touched);
+    let max_shift = views
+        .values()
+        .next()
+        .map_or(0, |v| u32::try_from(v.cells.len()).unwrap_or(0));
+    let earliest_shift_months = (0..max_shift).find(|k| {
+        apply(views, programme_active, changes, *k)
+            .is_some_and(|(shifted, t)| judge(views, &shifted, &t) == Answer::Fits)
+    });
+    WhatIf {
+        answer,
+        cells,
+        becomes_over,
+        stops_over,
+        unknown,
+        constraint_before: constraint_pool(&pools_of(views)).map(ToString::to_string),
+        constraint_after: constraint_pool(&pools_of(&after)).map(ToString::to_string),
+        earliest_shift_months,
     }
 }
 
@@ -1287,5 +1572,317 @@ mod tests {
                 );
             }
         }
+    }
+
+    // ─── What-if (WPM-T158) ─────────────────────────────────────────────────
+
+    fn wi_m(n: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(2027, n, 1).unwrap()
+    }
+
+    fn wi_six() -> Vec<NaiveDate> {
+        (1..=6).map(wi_m).collect()
+    }
+
+    fn wi_demand(programme: &str, month: u32, fte: i64) -> Demand {
+        Demand {
+            programme: programme.to_string(),
+            month: wi_m(month),
+            fte_centi: fte,
+            status: DemandStatus::Active,
+        }
+    }
+
+    fn wi_pool(
+        supply: i64,
+        demands: &[Demand],
+        commitments: &[Commitment],
+    ) -> BTreeMap<String, PoolView> {
+        let months = wi_six();
+        let mut views = BTreeMap::new();
+        views.insert(
+            "nurses".to_string(),
+            build_pool(&months, &[supply; 6], demands, commitments),
+        );
+        views
+    }
+
+    fn wi_change(month: u32, fte: i64) -> Change {
+        Change {
+            pool: "nurses".to_string(),
+            month: wi_m(month),
+            fte_centi: fte,
+        }
+    }
+
+    fn wi_none() -> BTreeMap<(String, NaiveDate), i64> {
+        BTreeMap::new()
+    }
+
+    #[test]
+    fn a_change_that_fits_changes_no_status() {
+        let views = wi_pool(500, &[wi_demand("programme:a", 1, 300)], &[]);
+        let w = what_if(&views, &wi_none(), &[wi_change(1, 100)]);
+        assert_eq!(w.answer, Answer::Fits);
+        assert_eq!((w.becomes_over, w.stops_over, w.unknown), (0, 0, 0));
+        assert_eq!(w.cells.len(), 1);
+        assert_eq!(
+            (
+                w.cells[0].before_balance_centi,
+                w.cells[0].after_balance_centi
+            ),
+            (200, 100)
+        );
+        assert_eq!(w.earliest_shift_months, Some(0));
+        assert_eq!((w.constraint_before, w.constraint_after), (None, None));
+    }
+
+    #[test]
+    fn a_change_that_breaks_a_pool_month_says_so_and_names_the_constraint_pool() {
+        let views = wi_pool(500, &[wi_demand("programme:a", 1, 300)], &[]);
+        let w = what_if(&views, &wi_none(), &[wi_change(1, 300)]);
+        assert_eq!(w.answer, Answer::Breaks);
+        assert_eq!(w.becomes_over, 1);
+        assert_eq!(
+            (w.cells[0].before, w.cells[0].after),
+            (CellStatus::Fits, CellStatus::Over)
+        );
+        assert_eq!(
+            (w.constraint_before, w.constraint_after),
+            (None, Some("nurses".to_string()))
+        );
+    }
+
+    #[test]
+    fn the_earliest_start_that_fits_is_found_by_moving_the_whole_proposal_later() {
+        // January and February are busy; March onward is free.
+        let busy = [
+            wi_demand("programme:a", 1, 450),
+            wi_demand("programme:a", 2, 450),
+        ];
+        let views = wi_pool(500, &busy, &[]);
+        let w = what_if(&views, &wi_none(), &[wi_change(1, 200)]);
+        assert_eq!(w.answer, Answer::Breaks);
+        assert_eq!(
+            w.earliest_shift_months,
+            Some(2),
+            "March is the first month it fits"
+        );
+        let never = [
+            wi_demand("programme:a", 1, 450),
+            wi_demand("programme:a", 2, 450),
+            wi_demand("programme:a", 3, 450),
+            wi_demand("programme:a", 4, 450),
+            wi_demand("programme:a", 5, 450),
+            wi_demand("programme:a", 6, 450),
+        ];
+        let w = what_if(&wi_pool(500, &never, &[]), &wi_none(), &[wi_change(1, 200)]);
+        assert_eq!(
+            w.earliest_shift_months, None,
+            "no month in the view has room"
+        );
+    }
+
+    #[test]
+    fn a_change_in_a_month_with_an_unanswered_partner_cannot_be_said() {
+        let partner = Commitment {
+            partner: "organization:p".to_string(),
+            month: wi_m(2),
+            fte_centi: 0,
+            status: CommitmentStatus::Requested,
+        };
+        // January has the partner's answer (none, but the partner is known from February), so January is unknown when short.
+        let views = wi_pool(100, &[], &[partner]);
+        let w = what_if(&views, &wi_none(), &[wi_change(1, 300)]);
+        assert_eq!(
+            w.answer,
+            Answer::Unknown,
+            "short, and a partner has not answered"
+        );
+        assert_eq!(w.unknown, 1);
+        assert_eq!(w.cells[0].after, CellStatus::Unknown);
+        assert_eq!(w.becomes_over, 0, "unknown is not over");
+    }
+
+    #[test]
+    fn giving_capacity_back_can_stop_a_month_being_over() {
+        let views = wi_pool(
+            500,
+            &[
+                wi_demand("programme:a", 1, 400),
+                wi_demand("programme:b", 1, 300),
+            ],
+            &[],
+        );
+        assert_eq!(views["nurses"].cells[0].status, CellStatus::Over);
+        let mut held = BTreeMap::new();
+        held.insert(("nurses".to_string(), wi_m(1)), 300);
+        let w = what_if(&views, &held, &[wi_change(1, -300)]);
+        assert_eq!(w.stops_over, 1);
+        assert_eq!(w.answer, Answer::Fits);
+        assert_eq!(
+            (w.constraint_before, w.constraint_after),
+            (Some("nurses".to_string()), None)
+        );
+    }
+
+    #[test]
+    fn a_programme_cannot_give_back_more_than_it_holds() {
+        let views = wi_pool(500, &[wi_demand("programme:a", 1, 200)], &[]);
+        let mut held = BTreeMap::new();
+        held.insert(("nurses".to_string(), wi_m(1)), 200);
+        let w = what_if(&views, &held, &[wi_change(1, -900)]);
+        assert_eq!(
+            w.cells[0].after_balance_centi, 500,
+            "the programme's 200 is taken back, not 900"
+        );
+    }
+
+    #[test]
+    fn a_change_that_does_not_make_an_existing_shortfall_worse_is_not_a_break() {
+        let views = wi_pool(500, &[wi_demand("programme:a", 1, 600)], &[]);
+        let mut held = BTreeMap::new();
+        held.insert(("nurses".to_string(), wi_m(1)), 600);
+        let w = what_if(&views, &held, &[wi_change(1, -50)]);
+        assert_eq!(w.answer, Answer::Fits, "100 short became 50 short");
+        assert_eq!(w.becomes_over, 0);
+        assert_eq!(
+            what_if(&views, &wi_none(), &[wi_change(1, 50)]).answer,
+            Answer::Breaks,
+            "and 50 more is worse"
+        );
+    }
+
+    #[test]
+    fn a_proposal_is_checked_before_it_is_run() {
+        let views = wi_pool(500, &[], &[]);
+        let months = wi_six();
+        assert_eq!(
+            change_problems(&views, &months, &[wi_change(1, 100)]),
+            Vec::<String>::new()
+        );
+        assert_eq!(change_problems(&views, &months, &[]).len(), 1);
+        let mut bad = wi_change(1, 100);
+        bad.pool = "other".to_string();
+        assert_eq!(change_problems(&views, &months, &[bad]).len(), 1);
+        assert_eq!(
+            change_problems(
+                &views,
+                &months,
+                &[Change {
+                    pool: "nurses".into(),
+                    month: NaiveDate::from_ymd_opt(2027, 1, 15).unwrap(),
+                    fte_centi: 10
+                }]
+            )
+            .len(),
+            1,
+            "not the first of a month"
+        );
+        assert_eq!(
+            change_problems(&views, &months, &[wi_change(1, 0)]).len(),
+            1
+        );
+        assert_eq!(
+            change_problems(&views, &months, &[wi_change(1, MAX_FTE_CENTI + 1)]).len(),
+            1
+        );
+    }
+
+    #[test]
+    fn the_current_view_is_not_changed_by_asking() {
+        let views = wi_pool(500, &[wi_demand("programme:a", 1, 300)], &[]);
+        let copy = views.clone();
+        let _ = what_if(&views, &wi_none(), &[wi_change(1, 900)]);
+        assert_eq!(views, copy);
+    }
+
+    #[test]
+    fn the_view_and_the_what_if_classify_a_cell_the_same_way() {
+        for (supply, active, firm, unknown) in [
+            (500, 300, 0, false),
+            (100, 300, 0, false),
+            (100, 300, 150, false),
+            (100, 300, 50, true),
+            (100, 300, 50, false),
+        ] {
+            let (status, remaining) = classify(supply - active, firm, unknown);
+            let partners = if unknown {
+                vec![PartnerCell {
+                    partner: "p".into(),
+                    commitment: None,
+                }]
+            } else {
+                vec![]
+            };
+            let cell = Cell {
+                month: wi_m(1),
+                supply_centi: supply,
+                demand_centi: active,
+                proposed_centi: 0,
+                own_balance_centi: supply - active,
+                firm_partner_centi: firm,
+                remaining_shortfall_centi: remaining,
+                partners,
+                status,
+            };
+            let view = PoolView {
+                cells: vec![cell.clone()],
+                over_total_centi: 0,
+                over_months: 0,
+                unknown_months: 0,
+            };
+            let again = moved(&view, &BTreeMap::new());
+            assert_eq!(again.cells[0].status, status);
+            assert_eq!(again.cells[0].remaining_shortfall_centi, remaining);
+        }
+    }
+
+    #[test]
+    fn the_programme_floor_is_its_own_claim_and_not_the_cell_total() {
+        // Another programme holds 300 of the same month; this one holds 200 and offers to give back 900.
+        let views = wi_pool(
+            500,
+            &[
+                wi_demand("programme:a", 1, 200),
+                wi_demand("programme:b", 1, 300),
+            ],
+            &[],
+        );
+        let mut held = BTreeMap::new();
+        held.insert(("nurses".to_string(), wi_m(1)), 200);
+        let w = what_if(&views, &held, &[wi_change(1, -900)]);
+        assert_eq!(
+            (
+                w.cells[0].before_balance_centi,
+                w.cells[0].after_balance_centi
+            ),
+            (0, 200),
+            "only the programme's own 200 comes back; the other programme's 300 stays"
+        );
+    }
+
+    #[test]
+    fn an_unknown_month_is_not_a_fit_so_the_search_moves_on_to_a_month_that_is() {
+        // Short supply in January to March with a partner who has not answered; plenty from April.
+        let partner = Commitment {
+            partner: "organization:p".to_string(),
+            month: wi_m(6),
+            fte_centi: 0,
+            status: CommitmentStatus::Requested,
+        };
+        let months = wi_six();
+        let mut views = BTreeMap::new();
+        views.insert(
+            "nurses".to_string(),
+            build_pool(&months, &[100, 100, 100, 900, 900, 900], &[], &[partner]),
+        );
+        let w = what_if(&views, &wi_none(), &[wi_change(1, 300)]);
+        assert_eq!(w.answer, Answer::Unknown);
+        assert_eq!(
+            w.earliest_shift_months,
+            Some(3),
+            "April is the first month that can be said to fit"
+        );
     }
 }

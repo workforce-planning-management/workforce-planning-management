@@ -3114,6 +3114,35 @@
         ]
       }
     },
+    "/api/capacity/what-if": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The answer",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "What a proposed change to a programme's demand (organization_ref, programme_ref and changes of pool, month and centi-FTE, negative to give capacity back) does to the plan: which pool-months become over-committed or stop being so, the constraint pool before and after, and the earliest start that fits. Reads, computes and stores nothing; names no one (a pool is a skill, and no worker, member, partner or other programme appears). Unknown where the model has no pools or a partner has not answered, never 'no impact'",
+        "tags": [
+          "capacity"
+        ]
+      }
+    },
     "/api/category-vocabulary": {
       "get": {
         "responses": {

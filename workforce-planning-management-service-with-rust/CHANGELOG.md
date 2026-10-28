@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the capacity what-if (WPM-T158)
+
+`POST /api/capacity/what-if` and `rules::capacity::what_if`: what a proposed change to a programme's demand does (pool-months that become or stop being over-committed, the constraint pool before and after, the earliest start that fits). Reads and computes; stores nothing; names no one; `unknown` where a partner has not answered or the organization has no pools. The contingent effect (WPM-T159) is not built.
+
 ### Added — bridges to the sibling apps (WPM-T355 to T357)
 
 `worker_hired` (now also for a worker created directly), `worker_terminated` and `worker_retired` carry `person_ref`, `organization_ref` and `effective_on` (`rules::bridge`); migration `000106` adds `supplier_contact_ref` to contractor details; `POST /api/bridges/overlap` answers, for up to 500 `person:` references the caller holds, whether each is a worker today. References and aggregates only; the PPM half is specified and unbuilt (`spec/cross-app-bridges.md`).

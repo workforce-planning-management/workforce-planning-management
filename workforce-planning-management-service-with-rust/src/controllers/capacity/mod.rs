@@ -65,6 +65,7 @@ mod pools;
 mod settings;
 mod start_check;
 mod view;
+mod what_if;
 // The sections share this module's imports and each other's handlers.
 #[allow(clippy::wildcard_imports)]
 use self::demand::*;
@@ -77,6 +78,8 @@ use self::start_check::*;
 #[allow(clippy::wildcard_imports)]
 use self::view::*;
 pub(crate) use self::view::{load_org_capacity, pack_view};
+#[allow(clippy::wildcard_imports)]
+use self::what_if::*;
 
 /// The routes.
 pub fn routes() -> Routes {
@@ -102,6 +105,7 @@ pub fn routes() -> Routes {
         .add("/capacity/settings", put(set_settings))
         .add("/capacity/settings", get(get_settings))
         .add("/capacity/start-check", post(start_check))
+        .add("/capacity/what-if", post(what_if))
         .add("/capacity/start-decisions", post(record_start_decision))
         .add("/capacity/start-decisions", get(list_start_decisions))
 }

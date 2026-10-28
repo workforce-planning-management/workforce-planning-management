@@ -2,10 +2,25 @@
 //! demand, partner commitments, the capacity view, the start check and the recorded
 //! start decision.
 
+use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{activate, an_org};
+
+async fn scalar(ctx: &loco_rs::app::AppContext, sql: String) -> i64 {
+    use sea_orm::Statement;
+    ctx.db
+        .query_one_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            sql,
+        ))
+        .await
+        .unwrap()
+        .unwrap()
+        .try_get("", "n")
+        .unwrap()
+}
 
 fn a_programme() -> String {
     format!("thing:{}", uuid::Uuid::new_v4())
@@ -1475,6 +1490,124 @@ async fn capacity_supply_equals_walking_the_days() {
             }
         }
         let _ = who;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_what_if_says_what_a_change_does_stores_nothing_and_names_no_one() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let title = format!("What-if engineer {tag}");
+        // Three full-time workers in one pool: 3.00 FTE of supply every month.
+        for n in 1..=3 {
+            let created: Value = request
+                .post("/api/workers")
+                .json(&json!({
+                    "person_ref": super::a_person(), "organization_ref": org,
+                    "worker_number": format!("WI-{tag}-{n}"), "display_name": format!("Secret Name {n}"),
+                    "employment_type": "permanent", "fte_percent": 100,
+                    "department": "engineering", "job_title": title, "hired_on": "2026-01-05",
+                }))
+                .await
+                .json();
+            activate!(&request, created["pid"].as_str().unwrap()).await;
+        }
+        let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": title })).await.json();
+        let pool = make_pool(&request, &org, &format!("What-if pool {tag}"), 0).await;
+        request
+            .post(&format!("/api/skill-pools/{pool}/members"))
+            .json(&json!({ "role_profile_pid": profile["pid"] }))
+            .await
+            .assert_status_ok();
+
+        // Another programme holds 2.00 in January and February. The programme asking holds 0.50 in January.
+        let (other, mine) = (a_programme(), a_programme());
+        for (programme, month, fte) in [(&other, "2027-01-01", 200), (&other, "2027-02-01", 200), (&mine, "2027-01-01", 50)] {
+            request
+                .put("/api/programme-demands")
+                .json(&json!({ "programme_ref": programme, "pool_pid": pool, "month": month, "fte_centi": fte }))
+                .await
+                .assert_status_ok();
+        }
+        for programme in [&other, &mine] {
+            ctx.db
+                .execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'"))
+                .await
+                .unwrap();
+        }
+        let rows_before = scalar(&ctx, format!("SELECT count(*) AS n FROM programme_demands WHERE programme_ref IN ('{other}', '{mine}')")).await;
+        let ask = |changes: Value| {
+            let request = &request;
+            let (org, mine) = (org.clone(), mine.clone());
+            async move {
+                request
+                    .post("/api/capacity/what-if")
+                    .json(&json!({ "organization_ref": org, "programme_ref": mine, "changes": changes }))
+                    .await
+            }
+        };
+
+        // A change that fits: 2.00 + 0.50 + 0.30 is under 3.00.
+        let fits: Value = ask(json!([{ "pool_pid": pool, "month": "2027-01-01", "fte_centi": 30 }])).await.json();
+        assert_eq!((fits["answer"].as_str(), fits["becomes_over"].as_i64(), fits["earliest_shift_months"].as_i64()), (Some("fits"), Some(0), Some(0)), "{fits}");
+        assert_eq!(fits["stored"], false);
+
+        // One that breaks January: 2.00 + 0.50 + 1.00 is over 3.00, and February has room if it moves later by a month.
+        let breaks: Value = ask(json!([{ "pool_pid": pool, "month": "2027-01-01", "fte_centi": 100 }])).await.json();
+        assert_eq!(breaks["answer"], "breaks", "{breaks}");
+        assert_eq!(breaks["becomes_over"], 1);
+        assert_eq!(breaks["constraint_pool_before"], Value::Null);
+        assert_eq!(breaks["constraint_pool_after"]["pool_pid"], pool.as_str());
+        assert_eq!(breaks["cells"][0]["before"], "fits");
+        assert_eq!(breaks["cells"][0]["after"], "over");
+        assert_eq!(breaks["earliest_shift_months"], 1, "February holds the other programme's 2.00, and 2.00 + 1.00 is exactly the 3.00 of supply");
+        assert_eq!(breaks["earliest_start"], "2027-02-01");
+
+        // Giving back more than it holds takes back only its own 0.50: the balance goes from 0.50 to 1.00, not to 3.00.
+        let back: Value = ask(json!([{ "pool_pid": pool, "month": "2027-01-01", "fte_centi": -900 }])).await.json();
+        assert_eq!((back["cells"][0]["before_balance_centi"].as_i64(), back["cells"][0]["after_balance_centi"].as_i64()), (Some(50), Some(100)), "{back}");
+        assert_eq!(back["answer"], "fits");
+
+        // It stores nothing: the same claims, the same rows, every time.
+        let rows_after = scalar(&ctx, format!("SELECT count(*) AS n FROM programme_demands WHERE programme_ref IN ('{other}', '{mine}')")).await;
+        assert_eq!(rows_after, rows_before);
+        let still = scalar(&ctx, format!("SELECT sum(fte_centi)::bigint AS n FROM programme_demands WHERE programme_ref = '{mine}'")).await;
+        assert_eq!(still, 50, "the programme's own claim is untouched");
+
+        // It names no one: a pool is a skill; no worker, no worker number, no display name, no partner, no other programme.
+        let all = format!("{fits}{breaks}{back}");
+        for word in ["Secret Name", "WI-", "person:", &other] {
+            assert!(!all.contains(word), "{word} must not appear in a what-if answer");
+        }
+
+        // Refused: no changes; a pool that is not the organization's; a day that is not the first of a month; a proposal that spans more months than the view holds.
+        for bad in [
+            json!([]),
+            json!([{ "pool_pid": uuid::Uuid::new_v4(), "month": "2027-01-01", "fte_centi": 10 }]),
+            json!([{ "pool_pid": pool, "month": "2027-01-15", "fte_centi": 10 }]),
+            json!([{ "pool_pid": pool, "month": "2027-01-01", "fte_centi": 10 }, { "pool_pid": pool, "month": "2031-01-01", "fte_centi": 10 }]),
+            json!([{ "pool_pid": pool, "month": "2027-01-01", "fte_centi": 0 }]),
+        ] {
+            assert_eq!(ask(bad.clone()).await.status_code(), 422, "{bad}");
+        }
+
+        // An organization with no skill pools cannot be said anything about: unknown, never "no impact".
+        let empty: Value = request
+            .post("/api/capacity/what-if")
+            .json(&json!({ "organization_ref": an_org(), "programme_ref": mine, "changes": [{ "pool_pid": pool, "month": "2027-01-01", "fte_centi": 10 }] }))
+            .await
+            .json();
+        assert_eq!(empty["answer"], "unknown", "{empty}");
+        assert!(empty["reason"].as_str().unwrap().contains("no skill pools"));
+
+        // The audit trail has counts and the answer, not the figures or the programme.
+        let asked = scalar(&ctx, "SELECT count(*) AS n FROM audit_logs WHERE action = 'capacity_what_if_asked'".to_string()).await;
+        let leaked = scalar(&ctx, format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'capacity_what_if_asked' AND snapshot::text LIKE '%{mine}%'")).await;
+        assert!(asked >= 3 && leaked == 0, "asked {asked}, leaked {leaked}");
     })
     .await;
 }
