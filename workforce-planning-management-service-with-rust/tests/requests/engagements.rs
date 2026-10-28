@@ -1079,3 +1079,35 @@ async fn demand_lines_by_basis_and_programme_reach_the_forecast() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_contractors_supplier_has_a_contact_that_is_a_person_ref_and_nothing_more() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let contractor: Value = create(&request, &org, &format!("SC-{tag}"), "contractor", Some("2026-12-31")).await.1;
+        let worker = contractor["pid"].as_str().unwrap().to_string();
+        let url = format!("/api/workers/{worker}/contractor-details");
+        let (supplier, contact) = (an_org(), a_person());
+
+        // The contact is a person: URN; an organization or a made-up string is refused.
+        for bad in [an_org(), "not-a-urn".to_string(), "person:not-a-uuid".to_string()] {
+            let body = json!({ "supplier_ref": supplier, "supplier_contact_ref": bad, "route": "agency" });
+            assert_eq!(request.put(&url).json(&body).await.status_code(), 422, "{bad}");
+        }
+        let saved = request.put(&url).json(&json!({ "supplier_ref": supplier, "supplier_contact_ref": contact, "route": "agency" })).await;
+        assert_eq!(saved.status_code(), 200, "{}", saved.text());
+        let shown: Value = request.get(&url).await.json();
+        assert_eq!(shown["contractor_details"]["supplier_contact_ref"], contact.as_str(), "{shown}");
+        assert_eq!(shown["contractor_details"]["supplier_ref"], supplier.as_str());
+
+        // Leaving it out clears it: the contact is optional, and the response holds nothing about the contact but the ref.
+        let cleared = request.put(&url).json(&json!({ "supplier_ref": supplier, "route": "agency" })).await;
+        assert_eq!(cleared.status_code(), 200);
+        let again: Value = request.get(&url).await.json();
+        assert_eq!(again["contractor_details"]["supplier_contact_ref"], Value::Null);
+    })
+    .await;
+}

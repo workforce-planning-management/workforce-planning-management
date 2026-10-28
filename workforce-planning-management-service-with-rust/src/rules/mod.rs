@@ -17,6 +17,7 @@ pub mod audit_export;
 pub mod bargaining;
 pub mod bargaining_pack;
 pub mod benchmark;
+pub mod bridge;
 pub mod capability;
 pub mod capacity;
 pub mod career;

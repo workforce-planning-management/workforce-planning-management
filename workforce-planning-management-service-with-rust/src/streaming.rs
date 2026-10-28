@@ -242,6 +242,17 @@ pub fn recent(limit: usize) -> Vec<EventView> {
         .collect()
 }
 
+/// The most recent in-memory envelopes with their data, newest first, capped at `limit`. For tests that pin what an event carries
+/// to another app; the operator projection ([`recent`]) leaves the data out on purpose.
+#[must_use]
+pub fn recent_envelopes(limit: usize) -> Vec<Envelope> {
+    let events = publisher()
+        .events
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    events.iter().rev().take(limit).cloned().collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

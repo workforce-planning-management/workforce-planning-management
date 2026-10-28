@@ -15,6 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub worker_pid: Uuid,
     pub supplier_ref: Option<String>,
+    pub supplier_contact_ref: Option<String>,
     pub route: Option<String>,
     pub rate_minor: Option<i64>,
     pub rate_currency: Option<String>,

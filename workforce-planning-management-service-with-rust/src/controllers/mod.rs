@@ -15,6 +15,7 @@ pub mod assessments;
 pub mod assignments;
 pub mod audits;
 pub mod bargaining;
+pub mod bridges;
 pub mod capacity;
 pub mod career;
 pub mod category_vocabulary;

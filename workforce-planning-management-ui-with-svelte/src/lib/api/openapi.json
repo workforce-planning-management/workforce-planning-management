@@ -2897,6 +2897,35 @@
         ]
       }
     },
+    "/api/bridges/overlap": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per reference, worker true or false",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Of up to 500 person: references the caller already holds (organization_ref and person_refs), which are workers of the organization today? A yes or no for each reference supplied and nothing else. HR under their own token; audited with the count, never the references",
+        "tags": [
+          "bridges"
+        ]
+      }
+    },
     "/api/candidates": {
       "get": {
         "responses": {

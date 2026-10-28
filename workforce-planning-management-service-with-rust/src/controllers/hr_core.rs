@@ -233,6 +233,21 @@ async fn create_worker(
         None,
     )
     .await?;
+    // A worker made directly (not hired from an application) is still a person who became an employee: tell the other apps (WPM-R207).
+    streaming::emit_on(
+        &txn,
+        "worker",
+        "worker_hired",
+        &row.pid.to_string(),
+        &row.worker_number,
+        caller.actor(),
+        Some(crate::rules::bridge::handoff_data(
+            &row.person_ref,
+            &row.organization_ref,
+            row.hired_on,
+        )),
+    )
+    .await?;
     txn.commit().await?;
     format::json(PidRef {
         pid: row.pid.to_string(),
@@ -536,7 +551,7 @@ async fn change_status(
         &row.pid.to_string(),
         &number,
         caller.actor(),
-        Some(serde_json::json!({ "from": from, "to": payload.to })),
+        Some(status_event_data(&from, &payload.to, &row)),
     )
     .await?;
     txn.commit().await?;
@@ -929,6 +944,23 @@ async fn unenroll(
     .await?;
     txn.commit().await?;
     format::empty_json()
+}
+
+/// What a status-change event carries: the change, and, when employment ends, who, where and when for the other apps (WPM-R207).
+fn status_event_data(from: &str, to: &str, row: &workers::Model) -> serde_json::Value {
+    let mut data = serde_json::json!({ "from": from, "to": to });
+    if matches!(to, "terminated" | "retired") {
+        let handoff = crate::rules::bridge::handoff_data(
+            &row.person_ref,
+            &row.organization_ref,
+            row.terminated_on
+                .unwrap_or_else(|| chrono::Utc::now().date_naive()),
+        );
+        if let (Some(d), Some(h)) = (data.as_object_mut(), handoff.as_object()) {
+            d.extend(h.clone());
+        }
+    }
+    data
 }
 
 /// The HR-core routes.

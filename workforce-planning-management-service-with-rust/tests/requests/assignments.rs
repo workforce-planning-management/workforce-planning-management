@@ -591,3 +591,73 @@ async fn the_tables_found_by_the_inventory_are_exported_and_erased() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_hire_and_termination_events_carry_the_person_ref_and_the_overlap_check_says_only_yes_or_no()
+ {
+    use workforce_planning_management::rules::bridge::HANDOFF_KEYS;
+    use workforce_planning_management::streaming::recent_envelopes;
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let person = crate::requests::a_person();
+        let made: Value = request
+            .post("/api/workers")
+            .json(&json!({
+                "person_ref": person, "organization_ref": org, "worker_number": format!("BR-{tag}"),
+                "display_name": "Bridge Person", "employment_type": "permanent", "department": "care",
+                "job_title": "Carer", "hired_on": "2026-01-05",
+            }))
+            .await
+            .json();
+        let w = made["pid"].as_str().unwrap().to_string();
+        activate!(&request, &w).await;
+
+        // A worker made directly tells the other apps who became an employee, where and when, and nothing else.
+        let hired = recent_envelopes(200).into_iter().find(|e| e.kind == "worker_hired" && e.pid == w).expect("a worker_hired event");
+        let data = hired.data.expect("the event carries data");
+        let mut keys: Vec<_> = data.as_object().unwrap().keys().cloned().collect();
+        keys.sort();
+        assert_eq!(keys, HANDOFF_KEYS);
+        assert_eq!((data["person_ref"].as_str(), data["organization_ref"].as_str(), data["effective_on"].as_str()), (Some(person.as_str()), Some(org.as_str()), Some("2026-01-05")));
+        assert!(!data.to_string().contains("Bridge Person") && !data.to_string().contains("care"), "no name, no department");
+
+        // The overlap check: yes for the worker, no for a stranger, nothing for a person not named.
+        let stranger = crate::requests::a_person();
+        let check = |refs: Vec<String>| {
+            let request = &request;
+            let org = org.clone();
+            async move { request.post("/api/bridges/overlap").json(&json!({ "organization_ref": org, "person_refs": refs })).await }
+        };
+        let got = check(vec![person.clone(), stranger.clone(), person.clone()]).await;
+        assert_eq!(got.status_code(), 200, "{}", got.text());
+        let got: Value = got.json();
+        assert_eq!(got["results"], json!([{ "person_ref": person, "worker": true }, { "person_ref": stranger, "worker": false }]), "{got}");
+        assert!(!got.to_string().contains(&w), "no worker pid");
+        for bad in [vec![], vec!["nope".to_string()], vec![org.clone()], vec![person.clone(); 501]] {
+            assert_eq!(check(bad).await.status_code(), 422);
+        }
+
+        // The audit entry carries counts, not references.
+        let leaked = scalar(&ctx, format!("SELECT count(*) AS n FROM audit_logs WHERE entity = 'bridge' AND snapshot::text LIKE '%{person}%'")).await;
+        let logged = scalar(&ctx, "SELECT count(*) AS n FROM audit_logs WHERE entity = 'bridge' AND action = 'bridge_overlap_checked'".to_string()).await;
+        assert_eq!((leaked, logged >= 1), (0, true));
+
+        // Termination tells the other apps the same three things (plus the status change the event always had).
+        for to in ["offboarding", "terminated"] {
+            request.post(&format!("/api/workers/{w}/status")).json(&json!({ "to": to })).await.assert_status_ok();
+        }
+        let ended = recent_envelopes(200).into_iter().find(|e| e.kind == "worker_terminated" && e.pid == w).expect("a worker_terminated event");
+        let data = ended.data.unwrap();
+        let mut keys: Vec<_> = data.as_object().unwrap().keys().cloned().collect();
+        keys.sort();
+        assert_eq!(keys, ["effective_on", "from", "organization_ref", "person_ref", "to"]);
+        assert_eq!(data["person_ref"], person.as_str());
+        // Once they have left, the overlap check no longer says they are a worker.
+        let after: Value = check(vec![person.clone()]).await.json();
+        assert_eq!(after["results"][0]["worker"], false, "{after}");
+    })
+    .await;
+}

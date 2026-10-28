@@ -219,6 +219,9 @@ struct DetailsPayload {
     /// The supplier (agency, or the contractor's own company): an `organization:` URN.
     #[serde(default)]
     supplier_ref: Option<String>,
+    /// The supplier's contact there: a `person:` URN (WPM-R206).
+    #[serde(default)]
+    supplier_contact_ref: Option<String>,
     #[serde(default)]
     route: Option<String>,
     #[serde(default)]
@@ -243,6 +246,7 @@ async fn details_of(
 fn details_json(row: &worker_contractor_details::Model, masked: bool) -> serde_json::Value {
     json!({
         "supplier_ref": row.supplier_ref,
+        "supplier_contact_ref": row.supplier_contact_ref,
         "route": row.route,
         "rate_minor": if masked { None } else { row.rate_minor },
         "rate_currency": if masked { None } else { row.rate_currency.clone() },
@@ -301,6 +305,11 @@ async fn set_details(
         entity_ref::EntityType::Organization,
         payload.supplier_ref.as_deref(),
     );
+    problems.ref_opt(
+        "supplier_contact_ref",
+        entity_ref::EntityType::Person,
+        payload.supplier_contact_ref.as_deref(),
+    );
     ensure_valid(&problems.into_vec())?;
     rules::validate_contractor_details(
         payload.route.as_deref(),
@@ -315,6 +324,7 @@ async fn set_details(
     let saved = if let Some(row) = existing {
         let mut active: worker_contractor_details::ActiveModel = row.into();
         active.supplier_ref = ActiveValue::set(payload.supplier_ref.clone());
+        active.supplier_contact_ref = ActiveValue::set(payload.supplier_contact_ref.clone());
         active.route = ActiveValue::set(payload.route.clone());
         active.rate_minor = ActiveValue::set(payload.rate_minor);
         active.rate_currency = ActiveValue::set(payload.rate_currency.clone());
@@ -325,6 +335,7 @@ async fn set_details(
         worker_contractor_details::ActiveModel {
             worker_pid: ActiveValue::set(worker.pid),
             supplier_ref: ActiveValue::set(payload.supplier_ref.clone()),
+            supplier_contact_ref: ActiveValue::set(payload.supplier_contact_ref.clone()),
             route: ActiveValue::set(payload.route.clone()),
             rate_minor: ActiveValue::set(payload.rate_minor),
             rate_currency: ActiveValue::set(payload.rate_currency.clone()),

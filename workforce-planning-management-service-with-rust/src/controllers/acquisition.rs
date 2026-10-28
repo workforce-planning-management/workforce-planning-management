@@ -648,7 +648,11 @@ async fn application_stage(
             &worker.pid.to_string(),
             &worker.worker_number,
             caller.actor(),
-            None,
+            Some(crate::rules::bridge::handoff_data(
+                &worker.person_ref,
+                &worker.organization_ref,
+                worker.hired_on,
+            )),
         )
         .await?;
         worker_pid = Some(worker.pid);

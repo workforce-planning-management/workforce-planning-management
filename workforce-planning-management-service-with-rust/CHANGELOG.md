@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — bridges to the sibling apps (WPM-T355 to T357)
+
+`worker_hired` (now also for a worker created directly), `worker_terminated` and `worker_retired` carry `person_ref`, `organization_ref` and `effective_on` (`rules::bridge`); migration `000106` adds `supplier_contact_ref` to contractor details; `POST /api/bridges/overlap` answers, for up to 500 `person:` references the caller holds, whether each is a worker today. References and aggregates only; the PPM half is specified and unbuilt (`spec/cross-app-bridges.md`).
+
 ### Added — a checked personal-data inventory (WPM-T353)
 
 `tests/personal_data_inventory.rs` and the generated `spec/governance/personal-data-inventory.md` (66 person-keyed tables). Found and fixed: weekly time totals and organization memberships were never erased, and three tables were missing from the subject-access export; an onboarding waiver reason survived erasure. Erasure gains four statements (appended) and the audit counts four keys.

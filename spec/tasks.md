@@ -5537,10 +5537,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       Found while writing it: the agency link already exists in part (`worker_contractor_details.supplier_ref`, validated as an `organization:` URN), and the `worker_hired` event carries no
       `person_ref`, so a consumer cannot tell who was hired. **Not read:** PPM's code is not on this machine, and CRM was looked at only as far as its file list and its use of `person_ref`;
       every PPM contract is an assumed shape and marked unverified (WPM-D136). No code, migration or test changed in this task.
-- [ ] WPM-T355 **Hire and termination events carry the person's ref.** *(WPM-R207)* `worker_hired` and `worker_terminated` gain `data` with `person_ref`, `organization_ref` and `effective_on`, nothing else;
+- [x] (2026-10-28) WPM-T355 **Hire and termination events carry the person's ref.** *(WPM-R207)* `worker_hired` and `worker_terminated` gain `data` with `person_ref`, `organization_ref` and `effective_on`, nothing else;
       a test pins the exact keys.
-- [ ] WPM-T356 **The supplier's contact.** *(WPM-R206)* `supplier_contact_ref` (a `person:` URN) on contractor details; validated, exported with the worker, erased with them.
-- [ ] WPM-T357 **The overlap check.** *(WPM-R208, WPM-D135)* `POST /api/bridges/overlap`: up to 500 `person:` refs, a yes or no for each, HR under their own token, audited with the count only.
+      **Done:** `rules::bridge::handoff_data` (one function, keys pinned as `HANDOFF_KEYS`, no personal word in the payload) used in three places: hiring from an application (`worker_hired`, which had `data: None`),
+      **direct creation by HR (which emitted only `created`, so no hire event existed: `worker_hired` is now emitted there too)**, and `worker_terminated` and `worker_retired` (their `from` and `to` kept). A request test
+      reads the envelopes and pins the exact key set for hire (3) and for termination (5), and that no name or department is in them. **Mutation-checked** three ways (the direct-creation event not emitted; an extra
+      field in the payload; the overlap check's employed filter dropped), all caught. **Not done:** CRM's side; a consumer must be idempotent on `event_id` (the outbox is at-least-once); the in-memory transport
+      loses events on restart (the outbox transport does not). **Changed behaviour to know:** webhook subscribers to `worker_hired` now also receive it for directly created workers.
+- [x] (2026-10-28) WPM-T356 **The supplier's contact.** *(WPM-R206)* `supplier_contact_ref` (a `person:` URN) on contractor details; validated, exported with the worker, erased with them.
+      **Done:** migration `000106` (a nullable column, checked as a `person:` URN), the entity, validation through the existing `ref_opt`, and the response; the table was already in the export and the erasure, so the new
+      column goes with them. A request test: an organization URN, a string and a malformed `person:` are refused; a valid one is stored and read back; leaving it out clears it. **Not done:** the name lookup (WPM-T358).
+- [x] (2026-10-28) WPM-T357 **The overlap check.** *(WPM-R208, WPM-D135)* `POST /api/bridges/overlap`: up to 500 `person:` refs, a yes or no for each, HR under their own token, audited with the count only.
+      **Done:** `rules::bridge::{overlap_problems, overlap}` (1 to 500 well-formed `person:` URNs; one answer per distinct ref in the order first seen; nothing about a person not named) and `POST /api/bridges/overlap`
+      (HR of the organization, in scope, under the caller's token; employed today means hired, not left, not deleted; the audit entry holds the counts and no reference, written inside a transaction as the audit guard requires,
+      which a first version missed and the guard caught). Request test: yes for a worker, no for a stranger, repeats answered once, no pid in the answer, four refused shapes, no reference in the audit trail, and no longer a
+      worker once terminated. **Not done:** a push to CRM; the endpoint is not rate limited; it tells an HR caller whether a person they name is employed by their organization, which is the fact HR reads on the worker list.
+      Verified: full `--ignored` suite 175, `cargo test --lib` 979, clippy clean, `personal_data_inventory` passes.
 - [ ] WPM-T358 **Supplier and contact names from CRM.** *(WPM-R206)* Best-effort, cached, never blocking a write. Needs CRM's lookup route read first.
 - [ ] WPM-T359 **Capacity what-if for PPM.** *(WPM-R209)* Is WPM-T158 to T160.
 - [ ] WPM-T360 **Programme demand in.** *(WPM-R210)* Idempotent on programme and source event. Needs PPM's contract.

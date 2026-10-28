@@ -686,6 +686,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/holidays/generate": {
             "post": { "tags": ["leave"], "summary": "Generate a region's holidays for a year from its rule pack. Safe to repeat: rows it made are brought up to date, rows added by hand are never changed. A region with no pack is refused. HR", "responses": ok("Counts of rows created, updated, unchanged and kept") }
         },
+        "/api/bridges/overlap": {
+            "post": { "tags": ["bridges"], "summary": "Of up to 500 person: references the caller already holds (organization_ref and person_refs), which are workers of the organization today? A yes or no for each reference supplied and nothing else. HR under their own token; audited with the count, never the references", "responses": ok("Per reference, worker true or false") }
+        },
         "/api/absence-categories": {
             "get": { "tags": ["leave"], "summary": "The kinds of leave (?pay=paid|unpaid|policy to filter): vacation (annual), government holiday (public_holiday), illness (sick), parental, unpaid and other, each paid, unpaid or by the employer's policy, how it is held against a balance, and whether a reason may be given. Sick leave never carries a reason and there is no category for a condition or for stress", "responses": ok("The categories") }
         },

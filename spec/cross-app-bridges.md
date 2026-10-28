@@ -43,13 +43,14 @@ copying a record and without carrying a personal field outward**.
 
 ### WPM-R207 — Hire handoff
 
-- **What WPM says.** The existing `worker_hired` event (emitted in the hire transaction by `acquisition.rs`) gains `data` holding exactly: `person_ref`, `organization_ref` and
-  `effective_on` (the first day). Nothing else: no name, no department, no pay, no worker number beyond what the envelope already has.
-  Today the event carries a worker pid and number but no `person_ref`, so a consumer cannot tell *which person* was hired.
+- **What WPM says.** The `worker_hired` event gains `data` holding exactly: `person_ref`, `organization_ref` and `effective_on` (the first day).
+  Nothing else: no name, no department, no pay, no worker number beyond what the envelope already has. Before this, the event carried a worker pid
+  and number but no `person_ref`, so a consumer could not tell *which person* was hired. It is emitted when a candidate is hired from an
+  application (`acquisition.rs`) **and when HR creates a worker directly** (`hr_core.rs`, which until now emitted only `created`).
 - **What CRM does with it** is CRM's to decide (for example, mark the contact as now an employee and stop campaign contact). That is
   CRM's requirement and lives in CRM's spec; WPM states the contract and no more.
-- **Terminated** is the mirror (`worker_terminated`, same three fields) so CRM can restore a contact it paused. Both are emitted in the
-  transaction that makes the change (WPM-D9).
+- **Employment ending** is the mirror: `worker_terminated` and `worker_retired` carry the same three fields beside the `from` and `to` they always had,
+  so CRM can restore a contact it paused. All are emitted in the transaction that makes the change (WPM-D9).
 - **Not done:** any CRM-side behaviour; replay of events a consumer missed (the outbox gives at-least-once, so a consumer must be idempotent
   on `event_id`).
 
@@ -93,7 +94,7 @@ read as one set. **Contract with PPM: unverified.**
 
 | Task | What | Needs |
 | --- | --- | --- |
-| WPM-T355 | `worker_hired` and `worker_terminated` carry `person_ref`, `organization_ref`, `effective_on` and nothing else (R207) | nothing outside WPM |
+| WPM-T355 | `worker_hired` and `worker_terminated`/`worker_retired` carry `person_ref`, `organization_ref`, `effective_on` and nothing else (R207) | nothing outside WPM |
 | WPM-T356 | `supplier_contact_ref` on contractor details (R206) | nothing outside WPM |
 | WPM-T357 | `POST /api/bridges/overlap` (R208) | nothing outside WPM |
 | WPM-T358 | Best-effort supplier and contact name lookup from CRM (R206) | CRM's lookup route, to be read |
