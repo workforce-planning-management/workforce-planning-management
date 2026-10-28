@@ -405,3 +405,71 @@ async fn the_absence_categories_are_listed_by_pay_and_a_government_holiday_has_n
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn holidays_are_generated_per_region_safely_repeated_and_kept_apart_from_hand_added_days() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let other = an_org();
+
+        // The regions with a pack are listed and none claims to be verified.
+        let regions: Value = request.get("/api/holiday-regions").await.json();
+        let list = regions["regions"].as_array().unwrap();
+        assert_eq!(list.iter().map(|r| r["region"].as_str().unwrap()).collect::<Vec<_>>(), ["GB-ENG", "US", "DE"]);
+        assert!(list.iter().all(|r| r["verified"] == false), "{regions}");
+
+        // Generating: a region with no pack, a bad code and a year out of range are refused.
+        let generate = |org: &str, region: &str, year: i64| {
+            let request = &request;
+            let body = json!({ "organization_ref": org, "region": region, "year": year });
+            async move { request.post("/api/holidays/generate").json(&body).await }
+        };
+        assert_eq!(generate(&org, "FR", 2026).await.status_code(), 422, "no pack");
+        assert_eq!(generate(&org, "gb eng", 2026).await.status_code(), 422);
+        assert_eq!(generate(&org, "GB-ENG", 1900).await.status_code(), 422);
+
+        let first = generate(&org, "GB-ENG", 2026).await;
+        assert_eq!(first.status_code(), 200, "{}", first.text());
+        let first: Value = first.json();
+        assert_eq!((first["created"].as_i64(), first["updated"].as_i64(), first["unchanged"].as_i64()), (Some(8), Some(0), Some(0)), "{first}");
+        assert_eq!(first["verified"], false);
+        let listed: Value = request.get(&format!("/api/holidays?organization={org}&region=GB-ENG&year=2026")).await.json();
+        let days: Vec<&str> = listed["holidays"].as_array().unwrap().iter().map(|h| h["observed_on"].as_str().unwrap()).collect();
+        assert_eq!(days, ["2026-01-01", "2026-04-03", "2026-04-06", "2026-05-04", "2026-05-25", "2026-08-31", "2026-12-25", "2026-12-28"]);
+        assert!(listed["holidays"][0].get("recorded_by").is_none());
+
+        // Repeating changes nothing; a second region and another organization are separate.
+        let again: Value = generate(&org, "GB-ENG", 2026).await.json();
+        assert_eq!((again["created"].as_i64(), again["unchanged"].as_i64()), (Some(0), Some(8)), "{again}");
+        assert_eq!(generate(&org, "US", 2026).await.json::<Value>()["created"], 11);
+        assert_eq!(generate(&other, "GB-ENG", 2026).await.json::<Value>()["created"], 8);
+        let only_gb: Value = request.get(&format!("/api/holidays?organization={org}&region=GB-ENG")).await.json();
+        assert_eq!(only_gb["holidays"].as_array().map(Vec::len), Some(8), "region filter");
+
+        // A day added by hand is kept, and a generated row that moves is brought up to date.
+        let hand = request
+            .post("/api/holidays")
+            .json(&json!({ "organization_ref": org, "region": "GB-ENG", "name": "Founders' day", "on": "2026-06-12" }))
+            .await;
+        assert_eq!(hand.status_code(), 200, "{}", hand.text());
+        let dup = request
+            .post("/api/holidays")
+            .json(&json!({ "organization_ref": org, "region": "GB-ENG", "name": "Founders' day", "on": "2026-06-12" }))
+            .await;
+        assert_eq!(dup.status_code(), 422);
+        assert_eq!(request.post("/api/holidays").json(&json!({ "organization_ref": org, "region": "GB-ENG", "name": " ", "on": "2026-06-12" })).await.status_code(), 422);
+
+        // A hand-edited generated row is rewritten, a manual row of the same name and date is not.
+        ctx.db.execute_unprepared(&format!("UPDATE holidays SET observed_on = '2026-12-29' WHERE organization_ref = '{org}' AND region = 'GB-ENG' AND name = 'Boxing Day'")).await.unwrap();
+        ctx.db.execute_unprepared(&format!("UPDATE holidays SET source = 'manual', observed_on = '2026-01-02' WHERE organization_ref = '{org}' AND region = 'GB-ENG' AND name = 'New Year''s Day'")).await.unwrap();
+        let fixed: Value = generate(&org, "GB-ENG", 2026).await.json();
+        assert_eq!((fixed["updated"].as_i64(), fixed["kept_manual"].as_i64(), fixed["unchanged"].as_i64()), (Some(1), Some(1), Some(6)), "{fixed}");
+        let after: Value = request.get(&format!("/api/holidays?organization={org}&region=GB-ENG&year=2026")).await.json();
+        let on = |name: &str| after["holidays"].as_array().unwrap().iter().find(|h| h["name"] == name).unwrap()["observed_on"].as_str().unwrap().to_string();
+        assert_eq!(on("Boxing Day"), "2026-12-28", "brought up to date");
+        assert_eq!(on("New Year's Day"), "2026-01-02", "a hand-kept row is left alone");
+    })
+    .await;
+}

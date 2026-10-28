@@ -142,6 +142,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::assignments::routes())
         .add_route(controllers::category_vocabulary::routes())
         .add_route(controllers::cost_centres::routes())
+        .add_route(controllers::holidays::routes())
         .add_route(controllers::policies::routes())
         .add_route(controllers::credentials::routes())
         .add_route(controllers::skill_mappings::routes())

@@ -5444,3 +5444,16 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       two French words that equal the English (`site`, `performance`) allow-listed. **Not verified:** pay by policy is not looked up anywhere (no
       sick pay or entitlement is computed); no entitlement is created for `public_holiday`; a holiday calendar is not built, so a holiday is
       recorded by hand; the Playwright specs, axe and the Keycloak suite were not run.
+- [x] (2026-10-28) WPM-T346 **The holiday calendar.** *(WPM-R5, WPM-D116)* Government holidays generated per country or region, not entered one by one.
+      **Done:** `rules/holiday.rs` (rule kinds `Fixed`, `Nth`, `Last`, `Easter`; weekend policies `Stays`, `NextWeekday` (a substitute that never lands on another
+      holiday, placing weekday holidays first), `Nearest`; Easter by the Gregorian algorithm; `generate`, `is_holiday`, `is_business_day`; packs `GB-ENG`, `US`, `DE`, each
+      `verified: false`); migration `000104` (`holidays`, unique per organization, region, natural date and name); `GET /api/holiday-regions`, `GET /api/holidays`
+      (open to a signed-in caller in scope), `POST /api/holidays/generate` (HR; idempotent: a row it made is updated, a hand-added row is kept) and `POST /api/holidays` (HR).
+      11 unit tests (Easter for six years; England 2026, with the Boxing Day substitute; Christmas on a weekend for 2021, 2022 and 2027 and every year 2015 to 2039 with eight
+      distinct weekday days; the US Saturday-to-Friday and Sunday-to-Monday observance, including a New Year observed in the year before; Germany from Easter) and a request test
+      (listing, refusals, generation, repetition, regions kept apart, a hand-added day, an update and a kept manual row). **Mutation-checked** five ways (the substitute clash
+      check; the weekday-first placement; the Saturday/Sunday direction for `Nearest`; Easter's day; manual rows protected), all caught. `cargo test --lib` 959, clippy clean, `pnpm check` 0/0.
+      **Not verified, and why it matters:** **the packs were not checked against any government list**; they are from the author's knowledge and marked unverified. Missing by design:
+      Scotland, Northern Ireland, US states, one-off days (a royal funeral, a jubilee), and every other country. **Not done:** a worker's region (so the calendar is per organization and
+      region, not yet per person), the leave day count skipping a holiday, a `public_holiday` leave entry created from the calendar, a UI.
+

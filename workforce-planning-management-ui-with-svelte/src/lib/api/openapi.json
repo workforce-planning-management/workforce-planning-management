@@ -5421,6 +5421,88 @@
         ]
       }
     },
+    "/api/holiday-regions": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The regions"
+          }
+        },
+        "summary": "The regions that have a public-holiday rule pack, each marked verified or not. Every shipped pack is an unverified example, not an official source",
+        "tags": [
+          "leave"
+        ]
+      }
+    },
+    "/api/holidays": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The holidays"
+          }
+        },
+        "summary": "An organization's public holidays (?organization=, optional ?region= and ?year=), by the day each is taken. A weekend date may be taken on a weekday",
+        "tags": [
+          "leave"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the holiday",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add a holiday by hand (a local or one-off day): a region code, a name and a date. HR",
+        "tags": [
+          "leave"
+        ]
+      }
+    },
+    "/api/holidays/generate": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Counts of rows created, updated, unchanged and kept",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Generate a region's holidays for a year from its rule pack. Safe to repeat: rows it made are brought up to date, rows added by hand are never changed. A region with no pack is refused. HR",
+        "tags": [
+          "leave"
+        ]
+      }
+    },
     "/api/interviews/{pid}": {
       "put": {
         "parameters": [

@@ -66,6 +66,7 @@ pub use super::groups::Entity as Groups;
 pub use super::handover_actions::Entity as HandoverActions;
 pub use super::headcount_snapshots::Entity as HeadcountSnapshots;
 pub use super::health_requirements::Entity as HealthRequirements;
+pub use super::holidays::Entity as Holidays;
 pub use super::idempotency_keys::Entity as IdempotencyKeys;
 pub use super::initiative_role_impacts::Entity as InitiativeRoleImpacts;
 pub use super::initiative_skill_shifts::Entity as InitiativeSkillShifts;

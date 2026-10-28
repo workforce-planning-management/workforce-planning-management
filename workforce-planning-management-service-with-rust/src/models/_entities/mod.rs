@@ -66,6 +66,7 @@ pub mod groups;
 pub mod handover_actions;
 pub mod headcount_snapshots;
 pub mod health_requirements;
+pub mod holidays;
 pub mod idempotency_keys;
 pub mod initiative_role_impacts;
 pub mod initiative_skill_shifts;

@@ -676,6 +676,16 @@ fn add_integration_paths(document: &mut Value) {
         "/api/cost-centres/{pid}/close": {
             "post": { "tags": ["assignments"], "summary": "Close a cost centre on a day not before it opened. Never deleted; a closed one is not reopened here. HR", "responses": ok("The closing day") }
         },
+        "/api/holiday-regions": {
+            "get": { "tags": ["leave"], "summary": "The regions that have a public-holiday rule pack, each marked verified or not. Every shipped pack is an unverified example, not an official source", "responses": ok("The regions") }
+        },
+        "/api/holidays": {
+            "get": { "tags": ["leave"], "summary": "An organization's public holidays (?organization=, optional ?region= and ?year=), by the day each is taken. A weekend date may be taken on a weekday", "responses": ok("The holidays") },
+            "post": { "tags": ["leave"], "summary": "Add a holiday by hand (a local or one-off day): a region code, a name and a date. HR", "responses": ok("The pid of the holiday") }
+        },
+        "/api/holidays/generate": {
+            "post": { "tags": ["leave"], "summary": "Generate a region's holidays for a year from its rule pack. Safe to repeat: rows it made are brought up to date, rows added by hand are never changed. A region with no pack is refused. HR", "responses": ok("Counts of rows created, updated, unchanged and kept") }
+        },
         "/api/absence-categories": {
             "get": { "tags": ["leave"], "summary": "The kinds of leave (?pay=paid|unpaid|policy to filter): vacation (annual), government holiday (public_holiday), illness (sick), parental, unpaid and other, each paid, unpaid or by the employer's policy, how it is held against a balance, and whether a reason may be given. Sick leave never carries a reason and there is no category for a condition or for stress", "responses": ok("The categories") }
         },

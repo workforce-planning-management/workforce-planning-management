@@ -191,6 +191,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("skill-mappings", Open),
     ("category-vocabulary", Open),
     ("absence-categories", Open),
+    ("holiday-regions", Open),
+    ("holidays", Open),
     ("cost-centres", Open),
     ("cost-centres/unmatched", Privileged),
     ("assignments/breakdown", Open),
