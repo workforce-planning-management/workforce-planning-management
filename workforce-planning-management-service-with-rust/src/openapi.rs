@@ -692,6 +692,12 @@ fn add_integration_paths(document: &mut Value) {
         "/api/capacity/what-if": {
             "post": { "tags": ["capacity"], "summary": "What a proposed change to a programme's demand (organization_ref, programme_ref and changes of pool, month and centi-FTE, negative to give capacity back) does to the plan: which pool-months become over-committed or stop being so, the constraint pool before and after, and the earliest start that fits. Reads, computes and stores nothing; names no one (a pool is a skill, and no worker, member, partner or other programme appears). Unknown where the model has no pools or a partner has not answered, never 'no impact'. With programme_new_end (where the change moves the programme's end) it also counts, per pool, the fixed-term and contractor engagements still running that end before it: a count under five is hidden, zero is shown, and there is no total", "responses": ok("The answer") }
         },
+        "/api/skill-pools/{pid}/peer-link": {
+            "put": { "tags": ["capacity"], "summary": "Link the pool to the peer app's pool for the same skills (peer_pool_ref, a lower-case hyphenated UUID), or remove the link with null. Set by a person, never matched by name. A linked pool counts the peer's demand claims and an unlinked one its own, never both; nothing is deleted either way", "responses": ok("The pool, its link and where its demand comes from") }
+        },
+        "/api/capacity/peer-demand": {
+            "post": { "tags": ["capacity"], "summary": "Take a programme's demand on a linked pool for a month from the peer (pool_pid, programme_ref, month, fte_centi, peer_event_id). Stored as a proposed claim with source ppm, beside any claim entered here and never added to it; the same peer_event_id again changes nothing. A pool that is not linked refuses it. WPM's own contract: the peer has not been read to call it", "responses": ok("The pid of the claim, and whether it was a repeat") }
+        },
         "/api/absence-categories": {
             "get": { "tags": ["leave"], "summary": "The kinds of leave (?pay=paid|unpaid|policy to filter): vacation (annual), government holiday (public_holiday), illness (sick), parental, unpaid and other, each paid, unpaid or by the employer's policy, how it is held against a balance, and whether a reason may be given. Sick leave never carries a reason and there is no category for a condition or for stress", "responses": ok("The categories") }
         },

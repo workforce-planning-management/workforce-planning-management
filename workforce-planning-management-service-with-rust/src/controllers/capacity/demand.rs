@@ -53,6 +53,7 @@ pub(super) async fn set_demand(
         .filter(programme_demands::Column::ProgrammeRef.eq(&payload.programme_ref))
         .filter(programme_demands::Column::PoolPid.eq(pool.pid))
         .filter(programme_demands::Column::Month.eq(payload.month))
+        .filter(programme_demands::Column::Source.eq("local"))
         .filter(programme_demands::Column::DeletedAt.is_null())
         .one(&ctx.db)
         .await?;
@@ -143,6 +144,7 @@ pub(super) async fn list_demand(
                 json!({
                     "pid": r.pid, "programme_ref": r.programme_ref, "pool_pid": r.pool_pid,
                     "month": r.month, "fte_centi": r.fte_centi, "status": r.status,
+                    "source": r.source, "received_at": r.received_at,
                 })
             })
             .collect::<Vec<_>>(),

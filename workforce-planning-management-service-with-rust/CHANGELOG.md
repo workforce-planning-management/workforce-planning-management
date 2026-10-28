@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 `GET /api/workers/{pid}/contractor-details` shows `supplier_name` and `supplier_contact_name`, best-effort through the existing display-name client: `null` when unknown, nothing stored.
 
+### Added — a pool can be linked to a peer's pool (WPM-T363, T364)
+
+`PUT /api/skill-pools/{pid}/peer-link`, `POST /api/capacity/peer-demand` and `programme_demands.source`. Standalone, nothing changes; linked, the pool counts the peer's demand claims and not its own, never both, and unlinking returns it to its own at once. Migration `000107`.
+
 ### Added — the capacity what-if (WPM-T158)
 
 `POST /api/capacity/what-if` and `rules::capacity::what_if`: what a proposed change to a programme's demand does (pool-months that become or stop being over-committed, the constraint pool before and after, the earliest start that fits). Reads and computes; stores nothing; names no one; `unknown` where a partner has not answered or the organization has no pools. With `programme_new_end` it also counts, per pool, the fixed-term and contractor engagements still running that end before it (WPM-T159): a count under five is hidden, zero is shown, and there is no total.

@@ -15,6 +15,11 @@ pub(crate) struct OrgCapacity {
     pub(crate) members: BTreeMap<String, Vec<rules::Member>>,
 }
 
+/// Whether a demand claim counts in a pool: only the claims of the source the pool takes its demand from (WPM-D140).
+pub(super) fn counts_here(source: &str, pool_linked: bool) -> bool {
+    source == rules::counted_source(pool_linked)
+}
+
 pub(super) fn parse_demand_rows(rows: &[programme_demands::Model]) -> Vec<rules::Demand> {
     rows.iter()
         .filter_map(|r| {
@@ -192,10 +197,11 @@ pub(crate) async fn load_org_capacity(
                 rules::supply_from_weighted(*total, pool.operations_reservation_bp, *month)
             })
             .collect();
+        let linked = pool.peer_pool_ref.is_some();
         let demand = parse_demand_rows(
             &demand_rows
                 .iter()
-                .filter(|d| d.pool_pid == pool.pid)
+                .filter(|d| d.pool_pid == pool.pid && counts_here(&d.source, linked))
                 .cloned()
                 .collect::<Vec<_>>(),
         );

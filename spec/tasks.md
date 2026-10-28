@@ -5580,8 +5580,10 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
 - [ ] WPM-T360 **Programme demand in.** *(WPM-R210)* Idempotent on programme and source event. Needs PPM's contract.
 - [ ] WPM-T361 **People-impact out.** *(WPM-R211)* Counts with the floor, for a programme. Needs WPM-T359 and PPM's contract.
 - [x] (2026-10-28) WPM-T362 **MHRA entry in the regulatory register.** *(WPM-R212)* See [mhra.md](mhra.md). The workforce questions stay open until the linked guidance is read.
-- [ ] WPM-T363 **Pool link to a peer's pool.** *(WPM-R213, WPM-D139)* See `cross-app-bridges.md`, "Working alone, and working together".
-- [ ] WPM-T364 **Sourced demand claims.** *(WPM-R213, WPM-D140, WPM-D141)*
+- [x] (2026-10-28) WPM-T363 **Pool link to a peer's pool.** *(WPM-R213, WPM-D139)* See `cross-app-bridges.md`, "Working alone, and working together".
+      **Done (2026-10-28):** migration `000107` adds `skill_pools.peer_pool_ref` (a lower-case hyphenated UUID, unique per organization among live pools) and `PUT /api/skill-pools/{pid}/peer-link` sets or clears it, audited without the id; the pool JSON shows `peer_pool_ref` and `demand_source`.
+- [x] (2026-10-28) WPM-T364 **Sourced demand claims.** *(WPM-R213, WPM-D140, WPM-D141)*
+      **Done (2026-10-28):** `programme_demands` gains `source` (`local`/`ppm`), `peer_event_id` and `received_at`; the live-claim index now includes the source, so a received and a local claim for the same programme, pool and month sit side by side. `POST /api/capacity/peer-demand` stores a received claim as `proposed` (a start decision still activates it, WPM-D50), refuses an unlinked pool, and is idempotent on the last event id of a claim. `rules::capacity::counted_source` is the one rule: a linked pool counts `ppm` claims, an unlinked pool `local`, never both; the view, the what-if and the start check all use it. **Not done:** the capacity view does not yet show the claims it ignores beside the counted figure (D140's "entered here"; the claim list shows every claim with its source); an older event replayed after a newer one overwrites it (only the latest event id is remembered); the receive route is WPM's own definition and PPM has not been read to call it.
 - [ ] WPM-T365 **Outbound supply for a linked pool.** *(WPM-R213, WPM-D135)*
 - [ ] WPM-T366 **Standalone and linked tests.** *(WPM-R213, WPM-D138)*
 

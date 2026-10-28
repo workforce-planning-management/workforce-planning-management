@@ -1065,6 +1065,22 @@ pub fn what_if(
     }
 }
 
+/// Where a demand claim came from (WPM-D140): entered here, or received from the peer.
+pub const DEMAND_SOURCES: [&str; 2] = ["local", "ppm"];
+
+/// Which source of demand a pool counts. **A linked pool counts the peer's claims and an unlinked pool its own; never both** (WPM-D140),
+/// so removing the link returns the pool to its local figures at once and two numbers for one pool are never added.
+#[must_use]
+pub const fn counted_source(linked: bool) -> &'static str {
+    if linked { "ppm" } else { "local" }
+}
+
+/// Whether text is a usable id for the peer's pool: a UUID in its hyphenated lower-case form, as the column requires.
+#[must_use]
+pub fn peer_pool_ref_ok(text: &str) -> bool {
+    text.len() == 36 && Uuid::parse_str(text).is_ok_and(|u| u.hyphenated().to_string() == text)
+}
+
 /// Whether a contingent engagement that ends on `ends_on` would end before a programme's proposed new end. An engagement already over
 /// (`ends_on` before `today`) is not an effect of the proposal; one ending on the new end date itself covers it.
 #[must_use]
@@ -1959,5 +1975,31 @@ mod tests {
                 ("d".to_string(), None),
             ]
         );
+    }
+
+    #[test]
+    fn a_linked_pool_counts_the_peers_claims_and_an_unlinked_one_its_own() {
+        assert_eq!(counted_source(true), "ppm");
+        assert_eq!(counted_source(false), "local");
+        assert_ne!(counted_source(true), counted_source(false));
+        assert!(
+            DEMAND_SOURCES.contains(&counted_source(true))
+                && DEMAND_SOURCES.contains(&counted_source(false))
+        );
+    }
+
+    #[test]
+    fn a_peer_pool_ref_is_a_lower_case_hyphenated_uuid_and_nothing_else() {
+        assert!(peer_pool_ref_ok("123e4567-e89b-42d3-a456-426614174000"));
+        for bad in [
+            "",
+            "pool one",
+            "123E4567-E89B-42D3-A456-426614174000",
+            "123e4567e89b42d3a456426614174000",
+            "thing:123e4567-e89b-42d3-a456-426614174000",
+            "123e4567-e89b-42d3-a456-42661417400",
+        ] {
+            assert!(!peer_pool_ref_ok(bad), "{bad}");
+        }
     }
 }

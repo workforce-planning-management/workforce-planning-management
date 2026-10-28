@@ -18,6 +18,7 @@ pub struct Model {
     pub name: String,
     pub description: Option<String>,
     pub operations_reservation_bp: i32,
+    pub peer_pool_ref: Option<String>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

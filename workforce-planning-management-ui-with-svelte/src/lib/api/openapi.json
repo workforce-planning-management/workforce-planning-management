@@ -3005,6 +3005,35 @@
         ]
       }
     },
+    "/api/capacity/peer-demand": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the claim, and whether it was a repeat",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Take a programme's demand on a linked pool for a month from the peer (pool_pid, programme_ref, month, fte_centi, peer_event_id). Stored as a proposed claim with source ppm, beside any claim entered here and never added to it; the same peer_event_id again changes nothing. A pool that is not linked refuses it. WPM's own contract: the peer has not been read to call it",
+        "tags": [
+          "capacity"
+        ]
+      }
+    },
     "/api/capacity/settings": {
       "get": {
         "responses": {
@@ -10433,6 +10462,35 @@
           }
         },
         "summary": "Remove a member (soft delete)",
+        "tags": [
+          "capacity"
+        ]
+      }
+    },
+    "/api/skill-pools/{pid}/peer-link": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pool, its link and where its demand comes from",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Link the pool to the peer app's pool for the same skills (peer_pool_ref, a lower-case hyphenated UUID), or remove the link with null. Set by a person, never matched by name. A linked pool counts the peer's demand claims and an unlinked one its own, never both; nothing is deleted either way",
         "tags": [
           "capacity"
         ]

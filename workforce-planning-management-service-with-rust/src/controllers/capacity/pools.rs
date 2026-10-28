@@ -151,6 +151,8 @@ pub(super) fn pool_json(
         "name": pool.name,
         "description": pool.description,
         "operations_reservation_bp": pool.operations_reservation_bp,
+        "peer_pool_ref": pool.peer_pool_ref,
+        "demand_source": rules::counted_source(pool.peer_pool_ref.is_some()),
         "members": members.iter().map(|m| json!({
             "pid": m.pid,
             "role_profile_pid": m.role_profile_pid,

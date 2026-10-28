@@ -61,6 +61,7 @@ fn pid_ref(pid: Uuid) -> serde_json::Value {
 }
 
 mod demand;
+mod peer;
 mod pools;
 mod settings;
 mod start_check;
@@ -69,6 +70,8 @@ mod what_if;
 // The sections share this module's imports and each other's handlers.
 #[allow(clippy::wildcard_imports)]
 use self::demand::*;
+#[allow(clippy::wildcard_imports)]
+use self::peer::*;
 #[allow(clippy::wildcard_imports)]
 use self::pools::*;
 #[allow(clippy::wildcard_imports)]
@@ -95,6 +98,8 @@ pub fn routes() -> Routes {
             "/skill-pools/{pid}/members/{member_pid}",
             delete(remove_member),
         )
+        .add("/skill-pools/{pid}/peer-link", put(set_peer_link))
+        .add("/capacity/peer-demand", post(receive_peer_demand))
         .add("/programme-demands", put(set_demand))
         .add("/programme-demands", get(list_demand))
         .add("/programme-demands/{pid}", delete(delete_demand))

@@ -19,6 +19,9 @@ pub struct Model {
     pub month: Date,
     pub fte_centi: i64,
     pub status: String,
+    pub source: String,
+    pub peer_event_id: Option<String>,
+    pub received_at: Option<DateTimeWithTimeZone>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

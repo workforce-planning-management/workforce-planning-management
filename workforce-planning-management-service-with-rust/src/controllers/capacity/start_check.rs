@@ -54,12 +54,15 @@ pub(super) async fn run_start_check(
     );
     ensure_valid(&problems.into_vec())?;
     ensure_org_in_scope(ctx, caller, &payload.organization_ref).await?;
-    let org_pools: Vec<Uuid> = skill_pools::Entity::find()
+    let pool_rows = skill_pools::Entity::find()
         .filter(skill_pools::Column::OrganizationRef.eq(&payload.organization_ref))
         .filter(skill_pools::Column::DeletedAt.is_null())
         .all(&ctx.db)
-        .await?
-        .into_iter()
+        .await?;
+    let org_pools: Vec<Uuid> = pool_rows.iter().map(|p| p.pid).collect();
+    let linked: std::collections::HashSet<Uuid> = pool_rows
+        .iter()
+        .filter(|p| p.peer_pool_ref.is_some())
         .map(|p| p.pid)
         .collect();
     let proposed: Vec<programme_demands::Model> = programme_demands::Entity::find()
@@ -68,7 +71,10 @@ pub(super) async fn run_start_check(
         .filter(programme_demands::Column::DeletedAt.is_null())
         .filter(programme_demands::Column::PoolPid.is_in(org_pools.clone()))
         .all(&ctx.db)
-        .await?;
+        .await?
+        .into_iter()
+        .filter(|r| counts_here(&r.source, linked.contains(&r.pool_pid)))
+        .collect();
     let lines: Vec<(String, NaiveDate, i64)> = if let Some(wish) = &payload.lines {
         let mut out = Vec::with_capacity(wish.len());
         for line in wish {

@@ -1721,3 +1721,112 @@ async fn a_moved_end_date_counts_the_engagements_that_would_end_before_it_per_po
     })
     .await;
 }
+
+/// WPM-T363, WPM-T364: a pool works alone; linked, it counts the peer's demand and not its own, never both; unlinked, it returns to its own.
+#[tokio::test]
+#[ignore = "needs a Postgres database; run with --ignored"]
+async fn a_linked_pool_counts_the_peers_demand_and_not_its_own_and_unlinking_returns_to_its_own() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let title = format!("Peer engineer {tag}");
+        for n in 1..=3 {
+            request
+                .post("/api/workers")
+                .json(&json!({
+                    "person_ref": super::a_person(), "organization_ref": org,
+                    "worker_number": format!("PE-{}-{n}", &tag[..8]), "display_name": "Peer Worker",
+                    "employment_type": "permanent", "fte_percent": 100,
+                    "department": "engineering", "job_title": title, "hired_on": "2026-01-05",
+                }))
+                .await
+                .assert_status_ok();
+        }
+        let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": title })).await.json();
+        let pool = make_pool(&request, &org, &format!("Peer pool {tag}"), 0).await;
+        request.post(&format!("/api/skill-pools/{pool}/members")).json(&json!({ "role_profile_pid": profile["pid"] })).await.assert_status_ok();
+        let programme = a_programme();
+        let activate = || {
+            let (ctx, programme) = (&ctx, programme.clone());
+            async move {
+                ctx.db.execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'")).await.unwrap();
+            }
+        };
+        let demand_in_january = || {
+            let (request, org, pool) = (&request, org.clone(), pool.clone());
+            async move {
+                let view: Value = request.get(&format!("/api/capacity?organization={org}&from=2027-01-01&months=3")).await.json();
+                let pools = view["pools"].as_array().unwrap().clone();
+                let ours = pools.iter().find(|p| p["pool_pid"] == pool.as_str() || p["name"].as_str().is_some_and(|n| n.starts_with("Peer pool"))).unwrap().clone();
+                ours["cells"][0]["demand_centi"].as_i64().unwrap()
+            }
+        };
+
+        // Alone: no peer, so a local claim is counted and a peer's is refused.
+        request.put("/api/programme-demands").json(&json!({ "programme_ref": programme, "pool_pid": pool, "month": "2027-01-01", "fte_centi": 100 })).await.assert_status_ok();
+        activate().await;
+        assert_eq!(demand_in_january().await, 100);
+        let peer_claim = |event: &str, fte: i64| json!({ "pool_pid": pool, "programme_ref": programme, "month": "2027-01-01", "fte_centi": fte, "peer_event_id": event });
+        let refused = request.post("/api/capacity/peer-demand").json(&peer_claim("e1", 40)).await;
+        assert_eq!(refused.status_code(), 422, "an unlinked pool takes nothing from a peer");
+
+        // Linking: a bad id, then a good one. The pool now counts the peer's demand, which is none yet: the local 100 is not counted.
+        let peer_pool = uuid::Uuid::new_v4().to_string();
+        for bad in ["Peer Pool", "123E4567-E89B-42D3-A456-426614174000", ""] {
+            assert_eq!(request.put(&format!("/api/skill-pools/{pool}/peer-link")).json(&json!({ "peer_pool_ref": bad })).await.status_code(), 422, "{bad}");
+        }
+        let linked: Value = request.put(&format!("/api/skill-pools/{pool}/peer-link")).json(&json!({ "peer_pool_ref": peer_pool })).await.json();
+        assert_eq!((linked["demand_source"].as_str(), linked["peer_pool_ref"].as_str()), (Some("ppm"), Some(peer_pool.as_str())), "{linked}");
+        assert_eq!(demand_in_january().await, 0, "the local claim is kept but not counted while the pool is linked");
+
+        // Another pool may not take the same peer pool.
+        let other = make_pool(&request, &org, &format!("Other pool {tag}"), 0).await;
+        assert_eq!(request.put(&format!("/api/skill-pools/{other}/peer-link")).json(&json!({ "peer_pool_ref": peer_pool })).await.status_code(), 422);
+
+        // The peer's claim is received (proposed), activated by a start decision in real use; here by hand. It is counted, the local one still is not.
+        let first: Value = request.post("/api/capacity/peer-demand").json(&peer_claim("e1", 40)).await.json();
+        assert_eq!(first["duplicate"], false, "{first}");
+        activate().await;
+        assert_eq!(demand_in_january().await, 40);
+        // The same event again changes nothing; a new event updates the figure; there is still one claim of each source.
+        let again: Value = request.post("/api/capacity/peer-demand").json(&peer_claim("e1", 999)).await.json();
+        assert_eq!((again["duplicate"].as_bool(), again["pid"].clone()), (Some(true), first["pid"].clone()));
+        assert_eq!(demand_in_january().await, 40);
+        request.post("/api/capacity/peer-demand").json(&peer_claim("e2", 60)).await.assert_status_ok();
+        assert_eq!(demand_in_january().await, 60);
+        let claims: Value = request.get(&format!("/api/programme-demands?pool={pool}")).await.json();
+        let sources: Vec<&str> = claims.as_array().unwrap().iter().map(|c| c["source"].as_str().unwrap()).collect();
+        assert_eq!(sources.len(), 2, "{claims}");
+        assert!(sources.contains(&"local") && sources.contains(&"ppm"));
+
+        // Changing the local claim while linked touches only the local one: the peer's 60 stays counted, and the local figure shows after unlinking.
+        request.put("/api/programme-demands").json(&json!({ "programme_ref": programme, "pool_pid": pool, "month": "2027-01-01", "fte_centi": 120 })).await.assert_status_ok();
+        activate().await;
+        assert_eq!(demand_in_january().await, 60);
+
+        // A start check of a programme with a proposed claim of each source needs only the peer's: 40, not 100 or 140.
+        let second = a_programme();
+        request.put("/api/programme-demands").json(&json!({ "programme_ref": second, "pool_pid": pool, "month": "2027-02-01", "fte_centi": 100 })).await.assert_status_ok();
+        request.post("/api/capacity/peer-demand").json(&json!({ "pool_pid": pool, "programme_ref": second, "month": "2027-02-01", "fte_centi": 40, "peer_event_id": "e3" })).await.assert_status_ok();
+        let check: Value = request.post("/api/capacity/start-check").json(&json!({ "organization_ref": org, "programme_ref": second })).await.json();
+        let needed: Vec<i64> = check["lines"].as_array().unwrap().iter().map(|l| l["needed_centi"].as_i64().unwrap()).collect();
+        assert_eq!(needed, vec![40], "{check}");
+
+        // A local claim entered after the peer's for the same programme, pool and month is its own claim, not an overwrite of the peer's.
+        let third = a_programme();
+        request.post("/api/capacity/peer-demand").json(&json!({ "pool_pid": pool, "programme_ref": third, "month": "2027-03-01", "fte_centi": 30, "peer_event_id": "e4" })).await.assert_status_ok();
+        request.put("/api/programme-demands").json(&json!({ "programme_ref": third, "pool_pid": pool, "month": "2027-03-01", "fte_centi": 90 })).await.assert_status_ok();
+        let both: Value = request.get(&format!("/api/programme-demands?pool={pool}&programme={third}")).await.json();
+        let mut figures: Vec<(String, i64)> = both.as_array().unwrap().iter().map(|c| (c["source"].as_str().unwrap().to_string(), c["fte_centi"].as_i64().unwrap())).collect();
+        figures.sort();
+        assert_eq!(figures, vec![("local".to_string(), 90), ("ppm".to_string(), 30)], "{both}");
+
+        // Unlinking returns to the local figure at once; nothing was deleted.
+        let unlinked: Value = request.put(&format!("/api/skill-pools/{pool}/peer-link")).json(&json!({ "peer_pool_ref": null })).await.json();
+        assert_eq!(unlinked["demand_source"], "local");
+        assert_eq!(demand_in_january().await, 120);
+        let kept = request.get(&format!("/api/programme-demands?pool={pool}")).await.json::<Value>();
+        assert_eq!(kept.as_array().unwrap().len(), 6, "three programmes, a claim of each source: nothing was deleted");
+    })
+    .await;
+}
