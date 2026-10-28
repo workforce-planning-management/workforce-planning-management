@@ -28,6 +28,21 @@ employer would therefore come from memory, and WPM-D136 says not to build on tha
   of medicines, medical devices and blood components in the UK, with the source above and the date read, and says in one line that
   WPM holds no licence, product, device or adverse-event data (as WPM-D75 holds no diagnosis). Nothing else is claimed.
 
+## Second reading (2026-10-28): two linked pages
+
+- **Marketing authorisations and licensing** (<https://www.gov.uk/medicines-medical-devices-blood/marketing-authorisations-variations-licensing>)
+  is an index with one summary line. It says nothing about named people, competence or notifying changes. The guidance that might
+  (apply for a variation; change of ownership; PSURs; MHRA Portal registration) was **not read**.
+- **Regulating medical devices in the UK** (<https://www.gov.uk/guidance/regulating-medical-devices-in-the-uk>) names one role: the
+  **UK responsible person**, who must hold written authority from the manufacturer, whose name and address go on the labelling, who passes
+  complaints to the manufacturer without delay, and who must tell the MHRA if they end the arrangement. It says nothing on staff
+  competence or training. These are duties of a *role held by an organisation*, about devices, not an employee record.
+
+Both readings were summaries by a fetch tool, not the pages verbatim; check the wording before building on them.
+
+**What this changes:** open item 2 (competence records) has no support in either page. Item 1 has narrow support only for the device
+side and only as a role, and it is not enough to justify a position flag; no requirement is added. Item 3 stays out of scope.
+
 ## Open, and not a requirement yet
 
 Each needs the linked guidance read first. None is built or planned.
