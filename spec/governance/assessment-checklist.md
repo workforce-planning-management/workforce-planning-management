@@ -27,6 +27,7 @@ repository root; "T" numbers are in [tasks.md](../tasks.md).
 | 1.3 | Is the license clear and compatible with our use? | Met | `LICENSE.md` and the texts in `LICENSE/`; a CI check keeps the manifests in step (T125) |
 | 1.4 | Is the software maintained, and is its history visible? | Partly met | Public history and changelogs; a pre-release project with no stability promise |
 | 1.5 | Insurance, financial standing, subcontractors | Deployer to answer | Not applicable to the code; applies to whoever supplies it |
+| 1.6 | Does the software contain third-party licensed content, and who holds the licence? | Met for what ships; deployer to answer for what they load | WPM ships no SFIA or SFIAplus content (WPM-D69). The deployer loads their own download with `import_sfia` and `import_sfiaplus`, which record version, holder, reference and the date the licence was checked, and mark the framework `internal_only`; the wording is read only by signed-in callers. The licence terms were taken from web sources and a maintainer's summary and **were not read in full**; the SFIAplus file format is provisional until the licence holder agrees it |
 
 ## 2. Domain safety
 

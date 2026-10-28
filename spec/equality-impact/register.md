@@ -26,6 +26,7 @@ because the demo has none. A deployer must replace "not yet measurable" with the
 | S7 | Change readiness (skills meeting a bar) | counts | rules | reskilling plans | planners, as aggregates | `rules::change::skill_readiness` |
 | S8 | Workforce insight flags (turnover, span of control, time to fill) | thresholds | rules | leadership attention | leaders, as aggregates | `rules::insights` |
 | S9 | **Risk of loss** (flight risk) | not built | | | | |
+| S10 | Stated skill level counted on WPM's 1–5 (SFIA's seven levels, a PCF level) | mapping | rules (`linear`, pinned) | gap, plan and requirement views | the worker, their line managers and HR | `rules::sfia::to_wpm`, `rules::framework::map_level` |
 
 **S9 is deliberately not built.** An individual risk-of-loss score predicts who might leave, so it
 quietly decides who gets attention, retention pay and development. It is exposed to the worst

@@ -3339,11 +3339,23 @@ Specified in [plan.md](plan.md) section I. The template and the register of toda
       assistant; no one with equality or legal responsibility has reviewed or approved any of them**, and
       the demo has no real data, so the evidence sections say "not yet measurable". A claim that the
       software tells raters what not to use was found untrue while writing and corrected: that is T167.
-- [ ] WPM-T166 **Scoring register in code.** *(WPM-R99)* `rules::scoring::REGISTER` (id, kind, inputs, the
+- [~] (2026-10-27) WPM-T166 **Scoring register in code.** *(WPM-R99)* `rules::scoring::REGISTER` (id, kind, inputs, the
       decision informed, assessment file, status, review date) and a test that every registered score has
       an assessment with all thirteen sections, a status that is approved or conditional, and a review
       date not yet passed; a lint test that names a new `pub fn` in `rules/` containing score, rank,
       rating, band, readiness or risk that is not in the register.
+      **Done in part (2026-10-27):** `rules::scoring::{REGISTER, Entry, Kind, Status, ready_for_use, unassessed, find}`: S1 to S8 from the register document plus **S10**, a
+      stated skill level counted on WPM's 1–5 (also added to `spec/equality-impact/register.md`); S9 stays unbuilt and a test says so. Tests (8): ids unique; every AI-register
+      feature (S1 to S8) is registered; each assessment names a section that exists in `register.md` and its status agrees with that section's text; a score with no assessment
+      (S10) is named and is never ready; the gate needs an approved or conditional status **and** a review date set and not passed; no score is ready today; and the lint
+      (a new `pub fn` in `src/rules/` whose name has score, rank, rating, band, readiness or risk must be registered or exempt with a reason; seven exemptions, each with its
+      reason, and a test that none is stale). **Mutation-checked:** a probe `pub fn flight_risk_score` made the lint fail; removed, it passes.
+      **Not as the task is worded, and why:** (1) the task wants every registered score to have an assessment with **all thirteen sections** and a status that is
+      **approved or conditional**; neither is true: the assessments are short drafts in `register.md` (not thirteen-section files) and **no one has approved any of them**, so
+      the register says `Draft` and `ready_for_use` is closed for every score. I did not mark anything approved to satisfy the wording. Writing the thirteen sections and
+      getting an approval are the deployer's and an equality lead's work; (2) S10 has no assessment yet; (3) `review_by` is unset everywhere for the same reason. **Verified:**
+      `cargo test --lib` and `cargo clippy --all-targets -- -D warnings` (see below for the last full run).
+
 - [ ] WPM-T167 **Scores say what they are.** *(WPM-R101)* Add to every score payload and screen: its inputs, "advisory;
       a person decides" and the assessment id; put the "do not use absence, leave, working pattern or
       adjustments" guidance beside the succession rating, the pipeline stage, the review rating and the
@@ -3533,29 +3545,117 @@ content is ever added to this repository** (WPM-D69).
       date and attribution; pure `rules::framework::publishable`; every surface that leaves the
       signed-in organization uses it. Unit tests and an integration test that an unauthenticated request
       and a public job post never carry imported wording of a non-publishable framework.
-- [ ] WPM-T181 **Pure core: the SFIA CSV contract.** *(WPM-R109, WPM-D70)* Parser and validator for the documented columns
+      **Part done (2026-10-27):** migration `000096` (version, `redistribution` open/internal_only/unknown with a CHECK and default `unknown`,
+      licence holder, reference, last check date; `uk-gdad-pcf` and `esco` set `open`), entity fields, pure `rules::framework::{Redistribution, publishable}`
+      (only `open` with a recorded attribution; anything else is a no) with 2 unit tests. `cargo fmt`, `cargo clippy --all-targets -- -D warnings` clean,
+      `cargo test --lib framework` (15). **Not done:** the migration was not run against Postgres; no surface calls `publishable` yet, because the
+      service has no public job-post or unauthenticated framework read today, so the integration test the task names cannot be written until one exists
+      (it belongs with the first such surface); no UI for the licence record; `import_framework` and `import_esco` do not yet set version or check date.
+- [x] WPM-T181 (2026-10-27) **Pure core: the SFIA CSV contract.** *(WPM-R109, WPM-D70)* Parser and validator for the documented columns
       (skill code, name, category, subcategory, description, level, level description, attributes):
       levels 1 to 7 only, a skill defined at some levels only, no invented level or text, a clear
       refusal naming the column; the `linear` mapping 1, 2, 2, 3, 4, 4, 5 pinned. A **synthetic fixture of
       invented text**, labelled not SFIA.
-- [ ] WPM-T182 **`import_sfia` task.** *(WPM-R109, WPM-R113)* Idempotent, records the version, marks skills and levels that a
+      **Done:** `rules/sfia.rs` (`parse_skills`, `COLUMNS`, `SFIA_SCALE_MAX`) over the shared RFC 4180 parser; refuses a wrong header, a cell count that does
+      not match, a blank required cell, a level outside 1 to 7, a skill whose own fields differ between rows, and a repeated level, each naming row and column.
+      Fixture `tests/fixtures/sfia-synthetic/skills.csv` (invented, labelled not SFIA). 6 unit tests incl. the pinned mapping; clippy clean.
+      **Not verified:** the contract is this repo's own reading of the documented columns, not checked against a real licensed download; `attributes` is kept as
+      one free-text cell; the five generic attributes per level (T183) have no contract yet.
+- [x] WPM-T182 (2026-10-27) **`import_sfia` task.** *(WPM-R109, WPM-R113)* Idempotent, records the version, marks skills and levels that a
       newer version drops as retired rather than deleting them, attaches the SFIA code as an external
       reference on the WPM skill, and writes the framework row with `internal_only`. Request tests with
       the fixture; refuses a file with no recorded licence check.
-- [ ] WPM-T183 **Levels of responsibility as a job-level framework.** *(WPM-R110)* Move job-level frameworks to the
+      **Done:** `tasks/import_sfia.rs` (`file:`, `version:`, `licence_checked_on:` required; `licence_holder:`, `licence_reference:` optional); migration `000097`
+      (`sfia_skills`, `sfia_skill_levels`, each with `retired_in`); the `sfia` framework row (scale 7, `internal_only` whatever it was before); upsert, then
+      skills and levels absent from a newer file are marked retired, and restored if they return; a WPM skill is linked to a code only on an exact normalised
+      name match (one per skill, one per code). `GET /api/capability-frameworks` now returns version, redistribution, holder and check date (no wording).
+      **Verified** against Postgres 18 (throwaway, Podman): request test (refusals write nothing, idempotent, retire, restore, link), the scheduler-config
+      test, the full `--ignored` request suite (162), `cargo test --lib` (868), clippy clean; migrations 000096 and 000097 ran. **Not verified:** a real
+      licensed file; the task through `cargo loco task` on the command line (only `import_sfia()` was called); a file with several WPM skills sharing a
+      name; no UI for the catalogue (T183, T184); `import_framework` and `import_esco` still do not record a version or check date.
+- [x] WPM-T183 (2026-10-27) **Levels of responsibility as a job-level framework.** *(WPM-R110)* Move job-level frameworks to the
       database so an imported framework has the same shape as the coded one; import the seven levels and
       five attributes; a worker's and a role's level can be an SFIA level. UI. Tests.
-- [ ] WPM-T184 **Native level on declared skills and role requirements.** *(WPM-R111, WPM-D70)* Store the framework's level and scale on a
+      **Done:** migration `000098` (`job_level_frameworks`, `job_level_levels`; `redistribution` defaults `unknown`); coded ladders stay as they were, stored ones are
+      read beside them (`StoredFramework`, a coded ladder wins on a clashing id), so `/api/job-levels*`, a worker's level and a role's level accept `sfia-levels`
+      with the same validation; levels-of-responsibility CSV contract (`rules::sfia::parse_levels`: `level,title,essence,autonomy,influence,complexity,
+      knowledge,business_skills`, exactly levels 1 to 7 once each, no blank cell; invented fixture `levels.csv`); `import_sfia levels_file:<path>` (needs the
+      licence version and check date; `internal_only`; re-run updates in place). The job-levels page has a framework select and shows attributes; the worker
+      and role pickers choose among ladders. 2 strings (`jobLevels.framework`, `jobLevels.attributes`) in the 12 full locales (machine-drafted, unreviewed).
+      **Verified:** Postgres 18 (throwaway, Podman): new request test (refusals write nothing, idempotent, listing, attributes, worker and role level, 422 on a
+      level the ladder lacks), full `--ignored` request suite (163), `cargo test --lib` (871), clippy clean; `pnpm check` (0/0), `pnpm lint`, `pnpm test` (218),
+      `levels-and-pay.spec.ts` (7, stubbed API). **Not verified:** no real SFIA download; the UI was not run against the real service and no screenshot was looked
+      at; the worker and role pickers' ladder switch has no Playwright test; attribute names show as the contract's English tokens (underscores to spaces), not
+      translated; `GET /api/job-levels*` needs a signed-in caller (kept inside the organization), but the guard `publishable` is not called there because
+      the route is not public; the Keycloak suite, axe and `gitleaks` were not run.
+- [x] WPM-T184 (2026-10-27) **Native level on declared skills and role requirements.** *(WPM-R111, WPM-D70)* Store the framework's level and scale on a
       declared skill (role requirements already do), show the native level, its description and the
       mapping used; start a role from SFIA skills as ESCO does. Request tests and Playwright;
       strings in the 13 locales (framework wording itself is not translated).
-- [ ] WPM-T185 **SFIAplus development resources.** *(WPM-R112)* A documented CSV contract and `import_sfiaplus`, resources
+      **Done:** migration `000099` (`worker_skills` gains `source_framework`, `source_level`, `source_scale_max`; a requirement gains `source_framework`, backfilled
+      `uk-gdad-pcf` where it had a level); `rules::sfia::to_wpm` (the `linear` map, pinned) and `MAPPING_NAME`; `PUT /api/workers/{pid}/skills` and
+      `PUT /api/role-profiles/{pid}/requirements` take `framework` + `framework_level` (the 1–5 may then be left out and is mapped; a stated 1–5 stands; a skill
+      that has a SFIA code can only be stated at a level SFIA defines for it; a plain declaration clears the native level, a requirement edit that states none
+      leaves the imported one); reads show `mapping` and the framework's own `native_description`; `GET /api/sfia/skills?q=` and `/{code}`;
+      `POST /api/role-profiles/from-sfia` (picked skills at defined levels, matched by code, then exact name, else created and linked; refusals create nothing).
+      UI: `/roles` start-from-SFIA panel (shown once a `sfia` framework exists), the requirement table shows the native level, the mapping and the wording;
+      6 strings in the 12 full locales (machine-drafted, unreviewed). The UI's OpenAPI copy and types regenerated.
+      **Verified:** Postgres 18 (throwaway, Podman): new request test (search, show, declare with mapping, the six refusals, stated 1–5, clearing, requirement,
+      start-from-SFIA incl. refusals and a taken title), full `--ignored` request suite (164), `cargo test --lib` (872), clippy clean; `pnpm check` (0/0),
+      `pnpm lint`, `pnpm test` (218), the full Playwright suite (252 passed, 19 skipped; 2 new, stubbed API). **Not verified:** no real SFIA file; the new panel
+      was not run against the real service and no screenshot was looked at; **there is no screen that declares a skill**, so a native level on a declared skill
+      is API-only (the existing client function now accepts it); a declared skill's wording is returned but no page shows it; the framework name shows as its slug
+      (`sfia`); a created skill's category is `technical` for a planner to correct; no axe check; the Keycloak suite and `gitleaks` were not run.
+      **Follow-up (2026-10-27), the gaps listed above:** (1) the framework shows by **name** (`source_framework_name` on requirements and declared skills);
+      (2) `category` is the planner's choice on start-from-SFIA (validated against the skill categories; the panel has a select); (3) a new **Declared skills**
+      panel on `/me` and the worker page declares a skill on WPM's 1–5 or SFIA's 1–7 and shows the native level, the mapping and the framework's wording (5 strings
+      in the 12 full locales, unreviewed); (4) requirement wording moved to its own list under the table after a screenshot showed it running off the edge, and
+      the declared line lost a double parenthesis; (5) the `/roles` profile select could show blank after seeding (a value set before its options existed): it is
+      re-made when the list arrives. **Run:** a real service (throwaway Postgres 18 under Podman) loaded by the real `cargo run -- task import_sfia` from the
+      invented fixtures, and `tests/live/sfia.spec.ts` against it (3 passes; screenshots of `/roles` and the declared panel looked at, both after the fixes);
+      axe (WCAG 2 A and AA) on `/roles` with the panel and a SFIA requirement, and on `/me` with a SFIA level: no violations; the Keycloak suite
+      (`--features keycloak`, 1 passed, a real Keycloak container: it covers token enforcement, not these routes); `gitleaks` 8 from a container over the repo's own
+      files (tracked and untracked, not ignored): 7 findings, all in files not changed here and all already reviewed in `.gitleaksignore`. A scan with `--no-git` over
+      the whole directory also reads `target/` and `node_modules/` (57 hits, all build output or those same files) and is the wrong mode: the project scans history.
+      **Still not done:** a real SFIA download (licensed; none here); axe was automated rules only (no keyboard walk-through, screen reader, dark mode or phone
+      width); the new strings are machine-drafted; I did not see the profile-select assertion fail before the fix; the profile's `Source:` line still shows the raw token
+      `sfia:picked-skills`.
+
+- [x] WPM-T185 (2026-10-27) **SFIAplus development resources.** *(WPM-R112)* A documented CSV contract and `import_sfiaplus`, resources
       attached to a skill at a level with the source named and the BCS licence recorded; shown as pointers
       in training recommendations, development plans and the skill-gap view; nothing is booked or
       bought. The format is to be agreed with the licence holder before building.
-- [ ] WPM-T186 **Equality, privacy and documents.** *(WPM-R111, WPM-R113)* Register the level and skill-level scores in the
+      **Done, on a provisional format:** the task says the format is to be agreed with the licence holder before building; it was built on this repository's own
+      CSV contract at the maintainer's instruction, and **the contract is provisional until the holder agrees it**. Contract (`rules::sfia::parse_resources`):
+      `skill_code,level,kind,title,provider,url`; `kind` is `typical_task`, `training`, `certification` or `membership`; a level 1 to 7; a web address only if it starts
+      `http://` or `https://` (also a database CHECK); a repeat is refused; invented fixture `resources.csv`. Migration `000100` (`sfiaplus_resources`, `retired_in`).
+      `import_sfiaplus file: version: licence_checked_on:` refuses a missing licence check, a SFIA skill not in the imported catalogue and a level SFIA does not define
+      for it (nothing is written), is idempotent, retires what a newer file drops, and records the `sfiaplus` framework row as `internal_only` with the BCS licence
+      holder, reference and check date. Pointers (`controllers/sfia::pointers_for`) attach to a skill by its SFIA code at the SFIA levels that **count as** the
+      WPM 1–5 level a need is at; each names its source, kind, SFIA level, provider and address. Shown in `GET /api/workers/{pid}/training-plan`, `/skill-gaps`
+      (only for a need the person is below) and `GET /api/sfia/skills/{code}` (per level). UI: a pointers list under the training plan on `/me` and the worker page
+      (source named, "nothing is booked or bought", an address that is not http(s) is never linked; 6 strings in the 12 full locales, unreviewed).
+      **Verified:** Postgres 18: request test (refusals write nothing, idempotent, the level a need counts as, a retired resource disappears from the plan, the licence
+      record), full `--ignored` suite (165), `cargo test --lib` (874), clippy clean; the real `cargo run -- task import_sfiaplus` loaded 4 invented resources and refused a
+      skills file given as resources; `pnpm check`, `pnpm lint`, `pnpm test` (218), the full Playwright suite (256 passed, 19 skipped; `skill-gaps.spec.ts` extended).
+      **Not verified:** a real `SFIAplus` file (licensed; none here); the pointers were not looked at in a screenshot or run in the browser against the real service (stubbed
+      only); no axe check on the pointers list; pointers appear in the training plan and the skill-gap API, but **not on the development-plan (goals) screens** and
+      the skill-gap panel in the UI shows them only through the plan; the first-listed source names the group (all pointers in a list share one source today); the
+      Keycloak suite was run once earlier in this session and not again after this change.
+
+- [~] (2026-10-27) WPM-T186 **Equality, privacy and documents.** *(WPM-R111, WPM-R113)* Register the level and skill-level scores in the
       scoring register and complete their assessments (WPM-T166); update the DPIA, the record of processing
       and the assessment checklist (licensed content); record what was not verified.
+      **Part done (2026-10-27), the documents:** record of processing row 17 (a skill level stated on a framework's own scale; licensed content, which is not
+      personal data), DPIA risks R16 (licensed content passed on) and R17 (a mapped level read as a measured score), assessment checklist 1.6 (third-party licensed
+      content). Checked: `python3 scripts/check-links.py` (0 dead), `cargo test --lib` (874).
+      **Not done, and why:** (1) *the scoring register*: it did not exist when the documents were written; T166 has since landed in part (`rules::scoring::REGISTER`, with S10 for the mapped level
+      and its lint), so the level **is** registered, but with no assessment and status `Draft`; (2) *the equality impact
+      assessments*: the mapped 1–5 level and the SFIA-based gap and plan views have none, and one is a judgement a person makes with the deployer's data
+      (`spec/equality-impact/template.md`, thirteen sections), not something to write here; R17 names it as the further action; (3) whether **erasure removes** a
+      declared level was not checked, and the record of processing says so; (4) the licence terms were not read in full; (5) the documents were not reviewed by a data
+      protection officer. T186 stays open until T166 lands and the assessments are made.
+
 
 ## Phase 20 — readiness for large medical and governmental organizations (WPM-R114–R123, WPM-D71–D73)
 

@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — SFIA and SFIAplus, from the deployer's own licensed files (WPM-T180 to T185; T186 part)
+
+WPM ships no SFIA or SFIAplus content. `import_sfia` (skills, and `levels_file:` for the seven levels of responsibility) and `import_sfiaplus` (development pointers; a
+**provisional** file format until the licence holder agrees it) load the deployer's own CSVs, refuse a missing licence check, record each framework's version,
+redistribution status, holder and check date, and keep what a newer file drops, marked retired. A role can start from SFIA skills; a declared skill or a requirement keeps
+SFIA's own level, counted on WPM's 1–5 by the stated `linear` rule and shown with the framework's wording; the training plan and skill-gap views carry SFIAplus pointers
+(nothing is booked or bought). T186 is open: the scoring register (T166) does not exist and the equality assessments are not made. Details: [`spec/sfia.md`](spec/sfia.md), [`spec/tasks.md`](spec/tasks.md).
+
 ### Added — specification: the electronic staff record, absence and line managers, disability and adjustments, succession, deputies and acting up (WPM-T309)
 
 Proposed, not built: four topic files and Phase 24 (WPM-T310–T344). [`spec/staff-records-and-pay.md`](spec/staff-records-and-pay.md)
