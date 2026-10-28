@@ -202,7 +202,11 @@ test.describe("AI-driven change", () => {
     );
     await page.goto("/change");
     await page.getByRole("button", { name: /Mark/ }).first().click();
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("error")).toContainText(
+      "That was not accepted",
+    );
+    await expect(page.getByTestId("error")).not.toContainText(
       "draft cannot become completed",
     );
   });

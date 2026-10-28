@@ -27,19 +27,14 @@ describe("errorKey", () => {
 });
 
 describe("errorText", () => {
-  it("adds the service's message only for a refusal that names a field or a state", () => {
-    const invalid = new ApiError(422, {
-      description: "end date is before start date",
-    });
-    expect(errorText(invalid)).toMatch(/: end date is before start date$/);
-    const conflict = new ApiError(409, { description: "already approved" });
-    expect(errorText(conflict)).toMatch(/: already approved$/);
-    // A refusal for want of a role says which rule, after the words.
-    const forbidden = new ApiError(403, {
-      description: "only the line manager decides",
-    });
-    expect(errorText(forbidden)).toMatch(/ only the line manager decides$/);
-    // No service message: just the words.
+  it("says only the catalogue's words, whatever the service said", () => {
+    for (const status of [403, 409, 422]) {
+      const text = errorText(
+        new ApiError(status, { description: "end date is before start date" }),
+      );
+      expect(text).not.toContain("end date");
+      expect(text).toBe(errorText(new ApiError(status, null)));
+    }
     expect(errorText(new ApiError(422, null))).not.toContain("API error");
   });
 

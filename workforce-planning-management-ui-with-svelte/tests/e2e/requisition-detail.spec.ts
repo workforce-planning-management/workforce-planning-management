@@ -91,7 +91,11 @@ test.describe("Requisition detail", () => {
       .getByRole("textbox", { name: "Worker number for the hire" })
       .fill("E-0042");
     await page.getByRole("button", { name: "→ hired" }).click();
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("action-error")).toContainText(
+      "That was not accepted",
+    );
+    await expect(page.getByTestId("action-error")).not.toContainText(
       "already taken",
     );
   });

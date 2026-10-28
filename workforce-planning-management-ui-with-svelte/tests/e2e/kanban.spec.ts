@@ -157,7 +157,7 @@ test("moving a card by its menu saves the new status, and says that the declared
   );
 });
 
-test("a move the service refuses is put back, and the reason is shown", async ({
+test("a move the service refuses is put back, and the refusal is said in words", async ({
   page,
 }) => {
   await signIn(page);
@@ -176,7 +176,11 @@ test("a move the service refuses is put back, and the reason is shown", async ({
     .getByRole("button", { name: "Move Database administration: 2 → 4" })
     .click();
   await page.getByRole("option", { name: /achieved/i }).click();
+  // The catalogue's words, not the service's.
   await expect(page.getByTestId("move-error")).toContainText(
+    "That was not accepted",
+  );
+  await expect(page.getByTestId("move-error")).not.toContainText(
     "the plan is not active",
   );
   // The card is back where it was.

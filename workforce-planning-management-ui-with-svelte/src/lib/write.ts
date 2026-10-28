@@ -1,5 +1,6 @@
-// What to say when a write fails: a refusal for want of the right (403) is said in words, anything else
-// is the service's own message (a validation message names the field), never a silent failure.
+// What to say when a write fails: always the catalogue's words for what the failure means, in the person's language, never a
+// silent failure and never the service's own text. The service's messages are English and written for developers, so no page
+// shows them (`tests/unit/no-api-error-text.test.ts` keeps it so).
 
 import { ApiError } from "./api/client";
 import { t, type StringKey } from "./i18n.svelte";
@@ -21,23 +22,12 @@ export function errorKey(cause: unknown): StringKey {
 }
 
 /**
- * What to show for a failed call. The words come from the catalogue, so every locale reads them.
- * A `403`, `409` or `422` adds the service's own message after them, because it names the rule, the
- * field or the state that was refused; a `401`, `404` or `5xx` adds nothing (a `5xx` gives no detail on
- * purpose, WPM-T259).
+ * What to show for a failed call: the catalogue's words for its status, and nothing the service said. Every locale reads them. A
+ * `5xx` gives no detail on purpose (WPM-T259), and neither does any other status: a refusal that needs to say which field or rule
+ * is the page's own work, in catalogue words, not the service's message.
  */
 export function errorText(cause: unknown): string {
-  const lead = t(errorKey(cause));
-  if (
-    cause instanceof ApiError &&
-    (cause.status === 403 || cause.status === 409 || cause.status === 422)
-  ) {
-    const detail = cause.message.trim();
-    if (detail && detail !== `API error ${cause.status}`) {
-      return `${lead}${/[.!?。]$/.test(lead) ? " " : ": "}${detail}`;
-    }
-  }
-  return lead;
+  return t(errorKey(cause));
 }
 
 export interface Failure {

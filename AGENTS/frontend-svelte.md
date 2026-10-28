@@ -33,6 +33,10 @@ proxy. Stack-level agreements:
   `{@html}` for anything user- or server-authored. Render links only if the URL
   starts with `https://`.
 - Masked values render as a state ("Hidden"), never an error.
+- **No page shows API error text.** A failed call is described by the catalogue's words for its status (`errorText` or `failure` in
+  `src/lib/write.ts`), in the person's language. The service's own message is English, written for developers, and may name a table or a
+  rule; a page never reads an error's `message`, `body` or `description` (reading an `ApiError`'s `status` to decide what to do is fine).
+  `tests/unit/no-api-error-text.test.ts` fails if a catch block, a promise catch or a file that handles `ApiError` does.
 - Status is **icon + label**, never colour alone (▲ Attention, ✓ Done, ● Info).
 - Forms: `data-testid` on inputs and buttons the e2e spec drives; labels from `t()`.
 

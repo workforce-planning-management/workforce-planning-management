@@ -175,7 +175,7 @@ test.describe("Skills catalogue", () => {
     expect(writes).toEqual([]);
   });
 
-  test("a skill that is in use cannot be deleted, and the service's reason is shown", async ({
+  test("a skill that is in use cannot be deleted, and the page says so in its own words", async ({
     page,
   }) => {
     await stubSkills(page, []);
@@ -194,6 +194,9 @@ test.describe("Skills catalogue", () => {
       .getByRole("button", { name: "Delete" })
       .click();
     await expect(page.getByTestId("error")).toContainText(
+      "That conflicts with the current state",
+    );
+    await expect(page.getByTestId("error")).not.toContainText(
       "2 people declare this skill",
     );
   });

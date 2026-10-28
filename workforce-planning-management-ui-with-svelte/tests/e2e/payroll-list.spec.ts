@@ -54,7 +54,13 @@ test.describe("Payroll runs", () => {
       }),
     );
     await page.goto("/payroll");
-    await expect(page.getByTestId("error")).toContainText("payroll is for HR");
+    // The catalogue's words, not the service's: "payroll is for HR" is never shown.
+    await expect(page.getByTestId("error")).toContainText(
+      "You are not allowed to do this.",
+    );
+    await expect(page.getByTestId("error")).not.toContainText(
+      "payroll is for HR",
+    );
     await expect(page.getByTestId("runs")).toHaveCount(0);
   });
 

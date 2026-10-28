@@ -146,7 +146,9 @@ test.describe("Positions", () => {
     await expect(page.getByTestId("position-list")).toContainText("Held");
   });
 
-  test("shows the service's words when a move is refused", async ({ page }) => {
+  test("says so in the catalogue's words when a move is refused", async ({
+    page,
+  }) => {
     await page.route(
       "**/api/proxy/positions/establishment?organization=*",
       (route) =>
@@ -175,7 +177,11 @@ test.describe("Positions", () => {
       .getByRole("button", { name: "Move", exact: true })
       .first()
       .click();
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("error")).toContainText(
+      "That was not accepted",
+    );
+    await expect(page.getByTestId("error")).not.toContainText(
       "requisition is linked",
     );
   });

@@ -670,7 +670,7 @@ test.describe("entering capacity", () => {
     });
   });
 
-  test("shows the service's message when a write is refused as invalid", async ({
+  test("says so in the catalogue's words when a write is refused as invalid", async ({
     page,
   }) => {
     await signIn(page);
@@ -683,7 +683,11 @@ test.describe("entering capacity", () => {
     await page.getByTestId("pool-name").fill("x");
     await page.getByTestId("create-pool").click();
     // The catalogue's words for a refusal, then the service's own message naming what was refused.
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("write-error")).toContainText(
+      "That was not accepted",
+    );
+    await expect(page.getByTestId("write-error")).not.toContainText(
       "name must not be blank",
     );
     await expect(page.getByTestId("write-error")).toContainText(

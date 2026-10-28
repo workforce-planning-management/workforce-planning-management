@@ -66,7 +66,11 @@ test.describe("Worker page panels", () => {
       .getByTestId("wellbeing-prompts")
       .getByRole("button", { name: "Done" })
       .click();
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("action-error")).toContainText(
+      "That was not accepted",
+    );
+    await expect(page.getByTestId("action-error")).not.toContainText(
       "already answered",
     );
   });

@@ -167,7 +167,11 @@ test.describe("Joiners and leavers", () => {
     await expect(heldTable).toContainText("Revoke");
     // Completion is refused while anything is open, and the service says what.
     await page.getByTestId("movement-complete").click();
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("error")).toContainText(
+      "That was not accepted",
+    );
+    await expect(page.getByTestId("error")).not.toContainText(
       "1 checklist item(s) still open",
     );
 

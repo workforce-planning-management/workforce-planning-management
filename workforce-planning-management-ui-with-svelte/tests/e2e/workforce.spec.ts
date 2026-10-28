@@ -116,7 +116,11 @@ test.describe("Workforce", () => {
       .getByTestId("pending-leave")
       .getByRole("button", { name: "Reject" })
       .click();
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("action-error")).toContainText(
+      "That was not accepted",
+    );
+    await expect(page.getByTestId("action-error")).not.toContainText(
       "already decided",
     );
   });

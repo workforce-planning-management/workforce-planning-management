@@ -88,7 +88,11 @@ test.describe("Role profiles", () => {
     await page.goto("/roles");
     await page.getByTestId("role-req-skill").selectOption(PROMPTING);
     await page.getByTestId("role-req-add").click();
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("error")).toContainText(
+      "That was not accepted",
+    );
+    await expect(page.getByTestId("error")).not.toContainText(
       "minimum must be 1 to 5",
     );
   });

@@ -982,7 +982,7 @@ test.describe("conversion plans (WPM-T164)", () => {
     await expect(page.getByTestId("conversion-open")).toHaveCount(0);
   });
 
-  test("the service's refusal is shown, and a caller who may not read plans sees no panel", async ({
+  test("the refusal is said in the catalogue's words, and a caller who may not read plans sees no panel", async ({
     page,
   }) => {
     await stubWorkerPage(page);
@@ -1004,7 +1004,11 @@ test.describe("conversion plans (WPM-T164)", () => {
     await page.goto(`/workers/${WORKER.pid}`);
     await page.getByTestId("conversion-target-input").fill("2026-12-01");
     await page.getByTestId("conversion-propose").click();
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("conversion-action-error")).toContainText(
+      "That was not accepted",
+    );
+    await expect(page.getByTestId("conversion-action-error")).not.toContainText(
       "already has an open plan",
     );
 
@@ -1074,7 +1078,7 @@ test.describe("conversion plans (WPM-T164)", () => {
     await page.getByTestId("conversion-target-input").fill("2027-01-31");
     await page.getByTestId("conversion-propose").click();
     await expect(page.getByTestId("conversion-action-error")).toContainText(
-      "line manager or HR",
+      "You are not allowed to do this.",
     );
     await expect(page.getByTestId("conversion-sent")).toHaveCount(0);
   });

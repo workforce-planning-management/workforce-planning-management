@@ -106,7 +106,11 @@ test.describe("Development", () => {
     await expect(page.getByTestId("error")).toContainText(
       "You are not allowed to do this.",
     );
+    // The catalogue's words, not the service's.
     await expect(page.getByTestId("error")).toContainText(
+      "You are not allowed to do this.",
+    );
+    await expect(page.getByTestId("error")).not.toContainText(
       "only HR reads succession",
     );
     await expect(page.getByTestId("gaps")).toHaveCount(0);
