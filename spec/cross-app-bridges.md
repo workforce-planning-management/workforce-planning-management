@@ -97,7 +97,26 @@ read as one set. **Contract with PPM: unverified.**
 | WPM-T355 | `worker_hired` and `worker_terminated`/`worker_retired` carry `person_ref`, `organization_ref`, `effective_on` and nothing else (R207) | nothing outside WPM |
 | WPM-T356 | `supplier_contact_ref` on contractor details (R206) | nothing outside WPM |
 | WPM-T357 | `POST /api/bridges/overlap` (R208) | nothing outside WPM |
-| WPM-T358 | Best-effort supplier and contact name lookup from CRM (R206) | CRM's lookup route, to be read |
+| WPM-T358 | Supplier and contact names (R206) | **Read 2026-10-28: CRM has no lookup by reference**, and holds no person's name; see "What CRM was read to say". Re-scoped to person-service |
 | WPM-T359 | Capacity what-if (R209) | the capacity model (WPM-T104 to T107); is WPM-T158 to T160. **WPM half built 2026-10-28** (`POST /api/capacity/what-if`; the contingent effect, T159, is built too; the persona test of T160 is open); PPM's side unverified |
 | WPM-T360 | Programme demand in (R210) | PPM's contract |
 | WPM-T361 | People-impact out (R211) | WPM-T359, PPM's contract |
+
+## What CRM was read to say (2026-10-28)
+
+CRM's source is on the same machine (`contact-relationship-management-service-with-rust`) and was read, not run.
+
+1. **CRM keeps no name for a person and has no lookup by reference.** A contact holds a `person:` URN; the name is resolved from
+   person-service at the moment of need (`clients::resolve_person`), and the list routes (`/api/contacts`, `/api/accounts`) are paged
+   lists, not lookups by ref. So the plan of WPM-T358, a supplier contact's name from CRM, cannot be done and should not be: the owner of
+   a `person:` name is person-service, which WPM already reads best-effort. **T358 is re-scoped** to resolving `supplier_contact_ref`
+   through that client. An `organization:` name has no confirmed source; CRM accounts carry a `display_name` but no by-ref route was found.
+2. **CRM already calls WPM, and the call does not match WPM-D135.** `POST /api/bridges/wpm/teams-import` (admin only, stub-first) pages
+   `GET {CRM_WORKER_SERVICE_URL}/api/workers?status=active&limit=200&offset=`, **sending no token**, and keeps each worker's `pid` and
+   `department` only, as `worker:<pid>` references. Two things follow. WPM's list is for a caller with access: an unauthenticated
+   call is refused when authentication is required, and an open one would be reading every active worker's record to use two fields.
+   And the reference is `worker:` where this document and WPM's events use `person:` (the `worker_hired` payload carries both). Neither is
+   fixed here; both are for CRM's owner and for WPM-T358's successor to settle. The call was read, not run against WPM.
+3. **PPM's code is still not on this machine.** CRM's `open_delivery_idea` (`POST /api/ideas` with `title`, `pitch`, `tags`, answered
+   `{pid}`) was, by its own comment, "read from that service's source, not run", so it is second-hand and says nothing about programme
+   demand or people-impact. WPM-T360 and T361 stay blocked (WPM-D136).
