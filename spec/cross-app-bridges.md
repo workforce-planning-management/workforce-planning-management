@@ -99,8 +99,8 @@ read as one set. **Contract with PPM: unverified.**
 | WPM-T357 | `POST /api/bridges/overlap` (R208) | nothing outside WPM |
 | WPM-T358 | Supplier and contact names (R206) | **Read 2026-10-28: CRM has no lookup by reference**, and holds no person's name; see "What CRM was read to say". Re-scoped to person-service |
 | WPM-T359 | Capacity what-if (R209) | the capacity model (WPM-T104 to T107); is WPM-T158 to T160. **WPM half built 2026-10-28** (`POST /api/capacity/what-if`; the contingent effect, T159, is built too; the persona test of T160 is open); PPM's side unverified |
-| WPM-T360 | Programme demand in (R210) | PPM's contract |
-| WPM-T361 | People-impact out (R211) | WPM-T359, PPM's contract |
+| WPM-T360 | Programme demand in (R210) | **PPM read 2026-10-28**: it keeps its own pools and commitments; a decision is needed first, see "What PPM was read to say" |
+| WPM-T361 | People-impact out (R211) | WPM-T359; PPM has no inbound route for it (read 2026-10-28) |
 
 ## What CRM was read to say (2026-10-28)
 
@@ -117,6 +117,27 @@ CRM's source is on the same machine (`contact-relationship-management-service-wi
    call is refused when authentication is required, and an open one would be reading every active worker's record to use two fields.
    And the reference is `worker:` where this document and WPM's events use `person:` (the `worker_hired` payload carries both). Neither is
    fixed here; both are for CRM's owner and for WPM-T358's successor to settle. The call was read, not run against WPM.
-3. **PPM's code is still not on this machine.** CRM's `open_delivery_idea` (`POST /api/ideas` with `title`, `pitch`, `tags`, answered
-   `{pid}`) was, by its own comment, "read from that service's source, not run", so it is second-hand and says nothing about programme
-   demand or people-impact. WPM-T360 and T361 stay blocked (WPM-D136).
+3. **PPM's code was not found at first; it is at `~/git/project-porfolio-management/project-porfolio-management`** (the directory is spelled
+   `porfolio`; the crate and docs say `portfolio`). CRM's idea contract below is still second-hand, but PPM itself was read next.
+
+## What PPM was read to say (2026-10-28)
+
+PPM's service (`project-portfolio-management-service-with-rust`) was read, not run.
+
+1. **PPM has its own capacity model, parallel to WPM's.** `PUT /api/capacity-commitments` sets, for one of **PPM's** pools (`pool_pid`), a plan
+   (`plan_pid`), an optional partner organization, a `kind` (supply or demand), a month (`YYYY-MM`) and `committed_fte` (a float, with an
+   optional `delivered_fte`). `GET /api/capacity-heatmap` computes the pool-by-month view from them. PPM's pools are `skill_pools` with
+   `roles` and `skills` as text tags, one role or skill in at most one pool. WPM's pools are different rows with different ids, built from
+   role profiles and skills at a minimum proficiency, with FTE in centi-FTE and months as `YYYY-MM-01`.
+2. **So "programme demand in" is not plumbing; it needs a decision.** Either WPM reads PPM's demand commitments and maps PPM's pool to its
+   own (by what? a name is not an identity), or PPM stops keeping supply and asks WPM, or the two views are shown side by side and
+   labelled. Nothing is built (WPM-D136); the choice is the owners'. The risk to name is two numbers for one pool.
+3. **PPM calls a worker-service route that WPM does not have.** `GET {base}/api/workers/{id}/skills` expecting `{"skills": ["tag", ...]}`
+   (`src/workers_client.rs`, for its skill-gap view). PPM's own notes say the route did not exist; it still does not on WPM (WPM has
+   `/api/workers/{pid}/skills-as-of`, a different shape). Without it PPM reports `unknown`, which is honest. A route would have to return
+   skills as tags WPM never uses (WPM skills are catalogue entries with proficiency), so adding one is another mapping decision.
+4. **PPM has no inbound route for people-impact, and nothing that calls WPM's what-if.** Only `POST /api/ideas` was found as an inbound
+   contract (title, pitch, tags). T361 has nowhere to send to.
+5. **PPM names its plans `plan_pid` and its programmes by `programme`-labelled plans**; WPM's `programme_ref` is a `thing:` URN. No mapping
+   between the two was found.
+
