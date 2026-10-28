@@ -536,3 +536,58 @@ async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_tables_found_by_the_inventory_are_exported_and_erased() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let w = seed_worker!(&request, &org, format!("INV-{tag}"), None).await;
+        activate!(&request, &w).await;
+        let person: String = ctx
+            .db
+            .query_one_raw(Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!("SELECT person_ref AS p FROM workers WHERE pid = '{w}'"),
+            ))
+            .await
+            .unwrap()
+            .unwrap()
+            .try_get("", "p")
+            .unwrap();
+        for sql in [
+            format!("INSERT INTO onboarding_items (pid, worker_pid, name, mandatory, status, waived_reason) VALUES (gen_random_uuid(), '{w}', 'Laptop', true, 'waived', 'has their own')"),
+            format!("INSERT INTO time_entry_weeks (worker_pid, week_start, minutes) VALUES ('{w}', '2026-10-05', 2250)"),
+            format!("INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) VALUES (gen_random_uuid(), '{person}', '{org}', '{w}', 'member', '2026-01-05')"),
+            format!("INSERT INTO succession_candidates (pid, plan_pid, worker_pid, readiness, rank) VALUES (gen_random_uuid(), gen_random_uuid(), '{w}', 'ready_now', 1)"),
+        ] {
+            ctx.db.execute_unprepared(&sql).await.unwrap();
+        }
+        let count = |table: &'static str| {
+            let ctx = &ctx;
+            let w = w.clone();
+            async move { scalar(ctx, format!("SELECT count(*) AS n FROM {table} WHERE worker_pid = '{w}'")).await }
+        };
+
+        // The export carries what the worker is owed and not the succession rating.
+        let export: Value = request.get(&format!("/api/workers/{w}/subject-access")).await.json();
+        assert_eq!(export["onboarding_items"][0]["waived_reason"], "has their own", "{export}");
+        assert_eq!(export["time_entry_weeks"][0]["minutes"], 2250);
+        assert!(export["organization_memberships"].as_array().is_some_and(|m| !m.is_empty()));
+        assert!(export.get("succession_candidates").is_none(), "readiness and rank are withheld (WPM-D128)");
+
+        // Erasure deletes the weekly totals, the memberships and the succession entry, and scrubs the waiver reason.
+        for to in ["offboarding", "terminated"] {
+            request.post(&format!("/api/workers/{w}/status")).json(&json!({ "to": to })).await.assert_status_ok();
+        }
+        let erased = request.post(&format!("/api/workers/{w}/erase")).await;
+        erased.assert_status_ok();
+        assert_eq!((count("time_entry_weeks").await, count("organization_memberships").await, count("succession_candidates").await), (0, 0, 0));
+        let reasons = scalar(&ctx, format!("SELECT count(*) AS n FROM onboarding_items WHERE worker_pid = '{w}' AND waived_reason IS NOT NULL")).await;
+        assert_eq!(reasons, 0, "the free-text reason is scrubbed");
+        assert_eq!(count("onboarding_items").await, 1, "the checklist item stays; it is the employer's");
+    })
+    .await;
+}

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a checked personal-data inventory (WPM-T353)
+
+`tests/personal_data_inventory.rs` and the generated `spec/governance/personal-data-inventory.md` (66 person-keyed tables). Found and fixed: weekly time totals and organization memberships were never erased, and three tables were missing from the subject-access export; an onboarding waiver reason survived erasure. Erasure gains four statements (appended) and the audit counts four keys.
+
 ### Added — small-cell suppression as one rule (WPM-T349)
 
 `rules::suppression::{visible, with_total}`: the floor written once, with complementary suppression so a hidden cell cannot be found by subtracting from a shown total (checked on about 78,000 small tables), and a test that fails when another rule file writes its own floor comparison. Seventeen files still hold their own copy and are listed to be moved.

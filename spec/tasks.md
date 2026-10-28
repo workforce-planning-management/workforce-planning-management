@@ -5515,4 +5515,19 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       saying so. The checker has its own tests. The register records today's nine value words as machine-drafted and unreviewed, and names the terms of art a reviewer should check.
       **Verified:** passes on the register; fails with a row removed and with a review claimed in part (restored). **Not done:** no translation was reviewed by a person (WPM-T155 stays open);
       the test checks the register's form, not that a named reviewer exists.
+- [x] (2026-10-28) WPM-T353 **A personal-data inventory that is checked, and the gaps it found.** *(WPM-R91, WPM-R92, WPM-D22)* The retention schedule covered the 56 soft-deleting tables; the DPIA and the record of
+      processing were prose. Nothing listed every table that holds a person's data or checked that each is exported and erased.
+      **Done:** `tests/personal_data_inventory.rs` (no database) reads the migrations for every table with a person column (`worker_pid`, `person_ref` and ten others), and fails when such a table is
+      missing from the subject-access export, or is in neither the erasure statements nor `rules::privacy::kind_of`, unless it is named in `NOT_EXPORTED` or `NOT_ERASED_OR_RETAINED` with a reason; it fails
+      for an exemption that is no longer needed or names a table that is gone. It writes `spec/governance/personal-data-inventory.md` (66 tables: linked by, export, erasure, retention kind, reason) and fails
+      when that is out of date. **It found real gaps, now fixed:** `time_entry_weeks` and `organization_memberships` were in neither the erasure nor the retention schedule; `onboarding_items`,
+      `time_entry_weeks` and `organization_memberships` were not exported; an onboarding item's free-text waiver reason survived erasure. Four statements appended to `erasure_statements`
+      (weekly totals and memberships deleted, the waiver reason scrubbed, succession entries deleted) and three tables added to the export; the audit counts gained four keys.
+      Record of processing rows 18 (assignments) and 19 (link tokens) and DPIA risks R18 and R19 added. **Verified:** a probe table with `worker_pid` and no handling fails the test; removing an
+      erasure statement fails it; a request test seeds the four tables, checks the export carries three (and not the succession rating, WPM-D128) and that erasure leaves none of the deleted
+      rows and no waiver reason, and fails when the scrub is disabled; full `--ignored` suite 173, `cargo test --lib` 976, clippy clean.
+      **Recorded gaps, not fixed:** applicants (`candidates`, `applications`) are data subjects with no subject-access route; `appraisal_nominations` (who was asked to rate whom) is neither exported nor
+      erased nor on the retention schedule; a redacted view of a person's own succession entry is not built. **Cannot see:** a table linked by a column with another name, personal data in a free-text
+      column of a table not keyed to a person, a table built by SeaORM migrations rather than raw SQL, and whether a statement is *right*. The retention schedule's own list of 56 tables was not
+      re-derived. **Not verified:** the Keycloak suite; a restore-and-replay drill with the new statements.
 

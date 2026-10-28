@@ -19,10 +19,10 @@ use crate::models::_entities::{
     engagement_status_assessments, entitlement_acknowledgements, equality_declarations,
     ergonomic_assessments, expense_claims, expense_items, flexible_working_requests, group_members,
     handover_actions, leave_entitlements, leave_requests, mentorships, mobility_interests,
-    movements, notifications, path_enrollments, pay_information_requests, payslips,
-    pipeline_members, policy_acknowledgements, positions, post_fundings,
-    professional_registrations, program_placements, resignations, reviews, rota_members,
-    rota_overrides, rota_swap_requests, scim_pushes, shift_assignments, time_entries,
+    movements, notifications, onboarding_items, organization_memberships, path_enrollments,
+    pay_information_requests, payslips, pipeline_members, policy_acknowledgements, positions,
+    post_fundings, professional_registrations, program_placements, resignations, reviews,
+    rota_members, rota_overrides, rota_swap_requests, scim_pushes, shift_assignments, time_entries,
     training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
     worker_contractor_details, worker_framework_roles, worker_health_records, worker_job_levels,
     worker_pay_positions, worker_skill_history, worker_skills, workers,
@@ -49,6 +49,21 @@ macro_rules! rows_for {
                 .await?
         )
     };
+}
+
+/// The worker's weekly time totals, as a JSON array. The table has no entity (it is a derived summary keyed by worker and week).
+async fn weekly_time<C: ConnectionTrait>(db: &C, worker: Uuid) -> Result<serde_json::Value> {
+    let row = db
+        .query_one_raw(sea_orm::Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            format!(
+                "SELECT COALESCE(json_agg(t ORDER BY week_start), '[]'::json) AS rows FROM time_entry_weeks t WHERE worker_pid = '{worker}'"
+            ),
+        ))
+        .await?;
+    Ok(row
+        .and_then(|r| r.try_get::<serde_json::Value>("", "rows").ok())
+        .unwrap_or_else(|| serde_json::json!([])))
 }
 
 /// `GET /api/workers/{pid}/subject-access` — everything WPM holds
@@ -171,6 +186,9 @@ async fn subject_access(
         "professional_registrations": rows_for!(db, professional_registrations, WorkerPid, epid),
         "program_placements": rows_for!(db, program_placements, WorkerPid, epid),
         "payslips": rows_for!(db, payslips, WorkerPid, epid),
+        "onboarding_items": rows_for!(db, onboarding_items, WorkerPid, epid),
+        "organization_memberships": rows_for!(db, organization_memberships, WorkerPid, epid),
+        "time_entry_weeks": weekly_time(db, epid).await?,
         "wellbeing_acknowledgements":
             rows_for!(db, entitlement_acknowledgements, WorkerPid, epid),
         "notifications": rows_for!(db, notifications, WorkerPid, epid),
@@ -307,6 +325,12 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!(
             "UPDATE expense_items SET description = NULL, receipt_ref = NULL WHERE worker_pid = '{epid}'"
         ),
+        // Added with the personal-data inventory (WPM-T353): weekly totals and memberships are about them only; an onboarding
+        // item stays (the checklist is the employer's) but its free-text reason goes; a succession entry is a rating about them.
+        format!("DELETE FROM time_entry_weeks WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM organization_memberships WHERE worker_pid = '{epid}'"),
+        format!("UPDATE onboarding_items SET waived_reason = NULL WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM succession_candidates WHERE worker_pid = '{epid}'"),
     ]
 }
 
@@ -472,6 +496,10 @@ async fn erase(
             "expense_claims_closed": affected[28],
             "expense_claim_texts_scrubbed": affected[29],
             "expense_item_texts_scrubbed": affected[30],
+            "weekly_time_deleted": affected[31],
+            "memberships_deleted": affected[32],
+            "onboarding_reasons_scrubbed": affected[33],
+            "succession_entries_deleted": affected[34],
         })),
     )
     .await?;
