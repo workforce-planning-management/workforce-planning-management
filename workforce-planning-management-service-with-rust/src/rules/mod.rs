@@ -11,6 +11,7 @@ pub mod ai_register;
 pub mod announcements;
 pub mod appraisal;
 pub mod assessment;
+pub mod assignment;
 pub mod audit_export;
 pub mod bargaining;
 pub mod bargaining_pack;

@@ -5277,8 +5277,16 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
 
 **Section P — the electronic staff record and pay deductions**
 
-- [ ] WPM-T310 **Assignments and categories, pure core.** *(WPM-R161, WPM-R162, WPM-D112, WPM-D116)* The FTE total rule, one primary,
+- [x] (2026-10-28) WPM-T310 **Assignments and categories, pure core.** *(WPM-R161, WPM-R162, WPM-D112, WPM-D116)* The FTE total rule, one primary,
       effective-dated change as end-and-start, job role and staff group agreement, unknown categories.
+      **Done:** `rules/assignment.rs`: `fte_total`, `fte_problems` (checks the new start day and every later start inside the new
+      assignment; the message names the total), `assignment_problems`, `primary_problems` (exactly one current primary; none current
+      says nothing), `end_for_change` (old ends the day before the effective date, so no overlap and no gap), `agreement`
+      (`Agrees`/`Mismatch`/`Unknown`; only a stated disagreement is a mismatch) and `category_or_unknown`. Dates are inclusive at both
+      ends. 9 unit tests; **mutation-checked** twice (`>` to `>=` on the FTE limit; `<=` to `<` on the change day), both caught.
+      `cargo fmt`, `cargo clippy --all-targets -- -D warnings` clean. **Not verified:** nothing is wired in (T311); the full `--ignored`
+      request suite was not re-run, as no controller or migration changed. **Choice to confirm:** the cross-organization total
+      (R161) is advisory and is not in this module; it belongs with the person-centric record (T313).
 - [ ] WPM-T311 **Assignments and categories, records, API and screen.** *(WPM-R161, WPM-R162)* Migration creating one primary assignment
       per worker from its columns; write-through to the worker row; `positions.holder` to the holding assignment; vocabulary import;
       aggregates with the floor; export and erasure.
