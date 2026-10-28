@@ -5302,8 +5302,19 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       date" test for continuous service), both caught; clippy clean. **Not done:** the records (prior-service table, migration), `/api/me/record`,
       the privileged view that reduces other employers to a total, the transferred-training rule, duplicates shown as possible. **Not
       verified:** whole years across several periods are measured from the first start, a reading of R166 that HR should confirm.
-- [ ] WPM-T314 **Statutory and mandatory learning, pure core.** *(WPM-R170, WPM-D117)* Audience matching, the six statuses, refresher
+- [x] (2026-10-28) WPM-T314 **Statutory and mandatory learning, pure core.** *(WPM-R170, WPM-D117)* Audience matching, the six statuses, refresher
       arithmetic, transferred completions.
+      **Done:** `rules/mandatory_learning.rs`: `applies` (audience of staff group, job role, area of work and position against a person's
+      current assignments: a stated miss settles it as `No`, a blank category is `Unknown`, any matching assignment is `Yes`, a restricted
+      audience with no assignment is `Unknown`, an empty audience is the organization), `status` (the six statuses; the latest completion
+      counts; a completion after the as-of date is ignored; a transferred one counts only where the requirement accepts it; once-is-enough
+      never expires; due on the as-of day is still in date; `due_soon` inside 90 days), `rollup` (counts per status, `unknown` apart and in
+      neither side of the rate, rate `None` with nothing to divide by, `Hidden` below the floor, a floor of 0 read as 1),
+      `requirement_problems` (basis, a source for a statutory one, a refresher of at least a month). 15 unit tests, **mutation-checked**
+      three ways (expiry on the day itself, the 90-day edge, a stated miss read as unknown), all caught; clippy clean.
+      **Not done:** the records, API and screens (T315); the CSTF mapping (a deployer's import). **Choices to confirm:** `due_soon` counts
+      as in date in the rate; the window is a constant, not yet configuration; expiry is the completion date plus the months, with the
+      calendar's end-of-month clamp.
 - [ ] WPM-T315 **Statutory and mandatory learning, records, API and screens.** *(WPM-R170)* Requirements, recorded completions, the
       person's, manager's and HR's views, roll-ups with the floor; extends the existing compliance view.
 - [ ] WPM-T316 **Qualifications.** *(WPM-R171)* Declared and verified, role requirements and the qualification gap beside the skill gap.

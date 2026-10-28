@@ -64,6 +64,7 @@ pub mod learning;
 pub mod leave;
 pub mod lifecycle;
 pub mod lms;
+pub mod mandatory_learning;
 pub mod mcp;
 pub mod metrics;
 pub mod mobility;
