@@ -22,6 +22,9 @@ pub(super) struct WhatIfPayload {
     organization_ref: String,
     programme_ref: String,
     changes: Vec<ChangeLine>,
+    /// Where the change moves the programme's end date, if it does: the contingent effect is worked out against it (WPM-R97).
+    #[serde(default)]
+    programme_new_end: Option<NaiveDate>,
 }
 
 /// `POST /api/capacity/what-if` — what a proposed change to a programme's demand does: which pool-months become over-committed or stop
@@ -96,6 +99,12 @@ pub(super) async fn what_if(
         }
     }
     let result = rules::what_if(&capacity.views, &held, &changes);
+    let contingent = match payload.programme_new_end {
+        Some(new_end) => {
+            Some(contingent_effect(&ctx, &payload.organization_ref, &capacity, new_end).await?)
+        }
+        None => None,
+    };
     let txn = ctx.db.begin().await?;
     Audit::record(
         &txn,
@@ -111,7 +120,58 @@ pub(super) async fn what_if(
     )
     .await?;
     txn.commit().await?;
-    format::json(answer_json(&result, &names, from))
+    let mut body = answer_json(&result, &names, from);
+    body["programme_new_end"] = json!(payload.programme_new_end);
+    body["contingent_ending"] = json!(contingent.map(|counts| {
+        counts
+        .into_iter()
+        .map(|(pool, count)| json!({ "pool_pid": pool, "pool": names.get(&pool), "count": count }))
+        .collect::<Vec<_>>()
+    }));
+    format::json(body)
+}
+
+/// Per pool, how many fixed-term and contractor engagements end before the programme's new end: counts, floored, no name and no total.
+/// The dates are read for the count and go no further.
+async fn contingent_effect(
+    ctx: &AppContext,
+    org: &str,
+    capacity: &OrgCapacity,
+    new_end: NaiveDate,
+) -> Result<Vec<(String, Option<usize>)>> {
+    let mut per_pool = Vec::new();
+    for pool in &capacity.pools {
+        let key = pool.pid.to_string();
+        let members = capacity.members.get(&key).map_or(&[][..], Vec::as_slice);
+        let mut ends = Vec::new();
+        if !members.is_empty() {
+            let sql = format!(
+                "SELECT w.engagement_ends_on AS ends FROM workers w
+                 WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND w.terminated_on IS NULL
+                   AND w.employment_type IN ('fixed_term', 'contractor') AND w.engagement_ends_on IS NOT NULL
+                   AND ({})",
+                holds_sql(members)
+            );
+            for row in ctx
+                .db
+                .query_all_raw(sea_orm::Statement::from_sql_and_values(
+                    sea_orm::DbBackend::Postgres,
+                    sql,
+                    [org.into()],
+                ))
+                .await?
+            {
+                ends.push(row.try_get::<NaiveDate>("", "ends")?);
+            }
+        }
+        per_pool.push((key, ends));
+    }
+    Ok(rules::ending_counts(
+        &per_pool,
+        today(),
+        new_end,
+        crate::rules::pulse::K_ANONYMITY,
+    ))
 }
 
 /// The answer as the API shows it. A pool is named (a skill, not a person); nothing finer appears.

@@ -11,6 +11,8 @@ pub(crate) struct OrgCapacity {
     pub(crate) views: BTreeMap<String, rules::PoolView>,
     pub(crate) demand: BTreeMap<String, Vec<rules::Demand>>,
     pub(crate) member_counts: BTreeMap<String, usize>,
+    /// What makes a worker count towards each pool, by pool.
+    pub(crate) members: BTreeMap<String, Vec<rules::Member>>,
 }
 
 pub(super) fn parse_demand_rows(rows: &[programme_demands::Model]) -> Vec<rules::Demand> {
@@ -62,23 +64,10 @@ async fn weighted_days(
     Ok(weighted)
 }
 
-/// The SQL of [`weighted_days`] for one pool. Only dates, UUIDs and integers are written into it (all
-/// from typed values, never from text); the organization is a bound parameter.
-fn pool_supply_sql(members: &[rules::Member], months: &[NaiveDate]) -> String {
-    let month_rows = months
-        .iter()
-        .map(|m| {
-            let first = rules::month_start(*m);
-            let last = first
-                .checked_add_days(chrono::Days::new(
-                    u64::try_from(rules::days_in_month(first) - 1).unwrap_or(30),
-                ))
-                .unwrap_or(first);
-            format!("(DATE '{first}', DATE '{last}')")
-        })
-        .collect::<Vec<_>>()
-        .join(", ");
-    let holds = members
+/// The SQL condition (on `workers w`) that a worker counts towards a pool: one of its role profiles or skills. Only UUIDs and integers
+/// from typed values are written into it.
+pub(super) fn holds_sql(members: &[rules::Member]) -> String {
+    members
         .iter()
         .map(|member| match member {
             rules::Member::RoleProfile(role) => format!(
@@ -96,7 +85,26 @@ fn pool_supply_sql(members: &[rules::Member], months: &[NaiveDate]) -> String {
             ),
         })
         .collect::<Vec<_>>()
-        .join(" OR ");
+        .join(" OR ")
+}
+
+/// The SQL of [`weighted_days`] for one pool. Only dates, UUIDs and integers are written into it (all
+/// from typed values, never from text); the organization is a bound parameter.
+fn pool_supply_sql(members: &[rules::Member], months: &[NaiveDate]) -> String {
+    let month_rows = months
+        .iter()
+        .map(|m| {
+            let first = rules::month_start(*m);
+            let last = first
+                .checked_add_days(chrono::Days::new(
+                    u64::try_from(rules::days_in_month(first) - 1).unwrap_or(30),
+                ))
+                .unwrap_or(first);
+            format!("(DATE '{first}', DATE '{last}')")
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    let holds = holds_sql(members);
     format!(
         "WITH m(first, last) AS (VALUES {month_rows}),
          span AS (
@@ -211,12 +219,18 @@ pub(crate) async fn load_org_capacity(
         member_counts.insert(key.clone(), members.len());
         demand_by_pool.insert(key, demand);
     }
+    let members = pools
+        .iter()
+        .map(|p| p.pid.to_string())
+        .zip(members_by_pool)
+        .collect();
     Ok(OrgCapacity {
         months,
         pools,
         views,
         demand: demand_by_pool,
         member_counts,
+        members,
     })
 }
 

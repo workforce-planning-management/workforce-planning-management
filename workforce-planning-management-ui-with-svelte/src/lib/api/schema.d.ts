@@ -2169,7 +2169,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** What a proposed change to a programme's demand (organization_ref, programme_ref and changes of pool, month and centi-FTE, negative to give capacity back) does to the plan: which pool-months become over-committed or stop being so, the constraint pool before and after, and the earliest start that fits. Reads, computes and stores nothing; names no one (a pool is a skill, and no worker, member, partner or other programme appears). Unknown where the model has no pools or a partner has not answered, never 'no impact' */
+        /** What a proposed change to a programme's demand (organization_ref, programme_ref and changes of pool, month and centi-FTE, negative to give capacity back) does to the plan: which pool-months become over-committed or stop being so, the constraint pool before and after, and the earliest start that fits. Reads, computes and stores nothing; names no one (a pool is a skill, and no worker, member, partner or other programme appears). Unknown where the model has no pools or a partner has not answered, never 'no impact'. With programme_new_end (where the change moves the programme's end) it also counts, per pool, the fixed-term and contractor engagements still running that end before it: a count under five is hidden, zero is shown, and there is no total */
         post: {
             parameters: {
                 query?: never;

@@ -3330,9 +3330,16 @@ tasks are the capacity answer and the contract, below.
       the zero clamp, now fixed; an unknown month counted as a fit, likewise; the programme filter; the empty-organization branch), all caught. `cargo test --lib` 991, full `--ignored` suite 176, clippy clean.
       **Not done:** the contingent effect (T159); the proposal's horizon starts at its earliest month and spans at most 24 months; programme demand is read from claims with status `active` (a claim becomes
       active only through a start decision); no UI; PPM's side of the call is unverified.
-- [ ] WPM-T159 **Contingent effect in the what-if answer.** *(WPM-R97)* Where a proposed change moves a
+- [x] (2026-10-28) WPM-T159 **Contingent effect in the what-if answer.** *(WPM-R97)* Where a proposed change moves a
       programme's end date, list the fixed-term and contractor engagements (counts per pool, no names)
       that would end before it. Depends on WPM-T135 and WPM-T142.
+      **Done (2026-10-28):** `POST /api/capacity/what-if` takes an optional `programme_new_end`; the answer then carries `contingent_ending`, per pool, the number of fixed-term and contractor
+      engagements still running (not terminated, with an end date on or after today) that end **before** it (`rules::capacity::ends_before_programme`; one ending on the new end date itself covers it).
+      A pool is matched by the same role-profile and skill test as supply (`holds_sql`, shared with the capacity view). A count under the small-group floor of 5 (`K_ANONYMITY`) is `null`, zero is
+      shown, and **there is no total** (a worker can sit in more than one pool, so a total would double-count). Interns are not counted, nor are other organizations' workers. Names no one; the dates
+      are read for the count and go no further. Unit tests (the boundaries; the floor, zero and no total) and a request test (counts, floor, a later end, no name, none when no end is given, a bad date);
+      **mutation-checked** seven ways (past engagements, the end-date boundary, the floor, the basis filter, the terminated filter, the organization scope), all caught, three after the test gained
+      an intern, a terminated worker and another organization's worker that it had lacked. **Not done:** it counts engagements by their own end date, not by the days the programme actually holds them.
 - [~] (2026-10-28) WPM-T160 **Verification and documents.** *(WPM-R97)* Enforcement test that the what-if answer names no
       one and that a manager sees counts only; update the DPIA (`spec/governance/dpia.md`), the record of
       processing and the data-flow diagram if WPM stores anything new (it should not).

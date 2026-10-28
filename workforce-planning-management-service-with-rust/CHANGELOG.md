@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — the capacity what-if (WPM-T158)
 
-`POST /api/capacity/what-if` and `rules::capacity::what_if`: what a proposed change to a programme's demand does (pool-months that become or stop being over-committed, the constraint pool before and after, the earliest start that fits). Reads and computes; stores nothing; names no one; `unknown` where a partner has not answered or the organization has no pools. The contingent effect (WPM-T159) is not built.
+`POST /api/capacity/what-if` and `rules::capacity::what_if`: what a proposed change to a programme's demand does (pool-months that become or stop being over-committed, the constraint pool before and after, the earliest start that fits). Reads and computes; stores nothing; names no one; `unknown` where a partner has not answered or the organization has no pools. With `programme_new_end` it also counts, per pool, the fixed-term and contractor engagements still running that end before it (WPM-T159): a count under five is hidden, zero is shown, and there is no total.
 
 ### Added — bridges to the sibling apps (WPM-T355 to T357)
 

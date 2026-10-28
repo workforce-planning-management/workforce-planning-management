@@ -1611,3 +1611,113 @@ async fn the_what_if_says_what_a_change_does_stores_nothing_and_names_no_one() {
     })
     .await;
 }
+
+/// WPM-T159: where a change moves the programme's end, the engagements that would end before it, as floored counts per pool.
+#[tokio::test]
+#[ignore = "needs a Postgres database; run with --ignored"]
+async fn a_moved_end_date_counts_the_engagements_that_would_end_before_it_per_pool_and_names_no_one()
+ {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let (big_title, small_title) = (format!("Big title {tag}"), format!("Small title {tag}"));
+        let hire = |title: String, n: usize, basis: &'static str, ends: Option<&'static str>| {
+            let (request, org, tag) = (&request, org.clone(), tag.clone());
+            async move {
+                let mut body = json!({
+                    "person_ref": super::a_person(), "organization_ref": org,
+                    "worker_number": format!("CE-{}-{}{}{n}", &tag[..8], &title[..1], &basis[..1]), "display_name": format!("Hidden Name {n}"),
+                    "employment_type": basis, "fte_percent": 100,
+                    "department": "engineering", "job_title": title, "hired_on": "2026-01-05",
+                });
+                if let Some(end) = ends {
+                    body["engagement_ends_on"] = json!(end);
+                }
+                request.post("/api/workers").json(&body).await.assert_status_ok();
+            }
+        };
+        // The big pool: six fixed-term and contractors end early, one ends on the last day, one after, and one is permanent.
+        for n in 0..4 {
+            hire(big_title.clone(), n, "fixed_term", Some("2027-01-31")).await;
+        }
+        for n in 4..6 {
+            hire(big_title.clone(), n, "contractor", Some("2027-02-28")).await;
+        }
+        hire(big_title.clone(), 6, "fixed_term", Some("2027-03-31")).await;
+        hire(big_title.clone(), 7, "fixed_term", Some("2028-01-31")).await;
+        hire(big_title.clone(), 8, "permanent", None).await;
+        // An intern with an early end is not fixed-term or contractor; a fixed-term worker already terminated does not end later.
+        hire(big_title.clone(), 9, "intern", Some("2027-01-31")).await;
+        hire(big_title.clone(), 10, "fixed_term", Some("2027-01-31")).await;
+        ctx.db
+            .execute_unprepared(&format!("UPDATE workers SET terminated_on = '2026-12-01' WHERE worker_number = 'CE-{}-Bf10'", &tag[..8]))
+            .await
+            .unwrap();
+        // The small pool: three end early, which is under the floor.
+        for n in 0..3 {
+            hire(small_title.clone(), n, "fixed_term", Some("2027-01-31")).await;
+        }
+        // The same job title in another organization is not this organization's supply.
+        request
+            .post("/api/workers")
+            .json(&json!({
+                "person_ref": super::a_person(), "organization_ref": an_org(), "worker_number": format!("CE-{}-other", &tag[..8]),
+                "display_name": "Elsewhere", "employment_type": "fixed_term", "fte_percent": 100,
+                "department": "engineering", "job_title": big_title, "hired_on": "2026-01-05", "engagement_ends_on": "2027-01-31",
+            }))
+            .await
+            .assert_status_ok();
+        let mut pools = Vec::new();
+        for (title, name) in [(&big_title, "Big"), (&small_title, "Small")] {
+            let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": title })).await.json();
+            let pool = make_pool(&request, &org, &format!("{name} pool {tag}"), 0).await;
+            request
+                .post(&format!("/api/skill-pools/{pool}/members"))
+                .json(&json!({ "role_profile_pid": profile["pid"] }))
+                .await
+                .assert_status_ok();
+            pools.push(pool);
+        }
+        let ask = |new_end: Value| {
+            let (request, org, pool) = (&request, org.clone(), pools[0].clone());
+            async move {
+                request
+                    .post("/api/capacity/what-if")
+                    .json(&json!({
+                        "organization_ref": org, "programme_ref": a_programme(), "programme_new_end": new_end,
+                        "changes": [{ "pool_pid": pool, "month": "2027-01-01", "fte_centi": 10 }],
+                    }))
+                    .await
+            }
+        };
+        let answer: Value = ask(json!("2027-03-31")).await.json();
+        let count = |answer: &Value, pool: &str| {
+            answer["contingent_ending"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|c| c["pool_pid"] == pool)
+                .map(|c| c["count"].clone())
+        };
+        assert_eq!(count(&answer, &pools[0]), Some(json!(6)), "{answer}");
+        assert_eq!(count(&answer, &pools[1]), Some(Value::Null), "three is under the floor: hidden, not zero");
+        assert_eq!(answer["programme_new_end"], "2027-03-31");
+        // Later, more end before it; there is no total to subtract from.
+        let later: Value = ask(json!("2027-04-30")).await.json();
+        assert_eq!(count(&later, &pools[0]), Some(json!(7)));
+        assert!(later.get("contingent_total").is_none());
+        // Names no one, and an answer without a new end says nothing about it.
+        for word in ["Hidden Name", "CE-", "person:"] {
+            assert!(!format!("{answer}{later}").contains(word), "{word}");
+        }
+        let plain: Value = request
+            .post("/api/capacity/what-if")
+            .json(&json!({ "organization_ref": org, "programme_ref": a_programme(), "changes": [{ "pool_pid": pools[0], "month": "2027-01-01", "fte_centi": 10 }] }))
+            .await
+            .json();
+        assert_eq!(plain["contingent_ending"], Value::Null);
+        // A date that is not a date is refused.
+        assert_eq!(ask(json!("soon")).await.status_code(), 422);
+    })
+    .await;
+}

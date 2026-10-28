@@ -98,6 +98,6 @@ read as one set. **Contract with PPM: unverified.**
 | WPM-T356 | `supplier_contact_ref` on contractor details (R206) | nothing outside WPM |
 | WPM-T357 | `POST /api/bridges/overlap` (R208) | nothing outside WPM |
 | WPM-T358 | Best-effort supplier and contact name lookup from CRM (R206) | CRM's lookup route, to be read |
-| WPM-T359 | Capacity what-if (R209) | the capacity model (WPM-T104 to T107); is WPM-T158 to T160. **WPM half built 2026-10-28** (`POST /api/capacity/what-if`; the contingent effect, T159, is open); PPM's side unverified |
+| WPM-T359 | Capacity what-if (R209) | the capacity model (WPM-T104 to T107); is WPM-T158 to T160. **WPM half built 2026-10-28** (`POST /api/capacity/what-if`; the contingent effect, T159, is built too; the persona test of T160 is open); PPM's side unverified |
 | WPM-T360 | Programme demand in (R210) | PPM's contract |
 | WPM-T361 | People-impact out (R211) | WPM-T359, PPM's contract |

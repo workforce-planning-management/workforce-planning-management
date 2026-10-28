@@ -1065,6 +1065,38 @@ pub fn what_if(
     }
 }
 
+/// Whether a contingent engagement that ends on `ends_on` would end before a programme's proposed new end. An engagement already over
+/// (`ends_on` before `today`) is not an effect of the proposal; one ending on the new end date itself covers it.
+#[must_use]
+pub fn ends_before_programme(ends_on: NaiveDate, today: NaiveDate, new_end: NaiveDate) -> bool {
+    ends_on >= today && ends_on < new_end
+}
+
+/// How many fixed-term and contractor engagements in each pool end before the programme's proposed new end. A count under the floor is
+/// `None` (small-cell suppression, [`crate::rules::suppression`]); zero is shown. There is **no total**: a worker can hold more than one
+/// pool's skills, so a total would count them twice, and a sum of shown cells would be wrong rather than safe.
+#[must_use]
+pub fn ending_counts(
+    per_pool: &[(String, Vec<NaiveDate>)],
+    today: NaiveDate,
+    new_end: NaiveDate,
+    floor: usize,
+) -> Vec<(String, Option<usize>)> {
+    per_pool
+        .iter()
+        .map(|(pool, ends)| {
+            let n = ends
+                .iter()
+                .filter(|e| ends_before_programme(**e, today, new_end))
+                .count();
+            (
+                pool.clone(),
+                crate::rules::suppression::visible(n, floor).then_some(n),
+            )
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1883,6 +1915,49 @@ mod tests {
             w.earliest_shift_months,
             Some(3),
             "April is the first month that can be said to fit"
+        );
+    }
+
+    #[test]
+    fn an_engagement_ends_before_the_new_end_only_if_it_is_running_now_and_ends_earlier() {
+        let today = d(2026, 10, 1);
+        let end = d(2027, 3, 31);
+        assert!(ends_before_programme(d(2027, 1, 31), today, end));
+        assert!(
+            ends_before_programme(today, today, end),
+            "ending today still counts"
+        );
+        assert!(
+            !ends_before_programme(d(2026, 9, 30), today, end),
+            "already over"
+        );
+        assert!(
+            !ends_before_programme(end, today, end),
+            "ending on the last day covers it"
+        );
+        assert!(!ends_before_programme(d(2027, 6, 30), today, end));
+    }
+
+    #[test]
+    fn ending_counts_hide_a_small_count_show_zero_and_give_no_total() {
+        let today = d(2026, 10, 1);
+        let end = d(2027, 3, 31);
+        let early = d(2027, 1, 1);
+        let late = d(2027, 12, 31);
+        let pools = vec![
+            ("a".to_string(), vec![early; 5]),
+            ("b".to_string(), vec![early; 4]),
+            ("c".to_string(), vec![late; 9]),
+            ("d".to_string(), vec![early, early, late]),
+        ];
+        assert_eq!(
+            ending_counts(&pools, today, end, 5),
+            vec![
+                ("a".to_string(), Some(5)),
+                ("b".to_string(), None),
+                ("c".to_string(), Some(0)),
+                ("d".to_string(), None),
+            ]
         );
     }
 }
