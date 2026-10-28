@@ -5318,7 +5318,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
 - [ ] WPM-T315 **Statutory and mandatory learning, records, API and screens.** *(WPM-R170)* Requirements, recorded completions, the
       person's, manager's and HR's views, roll-ups with the floor; extends the existing compliance view.
 - [ ] WPM-T316 **Qualifications.** *(WPM-R171)* Declared and verified, role requirements and the qualification gap beside the skill gap.
-- [ ] WPM-T317 **The PADR.** *(WPM-R172)* Review kind, two sign-offs, frozen versions, the due date (pure).
+- [~] (2026-10-28) WPM-T317 **The PADR.** *(WPM-R172)* Review kind, two sign-offs, frozen versions, the due date (pure).
+      **Part done (2026-10-28), the pure core:** `rules/padr.rs`: kinds `performance` and `padr`; `SignOffs` (complete when both have signed, completed
+      on the later day, frozen once either has signed), `sign` (once per signer, not dated in the future), `check_editable` (a correction is a
+      new version), `due_on` and `standing` (twelve months after the last completed PADR; for someone who has never had one, a configured
+      number of months after the primary start, none shipped; otherwise `Unknown`; due today is still current). 8 unit tests, mutation-checked
+      twice (overdue on the due day; completion on the earlier day), both caught; clippy clean; full `cargo test --lib` 926.
+      **Not done:** the review kind column, the PADR record (objectives, development needs, the offered-yes-or-no, versions), API and screens;
+      the reviewee's comment is outside this module. **Not verified:** no migration or request test.
 - [ ] WPM-T318 **Readiness for the next pay step.** *(WPM-R173, WPM-D120)* Configured standards, the formal-process flag, `unknown` where a
       standard cannot be evaluated.
 - [ ] WPM-T319 **Date of birth and age bands.** *(WPM-R169, WPM-D114)* Column, access, the test that no scoring code names it, aggregates.

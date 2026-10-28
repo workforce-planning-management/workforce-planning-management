@@ -74,6 +74,7 @@ pub mod org;
 pub mod org_access;
 pub mod org_shape;
 pub mod oversight;
+pub mod padr;
 pub mod pay_category;
 pub mod pay_gap;
 pub mod pay_information;
