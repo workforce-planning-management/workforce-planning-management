@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "Änderung des Schichtmodells",
     "new_monitoring": "neue Überwachung",
     "new_or_changed_score": "neue oder geänderte Bewertung",
-    "pay_structure_change": "Änderung der Vergütungsstruktur"
+    "pay_structure_change": "Änderung der Vergütungsstruktur",
+    "public_holiday": "gesetzlicher Feiertag",
+    "site": "Standort",
+    "area_of_work": "Arbeitsbereich",
+    "job_role": "Stellenrolle",
+    "staff_group": "Personalgruppe",
+    "occupation_code": "Berufsschlüssel",
+    "mandatory": "verpflichtend",
+    "performance": "Leistung",
+    "padr": "persönliches Entwicklungsgespräch"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "newid patrwm sifft",
     "new_monitoring": "monitro newydd",
     "new_or_changed_score": "sgôr newydd neu wedi newid",
-    "pay_structure_change": "newid strwythur tâl"
+    "pay_structure_change": "newid strwythur tâl",
+    "public_holiday": "gŵyl banc",
+    "site": "safle",
+    "area_of_work": "maes gwaith",
+    "job_role": "rôl swydd",
+    "staff_group": "grŵp staff",
+    "occupation_code": "cod galwedigaeth",
+    "mandatory": "gorfodol",
+    "performance": "perfformiad",
+    "padr": "adolygiad datblygu personol"
   },
   "engagement": {
     "title": "Ymgysylltiad",

@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "轮班模式变更",
     "new_monitoring": "新增监控",
     "new_or_changed_score": "新增或变更的评分",
-    "pay_structure_change": "薪酬结构变更"
+    "pay_structure_change": "薪酬结构变更",
+    "public_holiday": "法定假日",
+    "site": "地点",
+    "area_of_work": "工作领域",
+    "job_role": "岗位角色",
+    "staff_group": "员工组别",
+    "occupation_code": "职业代码",
+    "mandatory": "强制",
+    "performance": "绩效",
+    "padr": "个人发展评审"
   },
   "engagement": {
     "title": "用工关系",

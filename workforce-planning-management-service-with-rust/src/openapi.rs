@@ -676,6 +676,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/cost-centres/{pid}/close": {
             "post": { "tags": ["assignments"], "summary": "Close a cost centre on a day not before it opened. Never deleted; a closed one is not reopened here. HR", "responses": ok("The closing day") }
         },
+        "/api/absence-categories": {
+            "get": { "tags": ["leave"], "summary": "The kinds of leave (?pay=paid|unpaid|policy to filter): vacation (annual), government holiday (public_holiday), illness (sick), parental, unpaid and other, each paid, unpaid or by the employer's policy, how it is held against a balance, and whether a reason may be given. Sick leave never carries a reason and there is no category for a condition or for stress", "responses": ok("The categories") }
+        },
         "/api/category-vocabulary": {
             "get": { "tags": ["assignments"], "summary": "An organization's assignment category vocabulary (?organization=, optional ?kind=): site, area_of_work, job_role, staff_group or occupation_code, each with its label and, where it comes from a national standard, that standard and its own code. None is shipped", "responses": ok("The entries") },
             "post": { "tags": ["assignments"], "summary": "Add a vocabulary entry. A code is unique within an organization and kind; a job role may name its staff group, and an assignment that records the two must then agree. HR", "responses": ok("The pid of the entry") }

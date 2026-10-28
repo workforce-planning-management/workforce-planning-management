@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "changement du rythme de travail posté",
     "new_monitoring": "nouvelle surveillance",
     "new_or_changed_score": "note nouvelle ou modifiée",
-    "pay_structure_change": "changement de la structure salariale"
+    "pay_structure_change": "changement de la structure salariale",
+    "public_holiday": "jour férié",
+    "site": "site",
+    "area_of_work": "domaine de travail",
+    "job_role": "fonction",
+    "staff_group": "groupe de personnel",
+    "occupation_code": "code de profession",
+    "mandatory": "obligatoire",
+    "performance": "performance",
+    "padr": "entretien de développement personnel"
   },
   "engagement": {
     "title": "Engagement",

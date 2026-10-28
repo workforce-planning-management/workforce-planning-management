@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — absence categories (WPM-T345)
+
+`rules::absence_category` and `GET /api/absence-categories?pay=`: each kind of leave is paid, unpaid or by policy, with its balance and reason rule; `public_holiday` is a new kind (paid, no balance). No category for a condition or for workplace stress (WPM-D73, WPM-D121).
+
 ### Added — assignments (WPM-T310, WPM-T311 in part)
 
 Migration `000101`: `assignments` (title, department, location, optional categories where `NULL` is unknown, the FTE the contract says, the days it runs; one open primary per

@@ -320,3 +320,88 @@ async fn an_assignment_names_a_cost_centre_that_is_open_and_unmatched_position_v
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_absence_categories_are_listed_by_pay_and_a_government_holiday_has_no_balance() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let all: Value = request.get("/api/absence-categories").await.json();
+        let kinds: Vec<&str> = all["categories"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["kind"].as_str().unwrap())
+            .collect();
+        assert_eq!(
+            kinds,
+            [
+                "annual",
+                "public_holiday",
+                "sick",
+                "parental",
+                "unpaid",
+                "other"
+            ]
+        );
+        let pick = |pay: &'static str| {
+            let request = &request;
+            async move {
+                let v: Value = request
+                    .get(&format!("/api/absence-categories?pay={pay}"))
+                    .await
+                    .json();
+                v["categories"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|c| c["kind"].as_str().unwrap().to_string())
+                    .collect::<Vec<_>>()
+            }
+        };
+        assert_eq!(pick("paid").await, ["annual", "public_holiday"]);
+        assert_eq!(pick("unpaid").await, ["unpaid"]);
+        assert_eq!(pick("policy").await, ["sick", "parental", "other"]);
+        assert_eq!(
+            request
+                .get("/api/absence-categories?pay=free")
+                .await
+                .status_code(),
+            422
+        );
+        let sick = all["categories"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["kind"] == "sick")
+            .unwrap();
+        assert_eq!(
+            (sick["reason_allowed"].as_bool(), sick["balance"].as_str()),
+            (Some(false), Some("may_go_negative"))
+        );
+
+        // A government holiday is accepted as a kind of leave request, and takes no balance.
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let w = seed_worker!(&request, &org, format!("AC-{tag}"), None).await;
+        activate!(&request, &w).await;
+        let day = (Utc::now().date_naive() + Duration::days(30)).to_string();
+        let made = request
+            .post(&format!("/api/workers/{w}/leave-requests"))
+            .json(&json!({ "kind": "public_holiday", "start_on": day, "end_on": day }))
+            .await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+        // Sick leave still refuses a reason, and nothing here accepts a stress kind.
+        let sick_reason = request
+            .post(&format!("/api/workers/{w}/leave-requests"))
+            .json(&json!({ "kind": "sick", "start_on": day, "end_on": day, "reason": "stress" }))
+            .await;
+        assert_eq!(sick_reason.status_code(), 422);
+        let stress = request
+            .post(&format!("/api/workers/{w}/leave-requests"))
+            .json(&json!({ "kind": "workplace_stress", "start_on": day, "end_on": day }))
+            .await;
+        assert_eq!(stress.status_code(), 422, "there is no such category");
+    })
+    .await;
+}

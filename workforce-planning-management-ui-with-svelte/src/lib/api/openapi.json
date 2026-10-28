@@ -1768,6 +1768,19 @@
   },
   "openapi": "3.0.3",
   "paths": {
+    "/api/absence-categories": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The categories"
+          }
+        },
+        "summary": "The kinds of leave (?pay=paid|unpaid|policy to filter): vacation (annual), government holiday (public_holiday), illness (sick), parental, unpaid and other, each paid, unpaid or by the employer's policy, how it is held against a balance, and whether a reason may be given. Sick leave never carries a reason and there is no category for a condition or for stress",
+        "tags": [
+          "leave"
+        ]
+      }
+    },
     "/api/adjustment-requests/{pid}/status": {
       "post": {
         "parameters": [

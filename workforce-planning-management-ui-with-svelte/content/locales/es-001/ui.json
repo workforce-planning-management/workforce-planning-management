@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "cambio del patrón de turnos",
     "new_monitoring": "nueva supervisión",
     "new_or_changed_score": "puntuación nueva o modificada",
-    "pay_structure_change": "cambio de la estructura salarial"
+    "pay_structure_change": "cambio de la estructura salarial",
+    "public_holiday": "festivo",
+    "site": "sede",
+    "area_of_work": "área de trabajo",
+    "job_role": "función del puesto",
+    "staff_group": "grupo de personal",
+    "occupation_code": "código de ocupación",
+    "mandatory": "obligatorio",
+    "performance": "desempeño",
+    "padr": "revisión de desarrollo personal"
   },
   "engagement": {
     "title": "Contratación",

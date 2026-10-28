@@ -4,6 +4,7 @@
 //! exhaustively unit-tested. Controllers wire these; they never
 //! re-implement them.
 
+pub mod absence_category;
 pub mod access;
 pub mod adjustments;
 pub mod agreement;

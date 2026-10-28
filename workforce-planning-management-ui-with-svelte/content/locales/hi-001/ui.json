@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "शिफ्ट पैटर्न में बदलाव",
     "new_monitoring": "नई निगरानी",
     "new_or_changed_score": "नया या बदला हुआ स्कोर",
-    "pay_structure_change": "वेतन संरचना में बदलाव"
+    "pay_structure_change": "वेतन संरचना में बदलाव",
+    "public_holiday": "सार्वजनिक अवकाश",
+    "site": "स्थल",
+    "area_of_work": "कार्य क्षेत्र",
+    "job_role": "नौकरी की भूमिका",
+    "staff_group": "कर्मचारी समूह",
+    "occupation_code": "व्यवसाय कोड",
+    "mandatory": "अनिवार्य",
+    "performance": "प्रदर्शन",
+    "padr": "व्यक्तिगत विकास समीक्षा"
   },
   "engagement": {
     "title": "नियुक्ति",

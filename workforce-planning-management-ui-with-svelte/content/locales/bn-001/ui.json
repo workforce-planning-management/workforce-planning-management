@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "শিফট প্যাটার্ন পরিবর্তন",
     "new_monitoring": "নতুন নজরদারি",
     "new_or_changed_score": "নতুন বা পরিবর্তিত স্কোর",
-    "pay_structure_change": "বেতন কাঠামো পরিবর্তন"
+    "pay_structure_change": "বেতন কাঠামো পরিবর্তন",
+    "public_holiday": "সরকারি ছুটি",
+    "site": "সাইট",
+    "area_of_work": "কাজের ক্ষেত্র",
+    "job_role": "চাকরির ভূমিকা",
+    "staff_group": "কর্মী গোষ্ঠী",
+    "occupation_code": "পেশার কোড",
+    "mandatory": "বাধ্যতামূলক",
+    "performance": "কর্মক্ষমতা",
+    "padr": "ব্যক্তিগত উন্নয়ন পর্যালোচনা"
   },
   "engagement": {
     "title": "নিয়োগ",

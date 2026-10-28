@@ -15,7 +15,7 @@
   } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
 
-  const KINDS = ["annual", "sick", "parental", "unpaid", "other"];
+  const KINDS = ["annual", "public_holiday", "sick", "parental", "unpaid", "other"];
 
   let view = $state<MyTimeOff | null>(null);
   let error = $state<string | null>(null);

@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "alteração do padrão de turnos",
     "new_monitoring": "nova monitorização",
     "new_or_changed_score": "pontuação nova ou alterada",
-    "pay_structure_change": "alteração da estrutura salarial"
+    "pay_structure_change": "alteração da estrutura salarial",
+    "public_holiday": "feriado",
+    "site": "local",
+    "area_of_work": "área de trabalho",
+    "job_role": "função",
+    "staff_group": "grupo de pessoal",
+    "occupation_code": "código de ocupação",
+    "mandatory": "obrigatório",
+    "performance": "desempenho",
+    "padr": "avaliação de desenvolvimento pessoal"
   },
   "engagement": {
     "title": "Vínculo",

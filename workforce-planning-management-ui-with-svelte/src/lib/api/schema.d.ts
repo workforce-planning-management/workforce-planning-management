@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/absence-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The kinds of leave (?pay=paid|unpaid|policy to filter): vacation (annual), government holiday (public_holiday), illness (sick), parental, unpaid and other, each paid, unpaid or by the employer's policy, how it is held against a balance, and whether a reason may be given. Sick leave never carries a reason and there is no category for a condition or for stress */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The categories */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/adjustment-requests/{pid}/status": {
         parameters: {
             query?: never;

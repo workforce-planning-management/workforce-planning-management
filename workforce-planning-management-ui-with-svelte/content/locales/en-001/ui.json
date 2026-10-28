@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "shift pattern change",
     "new_monitoring": "new monitoring",
     "new_or_changed_score": "new or changed score",
-    "pay_structure_change": "pay structure change"
+    "pay_structure_change": "pay structure change",
+    "public_holiday": "public holiday",
+    "site": "site",
+    "area_of_work": "area of work",
+    "job_role": "job role",
+    "staff_group": "staff group",
+    "occupation_code": "occupation code",
+    "mandatory": "mandatory",
+    "performance": "performance",
+    "padr": "personal development review"
   },
   "engagement": {
     "title": "Engagement",

@@ -65,6 +65,12 @@ I can approve or reject it.*
 - Annual leave over remaining balance refused `422`; sick leave may
   go negative but is flagged; approval decrements the balance in the
   same transaction; the two-approver race is serialized (one wins).
+- **Absence categories** (2026-10-28). Each kind of leave is a category with a **pay** (`paid`, `unpaid` or `policy`: the employer's
+  scheme decides, which WPM does not), a balance rule (`enforced`, `may_go_negative`, `none`) and whether a reason may be given.
+  Vacation is `annual`; a government holiday is `public_holiday` (paid, no balance); illness or unwellness is `sick` (pay by policy,
+  never a reason, WPM-D73); `unpaid` is unpaid; `parental` and `other` keep their balances. `GET /api/absence-categories?pay=` lists
+  them. **There is no category for a condition and none for workplace stress**: stress is assessed in the work, not recorded in the
+  person (WPM-D121), and a test fails if a category names one.
 
 ## WPM-R6 — Shift scheduling
 

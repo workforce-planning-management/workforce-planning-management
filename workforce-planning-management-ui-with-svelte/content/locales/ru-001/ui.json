@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "изменение графика смен",
     "new_monitoring": "новый мониторинг",
     "new_or_changed_score": "новая или изменённая оценка",
-    "pay_structure_change": "изменение структуры оплаты"
+    "pay_structure_change": "изменение структуры оплаты",
+    "public_holiday": "государственный праздник",
+    "site": "площадка",
+    "area_of_work": "область работы",
+    "job_role": "должностная роль",
+    "staff_group": "группа персонала",
+    "occupation_code": "код профессии",
+    "mandatory": "обязательный",
+    "performance": "эффективность",
+    "padr": "обзор личного развития"
   },
   "engagement": {
     "title": "Трудовые отношения",

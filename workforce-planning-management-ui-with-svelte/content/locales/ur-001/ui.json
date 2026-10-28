@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "شفٹ کے نمونے میں تبدیلی",
     "new_monitoring": "نئی نگرانی",
     "new_or_changed_score": "نیا یا تبدیل شدہ سکور",
-    "pay_structure_change": "تنخواہ کے ڈھانچے میں تبدیلی"
+    "pay_structure_change": "تنخواہ کے ڈھانچے میں تبدیلی",
+    "public_holiday": "سرکاری تعطیل",
+    "site": "مقام",
+    "area_of_work": "کام کا شعبہ",
+    "job_role": "ملازمت کا کردار",
+    "staff_group": "عملے کا گروہ",
+    "occupation_code": "پیشے کا کوڈ",
+    "mandatory": "لازمی",
+    "performance": "کارکردگی",
+    "padr": "ذاتی ترقی کا جائزہ"
   },
   "engagement": {
     "title": "تقرری",

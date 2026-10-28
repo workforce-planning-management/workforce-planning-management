@@ -107,7 +107,9 @@
       "points",
       "web",
       "{total} pages",
-      "· budget {currency} ·"
+      "· budget {currency} ·",
+      "site",
+      "performance"
     ],
     "pt-001": [
       "Agenda",

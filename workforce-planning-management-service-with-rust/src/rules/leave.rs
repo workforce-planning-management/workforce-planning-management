@@ -35,7 +35,9 @@ pub enum BalanceCheck {
 ///
 /// A sick-leave request that carries a reason.
 pub fn validate_reason(kind: &str, reason: Option<&str>) -> Result<(), String> {
-    if kind == "sick" && reason.is_some_and(|r| !r.trim().is_empty()) {
+    if !super::absence_category::reason_allowed(kind)
+        && reason.is_some_and(|r| !r.trim().is_empty())
+    {
         return Err(
             "sick leave records that it is sick leave and its dates, never why: leave the reason out"
                 .to_string(),
@@ -45,10 +47,12 @@ pub fn validate_reason(kind: &str, reason: Option<&str>) -> Result<(), String> {
 }
 
 /// Check taking `requested` days of `kind` leave against
-/// `entitled - used`. `unpaid` leave always passes (no balance).
+/// `entitled - used`. A category with no balance (`unpaid`, `public_holiday`) always passes.
 #[must_use]
 pub fn check_balance(kind: &str, entitled: i32, used: i32, requested: i32) -> BalanceCheck {
-    if kind == "unpaid" {
+    use super::absence_category::{Balance, balance_of};
+    let balance = balance_of(kind);
+    if balance == Balance::None {
         return BalanceCheck::Ok {
             remaining_after: entitled.saturating_sub(used).saturating_sub(requested),
         };
@@ -57,7 +61,7 @@ pub fn check_balance(kind: &str, entitled: i32, used: i32, requested: i32) -> Ba
     let remaining_after = remaining.saturating_sub(requested);
     if remaining_after >= 0 {
         BalanceCheck::Ok { remaining_after }
-    } else if kind == "sick" {
+    } else if balance == Balance::MayGoNegative {
         BalanceCheck::NegativeFlagged { remaining_after }
     } else {
         BalanceCheck::OverBalance {

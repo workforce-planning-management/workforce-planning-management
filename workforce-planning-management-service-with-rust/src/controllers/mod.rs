@@ -5,6 +5,7 @@ use axum::http::StatusCode;
 use loco_rs::controller::ErrorDetail;
 use loco_rs::prelude::*;
 
+pub mod absence_categories;
 pub mod acquisition;
 pub mod adjustments;
 pub mod ai_register;

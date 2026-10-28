@@ -56,7 +56,14 @@ pub const TIME_STATUSES: &[&str] = &["recorded", "approved"];
 
 /// Leave kinds. Annual leave enforces the balance; sick may go
 /// negative but is flagged (WPM-R5).
-pub const LEAVE_KINDS: &[&str] = &["annual", "sick", "parental", "unpaid", "other"];
+pub const LEAVE_KINDS: &[&str] = &[
+    "annual",
+    "public_holiday",
+    "sick",
+    "parental",
+    "unpaid",
+    "other",
+];
 
 /// Leave request statuses.
 pub const LEAVE_STATUSES: &[&str] = &["requested", "approved", "rejected", "cancelled"];

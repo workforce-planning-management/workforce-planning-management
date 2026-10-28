@@ -5427,3 +5427,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       vacant in the establishment, extensions, pay treatments as configuration, the earnings line and arrears.
 - [ ] WPM-T344 **Acting up limits and fairness.** *(WPM-R205, WPM-D132)* Maximum duration on the action lists, expressions of interest,
       open versus direct counts, the equality share from monitoring.
+- [x] (2026-10-28) WPM-T345 **Absence categories: paid, unpaid and by policy.** *(WPM-R5, WPM-D73, WPM-D121)* A table of leave categories
+      with pay, balance rule and reason rule, replacing the two hard-coded cases; a government holiday kind; a listing by pay.
+      **Done:** `rules/absence_category.rs` (`CATEGORIES`: `annual` paid and enforced, `public_holiday` paid with no balance, `sick` by policy,
+      may go negative, never a reason, `parental` and `other` by policy and enforced, `unpaid` unpaid with no balance); `rules::leave::check_balance`
+      and `validate_reason` read it; `public_holiday` added to `LEAVE_KINDS`; `GET /api/absence-categories?pay=paid|unpaid|policy` (open);
+      the time-off picker offers the new kind; its label in all 13 locales (machine-drafted, unreviewed). 6 unit tests, including one that fails if a
+      category names a condition or stress, and one that keeps the table in step with `LEAVE_KINDS`; a request test (the listing and each filter, a
+      holiday request accepted, a sick request with a reason refused, an unknown kind such as `workplace_stress` refused).
+      **Not done, on purpose:** a workplace-stress category. It would record a health matter against a person, which WPM-D73 and WPM-D121 rule out;
+      stress belongs to the work assessment (absence-and-line-managers.md). If the product owner wants it, that is a decision to reverse D121, not a
+      setting. **Also found and fixed:** the earlier T311, T314 and T317 tokens (`site`, `area_of_work`, `job_role`, `staff_group`,
+      `occupation_code`, `mandatory`, `performance`, `padr`) had no entry in `values` and the UI unit test failed; labels added in 13 locales,
+      two French words that equal the English (`site`, `performance`) allow-listed. **Not verified:** pay by policy is not looked up anywhere (no
+      sick pay or entitlement is computed); no entitlement is created for `public_holiday`; a holiday calendar is not built, so a holiday is
+      recorded by hand; the Playwright specs, axe and the Keycloak suite were not run.

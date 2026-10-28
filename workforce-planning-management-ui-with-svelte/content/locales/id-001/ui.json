@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "perubahan pola shift",
     "new_monitoring": "pemantauan baru",
     "new_or_changed_score": "skor baru atau berubah",
-    "pay_structure_change": "perubahan struktur gaji"
+    "pay_structure_change": "perubahan struktur gaji",
+    "public_holiday": "hari libur nasional",
+    "site": "lokasi",
+    "area_of_work": "bidang pekerjaan",
+    "job_role": "peran jabatan",
+    "staff_group": "kelompok staf",
+    "occupation_code": "kode pekerjaan",
+    "mandatory": "wajib",
+    "performance": "kinerja",
+    "padr": "tinjauan pengembangan pribadi"
   },
   "engagement": {
     "title": "Keterlibatan",

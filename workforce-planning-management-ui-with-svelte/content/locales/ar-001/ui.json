@@ -1852,7 +1852,16 @@
     "shift_pattern_change": "تغيير نمط المناوبات",
     "new_monitoring": "مراقبة جديدة",
     "new_or_changed_score": "درجة جديدة أو معدلة",
-    "pay_structure_change": "تغيير هيكل الأجور"
+    "pay_structure_change": "تغيير هيكل الأجور",
+    "public_holiday": "عطلة رسمية",
+    "site": "الموقع",
+    "area_of_work": "مجال العمل",
+    "job_role": "الدور الوظيفي",
+    "staff_group": "مجموعة الموظفين",
+    "occupation_code": "رمز المهنة",
+    "mandatory": "إلزامي",
+    "performance": "الأداء",
+    "padr": "مراجعة التطوير الشخصي"
   },
   "engagement": {
     "title": "التعاقد",
