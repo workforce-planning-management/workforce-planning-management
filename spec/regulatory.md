@@ -133,3 +133,8 @@ Official Journal), Article 26 puts duties on the **deployer**. The register reco
   transfusion in the UK; an executive agency of the Department of Health and Social Care. Source:
   <https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency>, read 2026-10-28. WPM holds no
   licence, product, device or adverse-event data. What the MHRA requires of an employer's staff is **not yet read** ([mhra.md](mhra.md)).
+- **ISO 14971** (*Medical devices — Application of risk management to medical devices*), the international standard for a manufacturer's
+  risk management of a medical device. Recorded from the author's recollection, **not read**: the standard is paid-for and its text was not
+  available, and the edition in force (believed to be the 2019 third edition) is unchecked. WPM holds no device, hazard, risk-file or
+  adverse-event data and claims no conformance. Whether it bears on workforce planning at all (for example competence of the people who
+  carry out risk management) is **not established** ([mhra.md](mhra.md)).

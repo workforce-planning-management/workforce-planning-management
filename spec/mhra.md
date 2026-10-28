@@ -54,6 +54,10 @@ Each needs the linked guidance read first. None is built or planned.
    information, not workforce information, and is probably out of scope.
 4. Whether Yellow Card reports could ever involve a worker's health. If so, WPM-D73 applies: no diagnosis is stored.
 
+5. ISO 14971 (device risk management) is added to the register as a reference only (2026-10-28). Its text could not be read, so whether it
+   asks anything about the competence of the people involved is unknown and no requirement follows. The same bar applies as to the MHRA:
+   read the standard, or a source that quotes it, before drafting a duty.
+
 ## Task
 
 - [x] WPM-T362 Done in regulatory.md (WPM-R212). Next: read the guidance for items 1 and 2 and return with sourced requirements.
