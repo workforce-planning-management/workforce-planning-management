@@ -6,31 +6,54 @@
 
 import { expect, test } from "@playwright/test";
 
-test.skip(!process.env.WPM_LIVE_API, "needs a running service: set WPM_LIVE_API=1");
+test.skip(
+  !process.env.WPM_LIVE_API,
+  "needs a running service: set WPM_LIVE_API=1",
+);
 
 const org = process.env.PAY_INFO_ORG ?? "";
 const shots = process.env.PAGE_SHOTS;
 
 test.beforeEach(async ({ page }) => {
   await page.context().addCookies([
-    { name: "__Host-mxi_session", value: "live-test-session", domain: "localhost", path: "/", httpOnly: true, secure: true, sameSite: "Lax" },
+    {
+      name: "__Host-mxi_session",
+      value: "live-test-session",
+      domain: "localhost",
+      path: "/",
+      httpOnly: true,
+      secure: true,
+      sameSite: "Lax",
+    },
   ]);
-  await page.route("**/api/proxy/me/organizations/scope", (route) => route.fulfill({ json: [org] }));
+  await page.route("**/api/proxy/me/organizations/scope", (route) =>
+    route.fulfill({ json: [org] }),
+  );
 });
 
-test("the real queue: an overdue request, the answer with a withheld average, and recording it keeps only the day", async ({ page }) => {
+test("the real queue: an overdue request, the answer with a withheld average, and recording it keeps only the day", async ({
+  page,
+}) => {
   await page.goto("/pay-information");
   const rows = page.getByTestId("pay-info-queue-row");
   await expect(rows).toHaveCount(2);
   await expect(rows.first()).toContainText("Overdue");
-  if (shots) await page.screenshot({ path: `${shots}/pay-information-live-queue.png`, fullPage: true });
+  if (shots)
+    await page.screenshot({
+      path: `${shots}/pay-information-live-queue.png`,
+      fullPage: true,
+    });
 
   // The woman in a category with both sexes over the floor: both averages shown.
   await rows.first().getByTestId("pay-info-work-out").click();
   await expect(page.getByTestId("pay-info-own")).toContainText("£");
   await expect(page.getByTestId("pay-info-female")).toContainText("£");
   await expect(page.getByTestId("pay-info-male")).toContainText("£");
-  if (shots) await page.screenshot({ path: `${shots}/pay-information-live-answer.png`, fullPage: true });
+  if (shots)
+    await page.screenshot({
+      path: `${shots}/pay-information-live-answer.png`,
+      fullPage: true,
+    });
 
   // The man in a category with fewer than ten men: his sex's average is withheld, and no other worker is named.
   await page.reload();
@@ -51,5 +74,8 @@ test("the real queue in the dark theme", async ({ page }) => {
   await expect(page.getByTestId("pay-info-queue")).toBeVisible();
   await page.getByTestId("pay-info-work-out").first().click();
   await expect(page.getByTestId("pay-info-answer")).toBeVisible();
-  await page.screenshot({ path: `${shots}/pay-information-live-dark.png`, fullPage: true });
+  await page.screenshot({
+    path: `${shots}/pay-information-live-dark.png`,
+    fullPage: true,
+  });
 });

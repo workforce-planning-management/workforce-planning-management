@@ -479,7 +479,7 @@ async function record(
   await page.route(glob, (route) => {
     const request = route.request();
     if (request.method() === "GET") return route.fallback();
-    let body: unknown = null;
+    let body: unknown;
     try {
       body = request.postDataJSON();
     } catch {

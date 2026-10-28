@@ -5456,4 +5456,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       **Not verified, and why it matters:** **the packs were not checked against any government list**; they are from the author's knowledge and marked unverified. Missing by design:
       Scotland, Northern Ireland, US states, one-off days (a royal funeral, a jubilee), and every other country. **Not done:** a worker's region (so the calendar is per organization and
       region, not yet per person), the leave day count skipping a holiday, a `public_holiday` leave entry created from the calendar, a UI.
+- [x] (2026-10-28) WPM-T347 **ESLint and Prettier as one lint gate for the UI.** *(testing and verification)* Prettier checked only `src`; there was no ESLint.
+      **Done:** `eslint.config.js` (flat config: `@eslint/js` and `typescript-eslint` recommended, `eslint-plugin-svelte` recommended, Prettier's config last so formatting
+      is Prettier's alone); `pnpm lint` is now `eslint .` then `prettier --check` over `src`, `tests`, `scripts` and the config files, so CI's existing `pnpm run lint` step runs both;
+      `pnpm lint:fix` and `pnpm format` cover the same files. The first run found **79 problems in 40 files**; 61 were one rule and are off with a recorded reason, 18 were real and
+      are fixed (six unused names, two unused assignments, a regex whose character ranges held combining marks, a `let` that was never reassigned, an unneeded `svelte-ignore`).
+      56 test and script files were formatted once (formatting only; the 218 unit tests, `pnpm check` 0/0 and the build-free checks are unchanged).
+      **Rules turned off, and why:** `svelte/no-navigation-without-resolve` (every link is built by `l()`, which puts the locale in the URL, and `resolve()` knows nothing of it);
+      `svelte/prefer-svelte-reactivity` (the three `Map`s are built inside `$derived` as local lookups); `svelte/no-useless-mustaches` (`{" "}` keeps a deliberate space);
+      `no-empty-object-type` for `src/app.d.ts` only (SvelteKit's template). `tests/unit/untranslated.allow.json` is left out of Prettier because a script writes it.
+      **Verified:** a probe file with an unused variable fails `pnpm lint` at ESLint, and one badly formatted fails it at Prettier; both removed. **Not verified:** the Playwright
+      specs were reformatted but not run; CI was not run (the workflow is unchanged because `pnpm run lint` was already a step); the service-side Rust gates are unchanged.
 

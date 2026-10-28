@@ -15,7 +15,6 @@
     DataGridRow,
   } from "@lilydesignsystem/svelte-data-grid";
 
-  type Report = Awaited<ReturnType<typeof retentionReport>>;
   type SweepResult = Awaited<ReturnType<typeof retentionSweep>>;
 
   let sweepResult = $state<SweepResult | null>(null);

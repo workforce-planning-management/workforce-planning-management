@@ -9,10 +9,17 @@ import { base, json, stubWorkerPage } from "./fixtures";
 const W = `**/api/proxy/workers/${WORKER.pid}`;
 
 /** Record every POST under a pattern as "path body" and answer it. */
-async function record(page: Page, pattern: string, writes: string[], answer: unknown = { pid: "new" }) {
+async function record(
+  page: Page,
+  pattern: string,
+  writes: string[],
+  answer: unknown = { pid: "new" },
+) {
   await page.route(pattern, (route) => {
     if (route.request().method() === "GET") return route.fallback();
-    writes.push(`${new URL(route.request().url()).pathname.split("/proxy")[1]} ${route.request().postData() ?? ""}`.trim());
+    writes.push(
+      `${new URL(route.request().url()).pathname.split("/proxy")[1]} ${route.request().postData() ?? ""}`.trim(),
+    );
     return route.fulfill({ json: answer });
   });
 }
@@ -23,39 +30,70 @@ test.describe("Worker page panels", () => {
     await stubWorkerPage(page);
   });
 
-  test("answers a health prompt and sends an anonymous pulse score", async ({ page }) => {
+  test("answers a health prompt and sends an anonymous pulse score", async ({
+    page,
+  }) => {
     const writes: string[] = [];
     await record(page, `${W}/wellbeing-acknowledgements`, writes);
     await record(page, "**/api/proxy/pulse-surveys/s1/responses", writes, {});
     await page.goto(`/workers/${WORKER.pid}`);
-    await page.getByTestId("wellbeing-prompts").getByRole("button", { name: "I've booked it" }).click();
+    await page
+      .getByTestId("wellbeing-prompts")
+      .getByRole("button", { name: "I've booked it" })
+      .click();
     await expect.poll(() => writes.length).toBe(1);
-    expect(writes[0]).toBe(`/workers/${WORKER.pid}/wellbeing-acknowledgements {"entitlement_pid":"p1","response":"booked"}`);
-    await page.getByTestId("pulse-surveys").getByRole("button", { name: "4", exact: true }).click();
+    expect(writes[0]).toBe(
+      `/workers/${WORKER.pid}/wellbeing-acknowledgements {"entitlement_pid":"p1","response":"booked"}`,
+    );
+    await page
+      .getByTestId("pulse-surveys")
+      .getByRole("button", { name: "4", exact: true })
+      .click();
     await expect(page.getByTestId("pulse-surveys")).toContainText("Thanks");
-    expect(writes[1]).toBe(`/pulse-surveys/s1/responses {"worker_pid":"${WORKER.pid}","score":4}`);
+    expect(writes[1]).toBe(
+      `/pulse-surveys/s1/responses {"worker_pid":"${WORKER.pid}","score":4}`,
+    );
   });
 
-  test("a refused answer is shown beside the worker's facts", async ({ page }) => {
+  test("a refused answer is shown beside the worker's facts", async ({
+    page,
+  }) => {
     await page.route(`${W}/wellbeing-acknowledgements`, (route) =>
       route.fulfill({ status: 422, json: { description: "already answered" } }),
     );
     await page.goto(`/workers/${WORKER.pid}`);
-    await page.getByTestId("wellbeing-prompts").getByRole("button", { name: "Done" }).click();
-    await expect(page.getByTestId("action-error")).toContainText("already answered");
+    await page
+      .getByTestId("wellbeing-prompts")
+      .getByRole("button", { name: "Done" })
+      .click();
+    await expect(page.getByTestId("action-error")).toContainText(
+      "already answered",
+    );
   });
 
-  test("asks for an adjustment only once all three answers are in, and decides one", async ({ page }) => {
+  test("asks for an adjustment only once all three answers are in, and decides one", async ({
+    page,
+  }) => {
     const writes: string[] = [];
     await record(page, `${W}/adjustment-requests`, writes);
-    await record(page, "**/api/proxy/adjustment-requests/j1/status", writes, {});
-    page.on("dialog", (dialog) => void dialog.accept("Agreed with the manager"));
+    await record(
+      page,
+      "**/api/proxy/adjustment-requests/j1/status",
+      writes,
+      {},
+    );
+    page.on(
+      "dialog",
+      (dialog) => void dialog.accept("Agreed with the manager"),
+    );
     await page.goto(`/workers/${WORKER.pid}`);
     const panel = page.getByTestId("adjustments");
     const ask = panel.getByRole("button", { name: "Ask for a change" });
     await expect(ask).toBeDisabled();
     await panel.getByLabel("What barrier do you face?").fill("Noise");
-    await panel.getByLabel("How does it affect your work?").fill("Cannot focus");
+    await panel
+      .getByLabel("How does it affect your work?")
+      .fill("Cannot focus");
     await expect(ask).toBeDisabled();
     await panel.getByLabel("What change would reduce it?").fill("A quiet desk");
     await ask.click();
@@ -72,10 +110,17 @@ test.describe("Worker page panels", () => {
     expect(writes[1]).toContain("Agreed with the manager");
   });
 
-  test("records an ergonomic assessment and completes an open one", async ({ page }) => {
+  test("records an ergonomic assessment and completes an open one", async ({
+    page,
+  }) => {
     const writes: string[] = [];
     await record(page, `${W}/ergonomic-assessments`, writes);
-    await record(page, "**/api/proxy/ergonomic-assessments/g1/complete", writes, {});
+    await record(
+      page,
+      "**/api/proxy/ergonomic-assessments/g1/complete",
+      writes,
+      {},
+    );
     await page.goto(`/workers/${WORKER.pid}`);
     const panel = page.getByTestId("ergonomics");
     const create = panel.getByRole("button", { name: "New assessment" });
@@ -89,12 +134,28 @@ test.describe("Worker page panels", () => {
     await expect.poll(() => writes.length).toBe(2);
   });
 
-  test("starts a 360, opens it to nominate a rater, and moves it to collecting", async ({ page }) => {
+  test("starts a 360, opens it to nominate a rater, and moves it to collecting", async ({
+    page,
+  }) => {
     const writes: string[] = [];
     // A colleague to nominate: the person themself is not offered.
-    await json(page, "**/api/proxy/workers", [WORKER, { ...WORKER, pid: "44444444-4444-4444-8444-444444444444", display_name: "Colleague One" }]);
+    await json(page, "**/api/proxy/workers", [
+      WORKER,
+      {
+        ...WORKER,
+        pid: "44444444-4444-4444-8444-444444444444",
+        display_name: "Colleague One",
+      },
+    ]);
     await json(page, `${W}/appraisals`, [
-      { pid: "a1", status: "draft", competencies: ["communication", "delivery"], shared_on: null, nominated: 0, responded: 0 },
+      {
+        pid: "a1",
+        status: "draft",
+        competencies: ["communication", "delivery"],
+        shared_on: null,
+        nominated: 0,
+        responded: 0,
+      },
     ]);
     await record(page, `${W}/appraisals`, writes);
     await record(page, "**/api/proxy/appraisals/a1/nominations", writes);
@@ -111,13 +172,21 @@ test.describe("Worker page panels", () => {
     const panel = page.getByTestId("appraisals");
     await panel.getByRole("button", { name: "New 360" }).click();
     await expect.poll(() => writes.length).toBe(1);
-    expect(writes[0]).toContain('"competencies":["communication","collaboration","delivery"]');
+    expect(writes[0]).toContain(
+      '"competencies":["communication","collaboration","delivery"]',
+    );
 
-    await panel.getByRole("button", { name: /communication · delivery/ }).click();
+    await panel
+      .getByRole("button", { name: /communication · delivery/ })
+      .click();
     const nominate = panel.getByRole("button", { name: "Nominate" });
     await expect(nominate).toBeDisabled();
-    await panel.getByLabel("Colleague to nominate").selectOption({ label: "Colleague One" });
-    await panel.getByLabel("Relationship to the person").selectOption("manager");
+    await panel
+      .getByLabel("Colleague to nominate")
+      .selectOption({ label: "Colleague One" });
+    await panel
+      .getByLabel("Relationship to the person")
+      .selectOption("manager");
     await nominate.click();
     await expect.poll(() => writes.length).toBe(2);
     expect(writes[1]).toContain('"group":"manager"');

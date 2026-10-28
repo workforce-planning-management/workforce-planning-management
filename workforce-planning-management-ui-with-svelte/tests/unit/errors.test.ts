@@ -28,19 +28,25 @@ describe("errorKey", () => {
 
 describe("errorText", () => {
   it("adds the service's message only for a refusal that names a field or a state", () => {
-    const invalid = new ApiError(422, { description: "end date is before start date" });
+    const invalid = new ApiError(422, {
+      description: "end date is before start date",
+    });
     expect(errorText(invalid)).toMatch(/: end date is before start date$/);
     const conflict = new ApiError(409, { description: "already approved" });
     expect(errorText(conflict)).toMatch(/: already approved$/);
     // A refusal for want of a role says which rule, after the words.
-    const forbidden = new ApiError(403, { description: "only the line manager decides" });
+    const forbidden = new ApiError(403, {
+      description: "only the line manager decides",
+    });
     expect(errorText(forbidden)).toMatch(/ only the line manager decides$/);
     // No service message: just the words.
     expect(errorText(new ApiError(422, null))).not.toContain("API error");
   });
 
   it("never passes a server error's detail on", () => {
-    const text = errorText(new ApiError(500, { description: "relation \"workers\" does not exist" }));
+    const text = errorText(
+      new ApiError(500, { description: 'relation "workers" does not exist' }),
+    );
     expect(text).not.toContain("workers");
   });
 
@@ -61,7 +67,10 @@ describe("errorText", () => {
 
 describe("failure", () => {
   it("keeps the refusal for want of the right apart from the words", () => {
-    expect(failure(new ApiError(403, null))).toEqual({ notAllowed: true, message: null });
+    expect(failure(new ApiError(403, null))).toEqual({
+      notAllowed: true,
+      message: null,
+    });
     const other = failure(new ApiError(404, null));
     expect(other.notAllowed).toBe(false);
     expect(other.message).toBe(errorText(new ApiError(404, null)));
@@ -71,11 +80,15 @@ describe("failure", () => {
 describe("attempt", () => {
   it("is null when the write went through, and says why when it did not", async () => {
     expect(await attempt(async () => 1)).toBeNull();
-    expect(await attempt(() => Promise.reject(new ApiError(403, null)))).toEqual({
+    expect(
+      await attempt(() => Promise.reject(new ApiError(403, null))),
+    ).toEqual({
       notAllowed: true,
       message: null,
     });
-    const refused = await attempt(() => Promise.reject(new ApiError(422, { description: "no" })));
+    const refused = await attempt(() =>
+      Promise.reject(new ApiError(422, { description: "no" })),
+    );
     expect(refused?.notAllowed).toBe(false);
     expect(refused?.message).toContain("no");
   });

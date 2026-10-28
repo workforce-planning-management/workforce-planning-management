@@ -15,7 +15,6 @@
     DataGridRow,
   } from "@lilydesignsystem/svelte-data-grid";
 
-  type Overview = Awaited<ReturnType<typeof mentorshipOverview>>;
   const loader = createLoader(() => mentorshipOverview());
   const overview = $derived(loader.data);
   const error = $derived(loader.error);

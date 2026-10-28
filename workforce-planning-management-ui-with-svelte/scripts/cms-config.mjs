@@ -23,7 +23,10 @@ const source = JSON.parse(
   fs.readFileSync(path.join(localesDir, "en-001/ui.json"), "utf8"),
 );
 
-const label = (name) => name.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+const label = (name) =>
+  name
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/^./, (c) => c.toUpperCase());
 const q = (s) => JSON.stringify(s);
 
 /** Nested object -> Sveltia field list (indented YAML lines). */
@@ -33,9 +36,20 @@ function fields(node, indent) {
   for (const [name, value] of Object.entries(node)) {
     if (typeof value === "string") {
       const widget = value.length > 80 ? "text" : "string";
-      out.push(`${pad}- { name: ${q(name)}, label: ${q(label(name))}, widget: ${widget}, required: false, i18n: true }`);
+      out.push(
+        `${pad}- { name: ${q(name)}, label: ${q(label(name))}, widget: ${widget}, required: false, i18n: true }`,
+      );
     } else {
-      out.push(`${pad}- name: ${q(name)}`, `${pad}  label: ${q(label(name))}`, `${pad}  widget: object`, `${pad}  collapsed: true`, `${pad}  required: false`, `${pad}  i18n: true`, `${pad}  fields:`, ...fields(value, indent + 4));
+      out.push(
+        `${pad}- name: ${q(name)}`,
+        `${pad}  label: ${q(label(name))}`,
+        `${pad}  widget: object`,
+        `${pad}  collapsed: true`,
+        `${pad}  required: false`,
+        `${pad}  i18n: true`,
+        `${pad}  fields:`,
+        ...fields(value, indent + 4),
+      );
     }
   }
   return out;
@@ -80,7 +94,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const text = config();
   if (process.argv.includes("--check")) {
     if (!fs.existsSync(target) || fs.readFileSync(target, "utf8") !== text) {
-      console.error("static/admin/config.yml is out of date: run `pnpm cms-config`");
+      console.error(
+        "static/admin/config.yml is out of date: run `pnpm cms-config`",
+      );
       process.exit(1);
     }
   } else {

@@ -4,7 +4,6 @@
   import { listWorkers, money } from "#lib/api/wpm.js";
   import { i18n, t, l } from "#lib/i18n.svelte.js";
   import { createLoader } from "#lib/loader.svelte.js";
-  import type { Worker } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,

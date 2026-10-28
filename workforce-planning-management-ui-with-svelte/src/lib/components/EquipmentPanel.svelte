@@ -35,12 +35,10 @@
   const load = guardedLoad(
     async () => {
       const mine = await getWorkerEquipment(workerPid);
-      let list: Asset[] | null = null;
-      try {
-        list = (await listAssets(organizationRef)).assets;
-      } catch {
-        list = null; // a refusal is not an error here: the controls just do not show
-      }
+      // A refusal is not an error here: the controls just do not show.
+      const list: Asset[] | null = await listAssets(organizationRef)
+        .then((r) => r.assets)
+        .catch(() => null);
       return { mine, list };
     },
     ({ mine, list }) => {

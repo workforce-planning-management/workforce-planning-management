@@ -109,9 +109,7 @@ test.describe("The organization now and as planned", () => {
     );
   });
 
-  test("with no plans it says so", async ({
-    page,
-  }) => {
+  test("with no plans it says so", async ({ page }) => {
     await page.route("**/api/proxy/workforce-plans", (route) =>
       route.fulfill({ json: [] }),
     );
@@ -124,7 +122,9 @@ test.describe("The organization now and as planned", () => {
     await page.goto("/org-chart");
     await page.getByRole("link", { name: "Compare with a plan" }).click();
     await expect(page).toHaveURL(/\/org-chart\/shape$/);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("The organization now and as planned");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "The organization now and as planned",
+    );
   });
 
   test("a failed comparison shows the error in words", async ({ page }) => {

@@ -19,8 +19,9 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | UI | `pnpm build` | green |
 
 `CONTRIBUTING.md` also asks for `cargo fmt --check`, `cargo clippy --all-targets
--- -D warnings` and `pnpm lint` (`prettier --check src`). **As of 2026-10-06 all
-three are clean across the repo** — the service under both auth backends
+-- -D warnings` and `pnpm lint` (`eslint .` then `prettier --check` over `src`, `tests`,
+`scripts` and the config files; `pnpm lint:fix` repairs what it can). **As of 2026-10-06 all
+three were clean across the repo; the ESLint half of `pnpm lint` was added 2026-10-28 (WPM-T347)** — the service under both auth backends
 (default and `--features keycloak`) — after the whole-repo pass recorded in the
 changelog. Keep them clean; if you cannot run one, say so rather than claiming a
 green gate. A justified `#[allow(clippy::…)]` carries a reason comment.

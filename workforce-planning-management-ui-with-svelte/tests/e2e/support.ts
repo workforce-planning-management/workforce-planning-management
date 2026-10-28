@@ -135,8 +135,7 @@ export async function stubSignedIn(page: Page) {
         {
           pid: "99999999-9999-4999-9999-999999999999",
           person_ref: WORKER.person_ref,
-          organization_ref:
-            "organization:44444444-4444-4444-8444-444444444444",
+          organization_ref: "organization:44444444-4444-4444-8444-444444444444",
           worker_pid: null,
           employed: false,
           role: "hr_admin",

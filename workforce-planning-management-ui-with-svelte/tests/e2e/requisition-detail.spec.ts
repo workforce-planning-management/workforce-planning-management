@@ -38,18 +38,24 @@ test.describe("Requisition detail", () => {
     const received = application(1, "received");
     const offer = application(2, "offer");
     const moves: Array<{ url: string; body: unknown }> = [];
-    await page.route(`**/api/proxy/requisitions/${REQUISITION.pid}/applications`, (route) =>
-      route.fulfill({ json: [received, offer] }),
+    await page.route(
+      `**/api/proxy/requisitions/${REQUISITION.pid}/applications`,
+      (route) => route.fulfill({ json: [received, offer] }),
     );
     for (const a of [received, offer]) {
       await page.route(`**/api/proxy/applications/${a.pid}/stage`, (route) => {
-        moves.push({ url: route.request().url(), body: route.request().postDataJSON() });
+        moves.push({
+          url: route.request().url(),
+          body: route.request().postDataJSON(),
+        });
         return route.fulfill({ json: { ...a } });
       });
     }
     await page.goto(`/requisitions/${REQUISITION.pid}`);
     await expect(page).toHaveTitle("Vacancies — WPM");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Platform Engineer");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "Platform Engineer",
+    );
     const table = page.getByTestId("applications");
     await expect(table).toContainText("11111111");
     await expect(table).toContainText("22222222");
@@ -60,7 +66,9 @@ test.describe("Requisition detail", () => {
 
     // An offer is hired with a worker number, and only the offer row offers that.
     await expect(table.getByRole("textbox")).toHaveCount(1);
-    await table.getByRole("textbox", { name: "Worker number for the hire" }).fill("E-0042");
+    await table
+      .getByRole("textbox", { name: "Worker number for the hire" })
+      .fill("E-0042");
     await table.getByRole("button", { name: "→ hired" }).click();
     await expect.poll(() => moves.length).toBe(2);
     expect(moves[1]?.body).toEqual({ to: "hired", worker_number: "E-0042" });
@@ -68,24 +76,35 @@ test.describe("Requisition detail", () => {
 
   test("a refused move is shown beside the table", async ({ page }) => {
     const offer = application(2, "offer");
-    await page.route(`**/api/proxy/requisitions/${REQUISITION.pid}/applications`, (route) =>
-      route.fulfill({ json: [offer] }),
+    await page.route(
+      `**/api/proxy/requisitions/${REQUISITION.pid}/applications`,
+      (route) => route.fulfill({ json: [offer] }),
     );
     await page.route(`**/api/proxy/applications/${offer.pid}/stage`, (route) =>
-      route.fulfill({ status: 422, json: { description: "worker number E-0042 is already taken" } }),
+      route.fulfill({
+        status: 422,
+        json: { description: "worker number E-0042 is already taken" },
+      }),
     );
     await page.goto(`/requisitions/${REQUISITION.pid}`);
-    await page.getByRole("textbox", { name: "Worker number for the hire" }).fill("E-0042");
+    await page
+      .getByRole("textbox", { name: "Worker number for the hire" })
+      .fill("E-0042");
     await page.getByRole("button", { name: "→ hired" }).click();
-    await expect(page.getByTestId("action-error")).toContainText("already taken");
+    await expect(page.getByTestId("action-error")).toContainText(
+      "already taken",
+    );
   });
 
-  test("a requisition that cannot be read shows the error and no table", async ({ page }) => {
+  test("a requisition that cannot be read shows the error and no table", async ({
+    page,
+  }) => {
     await page.route(`**/api/proxy/requisitions/${REQUISITION.pid}`, (route) =>
       route.fulfill({ status: 404, json: { description: "not found" } }),
     );
-    await page.route(`**/api/proxy/requisitions/${REQUISITION.pid}/applications`, (route) =>
-      route.fulfill({ json: [] }),
+    await page.route(
+      `**/api/proxy/requisitions/${REQUISITION.pid}/applications`,
+      (route) => route.fulfill({ json: [] }),
     );
     await page.goto(`/requisitions/${REQUISITION.pid}`);
     await expect(page.getByTestId("error")).toContainText("not found");

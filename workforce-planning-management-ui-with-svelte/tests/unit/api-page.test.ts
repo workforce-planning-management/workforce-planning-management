@@ -11,7 +11,11 @@ const answering = (body: unknown, headers: Record<string, string>) =>
 describe("apiPage", () => {
   it("reads the rows and what the service said about the whole list", async () => {
     const page = await apiPage<number>("/x", {
-      fetch: answering([1, 2], { "x-total-count": "7", "x-limit": "2", "x-offset": "4" }),
+      fetch: answering([1, 2], {
+        "x-total-count": "7",
+        "x-limit": "2",
+        "x-offset": "4",
+      }),
     });
     expect(page).toEqual({ items: [1, 2], total: 7, limit: 2, offset: 4 });
   });
@@ -22,7 +26,9 @@ describe("apiPage", () => {
   });
 
   it("treats a header that is not a number as unknown", async () => {
-    const page = await apiPage<number>("/x", { fetch: answering([], { "x-total-count": "many" }) });
+    const page = await apiPage<number>("/x", {
+      fetch: answering([], { "x-total-count": "many" }),
+    });
     expect(page.total).toBeNull();
   });
 });

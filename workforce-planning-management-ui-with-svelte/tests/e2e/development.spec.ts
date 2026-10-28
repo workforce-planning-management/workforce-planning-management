@@ -27,7 +27,14 @@ test.describe("Development", () => {
         json: [
           {
             plan: PLAN,
-            candidates: [{ pid: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", worker_pid: WORKER.pid, readiness: "ready_now", rank: 1 }],
+            candidates: [
+              {
+                pid: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                worker_pid: WORKER.pid,
+                readiness: "ready_now",
+                rank: 1,
+              },
+            ],
           },
         ],
       }),
@@ -52,33 +59,56 @@ test.describe("Development", () => {
     await page.goto("/development");
     await expect(page).toHaveTitle("Development — WPM");
     await expect(page.getByTestId("gaps")).toContainText("Head of Platform");
-    await expect(page.getByTestId("succession")).toContainText("Head of Platform");
+    await expect(page.getByTestId("succession")).toContainText(
+      "Head of Platform",
+    );
     await expect(page.getByTestId("succession")).toContainText("ready_now");
-    await expect(page.getByTestId("expiring")).toContainText("course:fire-safety");
+    await expect(page.getByTestId("expiring")).toContainText(
+      "course:fire-safety",
+    );
     await expect(page.getByTestId("expiring")).toContainText("1 Dec 2026");
   });
 
-  test("with nothing to report the gap list shows a dash, not a zero", async ({ page }) => {
-    await page.route("**/api/proxy/succession-plans/gaps", (route) => route.fulfill({ json: { gaps: [] } }));
-    await page.route("**/api/proxy/succession-plans", (route) => route.fulfill({ json: [] }));
+  test("with nothing to report the gap list shows a dash, not a zero", async ({
+    page,
+  }) => {
+    await page.route("**/api/proxy/succession-plans/gaps", (route) =>
+      route.fulfill({ json: { gaps: [] } }),
+    );
+    await page.route("**/api/proxy/succession-plans", (route) =>
+      route.fulfill({ json: [] }),
+    );
     await page.route("**/api/proxy/training/expiring?within_days=90", (route) =>
-      route.fulfill({ json: { as_of: "2026-10-24", horizon: "2027-01-22", expiring: [] } }),
+      route.fulfill({
+        json: { as_of: "2026-10-24", horizon: "2027-01-22", expiring: [] },
+      }),
     );
     await page.goto("/development");
     await expect(page.getByTestId("gaps")).toContainText("—");
   });
 
-  test("a failed read is said in words, and the page does not pretend to be empty", async ({ page }) => {
+  test("a failed read is said in words, and the page does not pretend to be empty", async ({
+    page,
+  }) => {
     await page.route("**/api/proxy/succession-plans/gaps", (route) =>
-      route.fulfill({ status: 403, json: { description: "only HR reads succession" } }),
+      route.fulfill({
+        status: 403,
+        json: { description: "only HR reads succession" },
+      }),
     );
-    await page.route("**/api/proxy/succession-plans", (route) => route.fulfill({ json: [] }));
+    await page.route("**/api/proxy/succession-plans", (route) =>
+      route.fulfill({ json: [] }),
+    );
     await page.route("**/api/proxy/training/expiring?within_days=90", (route) =>
       route.fulfill({ json: { as_of: "x", horizon: "x", expiring: [] } }),
     );
     await page.goto("/development");
-    await expect(page.getByTestId("error")).toContainText("You are not allowed to do this.");
-    await expect(page.getByTestId("error")).toContainText("only HR reads succession");
+    await expect(page.getByTestId("error")).toContainText(
+      "You are not allowed to do this.",
+    );
+    await expect(page.getByTestId("error")).toContainText(
+      "only HR reads succession",
+    );
     await expect(page.getByTestId("gaps")).toHaveCount(0);
   });
 });

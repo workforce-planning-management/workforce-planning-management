@@ -61,10 +61,19 @@ async function unnamedControls(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("input, select, textarea")]
       .filter((el) => {
-        if (el instanceof HTMLInputElement && ["hidden", "submit", "button"].includes(el.type)) return false;
+        if (
+          el instanceof HTMLInputElement &&
+          ["hidden", "submit", "button"].includes(el.type)
+        )
+          return false;
         if (el.closest("label")) return false;
-        if (el.id && document.querySelector(`label[for="${el.id}"]`)) return false;
-        return !(el.getAttribute("aria-label") || el.getAttribute("aria-labelledby") || el.getAttribute("title"));
+        if (el.id && document.querySelector(`label[for="${el.id}"]`))
+          return false;
+        return !(
+          el.getAttribute("aria-label") ||
+          el.getAttribute("aria-labelledby") ||
+          el.getAttribute("title")
+        );
       })
       .map((el) => el.outerHTML.slice(0, 120)),
   );
@@ -110,12 +119,18 @@ test.describe("controls have names (WPM-T262)", () => {
 
   test("the wellbeing form", async ({ page }) => {
     await page.route("**/api/proxy/wellbeing/uptake", (route) =>
-      route.fulfill({ json: { as_of: "2026-10-01", derivation: "x", entitlements: [] } }),
+      route.fulfill({
+        json: { as_of: "2026-10-01", derivation: "x", entitlements: [] },
+      }),
     );
     await page.goto("/wellbeing");
     await expect(page.getByTestId("wellbeing-form")).toBeVisible();
     const result = await new AxeBuilder({ page }).withRules(rules).analyze();
-    expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`)).toEqual([]);
+    expect(
+      result.violations.map(
+        (v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`,
+      ),
+    ).toEqual([]);
     expect(await unnamedControls(page)).toEqual([]);
   });
 
@@ -123,29 +138,39 @@ test.describe("controls have names (WPM-T262)", () => {
     await page.route(`**/api/proxy/requisitions/${REQUISITION.pid}`, (route) =>
       route.fulfill({ json: REQUISITION }),
     );
-    await page.route(`**/api/proxy/requisitions/${REQUISITION.pid}/applications`, (route) =>
-      route.fulfill({
-        json: [
-          {
-            pid: "66666666-6666-4666-8666-666666666666",
-            requisition_pid: REQUISITION.pid,
-            candidate_pid: "77777777-7777-4777-8777-777777777777",
-            stage: "offer",
-            notes: null,
-          },
-        ],
-      }),
+    await page.route(
+      `**/api/proxy/requisitions/${REQUISITION.pid}/applications`,
+      (route) =>
+        route.fulfill({
+          json: [
+            {
+              pid: "66666666-6666-4666-8666-666666666666",
+              requisition_pid: REQUISITION.pid,
+              candidate_pid: "77777777-7777-4777-8777-777777777777",
+              stage: "offer",
+              notes: null,
+            },
+          ],
+        }),
     );
     await page.goto(`/requisitions/${REQUISITION.pid}`);
     await expect(page.getByTestId("applications")).toContainText("offer");
     const result = await new AxeBuilder({ page }).withRules(rules).analyze();
-    expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`)).toEqual([]);
+    expect(
+      result.violations.map(
+        (v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`,
+      ),
+    ).toEqual([]);
     expect(await unnamedControls(page)).toEqual([]);
   });
 
-  test("a worker's adjustment, ergonomic and appraisal forms", async ({ page }) => {
+  test("a worker's adjustment, ergonomic and appraisal forms", async ({
+    page,
+  }) => {
     // As in the other worker-page specs: what is not stubbed 404s and that panel shows its own state.
-    await page.route("**/api/proxy/**", (route) => route.fulfill({ status: 404, body: "unstubbed" }));
+    await page.route("**/api/proxy/**", (route) =>
+      route.fulfill({ status: 404, body: "unstubbed" }),
+    );
     for (const list of [
       "onboarding",
       "leave-entitlements",
@@ -159,16 +184,24 @@ test.describe("controls have names (WPM-T262)", () => {
       "ergonomic-assessments",
       "adjustment-requests",
     ]) {
-      await page.route(`**/api/proxy/workers/${PID}/${list}`, (route) => route.fulfill({ json: [] }));
+      await page.route(`**/api/proxy/workers/${PID}/${list}`, (route) =>
+        route.fulfill({ json: [] }),
+      );
     }
-    await page.route(`**/api/proxy/workers/${PID}`, (route) => route.fulfill({ json: WORKER }));
+    await page.route(`**/api/proxy/workers/${PID}`, (route) =>
+      route.fulfill({ json: WORKER }),
+    );
     await page.route(`**/api/proxy/workers/${PID}/wellbeing-prompts`, (route) =>
       route.fulfill({ json: { prompts: [] } }),
     );
     await page.goto(`/workers/${PID}`);
     await expect(page.getByTestId("adjustments")).toBeVisible();
     const result = await new AxeBuilder({ page }).withRules(rules).analyze();
-    expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`)).toEqual([]);
+    expect(
+      result.violations.map(
+        (v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`,
+      ),
+    ).toEqual([]);
     expect(await unnamedControls(page)).toEqual([]);
   });
 });

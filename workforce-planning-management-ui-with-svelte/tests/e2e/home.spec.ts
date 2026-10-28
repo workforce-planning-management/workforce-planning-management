@@ -18,19 +18,17 @@ const membership = (org: string, n: number) => ({
 });
 
 async function signIn(page: Page, value = "home-spec-session") {
-  await page
-    .context()
-    .addCookies([
-      {
-        name: "__Host-mxi_session",
-        value,
-        domain: "localhost",
-        path: "/",
-        httpOnly: true,
-        secure: true,
-        sameSite: "Lax",
-      },
-    ]);
+  await page.context().addCookies([
+    {
+      name: "__Host-mxi_session",
+      value,
+      domain: "localhost",
+      path: "/",
+      httpOnly: true,
+      secure: true,
+      sameSite: "Lax",
+    },
+  ]);
 }
 
 async function stubHome(page: Page, over: { warnings?: "fail" } = {}) {

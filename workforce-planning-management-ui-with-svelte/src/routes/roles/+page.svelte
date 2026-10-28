@@ -20,8 +20,6 @@
     mobilityInterestSummary,
     roleGap,
     roleProgression,
-    searchEscoOccupations,
-    getEscoOccupation,
   } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";

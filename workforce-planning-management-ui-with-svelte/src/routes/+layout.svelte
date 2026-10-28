@@ -293,7 +293,6 @@
 {/if}
 
 {#if navOpen}
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
   <div class="overlay-container" aria-hidden="true" onclick={closeNav}></div>
 {/if}
 <Drawer label={t("nav.menu")} side="left" bind:open={navOpen}>

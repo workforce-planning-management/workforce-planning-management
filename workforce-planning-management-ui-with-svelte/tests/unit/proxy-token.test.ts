@@ -50,7 +50,11 @@ beforeEach(() => {
 describe("the proxy and the token cache", () => {
   it("one page load of twenty calls exchanges once and sends the same bearer on each", async () => {
     const { seen, fetchStub } = upstream();
-    await Promise.all(Array.from({ length: 20 }, (_, i) => call(fetchStub, "sid-1", `workers?n=${i}`)));
+    await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        call(fetchStub, "sid-1", `workers?n=${i}`),
+      ),
+    );
     expect(seen.exchanges).toBe(1);
     expect(seen.bearers).toHaveLength(20);
     expect(new Set(seen.bearers).size).toBe(1);

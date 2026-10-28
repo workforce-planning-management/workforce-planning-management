@@ -22,20 +22,30 @@ const SHIFT = {
     ends_at: "2026-11-02T16:00:00Z",
     required_headcount: 3,
   },
-  assignments: [{ pid: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", worker_pid: WORKER.pid }],
+  assignments: [
+    { pid: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", worker_pid: WORKER.pid },
+  ],
 };
 
 async function stubWorkforce(
   page: import("@playwright/test").Page,
-  options: { requests?: unknown[]; flagged?: unknown[]; issues?: unknown[] } = {},
+  options: {
+    requests?: unknown[];
+    flagged?: unknown[];
+    issues?: unknown[];
+  } = {},
 ) {
-  await page.route(`**/api/proxy/workers/${WORKER.pid}/leave-requests`, (route) =>
-    route.fulfill({ json: options.requests ?? [REQUEST] }),
+  await page.route(
+    `**/api/proxy/workers/${WORKER.pid}/leave-requests`,
+    (route) => route.fulfill({ json: options.requests ?? [REQUEST] }),
   );
-  await page.route(`**/api/proxy/workers/${MASKED_WORKER.pid}/leave-requests`, (route) =>
-    route.fulfill({ json: [] }),
+  await page.route(
+    `**/api/proxy/workers/${MASKED_WORKER.pid}/leave-requests`,
+    (route) => route.fulfill({ json: [] }),
   );
-  await page.route("**/api/proxy/shifts**", (route) => route.fulfill({ json: [SHIFT] }));
+  await page.route("**/api/proxy/shifts**", (route) =>
+    route.fulfill({ json: [SHIFT] }),
+  );
   await page.route("**/api/proxy/workforce/working-time**", (route) =>
     route.fulfill({
       json: {
@@ -50,7 +60,12 @@ async function stubWorkforce(
   );
   await page.route("**/api/proxy/ergonomics/issues", (route) =>
     route.fulfill({
-      json: { as_of: "2026-10-24", by_department: {}, issues: options.issues ?? [], derivation: "x" },
+      json: {
+        as_of: "2026-10-24",
+        by_department: {},
+        issues: options.issues ?? [],
+        derivation: "x",
+      },
     }),
   );
 }
@@ -60,13 +75,18 @@ test.describe("Workforce", () => {
     await stubSignedIn(page);
   });
 
-  test("a manager sees pending leave and the rota, and approves a request", async ({ page }) => {
+  test("a manager sees pending leave and the rota, and approves a request", async ({
+    page,
+  }) => {
     const decided: string[] = [];
     await stubWorkforce(page);
-    await page.route(`**/api/proxy/leave-requests/${REQUEST.pid}/approve`, (route) => {
-      decided.push("approve");
-      return route.fulfill({ json: { ...REQUEST, status: "approved" } });
-    });
+    await page.route(
+      `**/api/proxy/leave-requests/${REQUEST.pid}/approve`,
+      (route) => {
+        decided.push("approve");
+        return route.fulfill({ json: { ...REQUEST, status: "approved" } });
+      },
+    );
     await page.goto("/workforce");
     await expect(page).toHaveTitle("Workforce — WPM");
     const pending = page.getByTestId("pending-leave");
@@ -79,24 +99,42 @@ test.describe("Workforce", () => {
     expect(decided).toEqual(["approve"]);
   });
 
-  test("a refused decision is shown beside the table, in words", async ({ page }) => {
+  test("a refused decision is shown beside the table, in words", async ({
+    page,
+  }) => {
     await stubWorkforce(page);
-    await page.route(`**/api/proxy/leave-requests/${REQUEST.pid}/reject`, (route) =>
-      route.fulfill({ status: 422, json: { description: "already decided" } }),
+    await page.route(
+      `**/api/proxy/leave-requests/${REQUEST.pid}/reject`,
+      (route) =>
+        route.fulfill({
+          status: 422,
+          json: { description: "already decided" },
+        }),
     );
     await page.goto("/workforce");
-    await page.getByTestId("pending-leave").getByRole("button", { name: "Reject" }).click();
-    await expect(page.getByTestId("action-error")).toContainText("already decided");
+    await page
+      .getByTestId("pending-leave")
+      .getByRole("button", { name: "Reject" })
+      .click();
+    await expect(page.getByTestId("action-error")).toContainText(
+      "already decided",
+    );
   });
 
-  test("working-time flags and ergonomic issues appear only when there are some", async ({ page }) => {
+  test("working-time flags and ergonomic issues appear only when there are some", async ({
+    page,
+  }) => {
     await stubWorkforce(page, {
       flagged: [
         {
           worker_pid: WORKER.pid,
           display_name: "Test Worker 001",
           department: "engineering",
-          average_weekly: { numerator_minutes: 3000, denominator_weeks: 1, value_minutes_per_week: 3000 },
+          average_weekly: {
+            numerator_minutes: 3000,
+            denominator_weeks: 1,
+            value_minutes_per_week: 3000,
+          },
           over_48h: true,
           rest_breaches: [],
         },
@@ -114,18 +152,24 @@ test.describe("Workforce", () => {
       ],
     });
     await page.goto("/workforce");
-    await expect(page.getByTestId("working-time")).toContainText("Test Worker 001");
+    await expect(page.getByTestId("working-time")).toContainText(
+      "Test Worker 001",
+    );
     await expect(page.getByTestId("working-time-clear")).toHaveCount(0);
     await expect(page.getByTestId("ergonomic-issues")).toContainText("Desk 4");
   });
 
-  test("one failed read is the page's error and nothing is drawn as empty", async ({ page }) => {
+  test("one failed read is the page's error and nothing is drawn as empty", async ({
+    page,
+  }) => {
     await stubWorkforce(page);
     await page.route("**/api/proxy/shifts**", (route) =>
       route.fulfill({ status: 500, json: { description: "boom" } }),
     );
     await page.goto("/workforce");
-    await expect(page.getByTestId("error")).toContainText("Something went wrong on our side");
+    await expect(page.getByTestId("error")).toContainText(
+      "Something went wrong on our side",
+    );
     await expect(page.getByTestId("pending-leave")).toHaveCount(0);
   });
 });

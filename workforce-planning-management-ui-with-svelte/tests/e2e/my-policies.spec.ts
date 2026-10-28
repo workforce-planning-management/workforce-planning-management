@@ -34,7 +34,11 @@ test.describe("My policies", () => {
               version: version("v1", "Acceptable use"),
               standing: acknowledged
                 ? { kind: "done", on: "2026-10-25" }
-                : { kind: "overdue", due_on: "2026-09-15", calendar_days_late: 40 },
+                : {
+                    kind: "overdue",
+                    due_on: "2026-09-15",
+                    calendar_days_late: 40,
+                  },
             },
             {
               policy: "Travel",
@@ -54,7 +58,9 @@ test.describe("My policies", () => {
     await page.goto("/me");
     const panel = page.getByTestId("my-policies");
     await expect(panel).toContainText("Acceptable use");
-    await expect(panel).toContainText("Overdue: due on 2026-09-15, 40 calendar days ago");
+    await expect(panel).toContainText(
+      "Overdue: due on 2026-09-15, 40 calendar days ago",
+    );
     await expect(panel).toContainText("Please acknowledge by 2026-11-01");
     await panel.getByTestId("policy-acknowledge").first().click();
     await expect(panel).toContainText("Acknowledged on 2026-10-25");

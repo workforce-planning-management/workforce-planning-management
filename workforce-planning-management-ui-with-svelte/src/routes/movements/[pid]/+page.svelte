@@ -30,7 +30,6 @@
 
   let movement = $state<(Movement & { items: MovementItem[] }) | null>(null);
   let held = $state<HeldItem[]>([]);
-  let remaining = $state(0);
   let trail = $state<HandoverAction[]>([]);
   let people = $state<Array<{ pid: string; display_name: string; organization_ref: string }>>([]);
   let error = $state<string | null>(null);
@@ -60,7 +59,6 @@
       if (handover) {
         const [h, tr] = handover;
         held = h.items;
-        remaining = h.remaining;
         trail = tr;
       }
     },

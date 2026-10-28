@@ -569,13 +569,22 @@ test.describe("planning by basis and programme", () => {
           },
         }),
     );
-    await page.route(`**/api/proxy/workforce-plans/${PLAN}/tolerances`, (route) =>
-      route.fulfill({
-        json: { derivation: "", as_of: "2026-10-20", overall: "not_set", breaches_without_escalation: 0, dimensions: [] },
-      }),
+    await page.route(
+      `**/api/proxy/workforce-plans/${PLAN}/tolerances`,
+      (route) =>
+        route.fulfill({
+          json: {
+            derivation: "",
+            as_of: "2026-10-20",
+            overall: "not_set",
+            breaches_without_escalation: 0,
+            dimensions: [],
+          },
+        }),
     );
-    await page.route(`**/api/proxy/workforce-plans/${PLAN}/escalations`, (route) =>
-      route.fulfill({ json: [] }),
+    await page.route(
+      `**/api/proxy/workforce-plans/${PLAN}/escalations`,
+      (route) => route.fulfill({ json: [] }),
     );
     await page.route(`**/api/proxy/workforce-plans/${PLAN}/cost`, (route) =>
       route.fulfill({
@@ -738,8 +747,12 @@ test.describe("planning by basis and programme", () => {
     await expect(async () => {
       await page.getByTestId("line-fte").fill("");
       await page.getByTestId("line-programme").fill("");
-      await expect(page.getByTestId("line-fte")).toHaveValue("", { timeout: 500 });
-      await expect(page.getByTestId("line-programme")).toHaveValue("", { timeout: 500 });
+      await expect(page.getByTestId("line-fte")).toHaveValue("", {
+        timeout: 500,
+      });
+      await expect(page.getByTestId("line-programme")).toHaveValue("", {
+        timeout: 500,
+      });
     }).toPass();
     await page.getByTestId("line-add").click();
     await expect.poll(() => sent.length).toBe(2);

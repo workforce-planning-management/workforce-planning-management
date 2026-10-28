@@ -422,19 +422,45 @@ describe("api path map", () => {
     await wpm.listDevelopmentPlans("w1");
     await wpm.setDevelopmentItemStatus("i1", "achieved");
     await wpm.listRecognisedBodies("organization:abc");
-    await wpm.createRecognisedBody({ organization_ref: "organization:abc", name: "n", kind: "union", basis: "other", recognised_on: "2026-01-01", contact_role: "r" });
+    await wpm.createRecognisedBody({
+      organization_ref: "organization:abc",
+      name: "n",
+      kind: "union",
+      basis: "other",
+      recognised_on: "2026-01-01",
+      contact_role: "r",
+    });
     await wpm.listBargainingUnits("b1");
     await wpm.addBargainingUnit("b1", { name: "u", department: "Care" });
     await wpm.listConsultations("organization:abc");
-    await wpm.openConsultation({ body_pid: "b1", establishment: "e", profile: "great_britain", establishment_size: 100, dismissals: 20, earliest_termination_on: "2027-01-01", topics: ["pay"] });
+    await wpm.openConsultation({
+      body_pid: "b1",
+      establishment: "e",
+      profile: "great_britain",
+      establishment_size: 100,
+      dismissals: 20,
+      earliest_termination_on: "2027-01-01",
+      topics: ["pay"],
+    });
     await wpm.beginConsultation("c1", { started_on: "2026-10-01" });
-    await wpm.closeConsultation("c1", { outcome: "agreed", ended_on: "2026-10-20" });
+    await wpm.closeConsultation("c1", {
+      outcome: "agreed",
+      ended_on: "2026-10-20",
+    });
     await wpm.consultationTimeline("c1");
     await wpm.readInformationPack("u1");
     await wpm.listFacilityTime("b1");
-    await wpm.addFacilityTime("b1", { period_start: "2026-01-01", period_end: "2026-03-31", minutes: 600 });
+    await wpm.addFacilityTime("b1", {
+      period_start: "2026-01-01",
+      period_end: "2026-03-31",
+      minutes: 600,
+    });
     await wpm.listDecisionGates("organization:abc");
-    await wpm.createDecisionGate({ organization_ref: "organization:abc", change_kind: "other", body_pid: "b1" });
+    await wpm.createDecisionGate({
+      organization_ref: "organization:abc",
+      change_kind: "other",
+      body_pid: "b1",
+    });
     await wpm.checkDecisionGate("organization:abc", "other");
     expect(calls).toEqual([
       "/api/proxy/workers?department=engineering",

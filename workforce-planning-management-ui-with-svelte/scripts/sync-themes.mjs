@@ -30,4 +30,6 @@ for (const entry of readdirSync(themesPackageDist)) {
   count += 1;
 }
 
-console.log(`sync-themes: copied ${count} theme stylesheets to static/assets/themes/`);
+console.log(
+  `sync-themes: copied ${count} theme stylesheets to static/assets/themes/`,
+);

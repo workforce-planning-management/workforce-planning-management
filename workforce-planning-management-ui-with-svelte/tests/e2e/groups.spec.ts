@@ -30,8 +30,15 @@ test.describe("Groups", () => {
     );
     await page.route("**/api/proxy/groups", (route) => {
       created.push(route.request().postDataJSON());
-      groups.push({ ...GROUP, pid: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", name: "Data circle", members: 0 });
-      return route.fulfill({ json: { pid: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" } });
+      groups.push({
+        ...GROUP,
+        pid: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        name: "Data circle",
+        members: 0,
+      });
+      return route.fulfill({
+        json: { pid: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
+      });
     });
     await page.route(`**/api/proxy/groups/${GROUP.pid}/members`, (route) =>
       route.fulfill({
@@ -79,7 +86,9 @@ test.describe("Groups", () => {
     // Two skills had fewer people than the floor: counted, never named.
     await expect(detail).toContainText("2");
 
-    await page.getByRole("textbox", { name: /Start a group/ }).fill("Data circle");
+    await page
+      .getByRole("textbox", { name: /Start a group/ })
+      .fill("Data circle");
     await page.getByRole("button", { name: "Start", exact: true }).click();
     await expect(page.getByTestId("group-list")).toContainText("Data circle");
     expect(created).toEqual([
@@ -93,17 +102,24 @@ test.describe("Groups", () => {
   });
 
   test("with no groups yet it says so", async ({ page }) => {
-    await page.route("**/api/proxy/groups?organization_ref=*", (route) => route.fulfill({ json: [] }));
+    await page.route("**/api/proxy/groups?organization_ref=*", (route) =>
+      route.fulfill({ json: [] }),
+    );
     await page.goto("/groups");
     await expect(page.getByTestId("group-list")).toContainText("No groups yet");
   });
 
   test("a failed list shows the error, in words", async ({ page }) => {
     await page.route("**/api/proxy/groups?organization_ref=*", (route) =>
-      route.fulfill({ status: 500, json: { description: "relation does not exist" } }),
+      route.fulfill({
+        status: 500,
+        json: { description: "relation does not exist" },
+      }),
     );
     await page.goto("/groups");
-    await expect(page.getByTestId("error")).toContainText("Something went wrong on our side");
+    await expect(page.getByTestId("error")).toContainText(
+      "Something went wrong on our side",
+    );
     await expect(page.getByTestId("error")).not.toContainText("relation");
   });
 });

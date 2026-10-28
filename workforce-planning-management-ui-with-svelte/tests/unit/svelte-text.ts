@@ -127,7 +127,7 @@ export function hasWords(text: string): boolean {
   const plain = text
     .replace(/&[a-z]+;|&#\d+;/gi, " ")
     .replace(/\{[^{}]*\}/g, " ");
-  return /[A-Za-zÀ-ɏЀ-ӿ؀-ۿऀ-ॿঀ-৿一-鿿]{2,}/.test(plain);
+  return /[\p{L}\p{M}]{2,}/u.test(plain);
 }
 
 export interface Finding {

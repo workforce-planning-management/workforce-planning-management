@@ -42,7 +42,10 @@ test.describe("a worker's page loads panel by panel (WPM-T260)", () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page);
     await page.route("**/api/proxy/**", (route) =>
-      route.fulfill({ status: 404, body: "unstubbed: " + route.request().url() }),
+      route.fulfill({
+        status: 404,
+        body: "unstubbed: " + route.request().url(),
+      }),
     );
     for (const list of [
       "onboarding",
@@ -60,18 +63,26 @@ test.describe("a worker's page loads panel by panel (WPM-T260)", () => {
         route.fulfill({ json: [] }),
       );
     }
-    await page.route(`**/api/proxy/workers/${WORKER.pid}/wellbeing-prompts`, (route) =>
-      route.fulfill({ json: { prompts: [] } }),
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/wellbeing-prompts`,
+      (route) => route.fulfill({ json: { prompts: [] } }),
     );
-    await page.route("**/api/proxy/pulse-surveys", (route) => route.fulfill({ json: [] }));
+    await page.route("**/api/proxy/pulse-surveys", (route) =>
+      route.fulfill({ json: [] }),
+    );
     await page.route(`**/api/proxy/workers/${WORKER.pid}`, (route) =>
       route.fulfill({ json: WORKER }),
     );
   });
 
-  test("a failed payslips panel says so and hides nothing else", async ({ page }) => {
+  test("a failed payslips panel says so and hides nothing else", async ({
+    page,
+  }) => {
     await page.route(`**/api/proxy/workers/${WORKER.pid}/payslips`, (route) =>
-      route.fulfill({ status: 500, json: { error: "internal", description: "payslips are down" } }),
+      route.fulfill({
+        status: 500,
+        json: { error: "internal", description: "payslips are down" },
+      }),
     );
     await page.goto(`/workers/${WORKER.pid}`);
     await expect(page.getByTestId("facts")).toContainText("Engineer");
@@ -82,9 +93,14 @@ test.describe("a worker's page loads panel by panel (WPM-T260)", () => {
     await expect(page.getByTestId("appraisals")).toBeVisible();
   });
 
-  test("when the worker itself fails to load, the page says so", async ({ page }) => {
+  test("when the worker itself fails to load, the page says so", async ({
+    page,
+  }) => {
     await page.route(`**/api/proxy/workers/${WORKER.pid}`, (route) =>
-      route.fulfill({ status: 500, json: { error: "internal", description: "down" } }),
+      route.fulfill({
+        status: 500,
+        json: { error: "internal", description: "down" },
+      }),
     );
     await page.goto(`/workers/${WORKER.pid}`);
     await expect(page.getByTestId("error")).toBeVisible();

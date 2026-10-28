@@ -4,37 +4,74 @@
 
 import { expect, test } from "@playwright/test";
 
-test.skip(!process.env.WPM_LIVE_API, "needs a running service: set WPM_LIVE_API=1");
+test.skip(
+  !process.env.WPM_LIVE_API,
+  "needs a running service: set WPM_LIVE_API=1",
+);
 
 const api = "http://localhost:5150/api";
 const org = `organization:${crypto.randomUUID()}`;
 
-test("a pack over twelve people shows counts, never a name; recording a score names the gate to consult", async ({ page, request }) => {
+test("a pack over twelve people shows counts, never a name; recording a score names the gate to consult", async ({
+  page,
+  request,
+}) => {
   for (let n = 0; n < 12; n++) {
     const made = await request.post(`${api}/workers`, {
       data: {
-        person_ref: `person:${crypto.randomUUID()}`, organization_ref: org, worker_number: `W${n}`, display_name: `Worker ${n}`,
-        employment_type: "permanent", fte_percent: 100, department: "Care", job_title: "Carer", hired_on: "2024-01-01",
+        person_ref: `person:${crypto.randomUUID()}`,
+        organization_ref: org,
+        worker_number: `W${n}`,
+        display_name: `Worker ${n}`,
+        employment_type: "permanent",
+        fte_percent: 100,
+        department: "Care",
+        job_title: "Carer",
+        hired_on: "2024-01-01",
       },
     });
     expect(made.ok(), await made.text()).toBe(true);
   }
   const body = await (
     await request.post(`${api}/recognised-bodies`, {
-      data: { organization_ref: org, name: "Care Union", kind: "union", basis: "other", recognised_on: "2020-03-01", contact_role: "HR lead" },
+      data: {
+        organization_ref: org,
+        name: "Care Union",
+        kind: "union",
+        basis: "other",
+        recognised_on: "2020-03-01",
+        contact_role: "HR lead",
+      },
     })
   ).json();
-  const unit = await request.post(`${api}/recognised-bodies/${body.pid}/units`, { data: { name: "Care staff", department: "Care" } });
+  const unit = await request.post(
+    `${api}/recognised-bodies/${body.pid}/units`,
+    { data: { name: "Care staff", department: "Care" } },
+  );
   expect(unit.ok(), await unit.text()).toBe(true);
   const gate = await request.post(`${api}/decision-gates`, {
-    data: { organization_ref: org, change_kind: "new_or_changed_score", body_pid: body.pid },
+    data: {
+      organization_ref: org,
+      change_kind: "new_or_changed_score",
+      body_pid: body.pid,
+    },
   });
   expect(gate.ok(), await gate.text()).toBe(true);
 
   await page.context().addCookies([
-    { name: "__Host-mxi_session", value: "live-test-session", domain: "localhost", path: "/", httpOnly: true, secure: true, sameSite: "Lax" },
+    {
+      name: "__Host-mxi_session",
+      value: "live-test-session",
+      domain: "localhost",
+      path: "/",
+      httpOnly: true,
+      secure: true,
+      sameSite: "Lax",
+    },
   ]);
-  await page.route("**/api/proxy/me/organizations/scope", (route) => route.fulfill({ json: [org] }));
+  await page.route("**/api/proxy/me/organizations/scope", (route) =>
+    route.fulfill({ json: [org] }),
+  );
 
   await page.goto("/bargaining");
   await page.getByTestId("bg-show-units").click();

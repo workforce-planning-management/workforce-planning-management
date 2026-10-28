@@ -13,7 +13,8 @@ function token(claims: object, version = "v4"): string {
 }
 
 const T0 = Date.parse("2026-10-24T10:00:00Z");
-const at = (secondsFromT0: number) => new Date(T0 + secondsFromT0 * 1000).toISOString();
+const at = (secondsFromT0: number) =>
+  new Date(T0 + secondsFromT0 * 1000).toISOString();
 
 /** An exchange that counts its calls and hands out tokens that expire `life` seconds after T0. */
 function exchanger(life = 600) {
@@ -48,12 +49,16 @@ describe("tokenExpiry", () => {
 
 describe("TokenCache", () => {
   it("a page load of many calls exchanges once", async () => {
-    let now = T0;
+    const now = T0;
     const cache = new TokenCache(() => now);
     const ex = exchanger();
     // Twenty calls in flight at once, then twenty more after the first answers.
-    const first = await Promise.all(Array.from({ length: 20 }, () => cache.get("sid", ex.run)));
-    const later = await Promise.all(Array.from({ length: 20 }, () => cache.get("sid", ex.run)));
+    const first = await Promise.all(
+      Array.from({ length: 20 }, () => cache.get("sid", ex.run)),
+    );
+    const later = await Promise.all(
+      Array.from({ length: 20 }, () => cache.get("sid", ex.run)),
+    );
     expect(ex.calls).toBe(1);
     expect(new Set([...first, ...later]).size).toBe(1);
   });
@@ -106,7 +111,9 @@ describe("TokenCache", () => {
     expect(await cache.get("sid", async () => (calls++, null))).toBeNull();
     expect(await cache.get("sid", async () => (calls++, null))).toBeNull();
     expect(calls).toBe(2);
-    await expect(cache.get("sid", () => Promise.reject(new Error("down")))).rejects.toThrow("down");
+    await expect(
+      cache.get("sid", () => Promise.reject(new Error("down"))),
+    ).rejects.toThrow("down");
     // And a rejection does not leave later callers waiting on it.
     const ex = exchanger();
     expect(await cache.get("sid", ex.run)).not.toBeNull();
@@ -122,7 +129,10 @@ describe("TokenCache", () => {
     expect(ex.calls).toBe(2);
 
     let release!: (t: string) => void;
-    const slow = cache.get("late", () => new Promise<string>((res) => (release = res)));
+    const slow = cache.get(
+      "late",
+      () => new Promise<string>((res) => (release = res)),
+    );
     cache.forget("late");
     release(token({ exp: at(600) }));
     await slow;

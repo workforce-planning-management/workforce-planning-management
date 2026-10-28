@@ -4,7 +4,13 @@
 import { describe, expect, it } from "vitest";
 
 import { errorText } from "../../src/lib/write";
-import { createLoader, guardedLoad, latestOnly, messageOf, settleEach } from "../../src/lib/loader.svelte";
+import {
+  createLoader,
+  guardedLoad,
+  latestOnly,
+  messageOf,
+  settleEach,
+} from "../../src/lib/loader.svelte";
 
 /** A promise settled by hand, so a test chooses the order responses arrive in. */
 function deferred<T>() {
@@ -96,7 +102,10 @@ describe("settleEach", () => {
       },
     });
     expect(out.leave).toEqual({ value: [1, 2], error: null });
-    expect(out.payslips).toEqual({ value: null, error: errorText(new Error("payslips down")) });
+    expect(out.payslips).toEqual({
+      value: null,
+      error: errorText(new Error("payslips down")),
+    });
   });
 
   it("describes a failure in the catalogue's words, never the raw exception", () => {

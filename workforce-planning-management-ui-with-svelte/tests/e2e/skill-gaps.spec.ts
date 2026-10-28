@@ -71,8 +71,24 @@ test.describe("Skill gaps", () => {
                 shortfall: 2,
                 priority: 6,
                 sfiaplus_pointers: [
-                  { source: "SFIAplus (BCS)", sfia_code: "ZZZ1", sfia_level: 5, kind: "training", title: "Invented tuning course", provider: "Invented Academy", url: "https://example.invalid/course" },
-                  { source: "SFIAplus (BCS)", sfia_code: "ZZZ1", sfia_level: 5, kind: "certification", title: "Invented certificate", provider: null, url: "javascript:alert(1)" },
+                  {
+                    source: "SFIAplus (BCS)",
+                    sfia_code: "ZZZ1",
+                    sfia_level: 5,
+                    kind: "training",
+                    title: "Invented tuning course",
+                    provider: "Invented Academy",
+                    url: "https://example.invalid/course",
+                  },
+                  {
+                    source: "SFIAplus (BCS)",
+                    sfia_code: "ZZZ1",
+                    sfia_level: 5,
+                    kind: "certification",
+                    title: "Invented certificate",
+                    provider: null,
+                    url: "javascript:alert(1)",
+                  },
                 ],
                 recommendation: {
                   courses: [
@@ -138,11 +154,19 @@ test.describe("Skill gaps", () => {
     // SFIAplus pointers name their source, say nothing is booked, and never link an address that is not http(s).
     const pointers = page.getByTestId("plan-pointers");
     await expect(pointers).toContainText("Data modelling");
-    await expect(pointers).toContainText("Training: Invented tuning course (Invented Academy)");
-    await expect(pointers).toContainText("Read from SFIAplus (BCS). Nothing is booked or bought from this.");
-    await expect(pointers.getByRole("link", { name: "Invented tuning course" })).toHaveAttribute("href", "https://example.invalid/course");
+    await expect(pointers).toContainText(
+      "Training: Invented tuning course (Invented Academy)",
+    );
+    await expect(pointers).toContainText(
+      "Read from SFIAplus (BCS). Nothing is booked or bought from this.",
+    );
+    await expect(
+      pointers.getByRole("link", { name: "Invented tuning course" }),
+    ).toHaveAttribute("href", "https://example.invalid/course");
     await expect(pointers).toContainText("Certification: Invented certificate");
-    await expect(pointers.getByRole("link", { name: "Invented certificate" })).toHaveCount(0);
+    await expect(
+      pointers.getByRole("link", { name: "Invented certificate" }),
+    ).toHaveCount(0);
     await expect(page.getByTestId("plan-total")).toContainText("2027-03-08");
     await expect(page.getByTestId("plan-assess")).toContainText(
       "Stakeholder management",
