@@ -90,6 +90,40 @@ read as one set. **Contract with PPM: unverified.**
   request that names a programme.
 - **Contract with PPM: unverified.** Shares its core with WPM-R209.
 
+## Working alone, and working together (WPM-R213, WPM-D138 to D141)
+
+Added 2026-10-28 after PPM was read. PPM and WPM each keep a capacity model (see "What PPM was read to say"). The aim is to **harmonize**
+them without making either depend on the other.
+
+- **WPM-D138 Each app owns its model and is complete without the other.** With no link configured, WPM's pools, demand and what-if work
+  exactly as today, and nothing calls out. A peer being down, absent or slow never fails a WPM request and never changes a number
+  silently. Rejected: making WPM read PPM's pools, which would make PPM a dependency.
+- **WPM-D139 A link is an explicit mapping set by a person, never matched by name.** A pool carries an optional `peer_pool_ref`, the
+  other app's identifier for the pool that means the same skills. It is set on both sides by someone who can see both, shown to them, and
+  removed in one step. An unmapped pool stays local. Rejected: matching pool names or tags, because a name is not an identity and a wrong
+  match would move real numbers.
+- **WPM-D140 For a linked pool each fact has one owner.** **Supply is WPM's** (it holds the workers, their leave and their FTE); **demand
+  is PPM's** (it holds the plans). Each side shows the owner's figure for a linked pool, labelled with its source and the time it was
+  taken. The receiving side's own entry of that kind is kept but not added: it is shown as "entered here" beside the owner's figure, so
+  two numbers for one pool are visible, named and never summed.
+- **WPM-D141 When the peer cannot be reached, the last figure received is shown with its age; with none, the answer is `unknown`.** Never
+  zero, never a silent fall back to the local entry. Unlinking returns the pool to local figures at once.
+
+**WPM-R213** A pool can be linked to its peer's pool by an explicit mapping; linked or not, WPM answers every capacity request itself;
+a linked pool takes demand from PPM and gives supply to PPM, each with its source and age; the two apps' figures are never added
+together. This extends WPM-R209 and WPM-R210.
+
+What this needs on WPM's side, in order, none of it built:
+
+1. A pool's `peer_pool_ref` (nullable), set and cleared by HR with the pool's own audit, no name or figure in the entry.
+2. Demand that arrives from the peer is stored as claims with `source = ppm`, the peer's event id, and the time received (idempotent on
+   the event id), and counted in the view with its source named; a local claim is `source = local`.
+3. The view and the what-if read demand by source for a linked pool as D140 says.
+4. An outbound supply figure for a linked pool: counts by pool and month, floored, to the caller's token (WPM-D135).
+
+What it needs on PPM's side is for its owners to say: a nullable mapping to a WPM pool, the same one-owner rule, and an inbound route for
+people-impact. WPM does not change PPM.
+
 ## Delivery
 
 | Task | What | Needs |
@@ -99,7 +133,7 @@ read as one set. **Contract with PPM: unverified.**
 | WPM-T357 | `POST /api/bridges/overlap` (R208) | nothing outside WPM |
 | WPM-T358 | Supplier and contact names (R206) | **Read 2026-10-28: CRM has no lookup by reference**, and holds no person's name; see "What CRM was read to say". Re-scoped to person-service |
 | WPM-T359 | Capacity what-if (R209) | the capacity model (WPM-T104 to T107); is WPM-T158 to T160. **WPM half built 2026-10-28** (`POST /api/capacity/what-if`; the contingent effect, T159, is built too; the persona test of T160 is open); PPM's side unverified |
-| WPM-T360 | Programme demand in (R210) | **PPM read 2026-10-28**: it keeps its own pools and commitments; a decision is needed first, see "What PPM was read to say" |
+| WPM-T360 | Programme demand in (R210, R213) | decided 2026-10-28 (WPM-D138 to D141): the pool link and sourced claims first (T363, T364) |
 | WPM-T361 | People-impact out (R211) | WPM-T359; PPM has no inbound route for it (read 2026-10-28) |
 
 ## What CRM was read to say (2026-10-28)
@@ -140,4 +174,11 @@ PPM's service (`project-portfolio-management-service-with-rust`) was read, not r
    contract (title, pitch, tags). T361 has nowhere to send to.
 5. **PPM names its plans `plan_pid` and its programmes by `programme`-labelled plans**; WPM's `programme_ref` is a `thing:` URN. No mapping
    between the two was found.
+
+## Tasks for the harmonization (WPM-R213)
+
+- [ ] WPM-T363 `skill_pools.peer_pool_ref` and its set/clear endpoint (HR, audited without names or figures); the link is shown with the pool.
+- [ ] WPM-T364 `programme_demands.source` (`local` default, `ppm`), the peer event id and received time; idempotent receive; the view and what-if show demand by source and never sum across sources.
+- [ ] WPM-T365 Outbound supply for a linked pool: floored counts by month, to the caller's token.
+- [ ] WPM-T366 A test that WPM answers every capacity request with the peer unset, down and slow, and that a link removed returns the local figures.
 

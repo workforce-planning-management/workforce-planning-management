@@ -819,6 +819,7 @@ Requested after section R. Succession exists (WPM-R12); deputies and acting up d
 - **WPM-D134 A bridge carries references and aggregates, never records** ([cross-app-bridges.md](cross-app-bridges.md), as are D135 and D136).
 - **WPM-D135 An inbound call acts under the caller's token; there is no bridge service account.**
 - **WPM-D136 A contract that was not read is not built against.**
+- **WPM-D138 to D141** each app is complete without the other; a link is an explicit mapping; one owner per fact for a linked pool; an unreachable peer shows the last figure with its age, else `unknown` ([cross-app-bridges.md](cross-app-bridges.md)).
 - **WPM-D133 The holder, or HR while the holder is unavailable, lets a deputy decide flexible working, and the default is no.**
   The ABAC operation `flexible_working:decide` permits a deputy only when the grant is `true`; `null`, missing and `false` deny.
   HR's grant lapses when the holder is available again.

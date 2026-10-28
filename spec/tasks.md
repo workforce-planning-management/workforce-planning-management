@@ -5580,3 +5580,8 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
 - [ ] WPM-T360 **Programme demand in.** *(WPM-R210)* Idempotent on programme and source event. Needs PPM's contract.
 - [ ] WPM-T361 **People-impact out.** *(WPM-R211)* Counts with the floor, for a programme. Needs WPM-T359 and PPM's contract.
 - [x] (2026-10-28) WPM-T362 **MHRA entry in the regulatory register.** *(WPM-R212)* See [mhra.md](mhra.md). The workforce questions stay open until the linked guidance is read.
+- [ ] WPM-T363 **Pool link to a peer's pool.** *(WPM-R213, WPM-D139)* See `cross-app-bridges.md`, "Working alone, and working together".
+- [ ] WPM-T364 **Sourced demand claims.** *(WPM-R213, WPM-D140, WPM-D141)*
+- [ ] WPM-T365 **Outbound supply for a linked pool.** *(WPM-R213, WPM-D135)*
+- [ ] WPM-T366 **Standalone and linked tests.** *(WPM-R213, WPM-D138)*
+
