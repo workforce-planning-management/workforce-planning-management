@@ -139,6 +139,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::decision_gates::routes())
         .add_route(controllers::equipment::routes())
         .add_route(controllers::assignments::routes())
+        .add_route(controllers::category_vocabulary::routes())
         .add_route(controllers::policies::routes())
         .add_route(controllers::credentials::routes())
         .add_route(controllers::skill_mappings::routes())

@@ -167,6 +167,55 @@ pub fn agreement(role_staff_group: Option<&str>, staff_group: Option<&str>) -> A
     }
 }
 
+/// The kinds of category an organization keeps a vocabulary for.
+pub const KINDS: &[&str] = &[
+    "site",
+    "area_of_work",
+    "job_role",
+    "staff_group",
+    "occupation_code",
+];
+
+/// Problems with a vocabulary entry: a known kind, a code and label, a standard and its code given together, and a staff group
+/// only on a job role.
+#[must_use]
+pub fn entry_problems(
+    kind: &str,
+    code: &str,
+    label: &str,
+    standard: Option<&str>,
+    standard_code: Option<&str>,
+    staff_group: Option<&str>,
+) -> Vec<String> {
+    let mut out = Vec::new();
+    let len = |t: &str| t.trim().chars().count();
+    if !KINDS.contains(&kind) {
+        out.push(format!("kind must be one of: {}", KINDS.join(", ")));
+    }
+    if !(1..=CODE_MAX).contains(&len(code)) {
+        out.push(format!("code must be 1 to {CODE_MAX} characters"));
+    }
+    if !(1..=TEXT_MAX).contains(&len(label)) {
+        out.push(format!("label must be 1 to {TEXT_MAX} characters"));
+    }
+    if standard.is_some() != standard_code.is_some() {
+        out.push("a standard and its own code are given together".to_string());
+    }
+    for (name, v) in [
+        ("standard", standard),
+        ("standard_code", standard_code),
+        ("staff_group", staff_group),
+    ] {
+        if v.is_some_and(|v| !(1..=CODE_MAX).contains(&len(v))) {
+            out.push(format!("{name} must be 1 to {CODE_MAX} characters"));
+        }
+    }
+    if staff_group.is_some() && kind != "job_role" {
+        out.push("only a job role belongs to a staff group".to_string());
+    }
+    out
+}
+
 /// A category as it reads: the recorded label, or `unknown`. Blank is not a recorded value.
 #[must_use]
 pub fn category_or_unknown(value: Option<&str>) -> &str {
@@ -264,6 +313,32 @@ mod tests {
         assert_eq!(
             ok("Nurse", "Ward 4", None, &[("site", Some(&"y".repeat(61)))]).len(),
             1
+        );
+    }
+
+    #[test]
+    fn a_vocabulary_entry_needs_a_kind_a_code_and_a_label() {
+        let e = |k, c, l, s, sc, g| entry_problems(k, c, l, s, sc, g);
+        assert_eq!(
+            e("job_role", "RN", "Nurse", None, None, Some("nursing")),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            e("site", "S1", "Main", Some("ESR"), Some("0001"), None),
+            Vec::<String>::new()
+        );
+        assert_eq!(e("ward", "S1", "Main", None, None, None).len(), 1);
+        assert_eq!(e("site", " ", "Main", None, None, None).len(), 1);
+        assert_eq!(e("site", "S1", "", None, None, None).len(), 1);
+        assert_eq!(
+            e("site", "S1", "Main", Some("ESR"), None, None).len(),
+            1,
+            "together"
+        );
+        assert_eq!(
+            e("site", "S1", "Main", None, None, Some("nursing")).len(),
+            1,
+            "only a role"
         );
     }
 

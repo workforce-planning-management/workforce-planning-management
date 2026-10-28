@@ -22,6 +22,7 @@ pub mod benefit_plans;
 pub mod candidates;
 pub mod capability_frameworks;
 pub mod capacity_settings;
+pub mod category_vocabulary;
 pub mod change_initiatives;
 pub mod collective_agreements;
 pub mod consultations;

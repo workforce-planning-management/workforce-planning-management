@@ -663,6 +663,10 @@ fn add_integration_paths(document: &mut Value) {
         "/api/asset-issues/{pid}/return": {
             "post": { "tags": ["equipment"], "summary": "Close an open issue as returned, or written_off with a reason, on a day not before it was issued and not in the future", "responses": ok("The outcome") }
         },
+        "/api/category-vocabulary": {
+            "get": { "tags": ["assignments"], "summary": "An organization's assignment category vocabulary (?organization=, optional ?kind=): site, area_of_work, job_role, staff_group or occupation_code, each with its label and, where it comes from a national standard, that standard and its own code. None is shipped", "responses": ok("The entries") },
+            "post": { "tags": ["assignments"], "summary": "Add a vocabulary entry. A code is unique within an organization and kind; a job role may name its staff group, and an assignment that records the two must then agree. HR", "responses": ok("The pid of the entry") }
+        },
         "/api/workers/{pid}/assignments": {
             "get": { "tags": ["assignments"], "summary": "The jobs a worker holds and has held, newest first, with the FTE in force today. A category nobody recorded reads unknown. The worker themself and HR", "responses": ok("The assignments") },
             "post": { "tags": ["assignments"], "summary": "Add a further (not primary) assignment. The FTE of the assignments in force may not go over 100 on any day; the 422 names the total. HR", "responses": ok("The pid of the assignment") }

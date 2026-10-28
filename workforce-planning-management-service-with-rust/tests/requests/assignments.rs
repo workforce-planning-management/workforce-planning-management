@@ -135,3 +135,76 @@ async fn a_worker_has_a_primary_assignment_and_a_change_ends_one_and_starts_anot
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_job_role_and_a_staff_group_must_agree_where_the_vocabulary_says_so() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let w = seed_worker!(&request, &org, format!("VO-{tag}"), None).await;
+        activate!(&request, &w).await;
+        let entry = |body: Value| {
+            let request = &request;
+            async move { request.post("/api/category-vocabulary").json(&body).await }
+        };
+
+        // Entries: a bad kind, a standard without its code, a staff group on a site, and a repeated code are refused.
+        for bad in [
+            json!({ "organization_ref": org, "kind": "ward", "code": "A", "label": "A" }),
+            json!({ "organization_ref": org, "kind": "site", "code": "A", "label": "A", "standard": "ESR" }),
+            json!({ "organization_ref": org, "kind": "site", "code": "A", "label": "A", "staff_group": "nursing" }),
+            json!({ "organization_ref": org, "kind": "site", "code": " ", "label": "A" }),
+        ] {
+            assert_eq!(entry(bad.clone()).await.status_code(), 422, "{bad}");
+        }
+        for ok in [
+            json!({ "organization_ref": org, "kind": "staff_group", "code": "nursing", "label": "Nursing", "standard": "synthetic", "standard_code": "S-1" }),
+            json!({ "organization_ref": org, "kind": "staff_group", "code": "admin", "label": "Administrative" }),
+            json!({ "organization_ref": org, "kind": "job_role", "code": "RN", "label": "Registered nurse", "staff_group": "nursing" }),
+            json!({ "organization_ref": org, "kind": "job_role", "code": "FREE", "label": "No group stated" }),
+        ] {
+            let made = entry(ok.clone()).await;
+            assert_eq!(made.status_code(), 200, "{ok}: {}", made.text());
+        }
+        let again = entry(json!({ "organization_ref": org, "kind": "job_role", "code": "RN", "label": "Again" })).await;
+        assert_eq!(again.status_code(), 422, "a code is unique in its kind");
+        let roles: Value = request.get(&format!("/api/category-vocabulary?organization={org}&kind=job_role")).await.json();
+        assert_eq!(roles["entries"].as_array().map(Vec::len), Some(2), "{roles}");
+        assert!(roles["entries"][0].get("recorded_by").is_none());
+        assert_eq!(request.get(&format!("/api/category-vocabulary?organization={org}&kind=ward")).await.status_code(), 422);
+
+        // A disagreement is a 422; agreement, an unlisted role and a role with no stated group are not.
+        let url = format!("/api/workers/{w}/assignments");
+        let primary_of = || {
+            let request = &request;
+            let url = url.clone();
+            async move {
+                let all: Value = request.get(&url).await.json();
+                all["assignments"].as_array().unwrap().iter().find(|a| a["is_primary"] == true && a["current"] == true).unwrap()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        // Make room first: the primary is cut to 50, so the one-percent shifts below fit.
+        let cut = request.post(&format!("/api/assignments/{}/change", primary_of().await)).json(&json!({ "fte_percent": 50, "effective_on": "2026-06-01" })).await;
+        assert_eq!(cut.status_code(), 200, "{}", cut.text());
+        let add = |role: &str, group: Option<&str>| {
+            let request = &request;
+            let url = url.clone();
+            let body = json!({ "job_title": "Shift", "department": "ward", "fte_percent": 1, "job_role": role, "staff_group": group });
+            async move { request.post(&url).json(&body).await.status_code() }
+        };
+        assert_eq!(add("RN", Some("admin")).await, 422, "the role belongs to nursing");
+        assert_eq!(add("RN", Some("nursing")).await, 200);
+        assert_eq!(add("RN", None).await, 200, "no staff group recorded is unknown, not a mismatch");
+        assert_eq!(add("UNLISTED", Some("admin")).await, 200, "the vocabulary does not say");
+        assert_eq!(add("FREE", Some("admin")).await, 200, "a role with no stated group");
+
+        // A change is checked the same way.
+        let primary = primary_of().await;
+        let change = format!("/api/assignments/{primary}/change");
+        assert_eq!(request.post(&change).json(&json!({ "job_role": "RN", "staff_group": "admin" })).await.status_code(), 422);
+        assert_eq!(request.post(&change).json(&json!({ "job_role": "RN", "staff_group": "nursing", "fte_percent": 90 })).await.status_code(), 200);
+    })
+    .await;
+}

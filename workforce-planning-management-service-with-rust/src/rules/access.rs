@@ -189,6 +189,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("workers/{}/collective-agreements", Privileged),
     ("policies", Open),
     ("skill-mappings", Open),
+    ("category-vocabulary", Open),
     ("credentials/issuer", Open),
     ("credentials/status-list", Open),
     ("me/credentials", ControllerDecides),

@@ -22,6 +22,7 @@ pub use super::benefit_plans::Entity as BenefitPlans;
 pub use super::candidates::Entity as Candidates;
 pub use super::capability_frameworks::Entity as CapabilityFrameworks;
 pub use super::capacity_settings::Entity as CapacitySettings;
+pub use super::category_vocabulary::Entity as CategoryVocabulary;
 pub use super::change_initiatives::Entity as ChangeInitiatives;
 pub use super::collective_agreements::Entity as CollectiveAgreements;
 pub use super::consultations::Entity as Consultations;

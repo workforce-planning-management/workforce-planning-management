@@ -83,6 +83,23 @@ async fn list(
     }))
 }
 
+/// A `422` when the vocabulary gives the job role a different staff group from the one recorded (WPM-R162).
+async fn ensure_role_agrees(
+    ctx: &AppContext,
+    organization: &str,
+    job_role: Option<&str>,
+    staff_group: Option<&str>,
+) -> Result<()> {
+    let Some(role) = job_role else { return Ok(()) };
+    let of_role = super::category_vocabulary::staff_group_of_role(ctx, organization, role).await?;
+    if rules::agreement(of_role.as_deref(), staff_group) == rules::Agreement::Mismatch {
+        return Err(unprocessable(
+            "the job role belongs to a different staff group in this organization's vocabulary",
+        ));
+    }
+    Ok(())
+}
+
 fn row_str<'a>(row: &'a assignments::Model, key: &str) -> Option<&'a str> {
     match key {
         "site" => row.site.as_deref(),
@@ -146,6 +163,13 @@ async fn add(
         problems.push("starts_on must not be before the worker's first day".to_string());
     }
     ensure_valid(&problems)?;
+    ensure_role_agrees(
+        &ctx,
+        &worker.organization_ref,
+        clean(p.job_role.clone()).as_deref(),
+        clean(p.staff_group.clone()).as_deref(),
+    )
+    .await?;
     let existing: Vec<rules::Assignment> =
         of(&ctx, worker.pid).await?.iter().map(as_rule).collect();
     ensure_valid(&rules::fte_problems(&existing, &new))?;
@@ -247,17 +271,14 @@ async fn change(
     );
     problems.extend(rules::assignment_problems(&new));
     ensure_valid(&problems)?;
-    let others: Vec<rules::Assignment> = of(&ctx, worker.pid)
-        .await?
-        .iter()
-        .map(|a| {
-            let mut r = as_rule(a);
-            if a.pid == old.pid {
-                r.ends_on = Some(end);
-            }
-            r
-        })
-        .collect();
+    ensure_role_agrees(
+        &ctx,
+        &worker.organization_ref,
+        job_role.as_deref(),
+        staff_group.as_deref(),
+    )
+    .await?;
+    let others = with_ended(&of(&ctx, worker.pid).await?, old.pid, end);
     ensure_valid(&rules::fte_problems(&others, &new))?;
 
     let new_pid = Uuid::new_v4();
@@ -286,12 +307,15 @@ async fn change(
     .insert(&txn)
     .await?;
     if old.is_primary {
-        let mut w: workers::ActiveModel = worker.into();
-        w.job_title = ActiveValue::set(job_title.trim().to_string());
-        w.department = ActiveValue::set(department.trim().to_string());
-        w.location = ActiveValue::set(location);
-        w.fte_percent = ActiveValue::set(new.fte_percent);
-        w.update(&txn).await?;
+        write_through(
+            &txn,
+            worker,
+            &job_title,
+            &department,
+            location,
+            new.fte_percent,
+        )
+        .await?;
     }
     Audit::record(
         &txn,
@@ -304,6 +328,37 @@ async fn change(
     .await?;
     txn.commit().await?;
     format::json(json!({ "pid": new_pid, "replaces": pid, "previous_ends_on": end }))
+}
+
+/// The worker's assignments as the rules see them, with the one `pid` ended on `end`.
+fn with_ended(rows: &[assignments::Model], pid: Uuid, end: NaiveDate) -> Vec<rules::Assignment> {
+    rows.iter()
+        .map(|a| {
+            let mut r = as_rule(a);
+            if a.pid == pid {
+                r.ends_on = Some(end);
+            }
+            r
+        })
+        .collect()
+}
+
+/// The worker row is the record of the primary assignment: write the new values through to it.
+async fn write_through(
+    txn: &sea_orm::DatabaseTransaction,
+    worker: workers::Model,
+    job_title: &str,
+    department: &str,
+    location: Option<String>,
+    fte_percent: i32,
+) -> Result<()> {
+    let mut w: workers::ActiveModel = worker.into();
+    w.job_title = ActiveValue::set(job_title.trim().to_string());
+    w.department = ActiveValue::set(department.trim().to_string());
+    w.location = ActiveValue::set(location);
+    w.fte_percent = ActiveValue::set(fte_percent);
+    w.update(txn).await?;
+    Ok(())
 }
 
 /// The routes.

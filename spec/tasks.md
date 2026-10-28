@@ -5303,6 +5303,13 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       real worker rows (only the back-fill SQL on an empty one, plus the trigger on new rows); a worker whose title or department is over 120 characters is trimmed by the
       trigger, not refused; the UI; the Keycloak suite. **Finding:** a worker edit through the older route changes the open primary in place, so history is made only by
       a change; a deployer who edits the worker row directly loses "what they did on that day".
+      **Further part done (2026-10-28), the vocabularies and the agreement check:** migration `000102` (`category_vocabulary`: kind, code, label, standard and its own code
+      given together, and a staff group only on a job role; unique per organization, kind and code; none shipped); `GET /api/category-vocabulary?organization=&kind=` (open to a
+      signed-in caller in scope) and `POST` (HR); on adding or changing an assignment, a job role whose vocabulary entry names a different staff group than the one recorded is a `422`
+      (an unlisted role, a role that names no group, or a blank staff group is `Unknown`, not a mismatch). Request test (entry refusals, uniqueness, listing, both write paths),
+      **mutation-checked** (agreement always true: fails); full `--ignored` suite 167, `cargo test --lib` 928, clippy clean. **Not done:** the import of a national list (an ESR
+      file), a code outside a non-empty vocabulary is still accepted (the spec does not say it is refused), editing or retiring an entry, a UI. **Also found:** a second change on the
+      day an assignment started is refused by the rule (`effective_on` must be after the start), which a HR user will meet when correcting a change made earlier the same day.
 
 - [ ] WPM-T312 **Cost centres, financial and subjective coding.** *(WPM-R163–R165, WPM-D116)* Register, unmatched free-text list,
       segment assembly and most-specific-rule derivation in the pure core, position numbers, the coding view.

@@ -16,6 +16,7 @@ pub mod audits;
 pub mod bargaining;
 pub mod capacity;
 pub mod career;
+pub mod category_vocabulary;
 pub mod change;
 pub mod consultations;
 pub mod contacts;

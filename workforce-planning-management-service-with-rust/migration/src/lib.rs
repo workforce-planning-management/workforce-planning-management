@@ -114,6 +114,7 @@ mod m20261027_000098_job_level_frameworks;
 mod m20261027_000099_native_levels;
 mod m20261027_000100_sfiaplus_resources;
 mod m20261028_000101_assignments;
+mod m20261028_000102_category_vocabulary;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -228,6 +229,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261027_000099_native_levels::Migration),
             Box::new(m20261027_000100_sfiaplus_resources::Migration),
             Box::new(m20261028_000101_assignments::Migration),
+            Box::new(m20261028_000102_category_vocabulary::Migration),
             // inject-above (do not remove this comment)
         ]
     }
