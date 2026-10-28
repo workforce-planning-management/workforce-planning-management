@@ -5435,6 +5435,8 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       the time-off picker offers the new kind; its label in all 13 locales (machine-drafted, unreviewed). 6 unit tests, including one that fails if a
       category names a condition or stress, and one that keeps the table in step with `LEAVE_KINDS`; a request test (the listing and each filter, a
       holiday request accepted, a sick request with a reason refused, an unknown kind such as `workplace_stress` refused).
+      **Mutation-checked** four ways (a holiday with a balance, an unpaid category marked paid, sick leave allowing a reason, sick leave with an enforced balance),
+      all caught. Full `--ignored` suite 170, `cargo test --lib` 948, `pnpm test` 218, clippy and `pnpm check` clean.
       **Not done, on purpose:** a workplace-stress category. It would record a health matter against a person, which WPM-D73 and WPM-D121 rule out;
       stress belongs to the work assessment (absence-and-line-managers.md). If the product owner wants it, that is a decision to reverse D121, not a
       setting. **Also found and fixed:** the earlier T311, T314 and T317 tokens (`site`, `area_of_work`, `job_role`, `staff_group`,
