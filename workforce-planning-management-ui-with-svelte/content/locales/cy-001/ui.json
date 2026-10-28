@@ -536,6 +536,12 @@
     "impUseful": "Defnyddiol"
   },
   "training": {
+    "pointers": "Awgrymiadau o ddeunydd trwyddedig",
+    "pointerNote": "Wedi'i ddarllen o {source}. Ni chaiff dim ei archebu na'i brynu ohono.",
+    "kindTraining": "Hyfforddiant",
+    "kindCertification": "Tystysgrif",
+    "kindMembership": "Aelodaeth",
+    "kindTypicalTask": "Tasg nodweddiadol",
     "title": "Cynllun hyfforddi",
     "weekly": "Oriau yr wythnos",
     "hint": "Amcangyfrifon cynllunio, nid addewidion. Mae sgiliau nad ydych wedi'u datgan wedi'u rhestru dan “Asesu yn gyntaf”.",
@@ -664,7 +670,17 @@
     "experience": "Profiad nodweddiadol",
     "management": "Cyfwerth rheoli",
     "source": "Ffynhonnell",
-    "noPay": "Nid cyflog yw lefel: ni ddangosir tâl. Mae llinell doriad yn golygu nad yw'r ffynhonnell yn dweud."
+    "noPay": "Nid cyflog yw lefel: ni ddangosir tâl. Mae llinell doriad yn golygu nad yw'r ffynhonnell yn dweud.",
+    "framework": "Fframwaith",
+    "attributes": "Priodoleddau"
+  },
+  "declaredSkills": {
+    "title": "Sgiliau a ddatganwyd",
+    "hint": "Sgil a'r lefel y mae rhywun yn dweud sydd ganddo. Gellir nodi lefel ar raddfa 1–5 WPM neu ar saith lefel SFIA: cedwir lefel SFIA fel y'i nodwyd, caiff ei chyfrif ar 1–5 gan reol a nodir, a dangosir hi gyda geiriad SFIA ei hun.",
+    "none": "Dim sgiliau wedi'u datgan eto.",
+    "scale": "Wedi'i nodi ar",
+    "scaleWpm": "WPM 1–5",
+    "scaleSfia": "SFIA 1–7"
   },
   "grades": {
     "workerTitle": "Lefel swydd",
@@ -1215,6 +1231,13 @@
       "new_profile_job_title": "Proffil newydd (teitl swydd)",
       "create": "Creu",
       "start_from_an_esco_occupation": "Dechrau o alwedigaeth ESCO",
+      "start_from_sfia_skills": "Dechrau o sgiliau SFIA",
+      "sfia_hint": "Dewiswch sgiliau SFIA ar y lefelau y mae SFIA yn eu diffinio ar eu cyfer. Mae'r lefel yn aros ar raddfa SFIA ac yn cael ei chyfrif ar raddfa 1–5 WPM gan reol a nodir. Ni chaiff dim ei greu nes i chi ddewis \"Creu proffil drafft\".",
+      "sfia_skill": "Sgil SFIA (cod neu enw)",
+      "sfia_level": "Lefel SFIA",
+      "sfia_add": "Ychwanegu",
+      "native_level_counted": "{level} o {scale} ar {framework}, wedi'i gyfrif fel {wpm} o 5 ({mapping})",
+      "framework_wording": "Geiriad y fframwaith",
       "esco_says_which_skills_an": "Mae ESCO yn dweud pa sgiliau y mae galwedigaeth eu hangen, nid pa mor dda — felly rydych chi'n dewis y lefel gychwynnol isod. Drafft i chi ei olygu yw'r canlyniad.",
       "occupation": "Galwedigaeth",
       "search": "Chwilio",

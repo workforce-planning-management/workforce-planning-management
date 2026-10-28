@@ -717,9 +717,39 @@ export function applyCategorySuggestions(
 /** Declare (upsert) a worker's proficiency in a skill (1-5). */
 export function declareSkill(
   workerPid: string,
-  body: { skill_pid: string; proficiency: number; target?: number },
+  body: {
+    skill_pid: string;
+    /** WPM's 1-5; may be left out when `framework` and `framework_level` are given. */
+    proficiency?: number;
+    target?: number;
+    /** The framework the level was stated on (e.g. "sfia"), with its own level. */
+    framework?: string;
+    framework_level?: number;
+  },
 ): Promise<Answer<"/api/workers/{pid}/skills", "put">> {
   return api(`/workers/${workerPid}/skills`, { method: "PUT", body });
+}
+
+/** A worker's declared skills; a level stated on a framework's own scale carries it, the mapping and the framework's wording. */
+export function listWorkerSkills(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<
+  Array<{
+    skill_pid: string;
+    proficiency: number;
+    target: number | null;
+    assessed_on: string;
+    source_framework: string | null;
+    source_level: number | null;
+    source_scale_max: number | null;
+    /** Present when a framework level is stated. */
+    source_framework_name?: string | null;
+    mapping?: string;
+    native_description?: string | null;
+  }>
+> {
+  return api(`/workers/${workerPid}/skills`, init);
 }
 
 /** The per-department skills matrix + gaps. */
@@ -912,8 +942,14 @@ export function getRoleProfile(
     min_proficiency: number;
     importance: "critical" | "important" | "useful";
     note: string | null;
+    source_framework: string | null;
+    source_framework_name: string | null;
     source_level: number | null;
     source_scale_max: number | null;
+    /** How the framework level is counted on WPM's 1-5; null when none is stated. */
+    mapping: string | null;
+    /** The framework's own wording at that level, when WPM holds it. */
+    native_description: string | null;
   }>;
 }> {
   return api(`/role-profiles/${pid}`, init);
@@ -933,9 +969,12 @@ export function setRoleRequirement(
   profilePid: string,
   body: {
     skill_pid: string;
-    min_proficiency: number;
+    /** WPM's 1-5; may be left out when `framework` and `framework_level` are given. */
+    min_proficiency?: number;
     importance: string;
     note?: string;
+    framework?: string;
+    framework_level?: number;
   },
 ): Promise<Answer<"/api/role-profiles/{pid}/requirements", "put">> {
   return api(`/role-profiles/${profilePid}/requirements`, {
@@ -2320,6 +2359,39 @@ export function seedProfileFromEsco(body: {
   skills_linked: number;
 }> {
   return api("/role-profiles/from-esco", { method: "POST", body });
+}
+
+/** Search the imported SFIA catalogue (needs at least 2 characters). */
+export function searchSfiaSkills(
+  q: string,
+  init?: FetchLike,
+): Promise<
+  Array<{
+    code: string;
+    name: string;
+    category: string;
+    subcategory: string;
+    retired_in: string | null;
+    levels: number[];
+  }>
+> {
+  return api(`/sfia/skills?q=${encodeURIComponent(q)}`, init);
+}
+
+/** Draft a role profile from SFIA skills at SFIA levels; the level is kept on SFIA's scale. */
+export function seedProfileFromSfia(body: {
+  job_title: string;
+  skills: Array<{ code: string; level: number }>;
+  importance?: "critical" | "important" | "useful";
+  /** The category given to a catalogue skill this creates; default "technical". */
+  category?: string;
+}): Promise<{
+  pid: string;
+  requirements_created: number;
+  skills_created: number;
+  skills_linked: number;
+}> {
+  return api("/role-profiles/from-sfia", { method: "POST", body });
 }
 
 /** Record a skill's reference in an external framework (e.g. ESCO). */

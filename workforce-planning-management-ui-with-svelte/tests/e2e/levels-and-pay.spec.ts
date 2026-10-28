@@ -493,4 +493,67 @@ test.describe("Job levels, pay bands and pay scales", () => {
     expect(asked.at(-1)).toContain("salary_minor=3511400");
     expect(asked.at(-1)).toContain("months_on_step=18");
   });
+
+  test("the job-levels page offers an imported ladder and shows its attributes", async ({
+    page,
+  }) => {
+    const level = (
+      n: number,
+      attributes?: { name: string; text: string }[],
+    ) => ({
+      number: n,
+      code: `L${n}`,
+      title: `Invented level ${n}`,
+      summary: `Invented essence ${n}`,
+      experience: null,
+      management_equivalent: null,
+      ...(attributes && { attributes }),
+    });
+    const google = {
+      id: "google-levels",
+      name: "Google technical levels (L3–L11)",
+      organization: "Google",
+      track: "technical",
+      source: "A published summary.",
+      levels: [level(5)],
+    };
+    const sfia = {
+      id: "sfia-levels",
+      name: "SFIA levels of responsibility",
+      organization: "SFIA Foundation",
+      track: "skills",
+      source: "Loaded by the licensee.",
+      levels: [
+        level(1, [{ name: "business_skills", text: "Invented skills text" }]),
+      ],
+    };
+    await page.route(
+      (url) => url.pathname === "/api/proxy/job-levels",
+      (route) =>
+        route.fulfill({
+          json: [google, sfia].map((f) => ({
+            ...f,
+            levels: f.levels.map((l) => l.code),
+          })),
+        }),
+    );
+    await page.route(
+      (url) => url.pathname === "/api/proxy/job-levels/google-levels",
+      (route) => route.fulfill({ json: google }),
+    );
+    await page.route(
+      (url) => url.pathname === "/api/proxy/job-levels/sfia-levels",
+      (route) => route.fulfill({ json: sfia }),
+    );
+    await page.goto("/job-levels");
+    await expect(page.getByTestId("level-L5")).toBeVisible();
+    await expect(page.getByText("Invented skills text")).toHaveCount(0);
+    await page.getByTestId("levels-framework").selectOption("sfia-levels");
+    await expect(page.getByTestId("levels-source")).toContainText(
+      "SFIA levels of responsibility",
+    );
+    await expect(page.getByTestId("level-L1")).toContainText(
+      "business skills: Invented skills text",
+    );
+  });
 });

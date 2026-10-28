@@ -536,6 +536,12 @@
     "impUseful": "Utile"
   },
   "training": {
+    "pointers": "Pistes issues de contenu sous licence",
+    "pointerNote": "Lu dans {source}. Rien n'est réservé ni acheté à partir de ceci.",
+    "kindTraining": "Formation",
+    "kindCertification": "Certification",
+    "kindMembership": "Adhésion",
+    "kindTypicalTask": "Tâche type",
     "title": "Plan de formation",
     "weekly": "Heures par semaine",
     "hint": "Estimations de planification, pas des promesses. Les compétences non déclarées figurent sous « À évaluer d'abord ».",
@@ -664,7 +670,17 @@
     "experience": "Expérience typique",
     "management": "Équivalent en management",
     "source": "Source",
-    "noPay": "Un niveau n'est pas un salaire : aucune rémunération n'est affichée. Un tiret signifie que la source ne le précise pas."
+    "noPay": "Un niveau n'est pas un salaire : aucune rémunération n'est affichée. Un tiret signifie que la source ne le précise pas.",
+    "framework": "Référentiel",
+    "attributes": "Attributs"
+  },
+  "declaredSkills": {
+    "title": "Compétences déclarées",
+    "hint": "Une compétence et le niveau que quelqu'un dit avoir. Le niveau peut être indiqué sur l'échelle 1–5 de WPM ou sur les sept niveaux de SFIA : le niveau SFIA est conservé tel quel, compté sur 1–5 selon une règle indiquée, et montré avec le texte propre de SFIA.",
+    "none": "Aucune compétence déclarée pour l'instant.",
+    "scale": "Indiqué sur",
+    "scaleWpm": "WPM 1–5",
+    "scaleSfia": "SFIA 1–7"
   },
   "grades": {
     "workerTitle": "Niveau de poste",
@@ -1215,6 +1231,13 @@
       "new_profile_job_title": "Nouveau profil (intitulé de poste)",
       "create": "Créer",
       "start_from_an_esco_occupation": "Partir d'une profession ESCO",
+      "start_from_sfia_skills": "Partir de compétences SFIA",
+      "sfia_hint": "Choisissez des compétences SFIA aux niveaux que SFIA définit pour elles. Le niveau reste sur l'échelle de SFIA et est compté sur l'échelle 1–5 de WPM selon une règle indiquée. Rien n'est créé avant « Créer le profil brouillon ».",
+      "sfia_skill": "Compétence SFIA (code ou nom)",
+      "sfia_level": "Niveau SFIA",
+      "sfia_add": "Ajouter",
+      "native_level_counted": "{level} sur {scale} dans {framework}, compté comme {wpm} sur 5 ({mapping})",
+      "framework_wording": "Texte du référentiel",
       "esco_says_which_skills_an": "ESCO indique quelles compétences une profession exige, pas à quel niveau — vous choisissez donc le niveau de départ ci-dessous. Le résultat est un brouillon que vous modifiez.",
       "occupation": "Profession",
       "search": "Rechercher",

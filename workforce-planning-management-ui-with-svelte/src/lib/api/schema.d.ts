@@ -11516,6 +11516,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/role-profiles/from-sfia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft a role profile from SFIA skills at SFIA levels the catalogue defines; the level is kept on SFIA's scale */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description FromSfia */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/role-profiles/{pid}": {
         parameters: {
             query?: never;
@@ -11708,7 +11748,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Require a skill at a minimum proficiency 1-5 with an importance (upsert) */
+        /** Require a skill at a minimum proficiency 1-5, or at a framework level (framework + framework_level) mapped to 1-5, with an importance (upsert) */
         put: {
             parameters: {
                 query?: never;
@@ -12214,6 +12254,74 @@ export interface paths {
                 422: components["responses"]["IdempotencyRefused"];
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sfia/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search the imported SFIA catalogue by code or name (?q=, at least 2 characters); signed-in callers only, the wording is licensed */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description SfiaSkills */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sfia/skills/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One SFIA skill with each level's wording and its mapping to WPM's 1-5 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description SfiaSkill */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -17098,7 +17206,7 @@ export interface paths {
                 };
             };
         };
-        /** Declare a skill and proficiency */
+        /** Declare a skill and proficiency 1-5, or a framework level (framework + framework_level) mapped to 1-5 */
         put: {
             parameters: {
                 query?: never;

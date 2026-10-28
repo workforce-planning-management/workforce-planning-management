@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — SFIA in roles, declared skills, job levels and the training plan (WPM-T183 to T185)
+
+`/roles`: start from SFIA skills (with the category chosen) and the requirement table shows the native level, the mapping and, under it, the framework's wording. A
+**Declared skills** panel on `/me` and the worker page declares a skill on WPM's 1–5 or SFIA's 1–7. `/job-levels` and the level pickers choose among ladders and show
+attributes. The training plan lists SFIAplus pointers (source named, never booked, links only for `http(s)`). The `/roles` profile select no longer shows blank after seeding.
+Strings in the 12 full locales (machine-drafted, unreviewed).
+
 ### Added — bargaining, consultations and decision gates (WPM-T178, part)
 
 `/bargaining` (recognised bodies with a contact role, units as rules, coverage from the floor, the information pack with each reading logged by the service, facility time per body per period), `/consultations` (the register, a timeline that is a suggestion with its evidence, begin and close) and `/decision-gates` (set a gate, check a change: advice, never a block). The AI register shows the decision-gate pointer after a feature is recorded. Nothing names a member or a representative (WPM-D68). `bargaining.*`, `consultations.*`, `gates.*` in the 12 full locales (machine-drafted, unreviewed). Stubbed, axe and live specs.

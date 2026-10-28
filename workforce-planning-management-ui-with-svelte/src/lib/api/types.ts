@@ -67,6 +67,8 @@ export interface JobLevel {
   /** As the source states it; null when it does not say (never a guess). */
   experience: string | null;
   management_equivalent: string | null;
+  /** Named attributes of an imported ladder (SFIA's five); absent for a coded one. */
+  attributes?: { name: string; text: string }[];
 }
 
 /** A job-level ladder (e.g. Google's technical levels). Carries no pay. */
@@ -411,6 +413,7 @@ export interface SkillGap {
   /** Levels short; null when not declared (unknown, not a number). */
   shortfall: number | null;
   priority: number;
+  sfiaplus_pointers?: SfiaplusPointer[];
 }
 
 /** One skill's roll-up across the workforce (counts only). */
@@ -461,10 +464,24 @@ export interface TrainingPlanItem {
   shortfall: number;
   priority: number;
   recommendation: TrainingRecommendation;
+  /** Present when `SFIAplus` was loaded and the skill has a SFIA code. */
+  sfiaplus_pointers?: SfiaplusPointer[];
   starts_on: string | null;
   ends_on: string | null;
   weeks: number;
   cumulative_hours: number;
+}
+
+/** A development pointer from licensed `SFIAplus` material: something to read or look into, never booked or bought. */
+export interface SfiaplusPointer {
+  /** The source, by name. */
+  source: string;
+  sfia_code: string;
+  sfia_level: number;
+  kind: "typical_task" | "training" | "certification" | "membership";
+  title: string;
+  provider: string | null;
+  url: string | null;
 }
 
 /** A person's training plan. */

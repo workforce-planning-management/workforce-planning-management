@@ -536,6 +536,12 @@
     "impUseful": "有用"
   },
   "training": {
+    "pointers": "来自授权材料的提示",
+    "pointerNote": "读自 {source}。不会据此预订或购买任何东西。",
+    "kindTraining": "培训",
+    "kindCertification": "认证",
+    "kindMembership": "会员资格",
+    "kindTypicalTask": "典型任务",
     "title": "培训计划",
     "weekly": "每周小时数",
     "hint": "规划估算，而非承诺。未申报的技能列在“先评估”中。",
@@ -664,7 +670,17 @@
     "experience": "典型经验",
     "management": "管理序列对应",
     "source": "来源",
-    "noPay": "职级不是薪资：此处不显示薪酬。破折号表示来源未说明。"
+    "noPay": "职级不是薪资：此处不显示薪酬。破折号表示来源未说明。",
+    "framework": "框架",
+    "attributes": "属性"
+  },
+  "declaredSkills": {
+    "title": "已申报技能",
+    "hint": "一项技能，以及某人自称具备的级别。级别可按 WPM 的 1–5 或 SFIA 的七个级别申报：SFIA 级别按所述保留，按所述规则折算为 1–5，并以 SFIA 自己的措辞显示。",
+    "none": "尚未申报任何技能。",
+    "scale": "所用量表",
+    "scaleWpm": "WPM 1–5",
+    "scaleSfia": "SFIA 1–7"
   },
   "grades": {
     "workerTitle": "职级",
@@ -1215,6 +1231,13 @@
       "new_profile_job_title": "新档案（职位名称）",
       "create": "创建",
       "start_from_an_esco_occupation": "从 ESCO 职业开始",
+      "start_from_sfia_skills": "从 SFIA 技能开始",
+      "sfia_hint": "按 SFIA 为各技能定义的级别选择 SFIA 技能。级别保留在 SFIA 的量表上，并按所述规则折算为 WPM 的 1–5。点击“创建草稿档案”之前不会创建任何内容。",
+      "sfia_skill": "SFIA 技能（代码或名称）",
+      "sfia_level": "SFIA 级别",
+      "sfia_add": "添加",
+      "native_level_counted": "{framework} 的 {level}/{scale}，计为 {wpm}/5（{mapping}）",
+      "framework_wording": "框架措辞",
       "esco_says_which_skills_an": "ESCO 说明某个职业需要哪些技能，但不说明需要到什么程度——因此请在下方选择起始等级。结果是供您编辑的草稿。",
       "occupation": "职业",
       "search": "搜索",

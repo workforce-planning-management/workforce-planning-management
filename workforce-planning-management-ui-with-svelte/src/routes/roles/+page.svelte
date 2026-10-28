@@ -7,6 +7,7 @@
 <script lang="ts">
   import { guardedLoad } from "#lib/loader.svelte.js";
   import EscoOccupationSeed from "#lib/components/roles/EscoOccupationSeed.svelte";
+  import SfiaSkillSeed from "#lib/components/roles/SfiaSkillSeed.svelte";
   import RoleProfileDetail from "#lib/components/roles/RoleProfileDetail.svelte";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -43,6 +44,7 @@
   let framework = $state("");
   let progression = $state<Progression | null>(null);
   const escoLoaded = $derived(frameworks.some((f) => f.slug === "esco"));
+  const sfiaLoaded = $derived(frameworks.some((f) => f.slug === "sfia"));
   let profile = $state<Profile | null>(null);
   let error = $state<string | null>(null);
 
@@ -183,6 +185,8 @@
 <p>
   <label>
     {t("pages.roles.profile")}
+    <!-- Re-made when the list arrives: a value set before its options exist is not applied again. -->
+    {#key profiles}
     <select
       data-testid="role-select"
       value={selected}
@@ -198,6 +202,7 @@
         <option value="">{t("pages.roles.no_profiles_yet")}</option>
       {/each}
     </select>
+    {/key}
   </label>
 </p>
 <form
@@ -215,6 +220,16 @@
 
 {#if escoLoaded}
   <EscoOccupationSeed
+    onseeded={async (pid) => {
+      selected = pid;
+      await loadProfiles();
+    }}
+    onfail={(message) => (error = message)}
+  />
+{/if}
+
+{#if sfiaLoaded}
+  <SfiaSkillSeed
     onseeded={async (pid) => {
       selected = pid;
       await loadProfiles();

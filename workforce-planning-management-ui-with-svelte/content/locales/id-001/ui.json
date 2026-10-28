@@ -536,6 +536,12 @@
     "impUseful": "Berguna"
   },
   "training": {
+    "pointers": "Petunjuk dari materi berlisensi",
+    "pointerNote": "Dibaca dari {source}. Tidak ada yang dipesan atau dibeli dari sini.",
+    "kindTraining": "Pelatihan",
+    "kindCertification": "Sertifikasi",
+    "kindMembership": "Keanggotaan",
+    "kindTypicalTask": "Tugas khas",
     "title": "Rencana pelatihan",
     "weekly": "Jam per minggu",
     "hint": "Perkiraan perencanaan, bukan janji. Keterampilan yang belum dinyatakan tercantum di “Nilai dulu”.",
@@ -664,7 +670,17 @@
     "experience": "Pengalaman umum",
     "management": "Setara di manajemen",
     "source": "Sumber",
-    "noPay": "Level bukan gaji: tidak ada gaji yang ditampilkan. Tanda strip berarti sumber tidak menyebutkannya."
+    "noPay": "Level bukan gaji: tidak ada gaji yang ditampilkan. Tanda strip berarti sumber tidak menyebutkannya.",
+    "framework": "Kerangka",
+    "attributes": "Atribut"
+  },
+  "declaredSkills": {
+    "title": "Keterampilan yang dinyatakan",
+    "hint": "Sebuah keterampilan dan level yang dikatakan seseorang dimilikinya. Level dapat dinyatakan pada skala 1–5 WPM atau tujuh level SFIA: level SFIA disimpan apa adanya, dihitung pada 1–5 dengan aturan yang dinyatakan, dan ditampilkan dengan kata-kata SFIA sendiri.",
+    "none": "Belum ada keterampilan yang dinyatakan.",
+    "scale": "Dinyatakan pada",
+    "scaleWpm": "WPM 1–5",
+    "scaleSfia": "SFIA 1–7"
   },
   "grades": {
     "workerTitle": "Level jabatan",
@@ -1215,6 +1231,13 @@
       "new_profile_job_title": "Profil baru (jabatan)",
       "create": "Buat",
       "start_from_an_esco_occupation": "Mulai dari pekerjaan ESCO",
+      "start_from_sfia_skills": "Mulai dari keterampilan SFIA",
+      "sfia_hint": "Pilih keterampilan SFIA pada level yang ditetapkan SFIA untuknya. Level tetap pada skala SFIA dan dihitung pada skala 1–5 WPM dengan aturan yang dinyatakan. Tidak ada yang dibuat sampai Anda memilih \"Buat profil draf\".",
+      "sfia_skill": "Keterampilan SFIA (kode atau nama)",
+      "sfia_level": "Level SFIA",
+      "sfia_add": "Tambah",
+      "native_level_counted": "{level} dari {scale} di {framework}, dihitung sebagai {wpm} dari 5 ({mapping})",
+      "framework_wording": "Rumusan kerangka",
       "esco_says_which_skills_an": "ESCO menyebut keterampilan apa yang dibutuhkan suatu pekerjaan, bukan seberapa baik — jadi Anda memilih tingkat awal di bawah. Hasilnya berupa draf untuk Anda sunting.",
       "occupation": "Pekerjaan",
       "search": "Cari",

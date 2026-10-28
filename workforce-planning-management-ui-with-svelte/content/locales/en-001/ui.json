@@ -536,6 +536,12 @@
     "impUseful": "Useful"
   },
   "training": {
+    "pointers": "Pointers from licensed material",
+    "pointerNote": "Read from {source}. Nothing is booked or bought from this.",
+    "kindTraining": "Training",
+    "kindCertification": "Certification",
+    "kindMembership": "Membership",
+    "kindTypicalTask": "Typical task",
     "title": "Training plan",
     "weekly": "Hours per week",
     "hint": "Planning estimates, not promises. Skills you have not declared are listed under “Assess first”.",
@@ -664,7 +670,17 @@
     "experience": "Typical experience",
     "management": "Management equivalent",
     "source": "Source",
-    "noPay": "A level is not a salary: no pay is shown. A dash means the source does not say."
+    "noPay": "A level is not a salary: no pay is shown. A dash means the source does not say.",
+    "framework": "Framework",
+    "attributes": "Attributes"
+  },
+  "declaredSkills": {
+    "title": "Declared skills",
+    "hint": "A skill and the level someone says they have. A level can be stated on WPM's 1–5 or on SFIA's seven levels: SFIA's level is kept as stated, counted on 1–5 by a stated rule, and shown with SFIA's own wording.",
+    "none": "No skills declared yet.",
+    "scale": "Stated on",
+    "scaleWpm": "WPM 1–5",
+    "scaleSfia": "SFIA 1–7"
   },
   "grades": {
     "workerTitle": "Job level",
@@ -1215,6 +1231,13 @@
       "new_profile_job_title": "New profile (job title)",
       "create": "Create",
       "start_from_an_esco_occupation": "Start from an ESCO occupation",
+      "start_from_sfia_skills": "Start from SFIA skills",
+      "sfia_hint": "Pick SFIA skills at the levels SFIA defines for them. The level stays on SFIA's scale and is counted on WPM's 1–5 by a stated rule. Nothing is created until \"Create draft profile\".",
+      "sfia_skill": "SFIA skill (code or name)",
+      "sfia_level": "SFIA level",
+      "sfia_add": "Add",
+      "native_level_counted": "{level} of {scale} on {framework}, counted as {wpm} of 5 ({mapping})",
+      "framework_wording": "Framework wording",
       "esco_says_which_skills_an": "ESCO says which skills an occupation needs, not how well — so you choose the starting level below. The result is a draft for you to edit.",
       "occupation": "Occupation",
       "search": "Search",

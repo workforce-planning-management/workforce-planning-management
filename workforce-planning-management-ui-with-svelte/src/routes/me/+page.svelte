@@ -21,6 +21,7 @@
   import MyPayInformation from "#lib/components/MyPayInformation.svelte";
   import PayPosition from "#lib/components/PayPosition.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
+  import DeclaredSkills from "#lib/components/DeclaredSkills.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
   import TeamAspirations from "#lib/components/TeamAspirations.svelte";
@@ -78,6 +79,7 @@
   <CareerHistory {workerPid} />
   <Aspirations {workerPid} />
   <SkillGaps {workerPid} />
+  <DeclaredSkills {workerPid} />
   <JobLevel {workerPid} />
   <PayPosition {workerPid} />
   <MyPayInformation {workerPid} />

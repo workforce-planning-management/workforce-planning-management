@@ -17,13 +17,14 @@
     moneyWhole,
     setRoleGrade,
   } from "#lib/api/wpm.js";
-  import type { JobLevelFramework, PayScale, RoleGrade } from "#lib/api/types.js";
+  import type { JobLevelFramework, JobLevelFrameworkSummary, PayScale, RoleGrade } from "#lib/api/types.js";
   import { t, i18n } from "#lib/i18n.svelte.js";
 
   let { profilePid }: { profilePid: string } = $props();
 
   let grade = $state<RoleGrade | null>(null);
   let ladder = $state<JobLevelFramework | null>(null);
+  let ladders = $state<JobLevelFrameworkSummary[]>([]);
   let scale = $state<PayScale | null>(null);
   let error = $state<string | null>(null);
   let level = $state("");
@@ -34,17 +35,20 @@
   const load = guardedLoad(
     async () => {
       const found = await getRoleGrade(profilePid);
-      const [firstLadder] = await listJobLevelFrameworks();
-      const ladderFound = firstLadder ? await getJobLevelFramework(firstLadder.id) : null;
+      const list = await listJobLevelFrameworks();
+      // The ladder the role's level is on, else the one being looked at, else the first.
+      const wanted = found.job_level?.framework ?? ladder?.id ?? list[0]?.id;
+      const ladderFound = wanted ? await getJobLevelFramework(wanted) : null;
       const [firstScale] = await listPayScales();
       const scaleFound = firstScale ? await getPayScale(firstScale.id) : null;
-      return { found, ladderFound, scaleFound };
+      return { found, ladderFound, scaleFound, list };
     },
-    ({ found, ladderFound, scaleFound }) => {
+    ({ found, ladderFound, scaleFound, list }) => {
       grade = found;
       level = found.job_level?.level?.code ?? "";
       band = found.pay_band?.band ?? "";
       ladder = ladderFound;
+      ladders = list;
       scale = scaleFound;
     },
     (cause) => {
@@ -56,6 +60,16 @@
     void profilePid;
     void load();
   });
+
+  async function chooseLadder(event: Event) {
+    const id = (event.currentTarget as HTMLSelectElement).value;
+    level = "";
+    try {
+      ladder = await getJobLevelFramework(id);
+    } catch (cause) {
+      error = message(cause);
+    }
+  }
 
   async function save(event: SubmitEvent) {
     event.preventDefault();
@@ -112,6 +126,14 @@
     <p class="muted" data-testid="role-grade-none">{t("grades.noRoleGrade")}</p>
   {/if}
   <form class="cx-form" onsubmit={save} data-testid="role-grade-form">
+    {#if ladders.length > 1}
+      <label>
+        {t("jobLevels.framework")}
+        <select data-testid="role-framework-choice" value={ladder?.id} onchange={chooseLadder}>
+          {#each ladders as f (f.id)}<option value={f.id}>{f.name}</option>{/each}
+        </select>
+      </label>
+    {/if}
     <label>
       {t("jobLevels.level")}
       <select data-testid="role-level-choice" bind:value={level}>

@@ -91,7 +91,20 @@
       header: t("pages.roles.framework_level"),
       sortable: true,
       align: "end",
-      format: (v, r) => (v !== null && v !== undefined ? `${v} of ${r.source_scale_max}` : "—"),
+      format: (v, r) => {
+        if (v === null || v === undefined) return "—";
+        // Stated on a framework's own scale: say which, and how it is counted on WPM's 1–5.
+        const counted = r.source_framework
+          ? tf("pages.roles.native_level_counted", {
+              level: v,
+              scale: r.source_scale_max,
+              framework: r.source_framework_name ?? r.source_framework,
+              wpm: r.min_proficiency,
+              mapping: r.mapping ?? "",
+            })
+          : `${v} of ${r.source_scale_max}`;
+        return counted;
+      },
     },
     {
       id: "importance",
@@ -156,6 +169,15 @@
     rows={profile.requirements as unknown as DataGridRow[]}
     rowId={(row) => String(row.skill_pid)}
   />
+  {@const worded = profile.requirements.filter((r) => r.native_description)}
+  {#if worded.length > 0}
+    <h3>{t("pages.roles.framework_wording")}</h3>
+    <ul data-testid="role-requirement-wording">
+      {#each worded as r (r.skill_pid)}
+        <li><strong>{r.skill ?? r.skill_pid}</strong> — {r.native_description}</li>
+      {/each}
+    </ul>
+  {/if}
 {/if}
 
 {#if progression && typeof progression.profile !== "string"}

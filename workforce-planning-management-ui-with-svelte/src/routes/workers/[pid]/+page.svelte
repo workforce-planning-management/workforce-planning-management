@@ -18,6 +18,7 @@
   import EngagementPanel from "#lib/components/EngagementPanel.svelte";
   import ConversionPanel from "#lib/components/ConversionPanel.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
+  import DeclaredSkills from "#lib/components/DeclaredSkills.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
   import GroupsPanel from "#lib/components/GroupsPanel.svelte";
   import TeamAspirations from "#lib/components/TeamAspirations.svelte";
@@ -460,6 +461,7 @@
     terminated={worker.terminated_on !== null}
     own={mine}
   />
+  <DeclaredSkills workerPid={worker.pid} />
   <JobLevel workerPid={worker.pid} />
   <PayPosition workerPid={worker.pid} />
   <EquipmentPanel workerPid={worker.pid} organizationRef={worker.organization_ref} />

@@ -6,6 +6,8 @@
   },
   "literalText": [],
   "anyLocale": [
+    "WPM 1–5",
+    "SFIA 1–7",
     "TSV",
     "UK GDAD PCF",
     "ESCO",
@@ -59,6 +61,7 @@
       "web"
     ],
     "fr-001": [
+      "Certification",
       "Actions",
       "Aspiration",
       "Attention",

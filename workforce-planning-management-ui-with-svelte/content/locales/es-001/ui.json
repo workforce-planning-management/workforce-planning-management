@@ -536,6 +536,12 @@
     "impUseful": "Útil"
   },
   "training": {
+    "pointers": "Referencias de material con licencia",
+    "pointerNote": "Leído de {source}. No se reserva ni se compra nada a partir de esto.",
+    "kindTraining": "Formación",
+    "kindCertification": "Certificación",
+    "kindMembership": "Afiliación",
+    "kindTypicalTask": "Tarea típica",
     "title": "Plan de formación",
     "weekly": "Horas por semana",
     "hint": "Estimaciones de planificación, no promesas. Las competencias sin declarar aparecen en «Evaluar primero».",
@@ -664,7 +670,17 @@
     "experience": "Experiencia típica",
     "management": "Equivalente en gestión",
     "source": "Fuente",
-    "noPay": "Un nivel no es un salario: no se muestra remuneración. Un guion significa que la fuente no lo indica."
+    "noPay": "Un nivel no es un salario: no se muestra remuneración. Un guion significa que la fuente no lo indica.",
+    "framework": "Marco",
+    "attributes": "Atributos"
+  },
+  "declaredSkills": {
+    "title": "Habilidades declaradas",
+    "hint": "Una habilidad y el nivel que alguien dice tener. El nivel puede indicarse en la escala 1–5 de WPM o en los siete niveles de SFIA: el nivel de SFIA se conserva tal cual, se cuenta en 1–5 con una regla declarada y se muestra con el texto propio de SFIA.",
+    "none": "Aún no hay habilidades declaradas.",
+    "scale": "Indicado en",
+    "scaleWpm": "WPM 1–5",
+    "scaleSfia": "SFIA 1–7"
   },
   "grades": {
     "workerTitle": "Nivel de puesto",
@@ -1215,6 +1231,13 @@
       "new_profile_job_title": "Nuevo perfil (título del puesto)",
       "create": "Crear",
       "start_from_an_esco_occupation": "Empezar desde una ocupación ESCO",
+      "start_from_sfia_skills": "Empezar desde habilidades SFIA",
+      "sfia_hint": "Elija habilidades SFIA en los niveles que SFIA define para ellas. El nivel se conserva en la escala de SFIA y se cuenta en la escala 1–5 de WPM con una regla declarada. No se crea nada hasta pulsar «Crear perfil borrador».",
+      "sfia_skill": "Habilidad SFIA (código o nombre)",
+      "sfia_level": "Nivel SFIA",
+      "sfia_add": "Añadir",
+      "native_level_counted": "{level} de {scale} en {framework}, contado como {wpm} de 5 ({mapping})",
+      "framework_wording": "Texto del marco",
       "esco_says_which_skills_an": "ESCO indica qué habilidades necesita una ocupación, no con qué nivel; por eso eliges abajo el nivel inicial. El resultado es un borrador para que lo edites.",
       "occupation": "Ocupación",
       "search": "Buscar",

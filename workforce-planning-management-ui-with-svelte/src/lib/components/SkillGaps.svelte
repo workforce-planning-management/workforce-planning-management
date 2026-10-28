@@ -11,7 +11,7 @@
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { workerSkillGaps, workerTrainingPlan } from "#lib/api/wpm.js";
   import type { SkillGap, TrainingPlan } from "#lib/api/types.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,
@@ -98,6 +98,15 @@
     },
     { id: "starts_on", header: t("training.dates"), sortable: true, cell: planDates },
   ]);
+
+  const pointerKind = (k: string) =>
+    k === "training"
+      ? t("training.kindTraining")
+      : k === "certification"
+        ? t("training.kindCertification")
+        : k === "membership"
+          ? t("training.kindMembership")
+          : t("training.kindTypicalTask");
 
   const source = (s: SkillGap["sources"][number]) =>
     s === "role"
@@ -223,6 +232,27 @@
           </tr>
         {/snippet}
       </DataTable>
+    {/if}
+    {@const pointed = plan.plan.filter((p) => (p.sfiaplus_pointers ?? []).length > 0)}
+    {#if pointed.length > 0}
+      <h3>{t("training.pointers")}</h3>
+      <ul data-testid="plan-pointers">
+        {#each pointed as item (item.skill_pid)}
+          <li>
+            <strong>{item.skill ?? item.skill_pid}</strong>
+            <ul>
+              {#each item.sfiaplus_pointers ?? [] as p (`${p.kind}:${p.title}`)}
+                <li>
+                  {pointerKind(p.kind)}:
+                  {#if p.url && /^https?:\/\//.test(p.url)}<a href={p.url} rel="noopener noreferrer">{p.title}</a>{:else}{p.title}{/if}
+                  {#if p.provider}<span class="muted">({p.provider})</span>{/if}
+                </li>
+              {/each}
+            </ul>
+            <span class="muted">{tf("training.pointerNote", { source: item.sfiaplus_pointers?.[0]?.source ?? "" })}</span>
+          </li>
+        {/each}
+      </ul>
     {/if}
     {#if plan.assess_first.length > 0}
       <p data-testid="plan-assess">

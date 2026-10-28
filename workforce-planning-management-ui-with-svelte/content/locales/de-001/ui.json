@@ -536,6 +536,12 @@
     "impUseful": "Nützlich"
   },
   "training": {
+    "pointers": "Hinweise aus lizenziertem Material",
+    "pointerNote": "Gelesen aus {source}. Daraus wird nichts gebucht oder gekauft.",
+    "kindTraining": "Schulung",
+    "kindCertification": "Zertifizierung",
+    "kindMembership": "Mitgliedschaft",
+    "kindTypicalTask": "Typische Aufgabe",
     "title": "Weiterbildungsplan",
     "weekly": "Stunden pro Woche",
     "hint": "Planungsschätzungen, keine Zusagen. Nicht angegebene Kompetenzen stehen unter „Zuerst bewerten“.",
@@ -664,7 +670,17 @@
     "experience": "Typische Erfahrung",
     "management": "Entsprechung im Management",
     "source": "Quelle",
-    "noPay": "Eine Stufe ist kein Gehalt: Es wird kein Entgelt gezeigt. Ein Strich bedeutet, dass die Quelle dazu nichts sagt."
+    "noPay": "Eine Stufe ist kein Gehalt: Es wird kein Entgelt gezeigt. Ein Strich bedeutet, dass die Quelle dazu nichts sagt.",
+    "framework": "Rahmenwerk",
+    "attributes": "Merkmale"
+  },
+  "declaredSkills": {
+    "title": "Angegebene Fähigkeiten",
+    "hint": "Eine Fähigkeit und die Stufe, die jemand angibt. Die Stufe kann auf WPMs Skala 1–5 oder auf den sieben SFIA-Stufen angegeben werden: Die SFIA-Stufe bleibt wie angegeben, wird nach einer genannten Regel auf 1–5 gerechnet und mit dem eigenen Wortlaut von SFIA gezeigt.",
+    "none": "Noch keine Fähigkeiten angegeben.",
+    "scale": "Angegeben auf",
+    "scaleWpm": "WPM 1–5",
+    "scaleSfia": "SFIA 1–7"
   },
   "grades": {
     "workerTitle": "Karrierestufe",
@@ -1215,6 +1231,13 @@
       "new_profile_job_title": "Neues Profil (Stellenbezeichnung)",
       "create": "Anlegen",
       "start_from_an_esco_occupation": "Mit einem ESCO-Beruf beginnen",
+      "start_from_sfia_skills": "Mit SFIA-Fähigkeiten beginnen",
+      "sfia_hint": "Wählen Sie SFIA-Fähigkeiten auf den Stufen, die SFIA für sie festlegt. Die Stufe bleibt auf der SFIA-Skala und wird nach einer genannten Regel auf WPMs Skala 1–5 gerechnet. Es wird nichts angelegt, bis Sie „Entwurfsprofil erstellen“ wählen.",
+      "sfia_skill": "SFIA-Fähigkeit (Code oder Name)",
+      "sfia_level": "SFIA-Stufe",
+      "sfia_add": "Hinzufügen",
+      "native_level_counted": "{level} von {scale} bei {framework}, gezählt als {wpm} von 5 ({mapping})",
+      "framework_wording": "Wortlaut des Rahmenwerks",
       "esco_says_which_skills_an": "ESCO sagt, welche Fähigkeiten ein Beruf braucht, nicht wie gut — deshalb wählen Sie unten die Ausgangsstufe. Das Ergebnis ist ein Entwurf, den Sie bearbeiten.",
       "occupation": "Beruf",
       "search": "Suchen",

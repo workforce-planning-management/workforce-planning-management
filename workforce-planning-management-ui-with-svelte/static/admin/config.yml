@@ -908,6 +908,12 @@ collections:
             required: false
             i18n: true
             fields:
+              - { name: "pointers", label: "Pointers", widget: string, required: false, i18n: true }
+              - { name: "pointerNote", label: "Pointer Note", widget: string, required: false, i18n: true }
+              - { name: "kindTraining", label: "Kind Training", widget: string, required: false, i18n: true }
+              - { name: "kindCertification", label: "Kind Certification", widget: string, required: false, i18n: true }
+              - { name: "kindMembership", label: "Kind Membership", widget: string, required: false, i18n: true }
+              - { name: "kindTypicalTask", label: "Kind Typical Task", widget: string, required: false, i18n: true }
               - { name: "title", label: "Title", widget: string, required: false, i18n: true }
               - { name: "weekly", label: "Weekly", widget: string, required: false, i18n: true }
               - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
@@ -1062,6 +1068,21 @@ collections:
               - { name: "management", label: "Management", widget: string, required: false, i18n: true }
               - { name: "source", label: "Source", widget: string, required: false, i18n: true }
               - { name: "noPay", label: "No Pay", widget: string, required: false, i18n: true }
+              - { name: "framework", label: "Framework", widget: string, required: false, i18n: true }
+              - { name: "attributes", label: "Attributes", widget: string, required: false, i18n: true }
+          - name: "declaredSkills"
+            label: "Declared Skills"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "scale", label: "Scale", widget: string, required: false, i18n: true }
+              - { name: "scaleWpm", label: "Scale Wpm", widget: string, required: false, i18n: true }
+              - { name: "scaleSfia", label: "Scale Sfia", widget: string, required: false, i18n: true }
           - name: "grades"
             label: "Grades"
             widget: object
@@ -1793,6 +1814,13 @@ collections:
                   - { name: "new_profile_job_title", label: "New_profile_job_title", widget: string, required: false, i18n: true }
                   - { name: "create", label: "Create", widget: string, required: false, i18n: true }
                   - { name: "start_from_an_esco_occupation", label: "Start_from_an_esco_occupation", widget: string, required: false, i18n: true }
+                  - { name: "start_from_sfia_skills", label: "Start_from_sfia_skills", widget: string, required: false, i18n: true }
+                  - { name: "sfia_hint", label: "Sfia_hint", widget: text, required: false, i18n: true }
+                  - { name: "sfia_skill", label: "Sfia_skill", widget: string, required: false, i18n: true }
+                  - { name: "sfia_level", label: "Sfia_level", widget: string, required: false, i18n: true }
+                  - { name: "sfia_add", label: "Sfia_add", widget: string, required: false, i18n: true }
+                  - { name: "native_level_counted", label: "Native_level_counted", widget: string, required: false, i18n: true }
+                  - { name: "framework_wording", label: "Framework_wording", widget: string, required: false, i18n: true }
                   - { name: "esco_says_which_skills_an", label: "Esco_says_which_skills_an", widget: text, required: false, i18n: true }
                   - { name: "occupation", label: "Occupation", widget: string, required: false, i18n: true }
                   - { name: "search", label: "Search", widget: string, required: false, i18n: true }

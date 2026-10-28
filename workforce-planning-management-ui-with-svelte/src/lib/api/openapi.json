@@ -9194,6 +9194,35 @@
         ]
       }
     },
+    "/api/role-profiles/from-sfia": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FromSfia",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Draft a role profile from SFIA skills at SFIA levels the catalogue defines; the level is kept on SFIA's scale",
+        "tags": [
+          "sfia"
+        ]
+      }
+    },
     "/api/role-profiles/{pid}": {
       "get": {
         "responses": {
@@ -9330,7 +9359,7 @@
             "$ref": "#/components/responses/IdempotencyRefused"
           }
         },
-        "summary": "Require a skill at a minimum proficiency 1-5 with an importance (upsert)",
+        "summary": "Require a skill at a minimum proficiency 1-5, or at a framework level (framework + framework_level) mapped to 1-5, with an importance (upsert)",
         "tags": [
           "roles"
         ]
@@ -9688,6 +9717,32 @@
         "summary": "Ask a colleague to take the requester's on-call days in a window",
         "tags": [
           "workforce"
+        ]
+      }
+    },
+    "/api/sfia/skills": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "SfiaSkills"
+          }
+        },
+        "summary": "Search the imported SFIA catalogue by code or name (?q=, at least 2 characters); signed-in callers only, the wording is licensed",
+        "tags": [
+          "sfia"
+        ]
+      }
+    },
+    "/api/sfia/skills/{code}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "SfiaSkill"
+          }
+        },
+        "summary": "One SFIA skill with each level's wording and its mapping to WPM's 1-5",
+        "tags": [
+          "sfia"
         ]
       }
     },
@@ -12875,7 +12930,7 @@
             "$ref": "#/components/responses/IdempotencyRefused"
           }
         },
-        "summary": "Declare a skill and proficiency",
+        "summary": "Declare a skill and proficiency 1-5, or a framework level (framework + framework_level) mapped to 1-5",
         "tags": [
           "learning"
         ]
