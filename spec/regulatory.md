@@ -126,3 +126,10 @@ Official Journal), Article 26 puts duties on the **deployer**. The register reco
   review of any scoring (application screening, succession
   readiness); works-council/union consultation where applicable.
   Tracked as production gates in [tasks.md](tasks.md).
+
+## UK regulators of sector employers
+
+- **MHRA** (Medicines and Healthcare products Regulatory Agency): regulates medicines, medical devices and blood components for
+  transfusion in the UK; an executive agency of the Department of Health and Social Care. Source:
+  <https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency>, read 2026-10-28. WPM holds no
+  licence, product, device or adverse-event data. What the MHRA requires of an employer's staff is **not yet read** ([mhra.md](mhra.md)).
