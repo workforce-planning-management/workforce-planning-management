@@ -5317,8 +5317,16 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       **Not verified:** complementary suppression across two views (a reader who sets the categories apart by a second request can still difference two cells); the floor is the
       default constant, not the organization's configured one; no UI.
 
-- [ ] WPM-T312 **Cost centres, financial and subjective coding.** *(WPM-R163–R165, WPM-D116)* Register, unmatched free-text list,
+- [~] (2026-10-28) WPM-T312 **Cost centres, financial and subjective coding.** *(WPM-R163–R165, WPM-D116)* Register, unmatched free-text list,
       segment assembly and most-specific-rule derivation in the pure core, position numbers, the coding view.
+      **Part done (2026-10-28), the pure core:** `rules/coding.rs`: `structure_problems` and `assemble` (segments from the cost centre, the subjective code, a fixed value or a
+      vocabulary kind; a segment with nothing to fill it makes the code incomplete and is named; a value not exactly the segment's length is named and never padded or cut);
+      `Rule`, `derive` (the most specific matching rule wins; none is `Uncoded`; a blank fact matches nothing; a rule naming nothing matches nothing; equal matches choose nothing,
+      `Ambiguous`), `conflict` (equally specific rules that could match one assignment, including an exact duplicate, are refused when the second is saved), `rule_problems`;
+      `CostCentre::open_on`, `check_open` (not in the register, or not open that day, is refused; first and last days are in), `chain` (parents up, loop-safe) and `creates_cycle`.
+      12 unit tests, **mutation-checked** three ways (least specific wins; the conflict test ignoring values; the last day excluded), all caught; clippy clean.
+      **Not done:** the register, structure and rule tables, API and screens; the unmatched `positions.cost_centre` list; position numbers; the coding view; the cost per cost centre.
+      **Not verified:** nothing is wired in, no migration; the pay scale band, a rule field, is not yet an assignment fact (T311 holds no band).
 - [~] (2026-10-28) WPM-T313 **Annual service and the person-centric record.** *(WPM-R166, WPM-R167, WPM-D113)* Interval union with a break tolerance
       (pure, clock-free), recognised prior service, `/api/me/record` and the privileged view with other employers reduced to a total.
       **Part done (2026-10-28), the pure core:** `rules/service.rs`: `service` (union of periods with overlaps counted once; a gap up to the

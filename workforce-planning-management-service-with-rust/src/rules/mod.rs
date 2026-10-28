@@ -20,6 +20,7 @@ pub mod capability;
 pub mod capacity;
 pub mod career;
 pub mod change;
+pub mod coding;
 pub mod consultation;
 pub mod consultation_register;
 pub mod contact_details;
