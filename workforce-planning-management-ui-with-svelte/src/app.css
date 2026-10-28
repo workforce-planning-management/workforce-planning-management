@@ -248,9 +248,10 @@ th {
   background: var(--bg);
   white-space: nowrap;
 }
+/* The border keeps the state colour; the text is darker so it reads at 4.5:1 on the tint (WCAG 2 AA). */
 .chip.warn {
   border-color: var(--state-awaiting);
-  color: var(--state-awaiting);
+  color: #a8480f;
   background: #fdf3ec;
 }
 .chip.danger {
@@ -260,7 +261,7 @@ th {
 }
 .chip.ok {
   border-color: var(--state-available);
-  color: var(--state-available);
+  color: #156a3a;
   background: #eef7f1;
 }
 /* Red, amber, green (tolerances): a colour, a shape and a word, so colour is never the only signal. */

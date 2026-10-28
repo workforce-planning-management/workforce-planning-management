@@ -1,0 +1,68 @@
+// Every page route and the URL the axe check visits for it. `tests/unit/axe-covers-every-route.test.ts` fails when a route under
+// `src/routes` is in neither table, or when a table names a route that no longer exists, so a new page cannot ship unchecked.
+// No imports: the unit test reads this file without Playwright.
+
+const PID = "11111111-1111-4111-8111-111111111111";
+
+/** Page route (the directory under `src/routes`, `[param]` kept) -> the URL to visit. */
+export const ROUTES: Record<string, string> = {
+  "/": "/",
+  "/ai-register": "/ai-register",
+  "/announcements": "/announcements",
+  "/bargaining": "/bargaining",
+  "/benchmarks": "/benchmarks",
+  "/capacity": "/capacity",
+  "/ceo": "/ceo",
+  "/change": "/change",
+  "/consultations": "/consultations",
+  "/contingent": "/contingent",
+  "/cpd": "/cpd",
+  "/cutover": "/cutover",
+  "/decision-gates": "/decision-gates",
+  "/demo": "/demo",
+  "/development": "/development",
+  "/directory": "/directory",
+  "/expenses": "/expenses",
+  "/groups": "/groups",
+  "/job-levels": "/job-levels",
+  "/kanban": "/kanban",
+  "/learning": "/learning",
+  "/me": "/me",
+  "/me/details": "/me/details",
+  "/mentorship": "/mentorship",
+  "/metrics": "/metrics",
+  "/movements": "/movements",
+  "/movements/[pid]": `/movements/${PID}`,
+  "/org-chart": "/org-chart",
+  "/org-chart/shape": "/org-chart/shape",
+  "/oversight": "/oversight",
+  "/pay-gap": "/pay-gap",
+  "/pay-information": "/pay-information",
+  "/pay-range": "/pay-range",
+  "/pay-scales": "/pay-scales",
+  "/payroll": "/payroll",
+  "/payroll/[pid]": `/payroll/${PID}`,
+  "/planning": "/planning",
+  "/policies": "/policies",
+  "/positions": "/positions",
+  "/privacy": "/privacy",
+  "/requisitions": "/requisitions",
+  "/requisitions/[pid]": `/requisitions/${PID}`,
+  "/resilience": "/resilience",
+  "/roles": "/roles",
+  "/rota": "/rota",
+  "/signin": "/signin",
+  "/skill-gaps": "/skill-gaps",
+  "/skills": "/skills",
+  "/tour": "/tour",
+  "/verify": "/verify",
+  "/verify/sso": "/verify/sso",
+  "/warnings": "/warnings",
+  "/wellbeing": "/wellbeing",
+  "/workers": "/workers",
+  "/workers/[pid]": `/workers/${PID}`,
+  "/workforce": "/workforce",
+};
+
+/** Page routes that are not checked, each with the reason. Empty on purpose: a route belongs in `ROUTES`. */
+export const EXCLUDED: Record<string, string> = {};

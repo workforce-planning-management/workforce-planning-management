@@ -73,6 +73,7 @@
   .lily-kanban :global(.kanban-board-wip-warning),
   .lily-kanban :global(.kanban-board-count) {
     font-size: 0.8em;
-    opacity: 0.8;
+    /* Not faded with opacity: that took the count under 4.5:1 (WCAG 2 AA). */
+    color: var(--muted, #5b6774);
   }
 </style>

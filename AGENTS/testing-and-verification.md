@@ -17,6 +17,7 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | UI | `pnpm test` | 80 vitest |
 | UI | `pnpm exec playwright test` | 45 specs, stubbed API (`PW_PORT=<free port>` if 4173 is taken) |
 | UI | `pnpm build` | green |
+| UI | `pnpm exec playwright test tests/e2e/a11y-routes.spec.ts` | axe (WCAG 2 A and AA) on every page route; add a new page to `tests/e2e/axe-routes.ts` or `pnpm test` fails |
 
 `CONTRIBUTING.md` also asks for `cargo fmt --check`, `cargo clippy --all-targets
 -- -D warnings` and `pnpm lint` (`eslint .` then `prettier --check` over `src`, `tests`,
