@@ -43,6 +43,94 @@ pub struct LevelFramework {
     pub levels: Vec<Level>,
 }
 
+/// A named attribute of a level (SFIA's autonomy, influence, …) and what the framework says of it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, serde::Deserialize)]
+pub struct Attribute {
+    /// The attribute's name.
+    pub name: String,
+    /// The framework's wording.
+    pub text: String,
+}
+
+/// A level held as owned text: the shape of a ladder read from the database.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct StoredLevel {
+    /// The level number.
+    pub number: u8,
+    /// The code, e.g. `L3`.
+    pub code: String,
+    /// The usual title for the level.
+    pub title: String,
+    /// What the level is, in the source's words.
+    pub summary: String,
+    /// Typical experience, when stated.
+    pub experience: Option<String>,
+    /// The management-track equivalent, when stated.
+    pub management_equivalent: Option<String>,
+    /// Named attributes of the level; empty for a ladder that has none.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub attributes: Vec<Attribute>,
+}
+
+/// A whole ladder as owned text, whether coded or stored.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct StoredFramework {
+    /// Stable id.
+    pub id: String,
+    /// Display name.
+    pub name: String,
+    /// The organization whose ladder this is.
+    pub organization: String,
+    /// The track covered.
+    pub track: String,
+    /// Where the figures come from.
+    pub source: String,
+    /// Levels, most junior first.
+    pub levels: Vec<StoredLevel>,
+}
+
+impl From<LevelFramework> for StoredFramework {
+    fn from(f: LevelFramework) -> Self {
+        Self {
+            id: f.id.to_string(),
+            name: f.name.to_string(),
+            organization: f.organization.to_string(),
+            track: f.track.to_string(),
+            source: f.source.to_string(),
+            levels: f
+                .levels
+                .into_iter()
+                .map(|l| StoredLevel {
+                    number: l.number,
+                    code: l.code.to_string(),
+                    title: l.title.to_string(),
+                    summary: l.summary.to_string(),
+                    experience: l.experience.map(str::to_string),
+                    management_equivalent: l.management_equivalent.map(str::to_string),
+                    attributes: Vec::new(),
+                })
+                .collect(),
+        }
+    }
+}
+
+impl StoredFramework {
+    /// The level with this code (`l5`, `L5`) or number-only (`5`).
+    #[must_use]
+    pub fn level(&self, code: &str) -> Option<&StoredLevel> {
+        let code = code.trim();
+        let wanted = code.strip_prefix(['l', 'L']).unwrap_or(code);
+        self.levels.iter().find(|l| l.number.to_string() == wanted)
+    }
+
+    /// The next level up, if any.
+    #[must_use]
+    pub fn next_above(&self, number: u8) -> Option<&StoredLevel> {
+        let above = number.checked_add(1)?;
+        self.levels.iter().find(|l| l.number == above)
+    }
+}
+
 fn level(
     number: u8,
     title: &'static str,
@@ -181,6 +269,23 @@ impl LevelFramework {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_owned_form_is_the_coded_ladder_and_looks_levels_up_the_same_way() {
+        let owned = StoredFramework::from(google_levels());
+        assert_eq!(owned.id, "google-levels");
+        assert_eq!(owned.levels.len(), 9);
+        assert_eq!(owned.level("l5").map(|l| l.number), Some(5));
+        assert_eq!(owned.level("5").map(|l| l.number), Some(5));
+        assert!(owned.level("L2").is_none());
+        assert_eq!(owned.next_above(11), None);
+        assert_eq!(owned.next_above(5).map(|l| l.number), Some(6));
+        let json = serde_json::to_value(&owned.levels[0]).unwrap();
+        assert!(
+            json.get("attributes").is_none(),
+            "a coded ladder shows no attributes key"
+        );
+    }
 
     /// L3–L11 with nothing missing or repeated, codes matching numbers, and every
     /// field the source did not state left `None` rather than invented.

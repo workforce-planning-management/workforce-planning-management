@@ -4,6 +4,8 @@ pub mod early_warning_sweep;
 pub mod engagement_end_reminders;
 pub mod import_esco;
 pub mod import_framework;
+pub mod import_sfia;
+pub mod import_sfiaplus;
 pub mod oversight_pack_freeze;
 pub mod pay_progression_reminders;
 pub mod policy_reminders;

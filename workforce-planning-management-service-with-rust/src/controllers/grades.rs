@@ -24,27 +24,42 @@ use crate::models::_entities::{role_profiles, worker_job_levels, workers};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::grade as rules;
-use crate::rules::job_levels as level_rules;
 use crate::rules::pay_scale as scale_rules;
 
 /// A level number on a framework, as the API shows it.
-fn level_view(framework: &str, number: i32) -> serde_json::Value {
-    let found = level_rules::find(framework).and_then(|f| {
-        let level = f
-            .levels
-            .iter()
-            .find(|l| i32::from(l.number) == number)
-            .cloned();
-        level.map(|l| (f.name, l))
-    });
-    match found {
+async fn level_view(ctx: &AppContext, framework: &str, number: i32) -> Result<serde_json::Value> {
+    let found = super::job_levels::find_framework(&ctx.db, framework)
+        .await?
+        .and_then(|f| {
+            let level = f
+                .levels
+                .iter()
+                .find(|l| i32::from(l.number) == number)
+                .cloned();
+            level.map(|l| (f.name, l))
+        });
+    Ok(match found {
         Some((name, level)) => {
             json!({ "framework": framework, "framework_name": name, "level": level })
         }
         // A ladder retired from the service: say so rather than drop the fact.
         None => json!({ "framework": framework, "framework_name": null, "level": null,
                         "level_number": number }),
-    }
+    })
+}
+
+/// A level named by a client, resolved against the coded and stored ladders: the canonical framework id and the number.
+async fn resolve_level(ctx: &AppContext, framework: &str, level: &str) -> Result<(String, u8)> {
+    let found = super::job_levels::find_framework(&ctx.db, framework.trim())
+        .await?
+        .ok_or_else(|| {
+            unprocessable(&format!(
+                "unknown job-level framework {:?}",
+                framework.trim()
+            ))
+        })?;
+    let number = rules::resolve_level_in(&found, level).map_err(|e| unprocessable(&e))?;
+    Ok((found.id, number))
 }
 
 /// A pay band on a scale, as the API shows it: entry and top pay, and the steps.
@@ -85,12 +100,15 @@ async fn get_worker_level(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let view = current(&ctx, &worker).await?.map(|row| {
-        let mut v = level_view(&row.framework, row.level_number);
-        v["effective_on"] = json!(row.effective_on);
-        v["on_behalf"] = json!(row.on_behalf);
-        v
-    });
+    let view = match current(&ctx, &worker).await? {
+        Some(row) => {
+            let mut v = level_view(&ctx, &row.framework, row.level_number).await?;
+            v["effective_on"] = json!(row.effective_on);
+            v["on_behalf"] = json!(row.on_behalf);
+            Some(v)
+        }
+        None => None,
+    };
     format::json(json!({ "job_level": view }))
 }
 
@@ -113,8 +131,7 @@ async fn set_worker_level(
     Json(payload): Json<WorkerLevelPayload>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let (framework, number) =
-        rules::resolve_level(&payload.framework, &payload.level).map_err(|e| unprocessable(&e))?;
+    let (framework, number) = resolve_level(&ctx, &payload.framework, &payload.level).await?;
     let today = Utc::now().date_naive();
     let effective_on = payload.effective_on.unwrap_or(today);
     rules::validate_effective_on(effective_on, today).map_err(|e| unprocessable(&e))?;
@@ -125,7 +142,7 @@ async fn set_worker_level(
     match existing {
         Some(row) => {
             let mut active: worker_job_levels::ActiveModel = row.into();
-            active.framework = ActiveValue::set(framework.to_string());
+            active.framework = ActiveValue::set(framework.clone());
             active.level_number = ActiveValue::set(i32::from(number));
             active.effective_on = ActiveValue::set(effective_on);
             active.recorded_by = ActiveValue::set(recorded_by);
@@ -135,7 +152,7 @@ async fn set_worker_level(
         None => {
             worker_job_levels::ActiveModel {
                 worker_pid: ActiveValue::set(worker.pid),
-                framework: ActiveValue::set(framework.to_string()),
+                framework: ActiveValue::set(framework.clone()),
                 level_number: ActiveValue::set(i32::from(number)),
                 effective_on: ActiveValue::set(effective_on),
                 recorded_by: ActiveValue::set(recorded_by),
@@ -157,7 +174,7 @@ async fn set_worker_level(
     )
     .await?;
     txn.commit().await?;
-    let mut view = level_view(framework, i32::from(number));
+    let mut view = level_view(&ctx, &framework, i32::from(number)).await?;
     view["effective_on"] = json!(effective_on);
     view["on_behalf"] = json!(on_behalf);
     format::json(json!({ "job_level": view }))
@@ -200,16 +217,16 @@ async fn find_profile(ctx: &AppContext, pid: &str) -> Result<role_profiles::Mode
         .ok_or(Error::NotFound)
 }
 
-fn grade_view(profile: &role_profiles::Model) -> serde_json::Value {
+async fn grade_view(ctx: &AppContext, profile: &role_profiles::Model) -> Result<serde_json::Value> {
     let level = match (&profile.job_level_framework, profile.job_level) {
-        (Some(f), Some(n)) => Some(level_view(f, n)),
+        (Some(f), Some(n)) => Some(level_view(ctx, f, n).await?),
         _ => None,
     };
     let band = match (&profile.pay_scale_id, &profile.pay_band) {
         (Some(s), Some(b)) => Some(band_view(s, b)),
         _ => None,
     };
-    json!({ "role_profile": profile.pid, "job_level": level, "pay_band": band })
+    Ok(json!({ "role_profile": profile.pid, "job_level": level, "pay_band": band }))
 }
 
 /// `GET /api/role-profiles/{pid}/grade` — the role's level and pay band (either may be `null`).
@@ -218,7 +235,7 @@ async fn get_role_grade(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    format::json(grade_view(&find_profile(&ctx, &pid).await?))
+    format::json(grade_view(&ctx, &find_profile(&ctx, &pid).await?).await?)
 }
 
 /// A level for a role.
@@ -259,12 +276,10 @@ async fn set_role_grade(
         ));
     }
     let profile = find_profile(&ctx, &pid).await?;
-    let level = payload
-        .job_level
-        .as_ref()
-        .map(|l| rules::resolve_level(&l.framework, &l.level))
-        .transpose()
-        .map_err(|e| unprocessable(&e))?;
+    let level = match payload.job_level.as_ref() {
+        Some(l) => Some(resolve_level(&ctx, &l.framework, &l.level).await?),
+        None => None,
+    };
     let band = payload
         .pay_band
         .as_ref()
@@ -272,8 +287,8 @@ async fn set_role_grade(
         .transpose()
         .map_err(|e| unprocessable(&e))?;
     let mut active: role_profiles::ActiveModel = profile.into();
-    active.job_level_framework = ActiveValue::set(level.map(|(f, _)| f.to_string()));
-    active.job_level = ActiveValue::set(level.map(|(_, n)| i32::from(n)));
+    active.job_level_framework = ActiveValue::set(level.as_ref().map(|(f, _)| f.clone()));
+    active.job_level = ActiveValue::set(level.as_ref().map(|(_, n)| i32::from(*n)));
     active.pay_scale_id = ActiveValue::set(band.map(|(s, _)| s.to_string()));
     active.pay_band = ActiveValue::set(band.map(|(_, b)| b.to_string()));
     let txn = ctx.db.begin().await?;
@@ -284,12 +299,14 @@ async fn set_role_grade(
         saved.pid,
         "grade_set",
         caller.actor(),
-        Some(json!({ "job_level": level.map(|(f, n)| format!("{f}:{n}")),
-                     "pay_band": band.map(|(s, b)| format!("{s}:{b}")) })),
+        Some(
+            json!({ "job_level": level.as_ref().map(|(f, n)| format!("{f}:{n}")),
+                     "pay_band": band.map(|(s, b)| format!("{s}:{b}")) }),
+        ),
     )
     .await?;
     txn.commit().await?;
-    format::json(grade_view(&saved))
+    format::json(grade_view(&ctx, &saved).await?)
 }
 
 /// `DELETE /api/role-profiles/{pid}/grade` — clear both.

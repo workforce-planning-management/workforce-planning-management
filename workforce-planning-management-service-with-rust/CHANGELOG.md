@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — SFIA and SFIAplus imports, native levels and pointers (WPM-T180 to T185)
+
+Migrations `000096` to `000100`: framework licence record (`version`, `redistribution` open/internal_only/unknown, holder, reference, check date; `rules::framework::publishable`),
+`sfia_skills` and `sfia_skill_levels`, `job_level_frameworks` and `job_level_levels`, native level columns on `worker_skills` and `source_framework` on requirements, and
+`sfiaplus_resources`. Tasks `import_sfia` (`file:`, `levels_file:`) and `import_sfiaplus`, each refusing a missing `licence_checked_on`. `PUT /api/workers/{pid}/skills` and
+`PUT /api/role-profiles/{pid}/requirements` take `framework` + `framework_level`; reads show `mapping`, `native_description` and `source_framework_name`. New:
+`GET /api/sfia/skills`, `GET /api/sfia/skills/{code}`, `POST /api/role-profiles/from-sfia`; the job-level routes read stored ladders beside the coded one; the training
+plan and skill gaps carry `sfiaplus_pointers`. `GET /api/capability-frameworks` shows version, redistribution, holder and check date.
+
 ### Added — the information pack for bargaining (WPM-T176), the consultation register and its timeline (WPM-T175), collective agreements (WPM-T174), recognised bodies and bargaining units (WPM-T173), consultation rules (WPM-T172), a guard (WPM-T171)
 
 `GET/POST /api/recognised-bodies` and `GET/POST /api/recognised-bodies/{pid}/units` (HR): a union, works council or staff forum the organization recognises, with a contact **role**, and the units it covers as rules over department, location, employment type and job title. Coverage is a count from the floor and never a list; no member or representative is held (WPM-D68). Collective agreements hang off a unit as dated, sourced, versioned reference data (`/api/bargaining-units/{pid}/agreements`); which apply to a worker is derived from the unit rules, for HR and payroll, and names no body (`/api/workers/{pid}/collective-agreements`). `GET /api/bargaining-units/{pid}/information-pack` gives a body the aggregates for its unit (counts from the floor, complementary suppression, a unit under the floor gives nothing, no name or salary); reading it is logged. `/api/consultations` is the register (a proposal as counts and dates, the body, topics, a document reference, dates and outcome; no attendee or minute) and its timeline reads `rules::consultation` (pure, GB and EU example profiles, the deployer's to confirm) with any longer period an agreement sets. `tests/no_union_membership.rs` fails the build if anything names membership or representative status.

@@ -19,6 +19,9 @@ pub struct Model {
     pub proficiency: i32,
     pub target: Option<i32>,
     pub assessed_on: Date,
+    pub source_framework: Option<String>,
+    pub source_level: Option<i32>,
+    pub source_scale_max: Option<i32>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

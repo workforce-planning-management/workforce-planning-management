@@ -397,6 +397,7 @@ pub async fn import_pcf(
             if let Some(row) = existing {
                 // Refresh provenance and wording only: the planner owns the level.
                 let mut active: role_skill_requirements::ActiveModel = row.into();
+                active.source_framework = ActiveValue::set(Some(PCF_SLUG.to_string()));
                 active.source_level = ActiveValue::set(Some(baseline));
                 active.source_scale_max = ActiveValue::set(Some(rules::PCF_SCALE_MAX));
                 active.note = ActiveValue::set(Some(wording));
@@ -413,6 +414,7 @@ pub async fn import_pcf(
                     min_proficiency: ActiveValue::set(mapped),
                     importance: ActiveValue::set("important".to_string()),
                     note: ActiveValue::set(Some(wording)),
+                    source_framework: ActiveValue::set(Some(PCF_SLUG.to_string())),
                     source_level: ActiveValue::set(Some(baseline)),
                     source_scale_max: ActiveValue::set(Some(rules::PCF_SCALE_MAX)),
                     ..Default::default()

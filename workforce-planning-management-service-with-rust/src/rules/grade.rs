@@ -26,6 +26,17 @@ pub fn resolve_level(framework: &str, level: &str) -> Result<(&'static str, u8),
     Ok((found.id, wanted.number))
 }
 
+/// A level resolved against a ladder already read (coded or stored): its number.
+///
+/// # Errors
+/// A message when the ladder has no such level.
+pub fn resolve_level_in(framework: &levels::StoredFramework, level: &str) -> Result<u8, String> {
+    framework
+        .level(level)
+        .map(|l| l.number)
+        .ok_or_else(|| format!("{} has no level {:?}", framework.id, level.trim()))
+}
+
 /// A pay band resolved against its scale: the canonical scale id and band code.
 ///
 /// # Errors

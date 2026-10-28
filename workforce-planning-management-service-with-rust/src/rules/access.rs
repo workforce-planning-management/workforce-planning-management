@@ -100,6 +100,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("esco/occupation", Open),
     ("esco/occupations", Open),
     ("esco/skills", Open),
+    ("sfia/skills", Open),
+    ("sfia/skills/{}", Open),
     ("events/recent", Privileged),
     ("expense-claims", ControllerDecides),
     ("expense-claims/{}", ControllerDecides),

@@ -1,0 +1,5 @@
+skill_code,level,kind,title,provider,url
+ZZZ1,3,training,Invented tuning course (NOT SFIAplus),Invented Academy,https://example.invalid/course
+ZZZ1,3,certification,Invented tuning certificate,,
+ZZZ1,5,membership,Invented tuning society,Invented Society,http://example.invalid/society
+ZZZ2,4,typical_task,Invented task: reviews gadget designs,,

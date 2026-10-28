@@ -108,6 +108,11 @@ mod m20261026_000092_recognised_bodies;
 mod m20261026_000093_collective_agreements;
 mod m20261026_000094_consultations;
 mod m20261026_000095_facility_time_and_gates;
+mod m20261027_000096_framework_licence;
+mod m20261027_000097_sfia_catalogue;
+mod m20261027_000098_job_level_frameworks;
+mod m20261027_000099_native_levels;
+mod m20261027_000100_sfiaplus_resources;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -118,6 +123,7 @@ impl MigratorTrait for Migrator {
     /// The ordered migration set. Order matters: workers first (most
     /// tables reference them), then the pillar tables, then the side
     /// tables.
+    #[allow(clippy::too_many_lines)] // one line per migration, in order
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
         vec![
             Box::new(m20220101_000001_workers::Migration),
@@ -215,6 +221,11 @@ impl MigratorTrait for Migrator {
             Box::new(m20261026_000093_collective_agreements::Migration),
             Box::new(m20261026_000094_consultations::Migration),
             Box::new(m20261026_000095_facility_time_and_gates::Migration),
+            Box::new(m20261027_000096_framework_licence::Migration),
+            Box::new(m20261027_000097_sfia_catalogue::Migration),
+            Box::new(m20261027_000098_job_level_frameworks::Migration),
+            Box::new(m20261027_000099_native_levels::Migration),
+            Box::new(m20261027_000100_sfiaplus_resources::Migration),
             // inject-above (do not remove this comment)
         ]
     }

@@ -219,12 +219,23 @@ async fn worker_gaps(
         count(Status::Below),
         count(Status::Undeclared),
     );
+    // `SFIAplus` pointers (WPM-R112) for a need the person is below: licensed resources to read, never booked or bought.
+    let pointers = crate::controllers::sfia::pointers_for(
+        &ctx.db,
+        &gaps
+            .iter()
+            .filter(|g| g.status == Status::Below)
+            .map(|g| (g.skill, g.required))
+            .collect::<Vec<_>>(),
+    )
+    .await?;
     let listed: Vec<serde_json::Value> = gaps
         .iter()
         .filter(|g| g.status != Status::Met)
         .map(|g| {
             serde_json::json!({
                 "skill_pid": g.skill,
+                "sfiaplus_pointers": pointers.get(&g.skill).cloned().unwrap_or_default(),
                 "skill": index.get(&g.skill).map(|s| s.0.clone()),
                 "category": index.get(&g.skill).map(|s| s.1.clone()),
                 "required": g.required,

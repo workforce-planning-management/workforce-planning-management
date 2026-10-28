@@ -1,0 +1,5 @@
+skill_code,skill_name,category,subcategory,description,level,level_description,attributes
+ZZZ1,Synthetic widget tuning,Invented category A,Invented sub 1,"Invented text, NOT SFIA: tunes imaginary widgets.",2,Invented text: follows a tuning checklist.,
+ZZZ1,Synthetic widget tuning,Invented category A,Invented sub 1,"Invented text, NOT SFIA: tunes imaginary widgets.",3,Invented text: tunes widgets unaided.,Invented attribute
+ZZZ1,Synthetic widget tuning,Invented category A,Invented sub 1,"Invented text, NOT SFIA: tunes imaginary widgets.",5,Invented text: sets the tuning policy.,
+ZZZ2,Synthetic gadget review,Invented category B,Invented sub 2,Invented text: reviews imaginary gadgets.,4,Invented text: reviews gadget designs.,

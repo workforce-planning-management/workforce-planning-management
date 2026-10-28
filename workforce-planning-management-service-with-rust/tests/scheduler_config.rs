@@ -21,6 +21,14 @@ const BY_HAND: &[(&str, &str)] = &[
         "an operator loads the ESCO catalogue once, from a file they chose",
     ),
     (
+        "import_sfiaplus",
+        "an operator loads the SFIAplus detail they are licensed for, from a file they chose",
+    ),
+    (
+        "import_sfia",
+        "an operator loads the SFIA catalogue they are licensed for, from a file they chose",
+    ),
+    (
         "import_framework",
         "an operator loads a capability framework once, from a file they chose",
     ),

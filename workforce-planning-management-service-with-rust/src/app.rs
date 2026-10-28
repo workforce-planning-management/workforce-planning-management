@@ -146,6 +146,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::positions::routes())
         .add_route(controllers::health_requirements::routes())
         .add_route(controllers::esco::routes())
+        .add_route(controllers::sfia::routes())
         .add_route(controllers::framework_roles::routes())
         .add_route(controllers::career::routes())
         .add_route(controllers::reporting::routes())
@@ -359,6 +360,8 @@ impl Hooks for App {
         tasks.register(tasks::early_warning_sweep::EarlyWarningSweep);
         tasks.register(tasks::oversight_pack_freeze::OversightPackFreeze);
         tasks.register(tasks::import_esco::ImportEsco);
+        tasks.register(tasks::import_sfia::ImportSfia);
+        tasks.register(tasks::import_sfiaplus::ImportSfiaplus);
         tasks.register(tasks::verify_audit_chain::VerifyAuditChain);
         // tasks-inject (do not remove)
     }

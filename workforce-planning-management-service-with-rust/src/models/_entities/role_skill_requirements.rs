@@ -19,6 +19,7 @@ pub struct Model {
     pub min_proficiency: i32,
     pub importance: String,
     pub note: Option<String>,
+    pub source_framework: Option<String>,
     pub source_level: Option<i32>,
     pub source_scale_max: Option<i32>,
 }

@@ -608,9 +608,16 @@ pub(super) async fn remove_skill_ref(
 #[derive(Debug, Deserialize)]
 pub(super) struct WorkerSkillPayload {
     skill_pid: Uuid,
-    proficiency: i32,
+    /// WPM's 1–5. May be left out when a framework level is given: it is then worked out by the stated mapping.
+    #[serde(default)]
+    proficiency: Option<i32>,
     #[serde(default)]
     target: Option<i32>,
+    /// The framework the level was stated on (e.g. `sfia`), with `framework_level` on its own scale.
+    #[serde(default)]
+    framework: Option<String>,
+    #[serde(default)]
+    framework_level: Option<i32>,
 }
 
 /// `PUT /api/workers/{pid}/skills` — declare or update the
@@ -623,8 +630,13 @@ pub(super) async fn declare_skill(
     Json(payload): Json<WorkerSkillPayload>,
 ) -> Result<Response> {
     let mut problems = Problems::new();
-    if !rules::valid_proficiency(payload.proficiency) {
+    if let Some(p) = payload.proficiency
+        && !rules::valid_proficiency(p)
+    {
         problems.push("proficiency must be between 1 and 5");
+    }
+    if payload.proficiency.is_none() && payload.framework_level.is_none() {
+        problems.push("give proficiency, or framework and framework_level");
     }
     if let Some(target) = payload.target
         && !rules::valid_proficiency(target)
@@ -639,6 +651,20 @@ pub(super) async fn declare_skill(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
+    let native = crate::controllers::sfia::resolve_native(
+        &ctx.db,
+        payload.framework.as_deref(),
+        payload.framework_level,
+    )
+    .await?;
+    if let Some(n) = &native {
+        crate::controllers::sfia::check_defined(&ctx.db, skill.pid, n).await?;
+    }
+    // A stated 1–5 stands; otherwise the framework level is mapped, and the mapping is shown wherever it is read.
+    let proficiency = payload
+        .proficiency
+        .or_else(|| native.as_ref().map(|n| n.wpm))
+        .ok_or_else(|| unprocessable("give proficiency, or framework and framework_level"))?;
     let existing = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
         .filter(worker_skills::Column::SkillPid.eq(skill.pid))
@@ -646,10 +672,17 @@ pub(super) async fn declare_skill(
         .await?;
     let today = chrono::Utc::now().date_naive();
     let txn = ctx.db.begin().await?;
+    let (source_framework, source_level, source_scale_max) =
+        native.as_ref().map_or((None, None, None), |n| {
+            (Some(n.framework.clone()), Some(n.level), Some(n.scale_max))
+        });
     let row = match existing {
         Some(row) => {
             let mut active: worker_skills::ActiveModel = row.into();
-            active.proficiency = ActiveValue::set(payload.proficiency);
+            active.proficiency = ActiveValue::set(proficiency);
+            active.source_framework = ActiveValue::set(source_framework);
+            active.source_level = ActiveValue::set(source_level);
+            active.source_scale_max = ActiveValue::set(source_scale_max);
             active.target = ActiveValue::set(payload.target);
             active.assessed_on = ActiveValue::set(today);
             active.deleted_at = ActiveValue::set(None);
@@ -660,9 +693,12 @@ pub(super) async fn declare_skill(
                 pid: ActiveValue::set(Uuid::new_v4()),
                 worker_pid: ActiveValue::set(worker.pid),
                 skill_pid: ActiveValue::set(skill.pid),
-                proficiency: ActiveValue::set(payload.proficiency),
+                proficiency: ActiveValue::set(proficiency),
                 target: ActiveValue::set(payload.target),
                 assessed_on: ActiveValue::set(today),
+                source_framework: ActiveValue::set(source_framework),
+                source_level: ActiveValue::set(source_level),
+                source_scale_max: ActiveValue::set(source_scale_max),
                 deleted_at: ActiveValue::set(None),
                 ..Default::default()
             }
@@ -674,7 +710,7 @@ pub(super) async fn declare_skill(
         &txn,
         worker.pid,
         skill.pid,
-        Some(payload.proficiency),
+        Some(proficiency),
         "declared",
         caller.actor(),
         auth::acting_for_other(&caller, &worker.person_ref),
@@ -705,5 +741,25 @@ pub(super) async fn list_worker_skills(
         .filter(worker_skills::Column::DeletedAt.is_null())
         .all(&ctx.db)
         .await?;
-    format::json(rows)
+    // Where a level was stated on a framework's own scale, say so, with the framework's wording and the mapping used.
+    let stated: Vec<_> = rows
+        .iter()
+        .map(|r| (r.skill_pid, r.source_framework.as_deref(), r.source_level))
+        .collect();
+    let described = crate::controllers::sfia::native_descriptions(&ctx.db, &stated).await?;
+    let names = crate::controllers::sfia::framework_names(&ctx.db).await?;
+    let out: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            let mut v = serde_json::to_value(r).unwrap_or_default();
+            if r.source_level.is_some() {
+                v["mapping"] = serde_json::json!(crate::rules::sfia::MAPPING_NAME);
+                v["native_description"] = serde_json::json!(described.get(&r.skill_pid));
+                v["source_framework_name"] =
+                    serde_json::json!(r.source_framework.as_ref().and_then(|f| names.get(f)));
+            }
+            v
+        })
+        .collect();
+    format::json(out)
 }

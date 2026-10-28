@@ -60,6 +60,7 @@ mod removals;
 mod rotas;
 mod scale;
 mod scim;
+mod sfia_import;
 mod shared_cache;
 mod skill_gaps;
 mod talent;

@@ -25,6 +25,11 @@ pub struct Model {
     pub scale_labels: Option<String>,
     pub imported_on: Date,
     pub note: Option<String>,
+    pub version: Option<String>,
+    pub redistribution: String,
+    pub licence_holder: Option<String>,
+    pub licence_reference: Option<String>,
+    pub licence_checked_on: Option<Date>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

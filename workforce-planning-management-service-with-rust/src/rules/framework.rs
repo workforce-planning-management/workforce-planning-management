@@ -295,9 +295,72 @@ pub fn job_title(level: &str, role: &str, collision: bool) -> String {
     title
 }
 
+/// Whether a framework's wording may be redistributed (WPM-R113).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Redistribution {
+    /// An open licence (OGL, a Commission decision): wording may leave the organization with attribution.
+    Open,
+    /// A licence for the licensee's internal use only (SFIA's corporate licence).
+    InternalOnly,
+    /// Not established. Treated as not publishable.
+    Unknown,
+}
+
+impl Redistribution {
+    /// Parse the stored token; anything unrecognised is [`Redistribution::Unknown`], never `Open`.
+    #[must_use]
+    pub fn parse(token: &str) -> Self {
+        match token {
+            "open" => Self::Open,
+            "internal_only" => Self::InternalOnly,
+            _ => Self::Unknown,
+        }
+    }
+
+    /// The stored token.
+    #[must_use]
+    pub const fn token(self) -> &'static str {
+        match self {
+            Self::Open => "open",
+            Self::InternalOnly => "internal_only",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
+/// May this framework's imported wording appear on a surface that leaves the
+/// signed-in organization (a public job post, an unauthenticated read, an
+/// export to a third party)? Only an `open` framework, and only when its
+/// attribution is recorded; an unknown status is a no.
+#[must_use]
+pub fn publishable(redistribution: Redistribution, attribution: Option<&str>) -> bool {
+    redistribution == Redistribution::Open && attribution.is_some_and(|a| !a.trim().is_empty())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_open_with_attribution_is_publishable() {
+        assert!(publishable(Redistribution::Open, Some("OGL v3.0")));
+        assert!(!publishable(Redistribution::Open, None));
+        assert!(!publishable(Redistribution::Open, Some("  ")));
+        assert!(!publishable(Redistribution::InternalOnly, Some("x")));
+        assert!(!publishable(Redistribution::Unknown, Some("x")));
+    }
+
+    #[test]
+    fn unrecognised_status_is_unknown_never_open() {
+        assert_eq!(Redistribution::parse("open"), Redistribution::Open);
+        assert_eq!(
+            Redistribution::parse("internal_only"),
+            Redistribution::InternalOnly
+        );
+        assert_eq!(Redistribution::parse("OPEN"), Redistribution::Unknown);
+        assert_eq!(Redistribution::parse(""), Redistribution::Unknown);
+        assert_eq!(Redistribution::InternalOnly.token(), "internal_only");
+    }
 
     const SUMMARY: &str = "\
 Software development role: Software developer

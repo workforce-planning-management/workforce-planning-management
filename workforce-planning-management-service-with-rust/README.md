@@ -106,7 +106,7 @@ backups** · **on-call rotas + swaps + swap requests** · **announcements** ·
 handover** · OpenAPI + Swagger · `/metrics.prom`.
 
 Loco tasks: `seed`, `snapshot_headcount`, `rota_reminders` and
-`pay_progression_reminders` (**schedule these daily — they do nothing by themselves**), `import_framework`, `import_esco`.
+`pay_progression_reminders` (**schedule these daily — they do nothing by themselves**), `import_framework`, `import_esco`, `import_sfia`, `import_sfiaplus`.
 
 Sign-in enforcement is **on by default** (`WPM_REQUIRE_AUTH`; only an explicit
 `0`/`false`/`no`/`off` turns it off, and the `production` environment refuses to

@@ -338,6 +338,15 @@ async fn worker_plan(
         .collect();
     let hours: Vec<u32> = recs.iter().map(|r| r.hours).collect();
     let slots = rules::schedule(&hours, weekly, start);
+    // `SFIAplus` pointers (WPM-R112): resources the deployer is licensed for, for the level each skill is needed at. Not booked.
+    let pointers = crate::controllers::sfia::pointers_for(
+        &ctx.db,
+        &below
+            .iter()
+            .map(|g| (g.skill, g.required))
+            .collect::<Vec<_>>(),
+    )
+    .await?;
 
     let plan: Vec<serde_json::Value> = below
         .iter()
@@ -353,6 +362,7 @@ async fn worker_plan(
                 "shortfall": g.shortfall,
                 "priority": gap_rules::priority(g),
                 "recommendation": r,
+                "sfiaplus_pointers": pointers.get(&g.skill).cloned().unwrap_or_default(),
                 "starts_on": slot.starts_on,
                 "ends_on": slot.ends_on,
                 "weeks": slot.weeks,

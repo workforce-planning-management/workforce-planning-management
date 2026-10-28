@@ -47,10 +47,17 @@ struct ProfilePayload {
 #[derive(Debug, Deserialize)]
 struct RequirementPayload {
     skill_pid: Uuid,
-    min_proficiency: i32,
+    /// WPM's 1–5. May be left out when a framework level is given: it is then worked out by the stated mapping.
+    #[serde(default)]
+    min_proficiency: Option<i32>,
     importance: String,
     #[serde(default)]
     note: Option<String>,
+    /// The framework the level was stated on (e.g. `sfia`), with `framework_level` on its own scale.
+    #[serde(default)]
+    framework: Option<String>,
+    #[serde(default)]
+    framework_level: Option<i32>,
 }
 
 /// `POST /api/role-profiles` — create a profile for a job title.
@@ -191,6 +198,10 @@ async fn list_frameworks(State(ctx): State<AppContext>) -> Result<Response> {
                 "scale_labels": f.scale_labels,
                 "imported_on": f.imported_on,
                 "note": f.note,
+                "version": f.version,
+                "redistribution": f.redistribution,
+                "licence_holder": f.licence_holder,
+                "licence_checked_on": f.licence_checked_on,
                 "profiles": mine.len(),
                 "roles": roles.len(),
             })
@@ -222,6 +233,12 @@ async fn get_profile(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
             skill_of.get(&r.skill_pid).map(|s| s.name.clone()),
         )
     });
+    let stated: Vec<_> = requirements
+        .iter()
+        .map(|r| (r.skill_pid, r.source_framework.as_deref(), r.source_level))
+        .collect();
+    let described = super::sfia::native_descriptions(&ctx.db, &stated).await?;
+    let framework_names = super::sfia::framework_names(&ctx.db).await?;
     let out: Vec<serde_json::Value> = requirements
         .iter()
         .map(|r| {
@@ -232,8 +249,12 @@ async fn get_profile(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
                 "min_proficiency": r.min_proficiency,
                 "importance": r.importance,
                 "note": r.note,
+                "source_framework": r.source_framework,
+                "source_framework_name": r.source_framework.as_ref().and_then(|f| framework_names.get(f)),
                 "source_level": r.source_level,
                 "source_scale_max": r.source_scale_max,
+                "mapping": r.source_level.map(|_| crate::rules::sfia::MAPPING_NAME),
+                "native_description": described.get(&r.skill_pid),
             })
         })
         .collect();
@@ -274,7 +295,17 @@ async fn set_requirement(
     Path(pid): Path<String>,
     Json(payload): Json<RequirementPayload>,
 ) -> Result<Response> {
-    rules::validate_requirement(payload.min_proficiency, &payload.importance)
+    let native = super::sfia::resolve_native(
+        &ctx.db,
+        payload.framework.as_deref(),
+        payload.framework_level,
+    )
+    .await?;
+    let min_proficiency = payload
+        .min_proficiency
+        .or_else(|| native.as_ref().map(|n| n.wpm))
+        .ok_or_else(|| unprocessable("give min_proficiency, or framework and framework_level"))?;
+    rules::validate_requirement(min_proficiency, &payload.importance)
         .map_err(|e| unprocessable(&e))?;
     let mut problems = Problems::new();
     if let Some(text) = &payload.note {
@@ -288,6 +319,9 @@ async fn set_requirement(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
+    if let Some(n) = &native {
+        super::sfia::check_defined(&ctx.db, skill.pid, n).await?;
+    }
     let existing = role_skill_requirements::Entity::find()
         .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
         .filter(role_skill_requirements::Column::SkillPid.eq(skill.pid))
@@ -297,9 +331,15 @@ async fn set_requirement(
     match existing {
         Some(row) => {
             let mut active: role_skill_requirements::ActiveModel = row.into();
-            active.min_proficiency = ActiveValue::set(payload.min_proficiency);
+            active.min_proficiency = ActiveValue::set(min_proficiency);
             active.importance = ActiveValue::set(payload.importance.clone());
             active.note = ActiveValue::set(payload.note.clone());
+            if let Some(n) = &native {
+                // Only when a native level is stated: an edit that gives none leaves the imported one as it was.
+                active.source_framework = ActiveValue::set(Some(n.framework.clone()));
+                active.source_level = ActiveValue::set(Some(n.level));
+                active.source_scale_max = ActiveValue::set(Some(n.scale_max));
+            }
             active.update(&txn).await?;
         }
         None => {
@@ -307,9 +347,12 @@ async fn set_requirement(
                 pid: ActiveValue::set(Uuid::new_v4()),
                 role_profile_pid: ActiveValue::set(profile.pid),
                 skill_pid: ActiveValue::set(skill.pid),
-                min_proficiency: ActiveValue::set(payload.min_proficiency),
+                min_proficiency: ActiveValue::set(min_proficiency),
                 importance: ActiveValue::set(payload.importance.clone()),
                 note: ActiveValue::set(payload.note.clone()),
+                source_framework: ActiveValue::set(native.as_ref().map(|n| n.framework.clone())),
+                source_level: ActiveValue::set(native.as_ref().map(|n| n.level)),
+                source_scale_max: ActiveValue::set(native.as_ref().map(|n| n.scale_max)),
                 ..Default::default()
             }
             .insert(&txn)
@@ -324,7 +367,7 @@ async fn set_requirement(
         caller.actor(),
         Some(serde_json::json!({
             "skill": skill.name,
-            "min_proficiency": payload.min_proficiency,
+            "min_proficiency": min_proficiency,
             "importance": payload.importance,
         })),
     )
