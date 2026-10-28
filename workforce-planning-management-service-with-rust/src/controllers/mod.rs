@@ -21,6 +21,7 @@ pub mod change;
 pub mod consultations;
 pub mod contacts;
 pub mod conversion_plans;
+pub mod cost_centres;
 pub mod cpd;
 pub mod credentials;
 pub mod cutover;

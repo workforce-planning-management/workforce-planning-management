@@ -666,6 +666,16 @@ fn add_integration_paths(document: &mut Value) {
         "/api/assignments/breakdown": {
             "get": { "tags": ["assignments"], "summary": "Headcount and FTE of the assignments in force today, by staff_group, job_role or area_of_work (?organization=&by=), from the floor: a cell under it shows nothing and no total is given. A category nobody recorded is its own unknown cell. No name, no worker, no pay", "responses": ok("The cells") }
         },
+        "/api/cost-centres": {
+            "get": { "tags": ["assignments"], "summary": "An organization's cost centre register (?organization=), each with whether it is open today and its parent chain", "responses": ok("The cost centres") },
+            "post": { "tags": ["assignments"], "summary": "Add a cost centre: a code unique in the organization, a name, an optional parent that is in the register and open on the first day. HR", "responses": ok("The pid of the cost centre") }
+        },
+        "/api/cost-centres/unmatched": {
+            "get": { "tags": ["assignments"], "summary": "The free-text position cost centre values that are not a code in the register, each with how many positions carry it. Nothing is matched or created. HR", "responses": ok("The unmatched values") }
+        },
+        "/api/cost-centres/{pid}/close": {
+            "post": { "tags": ["assignments"], "summary": "Close a cost centre on a day not before it opened. Never deleted; a closed one is not reopened here. HR", "responses": ok("The closing day") }
+        },
         "/api/category-vocabulary": {
             "get": { "tags": ["assignments"], "summary": "An organization's assignment category vocabulary (?organization=, optional ?kind=): site, area_of_work, job_role, staff_group or occupation_code, each with its label and, where it comes from a national standard, that standard and its own code. None is shipped", "responses": ok("The entries") },
             "post": { "tags": ["assignments"], "summary": "Add a vocabulary entry. A code is unique within an organization and kind; a job role may name its staff group, and an assignment that records the two must then agree. HR", "responses": ok("The pid of the entry") }

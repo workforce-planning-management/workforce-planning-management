@@ -70,6 +70,7 @@ async fn list(
                 "job_role",
                 "staff_group",
                 "occupation_code",
+                "cost_centre",
             ] {
                 let shown = rules::category_or_unknown(row_str(row, key));
                 o.insert(key.into(), json!(shown));
@@ -108,6 +109,7 @@ fn row_str<'a>(row: &'a assignments::Model, key: &str) -> Option<&'a str> {
         "area_of_work" => row.area_of_work.as_deref(),
         "job_role" => row.job_role.as_deref(),
         "staff_group" => row.staff_group.as_deref(),
+        "cost_centre" => row.cost_centre.as_deref(),
         _ => row.occupation_code.as_deref(),
     }
 }
@@ -126,6 +128,7 @@ struct AddPayload {
     job_role: Option<String>,
     staff_group: Option<String>,
     occupation_code: Option<String>,
+    cost_centre: Option<String>,
     fte_percent: i32,
     starts_on: Option<NaiveDate>,
     ends_on: Option<NaiveDate>,
@@ -165,6 +168,10 @@ async fn add(
         problems.push("starts_on must not be before the worker's first day".to_string());
     }
     ensure_valid(&problems)?;
+    if let Some(code) = clean(p.cost_centre.clone()) {
+        super::cost_centres::ensure_open(&ctx, &worker.organization_ref, &code, new.starts_on)
+            .await?;
+    }
     ensure_role_agrees(
         &ctx,
         &worker.organization_ref,
@@ -188,6 +195,7 @@ async fn add(
         job_role: ActiveValue::set(clean(p.job_role)),
         staff_group: ActiveValue::set(clean(p.staff_group)),
         occupation_code: ActiveValue::set(clean(p.occupation_code)),
+        cost_centre: ActiveValue::set(clean(p.cost_centre)),
         fte_percent: ActiveValue::set(new.fte_percent),
         is_primary: ActiveValue::set(false),
         starts_on: ActiveValue::set(new.starts_on),
@@ -221,6 +229,7 @@ struct ChangePayload {
     job_role: Option<String>,
     staff_group: Option<String>,
     occupation_code: Option<String>,
+    cost_centre: Option<String>,
     fte_percent: Option<i32>,
 }
 
@@ -245,39 +254,25 @@ async fn change(
         return Err(unprocessable("effective_on must not be in the future"));
     }
     let end = rules::end_for_change(&as_rule(&old), effective_on).map_err(|m| unprocessable(&m))?;
-    let job_title = p.job_title.unwrap_or_else(|| old.job_title.clone());
-    let department = p.department.unwrap_or_else(|| old.department.clone());
-    let location = clean(p.location).or_else(|| old.location.clone());
-    let site = clean(p.site).or_else(|| old.site.clone());
-    let area_of_work = clean(p.area_of_work).or_else(|| old.area_of_work.clone());
-    let job_role = clean(p.job_role).or_else(|| old.job_role.clone());
-    let staff_group = clean(p.staff_group).or_else(|| old.staff_group.clone());
-    let occupation_code = clean(p.occupation_code).or_else(|| old.occupation_code.clone());
+    let f = Fields::merged(&old, &p);
     let new = rules::Assignment {
         fte_percent: p.fte_percent.unwrap_or(old.fte_percent),
         starts_on: effective_on,
         ends_on: old.ends_on,
         primary: old.is_primary,
     };
-    let mut problems = rules::text_problems(
-        &job_title,
-        &department,
-        location.as_deref(),
-        &[
-            ("site", site.as_deref()),
-            ("area_of_work", area_of_work.as_deref()),
-            ("job_role", job_role.as_deref()),
-            ("staff_group", staff_group.as_deref()),
-            ("occupation_code", occupation_code.as_deref()),
-        ],
-    );
+    let mut problems = f.problems();
     problems.extend(rules::assignment_problems(&new));
     ensure_valid(&problems)?;
+    if let Some(code) = &f.cost_centre {
+        super::cost_centres::ensure_open(&ctx, &worker.organization_ref, code, effective_on)
+            .await?;
+    }
     ensure_role_agrees(
         &ctx,
         &worker.organization_ref,
-        job_role.as_deref(),
-        staff_group.as_deref(),
+        f.job_role.as_deref(),
+        f.staff_group.as_deref(),
     )
     .await?;
     let others = with_ended(&of(&ctx, worker.pid).await?, old.pid, end);
@@ -291,14 +286,15 @@ async fn change(
     assignments::ActiveModel {
         pid: ActiveValue::set(new_pid),
         worker_pid: ActiveValue::set(worker.pid),
-        job_title: ActiveValue::set(job_title.trim().to_string()),
-        department: ActiveValue::set(department.trim().to_string()),
-        location: ActiveValue::set(location.clone()),
-        site: ActiveValue::set(site),
-        area_of_work: ActiveValue::set(area_of_work),
-        job_role: ActiveValue::set(job_role),
-        staff_group: ActiveValue::set(staff_group),
-        occupation_code: ActiveValue::set(occupation_code),
+        job_title: ActiveValue::set(f.job_title.trim().to_string()),
+        department: ActiveValue::set(f.department.trim().to_string()),
+        location: ActiveValue::set(f.location.clone()),
+        site: ActiveValue::set(f.site.clone()),
+        area_of_work: ActiveValue::set(f.area_of_work.clone()),
+        job_role: ActiveValue::set(f.job_role.clone()),
+        staff_group: ActiveValue::set(f.staff_group.clone()),
+        occupation_code: ActiveValue::set(f.occupation_code.clone()),
+        cost_centre: ActiveValue::set(f.cost_centre.clone()),
         fte_percent: ActiveValue::set(new.fte_percent),
         is_primary: ActiveValue::set(old.is_primary),
         starts_on: ActiveValue::set(effective_on),
@@ -312,9 +308,9 @@ async fn change(
         write_through(
             &txn,
             worker,
-            &job_title,
-            &department,
-            location,
+            &f.job_title,
+            &f.department,
+            f.location.clone(),
             new.fte_percent,
         )
         .await?;
@@ -330,6 +326,55 @@ async fn change(
     .await?;
     txn.commit().await?;
     format::json(json!({ "pid": new_pid, "replaces": pid, "previous_ends_on": end }))
+}
+
+/// The words of an assignment after a change: what was given, over what was there.
+struct Fields {
+    job_title: String,
+    department: String,
+    location: Option<String>,
+    site: Option<String>,
+    area_of_work: Option<String>,
+    job_role: Option<String>,
+    staff_group: Option<String>,
+    occupation_code: Option<String>,
+    cost_centre: Option<String>,
+}
+
+impl Fields {
+    fn merged(old: &assignments::Model, p: &ChangePayload) -> Self {
+        let pick =
+            |new: &Option<String>, was: &Option<String>| clean(new.clone()).or_else(|| was.clone());
+        Self {
+            job_title: p.job_title.clone().unwrap_or_else(|| old.job_title.clone()),
+            department: p
+                .department
+                .clone()
+                .unwrap_or_else(|| old.department.clone()),
+            location: pick(&p.location, &old.location),
+            site: pick(&p.site, &old.site),
+            area_of_work: pick(&p.area_of_work, &old.area_of_work),
+            job_role: pick(&p.job_role, &old.job_role),
+            staff_group: pick(&p.staff_group, &old.staff_group),
+            occupation_code: pick(&p.occupation_code, &old.occupation_code),
+            cost_centre: pick(&p.cost_centre, &old.cost_centre),
+        }
+    }
+
+    fn problems(&self) -> Vec<String> {
+        rules::text_problems(
+            &self.job_title,
+            &self.department,
+            self.location.as_deref(),
+            &[
+                ("site", self.site.as_deref()),
+                ("area_of_work", self.area_of_work.as_deref()),
+                ("job_role", self.job_role.as_deref()),
+                ("staff_group", self.staff_group.as_deref()),
+                ("occupation_code", self.occupation_code.as_deref()),
+            ],
+        )
+    }
 }
 
 /// The worker's assignments as the rules see them, with the one `pid` ended on `end`.

@@ -24,6 +24,7 @@ pub struct Model {
     pub job_role: Option<String>,
     pub staff_group: Option<String>,
     pub occupation_code: Option<String>,
+    pub cost_centre: Option<String>,
     pub fte_percent: i32,
     pub is_primary: bool,
     pub starts_on: Date,

@@ -252,3 +252,71 @@ async fn the_breakdown_by_category_shows_nothing_under_the_floor_and_gives_no_to
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn an_assignment_names_a_cost_centre_that_is_open_and_unmatched_position_values_are_listed() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let w = seed_worker!(&request, &org, format!("CC-{tag}"), None).await;
+        activate!(&request, &w).await;
+        let url = format!("/api/workers/{w}/assignments");
+        let cc = |body: Value| {
+            let request = &request;
+            async move { request.post("/api/cost-centres").json(&body).await }
+        };
+
+        // A register: a root, a child under it; refusals for a repeat, a missing parent, a blank name.
+        let top: Value = cc(json!({ "organization_ref": org, "code": "TOP", "name": "Trust", "valid_from": "2020-01-01" })).await.json();
+        let top_pid = top["pid"].as_str().unwrap().to_string();
+        assert_eq!(cc(json!({ "organization_ref": org, "code": "TOP", "name": "Again" })).await.status_code(), 422);
+        assert_eq!(cc(json!({ "organization_ref": org, "code": "X1", "name": "X", "parent_code": "NOPE" })).await.status_code(), 422);
+        assert_eq!(cc(json!({ "organization_ref": org, "code": "X1", "name": " " })).await.status_code(), 422);
+        let ward = cc(json!({ "organization_ref": org, "code": "WARD4", "name": "Ward 4", "parent_code": "TOP", "valid_from": "2024-01-01" })).await;
+        assert_eq!(ward.status_code(), 200, "{}", ward.text());
+        let ward_pid = ward.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let listed: Value = request.get(&format!("/api/cost-centres?organization={org}")).await.json();
+        let w4 = listed["cost_centres"].as_array().unwrap().iter().find(|c| c["code"] == "WARD4").unwrap();
+        assert_eq!((w4["open"].as_bool(), w4["chain"].clone()), (Some(true), json!(["WARD4", "TOP"])));
+        assert!(w4.get("recorded_by").is_none());
+
+        // An assignment must name a code that is open on its start day.
+        let add = |code: &str, from: &str| {
+            let request = &request;
+            let url = url.clone();
+            let body = json!({ "job_title": "Shift", "department": "ward", "fte_percent": 1, "cost_centre": code, "starts_on": from });
+            async move { request.post(&url).json(&body).await.status_code() }
+        };
+        let cut = request.get(&url).await.json::<Value>()["assignments"][0]["pid"].as_str().unwrap().to_string();
+        let fte = request.post(&format!("/api/assignments/{cut}/change")).json(&json!({ "fte_percent": 50, "effective_on": "2026-06-01" })).await;
+        assert_eq!(fte.status_code(), 200, "{}", fte.text());
+        assert_eq!(add("WARD4", "2026-07-01").await, 200);
+        assert_eq!(add("NOPE", "2026-07-01").await, 422, "not in the register");
+        assert_eq!(add("WARD4", "2023-12-31").await, 422, "not open yet, and before the first day");
+
+        // Closed: a later write is refused, an earlier day is still fine, and it is never deleted.
+        let closed = request.post(&format!("/api/cost-centres/{ward_pid}/close")).json(&json!({ "valid_to": "2026-08-31" })).await;
+        assert_eq!(closed.status_code(), 200, "{}", closed.text());
+        assert_eq!(request.post(&format!("/api/cost-centres/{ward_pid}/close")).json(&json!({ "valid_to": "2026-09-30" })).await.status_code(), 422, "already closed");
+        assert_eq!(add("WARD4", "2026-09-01").await, 422);
+        assert_eq!(add("WARD4", "2026-08-31").await, 200);
+        assert_eq!(request.post(&format!("/api/cost-centres/{top_pid}/close")).json(&json!({ "valid_to": "2019-01-01" })).await.status_code(), 422, "before it opened");
+
+        // A category nobody recorded reads unknown, including the cost centre.
+        let rows: Value = request.get(&url).await.json();
+        assert!(rows["assignments"].as_array().unwrap().iter().any(|a| a["cost_centre"] == "unknown"));
+
+        // Position cost centres that match nothing are listed, not matched. A position needs its own fields; seed through SQL.
+        ctx.db.execute_unprepared(&format!(
+            "INSERT INTO positions (pid, organization_ref, cost_centre, title, budget_fte_percent, funding_kind, state)
+             VALUES (gen_random_uuid(), '{org}', 'ward-4 (old)', 'Nurse', 100, 'core', 'planned'),
+                    (gen_random_uuid(), '{org}', 'ward-4 (old)', 'Nurse', 100, 'core', 'planned'),
+                    (gen_random_uuid(), '{org}', 'TOP', 'Chief', 100, 'core', 'planned')"
+        )).await.unwrap();
+        let un: Value = request.get(&format!("/api/cost-centres/unmatched?organization={org}")).await.json();
+        assert_eq!(un["unmatched"], json!([{ "value": "ward-4 (old)", "positions": 2 }]), "{un}");
+    })
+    .await;
+}

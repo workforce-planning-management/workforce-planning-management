@@ -3555,6 +3555,88 @@
         ]
       }
     },
+    "/api/cost-centres": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The cost centres"
+          }
+        },
+        "summary": "An organization's cost centre register (?organization=), each with whether it is open today and its parent chain",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the cost centre",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add a cost centre: a code unique in the organization, a name, an optional parent that is in the register and open on the first day. HR",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/cost-centres/unmatched": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The unmatched values"
+          }
+        },
+        "summary": "The free-text position cost centre values that are not a code in the register, each with how many positions carry it. Nothing is matched or created. HR",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/cost-centres/{pid}/close": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The closing day",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Close a cost centre on a day not before it opened. Never deleted; a closed one is not reopened here. HR",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
     "/api/cpd-entries/{pid}": {
       "delete": {
         "parameters": [

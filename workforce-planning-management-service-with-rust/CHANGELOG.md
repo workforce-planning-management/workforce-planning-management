@@ -13,6 +13,8 @@ Migration `000101`: `assignments` (title, department, location, optional categor
 worker by a partial unique index), one primary back-filled per existing worker, and two triggers on `workers` so older writers keep working (a new worker gets a primary; an edit to
 title, department, location or FTE corrects the open primary in place; a termination date ends what is open). `GET` and `POST /api/workers/{pid}/assignments` and
 `POST /api/assignments/{pid}/change` (ends one the day before and starts another; a primary change writes through to the worker row). Migration `000102` and `GET`/`POST /api/category-vocabulary`: per-organization category vocabularies (none shipped); a job role and staff group that the vocabulary says disagree are a `422`.
+Migration `000103`, `GET`/`POST /api/cost-centres`, `/api/cost-centres/{pid}/close` and `/api/cost-centres/unmatched`: the cost centre register; an assignment's `cost_centre` must be open on its effective day.
+`rules::coding` is the pure core for financial and subjective coding.
 `rules::assignment`, `rules::service`,
 `rules::mandatory_learning` and `rules::padr` are the pure cores for T310, T313, T314 and T317. Assignments are in the subject-access export and erased with the person.
 

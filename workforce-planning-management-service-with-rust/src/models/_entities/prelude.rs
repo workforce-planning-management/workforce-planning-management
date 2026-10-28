@@ -27,6 +27,7 @@ pub use super::change_initiatives::Entity as ChangeInitiatives;
 pub use super::collective_agreements::Entity as CollectiveAgreements;
 pub use super::consultations::Entity as Consultations;
 pub use super::conversion_plans::Entity as ConversionPlans;
+pub use super::cost_centres::Entity as CostCentres;
 pub use super::cpd_entries::Entity as CpdEntries;
 pub use super::cpd_requirements::Entity as CpdRequirements;
 pub use super::credential_issuances::Entity as CredentialIssuances;

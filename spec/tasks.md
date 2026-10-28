@@ -5326,7 +5326,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `CostCentre::open_on`, `check_open` (not in the register, or not open that day, is refused; first and last days are in), `chain` (parents up, loop-safe) and `creates_cycle`.
       12 unit tests, **mutation-checked** three ways (least specific wins; the conflict test ignoring values; the last day excluded), all caught; clippy clean.
       **Not done:** the register, structure and rule tables, API and screens; the unmatched `positions.cost_centre` list; position numbers; the coding view; the cost per cost centre.
-      **Not verified:** nothing is wired in, no migration; the pay scale band, a rule field, is not yet an assignment fact (T311 holds no band).
+      **Not verified:** the pure core above is not wired in on its own; the pay scale band, a rule field, is not yet an assignment fact (T311 holds no band).
+      **Further part done (2026-10-28), the register and the assignment link:** migration `000103` (`cost_centres`: code, name, parent, valid from and to, unique per organization;
+      `assignments.cost_centre`); `GET /api/cost-centres` (open to a signed-in caller in scope, each with whether it is open today and its parent chain), `POST` (HR; a parent must be
+      in the register and open on the first day), `POST /api/cost-centres/{pid}/close` (never deleted, not reopened here), `GET /api/cost-centres/unmatched` (HR: the free-text
+      `positions.cost_centre` values that are not a code, with the number of positions, nothing matched or created). Adding or changing an assignment with a `cost_centre` that is not
+      in the register or not open on the effective day is a `422`. Request test, **mutation-checked** (open check disabled: fails); full `--ignored` suite 169, `cargo test --lib` 942,
+      clippy clean, `pnpm check` 0/0. **Still not done:** the coding structure and subjective rule tables and their endpoints (the pure core exists), position numbers, the coding view,
+      the establishment roll-up up the parent chain, the cost per cost centre, `positions.cost_centre` itself pointing at the register, a UI. **Not verified:** a parent that is closed
+      later still leaves its children open; the register was not checked against a real finance chart of accounts.
 - [~] (2026-10-28) WPM-T313 **Annual service and the person-centric record.** *(WPM-R166, WPM-R167, WPM-D113)* Interval union with a break tolerance
       (pure, clock-free), recognised prior service, `/api/me/record` and the privileged view with other employers reduced to a total.
       **Part done (2026-10-28), the pure core:** `rules/service.rs`: `service` (union of periods with overlaps counted once; a gap up to the
