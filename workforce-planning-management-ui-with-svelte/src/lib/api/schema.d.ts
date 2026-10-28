@@ -2044,6 +2044,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/capacity/peer-supply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What a linked pool gives its peer (?pool=, ?from=, ?months=): the pool's supply by month in hundredths of an FTE, hidden (null) in any month made up of fewer than five workers. Names no worker, gives no total, answered under the caller's own token. A pool that is not linked has nothing to give */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The months and their supply */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/capacity/settings": {
         parameters: {
             query?: never;

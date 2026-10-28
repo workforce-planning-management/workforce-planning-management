@@ -179,6 +179,6 @@ PPM's service (`project-portfolio-management-service-with-rust`) was read, not r
 
 - [ ] WPM-T363 `skill_pools.peer_pool_ref` and its set/clear endpoint (HR, audited without names or figures); the link is shown with the pool.
 - [ ] WPM-T364 `programme_demands.source` (`local` default, `ppm`), the peer event id and received time; idempotent receive; the view and what-if show demand by source and never sum across sources.
-- [ ] WPM-T365 Outbound supply for a linked pool: floored counts by month, to the caller's token.
-- [ ] WPM-T366 A test that WPM answers every capacity request with the peer unset, down and slow, and that a link removed returns the local figures.
+- [x] WPM-T365 Outbound supply for a linked pool: floored counts by month, to the caller's token.
+- [x] WPM-T366 A test that WPM answers every capacity request with the peer unset, down and slow, and that a link removed returns the local figures.
 

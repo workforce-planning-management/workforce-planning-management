@@ -13,6 +13,23 @@ pub(crate) struct OrgCapacity {
     pub(crate) member_counts: BTreeMap<String, usize>,
     /// What makes a worker count towards each pool, by pool.
     pub(crate) members: BTreeMap<String, Vec<rules::Member>>,
+    /// How many workers count towards each pool in each month (employed on any day of it), by pool; used to floor what leaves.
+    pub(crate) workers: BTreeMap<String, Vec<usize>>,
+}
+
+/// A pool's partner commitments as the rules read them; a row with a status the rules do not know is left out.
+fn commitments_of(rows: &[partner_commitments::Model], pool: Uuid) -> Vec<rules::Commitment> {
+    rows.iter()
+        .filter(|c| c.pool_pid == pool)
+        .filter_map(|c| {
+            Some(rules::Commitment {
+                partner: c.partner_ref.clone(),
+                month: c.month,
+                fte_centi: c.fte_centi,
+                status: rules::CommitmentStatus::parse(&c.status)?,
+            })
+        })
+        .collect()
 }
 
 /// Whether a demand claim counts in a pool: only the claims of the source the pool takes its demand from (WPM-D140).
@@ -44,9 +61,14 @@ async fn weighted_days(
     org: &str,
     months: &[NaiveDate],
     members_by_pool: &[Vec<rules::Member>],
-) -> Result<Vec<Vec<i64>>> {
+) -> Result<(Vec<Vec<i64>>, Vec<Vec<usize>>)> {
     let mut weighted = vec![vec![0_i64; months.len()]; members_by_pool.len()];
-    for (members, sums) in members_by_pool.iter().zip(weighted.iter_mut()) {
+    let mut heads = vec![vec![0_usize; months.len()]; members_by_pool.len()];
+    for ((members, sums), counts) in members_by_pool
+        .iter()
+        .zip(weighted.iter_mut())
+        .zip(heads.iter_mut())
+    {
         if members.is_empty() || months.is_empty() {
             continue;
         }
@@ -61,12 +83,14 @@ async fn weighted_days(
         for row in rows {
             let first: NaiveDate = row.try_get("", "first")?;
             let total: i64 = row.try_get("", "total")?;
+            let workers: i64 = row.try_get("", "workers")?;
             if let Some(i) = months.iter().position(|m| *m == first) {
                 sums[i] = total;
+                counts[i] = usize::try_from(workers).unwrap_or(0);
             }
         }
     }
-    Ok(weighted)
+    Ok((weighted, heads))
 }
 
 /// The SQL condition (on `workers w`) that a worker counts towards a pool: one of its role profiles or skills. Only UUIDs and integers
@@ -131,7 +155,8 @@ fn pool_supply_sql(members: &[rules::Member], months: &[NaiveDate]) -> String {
                  FROM clipped c) c
            GROUP BY pid, first)
          SELECT s.first AS first,
-                coalesce(sum(s.fte::bigint * ((s.t - s.f + 1) - coalesce(a.days, 0))), 0)::bigint AS total
+                coalesce(sum(s.fte::bigint * ((s.t - s.f + 1) - coalesce(a.days, 0))), 0)::bigint AS total,
+                count(DISTINCT s.pid)::bigint AS workers
          FROM span s LEFT JOIN away a ON a.pid = s.pid AND a.first = s.first
          GROUP BY s.first"
     )
@@ -185,7 +210,7 @@ pub(crate) async fn load_org_capacity(
                 .collect()
         })
         .collect();
-    let weighted = weighted_days(ctx, org, &months, &members_by_pool).await?;
+    let (weighted, heads) = weighted_days(ctx, org, &months, &members_by_pool).await?;
     let mut views = BTreeMap::new();
     let mut demand_by_pool = BTreeMap::new();
     let mut member_counts = BTreeMap::new();
@@ -205,26 +230,22 @@ pub(crate) async fn load_org_capacity(
                 .cloned()
                 .collect::<Vec<_>>(),
         );
-        let commitments: Vec<rules::Commitment> = commitment_rows
-            .iter()
-            .filter(|c| c.pool_pid == pool.pid)
-            .filter_map(|c| {
-                Some(rules::Commitment {
-                    partner: c.partner_ref.clone(),
-                    month: c.month,
-                    fte_centi: c.fte_centi,
-                    status: rules::CommitmentStatus::parse(&c.status)?,
-                })
-            })
-            .collect();
+        let commitments = commitments_of(&commitment_rows, pool.pid);
         let key = pool.pid.to_string();
-        views.insert(
-            key.clone(),
-            rules::build_pool(&months, &supply, &demand, &commitments),
-        );
+        let mut view = rules::build_pool(&months, &supply, &demand, &commitments);
+        // A linked pool the peer has sent nothing to has unknown demand, not none (WPM-D141).
+        if linked
+            && !demand_rows
+                .iter()
+                .any(|d| d.pool_pid == pool.pid && d.source == "ppm")
+        {
+            view = rules::with_demand_unknown(view);
+        }
+        views.insert(key.clone(), view);
         member_counts.insert(key.clone(), members.len());
         demand_by_pool.insert(key, demand);
     }
+    let workers = pools.iter().map(|p| p.pid.to_string()).zip(heads).collect();
     let members = pools
         .iter()
         .map(|p| p.pid.to_string())
@@ -237,6 +258,7 @@ pub(crate) async fn load_org_capacity(
         demand: demand_by_pool,
         member_counts,
         members,
+        workers,
     })
 }
 

@@ -158,3 +158,56 @@ pub(super) async fn receive_peer_demand(
     txn.commit().await?;
     format::json(json!({ "pid": row.pid, "duplicate": false }))
 }
+
+/// Query for `GET /api/capacity/peer-supply`.
+#[derive(Debug, Deserialize)]
+pub(super) struct PeerSupplyQuery {
+    pool: Uuid,
+    from: Option<NaiveDate>,
+    months: Option<u32>,
+}
+
+/// `GET /api/capacity/peer-supply?pool=&from=&months=` — what a linked pool gives its peer: the pool's supply by month, as FTE in
+/// hundredths, with a month **hidden** (`null`) where fewer than five workers make it up. It names no worker, gives no total, and is
+/// answered under the caller's own token (WPM-D135): a caller who may not see the pool is refused as on the capacity view. A pool that is
+/// not linked has nothing to give (WPM-D138, WPM-R213).
+#[debug_handler]
+pub(super) async fn peer_supply_view(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axum::extract::Query(query): axum::extract::Query<PeerSupplyQuery>,
+) -> Result<Response> {
+    let pool = live_pool(&ctx, &caller, &query.pool.to_string()).await?;
+    let Some(peer_pool_ref) = pool.peer_pool_ref.clone() else {
+        return Err(unprocessable(
+            "the pool is not linked to a peer pool, so it gives the peer nothing",
+        ));
+    };
+    let from = query.from.unwrap_or_else(today);
+    let capacity = load_org_capacity(
+        &ctx,
+        &pool.organization_ref,
+        from,
+        query.months.unwrap_or(DEFAULT_MONTHS),
+    )
+    .await?;
+    let key = pool.pid.to_string();
+    let (Some(view), Some(workers)) = (capacity.views.get(&key), capacity.workers.get(&key)) else {
+        return Err(Error::NotFound);
+    };
+    let supply: Vec<i64> = view.cells.iter().map(|c| c.supply_centi).collect();
+    let shown = rules::peer_supply(&supply, workers, crate::rules::pulse::K_ANONYMITY);
+    format::json(json!({
+        "pool_pid": pool.pid,
+        "peer_pool_ref": peer_pool_ref,
+        "source": "wpm",
+        "as_of": Utc::now(),
+        "floor": crate::rules::pulse::K_ANONYMITY,
+        "months": capacity.months.iter().zip(&shown).map(|(month, centi)| json!({
+            "month": month,
+            "supply_centi": centi,
+            "hidden": centi.is_none(),
+        })).collect::<Vec<_>>(),
+        "derivation": rules::DERIVATION,
+    }))
+}

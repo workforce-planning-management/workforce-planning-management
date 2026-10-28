@@ -470,6 +470,24 @@ pub struct PoolView {
     pub over_months: usize,
     /// How many months cannot be said.
     pub unknown_months: usize,
+    /// Whether the pool's demand is known. A linked pool its peer has sent nothing to is not (WPM-D141), and stays unknown whatever a
+    /// what-if adds to it.
+    pub demand_known: bool,
+}
+
+/// A linked pool whose peer has sent no demand at all: its demand is **not known**, not zero (WPM-D141), so no month can be said to fit or
+/// to be over. Every cell becomes `Unknown`; the figures stay as they are.
+#[must_use]
+pub fn with_demand_unknown(mut view: PoolView) -> PoolView {
+    for cell in &mut view.cells {
+        cell.status = CellStatus::Unknown;
+        cell.remaining_shortfall_centi = 0;
+    }
+    view.over_total_centi = 0;
+    view.over_months = 0;
+    view.unknown_months = view.cells.len();
+    view.demand_known = false;
+    view
 }
 
 /// What a pool-month comes to, from its balance (`supply - active demand`), the firm partner capacity and whether a partner has not
@@ -559,6 +577,7 @@ pub fn build_pool(
         over_total_centi: over_total,
         over_months,
         unknown_months,
+        demand_known: true,
     }
 }
 
@@ -899,7 +918,11 @@ fn moved(view: &PoolView, moves: &BTreeMap<NaiveDate, i64>) -> PoolView {
         let active = (cell.demand_centi + moves.get(&cell.month).copied().unwrap_or(0)).max(0);
         let balance = cell.supply_centi - active;
         let any_unknown = cell.partners.iter().any(|p| p.commitment.is_none());
-        let (status, remaining) = classify(balance, cell.firm_partner_centi, any_unknown);
+        let (status, remaining) = if view.demand_known {
+            classify(balance, cell.firm_partner_centi, any_unknown)
+        } else {
+            (CellStatus::Unknown, 0)
+        };
         match status {
             CellStatus::Over => {
                 over_total += remaining;
@@ -921,6 +944,7 @@ fn moved(view: &PoolView, moves: &BTreeMap<NaiveDate, i64>) -> PoolView {
         over_total_centi: over_total,
         over_months,
         unknown_months,
+        demand_known: view.demand_known,
     }
 }
 
@@ -1079,6 +1103,18 @@ pub const fn counted_source(linked: bool) -> &'static str {
 #[must_use]
 pub fn peer_pool_ref_ok(text: &str) -> bool {
     text.len() == 36 && Uuid::parse_str(text).is_ok_and(|u| u.hyphenated().to_string() == text)
+}
+
+/// The supply a linked pool gives its peer, month by month: the figure, or `None` where fewer than `floor` workers make it up (small-cell
+/// suppression, [`crate::rules::suppression`]), because the FTE of one or two people says who they are. A month with no worker is a real
+/// zero and is shown. No total is given.
+#[must_use]
+pub fn peer_supply(supply_centi: &[i64], workers: &[usize], floor: usize) -> Vec<Option<i64>> {
+    supply_centi
+        .iter()
+        .zip(workers)
+        .map(|(centi, n)| crate::rules::suppression::visible(*n, floor).then_some(*centi))
+        .collect()
 }
 
 /// Whether a contingent engagement that ends on `ends_on` would end before a programme's proposed new end. An engagement already over
@@ -1879,6 +1915,7 @@ mod tests {
                 over_total_centi: 0,
                 over_months: 0,
                 unknown_months: 0,
+                demand_known: true,
             };
             let again = moved(&view, &BTreeMap::new());
             assert_eq!(again.cells[0].status, status);
@@ -2001,5 +2038,66 @@ mod tests {
         ] {
             assert!(!peer_pool_ref_ok(bad), "{bad}");
         }
+    }
+
+    #[test]
+    fn supply_for_a_peer_is_hidden_where_too_few_workers_make_it_up() {
+        assert_eq!(
+            peer_supply(&[500, 400, 0, 100], &[5, 4, 0, 1], 5),
+            vec![Some(500), None, Some(0), None]
+        );
+        assert_eq!(
+            peer_supply(&[500], &[5], 0),
+            vec![Some(500)],
+            "a floor of 0 reads as 1"
+        );
+        assert_eq!(
+            peer_supply(&[500, 400], &[7], 5),
+            vec![Some(500)],
+            "a month with no worker count is not invented"
+        );
+    }
+
+    #[test]
+    fn a_pool_whose_peer_has_sent_no_demand_is_unknown_in_every_month_not_fitting() {
+        let months = [d(2027, 1, 1), d(2027, 2, 1)];
+        let view = build_pool(&months, &[100, 100], &[], &[]);
+        assert!(view.cells.iter().all(|c| c.status == CellStatus::Fits));
+        let unknown = with_demand_unknown(view);
+        assert!(
+            unknown
+                .cells
+                .iter()
+                .all(|c| c.status == CellStatus::Unknown)
+        );
+        assert_eq!(
+            (
+                unknown.unknown_months,
+                unknown.over_months,
+                unknown.over_total_centi
+            ),
+            (2, 0, 0)
+        );
+        assert_eq!(
+            unknown.cells[0].supply_centi, 100,
+            "the supply is still known"
+        );
+        assert!(!unknown.demand_known);
+        let after = moved(&unknown, &BTreeMap::from([(months[0], 50)]));
+        assert_eq!(
+            after.cells[0].status,
+            CellStatus::Unknown,
+            "a what-if cannot make unknown demand fit"
+        );
+        let over = with_demand_unknown(build_pool(
+            &months,
+            &[0, 0],
+            &[demand("thing:x", months[0], 50, DemandStatus::Active)],
+            &[],
+        ));
+        assert_eq!(
+            over.over_months, 0,
+            "an overcommitted month is not claimed when demand is unknown"
+        );
     }
 }

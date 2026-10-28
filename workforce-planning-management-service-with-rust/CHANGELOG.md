@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 `GET /api/workers/{pid}/contractor-details` shows `supplier_name` and `supplier_contact_name`, best-effort through the existing display-name client: `null` when unknown, nothing stored.
 
+### Added — what a linked pool gives its peer, and unknown demand (WPM-T365, T366)
+
+`GET /api/capacity/peer-supply`: supply by month, hidden where fewer than five workers make it up. **Fixed:** a linked pool its peer had said nothing to counted zero demand and showed as fitting; it is now unknown in every month, and a what-if cannot make it fit.
+
 ### Added — a pool can be linked to a peer's pool (WPM-T363, T364)
 
 `PUT /api/skill-pools/{pid}/peer-link`, `POST /api/capacity/peer-demand` and `programme_demands.source`. Standalone, nothing changes; linked, the pool counts the peer's demand claims and not its own, never both, and unlinking returns it to its own at once. Migration `000107`.

@@ -698,6 +698,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/capacity/peer-demand": {
             "post": { "tags": ["capacity"], "summary": "Take a programme's demand on a linked pool for a month from the peer (pool_pid, programme_ref, month, fte_centi, peer_event_id). Stored as a proposed claim with source ppm, beside any claim entered here and never added to it; the same peer_event_id again changes nothing. A pool that is not linked refuses it. WPM's own contract: the peer has not been read to call it", "responses": ok("The pid of the claim, and whether it was a repeat") }
         },
+        "/api/capacity/peer-supply": {
+            "get": { "tags": ["capacity"], "summary": "What a linked pool gives its peer (?pool=, ?from=, ?months=): the pool's supply by month in hundredths of an FTE, hidden (null) in any month made up of fewer than five workers. Names no worker, gives no total, answered under the caller's own token. A pool that is not linked has nothing to give", "responses": ok("The months and their supply") }
+        },
         "/api/absence-categories": {
             "get": { "tags": ["leave"], "summary": "The kinds of leave (?pay=paid|unpaid|policy to filter): vacation (annual), government holiday (public_holiday), illness (sick), parental, unpaid and other, each paid, unpaid or by the employer's policy, how it is held against a balance, and whether a reason may be given. Sick leave never carries a reason and there is no category for a condition or for stress", "responses": ok("The categories") }
         },

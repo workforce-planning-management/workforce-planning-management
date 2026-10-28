@@ -3034,6 +3034,19 @@
         ]
       }
     },
+    "/api/capacity/peer-supply": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The months and their supply"
+          }
+        },
+        "summary": "What a linked pool gives its peer (?pool=, ?from=, ?months=): the pool's supply by month in hundredths of an FTE, hidden (null) in any month made up of fewer than five workers. Names no worker, gives no total, answered under the caller's own token. A pool that is not linked has nothing to give",
+        "tags": [
+          "capacity"
+        ]
+      }
+    },
     "/api/capacity/settings": {
       "get": {
         "responses": {

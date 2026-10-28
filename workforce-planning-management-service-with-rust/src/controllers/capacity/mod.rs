@@ -100,6 +100,7 @@ pub fn routes() -> Routes {
         )
         .add("/skill-pools/{pid}/peer-link", put(set_peer_link))
         .add("/capacity/peer-demand", post(receive_peer_demand))
+        .add("/capacity/peer-supply", get(peer_supply_view))
         .add("/programme-demands", put(set_demand))
         .add("/programme-demands", get(list_demand))
         .add("/programme-demands/{pid}", delete(delete_demand))

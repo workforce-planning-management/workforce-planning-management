@@ -1830,3 +1830,80 @@ async fn a_linked_pool_counts_the_peers_demand_and_not_its_own_and_unlinking_ret
     })
     .await;
 }
+
+/// WPM-T365, WPM-T366: what a linked pool gives its peer is floored; and every capacity request is answered with the peer unset, silent and
+/// removed, a linked pool the peer has said nothing to being unknown and not fitting.
+#[tokio::test]
+#[ignore = "needs a Postgres database; run with --ignored"]
+async fn a_linked_pool_gives_its_peer_a_floored_supply_and_every_request_is_answered_with_the_peer_silent()
+ {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut pools = Vec::new();
+        for (label, workers) in [("Big", 5), ("Small", 3)] {
+            let title = format!("{label} engineer {tag}");
+            for n in 1..=workers {
+                request
+                    .post("/api/workers")
+                    .json(&json!({
+                        "person_ref": super::a_person(), "organization_ref": org,
+                        "worker_number": format!("PS-{}-{}{n}", &tag[..8], &label[..1]), "display_name": "Supply Worker",
+                        "employment_type": "permanent", "fte_percent": 100,
+                        "department": "engineering", "job_title": title, "hired_on": "2026-01-05",
+                    }))
+                    .await
+                    .assert_status_ok();
+            }
+            let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": title })).await.json();
+            let pool = make_pool(&request, &org, &format!("{label} supply pool {tag}"), 0).await;
+            request.post(&format!("/api/skill-pools/{pool}/members")).json(&json!({ "role_profile_pid": profile["pid"] })).await.assert_status_ok();
+            pools.push((label, pool));
+        }
+        let (big, small) = (pools[0].1.clone(), pools[1].1.clone());
+        let status_of = |label: &'static str| {
+            let (request, org) = (&request, org.clone());
+            async move {
+                let view: Value = request.get(&format!("/api/capacity?organization={org}&from=2027-01-01&months=2")).await.json();
+                view["pools"].as_array().unwrap().iter().find(|p| p["name"].as_str().is_some_and(|n| n.starts_with(label))).unwrap()["cells"][0]["status"].as_str().unwrap().to_string()
+            }
+        };
+
+        // Unset: the peer is not a dependency. The view answers, a pool with no demand fits, and it gives a peer nothing.
+        assert_eq!(status_of("Big").await, "fits");
+        let none = request.get(&format!("/api/capacity/peer-supply?pool={big}&from=2027-01-01&months=2")).await;
+        assert_eq!(none.status_code(), 422, "an unlinked pool has nothing to give");
+
+        // Linked and silent: the peer has said nothing, so demand is unknown, not zero and not fitting; the request is still answered.
+        for pool in [&big, &small] {
+            request.put(&format!("/api/skill-pools/{pool}/peer-link")).json(&json!({ "peer_pool_ref": uuid::Uuid::new_v4().to_string() })).await.assert_status_ok();
+        }
+        assert_eq!(status_of("Big").await, "unknown");
+        let asked = request
+            .post("/api/capacity/what-if")
+            .json(&json!({ "organization_ref": org, "programme_ref": a_programme(), "changes": [{ "pool_pid": big, "month": "2027-01-01", "fte_centi": 50 }] }))
+            .await;
+        assert_eq!(asked.status_code(), 200, "{}", asked.text());
+        let answer: Value = asked.json();
+        assert_eq!(answer["answer"], "unknown", "{answer}");
+
+        // What the pools give the peer: five workers make a month visible, three do not; no name, no total.
+        let given: Value = request.get(&format!("/api/capacity/peer-supply?pool={big}&from=2027-01-01&months=2")).await.json();
+        assert_eq!(given["months"][0]["supply_centi"], 500, "{given}");
+        assert_eq!(given["months"][0]["hidden"], false);
+        let held: Value = request.get(&format!("/api/capacity/peer-supply?pool={small}&from=2027-01-01&months=2")).await.json();
+        assert_eq!(held["months"][0]["supply_centi"], Value::Null, "{held}");
+        assert_eq!(held["months"][0]["hidden"], true);
+        for word in ["Supply Worker", "PS-", "person:", "total"] {
+            assert!(!format!("{given}{held}").contains(word), "{word}");
+        }
+
+        // Once the peer speaks the pool is judged again; removing the link returns the local figures.
+        request.post("/api/capacity/peer-demand").json(&json!({ "pool_pid": big, "programme_ref": a_programme(), "month": "2027-01-01", "fte_centi": 50, "peer_event_id": format!("s-{tag}") })).await.assert_status_ok();
+        assert_eq!(status_of("Big").await, "fits");
+        request.put(&format!("/api/skill-pools/{big}/peer-link")).json(&json!({ "peer_pool_ref": null })).await.assert_status_ok();
+        assert_eq!(status_of("Big").await, "fits");
+        let _ = &ctx;
+    })
+    .await;
+}
