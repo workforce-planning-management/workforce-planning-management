@@ -75,6 +75,7 @@ pub use super::job_level_frameworks::Entity as JobLevelFrameworks;
 pub use super::job_level_levels::Entity as JobLevelLevels;
 pub use super::leave_entitlements::Entity as LeaveEntitlements;
 pub use super::leave_requests::Entity as LeaveRequests;
+pub use super::link_tokens::Entity as LinkTokens;
 pub use super::mobility_interests::Entity as MobilityInterests;
 pub use super::movement_items::Entity as MovementItems;
 pub use super::movements::Entity as Movements;

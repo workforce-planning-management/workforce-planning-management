@@ -5467,4 +5467,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `no-empty-object-type` for `src/app.d.ts` only (SvelteKit's template). `tests/unit/untranslated.allow.json` is left out of Prettier because a script writes it.
       **Verified:** a probe file with an unused variable fails `pnpm lint` at ESLint, and one badly formatted fails it at Prettier; both removed. **Not verified:** the Playwright
       specs were reformatted but not run; CI was not run (the workflow is unchanged because `pnpm run lint` was already a step); the service-side Rust gates are unchanged.
+- [x] (2026-10-28) WPM-T348 **Single-use hashed link tokens.** *(auth.md, WPM-D73 spirit)* A token that works once, stored only as a hash.
+      **Done:** `rules/link_token.rs` (32 random bytes as 43 URL-safe characters; `well_formed` refuses anything else before it is hashed; `hash` is SHA-256 in hex, checked against two
+      standard vectors; a purpose of 1 to 60 snake-case characters; a life of 1 minute to 7 days; `check` with the reason, expiry exclusive); migration `000105` (`link_tokens`, hash
+      unique and checked as 64 hex characters, a trigger that refuses any change to `used_at` once set); `models::link_tokens::{issue, consume, purge_expired}` (consume is one atomic
+      `UPDATE ... RETURNING`; every refusal looks the same to the caller and the reason goes to the audit trail, never the token). 8 unit tests and a request test (bad purpose or life
+      refused; no column for the token and the token text is nowhere in the table; wrong purpose refused without using it up; malformed input; works once; `used_at` cannot be cleared;
+      expiry at the minute; reasons in the audit trail and the token not; purge). **Mutation-checked** three ways (the unused test dropped; the purpose test dropped; the expiry test
+      dropped), all caught; a fourth (the length test in `well_formed`) is an equivalent mutant because the base64 decode already fixes the length. `cargo test --lib` 967, clippy clean.
+      **Not done:** any consumer or endpoint; rate limiting; a scheduled purge; two simultaneous consumes were not tested (the test pool holds one connection), the atomicity rests on the
+      single statement. **Not verified:** the full `--ignored` suite was not re-run for this change.
 

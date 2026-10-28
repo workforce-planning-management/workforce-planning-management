@@ -154,6 +154,21 @@ at the authentication service keeps working here for up to one token lifetime, a
 **Not done.** No revocation list or introspection call (they would make the provider a dependency of every request); no check of the
 `sid` against the provider; no refresh handling (that belongs to the UI's session, not the API).
 
+## Single-use link tokens (WPM-T348)
+
+A link in a message that lets one person do one thing once (confirm an address, answer a request) carries a **token** that works exactly once.
+
+- **The token is 32 random bytes, shown once, in the link.** Only its SHA-256 hash is stored (`link_tokens.token_hash`); there is no column that could hold the
+  token, so a copy of the table holds nothing that works as a link. The token is never written to the audit trail, a log or a response after it is issued.
+- **A token has a purpose, an expiry and a use.** A link made for one purpose cannot be used for another (and a wrong-purpose attempt does not use it up); it lives
+  1 minute to 7 days; and consuming it is one atomic `UPDATE ... WHERE` that checks hash, purpose, expiry and unused together, so two people presenting the same link at
+  once cannot both succeed. A trigger refuses any later change to `used_at`.
+- **A refusal says nothing.** An unknown, malformed, used, expired or wrong-purpose token returns the same answer to the caller. The reason is in the audit trail
+  (`link_token_refused`, with `reason`), so an operator can tell a stale link from a guess.
+- **Consumers.** None yet: this is the primitive. A feature that sends a link calls `models::link_tokens::issue` and `consume`; it chooses the purpose and the life.
+- **Not done:** rate limiting of consume attempts; purging on a schedule (`purge_expired` exists but nothing calls it); the token in a URL fragment or POST body versus a
+  query string is the consumer's choice, and a query string can reach a log.
+
 ## Activation runbook (WPM-G1)
 
 Before WPM-D52 the shipped default was wide open (the family posture).

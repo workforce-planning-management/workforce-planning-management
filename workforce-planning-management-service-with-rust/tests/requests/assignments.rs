@@ -473,3 +473,66 @@ async fn holidays_are_generated_per_region_safely_repeated_and_kept_apart_from_h
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
+    use chrono::Duration as D;
+    use workforce_planning_management::models::link_tokens::{consume, issue, purge_expired};
+    crate::requests::request_open(|_request, ctx| async move {
+        let now = Utc::now();
+        let subject = uuid::Uuid::new_v4();
+
+        // A bad purpose or life is refused; nothing is stored.
+        assert!(issue(&ctx.db, "Bad Purpose", None, 30, now).await.is_err());
+        assert!(issue(&ctx.db, "confirm", None, 0, now).await.is_err());
+        assert!(issue(&ctx.db, "confirm", None, 7 * 24 * 60 + 1, now).await.is_err());
+
+        let token = issue(&ctx.db, "confirm", Some(subject), 30, now).await.unwrap();
+        assert_eq!(token.len(), 43);
+        let other = issue(&ctx.db, "confirm", None, 30, now).await.unwrap();
+        assert_ne!(token, other, "tokens are random");
+
+        // Only the hash is stored: no column can hold a token, and the token text is nowhere in the table.
+        let cols = scalar(&ctx, "SELECT count(*) AS n FROM information_schema.columns WHERE table_name = 'link_tokens' AND column_name IN ('token', 'secret', 'value', 'plaintext')".to_string()).await;
+        assert_eq!(cols, 0, "there is no column for the token itself");
+        let leaked = scalar(&ctx, format!("SELECT count(*) AS n FROM link_tokens WHERE token_hash = '{token}' OR purpose = '{token}'")).await;
+        assert_eq!(leaked, 0);
+        let hash = workforce_planning_management::rules::link_token::hash(&token);
+        assert_eq!(scalar(&ctx, format!("SELECT count(*) AS n FROM link_tokens WHERE token_hash = '{hash}'")).await, 1);
+
+        // The wrong purpose does not use it up, and does not work.
+        assert_eq!(consume(&ctx.db, "reset", &token, now + D::minutes(1)).await.unwrap(), None);
+        // Malformed input never reaches the table.
+        assert_eq!(consume(&ctx.db, "confirm", "short", now).await.unwrap(), None);
+        assert_eq!(consume(&ctx.db, "confirm", &format!("{}!", &token[..42]), now).await.unwrap(), None);
+
+        // The right purpose works exactly once.
+        let first = consume(&ctx.db, "confirm", &token, now + D::minutes(2)).await.unwrap();
+        assert_eq!(first.map(|c| c.subject_pid), Some(Some(subject)));
+        assert_eq!(consume(&ctx.db, "confirm", &token, now + D::minutes(3)).await.unwrap(), None, "used");
+
+        // A used token cannot be made usable again, even by an UPDATE.
+        let reuse = ctx.db.execute_unprepared(&format!("UPDATE link_tokens SET used_at = NULL WHERE token_hash = '{hash}'")).await;
+        assert!(reuse.is_err(), "used_at is written once");
+
+        // Expiry is exclusive and an expired token is refused.
+        let brief = issue(&ctx.db, "confirm", None, 1, now).await.unwrap();
+        assert_eq!(consume(&ctx.db, "confirm", &brief, now + D::minutes(1)).await.unwrap(), None, "expired at the minute");
+        let live = issue(&ctx.db, "confirm", None, 5, now).await.unwrap();
+        assert!(consume(&ctx.db, "confirm", &live, now + D::minutes(4)).await.unwrap().is_some());
+
+        // The audit trail has the reasons and never the token.
+        let reasons = |r: &str| scalar(&ctx, format!("SELECT count(*) AS n FROM audit_logs WHERE entity = 'link_token' AND action = 'link_token_refused' AND snapshot->>'reason' = '{r}'"));
+        assert!(reasons("wrong_purpose").await >= 1 && reasons("used").await >= 1 && reasons("expired").await >= 1 && reasons("malformed").await >= 2);
+        let in_audit = scalar(&ctx, format!("SELECT count(*) AS n FROM audit_logs WHERE snapshot::text LIKE '%{token}%' OR snapshot::text LIKE '%{brief}%'")).await;
+        assert_eq!(in_audit, 0, "a token is never written to the audit trail");
+
+        // Old tokens are purged.
+        let removed = purge_expired(&ctx.db, now + D::hours(1)).await.unwrap();
+        assert!(removed >= 4, "{removed}");
+        assert_eq!(scalar(&ctx, "SELECT count(*) AS n FROM link_tokens".to_string()).await, 0);
+    })
+    .await;
+}

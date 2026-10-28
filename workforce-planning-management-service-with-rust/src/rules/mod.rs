@@ -66,6 +66,7 @@ pub mod key_person;
 pub mod learning;
 pub mod leave;
 pub mod lifecycle;
+pub mod link_token;
 pub mod lms;
 pub mod mandatory_learning;
 pub mod mcp;

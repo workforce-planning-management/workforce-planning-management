@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — single-use link tokens (WPM-T348)
+
+Migration `000105`, `rules::link_token` and `models::link_tokens::{issue, consume, purge_expired}`: a link token is 32 random bytes shown once, stored only as its SHA-256 hash, bound to a purpose, expiring, and consumed by one atomic update. Every refusal looks the same to the caller; the reason goes to the audit trail. No consumer yet.
+
 ### Added — the holiday calendar (WPM-T346)
 
 Migration `000104`, `rules::holiday` and `GET /api/holiday-regions`, `GET`/`POST /api/holidays`, `POST /api/holidays/generate`: public holidays generated from a region's rules (fixed dates, nth or last weekdays, Easter offsets, weekend substitutes), repeatable, with hand-added days kept. Packs for `GB-ENG`, `US` and `DE` are unverified examples.

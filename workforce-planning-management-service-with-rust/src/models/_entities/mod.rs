@@ -77,6 +77,7 @@ pub mod learning_path_steps;
 pub mod learning_paths;
 pub mod leave_entitlements;
 pub mod leave_requests;
+pub mod link_tokens;
 pub mod mentorship_sessions;
 pub mod mentorships;
 pub mod mobility_interests;
