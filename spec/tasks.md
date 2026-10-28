@@ -5292,8 +5292,16 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       aggregates with the floor; export and erasure.
 - [ ] WPM-T312 **Cost centres, financial and subjective coding.** *(WPM-R163–R165, WPM-D116)* Register, unmatched free-text list,
       segment assembly and most-specific-rule derivation in the pure core, position numbers, the coding view.
-- [ ] WPM-T313 **Annual service and the person-centric record.** *(WPM-R166, WPM-R167, WPM-D113)* Interval union with a break tolerance
+- [~] (2026-10-28) WPM-T313 **Annual service and the person-centric record.** *(WPM-R166, WPM-R167, WPM-D113)* Interval union with a break tolerance
       (pure, clock-free), recognised prior service, `/api/me/record` and the privileged view with other employers reduced to a total.
+      **Part done (2026-10-28), the pure core:** `rules/service.rs`: `service` (union of periods with overlaps counted once; a gap up to the
+      configured tolerance joins **continuous** service, none set means only touching periods join; total and continuous days and whole
+      years, the merged spans, and `None` plus the named references when a period has no start or ends before it starts), `prior_days`
+      (recognised prior service, kept apart, never added), `anniversary`. Inclusive days; whole years count from the earliest start, so a
+      year ends the day before its anniversary. 12 unit tests, **mutation-checked** twice (the gap comparison; the "reaches the as-of
+      date" test for continuous service), both caught; clippy clean. **Not done:** the records (prior-service table, migration), `/api/me/record`,
+      the privileged view that reduces other employers to a total, the transferred-training rule, duplicates shown as possible. **Not
+      verified:** whole years across several periods are measured from the first start, a reading of R166 that HR should confirm.
 - [ ] WPM-T314 **Statutory and mandatory learning, pure core.** *(WPM-R170, WPM-D117)* Audience matching, the six statuses, refresher
       arithmetic, transferred completions.
 - [ ] WPM-T315 **Statutory and mandatory learning, records, API and screens.** *(WPM-R170)* Requirements, recorded completions, the

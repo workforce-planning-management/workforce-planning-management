@@ -93,6 +93,7 @@ pub mod scale;
 pub mod scim;
 pub mod scoring;
 pub mod self_service;
+pub mod service;
 pub mod sfia;
 pub mod skill_gap;
 pub mod skill_merge;
