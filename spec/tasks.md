@@ -5531,3 +5531,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       column of a table not keyed to a person, a table built by SeaORM migrations rather than raw SQL, and whether a statement is *right*. The retention schedule's own list of 56 tables was not
       re-derived. **Not verified:** the Keycloak suite; a restore-and-replay drill with the new statements.
 
+## Phase 25 — cross-app bridges (proposed WPM-R206–R211, WPM-D134–D136; [cross-app-bridges.md](cross-app-bridges.md))
+
+- [x] (2026-10-28) WPM-T354 **Spec round.** *(traces to WPM-R206–R211, WPM-D134–D136)* [cross-app-bridges.md](cross-app-bridges.md), the registries and [integrations.md](integrations.md).
+      Found while writing it: the agency link already exists in part (`worker_contractor_details.supplier_ref`, validated as an `organization:` URN), and the `worker_hired` event carries no
+      `person_ref`, so a consumer cannot tell who was hired. **Not read:** PPM's code is not on this machine, and CRM was looked at only as far as its file list and its use of `person_ref`;
+      every PPM contract is an assumed shape and marked unverified (WPM-D136). No code, migration or test changed in this task.
+- [ ] WPM-T355 **Hire and termination events carry the person's ref.** *(WPM-R207)* `worker_hired` and `worker_terminated` gain `data` with `person_ref`, `organization_ref` and `effective_on`, nothing else;
+      a test pins the exact keys.
+- [ ] WPM-T356 **The supplier's contact.** *(WPM-R206)* `supplier_contact_ref` (a `person:` URN) on contractor details; validated, exported with the worker, erased with them.
+- [ ] WPM-T357 **The overlap check.** *(WPM-R208, WPM-D135)* `POST /api/bridges/overlap`: up to 500 `person:` refs, a yes or no for each, HR under their own token, audited with the count only.
+- [ ] WPM-T358 **Supplier and contact names from CRM.** *(WPM-R206)* Best-effort, cached, never blocking a write. Needs CRM's lookup route read first.
+- [ ] WPM-T359 **Capacity what-if for PPM.** *(WPM-R209)* Is WPM-T158 to T160.
+- [ ] WPM-T360 **Programme demand in.** *(WPM-R210)* Idempotent on programme and source event. Needs PPM's contract.
+- [ ] WPM-T361 **People-impact out.** *(WPM-R211)* Counts with the floor, for a programme. Needs WPM-T359 and PPM's contract.
+

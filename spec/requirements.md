@@ -607,3 +607,4 @@ acceptance criteria and traces to the tasks that delivered it:
 - **WPM-R50** localization and content-as-data (locale routes — one full-code address per locale —
   Sveltia CMS) — [locales-for-global-sharing-with-svelte](locales-for-global-sharing-with-svelte/index.md)
   § "How WPM applies this" (WPM-T70–T72).
+- **WPM-R206–R211** cross-app bridges: the agency and supplier link, the hire handoff, an overlap check (to contact-relationship-management), the capacity what-if answer, programme demand in and people-impact out (to project-portfolio-management); references and aggregates only. See [cross-app-bridges.md](cross-app-bridges.md).

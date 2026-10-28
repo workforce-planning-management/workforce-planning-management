@@ -30,6 +30,10 @@ WPM emits the corresponding `entity_links` write (or a `linked` /
 automatically — until then the two layers are maintained
 independently, and this file is the record of that gap.
 
+## Bridges to the sibling apps
+
+The two siblings that overlap WPM most, contact-relationship-management and project-portfolio-management, are bridged by references and aggregates only; see [cross-app-bridges.md](cross-app-bridges.md) (WPM-R206–R211).
+
 ## Events
 
 Family envelope via the `WPM_EVENT_TRANSPORT` seam (default

@@ -816,6 +816,9 @@ Requested after section R. Succession exists (WPM-R12); deputies and acting up d
 - **WPM-D130 A deputy holds named authority, not the manager's confidences.**
 - **WPM-D131 Acting cover does not fill a vacancy.**
 - **WPM-D132 Acting up is a door to promotion, so who walks through it is counted.**
+- **WPM-D134 A bridge carries references and aggregates, never records** ([cross-app-bridges.md](cross-app-bridges.md), as are D135 and D136).
+- **WPM-D135 An inbound call acts under the caller's token; there is no bridge service account.**
+- **WPM-D136 A contract that was not read is not built against.**
 - **WPM-D133 The holder, or HR while the holder is unavailable, lets a deputy decide flexible working, and the default is no.**
   The ABAC operation `flexible_working:decide` permits a deputy only when the grant is `true`; `null`, missing and `false` deny.
   HR's grant lapses when the holder is available again.
