@@ -1160,6 +1160,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assignments/breakdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Headcount and FTE of the assignments in force today, by staff_group, job_role or area_of_work (?organization=&by=), from the floor: a cell under it shows nothing and no total is given. A category nobody recorded is its own unknown cell. No name, no worker, no pay */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The cells */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assignments/{pid}/change": {
         parameters: {
             query?: never;

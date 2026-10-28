@@ -663,6 +663,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/asset-issues/{pid}/return": {
             "post": { "tags": ["equipment"], "summary": "Close an open issue as returned, or written_off with a reason, on a day not before it was issued and not in the future", "responses": ok("The outcome") }
         },
+        "/api/assignments/breakdown": {
+            "get": { "tags": ["assignments"], "summary": "Headcount and FTE of the assignments in force today, by staff_group, job_role or area_of_work (?organization=&by=), from the floor: a cell under it shows nothing and no total is given. A category nobody recorded is its own unknown cell. No name, no worker, no pay", "responses": ok("The cells") }
+        },
         "/api/category-vocabulary": {
             "get": { "tags": ["assignments"], "summary": "An organization's assignment category vocabulary (?organization=, optional ?kind=): site, area_of_work, job_role, staff_group or occupation_code, each with its label and, where it comes from a national standard, that standard and its own code. None is shipped", "responses": ok("The entries") },
             "post": { "tags": ["assignments"], "summary": "Add a vocabulary entry. A code is unique within an organization and kind; a job role may name its staff group, and an assignment that records the two must then agree. HR", "responses": ok("The pid of the entry") }

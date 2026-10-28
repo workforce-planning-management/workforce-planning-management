@@ -10,8 +10,10 @@ use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
+use super::pay_transparency::organization_problems;
 use super::{
-    ensure_org_in_scope, ensure_valid, forbidden, row_json, unprocessable, writable_worker,
+    ensure_org_in_scope, ensure_scale, ensure_valid, forbidden, row_json, unprocessable,
+    writable_worker,
 };
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{assignments, workers};
@@ -361,10 +363,69 @@ async fn write_through(
     Ok(())
 }
 
+#[derive(Debug, Deserialize)]
+struct BreakdownQuery {
+    organization: String,
+    by: String,
+}
+
+/// `GET /api/assignments/breakdown?organization=&by=staff_group|job_role|area_of_work` — headcount and FTE of the assignments in
+/// force today, by category, from the floor; a cell under it shows nothing, and no total is given. A category not recorded is its own
+/// `unknown` cell. No name, no worker, no pay.
+#[debug_handler]
+async fn breakdown(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axum::extract::Query(q): axum::extract::Query<BreakdownQuery>,
+) -> Result<Response> {
+    ensure_valid(&organization_problems(&q.organization))?;
+    ensure_org_in_scope(&ctx, &caller, &q.organization).await?;
+    if !["staff_group", "job_role", "area_of_work"].contains(&q.by.as_str()) {
+        return Err(unprocessable(
+            "by must be one of: staff_group, job_role, area_of_work",
+        ));
+    }
+    let today = Utc::now().date_naive();
+    let in_org = workers::Entity::find()
+        .filter(workers::Column::OrganizationRef.eq(&q.organization))
+        .filter(workers::Column::DeletedAt.is_null());
+    ensure_scale(&ctx, in_org.clone()).await?;
+    let pids: Vec<Uuid> = in_org
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|w| w.pid)
+        .collect();
+    let rows: Vec<(Uuid, Option<String>, i32)> = assignments::Entity::find()
+        .filter(assignments::Column::WorkerPid.is_in(pids))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .filter(|a| as_rule(a).current_on(today))
+        .map(|a| {
+            let category = match q.by.as_str() {
+                "staff_group" => a.staff_group,
+                "job_role" => a.job_role,
+                _ => a.area_of_work,
+            };
+            (a.worker_pid, category, a.fte_percent)
+        })
+        .collect();
+    let floor = crate::rules::equality_monitoring::DEFAULT_FLOOR;
+    let cells: Vec<_> = rules::breakdown(&rows, floor)
+        .into_iter()
+        .map(|c| json!({ "category": c.category, "headcount": c.headcount, "fte_percent": c.fte_percent }))
+        .collect();
+    format::json(
+        json!({ "organization": q.organization, "by": q.by, "floor": floor, "cells": cells }),
+    )
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
+        .add("/assignments/breakdown", get(breakdown))
         .add("/workers/{pid}/assignments", get(list))
         .add("/workers/{pid}/assignments", post(add))
         .add("/assignments/{pid}/change", post(change))

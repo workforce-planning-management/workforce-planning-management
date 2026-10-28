@@ -5,6 +5,8 @@
 //! of category, cost centre or FTE ends one assignment and starts another on the effective date. A category that was never
 //! recorded reads `unknown`, never a default. Dates are inclusive at both ends.
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use chrono::{Days, NaiveDate};
 
 /// The most FTE a worker's current assignments can add up to in one organization.
@@ -225,6 +227,42 @@ pub fn category_or_unknown(value: Option<&str>) -> &str {
     }
 }
 
+/// One category's headcount and FTE. Below the floor both are `None`: a small group shows nothing, not a small number.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Cell {
+    /// The category code, or `unknown`.
+    pub category: String,
+    /// People with at least one assignment in the category.
+    pub headcount: Option<usize>,
+    /// The FTE of those assignments, in percent points (200 is two whole-time posts).
+    pub fte_percent: Option<i64>,
+}
+
+/// Headcount and FTE by category. `rows` is `(worker, category, fte_percent)` for each assignment in force; a worker with two
+/// assignments in one category counts once there. A category not recorded is its own cell, `unknown`, never merged into another.
+/// A cell under `floor` (0 is read as 1) shows nothing. **No total is returned**, so a hidden cell cannot be found by subtraction.
+#[must_use]
+pub fn breakdown<W: Ord + Clone>(rows: &[(W, Option<String>, i32)], floor: usize) -> Vec<Cell> {
+    let mut by: BTreeMap<String, (BTreeSet<W>, i64)> = BTreeMap::new();
+    for (worker, category, fte) in rows {
+        let cell = by
+            .entry(category_or_unknown(category.as_deref()).to_string())
+            .or_default();
+        cell.0.insert(worker.clone());
+        cell.1 += i64::from(*fte);
+    }
+    by.into_iter()
+        .map(|(category, (workers, fte))| {
+            let shown = workers.len() >= floor.max(1);
+            Cell {
+                category,
+                headcount: shown.then_some(workers.len()),
+                fte_percent: shown.then_some(fte),
+            }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -340,6 +378,42 @@ mod tests {
             1,
             "only a role"
         );
+    }
+
+    #[test]
+    fn a_breakdown_counts_a_person_once_per_category_and_hides_small_cells() {
+        let rows = [
+            (1, Some("nursing".to_string()), 60),
+            (1, Some("nursing".to_string()), 40),
+            (2, Some("nursing".to_string()), 100),
+            (3, Some("admin".to_string()), 100),
+            (4, None, 50),
+            (5, Some(" ".to_string()), 50),
+        ];
+        let cells = breakdown(&rows, 2);
+        let get = |c: &str| cells.iter().find(|x| x.category == c).unwrap().clone();
+        assert_eq!(
+            (get("nursing").headcount, get("nursing").fte_percent),
+            (Some(2), Some(200))
+        );
+        assert_eq!(
+            (get("admin").headcount, get("admin").fte_percent),
+            (None, None),
+            "one person is under a floor of two"
+        );
+        assert_eq!(
+            (get("unknown").headcount, get("unknown").fte_percent),
+            (Some(2), Some(100)),
+            "blank and missing are one unknown cell"
+        );
+        assert_eq!(cells.len(), 3);
+    }
+
+    #[test]
+    fn a_floor_of_zero_is_read_as_one_and_nothing_is_nothing() {
+        let rows = [(1, Some("a".to_string()), 10)];
+        assert_eq!(breakdown(&rows, 0)[0].headcount, Some(1));
+        assert_eq!(breakdown::<i32>(&[], 5), Vec::<Cell>::new());
     }
 
     #[test]

@@ -208,3 +208,47 @@ async fn a_job_role_and_a_staff_group_must_agree_where_the_vocabulary_says_so() 
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_breakdown_by_category_shows_nothing_under_the_floor_and_gives_no_total() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut workers = Vec::new();
+        for n in 0..10 {
+            let w = seed_worker!(&request, &org, format!("BD-{tag}-{n}"), None).await;
+            activate!(&request, &w).await;
+            workers.push(w);
+        }
+        // All ten are clinical; three also sit in one area of work.
+        ctx.db.execute_unprepared(&format!(
+            "UPDATE assignments SET staff_group = 'clinical' WHERE worker_pid IN (SELECT pid FROM workers WHERE organization_ref = '{org}')"
+        )).await.unwrap();
+        for w in &workers[..3] {
+            ctx.db.execute_unprepared(&format!("UPDATE assignments SET area_of_work = 'ward' WHERE worker_pid = '{w}'")).await.unwrap();
+        }
+        let get = |by: &'static str| {
+            let request = &request;
+            let org = org.clone();
+            async move { request.get(&format!("/api/assignments/breakdown?organization={org}&by={by}")).await.json::<Value>() }
+        };
+        let group = get("staff_group").await;
+        assert_eq!(group["floor"], 10);
+        assert_eq!(group["cells"][0], json!({ "category": "clinical", "headcount": 10, "fte_percent": 1000 }), "{group}");
+        let area = get("area_of_work").await;
+        let cells = area["cells"].as_array().unwrap();
+        assert_eq!(cells.len(), 2, "{area}");
+        for c in cells {
+            assert!(c["headcount"].is_null() && c["fte_percent"].is_null(), "3 and 7 are under the floor of 10: {c}");
+        }
+        assert!(cells.iter().any(|c| c["category"] == "unknown"), "not recorded is its own cell");
+        assert!(area.get("total").is_none() && !area.to_string().contains(&workers[0]), "no total and no worker");
+        let role = get("job_role").await;
+        assert_eq!(role["cells"][0]["category"], "unknown");
+        assert_eq!(role["cells"][0]["headcount"], 10);
+        assert_eq!(request.get(&format!("/api/assignments/breakdown?organization={org}&by=salary")).await.status_code(), 422);
+    })
+    .await;
+}

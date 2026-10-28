@@ -2539,6 +2539,19 @@
         ]
       }
     },
+    "/api/assignments/breakdown": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The cells"
+          }
+        },
+        "summary": "Headcount and FTE of the assignments in force today, by staff_group, job_role or area_of_work (?organization=&by=), from the floor: a cell under it shows nothing and no total is given. A category nobody recorded is its own unknown cell. No name, no worker, no pay",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
     "/api/assignments/{pid}/change": {
       "post": {
         "parameters": [

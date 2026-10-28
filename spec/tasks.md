@@ -5310,6 +5310,12 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       **mutation-checked** (agreement always true: fails); full `--ignored` suite 167, `cargo test --lib` 928, clippy clean. **Not done:** the import of a national list (an ESR
       file), a code outside a non-empty vocabulary is still accepted (the spec does not say it is refused), editing or retiring an entry, a UI. **Also found:** a second change on the
       day an assignment started is refused by the rule (`effective_on` must be after the start), which a HR user will meet when correcting a change made earlier the same day.
+      **Further part done (2026-10-28), the aggregates:** `rules::assignment::breakdown` (a person counts once per category, `unknown` is its own cell, a cell under the floor shows
+      nothing, **no total is returned** so a hidden cell cannot be found by subtraction) and `GET /api/assignments/breakdown?organization=&by=staff_group|job_role|area_of_work`
+      (floor 10, the assignments in force today, no name or worker, the scale ceiling applies). 2 unit tests and a request test (10 workers: a full cell, two under-floor cells, the
+      unknown cell, no total, a refused `by`), **mutation-checked** (floor ignored: both fail); full `--ignored` suite 168, `cargo test --lib` 930, clippy clean, `pnpm check` 0/0.
+      **Not verified:** complementary suppression across two views (a reader who sets the categories apart by a second request can still difference two cells); the floor is the
+      default constant, not the organization's configured one; no UI.
 
 - [ ] WPM-T312 **Cost centres, financial and subjective coding.** *(WPM-R163–R165, WPM-D116)* Register, unmatched free-text list,
       segment assembly and most-specific-rule derivation in the pure core, position numbers, the coding view.
