@@ -39,10 +39,15 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   - **Equity is tested.** A change that adds a jurisdiction-specific rule is not done without the same rule's parameters being
     expressible for a second, differently shaped jurisdiction (a test with two profiles).
 
+- **WPM-D144 Jurisdiction rules are held as dated, sourced profiles by jurisdiction code, resolved by one pure function.**
+  *Proposed, needs product-owner confirmation.* The design is in "Jurisdiction profile design" below: parameters with no default, layers
+  (supranational, national, subnational) chained per organization, a combination rule per parameter, the applicable chain taken from the
+  place the work is done, and append-only rows with a source and a status.
+
 ## Tasks
 
 - [x] (2026-10-29) WPM-T367 **Worldwide audit of the spec.** *(WPM-R214, WPM-D143)* Done: 19 rows in the audit table above. `spec/` only: code, seed data and UI strings are not audited. Wording fixes (rows 10, 11) are left to T370.
-- [ ] WPM-T368 **Jurisdiction profile model.** *(WPM-R214, WPM-D143)* A design for per-organization, per-layer (national, regional,
+- [x] (2026-10-29) WPM-T368 **Jurisdiction profile model.** *(Done: see the design section below; proposed WPM-D144; questions for the product owner at its end.)* Original text: *(WPM-R214, WPM-D143)* A design for per-organization, per-layer (national, regional,
   supranational) profiles with effective dates, and what each existing rule (working-time guardrails, retention, pay transparency,
   equality categories) reads from it. Design first; no code.
 - [ ] WPM-T369 **Second-profile tests.** *(WPM-R214, WPM-D143)* For each rule with UK values, a pure-core test with a non-UK profile of a
@@ -94,6 +99,104 @@ is changed by this audit; each row becomes a follow-up. **Not done:** the code, 
 - **Wording to fix at once** is rows 10 and 11, where statutory language has no jurisdiction. These are edits, not designs, and are
   carried in T370.
 
+## Jurisdiction profile design (WPM-T368, 2026-10-29)
+
+*Design only: no code, migration or test changed. Proposed, needs product-owner confirmation (WPM-D144). The questions that need an answer
+are at the end.*
+
+### What exists today
+
+A jurisdiction's rules reach WPM in four different ways, none of which can hold two jurisdictions at once:
+
+| Way | Examples | Limit |
+| --- | --- | --- |
+| A **constant in code** | `working_time.rs`: 17 weeks, 48 hours, 11 hours of rest | One value for every deployment |
+| A **deployment-wide setting** | `WPM_RETENTION_DAYS`, `WPM_PAY_INFORMATION_MONTHS`, `WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, `WPM_PAY_GAP_SEX_CATEGORY` | One value per deployment, so one country per deployment, and no date |
+| **Rows with a region** | `holidays.region` (a code like `GB-ENG` or `US` or `DE`, checked against `^[A-Z0-9]{2,3}(-[A-Z0-9]{1,3})?$`) | Right shape, but only for holidays |
+| **Reference data** | pay scales (WPM-T102), student loan thresholds, SFIA and ESCO imports | Dated and sourced, but keyed by nothing common |
+
+### The model
+
+A **profile** is a dated, sourced set of **parameters** for one **jurisdiction code**, held by an organization. Three nouns:
+
+- **Jurisdiction code.** The shape the holidays already use, which is ISO 3166-1 alpha-2 for a country, ISO 3166-2 for a subdivision (a
+  state, province, canton, nation within a state) and a registered code for a supranational region (`EU`; others by a short list the
+  deployer extends). A code has a **layer**: `supranational`, `national` or `subnational`. A code has a parent (`GB-ENG` → `GB`; `DE` → `EU`),
+  so a federation, a bloc or a country of countries is just a chain. The chain is data, kept per organization, because membership changes
+  (a state leaves a bloc) and WPM does not assert it.
+- **Parameter.** A key from a **parameter registry** (a list in the spec, then in code): `working_time.max_average_weekly_minutes`,
+  `working_time.reference_weeks`, `working_time.min_daily_rest_minutes`, `retention.<class>.days`, `pay_transparency.information_months`,
+  `pay_transparency.joint_assessment_percent`, `holidays.weekend_days`, `calendar.week_start`, `equality.categories`, `deduction.<scheme>`,
+  and so on. Each registry entry fixes its **type and unit**, its **combination rule** (below), and its **validation range**. A parameter
+  has **no default value**: not configured is `unknown`, never a number (WPM-D141's rule, and the AGENTS rule that an unknown is never a zero).
+- **Profile row.** `(organization, jurisdiction code, parameter key, value, effective_from, effective_to?, source, checked_on, status)`.
+  `status` is `read` (the source was read and checked on that date), `example` (a worked case, as the UK values will be) or `unverified`.
+  Rows are **append-only**: a change is a new row with a later `effective_from`, so a past decision can be explained by the rule in force
+  that day, and the audit trail names the parameter and the code but no person and no figure about a person.
+
+### Which jurisdictions apply to a worker
+
+A worker is under the chain of the **place the work is done**, **not** nationality, citizenship, residence or any characteristic of the
+person. This is the usual legal test for employment rules, and it keeps a protected characteristic out of the rules. **The staff record
+cannot say this today:** `Worker.location` is free text (≤ 100 characters, [domain-model.md](domain-model.md)), so it cannot be resolved to a
+code. The design therefore needs a new, structured, optional **`work_jurisdiction`** (a jurisdiction code) on the worker, set by HR, with the
+free-text location left as it is. A remote worker's value is a fact about the assignment, set by HR. Where it is not set, the answer is
+`unknown` and the guardrails say so; it is never defaulted to the organization's own country.
+
+### How parameters combine across layers
+
+Each registry entry names one rule, and the resolver is one pure function in `rules::jurisdiction`:
+
+| Rule | Used for | Meaning |
+| --- | --- | --- |
+| `most_specific` | week start, weekend days, currency exponent | The deepest layer that has a value wins |
+| `strictest_min` / `strictest_max` | a weekly-hours ceiling (the lowest value), a rest minimum (the highest value) | The most protective of all layers that apply |
+| `union` | public holidays, equality categories | All layers' values together |
+| `bounded` | retention (a floor from one law, a ceiling from another) | The intersection; an **empty intersection is refused and shown** to HR, not resolved silently |
+
+`resolve(parameter, chain, as_of) -> Resolved { value, from_code, status, source } | Unknown`. It is DB-free and clock-free, tested with at
+least two profiles of a different shape (T369). A result always says **where the value came from**, and every screen or report that
+uses one shows it, as the capacity view shows its demand's source (WPM-D140).
+
+### What changes in each existing area
+
+| Area (audit row) | Today | After |
+| --- | --- | --- |
+| Working-time guardrails (5) | Constants, named for the Working Time Regulations | Three parameters; the UK/EU values are an `example` profile; with none configured the flags say `no limit configured`, not `no breach` |
+| Retention (config) | One `WPM_RETENTION_*` per deployment | `bounded` parameters per class; the env var becomes a fallback for a deployment with no profile, until it is removed |
+| Pay transparency (7) | `WPM_*` settings with the Directive's values | Parameters under `EU`; another region's regime is another profile, or absent |
+| Student loans (3) | `StudentLoanPlan` with UK plan names | A general **statutory deduction scheme**: `(jurisdiction, scheme, code, period, threshold, rate, source)`; the UK plans become example rows |
+| Payroll fields (4) | `tax_code`, `ni_category` | A list of `(scheme, code)` pairs per worker, validated against the jurisdiction's scheme list; the two names become `scheme` values. **WPM-D115 generalizes:** no bank detail and **no national identifier of any country** gets a column |
+| Public holidays (6) | `holidays.region` | Unchanged; adds `holidays.weekend_days` and week start per code |
+| Equality categories (13) | A configured category list | `union` parameter per code; the pay-gap "sex" category stays a named setting |
+| Money | Currency per row | Unchanged; the minor-unit exponent comes from the currency (T369 checks the code) |
+
+### What does not change
+
+- **WPM stores parameters, not law** (scope: no labour-law engine). A profile is a deployer's statement with a source, not WPM's claim.
+- **Roll-ups, floors and masks are unchanged.** A profile never makes a figure about a person visible; a count under the floor is hidden in
+  every jurisdiction.
+- **No profile is the default.** The demo seed ships an `example` UK profile **and** a differently shaped example (proposed: one with a
+  Sunday-start week, a six-day working week, a different currency exponent and a federal layer) so that nothing in the demo reads as
+  "the" shape.
+
+### Order of work
+
+1. A pure `rules::jurisdiction` (registry, chain, `resolve`), with two-profile tests (T369).
+2. The tables (`jurisdictions`, `jurisdiction_parameters`), HR-only read and write, audited without figures about people.
+3. Move one rule at a time, working time first (it has constants and a clear test), then retention, then pay transparency, then deductions
+   and payroll fields.
+4. A screen showing, for an organization, each parameter, its value, its source and layer, and its status.
+
+### Needs the product owner
+
+1. **Behaviour change.** With no profile configured, today's UK/EU working-time flags would become `no limit configured`. Is that right
+   for the demo, or does the demo seed always load an example profile (the proposal)?
+2. **Who edits a profile.** HR of the organization (proposed), the deployer only, or both with a review?
+3. **Subnational and bloc codes.** Is ISO 3166 plus a deployer-extended supranational list acceptable, or is a different registry wanted?
+4. **Where the work is done.** Is a new structured `work_jurisdiction` on the worker, set by HR, the right test, and is it HR's to set for a remote worker?
+5. **Naming the example profiles.** Which second worked example do you want first?
+
 ## Not done
 
-Nothing is implemented here. This is the requirement, the proposed decision, the tasks and the audit (T367).
+Nothing is implemented here (T367 audit, T368 design). This is the requirement, the proposed decision, the tasks and the audit (T367).
