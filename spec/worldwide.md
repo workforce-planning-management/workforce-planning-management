@@ -40,7 +40,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
     expressible for a second, differently shaped jurisdiction (a test with two profiles).
 
 - **WPM-D144 Jurisdiction rules are held as dated, sourced profiles by jurisdiction code, resolved by one pure function.**
-  *Proposed, needs product-owner confirmation.* The design is in "Jurisdiction profile design" below: parameters with no default, layers
+  *Confirmed in part by the product owner, 2026-10-29: questions 1 to 4 of the design (the demo seed always loads example profiles; HR of the organization edits a profile; ISO 3166 plus a deployer-extended supranational list; a structured `work_jurisdiction` set by HR). Question 5, the second example profile, is open.* The design is in "Jurisdiction profile design" below: parameters with no default, layers
   (supranational, national, subnational) chained per organization, a combination rule per parameter, the applicable chain taken from the
   place the work is done, and append-only rows with a source and a status.
 
@@ -101,8 +101,8 @@ is changed by this audit; each row becomes a follow-up. **Not done:** the code, 
 
 ## Jurisdiction profile design (WPM-T368, 2026-10-29)
 
-*Design only: no code, migration or test changed. Proposed, needs product-owner confirmation (WPM-D144). The questions that need an answer
-are at the end.*
+*Design only: no code, migration or test changed. WPM-D144; questions 1 to 4 below were answered yes by the product owner on 2026-10-29
+(HR edits), question 5 is open.*
 
 ### What exists today
 
@@ -190,11 +190,11 @@ uses one shows it, as the capacity view shows its demand's source (WPM-D140).
 
 ### Needs the product owner
 
-1. **Behaviour change.** With no profile configured, today's UK/EU working-time flags would become `no limit configured`. Is that right
+1. **Behaviour change.** **Answered 2026-10-29: yes.** With no profile configured, today's UK/EU working-time flags would become `no limit configured`. Is that right
    for the demo, or does the demo seed always load an example profile (the proposal)?
-2. **Who edits a profile.** HR of the organization (proposed), the deployer only, or both with a review?
-3. **Subnational and bloc codes.** Is ISO 3166 plus a deployer-extended supranational list acceptable, or is a different registry wanted?
-4. **Where the work is done.** Is a new structured `work_jurisdiction` on the worker, set by HR, the right test, and is it HR's to set for a remote worker?
+2. **Who edits a profile.** **Answered 2026-10-29: yes (HR).** HR of the organization (proposed), the deployer only, or both with a review?
+3. **Subnational and bloc codes.** **Answered 2026-10-29: yes.** Is ISO 3166 plus a deployer-extended supranational list acceptable, or is a different registry wanted?
+4. **Where the work is done.** **Answered 2026-10-29: yes.** Is a new structured `work_jurisdiction` on the worker, set by HR, the right test, and is it HR's to set for a remote worker?
 5. **Naming the example profiles.** Which second worked example do you want first?
 
 ## Not done
