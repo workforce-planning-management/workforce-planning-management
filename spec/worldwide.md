@@ -41,9 +41,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
 
 ## Tasks
 
-- [ ] WPM-T367 **Worldwide audit of the spec.** *(WPM-R214, WPM-D143)* Read the spec and the register for statements that assume the UK
-  or US (statutory language without a jurisdiction, UK-only examples treated as the model); list each, scope or reword it, and record
-  what is a worked example. Output: a table in this file.
+- [x] (2026-10-29) WPM-T367 **Worldwide audit of the spec.** *(WPM-R214, WPM-D143)* Done: 19 rows in the audit table above. `spec/` only: code, seed data and UI strings are not audited. Wording fixes (rows 10, 11) are left to T370.
 - [ ] WPM-T368 **Jurisdiction profile model.** *(WPM-R214, WPM-D143)* A design for per-organization, per-layer (national, regional,
   supranational) profiles with effective dates, and what each existing rule (working-time guardrails, retention, pay transparency,
   equality categories) reads from it. Design first; no code.
@@ -55,6 +53,47 @@ worked cases, not the design.** This file is the rule that stops them becoming t
 - [ ] WPM-T371 **Locale and convention equity check.** *(WPM-R214, WPM-D143)* Names, addresses, dates and calendars, numbers and
   currency, identifiers, right-to-left and plural rules: a checklist run against the UI and API, with gaps recorded as tasks.
 
+## Audit (WPM-T367, 2026-10-29)
+
+Method: a search of `spec/` for UK and US terms (UK, US, NHS, GDPR, Equality Act, Working Time Regulations, national insurance, £, `en-gb`,
+and the like), then a read of each hit and of the places where a UK shape is built into a field or rule without a name. Read-only: nothing
+is changed by this audit; each row becomes a follow-up. **Not done:** the code, the seed data and the UI strings were not audited (only
+`spec/`); the search finds named terms, so an unnamed assumption (a field shaped for one country) is found only where the row says so.
+
+| # | Where | What it assumes | Verdict | Follow-up |
+| --- | --- | --- | --- | --- |
+| 1 | [pay-scales.md](pay-scales.md) | A single national public-sector scale, in £, with NHS bands and allowances | **Worked example, but not labelled as one in the title.** The model was made generic (WPM-T102); the data is UK. | Retitle as an example; add a second, differently shaped scale (T369) |
+| 2 | [staff-records-and-pay.md](staff-records-and-pay.md) pay progression, pension | NHS Agenda for Change; the NHS Pension Scheme tiers and rates | **Worked example**, already described as a synthetic scheme. | Keep; say "example" at the first mention |
+| 3 | staff-records-and-pay.md, [domain-model.md](domain-model.md) student loans | `StudentLoanPlan` with UK plan names (1, 2, 4, 5, postgraduate), a tax year | **Shape assumes the UK.** Other countries have different or no loan-deduction schemes. | Generalize to a *statutory deduction scheme* keyed by jurisdiction (T368) |
+| 4 | staff-records-and-pay.md, domain-model.md, [regulatory.md](regulatory.md) payroll details | `tax code`, `NI category`, `starter declaration` are fields | **UK-shaped field names.** | Rename or make them jurisdiction-keyed codes (T368) |
+| 5 | [workforce-management.md](workforce-management.md) working-time guardrails (WPM-R27) | The 17-week 48-hour average and 11-hour rest gap, called "the Working Time Regulations" | **UK/EU limits as the only limits.** Other countries set different weekly, daily and rest limits. | The limits become profile parameters; the text names the regime (T368, T369) |
+| 6 | [requirements.md](requirements.md) public holidays | Packs for England and Wales, US federal and Germany; a weekend policy of stay, next weekday, or Friday and Monday | **Already data, and already labelled unverified.** The weekend is assumed Saturday and Sunday; calendars other than Gregorian are not covered. | Per-region weekend days and week start; non-Gregorian holidays (T371) |
+| 7 | [pay-transparency.md](pay-transparency.md) | The EU Pay Transparency Directive (2023/970) | **Correctly scoped to the EU**, and the threshold is configuration. It is the only pay-transparency regime covered; the UK, US states and others are absent. | Record other regimes as *not yet read* (T370) |
+| 8 | [worker-unions.md](worker-unions.md) | "Special category data under the UK GDPR and the EU GDPR" | **Scoped, but two regimes only.** Union membership is treated differently, or protected differently, elsewhere. | Add other regimes as not yet read (T370) |
+| 9 | [regulatory.md](regulatory.md) | UK GDPR and DPA 2018 lawful-basis mapping; a section on UK regulators; the EU AI Act | **UK-first register.** | Reorganize by region (T370) |
+| 10 | [plan.md](plan.md), [design.md](design.md) | "UK GDPR Article 35" for the DPIA; "the Equality Act's actual shape" for the adjustments duty | **Statutory language without a jurisdiction** (the Equality Act is UK law). | Name the jurisdiction in the sentence; the design is the barrier-based duty in many regimes (T370) |
+| 11 | [glossary.md](glossary.md) | "Right to work: statutory employment-eligibility check" | **Unscoped.** The check, and whether there is one, differs by country. | Scope the entry |
+| 12 | [equality-impact/template.md](equality-impact/template.md) | Lists the UK Equality Act 2010 and the EU rules as examples | **Already says the deployer's lawyers decide**; examples are two regimes. | Keep; add that the list is not exhaustive |
+| 13 | [disability-and-adjustments.md](disability-and-adjustments.md) and WDES | WDES (NHS England's Workforce Disability Equality Standard) mapping by number | **A UK health-service standard**, used as a reporting map. | Mark as one profile (T368) |
+| 14 | [uk-gdad-pcf](uk-gdad-pcf/index.md), [oxford-spelling](oxford-spelling/index.md) | UK government digital-and-data framework; British-with-"-ize" spelling for the spec's own prose | **Named as UK on purpose**, and one is a writing convention for the spec, not a product behaviour. | Keep; say the spec's prose convention does not set a locale for the product |
+| 15 | [mhra.md](mhra.md) | A UK regulator, and ISO 14971 | **Scoped to the UK by name**, and a non-workforce item. | Keep; the register gets sibling regions (T370) |
+| 16 | [expense-claims.md](expense-claims.md), [domain-model.md](domain-model.md) money | One ISO 4217 currency per claim; minor units | **Good in the spec**: money is minor units plus a currency, and no two-decimal assumption was found in the text. | Confirm in code that the exponent comes from the currency (T369) |
+| 17 | [locales-for-global-sharing-with-svelte](locales-for-global-sharing-with-svelte/index.md), [locales-x-for-roles](locales-x-for-roles/index.md) | 17 locales across scripts, `en-001` as the world-English default | **Good.** Two English variants carry a country (`en-gb`, `en-us`); the other locales are language or region based. | Keep; the equal-locale rule (D143) is checked in T371 |
+| 18 | [sfia.md](sfia.md), [esco](esco/index.md) | SFIA (UK-origin, international use) and ESCO (EU) as skills frameworks | **Both are optional imports from the deployer's own file**; neither is built in. Other national skills frameworks are not covered. | Say so; the import is the extension point (T368) |
+| 19 | [purpose.md](purpose.md), [scope.md](scope.md) | "Jurisdiction-complete tax law" and "multi-country labor-law engines" out of scope | **Consistent with D143**: WPM holds parameters, not law. | Keep; say "multi-country" in scope means *no engine*, not *no support* |
+
+### What the audit found, in short
+
+- **The UK is the only worked example in 9 of 19 rows** (1 to 5, 9, 10, 11 and 13: pay scales, pension, student loans, payroll fields, working
+  time, the register, the DPIA and equality wording, the right-to-work entry and WDES). Of these, rows 3, 4 and 5 are **field or rule shapes**, not only
+  examples: they would not fit another country as written. These are the first for T368.
+- **The EU is covered only for pay transparency (row 7)**, the AI Act and GDPR. No other region (for example Africa, Latin America, South and
+  South-East Asia, the Gulf, Oceania, Canada, or the US states) has a section, and none is marked *not yet read*. That is the gap T370 fills.
+- **What is already right:** money is in minor units with a currency (16), holidays are data (6), locales span scripts (17), and the
+  skills frameworks are optional imports (18).
+- **Wording to fix at once** is rows 10 and 11, where statutory language has no jurisdiction. These are edits, not designs, and are
+  carried in T370.
+
 ## Not done
 
-Nothing is implemented here. This is the requirement, the proposed decision and the tasks; the audit (T367) comes first.
+Nothing is implemented here. This is the requirement, the proposed decision, the tasks and the audit (T367).
