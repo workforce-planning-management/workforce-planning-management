@@ -69,6 +69,7 @@ pub mod leave;
 pub mod lifecycle;
 pub mod link_token;
 pub mod lms;
+pub mod manager_change;
 pub mod mandatory_learning;
 pub mod mcp;
 pub mod metrics;
