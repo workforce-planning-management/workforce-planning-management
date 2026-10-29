@@ -125,6 +125,7 @@ pub fn kind_of(table: &str) -> Option<RecordKind> {
         | "feedback_entries"
         | "goals"
         | "mobility_interests"
+        | "appraisal_nominations"
         | "pipeline_members"
         | "program_placements"
         | "reviews"

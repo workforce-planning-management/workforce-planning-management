@@ -12,17 +12,18 @@ use uuid::Uuid;
 use super::{forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    adjustment_requests, announcement_reads, appraisal_nominations, appraisal_responses,
-    appraisals, assessments, asset_issues, assignments, benefit_enrollments, candidates,
-    conversion_plans, cpd_entries, credential_issuances, development_plans, dotted_line_reports,
-    emergency_contacts, engagement_decisions, engagement_extensions, engagement_reminders,
-    engagement_status_assessments, entitlement_acknowledgements, equality_declarations,
-    ergonomic_assessments, expense_claims, expense_items, flexible_working_requests, group_members,
-    handover_actions, leave_entitlements, leave_requests, mentorships, mobility_interests,
-    movements, notifications, onboarding_items, organization_memberships, path_enrollments,
-    pay_information_requests, payslips, pipeline_members, policy_acknowledgements, positions,
-    post_fundings, professional_registrations, program_placements, resignations, reviews,
-    rota_members, rota_overrides, rota_swap_requests, scim_pushes, shift_assignments, time_entries,
+    adjustment_requests, announcement_reads, applications, appraisal_nominations,
+    appraisal_responses, appraisals, assessment_results, assessments, asset_issues, assignments,
+    benefit_enrollments, candidates, conversion_plans, cpd_entries, credential_issuances,
+    development_plans, dotted_line_reports, emergency_contacts, engagement_decisions,
+    engagement_extensions, engagement_reminders, engagement_status_assessments,
+    entitlement_acknowledgements, equality_declarations, ergonomic_assessments, expense_claims,
+    expense_items, flexible_working_requests, group_members, handover_actions, interviews,
+    leave_entitlements, leave_requests, mentorships, mobility_interests, movements, notifications,
+    onboarding_items, organization_memberships, path_enrollments, pay_information_requests,
+    payslips, pipeline_members, policy_acknowledgements, positions, post_fundings,
+    professional_registrations, program_placements, resignations, reviews, rota_members,
+    rota_overrides, rota_swap_requests, scim_pushes, shift_assignments, time_entries,
     training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
     worker_contractor_details, worker_framework_roles, worker_health_records, worker_job_levels,
     worker_pay_positions, worker_skill_history, worker_skills, workers,
@@ -99,11 +100,13 @@ async fn subject_access(
     let epid = worker.pid;
     // 360°: appraisals about them, nominations naming them as rater,
     // and only the responses THEY authored.
-    let their_nominations = appraisal_nominations::Entity::find()
-        .filter(appraisal_nominations::Column::RaterPid.eq(epid))
-        .all(db)
-        .await?;
-    let nomination_pids: Vec<Uuid> = their_nominations.iter().map(|n| n.pid).collect();
+    let their_nominations = rows_for!(db, appraisal_nominations, RaterPid, epid);
+    let nomination_pids: Vec<Uuid> = their_nominations
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|n| n["pid"].as_str()?.parse().ok())
+        .collect();
     let authored_responses = appraisal_responses::Entity::find()
         .filter(appraisal_responses::Column::NominationPid.is_in(nomination_pids))
         .all(db)
@@ -217,6 +220,67 @@ async fn subject_access(
         None,
     )
     .await?;
+    format::json(export)
+}
+
+/// `GET /api/candidates/{pid}/subject-access` — everything WPM holds about one applicant, in
+/// one audited JSON document (WPM-T353). An applicant is a data subject before they are a worker:
+/// the record, their applications, the interviews on them (the interviewers' notes are about the
+/// applicant, so they are theirs to see), and their assessments with the results. Privileged
+/// callers only: an applicant has no sign-in here, so HR makes the request on their behalf.
+#[debug_handler]
+async fn candidate_subject_access(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let candidate = records::find_candidate(&ctx.db, records::parse_pid(&pid)?).await?;
+    let db = &ctx.db;
+    let apps = rows_for!(db, applications, CandidatePid, candidate.pid);
+    let app_pids: Vec<Uuid> = apps
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|a| a["pid"].as_str()?.parse().ok())
+        .collect();
+    let their_interviews = interviews::Entity::find()
+        .filter(interviews::Column::ApplicationPid.is_in(app_pids))
+        .all(db)
+        .await?;
+    let their_assessments = assessments::Entity::find()
+        .filter(assessments::Column::SubjectPid.eq(candidate.pid))
+        .all(db)
+        .await?;
+    let assessment_pids: Vec<Uuid> = their_assessments.iter().map(|a| a.pid).collect();
+    let results = assessment_results::Entity::find()
+        .filter(assessment_results::Column::AssessmentPid.is_in(assessment_pids))
+        .all(db)
+        .await?;
+    let export = serde_json::json!({
+        "as_of": chrono::Utc::now(),
+        "candidate": rows_for!(db, candidates, Pid, candidate.pid),
+        "applications": apps,
+        "interviews": their_interviews,
+        "assessments": their_assessments,
+        "assessment_results": results,
+        "exclusions": [
+            "the requisition an application is for: the employer's record, not the applicant's",
+            "interviewers' identities: held as references (WPM-D22), not names; the notes they \
+             wrote about the applicant are included",
+            "upstream person records: held by the identity services, not WPM",
+        ],
+    });
+    let txn = ctx.db.begin().await?;
+    Audit::record(
+        &txn,
+        "candidate",
+        candidate.pid,
+        "subject_access_exported",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    txn.commit().await?;
     format::json(export)
 }
 
@@ -637,6 +701,21 @@ async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
     let txn = ctx.db.begin().await?;
     let mut deleted = serde_json::Map::new();
     let mut total: u64 = 0;
+    // An appraisal's invitations and answers live and die with it: the sweep removes them first, or they would outlive
+    // the appraisal for good (a rater's pid and scores with nothing left to attach to).
+    let appraisal_days = days_for("appraisals", &all);
+    for table in ["appraisal_responses", "appraisal_nominations"] {
+        let result = txn
+            .execute_unprepared(&format!(
+                "DELETE FROM {table} WHERE appraisal_pid IN (SELECT pid FROM appraisals \
+                 WHERE deleted_at < now() - interval '{appraisal_days} days')"
+            ))
+            .await?;
+        if result.rows_affected() > 0 {
+            deleted.insert(table.to_string(), serde_json::json!(result.rows_affected()));
+            total += result.rows_affected();
+        }
+    }
     for table in rules::SOFT_DELETED_TABLES {
         let days = days_for(table, &all);
         let result = txn
@@ -688,6 +767,10 @@ pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
         .add("/workers/{pid}/subject-access", get(subject_access))
+        .add(
+            "/candidates/{pid}/subject-access",
+            get(candidate_subject_access),
+        )
         .add("/workers/{pid}/erase", post(erase))
         .add("/retention", get(retention_report))
         .add("/retention/schedule", get(retention_schedule))

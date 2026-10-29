@@ -2979,6 +2979,19 @@
         ]
       }
     },
+    "/api/candidates/{pid}/subject-access": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Export"
+          }
+        },
+        "summary": "Applicant subject-access export: the candidate, applications, interviews, assessments and results, exclusions named (audited; privileged)",
+        "tags": [
+          "privacy"
+        ]
+      }
+    },
     "/api/capability-frameworks": {
       "get": {
         "responses": {

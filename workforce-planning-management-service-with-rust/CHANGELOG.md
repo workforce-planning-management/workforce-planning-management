@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — applicant subject access, and an appraisal's invitations swept with it (WPM-T353)
+
+`GET /api/candidates/{pid}/subject-access` (privileged, audited) gives an applicant their record, applications, interviews with the interviewers' notes, assessments and results. The retention sweep now deletes an appraisal's nominations and responses before the appraisal, which they used to outlive; `appraisal_nominations` is on the retention schedule. The inventory's three stale exemptions are gone.
+
 ### Added — names for a contractor's supplier and contact (WPM-T358)
 
 `GET /api/workers/{pid}/contractor-details` shows `supplier_name` and `supplier_contact_name`, best-effort through the existing display-name client: `null` when unknown, nothing stored.

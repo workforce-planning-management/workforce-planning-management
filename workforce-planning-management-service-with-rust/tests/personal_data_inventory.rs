@@ -46,31 +46,13 @@ const NOT_EXPORTED: &[(&str, &str)] = &[
         "movement_items",
         "A task assigned to a worker about someone else's move; the worker's own joiner and leaver record is exported. Erasure unassigns it.",
     ),
-    (
-        "appraisal_nominations",
-        "Says who was asked to rate whom. Raters' answers are third-party content withheld from the subject by design, and a nominee's export carries the report aggregate instead.",
-    ),
-    (
-        "applications",
-        "Applicants are data subjects too, but there is no subject-access route for them yet: a gap (WPM-T353). Removed by the retention horizon.",
-    ),
-    (
-        "candidates",
-        "As for applications: no subject-access route for applicants yet (WPM-T353). Removed when consent expires and by the retention horizon.",
-    ),
 ];
 
 /// Person-keyed tables that are neither erased by a statement nor on the retention schedule, each with the reason.
-const NOT_ERASED_OR_RETAINED: &[(&str, &str)] = &[
-    (
-        "appraisal_nominations",
-        "The row (that a person was asked to rate) stays with the appraisal it belongs to; erasure scrubs the rater's free-text comments on it. Not yet on the retention schedule: a gap (WPM-T353).",
-    ),
-    (
-        "erasure_ledger",
-        "Must stay: it is what makes a restore erase the person again (WPM-D63). It holds a pid and a time.",
-    ),
-];
+const NOT_ERASED_OR_RETAINED: &[(&str, &str)] = &[(
+    "erasure_ledger",
+    "Must stay: it is what makes a restore erase the person again (WPM-D63). It holds a pid and a time.",
+)];
 
 struct Table {
     name: String,
@@ -228,13 +210,13 @@ fn inventory() -> String {
          Every table that is keyed to a person, and what happens to it on a subject-access request and on erasure. **Generated** by\n\
          `workforce-planning-management-service-with-rust/tests/personal_data_inventory.rs` from the migrations and `src/controllers/privacy.rs`;\n\
          do not edit by hand. Rewrite it with `WPM_WRITE_INVENTORY=1 cargo test --test personal_data_inventory`; the test fails when it is out of date.\n\n\
-         - **Export**: the table is in `GET /api/workers/{pid}/subject-access`.\n\
+         - **Export**: the table is in `GET /api/workers/{pid}/subject-access` (or, for applicants, `GET /api/candidates/{pid}/subject-access`).\n\
          - **Erasure**: a statement in `erasure_statements` deletes or scrubs it when a worker is erased (WPM-D22).\n\
          - **Retention**: the table is on the retention schedule ([retention-schedule.md](retention-schedule.md)); a soft-deleted row is removed for good after its horizon.\n\
          - A table with neither erasure nor retention, or no export, carries the reason in the last column.\n\n\
          **What this does not cover.** A table is listed because it has a column that names a person (`worker_pid`, `person_ref` and the others in the test). Personal data in a\n\
          free-text column of a table that is not keyed to a person, a table linked by some other name, and whether an export or erasure statement is *right* are for a reviewer.\n\
-         Applicants (`candidates`, `applications`) have no subject-access route yet.\n\n\
+         Applicants have their own export, `GET /api/candidates/{pid}/subject-access`; erasing an applicant before consent expires is not built.\n\n\
          | Table | Linked by | Export | Erasure | Retention | Reason, where something is missing |\n\
          | --- | --- | --- | --- | --- | --- |\n",
     );

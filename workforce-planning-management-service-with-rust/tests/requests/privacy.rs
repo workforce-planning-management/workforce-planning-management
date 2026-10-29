@@ -230,3 +230,56 @@ async fn every_soft_deleting_table_has_a_deleted_at_index() {
     })
     .await;
 }
+
+/// WPM-T353: an applicant has a subject-access export of their own (the record, applications, interviews with the interviewers'
+/// notes, assessments and results, and no one else's), and the retention sweep takes an appraisal's invitations and answers with it.
+#[tokio::test]
+#[serial_test::serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn an_applicant_can_be_given_their_data_and_a_swept_appraisal_leaves_no_invitations() {
+    use sea_orm::ConnectionTrait;
+    crate::requests::request_open(|request, ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let candidate = |n: &str| json!({ "display_name": format!("Test Applicant {n}"), "email": format!("{n}-{tag}@example.com"), "source": "referral" });
+        let mine: Value = request.post("/api/candidates").json(&candidate("a")).await.json();
+        let other: Value = request.post("/api/candidates").json(&candidate("b")).await.json();
+        let (mine, other) = (mine["pid"].as_str().unwrap().to_string(), other["pid"].as_str().unwrap().to_string());
+        let sql = |q: String| {
+            let db = ctx.db.clone();
+            async move { db.execute_unprepared(&q).await.unwrap() }
+        };
+        for (cand, note) in [(&mine, "strong on systems"), (&other, "another applicants note")] {
+            let (app, requisition) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
+            sql(format!("INSERT INTO applications (pid, requisition_pid, candidate_pid, stage) VALUES ('{app}', '{requisition}', '{cand}', 'screened')")).await;
+            sql(format!("INSERT INTO interviews (pid, application_pid, scheduled_at, interviewer_ref, outcome, notes) VALUES (gen_random_uuid(), '{app}', now(), 'person:00000000-0000-0000-0000-000000000001', 'pending', '{note}')")).await;
+        }
+        let export: Value = request.get(&format!("/api/candidates/{mine}/subject-access")).await.json();
+        assert_eq!(export["candidate"][0]["pid"], mine.as_str());
+        assert_eq!(export["applications"].as_array().unwrap().len(), 1);
+        let text = export.to_string();
+        assert!(text.contains("strong on systems"), "the interviewer's note about them is theirs");
+        assert!(!text.contains("another applicants note") && !text.contains(&other), "no other applicant appears");
+        assert!(export["exclusions"].as_array().unwrap().len() >= 2);
+        assert_eq!(request.get(&format!("/api/candidates/{}/subject-access", uuid::Uuid::new_v4())).await.status_code(), 404);
+        let audits: Value = request.get("/api/audits/recent").await.json();
+        assert!(audits.to_string().contains("subject_access_exported"));
+
+        // A soft-deleted appraisal past its horizon is swept with its invitations and answers.
+        let (appraisal, nomination) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
+        let (subject, rater) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
+        sql(format!("INSERT INTO appraisals (pid, worker_pid, competencies, status, deleted_at) VALUES ('{appraisal}', '{subject}', '[]', 'closed', now() - interval '9000 days')")).await;
+        sql(format!("INSERT INTO appraisal_nominations (pid, appraisal_pid, rater_pid, rater_group) VALUES ('{nomination}', '{appraisal}', '{rater}', 'peer')")).await;
+        sql(format!("INSERT INTO appraisal_responses (pid, appraisal_pid, nomination_pid, rater_group, scores, comment) VALUES (gen_random_uuid(), '{appraisal}', '{nomination}', 'peer', '{{}}', 'text')")).await;
+        let live = uuid::Uuid::new_v4();
+        sql(format!("INSERT INTO appraisal_nominations (pid, appraisal_pid, rater_pid, rater_group) VALUES (gen_random_uuid(), '{live}', '{rater}', 'peer')")).await;
+        let sweep: Value = request.post("/api/retention/sweep").await.json();
+        assert_eq!(sweep["deleted"]["appraisal_nominations"], 1);
+        assert_eq!(sweep["deleted"]["appraisal_responses"], 1);
+        for (table, left) in [("appraisal_nominations", 1), ("appraisal_responses", 0)] {
+            let row = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
+                format!("SELECT count(*) AS n FROM {table} WHERE appraisal_pid IN ('{appraisal}', '{live}')"))).await.unwrap().unwrap();
+            assert_eq!(row.try_get::<i64>("", "n").unwrap(), left, "{table}");
+        }
+    })
+    .await;
+}

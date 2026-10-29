@@ -4,26 +4,26 @@ Every table that is keyed to a person, and what happens to it on a subject-acces
 `workforce-planning-management-service-with-rust/tests/personal_data_inventory.rs` from the migrations and `src/controllers/privacy.rs`;
 do not edit by hand. Rewrite it with `WPM_WRITE_INVENTORY=1 cargo test --test personal_data_inventory`; the test fails when it is out of date.
 
-- **Export**: the table is in `GET /api/workers/{pid}/subject-access`.
+- **Export**: the table is in `GET /api/workers/{pid}/subject-access` (or, for applicants, `GET /api/candidates/{pid}/subject-access`).
 - **Erasure**: a statement in `erasure_statements` deletes or scrubs it when a worker is erased (WPM-D22).
 - **Retention**: the table is on the retention schedule ([retention-schedule.md](retention-schedule.md)); a soft-deleted row is removed for good after its horizon.
 - A table with neither erasure nor retention, or no export, carries the reason in the last column.
 
 **What this does not cover.** A table is listed because it has a column that names a person (`worker_pid`, `person_ref` and the others in the test). Personal data in a
 free-text column of a table that is not keyed to a person, a table linked by some other name, and whether an export or erasure statement is *right* are for a reviewer.
-Applicants (`candidates`, `applications`) have no subject-access route yet.
+Applicants have their own export, `GET /api/candidates/{pid}/subject-access`; erasing an applicant before consent expires is not built.
 
 | Table | Linked by | Export | Erasure | Retention | Reason, where something is missing |
 | --- | --- | --- | --- | --- | --- |
 | `adjustment_requests` | `worker_pid` | yes | yes | wellbeing |  |
 | `announcement_reads` | `worker_pid` | yes | yes | none |  |
-| `applications` | `candidate_pid` | no | no | recruitment | Not exported: Applicants are data subjects too, but there is no subject-access route for them yet: a gap (WPM-T353). Removed by the retention horizon. |
-| `appraisal_nominations` | `rater_pid` | no | no | none | Not exported: Says who was asked to rate whom. Raters' answers are third-party content withheld from the subject by design, and a nominee's export carries the report aggregate instead. Not erased or retained: The row (that a person was asked to rate) stays with the appraisal it belongs to; erasure scrubs the rater's free-text comments on it. Not yet on the retention schedule: a gap (WPM-T353). |
+| `applications` | `candidate_pid` | yes | no | recruitment |  |
+| `appraisal_nominations` | `rater_pid` | yes | no | performance |  |
 | `appraisals` | `worker_pid` | yes | yes | performance |  |
 | `asset_issues` | `worker_pid` | yes | yes | none |  |
 | `assignments` | `worker_pid` | yes | yes | none |  |
 | `benefit_enrollments` | `worker_pid` | yes | no | pay |  |
-| `candidates` | `person_ref` | no | yes | recruitment | Not exported: As for applications: no subject-access route for applicants yet (WPM-T353). Removed when consent expires and by the retention horizon. |
+| `candidates` | `person_ref` | yes | yes | recruitment |  |
 | `conversion_plans` | `worker_pid` | yes | yes | none |  |
 | `cpd_entries` | `worker_pid` | yes | yes | learning |  |
 | `credential_issuances` | `worker_pid` | yes | yes | none |  |

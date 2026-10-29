@@ -1936,6 +1936,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/candidates/{pid}/subject-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Applicant subject-access export: the candidate, applications, interviews, assessments and results, exclusions named (audited; privileged) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Export */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/capability-frameworks": {
         parameters: {
             query?: never;
