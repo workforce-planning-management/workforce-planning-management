@@ -5216,6 +5216,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       counts per manager with the floor, the people-manager audience, asking HR for help.
 - [ ] WPM-T332 **Guidance pages.** *(WPM-R187)* CMS content per locale, labelled generic, linked from each action.
 - [ ] WPM-T333 **Changing manager.** *(WPM-R188)* The "getting to know your team" item; no handover of adjustment words.
+      **Part done (2026-10-29), not ticked.** Built: the pure core `src/rules/manager_change.rs` (change detection, the dated 60-day
+      window, `GetToKnowItem` with counts, one date and a passport yes/no, and no text field), 6 unit tests including two that fail if
+      the payload or the type gains a field or a text type (mutation-checked: window bound, change detection and an added `String`
+      field each fail a test). Verified: `cargo test --lib` 866 pass, `cargo clippy --all-targets -- -D warnings` clean. **Not
+      built**, because its inputs do not exist yet: the facts come from WPM-T326/T327 (absence plans, review points), T331 (the
+      action list the item appears on), T334 (the passport) and T310-series PADR/learning records, none of which is done; so no
+      controller, migration, openapi, UI or strings, no request test, and no DPIA or inventory change (nothing is stored or
+      exposed). Remaining: wire `items()` into the action list once T331 exists and add the request test there.
 
 **Section R — disability, non-visible disability, neurodivergence and reasonable adjustments**
 

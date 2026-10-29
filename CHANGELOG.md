@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — changing manager, pure core (WPM-T333, part)
+
+`rules::manager_change`: the dated "getting to know your team" item for a new report (counts, a PADR date and whether a passport exists; no
+adjustment words, no text field), with tests that fail if the payload gains one. Not wired to an endpoint: it waits for the action list (WPM-T331).
+
 ### Added — specification: the electronic staff record, absence and line managers, disability and adjustments, succession, deputies and acting up (WPM-T309)
 
 Proposed, not built: four topic files and Phase 24 (WPM-T310–T344). [`spec/staff-records-and-pay.md`](spec/staff-records-and-pay.md)
