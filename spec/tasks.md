@@ -3340,13 +3340,21 @@ tasks are the capacity answer and the contract, below.
       are read for the count and go no further. Unit tests (the boundaries; the floor, zero and no total) and a request test (counts, floor, a later end, no name, none when no end is given, a bad date);
       **mutation-checked** seven ways (past engagements, the end-date boundary, the floor, the basis filter, the terminated filter, the organization scope), all caught, three after the test gained
       an intern, a terminated worker and another organization's worker that it had lacked. **Not done:** it counts engagements by their own end date, not by the days the programme actually holds them.
-- [~] (2026-10-28) WPM-T160 **Verification and documents.** *(WPM-R97)* Enforcement test that the what-if answer names no
+- [x] (2026-10-29) WPM-T160 **Verification and documents.** *(WPM-R97)* Enforcement test that the what-if answer names no
       one and that a manager sees counts only; update the DPIA (`spec/governance/dpia.md`), the record of
       processing and the data-flow diagram if WPM stores anything new (it should not).
       **Part done (2026-10-28):** a request test checks the answer names no one (no worker, number, name, partner or other programme) and stores nothing (the same rows before and after); the DPIA and the
       record of processing need no new row because the what-if holds nothing and carries no personal data, and the data-flow diagram is unchanged. **Not done:** the persona enforcement test ("a manager sees counts
       only"): the endpoint answers every caller in the organization's scope with the same pool-month figures, and no persona-matrix test was written; whether that is the right audience is a decision for the
       product owner, because pool supply and demand are planning figures and not a person's data.
+      **Finished (2026-10-29):** `tests/enforcement_what_if.rs` (own binary, `--ignored`) runs the persona matrix against the live route with sign-in on: signed out 401; the service, HR and a planner
+      (a deployer rule added in the test) 200 with the **same payload**; an ordinary manager 403 (the policy treats a POST as a write and gives a manager none); a partner-only caller 403; another
+      organization's HR and an HR caller with no membership 404. Every answer is walked for people keys (`worker_pid(s)`, `person_ref`, `display_name`, `worker_number`, `workers`, `people`, `names`, `email`) and
+      for seeded names and the other programme's reference, and `members` must be a bare count; the capacity view is walked the same way for a manager, HR and a planner (200) and refused for a partner (403) and
+      another organization (404). **Audience recorded as WPM-D142, proposed, needs product-owner confirmation:** nothing is widened; a manager cannot ask the what-if unless a deployer's policy lets them
+      write, and a read-class exception would be a new decision. **Mutation-checked** two ways, both caught (a `worker_pids` key added to the answer; the organization scope check removed). Verified: the new
+      test, `cargo test --test enforcement` and `--test mod capacity` (15) against a throwaway Postgres 18, `cargo test --lib` 997, clippy clean. **Not verified:** the peer-supply endpoint is not in the
+      matrix (it is read-open like the view and was not walked); no Keycloak or Entra token shapes; the full `--ignored` suite was not rerun.
 
 ## Phase 17 — equality impact for scoring (proposed WPM-R99–R101, WPM-D67)
 
@@ -5575,7 +5583,7 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       worker once terminated. **Not done:** a push to CRM; the endpoint is not rate limited; it tells an HR caller whether a person they name is employed by their organization, which is the fact HR reads on the worker list.
       Verified: full `--ignored` suite 175, `cargo test --lib` 979, clippy clean, `personal_data_inventory` passes.
 - [x] (2026-10-28) WPM-T358 **Supplier and contact names, best-effort.** *(WPM-R206)* Best-effort, cached, never blocking a write. **Re-scoped 2026-10-28:** CRM was read and has no lookup by reference and no person names, so the source is person-service (see `cross-app-bridges.md`, "What CRM was read to say"). **Built:** `GET /api/workers/{pid}/contractor-details` adds `supplier_name` and `supplier_contact_name` through `clients::display_name` (cache, then the owning service in `http` mode); unresolved is `null`, never an error, nothing is stored, and a person's name stays in the process cache only (not the shared one). The write's answer carries no name. **Not verified:** the live call to person-service or an organization service (stub mode only).
-- [ ] WPM-T359 **Capacity what-if for PPM.** *(WPM-R209)* Is WPM-T158 to T160.
+- [x] (2026-10-29) WPM-T359 **Capacity what-if for PPM.** *(WPM-R209)* Is WPM-T158 to T160, all done. **Not done here:** PPM's side of the call (T157, outside this repository) and the product owner's confirmation of WPM-D142.
 - [ ] WPM-T360 **Programme demand in.** *(WPM-R210)* Idempotent on programme and source event. Needs PPM's contract.
 - [ ] WPM-T361 **People-impact out.** *(WPM-R211)* Counts with the floor, for a programme. Needs WPM-T359 and PPM's contract.
 - [x] (2026-10-28) WPM-T362 **MHRA entry in the regulatory register.** *(WPM-R212)* See [mhra.md](mhra.md). The workforce questions stay open until the linked guidance is read.

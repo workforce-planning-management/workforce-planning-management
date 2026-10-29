@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — who may ask the capacity what-if, tested (WPM-T160; ticks WPM-T359)
+
+`tests/enforcement_what_if.rs` runs each persona against the what-if and the capacity view: the service, HR and a planner get the same counts-only answer, an ordinary manager and a partner-only caller are refused, and another organization is not found. Mutation-checked. The audience is recorded as WPM-D142, **proposed, needs product-owner confirmation**; nothing was widened. No service code changed.
+
 ### Added — SFIA and SFIAplus, from the deployer's own licensed files (WPM-T180 to T185; T186 part)
 
 WPM ships no SFIA or SFIAplus content. `import_sfia` (skills, and `levels_file:` for the seven levels of responsibility) and `import_sfiaplus` (development pointers; a

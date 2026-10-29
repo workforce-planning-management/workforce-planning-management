@@ -75,6 +75,14 @@ the programme, before it is approved.*
   about it. This also keeps a record about a project from becoming a record about a person.
   (WPM's existing *change initiatives*, for automation and AI effects on roles and skills, are a
   different thing and stay in WPM.)
+- **WPM-D142 The what-if answers whoever the policy lets write, within their organization's scope, and tells them all the same thing.**
+  *Proposed, needs product-owner confirmation* (written 2026-10-29 by the AI assistant in WPM-T160, because the spec was silent on the audience).
+  A what-if is a `POST`, so the access policy treats it as a write: under the reference policy that is the service, an administrator and HR, and a
+  deployer may add a rule (for example for planners). The organization's scope applies as everywhere (outside it, not found), and a caller who is
+  only a partner is refused. The reading of the capacity view and the peer supply stays open to every caller in scope, as it was. **Nothing is
+  widened:** an ordinary manager is not given the what-if by this decision, and the answer is the same payload for every audience that may ask:
+  pool-month figures and counts under the small-group floor, with no worker, person reference, name, partner or other programme. If the product
+  owner wants managers to ask without a write rule, the route needs a read-class exception in `derive_action`, and that is a new decision.
 
 ## Acceptance (for the PPM side, to copy there)
 
