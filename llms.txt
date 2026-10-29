@@ -82,6 +82,7 @@ Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decis
 - [spec/lily-design-system-svelte-with-picker-bar/index.md](spec/lily-design-system-svelte-with-picker-bar/index.md): convention: the Lily Design System with the picker bar in each Svelte app
 - [spec/contents-for-global-sharing-with-svelte/index.md](spec/contents-for-global-sharing-with-svelte/index.md): convention: tables of contents for global sharing with Svelte
 - [spec/glossary.md](spec/glossary.md): terms used across the spec
+- [spec/worldwide.md](spec/worldwide.md): the target is worldwide, not US or UK; jurisdiction is data, standards are profiles (WPM-R214)
 - [spec/regulatory.md](spec/regulatory.md): regulatory position: demo software, not a production HR or payroll system
 - [spec/roadmap.md](spec/roadmap.md): what is delivered, proposed and deferred
 - [spec/testing.md](spec/testing.md): how to run each suite, the PostgreSQL and Podman setup

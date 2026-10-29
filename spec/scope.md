@@ -2,6 +2,8 @@
 
 ## In scope (v1)
 
+**Target: worldwide.** UK and US examples are worked cases, not the design; see [worldwide.md](worldwide.md) (WPM-R214).
+
 - **Employee records** — the employment relationship (hire →
   active → leave → offboarding → terminated/retired), employment
   facts (type, FTE, department, job title, manager chain, salary in

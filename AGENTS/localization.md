@@ -4,6 +4,11 @@ The URL carries the locale, and the UI strings are content. Full description:
 [spec/locales-for-global-sharing-with-svelte](../spec/locales-for-global-sharing-with-svelte/index.md)
 ("How WPM applies this", WPM-R50 / WPM-D37).
 
+## Worldwide
+
+The target is worldwide, not the US or UK. Jurisdiction is data, not code; no locale or country is the default shape.
+See [spec/worldwide.md](../spec/worldwide.md) (WPM-R214, WPM-D143).
+
 ## Locales
 
 17 content locales in

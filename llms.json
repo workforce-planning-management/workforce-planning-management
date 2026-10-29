@@ -367,6 +367,11 @@
         "description": "terms used across the spec"
       },
       {
+        "title": "spec/worldwide.md",
+        "path": "spec/worldwide.md",
+        "description": "the target is worldwide, not US or UK; jurisdiction is data, standards are profiles (WPM-R214)"
+      },
+      {
         "title": "spec/regulatory.md",
         "path": "spec/regulatory.md",
         "description": "regulatory position: demo software, not a production HR or payroll system"

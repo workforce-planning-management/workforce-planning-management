@@ -129,6 +129,8 @@ Official Journal), Article 26 puts duties on the **deployer**. The register reco
 
 ## UK regulators of sector employers
 
+The target is worldwide ([worldwide.md](worldwide.md), WPM-R214); the UK is one region here, and other regions are *not yet read* (WPM-T370).
+
 - **MHRA** (Medicines and Healthcare products Regulatory Agency): regulates medicines, medical devices and blood components for
   transfusion in the UK; an executive agency of the Department of Health and Social Care. Source:
   <https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency>, read 2026-10-28. WPM holds no
