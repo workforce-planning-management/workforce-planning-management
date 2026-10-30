@@ -3,7 +3,7 @@
   "slug": "workforce-planning-management",
   "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Loco) and SvelteKit, in 17 locales. Demo software; synthetic data only.",
   "status": {
-    "tasks_delivered": "WPM-T1–T397 (done, open and part done counted in spec/implementation-status.md)",
+    "tasks_delivered": "WPM-T1–T398 (done, open and part done counted in spec/implementation-status.md)",
     "highest_requirement": "WPM-R216",
     "highest_decision": "WPM-D149",
     "deferred": [],
@@ -34,7 +34,7 @@
       {
         "title": "spec/tasks.md",
         "path": "spec/tasks.md",
-        "description": "the live delivery checklist (WPM-T1–T397); each entry records what was verified and what was not; Phase 25 is the newest"
+        "description": "the live delivery checklist (WPM-T1–T398); each entry records what was verified and what was not; Phase 25 is the newest"
       },
       {
         "title": "spec/requirements.md",

@@ -85,6 +85,28 @@ pub fn a_worker() -> String {
     format!("worker:{}", uuid::Uuid::new_v4())
 }
 
+/// A JSON value as text with its random ids and its timestamps blanked, for a test that checks the text
+/// carries no figure: a figure such as "5500" can occur by chance inside a UUID (it did, in CI on 2026-10-30)
+/// or a timestamp, and that is not a leak.
+pub fn text_without_ids(value: &serde_json::Value) -> String {
+    fn blank(v: &serde_json::Value) -> serde_json::Value {
+        match v {
+            serde_json::Value::String(s)
+                if uuid::Uuid::parse_str(s).is_ok()
+                    || chrono::DateTime::parse_from_rfc3339(s).is_ok() =>
+            {
+                serde_json::Value::String(String::new())
+            }
+            serde_json::Value::Array(a) => serde_json::Value::Array(a.iter().map(blank).collect()),
+            serde_json::Value::Object(o) => {
+                serde_json::Value::Object(o.iter().map(|(k, v)| (k.clone(), blank(v))).collect())
+            }
+            other => other.clone(),
+        }
+    }
+    serde_json::to_string(&blank(value)).unwrap_or_default()
+}
+
 /// Create one active worker (no onboarding gate: the status stays
 /// `onboarding` unless a test activates it). Expands to a value
 /// (`String`, the worker pid), await it like a function call.

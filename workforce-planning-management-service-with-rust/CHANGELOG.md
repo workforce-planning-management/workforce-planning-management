@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — two no-figure checks are not tripped by a random id (WPM-T398)
+
+The request tests that check a notification carries no amount (`expenses`, `pay_positions`) now blank UUIDs and timestamps first:
+CI failed once when "5500" occurred inside a claim's random UUID. Test-only; the full request suite was run by CI, not locally.
+
 ### Fixed — a reused peer event id is a repeat only for its own pool, programme and month (WPM-T397, WPM-D148)
 
 `POST /api/capacity/peer-demand` looked for a repeat of `peer_event_id` across every `ppm` claim, so a caller who reused an id was

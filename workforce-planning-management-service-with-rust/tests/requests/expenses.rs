@@ -154,7 +154,7 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
             .iter()
             .find(|n| n["kind"] == "expense_submitted")
             .expect("the manager is told");
-        let all = serde_json::to_string(note).unwrap();
+        let all = super::text_without_ids(note);
         for leak in ["5500", "55.00", "Leeds", "£", "train"] {
             assert!(!all.contains(leak), "{leak} leaked: {all}");
         }

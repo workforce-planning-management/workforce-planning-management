@@ -5708,3 +5708,11 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `CONTRIBUTING.md`, `CHANGELOG.md` and `NEWS.md` under Operate; both subprojects' `spec/index.md` under Code; the subproject changelogs, the live Playwright README, the NHS DTAC notes and the remaining
       repository special files under Optional. Every Markdown file outside the locale pages, the test fixtures and the topic folders' duplicate `README.md` files is now listed. `llms.py --check` passes.
       **The GitHub Pages site** that [monorepo-github-pages](monorepo-github-pages/index.md) specifies does not exist and is not a small step: WPM-T392 records what it needs. There is no `*-skill` folder.
+- [x] (2026-10-30) WPM-T398 **A no-figure check in two request tests is not tripped by a random id.** *(WPM-R119)* CI failed on the push of
+      WPM-T377 and WPM-T378 (run 41040607406, the `mod` suite, 183 of 184): `a_claim_goes_from_draft_to_reimbursed` asserts that a
+      manager's notification carries no amount, and "5500" occurred by chance inside the claim's random UUID (`ca550037-…`), not as an
+      amount. The test now checks the notification's text with every UUID and RFC 3339 timestamp blanked
+      (`tests/requests/mod.rs::text_without_ids`), and so does the same check in `eligibility_reminders_name_no_pay_and_are_sent_once`,
+      which could fail the same way on "40559". The service code is unchanged. **Verified:** `cargo fmt`, `clippy --all-targets -D
+      warnings` clean; the four `expenses` and `pay_positions` request tests on a throwaway local PostgreSQL. The full request suite was
+      not run locally (CI runs it).

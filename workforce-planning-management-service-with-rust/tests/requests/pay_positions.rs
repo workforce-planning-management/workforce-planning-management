@@ -175,7 +175,7 @@ async fn eligibility_reminders_name_no_pay_and_are_sent_once() {
         let note = &told(soon).await[0];
         let text = note["body"].as_str().unwrap();
         assert!(text.contains("eligible"), "{text}");
-        let all = serde_json::to_string(note).unwrap();
+        let all = super::text_without_ids(note);
         for leak in ["national-2026", "band", "40559", "42805", "£"] {
             assert!(!all.contains(leak), "{leak} leaked: {all}");
         }
