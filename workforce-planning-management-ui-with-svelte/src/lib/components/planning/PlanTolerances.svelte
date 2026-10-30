@@ -4,6 +4,7 @@
   the decision recorded. Every change goes through `run`, which saves, then reads the plan again.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import {
     decideEscalation,
     raiseEscalationLevel,
@@ -164,7 +165,7 @@
   <ul data-testid="escalation-history">
     {#each escalations.filter((e) => e.status === "decided") as e (e.pid)}
       <li>
-        {tv(e.dimension)} · {e.raised_on} → {e.decided_on} · {tv(e.decision)}{#if e.decision_note} — {e.decision_note}{/if}
+        {tv(e.dimension)} · {formatDate(e.raised_on)} → {formatDate(e.decided_on)} · {tv(e.decision)}{#if e.decision_note} — {e.decision_note}{/if}
       </li>
     {/each}
   </ul>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatNumber } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -111,27 +112,27 @@
   {:else}
     <div class="tiles">
       <a class="tile" href={l("/workers")} data-testid="tile-active">
-        <strong>{active.length}</strong>
+        <strong>{formatNumber(active.length)}</strong>
         <span>{t("dash.activeWorkers")}</span>
       </a>
       <a class="tile" href={l("/requisitions")} data-testid="tile-open">
-        <strong>{open?.length ?? 0}</strong>
+        <strong>{formatNumber(open?.length ?? 0)}</strong>
         <span>{t("dash.openRequisitions")}</span>
       </a>
       <a class="tile" href={l("/development")} data-testid="tile-gaps">
-        <strong>{gapCount ?? 0}</strong>
+        <strong>{formatNumber(gapCount ?? 0)}</strong>
         <span>{t("dash.successionGaps")}</span>
       </a>
       <a class="tile" href={l("/resilience")} data-testid="tile-single-points">
-        <strong>{singlePoints ?? "—"}</strong>
+        <strong>{formatNumber(singlePoints)}</strong>
         <span>{t("dash.singlePoints")}</span>
       </a>
       <a class="tile" href={l("/warnings")} data-testid="tile-warnings">
-        <strong>{warnings ?? "—"}</strong>
+        <strong>{formatNumber(warnings)}</strong>
         <span>{t("dash.earlyWarnings")}</span>
       </a>
       <a class="tile" href={l("/capacity")} data-testid="tile-pools-over">
-        <strong>{poolsOver ?? "—"}</strong>
+        <strong>{formatNumber(poolsOver)}</strong>
         <span>{t("dash.poolsOver")}</span>
       </a>
     </div>

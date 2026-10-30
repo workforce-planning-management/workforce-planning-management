@@ -8,6 +8,7 @@
   plan back. The worker themselves, and a permanent worker with no plan, see nothing.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -113,16 +114,16 @@
     <dt>{t("common.status")}</dt>
     <dd data-testid="conversion-status">{tv(plan.status)}</dd>
     <dt>{t("conversion.target")}</dt>
-    <dd>{plan.target_on}</dd>
+    <dd>{formatDate(plan.target_on)}</dd>
     {#if plan.review_on}
       <dt>{t("conversion.review")}</dt>
-      <dd>{plan.review_on}</dd>
+      <dd>{formatDate(plan.review_on)}</dd>
     {/if}
     {#if plan.post_funding_kind}
       <dt>{t("conversion.funding")}</dt>
       <dd>
         {tv(plan.post_funding_kind)}{#if plan.post_funding_ends_on}
-          · {t("engagement.fundingEnds")}: {plan.post_funding_ends_on}{/if}
+          · {t("engagement.fundingEnds")}: {formatDate(plan.post_funding_ends_on)}{/if}
       </dd>
     {/if}
     <dt>{t("conversion.proposedBy")}</dt>
@@ -133,7 +134,7 @@
     {/if}
     {#if plan.settled_on}
       <dt>{t("conversion.settledOn")}</dt>
-      <dd>{plan.settled_on}</dd>
+      <dd>{formatDate(plan.settled_on)}</dd>
     {/if}
     {#if plan.reason}
       <dt>{t("conversion.reason")}</dt>
@@ -241,8 +242,8 @@
       <ul data-testid="conversion-history">
         {#each past as plan (plan.pid)}
           <li>
-            {tv(plan.intent)} · {tv(plan.status)} · {plan.target_on}{#if plan.settled_on}
-              {" "}<span class="muted">· {plan.settled_on}</span>{/if}
+            {tv(plan.intent)} · {tv(plan.status)} · {formatDate(plan.target_on)}{#if plan.settled_on}
+              {" "}<span class="muted">· {formatDate(plan.settled_on)}</span>{/if}
           </li>
         {/each}
       </ul>

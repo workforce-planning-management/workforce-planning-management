@@ -71,7 +71,7 @@ test.describe("Job levels, pay bands and pay scales", () => {
       "Senior Software Engineer",
     );
     await expect(panel.getByTestId("job-level-held")).toContainText(
-      "2024-03-01",
+      "1 Mar 2024",
     );
     expect(sent.at(-1)).toMatchObject({
       framework: "google-levels",
@@ -163,7 +163,7 @@ test.describe("Job levels, pay bands and pay scales", () => {
       "£40,559",
     );
     await expect(panel.getByTestId("pay-position-progression")).toContainText(
-      "Eligible to move up on 2026-12-01 (in 56 calendar days), to £42,805",
+      "Eligible to move up on 1 Dec 2026 (in 56 calendar days), to £42,805",
     );
     expect(sent.at(-1)).toEqual({
       scale: "national-2026-27",

@@ -6,6 +6,7 @@
   service lets the caller read the organization's assets.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -84,8 +85,8 @@
         <li data-testid="equipment-row">
           <strong>{tv(i.kind)}</strong> {i.tag}
           <span class="muted">
-            — {tf("equipment.issued", { day: i.issued_on })}{#if i.returned_on}
-              · {tv(i.outcome)} {i.returned_on}{#if i.note} · {i.note}{/if}{/if}
+            — {tf("equipment.issued", { day: formatDate(i.issued_on) })}{#if i.returned_on}
+              · {tv(i.outcome)} {formatDate(i.returned_on)}{#if i.note} · {i.note}{/if}{/if}
           </span>
           {#if assets && !i.returned_on}
             {#if closing === i.issue_pid}

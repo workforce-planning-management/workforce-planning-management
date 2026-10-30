@@ -112,15 +112,16 @@ nothing behind, that every worker present has its one audit row, and that the se
 
 ## Front-end edition (`workforce-planning-management-ui-with-svelte`)
 
-- **vitest — 253 tests / 33 files (as of 2026-10-30)**: the API client **path map** (every
+- **vitest — 269 tests / 34 files (as of 2026-10-30)**: the API client **path map** (every
   function's exact proxied path), `money()` honesty and the money formatter and parser
   (`tests/unit/money.test.ts`: JPY, EUR, KWD and CLF exponents, a decimal comma, no built-in
-  currency and no fixed 100 anywhere in `src/`, WPM-T373), the **locale parity** of
+  currency and no fixed 100 anywhere in `src/`, WPM-T373), numbers and dates in the page's locale and a scan for hand-rolled
+  formatting (`tests/unit/locale-format.test.ts`, WPM-T375), the **locale parity** of
   every `-001` locale (and that regional locales hold only keys that exist), that every
   `content/locales/` directory is `<language>-<region>` and matches `LOCALES`, the
   prefix (full code only) / negotiation logic, the **CMS config is up to date**, the
   CEO dashboard helpers, and component tests.
-- **Playwright — 317 tests passing and 19 skipped (as of 2026-10-30)** over a `page.route`-stubbed API (contract-mirroring;
+- **Playwright — 320 tests passing and 19 skipped (as of 2026-10-30)** over a `page.route`-stubbed API (contract-mirroring;
   an unstubbed call is a 404 and loud): the signed-in smoke journeys, the
   locale redirect / picker / the unforwarded bare language / `/admin/` shell, and one spec per newer
   area. The **CEO dashboard** is checked at **two viewports** — 1080 × 810 @2×

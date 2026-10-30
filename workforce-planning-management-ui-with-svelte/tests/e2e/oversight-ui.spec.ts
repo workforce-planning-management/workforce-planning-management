@@ -423,7 +423,7 @@ test.describe("oversight and the monthly pack", () => {
     await page.getByTestId("withdraw-reason").fill("wrong month");
     await page.getByTestId("withdraw").click();
     await expect(page.getByTestId("withdrawn")).toContainText("wrong month");
-    await expect(detail).toContainText("Withdrawn 2026-10-12: wrong month");
+    await expect(detail).toContainText("Withdrawn 12 Oct 2026: wrong month");
     await expect(detail.getByTestId("withdraw")).toHaveCount(0);
   });
 });
@@ -703,7 +703,7 @@ test.describe("entering capacity", () => {
     await page.goto("/capacity");
     const table = page.getByTestId("heatmap").getByRole("table");
     await expect(
-      table.getByRole("columnheader", { name: "2026-12" }),
+      table.getByRole("columnheader", { name: "Dec 2026" }),
     ).toBeVisible();
     await expect(
       table.getByRole("rowheader", { name: /Platform engineers/ }),
@@ -894,7 +894,7 @@ test.describe("early warnings", () => {
       "Not acknowledged",
     );
     await expect(page.getByTestId("warning").nth(1)).toContainText(
-      "Cleared 2026-09-25",
+      "Cleared 25 Sept 2026",
     );
     // Only the unacknowledged one can be acknowledged.
     await expect(page.getByTestId("acknowledge")).toHaveCount(1);

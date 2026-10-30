@@ -5,6 +5,7 @@
   All server-derived.
 -->
 <script lang="ts">
+  import { formatNumber } from "#lib/locale-format.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { mentorshipOverview } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
@@ -41,10 +42,10 @@
 
 {#if overview}
   <section class="tiles" data-testid="mentorship-tiles">
-    <div class="tile"><strong>{overview.active_pairings}</strong><span>{t("pages.mentorship.active_pairings")}</span></div>
-    <div class="tile"><strong>{overview.unmatched_total}</strong><span>{t("pages.mentorship.unmatched")}</span></div>
+    <div class="tile"><strong>{formatNumber(overview.active_pairings)}</strong><span>{t("pages.mentorship.active_pairings")}</span></div>
+    <div class="tile"><strong>{formatNumber(overview.unmatched_total)}</strong><span>{t("pages.mentorship.unmatched")}</span></div>
     <div class="tile">
-      <strong>{overview.stale_mentorships.length}</strong>
+      <strong>{formatNumber(overview.stale_mentorships.length)}</strong>
       <span>{tf("pages.mentorship.stale_over_d", { stale_days: overview.stale_days })}</span>
     </div>
   </section>

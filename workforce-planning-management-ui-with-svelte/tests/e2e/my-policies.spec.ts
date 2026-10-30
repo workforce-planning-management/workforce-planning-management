@@ -59,11 +59,11 @@ test.describe("My policies", () => {
     const panel = page.getByTestId("my-policies");
     await expect(panel).toContainText("Acceptable use");
     await expect(panel).toContainText(
-      "Overdue: due on 2026-09-15, 40 calendar days ago",
+      "Overdue: due on 15 Sept 2026, 40 calendar days ago",
     );
-    await expect(panel).toContainText("Please acknowledge by 2026-11-01");
+    await expect(panel).toContainText("Please acknowledge by 1 Nov 2026");
     await panel.getByTestId("policy-acknowledge").first().click();
-    await expect(panel).toContainText("Acknowledged on 2026-10-25");
+    await expect(panel).toContainText("Acknowledged on 25 Oct 2026");
     expect(sent).toEqual([{ version_pid: "v1" }]);
   });
 });

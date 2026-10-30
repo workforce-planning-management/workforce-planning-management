@@ -5,6 +5,7 @@
   skills are read for the chosen organization (a named read is a separate, audited route).
 -->
 <script lang="ts">
+  import { formatDecimal } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -59,7 +60,7 @@
 
   // Skills across the whole scope (the department rows repeat them), worst first.
   const skills = $derived((people?.skills ?? []).filter((s) => !s.department));
-  const hours = (n: number) => n.toFixed(1);
+  const hours = (n: number) => formatDecimal(n, 1);
 
   const skillColumns = $derived<DataGridColumn[]>([
     { id: "skill", header: t("res.skill"), sortable: true, rowHeader: true },

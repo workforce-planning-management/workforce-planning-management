@@ -160,7 +160,7 @@ test.describe("Bargaining", () => {
     await page.getByTestId("bg-pack").click();
     const result = page.getByTestId("bg-pack-result");
     await expect(result).toContainText("it is logged");
-    await expect(result).toContainText("12 people covered, as of 2026-10-27");
+    await expect(result).toContainText("12 people covered, as of 27 Oct 2026");
     await expect(result).toContainText("withheld (under 5)");
     await expect(page.getByTestId("bg-vacancies")).toContainText("Not shown");
     await page.getByTestId("bg-fstart").fill("2026-01-01");

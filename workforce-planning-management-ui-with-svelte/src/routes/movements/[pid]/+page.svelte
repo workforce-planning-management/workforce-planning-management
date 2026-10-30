@@ -7,6 +7,7 @@
   says what is left).
 -->
 <script lang="ts">
+  import { formatDate, formatDateTime } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -121,7 +122,7 @@
   </h1>
   <p class="muted">
     {movement.job_title}, {movement.department} ·
-    {movement.kind === "leaver" ? t("movements.lastDay") : t("movements.startDay")}: {movement.effective_on}
+    {movement.kind === "leaver" ? t("movements.lastDay") : t("movements.startDay")}: {formatDate(movement.effective_on)}
     {#if movement.reason}· {movement.reason}{/if}
   </p>
 
@@ -138,7 +139,7 @@
         <tr data-state={item.state}>
           <td title={stateLabel(item.state)}><span aria-hidden="true">{stateMark(item.state)}</span> <span class="muted">{stateLabel(item.state)}</span></td>
           <td>{item.title}{#if item.skipped_reason} <span class="muted">— {item.skipped_reason}</span>{/if}</td>
-          <td>{item.due_on}</td>
+          <td>{formatDate(item.due_on)}</td>
           <td>{item.assignee_name ?? "—"}</td>
           <td>
             {#if movement.status === "open"}
@@ -242,7 +243,7 @@
           <li>
             <span class="chip">{kindLabel(a.kind)}</span> {a.label}
             — {a.action}{#if a.to_worker_name} → {a.to_worker_name}{/if}
-            <span class="muted">· {a.performed_at.slice(0, 16).replace("T", " ")}</span>
+            <span class="muted">· {formatDateTime(a.performed_at)}</span>
           </li>
         {/each}
       </ul>

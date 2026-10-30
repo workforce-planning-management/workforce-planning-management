@@ -5,6 +5,7 @@
   your level. Selected skills become ordinary skill declarations.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -194,7 +195,7 @@
   {#if role && !changing}
     <p data-testid="current-role">
       {t("comp.frameworkRolePanel.current_role")} <strong>{role.role_label}</strong>
-      <span class="muted">{tf("comp.frameworkRolePanel.chosen", { selected_on: role.selected_on })}</span>
+      <span class="muted">{tf("comp.frameworkRolePanel.chosen", { selected_on: formatDate(role.selected_on) })}</span>
       <button type="button" onclick={() => (changing = true)}>{t("comp.frameworkRolePanel.change")}</button>
       <button type="button" onclick={() => void clear()}>{t("comp.frameworkRolePanel.clear")}</button>
     </p>

@@ -39,6 +39,9 @@ The 2026-10-30 additions (four keys for money input, WPM-T373 and WPM-T376: `exp
 `pages.planning.budget_needs_currency` and `pages.planning.bad_budget`) were machine-translated by the same assistant, also unreviewed.
 The currency codes in them (EUR, JPY, INR) are ISO 4217 codes and stay in Latin letters in every locale.
 
+The 2026-10-30 additions for typed numbers (WPM-T375: `common.badNumber` and `common.badNumberAtLeast`) were machine-translated by the
+same assistant, also unreviewed.
+
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.
 

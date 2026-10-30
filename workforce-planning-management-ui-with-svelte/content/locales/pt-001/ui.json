@@ -164,7 +164,9 @@
     "save": "Guardar",
     "remove": "Remover",
     "month": "Mês",
-    "programme": "Referência do programa"
+    "programme": "Referência do programa",
+    "badNumber": "{field}: introduza um número de {min} a {max}, escrito como esta página escreve os números (por exemplo, {example}).",
+    "badNumberAtLeast": "{field}: introduza um número de pelo menos {min}, escrito como esta página escreve os números (por exemplo, {example})."
   },
   "dash": {
     "title": "Minha página inicial",

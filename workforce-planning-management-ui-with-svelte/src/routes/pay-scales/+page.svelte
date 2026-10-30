@@ -5,6 +5,7 @@
   into the lookup is sent, answered and forgotten.
 -->
 <script lang="ts">
+  import { formatDate, formatPercent } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { getPayScale, listPayScales, money, moneyWhole, payPosition } from "#lib/api/wpm.js";
@@ -76,7 +77,8 @@
     stepColumn("top", t("payScales.top"), 2, topCell),
   ]);
 
-  const perCent = (tenths: number): string => `${(tenths / 10).toFixed(1)}%`;
+  // Tenths of a percent: 33 is 3.3% ("33e-3" is exactly 0.033).
+  const perCent = (tenths: number): string => formatPercent(Number(`${tenths}e-3`), 1);
 
   async function ask(event: SubmitEvent): Promise<void> {
     event.preventDefault();
@@ -132,7 +134,7 @@
 {#if scale}
   <p data-testid="pay-scale-source">
     <strong>{scale.name}</strong> — {t("payScales.from")}
-    {scale.effective_from}, +{perCent(scale.uplift_tenths_percent)}.
+    {formatDate(scale.effective_from)}, +{perCent(scale.uplift_tenths_percent)}.
     {t("payScales.source")}: {scale.source}.
   </p>
   <p class="muted">{t("payScales.basis")}</p>

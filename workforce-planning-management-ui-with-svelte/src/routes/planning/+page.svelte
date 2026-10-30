@@ -7,6 +7,7 @@
   aggregate and levers are suggestions, never decisions.
 -->
 <script lang="ts">
+  import { formatDate, numberToInput, parseScaled } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import PlanForecast from "#lib/components/planning/PlanForecast.svelte";
   import PlanTolerances from "#lib/components/planning/PlanTolerances.svelte";
@@ -70,12 +71,13 @@
   let org = $state("");
   let start = $state("");
   let end = $state("");
-  let attritionPct = $state<number | null>(null);
+  /** Percentages and the FTE are typed in the page's own number format ("2,5" in German); empty is unknown (WPM-T375). */
+  let attritionPct = $state("");
   /** The budget as typed, in the page's own number format; empty is no budget. */
   let budget = $state("");
   /** No currency is assumed: a budget names its own (WPM-T376). */
   let budgetCurrency = $state("");
-  let onCostPct = $state<number | null>(null);
+  let onCostPct = $state("");
   let department = $state("");
   let lineRole = $state("");
   let targetOn = $state("");
@@ -84,7 +86,7 @@
   let lineEnds = $state("");
   let lineProgramme = $state("");
   /** FTE across the headcount, in people (2.5); empty is unknown, never assumed. */
-  let lineFte = $state<number | null>(null);
+  let lineFte = $state("");
   let objectiveTitle = $state("");
 
   /** The plans' horizons as bars, each demand line a milestone under its plan. */
@@ -213,7 +215,7 @@
       id: "horizon_start",
       header: t("pages.planning.horizon"),
       sortable: true,
-      format: (_v, r) => `${r.horizon_start} → ${r.horizon_end}`,
+      format: (_v, r) => `${formatDate(r.horizon_start as string)} → ${formatDate(r.horizon_end as string)}`,
     },
     { id: "demand_lines", header: t("pages.planning.lines"), sortable: true, align: "end" },
     {
@@ -286,15 +288,27 @@
       }
       budgetPart = { budget_minor: minor, budget_currency: code };
     }
+    // A percentage to basis points: "2,5" is 250.
+    const attritionBp = attritionPct.trim() === "" ? undefined : parseScaled(attritionPct, 2);
+    const onCostBp = onCostPct.trim() === "" ? undefined : parseScaled(onCostPct, 2);
+    for (const [bp, label] of [
+      [attritionBp, t("pages.planning.annual_attrition_blank_observed")],
+      [onCostBp, t("pages.planning.employer_on_cost")],
+    ] as const) {
+      if (bp === null || (bp !== undefined && (bp < 0 || bp > 10000))) {
+        error = tf("common.badNumber", { field: label, min: 0, max: 100, example: numberToInput(2.5) });
+        return;
+      }
+    }
     void run(async () => {
       const created = await createWorkforcePlan({
         name,
         organization_ref: org,
         horizon_start: start,
         horizon_end: end,
-        ...(attritionPct !== null ? { attrition_bp: Math.round(attritionPct * 100) } : {}),
+        ...(typeof attritionBp === "number" ? { attrition_bp: attritionBp } : {}),
         ...budgetPart,
-        ...(onCostPct !== null ? { on_cost_bp: Math.round(onCostPct * 100) } : {}),
+        ...(typeof onCostBp === "number" ? { on_cost_bp: onCostBp } : {}),
       });
       name = "";
       selected = created.pid;
@@ -315,10 +329,10 @@
   </label>
   <label>{t("pages.planning.from")} <input type="date" data-testid="plan-start" bind:value={start} required /></label>
   <label>{t("pages.planning.to")} <input type="date" data-testid="plan-end" bind:value={end} required /></label>
-  <label>{t("pages.planning.annual_attrition_blank_observed")} <input type="number" min="0" max="100" step="0.1" bind:value={attritionPct} /></label>
+  <label>{t("pages.planning.annual_attrition_blank_observed")} <input inputmode="decimal" data-testid="plan-attrition" bind:value={attritionPct} /></label>
   <label>{t("pages.planning.annual_hiring_budget")} <input inputmode="decimal" data-testid="plan-budget" bind:value={budget} /></label>
   <label>{t("pages.planning.currency")} <input maxlength="3" size="4" data-testid="plan-currency" bind:value={budgetCurrency} /></label>
-  <label>{t("pages.planning.employer_on_cost")} <input type="number" min="0" max="100" step="0.1" bind:value={onCostPct} /></label>
+  <label>{t("pages.planning.employer_on_cost")} <input inputmode="decimal" data-testid="plan-on-cost" bind:value={onCostPct} /></label>
   <button type="submit" data-testid="plan-create">{t("pages.planning.create_plan")}</button>
 </form>
 
@@ -349,9 +363,9 @@
     <tbody>
       {#each plan.demand_lines as line (line.pid)}
         <tr>
-          <td>{line.department}</td><td>{line.job_title ?? "any"}</td><td>{line.target_on}</td><td>{line.target_headcount}</td>
+          <td>{line.department}</td><td>{line.job_title ?? "any"}</td><td>{formatDate(line.target_on)}</td><td>{line.target_headcount}</td>
           <td>{line.target_fte ?? "—"}</td>
-          <td>{tv(line.basis)}{#if line.expected_ends_on} <span class="muted">→ {line.expected_ends_on}</span>{/if}</td>
+          <td>{tv(line.basis)}{#if line.expected_ends_on} <span class="muted">→ {formatDate(line.expected_ends_on)}</span>{/if}</td>
           <td>{line.programme_ref ?? "—"}</td>
           {#each plan.objectives as o (o.pid)}
             <td>
@@ -377,6 +391,13 @@
     <form
       onsubmit={(event) => {
         event.preventDefault();
+        // FTE across the headcount to centi-FTE: "2,5" is 250.
+        const fteCenti = lineFte.trim() === "" ? undefined : parseScaled(lineFte, 2);
+        if (fteCenti === null || (fteCenti !== undefined && fteCenti < 0)) {
+          error = tf("common.badNumberAtLeast", { field: t("plan.fteOptional"), min: 0, example: numberToInput(2.5) });
+          return;
+        }
+        error = null;
         void run(() =>
           setDemandLine(plan!.pid, {
             department,
@@ -384,7 +405,7 @@
             target_headcount: headcount,
             basis: lineBasis,
             ...(lineRole ? { role_profile_pid: lineRole } : {}),
-            ...(lineFte === null ? {} : { target_fte_percent: Math.round(lineFte * 100) }),
+            ...(fteCenti === undefined ? {} : { target_fte_percent: fteCenti }),
             ...(lineBasis !== "permanent" && lineEnds ? { expected_ends_on: lineEnds } : {}),
             ...(lineProgramme.trim() ? { programme_ref: lineProgramme.trim() } : {}),
           }),
@@ -401,7 +422,7 @@
       </label>
       <label>{t("pages.planning.target_date")} <input data-testid="line-target" type="date" min={plan.horizon_start} max={plan.horizon_end} bind:value={targetOn} required /></label>
       <label>{t("pages.planning.headcount")} <input type="number" min="0" bind:value={headcount} required /></label>
-      <label>{t("plan.fteOptional")} <input data-testid="line-fte" type="number" min="0" step="0.05" bind:value={lineFte} /></label>
+      <label>{t("plan.fteOptional")} <input data-testid="line-fte" inputmode="decimal" bind:value={lineFte} /></label>
       <label>
         {t("engagement.basis")}
         <select data-testid="line-basis" bind:value={lineBasis}>

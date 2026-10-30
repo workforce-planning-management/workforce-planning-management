@@ -164,7 +164,9 @@
     "save": "Cadw",
     "remove": "Dileu",
     "month": "Mis",
-    "programme": "Cyfeirnod y rhaglen"
+    "programme": "Cyfeirnod y rhaglen",
+    "badNumber": "{field}: rhowch rif o {min} i {max}, wedi'i ysgrifennu fel y mae'r dudalen hon yn ysgrifennu rhifau (er enghraifft {example}).",
+    "badNumberAtLeast": "{field}: rhowch rif o {min} o leiaf, wedi'i ysgrifennu fel y mae'r dudalen hon yn ysgrifennu rhifau (er enghraifft {example})."
   },
   "dash": {
     "title": "Fy Nhudalen Hafan",

@@ -6,6 +6,7 @@
   document, not its text.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -61,13 +62,13 @@
           </span>
           <br />
           {#if p.standing.kind === "done"}
-            <span data-testid="policy-standing">{tf("myPolicies.done", { day: p.standing.on })}</span>
+            <span data-testid="policy-standing">{tf("myPolicies.done", { day: formatDate(p.standing.on) })}</span>
           {:else}
             <span data-testid="policy-standing">
               {#if p.standing.kind === "overdue"}
-                {tf("myPolicies.overdue", { day: p.standing.due_on, days: p.standing.calendar_days_late })}
+                {tf("myPolicies.overdue", { day: formatDate(p.standing.due_on), days: p.standing.calendar_days_late })}
               {:else}
-                {tf("myPolicies.due", { day: p.standing.due_on })}
+                {tf("myPolicies.due", { day: formatDate(p.standing.due_on) })}
               {/if}
             </span>
             <button type="button" data-testid="policy-acknowledge" onclick={() => void acknowledge(p.version.pid)}>

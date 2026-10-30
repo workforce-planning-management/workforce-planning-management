@@ -6,6 +6,7 @@
   stored. Recording that an answer was given is HR's and keeps dates only.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
@@ -69,10 +70,10 @@
 
   const standingText = (r: PayInformationQueueItem) =>
     r.standing === "answered"
-      ? tf("payInfo.answered", { day: r.answered_on ?? "" })
+      ? tf("payInfo.answered", { day: formatDate(r.answered_on) })
       : r.standing === "overdue"
-        ? tf("payInfo.overdue", { day: r.due_on })
-        : tf("payInfo.due", { day: r.due_on });
+        ? tf("payInfo.overdue", { day: formatDate(r.due_on) })
+        : tf("payInfo.due", { day: formatDate(r.due_on) });
   const pay = (minor: number | null) => money(minor, working?.currency, i18n.locale);
   const averageText = (f: GapFigure<number>) =>
     f.status === "shown"
@@ -117,7 +118,7 @@
     {#each queue as r (r.pid)}
       <li data-testid="pay-info-queue-row">
         <strong>{r.display_name}</strong> <span class="muted">({r.worker_number})</span> —
-        {tf("payInfo.asked", { day: r.asked_on })} · {standingText(r)}
+        {tf("payInfo.asked", { day: formatDate(r.asked_on) })} · {standingText(r)}
         {#if r.standing !== "answered"}
           <button type="button" data-testid="pay-info-work-out" onclick={() => void workOut(r.pid)}>{t("payInfo.work_out")}</button>
         {/if}

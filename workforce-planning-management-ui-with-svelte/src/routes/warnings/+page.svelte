@@ -6,6 +6,7 @@
   runs a sweep (an administrator), which opens, closes and notifies.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     acknowledgeEarlyWarning,
@@ -101,11 +102,11 @@
             <span class="chip" class:danger={w.cleared_on === null}>{tv(w.kind)}</span>
             {#if w.subject_name}<strong>{w.subject_name}</strong>{/if}
             <span class="muted">
-              · {tf("ew.firstSeen", { date: w.first_true_on })} · {tf("ew.daysOpen", { days: w.days_open })}
-              {#if w.cleared_on}· {tf("ew.cleared", { date: w.cleared_on })}{/if}
+              · {tf("ew.firstSeen", { date: formatDate(w.first_true_on) })} · {tf("ew.daysOpen", { days: w.days_open })}
+              {#if w.cleared_on}· {tf("ew.cleared", { date: formatDate(w.cleared_on) })}{/if}
               ·
               {w.acknowledged_on
-                ? tf("ew.acknowledged", { date: w.acknowledged_on })
+                ? tf("ew.acknowledged", { date: formatDate(w.acknowledged_on) })
                 : t("ew.notAcknowledged")}
             </span>
             {#if !w.acknowledged_on}

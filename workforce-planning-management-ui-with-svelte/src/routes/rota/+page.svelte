@@ -7,6 +7,7 @@
   as unavailable, never guessed. HR creates rotas and records swaps.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -210,7 +211,7 @@
     <ul data-testid="rota-swaps">
       {#each view.overrides as o (o.pid)}
         <li>
-          {o.worker_name ?? o.worker_pid} · {o.starts_on} → {o.ends_on}
+          {o.worker_name ?? o.worker_pid} · {formatDate(o.starts_on)} → {formatDate(o.ends_on)}
           {#if o.note}<span class="muted">— {o.note}</span>{/if}
           <button type="button" onclick={() => void run(() => removeRotaSwap(o.pid))}>
             {t("backups.remove")}
@@ -252,7 +253,7 @@
       {#each requests as r (r.pid)}
         <li>
           {r.requester_name ?? r.requester_pid} → {r.taker_name ?? r.taker_pid}
-          · {r.starts_on} → {r.ends_on} · <span class="chip">{tv(r.status)}</span>
+          · {formatDate(r.starts_on)} → {formatDate(r.ends_on)} · <span class="chip">{tv(r.status)}</span>
           {#if r.status === "requested"}
             <button type="button" onclick={() => void run(() => decideSwap(r.pid, "accept"))}>{t("rota.accept")}</button>
             <button type="button" onclick={() => void run(() => decideSwap(r.pid, "decline"))}>{t("rota.decline")}</button>

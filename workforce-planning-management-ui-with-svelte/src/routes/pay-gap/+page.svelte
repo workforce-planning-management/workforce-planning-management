@@ -7,6 +7,7 @@
   service audits the read and the CSV.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
@@ -217,7 +218,7 @@
       <p>
         {tf("payRange.currency", { currency: answer.currency ?? "—" })}
         {#if answer.reporting}
-          · <span data-testid="pay-gap-reporting">{tf("payGap.reporting", { years: answer.reporting.every_years, first: answer.reporting.first_report_on, next: answer.reporting.next_report_on })}</span>
+          · <span data-testid="pay-gap-reporting">{tf("payGap.reporting", { years: answer.reporting.every_years, first: formatDate(answer.reporting.first_report_on), next: formatDate(answer.reporting.next_report_on) })}</span>
         {:else}
           · <span data-testid="pay-gap-reporting">{t("payGap.no_reporting")}</span>
         {/if}

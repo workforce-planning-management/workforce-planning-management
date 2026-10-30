@@ -6,6 +6,7 @@
   whoever holds it chooses who sees it.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -81,12 +82,12 @@
         {@const live = liveFor(e.pid)}
         {@const past = issued.find((c) => c.source_pid === e.pid && c.revoked_at)}
         <li data-testid="credential-row">
-          <strong>{e.activity}</strong> <span class="muted">— {e.entry_date}</span>
+          <strong>{e.activity}</strong> <span class="muted">— {formatDate(e.entry_date)}</span>
           {#if live}
-            <span data-testid="credential-state">{tf("credentials.issued", { day: live.issued_at.slice(0, 10) })}</span>
+            <span data-testid="credential-state">{tf("credentials.issued", { day: formatDate(live.issued_at) })}</span>
             <button type="button" data-testid="credential-revoke" onclick={() => void revoke(live.pid)}>{t("credentials.revoke")}</button>
           {:else}
-            {#if past}<span data-testid="credential-state" class="muted">{tf("credentials.revoked", { day: (past.revoked_at ?? "").slice(0, 10) })}</span>{/if}
+            {#if past}<span data-testid="credential-state" class="muted">{tf("credentials.revoked", { day: formatDate(past.revoked_at) })}</span>{/if}
             <button type="button" data-testid="credential-issue" onclick={() => void issue(e.pid)}>{t("credentials.issue")}</button>
           {/if}
         </li>

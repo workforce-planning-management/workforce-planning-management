@@ -5,6 +5,7 @@
   nothing. Nothing here says who belongs to a body or represents one (WPM-D68). HR only.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
@@ -200,7 +201,7 @@
           <li class="panel" data-testid="bg-body">
             <h2>{b.name}</h2>
             <p>
-              {tv(b.kind)} · {tv(b.basis)} · {tf("bargaining.since", { day: b.recognised_on })} ·
+              {tv(b.kind)} · {tv(b.basis)} · {tf("bargaining.since", { day: formatDate(b.recognised_on) })} ·
               {tf("bargaining.contact", { role: b.contact_role })} · {tf("bargaining.unit_count", { n: b.units })}
             </p>
             <button type="button" data-testid="bg-show-units" onclick={() => showUnits(b.pid)}>{t("bargaining.units")}</button>
@@ -229,7 +230,7 @@
                   {#if p.headcount === null}
                     <p data-testid="bg-pack-nothing">{tf("bargaining.pack_under_floor", { floor: pack.data.floor })}</p>
                   {:else}
-                    <p>{tf("bargaining.pack_headcount", { n: p.headcount, day: p.as_of })}</p>
+                    <p>{tf("bargaining.pack_headcount", { n: p.headcount, day: formatDate(p.as_of) })}</p>
                     {#each sections(p) as section (section.title)}
                       <h4>{section.title}</h4>
                       <ul>{#each section.groups as g (g.group)}<li>{tv(g.group)}: {cellText(g.headcount)}</li>{/each}</ul>
@@ -251,7 +252,7 @@
                 <ul data-testid="bg-facility">
                   {#each periods as f (f.pid)}
                     <li data-testid="bg-period">
-                      {f.period_start} – {f.period_end}: {tf("bargaining.minutes_hours", { minutes: f.minutes, hours: f.hours })}
+                      {formatDate(f.period_start)} – {formatDate(f.period_end)}: {tf("bargaining.minutes_hours", { minutes: f.minutes, hours: f.hours })}
                       {#if f.budget_minutes !== null} · {tf("bargaining.budget", { minutes: f.budget_minutes })}{/if}
                       {#if f.over_budget} · <strong data-testid="bg-over">{t("bargaining.over_budget")}</strong>{/if}
                     </li>

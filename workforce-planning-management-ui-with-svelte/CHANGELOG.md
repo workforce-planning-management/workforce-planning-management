@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — numbers, percentages and dates in the page's locale (WPM-T375)
+
+One module, `src/lib/locale-format.ts`, on `Intl` with `i18n.locale`: numbers, fixed decimals, percentages, basis points and centi-FTE
+(the point placed exactly), signed changes, dates (a civil date the same day everywhere, a timestamp in the reader's zone), date-times,
+times and months; typed numbers through `money.ts`'s `parseAmount`. `format.ts` writes through it; `tf`/`tp` write a number placeholder
+in the page's format; `DataTable` formats a number or ISO date in a column with no type of its own (sorting and export unchanged). About
+85 raw ISO dates, 17 `toFixed` and hand-made percentages, two `toLocale*` calls in the browser's locale and the English "now" in
+`CareerHistory` are gone. Eight decimal inputs (attrition, on-cost and line FTE on `/planning`, reservation and claim FTE on `/capacity`,
+three amounts on `/cpd`) are `inputmode="decimal"` text read in the page's format and refused before a request when they are not a number
+(`common.badNumber`, `common.badNumberAtLeast`: two new keys in the 13 full locales, machine-translated and unreviewed). Tests:
+`tests/unit/locale-format.test.ts` (unit tests and a scan of `src/` for new hand-rolled formatting), three new Playwright tests (German
+percentages sent as basis points, a payroll period in German and in Bengali digits), 26 assertions updated from ISO text.
+**Not done:** bare counts in markup outside the headline tiles are not all converted and the scan cannot see them; multi-line `tf`/`tp`
+calls are outside the scan; ranges still use "→" (WPM-T377); `type="date"` inputs follow the browser. **Not verified:** screenshots were
+not looked at; no live service; Arabic-Indic digits typed on an Arabic page.
+
 ### Changed — money uses the currency's own minor unit and the reader's number format (WPM-T373, WPM-T376)
 
 One formatter and parser, `src/lib/money.ts`, shared in behaviour with the sibling project-portfolio-management UI's `money.ts`

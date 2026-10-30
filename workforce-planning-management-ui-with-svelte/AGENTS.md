@@ -41,6 +41,11 @@ masked fields render as first-class masked states, never errors or fake zeros.
    own (JPY 0, KWD 3), never a fixed 100, the format is the page's locale, and
    no form starts with a currency (WPM-T373, WPM-T376). It is shared in
    behaviour with the sibling PPM UI's `money.ts`; change both together.
+   **Other numbers and dates** go through `src/lib/locale-format.ts`
+   (`formatNumber`, `formatPercent`, `formatDate`, `parseNumber`, …), never
+   `toFixed`, `toLocale*`, a glued `%` or a raw ISO date in markup; a scan in
+   `tests/unit/locale-format.test.ts` fails otherwise (WPM-T375). A decimal
+   input is text with `inputmode="decimal"`, read with `parseNumber`.
 6. **Localization is content, and the URL carries the locale** (WPM-R50,
    WPM-D37). Strings live in `content/locales/<locale>/ui.json` (17 locales;
    regional ones hold overrides only), loaded through `src/lib/i18n.svelte.ts`;

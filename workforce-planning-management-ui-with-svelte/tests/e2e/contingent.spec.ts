@@ -240,7 +240,7 @@ test.describe("contingent workforce", () => {
         }),
     );
     await page.goto("/contingent");
-    await expect(page.getByTestId("trend-table")).toContainText("2026-05-01");
+    await expect(page.getByTestId("trend-table")).toContainText("1 May 2026");
     await expect(page.getByTestId("contingent-departments")).toContainText(
       "engineering",
     );
@@ -370,7 +370,7 @@ test.describe("contingent workforce", () => {
     const panel = page.getByTestId("engagement");
     await expect(panel).toBeVisible();
     await expect(page.getByTestId("engagement-basis")).toHaveText("contractor");
-    await expect(page.getByTestId("engagement-ends")).toHaveText("2026-12-31");
+    await expect(page.getByTestId("engagement-ends")).toHaveText("31 Dec 2026");
     await expect(page.getByTestId("engagement-standing")).toContainText(
       "ending soon",
     );

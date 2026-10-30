@@ -170,14 +170,42 @@ export function t(key: StringKey): string {
 /**
  * Reactive translation with values: `tf("groups.since", { joined_at })` fills the
  * `{joined_at}` placeholder in the catalogue string. A placeholder with no value is
- * left as written, so a missing value is visible rather than blank.
+ * left as written, so a missing value is visible rather than blank. A number is written in the
+ * page's own format; a date is passed through `formatDate` first (`locale-format.ts`).
  */
 export function tf(
   key: StringKey,
   params: Record<string, unknown> = {},
 ): string {
-  return translate(key, current).replace(/\{(\w+)\}/g, (whole, name: string) =>
-    name in params ? String(params[name]) : whole,
+  return fill(translate(key, current), params, current);
+}
+
+/**
+ * A placeholder's value as text in `locale`: a number through `Intl.NumberFormat` (grouping, the locale's decimal
+ * mark and digits: "1,234", "1.234", "১,২৩৪"), anything else as written (WPM-T375). A figure that must not be grouped,
+ * such as a year, is passed already formatted (`formatNumber(year, { useGrouping: false })`).
+ */
+export function placeholderText(
+  value: unknown,
+  locale: Locale = current,
+): string {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    try {
+      return new Intl.NumberFormat(locale).format(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+}
+
+function fill(
+  text: string,
+  params: Record<string, unknown>,
+  locale: Locale,
+): string {
+  return text.replace(/\{(\w+)\}/g, (whole, name: string) =>
+    name in params ? placeholderText(params[name], locale) : whole,
   );
 }
 
@@ -210,8 +238,5 @@ export function tp(
   locale: Locale = current,
 ): string | null {
   if (!(key in STRINGS[DEFAULT_LOCALE])) return null;
-  return translate(key as StringKey, locale).replace(
-    /\{(\w+)\}/g,
-    (whole, name: string) => (name in params ? String(params[name]) : whole),
-  );
+  return fill(translate(key as StringKey, locale), params, locale);
 }

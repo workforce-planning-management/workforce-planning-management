@@ -9,6 +9,15 @@
 // into "no data" either.
 
 import type { Ratio } from "./api/types";
+import {
+  formatBasisPoints,
+  formatDecimal,
+  formatInteger,
+  formatPercent,
+} from "./locale-format";
+
+// Every figure is written through `Intl` in the page's locale (`locale-format.ts`, WPM-T375): "67%" in
+// English, "67 %" in German, Bengali digits on a Bengali page.
 
 /**
  * A ratio as a rounded percentage, or `null` when there is nothing to
@@ -20,13 +29,13 @@ import type { Ratio } from "./api/types";
  */
 export function percent(ratio: Ratio | null | undefined): string | null {
   if (!ratio || ratio.value === null) return null;
-  return `${Math.round(ratio.value * 100)}%`;
+  return formatPercent(ratio.value);
 }
 
 /** A ratio's working, for display alongside the percentage: `"2/3"`. */
 export function workings(ratio: Ratio | null | undefined): string | null {
   if (!ratio) return null;
-  return `${ratio.numerator}/${ratio.denominator}`;
+  return `${formatInteger(ratio.numerator)}/${formatInteger(ratio.denominator)}`;
 }
 
 /**
@@ -53,7 +62,7 @@ export function percentWithWorkings(
  */
 export function percentOf(done: number, total: number, fallback = "—"): string {
   if (total === 0) return fallback;
-  return `${Math.round((done / total) * 100)}%`;
+  return formatPercent(done / total);
 }
 
 /**
@@ -63,7 +72,7 @@ export function percentOf(done: number, total: number, fallback = "—"): string
  */
 export function mean(value: number | null | undefined): string | null {
   if (value === null || value === undefined) return null;
-  return value.toFixed(1);
+  return formatDecimal(value, 1);
 }
 
 /**
@@ -72,15 +81,13 @@ export function mean(value: number | null | undefined): string | null {
  */
 export function rate(value: number | null | undefined): string | null {
   if (value === null || value === undefined) return null;
-  return `${(value * 100).toFixed(1)}%`;
+  return formatPercent(value, 1);
 }
 
 /**
- * Basis points (hundredths of a percent) as a percentage with two decimals, by digits only: `10456` is `104.56%`, `-5` is `-0.05%`.
- * The service worked the figure out; this only places the point.
+ * Basis points (hundredths of a percent) as a percentage with two decimals: `10456` is `104.56%`, `-5` is `-0.05%`
+ * (in English). The service worked the figure out; this only places the point, exactly (`10456e-4`, not a division).
  */
 export function basisPoints(bp: number): string {
-  const sign = bp < 0 ? "-" : "";
-  const abs = Math.abs(Math.trunc(bp));
-  return `${sign}${Math.trunc(abs / 100)}.${String(abs % 100).padStart(2, "0")}%`;
+  return formatBasisPoints(bp);
 }

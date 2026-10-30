@@ -6,6 +6,7 @@
   A development conversation starter, not a selection decision.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -228,7 +229,7 @@
             <th>{plan?.total_hours}</th>
             <th></th>
             <th></th>
-            <th>{t("training.finish")} {plan?.finish_on} ({plan?.total_weeks} {t("training.weeks")})</th>
+            <th>{t("training.finish")} {formatDate(plan?.finish_on)} ({plan?.total_weeks} {t("training.weeks")})</th>
           </tr>
         {/snippet}
       </DataTable>

@@ -108,7 +108,7 @@ test.describe("Policies", () => {
     const rows = page.getByTestId("policy-record-row");
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0)).toContainText("E-001");
-    await expect(rows.nth(0)).toContainText("Acknowledged on 2026-09-03");
+    await expect(rows.nth(0)).toContainText("Acknowledged on 3 Sept 2026");
     await expect(rows.nth(1)).toContainText("Not yet");
   });
 

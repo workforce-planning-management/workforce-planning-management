@@ -135,7 +135,7 @@ test.describe("Pay gap", () => {
       "Threshold 5.00% either way; 6 calendar months to remedy",
     );
     await expect(rows.nth(0).getByTestId("assessment-signal")).toContainText(
-      "A joint assessment is due: the period ended 2026-07-10",
+      "A joint assessment is due: the period ended 10 Jul 2026",
     );
     await expect(rows.nth(1).getByTestId("assessment-signal")).toContainText(
       "the gap is withheld",
@@ -200,7 +200,7 @@ test.describe("Pay gap", () => {
       "In no category: fewer than 10",
     );
     await expect(page.getByTestId("pay-gap-reporting")).toContainText(
-      "first on 2027-06-07",
+      "first on 7 Jun 2027",
     );
     await expect(page.getByTestId("pay-gap-audited")).toContainText(
       "audit log",

@@ -5,6 +5,7 @@
   read with 403). Nothing is derived: the level is what was recorded.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -103,7 +104,7 @@
     {#if held?.level}
       <p data-testid="job-level-held">
         <strong>{held.level.code}</strong> — {held.level.title}
-        <span class="muted">({held.framework_name}; {t("grades.since")} {held.effective_on})</span>
+        <span class="muted">({held.framework_name}; {t("grades.since")} {formatDate(held.effective_on)})</span>
       </p>
       <button data-testid="job-level-clear" onclick={() => run(() => clearWorkerJobLevel(workerPid))}>
         {t("grades.clear")}

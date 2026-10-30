@@ -129,7 +129,7 @@ test.describe("Dashboard (home page)", () => {
         route.fulfill({ json: [{}, {}, {}, {}, {}, {}] }),
       );
       await page.goto("/ceo");
-      await expect(page.getByTestId("kpi-headcount")).toContainText("12345");
+      await expect(page.getByTestId("kpi-headcount")).toContainText("12,345");
       await expect(page.getByTestId("trend-chart")).toBeVisible();
       await expect(page.getByTestId("ceo-insights")).toContainText("Attention");
       await expect(page.getByTestId("kpi-escalations")).toContainText("3");

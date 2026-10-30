@@ -164,7 +164,9 @@
     "save": "Simpan",
     "remove": "Hapus",
     "month": "Bulan",
-    "programme": "Referensi program"
+    "programme": "Referensi program",
+    "badNumber": "{field}: masukkan angka dari {min} sampai {max}, ditulis seperti halaman ini menulis angka (misalnya {example}).",
+    "badNumberAtLeast": "{field}: masukkan angka paling sedikit {min}, ditulis seperti halaman ini menulis angka (misalnya {example})."
   },
   "dash": {
     "title": "Beranda Saya",

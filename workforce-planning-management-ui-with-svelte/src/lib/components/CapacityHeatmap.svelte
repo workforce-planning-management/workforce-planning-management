@@ -4,6 +4,7 @@
   cannot be said is `unknown` (dashed, "?"): it is never drawn as a zero and never as a pass.
 -->
 <script lang="ts">
+  import { formatCentiFte, formatMonth } from "#lib/locale-format.js";
   import type { CellStatus } from "#lib/api/wpm.js";
   import { t, tf } from "#lib/i18n.svelte.js";
   import { stateLabel } from "#lib/stateLabel.js";
@@ -28,8 +29,8 @@
     over: "✕",
     unknown: "?",
   };
-  const fte = (centi: number) => (centi / 100).toFixed(2);
-  const label = (month: string) => month.slice(0, 7);
+  const fte = (centi: number) => formatCentiFte(centi);
+  const label = (month: string) => formatMonth(month);
 </script>
 
 <div class="scroll" data-testid="heatmap">

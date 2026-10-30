@@ -5,6 +5,7 @@
   confirm; it is not a verdict. HR only.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
@@ -155,10 +156,10 @@
             <p>
               {tv(c.profile)} · {c.topics.map((x) => tv(x)).join(", ")} ·
               {tf("consultations.counts", { size: c.establishment_size, dismissals: c.dismissals })} ·
-              {tf("consultations.earliest", { day: c.earliest_termination_on })} ·
+              {tf("consultations.earliest", { day: formatDate(c.earliest_termination_on) })} ·
               <span data-testid="cs-outcome">{tv(c.outcome)}</span>
-              {#if c.started_on} · {tf("consultations.began", { day: c.started_on })}{/if}
-              {#if c.ended_on} · {tf("consultations.ended", { day: c.ended_on })}{/if}
+              {#if c.started_on} · {tf("consultations.began", { day: formatDate(c.started_on) })}{/if}
+              {#if c.ended_on} · {tf("consultations.ended", { day: formatDate(c.ended_on) })}{/if}
             </p>
             <button type="button" data-testid="cs-timeline" onclick={() => showTimeline(c.pid)}>{t("consultations.timeline")}</button>
             {#if shown === c.pid}
@@ -170,7 +171,7 @@
                     ({tf("consultations.evidence", { counted: timeline.assessment.evidence.counted, needed: timeline.assessment.evidence.needed, days: timeline.assessment.evidence.window_days })})
                   </p>
                   {#if timeline.assessment.latest_consultation_start}
-                    <p>{tf("consultations.latest_start", { day: timeline.assessment.latest_consultation_start })}</p>
+                    <p>{tf("consultations.latest_start", { day: formatDate(timeline.assessment.latest_consultation_start) })}</p>
                   {/if}
                   {#if timeline.assessment.latest_authority_notice}
                     <p>{tf("consultations.latest_notice", { day: timeline.assessment.latest_authority_notice })}</p>

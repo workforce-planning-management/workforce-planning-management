@@ -5,6 +5,7 @@
   never sees Add item. A possible duplicate is flagged (▲), not refused.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -178,7 +179,7 @@
       </p>
     {/if}
     {#if claim.reimbursed_on}
-      <p>✓ {t("expenses.reimbursedOn")} {claim.reimbursed_on}</p>
+      <p>✓ {t("expenses.reimbursedOn")} {formatDate(claim.reimbursed_on)}</p>
     {/if}
 
     <DataTable

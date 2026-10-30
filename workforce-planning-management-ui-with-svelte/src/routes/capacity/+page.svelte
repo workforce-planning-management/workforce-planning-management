@@ -4,6 +4,7 @@
   programmes draw on it. Pools and months, never people. An unknown month is shown as unknown.
 -->
 <script lang="ts">
+  import { numberToInput, parseScaled } from "#lib/locale-format.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     addSkillPoolMember,
@@ -31,7 +32,8 @@
 
   // The pool forms.
   let poolName = $state("");
-  let reservation = $state(0);
+  /** Typed in the page's own number format ("2,5" in German), WPM-T375. */
+  let reservation = $state("0");
   let memberPool = $state("");
   let memberKind = $state<"role" | "skill">("role");
   let memberRole = $state("");
@@ -41,7 +43,7 @@
   let programme = $state("");
   let claimPool = $state("");
   let claimMonth = $state("");
-  let claimFte = $state(1);
+  let claimFte = $state("1");
 
   async function write(action: () => Promise<unknown>) {
     failed = await attempt(action);
@@ -140,17 +142,24 @@
       class="form"
       onsubmit={(e) => {
         e.preventDefault();
+        // A percentage to basis points: "2,5" is 250.
+        const reservationBp = parseScaled(reservation, 2);
+        if (reservationBp === null || reservationBp < 0 || reservationBp > 10000) {
+          error = tf("common.badNumber", { field: t("cap.reservation"), min: 0, max: 100, example: numberToInput(2.5) });
+          return;
+        }
+        error = null;
         void write(() =>
           createSkillPool({
             organization_ref: org,
             name: poolName,
-            operations_reservation_bp: Math.round(reservation * 100),
+            operations_reservation_bp: reservationBp,
           }),
         );
       }}
     >
       <label>{t("cap.poolName")} <input bind:value={poolName} required data-testid="pool-name" /></label>
-      <label>{t("cap.reservation")} <input type="number" min="0" max="100" step="0.5" bind:value={reservation} /></label>
+      <label>{t("cap.reservation")} <input inputmode="decimal" bind:value={reservation} data-testid="pool-reservation" /></label>
       <button type="submit" data-testid="create-pool">{t("cap.createPool")}</button>
     </form>
 
@@ -213,12 +222,19 @@
       class="form"
       onsubmit={(e) => {
         e.preventDefault();
+        // FTE to centi-FTE: "0,8" is 80.
+        const fteCenti = parseScaled(claimFte, 2);
+        if (fteCenti === null || fteCenti < 0) {
+          error = tf("common.badNumberAtLeast", { field: t("cap.fte"), min: 0, example: numberToInput(0.8) });
+          return;
+        }
+        error = null;
         void write(() =>
           setProgrammeDemand({
             programme_ref: programme,
             pool_pid: claimPool,
             month: claimMonth,
-            fte_centi: Math.round(claimFte * 100),
+            fte_centi: fteCenti,
           }),
         );
       }}
@@ -232,7 +248,7 @@
         </select>
       </label>
       <label>{t("common.month")} <input type="date" bind:value={claimMonth} required data-testid="claim-month" /></label>
-      <label>{t("cap.fte")} <input type="number" min="0" step="0.01" bind:value={claimFte} required data-testid="claim-fte" /></label>
+      <label>{t("cap.fte")} <input inputmode="decimal" bind:value={claimFte} required data-testid="claim-fte" /></label>
       <button type="submit" data-testid="save-claim">{t("cap.saveClaim")}</button>
     </form>
     <WriteResult {failed} />

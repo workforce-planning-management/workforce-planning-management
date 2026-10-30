@@ -6,6 +6,7 @@
   and where the request stands, never a figure.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -56,13 +57,13 @@
     <ul data-testid="pay-info-list">
       {#each requests as r (r.pid)}
         <li data-testid="pay-info-row">
-          {tf("payInfo.asked", { day: r.asked_on })} ·
+          {tf("payInfo.asked", { day: formatDate(r.asked_on) })} ·
           {#if r.standing === "answered"}
-            <span data-testid="pay-info-standing">{tf("payInfo.answered", { day: r.answered_on ?? "" })}</span>
+            <span data-testid="pay-info-standing">{tf("payInfo.answered", { day: formatDate(r.answered_on) })}</span>
           {:else if r.standing === "overdue"}
-            <span data-testid="pay-info-standing">{tf("payInfo.overdue", { day: r.due_on })}</span>
+            <span data-testid="pay-info-standing">{tf("payInfo.overdue", { day: formatDate(r.due_on) })}</span>
           {:else}
-            <span data-testid="pay-info-standing">{tf("payInfo.due", { day: r.due_on })}</span>
+            <span data-testid="pay-info-standing">{tf("payInfo.due", { day: formatDate(r.due_on) })}</span>
           {/if}
         </li>
       {/each}

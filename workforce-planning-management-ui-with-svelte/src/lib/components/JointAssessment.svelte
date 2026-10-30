@@ -8,6 +8,7 @@
   was paid unfairly. Needs a payroll-level read to see; HR records.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -85,9 +86,9 @@
   const signalText = (s: AssessmentSignal) => {
     switch (s.status) {
       case "due":
-        return tf("jointAssessment.due", { day: s.remedy_by });
+        return tf("jointAssessment.due", { day: formatDate(s.remedy_by) });
       case "pending":
-        return s.remedy_by ? tf("jointAssessment.pending", { day: s.remedy_by }) : t("jointAssessment.pending_unreported");
+        return s.remedy_by ? tf("jointAssessment.pending", { day: formatDate(s.remedy_by) }) : t("jointAssessment.pending_unreported");
       case "not_due":
         return t(`jointAssessment.not_due_${s.why}` as "jointAssessment.not_due_justified");
       default:
@@ -117,13 +118,13 @@
               <tr data-testid="assessment-row">
                 <td>{c.category}</td>
                 <td>{c.gap.status === "shown" ? basisPoints(c.gap.value.gap_bp) : "—"}</td>
-                <td>{c.reported_on ?? t("jointAssessment.not_reported")}</td>
+                <td>{c.reported_on ? formatDate(c.reported_on) : t("jointAssessment.not_reported")}</td>
                 <td data-testid="assessment-signal">{signalText(c.signal)}</td>
                 <td>
                   {#if c.record}<span class="muted" data-testid="assessment-recorded">
                     {c.record.justified ? t("jointAssessment.recorded_justified") : ""}
-                    {c.record.remedied_on ? tf("jointAssessment.recorded_remedied", { day: c.record.remedied_on }) : ""}
-                    {c.record.assessed_on ? `${tf("jointAssessment.recorded_assessed", { day: c.record.assessed_on })} ${tv(c.record.outcome)}` : ""}
+                    {c.record.remedied_on ? tf("jointAssessment.recorded_remedied", { day: formatDate(c.record.remedied_on) }) : ""}
+                    {c.record.assessed_on ? `${tf("jointAssessment.recorded_assessed", { day: formatDate(c.record.assessed_on) })} ${tv(c.record.outcome)}` : ""}
                   </span>{/if}
                   <button type="button" data-testid="assessment-edit" onclick={() => edit(c)}>{t("jointAssessment.record")}</button>
                 </td>

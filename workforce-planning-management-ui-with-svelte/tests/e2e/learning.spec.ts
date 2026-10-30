@@ -130,7 +130,7 @@ test.describe("Learning and mentorship", () => {
       page.getByTestId("unmatched").getByText("Solo Dev"),
     ).toBeVisible();
     await expect(
-      page.getByTestId("stale-mentorships").getByText("2026-05-01"),
+      page.getByTestId("stale-mentorships").getByText("1 May 2026"),
     ).toBeVisible();
   });
 });

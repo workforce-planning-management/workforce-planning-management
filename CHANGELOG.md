@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the UI's numbers and dates are in the reader's format (WPM-T375)
+
+Numbers, percentages, FTE and dates in the UI go through one module, `src/lib/locale-format.ts` (`Intl` in the page's locale): "30 Oct
+2026" or "30.10.2026" rather than "2026-10-30", "12,5 %" in German, Bengali digits on a Bengali page. Decimal inputs on `/planning`,
+`/capacity` and `/cpd` read the locale's decimal mark. The API is unchanged. **Not done:** every bare count in markup; ranges still use
+"→" (WPM-T377). **Not verified:** screenshots; a live service. See the UI changelog.
+
 ### Changed — the UI's money is worldwide (WPM-T373, WPM-T376)
 
 The UI shows and reads money with the currency's own minor unit (JPY 0, KWD 3) and the reader's number format, including a decimal

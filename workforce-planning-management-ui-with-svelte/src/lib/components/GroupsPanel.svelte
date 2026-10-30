@@ -5,6 +5,7 @@
   else's record acts on their behalf.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -79,7 +80,7 @@
       <li>
         {g.name} <span class="chip">{kindLabel(g.kind)}</span>
         {#if g.role === "lead"}<span class="chip ok">{t("comp.groupsPanel.lead")}</span>{/if}
-        <span class="muted">{tf("comp.groupsPanel.since", { joined_at: g.joined_at.slice(0, 10) })}</span>
+        <span class="muted">{tf("comp.groupsPanel.since", { joined_at: formatDate(g.joined_at) })}</span>
         <button type="button" onclick={() => void run(() => leaveGroup(g.group_pid, workerPid))}>{t("comp.groupsPanel.leave")}</button>
       </li>
     {:else}

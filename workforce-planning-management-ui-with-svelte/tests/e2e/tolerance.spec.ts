@@ -394,3 +394,35 @@ test.describe("a plan's budget (WPM-T373, WPM-T376)", () => {
     expect(created[0]).not.toHaveProperty("budget_currency");
   });
 });
+
+test.describe("a plan's percentages (WPM-T375)", () => {
+  test("are read in the page's number format and sent as basis points; a non-number is refused", async ({
+    page,
+  }) => {
+    await signIn(page);
+    await stub(page);
+    const created: Array<Record<string, unknown>> = [];
+    await page.route("**/api/proxy/workforce-plans", (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      created.push(route.request().postDataJSON());
+      return route.fulfill({ json: { pid: PLAN } });
+    });
+    await page.goto("/de-001/planning");
+    await page.getByTestId("plan-name").fill("FY28");
+    await page
+      .getByTestId("plan-org")
+      .fill("organization:33333333-3333-4333-8333-333333333333");
+    await page.getByTestId("plan-start").fill("2027-01-01");
+    await page.getByTestId("plan-end").fill("2027-12-31");
+    // A decimal comma, as a German page writes it; a full stop is a group mark here, not a decimal.
+    await page.getByTestId("plan-attrition").fill("zwölf");
+    await page.getByTestId("plan-create").click();
+    await expect(page.getByTestId("error")).toContainText("2,5");
+    expect(created).toHaveLength(0);
+    await page.getByTestId("plan-attrition").fill("12,5");
+    await page.getByTestId("plan-on-cost").fill("28,3");
+    await page.getByTestId("plan-create").click();
+    await expect.poll(() => created.length).toBe(1);
+    expect(created[0]).toMatchObject({ attrition_bp: 1250, on_cost_bp: 2830 });
+  });
+});

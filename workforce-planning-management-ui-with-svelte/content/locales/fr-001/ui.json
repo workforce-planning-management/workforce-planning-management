@@ -164,7 +164,9 @@
     "save": "Enregistrer",
     "remove": "Retirer",
     "month": "Mois",
-    "programme": "Référence du programme"
+    "programme": "Référence du programme",
+    "badNumber": "{field} : saisissez un nombre de {min} à {max}, écrit comme cette page écrit les nombres (par exemple {example}).",
+    "badNumberAtLeast": "{field} : saisissez un nombre d’au moins {min}, écrit comme cette page écrit les nombres (par exemple {example})."
   },
   "dash": {
     "title": "Ma page d'accueil",

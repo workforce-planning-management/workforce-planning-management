@@ -3,6 +3,7 @@
   rotas they can read, over the next four weeks.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -68,7 +69,7 @@
         {#each incoming as r (r.pid)}
           <li>
             <strong>{r.requester_name ?? r.requester_pid}</strong>
-            {t("rota.asks")} — {r.rota_name}: {r.starts_on} → {r.ends_on}
+            {t("rota.asks")} — {r.rota_name}: {formatDate(r.starts_on)} → {formatDate(r.ends_on)}
             {#if r.note}<span class="muted">— {r.note}</span>{/if}
             <button type="button" onclick={() => void decide(r.pid, "accept")}>{t("rota.accept")}</button>
             <button type="button" onclick={() => void decide(r.pid, "decline")}>{t("rota.decline")}</button>
@@ -81,7 +82,7 @@
       <ul data-testid="swap-outgoing">
         {#each outgoing as r (r.pid)}
           <li>
-            {r.taker_name ?? r.taker_pid} — {r.rota_name}: {r.starts_on} → {r.ends_on}
+            {r.taker_name ?? r.taker_pid} — {r.rota_name}: {formatDate(r.starts_on)} → {formatDate(r.ends_on)}
             <button type="button" onclick={() => void decide(r.pid, "cancel")}>{t("rota.cancel")}</button>
           </li>
         {/each}

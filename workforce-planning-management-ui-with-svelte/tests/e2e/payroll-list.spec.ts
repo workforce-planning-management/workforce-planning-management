@@ -35,9 +35,9 @@ test.describe("Payroll runs", () => {
     await page.goto("/payroll");
     await expect(page).toHaveTitle("Payroll — WPM");
     const table = page.getByTestId("runs");
-    await expect(table).toContainText("2026-09-01 → 2026-09-30");
-    await expect(table).toContainText("2026-10-01 → 2026-10-31");
-    const link = table.getByRole("link", { name: "2026-10-01 → 2026-10-31" });
+    await expect(table).toContainText("1 Sept 2026 → 30 Sept 2026");
+    await expect(table).toContainText("1 Oct 2026 → 31 Oct 2026");
+    const link = table.getByRole("link", { name: "1 Oct 2026 → 31 Oct 2026" });
     await expect(link).toHaveAttribute(
       "href",
       `/en-001/payroll/${RUNS[1]?.pid}`,
@@ -117,5 +117,30 @@ test.describe("Payroll runs", () => {
     );
     await page.getByTestId("load-more-button").click();
     await expect(page.getByTestId("load-more")).toHaveCount(0);
+  });
+});
+
+test.describe("dates in the page's locale (WPM-T375)", () => {
+  test.beforeEach(async ({ page }) => {
+    await stubSignedIn(page);
+    await page.route("**/api/proxy/payroll-runs?limit=500", (route) =>
+      route.fulfill({ json: RUNS }),
+    );
+  });
+
+  test("a German page writes the period the German way", async ({ page }) => {
+    await page.goto("/de-001/payroll");
+    await expect(page.getByTestId("runs")).toContainText(
+      "01.09.2026 → 30.09.2026",
+    );
+  });
+
+  test("a Bengali page writes it in Bengali, in its own digits", async ({
+    page,
+  }) => {
+    await page.goto("/bn-001/payroll");
+    const table = page.getByTestId("runs");
+    await expect(table).toContainText("২০২৬");
+    await expect(table).not.toContainText("2026-09-01");
   });
 });

@@ -17,6 +17,7 @@
     withPackFallback,
   } from "#lib/data-table-labels.js";
   import type { LabelPack } from "@lilydesignsystem/svelte-locale-translations";
+  import { formatDate, formatNumber, isCivilDate } from "#lib/locale-format.js";
 
   let {
     label,
@@ -52,6 +53,29 @@
     testid?: string;
   } = $props();
 
+  // A column with no `type`, `format` or `cell` of its own shows a number and an ISO date in the page's locale
+  // ("1,234", "30 Oct 2026"; WPM-T375). It still sorts on the value, and an export still carries the value as sent.
+  const read = (column: DataGridColumn, row: DataGridRow): unknown =>
+    column.accessor ? column.accessor(row) : row[column.id];
+  const shown = $derived(
+    columns.map((column): DataGridColumn =>
+      column.type || column.format || column.cell
+        ? column
+        : {
+            ...column,
+            format: (value: unknown) =>
+              typeof value === "number"
+                ? formatNumber(value)
+                : isCivilDate(value)
+                  ? formatDate(value)
+                  : value === null || value === undefined
+                    ? ""
+                    : String(value),
+            exportValue: column.exportValue ?? ((row: DataGridRow) => read(column, row)),
+          },
+    ),
+  );
+
   // Column visibility is offered only when a column is marked `hidable: true`.
   let pack = $state<LabelPack>();
   $effect(() => {
@@ -83,7 +107,7 @@
 <DataGrid
   {label}
   mode="table"
-  {columns}
+  columns={shown}
   emptyValue="—"
   {rows}
   {rowId}

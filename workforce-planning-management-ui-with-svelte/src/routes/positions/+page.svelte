@@ -6,6 +6,7 @@
   Linking a holder or a requisition is done through the API for now.
 -->
 <script lang="ts">
+  import { formatCentiFte } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -43,7 +44,7 @@
 
   const fte = (f: PositionFte) =>
     f.status === "known"
-      ? (f.percent / 100).toFixed(2)
+      ? formatCentiFte(f.percent)
       : f.status === "withheld"
         ? t("pages.positions.withheld")
         : t("pages.positions.unknown");
@@ -61,7 +62,7 @@
   const seatColumns = $derived<DataGridColumn[]>([
     { id: "cost_centre", header: t("pages.positions.cost_centre"), sortable: true, rowHeader: true },
     { id: "title", header: t("pages.positions.title"), sortable: true },
-    { id: "budget_fte_percent", header: t("pages.positions.budgeted"), sortable: true, align: "end", accessor: (r) => ((r.budget_fte_percent as number) / 100).toFixed(2) },
+    { id: "budget_fte_percent", header: t("pages.positions.budgeted"), sortable: true, align: "end", format: (v) => formatCentiFte(v as number) },
     { id: "funding_kind", header: t("pages.positions.funding"), sortable: true, accessor: (r) => t(`values.${r.funding_kind as string}` as never) },
     { id: "state", header: t("pages.positions.state"), sortable: true, accessor: (r) => t(`values.${r.state as string}` as never) },
     { id: "held", header: t("pages.positions.holder"), accessor: (r) => (r.holder_worker_pid ? String(r.holder_worker_pid) : r.held ? t("pages.positions.held") : t("pages.positions.not_held")) },

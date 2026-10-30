@@ -6,6 +6,7 @@
   will happen.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -100,7 +101,7 @@
           band: held.band,
           step: held.step,
           amount: amount(held.annual_minor, held.currency),
-          since: held.step_since,
+          since: formatDate(held.step_since),
         })}
       </p>
       {#if held.progression}
@@ -109,12 +110,12 @@
             ● {t("payScales.progression.at_top")}
           {:else if held.progression.kind === "due"}
             ✓ {tp("payPosition.due", {
-              date: held.progression.eligible_on,
+              date: formatDate(held.progression.eligible_on),
               amount: amount(held.progression.next_annual_minor, held.currency),
             })}
           {:else}
             ● {tp("payPosition.notYet", {
-              date: held.progression.eligible_on,
+              date: formatDate(held.progression.eligible_on),
               days: held.progression.days_remaining,
               amount: amount(held.progression.next_annual_minor, held.currency),
             })}

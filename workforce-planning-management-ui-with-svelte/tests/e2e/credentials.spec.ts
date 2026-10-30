@@ -67,12 +67,12 @@ test.describe("Credentials", () => {
       "aaa.bbb.ccc",
     );
     await expect(panel.getByTestId("credential-state")).toContainText(
-      "Issued 2026-10-25",
+      "Issued 25 Oct 2026",
     );
     await panel.getByTestId("credential-revoke").click();
     await expect(panel.getByTestId("credential-token-box")).toHaveCount(0);
     await expect(panel.getByTestId("credential-state")).toContainText(
-      "Revoked 2026-10-25",
+      "Revoked 25 Oct 2026",
     );
     await expect(panel.getByTestId("credential-issue")).toBeVisible();
   });

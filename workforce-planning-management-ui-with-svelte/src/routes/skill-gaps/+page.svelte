@@ -5,6 +5,7 @@
   Counts only: nobody is named, and private aspirations are never included.
 -->
 <script lang="ts">
+  import { formatDecimal, formatNumber } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { trainingDemand, workforceSkillGaps } from "#lib/api/wpm.js";
@@ -119,10 +120,10 @@
   <h2>{t("training.demandTitle")}</h2>
   <p class="muted">{t("training.demandHint")}</p>
   <p data-testid="demand-total">
-    <strong>{demand.total_hours}</strong> {t("training.hours")} ·
-    {demand.people_with_gaps} {t("training.people")}
+    <strong>{formatNumber(demand.total_hours)}</strong> {t("training.hours")} ·
+    {formatNumber(demand.people_with_gaps)} {t("training.people")}
     {#if demand.average_hours_per_person !== null}
-      · {t("training.avg")}: {demand.average_hours_per_person.toFixed(1)}
+      · {t("training.avg")}: {formatDecimal(demand.average_hours_per_person, 1)}
     {/if}
   </p>
   {#if demand.skills.length > 0}

@@ -5,6 +5,7 @@
   API for now.
 -->
 <script lang="ts">
+  import { formatDecimal } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -45,7 +46,7 @@
     void loadDiff();
   });
 
-  const span = (mean: number | null) => (mean === null ? "—" : (mean / 100).toFixed(2));
+  const span = (mean: number | null) => (mean === null ? "—" : formatDecimal(Number(`${mean}e-2`), 2));
   const changeWord = (c: ShapeRole["change"]) => t(`pages.orgshape.change_${c}` as never);
   const roleColumns = $derived<DataGridColumn[]>([
     { id: "title", header: t("pages.orgshape.role"), sortable: true, rowHeader: true },

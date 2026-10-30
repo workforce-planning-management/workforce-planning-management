@@ -12,6 +12,7 @@
   snapshot job.
 -->
 <script lang="ts">
+  import { formatNumber, formatPercentValue, formatSigned } from "#lib/locale-format.js";
   import { onMount } from "svelte";
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
@@ -142,12 +143,12 @@
 
   <a class="cx-tile cx-kpi" href={l("/metrics")} data-testid="kpi-headcount">
     <span class="cx-label">{t("metrics.headcount")}</span>
-    <strong class="cx-hero">{metrics ? metrics.headcount.closing : dash}</strong>
+    <strong class="cx-hero">{metrics ? formatNumber(metrics.headcount.closing) : dash}</strong>
     <span class="cx-sub">
       {#if change}
         <span class="cx-delta" data-direction={change.direction}>
           {arrow(change.direction)}
-          {change.abs > 0 ? "+" : ""}{change.abs}{#if change.pct !== null}&nbsp;({change.pct.toFixed(1)}%){/if}
+          {formatSigned(change.abs)}{#if change.pct !== null}&nbsp;({formatPercentValue(change.pct, 1)}){/if}
         </span>
         {t("ceo.vsStart")}
       {:else}{dash}{/if}
@@ -162,7 +163,7 @@
 
   <a class="cx-tile cx-kpi" href={l("/requisitions")} data-testid="kpi-open">
     <span class="cx-label">{t("dash.openRequisitions")}</span>
-    <strong class="cx-hero">{openRoles ?? dash}</strong>
+    <strong class="cx-hero">{formatNumber(openRoles)}</strong>
     <span class="cx-sub">
       {#if metrics?.time_to_fill}
         {mean(metrics.time_to_fill.median_days)} {t("metrics.days")} · {t("metrics.timeToFill")}
@@ -172,7 +173,7 @@
 
   <a class="cx-tile cx-kpi" href={l("/development")} data-testid="kpi-gaps">
     <span class="cx-label">{t("dash.successionGaps")}</span>
-    <strong class="cx-hero">{gaps ?? dash}</strong>
+    <strong class="cx-hero">{formatNumber(gaps)}</strong>
     <span class="cx-sub">
       {#if gaps === null}{dash}
       {:else if gaps === 0}<span class="cx-status cx-good">✓ {t("ceo.noGaps")}</span>
@@ -211,7 +212,7 @@
 
   <a class="cx-tile cx-kpi" href={l("/planning")} data-testid="kpi-escalations">
     <span class="cx-label">{t("ceo.escalations")}</span>
-    <strong class="cx-hero">{escalations ? escalations.count : dash}</strong>
+    <strong class="cx-hero">{escalations ? formatNumber(escalations.count) : dash}</strong>
     <span class="cx-sub">
       {#if escalations === null}{dash}
       {:else if escalations.count === 0}<span class="cx-status cx-good">✓ {t("ceo.noEscalations")}</span>

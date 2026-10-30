@@ -9,6 +9,7 @@
   nothing recorded says unknown.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -90,7 +91,7 @@
 
 {#if answer}
   <p data-testid="ai-applies">
-    {answer.applies_now ? tf("aiRegister.applies_now", { day: answer.applies_from }) : tf("aiRegister.applies_later", { day: answer.applies_from })}
+    {answer.applies_now ? tf("aiRegister.applies_now", { day: formatDate(answer.applies_from) }) : tf("aiRegister.applies_later", { day: formatDate(answer.applies_from) })}
   </p>
   <ul class="plain" data-testid="ai-features">
     {#each answer.features as r (r.feature.id)}

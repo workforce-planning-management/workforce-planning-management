@@ -50,7 +50,7 @@ test("the org chart says when it draws only part of the organization", async ({
   );
   await page.goto("/en-001/org-chart");
   await expect(page.getByTestId("org-chart-truncated")).toHaveText(
-    "Showing 3 of 200000 people; the rest are not drawn.",
+    "Showing 3 of 200,000 people; the rest are not drawn.",
   );
 });
 
@@ -99,9 +99,9 @@ test("the mentorship overview counts everyone unmatched and names only some", as
     }),
   );
   await page.goto("/en-001/mentorship");
-  await expect(page.getByTestId("mentorship-tiles")).toContainText("199000");
+  await expect(page.getByTestId("mentorship-tiles")).toContainText("199,000");
   await expect(page.getByTestId("unmatched-shown")).toHaveText(
-    "Showing the newest 1 of 199000.",
+    "Showing the newest 1 of 199,000.",
   );
   await expect(page.getByTestId("unmatched")).toContainText("Newest Hire");
 });

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { listRunsPage } from "#lib/api/wpm.js";
@@ -42,7 +43,7 @@
 
 {#snippet periodCell({ row }: { row: DataGridRow })}
   {@const run = row as unknown as PayrollRun}
-  <a href={l(`/payroll/${run.pid}`)}>{run.period_start} → {run.period_end}</a>
+  <a href={l(`/payroll/${run.pid}`)}>{formatDate(run.period_start)} → {formatDate(run.period_end)}</a>
 {/snippet}
 
 {#snippet statusCell({ formatted }: { formatted: string })}

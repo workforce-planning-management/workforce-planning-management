@@ -6,6 +6,7 @@
   and so does anyone the service will not show it to.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -76,9 +77,9 @@
       <dt>{t("engagement.basis")}</dt>
       <dd data-testid="engagement-basis">{tv(engagement.employment_type)}</dd>
       <dt>{t("engagement.started")}</dt>
-      <dd>{engagement.hired_on}</dd>
+      <dd>{formatDate(engagement.hired_on)}</dd>
       <dt>{t("engagement.ends")}</dt>
-      <dd data-testid="engagement-ends">{engagement.engagement_ends_on ?? t("engagement.noEnd")}</dd>
+      <dd data-testid="engagement-ends">{engagement.engagement_ends_on ? formatDate(engagement.engagement_ends_on) : t("engagement.noEnd")}</dd>
       {#if engagement.standing}
         <dt>{t("engagement.standing")}</dt>
         <dd data-testid="engagement-standing">
@@ -97,7 +98,7 @@
     {:else}
       <ul data-testid="engagement-extensions">
         {#each engagement.extensions as e (e.pid)}
-          <li>{e.previous_end} → {e.new_end}{#if e.reason} <span class="muted">· {e.reason}</span>{/if}</li>
+          <li>{formatDate(e.previous_end)} → {formatDate(e.new_end)}{#if e.reason} <span class="muted">· {e.reason}</span>{/if}</li>
         {/each}
       </ul>
     {/if}
@@ -109,7 +110,7 @@
           <p>
             {tv(funding.funding.kind)}
             {#if funding.funding.programme_ref}<span class="muted">· {funding.funding.programme_ref}</span>{/if}
-            · {t("engagement.fundingEnds")}: {funding.funding.ends_on ?? t("engagement.noEnd")}
+            · {t("engagement.fundingEnds")}: {funding.funding.ends_on ? formatDate(funding.funding.ends_on) : t("engagement.noEnd")}
           </p>
           <p data-testid="engagement-alignment">
             {#if funding.needs_attention}<span aria-hidden="true">⚠ </span>{/if}{tv(funding.alignment)}

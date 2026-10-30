@@ -381,7 +381,7 @@ test("a resignation needs a second click, and can be taken back", async ({
     sent.some((s) => s.url === "/me/resignation" && s.method === "POST"),
   ).toBe(false);
   await page.getByTestId("resign-submit").click();
-  await expect(page.getByTestId("resign-status")).toContainText("2026-12-31");
+  await expect(page.getByTestId("resign-status")).toContainText("31 Dec 2026");
   expect(sent.find((s) => s.url === "/me/resignation")?.body).toEqual({
     proposed_last_day: "2026-12-31",
     reason: "new_role",

@@ -116,9 +116,34 @@ worked cases, not the design.** This file is the rule that stops them becoming t
 - [ ] WPM-T374 **Plural rules.** *(WPM-R214, WPM-D143; rows 26, 27)* A `tn(key, count)` that picks a CLDR plural form with
   `Intl.PluralRules(i18n.locale)`; the 8 "(s)" strings and the English "s" in `FrameworkRolePanel.svelte:315` replaced first; parity and
   CMS config updated for the new keys.
-- [ ] WPM-T375 **Dates and numbers through the page's locale.** *(WPM-R214, WPM-D143; rows 10, 11, 24)* One date, date-time, number and
+- [x] (2026-10-30) WPM-T375 **Dates and numbers through the page's locale.** *(WPM-R214, WPM-D143; rows 10, 11, 24)* One date, date-time, number and
   percent helper on `Intl` with `i18n.locale`, used for raw ISO dates, `toFixed`, hand-made percentages, `toLocale*([])` and the numbers
   `tf`/`tp` put into strings; the English "now" in `CareerHistory.svelte` becomes a key.
+  **Done (most of it):** one module, `src/lib/locale-format.ts` in the UI: `formatNumber`, `formatInteger`, `formatDecimal` (the
+  locale's `toFixed`), `formatPercent` (a fraction), `formatPercentValue` (a value already in percent), `formatBasisPoints` and
+  `formatCentiFte` (the point placed exactly, `10456e-4`, not by division), `formatSigned`, `formatDate` (a civil date in UTC so it is the
+  same day everywhere; a timestamp in the reader's zone), `formatDateTime`, `formatTime`, `formatMonth`, and for typed numbers
+  `parseNumber` and `parseScaled` (on `money.ts`'s `parseAmount`, not a second parser) and `numberToInput`. An unknown is "—". `format.ts`
+  (`percent`, `rate`, `mean`, `percentOf`, `basisPoints`, `workings`) now writes through it. `tf` and `tp` write a number placeholder with
+  `Intl.NumberFormat` in the page's locale (a year is passed pre-formatted without grouping); the percent sign stays in the catalogue
+  string, where each locale already puts it its own way. `DataTable` shows a number or an ISO date in a column with no `type`,
+  `format` or `cell` in the page's locale, still sorting and exporting the value as sent. About 85 raw ISO dates in markup and
+  placeholders (rows 10's list and the rest the scan found), the 17 `toFixed` and hand-made percentages of row 24, the two `toLocale*`
+  calls of row 11 (now the page's locale, not the browser's), the sliced timestamps, the CEO, home, mentorship and privacy headline counts,
+  and the English "now" in `CareerHistory` (now `values.now`, and the column sorts on the ISO value) go through it. The eight decimal
+  inputs (on `/planning` attrition, on-cost and a line's FTE; on `/capacity` the operations reservation and a claim's FTE; on `/cpd` the
+  required and logged amounts) are text inputs with `inputmode="decimal"`, read in the page's format and refused before a request with
+  `common.badNumber` / `common.badNumberAtLeast` (two new keys in the 13 `-001` locales, AI-written and unreviewed). The API is unchanged:
+  ISO dates, basis points, centi-FTE. Tests: `tests/unit/locale-format.test.ts` (unit tests in en, de, fr, hi, bn, zh and en-us, and a
+  scan of `src/` that fails on a new `toFixed`, `toLocale*`, a percent sign glued to a number, a timestamp sliced to a date, or an ISO
+  date field put straight into markup, a template string or a `tf`/`tp` placeholder); Playwright: a German plan's "12,5" and "28,3" sent
+  as 1250 and 2830 basis points and a non-number refused, a payroll period in German (`01.09.2026`) and in Bengali digits, and 26 existing
+  assertions moved from ISO text to the en-001 form ("1 Sept 2026", "200,000"). **Not done:** a bare count put straight into markup
+  (`{x.length}`, `{row.score}`) outside the places named above is not all converted, and the scan cannot see one (it has no types); a
+  date in a multi-line `tf`/`tp` call is outside the scan; ranges still use a literal "→" (WPM-T377); `type="date"` inputs show the
+  browser's format; whole-number inputs stay `type="number"`; the calendar's shift key is still the UTC day. **Not tested:** screenshots
+  were not looked at; Arabic-Indic digits typed on an Arabic page; a reader in a time zone far from UTC (a timestamp shown as a date can
+  be the day before or after its UTC date, which is intended).
 - [x] (2026-10-30) WPM-T376 **No default currency; locale decimal input.** *(WPM-R214, WPM-D143; rows 22, 23)* The `"GBP"` defaults in the UI go (the
   organization's currency when it has one, else empty); an amount typed with the locale's decimal separator is read correctly.
   **Done (the money parts):** the new-expense-claim form and the plan form start with no currency (`$state("")`); a claim cannot start, and
@@ -324,8 +349,8 @@ through `rules::duplicates`.
 | 7 | Phone | API `src/rules/contact_details.rs:67-90`; UI `ContactDetailsPanel.svelte:93` (`type="tel"`, no pattern) | 5 to 15 digits, an optional `+`; no country's shape assumed. Only ASCII digits are accepted | **Partial**: no country's shape, but a number typed in Arabic-Indic or Bengali digits is refused | T382 |
 | 8 | Identifiers | API `src/models/_entities/workers.rs:11-34`; UI (no field, no pattern) | No national identifier, tax code or insurance number column or field in either; the worker number is the employer's own free text | **Right** (the spec's payroll fields, audit row 4, are not in the code) | — |
 | 9 | Dates | UI `src/lib/components/CalendarPanel.svelte:50,54,58,75`, `TrendChart.svelte:28` | `Intl.DateTimeFormat(i18n.locale, …)`; weekday names from `Intl` | **Right** | — |
-| 10 | Dates | UI `src/lib/components/me/TimeOffPanel.svelte:90`, `src/routes/groups/+page.svelte:156`, `src/routes/movements/[pid]/+page.svelte:245`, `CareerHistory.svelte:54` (and about 80 more) | Raw ISO dates in markup or placeholders; `CareerHistory` writes an English "now" | **Gap** | T375 |
-| 11 | Dates | UI `src/routes/workforce/+page.svelte:69,100` | `toLocaleTimeString([])` / `toLocaleString()`: the browser's locale, not the page's | **Gap** | T375 |
+| 10 | Dates | UI `src/lib/components/me/TimeOffPanel.svelte:90`, `src/routes/groups/+page.svelte:156`, `src/routes/movements/[pid]/+page.svelte:245`, `CareerHistory.svelte:54` (and about 80 more) | Raw ISO dates in markup or placeholders; `CareerHistory` writes an English "now" | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`) | T375 |
+| 11 | Dates | UI `src/routes/workforce/+page.svelte:69,100` | `toLocaleTimeString([])` / `toLocaleString()`: the browser's locale, not the page's | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`) | T375 |
 | 12 | Time zone | UI `CalendarPanel.svelte:35`, `src/routes/rota/+page.svelte:46`, `src/lib/ceo.ts:11,87` | "Today" is the UTC date (`toISOString().slice(0, 10)`); there is no user or organization time zone | **Gap**: the wrong day near midnight far from UTC | T378 |
 | 13 | Week start | UI `CalendarPanel.svelte:95` (`locale={i18n.locale}` to the calendar, which takes the first day from the locale) | Every `-001` locale resolves to Monday; only `en-us` gives Sunday; no region setting apart from the language | **Partial** | T378 |
 | 14 | Week start | API `migration/src/m20261021_000078_time_entry_weeks.rs:32-37`; `src/controllers/workforce.rs:799` | The working-time roll-up groups by `date_trunc('week', …)`, an ISO Monday week, and its partial index is fixed at 2,720 minutes | **Gap** (tied to row 17) | T380 |
@@ -338,7 +363,7 @@ through `rules::duplicates`.
 | 21 | Currency exponent | UI `src/lib/api/wpm.ts:100,116-117`; input at `ExpenseClaimView.svelte:115`, `src/routes/pay-scales/+page.svelte:93`, `src/routes/planning/+page.svelte:279` | `minor / 100` to show, `Math.round(x * 100)` to store, `moneyWhole` assumes cents | **Gap**: a JPY amount shows at a hundredth of its value, KWD or BHD at ten times; audit row 16 holds for the spec and the API but not the UI. **Fixed 2026-10-30** (`src/lib/money.ts`) | T373 |
 | 22 | Currency | UI `src/lib/components/ExpenseClaims.svelte:34`, `src/routes/planning/+page.svelte:74` | `$state("GBP")` as the default currency | **Gap**. **Fixed 2026-10-30**: no starting currency | T376 |
 | 23 | Numbers | UI `ExpenseClaimView.svelte:107,211` (`Number(amount)`), `pay-scales/+page.svelte:85` | A decimal comma ("12,50") is not a number | **Gap** for de, fr, es, pt, ru, id and others. **Fixed 2026-10-30** for amounts (`parseAmount`) | T376 |
-| 24 | Numbers | UI `src/lib/format.ts:23,66,75,85`, `CapacityHeatmap.svelte:31`, `PlanForecast.svelte:45,58,68,167-172`; `src/lib/i18n.svelte.ts` (`tf`, `tp` use `String(n)`) | Percentages and decimals by hand (`toFixed`, a `.` and `%`); `money()` without a locale; numbers in strings are not localized, so Bengali digits from `Intl` and ASCII digits mix on a page | **Gap** | T375 |
+| 24 | Numbers | UI `src/lib/format.ts:23,66,75,85`, `CapacityHeatmap.svelte:31`, `PlanForecast.svelte:45,58,68,167-172`; `src/lib/i18n.svelte.ts` (`tf`, `tp` use `String(n)`) | Percentages and decimals by hand (`toFixed`, a `.` and `%`); `money()` without a locale; numbers in strings are not localized, so Bengali digits from `Intl` and ASCII digits mix on a page | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`), bare counts in markup in part | T375 |
 | 25 | Numbers | UI `src/lib/components/LoadMore.svelte:23`, `src/routes/pay-gap/+page.svelte:127` | `Intl.NumberFormat(i18n.locale)` | **Right** | — |
 | 26 | Plurals | UI `src/lib/i18n.svelte.ts`; `content/locales/REVIEW.md:50-51` | No `Intl.PluralRules`; 8 en-001 strings use "(s)"; about 40 strings fill a count | **Gap**: Arabic, Russian, Welsh and others have more than two forms | T374 |
 | 27 | Plurals | UI `src/lib/components/FrameworkRolePanel.svelte:315` | `changes2: changes.length === 1 ? "" : "s"` appends an English "s" in every locale | **Gap (a bug)** | T374 |
@@ -367,5 +392,5 @@ through `rules::duplicates`.
 ## Not done
 
 Nothing is implemented here (T367 audit, T368 design, T371 check). This is the requirement, the decisions, the tasks, the audit (T367)
-and the equity check (T371). Since 2026-10-30 the UI's money (T373, T376) and the pure-core checks of T369 are code; their entries
+and the equity check (T371). Since 2026-10-30 the UI's money (T373, T376), its numbers and dates (T375) and the pure-core checks of T369 are code; their entries
 above say what each did and did not do.

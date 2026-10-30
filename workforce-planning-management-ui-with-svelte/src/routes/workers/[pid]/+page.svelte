@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatDate, formatNumber } from "#lib/locale-format.js";
   import WellbeingPrompts from "#lib/components/worker/WellbeingPrompts.svelte";
   import Appraisals from "#lib/components/worker/Appraisals.svelte";
   import AdjustmentRequests from "#lib/components/worker/AdjustmentRequests.svelte";
@@ -203,7 +204,7 @@
       header: t("columns.dates"),
       sortable: true,
       format: (_v, r) =>
-        `${r.start_on} → ${r.end_on} (${r.days} ${t("common.days")})`,
+        `${formatDate(r.start_on as string)} → ${formatDate(r.end_on as string)} (${formatNumber(r.days as number)} ${t("common.days")})`,
     },
     { id: "status", header: t("common.status"), sortable: true, cell: statusChip },
   ]);

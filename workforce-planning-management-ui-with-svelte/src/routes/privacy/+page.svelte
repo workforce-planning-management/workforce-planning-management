@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatNumber } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -56,7 +57,7 @@
 {:else}
   <h2>{t("pr.retention")}</h2>
   <div class="panel" data-testid="retention-report">
-    <p>{t("pr.horizon")}: <strong>{report.horizon_days}</strong></p>
+    <p>{t("pr.horizon")}: <strong>{formatNumber(report.horizon_days)}</strong></p>
     <h3>{t("pr.pastHorizon")}</h3>
     {#if Object.keys(report.soft_deleted_past_horizon).length === 0}
       <p class="muted">—</p>
@@ -68,7 +69,7 @@
         rowId={(row) => String(row.table)}
       />
     {/if}
-    <p>{t("pr.candidates")}: <strong>{report.expired_consent_candidates}</strong></p>
+    <p>{t("pr.candidates")}: <strong>{formatNumber(report.expired_consent_candidates)}</strong></p>
     <p class="muted">{report.derivation}</p>
     <button onclick={() => void sweep()} data-testid="run-sweep">{t("pr.sweep")}</button>
     {#if actionError}

@@ -5,6 +5,7 @@
   fewer than the floor of people declare.
 -->
 <script lang="ts">
+  import { formatDate, formatPercent } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -50,7 +51,7 @@
       header: t("pages.groups.coverage"),
       sortable: true,
       align: "end",
-      format: (v) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "—"),
+      format: (v) => (typeof v === "number" ? formatPercent(v) : "—"),
     },
     ...(["1", "2", "3", "4", "5"] as const).map(
       (level): DataGridColumn => ({
@@ -153,7 +154,7 @@
     <h3>{t("pages.groups.members")}</h3>
     <ul>
       {#each members.members as m (m.worker_pid)}
-        <li>{m.display_name} {#if m.role === "lead"}<span class="chip ok">{t("pages.groups.lead")}</span>{/if}<span class="muted"> {tf("pages.groups.since", { joined_at: m.joined_at.slice(0, 10) })}</span></li>
+        <li>{m.display_name} {#if m.role === "lead"}<span class="chip ok">{t("pages.groups.lead")}</span>{/if}<span class="muted"> {tf("pages.groups.since", { joined_at: formatDate(m.joined_at) })}</span></li>
       {/each}
     </ul>
     <h3>{t("pages.groups.what_the_group_knows")}</h3>

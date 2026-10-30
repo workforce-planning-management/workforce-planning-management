@@ -38,7 +38,7 @@ test.describe("Pay information", () => {
     await expect(panel.getByTestId("pay-info-ask")).toBeEnabled();
     await panel.getByTestId("pay-info-ask").click();
     await expect(panel.getByTestId("pay-info-standing")).toContainText(
-      "Answer due by 2026-12-25",
+      "Answer due by 25 Dec 2026",
     );
     await expect(panel.getByTestId("pay-info-ask")).toBeDisabled();
     await expect(panel).not.toContainText("£");
@@ -93,7 +93,7 @@ test.describe("Pay information", () => {
     await page.goto("/pay-information");
     const queue = page.getByTestId("pay-info-queue-row");
     await expect(queue).toContainText("Asker One");
-    await expect(queue).toContainText("Overdue: was due 2026-10-01");
+    await expect(queue).toContainText("Overdue: was due 1 Oct 2026");
     await queue.getByTestId("pay-info-work-out").click();
     await expect(page.getByTestId("pay-info-own")).toContainText("£38,000.00");
     await expect(page.getByTestId("pay-info-category")).toContainText("Care");
@@ -106,7 +106,7 @@ test.describe("Pay information", () => {
     await page.getByTestId("pay-info-mark").click();
     await expect(page.getByTestId("pay-info-answer")).toHaveCount(0);
     await expect(page.getByTestId("pay-info-queue-row")).toContainText(
-      "Answered 2026-10-25",
+      "Answered 25 Oct 2026",
     );
     await expect(page.getByTestId("pay-info-work-out")).toHaveCount(0);
   });

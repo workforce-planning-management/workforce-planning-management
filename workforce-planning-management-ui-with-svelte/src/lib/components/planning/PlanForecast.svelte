@@ -4,6 +4,7 @@
   see is withheld, and an unknown is shown as unknown.
 -->
 <script lang="ts">
+  import { formatDate, formatDecimal, formatNumber } from "#lib/locale-format.js";
   import { money, PLAN_BASES } from "#lib/api/wpm.js";
   import type { planAlignment, planCost, planForecast } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
@@ -65,7 +66,7 @@
   <p data-testid="plan-assumptions">
     {t("pages.planning.attrition_assumption")}
     {#if forecast.assumptions.attrition_bp !== null}
-      {tf("pages.planning.a_year", { attrition_bp: (forecast.assumptions.attrition_bp / 100).toFixed(1), attrition_source: tv(forecast.assumptions.attrition_source) })}
+      {tf("pages.planning.a_year", { attrition_bp: formatDecimal(forecast.assumptions.attrition_bp / 100, 1), attrition_source: tv(forecast.assumptions.attrition_source) })}
     {:else}
       <strong>{t("pages.planning.insufficient_history")}</strong> {t("pages.planning.no_projection_until_a_plan")}
     {/if}
@@ -79,7 +80,7 @@
     <tbody>
       {#each forecast.departments as row (row.department + row.target_on)}
         <tr>
-          <td>{row.department}</td><td>{row.target_on}</td>
+          <td>{row.department}</td><td>{formatDate(row.target_on)}</td>
           <td>{row.opening_headcount}</td><td>{row.planned_demand}</td>
           <td>{row.projected_supply ?? "—"}</td>
           <td class:warn={(row.headcount_gap ?? 0) > 0}>{row.headcount_gap ?? "—"}</td>
@@ -164,7 +165,7 @@
   />
   {#if cost.salary_visible}
     <p data-testid="plan-cost-total">
-      {tf("pages.planning.total_annual_incl_on_cost", { on_cost_bp: (cost.assumptions.on_cost_bp / 100).toFixed(1), currency: money(cost.total_annual_cost_minor, cost.currency) })}
+      {tf("pages.planning.total_annual_incl_on_cost", { on_cost_bp: formatDecimal(cost.assumptions.on_cost_bp / 100, 1), currency: money(cost.total_annual_cost_minor, cost.currency) })}
       {#if cost.uncosted_groups > 0}<span class="muted">{tf("pages.planning.line_group_s_could_not_be_costed", { uncosted_groups: cost.uncosted_groups })}</span>{/if}
       {#if cost.affordability}
         {tf("pages.planning.budget", { currency: money(cost.affordability.budget_minor, cost.currency) })}
@@ -185,7 +186,7 @@
     <p>{tf("pages.planning.objectives_with_no_demand_behind", { unresourced_objectives: alignment.unresourced_objectives.join("; ") })}</p>
   {/if}
   {#if alignment.unaligned_demand_lines.length > 0}
-    <p class="muted">{tf("pages.planning.demand_serving_no_objective", { target_headcount: alignment.unaligned_demand_lines.map((l) => `${l.department} ${l.target_on} (${l.target_headcount})`).join("; ") })}</p>
+    <p class="muted">{tf("pages.planning.demand_serving_no_objective", { target_headcount: alignment.unaligned_demand_lines.map((l) => `${l.department} ${formatDate(l.target_on)} (${formatNumber(l.target_headcount)})`).join("; ") })}</p>
   {/if}
 {/if}
 

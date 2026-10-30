@@ -93,7 +93,8 @@ describe("CareerHistory", () => {
     render(CareerHistory, { workerPid: "w1" });
     const table = await screen.findByTestId("role-history");
     await waitFor(() => expect(table.textContent).toContain("Junior tester"));
-    expect(table.textContent).toContain("2024-01-01");
+    // The start in the page's locale and the reader's time zone (WPM-T375), no longer the raw ISO text.
+    expect(table.textContent).toMatch(/1 Jan 2024|31 Dec 2023/);
     expect(table.textContent).toContain("current");
     expect(table.textContent).toContain("on their behalf");
   });

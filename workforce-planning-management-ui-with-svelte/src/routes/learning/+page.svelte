@@ -6,6 +6,7 @@
   completed training enrolment). All server-derived; derivations shown.
 -->
 <script lang="ts">
+  import { formatDecimal } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -88,7 +89,7 @@
       header: t("pages.learning.avg_proficiency"),
       sortable: true,
       align: "end",
-      format: (v) => (typeof v === "number" ? v.toFixed(1) : "—"),
+      format: (v) => (typeof v === "number" ? formatDecimal(v, 1) : "—"),
     },
     {
       id: "below_target",

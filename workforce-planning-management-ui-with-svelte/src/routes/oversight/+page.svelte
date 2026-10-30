@@ -6,6 +6,7 @@
   administrator of the organization; anyone else gets the reason, not a silent failure.
 -->
 <script lang="ts">
+  import { formatDate, formatDecimal, formatMonth } from "#lib/locale-format.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
     createOversightCriterion,
@@ -160,7 +161,7 @@
     {#if status.current}
       <p>
         <strong data-testid="level">{status.current.level}</strong>
-        <span class="muted">· {tf("ovs.since", { date: status.current.effective_on })}</span>
+        <span class="muted">· {tf("ovs.since", { date: formatDate(status.current.effective_on) })}</span>
       </p>
       <p class="muted">
         {#if status.current.deciding_body}{t("ovs.decidingBody")}: {status.current.deciding_body} ·
@@ -197,10 +198,10 @@
             <button type="button" onclick={() => toggle(p.pid)}>
               {open?.pid === p.pid ? t("ovs.close") : t("ovs.open")}
             </button>
-            {tf("ovs.frozen", { date: p.as_of, month: p.month.slice(0, 7) })}
+            {tf("ovs.frozen", { date: formatDate(p.as_of), month: formatMonth(p.month, "long") })}
             {#if p.withdrawn}
               <span class="chip danger" data-testid="withdrawn">
-                {tf("ovs.withdrawn", { date: p.withdrawn.on, reason: p.withdrawn.reason })}
+                {tf("ovs.withdrawn", { date: formatDate(p.withdrawn.on), reason: p.withdrawn.reason })}
               </span>
             {/if}
           </li>
@@ -212,7 +213,7 @@
       <article class="frozen" data-testid="pack-detail">
         {#if open.withdrawn}
           <p class="chip danger">
-            {tf("ovs.withdrawn", { date: open.withdrawn.on, reason: open.withdrawn.reason })}
+            {tf("ovs.withdrawn", { date: formatDate(open.withdrawn.on), reason: open.withdrawn.reason })}
           </p>
         {:else}
           <form
@@ -232,7 +233,7 @@
         <p>
           <strong>{pack.oversight.current?.level ?? t("ovs.none")}</strong>
           {#if pack.oversight.current}
-            <span class="muted">· {tf("ovs.since", { date: pack.oversight.current.effective_on })}</span>
+            <span class="muted">· {tf("ovs.since", { date: formatDate(pack.oversight.current.effective_on) })}</span>
           {/if}
         </p>
         <OversightCriteria criteria={pack.oversight.criteria} />
@@ -240,9 +241,9 @@
         <CapacityHeatmap months={pack.capacity.months} pools={pack.capacity.pools} />
         <p>{tf("res.spof", { count: pack.key_person.single_points_of_failure })}</p>
         <p>
-          {tf("res.seniorHours", { hours: pack.governance.senior_hours_per_month.toFixed(1) })}
+          {tf("res.seniorHours", { hours: formatDecimal(pack.governance.senior_hours_per_month, 1) })}
           <span class="muted">
-            · {tf("res.allHours", { hours: pack.governance.all_hours_per_month.toFixed(1) })}
+            · {tf("res.allHours", { hours: formatDecimal(pack.governance.all_hours_per_month, 1) })}
           </span>
         </p>
       </article>

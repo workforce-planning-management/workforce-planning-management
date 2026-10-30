@@ -7,6 +7,7 @@
   the service.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
@@ -132,7 +133,7 @@
                     <td>{v.version}</td>
                     <td>{v.title}</td>
                     <td>{v.document_ref}</td>
-                    <td>{v.effective_on}</td>
+                    <td>{formatDate(v.effective_on)}</td>
                     <td>{tv(v.audience)}{#if v.audience_value}: {v.audience_value}{/if}</td>
                     <td>{v.acknowledge_within_days}</td>
                     <td><button type="button" data-testid="policy-record" onclick={() => void open(v.pid)}>{t("policies.record")}</button></td>
@@ -154,7 +155,7 @@
         {#each record.people as person (person.worker_pid)}
           <li data-testid="policy-record-row">
             {person.worker_number}
-            — {person.acknowledged_on ? tf("myPolicies.done", { day: person.acknowledged_on }) : t("policies.not_yet")}
+            — {person.acknowledged_on ? tf("myPolicies.done", { day: formatDate(person.acknowledged_on) }) : t("policies.not_yet")}
           </li>
         {/each}
       </ul>

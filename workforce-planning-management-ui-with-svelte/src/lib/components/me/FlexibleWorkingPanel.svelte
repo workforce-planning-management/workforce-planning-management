@@ -4,6 +4,7 @@
   computes the dates and never changes a contract (an agreed change of hours is for HR to apply).
 -->
 <script lang="ts">
+  import { formatDate, formatPercentValue } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -62,19 +63,19 @@
       <li data-testid="flex-{r.pid}">
         <strong>{tv(r.kind)}</strong> — {tv(r.status)}
         <span class="muted">
-          · {tf("details.flex.from", { date: r.proposed_start })}{r.proposed_fte_percent ? ` · ${r.proposed_fte_percent}%` : ""}
-          · {tf("details.flex.decide_by", { date: r.decide_by })}
+          · {tf("details.flex.from", { date: formatDate(r.proposed_start) })}{r.proposed_fte_percent ? ` · ${formatPercentValue(r.proposed_fte_percent)}` : ""}
+          · {tf("details.flex.decide_by", { date: formatDate(r.decide_by) })}
         </span>
         {#if r.overdue}<strong class="warn" data-testid="flex-overdue">{t("details.flex.overdue")}</strong>{/if}
         {#if r.decision_reason}<span class="muted"> · {tv(r.decision_reason)}</span>{/if}
         {#if r.decision_note}<span class="muted"> · {r.decision_note}</span>{/if}
-        {#if r.trial_until}<span class="muted"> · {tf("details.flex.trial", { date: r.trial_until })}</span>{/if}
+        {#if r.trial_until}<span class="muted"> · {tf("details.flex.trial", { date: formatDate(r.trial_until) })}</span>{/if}
         {#if r.hr_to_apply_fte_percent}
           <span class="muted"> · {tf("details.flex.hr_applies", { fte: r.hr_to_apply_fte_percent })}</span>
         {/if}
         {#if r.status === "counter_proposed"}
           <p data-testid="flex-counter">
-            {t("details.flex.counter")}: {r.counter_note ?? ""}{r.counter_fte_percent ? ` (${r.counter_fte_percent}%)` : ""}
+            {t("details.flex.counter")}: {r.counter_note ?? ""}{r.counter_fte_percent ? ` (${formatPercentValue(r.counter_fte_percent)})` : ""}
             <button type="button" data-testid="flex-accept" onclick={() => void run(() => actOnFlexibleRequest(r.pid, "respond", { response: "accept" }))}>{t("details.flex.accept")}</button>
             <button type="button" data-testid="flex-decline" onclick={() => void run(() => actOnFlexibleRequest(r.pid, "respond", { response: "decline" }))}>{t("details.flex.decline")}</button>
           </p>

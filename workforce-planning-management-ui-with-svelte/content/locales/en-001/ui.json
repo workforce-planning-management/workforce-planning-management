@@ -164,7 +164,9 @@
     "save": "Save",
     "remove": "Remove",
     "month": "Month",
-    "programme": "Programme reference"
+    "programme": "Programme reference",
+    "badNumber": "{field}: enter a number from {min} to {max}, written the way this page writes numbers (for example {example}).",
+    "badNumberAtLeast": "{field}: enter a number of at least {min}, written the way this page writes numbers (for example {example})."
   },
   "dash": {
     "title": "My Home Page",

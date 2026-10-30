@@ -6,6 +6,7 @@
   than the person are marked.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -51,7 +52,8 @@
   let snapshot = $state<Awaited<ReturnType<typeof skillsAsOf>> | null>(null);
 
   const message = (cause: unknown) => (errorText(cause));
-  const day = (iso: string | null) => (iso ? iso.slice(0, 10) : "now");
+  // Sorted on the ISO value; shown in the page's locale, an open end as "now" in the page's language.
+  const day = (v: unknown) => (typeof v === "string" && v !== "" ? formatDate(v) : t("values.now"));
 
   const load = guardedLoad(
     () => Promise.all([roleHistory(workerPid), skillHistory(workerPid), listSkills()]),
@@ -101,13 +103,15 @@
       id: "started_at",
       header: t("comp.careerHistory.from"),
       sortable: true,
-      accessor: (r) => day((r as unknown as RoleHistoryRow).started_at),
+      accessor: (r) => (r as unknown as RoleHistoryRow).started_at,
+      format: (v) => day(v),
     },
     {
       id: "ended_at",
       header: t("comp.careerHistory.to"),
       sortable: true,
-      accessor: (r) => day((r as unknown as RoleHistoryRow).ended_at),
+      accessor: (r) => (r as unknown as RoleHistoryRow).ended_at,
+      format: (v) => day(v),
     },
     {
       id: "recorded_by",
@@ -125,13 +129,15 @@
       id: "started_at",
       header: t("comp.careerHistory.from"),
       sortable: true,
-      accessor: (r) => day((r as unknown as SkillHistoryRow).started_at),
+      accessor: (r) => (r as unknown as SkillHistoryRow).started_at,
+      format: (v) => day(v),
     },
     {
       id: "ended_at",
       header: t("comp.careerHistory.to"),
       sortable: true,
-      accessor: (r) => day((r as unknown as SkillHistoryRow).ended_at),
+      accessor: (r) => (r as unknown as SkillHistoryRow).ended_at,
+      format: (v) => day(v),
     },
     {
       id: "source",

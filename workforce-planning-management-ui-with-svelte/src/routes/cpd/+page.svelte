@@ -5,6 +5,7 @@
   units (hours or points).
 -->
 <script lang="ts">
+  import { formatDate, numberToInput, parseNumber } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -49,13 +50,14 @@
   // new requirement
   let reqName = $state("");
   let reqUnit = $state<string>("hours");
-  let reqAmount = $state(30);
+  /** Amounts are typed in the page's own number format ("1,5" hours in German), WPM-T375. */
+  let reqAmount = $state("30");
   let reqStart = $state("");
   let reqEnd = $state("");
   // correcting or withdrawing a requirement
   let editing = $state<string | null>(null);
   let editName = $state("");
-  let editAmount = $state(0);
+  let editAmount = $state("");
   let editStart = $state("");
   let editEnd = $state("");
   let withdrawing = $state<string | null>(null);
@@ -64,7 +66,7 @@
   let entryActivity = $state("");
   let entryCategory = $state<string>("course");
   let entryUnit = $state<string>("hours");
-  let entryAmount = $state(1);
+  let entryAmount = $state("1");
   let entryUrl = $state("");
   let entrySkill = $state("");
   let skills = $state<Array<{ pid: string; name: string }>>([]);
@@ -111,13 +113,25 @@
     })();
   });
 
+  /** A typed amount, or null after saying why it cannot be read. */
+  function amountOf(text: string, field: string, min: number): number | null {
+    const n = parseNumber(text);
+    if (n === null || n < min) {
+      error = tf("common.badNumberAtLeast", { field, min, example: numberToInput(1.5) });
+      return null;
+    }
+    return n;
+  }
+
   async function addRequirement() {
     error = null;
+    const required = amountOf(reqAmount, t("pages.cpd.required"), 1);
+    if (required === null) return;
     try {
       await createCpdRequirement({
         name: reqName,
         unit: reqUnit,
-        required: reqAmount,
+        required,
         period_start: reqStart,
         period_end: reqEnd,
       });
@@ -133,18 +147,20 @@
     editing = r.pid;
     withdrawing = null;
     editName = r.name;
-    editAmount = r.required;
+    editAmount = numberToInput(r.required);
     editStart = r.period_start;
     editEnd = r.period_end;
   }
 
   async function saveEdit(r: Requirements[number]) {
     error = null;
+    const required = amountOf(editAmount, t("pages.cpd.required"), 1);
+    if (required === null) return;
     try {
       await updateCpdRequirement(r.pid, {
         name: editName,
         unit: r.unit,
-        required: editAmount,
+        required,
         period_start: editStart,
         period_end: editEnd,
         job_title: r.job_title,
@@ -172,13 +188,15 @@
   async function addEntry() {
     if (!workerPid) return;
     error = null;
+    const amount = amountOf(entryAmount, t("pages.cpd.amount"), 0.01);
+    if (amount === null) return;
     try {
       await createCpdEntry(workerPid, {
         entry_date: entryDate,
         activity: entryActivity,
         category: entryCategory,
         unit: entryUnit,
-        amount: entryAmount,
+        amount,
         ...(entryUrl ? { evidence_url: entryUrl } : {}),
         ...(entrySkill ? { skill_pid: entrySkill } : {}),
       });
@@ -248,11 +266,11 @@
 {/snippet}
 
 {#snippet periodCell({ row }: { row: DataGridRow })}
-  {row.period_start} → {row.period_end}
+  {formatDate(row.period_start as string)} → {formatDate(row.period_end as string)}
 {/snippet}
 
 {#snippet progressRequirementCell({ row }: { row: DataGridRow })}
-  {row.name} <span class="muted">({row.period_start} → {row.period_end})</span>
+  {row.name} <span class="muted">({formatDate(row.period_start as string)} → {formatDate(row.period_end as string)})</span>
 {/snippet}
 
 {#snippet requiredCell({ row }: { row: DataGridRow })}
@@ -289,7 +307,7 @@
 {/snippet}
 
 {#snippet verifyCell({ row }: { row: DataGridRow })}
-  {#if row.verified_on}✓ {row.verified_on}{:else}
+  {#if row.verified_on}✓ {formatDate(row.verified_on as string)}{:else}
     <button type="button" onclick={() => void verify(String(row.pid))}>{t("pages.cpd.verify")}</button>
   {/if}
 {/snippet}
@@ -329,7 +347,7 @@
     {t("pages.cpd.unit")}
     <select bind:value={reqUnit}>{#each CPD_UNITS as u (u)}<option value={u}>{tv(u)}</option>{/each}</select>
   </label>
-  <label>{t("pages.cpd.required")} <input type="number" min="1" step="any" bind:value={reqAmount} required /></label>
+  <label>{t("pages.cpd.required")} <input inputmode="decimal" bind:value={reqAmount} required data-testid="cpd-required" /></label>
   <label>{t("pages.cpd.from")} <input type="date" bind:value={reqStart} required /></label>
   <label>{t("pages.cpd.to")} <input type="date" bind:value={reqEnd} required /></label>
   <button type="submit" data-testid="cpd-req-add">{t("pages.cpd.add")}</button>
@@ -348,14 +366,14 @@
             }}
           >
             <label>{t("pages.cpd.name")} <input data-testid="cpd-edit-name" bind:value={editName} required /></label>
-            <label>{t("pages.cpd.required")} ({tv(r.unit)}) <input data-testid="cpd-edit-required" type="number" min="1" step="any" bind:value={editAmount} required /></label>
+            <label>{t("pages.cpd.required")} ({tv(r.unit)}) <input data-testid="cpd-edit-required" inputmode="decimal" bind:value={editAmount} required /></label>
             <label>{t("pages.cpd.from")} <input type="date" bind:value={editStart} required /></label>
             <label>{t("pages.cpd.to")} <input type="date" bind:value={editEnd} required /></label>
             <button type="submit" data-testid="cpd-edit-save">{t("pages.cpd.save")}</button>
             <button type="button" onclick={() => (editing = null)}>{t("pages.cpd.cancel")}</button>
           </form>
         {:else}
-          {r.name} <span class="muted">— {r.required} {tv(r.unit)}, {r.period_start} → {r.period_end}{r.job_title ? ` · ${r.job_title}` : ""}</span>
+          {r.name} <span class="muted">— {r.required} {tv(r.unit)}, {formatDate(r.period_start)} → {formatDate(r.period_end)}{r.job_title ? ` · ${r.job_title}` : ""}</span>
           <button type="button" data-testid="cpd-correct" onclick={() => startEdit(r)}>{t("pages.cpd.correct")}</button>
           {#if withdrawing === r.pid}
             <button type="button" class="warn" data-testid="cpd-withdraw-confirm" onclick={() => void withdraw(r.pid)}>{t("pages.cpd.confirm_withdraw")}</button>
@@ -402,7 +420,7 @@
     <h3>{t("pages.cpd.registrations")}</h3>
     <ul>
       {#each progress.registrations as r, index (index)}
-        <li>{r.body} — {r.expires_on ?? t("pages.cpd.no_expiry")} <span class="chip" class:warn={r.status === "expired" || r.status === "expiring"}>{tv(r.status)}</span></li>
+        <li>{r.body} — {r.expires_on ? formatDate(r.expires_on) : t("pages.cpd.no_expiry")} <span class="chip" class:warn={r.status === "expired" || r.status === "expiring"}>{tv(r.status)}</span></li>
       {/each}
     </ul>
   {/if}
@@ -450,7 +468,7 @@
       {t("pages.cpd.unit")}
       <select bind:value={entryUnit}>{#each CPD_UNITS as u (u)}<option value={u}>{tv(u)}</option>{/each}</select>
     </label>
-    <label>{t("pages.cpd.amount")} <input type="number" min="0.01" step="any" bind:value={entryAmount} required /></label>
+    <label>{t("pages.cpd.amount")} <input inputmode="decimal" bind:value={entryAmount} required data-testid="cpd-amount" /></label>
     <label>
       {t("pages.cpd.skill")}
       <select data-testid="cpd-entry-skill-pick" bind:value={entrySkill}>

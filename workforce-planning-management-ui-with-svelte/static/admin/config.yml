@@ -257,6 +257,8 @@ collections:
               - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
               - { name: "month", label: "Month", widget: string, required: false, i18n: true }
               - { name: "programme", label: "Programme", widget: string, required: false, i18n: true }
+              - { name: "badNumber", label: "Bad Number", widget: text, required: false, i18n: true }
+              - { name: "badNumberAtLeast", label: "Bad Number At Least", widget: text, required: false, i18n: true }
           - name: "dash"
             label: "Dash"
             widget: object

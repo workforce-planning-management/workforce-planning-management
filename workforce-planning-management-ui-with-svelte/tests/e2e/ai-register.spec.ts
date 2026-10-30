@@ -84,7 +84,7 @@ test.describe("AI register", () => {
     });
     await page.goto("/ai-register");
     await expect(page.getByTestId("ai-applies")).toContainText(
-      "The Annex III duties apply from 2027-12-02",
+      "The Annex III duties apply from 2 Dec 2027",
     );
     const cards = page.getByTestId("ai-feature");
     await expect(cards).toHaveCount(2);

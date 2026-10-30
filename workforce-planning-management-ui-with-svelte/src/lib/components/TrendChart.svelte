@@ -7,6 +7,7 @@
   page defines, so it follows light / dark.
 -->
 <script lang="ts">
+  import { formatDate, formatNumber } from "#lib/locale-format.js";
   import { paddedRange, type TrendPoint } from "#lib/ceo.js";
   import { i18n } from "#lib/i18n.svelte.js";
 
@@ -83,7 +84,7 @@
     <table>
       <caption>{label}</caption>
       <tbody>
-        {#each points as p (p.date)}<tr><th scope="row">{p.date}</th><td>{p.value}</td></tr>{/each}
+        {#each points as p (p.date)}<tr><th scope="row">{formatDate(p.date)}</th><td>{formatNumber(p.value)}</td></tr>{/each}
       </tbody>
     </table>
   </div>

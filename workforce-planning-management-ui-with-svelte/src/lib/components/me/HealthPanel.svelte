@@ -4,6 +4,7 @@
   only whether I am cleared. No reason is held. Off unless a deployer enables it.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { getMyHealthRequirements, type MyHealthRequirements } from "#lib/api/wpm.js";
@@ -35,8 +36,8 @@
         <li data-testid="health-{r.requirement.pid}">
           <strong>{r.requirement.name}</strong> — {tv(r.standing)}
           <span class="muted">· {r.cleared ? t("details.health.cleared") : t("details.health.not_cleared")}</span>
-          {#if r.recorded_on}<span class="muted"> · {tf("details.health.recorded", { date: r.recorded_on })}</span>{/if}
-          {#if r.next_due}<span class="muted"> · {tf("details.health.due", { date: r.next_due })}</span>{/if}
+          {#if r.recorded_on}<span class="muted"> · {tf("details.health.recorded", { date: formatDate(r.recorded_on) })}</span>{/if}
+          {#if r.next_due}<span class="muted"> · {tf("details.health.due", { date: formatDate(r.next_due) })}</span>{/if}
           {#if r.reminder}<strong class="warn" data-testid="health-reminder"> {t("details.health.reminder")}</strong>{/if}
           {#if r.requirement.description}<br /><span class="muted">{r.requirement.description}</span>{/if}
         </li>

@@ -167,7 +167,7 @@ test.describe("Skill gaps", () => {
     await expect(
       pointers.getByRole("link", { name: "Invented certificate" }),
     ).toHaveCount(0);
-    await expect(page.getByTestId("plan-total")).toContainText("2027-03-08");
+    await expect(page.getByTestId("plan-total")).toContainText("8 Mar 2027");
     await expect(page.getByTestId("plan-assess")).toContainText(
       "Stakeholder management",
     );

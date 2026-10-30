@@ -164,7 +164,9 @@
     "save": "Speichern",
     "remove": "Entfernen",
     "month": "Monat",
-    "programme": "Programmreferenz"
+    "programme": "Programmreferenz",
+    "badNumber": "{field}: Geben Sie eine Zahl von {min} bis {max} ein, so geschrieben, wie diese Seite Zahlen schreibt (zum Beispiel {example}).",
+    "badNumberAtLeast": "{field}: Geben Sie eine Zahl von mindestens {min} ein, so geschrieben, wie diese Seite Zahlen schreibt (zum Beispiel {example})."
   },
   "dash": {
     "title": "Meine Startseite",

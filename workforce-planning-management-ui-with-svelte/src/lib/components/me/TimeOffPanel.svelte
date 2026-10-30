@@ -4,6 +4,7 @@
   A request is made here and a person decides it; one awaiting a decision, or approved and not started, can be cancelled.
 -->
 <script lang="ts">
+  import { formatDate, formatNumber } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -83,11 +84,11 @@
       </tbody>
     </table>
     </div>
-    <p class="muted">{tf("details.time.unit", { year: view.year })}</p>
+    <p class="muted">{tf("details.time.unit", { year: formatNumber(view.year, { useGrouping: false }) })}</p>
     <ul data-testid="time-requests">
       {#each view.requests as r (r.pid)}
         <li>
-          {tv(r.kind)}: {r.start_on} → {r.end_on} ({r.days}) <span class="muted">— {tv(r.status)}</span>
+          {tv(r.kind)}: {formatDate(r.start_on)} → {formatDate(r.end_on)} ({formatNumber(r.days)}) <span class="muted">— {tv(r.status)}</span>
           {#if r.reason}<span class="muted">— {r.reason}</span>{/if}
           {#if cancellable(r)}
             <button type="button" data-testid="leave-cancel" onclick={() => void run(() => cancelMyLeave(r.pid))}>

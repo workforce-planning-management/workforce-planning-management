@@ -7,6 +7,7 @@
   "Show who" opens the list behind a figure by worker number — a read the service audits.
 -->
 <script lang="ts">
+  import { formatDecimal, formatPercentValue } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import LoadMore from "#lib/components/LoadMore.svelte";
@@ -92,8 +93,8 @@
 
   /** A count: a number, or "withheld" for one to nine people. Never 0 for a withheld one. */
   const count = (n: Withheld) => (n === null ? null : String(n));
-  const pct = (n: number | null) => (n === null ? "—" : `${n.toFixed(1)}%`);
-  const fte = (n: number | null) => (n === null ? "—" : n.toFixed(2));
+  const pct = (n: number | null) => formatPercentValue(n, 1);
+  const fte = (n: number | null) => formatDecimal(n, 2);
 
   const pctFmt = (v: unknown) => pct(v as number | null);
   const fteFmt = (v: unknown) => fte(v as number | null);

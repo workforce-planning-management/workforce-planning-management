@@ -4,6 +4,7 @@
   The reason is the worker's own: a manager or HR is never shown it.
 -->
 <script lang="ts">
+  import { formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -66,9 +67,9 @@
   {#if error}<ErrorNote testid="resign-error" message={error} />{/if}
   {#if resignation}
     <p data-testid="resign-status">
-      {tv(resignation.status)} — {tf("details.resign.logged", { date: resignation.logged_on })}
-      · {tf("details.resign.proposed", { date: resignation.proposed_last_day })}
-      {#if resignation.agreed_last_day}· {tf("details.resign.agreed", { date: resignation.agreed_last_day })}{/if}
+      {tv(resignation.status)} — {tf("details.resign.logged", { date: formatDate(resignation.logged_on) })}
+      · {tf("details.resign.proposed", { date: formatDate(resignation.proposed_last_day) })}
+      {#if resignation.agreed_last_day}· {tf("details.resign.agreed", { date: formatDate(resignation.agreed_last_day) })}{/if}
       {#if resignation.reason}<span class="muted"> · {tv(resignation.reason)}</span>{/if}
     </p>
     {#if resignation.status === "logged"}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatDate, formatDateTime, formatNumber, formatTime } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -66,7 +67,7 @@
     shifts.map((s) => ({
       id: s.shift.pid,
       date: s.shift.starts_at.slice(0, 10),
-      title: `${s.shift.department} ${new Date(s.shift.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+      title: `${s.shift.department} ${formatTime(s.shift.starts_at)}`,
       values: { filled: `${s.assignments.length} / ${s.shift.required_headcount}` },
     })),
   );
@@ -86,7 +87,7 @@
       id: "start_on",
       header: t("columns.dates"),
       sortable: true,
-      format: (_v, r) => `${r.start_on} → ${r.end_on} (${r.days} ${t("common.days")})`,
+      format: (_v, r) => `${formatDate(r.start_on as string)} → ${formatDate(r.end_on as string)} (${formatNumber(r.days as number)} ${t("common.days")})`,
     },
     { id: "actions", header: t("common.actions"), cell: decideCell },
   ]);
@@ -97,7 +98,7 @@
       header: t("columns.shift"),
       sortable: true,
       format: (_v, r) =>
-        `${new Date(String(r.starts_at)).toLocaleString()} → ${new Date(String(r.ends_at)).toLocaleTimeString()}`,
+        `${formatDateTime(String(r.starts_at))} → ${formatTime(String(r.ends_at))}`,
     },
     {
       id: "assigned",
