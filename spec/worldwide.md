@@ -50,7 +50,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
 - [x] (2026-10-29) WPM-T368 **Jurisdiction profile model.** *(Done: see the design section below; proposed WPM-D144; questions for the product owner at its end.)* Original text: *(WPM-R214, WPM-D143)* A design for per-organization, per-layer (national, regional,
   supranational) profiles with effective dates, and what each existing rule (working-time guardrails, retention, pay transparency,
   equality categories) reads from it. Design first; no code.
-- [ ] WPM-T369 **Second-profile tests.** *(WPM-R214, WPM-D143)* For each rule with UK values, a pure-core test with a non-UK profile of a
+- [~] WPM-T369 **Second-profile tests.** *(WPM-R214, WPM-D143)* For each rule with UK values, a pure-core test with a non-UK profile of a
   different shape (different currency exponent, weekend, week start, limits), and a lint or test that fails if `src/rules/` names a
   country.
   **Done in part (2026-10-30):** (1) `src/jurisdiction_neutrality.rs`, in `cargo test --lib`: a lexical check of every identifier and
