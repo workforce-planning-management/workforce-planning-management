@@ -10,14 +10,14 @@ Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
 (WPM-D*), a task (WPM-T*), code and tests.
 
-Status as of 2026-10-30: tasks WPM-T1–T397 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R216; decisions up to WPM-D148; 110 migrations, 84 controllers, 56 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
+Status as of 2026-10-30: tasks WPM-T1–T397 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R216; decisions up to WPM-D149; 110 migrations, 84 controllers, 56 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
 
 ## Specification
 
 - [spec/index.md](spec/index.md): overview, topic map, status
 - [spec/tasks.md](spec/tasks.md): the live delivery checklist (WPM-T1–T397); each entry records what was verified and what was not; Phase 25 is the newest
 - [spec/requirements.md](spec/requirements.md): requirements (WPM-R1–R38 here; R39–R216 in the topic files, each pointed at from the end of this file)
-- [spec/design.md](spec/design.md): design decisions (WPM-D1–D28 here; D29–D148 in the topic files, each range pointed at from this file)
+- [spec/design.md](spec/design.md): design decisions (WPM-D1–D28 here; D29–D149 in the topic files, each range pointed at from this file)
 - [spec/domain-model.md](spec/domain-model.md): entities
 - [spec/auth.md](spec/auth.md): personas, ABAC, masking, the sensitivity map, the activation runbook
 - [spec/audit.md](spec/audit.md): what is audited, and the rule that a write without its audit row does not happen (WPM-D107)

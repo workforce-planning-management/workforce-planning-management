@@ -7,6 +7,7 @@
   as unavailable, never guessed. HR creates rotas and records swaps.
 -->
 <script lang="ts">
+  import { todayIso } from "#lib/reader-calendar.js";
   import { arrow, formatDateRange } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
@@ -44,7 +45,7 @@
   // New rota form.
   let name = $state("");
   let period = $state(7);
-  let startsOn = $state(new Date().toISOString().slice(0, 10));
+  let startsOn = $state(todayIso());
   let organization = $state("");
   let picked = $state<string[]>([]);
   let requests = $state<SwapRequest[]>([]);

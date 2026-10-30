@@ -5,7 +5,7 @@
   "status": {
     "tasks_delivered": "WPM-T1–T397 (done, open and part done counted in spec/implementation-status.md)",
     "highest_requirement": "WPM-R216",
-    "highest_decision": "WPM-D148",
+    "highest_decision": "WPM-D149",
     "deferred": [],
     "as_of": "2026-10-30",
     "counts_from": "spec/implementation-status.md"
@@ -16,8 +16,8 @@
     "tests": {
       "service_unit_declared": 1052,
       "service_request_declared": 184,
-      "ui_unit_declared": 244,
-      "ui_e2e_declared": 223,
+      "ui_unit_declared": 261,
+      "ui_e2e_declared": 231,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
     "migrations": 110,
@@ -44,7 +44,7 @@
       {
         "title": "spec/design.md",
         "path": "spec/design.md",
-        "description": "design decisions (WPM-D1–D28 here; D29–D148 in the topic files, each range pointed at from this file)"
+        "description": "design decisions (WPM-D1–D28 here; D29–D149 in the topic files, each range pointed at from this file)"
       },
       {
         "title": "spec/domain-model.md",

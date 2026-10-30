@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the UI's today, week start and weekend are the reader's (WPM-T378, WPM-D149)
+
+Today is the reader's date, not the UTC date, and the calendars' first day and weekend follow CLDR for the reader's region. Proposed
+WPM-D149 records the choice (the browser, no stored setting yet). See the UI changelog for what was not done.
+
 ### Changed — right-to-left pages are laid out from the right (WPM-T377)
 
 Logical CSS throughout the UI, date ranges written by `Intl`'s `formatRange` instead of a literal "→", arrows that point along the

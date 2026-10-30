@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isoDateIn } from "#lib/reader-calendar.js";
   import { formatDateRange, formatDateTimeRange, formatNumber, formatTime } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { errorText } from "#lib/write.js";
@@ -66,7 +67,7 @@
   const shiftEvents = $derived(
     shifts.map((s) => ({
       id: s.shift.pid,
-      date: s.shift.starts_at.slice(0, 10),
+      date: isoDateIn(new Date(s.shift.starts_at)),
       title: `${s.shift.department} ${formatTime(s.shift.starts_at)}`,
       values: { filled: `${s.assignments.length} / ${s.shift.required_headcount}` },
     })),

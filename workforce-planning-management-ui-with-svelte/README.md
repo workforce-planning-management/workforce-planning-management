@@ -18,7 +18,7 @@ rota, announcements, skill gaps with a training plan, joiners and leavers, and a
 
 **Status (2026-10-30):** the original demonstration through WPM-T97, and the
 UI of the later tasks in [../spec/tasks.md](../spec/tasks.md) (56 pages).
-`pnpm lint` and svelte-check clean (0 errors, 0 warnings); **298 vitest and 330
+`pnpm lint` and svelte-check clean (0 errors, 0 warnings); **308 vitest and 335
 Playwright tests** pass, 19 skipped (`page.route`-stubbed — runs without the Rust
 service); the production build is green. Quick start: `pnpm install && pnpm dev` (expects the Loco
 sibling on :5150; `pnpm test` / `pnpm exec playwright test`).

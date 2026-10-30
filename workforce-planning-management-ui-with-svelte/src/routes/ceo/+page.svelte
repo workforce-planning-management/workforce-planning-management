@@ -12,6 +12,7 @@
   snapshot job.
 -->
 <script lang="ts">
+  import { todayIso } from "#lib/reader-calendar.js";
   import { formatNumber, formatPercentValue, formatSigned } from "#lib/locale-format.js";
   import { onMount } from "svelte";
   import { page } from "$app/state";
@@ -49,7 +50,7 @@
   const organizationRefs = $derived((page.data.scope ?? []) as string[]);
 
   const dash = "—";
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
 
   /** A failed load is "no figure" for that tile, never an error over the whole screen. */
   async function settle<T>(promise: Promise<T>): Promise<T | null> {

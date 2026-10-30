@@ -5,6 +5,7 @@
   units (hours or points).
 -->
 <script lang="ts">
+  import { todayIso } from "#lib/reader-calendar.js";
   import { formatDate, formatDateRange, numberToInput, parseNumber } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
@@ -62,7 +63,7 @@
   let editEnd = $state("");
   let withdrawing = $state<string | null>(null);
   // new entry
-  let entryDate = $state(new Date().toISOString().slice(0, 10));
+  let entryDate = $state(todayIso());
   let entryActivity = $state("");
   let entryCategory = $state<string>("course");
   let entryUnit = $state<string>("hours");

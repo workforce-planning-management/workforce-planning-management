@@ -7,6 +7,7 @@
   aggregate and levers are suggestions, never decisions.
 -->
 <script lang="ts">
+  import { todayIso } from "#lib/reader-calendar.js";
   import { arrow, formatDate, formatDateRange, numberToInput, parseScaled } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import PlanForecast from "#lib/components/planning/PlanForecast.svelte";
@@ -109,7 +110,7 @@
       range: { start: starts[0] ?? "", end: ends[ends.length - 1] ?? "" },
     };
   });
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
 
   const PLAN_COLUMNS = ["draft", "active", "archived"].map((id) => ({ id, title: id }));
   const planCards = $derived(

@@ -157,10 +157,7 @@ describe("numbers typed in the page's locale", () => {
 // The scan. A line that matches is hand-rolled formatting of something a person reads. Allowed: comments, CSS, and a
 // line in ALLOW with its reason.
 const here = join(__dirname, "..", "..");
-const ALLOW: Record<string, string> = {
-  "src/routes/workforce/+page.svelte:date: s.shift.starts_at.slice(0, 10),":
-    "a calendar's day key for the shift, not text",
-};
+const ALLOW: Record<string, string> = {};
 const FIELD = String.raw`[\w.?]*?(?:\w+_(?:on|at|date|start|end|until|from|due|day)\b|decide_by|remedy_by|as_of|\.date\b|\.on\b|\.month\b)`;
 const RULES: [string, RegExp][] = [
   ["toFixed", /\.toFixed\(/],

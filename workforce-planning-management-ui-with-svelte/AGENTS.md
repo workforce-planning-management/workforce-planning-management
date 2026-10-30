@@ -51,6 +51,11 @@ masked fields render as first-class masked states, never errors or fake zeros.
    `toFixed`, `toLocale*`, a glued `%` or a raw ISO date in markup; a scan in
    `tests/unit/locale-format.test.ts` fails otherwise (WPM-T375). A decimal
    input is text with `inputmode="decimal"`, read with `parseNumber`.
+   A range of dates is `formatDateRange` and a "becomes" arrow is `arrow()`, never a literal "→"; styles
+   are logical (`text-align: start`, `margin-inline-*`), and `tests/unit/right-to-left.test.ts` fails on
+   a physical left/right (WPM-T377). Today is `todayIso()` (the reader's time zone, never the UTC date),
+   and a calendar's week start and weekend come from `weekInfo()` in `src/lib/reader-calendar.ts`
+   (WPM-T378, WPM-D149).
 6. **Localization is content, and the URL carries the locale** (WPM-R50,
    WPM-D37). Strings live in `content/locales/<locale>/ui.json` (17 locales;
    regional ones hold overrides only), loaded through `src/lib/i18n.svelte.ts`;
@@ -94,8 +99,8 @@ pnpm install
 pnpm dev                    # expects the Loco sibling on :5150
 pnpm check                  # svelte-kit sync && svelte-check (0 errors)
 pnpm lint                   # eslint, then prettier --check
-pnpm test                   # vitest (298 in 36 files, 2026-10-30)
-PW_PORT=4193 pnpm exec playwright test   # 330 pass, 19 skip, stubbed API (2026-10-30); pick a free port
+pnpm test                   # vitest (308 in 37 files, 2026-10-30)
+PW_PORT=4193 pnpm exec playwright test   # 335 pass, 19 skip, stubbed API (2026-10-30); pick a free port
 WPM_LIVE_API=1 pnpm exec playwright test -c playwright.live.config.ts   # 23 tests in 10 files against a REAL service (tests/live/README.md)
 pnpm build
 # The demo (guided tour, fictitious data): see INSTALL.md "Try the demo". WPM_DEMO_API_URL names a SEPARATE

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — today, week start and weekend are the reader's (WPM-T378, WPM-D149)
+
+`src/lib/reader-calendar.ts`: `todayIso()` is today in the reader's time zone (it was the UTC date on five pages and in the calendar),
+`isoDateIn()` places a shift on its day in that zone, and `weekInfo()` gives a calendar's first day and weekend from CLDR
+(`Intl.Locale#getWeekInfo`) for the page locale's country, else the browser's first country, else the page locale's world data; a
+fallback table for browsers without it is checked against the runtime's CLDR data. `CalendarPanel` now marks the weekend and starts the
+week on the reader's day (the page locale plus `-u-fw-…`, so formatting is unchanged). API values stay ISO dates. Tests:
+`tests/unit/reader-calendar.test.ts` (UTC+14 and UTC−11 zones, a Saturday week start and a Friday–Saturday weekend for Egypt on `ar-001`,
+Saudi Arabia, Afghanistan, Iran, India, the table, a scan for the UTC "today") and five Playwright cases in `calendar.spec.ts` (today in
+`Pacific/Kiritimati` and UTC; the week for `en-001`, a browser in `ar-EG` and one in plain `ar`). **Not done:** no stored user or
+organization time zone or region. **Not tested:** a browser without `getWeekInfo`.
+
 ### Changed — right to left (WPM-T377)
 
 Every physical left/right style in `src/` is logical: table cells `text-align: start`, the bed and home cards and calendar events

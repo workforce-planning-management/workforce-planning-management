@@ -7,6 +7,7 @@
   the service.
 -->
 <script lang="ts">
+  import { todayIso } from "#lib/reader-calendar.js";
   import { formatDate } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { guardedLoad } from "#lib/loader.svelte.js";
@@ -37,7 +38,7 @@
   let target = $state("");
   let title = $state("");
   let documentRef = $state("");
-  let effectiveOn = $state(new Date().toISOString().slice(0, 10));
+  let effectiveOn = $state(todayIso());
   let audience = $state<string>("all");
   let audienceValue = $state("");
   let days = $state(14);

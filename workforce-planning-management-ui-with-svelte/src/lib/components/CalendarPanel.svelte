@@ -13,6 +13,8 @@
     CalendarViewMode,
   } from "@lilydesignsystem/svelte-calendar";
   import { i18n, t, tf } from "#lib/i18n.svelte.js";
+  import { formatDateRange } from "#lib/locale-format.js";
+  import { browserLanguages, calendarLocale, todayIso, weekInfo } from "#lib/reader-calendar.js";
 
   let {
     label,
@@ -32,7 +34,12 @@
     initialDate?: string;
   } = $props();
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Today in the reader's own time zone, not UTC; the week's first day and weekend from CLDR for the reader's region
+  // (WPM-T378, WPM-D149). The Lily calendar reads the first day from the locale tag, so it gets the page's locale
+  // with the CLDR `fw` keyword set; the weekend it takes as weekday numbers.
+  const today = todayIso();
+  const week = $derived(weekInfo(i18n.locale, browserLanguages()));
+  const locale = $derived(calendarLocale(i18n.locale, week));
   // A phone has no room for a month grid: start on the agenda there.
   const narrow = (() => {
     try {
@@ -75,7 +82,7 @@
         ? new Intl.DateTimeFormat(i18n.locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(
             new Date(`${anchorDate}T00:00:00Z`),
           )
-        : `${shortDate(start)} – ${shortDate(end)}`,
+        : formatDateRange(start, end),
     weekday: (weekday: number) => weekdayName(weekday, "long"),
     weekdayAbbr: (weekday: number) => weekdayName(weekday, "short"),
     day: (iso: string, _weekday: number, outside: boolean) =>
@@ -92,7 +99,8 @@
     {ranges}
     eventFields={fields}
     {today}
-    locale={i18n.locale}
+    {locale}
+    weekendDays={week.weekend}
     maxEvents={3}
     {labels}
   >

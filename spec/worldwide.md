@@ -44,6 +44,23 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   (supranational, national, subnational) chained per organization, a combination rule per parameter, the applicable chain taken from the
   place the work is done, and append-only rows with a source and a status.
 
+- **WPM-D149 A calendar's "today", week start and weekend are the reader's, from the browser, until a user or organization setting exists.**
+  *Proposed, needs product-owner confirmation* (drafted 2026-10-30 by the AI assistant for WPM-T378). The UI only; the API keeps ISO
+  dates and is unchanged.
+  - **Today** is the date in the reader's own time zone (the browser's `Intl.DateTimeFormat().resolvedOptions().timeZone`), never the
+    UTC date: near midnight far from UTC the two differ by a day. A timestamp placed on a calendar day (a shift) is placed on its day in
+    that zone. A civil date from the API ("2026-10-30") is the same day everywhere and is never shifted.
+  - **Week start and weekend** come from Unicode CLDR week data through `Intl.Locale#getWeekInfo()` (or the older `weekInfo`
+    property), for a region taken in this order: the page locale's own country (`en-us`, `de-de`); else the first country among the
+    browser's languages (`navigator.languages`, so a reader in Egypt on `ar-001` gets Saturday and a Friday–Saturday weekend); else the
+    page locale itself, whose `001` (world) region is Monday and Saturday–Sunday in CLDR. The language alone never chooses a country: an
+    `ar-001` page with no country in the browser is *not* assumed to be Egyptian or Saudi.
+  - **Fallback** where the browser has neither `getWeekInfo` nor `weekInfo`: a small table copied from CLDR `weekData` (Sunday-first,
+    Saturday-first and Friday-first regions; Friday–Saturday, Thursday–Friday, Friday-only and Sunday-only weekends), else Monday and
+    Saturday–Sunday (ISO 8601 and the CLDR world default). The table is a fallback, not the source; it may lag CLDR.
+  - **Not decided here:** a stored user or organization time zone and region (D144's `work_jurisdiction` could supply the region); the
+    service's own "today" (the server's clock) and the working-time and holiday rules' weekend (WPM-T379, WPM-T380).
+
 ## Tasks
 
 - [x] (2026-10-29) WPM-T367 **Worldwide audit of the spec.** *(WPM-R214, WPM-D143)* Done: 19 rows in the audit table above. `spec/` only: code, seed data and UI strings are not audited. Wording fixes (rows 10, 11) are left to T370.
@@ -157,7 +174,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   assertions moved from ISO text to the en-001 form ("1 Sept 2026", "200,000"). **Not done:** a bare count put straight into markup
   (`{x.length}`, `{row.score}`) outside the places named above is not all converted, and the scan cannot see one (it has no types); a
   date in a multi-line `tf`/`tp` call is outside the scan; ranges still use a literal "→" (WPM-T377, *since done*); `type="date"` inputs show the
-  browser's format; whole-number inputs stay `type="number"`; the calendar's shift key is still the UTC day. **Not tested:** screenshots
+  browser's format; whole-number inputs stay `type="number"`; the calendar's shift key is still the UTC day (*since fixed by WPM-T378*). **Not tested:** screenshots
   were not looked at; Arabic-Indic digits typed on an Arabic page; a reader in a time zone far from UTC (a timestamp shown as a date can
   be the day before or after its UTC date, which is intended).
 - [x] (2026-10-30) WPM-T376 **No default currency; locale decimal input.** *(WPM-R214, WPM-D143; rows 22, 23)* The `"GBP"` defaults in the UI go (the
@@ -201,9 +218,31 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   are not scanned; the trend chart (`TrendChart.svelte`) keeps time running left to right on every page; the calendar's own
   toolbar and keyboard come from Lily and were not changed. **Not tested:** every other page in Arabic or Urdu (only the payroll list,
   the menu and the scan); screenshots in dark mode or at phone width; a native reader.
-- [ ] WPM-T378 **Today, week start and weekend in the UI.** *(WPM-R214, WPM-D143, WPM-D144; rows 12, 13, 16)* "Today" in a time zone
-  (the user's or the organization's), not UTC; week start and weekend days for the calendar from a region setting separate from the
-  language. Needs the jurisdiction model (D144) or a user setting decided first.
+- [x] (2026-10-30) WPM-T378 **Today, week start and weekend in the UI.** *(WPM-R214, WPM-D143, WPM-D144, WPM-D149; rows 12, 13, 16)* "Today"
+  in a time zone (the user's or the organization's), not UTC; week start and weekend days for the calendar from a region setting
+  separate from the language. **Done, as proposed WPM-D149 (the reader's browser, no stored setting):** `src/lib/reader-calendar.ts`:
+  `todayIso()` is the date in the reader's time zone, `isoDateIn(instant, zone)` the day an instant falls on there, and `weekInfo(page
+  locale, navigator.languages)` the week's first day and weekend from CLDR (`Intl.Locale#getWeekInfo`, or `weekInfo`) for the page
+  locale's country, else the browser's first country, else the page locale's own `001` data (Monday, Saturday–Sunday); where the
+  browser has neither, a fallback table from CLDR `weekData`, which a unit test checks against the runtime's CLDR data for every region
+  it names. `CalendarPanel` takes today from `todayIso()`, passes the weekend days (`data-weekend`, shaded) and gives the Lily calendar
+  the page locale with the CLDR `fw` keyword (`ar-001-u-fw-sat`), so its formatting stays the page's; its period title is a
+  `formatDateRange`. The five pages that defaulted a date to the UTC date (`/planning`, `/ceo`, `/policies`, `/rota`, `/cpd`) use
+  `todayIso()`; `/workforce` places a shift on its day in the reader's zone (the scan's last allowlist entry, the UTC shift key, is
+  gone). API values stay ISO dates; a civil date from the API is never shifted. **Tests:** `tests/unit/reader-calendar.test.ts` (today
+  in Kiritimati, UTC+14, a day ahead of UTC; Pago Pago a day behind; Kolkata across a new year; a Saturday week start and a
+  Friday–Saturday weekend for a reader in Egypt on `ar-001`; Sunday-first with a Friday–Saturday weekend in Saudi Arabia; Thursday–Friday
+  in Afghanistan, Friday only in Iran, Sunday only in India; `ar-001` with no country is CLDR's world week; the table against CLDR;
+  a scan that no page takes today as `new Date().toISOString().slice(0, 10)`). Playwright (`calendar.spec.ts`): at noon UTC the
+  calendar marks the 15th in `Pacific/Kiritimati` and the 14th in UTC; `en-001` with no country is Monday-first with Saturday and
+  Sunday marked; a browser in `ar-EG` on `ar-001` starts on Saturday (the header is the browser's own Arabic "Saturday") with Friday
+  and Saturday marked in the header and two cells a week; a browser in plain `ar` keeps the world week. The Egyptian calendar screenshot
+  was looked at. **Not done:** no stored user or organization time zone or region (D149 leaves it to a later decision; D144's
+  `work_jurisdiction` could supply the region); the service's own "today" is still the server's clock; a timestamp shown as a date
+  elsewhere was already in the reader's zone (WPM-T375); the holiday and working-time rules' weekend is WPM-T379 and WPM-T380.
+  **Not tested:** a browser without `getWeekInfo`/`weekInfo` (the table is unit-tested, not run in such a browser; Lily's own fallback
+  then reads the first day from the tag's region, so an `-001` page would start on Monday whatever the reader's country); the weekend
+  shading in dark mode; other calendars than the CPD one (they share `CalendarPanel`).
 - [ ] WPM-T379 **Weekend days and non-Gregorian holidays in the holiday rules.** *(WPM-R214, WPM-D143, WPM-D144; rows 15, 18, 19)*
   `rules::holiday` takes the weekend days as a parameter (the D144 `holidays.weekend_days`), so a substitute day and `is_business_day`
   follow it; a rule kind for a holiday fixed in another calendar; an example pack of a different shape. The registry is not confirmed yet
@@ -390,11 +429,11 @@ through `rules::duplicates`.
 | 9 | Dates | UI `src/lib/components/CalendarPanel.svelte:50,54,58,75`, `TrendChart.svelte:28` | `Intl.DateTimeFormat(i18n.locale, …)`; weekday names from `Intl` | **Right** | — |
 | 10 | Dates | UI `src/lib/components/me/TimeOffPanel.svelte:90`, `src/routes/groups/+page.svelte:156`, `src/routes/movements/[pid]/+page.svelte:245`, `CareerHistory.svelte:54` (and about 80 more) | Raw ISO dates in markup or placeholders; `CareerHistory` writes an English "now" | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`) | T375 |
 | 11 | Dates | UI `src/routes/workforce/+page.svelte:69,100` | `toLocaleTimeString([])` / `toLocaleString()`: the browser's locale, not the page's | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`) | T375 |
-| 12 | Time zone | UI `CalendarPanel.svelte:35`, `src/routes/rota/+page.svelte:46`, `src/lib/ceo.ts:11,87` | "Today" is the UTC date (`toISOString().slice(0, 10)`); there is no user or organization time zone | **Gap**: the wrong day near midnight far from UTC | T378 |
-| 13 | Week start | UI `CalendarPanel.svelte:95` (`locale={i18n.locale}` to the calendar, which takes the first day from the locale) | Every `-001` locale resolves to Monday; only `en-us` gives Sunday; no region setting apart from the language | **Partial** | T378 |
+| 12 | Time zone | UI `CalendarPanel.svelte:35`, `src/routes/rota/+page.svelte:46`, `src/lib/ceo.ts:11,87` | "Today" is the UTC date (`toISOString().slice(0, 10)`); there is no user or organization time zone | **Gap**: the wrong day near midnight far from UTC. **Fixed 2026-10-30**: the reader's zone (D149) | T378 |
+| 13 | Week start | UI `CalendarPanel.svelte:95` (`locale={i18n.locale}` to the calendar, which takes the first day from the locale) | Every `-001` locale resolves to Monday; only `en-us` gives Sunday; no region setting apart from the language | **Partial**. **Fixed 2026-10-30**: CLDR for the reader's region (D149) | T378 |
 | 14 | Week start | API `migration/src/m20261021_000078_time_entry_weeks.rs:32-37`; `src/controllers/workforce.rs:799` | The working-time roll-up groups by `date_trunc('week', …)`, an ISO Monday week, and its partial index is fixed at 2,720 minutes | **Gap** (tied to row 17) | T380 |
 | 15 | Weekend | API `src/rules/holiday.rs:128-130,188-192` | `is_weekend` is Saturday and Sunday; a substitute day and `is_business_day` follow it | **Gap**: a Friday and Saturday (or Friday only) weekend cannot be expressed | T379 |
-| 16 | Weekend | UI `CalendarPanel.svelte:153` (`td[data-weekend]`, never set: `weekendDays` is not passed) | No weekend is shown in any locale | **Gap** (neutral, but no weekend at all) | T378 |
+| 16 | Weekend | UI `CalendarPanel.svelte:153` (`td[data-weekend]`, never set: `weekendDays` is not passed) | No weekend is shown in any locale | **Gap** (neutral, but no weekend at all). **Fixed 2026-10-30**: the reader's CLDR weekend | T378 |
 | 17 | Working time | API `src/rules/working_time.rs:9-23`; `src/controllers/workforce.rs:762,775,895` | 17 weeks, 48 hours and 11 hours of rest are constants; no other limits can be configured | **Gap**: the D144 design's first move; not refactored here (see T369) | T380 |
 | 18 | Calendars | API `src/rules/holiday.rs:79-82`; UI (no `calendar` option, no `-u-ca-`) | Gregorian only: Easter by the Gregorian algorithm; no lunar, Hijri, Hindu or other holiday rule; no non-Gregorian display | **Gap** | T379 |
 | 19 | Holidays | API `src/rules/holiday.rs:240-290` | Three example packs (GB-ENG, US, DE), labelled unverified; any region can add days by hand | **Right** in shape (data, labelled); the packs are three Western ones | T379 |

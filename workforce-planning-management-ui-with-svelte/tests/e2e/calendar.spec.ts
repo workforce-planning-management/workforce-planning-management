@@ -11,9 +11,9 @@ const WORKER = {
   organization_ref: "urn:org:1",
 };
 
-async function stub(page: Page) {
+async function stub(page: Page, now = "2026-10-14T09:00:00Z") {
   // The calendar opens on today; pin it so the entry is on screen.
-  await page.clock.setFixedTime(new Date("2026-10-14T09:00:00Z"));
+  await page.clock.setFixedTime(new Date(now));
   await page.context().addCookies([
     {
       name: "__Host-mxi_session",
@@ -216,4 +216,96 @@ test("a table exports as TSV, as Excel, and copies to the clipboard (WPM-R133)",
   const clip = await page.evaluate(() => navigator.clipboard.readText());
   expect(clip).toContain("Annual CPD");
   expect(clip).toContain("\t");
+});
+
+// Today, week start and weekend are the reader's (WPM-T378, WPM-D149).
+
+/** The day number of the cell marked today, and which header columns are weekend days. */
+async function todayAndWeekend(page: Page) {
+  await page.getByTestId("cpd-worker").selectOption(WORKER.pid);
+  const calendar = page.getByTestId("cpd-calendar");
+  await expect(calendar).toContainText("Data ethics course");
+  const today = await calendar
+    .locator('td[aria-current="date"] .cx-calendar-date')
+    .textContent();
+  const weekend = await calendar
+    .locator("thead th")
+    .evaluateAll((ths) => ths.map((th) => th.hasAttribute("data-weekend")));
+  return { today: today?.trim(), weekend };
+}
+
+test.describe("today in a time zone where the UTC date differs (UTC+14)", () => {
+  test.use({ timezoneId: "Pacific/Kiritimati" });
+  test("noon UTC on the 14th is the 15th here, and the calendar marks the 15th", async ({
+    page,
+  }) => {
+    await stub(page, "2026-10-14T12:00:00Z");
+    await page.goto("/cpd");
+    expect((await todayAndWeekend(page)).today).toBe("15");
+  });
+});
+
+test.describe("today in UTC", () => {
+  test.use({ timezoneId: "UTC" });
+  test("the same instant is the 14th", async ({ page }) => {
+    await stub(page, "2026-10-14T12:00:00Z");
+    await page.goto("/cpd");
+    expect((await todayAndWeekend(page)).today).toBe("14");
+  });
+});
+
+test("a world-English reader with no country: Monday first, Saturday and Sunday the weekend", async ({
+  page,
+}) => {
+  await stub(page);
+  await page.goto("/en-001/cpd");
+  const { weekend } = await todayAndWeekend(page);
+  expect(weekend).toEqual([false, false, false, false, false, true, true]);
+  await expect(
+    page.getByTestId("cpd-calendar").locator("thead th").first(),
+  ).toContainText("Mon");
+});
+
+test.describe("a reader in Egypt on the Arabic page", () => {
+  test.use({ locale: "ar-EG" });
+  test("the week starts on Saturday and Friday and Saturday are the weekend", async ({
+    page,
+  }) => {
+    await stub(page);
+    await page.goto("/ar-001/cpd");
+    const { weekend } = await todayAndWeekend(page);
+    expect(weekend).toEqual([true, false, false, false, false, false, true]);
+    const saturday = await page.evaluate(() =>
+      new Intl.DateTimeFormat("ar-001", {
+        weekday: "short",
+        timeZone: "UTC",
+      }).format(new Date(Date.UTC(2023, 0, 7))),
+    );
+    await expect(
+      page.getByTestId("cpd-calendar").locator("thead th").first(),
+    ).toContainText(saturday);
+    // Weekend days are marked in the grid too, two to a week.
+    const rows = await page
+      .getByTestId("cpd-calendar")
+      .locator("tbody tr")
+      .count();
+    await expect(
+      page.getByTestId("cpd-calendar").locator("tbody td[data-weekend]"),
+    ).toHaveCount(rows * 2);
+    await page
+      .getByTestId("cpd-calendar")
+      .screenshot({ path: "test-results/cpd-calendar-ar-eg.png" });
+  });
+});
+
+test.describe("a reader on the Arabic page with no country", () => {
+  test.use({ locale: "ar" });
+  test("gets CLDR's world week, not a country guessed from the language", async ({
+    page,
+  }) => {
+    await stub(page);
+    await page.goto("/ar-001/cpd");
+    const { weekend } = await todayAndWeekend(page);
+    expect(weekend).toEqual([false, false, false, false, false, true, true]);
+  });
 });
