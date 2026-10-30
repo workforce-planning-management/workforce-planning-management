@@ -16,6 +16,8 @@ pub struct Model {
     pub pid: Uuid,
     pub assessment_pid: Uuid,
     pub name: String,
+    /// The default item's stable key (WPM-T386); `None` for a custom item.
+    pub item_key: Option<String>,
     pub ok: Option<bool>,
     pub note: Option<String>,
     pub deleted_at: Option<DateTimeWithTimeZone>,

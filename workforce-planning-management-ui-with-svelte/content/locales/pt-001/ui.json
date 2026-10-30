@@ -117,7 +117,17 @@
     "ok": "OK",
     "issue": "Problema",
     "complete": "Concluir",
-    "issues": "Problemas ergonômicos"
+    "issues": "Problemas ergonômicos",
+    "items": {
+      "screen": "Ecrã a uma altura e distância confortáveis, sem cintilação",
+      "chair": "Cadeira regulável, com apoio lombar",
+      "keyboard_mouse": "Teclado e rato posicionados para manter os pulsos direitos",
+      "desk_space": "Espaço suficiente na secretária; documentos apoiáveis ao lado do ecrã",
+      "lighting": "Iluminação adequada; ecrã sem encandeamento nem reflexos",
+      "leg_room": "Espaço livre para as pernas; pés apoiados",
+      "breaks": "O ritmo de trabalho permite pausas ou mudanças de atividade",
+      "software": "Software e ecrã legíveis e com boa resposta"
+    }
   },
   "adj": {
     "title": "Ajustes razoáveis",

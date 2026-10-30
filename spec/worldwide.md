@@ -369,8 +369,30 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   answer and the spec, then moved to a profile when the registry exists; the pay-gap tiers become configurable.
 - [ ] WPM-T385 **A seed that is not only GBP.** *(WPM-R214, WPM-D143, WPM-D144; row 39)* The seed and `demo-data.py` include a currency
   of another exponent and, once profiles exist, the example profiles D144 question 1 calls for (India, then Japan, labelled `example`).
-- [ ] WPM-T386 **The workstation checklist is content, not English code.** *(WPM-R214, WPM-D143; row 37)* The default DSE items become
+- [x] (2026-10-30) WPM-T386 **The workstation checklist is content, not English code.** *(WPM-R214, WPM-D143; row 37)* The default DSE items become
   keys a locale translates, and are named as one regime's list.
+  **Done:** `rules::ergonomics::DSE_ITEMS` is eight `{key, text}` pairs (`screen`, `chair`, `keyboard_mouse`, `desk_space`, `lighting`,
+  `leg_room`, `breaks`, `software`), documented as an example list in the shape of the UK Health and Safety (Display Screen Equipment)
+  Regulations 1992 assessment, the only regime read for it; a deployer elsewhere passes its own `items`. Migration `000111` adds
+  `ergonomic_items.item_key` (nullable, lower-case letters and underscores) and gives each existing row whose `name` is exactly one of
+  the eight sentences its key; a new default item is stored with its key and its English text in `name` (for an API reader); a custom
+  item has no key and is shown as typed. The worker's list and `GET /api/ergonomics/issues` answer `item_key`, taking a row's stored key
+  or, for a row that holds a default sentence word for word with none, that sentence's key (`display_key`), so existing rows stay
+  readable and translate too. The UI shows `erg.items.<key>` in the page's language (`src/lib/ergonomics.ts`), falling back to the
+  stored text for a custom item or a key it does not know. The eight strings are in all 13 `-001` locales, machine-drafted and recorded
+  unreviewed in `content/locales/REVIEW.md`. **Tests:** 4 unit tests in the service (unique plain keys, the old-row lookup and
+  `display_key`, the migration's pairs equal the table's, compared without whitespace; mutation-checked by changing one migration
+  sentence, which failed it); the request test now checks the eight keys in order, the English beside them, `item_key` on the issues
+  report, a custom item without a key, and an old-style row inserted with no key shown by its sentence's key; 4 vitest (the keys read
+  from the Rust rule, German and Arabic shown, a custom and an unknown key shown as stored, every `-001` locale holding all eight with
+  the English equal to the service's); a Playwright test on `/de-001/workers/…` (German shown, the English not, a custom item and an
+  unknown key as stored). **Not done:** no second regime's list is shipped (D144's profiles would hold one); a custom checklist a
+  deployer sends is stored as typed and not translatable; the eight translations are unreviewed. **Not tested:** the migration's
+  backfill against a database holding pre-migration rows (the request suite's database is created by the migrations, so it holds
+  none; the read-time `display_key` covers such a row either way); `down`. **Verified (2026-10-30):** service fmt, clippy pedantic
+  (service and migration crate), 1,052 unit tests, 185 request tests and the `personal_data_inventory` and `route_coverage` binaries on
+  a throwaway database; UI lint, svelte-check (0 errors, 0 warnings), 320 vitest, Playwright 336 passed and 19 skipped; the svelte
+  autofixer on both changed components (no issues).
 
 ## Audit (WPM-T367, 2026-10-29)
 
@@ -560,7 +582,7 @@ through `rules::duplicates`.
 | 34 | Statutory defaults | API `src/rules/flexible_working.rs:13-17`, `src/rules/resignation.rs:13`, `src/rules/pay_information.rs:17`, `src/rules/joint_assessment.rs:17-19`, `src/rules/privacy.rs:85-97` | Each rule takes its limit as a parameter, but the default when no `WPM_*` setting is given is one regime's value (2 months, 2 requests, 14 calendar days; 28 calendar days; 2 months; 5% and 6 months) and is not labelled as whose | **Partial**: parameterized, one deployment-wide value | T384 |
 | 35 | Statutory defaults | API `src/controllers/pay_transparency.rs:442`, `src/rules/pay_gap.rs:540-566` | `tier_for` takes the tiers, but the controller always passes the EU Directive's tiers | **Partial** | T384 |
 | 36 | Pay gap | UI `src/routes/pay-gap/+page.svelte:132-133`; API `WPM_PAY_GAP_SEX_CATEGORY` | Female and male columns, the shape of the EU and UK reports; the equality categories themselves come from the server (`EqualityPanel.svelte:62`) | **Partial** | T384 |
-| 37 | Server content | API `src/rules/ergonomics.rs:6-16`, `src/controllers/ergonomics.rs:52` | The default workstation checklist is eight English sentences stored as data, "UK Display Screen Equipment shape" | **Gap**: not translatable, one regime's list | T386 |
+| 37 | Server content | API `src/rules/ergonomics.rs:6-16`, `src/controllers/ergonomics.rs:52` | The default workstation checklist is eight English sentences stored as data, "UK Display Screen Equipment shape" | **Gap**: not translatable, one regime's list. **Fixed 2026-10-30**: stored by key, translated, named as one regime's example | T386 |
 | 38 | Server content | API `src/rules/cutover.rs:49-59`, `src/rules/insights.rs:72-76` | English text for an API reader plus a code the UI translates | **Right** | — |
 | 39 | Seed data | API `src/tasks/seed.rs:61,100,150,175,190`; root `scripts/demo-data.py:281` | Every salary, payslip and expense claim is in GBP; names are "Test Worker 001" and "Fictitious … Worker" (neutral); no holiday pack and no example jurisdiction profile is loaded | **Gap**: the demo has one currency (exponent 2) and one country's money; D144 question 1 (confirmed) has the seed load example profiles, which do not exist yet | T385 |
 

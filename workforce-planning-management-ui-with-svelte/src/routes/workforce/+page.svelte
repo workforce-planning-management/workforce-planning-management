@@ -6,6 +6,7 @@
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { decideLeave, ergonomicIssues, listWorkers, listLeaveRequests, listShifts, workingTime } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { ergonomicItemLabel } from "#lib/ergonomics.js";
   import { createLoader } from "#lib/loader.svelte.js";
   import CalendarPanel from "#lib/components/CalendarPanel.svelte";
   import DataTable from "#lib/components/DataTable.svelte";
@@ -197,7 +198,7 @@
       testid="ergonomic-issues"
       label={t("erg.issues")}
       columns={ergColumns}
-      rows={ergIssues.issues.map((i, n) => ({ ...i, n })) as unknown as DataGridRow[]}
+      rows={ergIssues.issues.map((i, n) => ({ ...i, item: ergonomicItemLabel(i.item_key, i.item), n })) as unknown as DataGridRow[]}
       rowId={(row) => String(row.n)}
     />
   {/if}

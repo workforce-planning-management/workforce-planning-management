@@ -11,6 +11,7 @@
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t, tv } from "#lib/i18n.svelte.js";
   import { errorText } from "#lib/write.js";
+  import { ergonomicItemLabel } from "#lib/ergonomics.js";
 
   let {
     pid,
@@ -66,7 +67,7 @@
       <ul>
         {#each assessment.items as item (item.pid)}
           <li>
-            {item.name}
+            {ergonomicItemLabel(item.item_key, item.name)}
             {#if item.ok === true}✓{:else if item.ok === false}✗ <span class="muted">{item.note}</span>{/if}
             {#if assessment.status === "open" && item.ok === null}
               <button onclick={() => void act(() => answerErgonomicItem(item.pid, true))}>{t("erg.ok")}</button>

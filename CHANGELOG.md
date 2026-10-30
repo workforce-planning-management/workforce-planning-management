@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the workstation checklist is translatable content (WPM-T386)
+
+The eight default ergonomic checklist items are stored by key (a new `ergonomic_items.item_key`, existing rows backfilled) with their
+English text, shown in the reader's language in all 13 shipped languages (machine drafts, unreviewed), and named as one regime's example
+list. **Not done:** a second regime's list.
+
 ### Changed — addresses and phones assume no one country (WPM-T382, proposed WPM-D152)
 
 A postcode has no pattern (any text up to 20 characters), a telephone number's digits may be typed in any Unicode decimal digit set or

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the default workstation checklist is stored by key (WPM-T386)
+
+`rules::ergonomics::DSE_ITEMS` holds `{key, text}` pairs and says whose list it is (an example in the shape of one regime's
+assessment). Migration `000111` adds `ergonomic_items.item_key` and backfills it for rows holding one of the eight default sentences;
+new default items store their key and the English text. The worker's assessments and the issues report answer `item_key` (the stored
+key, else the key of a default sentence held word for word, else `null` for a custom item). Tests: 4 unit tests, the request test
+extended (keys, custom item, an old-style row). **Not tested:** the backfill on a database with pre-migration rows; `down`.
+
 ### Changed — no one country's postcode or phone digits (WPM-T382, proposed WPM-D152)
 
 `rules::contact_details::validate_postcode` no longer holds a postcode to 12 ASCII letters, digits, spaces and hyphens: any text of up to

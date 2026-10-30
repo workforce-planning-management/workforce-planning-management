@@ -150,6 +150,7 @@ test.describe("Workforce", () => {
           display_name: "Test Worker 001",
           workstation: "Desk 4",
           item: "monitor_height",
+          item_key: null,
           note: null,
           assessment_status: "completed",
         },

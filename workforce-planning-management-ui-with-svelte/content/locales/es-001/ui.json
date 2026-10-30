@@ -117,7 +117,17 @@
     "ok": "Bien",
     "issue": "Problema",
     "complete": "Completar",
-    "issues": "Problemas ergonómicos"
+    "issues": "Problemas ergonómicos",
+    "items": {
+      "screen": "Pantalla a una altura y distancia cómodas, sin parpadeo",
+      "chair": "Silla regulable, con apoyo lumbar",
+      "keyboard_mouse": "Teclado y ratón colocados para mantener las muñecas rectas",
+      "desk_space": "Espacio suficiente en el escritorio; los documentos pueden sostenerse junto a la pantalla",
+      "lighting": "Iluminación adecuada; pantalla sin deslumbramientos ni reflejos",
+      "leg_room": "Espacio libre para las piernas; pies apoyados",
+      "breaks": "El ritmo de trabajo permite pausas o cambios de actividad",
+      "software": "Software y pantalla legibles y con buena respuesta"
+    }
   },
   "adj": {
     "title": "Ajustes razonables",

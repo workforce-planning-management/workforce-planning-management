@@ -117,7 +117,17 @@
     "ok": "Iawn",
     "issue": "Problem",
     "complete": "Cwblhau",
-    "issues": "Problemau ergonomig"
+    "issues": "Problemau ergonomig",
+    "items": {
+      "screen": "Sgrin ar uchder a phellter cyfforddus, heb grynu",
+      "chair": "Cadair y gellir ei haddasu, gyda chynhaliaeth i waelod y cefn",
+      "keyboard_mouse": "Bysellfwrdd a llygoden wedi'u gosod i gadw'r arddyrnau'n syth",
+      "desk_space": "Digon o le ar y ddesg; modd dal dogfennau wrth ochr y sgrin",
+      "lighting": "Goleuo digonol; sgrin heb lacharedd nac adlewyrchiadau",
+      "leg_room": "Lle clir i'r coesau; y traed wedi'u cynnal",
+      "breaks": "Patrwm gwaith yn caniatáu seibiannau neu newid gweithgaredd",
+      "software": "Meddalwedd a sgrin yn ddarllenadwy ac yn ymatebol"
+    }
   },
   "adj": {
     "title": "Addasiadau rhesymol",

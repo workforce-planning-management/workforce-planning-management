@@ -218,7 +218,8 @@ Benchmark (job_title × currency)
   neutral body + reference data (never scores/comments/words),
   `read_at`. In-app only; WPM holds no contact details.
 - **ErgonomicAssessment** / **ErgonomicItem** (WPM-R32/D24) — a DSE
-  workstation checklist (default 8 items; **no symptom field**);
+  workstation checklist (default 8 items, each stored with a stable `item_key` the UI translates and its English `name`;
+  a custom item has no key, WPM-T386; **no symptom field**);
   items answered `ok`/`issue` + equipment note; completion requires
   every answer; issue-flagged items feed the rota-tier department
   report.

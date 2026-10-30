@@ -117,7 +117,17 @@
     "ok": "OK",
     "issue": "Masalah",
     "complete": "Selesaikan",
-    "issues": "Masalah ergonomis"
+    "issues": "Masalah ergonomis",
+    "items": {
+      "screen": "Layar pada tinggi dan jarak yang nyaman, tanpa kedipan",
+      "chair": "Kursi dapat disetel, dengan penyangga punggung bawah",
+      "keyboard_mouse": "Papan ketik dan tetikus diletakkan agar pergelangan tangan tetap lurus",
+      "desk_space": "Ruang meja cukup; dokumen dapat diletakkan di samping layar",
+      "lighting": "Pencahayaan memadai; layar bebas silau dan pantulan",
+      "leg_room": "Ruang kaki lapang; kaki tertopang",
+      "breaks": "Pola kerja memungkinkan jeda atau pergantian aktivitas",
+      "software": "Perangkat lunak dan tampilan mudah dibaca dan responsif"
+    }
   },
   "adj": {
     "title": "Penyesuaian wajar",

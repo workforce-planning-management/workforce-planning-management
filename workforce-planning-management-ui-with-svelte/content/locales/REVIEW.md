@@ -47,6 +47,12 @@ language uses: six in Arabic and Welsh, four in Russian, three in Spanish, Frenc
 one in Indonesian and Chinese) were written by the same assistant, also unreviewed. Read the Arabic dual and the Russian and Welsh forms
 first; the Welsh mutations after a number (`ofyniad`, `flwyddyn`) follow the spoken number and may not read well after digits.
 
+The 2026-10-30 workstation checklist items (WPM-T386: the eight `erg.items.*` strings, the default ergonomic checklist, which was
+stored as English text until then) were machine-drafted by the same assistant in all 12 languages, unreviewed. Read them for the
+equipment terms (lumbar support, glare, footrest) and for whether each reads as a checklist line, not a sentence about the person.
+The 2026-10-30 address labels in `en-001` ("City or locality", "State, province or region", "Postal code", WPM-T382) changed the English
+the translations were made from; the translated labels were not re-read against it.
+
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.
 

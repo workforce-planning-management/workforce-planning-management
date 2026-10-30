@@ -25,7 +25,8 @@ struct PidRef {
 }
 
 /// `POST /api/workers/{pid}/ergonomic-assessments` body. Omitted
-/// `items` ⇒ the default DSE checklist.
+/// `items` ⇒ the default checklist, stored by key (WPM-T386); given
+/// `items` are stored as typed, with no key.
 #[derive(Debug, Deserialize)]
 struct AssessmentPayload {
     workstation: String,
@@ -48,10 +49,14 @@ async fn create_assessment(
     problems.cap_list("items", &payload.items);
     ensure_valid(&problems.into_vec())?;
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let items: Vec<String> = if payload.items.is_empty() {
-        rules::DSE_ITEMS.iter().map(ToString::to_string).collect()
+    // (key, text): a default item is stored by its key, with its English text for an API reader
+    let items: Vec<(Option<&str>, String)> = if payload.items.is_empty() {
+        rules::DSE_ITEMS
+            .iter()
+            .map(|i| (Some(i.key), i.text.to_string()))
+            .collect()
     } else {
-        payload.items.clone()
+        payload.items.iter().map(|n| (None, n.clone())).collect()
     };
     let txn = ctx.db.begin().await?;
     let assessment = ergonomic_assessments::ActiveModel {
@@ -65,11 +70,12 @@ async fn create_assessment(
     }
     .insert(&txn)
     .await?;
-    for name in &items {
+    for (key, name) in &items {
         ergonomic_items::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
             assessment_pid: ActiveValue::set(assessment.pid),
             name: ActiveValue::set(name.clone()),
+            item_key: ActiveValue::set(key.map(ToString::to_string)),
             ok: ActiveValue::set(None),
             note: ActiveValue::set(None),
             deleted_at: ActiveValue::set(None),
@@ -115,6 +121,17 @@ async fn list_assessments(
             .order_by_asc(ergonomic_items::Column::Id)
             .all(&ctx.db)
             .await?;
+        // a row written before keys, holding a default sentence, is shown by that sentence's key
+        let shown: Vec<serde_json::Value> = items
+            .iter()
+            .map(|item| {
+                let mut value = serde_json::to_value(item)?;
+                value["item_key"] =
+                    serde_json::json!(rules::display_key(item.item_key.as_deref(), &item.name));
+                Ok(value)
+            })
+            .collect::<std::result::Result<_, serde_json::Error>>()
+            .map_err(|e| Error::Message(e.to_string()))?;
         view.push(serde_json::json!({
             "pid": assessment.pid,
             "workstation": assessment.workstation,
@@ -123,7 +140,7 @@ async fn list_assessments(
             "open_issues": rules::open_issues(
                 &items.iter().map(|i| i.ok).collect::<Vec<_>>()
             ),
-            "items": items,
+            "items": shown,
         }));
     }
     format::json(view)
@@ -293,6 +310,7 @@ async fn issues(State(ctx): State<AppContext>) -> Result<Response> {
             "display_name": worker.display_name,
             "workstation": assessment.workstation,
             "item": item.name,
+            "item_key": rules::display_key(item.item_key.as_deref(), &item.name),
             "note": item.note,
             "assessment_status": assessment.status,
         }));

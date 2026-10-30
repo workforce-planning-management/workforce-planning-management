@@ -117,7 +117,17 @@
     "ok": "OK",
     "issue": "Issue",
     "complete": "Complete",
-    "issues": "Ergonomic issues"
+    "issues": "Ergonomic issues",
+    "items": {
+      "screen": "Screen at a comfortable height and distance, free of flicker",
+      "chair": "Chair adjustable, with lower-back support",
+      "keyboard_mouse": "Keyboard and mouse positioned to keep wrists straight",
+      "desk_space": "Enough desk space; documents holdable beside the screen",
+      "lighting": "Lighting adequate; screen free of glare and reflections",
+      "leg_room": "Leg room clear; feet supported",
+      "breaks": "Work pattern allows breaks or changes of activity",
+      "software": "Software and display legible and responsive"
+    }
   },
   "adj": {
     "title": "Reasonable adjustments",

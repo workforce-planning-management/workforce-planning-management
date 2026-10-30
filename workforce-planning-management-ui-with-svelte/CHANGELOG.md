@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the workstation checklist in the reader's language (WPM-T386)
+
+A default ergonomic checklist item is shown by its `item_key` as `erg.items.<key>` (`src/lib/ergonomics.ts`), in the worker panel and
+the `/workforce` issues table; a custom item, or a key this client does not know, is shown as stored. The eight strings are in all 13
+`-001` locales, machine-drafted and unreviewed (`content/locales/REVIEW.md`); `static/admin/config.yml` regenerated. Tests: 4 vitest and
+1 Playwright test (`/de-001`).
+
 ### Changed — world English address labels; British and US ones as overrides (WPM-T382)
 
 `en-001` says "City or locality", "State, province or region" and "Postal code" (it said "Town or city", "County or region",

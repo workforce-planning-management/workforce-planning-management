@@ -117,7 +117,17 @@
     "ok": "OK",
     "issue": "Problem",
     "complete": "Abschließen",
-    "issues": "Ergonomie-Probleme"
+    "issues": "Ergonomie-Probleme",
+    "items": {
+      "screen": "Bildschirm in angenehmer Höhe und Entfernung, flimmerfrei",
+      "chair": "Stuhl verstellbar, mit Stütze für den unteren Rücken",
+      "keyboard_mouse": "Tastatur und Maus so platziert, dass die Handgelenke gerade bleiben",
+      "desk_space": "Genug Platz auf dem Schreibtisch; Unterlagen lassen sich neben dem Bildschirm halten",
+      "lighting": "Beleuchtung ausreichend; Bildschirm frei von Blendung und Spiegelungen",
+      "leg_room": "Beinraum frei; Füße abgestützt",
+      "breaks": "Arbeitsablauf erlaubt Pausen oder Tätigkeitswechsel",
+      "software": "Software und Anzeige gut lesbar und reaktionsschnell"
+    }
   },
   "adj": {
     "title": "Angemessene Anpassungen",

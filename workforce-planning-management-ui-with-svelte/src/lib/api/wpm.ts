@@ -3301,7 +3301,10 @@ export function decideAdjustment(
 /** One DSE checklist item (equipment note only — WPM-D24). */
 export interface ErgonomicItem {
   pid: string;
+  /** The English text (a default item) or the words typed (a custom one). */
   name: string;
+  /** A default item's stable key, translated by `ergonomicItemLabel`; `null` for a custom item (WPM-T386). */
+  item_key: string | null;
   ok: boolean | null;
   note: string | null;
 }
@@ -3362,6 +3365,7 @@ export function ergonomicIssues(init?: FetchLike): Promise<{
     display_name: string;
     workstation: string;
     item: string;
+    item_key: string | null;
     note: string | null;
     assessment_status: string;
   }>;

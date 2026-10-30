@@ -138,6 +138,41 @@ test.describe("Worker page panels", () => {
     await expect.poll(() => writes.length).toBe(2);
   });
 
+  test("shows a default checklist item in the reader's language and a custom one as typed (WPM-T386)", async ({
+    page,
+  }) => {
+    const item = (pid: string, name: string, item_key: string | null) => ({
+      pid,
+      name,
+      item_key,
+      ok: null,
+      note: null,
+    });
+    await json(page, `${W}/ergonomic-assessments`, [
+      {
+        pid: "g2",
+        workstation: "Desk 7",
+        status: "open",
+        assessed_on: null,
+        open_issues: 0,
+        items: [
+          item("i1", "Chair adjustable, with lower-back support", "chair"),
+          item("i2", "Laptop stand present", null),
+          item("i3", "Footrest available", "a_key_this_client_lacks"),
+        ],
+      },
+    ]);
+    await page.goto(`/de-001/workers/${WORKER.pid}`);
+    const panel = page.getByTestId("ergonomics");
+    await expect(panel).toContainText(
+      "Stuhl verstellbar, mit Stütze für den unteren Rücken",
+    );
+    await expect(panel).not.toContainText("Chair adjustable");
+    await expect(panel).toContainText("Laptop stand present");
+    await expect(panel).toContainText("Footrest available");
+    await expect(panel).not.toContainText("a_key_this_client_lacks");
+  });
+
   test("starts a 360, opens it to nominate a rater, and moves it to collecting", async ({
     page,
   }) => {

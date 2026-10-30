@@ -185,6 +185,21 @@ collections:
               - { name: "issue", label: "Issue", widget: string, required: false, i18n: true }
               - { name: "complete", label: "Complete", widget: string, required: false, i18n: true }
               - { name: "issues", label: "Issues", widget: string, required: false, i18n: true }
+              - name: "items"
+                label: "Items"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "screen", label: "Screen", widget: string, required: false, i18n: true }
+                  - { name: "chair", label: "Chair", widget: string, required: false, i18n: true }
+                  - { name: "keyboard_mouse", label: "Keyboard_mouse", widget: string, required: false, i18n: true }
+                  - { name: "desk_space", label: "Desk_space", widget: string, required: false, i18n: true }
+                  - { name: "lighting", label: "Lighting", widget: string, required: false, i18n: true }
+                  - { name: "leg_room", label: "Leg_room", widget: string, required: false, i18n: true }
+                  - { name: "breaks", label: "Breaks", widget: string, required: false, i18n: true }
+                  - { name: "software", label: "Software", widget: string, required: false, i18n: true }
           - name: "adj"
             label: "Adj"
             widget: object

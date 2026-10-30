@@ -117,7 +117,17 @@
     "ok": "OK",
     "issue": "Problème",
     "complete": "Terminer",
-    "issues": "Problèmes ergonomiques"
+    "issues": "Problèmes ergonomiques",
+    "items": {
+      "screen": "Écran à une hauteur et une distance confortables, sans scintillement",
+      "chair": "Siège réglable, avec soutien lombaire",
+      "keyboard_mouse": "Clavier et souris placés pour garder les poignets droits",
+      "desk_space": "Assez de place sur le bureau ; documents posables à côté de l’écran",
+      "lighting": "Éclairage suffisant ; écran sans éblouissement ni reflets",
+      "leg_room": "Espace dégagé pour les jambes ; pieds en appui",
+      "breaks": "L’organisation du travail permet des pauses ou des changements d’activité",
+      "software": "Logiciels et affichage lisibles et réactifs"
+    }
   },
   "adj": {
     "title": "Aménagements raisonnables",
