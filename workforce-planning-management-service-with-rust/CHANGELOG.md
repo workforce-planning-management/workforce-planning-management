@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the seed is not only GBP (WPM-T385, part)
+
+`cargo run -- task seed` adds a second organization of three workers paid in JPY (exponent 0), a JPY requisition and benchmark, and a
+KWD (exponent 3) benchmark and benefit plan, beside the GBP organization. The demo's payroll run stays on the GBP organization, since
+the stub is written for GBP (WPM-T383). Verified by migrating and seeding a throwaway database and running `scripts/demo-data.py`
+against it. **Not done:** the example India and Japan profiles (wait for the D144 registry); no worker paid in a 3-exponent currency.
+
 ### Added — whose each statutory default is, and configurable pay-gap tiers (WPM-T384, part)
 
 `src/statutory_defaults.rs` names, for 23 `WPM_*` settings, whose their default is (a D144-shaped jurisdiction code, the source, and

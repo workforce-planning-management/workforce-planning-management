@@ -22,7 +22,7 @@ impl Task for Seed {
         TaskInfo {
             name: "seed".to_string(),
             detail:
-                "Seed a synthetic demo organization (~40 workers, requisitions, plans, benchmarks)"
+                "Seed synthetic demo organizations (~40 workers paid in GBP, 3 in JPY; requisitions, plans, benchmarks)"
                     .to_string(),
         }
     }
@@ -202,6 +202,107 @@ impl Task for Seed {
             .insert(db)
             .await?;
         }
+        // Not only GBP (WPM-T385): money in currencies of other ISO 4217 exponents beside the
+        // pounds (exponent 2). A second organization pays in yen (exponent 0, so 6,000,000 is
+        // 6,000,000 yen, not 60,000), with a requisition and a benchmark in yen; a benchmark and a
+        // benefit plan in Kuwaiti dinars (exponent 3, so 12_500 is 12.500 dinars). The payroll stub is
+        // written for GBP, so a run for the yen organization is refused until a deployer sets a stub for
+        // yen (WPM-T383); the demo runs payroll for the GBP organization only.
+        let yen_org = format!("organization:{}", Uuid::new_v4());
+        for (title, salary) in [
+            ("Engineer", 6_000_000_i64),
+            ("Analyst", 5_200_000),
+            ("Coordinator", 4_400_000),
+        ] {
+            n += 1;
+            workers::ActiveModel {
+                pid: ActiveValue::set(Uuid::new_v4()),
+                person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
+                upstream_worker_ref: ActiveValue::set(None),
+                organization_ref: ActiveValue::set(yen_org.clone()),
+                worker_number: ActiveValue::set(format!("E-{n:04}")),
+                display_name: ActiveValue::set(format!("Test Worker {n:03}")),
+                status: ActiveValue::set("active".to_string()),
+                employment_type: ActiveValue::set("permanent".to_string()),
+                fte_percent: ActiveValue::set(100),
+                department: ActiveValue::set("engineering".to_string()),
+                job_title: ActiveValue::set(title.to_string()),
+                manager_pid: ActiveValue::set(None),
+                salary_minor: ActiveValue::set(Some(salary)),
+                salary_currency: ActiveValue::set(Some("JPY".to_string())),
+                hired_on: ActiveValue::set(
+                    chrono::NaiveDate::from_ymd_opt(2024, 4, 1).ok_or_else(|| {
+                        Error::string("seed data: invalid yen worker hired_on date")
+                    })?,
+                ),
+                terminated_on: ActiveValue::set(None),
+                deleted_at: ActiveValue::set(None),
+                ..Default::default()
+            }
+            .insert(db)
+            .await?;
+        }
+        requisitions::ActiveModel {
+            pid: ActiveValue::set(Uuid::new_v4()),
+            organization_ref: ActiveValue::set(yen_org.clone()),
+            department: ActiveValue::set("engineering".to_string()),
+            job_title: ActiveValue::set("Platform Engineer".to_string()),
+            headcount: ActiveValue::set(1),
+            salary_min_minor: ActiveValue::set(Some(5_500_000)),
+            salary_max_minor: ActiveValue::set(Some(8_000_000)),
+            salary_currency: ActiveValue::set(Some("JPY".to_string())),
+            status: ActiveValue::set("open".to_string()),
+            opened_on: ActiveValue::set(Some(
+                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).ok_or_else(|| {
+                    Error::string("seed data: invalid yen requisition opened_on date")
+                })?,
+            )),
+            deleted_at: ActiveValue::set(None),
+            ..Default::default()
+        }
+        .insert(db)
+        .await?;
+        for (title, currency, min, median, max) in [
+            (
+                "Engineer",
+                "JPY",
+                5_200_000_i64,
+                6_200_000_i64,
+                7_600_000_i64,
+            ),
+            ("Analyst", "KWD", 7_800_000, 9_000_000, 10_800_000),
+        ] {
+            benchmarks::ActiveModel {
+                pid: ActiveValue::set(Uuid::new_v4()),
+                job_title: ActiveValue::set(title.to_string()),
+                currency: ActiveValue::set(currency.to_string()),
+                min_minor: ActiveValue::set(min),
+                median_minor: ActiveValue::set(median),
+                max_minor: ActiveValue::set(max),
+                source: ActiveValue::set("Demo Salary Survey 2026".to_string()),
+                as_of: ActiveValue::set(
+                    chrono::NaiveDate::from_ymd_opt(2026, 4, 1)
+                        .ok_or_else(|| Error::string("seed data: invalid benchmark as_of date"))?,
+                ),
+                deleted_at: ActiveValue::set(None),
+                ..Default::default()
+            }
+            .insert(db)
+            .await?;
+        }
+        benefit_plans::ActiveModel {
+            pid: ActiveValue::set(Uuid::new_v4()),
+            name: ActiveValue::set("Health Cover (dinars)".to_string()),
+            kind: ActiveValue::set("health".to_string()),
+            provider: ActiveValue::set("Demo Provider Ltd".to_string()),
+            worker_cost_minor: ActiveValue::set(12_500),
+            employer_cost_minor: ActiveValue::set(30_000),
+            currency: ActiveValue::set("KWD".to_string()),
+            deleted_at: ActiveValue::set(None),
+            ..Default::default()
+        }
+        .insert(db)
+        .await?;
         // A synthetic oversight scale (WPM-D48): the product ships no real framework, so this one is
         // labelled synthetic in its names and its flag, and exists only to make the views demonstrable.
         let mut level_pids = Vec::new();
@@ -260,8 +361,8 @@ impl Task for Seed {
         }
         .insert(db)
         .await?;
-        tracing::info!(organization = %org, workers = n, "seeded synthetic demo organization");
-        println!("seeded: organization {org} with {n} workers");
+        tracing::info!(organization = %org, yen_organization = %yen_org, workers = n, "seeded synthetic demo organizations");
+        println!("seeded: organization {org} (GBP) and {yen_org} (JPY), {n} workers in all");
         Ok(())
     }
 }

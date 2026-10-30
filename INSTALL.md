@@ -37,7 +37,7 @@ data: a demo session reaches only that service, with no authentication.
 ```sh
 cd workforce-planning-management-service-with-rust
 cargo run -- db migrate    # apply migrations
-cargo run -- task seed     # synthetic org, ~40 employees
+cargo run -- task seed     # synthetic orgs: ~40 employees paid in GBP, 3 in JPY
 WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 5150; sign-in enforcement is on by default,
                                          # so local development without an identity service opts out
 ```

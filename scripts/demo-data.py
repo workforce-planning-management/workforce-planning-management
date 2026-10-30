@@ -282,6 +282,17 @@ if perm:
     if claim:
         call("POST", f"/expense-claims/{claim['pid']}/items", {"incurred_on": day(-12), "category": "travel", "amount_minor": 12450, "description": "Train"})
         call("POST", f"/expense-claims/{claim['pid']}/submit")
+# Not only GBP (WPM-T385): claims in currencies of other exponents. An amount is in the currency's ISO 4217 minor
+# unit, so 4,800 yen is 4800 (exponent 0) and 12.345 dinars is 12345 (exponent 3), never a hundredth of either.
+for w, title, currency, amount, what in [
+    (perm[1:2], "Client visit, Osaka", "JPY", 4800, "Rail fare"),
+    (perm[2:3], "Supplier meeting, Kuwait City", "KWD", 12345, "Taxi"),
+]:
+    if w:
+        claim = call("POST", f"/workers/{w[0]['pid']}/expense-claims", {"title": title, "currency": currency, "description": "Fictitious"})
+        if claim:
+            call("POST", f"/expense-claims/{claim['pid']}/items", {"incurred_on": day(-9), "category": "travel", "amount_minor": amount, "description": what})
+            call("POST", f"/expense-claims/{claim['pid']}/submit")
 
 step("change initiative")
 ci = call("POST", "/change-initiatives", {"name": "Platform modernisation", "kind": "process_redesign", "description": "Fictitious"})

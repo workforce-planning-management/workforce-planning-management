@@ -428,8 +428,25 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   not read against the Act's text in this task, which is why they say `unverified`; the gap report's `reporting_basis` with a configured
   `WPM_PAY_GAP_TIERS` in a request (the parser is unit-tested and the endpoint's `none` case is request-tested; the gap report needs
   equality monitoring on, which its own binary sets).
-- [ ] WPM-T385 **A seed that is not only GBP.** *(WPM-R214, WPM-D143, WPM-D144; row 39)* The seed and `demo-data.py` include a currency
+- [~] WPM-T385 **A seed that is not only GBP.** *(WPM-R214, WPM-D143, WPM-D144; row 39)* The seed and `demo-data.py` include a currency
   of another exponent and, once profiles exist, the example profiles D144 question 1 calls for (India, then Japan, labelled `example`).
+  **Part done (2026-10-30): the currencies.** The seed (`cargo run -- task seed`) adds, beside the GBP organization (exponent 2), a second
+  organization of three workers paid in **JPY** (exponent 0: a salary of 6,000,000 is 6,000,000 yen) with an open requisition in yen, a
+  benchmark in yen (Engineer) and one in **KWD** (exponent 3: Analyst, a median of 9,000,000 is 9,000.000 dinars), and a benefit plan in
+  dinars (12,500 is 12.500 a month). `scripts/demo-data.py` adds two submitted expense claims beside the GBP one: 4,800 yen (`4800`) and
+  12.345 dinars (`12345`), each amount in its currency's ISO 4217 minor unit. Every name stays neutral ("Test Worker 041"). The payroll
+  stub is written for GBP (WPM-T383), so the demo runs payroll for the GBP organization only; a run for the yen one is refused until a
+  deployer sets a yen stub, which is what the stub should do. **Verified (2026-10-30):** on a throwaway local PostgreSQL database,
+  migrations then the seed (40 GBP and 3 JPY workers; benchmarks in GBP, JPY and KWD; a KWD benefit plan; a JPY requisition), then the
+  service started with sign-in off and `demo-data.py` run against it: the three claims were stored with items of 12,450 GBP, 4,800 JPY
+  and 12,345 KWD minor units, the GBP organization's run was calculated (36 payslips) and the script's organization was the GBP one. One
+  step failed, a `POST /workers` answered 503 "could not check the Idempotency-Key" (the log says the connection pool timed out, at the
+  first write after start); it is not caused by this change and was not investigated. **What remains, and why:** the example profiles
+  for India and then Japan (D144 question 1 and 5) need the profile registry and resolver, which the product owner has not confirmed
+  (only D144 questions 1 to 4 are), so none is seeded; no holiday pack is loaded. **Not done either:** no worker is paid in a 3-exponent
+  currency (the stub would refuse a run for one in a GBP organization, and a third organization was not added); no request test covers
+  the seed (none did before). **Not looked at:** the yen and dinar amounts in the UI (its money formatting is WPM-T400's, unit-tested
+  there).
 - [x] (2026-10-30) WPM-T386 **The workstation checklist is content, not English code.** *(WPM-R214, WPM-D143; row 37)* The default DSE items become
   keys a locale translates, and are named as one regime's list.
   **Done:** `rules::ergonomics::DSE_ITEMS` is eight `{key, text}` pairs (`screen`, `chair`, `keyboard_mouse`, `desk_space`, `lighting`,
@@ -645,7 +662,7 @@ through `rules::duplicates`.
 | 36 | Pay gap | UI `src/routes/pay-gap/+page.svelte:132-133`; API `WPM_PAY_GAP_SEX_CATEGORY` | Female and male columns, the shape of the EU and UK reports; the equality categories themselves come from the server (`EqualityPanel.svelte:62`) | **Partial** | T384 |
 | 37 | Server content | API `src/rules/ergonomics.rs:6-16`, `src/controllers/ergonomics.rs:52` | The default workstation checklist is eight English sentences stored as data, "UK Display Screen Equipment shape" | **Gap**: not translatable, one regime's list. **Fixed 2026-10-30**: stored by key, translated, named as one regime's example | T386 |
 | 38 | Server content | API `src/rules/cutover.rs:49-59`, `src/rules/insights.rs:72-76` | English text for an API reader plus a code the UI translates | **Right** | — |
-| 39 | Seed data | API `src/tasks/seed.rs:61,100,150,175,190`; root `scripts/demo-data.py:281` | Every salary, payslip and expense claim is in GBP; names are "Test Worker 001" and "Fictitious … Worker" (neutral); no holiday pack and no example jurisdiction profile is loaded | **Gap**: the demo has one currency (exponent 2) and one country's money; D144 question 1 (confirmed) has the seed load example profiles, which do not exist yet | T385 |
+| 39 | Seed data | API `src/tasks/seed.rs:61,100,150,175,190`; root `scripts/demo-data.py:281` | Every salary, payslip and expense claim is in GBP; names are "Test Worker 001" and "Fictitious … Worker" (neutral); no holiday pack and no example jurisdiction profile is loaded | **Gap**: the demo has one currency (exponent 2) and one country's money; D144 question 1 (confirmed) has the seed load example profiles, which do not exist yet. **Part fixed 2026-10-30**: JPY and KWD beside GBP; the example profiles wait for the registry | T385 |
 
 ### What the check found, in short
 
