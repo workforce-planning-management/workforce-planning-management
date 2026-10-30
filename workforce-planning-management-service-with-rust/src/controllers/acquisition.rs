@@ -169,6 +169,7 @@ async fn create_requisition(
     {
         problems.push("salary_min_minor exceeds salary_max_minor".to_string());
     }
+    problems.currency_opt("salary_currency", payload.salary_currency.as_deref());
     problems.ref_opt(
         "programme_ref",
         entity_ref::EntityType::Thing,
@@ -606,6 +607,7 @@ async fn application_stage(
         {
             problems.push(message);
         }
+        problems.currency_opt("salary_currency", payload.salary_currency.as_deref());
         ensure_valid(&problems.into_vec())?;
         let worker = workers::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),

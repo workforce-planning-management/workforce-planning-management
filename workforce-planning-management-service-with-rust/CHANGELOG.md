@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the ISO 4217 minor-unit table; unknown currency codes are refused (WPM-T400, WPM-D151)
+
+`src/rules/currency.rs` holds `MINOR_UNITS` (the active ISO 4217 codes and their exponents, the same entries as the sibling project
+portfolio management and contact relationship management services' tables) with `exponent`, `is_known` and `check`, and
+`Problems::require_currency` / `currency_opt` use it. A currency that is not three capital letters in the table is now refused with 422
+on an expense claim, a plan budget, the plan cost, pay-range and pay-transparency queries and a contractor's rate (each checked only the
+shape before), and on a worker's salary (create and update), a requisition's and a hire's salary, a benefit plan and a benchmark (which
+checked only that it was not blank, or nothing). `XAU`, `XDR` and `XXX` are not in the table. Amounts are unchanged: the API never
+scaled them and still does not. Tests: 6 unit tests and 1 request test (HUF, IDR, COP, IQD, PKR taken; `ZZZ`, `XAU`, `jpy` refused).
+**Not done:** codes already stored outside the table are not looked for, and no stored amount is rewritten (see the root changelog for
+what an operator checks). **Not run locally:** `chaos`, Keycloak, `verify-db-roles.sh`, the enforcement binaries.
+
 ### Fixed — two no-figure checks are not tripped by a random id (WPM-T398)
 
 The request tests that check a notification carries no amount (`expenses`, `pay_positions`) now blank UUIDs and timestamps first:

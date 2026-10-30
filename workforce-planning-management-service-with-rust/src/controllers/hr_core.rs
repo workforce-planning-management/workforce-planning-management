@@ -158,6 +158,12 @@ fn validate_worker(p: &WorkerPayload) -> Vec<String> {
     }
     if p.salary_minor.is_some() && p.salary_currency.as_deref().unwrap_or("").trim().is_empty() {
         problems.push("salary_currency is required with salary_minor".to_string());
+    } else if let Some(code) = p
+        .salary_currency
+        .as_deref()
+        .filter(|c| !c.trim().is_empty())
+    {
+        problems.require_currency("salary_currency", code);
     }
     problems.into_vec()
 }
@@ -442,6 +448,7 @@ async fn update_worker(
     if payload.salary_minor.is_some_and(|s| s < 0) {
         problems.push("salary_minor must be non-negative".to_string());
     }
+    problems.currency_opt("salary_currency", payload.salary_currency.as_deref());
     problems.ref_opt(
         "upstream_worker_ref",
         entity_ref::EntityType::Worker,
@@ -791,7 +798,7 @@ async fn create_plan(
     problems.require_text("name", &payload.name);
     problems.require_token("kind", tokens::BENEFIT_KINDS, &payload.kind);
     problems.require_text("provider", &payload.provider);
-    problems.require_text("currency", &payload.currency);
+    problems.require_currency("currency", &payload.currency);
     if payload.worker_cost_minor < 0 || payload.employer_cost_minor < 0 {
         problems.push("benefit costs must be non-negative".to_string());
     }

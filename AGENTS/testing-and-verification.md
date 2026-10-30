@@ -7,8 +7,8 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 
 | Where | Command | Expect (2026-10-30) |
 | --- | --- | --- |
-| Service | `cargo test --lib` | 1,034 unit tests |
-| Service | `cargo test --test mod -- --ignored --test-threads=1` | 184 request tests (need Postgres; **serial** — they share a database) |
+| Service | `cargo test --lib` | 1,040 unit tests |
+| Service | `cargo test --test mod -- --ignored --test-threads=1` | 185 request tests (need Postgres; **serial** — they share a database) |
 | Service | `cargo test --test <binary> -- --ignored --test-threads=1` | one test each: `enforcement` (the auth persona matrix) and the fourteen `enforcement_*` binaries, `security`, `retention_schedule`, `request_log`, `no_union_membership`, `personal_data_inventory`, `route_coverage`, `scheduler_config`; each its own process because the auth flags are process-wide (the list CI runs is in `.github/workflows/ci.yml`) |
 | Service | `cargo test --test chaos -- --ignored --nocapture` | database faults through a proxy; the seed is printed |
 | Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers (`oidc_entra` likewise, with no container) |
@@ -16,7 +16,7 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | Service | `cargo +1.97 check --locked -p workforce-planning-management-migration -p entity-ref` | the MSRV (CI's `msrv` job; the matcher likewise in its own directory) |
 | UI | `pnpm lint` | ESLint, then Prettier: clean |
 | UI | `pnpm check` | svelte-check: 0 errors, 0 warnings |
-| UI | `pnpm test` | 308 vitest in 37 files |
+| UI | `pnpm test` | 313 vitest in 37 files |
 | UI | `PW_PORT=<free port> pnpm exec playwright test` | 335 pass, 19 skip, stubbed API (4173 is the default port and is often taken) |
 | UI | `pnpm build` | green |
 | UI | `pnpm exec playwright test tests/e2e/a11y-routes.spec.ts` | axe (WCAG 2 A and AA) on every page route; add a new page to `tests/e2e/axe-routes.ts` or `pnpm test` fails |

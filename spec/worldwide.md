@@ -61,6 +61,26 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   - **Not decided here:** a stored user or organization time zone and region (D144's `work_jurisdiction` could supply the region); the
     service's own "today" (the server's clock) and the working-time and holiday rules' weekend (WPM-T379, WPM-T380).
 
+- **WPM-D151 A currency's minor unit is its ISO 4217 one, from one table the API and the UI share; the API refuses a code outside it.**
+  *Proposed, needs product-owner confirmation* (drafted 2026-10-30 by the AI assistant for WPM-T400, after the contact relationship
+  management app's fix, its commit 37ef205, and the project portfolio management UI's, its commit 490ad5d).
+  - **The stored unit is ISO 4217's.** An amount is an integer count of the currency's ISO 4217 minor unit: HUF, IDR, COP and PKR have 2
+    decimal places, IQD 3, JPY 0, KWD 3, CLF 4. Unicode CLDR's *display* digits are not the minor unit: CLDR shows 0 places for 16 codes
+    (AFN, ALL, COP, HUF, IDR, IQD, IRR, KPW, LAK, LBP, MGA, MMK, PKR, SOS, SYP, YER) where ISO 4217 has 2, or 3 for IQD. A UI that took the
+    exponent from `Intl` (which uses CLDR) stored 1,500 forint as 1,500 fillér, a hundredth of the amount the API means.
+  - **One table, two copies, held equal.** The service's `src/rules/currency.rs` (`MINOR_UNITS`, the shape of the sibling project
+    portfolio management service's `src/currency.rs` and the contact relationship management service's `src/rules/currency.rs`) and the
+    UI's `src/lib/money.ts` hold the same entries; a vitest test reads the Rust file and fails when they differ. `Intl` is the UI's
+    fallback only for a code the table does not hold, and gives the number format (separators, symbol, digits) in every case.
+  - **Shown, typed and stored in the same unit.** The UI formats with `minimumFractionDigits` and `maximumFractionDigits` set to the ISO
+    exponent, so a forint amount shows two places ("Ft 1,500.50"), a whole one in `moneyWhole` shows none.
+  - **The API accepts only codes in the table.** Where the API takes a currency (an expense claim, a worker's salary, a requisition's or a
+    hire's salary, a contractor's rate, a plan budget, a benefit plan, a benchmark, a pay or cost query), a code that is not three capital
+    letters in the table is refused with 422. Funds and metals with no minor unit (`XAU`, `XDR`, `XXX`) are not in it.
+  - **Stored data is not rewritten.** An amount already stored is not rescaled by the service: it cannot tell a forint amount typed in
+    the UI under WPM-T373 from one an API client sent in fillér. What an operator checks is in WPM-T400.
+  - **The family changes together.** The three `money.ts` files and the three tables share this rule; a fix to one is copied to the others.
+
 ## Tasks
 
 - [x] (2026-10-29) WPM-T367 **Worldwide audit of the spec.** *(WPM-R214, WPM-D143)* Done: 19 rows in the audit table above. `spec/` only: code, seed data and UI strings are not audited. Wording fixes (rows 10, 11) are left to T370.
@@ -130,6 +150,38 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   as 1,234,567 fils). A mutation that forced the exponent to 2 failed the yen and KWD specs. **Not done:** the percentages, decimals and
   `toFixed` of row 24 (WPM-T375); the remaining `/ 100` in the UI are basis points, centi-FTE and percentages, not money. **Not tested:**
   a runtime whose `Intl` lacks currency data (the fallback exponent of 2 is reached only there); screenshots were not looked at.
+  **Corrected by WPM-T400 (2026-10-30):** `Intl`'s `maximumFractionDigits` is CLDR's display digits, not the ISO 4217 minor unit, and
+  the two differ for 16 codes (HUF, IDR, COP, PKR and IQD among them), so a forint, rupiah or peso amount typed in the UI was stored at a
+  hundredth of its value (a dinar at a thousandth). The exponent now comes from an ISO 4217 table shared with the service (WPM-D151).
+- [x] (2026-10-30) WPM-T400 **The minor unit is ISO 4217's, from a table the UI and the API share.** *(WPM-R214, WPM-D143, WPM-D151;
+  check row 21)* Fixes WPM-T373. **Done:** the service gains `rules::currency` (`MINOR_UNITS`, the active ISO 4217 codes with their
+  exponents, the shape of the sibling project portfolio management service's `src/currency.rs` and the contact relationship management
+  service's `src/rules/currency.rs`; `exponent`, `is_known`, `check`) and `Problems::require_currency` / `currency_opt`. The API refuses
+  with 422 a currency that is not a code in the table wherever it takes one: an expense claim (`expenses::validate_currency`), a plan
+  budget and the plan cost, pay-range and pay-transparency queries (`cost::valid_currency`), a contractor's rate
+  (`engagement::validate_contractor_details`), a worker's salary on create and update, a requisition's and a hire's salary, a benefit
+  plan and a benchmark (the last four checked only that the text was not blank, or nothing). The UI's `src/lib/money.ts` takes the
+  exponent from the same table (a copy, `MINOR_UNITS`), falls back to `Intl` only for a code it does not hold, and formats with the
+  minimum and maximum fraction digits set to that exponent, so what is shown, typed and stored agree; its header says the family's three
+  `money.ts` files share the rule. **Tests:** 5 unit tests in `rules::currency` (the table sorted and well formed, the exponents that
+  are not 2 exactly the ISO list, the 16 CLDR-differing codes at their ISO unit, lookup, the shape-then-table check) and 1 in
+  `validation`, with the unknown codes `ZZZ` and `XAU` added to the expenses, cost and engagement rule tests; a request test
+  (`expenses::currencies_are_checked_against_the_iso_4217_table`: a HUF claim item of 150,000 kept as 150,000; a salary in IDR taken and
+  in `ZZZ`, `XAU` or `jpy` refused; a benchmark, a benefit plan and a requisition refused in `ZZZ` and taken in COP, IQD and PKR); 5
+  vitest tests (the UI table equal to the Rust file; the 16 codes; the `Intl` fallback for `XAU`; HUF, IDR, COP, JPY, KWD and CLF typed,
+  stored and shown back in `en-001` and `de-001`, plus IQD). Forcing the UI back to `Intl`-first failed 3 of them.
+  **Stored amounts that could be wrong (not migrated):** WPM-T373 (commit 5c9286f, 2026-10-30) is in no release (the newest tag,
+  v0.1.3, is from 2026-10-21; before T373 the UI multiplied by 100, which is right for these codes), so only a deployment that ran `main`
+  between commit 5c9286f and this fix can hold one. There, an amount typed in the UI in AFN, ALL, COP, HUF, IDR, IRR, KPW, LAK, LBP,
+  MGA, MMK, PKR, SOS, SYP or YER is stored at 1/100 of what was meant, and in IQD at 1/1000. The UI inputs that store an amount are the
+  expense item (`expense_items.amount_minor`, in its claim's `expense_claims.currency`) and the plan budget
+  (`workforce_plans.budget_minor`, `budget_currency`); the pay-scale salary is a lookup, not stored. An operator checks
+  `SELECT … FROM expense_claims WHERE currency IN (…16 codes…) AND created_at >= <T373 deploy>` and the same for `workforce_plans` on
+  `budget_currency` and `updated_at`, and corrects an amount by hand (×100, or ×1000 for IQD) only where the person confirms what they
+  typed: an API client that sent ISO minor units in that window stored the right amount, and the two cannot be told apart. The
+  service does not rescale anything. Codes already stored outside the table (any row written before this check) are not looked for.
+  **Not done:** no migration; stored codes are not checked; the openapi document does not list the codes. **Not tested:** a runtime
+  whose `Intl` lacks currency data; no Playwright spec in one of the 16 currencies (the existing yen and KWD specs pass unchanged).
 - [x] (2026-10-30) WPM-T374 **Plural rules.** *(WPM-R214, WPM-D143; rows 26, 27)* A `tn(key, count)` that picks a CLDR plural form with
   `Intl.PluralRules(i18n.locale)`; the 8 "(s)" strings and the English "s" in `FrameworkRolePanel.svelte:315` replaced first; parity and
   CMS config updated for the new keys.
@@ -438,7 +490,7 @@ through `rules::duplicates`.
 | 18 | Calendars | API `src/rules/holiday.rs:79-82`; UI (no `calendar` option, no `-u-ca-`) | Gregorian only: Easter by the Gregorian algorithm; no lunar, Hijri, Hindu or other holiday rule; no non-Gregorian display | **Gap** | T379 |
 | 19 | Holidays | API `src/rules/holiday.rs:240-290` | Three example packs (GB-ENG, US, DE), labelled unverified; any region can add days by hand | **Right** in shape (data, labelled); the packs are three Western ones | T379 |
 | 20 | Currency exponent | API `src/rules/expenses.rs:65-71`, `src/rules/cost.rs:140-145`; `src/rules/display.rs:13-17` (used only for CPD amounts and FTE, not money) | The API holds and returns minor units with a code and never converts to major units, so it needs no exponent | **Right** | — |
-| 21 | Currency exponent | UI `src/lib/api/wpm.ts:100,116-117`; input at `ExpenseClaimView.svelte:115`, `src/routes/pay-scales/+page.svelte:93`, `src/routes/planning/+page.svelte:279` | `minor / 100` to show, `Math.round(x * 100)` to store, `moneyWhole` assumes cents | **Gap**: a JPY amount shows at a hundredth of its value, KWD or BHD at ten times; audit row 16 holds for the spec and the API but not the UI. **Fixed 2026-10-30** (`src/lib/money.ts`) | T373 |
+| 21 | Currency exponent | UI `src/lib/api/wpm.ts:100,116-117`; input at `ExpenseClaimView.svelte:115`, `src/routes/pay-scales/+page.svelte:93`, `src/routes/planning/+page.svelte:279` | `minor / 100` to show, `Math.round(x * 100)` to store, `moneyWhole` assumes cents | **Gap**: a JPY amount shows at a hundredth of its value, KWD or BHD at ten times; audit row 16 holds for the spec and the API but not the UI. **Fixed 2026-10-30** (`src/lib/money.ts`); the exponent was CLDR's, wrong for 16 codes, **corrected 2026-10-30** to ISO 4217's (D151) | T373, T400 |
 | 22 | Currency | UI `src/lib/components/ExpenseClaims.svelte:34`, `src/routes/planning/+page.svelte:74` | `$state("GBP")` as the default currency | **Gap**. **Fixed 2026-10-30**: no starting currency | T376 |
 | 23 | Numbers | UI `ExpenseClaimView.svelte:107,211` (`Number(amount)`), `pay-scales/+page.svelte:85` | A decimal comma ("12,50") is not a number | **Gap** for de, fr, es, pt, ru, id and others. **Fixed 2026-10-30** for amounts (`parseAmount`) | T376 |
 | 24 | Numbers | UI `src/lib/format.ts:23,66,75,85`, `CapacityHeatmap.svelte:31`, `PlanForecast.svelte:45,58,68,167-172`; `src/lib/i18n.svelte.ts` (`tf`, `tp` use `String(n)`) | Percentages and decimals by hand (`toFixed`, a `.` and `%`); `money()` without a locale; numbers in strings are not localized, so Bengali digits from `Intl` and ASCII digits mix on a page | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`), bare counts in markup in part | T375 |

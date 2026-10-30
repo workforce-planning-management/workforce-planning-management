@@ -33,6 +33,7 @@ pub mod cpd;
 pub mod credential;
 pub mod crosswalk;
 pub mod csv;
+pub mod currency;
 pub mod cutover;
 pub mod decision_gate;
 pub mod derived;

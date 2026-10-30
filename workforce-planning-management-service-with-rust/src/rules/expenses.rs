@@ -58,12 +58,13 @@ pub const MAX_ITEMS: usize = 50;
 /// The largest single item, in minor units (a sanity cap, not a policy limit).
 pub const MAX_ITEM_MINOR: i64 = 100_000_000;
 
-/// An ISO 4217-shaped currency: three upper-case ASCII letters.
+/// An ISO 4217 currency: three upper-case ASCII letters and a code in [`super::currency::MINOR_UNITS`], so the
+/// claim's minor unit is known (WPM-T400).
 ///
 /// # Errors
 /// A message when it is not.
 pub fn validate_currency(currency: &str) -> Result<(), String> {
-    if currency.len() == 3 && currency.bytes().all(|b| b.is_ascii_uppercase()) {
+    if super::currency::is_known(currency) {
         Ok(())
     } else {
         Err("currency must be a three-letter ISO 4217 code such as GBP".to_string())
@@ -249,7 +250,8 @@ mod tests {
     #[test]
     fn currency_and_totals() {
         assert!(validate_currency("GBP").is_ok());
-        for bad in ["gbp", "GB", "GBPP", "G1P", ""] {
+        assert!(validate_currency("HUF").is_ok() && validate_currency("JPY").is_ok());
+        for bad in ["gbp", "GB", "GBPP", "G1P", "", "ZZZ", "XAU"] {
             assert!(validate_currency(bad).is_err(), "{bad}");
         }
         assert_eq!(total_minor(&[]), Ok(0));

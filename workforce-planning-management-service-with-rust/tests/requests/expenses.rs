@@ -34,6 +34,8 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
             json!({ "title": " ", "currency": "GBP" }),
             json!({ "title": "Trip", "currency": "gbp" }),
             json!({ "title": "Trip", "currency": "GB" }),
+            json!({ "title": "Trip", "currency": "ZZZ" }),
+            json!({ "title": "Trip", "currency": "XAU" }),
         ] {
             assert_eq!(
                 request.post(&url).json(&bad).await.status_code(),
@@ -381,6 +383,71 @@ async fn a_claim_is_exported_and_erased_keeping_the_amounts() {
         // The unfinished draft is closed, not left dangling.
         let closed = query(format!("SELECT status FROM expense_claims WHERE pid = '{draft_pid}'")).await;
         assert_eq!(closed.try_get_by_index::<String>(0).unwrap(), "cancelled");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+/// WPM-T400: a currency the ISO 4217 table does not hold is refused wherever the API takes one, and a code whose
+/// Unicode CLDR display digits differ from its ISO minor unit (HUF: CLDR 0, ISO 2) is taken and kept in ISO minor units.
+async fn currencies_are_checked_against_the_iso_4217_table() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let worker = seed_worker!(&request, &org, "CUR-1", None).await;
+        activate!(&request, &worker).await;
+
+        let url = format!("/api/workers/{worker}/expense-claims");
+        let claim: Value = request
+            .post(&url)
+            .json(&json!({ "title": "Budapest visit", "currency": "HUF" }))
+            .await
+            .json();
+        let pid = claim["pid"].as_str().unwrap().to_string();
+        let day = (Utc::now().date_naive() - Duration::days(1)).to_string();
+        // 1,500.00 forint is 150,000 fillér: the amount is kept as sent, never rescaled.
+        request
+            .post(&format!("/api/expense-claims/{pid}/items"))
+            .json(&json!({ "incurred_on": day, "category": "travel", "amount_minor": 150_000 }))
+            .await
+            .assert_status_ok();
+        let full: Value = request.get(&format!("/api/expense-claims/{pid}")).await.json();
+        assert_eq!(full["currency"], "HUF");
+        assert_eq!(full["total_minor"], 150_000);
+
+        // A salary: a known code is taken, an unknown or a metal refused.
+        for (code, status) in [("IDR", 200), ("ZZZ", 422), ("XAU", 422), ("jpy", 422)] {
+            assert_eq!(
+                request
+                    .put(&format!("/api/workers/{worker}"))
+                    .json(&json!({ "salary_minor": 100, "salary_currency": code }))
+                    .await
+                    .status_code(),
+                status,
+                "{code}"
+            );
+        }
+        // A benchmark and a benefit plan likewise.
+        let bench = |code: &str| {
+            json!({ "job_title": "Engineer", "currency": code, "min_minor": 1, "median_minor": 2,
+                    "max_minor": 3, "source": "survey", "as_of": "2026-04-01" })
+        };
+        assert_eq!(request.post("/api/benchmarks").json(&bench("ZZZ")).await.status_code(), 422);
+        request.post("/api/benchmarks").json(&bench("COP")).await.assert_status_ok();
+        let plan = |code: &str| {
+            json!({ "name": "Cover", "kind": "health", "provider": "Example", "currency": code,
+                    "worker_cost_minor": 0, "employer_cost_minor": 0 })
+        };
+        assert_eq!(request.post("/api/benefit-plans").json(&plan("ZZZ")).await.status_code(), 422);
+        request.post("/api/benefit-plans").json(&plan("IQD")).await.assert_status_ok();
+        // A requisition's salary range.
+        let requisition = |code: &str| {
+            json!({ "organization_ref": org, "department": "engineering", "job_title": "Engineer",
+                    "headcount": 1, "salary_min_minor": 1, "salary_max_minor": 2, "salary_currency": code })
+        };
+        assert_eq!(request.post("/api/requisitions").json(&requisition("ZZZ")).await.status_code(), 422);
+        request.post("/api/requisitions").json(&requisition("PKR")).await.assert_status_ok();
     })
     .await;
 }

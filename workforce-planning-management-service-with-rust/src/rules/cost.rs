@@ -137,11 +137,11 @@ pub fn against_budget(cost_minor: i64, budget_minor: i64) -> (i64, bool) {
     (budget_minor - cost_minor, cost_minor <= budget_minor)
 }
 
-/// Whether `code` looks like an ISO-4217 currency code (three uppercase
-/// ASCII letters).
+/// Whether `code` is an ISO-4217 currency code: three uppercase ASCII letters
+/// and a code in [`super::currency::MINOR_UNITS`] (WPM-T400).
 #[must_use]
 pub fn valid_currency(code: &str) -> bool {
-    code.len() == 3 && code.bytes().all(|b| b.is_ascii_uppercase())
+    super::currency::is_known(code)
 }
 
 #[cfg(test)]
@@ -219,6 +219,7 @@ mod tests {
         assert_eq!(against_budget(120, 100), (-20, false));
         assert!(valid_currency("GBP"));
         assert!(!valid_currency("gbp") && !valid_currency("GB") && !valid_currency("GBPP"));
+        assert!(!valid_currency("ZZZ") && valid_currency("IDR"));
     }
 
     /// Money is withheld before anything else is considered; a missing gap or unit cost says why.

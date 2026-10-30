@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — money uses the ISO 4217 minor unit, not CLDR's display digits (WPM-T400, WPM-D151)
+
+`src/lib/money.ts` takes a currency's exponent from `MINOR_UNITS`, a copy of the service's `src/rules/currency.rs` table (a vitest test
+reads the Rust file and fails when they differ), and falls back to `Intl` only for a code it does not hold. `Intl`'s
+`maximumFractionDigits` is CLDR's, which shows 0 places for 16 codes where ISO 4217 has 2 (3 for IQD), so 1,500 forint typed was sent
+as 1,500 fillér. Formatting now sets the minimum and maximum fraction digits to the ISO exponent, so a forint amount shows two places.
+The header says the family's three `money.ts` files share the rule. Tests: 5 vitest (the tables equal; the 16 codes; the `XAU`
+fallback; HUF, IDR, COP, JPY, KWD and CLF round trips in `en-001` and `de-001`, and IQD); forcing `Intl` first fails 3. **Stored amounts that could be wrong (not migrated):** only on a deployment that ran `main` between commit 5c9286f (WPM-T373) and this
+fix (T373 is in no release; v0.1.3 predates it): an expense item (`expense_items.amount_minor`, by its claim's `currency`) or a plan
+budget (`workforce_plans.budget_minor`, `budget_currency`) typed in the UI in AFN, ALL, COP, HUF, IDR, IRR, KPW, LAK, LBP, MGA, MMK,
+PKR, SOS, SYP or YER is 1/100 of what was meant, and in IQD 1/1000. An operator lists those rows from that window and corrects one by
+hand only where the person confirms what they typed: an API client that sent ISO minor units then stored the right amount, and the
+two cannot be told apart (spec/worldwide.md, WPM-T400).
+**Not tested:** no Playwright spec in one of the 16 currencies (the yen and KWD specs pass unchanged); a runtime without `Intl` currency data.
+
 ### Changed — today, week start and weekend are the reader's (WPM-T378, WPM-D149)
 
 `src/lib/reader-calendar.ts`: `todayIso()` is today in the reader's time zone (it was the UTC date on five pages and in the calendar),

@@ -9,6 +9,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — a currency's minor unit is ISO 4217's, from one table the UI and the API share (WPM-T400, WPM-D151)
+
+The UI's `money.ts` (WPM-T373) took the exponent from `Intl`, which gives Unicode CLDR's display digits; for 16 codes (HUF, IDR, COP,
+PKR, IQD among them) those differ from the ISO 4217 minor unit the API stores, so a forint amount typed in the UI was stored at a
+hundredth of its value. The service gains `rules::currency` (the ISO 4217 table, the shape of the sibling apps') and refuses a code
+outside it with 422 wherever it takes a currency; the UI uses the same table, held equal by a vitest test, and `Intl` only as the
+fallback for a code it does not hold. **Stored amounts that could be wrong (not migrated):** only on a deployment that ran `main` between commit 5c9286f (WPM-T373) and this
+fix (T373 is in no release; v0.1.3 predates it): an expense item (`expense_items.amount_minor`, by its claim's `currency`) or a plan
+budget (`workforce_plans.budget_minor`, `budget_currency`) typed in the UI in AFN, ALL, COP, HUF, IDR, IRR, KPW, LAK, LBP, MGA, MMK,
+PKR, SOS, SYP or YER is 1/100 of what was meant, and in IQD 1/1000. An operator lists those rows from that window and corrects one by
+hand only where the person confirms what they typed: an API client that sent ISO minor units then stored the right amount, and the
+two cannot be told apart (spec/worldwide.md, WPM-T400).
+**Not done:** no migration; codes already stored are not checked.
+
 ### Added — a GitHub Pages documentation site, built and not published (WPM-T392, WPM-R217, WPM-D150)
 
 New subproject `workforce-planning-management.github.io/` (SvelteKit `adapter-static`, Svelte 5 runes, Lily pickers): the root

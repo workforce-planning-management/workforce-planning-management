@@ -23,7 +23,7 @@ project-portfolio-management and contact-relationship-management apps, and the f
 [worldwide](spec/worldwide.md) tasks have been built. Much is still proposed or part done: see
 [spec/tasks.md](spec/tasks.md) and the generated counts in
 [spec/implementation-status.md](spec/implementation-status.md). Verified on 2026-10-30, on a
-throwaway PostgreSQL 18 database: 1,034 service unit tests, 184 database-backed request tests and
+throwaway PostgreSQL 18 database: 1,040 service unit tests, 185 database-backed request tests and
 every enforcement, security, retention, request-log, chaos and inventory binary; the UI's lint,
 svelte-check, 291 unit tests and 325 Playwright tests over a stubbed API (19 skipped). Not rerun on
 that date: the Keycloak and Entra suites (CI runs them), the Redis-backed shared-cache tests (no Redis

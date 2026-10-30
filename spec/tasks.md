@@ -5732,3 +5732,7 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       which could fail the same way on "40559". The service code is unchanged. **Verified:** `cargo fmt`, `clippy --all-targets -D
       warnings` clean; the four `expenses` and `pay_positions` request tests on a throwaway local PostgreSQL. The full request suite was
       not run locally (CI runs it).
+- [x] (2026-10-30) WPM-T400 **A currency's minor unit is ISO 4217's, from one table the UI and the API share.** *(WPM-R214, WPM-D143, WPM-D151)* Fixes
+      WPM-T373, whose UI exponent was CLDR's display digits, so a HUF, IDR, COP, PKR or IQD amount typed in the UI was stored at 1/100 (IQD 1/1000) of its
+      value. The service gains `rules::currency` and refuses an unknown code with 422 wherever it takes one; `money.ts` uses the same table, held equal by a
+      vitest test. Stored amounts are not migrated: what an operator checks is in [worldwide.md](worldwide.md).

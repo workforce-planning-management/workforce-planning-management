@@ -112,7 +112,7 @@ nothing behind, that every worker present has its one audit row, and that the se
 
 ## Front-end edition (`workforce-planning-management-ui-with-svelte`)
 
-- **vitest — 308 tests / 37 files (as of 2026-10-30)**: the API client **path map** (every
+- **vitest — 313 tests / 37 files (as of 2026-10-30)**: the API client **path map** (every
   function's exact proxied path), `money()` honesty and the money formatter and parser
   (`tests/unit/money.test.ts`: JPY, EUR, KWD and CLF exponents, a decimal comma, no built-in
   currency and no fixed 100 anywhere in `src/`, WPM-T373), numbers and dates in the page's locale and a scan for hand-rolled

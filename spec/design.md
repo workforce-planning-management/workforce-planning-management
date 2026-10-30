@@ -409,6 +409,11 @@ The site carries a committed copy of the documents so the exported repository bu
 where it can, is English around the documents, offers only the audited themes, and is published by the owner
 ([github-pages-site.md](github-pages-site.md)).
 
+## WPM-D151 — A currency's minor unit is the ISO 4217 one, held in one table
+
+The API and the UI take a currency's exponent from the same ISO 4217 table, never from Unicode CLDR's display digits, and
+the API refuses a code the table does not hold ([worldwide.md](worldwide.md), D151).
+
 ## WPM-D52, WPM-D54 — Secure by default; rate limits keep no history
 
 Sign-in is enforced unless explicitly turned off, production refuses an open or

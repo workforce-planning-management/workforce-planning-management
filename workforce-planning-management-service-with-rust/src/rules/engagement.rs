@@ -179,7 +179,8 @@ pub fn validate_contractor_details(
             if amount < 0 {
                 return Err("rate_minor must not be negative".to_string());
             }
-            if currency.len() != 3 || !currency.bytes().all(|b| b.is_ascii_uppercase()) {
+            // A code in the ISO 4217 table, so the rate's minor unit is known (WPM-T400).
+            if !super::currency::is_known(currency) {
                 return Err("rate_currency must be an ISO 4217 code such as GBP".to_string());
             }
             if !RATE_BASES.contains(&basis) {
@@ -466,6 +467,8 @@ mod tests {
         assert!(validate_contractor_details(None, Some(-1), Some("GBP"), Some("day")).is_err());
         assert!(validate_contractor_details(None, Some(1), Some("gbp"), Some("day")).is_err());
         assert!(validate_contractor_details(None, Some(1), Some("GB"), Some("day")).is_err());
+        assert!(validate_contractor_details(None, Some(1), Some("ZZZ"), Some("day")).is_err());
+        assert!(validate_contractor_details(None, Some(1), Some("HUF"), Some("day")).is_ok());
         assert!(validate_contractor_details(None, Some(1), Some("GBP"), Some("week")).is_err());
     }
 

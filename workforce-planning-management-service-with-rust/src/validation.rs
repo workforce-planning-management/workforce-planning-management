@@ -84,6 +84,21 @@ impl Problems {
         }
     }
 
+    /// `field` must be an ISO 4217 code in [`crate::rules::currency::MINOR_UNITS`], so the amount it
+    /// goes with has a known minor unit (WPM-T400).
+    pub fn require_currency(&mut self, field: &str, value: &str) {
+        if let Err(reason) = crate::rules::currency::check(value) {
+            self.push(format!("{field}: {reason}"));
+        }
+    }
+
+    /// Optional variant of [`Self::require_currency`].
+    pub fn currency_opt(&mut self, field: &str, value: Option<&str>) {
+        if let Some(v) = value {
+            self.require_currency(field, v);
+        }
+    }
+
     /// A string list must respect the array and per-item caps, with no
     /// blank entries.
     pub fn cap_list(&mut self, field: &str, values: &[String]) {
@@ -110,6 +125,22 @@ impl Problems {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn currency_rules() {
+        let mut p = Problems::new();
+        p.require_currency("currency", "HUF");
+        p.currency_opt("salary_currency", Some("JPY"));
+        p.currency_opt("salary_currency", None);
+        assert_eq!(p.into_vec(), Vec::<String>::new());
+        let mut p = Problems::new();
+        p.require_currency("currency", "ZZZ");
+        p.currency_opt("salary_currency", Some("jpy"));
+        let v = p.into_vec();
+        assert_eq!(v.len(), 2);
+        assert!(v[0].starts_with("currency: ZZZ is not an ISO 4217"));
+        assert!(v[1].starts_with("salary_currency: a currency is an ISO 4217 code"));
+    }
 
     #[test]
     fn text_rules() {

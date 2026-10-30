@@ -431,7 +431,7 @@ async fn create_benchmark(
 ) -> Result<Response> {
     let mut problems = Problems::new();
     problems.require_text("job_title", &payload.job_title);
-    problems.require_text("currency", &payload.currency);
+    problems.require_currency("currency", &payload.currency);
     problems.require_text("source", &payload.source);
     if payload.min_minor < 0
         || payload.min_minor > payload.median_minor
