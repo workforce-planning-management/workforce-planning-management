@@ -494,6 +494,82 @@ test.describe("Job levels, pay bands and pay scales", () => {
     expect(asked.at(-1)).toContain("months_on_step=18");
   });
 
+  test("a pay scale in yen shows whole yen, and a salary typed in German is read with its own separators (WPM-T373, WPM-T376)", async ({
+    page,
+  }) => {
+    // JPY has no minor unit: 5,200,000 minor units are ¥5,200,000, not ¥52,000.
+    const scale = {
+      id: "yen-2026",
+      name: "Yen scale 2026",
+      framework: "banded-pay",
+      nation: "national",
+      currency: "JPY",
+      effective_from: "2026-04-01",
+      uplift_tenths_percent: 20,
+      source: "A synthetic scale",
+      minutes_per_week: 2400,
+      bands: [
+        {
+          code: "5",
+          closed: false,
+          steps: [
+            { annual_minor: 5_200_000, years_to_next: 2 },
+            { annual_minor: 6_100_000, years_to_next: null },
+          ],
+        },
+      ],
+      allowances: [{ code: "on_call", name: "On-call", amount_minor: 2605 }],
+    };
+    const asked: string[] = [];
+    await page.route(
+      (url) => url.pathname === "/api/proxy/pay-scales",
+      (route) => route.fulfill({ json: [{ ...scale, bands: ["5"] }] }),
+    );
+    await page.route(
+      (url) => url.pathname === "/api/proxy/pay-scales/yen-2026",
+      (route) => route.fulfill({ json: scale }),
+    );
+    await page.route(
+      (url) => url.pathname.endsWith("/position"),
+      (route) => {
+        asked.push(new URL(route.request().url()).searchParams.toString());
+        return route.fulfill({
+          json: {
+            scale: scale.id,
+            band: "5",
+            closed_to_new_entrants: false,
+            currency: "JPY",
+            basis: "annual, full-time",
+            position: { kind: "on_step", step: 1 },
+            progression: {
+              kind: "not_yet",
+              months_remaining: 6,
+              next_annual_minor: 6_100_000,
+            },
+          },
+        });
+      },
+    );
+    await page.goto("/de-001/pay-scales");
+    const band5 = page.getByTestId("band-5");
+    await expect(band5).toContainText(/5\.200\.000\s¥/u);
+    await expect(band5).toContainText(/6\.100\.000\s¥/u);
+    await expect(page.getByTestId("pay-allowances")).toContainText(
+      /2\.605\s¥/u,
+    );
+    await page.getByTestId("pay-salary").fill("5.200.000");
+    await page.getByTestId("pay-ask").click();
+    await expect(page.getByTestId("pay-progression")).toContainText(
+      /6\.100\.000\s¥/u,
+    );
+    expect(asked.at(-1)).toContain("salary_minor=5200000");
+    // Not a number in German: refused before anything is sent.
+    await page.getByTestId("pay-salary").fill("5,2,0");
+    await page.getByTestId("pay-ask").click();
+    await expect(page.getByTestId("pay-lookup-error")).toBeVisible();
+    expect(asked).toHaveLength(1);
+  });
+
   test("the job-levels page offers an imported ladder and shows its attributes", async ({
     page,
   }) => {

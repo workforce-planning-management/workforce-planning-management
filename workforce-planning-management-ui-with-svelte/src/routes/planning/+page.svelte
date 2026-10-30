@@ -32,7 +32,8 @@
   } from "#lib/api/wpm.js";
   import LilyGantt from "#lib/components/LilyGantt.svelte";
   import LilyKanban from "#lib/components/LilyKanban.svelte";
-  import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { i18n, t, tf, tv } from "#lib/i18n.svelte.js";
+  import { currencyCode, toMinor } from "#lib/money.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
@@ -70,8 +71,10 @@
   let start = $state("");
   let end = $state("");
   let attritionPct = $state<number | null>(null);
-  let budget = $state<number | null>(null);
-  let budgetCurrency = $state("GBP");
+  /** The budget as typed, in the page's own number format; empty is no budget. */
+  let budget = $state("");
+  /** No currency is assumed: a budget names its own (WPM-T376). */
+  let budgetCurrency = $state("");
   let onCostPct = $state<number | null>(null);
   let department = $state("");
   let lineRole = $state("");
@@ -268,6 +271,21 @@
 <form
   onsubmit={(event) => {
     event.preventDefault();
+    error = null;
+    let budgetPart = {};
+    if (budget.trim() !== "") {
+      const code = currencyCode(budgetCurrency);
+      if (code === null) {
+        error = t("pages.planning.budget_needs_currency");
+        return;
+      }
+      const minor = toMinor(budget, code, i18n.locale);
+      if (minor === null || minor < 0) {
+        error = t("pages.planning.bad_budget");
+        return;
+      }
+      budgetPart = { budget_minor: minor, budget_currency: code };
+    }
     void run(async () => {
       const created = await createWorkforcePlan({
         name,
@@ -275,9 +293,7 @@
         horizon_start: start,
         horizon_end: end,
         ...(attritionPct !== null ? { attrition_bp: Math.round(attritionPct * 100) } : {}),
-        ...(budget !== null
-          ? { budget_minor: Math.round(budget * 100), budget_currency: budgetCurrency }
-          : {}),
+        ...budgetPart,
         ...(onCostPct !== null ? { on_cost_bp: Math.round(onCostPct * 100) } : {}),
       });
       name = "";
@@ -297,11 +313,11 @@
       <input data-testid="plan-org" bind:value={org} required />
     {/if}
   </label>
-  <label>{t("pages.planning.from")} <input type="date" bind:value={start} required /></label>
-  <label>{t("pages.planning.to")} <input type="date" bind:value={end} required /></label>
+  <label>{t("pages.planning.from")} <input type="date" data-testid="plan-start" bind:value={start} required /></label>
+  <label>{t("pages.planning.to")} <input type="date" data-testid="plan-end" bind:value={end} required /></label>
   <label>{t("pages.planning.annual_attrition_blank_observed")} <input type="number" min="0" max="100" step="0.1" bind:value={attritionPct} /></label>
-  <label>{t("pages.planning.annual_hiring_budget")} <input type="number" min="0" step="any" bind:value={budget} /></label>
-  <label>{t("pages.planning.currency")} <input maxlength="3" size="4" bind:value={budgetCurrency} /></label>
+  <label>{t("pages.planning.annual_hiring_budget")} <input inputmode="decimal" data-testid="plan-budget" bind:value={budget} /></label>
+  <label>{t("pages.planning.currency")} <input maxlength="3" size="4" data-testid="plan-currency" bind:value={budgetCurrency} /></label>
   <label>{t("pages.planning.employer_on_cost")} <input type="number" min="0" max="100" step="0.1" bind:value={onCostPct} /></label>
   <button type="submit" data-testid="plan-create">{t("pages.planning.create_plan")}</button>
 </form>

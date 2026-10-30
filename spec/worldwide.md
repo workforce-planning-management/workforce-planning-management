@@ -93,17 +93,48 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   gaps are T373 to T386. Audit row 16 is corrected in part: the API never assumes a currency exponent, the UI assumes 2. **Not done:** no
   behaviour and no wording changed (the wording candidates are API messages and UI strings, left to their tasks); nothing was run in a
   browser; the CMS was not examined.
-- [ ] WPM-T373 **Money uses the currency's own exponent in the UI.** *(WPM-R214, WPM-D143; check rows 21, 24)* `money`, `moneyWhole`
+- [x] (2026-10-30) WPM-T373 **Money uses the currency's own exponent in the UI.** *(WPM-R214, WPM-D143; check rows 21, 24)* `money`, `moneyWhole`
   and the three amount inputs take the minor-unit exponent from the currency (ISO 4217, through `Intl.NumberFormat#resolvedOptions` or a
   table), not 100; `PlanForecast` passes the locale; unit tests with JPY (0) and KWD (3).
+  **Done:** one formatter and parser, `src/lib/money.ts` in the UI: `money`, `moneyWhole`, `signedMoney`, `minorToInput`, `parseAmount`,
+  `toMinor`, `currencyCode` and `exponentOf`. The exponent is `Intl.NumberFormat(locale, { style: "currency", currency })
+  .resolvedOptions().maximumFractionDigits` (JPY 0, EUR 2, KWD 3, CLF 4; 2 only when the runtime does not know the code), and the format
+  is `Intl` in the page's locale (`i18n.locale`), which is now the default, so `PlanForecast` and every other caller get the reader's
+  locale. **Shared in behaviour with the sibling project-portfolio-management UI's `src/lib/money.ts` (its commit 956d9ed)** — the same
+  exponent, formatting and parsing rules — so the two apps stay alike; change both together. WPM's differences are its conventions only
+  (an unknown amount or a missing currency is "—"; `moneyWhole` drops a fraction that is zero in the currency's own minor unit).
+  `src/lib/api/wpm.ts` re-exports `money` and `moneyWhole` from it; the two hand-rolled `minor / 100` formatters are gone, and the expense
+  item, pay-scale salary and plan budget inputs store `toMinor(text, currency)` instead of `Math.round(x * 100)`. The API contract is
+  unchanged (integer minor units plus a currency code). Exports (CSV from the data grids) already went through `money()`. Tests:
+  `tests/unit/money.test.ts` (16: the four exponents, in every shipped locale for JPY and KWD; German and French separators; the em dash;
+  `moneyWhole` in GBP, JPY and KWD; parsing and round trips; and a scan of `src/` that fails on a fixed `* 100`, `/ 100` or `% 100` on a
+  money name, or on a `$state("XXX")` currency). Playwright: a yen pay scale on `/de-001/pay-scales` (whole yen, `5.200.000 ¥`, a salary
+  sent as `salary_minor=5200000`), a yen expense claim (`JP¥1,500` for 1500 typed) and a KWD plan budget (`1.234,567` typed in German sent
+  as 1,234,567 fils). A mutation that forced the exponent to 2 failed the yen and KWD specs. **Not done:** the percentages, decimals and
+  `toFixed` of row 24 (WPM-T375); the remaining `/ 100` in the UI are basis points, centi-FTE and percentages, not money. **Not tested:**
+  a runtime whose `Intl` lacks currency data (the fallback exponent of 2 is reached only there); screenshots were not looked at.
 - [ ] WPM-T374 **Plural rules.** *(WPM-R214, WPM-D143; rows 26, 27)* A `tn(key, count)` that picks a CLDR plural form with
   `Intl.PluralRules(i18n.locale)`; the 8 "(s)" strings and the English "s" in `FrameworkRolePanel.svelte:315` replaced first; parity and
   CMS config updated for the new keys.
 - [ ] WPM-T375 **Dates and numbers through the page's locale.** *(WPM-R214, WPM-D143; rows 10, 11, 24)* One date, date-time, number and
   percent helper on `Intl` with `i18n.locale`, used for raw ISO dates, `toFixed`, hand-made percentages, `toLocale*([])` and the numbers
   `tf`/`tp` put into strings; the English "now" in `CareerHistory.svelte` becomes a key.
-- [ ] WPM-T376 **No default currency; locale decimal input.** *(WPM-R214, WPM-D143; rows 22, 23)* The `"GBP"` defaults in the UI go (the
+- [x] (2026-10-30) WPM-T376 **No default currency; locale decimal input.** *(WPM-R214, WPM-D143; rows 22, 23)* The `"GBP"` defaults in the UI go (the
   organization's currency when it has one, else empty); an amount typed with the locale's decimal separator is read correctly.
+  **Done (the money parts):** the new-expense-claim form and the plan form start with no currency (`$state("")`); a claim cannot start, and
+  a plan with a budget cannot be created, until a three-letter code is typed ("expenses.currencyNeeded",
+  "pages.planning.budget_needs_currency"); a plan with no budget sends no currency. The organization has no currency in the API, so there is
+  nothing to take one from; an expense item and a pay-scale salary take the record's own currency. An amount is read by `parseAmount` in the
+  page's locale: its decimal mark is the only decimal mark ("12,50" and "1.234,50" in German, "1 234,50" in French, "1,234.50" in English),
+  its group mark and spaces are ignored, its own digits are read (Bengali), and anything else is refused before a request
+  ("expenses.badAmount", "pages.planning.bad_budget", the existing "payScales.badSalary"). The plan budget is now a text input with
+  `inputmode="decimal"`, not `type="number"` (whose decimal mark follows the browser, not the page). The pay-gap and pay-range currency
+  filters use the same `currencyCode`. Four new keys in all 13 `-001` locales, AI-written and unreviewed (recorded in
+  `content/locales/REVIEW.md`). Playwright: the empty currency refused with nothing sent, a German claim with "1.234,50" and "12,5" sent as
+  123450 and 1250 and shown as `1.247,00 €`, a non-number refused, axe (WCAG 2 A and AA) over the expense panel, and the plan budget specs
+  above. **Not done:** the percentage inputs on `/planning` (attrition, on-cost) are still `type="number"` (WPM-T375); no organization
+  currency exists to default to. **Not tested:** a person on an Arabic or Urdu page typing Arabic-Indic digits (the parser reads the
+  locale's own digits, but `ar-001` formats with ASCII digits, so only those are tested there).
 - [ ] WPM-T377 **Right-to-left finish.** *(WPM-R214, WPM-D143; rows 28 to 30)* Logical CSS for the 11 physical declarations (tables
   first); ranges as a catalogue pattern or `formatRange` instead of a literal "→"; a `ur-001` direction test beside the `ar-001` one.
 - [ ] WPM-T378 **Today, week start and weekend in the UI.** *(WPM-R214, WPM-D143, WPM-D144; rows 12, 13, 16)* "Today" in a time zone
@@ -304,9 +335,9 @@ through `rules::duplicates`.
 | 18 | Calendars | API `src/rules/holiday.rs:79-82`; UI (no `calendar` option, no `-u-ca-`) | Gregorian only: Easter by the Gregorian algorithm; no lunar, Hijri, Hindu or other holiday rule; no non-Gregorian display | **Gap** | T379 |
 | 19 | Holidays | API `src/rules/holiday.rs:240-290` | Three example packs (GB-ENG, US, DE), labelled unverified; any region can add days by hand | **Right** in shape (data, labelled); the packs are three Western ones | T379 |
 | 20 | Currency exponent | API `src/rules/expenses.rs:65-71`, `src/rules/cost.rs:140-145`; `src/rules/display.rs:13-17` (used only for CPD amounts and FTE, not money) | The API holds and returns minor units with a code and never converts to major units, so it needs no exponent | **Right** | — |
-| 21 | Currency exponent | UI `src/lib/api/wpm.ts:100,116-117`; input at `ExpenseClaimView.svelte:115`, `src/routes/pay-scales/+page.svelte:93`, `src/routes/planning/+page.svelte:279` | `minor / 100` to show, `Math.round(x * 100)` to store, `moneyWhole` assumes cents | **Gap**: a JPY amount shows at a hundredth of its value, KWD or BHD at ten times; audit row 16 holds for the spec and the API but not the UI | T373 |
-| 22 | Currency | UI `src/lib/components/ExpenseClaims.svelte:34`, `src/routes/planning/+page.svelte:74` | `$state("GBP")` as the default currency | **Gap** | T376 |
-| 23 | Numbers | UI `ExpenseClaimView.svelte:107,211` (`Number(amount)`), `pay-scales/+page.svelte:85` | A decimal comma ("12,50") is not a number | **Gap** for de, fr, es, pt, ru, id and others | T376 |
+| 21 | Currency exponent | UI `src/lib/api/wpm.ts:100,116-117`; input at `ExpenseClaimView.svelte:115`, `src/routes/pay-scales/+page.svelte:93`, `src/routes/planning/+page.svelte:279` | `minor / 100` to show, `Math.round(x * 100)` to store, `moneyWhole` assumes cents | **Gap**: a JPY amount shows at a hundredth of its value, KWD or BHD at ten times; audit row 16 holds for the spec and the API but not the UI. **Fixed 2026-10-30** (`src/lib/money.ts`) | T373 |
+| 22 | Currency | UI `src/lib/components/ExpenseClaims.svelte:34`, `src/routes/planning/+page.svelte:74` | `$state("GBP")` as the default currency | **Gap**. **Fixed 2026-10-30**: no starting currency | T376 |
+| 23 | Numbers | UI `ExpenseClaimView.svelte:107,211` (`Number(amount)`), `pay-scales/+page.svelte:85` | A decimal comma ("12,50") is not a number | **Gap** for de, fr, es, pt, ru, id and others. **Fixed 2026-10-30** for amounts (`parseAmount`) | T376 |
 | 24 | Numbers | UI `src/lib/format.ts:23,66,75,85`, `CapacityHeatmap.svelte:31`, `PlanForecast.svelte:45,58,68,167-172`; `src/lib/i18n.svelte.ts` (`tf`, `tp` use `String(n)`) | Percentages and decimals by hand (`toFixed`, a `.` and `%`); `money()` without a locale; numbers in strings are not localized, so Bengali digits from `Intl` and ASCII digits mix on a page | **Gap** | T375 |
 | 25 | Numbers | UI `src/lib/components/LoadMore.svelte:23`, `src/routes/pay-gap/+page.svelte:127` | `Intl.NumberFormat(i18n.locale)` | **Right** | — |
 | 26 | Plurals | UI `src/lib/i18n.svelte.ts`; `content/locales/REVIEW.md:50-51` | No `Intl.PluralRules`; 8 en-001 strings use "(s)"; about 40 strings fill a count | **Gap**: Arabic, Russian, Welsh and others have more than two forms | T374 |
@@ -336,4 +367,5 @@ through `rules::duplicates`.
 ## Not done
 
 Nothing is implemented here (T367 audit, T368 design, T371 check). This is the requirement, the decisions, the tasks, the audit (T367)
-and the equity check (T371).
+and the equity check (T371). Since 2026-10-30 the UI's money (T373, T376) and the pure-core checks of T369 are code; their entries
+above say what each did and did not do.

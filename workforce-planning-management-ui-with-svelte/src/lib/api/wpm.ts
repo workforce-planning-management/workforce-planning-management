@@ -83,39 +83,9 @@ function pageQuery(
   return qs ? `?${qs}` : "";
 }
 
-/**
- * Format minor units + ISO-4217 as a locale-aware money string.
- * `null` renders as an em dash (the masked/absent state) — never 0,
- * which would be a lie.
- */
-export function money(
-  minor: number | null | undefined,
-  currency: string | null | undefined,
-  locale?: string,
-): string {
-  if (minor === null || minor === undefined || !currency) return "—";
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-  }).format(minor / 100);
-}
-
-/**
- * Like [`money`], but a whole-pound amount drops its `.00` — the way a pay
- * circular prints a scale (£26,300) — while an amount with pence keeps them.
- */
-export function moneyWhole(
-  minor: number | null | undefined,
-  currency: string | null | undefined,
-  locale?: string,
-): string {
-  if (minor === null || minor === undefined || !currency) return "—";
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: minor % 100 === 0 ? 0 : 2,
-  }).format(minor / 100);
-}
+// Money is formatted in one place, `src/lib/money.ts`: the currency's own minor-unit exponent and the
+// reader's locale (WPM-T373). Re-exported here so `money()` stays beside the API it formats.
+export { money, moneyWhole } from "#lib/money.js";
 
 /**
  * The signed-in caller's own organization memberships — every org

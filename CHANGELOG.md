@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the UI's money is worldwide (WPM-T373, WPM-T376)
+
+The UI shows and reads money with the currency's own minor unit (JPY 0, KWD 3) and the reader's number format, including a decimal
+comma, and no form starts with a currency. One module, `src/lib/money.ts`, shared in behaviour with the sibling PPM UI's. The API is
+unchanged. **Not done:** other numbers and percentages (WPM-T375). **Not verified:** screenshots; a live service. See the UI changelog.
+
 ### Added — the pure core names no country, and second-profile tests (WPM-T369, done in part)
 
 The service's `cargo test --lib` now fails if `src/rules/` names a country, a region or one jurisdiction's law in code (an allow-list

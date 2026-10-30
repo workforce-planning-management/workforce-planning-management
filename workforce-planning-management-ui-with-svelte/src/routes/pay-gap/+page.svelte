@@ -23,6 +23,7 @@
   import type { Excluded, Gap, GapFigure, PayCategory, PayGapReport } from "#lib/api/wpm.js";
   import JointAssessment from "#lib/components/JointAssessment.svelte";
   import { basisPoints } from "#lib/format.js";
+  import { currencyCode as readCurrency } from "#lib/money.js";
   import { i18n, t, tf } from "#lib/i18n.svelte.js";
 
   const organizations = $derived((page.data.scope ?? []) as string[]);
@@ -33,7 +34,7 @@
   $effect(() => {
     if (!organization && organizations.length > 0) organization = organizations[0] ?? "";
   });
-  const currencyChosen = $derived(/^[A-Za-z]{3}$/.test(currencyCode) ? currencyCode.toUpperCase() : "");
+  const currencyChosen = $derived(readCurrency(currencyCode) ?? "");
   const options = $derived({ ...(asOf ? { asOf } : {}), ...(currencyChosen ? { currency: currencyChosen } : {}), variable });
 
   let categories = $state<PayCategory[] | null>(null);

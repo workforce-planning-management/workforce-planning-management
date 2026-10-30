@@ -17,6 +17,7 @@
   } from "#lib/api/wpm.js";
   import type { ExpenseClaim } from "#lib/api/types.js";
   import { t, tp, i18n } from "#lib/i18n.svelte.js";
+  import { toMinor } from "#lib/money.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,
@@ -104,15 +105,17 @@
 
   function addItem(event: SubmitEvent) {
     event.preventDefault();
-    const pounds = Number(amount);
-    if (!date || !Number.isFinite(pounds) || pounds <= 0) {
-      error = t("expenses.amount");
+    if (!claim) return;
+    // Read in the page's own number format ("12,50" in German) and the claim's own minor unit.
+    const minor = toMinor(amount, claim.currency, i18n.locale);
+    if (!date || minor === null || minor <= 0) {
+      error = t("expenses.badAmount");
       return;
     }
     const body = {
       incurred_on: date,
       category,
-      amount_minor: Math.round(pounds * 100),
+      amount_minor: minor,
       ...(description.trim() && { description: description.trim() }),
       ...(receipt.trim() && { receipt_ref: receipt.trim() }),
     };

@@ -14,6 +14,7 @@
   import type { ExpenseClaimSummary } from "#lib/api/types.js";
   import ExpenseClaimView from "#lib/components/ExpenseClaimView.svelte";
   import { t, tp, i18n } from "#lib/i18n.svelte.js";
+  import { currencyCode } from "#lib/money.js";
 
   let { workerPid }: { workerPid: string } = $props();
 
@@ -31,7 +32,8 @@
   let error = $state<string | null>(null);
   let open = $state<string | null>(null);
   let title = $state("");
-  let currency = $state("GBP");
+  // No currency is assumed: the person names the one they spent (WPM-T376).
+  let currency = $state("");
 
   const message = (cause: unknown) => (errorText(cause));
 
@@ -59,8 +61,13 @@
   async function start(event: SubmitEvent) {
     event.preventDefault();
     error = null;
+    const code = currencyCode(currency);
+    if (code === null) {
+      error = t("expenses.currencyNeeded");
+      return;
+    }
     try {
-      const made = await createExpenseClaim(workerPid, { title: title.trim(), currency });
+      const made = await createExpenseClaim(workerPid, { title: title.trim(), currency: code });
       title = "";
       open = made.pid;
       await load();

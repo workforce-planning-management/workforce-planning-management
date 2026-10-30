@@ -15,6 +15,7 @@
   import { getPayRange } from "#lib/api/wpm.js";
   import type { PayRange, PayRangeFigure, PayRangeLeft, PayRangeOutlier, PayRangeStat } from "#lib/api/wpm.js";
   import { basisPoints } from "#lib/format.js";
+  import { currencyCode as readCurrency } from "#lib/money.js";
   import { t, tf } from "#lib/i18n.svelte.js";
 
   const organizations = $derived((page.data.scope ?? []) as string[]);
@@ -23,7 +24,7 @@
   let cutoff = $state(10);
   let currencyCode = $state("");
   // Only a whole ISO-4217 shape is sent; anything shorter is still being typed.
-  const currencyChosen = $derived(/^[A-Za-z]{3}$/.test(currencyCode) ? currencyCode.toUpperCase() : "");
+  const currencyChosen = $derived(readCurrency(currencyCode) ?? "");
   $effect(() => {
     if (!organization && organizations.length > 0) organization = organizations[0] ?? "";
   });

@@ -753,7 +753,9 @@
       "rejected": "Отклонена",
       "reimbursed": "Возмещена",
       "cancelled": "Отменена"
-    }
+    },
+    "badAmount": "Введите дату и сумму числом больше нуля.",
+    "currencyNeeded": "Введите валюту трёхбуквенным кодом, например EUR, JPY или INR."
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} красных без эскалации",
       "days_open_calendar": "открыто {days} календарных дней",
       "escalation_history": "История эскалаций",
-      "level": "Уровень"
+      "level": "Уровень",
+      "budget_needs_currency": "У бюджета должна быть валюта: введите трёхбуквенный код, например EUR, JPY или INR.",
+      "bad_budget": "Введите бюджет числом, ноль или больше."
     },
     "requisitionsPid": {
       "hired": "→ принят"

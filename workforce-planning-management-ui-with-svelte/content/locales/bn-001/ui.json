@@ -753,7 +753,9 @@
       "rejected": "প্রত্যাখ্যাত",
       "reimbursed": "পরিশোধিত",
       "cancelled": "বাতিল"
-    }
+    },
+    "badAmount": "তারিখ দিন, এবং পরিমাণ শূন্যের বেশি একটি সংখ্যা হিসেবে দিন।",
+    "currencyNeeded": "মুদ্রাটি তার তিন অক্ষরের কোড দিয়ে লিখুন, যেমন EUR, JPY বা INR।"
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count}টি লাল, উর্ধ্বতনে পাঠানো হয়নি",
       "days_open_calendar": "{days} ক্যালেন্ডার দিন ধরে খোলা",
       "escalation_history": "উর্ধ্বতনে পাঠানোর ইতিহাস",
-      "level": "স্তর"
+      "level": "স্তর",
+      "budget_needs_currency": "বাজেটের জন্য তার মুদ্রা দরকার: তিন অক্ষরের কোডটি লিখুন, যেমন EUR, JPY বা INR।",
+      "bad_budget": "বাজেট একটি সংখ্যা হিসেবে দিন, শূন্য বা তার বেশি।"
     },
     "requisitionsPid": {
       "hired": "→ নিয়োগ হয়েছে"

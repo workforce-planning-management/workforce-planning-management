@@ -19,9 +19,9 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Rust unit tests (`#[test]` in `src/`) | 1044 |
 | Rust request tests (`tests/requests/`) | 181 |
 | Rust test binaries beside the request suite | 26 |
-| Front-end unit test files | 32 |
-| Front-end unit tests (`it(` / `test(`) | 202 |
-| Playwright tests (`test(`) | 214 |
+| Front-end unit test files | 33 |
+| Front-end unit tests (`it(` / `test(`) | 218 |
+| Playwright tests (`test(`) | 219 |
 | Front-end pages (`+page.svelte`) | 56 |
 | Content locales | 17 |
 | Topic files in `spec/` (not counting this one) | 57 |

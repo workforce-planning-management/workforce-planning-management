@@ -753,7 +753,9 @@
       "rejected": "Rejected",
       "reimbursed": "Reimbursed",
       "cancelled": "Cancelled"
-    }
+    },
+    "badAmount": "Enter the date, and the amount as a number above zero.",
+    "currencyNeeded": "Enter the currency as its three-letter code, such as EUR, JPY or INR."
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} red with no escalation",
       "days_open_calendar": "{days} calendar days open",
       "escalation_history": "Escalation history",
-      "level": "Level"
+      "level": "Level",
+      "budget_needs_currency": "A budget needs its currency: enter the three-letter code, such as EUR, JPY or INR.",
+      "bad_budget": "Enter the budget as a number, zero or more."
     },
     "requisitionsPid": {
       "hired": "→ hired"

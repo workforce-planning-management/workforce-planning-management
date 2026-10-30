@@ -753,7 +753,9 @@
       "rejected": "已驳回",
       "reimbursed": "已报销",
       "cancelled": "已取消"
-    }
+    },
+    "badAmount": "请输入日期，并以大于零的数字输入金额。",
+    "currencyNeeded": "请用三个字母的代码输入货币，例如 EUR、JPY 或 INR。"
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} 项红色未上报",
       "days_open_calendar": "已开放 {days} 个日历日",
       "escalation_history": "上报历史",
-      "level": "级别"
+      "level": "级别",
+      "budget_needs_currency": "预算需要注明货币：请输入三个字母的代码，例如 EUR、JPY 或 INR。",
+      "bad_budget": "请以数字输入预算，零或以上。"
     },
     "requisitionsPid": {
       "hired": "→ 已录用"

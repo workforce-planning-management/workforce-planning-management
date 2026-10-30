@@ -753,7 +753,9 @@
       "rejected": "Ditolak",
       "reimbursed": "Sudah diganti",
       "cancelled": "Dibatalkan"
-    }
+    },
+    "badAmount": "Masukkan tanggal, dan jumlahnya sebagai angka di atas nol.",
+    "currencyNeeded": "Masukkan mata uang dengan kode tiga hurufnya, misalnya EUR, JPY, atau INR."
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} merah tanpa eskalasi",
       "days_open_calendar": "terbuka {days} hari kalender",
       "escalation_history": "Riwayat eskalasi",
-      "level": "Tingkat"
+      "level": "Tingkat",
+      "budget_needs_currency": "Anggaran memerlukan mata uangnya: masukkan kode tiga huruf, misalnya EUR, JPY, atau INR.",
+      "bad_budget": "Masukkan anggaran sebagai angka, nol atau lebih."
     },
     "requisitionsPid": {
       "hired": "→ direkrut"

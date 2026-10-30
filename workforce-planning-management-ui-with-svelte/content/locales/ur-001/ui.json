@@ -753,7 +753,9 @@
       "rejected": "مسترد",
       "reimbursed": "ادا شدہ",
       "cancelled": "منسوخ"
-    }
+    },
+    "badAmount": "تاریخ درج کریں، اور رقم صفر سے زیادہ عدد کے طور پر۔",
+    "currencyNeeded": "کرنسی اس کے تین حرفی کوڈ سے درج کریں، جیسے EUR، JPY یا INR۔"
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} سرخ، اعلیٰ سطح پر نہیں بھیجا گیا",
       "days_open_calendar": "{days} کیلنڈر دن سے کھلا",
       "escalation_history": "اعلیٰ سطح پر بھیجنے کی تاریخ",
-      "level": "سطح"
+      "level": "سطح",
+      "budget_needs_currency": "بجٹ کو اس کی کرنسی چاہیے: تین حرفی کوڈ درج کریں، جیسے EUR، JPY یا INR۔",
+      "bad_budget": "بجٹ ایک عدد کے طور پر درج کریں، صفر یا زیادہ۔"
     },
     "requisitionsPid": {
       "hired": "← بھرتی ہو گیا"

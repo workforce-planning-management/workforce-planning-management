@@ -753,7 +753,9 @@
       "rejected": "अस्वीकृत",
       "reimbursed": "प्रतिपूर्ति हुई",
       "cancelled": "रद्द"
-    }
+    },
+    "badAmount": "तारीख दर्ज करें, और राशि शून्य से अधिक संख्या के रूप में।",
+    "currencyNeeded": "मुद्रा उसके तीन अक्षरों वाले कोड से दर्ज करें, जैसे EUR, JPY या INR।"
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} लाल, एस्केलेशन नहीं",
       "days_open_calendar": "{days} कैलेंडर दिनों से खुला",
       "escalation_history": "एस्केलेशन इतिहास",
-      "level": "स्तर"
+      "level": "स्तर",
+      "budget_needs_currency": "बजट को उसकी मुद्रा चाहिए: तीन अक्षरों वाला कोड दर्ज करें, जैसे EUR, JPY या INR।",
+      "bad_budget": "बजट एक संख्या के रूप में दर्ज करें, शून्य या अधिक।"
     },
     "requisitionsPid": {
       "hired": "→ भर्ती हुआ"

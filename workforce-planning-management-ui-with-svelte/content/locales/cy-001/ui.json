@@ -753,7 +753,9 @@
       "rejected": "Gwrthodwyd",
       "reimbursed": "Talwyd yn ôl",
       "cancelled": "Cafodd ei ganslo"
-    }
+    },
+    "badAmount": "Rhowch y dyddiad, a'r swm fel rhif sy'n fwy na sero.",
+    "currencyNeeded": "Rhowch yr arian cyfred fel ei god tair llythyren, fel EUR, JPY neu INR."
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} coch heb uwchgyfeirio",
       "days_open_calendar": "ar agor ers {days} diwrnod calendr",
       "escalation_history": "Hanes uwchgyfeirio",
-      "level": "Lefel"
+      "level": "Lefel",
+      "budget_needs_currency": "Mae angen arian cyfred ar gyllideb: rhowch y cod tair llythyren, fel EUR, JPY neu INR.",
+      "bad_budget": "Rhowch y gyllideb fel rhif, sero neu fwy."
     },
     "requisitionsPid": {
       "hired": "→ wedi'i gyflogi"

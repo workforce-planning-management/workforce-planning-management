@@ -1181,6 +1181,8 @@ collections:
                   - { name: "rejected", label: "Rejected", widget: string, required: false, i18n: true }
                   - { name: "reimbursed", label: "Reimbursed", widget: string, required: false, i18n: true }
                   - { name: "cancelled", label: "Cancelled", widget: string, required: false, i18n: true }
+              - { name: "badAmount", label: "Bad Amount", widget: string, required: false, i18n: true }
+              - { name: "currencyNeeded", label: "Currency Needed", widget: string, required: false, i18n: true }
           - name: "comp"
             label: "Comp"
             widget: object
@@ -1785,6 +1787,8 @@ collections:
                   - { name: "days_open_calendar", label: "Days_open_calendar", widget: string, required: false, i18n: true }
                   - { name: "escalation_history", label: "Escalation_history", widget: string, required: false, i18n: true }
                   - { name: "level", label: "Level", widget: string, required: false, i18n: true }
+                  - { name: "budget_needs_currency", label: "Budget_needs_currency", widget: text, required: false, i18n: true }
+                  - { name: "bad_budget", label: "Bad_budget", widget: string, required: false, i18n: true }
               - name: "requisitionsPid"
                 label: "Requisitions Pid"
                 widget: object

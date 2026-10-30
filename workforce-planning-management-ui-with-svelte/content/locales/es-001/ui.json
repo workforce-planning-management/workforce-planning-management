@@ -753,7 +753,9 @@
       "rejected": "Rechazada",
       "reimbursed": "Reembolsada",
       "cancelled": "Cancelada"
-    }
+    },
+    "badAmount": "Introduzca la fecha y el importe como un número mayor que cero.",
+    "currencyNeeded": "Introduzca la moneda con su código de tres letras, como EUR, JPY o INR."
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} en rojo sin escalar",
       "days_open_calendar": "abierto hace {days} días naturales",
       "escalation_history": "Historial de escalados",
-      "level": "Nivel"
+      "level": "Nivel",
+      "budget_needs_currency": "Un presupuesto necesita su moneda: introduzca el código de tres letras, como EUR, JPY o INR.",
+      "bad_budget": "Introduzca el presupuesto como un número, cero o más."
     },
     "requisitionsPid": {
       "hired": "→ contratado"

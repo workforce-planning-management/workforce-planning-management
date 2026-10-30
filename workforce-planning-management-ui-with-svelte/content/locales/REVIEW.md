@@ -35,6 +35,10 @@ The 2026-10-24 additions (the `labels.*` keys: eight accessible names for form c
 
 The 2026-10-25 additions (`values.*` words for the kinds of equipment and how an issue ends, the three audiences of a policy, the four confidences and two bases of a skill mapping, written by the same assistant, also unreviewed): laptop, phone, pass, key, returned, written_off, all, department, job_title, exact, close, broader, narrower, authority, judgement. The German "Notebook", the Indonesian "komputer jinjing" and the French "précis" were chosen so as not to repeat the English word.
 
+The 2026-10-30 additions (four keys for money input, WPM-T373 and WPM-T376: `expenses.badAmount`, `expenses.currencyNeeded`,
+`pages.planning.budget_needs_currency` and `pages.planning.bad_budget`) were machine-translated by the same assistant, also unreviewed.
+The currency codes in them (EUR, JPY, INR) are ISO 4217 codes and stay in Latin letters in every locale.
+
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.
 

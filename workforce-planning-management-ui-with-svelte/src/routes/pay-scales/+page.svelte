@@ -9,6 +9,7 @@
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { getPayScale, listPayScales, money, moneyWhole, payPosition } from "#lib/api/wpm.js";
   import { t, tp, i18n, tf } from "#lib/i18n.svelte.js";
+  import { toMinor } from "#lib/money.js";
   import type { PayLookup, PayScale } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -82,15 +83,16 @@
     if (!scale) return;
     lookupError = null;
     lookup = null;
-    const pounds = salary.trim() === "" ? undefined : Number(salary);
-    if (pounds !== undefined && !Number.isFinite(pounds)) {
+    // Read in the page's own number format ("35.114,50" in German) and the scale's own minor unit.
+    const minor = salary.trim() === "" ? undefined : toMinor(salary, scale.currency, i18n.locale);
+    if (minor === null) {
       lookupError = t("payScales.badSalary");
       return;
     }
     try {
       lookup = await payPosition(scale.id, {
         band,
-        ...(pounds !== undefined && { salary_minor: Math.round(pounds * 100) }),
+        ...(minor !== undefined && { salary_minor: minor }),
         ...(step.trim() !== "" && months.trim() !== "" && {
           step: Number(step),
           months_on_step: Number(months),

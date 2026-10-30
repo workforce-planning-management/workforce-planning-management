@@ -1,5 +1,6 @@
 // Expense claims. The API is stubbed per test; an unstubbed /api/proxy call 404s loudly.
 
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { WORKER, stubSignedIn } from "./support";
 
@@ -29,10 +30,18 @@ test.describe("Expense claims", () => {
             pid: cid,
             status: seed.status,
             title: "Leeds visit",
+            currency: "GBP",
             note: null as string | null,
             paid: null as string | null,
           }
-        : null,
+        : (null as null | {
+            pid: string;
+            status: string;
+            title: string;
+            currency: string;
+            note: string | null;
+            paid: string | null;
+          }),
       items: (seed
         ? [
             {
@@ -52,7 +61,7 @@ test.describe("Expense claims", () => {
       worker_pid: WORKER.pid,
       title: state.claim!.title,
       description: null,
-      currency: "GBP",
+      currency: state.claim!.currency,
       status: state.claim!.status,
       total_minor: state.items.reduce((n, i) => n + i.amount_minor, 0),
       item_count: state.items.length,
@@ -100,6 +109,7 @@ test.describe("Expense claims", () => {
             pid: cid,
             status: "draft",
             title: body.title,
+            currency: body.currency,
             note: null,
             paid: null,
           };
@@ -168,6 +178,7 @@ test.describe("Expense claims", () => {
     const panel = page.getByTestId("expense-claims");
     await expect(panel.getByTestId("expense-none")).toBeVisible();
     await panel.getByTestId("expense-title").fill("Leeds visit");
+    await panel.getByTestId("expense-currency").fill("GBP");
     await panel.getByTestId("expense-create").click();
     // The new draft opens: add two identical lunches and a fare.
     const add = async (category: string, amount: string) => {
@@ -196,6 +207,85 @@ test.describe("Expense claims", () => {
     await expect(panel.getByTestId("expense-reject")).toHaveCount(0);
     await panel.getByTestId("expense-withdraw").click();
     await expect(panel.getByTestId("expense-status")).toContainText("Draft");
+  });
+
+  test("no currency is assumed: a claim cannot start until the person names one (WPM-T376)", async ({
+    page,
+  }) => {
+    await stubExpenses(page, "claimant");
+    const posted: unknown[] = [];
+    page.on("request", (request) => {
+      if (
+        request.method() === "POST" &&
+        request.url().endsWith(`/workers/${WORKER.pid}/expense-claims`)
+      )
+        posted.push(request.postDataJSON());
+    });
+    await page.goto("/en-001/me");
+    const panel = page.getByTestId("expense-claims");
+    await expect(panel.getByTestId("expense-currency")).toHaveValue("");
+    await panel.getByTestId("expense-title").fill("Osaka visit");
+    await panel.getByTestId("expense-create").click();
+    await expect(panel.getByTestId("error")).toContainText("three-letter code");
+    expect(posted).toHaveLength(0);
+    // A yen claim: the amount is whole yen, not hundredths (WPM-T373).
+    await panel.getByTestId("expense-currency").fill("jpy");
+    await panel.getByTestId("expense-create").click();
+    await expect
+      .poll(() => posted.at(-1))
+      .toEqual({
+        title: "Osaka visit",
+        currency: "JPY",
+      });
+    await panel.getByTestId("expense-date").fill("2026-10-01");
+    await panel.getByTestId("expense-amount").fill("1500");
+    await panel.getByTestId("expense-add").click();
+    await expect(panel.getByTestId("expense-total")).toHaveText("JP¥1,500");
+    await expect(panel.getByTestId("expense-items")).toContainText("JP¥1,500");
+  });
+
+  test("an amount is read in the page's own number format: a decimal comma in German (WPM-T376)", async ({
+    page,
+  }) => {
+    await stubExpenses(page, "claimant");
+    const items: Array<{ amount_minor: number }> = [];
+    page.on("request", (request) => {
+      if (request.method() === "POST" && request.url().endsWith("/items"))
+        items.push(request.postDataJSON());
+    });
+    await page.goto("/de-001/me");
+    const panel = page.getByTestId("expense-claims");
+    await panel.getByTestId("expense-title").fill("Reise nach Köln");
+    await panel.getByTestId("expense-currency").fill("EUR");
+    await panel.getByTestId("expense-create").click();
+    await panel.getByTestId("expense-date").fill("2026-10-01");
+    await panel.getByTestId("expense-amount").fill("1.234,50");
+    await panel.getByTestId("expense-add").click();
+    await expect.poll(() => items.at(-1)?.amount_minor).toBe(123_450);
+    await expect(panel.getByTestId("expense-total")).toHaveText(
+      /^1\.234,50\s€$/u,
+    );
+    await panel.getByTestId("expense-date").fill("2026-10-02");
+    await panel.getByTestId("expense-amount").fill("12,5");
+    await panel.getByTestId("expense-add").click();
+    await expect.poll(() => items.at(-1)?.amount_minor).toBe(1250);
+    await expect(panel.getByTestId("expense-total")).toHaveText(
+      /^1\.247,00\s€$/u,
+    );
+    // Text that is not a number is refused before anything is sent.
+    await panel.getByTestId("expense-amount").fill("zwölf");
+    await panel.getByTestId("expense-add").click();
+    await expect(panel.getByTestId("expense-error")).toBeVisible();
+    expect(items).toHaveLength(2);
+    const result = await new AxeBuilder({ page })
+      .include('[data-testid="expense-claims"]')
+      .withTags(["wcag2a", "wcag2aa"])
+      .analyze();
+    expect(
+      result.violations.map(
+        (v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`,
+      ),
+    ).toEqual([]);
   });
 
   test("a manager decides claims from the queue: a rejection needs a note, then approve and reimburse", async ({

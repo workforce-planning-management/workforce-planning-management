@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — money uses the currency's own minor unit and the reader's number format (WPM-T373, WPM-T376)
+
+One formatter and parser, `src/lib/money.ts`, shared in behaviour with the sibling project-portfolio-management UI's `money.ts`
+(its commit 956d9ed): the exponent comes from the currency through `Intl` (JPY 0, EUR 2, KWD 3, CLF 4), not a fixed 100, and the
+format is the page's locale. Typed amounts (an expense item, a pay-scale salary, a plan budget) are read in the page's number format,
+so "12,50" in German is 12.50; text that is not a number is refused before a request. The expense-claim and plan forms start with no
+currency, and a claim or a budget cannot be sent without a three-letter code. The API contract (minor units plus a code) is unchanged.
+Four new keys in the 13 full locales, machine-translated and unreviewed. Tests: `tests/unit/money.test.ts` (16), five new
+Playwright tests (yen pay scale in German, yen and euro expense claims with axe on the panel, a KWD plan budget, no budget sends no
+currency). **Not done:** percentages and other numbers (WPM-T375); the percentage inputs on `/planning` are still `type="number"`.
+**Not verified:** screenshots were not looked at; no live service was used (stubbed API only); the CMS was not opened.
+
 ### Added — SFIA in roles, declared skills, job levels and the training plan (WPM-T183 to T185)
 
 `/roles`: start from SFIA skills (with the category chosen) and the requirement table shows the native level, the mapping and, under it, the framework's wording. A

@@ -36,8 +36,11 @@ masked fields render as first-class masked states, never errors or fake zeros.
 4. **Masking honesty.** Salary, payslip amounts and review content may arrive
    masked; render it as a state. **A figure that cannot be loaded or is unknown
    is "—", never `0`** (`format.rate` / `format.mean` return `null`).
-5. **Money.** Minor units + currency through one `money()`; no float
-   arithmetic.
+5. **Money.** Minor units + currency through `src/lib/money.ts` (`money`,
+   `moneyWhole`, `toMinor` for typed amounts): the exponent is the currency's
+   own (JPY 0, KWD 3), never a fixed 100, the format is the page's locale, and
+   no form starts with a currency (WPM-T373, WPM-T376). It is shared in
+   behaviour with the sibling PPM UI's `money.ts`; change both together.
 6. **Localization is content, and the URL carries the locale** (WPM-R50,
    WPM-D37). Strings live in `content/locales/<locale>/ui.json` (17 locales;
    regional ones hold overrides only), loaded through `src/lib/i18n.svelte.ts`;

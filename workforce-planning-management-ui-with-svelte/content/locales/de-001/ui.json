@@ -753,7 +753,9 @@
       "rejected": "Abgelehnt",
       "reimbursed": "Erstattet",
       "cancelled": "Storniert"
-    }
+    },
+    "badAmount": "Geben Sie das Datum und den Betrag als Zahl über null ein.",
+    "currencyNeeded": "Geben Sie die Währung als dreistelligen Buchstabencode ein, etwa EUR, JPY oder INR."
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} rot ohne Eskalation",
       "days_open_calendar": "seit {days} Kalendertagen offen",
       "escalation_history": "Eskalationsverlauf",
-      "level": "Stufe"
+      "level": "Stufe",
+      "budget_needs_currency": "Ein Budget braucht seine Währung: Geben Sie den dreistelligen Code ein, etwa EUR, JPY oder INR.",
+      "bad_budget": "Geben Sie das Budget als Zahl ein, null oder mehr."
     },
     "requisitionsPid": {
       "hired": "→ eingestellt"

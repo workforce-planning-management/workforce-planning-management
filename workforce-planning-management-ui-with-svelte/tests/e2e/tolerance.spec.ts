@@ -335,3 +335,62 @@ test.describe("tolerances", () => {
     });
   });
 });
+
+test.describe("a plan's budget (WPM-T373, WPM-T376)", () => {
+  test("names its own currency, and is read in the page's number format with that currency's minor unit", async ({
+    page,
+  }) => {
+    await signIn(page);
+    await stub(page);
+    const created: unknown[] = [];
+    await page.route("**/api/proxy/workforce-plans", (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      created.push(route.request().postDataJSON());
+      return route.fulfill({ json: { pid: PLAN } });
+    });
+    await page.goto("/de-001/planning");
+    await expect(page.getByTestId("plan-currency")).toHaveValue("");
+    await page.getByTestId("plan-name").fill("FY28");
+    await page
+      .getByTestId("plan-org")
+      .fill("organization:33333333-3333-4333-8333-333333333333");
+    await page.getByTestId("plan-start").fill("2027-01-01");
+    await page.getByTestId("plan-end").fill("2027-12-31");
+    // A budget with no currency is refused before anything is sent: none is assumed.
+    await page.getByTestId("plan-budget").fill("1.234,567");
+    await page.getByTestId("plan-create").click();
+    await expect(page.getByTestId("error")).toContainText("Währung");
+    expect(created).toHaveLength(0);
+    // Kuwaiti dinar has three decimals: 1.234,567 KWD is 1,234,567 fils.
+    await page.getByTestId("plan-currency").fill("kwd");
+    await page.getByTestId("plan-create").click();
+    await expect.poll(() => created.length).toBe(1);
+    expect(created[0]).toMatchObject({
+      name: "FY28",
+      budget_minor: 1_234_567,
+      budget_currency: "KWD",
+    });
+  });
+
+  test("no budget sends no currency", async ({ page }) => {
+    await signIn(page);
+    await stub(page);
+    const created: Array<Record<string, unknown>> = [];
+    await page.route("**/api/proxy/workforce-plans", (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      created.push(route.request().postDataJSON());
+      return route.fulfill({ json: { pid: PLAN } });
+    });
+    await page.goto("/en-001/planning");
+    await page.getByTestId("plan-name").fill("FY28");
+    await page
+      .getByTestId("plan-org")
+      .fill("organization:33333333-3333-4333-8333-333333333333");
+    await page.getByTestId("plan-start").fill("2027-01-01");
+    await page.getByTestId("plan-end").fill("2027-12-31");
+    await page.getByTestId("plan-create").click();
+    await expect.poll(() => created.length).toBe(1);
+    expect(created[0]).not.toHaveProperty("budget_minor");
+    expect(created[0]).not.toHaveProperty("budget_currency");
+  });
+});

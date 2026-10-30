@@ -753,7 +753,9 @@
       "rejected": "مرفوضة",
       "reimbursed": "مسدّدة",
       "cancelled": "ملغاة"
-    }
+    },
+    "badAmount": "أدخل التاريخ، والمبلغ رقمًا أكبر من صفر.",
+    "currencyNeeded": "أدخل العملة برمزها المكوّن من ثلاثة أحرف، مثل EUR أو JPY أو INR."
   },
   "comp": {
     "aspirations": {
@@ -1211,7 +1213,9 @@
       "breaches_without_escalation": "{count} أحمر بلا تصعيد",
       "days_open_calendar": "مفتوح منذ {days} يومًا تقويميًا",
       "escalation_history": "سجل التصعيد",
-      "level": "المستوى"
+      "level": "المستوى",
+      "budget_needs_currency": "تحتاج الميزانية إلى عملتها: أدخل الرمز المكوّن من ثلاثة أحرف، مثل EUR أو JPY أو INR.",
+      "bad_budget": "أدخل الميزانية رقمًا، صفرًا أو أكثر."
     },
     "requisitionsPid": {
       "hired": "← تم التعيين"
