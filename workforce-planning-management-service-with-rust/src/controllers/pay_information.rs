@@ -29,7 +29,7 @@ use crate::rules::pay_gap::Reason;
 use crate::rules::pay_information as rules;
 
 /// Calendar months an answer may take: `WPM_PAY_INFORMATION_MONTHS`, default 2 (the Directive's), 1 to 12.
-fn answer_months() -> u32 {
+pub(crate) fn answer_months() -> u32 {
     crate::compat::env_var("WPM_PAY_INFORMATION_MONTHS")
         .and_then(|v| v.trim().parse::<u32>().ok())
         .filter(|n| (1..=rules::MAX_ANSWER_MONTHS).contains(n))

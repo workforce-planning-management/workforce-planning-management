@@ -390,9 +390,44 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   one per currency); the overtime rate's month is not derived from the contracted day (they are two settings, and a deployer changing one
   should change the other); D144 registry keys for these parameters were not named. **Not tested:** the `WPM_PAYROLL_*` and
   `WPM_CONTRACTED_DAY_MINUTES` settings themselves (read in the controller, not the pure core; no request test sets them).
-- [ ] WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144; rows 34 to 36)* Each `WPM_*` default from one
+- [~] WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144; rows 34 to 36)* Each `WPM_*` default from one
   regime (flexible working, resignation notice, pay information, joint assessment, retention) is named with its regime in the API's
   answer and the spec, then moved to a profile when the registry exists; the pay-gap tiers become configurable.
+  **Part done (2026-10-30): named, and the tiers configurable.** **Named:** `src/statutory_defaults.rs` (outside `src/rules/`, which names
+  no country, WPM-T369) lists 23 settings, each with its default and whose it is: a jurisdiction code in D144's shape, what it rests on,
+  and a status, `read` (checked against the text), `unverified` (modelled on it, not checked), `example` (a worked example in a regime's
+  shape) or `starting_point` (no regime's). The table, as shipped:
+
+  | Setting | Default | Whose (status) |
+  | --- | --- | --- |
+  | `WPM_FLEXIBLE_DECISION_MONTHS`, `WPM_FLEXIBLE_REQUESTS_PER_YEAR`, `WPM_FLEXIBLE_REFUSAL_REASONS` | 2 calendar months, 2 a year, the nine reasons | `GB`: Employment Rights Act 1996, Part 8A, as amended from 6 April 2024 (**unverified**: WPM-T212 modelled them on common rules and did not check a text) |
+  | `WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS` | 14 | none (starting point) |
+  | `WPM_RESIGNATION_NOTICE_CALENDAR_DAYS` | 28 | none (starting point) |
+  | `WPM_PAY_INFORMATION_MONTHS`, `WPM_REQUIRE_PAY_RANGE`, `WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, `WPM_JOINT_ASSESSMENT_MONTHS`, `WPM_PAY_GAP_TIERS` | 2, on, 5, 6, the three tiers | `EU`: Directive (EU) 2023/970, Articles 7, 5, 10(1), 10(1) and 9 (**read**, WPM-T268, 2026-10-24) |
+  | `WPM_RETENTION_<KIND>_DAYS` (eight) | 180 to 2,190 calendar days | none (starting point, [retention-schedule](governance/retention-schedule.md)) |
+  | `WPM_PAYROLL_STUB_CURRENCY`, `_ALLOWANCE_MINOR`, `_RATE_PERCENT` | GBP, 104,750, 20 | `GB` (**example**: the UK's 2025-26 shape, a stub, WPM-T383) |
+  | `WPM_PAYROLL_MONTH_MINUTES`, `WPM_CONTRACTED_DAY_MINUTES` | 9,750, 450 | none (starting point) |
+
+  **In the API's answer:** `GET /api/statutory-defaults` (any signed-in caller: configuration, no personal data) gives each setting's
+  area, the value in force (read as its feature reads it), whether the deployer set it, the default and `default_from` (`regime`,
+  `reference`, `status`). The gap report adds `reporting_basis` and the joint assessment signal `threshold_basis` and `remedy_basis`
+  (`{setting, set, default_from}`). A unit test holds each listed default equal to the code's own constant, so the table cannot drift.
+  **Tiers configurable:** `rules::pay_gap::parse_tiers` reads `from_workers:every_years:first_report_on` entries (comma-separated; 1 or
+  more workers, no two at one size, every 1 to 10 years, a date, at most 10) or `none` (no reporting duty, so no tier is ever due);
+  `WPM_PAY_GAP_TIERS` feeds the gap report through it, and a value that does not parse is ignored with a warning, never half-applied.
+  **Tests:** 3 unit tests (the parser: the Directive's tiers written out equal the defaults, a one-tier and a two-tier shape, `none`,
+  ten refusals and the limit; the table equals the code; sorted, unique, a regime exactly where the status is not a starting point,
+  every value readable); a request test (the five areas listed; `GB` unverified, a starting point, `EU` read with its Article; then
+  three settings set in the process: a value of 3 shown as set, `none` giving no tiers, a junk notice set but not used; and back).
+  **What remains, and why:** moving these defaults into dated, sourced profiles under a jurisdiction code is D144's registry and
+  resolver, which the product owner has not confirmed (only D144 questions 1 to 4 are), so nothing was moved and the `WPM_*` settings stay
+  one value per deployment. **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
+  and UK reports; changing them needs the equality categories per jurisdiction, which is the registry too); `WPM_PAY_GAP_SEX_CATEGORY`
+  and `WPM_AI_ACT_APPLIES_FROM` are not in the table (the first names a category, not a value of a regime; the second's answer already
+  names the AI Act); the working-time constants are WPM-T380; no UI shows the new endpoint. **Not verified:** the `GB` references were
+  not read against the Act's text in this task, which is why they say `unverified`; the gap report's `reporting_basis` with a configured
+  `WPM_PAY_GAP_TIERS` in a request (the parser is unit-tested and the endpoint's `none` case is request-tested; the gap report needs
+  equality monitoring on, which its own binary sets).
 - [ ] WPM-T385 **A seed that is not only GBP.** *(WPM-R214, WPM-D143, WPM-D144; row 39)* The seed and `demo-data.py` include a currency
   of another exponent and, once profiles exist, the example profiles D144 question 1 calls for (India, then Japan, labelled `example`).
 - [x] (2026-10-30) WPM-T386 **The workstation checklist is content, not English code.** *(WPM-R214, WPM-D143; row 37)* The default DSE items become
@@ -605,8 +640,8 @@ through `rules::duplicates`.
 | 31 | Locales | UI `content/locales/*/ui.json`, `src/lib/locales.ts` | 17 locales; all 12 translated `-001` files hold all 2,338 keys of `en-001`; `en-001` (not `en-gb`) is the default; all translations are AI-written and unreviewed (`REVIEW.md`) | **Right** in parity; **partial**: no locale is reviewed | — (recorded) |
 | 32 | Locales | UI `content/locales/en-gb/ui.json` (5 overrides), `en-us/ui.json` (0) | `en-001` is written in British wording, so `en-gb` barely differs and `en-us` has nothing to override | **Partial**. **In part 2026-10-30**: the address labels; other terms not reviewed | T382 |
 | 33 | Pay arithmetic | API `src/rules/payroll.rs:42-47`, `src/rules/workforce.rs:10` | The stub tax (20% above 104,750 minor units a month, the UK allowance divided by 12), a 7.5-hour day and 9,750 minutes a month, applied to every worker whatever the currency | **Gap** (labelled a stub; production gate WPM-G2). **Fixed 2026-10-30**: parameters, named as an example written for GBP, another currency refused | T383 |
-| 34 | Statutory defaults | API `src/rules/flexible_working.rs:13-17`, `src/rules/resignation.rs:13`, `src/rules/pay_information.rs:17`, `src/rules/joint_assessment.rs:17-19`, `src/rules/privacy.rs:85-97` | Each rule takes its limit as a parameter, but the default when no `WPM_*` setting is given is one regime's value (2 months, 2 requests, 14 calendar days; 28 calendar days; 2 months; 5% and 6 months) and is not labelled as whose | **Partial**: parameterized, one deployment-wide value | T384 |
-| 35 | Statutory defaults | API `src/controllers/pay_transparency.rs:442`, `src/rules/pay_gap.rs:540-566` | `tier_for` takes the tiers, but the controller always passes the EU Directive's tiers | **Partial** | T384 |
+| 34 | Statutory defaults | API `src/rules/flexible_working.rs:13-17`, `src/rules/resignation.rs:13`, `src/rules/pay_information.rs:17`, `src/rules/joint_assessment.rs:17-19`, `src/rules/privacy.rs:85-97` | Each rule takes its limit as a parameter, but the default when no `WPM_*` setting is given is one regime's value (2 months, 2 requests, 14 calendar days; 28 calendar days; 2 months; 5% and 6 months) and is not labelled as whose | **Partial**: parameterized, one deployment-wide value. **Labelled 2026-10-30**: each default names whose it is (`GET /api/statutory-defaults`); still one value per deployment | T384 |
+| 35 | Statutory defaults | API `src/controllers/pay_transparency.rs:442`, `src/rules/pay_gap.rs:540-566` | `tier_for` takes the tiers, but the controller always passes the EU Directive's tiers | **Partial**. **Fixed 2026-10-30**: `WPM_PAY_GAP_TIERS`, or `none` | T384 |
 | 36 | Pay gap | UI `src/routes/pay-gap/+page.svelte:132-133`; API `WPM_PAY_GAP_SEX_CATEGORY` | Female and male columns, the shape of the EU and UK reports; the equality categories themselves come from the server (`EqualityPanel.svelte:62`) | **Partial** | T384 |
 | 37 | Server content | API `src/rules/ergonomics.rs:6-16`, `src/controllers/ergonomics.rs:52` | The default workstation checklist is eight English sentences stored as data, "UK Display Screen Equipment shape" | **Gap**: not translatable, one regime's list. **Fixed 2026-10-30**: stored by key, translated, named as one regime's example | T386 |
 | 38 | Server content | API `src/rules/cutover.rs:49-59`, `src/rules/insights.rs:72-76` | English text for an API reader plus a code the UI translates | **Right** | — |

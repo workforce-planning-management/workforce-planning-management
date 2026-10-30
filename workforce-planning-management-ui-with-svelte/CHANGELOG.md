@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the API description has `GET /api/statutory-defaults` (WPM-T384)
+
+`src/lib/api/openapi.json` and `schema.d.ts` regenerated from the service for the new route. No screen calls it yet.
+
 ### Changed — the workstation checklist in the reader's language (WPM-T386)
 
 A default ergonomic checklist item is shown by its `item_key` as `erg.items.<key>` (`src/lib/ergonomics.ts`), in the worker panel and

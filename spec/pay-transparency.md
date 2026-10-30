@@ -81,7 +81,8 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
   Directive's own rule on that basis (for example gross hourly pay) was not read in the spec round and is an open item for
   WPM-T269.*
 - **Reporting tier.** From the organization's headcount WPM says which tier of Article 9 applies and when the next report is due,
-  using the configured dates. It reminds; it does not file.
+  using the configured dates. The tiers are `WPM_PAY_GAP_TIERS` (`from_workers:every_years:first_report_on`, comma-separated, or
+  `none` for no reporting duty), else the Directive's three; the report's `reporting_basis` says which (WPM-T384). It reminds; it does not file.
 - **Read** (WPM-T270): `GET /api/pay-transparency/gap-report?organization=&as_of=&currency=&variable=` and the same as CSV at
   `/gap-report/csv`. Both are audited (`pay_gap_report_read`, `pay_gap_report_exported`: the day and how many categories, no
   figure) and name no one. **Who:** a caller who may read salaries unmasked, as for the plan cost view (payroll, administrators);

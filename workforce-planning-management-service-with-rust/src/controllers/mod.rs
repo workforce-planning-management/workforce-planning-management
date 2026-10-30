@@ -86,6 +86,7 @@ pub mod rotas;
 pub mod sfia;
 pub mod skill_gaps;
 pub mod skill_mappings;
+pub mod statutory_defaults;
 pub mod talent;
 pub mod training_plan;
 pub mod transfers;

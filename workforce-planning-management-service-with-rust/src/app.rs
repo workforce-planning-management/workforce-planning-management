@@ -179,6 +179,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::wellbeing::routes())
         .add_route(controllers::appraisals::routes())
         .add_route(controllers::privacy::routes())
+        .add_route(controllers::statutory_defaults::routes())
         .add_route(controllers::notifications::routes())
         .add_route(controllers::ergonomics::routes())
         .add_route(controllers::adjustments::routes())

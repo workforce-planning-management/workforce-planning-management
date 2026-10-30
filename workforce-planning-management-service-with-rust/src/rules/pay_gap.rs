@@ -562,6 +562,62 @@ pub fn directive_tiers() -> Vec<Obligation> {
     ]
 }
 
+/// The most tiers a deployment may configure.
+pub const MAX_TIERS: usize = 10;
+/// The longest gap between reports a tier may set, in years.
+pub const MAX_EVERY_YEARS: u32 = 10;
+
+/// Parse a deployment's reporting tiers (WPM-T384): `from_workers:every_years:first_report_on` entries separated by commas
+/// (`250:1:2027-06-07,150:3:2027-06-07`), or `none` for a deployment with no reporting duty (an empty list, so no tier is
+/// ever due). Each tier starts at 1 worker or more, no two share a size, every 1 to [`MAX_EVERY_YEARS`] years, a calendar
+/// date; at most [`MAX_TIERS`]. Returned largest first.
+///
+/// # Errors
+///
+/// The first entry that does not check, and why.
+pub fn parse_tiers(text: &str) -> Result<Vec<Obligation>, String> {
+    let text = text.trim();
+    if text.eq_ignore_ascii_case("none") {
+        return Ok(Vec::new());
+    }
+    let mut tiers: Vec<Obligation> = Vec::new();
+    for entry in text.split(',').map(str::trim) {
+        let parts: Vec<&str> = entry.split(':').map(str::trim).collect();
+        let [from, every, first] = parts.as_slice() else {
+            return Err(format!(
+                "tier {entry:?} is not from_workers:every_years:first_report_on"
+            ));
+        };
+        let from_workers = from
+            .parse::<usize>()
+            .ok()
+            .filter(|n| *n >= 1)
+            .ok_or_else(|| {
+                format!("tier {entry:?}: from_workers must be a whole number of 1 or more")
+            })?;
+        let every_years = every
+            .parse::<u32>()
+            .ok()
+            .filter(|n| (1..=MAX_EVERY_YEARS).contains(n))
+            .ok_or_else(|| format!("tier {entry:?}: every_years must be 1 to {MAX_EVERY_YEARS}"))?;
+        let first_report_on = NaiveDate::parse_from_str(first, "%Y-%m-%d")
+            .map_err(|_| format!("tier {entry:?}: first_report_on must be a date, YYYY-MM-DD"))?;
+        if tiers.iter().any(|t| t.from_workers == from_workers) {
+            return Err(format!("two tiers start at {from_workers} workers"));
+        }
+        tiers.push(Obligation {
+            from_workers,
+            every_years,
+            first_report_on,
+        });
+    }
+    if tiers.len() > MAX_TIERS {
+        return Err(format!("at most {MAX_TIERS} tiers"));
+    }
+    tiers.sort_by_key(|t| std::cmp::Reverse(t.from_workers));
+    Ok(tiers)
+}
+
 /// The tier that covers `headcount`: the one with the largest `from_workers` it reaches. `None` below every tier.
 #[must_use]
 pub fn tier_for(headcount: usize, tiers: &[Obligation]) -> Option<Obligation> {
@@ -1124,5 +1180,51 @@ mod tests {
             first_report_on: day(2028, 2, 29),
         };
         assert_eq!(next_due(leap, day(2028, 3, 1)), day(2029, 2, 28));
+    }
+
+    /// WPM-T384: a deployment's own tiers parse, `none` is no duty, and a bad entry says why.
+    #[test]
+    fn reporting_tiers_are_configurable() {
+        let date = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+        // The Directive's own tiers, written as a setting, equal the defaults.
+        let written = parse_tiers("250:1:2027-06-07, 150:3:2027-06-07, 100:3:2031-06-07").unwrap();
+        assert_eq!(written, directive_tiers());
+        // Another shape: one tier from 50 workers every two years, given smallest first.
+        let other = parse_tiers("50:2:2028-01-01").unwrap();
+        assert_eq!(tier_for(49, &other), None);
+        assert_eq!(tier_for(50, &other).unwrap().every_years, 2);
+        let two = parse_tiers("20:5:2030-04-01,500:1:2029-01-01").unwrap();
+        assert_eq!(two[0].from_workers, 500, "largest first");
+        assert_eq!(
+            tier_for(600, &two).unwrap().first_report_on,
+            date(2029, 1, 1)
+        );
+        assert_eq!(tier_for(30, &two).unwrap().every_years, 5);
+        // No reporting duty at all.
+        assert_eq!(parse_tiers("none").unwrap(), Vec::new());
+        assert_eq!(parse_tiers(" NONE ").unwrap(), Vec::new());
+        assert_eq!(tier_for(10_000, &[]), None);
+        // Refusals.
+        for (bad, why) in [
+            ("", "from_workers:every_years"),
+            ("250:1", "from_workers:every_years"),
+            ("250:1:2027-06-07:x", "from_workers:every_years"),
+            ("0:1:2027-06-07", "from_workers"),
+            ("-5:1:2027-06-07", "from_workers"),
+            ("250:0:2027-06-07", "every_years"),
+            ("250:11:2027-06-07", "every_years"),
+            ("250:1:2027-02-30", "date"),
+            ("250:1:7 June 2027", "date"),
+            ("250:1:2027-06-07,250:3:2028-06-07", "two tiers"),
+        ] {
+            let error = parse_tiers(bad).unwrap_err();
+            assert!(error.contains(why), "{bad:?}: {error}");
+        }
+        let eleven: Vec<String> = (1..=11).map(|n| format!("{n}:1:2027-06-07")).collect();
+        assert!(
+            parse_tiers(&eleven.join(","))
+                .unwrap_err()
+                .contains("at most")
+        );
     }
 }

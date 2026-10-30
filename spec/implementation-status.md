@@ -13,11 +13,11 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Tasks not done (open or proposed) | 71 |
 | Highest task number marked done | WPM-T400 |
 | Database migrations | 111 |
-| Controllers | 84 |
+| Controllers | 85 |
 | Pure rule modules | 115 |
-| OpenAPI paths | 446 |
-| Rust unit tests (`#[test]` in `src/`) | 1072 |
-| Rust request tests (`tests/requests/`) | 186 |
+| OpenAPI paths | 447 |
+| Rust unit tests (`#[test]` in `src/`) | 1075 |
+| Rust request tests (`tests/requests/`) | 187 |
 | Rust test binaries beside the request suite | 26 |
 | Front-end unit test files | 38 |
 | Front-end unit tests (`it(` / `test(`) | 273 |

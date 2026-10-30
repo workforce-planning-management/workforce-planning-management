@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — whose each statutory default is, and configurable pay-gap tiers (WPM-T384, part)
+
+`src/statutory_defaults.rs` names, for 23 `WPM_*` settings, whose their default is (a D144-shaped jurisdiction code, the source, and
+`read`, `unverified`, `example` or `starting_point`); `GET /api/statutory-defaults` (open to any signed-in caller) answers each one's
+value in force, whether it was set, the default and `default_from`. The gap report answers `reporting_basis` and the joint assessment
+signal `threshold_basis` and `remedy_basis`. `rules::pay_gap::parse_tiers` and `WPM_PAY_GAP_TIERS` (or `none`) replace the Directive's
+fixed tiers. `pay_assessment::configured`, `pay_information::answer_months` and `privacy::horizons` are now `pub(crate)`. Tests: 3 unit
+tests and a request test. **Not done:** moving the defaults into jurisdiction profiles (waits for the unconfirmed D144 registry); the
+`GB` references were not read against the Act's text (they say `unverified`). **Not tested:** the gap report with a configured
+`WPM_PAY_GAP_TIERS` in a request.
+
 ### Changed — the payroll stub is parameters, written for one currency (WPM-T383)
 
 `rules::payroll::TaxStub` holds the stub's currency, monthly allowance (minor units of that currency), flat rate and working minutes

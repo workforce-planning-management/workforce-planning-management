@@ -49,6 +49,7 @@ pub mod request_log;
 pub mod rules;
 pub mod security;
 pub mod shared_cache;
+pub mod statutory_defaults;
 pub mod streaming;
 pub mod tasks;
 pub mod validation;

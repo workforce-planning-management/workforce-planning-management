@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — whose each statutory default is (WPM-T384, part)
+
+Every `WPM_*` setting whose default is one regime's value (flexible working, resignation notice, pay information, the joint pay
+assessment, retention, the payroll stub) now says whose: the EU Directive's Articles (read), Great Britain's flexible working rules
+(unverified), an example, or a starting point that is no regime's, in `GET /api/statutory-defaults` and in the spec. The pay-gap
+reporting tiers are configurable (`WPM_PAY_GAP_TIERS`, or `none`). **Not done:** moving the defaults into jurisdiction profiles, which
+waits for the D144 registry, not yet confirmed; the female and male columns of the pay-gap page.
+
 ### Changed — the payroll stub is not one country's (WPM-T383)
 
 The stub tax's allowance and rate, the working minutes in a month and the 7.5-hour contracted day are settings; unset, the stub is an

@@ -13986,6 +13986,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/statutory-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whose each default is: every WPM_* setting whose default is one regime's value (or a starting point), its value in force, whether it was set, and the jurisdiction code and source of its default (WPM-T384) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/succession-candidates/{pid}": {
         parameters: {
             query?: never;

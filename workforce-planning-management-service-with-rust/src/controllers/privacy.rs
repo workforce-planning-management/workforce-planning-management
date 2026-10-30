@@ -579,7 +579,7 @@ async fn erase(
 /// The horizon for every record kind, read from the environment: a kind's own
 /// `WPM_RETENTION_<KIND>_DAYS`, else the legacy `WPM_RETENTION_DAYS`, else the
 /// kind's default; floored at 30 calendar days (WPM-R91, WPM-D22, WPM-D60).
-fn horizons() -> Vec<(rules::RecordKind, rules::Horizon)> {
+pub(crate) fn horizons() -> Vec<(rules::RecordKind, rules::Horizon)> {
     let legacy = crate::compat::env_var("WPM_RETENTION_DAYS");
     rules::RecordKind::ALL
         .iter()

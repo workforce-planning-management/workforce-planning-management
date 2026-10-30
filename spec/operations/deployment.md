@@ -20,6 +20,10 @@ the compose file are written but were not built where this was written; try them
 
 ## Required settings (production)
 
+Whose each regime-shaped default is (a jurisdiction code, its source, and whether that source was read) is listed by
+`GET /api/statutory-defaults`, with the value in force and whether you set it (WPM-T384). A default is a starting point to confirm,
+not a statement that your deployment is under that regime.
+
 | Variable | Required | Default | What it does |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | yes | none | PostgreSQL 18 connection string. **In production it must require TLS across a network**: add `?sslmode=verify-full` (best: the server's certificate is checked) or `require` or `verify-ca`; boot refuses a plaintext connection to another host. A loopback address or a Unix socket needs no TLS |
@@ -35,6 +39,7 @@ the compose file are written but were not built where this was written; try them
 | `WPM_PAYROLL_STUB_CURRENCY`, `WPM_PAYROLL_STUB_ALLOWANCE_MINOR`, `WPM_PAYROLL_STUB_RATE_PERCENT` | no | `GBP`, `104750`, `20` | The payroll **stub**'s tax (demo only, not any country's tax; WPM-T383): the currency it is written for, the monthly tax-free allowance in that currency's minor unit, and the flat rate above it (0 to 100). The defaults are an example in the shape of the UK's 2025-26 personal allowance and basic rate. Another currency is taken only with its own allowance and rate; a run that would pay anyone in a currency other than the stub's is refused |
 | `WPM_PAYROLL_MONTH_MINUTES`, `WPM_CONTRACTED_DAY_MINUTES` | no | `9750`, `450` | Working minutes in a month for the overtime rate (1 to 44,640), and the full-time contracted day (1 to 1,440 minutes; overtime is time beyond it, scaled by FTE). Starting points, no regime's: change both together |
 | `WPM_PAY_INFORMATION_MONTHS` | no | `2` | Calendar months HR has to answer a worker's pay information request, 1 to 12 (the Directive's period is two months, WPM-R145) |
+| `WPM_PAY_GAP_TIERS` | no | `250:1:2027-06-07,150:3:2027-06-07,100:3:2031-06-07` | The pay-gap reporting tiers (WPM-T384): `from_workers:every_years:first_report_on`, comma-separated, or `none` for no reporting duty. The default is the EU Directive's Article 9; set what your national law says |
 | `WPM_REQUIRE_PAY_RANGE` | no | on | A vacancy must state its pay range (a minimum and a maximum) before it is opened. **On by default** (Article 5 of the Pay Transparency Directive); turn it off (`0`, `false`, `no`, `off`) only where the Directive does not apply |
 | `WPM_AI_ACT_APPLIES_FROM` | no | `2027-12-02` | The date the AI Act's Annex III duties apply to a deployer (`YYYY-MM-DD`); shown on the AI register. The date moved once already, so it is configuration, not code |
 | `WPM_MCP_ALLOWED_ORIGINS` | no | none | Comma-separated `Origin` values that may call `POST /mcp` from a browser. An agent sends no `Origin` and is unaffected; any other `Origin` is refused (DNS-rebinding protection) |

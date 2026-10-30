@@ -18,7 +18,7 @@ use crate::rules::joint_assessment::{self as rules, Config, Record};
 use crate::validation::Problems;
 
 /// The threshold (percent, a whole number) and the period (calendar months) from the environment, else the Directive's.
-fn configured() -> Config {
+pub(crate) fn configured() -> Config {
     let threshold = crate::compat::env_var("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT")
         .and_then(|v| v.trim().parse::<i64>().ok())
         .map_or(rules::DEFAULT_THRESHOLD_BP, |p| p * 100);
@@ -122,6 +122,9 @@ pub(crate) async fn signals(
         "as_of": built.as_of,
         "threshold_bp": config.threshold_bp,
         "remedy_months": config.remedy_months,
+        // Whose threshold and period these are (WPM-T384).
+        "threshold_basis": super::statutory_defaults::basis("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT"),
+        "remedy_basis": super::statutory_defaults::basis("WPM_JOINT_ASSESSMENT_MONTHS"),
         "categories": out,
         "derivation": "A joint pay assessment is due when a category's average pay gap in basic pay is at or over the threshold, \
                        either way, the employer has not recorded a justification on objective, gender-neutral criteria, and has \

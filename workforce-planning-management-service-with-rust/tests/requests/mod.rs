@@ -64,6 +64,7 @@ mod scim;
 mod sfia_import;
 mod shared_cache;
 mod skill_gaps;
+mod statutory_defaults;
 mod talent;
 mod tolerances;
 mod webhooks;

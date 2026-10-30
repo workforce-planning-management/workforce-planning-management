@@ -10863,6 +10863,19 @@
         ]
       }
     },
+    "/api/statutory-defaults": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Settings"
+          }
+        },
+        "summary": "Whose each default is: every WPM_* setting whose default is one regime's value (or a starting point), its value in force, whether it was set, and the jurisdiction code and source of its default (WPM-T384)",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
     "/api/succession-candidates/{pid}": {
       "put": {
         "parameters": [
