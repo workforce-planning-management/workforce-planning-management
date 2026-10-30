@@ -1,8 +1,8 @@
 # AGENTS.md — working agreements
 
 A pocket guide for human and AI collaborators working in this
-subproject. Read this **before** opening a PR. (Updated 2026-10-06,
-through WPM-T97.)
+subproject. Read this **before** opening a PR. (Updated 2026-10-30,
+through WPM-T396.)
 
 ## What this project is
 
@@ -14,7 +14,12 @@ benchmarking, wellbeing and privacy — and, since WPM-T69: `/metrics` (with
 insights), `/directory`, `/rota`, `/announcements`, `/skill-gaps`,
 `/movements`, `/planning`, `/roles`, `/groups` the one-screen `/ceo`
 dashboard and, since WPM-T118, `/capacity`, `/resilience`, `/oversight` (with the monthly
-pack), `/cutover` and `/warnings`. The app owns no data; every page round-trips through the API, and
+pack), `/cutover` and `/warnings`; later the pay pages (`/pay-gap`, `/pay-information`,
+`/pay-range`, `/pay-scales`), `/positions`, `/job-levels`, `/bargaining`, `/consultations`,
+`/policies`, `/ai-register`, `/expenses`, `/contingent`, `/decision-gates` and the `/demo`
+tour: 56 pages in all (2026-10-30). The bridges to the sibling apps have no screen; the UI
+calls none of their routes. Money, numbers, dates and plurals go through the page's locale
+(`src/lib/money.ts`, `src/lib/locale-format.ts`, `tn`; [worldwide](../spec/worldwide.md)). The app owns no data; every page round-trips through the API, and
 masked fields render as first-class masked states, never errors or fake zeros.
 
 > ⚠️ Demo software, not a production HR system. See
@@ -88,9 +93,10 @@ masked fields render as first-class masked states, never errors or fake zeros.
 pnpm install
 pnpm dev                    # expects the Loco sibling on :5150
 pnpm check                  # svelte-kit sync && svelte-check (0 errors)
-pnpm test                   # vitest (145)
-pnpm exec playwright test   # 135 specs, stubbed API — no service needed
-WPM_LIVE_API=1 pnpm exec playwright test -c playwright.live.config.ts   # 11 specs against a REAL service (tests/live/README.md)
+pnpm lint                   # eslint, then prettier --check
+pnpm test                   # vitest (291 in 35 files, 2026-10-30)
+PW_PORT=4193 pnpm exec playwright test   # 325 pass, 19 skip, stubbed API (2026-10-30); pick a free port
+WPM_LIVE_API=1 pnpm exec playwright test -c playwright.live.config.ts   # 23 tests in 10 files against a REAL service (tests/live/README.md)
 pnpm build
 # The demo (guided tour, fictitious data): see INSTALL.md "Try the demo". WPM_DEMO_API_URL names a SEPARATE
 # service instance (WPM_REQUIRE_AUTH=0, nothing real in it, filled by scripts/demo-data.py); signing in as

@@ -5668,3 +5668,11 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `workforce-planning-management.github.io/` inside this repository; a `github-pages` remote for the organization's `<organization>.github.io` repository; a `Makefile` task `make github-pages` calling a POSIX
       script `bin/make-github-pages` that runs `git subtree push --prefix=<name>.github.io github-pages main`; and the sibling read-only export only ever updated through the subtree. None of it exists, and no
       `*.github.io` repository was found for this organization (checked 2026-10-30). It needs the maintainer to create the GitHub repository and to decide what the site shows; not a small step.
+- [x] (2026-10-30) WPM-T393 **Agent files accurate and current.** *(WPM-R119)* `AGENTS.md` said "Updated 2026-10-07, through WPM-T97" and listed neither the matcher crate, `scripts/`, `docs/` nor the
+      workflows; it now does, and says the sibling repositories are not edited from here. `AGENTS/spec-driven-delivery.md`: the next free ids (WPM-R217, D148, T397), Phase 25 as the newest heading (it said
+      Phase 11), that every task needs an entry in `tasks.md` because `status.py` counts only that file, and `[~]` for part done; it said no deferral was open. `AGENTS/testing-and-verification.md`: the
+      table of what to run was dated 2026-10-06 (317 unit, 62 request, 80 vitest, 45 Playwright); it now has the counts run on 2026-10-30, every test binary, the MSRV check and the repo scripts, and a
+      local-PostgreSQL route. `AGENTS/git-and-releases.md`: watching CI after a push, and how Dependabot pull requests are applied and closed (after their commit's CI is green, the lesson of WPM-T306).
+      `AGENTS/docs-and-agent-files.md`: `docs/`, and what is still absent. The service's and the UI's `AGENTS.md` (both "through WPM-T97"): the bridges, the 115 rule modules, all sixteen loco tasks and
+      the MSRV note; the UI's 56 pages, the locale formatting modules and the current counts. Sizes (`wc -c`, 2026-10-30): the largest is the service's `AGENTS.md`, 8,496 bytes; every file is under 40,000.
+      There is no `CLAUDE.md` to update. **Not done:** `backend-rust.md`, `frontend-svelte.md`, `localization.md` and `privacy-and-data-rules.md` were read and left unchanged (nothing in them was found stale).

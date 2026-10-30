@@ -5,14 +5,16 @@
 | Kind | Files |
 | --- | --- |
 | Specification | `spec/*.md` (+ topic folders) — the source of truth |
+| Guides | `docs/` — tutorials and jurisdiction notes that use the spec, never restate it |
 | Per-subproject | `README.md`, `index.md`, `AGENTS.md`, `CHANGELOG.md`, `spec/index.md` |
 | Repo special files | `README.md`, `INSTALL.md`, `NEWS.md`, `CHANGELOG.md`, `COMPARISONS.md`, `BENCHMARKS.md`, `CONTRIBUTING.md`, `RFC.md`, `GOVERNANCE.md`, `SECURITY.md`, `MAINTAINERS.md`, `AI_STATEMENT.md`, `CODEOWNERS`, `CITATION.cff`, `LICENSE.md`, `LICENSE/` |
 | Agent files | `AGENTS.md` + `AGENTS/*.md` (this set), the two subproject `AGENTS.md`, `llms.txt`, `llms.json` |
 
-**Not present** (and not to be assumed): `CLAUDE.md`, `*-skill` folders, a
-`<repo>.github.io` site (specified in
+**Not present** (and not to be assumed, checked 2026-10-30): `CLAUDE.md`, `*-skill`
+folders, a `<repo>.github.io` site or repository (specified in
 [`spec/monorepo-github-pages`](../spec/monorepo-github-pages/index.md) but not
-created).
+created; it is WPM-T392, open). `.claude/settings.local.json` is a local tool file,
+not an agent file.
 
 ## Rules for editing documentation
 
@@ -40,8 +42,8 @@ created).
 ## These agent files
 
 - `AGENTS.md` is the short entry point; `AGENTS/*.md` hold detail. **Each file
-  stays under 40 KB** (they are far below it today); split a file rather than let
-  it grow. Check with `wc -c AGENTS.md AGENTS/*.md */AGENTS.md`.
+  stays under 40,000 bytes** (the largest, the service's, is under 9,000 as of 2026-10-30); split a
+  file rather than let it grow. Check with `wc -c AGENTS.md AGENTS/*.md */AGENTS.md`.
 - Put a rule where it is used: stack-level detail in the subproject `AGENTS.md`,
   cross-cutting practice here. Do not duplicate a rule; link to it.
 - Record a lesson **when it cost something** (a bug, a wrong turn) — with the

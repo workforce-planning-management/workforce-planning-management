@@ -4,7 +4,7 @@ Working agreements for humans and AI agents on this repository. This file is
 the short entry point; the detail is in [`AGENTS/`](AGENTS/). Each subproject
 also has its own [API](workforce-planning-management-service-with-rust/AGENTS.md)
 and [UI](workforce-planning-management-ui-with-svelte/AGENTS.md) guide for
-stack-level detail. (Updated 2026-10-07, through WPM-T97.)
+stack-level detail. (Updated 2026-10-30, through WPM-T396.)
 
 > ⚠️ **Demo software.** Not a production HR or payroll system; synthetic data
 > only. See [spec/regulatory.md](spec/regulatory.md).
@@ -40,8 +40,22 @@ stack-level detail. (Updated 2026-10-07, through WPM-T97.)
 
 ## Where things are
 
-- `spec/` — requirements (`WPM-R*`), decisions (`WPM-D*`), tasks (`WPM-T*`), topic files.
-- `workforce-planning-management-service-with-rust/` — Loco JSON API (`src/rules/`, `src/controllers/`, `migration/`, `tests/`).
+- `spec/` — requirements (`WPM-R*`), decisions (`WPM-D*`), tasks (`WPM-T*`), topic files;
+  [`spec/implementation-status.md`](spec/implementation-status.md) holds the counts (generated, never edited).
+- `workforce-planning-management-service-with-rust/` — Loco JSON API (`src/rules/`, `src/controllers/`, `migration/`, `tests/`,
+  `crates/entity-ref` vendored).
 - `workforce-planning-management-ui-with-svelte/` — SvelteKit client (`src/routes/`, `src/lib/`, `content/locales/`, `tests/`).
+- `workforce-planning-management-matcher-with-rust/` — the worker-record matcher crate, published to crates.io; the service
+  uses the published copy, not this path (see the `[patch.crates-io]` note in the service's `Cargo.toml`).
+- `scripts/` — the checks CI runs (`check-links.py`, `check-days.py`, `check-licenses.py`, `check-actions-pinned.py`,
+  `status.py`, `llms.py`), the demo filler, backup and restore, and the least-privilege drill (`verify-db-roles.sh`).
+- `docs/` — guides beside the spec (`docs/united-kingdom/`, the UK NHS notes).
+- `.github/workflows/` — `ci.yml` (every gate) and `release.yml`; every action and image pinned to a digest.
 - `.sota/` — the 2026-10-05 benchmark scan record (`last-scan.json`, the rubric).
 - [`llms.txt`](llms.txt) / [`llms.json`](llms.json) — a map of the repo for agents.
+
+## Siblings
+
+PPM (project-portfolio-management) and CRM (contact-relationship-management) are separate repositories that WPM bridges to by
+references and counts ([spec/cross-app-bridges.md](spec/cross-app-bridges.md)). **Do not edit them from here**, and name them
+in plain text, not as links (a link to a sibling cannot resolve in a fresh clone).

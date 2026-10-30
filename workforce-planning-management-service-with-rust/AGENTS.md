@@ -1,8 +1,8 @@
 # AGENTS.md — working agreements
 
 A pocket guide for human and AI collaborators working in this
-subproject. Read this **before** opening a PR. (Updated 2026-10-06,
-through WPM-T97.)
+subproject. Read this **before** opening a PR. (Updated 2026-10-30,
+through WPM-T396.)
 
 ## What this project is
 
@@ -28,6 +28,13 @@ the whole employment lifecycle:
 - **Wellbeing and rights** — wellbeing prompts, the anonymous pulse, ergonomics,
   reasonable adjustments, subject access / erasure / retention.
 - **Payroll** — runs, payslips, benchmarking.
+- **Delivery capacity and oversight** — skill pools, programme demand, the
+  what-if, early warnings, the oversight pack, cutover readiness.
+- **Bridges to the siblings** — the pool link, peer demand and supply and
+  people impact for project-portfolio-management; the hire and leave webhooks,
+  the overlap check and the lean worker list (`?fields=`) for
+  contact-relationship-management. References and counts only, under the
+  caller's token ([cross-app-bridges](../spec/cross-app-bridges.md)).
 
 There is no built-in UI — the
 [Svelte sibling](../workforce-planning-management-ui-with-svelte/) is the HR /
@@ -59,9 +66,10 @@ URNs (`person:<uuid>`), never duplicated demographics
 3. **Pure core first.** Rules live in DB-free, clock-free `src/rules/<area>.rs`
    with exhaustive unit tests (dates and "today" are always supplied);
    controllers only load data, call the rule and write. Write and test the rule
-   module **before** its controller. Existing modules: `lifecycle`, `leave`,
-   `working_time`, `org`, `metrics`, `insights`, `directory`, `emergency`,
-   `cover`, `rota`, `announcements`, `skill_gap`, `training`, `movements`, …
+   module **before** its controller. There are 115 entries in `src/rules/`
+   (2026-10-30), from `lifecycle`, `leave` and `working_time` to `capacity`,
+   `bridge`, `people_impact`, `webhook` and `worker_fields`; look there before
+   writing a new one.
 4. **Money discipline.** Minor units (`i64`) + ISO-4217; overflow refused;
    `net = gross − Σ deductions` before persist. No floats for money.
 5. **Sensitive data.** Salary, payslips, review content, 360 reports,
@@ -106,8 +114,8 @@ URNs (`person:<uuid>`), never duplicated demographics
 ```bash
 cargo run -- db migrate && cargo run -- task seed
 WPM_REQUIRE_AUTH=0 cargo run -- start   # sign-in is enforced by default (WPM-D52)
-cargo test                          # DB-free unit tests
-cargo test --test mod -- --ignored --test-threads=1    # request tests (Postgres)
+cargo test --lib                    # DB-free unit tests (1,034 on 2026-10-30)
+cargo test --test mod -- --ignored --test-threads=1    # request tests (Postgres; serial, they share a database)
 cargo test --test enforcement -- --ignored             # auth persona matrix
 cargo test --test security -- --ignored                # headers and rate limits
 cargo test --test chaos -- --ignored --nocapture       # database faults (reset, blackhole, slow, a seeded monkey)
@@ -116,8 +124,14 @@ cargo test --no-default-features --features keycloak \
 cargo clippy --all-targets          # pedantic; keep new files clean
 ```
 
-Loco tasks (`cargo run -- task <name>`): `seed`, `snapshot_headcount`
-(**schedule daily**), `rota_reminders [days_ahead:N]` (**schedule daily**),
-`pay_progression_reminders [days_ahead:N]` (**schedule daily**),
-`import_framework`, `import_esco`, `import_sfia`, `import_sfiaplus`. See [testing](../spec/testing.md) for running
-the suites (`entity-ref` is vendored in `crates/`; `authentication-verifier` comes from crates.io).
+Loco tasks (`cargo run -- task <name>`), sixteen as of 2026-10-30: `seed`; the scheduled ones in
+`config/scheduler.yaml` (`webhook_deliver` every minute, `snapshot_headcount`, `rota_reminders`,
+`pay_progression_reminders`, `policy_reminders`, `engagement_end_reminders`, `early_warning_sweep`,
+`oversight_pack_freeze`, `verify_audit_chain`, and `scim_push` where SCIM is configured); `replay_erasures`
+after a restore; and the imports `import_framework`, `import_esco`, `import_sfia`, `import_sfiaplus`. See
+[testing](../spec/testing.md) for running the suites (`entity-ref` is vendored in `crates/`;
+`authentication-verifier` comes from crates.io).
+
+**MSRV.** The policy is stable minus two (1.97 while stable is 1.99), checked by CI's `msrv` job for the
+migration crate and `entity-ref`. This crate still declares 1.99 because the published matcher 0.1.0
+does; lower it when a matcher declaring 1.97 is published (WPM-T390).

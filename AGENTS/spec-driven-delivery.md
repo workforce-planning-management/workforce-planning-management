@@ -19,7 +19,7 @@ Requirements and decisions live in `spec/requirements.md` / `spec/design.md`
 [joiners-and-leavers](../spec/joiners-and-leavers.md),
 [communication-and-leadership](../spec/communication-and-leadership.md),
 [locales](../spec/locales-for-global-sharing-with-svelte/index.md)). Next free
-ids (as of 2026-10-30): **WPM-R217**, **WPM-D148**, **WPM-T389**. WPM-R56–R132, WPM-R144–R205, WPM-D45–D83,
+ids (as of 2026-10-30): **WPM-R217**, **WPM-D148**, **WPM-T397**. WPM-R56–R132, WPM-R144–R205, WPM-D45–D83,
 WPM-D99–D133, WPM-T103–T224 and WPM-T246–T344 are taken by [`spec/plan.md`](../spec/plan.md) and
 [`spec/production-readiness.md`](../spec/production-readiness.md) and
 [`spec/operations-and-governance.md`](../spec/operations-and-governance.md), some built and
@@ -37,13 +37,21 @@ and are not reused.
       svelte-check, vitest, Playwright, build.
 ```
 
-- Put new entries under the newest phase heading (currently **Phase 11**), not
-  at the end of the file — the Phase 9 backlog is at the end of an earlier part.
+- Put new entries under the newest phase heading (currently **Phase 25**, cross-app
+  bridges and the worldwide target), not at the end of an earlier part.
+- **Every task has an entry in `tasks.md`**, even when its detail lives in a topic
+  file (`worldwide.md`, `cross-app-bridges.md`): a one-line entry with the status and
+  a link is enough. `scripts/status.py` counts `tasks.md` only, and it once
+  reported "highest task done: WPM-T267" for weeks because it missed entries written
+  as `- [x] (2026-10-30) WPM-T…` (fixed 2026-10-30, WPM-T391).
+- A task done in part is `[~]` with "Part done (date):" and what remains; `[ ]` is
+  not started.
 - **Say what you did not verify.** "Not done:" and "Not tested:" are normal and
   expected; a claim you did not run is a defect (this repo has had to correct
   one: a handover kind that was implemented but untested).
 - Mark done only when it is done. A deliberate deferral stays `[ ]` with its
-  reason (none is open today; expense claims was the last, delivered as WPM-T97).
+  reason, and an open task says precisely what remains (the counts are in
+  [`implementation-status.md`](../spec/implementation-status.md)).
 - A task entry for a ranked/aggregate view states its **derivation** and what
   it excludes.
 

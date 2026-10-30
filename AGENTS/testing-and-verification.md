@@ -5,19 +5,22 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 
 ## What to run
 
-| Where | Command | Expect (2026-10-06) |
+| Where | Command | Expect (2026-10-30) |
 | --- | --- | --- |
-| Service | `cargo test` (or `--lib`) | 317 unit tests |
-| Service | `cargo test -- --ignored --test-threads=1` | 62 request tests (need Postgres; **serial** — they share a database) |
-| Service | `cargo test --test enforcement -- --ignored` | auth persona matrix |
-| Service | `cargo test --test enforcement_expenses -- --ignored` | who may see, write and decide an expense claim (own binary: the auth flag is process-wide) |
-| Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers |
-| Service | `cargo clippy --all-targets` | keep **new** files clean (pedantic) |
+| Service | `cargo test --lib` | 1,034 unit tests |
+| Service | `cargo test --test mod -- --ignored --test-threads=1` | 183 request tests (need Postgres; **serial** — they share a database) |
+| Service | `cargo test --test <binary> -- --ignored --test-threads=1` | one test each: `enforcement` (the auth persona matrix) and the fourteen `enforcement_*` binaries, `security`, `retention_schedule`, `request_log`, `no_union_membership`, `personal_data_inventory`, `route_coverage`, `scheduler_config`; each its own process because the auth flags are process-wide (the list CI runs is in `.github/workflows/ci.yml`) |
+| Service | `cargo test --test chaos -- --ignored --nocapture` | database faults through a proxy; the seed is printed |
+| Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers (`oidc_entra` likewise, with no container) |
+| Service | `cargo clippy --all-targets -- -D warnings` | clean (pedantic) |
+| Service | `cargo +1.97 check --locked -p workforce-planning-management-migration -p entity-ref` | the MSRV (CI's `msrv` job; the matcher likewise in its own directory) |
+| UI | `pnpm lint` | ESLint, then Prettier: clean |
 | UI | `pnpm check` | svelte-check: 0 errors, 0 warnings |
-| UI | `pnpm test` | 80 vitest |
-| UI | `pnpm exec playwright test` | 45 specs, stubbed API (`PW_PORT=<free port>` if 4173 is taken) |
+| UI | `pnpm test` | 291 vitest in 35 files |
+| UI | `PW_PORT=<free port> pnpm exec playwright test` | 325 pass, 19 skip, stubbed API (4173 is the default port and is often taken) |
 | UI | `pnpm build` | green |
 | UI | `pnpm exec playwright test tests/e2e/a11y-routes.spec.ts` | axe (WCAG 2 A and AA) on every page route; add a new page to `tests/e2e/axe-routes.ts` or `pnpm test` fails |
+| Repo | `python3 scripts/status.py --check`, `llms.py --check`, `check-links.py`, `check-days.py`, `check-licenses.py`, `check-actions-pinned.py` | each clean; CI's `docs` job runs them |
 
 `CONTRIBUTING.md` also asks for `cargo fmt --check`, `cargo clippy --all-targets
 -- -D warnings` and `pnpm lint` (`eslint .` then `prettier --check` over `src`, `tests`,
@@ -47,7 +50,10 @@ database-backed suites:
    -e POSTGRES_DB=workforce_planning_management_test -p 55440:5432 --tmpfs
    /var/lib/postgresql <postgres-18-image>`; wait a few seconds.
 3. `DATABASE_URL=postgres://loco:loco@localhost:55440/workforce_planning_management_test
-   cargo test --offline --test mod -- --ignored --test-threads=1` in `<ws>/repo/api`.
+   cargo test --test mod -- --ignored --test-threads=1` in the service directory.
+   A local PostgreSQL works as well: `createdb -U postgres -O <you> <throwaway name>`, point
+   `DATABASE_URL` at it, and `dropdb -U postgres <name>` afterwards. A database reused across
+   runs can time out at boot (seen once in `skill_gaps`, WPM-T388); use a fresh one.
 4. For Keycloak: `export DOCKER_HOST="unix://$(podman machine inspect --format
    '{{.ConnectionInfo.PodmanSocket.Path}}')"` and `TESTCONTAINERS_RYUK_DISABLED=true`.
 5. `podman stop` your container afterwards. **Do not touch containers you did not

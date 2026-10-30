@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — agent files brought up to date (WPM-T393)
+
+`AGENTS.md` (was "through WPM-T97"), the `AGENTS/` files and the two subproject `AGENTS.md` now give the current test counts,
+the matcher and `scripts/`, the Dependabot practice, the next free ids and how a task is recorded. Every file is under 9,000 bytes.
+
 ### Fixed — the spec matches the code (WPM-T391)
 
 `scripts/status.py` missed every dated task entry, so the generated status said 232 tasks done and the highest WPM-T267; it now
