@@ -101,6 +101,8 @@ pub mod rota;
 pub mod scale;
 pub mod scim;
 pub mod scoring;
+#[cfg(test)]
+mod second_profile;
 pub mod self_service;
 pub mod service;
 pub mod sfia;

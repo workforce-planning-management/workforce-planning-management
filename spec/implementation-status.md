@@ -14,9 +14,9 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Highest task number marked done | WPM-T267 |
 | Database migrations | 108 |
 | Controllers | 84 |
-| Pure rule modules | 112 |
+| Pure rule modules | 113 |
 | OpenAPI paths | 446 |
-| Rust unit tests (`#[test]` in `src/`) | 1030 |
+| Rust unit tests (`#[test]` in `src/`) | 1044 |
 | Rust request tests (`tests/requests/`) | 181 |
 | Rust test binaries beside the request suite | 26 |
 | Front-end unit test files | 32 |

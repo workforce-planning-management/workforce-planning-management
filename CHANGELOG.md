@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the pure core names no country, and second-profile tests (WPM-T369, done in part)
+
+The service's `cargo test --lib` now fails if `src/rules/` names a country, a region or one jurisdiction's law in code (an allow-list
+with a reason per entry; a planted name is caught), and runs each rule that takes its limits as parameters with a second, differently
+shaped synthetic profile. **Not done:** no rule was refactored; the working-time limits, the holiday weekend days and the payroll stub
+still hard-code one regime (WPM-T380, T379, T383). See the service changelog.
+
 ### Added — the locale and convention equity check (WPM-T371)
 
 [`spec/worldwide.md`](spec/worldwide.md) records 39 findings against the UI and the API, each with file and line: 9 right, 9 partial, 21

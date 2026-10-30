@@ -53,6 +53,27 @@ worked cases, not the design.** This file is the rule that stops them becoming t
 - [ ] WPM-T369 **Second-profile tests.** *(WPM-R214, WPM-D143)* For each rule with UK values, a pure-core test with a non-UK profile of a
   different shape (different currency exponent, weekend, week start, limits), and a lint or test that fails if `src/rules/` names a
   country.
+  **Done in part (2026-10-30):** (1) `src/jurisdiction_neutrality.rs`, in `cargo test --lib`: a lexical check of every identifier and
+  string literal in `src/rules/` (comments excluded, since D143 asks prose to name its regime) against lists of country and region
+  names, phrases (for example "Working Time Regulations", "national insurance") and upper-case country codes; 27 allow-list entries,
+  each a file, a word and a reason (the consultation and holiday example profiles and packs, the `uk-gdad-pcf` framework id, ESCO URIs
+  in fixtures, test inputs for code shapes); an entry that matches nothing fails. Tests: a planted file (a constant, a function, a
+  camel-case name, a raw string, a code, and names in comments that must not count), ordinary words ("us", SQL `IN`), and the
+  allow-list's scope. Mutation-checked: a `"Japan"` constant named `PLANTED_UK_LIMIT` added to `working_time.rs` failed the check on
+  both words, and was removed. **Coarse by design:** a country not on the lists is not caught; `IN` is not checked. (2)
+  `src/rules/second_profile.rs`: 10 tests running each rule that really takes its limits as parameters with a synthetic second profile
+  of a different shape, named for no country: collective consultation (a percentage-only test, a size floor, a window of 60 calendar days, no
+  authority notice), holiday rules (no Easter and no substitute day, so a Saturday holiday stays; the nearest-weekday policy crossing
+  the year), retention horizons (pay held 3,650 calendar days, recruitment below the floor raised to 30), joint pay assessment (10% and
+  3 months), the pay-information period, pay-gap reporting tiers (one band from 50 workers every two years), flexible working (3
+  months, one request a year, 30 calendar days to appeal, its own refusal list), resignation notice (90 and 0 calendar days), and money
+  (JPY and KWD codes valid; the API never divides by 100). **Not done, and why:** no rule was refactored. The rules that hard-code one
+  regime's values take no profile yet: the working-time limits and the roll-up week (WPM-T380), the weekend days of the holiday rules
+  and `is_business_day` (WPM-T379), the payroll stub's allowance, rate, day and month (WPM-T383); the pay-gap tiers are a parameter of
+  the rule but not of the controller (WPM-T384). Week start has no rule in the API to test; the UI's money exponent is WPM-T373. These
+  follow D144's order of work, whose resolver and parameter registry are not among the parts the product owner confirmed (questions 1
+  to 4), so none was built here. Not tested: the deployment-wide `WPM_*` settings that feed these parameters (controllers, not the
+  pure core).
 - [x] (2026-10-30) WPM-T370 **Regulatory register by region.** *(WPM-R214, WPM-D143)* Re-organize [regulatory.md](regulatory.md) so the UK is one
   section among regions, with the others marked *not yet read* rather than absent.
   **Done (spec only):** [regulatory.md](regulatory.md) now opens by saying the law is recorded by region, and ends with "The register by

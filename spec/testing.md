@@ -15,6 +15,11 @@ State as of 2026-10-07 (WPM-T97).
   grade, expenses}` — each pinning its edge cases
   (dated windows, ties, "nobody available", "unknown is not zero", completion
   gating). Each new rule module is written and tested before its controller.
+- **Source-text checks** (in `cargo test --lib`; 1,026 unit tests in all as of 2026-10-30): no line ends in a doubled backslash
+  (`src/lib.rs`), and **`src/rules/` names no country, region or single-jurisdiction law in an identifier or string literal**
+  (`src/jurisdiction_neutrality.rs`, WPM-T369): an allow-list entry per file and word with its reason, a stale entry fails, and a
+  planted name is caught. Beside it, `src/rules/second_profile.rs` runs each rule that takes a jurisdiction's limits as parameters with
+  a second, synthetic profile of a different shape ([worldwide](worldwide.md)).
 - **Request tests** (Postgres, `#[ignore]`d, `cargo test -- --ignored` —
   **62 tests in 24 files**): the hire journey; leave and shift conflicts;
   payroll; L&D; assessments; talent; wellbeing; pulse; 360; ergonomics;

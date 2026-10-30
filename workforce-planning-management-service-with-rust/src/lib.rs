@@ -55,6 +55,10 @@ pub mod validation;
 /// Header-based API versioning (`Accepts-version`) for the REST surface.
 pub mod version;
 
+/// The pure core names no country (WPM-T369): a source-text check over `src/rules/`.
+#[cfg(test)]
+mod jurisdiction_neutrality;
+
 #[cfg(test)]
 mod source_text_guards {
     use std::path::Path;

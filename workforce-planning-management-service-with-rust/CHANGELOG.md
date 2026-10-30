@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a check that the pure core names no country, and second-profile tests (WPM-T369, done in part)
+
+`src/jurisdiction_neutrality.rs` (test-only): every identifier and string literal in `src/rules/` is checked against country and
+region names, single-jurisdiction law and body names, and upper-case country codes; comments are not checked. 27 allow-list entries,
+each with a reason; a stale entry fails; 4 tests, including a planted name. `src/rules/second_profile.rs` (test-only): 10 tests that run
+collective consultation, holiday generation, retention horizons, joint pay assessment, the pay-information period, pay-gap tiers,
+flexible working, resignation notice and the currency checks with a synthetic second profile of another shape. 1,026 unit tests (was
+1,012). **No behaviour changed.** **Not done:** the working-time constants, the holiday weekend (Saturday and Sunday) and the payroll
+stub take no profile (WPM-T380, T379, T383); the check is lexical and catches only the names on its lists.
+
 ### Changed — a hire or an ending tells a webhook subscriber who (WPM-T372, proposed WPM-D145)
 
 `worker_hired`, `worker_terminated` and `worker_retired` deliveries gain `data`: exactly `person_ref`, `organization_ref` and
