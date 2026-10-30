@@ -5,7 +5,7 @@
   a missing figure renders "—", never 0.
 -->
 <script lang="ts">
-  import { formatDate } from "#lib/locale-format.js";
+  import { arrow, formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -72,7 +72,7 @@
     if (!metrics) return dash;
     switch (id) {
       case "headcount":
-        return `${metrics.headcount.opening} → ${metrics.headcount.closing}`;
+        return `${metrics.headcount.opening} ${arrow()} ${metrics.headcount.closing}`;
       case "starters":
         return String(metrics.starters);
       case "leavers":
@@ -107,7 +107,7 @@
 {#snippet valueCell({ row }: { row: DataGridRow })}
   {#if metrics}
     {#if row.id === "headcount"}
-      {metrics.headcount.opening} → {metrics.headcount.closing}
+      {metrics.headcount.opening} {arrow()} {metrics.headcount.closing}
       <span class="muted">({t("metrics.openingOn")} {formatDate(metrics.headcount.opening_date)})</span>
     {:else if row.id === "starters"}
       {metrics.starters}

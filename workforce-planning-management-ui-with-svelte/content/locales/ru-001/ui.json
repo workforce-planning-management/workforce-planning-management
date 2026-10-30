@@ -2216,7 +2216,8 @@
     "criticality": "Критичность",
     "candidates": "Кандидаты",
     "tableName": "Таблица",
-    "rowCount": "Строки"
+    "rowCount": "Строки",
+    "period": "Период"
   },
   "calendar": {
     "week": "Неделя",

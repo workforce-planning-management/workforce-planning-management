@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { arrow } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -74,7 +75,7 @@
             {#if NEXT[application.stage]}
               {@const next = NEXT[application.stage] ?? ""}
               <button onclick={() => void move(application, next)}>
-                → {next}
+                {arrow()} {next}
               </button>
             {/if}
             {#if application.stage === "offer"}

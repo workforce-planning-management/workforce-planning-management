@@ -70,3 +70,6 @@ written earlier, also by the assistant. Expect inconsistent terminology between 
 6. Fill in the row above (reviewer, date, scope, outcome) in the same change.
 
 A review that finds problems is a success. Record what was fixed in the outcome column.
+
+The 2026-10-30 addition `columns.period` (the payroll list's period column, which had no header and so a sort button with no name, found
+by the right-to-left axe test of WPM-T377) copies each locale's existing `ceo.period` word; nothing new was translated.

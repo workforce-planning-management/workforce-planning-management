@@ -5,7 +5,7 @@
   says who is covering today, or that nobody can — never a guess.
 -->
 <script lang="ts">
-  import { formatDate } from "#lib/locale-format.js";
+  import { formatDateRange } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -82,7 +82,7 @@
         <strong>{b.backup_name ?? b.backup_pid}</strong>
         {#if b.backup_title}<span class="muted">— {b.backup_title}</span>{/if}
         {#if b.starts_on || b.ends_on}
-          <span class="muted">({b.starts_on ? formatDate(b.starts_on) : "…"} → {b.ends_on ? formatDate(b.ends_on) : "…"})</span>
+          <span class="muted">({formatDateRange(b.starts_on, b.ends_on)})</span>
         {/if}
         {#if b.note}<span class="muted">— {b.note}</span>{/if}
         <button type="button" onclick={() => void run(() => removeBackup(b.pid))}>

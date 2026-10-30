@@ -6,7 +6,7 @@
   and so does anyone the service will not show it to.
 -->
 <script lang="ts">
-  import { formatDate } from "#lib/locale-format.js";
+  import { arrow, formatDate } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import {
@@ -98,7 +98,7 @@
     {:else}
       <ul data-testid="engagement-extensions">
         {#each engagement.extensions as e (e.pid)}
-          <li>{formatDate(e.previous_end)} → {formatDate(e.new_end)}{#if e.reason} <span class="muted">· {e.reason}</span>{/if}</li>
+          <li>{formatDate(e.previous_end)} {arrow()} {formatDate(e.new_end)}{#if e.reason} <span class="muted">· {e.reason}</span>{/if}</li>
         {/each}
       </ul>
     {/if}

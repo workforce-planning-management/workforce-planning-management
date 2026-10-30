@@ -35,9 +35,11 @@ test.describe("Payroll runs", () => {
     await page.goto("/payroll");
     await expect(page).toHaveTitle("Payroll — WPM");
     const table = page.getByTestId("runs");
-    await expect(table).toContainText("1 Sept 2026 → 30 Sept 2026");
-    await expect(table).toContainText("1 Oct 2026 → 31 Oct 2026");
-    const link = table.getByRole("link", { name: "1 Oct 2026 → 31 Oct 2026" });
+    // A period is one range in the page's locale (Intl's formatRange), not two dates with an arrow (WPM-T377).
+    await expect(table).toContainText("1–30 Sept 2026");
+    await expect(table).toContainText("1–31 Oct 2026");
+    await expect(table).not.toContainText("→");
+    const link = table.getByRole("link", { name: "1–31 Oct 2026" });
     await expect(link).toHaveAttribute(
       "href",
       `/en-001/payroll/${RUNS[1]?.pid}`,
@@ -130,9 +132,7 @@ test.describe("dates in the page's locale (WPM-T375)", () => {
 
   test("a German page writes the period the German way", async ({ page }) => {
     await page.goto("/de-001/payroll");
-    await expect(page.getByTestId("runs")).toContainText(
-      "01.09.2026 → 30.09.2026",
-    );
+    await expect(page.getByTestId("runs")).toContainText("01.–30.09.2026");
   });
 
   test("a Bengali page writes it in Bengali, in its own digits", async ({

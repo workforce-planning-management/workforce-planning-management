@@ -5,7 +5,7 @@
   units (hours or points).
 -->
 <script lang="ts">
-  import { formatDate, numberToInput, parseNumber } from "#lib/locale-format.js";
+  import { formatDate, formatDateRange, numberToInput, parseNumber } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -266,11 +266,11 @@
 {/snippet}
 
 {#snippet periodCell({ row }: { row: DataGridRow })}
-  {formatDate(row.period_start as string)} → {formatDate(row.period_end as string)}
+  {formatDateRange(row.period_start as string, row.period_end as string)}
 {/snippet}
 
 {#snippet progressRequirementCell({ row }: { row: DataGridRow })}
-  {row.name} <span class="muted">({formatDate(row.period_start as string)} → {formatDate(row.period_end as string)})</span>
+  {row.name} <span class="muted">({formatDateRange(row.period_start as string, row.period_end as string)})</span>
 {/snippet}
 
 {#snippet requiredCell({ row }: { row: DataGridRow })}
@@ -373,7 +373,7 @@
             <button type="button" onclick={() => (editing = null)}>{t("pages.cpd.cancel")}</button>
           </form>
         {:else}
-          {r.name} <span class="muted">— {r.required} {tv(r.unit)}, {formatDate(r.period_start)} → {formatDate(r.period_end)}{r.job_title ? ` · ${r.job_title}` : ""}</span>
+          {r.name} <span class="muted">— {r.required} {tv(r.unit)}, {formatDateRange(r.period_start, r.period_end)}{r.job_title ? ` · ${r.job_title}` : ""}</span>
           <button type="button" data-testid="cpd-correct" onclick={() => startEdit(r)}>{t("pages.cpd.correct")}</button>
           {#if withdrawing === r.pid}
             <button type="button" class="warn" data-testid="cpd-withdraw-confirm" onclick={() => void withdraw(r.pid)}>{t("pages.cpd.confirm_withdraw")}</button>

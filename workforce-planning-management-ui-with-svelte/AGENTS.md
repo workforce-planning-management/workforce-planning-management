@@ -94,8 +94,8 @@ pnpm install
 pnpm dev                    # expects the Loco sibling on :5150
 pnpm check                  # svelte-kit sync && svelte-check (0 errors)
 pnpm lint                   # eslint, then prettier --check
-pnpm test                   # vitest (291 in 35 files, 2026-10-30)
-PW_PORT=4193 pnpm exec playwright test   # 325 pass, 19 skip, stubbed API (2026-10-30); pick a free port
+pnpm test                   # vitest (298 in 36 files, 2026-10-30)
+PW_PORT=4193 pnpm exec playwright test   # 330 pass, 19 skip, stubbed API (2026-10-30); pick a free port
 WPM_LIVE_API=1 pnpm exec playwright test -c playwright.live.config.ts   # 23 tests in 10 files against a REAL service (tests/live/README.md)
 pnpm build
 # The demo (guided tour, fictitious data): see INSTALL.md "Try the demo". WPM_DEMO_API_URL names a SEPARATE

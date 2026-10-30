@@ -200,8 +200,8 @@
     white-space: nowrap;
   }
   .cx-calendar-event {
-    border-left: 3px solid currentColor;
-    padding-left: 0.25rem;
+    border-inline-start: 3px solid currentColor;
+    padding-inline-start: 0.25rem;
     margin-top: 0.1rem;
   }
   .cx-calendar-range {

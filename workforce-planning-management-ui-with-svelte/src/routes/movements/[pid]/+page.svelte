@@ -7,7 +7,7 @@
   says what is left).
 -->
 <script lang="ts">
-  import { formatDate, formatDateTime } from "#lib/locale-format.js";
+  import { arrow, formatDate, formatDateTime } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -242,7 +242,7 @@
         {#each trail as a (a.performed_at + a.subject_pid)}
           <li>
             <span class="chip">{kindLabel(a.kind)}</span> {a.label}
-            — {a.action}{#if a.to_worker_name} → {a.to_worker_name}{/if}
+            — {a.action}{#if a.to_worker_name} {arrow()} {a.to_worker_name}{/if}
             <span class="muted">· {formatDateTime(a.performed_at)}</span>
           </li>
         {/each}

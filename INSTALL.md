@@ -90,7 +90,7 @@ pnpm dev                   # expects the service running (stub mode is fine)
 pnpm lint                  # eslint, then prettier --check
 pnpm check                 # svelte-kit sync && svelte-check
 pnpm test                  # vitest (291 on 2026-10-30)
-pnpm exec playwright test  # 325 pass, 19 skip; page.route-stubbed, no running service needed
+pnpm exec playwright test  # 330 pass, 19 skip; page.route-stubbed, no running service needed
                            # (PW_PORT=<free port> if 4173 is taken)
 pnpm build
 ```

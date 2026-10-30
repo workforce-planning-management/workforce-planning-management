@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — right to left (WPM-T377)
+
+Every physical left/right style in `src/` is logical: table cells `text-align: start`, the bed and home cards and calendar events
+`border-inline-start` / `padding-inline-start`. A range of dates is `formatDateRange` / `formatDateTimeRange` in
+`src/lib/locale-format.ts` (`Intl.DateTimeFormat#formatRange`: "1–30 Sept 2026"; an unknown end is "…"), and an arrow meaning
+"becomes" is `arrow()` ("←" on an Arabic or Urdu page); the 33 literal "→" in 22 files are gone, three of them ranges that showed raw ISO
+dates. The share button's arrow is mirrored under `dir="rtl"`. The payroll list's period column gets a header (`columns.period`, each
+locale's existing `ceo.period` word): without one its sort button had no accessible name, which the new axe test found.
+Tests: `tests/unit/right-to-left.test.ts` (a scan that fails on a new physical side or literal arrow, with a reasoned allowlist; range
+and arrow unit tests) and `tests/e2e/right-to-left.spec.ts` (ar-001 and ur-001: a table, a period, the menu, axe; an en-001 control).
+**Not done:** the Lily theme stylesheets are not scanned; the trend chart's time axis is left to right on every page. **Not tested:**
+other pages in Arabic or Urdu, dark mode or phone width in right to left, a native reader.
+
 ### Changed — dependencies (WPM-T389)
 
 `pnpm update`: `svelte` 5.57.3 and `@types/node` 26.6.6. The Lily `svelte-locale-translations` 0.3.0 to 0.4.0 and

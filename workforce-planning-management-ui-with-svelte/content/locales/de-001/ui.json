@@ -2200,7 +2200,8 @@
     "criticality": "Kritikalität",
     "candidates": "Kandidaten",
     "tableName": "Tabelle",
-    "rowCount": "Zeilen"
+    "rowCount": "Zeilen",
+    "period": "Zeitraum"
   },
   "calendar": {
     "week": "Woche",

@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — right-to-left pages are laid out from the right (WPM-T377)
+
+Logical CSS throughout the UI, date ranges written by `Intl`'s `formatRange` instead of a literal "→", arrows that point along the
+page's direction, and a scan and Playwright tests in Arabic and Urdu. See the UI changelog for what was not tested.
+
 ### Fixed — a reused peer event id no longer answers with another organization's claim (WPM-T397)
 
 The repeat check of `POST /api/capacity/peer-demand` is scoped to the event's own pool, programme and month, after the pool and scope

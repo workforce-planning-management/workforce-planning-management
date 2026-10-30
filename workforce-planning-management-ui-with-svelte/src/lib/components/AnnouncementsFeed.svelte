@@ -6,7 +6,7 @@
   editor of the organization).
 -->
 <script lang="ts">
-  import { formatDate } from "#lib/locale-format.js";
+  import { formatDate, formatDateRange } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -122,7 +122,7 @@
             {#if unread(a)}<span class="chip" data-testid="unread">{t("announcements.unread")}</span>{/if}
             {a.title}
           </h3>
-          <p class="muted">{formatDate(a.publish_on)}{#if a.expires_on} → {formatDate(a.expires_on)}{/if}</p>
+          <p class="muted">{a.expires_on ? formatDateRange(a.publish_on, a.expires_on) : formatDate(a.publish_on)}</p>
           <!-- Plain text with line breaks; Svelte escapes it, so a post can never carry markup. -->
           <p class="body">{a.body}</p>
           {#if a.links.length > 0}

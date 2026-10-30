@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatDate, formatDateTime, formatNumber, formatTime } from "#lib/locale-format.js";
+  import { formatDateRange, formatDateTimeRange, formatNumber, formatTime } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -87,7 +87,7 @@
       id: "start_on",
       header: t("columns.dates"),
       sortable: true,
-      format: (_v, r) => `${formatDate(r.start_on as string)} → ${formatDate(r.end_on as string)} (${formatNumber(r.days as number)} ${t("common.days")})`,
+      format: (_v, r) => `${formatDateRange(r.start_on as string, r.end_on as string)} (${formatNumber(r.days as number)} ${t("common.days")})`,
     },
     { id: "actions", header: t("common.actions"), cell: decideCell },
   ]);
@@ -98,7 +98,7 @@
       header: t("columns.shift"),
       sortable: true,
       format: (_v, r) =>
-        `${formatDateTime(String(r.starts_at))} → ${formatTime(String(r.ends_at))}`,
+        formatDateTimeRange(String(r.starts_at), String(r.ends_at)),
     },
     {
       id: "assigned",

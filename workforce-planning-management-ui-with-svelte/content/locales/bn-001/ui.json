@@ -2200,7 +2200,8 @@
     "criticality": "গুরুত্ব",
     "candidates": "প্রার্থী",
     "tableName": "টেবিল",
-    "rowCount": "সারি"
+    "rowCount": "সারি",
+    "period": "সময়কাল"
   },
   "calendar": {
     "week": "সপ্তাহ",

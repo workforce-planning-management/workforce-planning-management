@@ -4,7 +4,7 @@
   see is withheld, and an unknown is shown as unknown.
 -->
 <script lang="ts">
-  import { formatDate, formatDecimal, formatNumber } from "#lib/locale-format.js";
+  import { arrow, formatDate, formatDecimal, formatNumber } from "#lib/locale-format.js";
   import { money, PLAN_BASES } from "#lib/api/wpm.js";
   import type { planAlignment, planCost, planForecast } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
@@ -94,9 +94,9 @@
               {@const demand = row.demand_by_basis.find((d) => d.basis === b)}
               {#if supply?.headcount || demand}
                 <span class="chip">
-                  {tv(b)}: {demand?.headcount ?? 0} → {supply?.headcount ?? "—"}
+                  {tv(b)}: {demand?.headcount ?? 0} {arrow()} {supply?.headcount ?? "—"}
                   {#if demand?.fte != null || supply?.fte != null}
-                    ({demand?.fte ?? "—"} → {supply?.fte ?? "—"} {t("contingent.fte")})
+                    ({demand?.fte ?? "—"} {arrow()} {supply?.fte ?? "—"} {t("contingent.fte")})
                   {/if}
                 </span>
               {/if}

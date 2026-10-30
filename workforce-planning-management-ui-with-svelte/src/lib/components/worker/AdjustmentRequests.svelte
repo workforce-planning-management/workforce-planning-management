@@ -3,6 +3,7 @@
   declines or marks it in place. When the words are withheld from the viewer, only the category and status show.
 -->
 <script lang="ts">
+  import { arrow } from "#lib/locale-format.js";
   import {
     ADJUSTMENT_CATEGORIES,
     createAdjustmentRequest,
@@ -75,7 +76,7 @@
         <span class="chip">{tv(request.category)}</span>
         <span class="chip">{tv(request.status)}</span>
         {#if !request.words_withheld}
-          <br />{request.barrier} → {request.adjustment}
+          <br />{request.barrier} {arrow()} {request.adjustment}
           {#if request.decision_note}<br /><span class="muted">{request.decision_note}</span>{/if}
         {/if}
         {#if request.status === "requested"}

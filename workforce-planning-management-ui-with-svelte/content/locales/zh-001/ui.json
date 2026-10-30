@@ -2192,7 +2192,8 @@
     "criticality": "重要性",
     "candidates": "候选人",
     "tableName": "表",
-    "rowCount": "行数"
+    "rowCount": "行数",
+    "period": "时间段"
   },
   "calendar": {
     "week": "周",

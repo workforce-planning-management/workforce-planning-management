@@ -7,7 +7,7 @@
   aggregate and levers are suggestions, never decisions.
 -->
 <script lang="ts">
-  import { formatDate, numberToInput, parseScaled } from "#lib/locale-format.js";
+  import { arrow, formatDate, formatDateRange, numberToInput, parseScaled } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import PlanForecast from "#lib/components/planning/PlanForecast.svelte";
   import PlanTolerances from "#lib/components/planning/PlanTolerances.svelte";
@@ -215,7 +215,7 @@
       id: "horizon_start",
       header: t("pages.planning.horizon"),
       sortable: true,
-      format: (_v, r) => `${formatDate(r.horizon_start as string)} → ${formatDate(r.horizon_end as string)}`,
+      format: (_v, r) => formatDateRange(r.horizon_start as string, r.horizon_end as string),
     },
     { id: "demand_lines", header: t("pages.planning.lines"), sortable: true, align: "end" },
     {
@@ -365,7 +365,7 @@
         <tr>
           <td>{line.department}</td><td>{line.job_title ?? "any"}</td><td>{formatDate(line.target_on)}</td><td>{line.target_headcount}</td>
           <td>{line.target_fte ?? "—"}</td>
-          <td>{tv(line.basis)}{#if line.expected_ends_on} <span class="muted">→ {formatDate(line.expected_ends_on)}</span>{/if}</td>
+          <td>{tv(line.basis)}{#if line.expected_ends_on} <span class="muted">{arrow()} {formatDate(line.expected_ends_on)}</span>{/if}</td>
           <td>{line.programme_ref ?? "—"}</td>
           {#each plan.objectives as o (o.pid)}
             <td>

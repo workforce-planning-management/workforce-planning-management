@@ -6,7 +6,7 @@
   A development conversation starter, not a selection decision.
 -->
 <script lang="ts">
-  import { formatDate } from "#lib/locale-format.js";
+  import { formatDate, formatDateRange } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -165,7 +165,7 @@
 {/snippet}
 
 {#snippet planDates({ row }: { row: DataGridRow })}
-  {planItem(row).starts_on} → {planItem(row).ends_on}
+  {formatDateRange(planItem(row).starts_on, planItem(row).ends_on)}
   <span class="muted">({planItem(row).weeks} {t("training.weeks")})</span>
 {/snippet}
 

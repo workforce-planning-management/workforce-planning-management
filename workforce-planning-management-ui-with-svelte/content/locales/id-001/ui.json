@@ -2192,7 +2192,8 @@
     "criticality": "Tingkat kekritisan",
     "candidates": "Kandidat",
     "tableName": "Tabel",
-    "rowCount": "Baris"
+    "rowCount": "Baris",
+    "period": "Periode"
   },
   "calendar": {
     "week": "Minggu",

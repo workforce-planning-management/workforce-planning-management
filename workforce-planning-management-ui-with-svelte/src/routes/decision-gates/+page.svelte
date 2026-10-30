@@ -3,6 +3,7 @@
   needs and ADVISES; it never blocks. Whether consultation is required is for the law and the agreements to say. HR only.
 -->
 <script lang="ts">
+  import { arrow } from "#lib/locale-format.js";
   import { page } from "$app/state";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
@@ -111,7 +112,7 @@
       <ul data-testid="dg-gates">
         {#each gates as g (g.pid)}
           <li data-testid="dg-gate">
-            {tv(g.change_kind)} → {bodyName(g.body_pid)}{#if g.note} · {g.note}{/if}
+            {tv(g.change_kind)} {arrow()} {bodyName(g.body_pid)}{#if g.note} · {g.note}{/if}
             <button type="button" data-testid="dg-check" onclick={() => check(g.change_kind)}>{t("gates.check")}</button>
           </li>
         {/each}

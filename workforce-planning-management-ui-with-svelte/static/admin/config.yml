@@ -3030,6 +3030,7 @@ collections:
               - { name: "candidates", label: "Candidates", widget: string, required: false, i18n: true }
               - { name: "tableName", label: "Table Name", widget: string, required: false, i18n: true }
               - { name: "rowCount", label: "Row Count", widget: string, required: false, i18n: true }
+              - { name: "period", label: "Period", widget: string, required: false, i18n: true }
           - name: "calendar"
             label: "Calendar"
             widget: object

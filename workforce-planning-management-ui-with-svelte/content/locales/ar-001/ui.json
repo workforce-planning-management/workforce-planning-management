@@ -2232,7 +2232,8 @@
     "criticality": "الأهمية",
     "candidates": "المرشحون",
     "tableName": "الجدول",
-    "rowCount": "الصفوف"
+    "rowCount": "الصفوف",
+    "period": "الفترة"
   },
   "calendar": {
     "week": "أسبوع",

@@ -5,6 +5,7 @@
   others are shown as related and counted for nothing.
 -->
 <script lang="ts">
+  import { arrow } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -96,7 +97,7 @@
       <option value="">—</option>
       {#each skills as s (s.pid)}<option value={s.pid}>{s.name}</option>{/each}
     </select>
-    →
+    {arrow()}
     <select data-testid="crosswalk-to" bind:value={to} aria-label={t("crosswalk.to")}>
       <option value="">—</option>
       {#each skills as s (s.pid)}<option value={s.pid}>{s.name}</option>{/each}

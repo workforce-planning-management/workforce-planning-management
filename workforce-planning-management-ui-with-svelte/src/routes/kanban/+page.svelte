@@ -5,6 +5,7 @@
   step achieved does not change the declared level of the skill: that is a separate, evidenced act.
 -->
 <script lang="ts">
+  import { arrow } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -60,7 +61,7 @@
     items.map((i) => ({
       id: i.pid,
       columnId: i.status,
-      title: `${skills[i.skill_pid] ?? t("kanban.unknownSkill")}: ${i.current_level} → ${i.target_level}`,
+      title: `${skills[i.skill_pid] ?? t("kanban.unknownSkill")}: ${i.current_level} ${arrow()} ${i.target_level}`,
     })),
   );
 

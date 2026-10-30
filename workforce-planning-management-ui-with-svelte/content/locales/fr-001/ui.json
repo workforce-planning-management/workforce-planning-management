@@ -2208,7 +2208,8 @@
     "criticality": "Criticité",
     "candidates": "Candidats",
     "tableName": "Table",
-    "rowCount": "Lignes"
+    "rowCount": "Lignes",
+    "period": "Période"
   },
   "calendar": {
     "week": "Semaine",

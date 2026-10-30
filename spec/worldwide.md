@@ -156,7 +156,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   as 1250 and 2830 basis points and a non-number refused, a payroll period in German (`01.09.2026`) and in Bengali digits, and 26 existing
   assertions moved from ISO text to the en-001 form ("1 Sept 2026", "200,000"). **Not done:** a bare count put straight into markup
   (`{x.length}`, `{row.score}`) outside the places named above is not all converted, and the scan cannot see one (it has no types); a
-  date in a multi-line `tf`/`tp` call is outside the scan; ranges still use a literal "→" (WPM-T377); `type="date"` inputs show the
+  date in a multi-line `tf`/`tp` call is outside the scan; ranges still use a literal "→" (WPM-T377, *since done*); `type="date"` inputs show the
   browser's format; whole-number inputs stay `type="number"`; the calendar's shift key is still the UTC day. **Not tested:** screenshots
   were not looked at; Arabic-Indic digits typed on an Arabic page; a reader in a time zone far from UTC (a timestamp shown as a date can
   be the day before or after its UTC date, which is intended).
@@ -177,8 +177,30 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   were left as `type="number"` here and moved to the locale's decimal input by WPM-T375; only the whole-number headcount input stays
   `type="number"`.) **Not tested:** a person on an Arabic or Urdu page typing Arabic-Indic digits (the parser reads the
   locale's own digits, but `ar-001` formats with ASCII digits, so only those are tested there).
-- [ ] WPM-T377 **Right-to-left finish.** *(WPM-R214, WPM-D143; rows 28 to 30)* Logical CSS for the 11 physical declarations (tables
+- [x] (2026-10-30) WPM-T377 **Right-to-left finish.** *(WPM-R214, WPM-D143; rows 28 to 30)* Logical CSS for the 11 physical declarations (tables
   first); ranges as a catalogue pattern or `formatRange` instead of a literal "→"; a `ur-001` direction test beside the `ar-001` one.
+  **Done:** the 11 physical declarations are logical: `text-align: start` on every table cell, `border-inline-start` (and its colour)
+  on the bed cards, the home feature cards and calendar events, `padding-inline-start` on calendar events; no other physical left/right
+  property was found in `src/` (four-value `margin`/`padding` shorthands, `float`, `inset` and `style:` directives were checked).
+  `src/lib/locale-format.ts` adds `formatDateRange` (`Intl.DateTimeFormat#formatRange` in the page's locale: "1–30 Sept 2026",
+  "01.–30.09.2026"; an unknown end is "…" with an en dash, no direction), `formatDateTimeRange` (a shift, in the reader's time zone)
+  and `arrow()` ("→", or "←" on an Arabic or Urdu page) for an arrow that means "becomes" (3 → 4, a stage to the next, a requester to a
+  taker). The 33 literal arrows in 22 components and pages go through them, among them three ranges that showed raw ISO dates
+  (`OnCall`'s stretches, `SkillGaps`' training plan, `Backups`' open ends). The eight catalogue strings already used "←" in `ar-001` and
+  `ur-001`. The share button's forward arrow (Lily `SharePicker`) is mirrored under `dir="rtl"`; the other icons (menu, close) have no
+  direction, and the menu drawer already opens from the inline start. The axe run found a real fault on the way: the payroll list's
+  period column had no header, so its sort button had no name; it is now `columns.period` (each locale's existing `ceo.period` word,
+  `REVIEW.md`). **Tests:** `tests/unit/right-to-left.test.ts`: a scan of `src/` that fails on a physical left/right property, alignment,
+  float or `style:` directive and on a literal "→"/"←" outside comments (an allowlist with a reason per line, empty today), and unit
+  tests of the ranges and the arrow in en, ar and ur. Playwright `tests/e2e/right-to-left.spec.ts` on `ar-001` and `ur-001`: `dir`
+  and `lang`, every payroll table cell `text-align: start` with its text at the cell's right edge, the period written as the browser's
+  own `formatRange` with no arrow and no ISO date, axe (WCAG 2 A and AA) over the page and the open menu, the share arrow mirrored, the
+  menu drawer flush with the right edge and its link navigating; an `en-001` control (left to right, arrow not mirrored). The payroll
+  list's assertions moved from "1 Sept 2026 → 30 Sept 2026" to "1–30 Sept 2026" (and "01.–30.09.2026" in German). Screenshots of the
+  Arabic payroll page and the Urdu menu were looked at. **Not done:** the theme stylesheets in `static/assets/themes/` (copied from Lily)
+  are not scanned; the trend chart (`TrendChart.svelte`) keeps time running left to right on every page; the calendar's own
+  toolbar and keyboard come from Lily and were not changed. **Not tested:** every other page in Arabic or Urdu (only the payroll list,
+  the menu and the scan); screenshots in dark mode or at phone width; a native reader.
 - [ ] WPM-T378 **Today, week start and weekend in the UI.** *(WPM-R214, WPM-D143, WPM-D144; rows 12, 13, 16)* "Today" in a time zone
   (the user's or the organization's), not UTC; week start and weekend days for the calendar from a region setting separate from the
   language. Needs the jurisdiction model (D144) or a user setting decided first.
@@ -384,9 +406,9 @@ through `rules::duplicates`.
 | 25 | Numbers | UI `src/lib/components/LoadMore.svelte:23`, `src/routes/pay-gap/+page.svelte:127` | `Intl.NumberFormat(i18n.locale)` | **Right** | — |
 | 26 | Plurals | UI `src/lib/i18n.svelte.ts`; `content/locales/REVIEW.md:50-51` | No `Intl.PluralRules`; 8 en-001 strings use "(s)"; about 40 strings fill a count | **Gap**: Arabic, Russian, Welsh and others have more than two forms. **Fixed 2026-10-30** for the 8 "(s)" strings (`tn`); the other count strings remain | T374 |
 | 27 | Plurals | UI `src/lib/components/FrameworkRolePanel.svelte:315` | `changes2: changes.length === 1 ? "" : "s"` appends an English "s" in every locale | **Gap (a bug)**. **Fixed 2026-10-30** (`tn`) | T374 |
-| 28 | Right-to-left | UI `src/hooks.server.ts:64-65`, `src/routes/+layout.svelte:200-201`, `src/lib/locales.ts` (`RTL_LANGUAGES = ["ar", "ur"]`) | `dir` set on the server and the client for `ar-001` and `ur-001`; an end-to-end test covers `ar` only | **Right**; `ur` untested | T377 |
-| 29 | Right-to-left | UI `src/app.css:128,182,191-206`, `CalendarPanel.svelte:203-204`, `src/routes/+page.svelte:369` | 11 physical declarations (against 27 logical); `text-align: left` on every table cell | **Gap** | T377 |
-| 30 | Right-to-left | UI `TimeOffPanel.svelte:90`, `OnCall.svelte:59`, `metrics/+page.svelte:74` (and about 12 more, plus 8 catalogue strings) | A literal "→" between the ends of a range points the wrong way in `ar` and `ur` | **Gap** | T377 |
+| 28 | Right-to-left | UI `src/hooks.server.ts:64-65`, `src/routes/+layout.svelte:200-201`, `src/lib/locales.ts` (`RTL_LANGUAGES = ["ar", "ur"]`) | `dir` set on the server and the client for `ar-001` and `ur-001`; an end-to-end test covers `ar` only | **Right**; `ur` untested. **Tested 2026-10-30** in `ar` and `ur` (`right-to-left.spec.ts`) | T377 |
+| 29 | Right-to-left | UI `src/app.css:128,182,191-206`, `CalendarPanel.svelte:203-204`, `src/routes/+page.svelte:369` | 11 physical declarations (against 27 logical); `text-align: left` on every table cell | **Gap**. **Fixed 2026-10-30**: all logical, and a scan fails on a new one | T377 |
+| 30 | Right-to-left | UI `TimeOffPanel.svelte:90`, `OnCall.svelte:59`, `metrics/+page.svelte:74` (and about 12 more, plus 8 catalogue strings) | A literal "→" between the ends of a range points the wrong way in `ar` and `ur` | **Gap**. **Fixed 2026-10-30**: `formatDateRange` and `arrow()` | T377 |
 | 31 | Locales | UI `content/locales/*/ui.json`, `src/lib/locales.ts` | 17 locales; all 12 translated `-001` files hold all 2,338 keys of `en-001`; `en-001` (not `en-gb`) is the default; all translations are AI-written and unreviewed (`REVIEW.md`) | **Right** in parity; **partial**: no locale is reviewed | — (recorded) |
 | 32 | Locales | UI `content/locales/en-gb/ui.json` (5 overrides), `en-us/ui.json` (0) | `en-001` is written in British wording, so `en-gb` barely differs and `en-us` has nothing to override | **Partial** | T382 |
 | 33 | Pay arithmetic | API `src/rules/payroll.rs:42-47`, `src/rules/workforce.rs:10` | The stub tax (20% above 104,750 minor units a month, the UK allowance divided by 12), a 7.5-hour day and 9,750 minutes a month, applied to every worker whatever the currency | **Gap** (labelled a stub; production gate WPM-G2) | T383 |

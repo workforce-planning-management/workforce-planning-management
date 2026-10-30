@@ -367,7 +367,7 @@
   .home-feature-card {
     background: var(--panel);
     border: 1px solid var(--line);
-    border-left: 4px solid var(--accent);
+    border-inline-start: 4px solid var(--accent);
     border-radius: 8px;
     padding: 1.1rem;
   }

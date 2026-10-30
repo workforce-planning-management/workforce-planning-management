@@ -341,6 +341,11 @@
   :global(.drawer) {
     transition: transform 0.15s ease-out;
   }
+  /* The share button's icon is an arrow pointing forward (Lily's SharePicker draws it pointing right);
+     on a right-to-left page forward is to the left, so it is mirrored there (WPM-T377). */
+  :global(:root[dir="rtl"] .share-picker-icon) {
+    transform: scaleX(-1);
+  }
   .drawer-head {
     display: flex;
     align-items: center;

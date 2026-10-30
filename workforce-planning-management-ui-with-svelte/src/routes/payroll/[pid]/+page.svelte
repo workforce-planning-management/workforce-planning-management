@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatDate } from "#lib/locale-format.js";
+  import { formatDateRange } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
@@ -96,7 +96,7 @@
   <p>{t("common.loading")}</p>
 {:else}
   <h1>
-    {formatDate(run.period_start)} → {formatDate(run.period_end)}
+    {formatDateRange(run.period_start, run.period_end)}
     <span class="chip" data-testid="run-status">{tv(run.status)}</span>
   </h1>
   <div class="panel">

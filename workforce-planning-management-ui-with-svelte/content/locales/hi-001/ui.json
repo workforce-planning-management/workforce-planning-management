@@ -2200,7 +2200,8 @@
     "criticality": "महत्त्व",
     "candidates": "उम्मीदवार",
     "tableName": "तालिका",
-    "rowCount": "पंक्तियाँ"
+    "rowCount": "पंक्तियाँ",
+    "period": "अवधि"
   },
   "calendar": {
     "week": "सप्ताह",
