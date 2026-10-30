@@ -271,3 +271,75 @@ async fn contracts_404_cycle_and_uniqueness() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// WPM-T388: `?fields=` returns only the fields asked for, refuses an unknown name, and the list audits a salary read whenever it carries
+// a salary, as the single read does, and not when it does not.
+async fn worker_list_returns_the_fields_asked_for_and_audits_salary_it_carries() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let department = format!("lean-{}", uuid::Uuid::new_v4().simple());
+        let mut pids = Vec::new();
+        for n in 1..=2 {
+            let created: Value = request
+                .post("/api/workers")
+                .json(&json!({
+                    "person_ref": a_person(), "organization_ref": org,
+                    "worker_number": format!("{department}-{n}"), "display_name": format!("Lean Worker {n}"),
+                    "employment_type": "permanent", "department": department, "job_title": "Engineer",
+                    "salary_minor": 3_000_000, "salary_currency": "GBP", "hired_on": "2026-01-05",
+                }))
+                .await
+                .json();
+            pids.push(created["pid"].as_str().unwrap().to_string());
+        }
+        let salary_reads = |pid: String| {
+            let request = &request;
+            async move {
+                let audits: Value = request.get(&format!("/api/audits/{pid}")).await.json();
+                audits.as_array().unwrap().iter().filter(|a| a["action"] == "salary_read").cloned().collect::<Vec<Value>>()
+            }
+        };
+
+        // The lean list: three fields per row and nothing else; no salary, so no salary read is recorded. Paging is unchanged.
+        let lean = request.get(&format!("/api/workers?department={department}&fields=pid,department,person_ref")).await;
+        assert_eq!(lean.status_code(), 200);
+        assert_eq!(lean.headers().get("x-total-count").unwrap().to_str().unwrap(), "2");
+        let rows: Value = lean.json();
+        let rows = rows.as_array().unwrap();
+        assert_eq!(rows.len(), 2);
+        for row in rows {
+            let mut keys: Vec<&str> = row.as_object().unwrap().keys().map(String::as_str).collect();
+            keys.sort_unstable();
+            assert_eq!(keys, vec!["department", "person_ref", "pid"], "{row}");
+            assert!(row["person_ref"].as_str().unwrap().starts_with("person:"));
+        }
+        for pid in &pids {
+            assert_eq!(salary_reads(pid.clone()).await, Vec::<Value>::new(), "no salary in the answer, no salary read");
+        }
+
+        // Asking for the salary is a salary read of every row that carries one, audited with the department and no figure.
+        let paid: Value = request.get(&format!("/api/workers?department={department}&fields=pid,salary_minor")).await.json();
+        assert!(paid.as_array().unwrap().iter().all(|r| r["salary_minor"] == 3_000_000 && r.as_object().unwrap().len() == 2), "{paid}");
+        for pid in &pids {
+            let reads = salary_reads(pid.clone()).await;
+            assert_eq!(reads.len(), 1, "{reads:?}");
+            assert_eq!(reads[0]["snapshot"], json!({ "department": department, "via": "list" }));
+            assert!(!reads[0].to_string().contains("3000000"));
+        }
+        // The whole record (no `fields`) is the list as before, and is a salary read too.
+        let whole: Value = request.get(&format!("/api/workers?department={department}")).await.json();
+        assert!(whole[0].get("display_name").is_some() && whole[0].get("job_title").is_some(), "{whole}");
+        assert_eq!(salary_reads(pids[0].clone()).await.len(), 2);
+
+        // Refusals: an unknown name, an empty list, the internal id; nothing is audited for them.
+        for bad in ["pid,nmae", "", "id", "pid,deleted_at", "salary"] {
+            let response = request.get(&format!("/api/workers?department={department}&fields={bad}")).await;
+            assert_eq!(response.status_code(), 422, "{bad:?}");
+        }
+        assert_eq!(salary_reads(pids[0].clone()).await.len(), 2);
+    })
+    .await;
+}

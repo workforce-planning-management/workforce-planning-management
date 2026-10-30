@@ -29,7 +29,7 @@ pub fn spec() -> Value {
         "paths": {
             "/api/workers": {
                 "post": { "tags": ["hr-core"], "summary": "Create a worker (onboarding status; person/organization URNs; salary minor units)", "responses": created },
-                "get": { "tags": ["hr-core"], "summary": "List workers (?department=&status=; per-row mask obligation)", "responses": ok("Workers") }
+                "get": { "tags": ["hr-core"], "summary": "List workers (?department=&status=&limit=&offset=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does", "responses": ok("Workers, or the fields asked for of each") }
             },
             "/api/workers/{pid}": {
                 "get": { "tags": ["hr-core"], "summary": "Fetch a worker (salary read audited; mask honoured)", "responses": ok("Worker") },

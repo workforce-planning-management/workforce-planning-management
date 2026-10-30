@@ -18,7 +18,7 @@ use crate::metrics::Metrics;
 use crate::models::_entities::{benefit_enrollments, benefit_plans, onboarding_items, workers};
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
-use crate::rules::{engagement, lifecycle, org, talent, tokens};
+use crate::rules::{engagement, lifecycle, org, talent, tokens, worker_fields};
 use crate::streaming;
 use crate::validation::Problems;
 
@@ -275,6 +275,10 @@ struct WorkerListParams {
     /// Rows to skip; absent ⇒ 0.
     #[serde(default)]
     offset: Option<u64>,
+    /// A comma-separated allowlist of fields to return (`rules::worker_fields::LIST_FIELDS`); absent ⇒ the whole record. An unknown
+    /// name is a 422 (WPM-R216).
+    #[serde(default)]
+    fields: Option<String>,
 }
 
 #[debug_handler]
@@ -288,6 +292,8 @@ async fn list_workers(
         offset: params.offset,
     };
     page.check_offset()?;
+    let fields = worker_fields::parse_fields(params.fields.as_deref())
+        .map_err(|message| unprocessable(&message))?;
     let (limit, offset) = page.resolve(WORKER_LIST_DEFAULT_LIMIT);
     let mut query = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
     if let Some(department) = &params.department {
@@ -306,7 +312,9 @@ async fn list_workers(
         .offset(offset)
         .all(&ctx.db)
         .await?;
+    let discloses_salary = worker_fields::includes_salary(fields.as_deref());
     let mut out = Vec::with_capacity(rows.len());
+    let mut salary_reads = Vec::new();
     for worker in rows {
         let obligations = auth::authorize_record(
             &caller,
@@ -314,11 +322,41 @@ async fn list_workers(
             &auth::worker_resource_attrs(&worker),
         )
         .map_err(record_rejection)?;
-        out.push(if obligations.iter().any(|o| o == "mask") {
+        let masked = obligations.iter().any(|o| o == "mask");
+        // A salary the answer carries is a salary read, audited as the single read audits it (WPM-D7, WPM-R216).
+        if discloses_salary && worker.salary_minor.is_some() && !masked {
+            salary_reads.push((worker.pid, worker.department.clone()));
+        }
+        let worker = if masked {
             auth::mask_worker(worker)
         } else {
             worker
+        };
+        out.push(match &fields {
+            None => serde_json::to_value(worker)?,
+            Some(names) => match serde_json::to_value(worker)? {
+                serde_json::Value::Object(record) => {
+                    serde_json::Value::Object(worker_fields::project(&record, names))
+                }
+                other => other,
+            },
         });
+    }
+    // No audit, no answer (WPM-D107): every salary read is recorded, together, before the list is sent.
+    if !salary_reads.is_empty() {
+        let txn = ctx.db.begin().await?;
+        for (pid, department) in salary_reads {
+            Audit::record(
+                &txn,
+                "worker",
+                pid,
+                "salary_read",
+                caller.actor(),
+                Some(serde_json::json!({ "department": department, "via": "list" })),
+            )
+            .await?;
+        }
+        txn.commit().await?;
     }
     Ok(with_page_headers(format::json(out)?, total, limit, offset))
 }

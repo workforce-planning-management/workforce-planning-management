@@ -299,6 +299,62 @@ async fn enforcement_personas_gate_and_mask() {
         };
         assert!(hr_view["salary_minor"].is_null(), "hr read is masked");
 
+        // The list with `?fields=` (WPM-T388) keeps the mask: a masked colleague asking for the salary gets null and no salary read is
+        // recorded; payroll asking for it gets the figure, and its list read is audited as the single read is.
+        let salary_reads = || async {
+            use sea_orm::{ConnectionTrait, Statement};
+            ctx.db
+                .query_one_raw(Statement::from_string(
+                    ctx.db.get_database_backend(),
+                    format!("SELECT count(*)::bigint AS n FROM audit_logs WHERE entity_pid = '{worker_pid}' AND action = 'salary_read'"),
+                ))
+                .await
+                .unwrap()
+                .unwrap()
+                .try_get::<i64>("", "n")
+                .unwrap()
+        };
+        // The database may hold more workers than one page, so page through to the one made here.
+        let row_of = |fields: &'static str, token: String| {
+            let (request, worker_pid) = (&request, worker_pid.clone());
+            async move {
+                for page in 0.. {
+                    let response = request
+                        .get(&format!("/api/workers?department=engineering&fields={fields}&limit=500&offset={}", page * 500))
+                        .add_header("authorization", bearer(&token))
+                        .await;
+                    assert_eq!(response.status_code(), 200);
+                    let rows: Value = response.json();
+                    let rows = rows.as_array().unwrap();
+                    assert!(!rows.is_empty(), "the worker is listed (page {page}, fields {fields})");
+                    if let Some(row) = rows.iter().find(|r| r["pid"] == worker_pid.as_str()) {
+                        return row.clone();
+                    }
+                }
+                unreachable!()
+            }
+        };
+        // The list is scoped to the caller's organizations (the single read is not), so payroll needs a membership in this one.
+        {
+            use sea_orm::ConnectionTrait;
+            ctx.db
+                .execute_unprepared(&format!(
+                    "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
+                     VALUES ('{}', 'person:payroll-user', '{org}', 'member', '2026-01-05')",
+                    uuid::Uuid::new_v4()
+                ))
+                .await
+                .unwrap();
+        }
+        let before = salary_reads().await;
+        let masked_row = row_of("pid,salary_minor,salary_currency", other.clone()).await;
+        assert!(masked_row["salary_minor"].is_null() && masked_row["salary_currency"].is_null(), "{masked_row}");
+        assert_eq!(salary_reads().await, before, "a masked list discloses no salary and records no salary read");
+        assert_eq!(row_of("pid,salary_minor", payroll.clone()).await["salary_minor"], 3_600_000);
+        assert_eq!(salary_reads().await, before + 1, "payroll's list read of the salary is audited");
+        assert_eq!(row_of("pid,department,person_ref", payroll.clone()).await.as_object().unwrap().len(), 3);
+        assert_eq!(salary_reads().await, before + 1, "the lean list is no salary read");
+
         // Subject access (WPM-R30): the subject exports unmasked; a
         // masked caller is refused outright — a full export cannot be
         // "masked".

@@ -14795,7 +14795,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List workers (?department=&status=; per-row mask obligation) */
+        /** List workers (?department=&status=&limit=&offset=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does */
         get: {
             parameters: {
                 query?: never;
@@ -14805,7 +14805,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Workers */
+                /** @description Workers, or the fields asked for of each */
                 200: {
                     headers: {
                         [name: string]: unknown;

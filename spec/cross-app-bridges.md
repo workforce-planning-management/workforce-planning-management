@@ -298,7 +298,27 @@ CRM's source is on the same machine (`contact-relationship-management-service-wi
    now keeps each worker's `person_ref` and stores team members by it, skipping (and counting) a worker without one; it never falls back
    to `worker:`. Two things remain for WPM's owner, found by a live end-to-end run of the three apps on 2026-10-30: `GET /api/workers`
    returns the whole worker record (name, job title, manager, salary unless the policy masks it) to the import's token, which keeps three
-   fields of it; and the list does not audit salary reads as the single-worker read does. Neither is changed here.
+   fields of it; and the list does not audit salary reads as the single-worker read does. Neither is changed here. **Both settled
+   on WPM's side the same day (WPM-R216, WPM-D147, WPM-T388):** the list takes `?fields=`, so the import can ask for
+   `GET /api/workers?status=active&fields=pid,department,person_ref&limit=200&offset=` and receive those three fields of each worker
+   and nothing else, under the same policy and scope; and a list that carries an unmasked salary now audits a `salary_read` for each
+   such worker. **Whether and when CRM asks for the lean list is CRM's change**; nothing here has been run from CRM.
+
+### WPM-R216 — A lean worker list for a bridge
+
+**WPM-R216** `GET /api/workers` takes an optional `fields`: a comma-separated list of the record's field names (`pid`, `person_ref`,
+`upstream_worker_ref`, `organization_ref`, `worker_number`, `display_name`, `status`, `employment_type`, `fte_percent`, `department`,
+`job_title`, `location`, `manager_pid`, `salary_minor`, `salary_currency`, `hired_on`, `terminated_on`, `engagement_ends_on`,
+`created_at`, `updated_at`); each row then holds those fields and no others. An unknown name, an empty list or an empty name is `422`
+with the allowed names; the serial `id` and `deleted_at` are not offered. Filters, paging (`x-total-count`), the policy, the
+organization scope and the per-row salary mask are unchanged: a salary asked for by a caller the policy masks is `null`.
+
+- **WPM-D147 A list is a salary read whenever it carries a salary, and is audited as the single read is.** For each listed worker whose
+  salary the answer carries unmasked (no `fields`, or `fields` naming `salary_minor` or `salary_currency`), a `salary_read` row is
+  written with the department and `"via": "list"`, no figure, all in one transaction before the answer is sent (WPM-D107: if the audit
+  fails, the list is not given). A list that does not carry salary, or masks it, records none. Rejected: one summary row per list
+  (it cannot answer "who read this person's salary" for one person); ignoring an unknown field name (a typo would silently widen the
+  answer to the whole record or narrow it to nothing).
 3. **PPM's code was not found at first; it is at `~/git/project-porfolio-management/project-porfolio-management`** (the directory is spelled
    `porfolio`; the crate and docs say `portfolio`). CRM's idea contract below is still second-hand, but PPM itself was read next.
 

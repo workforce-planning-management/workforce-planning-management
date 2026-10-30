@@ -5,7 +5,8 @@
 Family conventions: every mutation writes an audit row (entity kind,
 pid, action, actor, snapshot). Because HR data is regulated personal
 data, **sensitive reads are audited too**: employee-record reads that
-include salary, payslip reads, review-content reads, succession-plan
+include salary (the single read, and the worker list for each worker whose
+salary it carries unmasked, `salary_read` with `"via": "list"`; WPM-D147), payslip reads, review-content reads, succession-plan
 reads, 360 report reads (`report_read`), unmasked adjustment-request
 reads (`adjustments_read`), unmasked assessment-score reads, and
 subject-access exports (`subject_access_exported`) each record who

@@ -116,5 +116,6 @@ pub mod tolerance;
 pub mod training;
 pub mod webhook;
 pub mod wellbeing;
+pub mod worker_fields;
 pub mod workforce;
 pub mod working_time;

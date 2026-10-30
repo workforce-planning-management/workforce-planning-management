@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — a lean worker list for bridges (WPM-T388)
+
+`GET /api/workers?fields=` lets CRM's teams import ask for `pid,department,person_ref` only, and the list now audits each salary it
+carries as the single read does (WPM-R216, WPM-D147). **Not verified:** CRM asking for it. See the service changelog.
+
 ### Changed — PPM can withdraw a demand figure it sent (WPM-T387)
 
 The family contract's demand route takes `fte_centi: 0` to withdraw a claim and an optional `sent_at` so an older event cannot overwrite

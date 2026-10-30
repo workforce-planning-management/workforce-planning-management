@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a lean worker list, and the list audits the salary it carries (WPM-T388, WPM-R216, WPM-D147)
+
+`GET /api/workers?fields=pid,department,person_ref` returns only the named fields of each row (an allowlist of 20; an unknown name is
+`422`); absent, the whole record as before. Policy, scope, paging and the mask are unchanged. A list that carries an unmasked salary now
+writes a `salary_read` audit row per such worker (`"via": "list"`, no figure) before answering, as the single read does. **Not done:**
+the whole record is still the default. **Not verified:** CRM's teams import asking for the lean list (CRM's change); a 500-row salaried
+page's audit cost.
+
 ### Changed — the peer can withdraw a demand figure, and an older event no longer overwrites a newer one (WPM-T387, WPM-R215, WPM-D146)
 
 `POST /api/capacity/peer-demand` takes `fte_centi: 0` to withdraw the `ppm` claim for that pool, programme and month (closed, last
