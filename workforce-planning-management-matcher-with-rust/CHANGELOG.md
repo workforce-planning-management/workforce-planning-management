@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `rust-version` is 1.97, the N-2 MSRV (spec/rust-msrv-n-minus-2; stable is 1.99.1), down from 1.99: the crate
+  compiles on 1.97 and CI checks it there (WPM-T389). Not published: 0.1.0 on crates.io still declares 1.99 (WPM-T390).
+  `cargo update` had nothing to update.
+
 ## 0.1.0 - 2026-10-19
 
 - First version: `WorkerRecord`, `MatchingEngine`, `MatchConfig` (strict, default,

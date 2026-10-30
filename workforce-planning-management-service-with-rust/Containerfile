@@ -15,7 +15,7 @@
 
 # Base images are pinned by digest (WPM-T195), so a rebuild gets the same bytes; the tag says what the digest was.
 # To move them: look up the tag's current index digest, change it here, build, and run the tests.
-FROM docker.io/library/rust:1@sha256:e259494b14672950a909b4c54527e19d29cae6ebf980672114c8bb85e5594e4a AS build
+FROM docker.io/library/rust:1@sha256:09027f873d45b8ecd1dc86f1fa13b7a62b875c961f017a0e331267b350430137 AS build
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
@@ -23,7 +23,7 @@ COPY migration ./migration
 COPY src ./src
 RUN cargo build --release --locked --bin workforce-planning-management
 
-FROM docker.io/library/debian:stable-slim@sha256:eb593cf2c358cacef45ca0a424bbc7d30cfa3466265fc2662b9466a0ca6ba1c5 AS runtime
+FROM docker.io/library/debian:stable-slim@sha256:13e0a2e78aa0554ad5ff66e4e260c6dbcdff807eb1f39d43b9fb0288aae88b04 AS runtime
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/* \

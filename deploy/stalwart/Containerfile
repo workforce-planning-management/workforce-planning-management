@@ -2,7 +2,7 @@
 # sets the server up the first time it starts, so `podman compose up` needs no clicks.
 #
 # DEMO ONLY: a catch-all mail sink. Nothing is delivered outside the container's own domain.
-FROM docker.io/stalwartlabs/stalwart:v0.16.26@sha256:254ce5d7f3dbe4bb628ce2c7912e664ecb1c3466db79907f4a44d9a00117776b
+FROM docker.io/stalwartlabs/stalwart:v0.16.27@sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c
 
 # The CLI is a static binary: it is copied in rather than run as a second container, because the setup
 # has to restart the server between two steps (see entrypoint.sh).

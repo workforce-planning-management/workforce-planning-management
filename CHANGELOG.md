@@ -9,6 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — dependencies, actions and images updated (WPM-T389)
+
+Rust lockfile updates within range (`loco-rs` 1.2.0, `tokio` 1.54, `uuid` 1.29 and `redis` 1.8 now also the declared minimum);
+the UI's `svelte` 5.57.3, `@types/node` 26.6.6, and the Lily `svelte-locale-translations` 0.4.0 and `svelte-picker-bar` 0.5.1;
+`Swatinem/rust-cache` 2.9.3 (Dependabot #17); new digests for the Postgres 18, Redis 8, Rust and Debian images and Stalwart
+0.16.27. The matcher, the migration crate and `entity-ref` declare the N-2 MSRV, Rust 1.97, and a new CI job checks them on it;
+the service stays at 1.99 until a matcher declaring 1.97 is published (WPM-T390). **Held back:** TypeScript 7 (SvelteKit 3.1.0
+does not load it) and Stalwart 1.0 (a new major, not tried). See the subproject changelogs and WPM-T389.
+
 ### Added — a lean worker list for bridges (WPM-T388)
 
 `GET /api/workers?fields=` lets CRM's teams import ask for `pid,department,person_ref` only, and the list now audits each salary it

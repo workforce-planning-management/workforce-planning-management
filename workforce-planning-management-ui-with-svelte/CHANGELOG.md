@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — dependencies (WPM-T389)
+
+`pnpm update`: `svelte` 5.57.3 and `@types/node` 26.6.6. The Lily `svelte-locale-translations` 0.3.0 to 0.4.0 and
+`svelte-picker-bar` 0.4.0 to 0.5.1 (exact pins, as before); lint, svelte-check, vitest, Playwright and the build stay green.
+**Held back:** TypeScript 7.0.2, tried again: `svelte-kit sync` fails to load it under SvelteKit 3.1.0, so it stays on 6.0.3.
+`pnpm audit` reports one low advisory with no patched release (`deepmerge` 4.3.1 through `@sveltejs/vite-plugin-svelte`, a build
+tool); the existing peer warning (`openapi-typescript` 7.13.0 wants TypeScript 5) is unchanged.
+
 ### Added — plural rules (WPM-T374)
 
 `src/lib/i18n.svelte.ts` adds `tn(key, count, params)`: a *plural group* in the catalogue is an object keyed by CLDR category

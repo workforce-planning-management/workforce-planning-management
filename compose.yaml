@@ -21,7 +21,7 @@
 # The credentials below and in deploy/stalwart/plan.ndjson are demo constants: never reuse them.
 services:
   postgres:
-    image: docker.io/library/postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    image: docker.io/library/postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
     environment:
       POSTGRES_USER: loco
       POSTGRES_PASSWORD: loco
@@ -35,7 +35,7 @@ services:
       - /var/lib/postgresql
 
   redis:
-    image: docker.io/library/redis:8-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
+    image: docker.io/library/redis:8-alpine@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
     command: ["redis-server", "--save", "", "--appendonly", "no"]   # a cache: nothing to keep
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

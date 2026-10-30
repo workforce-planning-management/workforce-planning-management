@@ -31,7 +31,7 @@ jobs:
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' workforce-planning-management-service-with-rust/Cargo.toml | head -1)
           test "v${version}" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != crate version v${version}"; exit 1; }
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: workforce-planning-management-service-with-rust
       - name: software bill of materials

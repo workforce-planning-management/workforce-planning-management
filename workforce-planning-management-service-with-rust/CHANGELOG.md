@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — dependencies (WPM-T389)
+
+`cargo update` took 37 compatible updates and added 2 crates (`arrow` 60.1, `aws-lc-rs` 1.19, `tonic` 0.14.9, `wasm-bindgen` 0.2.130 and others);
+the declared minimums move to what the lockfile already held: `loco-rs` 1.2.0, `tokio` 1.54, `uuid` 1.29 (and in `entity-ref`),
+`redis` 1.8. `cargo upgrade --incompatible allow --dry-run` found no newer breaking line for any direct dependency. The migration
+crate and `entity-ref` declare `rust-version = "1.97"` (spec/rust-msrv-n-minus-2: stable is 1.99.1). **The service still declares
+1.99**: it compiles on 1.97 (`cargo +1.97 check --all-targets --ignore-rust-version`), but the published matcher 0.1.0 declares 1.99,
+so a 1.97 build would be refused until a matcher declaring 1.97 is published (WPM-T390). The `Containerfile`'s Rust and Debian base
+images and `compose.test.yaml`'s Postgres 18 and Redis 8 images are on new digests of the same tags.
+
 ### Added — a lean worker list, and the list audits the salary it carries (WPM-T388, WPM-R216, WPM-D147)
 
 `GET /api/workers?fields=pid,department,person_ref` returns only the named fields of each row (an allowlist of 20; an unknown name is

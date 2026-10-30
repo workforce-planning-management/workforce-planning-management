@@ -2,7 +2,7 @@
 name = "entity-ref"
 version = "0.2.0"
 edition = "2024"
-rust-version = "1.96"
+rust-version = "1.97"
 authors = ["Joel Parker Henderson <joel@joelparkerhenderson.com>"]
 description = "EntityRef — the shared cross-service-linking value type (entity_type:uuid URN) + edge-kind registry for the Main X Index family"
 readme = "README.md"
@@ -18,7 +18,7 @@ path = "src/lib.rs"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "2.0"
-uuid = { version = "1.26", features = ["v4"] }
+uuid = { version = "1.29", features = ["v4"] }
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

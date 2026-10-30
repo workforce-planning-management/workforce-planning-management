@@ -2,7 +2,7 @@
 name = "workforce-planning-management-migration"
 version = "0.1.3"
 edition = "2024"
-rust-version = "1.96"
+rust-version = "1.97"
 publish = true
 description = "Database migrations for the workforce planning management service"
 repository = "https://github.com/workforce-planning-management/workforce-planning-management/tree/main/workforce-planning-management-service-with-rust/migration"
