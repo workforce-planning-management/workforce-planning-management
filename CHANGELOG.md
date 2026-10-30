@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — a tutorial for the family bridges (WPM-T394)
+
+[docs/tutorials/family-bridges.md](docs/tutorials/family-bridges.md) walks through the pool link, peer demand and supply, people
+impact, the hire webhook, the overlap check and the lean worker list, and was run against a local service. The READMEs, `index.md`
+files, INSTALL and NEWS are current. Running it found that a reused peer event id is answered with another claim, across
+organizations (WPM-T397, open).
+
 ### Changed — agent files brought up to date (WPM-T393)
 
 `AGENTS.md` (was "through WPM-T97"), the `AGENTS/` files and the two subproject `AGENTS.md` now give the current test counts,

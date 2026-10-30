@@ -21,8 +21,10 @@ data: a demo session reaches only that service, with no authentication.
 
 ## Prerequisites
 
-- **Rust** — MSRV is declared as `rust-version = "1.99"` in
-  `workforce-planning-management-service-with-rust/Cargo.toml`.
+- **Rust** — stable. The service declares `rust-version = "1.99"` in
+  `workforce-planning-management-service-with-rust/Cargo.toml`; the matcher, the migration
+  crate and `entity-ref` declare 1.97, the project's N-2 policy (see WPM-T390 for why the
+  service is not there yet).
 - **Podman** (not Docker) — for the service's test database and Redis.
 - **PostgreSQL 18 and Redis 8** — provided by
   `workforce-planning-management-service-with-rust/compose.test.yaml`;
@@ -41,9 +43,9 @@ WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 5150; sign-in enforceme
 ```
 
 ```sh
-cargo test                 # DB-free unit tests (570)
-cargo test -- --ignored    # request tests (97; needs Postgres — see below)
-cargo test --test enforcement -- --ignored   # auth persona matrix
+cargo test --lib           # DB-free unit tests (1,034 on 2026-10-30)
+cargo test --test mod -- --ignored --test-threads=1   # request tests (183; needs Postgres — see below)
+cargo test --test enforcement -- --ignored --test-threads=1   # auth persona matrix
 ```
 
 ### Schedule the tasks
@@ -70,7 +72,7 @@ Optional imports: `cargo run -- task import_framework` (UK GDAD PCF) and
 ```sh
 podman compose -f compose.test.yaml up -d --wait
 export WPM_TEST_REDIS_URL=redis://localhost:6379   # the Redis-backed tests skip without it
-cargo test -- --ignored
+cargo test --test mod -- --ignored --test-threads=1   # serial: the tests share one database
 podman compose -f compose.test.yaml down
 ```
 
@@ -85,9 +87,11 @@ pnpm dev                   # expects the service running (stub mode is fine)
 ```
 
 ```sh
+pnpm lint                  # eslint, then prettier --check
 pnpm check                 # svelte-kit sync && svelte-check
-pnpm test                  # vitest (80)
-pnpm exec playwright test  # 45 specs, page.route-stubbed — no running service needed
+pnpm test                  # vitest (291 on 2026-10-30)
+pnpm exec playwright test  # 325 pass, 19 skip; page.route-stubbed, no running service needed
+                           # (PW_PORT=<free port> if 4173 is taken)
 pnpm build
 ```
 
@@ -146,8 +150,14 @@ scripts/verify-db-roles.sh                         # the request tests as the le
 podman compose -f compose.test.yaml down
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same commands, plus `cargo fmt`,
-`clippy -D warnings`, `cargo deny`, the front-end checks and Playwright.
+CI (`.github/workflows/ci.yml`) runs the same commands and every other enforcement
+binary, plus `cargo fmt`, `clippy -D warnings`, `cargo deny`, the MSRV check, the
+Keycloak and Entra suites, the front-end checks and Playwright.
+
+## Try the family bridges
+
+[docs/tutorials/family-bridges.md](docs/tutorials/family-bridges.md) walks through every bridge to
+the sibling apps with `curl` against a throwaway service.
 
 ## Auth
 

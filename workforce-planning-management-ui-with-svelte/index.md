@@ -18,5 +18,6 @@ the Loco JSON API sibling.
 ## The task queue
 
 Live delivery checklist: [../spec/tasks.md](../spec/tasks.md)
-(this edition: WPM-T18/T19, the front-end halves of T20–T36, and the UI of
-every later task through WPM-T97 — all delivered).
+(this edition: WPM-T18/T19, the front-end halves of T20–T36, the UI of every
+task through WPM-T97, and the UI of the later tasks; the bridges to the
+sibling apps have no screen).

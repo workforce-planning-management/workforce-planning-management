@@ -16,10 +16,11 @@ rota, announcements, skill gaps with a training plan, joiners and leavers, and a
 > ⚠️ **Demo software.** Not a production HR system; synthetic data
 > only. See [spec/regulatory](../spec/regulatory.md).
 
-**Status: implemented through WPM-T97 (2026-07-18 → 2026-10-07).**
-svelte-check clean (0 errors, 0 warnings); **80 vitest + 45 Playwright specs**
-pass (`page.route`-stubbed — runs without the Rust service); the production
-build is green. Quick start: `pnpm install && pnpm dev` (expects the Loco
+**Status (2026-10-30):** the original demonstration through WPM-T97, and the
+UI of the later tasks in [../spec/tasks.md](../spec/tasks.md) (56 pages).
+`pnpm lint` and svelte-check clean (0 errors, 0 warnings); **291 vitest and 325
+Playwright tests** pass, 19 skipped (`page.route`-stubbed — runs without the Rust
+service); the production build is green. Quick start: `pnpm install && pnpm dev` (expects the Loco
 sibling on :5150; `pnpm test` / `pnpm exec playwright test`).
 
 ## Environment variables
@@ -40,7 +41,7 @@ auth service and this service side by side.
 
 ## Stack
 
-SvelteKit 2 · Svelte 5 runes · TypeScript strict · SPA mode with a
+SvelteKit 3 · Svelte 5 runes · TypeScript strict · SPA mode with a
 same-origin BFF proxy (session cookie → short-lived PASETO; no token
 in browser JS) · **17 content locales under `/<locale>/` routes** (e.g.
 `/en-001/workers`, `/cy-001/workers`; `/en/…` redirects to `/en-001/…`) with

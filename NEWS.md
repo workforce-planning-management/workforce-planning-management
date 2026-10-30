@@ -15,6 +15,15 @@ present. See [CONTRIBUTING.md](CONTRIBUTING.md#funding).
 
 ## Milestones
 
+- **2026-10-28 → 2026-10-30** — **Cross-app bridges and worldwide by design** (WPM-T354 to
+  T388): WPM talks to its siblings by references and counts only, under the caller's token.
+  For project-portfolio-management: a pool linked by a person, demand received and withdrawn
+  with its source, supply given with the privacy floor, the what-if, and people impact for a
+  programme. For contact-relationship-management: the hire and leave handoff in webhooks, a
+  check of which contacts are workers, and a worker list that returns only the fields asked
+  for and audits any salary it carries. The UI's money, numbers, dates and plurals follow the
+  page's locale. Not verified: the siblings' halves, run against WPM. See
+  [docs/tutorials/family-bridges.md](docs/tutorials/family-bridges.md).
 - **2026-10-11** — **Delivery capacity** (WPM-T104–T107): skill pools, programme demand and
   partner commitments; a pool × month view that names the constraint pool and shows a partner's
   silence as *unknown*, never zero; and a start check that is a suggestion with its evidence,

@@ -5676,3 +5676,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `AGENTS/docs-and-agent-files.md`: `docs/`, and what is still absent. The service's and the UI's `AGENTS.md` (both "through WPM-T97"): the bridges, the 115 rule modules, all sixteen loco tasks and
       the MSRV note; the UI's 56 pages, the locale formatting modules and the current counts. Sizes (`wc -c`, 2026-10-30): the largest is the service's `AGENTS.md`, 8,496 bytes; every file is under 40,000.
       There is no `CLAUDE.md` to update. **Not done:** `backend-rust.md`, `frontend-svelte.md`, `localization.md` and `privacy-and-data-rules.md` were read and left unchanged (nothing in them was found stale).
+- [x] (2026-10-30) WPM-T394 **Documentation current, and a tutorial for the family bridges.** *(WPM-R119)* New: [docs/tutorials/family-bridges.md](../docs/tutorials/family-bridges.md), seven steps with `curl`: the
+      pool link, peer demand (recorded, duplicate, stale, withdrawn) and supply, people impact, the hire webhook, the overlap check and the lean worker list; linked from the README, INSTALL, NEWS, `AGENTS.md`,
+      the service's `index.md` and [cross-app-bridges.md](cross-app-bridges.md). **Run, not only written:** every code block after the server start was extracted from the file and run against a local service
+      on a throwaway PostgreSQL 18 database with sign-in off; the outputs shown are from that run. Running it found three things the first draft had wrong (a worker created by HR is `onboarding`, so the
+      active list was empty; a pool with no role profile or skill has a known zero supply, not a hidden one; a failed delivery is `pending` with `last_error`) and one fault in the service (WPM-T397). **Updated:**
+      the root README (its status said "through WPM-T97" with counts from 2026-10-11; SvelteKit 3, not 2; the matcher was missing from the subprojects; the run command lacked `WPM_REQUIRE_AUTH=0`), INSTALL
+      (counts from early October; `cargo test -- --ignored` would run the request tests in parallel on one database; the MSRV line), NEWS (a milestone for the bridges), the service README and `index.md`
+      and the UI README and `index.md` (each said "through WPM-T97" with October counts). **Not verified:** the tutorial with sign-in on and forwarded tokens, the webhook against a listening receiver
+      (nothing listened, so no signature was checked), people impact with a funded post, and supply from a pool with members.
+- [ ] WPM-T397 **A reused peer event id answers with another claim, across organizations.** *(WPM-R210, WPM-R215, WPM-D135)* Found 2026-10-30 while running the tutorial (WPM-T394): `POST
+      /api/capacity/peer-demand` looks for a `ppm` claim with the same `peer_event_id` **before** it uses the pool or the caller's scope, and the unique index is `(source, peer_event_id)`, so an event id
+      already applied to any claim, in any organization, is answered `duplicate: true` with that claim's pid and status. Seen: two runs reusing `ev-2` for different pools; the second got the first's
+      closed claim. Harm: a caller learns a claim's pid and status in a pool they may not see if they reuse its event id, and a peer that reuses ids across pools silently loses figures. What remains:
+      a decision (scope the repeat check to the pool, programme and month, or refuse an id seen for another claim with `422`), the index to match, a request test across two organizations, and the
+      contract table in [cross-app-bridges.md](cross-app-bridges.md). Not changed in the maintenance pass because it changes the family contract PPM builds against.

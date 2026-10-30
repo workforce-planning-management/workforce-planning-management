@@ -15,23 +15,28 @@ payroll & compensation — in **17 locales**. See
 > data anywhere in the repository. See
 > [spec/regulatory.md](spec/regulatory.md).
 
-**Status: the demonstration is implemented through WPM-T97 (2026-07-18 → 2026-10-07). Since
-then: production-readiness, operations and information-governance work (WPM-T102, T119,
-T123–T128, T144–T155), the delivery-capacity API (WPM-T104–T107) and two corrections
-(WPM-T134, T136). Much more is proposed but not built: see
-[spec/tasks.md](spec/tasks.md) and [spec/implementation-status.md](spec/implementation-status.md).**
-Verified on 2026-10-11 for the service: 561 unit tests and 95 database-backed request tests,
-with thirteen enforcement binaries (need-to-know reads, cutover planning, the oversight pack and partner role, contractor rates, expenses, self-service, flexible working, conversion plans, equality monitoring and health requirements), security, retention-schedule and Entra suites. The Keycloak suite (real
-Keycloak 26) and the front-end counts (145 unit tests and 135 Playwright specs over a stubbed API, measured 2026-10-18; the 11 live ones against a real service were last
-measured on 2026-10-07 and were not rerun for this update. See each
-subproject's own README for its own gate status, and [spec/testing.md](spec/testing.md).
+**Status (2026-10-30):** the demonstration was implemented through WPM-T97 (2026-07-18 to
+2026-10-07); since then production readiness, operations and information governance, delivery
+capacity, programmes and the contingent workforce, SFIA, unions, self-service, regulatory reporting,
+outbound webhooks, the [cross-app bridges](spec/cross-app-bridges.md) to the sibling
+project-portfolio-management and contact-relationship-management apps, and the first
+[worldwide](spec/worldwide.md) tasks have been built. Much is still proposed or part done: see
+[spec/tasks.md](spec/tasks.md) and the generated counts in
+[spec/implementation-status.md](spec/implementation-status.md). Verified on 2026-10-30, on a
+throwaway PostgreSQL 18 database: 1,034 service unit tests, 183 database-backed request tests and
+every enforcement, security, retention, request-log, chaos and inventory binary; the UI's lint,
+svelte-check, 291 unit tests and 325 Playwright tests over a stubbed API (19 skipped). Not rerun on
+that date: the Keycloak and Entra suites (CI runs them), the Redis-backed shared-cache tests (no Redis
+here), and the live Playwright specs against a real service. See each subproject's README and
+[spec/testing.md](spec/testing.md).
 
 ## Subprojects
 
 | Subproject | Role | Stack |
 | --- | --- | --- |
 | [workforce-planning-management-service-with-rust](workforce-planning-management-service-with-rust/) | Back-end JSON API | Rust, Loco (Axum + SeaORM), PostgreSQL |
-| [workforce-planning-management-ui-with-svelte](workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 2, Svelte 5 runes, TypeScript |
+| [workforce-planning-management-ui-with-svelte](workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 3, Svelte 5 runes, TypeScript |
+| [workforce-planning-management-matcher-with-rust](workforce-planning-management-matcher-with-rust/) | Worker-record matcher crate (published; the service uses the crates.io copy) | Rust, no database, no clock |
 
 Each subproject is self-contained: it owns its own `README.md`,
 `AGENTS.md` (working agreements), `CHANGELOG.md`, and `spec/`
@@ -52,7 +57,8 @@ duplicating them. See [spec/scope.md](spec/scope.md) and
 ```sh
 # Back-end
 cd workforce-planning-management-service-with-rust
-cargo run -- db migrate && cargo run -- task seed && cargo run -- start
+cargo run -- db migrate && cargo run -- task seed
+WPM_REQUIRE_AUTH=0 cargo run -- start   # sign-in is enforced by default; this opts out for local use only
 
 # Front-end (in another shell)
 cd workforce-planning-management-ui-with-svelte
@@ -94,7 +100,11 @@ without the spec describing it.**
   (purpose, scope, domain model, the five pillars, the newer topic files,
   auth, audit, architecture, testing, regulatory posture, roadmap, glossary).
 - [INSTALL.md](INSTALL.md) — build, run, test, schedule the tasks, edit
-  translations. [NEWS.md](NEWS.md), [CHANGELOG.md](CHANGELOG.md),
+  translations.
+- [docs/tutorials/family-bridges.md](docs/tutorials/family-bridges.md) — a
+  worked tour of the bridges to the sibling apps (pool link, peer demand and
+  supply, people impact, the hire and leave webhooks, the overlap check, the
+  lean worker list). [NEWS.md](NEWS.md), [CHANGELOG.md](CHANGELOG.md),
   [COMPARISONS.md](COMPARISONS.md), [BENCHMARKS.md](BENCHMARKS.md).
 - [AGENTS.md](AGENTS.md) and [AGENTS/](AGENTS/spec-driven-delivery.md) — working
   agreements for humans and AI agents (spec-driven delivery, backend, frontend,

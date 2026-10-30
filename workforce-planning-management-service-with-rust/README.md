@@ -28,15 +28,17 @@ provides the HR, manager, and worker self-service client.
 > statutory calculations are illustrative stubs; synthetic data
 > only. See [spec/regulatory](../spec/regulatory.md).
 
-**Status: implemented through WPM-T97 (2026-07-18 → 2026-10-07).** 317
-DB-free unit tests, **62 database-backed request tests** (24 files), the
-enforcement persona matrix (mounted on the shipped reference policy), the
-expense-claim enforcement test and a
-**Keycloak suite against a real Keycloak 26** pass against Postgres 18;
-`cargo fmt`, `clippy -D warnings` (pedantic) are clean across the crate. 49 migration
-sets, ~300 documented paths. Both production gates' **code sides are done** (WPM-G1 reference policy +
-runbook; WPM-G2 subject rights + retention); what remains on them is
-operational and legal work. No open deferral — see [../spec/tasks.md](../spec/tasks.md) and [../spec/roadmap.md](../spec/roadmap.md).
+**Status (2026-10-30):** the original demonstration through WPM-T97 (2026-07-18 → 2026-10-07), and
+since then the production-readiness, operations, capacity, programme, SFIA, union, self-service,
+regulatory-reporting, webhook and cross-app bridge work in [../spec/tasks.md](../spec/tasks.md); much is
+still proposed or part done there. Verified on 2026-10-30 on a throwaway PostgreSQL 18 database:
+`cargo fmt --check` and `clippy -D warnings` (pedantic) clean; 1,034 unit tests; 183 database-backed
+request tests; every `enforcement_*` persona binary and the security, retention, request-log, chaos,
+route-coverage, scheduler and personal-data-inventory binaries. Not rerun that day: the Keycloak and
+Entra suites and the Redis-backed tests (CI runs them). The counts of migrations, controllers and
+OpenAPI paths are generated in [../spec/implementation-status.md](../spec/implementation-status.md).
+Both production gates' **code sides are done** (WPM-G1 reference policy + runbook; WPM-G2 subject
+rights + retention); what remains on them is operational and legal work.
 
 ## What it answers
 

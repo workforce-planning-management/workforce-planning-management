@@ -49,7 +49,7 @@ stack-level detail. (Updated 2026-10-30, through WPM-T396.)
   uses the published copy, not this path (see the `[patch.crates-io]` note in the service's `Cargo.toml`).
 - `scripts/` — the checks CI runs (`check-links.py`, `check-days.py`, `check-licenses.py`, `check-actions-pinned.py`,
   `status.py`, `llms.py`), the demo filler, backup and restore, and the least-privilege drill (`verify-db-roles.sh`).
-- `docs/` — guides beside the spec (`docs/united-kingdom/`, the UK NHS notes).
+- `docs/` — guides beside the spec: [the family bridges tutorial](docs/tutorials/family-bridges.md) and the UK NHS notes.
 - `.github/workflows/` — `ci.yml` (every gate) and `release.yml`; every action and image pinned to a digest.
 - `.sota/` — the 2026-10-05 benchmark scan record (`last-scan.json`, the rubric).
 - [`llms.txt`](llms.txt) / [`llms.json`](llms.json) — a map of the repo for agents.

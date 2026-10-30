@@ -178,7 +178,10 @@ parser (a `4xx`). The claim list (`GET /api/programme-demands`) shows `peer_sent
 
 **Not done:** zero for a claim that does not exist stores nothing, so if that withdrawal overtakes the figure it withdraws (the figure
 arrives second), the figure is recorded; PPM's ordering on its side, or sending the figure again as zero, closes it. An event without
-`sent_at` can still overwrite a newer one, as before. **Not verified:** PPM's sender (being changed by PPM's owner in parallel against
+`sent_at` can still overwrite a newer one, as before. A `peer_event_id` is unique across every `ppm` claim (the index is on
+`(source, peer_event_id)`), and the repeat check looks it up before it looks at the pool or the caller's scope, so an id reused for
+another claim is answered as a duplicate of that claim, with its pid and status, even when that claim is in a pool the caller may
+not see (found 2026-10-30 while writing the tutorial; WPM-T397, open). **Not verified:** PPM's sender (being changed by PPM's owner in parallel against
 this contract) has not been run against WPM.
 
 ### WPM-R211 — People-impact out (WPM tells PPM)
@@ -290,7 +293,8 @@ people-impact. WPM does not change PPM.
 | WPM-T387 | Withdrawal with zero, and `sent_at` ordering (R215, D146) | **Built 2026-10-30.** PPM's sender not run against it |
 | WPM-T388 | The lean worker list, `?fields=`, and salary-read audit on the list (R216, D147) | **Built 2026-10-30.** CRM's import not changed or run |
 
-Every route above is in the OpenAPI document.
+Every route above is in the OpenAPI document. A worked example of each, run against a local service, is in
+[docs/tutorials/family-bridges.md](../docs/tutorials/family-bridges.md).
 
 ## What CRM was read to say (2026-10-28)
 
