@@ -165,6 +165,11 @@ jobs:
       - run: cargo test --locked --test enforcement_oversight_pack -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_cutover -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_escalations -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_pay_gap -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_pay_information -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_what_if -- --ignored --test-threads=1
+      # Not #[ignore]d, so `--lib` above does not reach them and `--ignored` would run none of them (WPM-T396).
+      - run: cargo test --locked --test no_union_membership --test personal_data_inventory --test route_coverage --test scheduler_config
       - run: cargo test --locked --test security -- --ignored --test-threads=1
       - run: cargo test --locked --test retention_schedule -- --ignored --test-threads=1
       # What the log holds for a request (WPM-R122): an id and a route, never a query string or an identifier.

@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — CI runs every service test binary (WPM-T396)
+
+Seven of the service's test binaries never ran in CI (three persona tests and four that are not `#[ignore]`d, which neither
+`cargo test --lib` nor an `--ignored` run reaches). The `api-db` job now runs them. They pass locally.
+
 ### Changed — dependencies, actions and images updated (WPM-T389)
 
 Rust lockfile updates within range (`loco-rs` 1.2.0, `tokio` 1.54, `uuid` 1.29 and `redis` 1.8 now also the declared minimum);

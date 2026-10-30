@@ -5634,3 +5634,8 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
 - [ ] WPM-T390 **Publish a matcher that declares Rust 1.97, then lower the service's MSRV to 1.97.** *(WPM-T389)* What remains: a maintainer-decided release of `workforce-planning-management-matcher` (0.1.1, with
       `rust-version = "1.97"`; `cargo publish` is irreversible and is the maintainer's call, `AI_STATEMENT.md` §7); then `cargo update -p workforce-planning-management-matcher`, the service's `rust-version` to 1.97, and the
       service added to CI's `msrv` job. Until then the service declares 1.99 although its own code compiles on 1.97.
+- [x] (2026-10-30) WPM-T396 **CI runs the seven service test binaries it skipped.** *(WPM-R119, WPM-R123)* Found by the maintenance audit of 2026-10-30: `.github/workflows/ci.yml` ran 19 of the service's 26 test
+      binaries beside the request suite, and none of `enforcement_pay_gap`, `enforcement_pay_information`, `enforcement_what_if` (all `#[ignore]`d persona tests) or `no_union_membership`, `personal_data_inventory`,
+      `route_coverage`, `scheduler_config` (not ignored, so neither `cargo test --lib` nor an `--ignored` run reaches them). The `api-db` job now runs all seven; a check that every file in `tests/*.rs` is named
+      by a `--test` in the workflow finds none missing. **Verified locally (2026-10-30):** all seven pass against a throwaway PostgreSQL 18 database (WPM-T389's run). **Not done:** no script fails CI when a
+      new test binary is added without a CI step (the same check, as a script, would be a small follow-up). **Not verified:** the jobs on GitHub's runners until CI runs this commit.
