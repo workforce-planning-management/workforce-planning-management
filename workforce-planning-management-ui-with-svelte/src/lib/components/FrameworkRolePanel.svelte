@@ -5,7 +5,7 @@
   your level. Selected skills become ordinary skill declarations.
 -->
 <script lang="ts">
-  import { formatDate } from "#lib/locale-format.js";
+  import { compareText, formatDate } from "#lib/locale-format.js";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
@@ -61,7 +61,7 @@
       byLabel.set(label, [...(byLabel.get(label) ?? []), p]);
     }
     return [...byLabel.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => compareText(a, b))
       .map(([label, items]) => ({
         label,
         items: items.sort((x, y) => (x.level_order ?? 0) - (y.level_order ?? 0)),

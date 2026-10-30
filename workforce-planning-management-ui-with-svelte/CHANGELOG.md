@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — names and labels sort by the page's locale (WPM-T381)
+
+`compareText` in `src/lib/locale-format.ts` compares with `Intl.Collator` in the page's locale (numeric, one collator per locale) and
+replaces every `localeCompare` with no locale: the org views (`orgViews.ts`), `/directory`, `/roles`, `/skill-gaps`, `RolePicker` and
+`FrameworkRolePanel`. The whole display name is the key; no part is assumed. The locale-format scan now fails on a new `localeCompare`.
+Tests: 3 vitest (Swedish, German and Spanish order; Cyrillic and Arabic names; numbers in labels; an invalid locale). **Not tested:**
+the sorted lists in a browser (the Playwright specs over them pass, but none sorts in a non-English locale).
+
 ### Fixed — money uses the ISO 4217 minor unit, not CLDR's display digits (WPM-T400, WPM-D151)
 
 `src/lib/money.ts` takes a currency's exponent from `MINOR_UNITS`, a copy of the service's `src/rules/currency.rs` table (a vitest test

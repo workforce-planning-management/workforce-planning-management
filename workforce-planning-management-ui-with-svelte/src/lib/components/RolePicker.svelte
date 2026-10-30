@@ -6,6 +6,7 @@
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { t } from "#lib/i18n.svelte.js";
+  import { compareText } from "#lib/locale-format.js";
   import { listRoleProfiles, searchEscoOccupations } from "#lib/api/wpm.js";
 
   type Pick = { role_profile_pid?: string; occupation_uri?: string; label: string };
@@ -36,7 +37,7 @@
       byLabel.set(label, [...(byLabel.get(label) ?? []), p]);
     }
     return [...byLabel.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => compareText(a, b))
       .map(([label, items]) => ({ label, items: items.sort((x, y) => (x.level_order ?? 0) - (y.level_order ?? 0)) }));
   });
 

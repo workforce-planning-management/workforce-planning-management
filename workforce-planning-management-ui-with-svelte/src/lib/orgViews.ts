@@ -3,6 +3,7 @@
 // display, so every view lists exactly the same people.
 
 import type { OrgNode } from "./api/types";
+import { compareText } from "./locale-format.js";
 
 export const ORG_VIEWS = [
   "manager",
@@ -38,11 +39,11 @@ export function byDepartment(
     groups.set(node.department, members);
   }
   return [...groups.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => compareText(a, b))
     .map(([department, members]) => ({
       department,
       members: members.sort((a, b) =>
-        a.display_name.localeCompare(b.display_name),
+        compareText(a.display_name, b.display_name),
       ),
     }));
 }
@@ -62,7 +63,7 @@ export function byLevel(
     .map(([level, members]) => ({
       level,
       members: members.sort((a, b) =>
-        a.display_name.localeCompare(b.display_name),
+        compareText(a.display_name, b.display_name),
       ),
     }));
 }
@@ -114,7 +115,7 @@ export function byTenure(
     .map(([band, members]) => ({
       band,
       members: members.sort((a, b) =>
-        a.display_name.localeCompare(b.display_name),
+        compareText(a.display_name, b.display_name),
       ),
     }));
 }
@@ -138,12 +139,12 @@ export function byLocation(
     .sort(([a], [b]) => {
       if (a === null) return b === null ? 0 : 1;
       if (b === null) return -1;
-      return a.localeCompare(b);
+      return compareText(a, b);
     })
     .map(([location, members]) => ({
       location,
       members: members.sort((a, b) =>
-        a.display_name.localeCompare(b.display_name),
+        compareText(a.display_name, b.display_name),
       ),
     }));
 }

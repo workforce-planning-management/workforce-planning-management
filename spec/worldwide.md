@@ -303,8 +303,26 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   parameters `working_time.reference_weeks`, `max_average_weekly_minutes` and `min_daily_rest_minutes`, with `no limit configured` when
   none is set (D144 question 1, confirmed) and the demo seed loading an example profile; the roll-up's week start and its partial index
   (fixed at 2,720 minutes) follow. D144's order of work, step 3, after the resolver (step 1).
-- [ ] WPM-T381 **Names without a first and last.** *(WPM-R214, WPM-D143; rows 2, 3)* The duplicate check does not split a name into
+- [x] (2026-10-30) WPM-T381 **Names without a first and last.** *(WPM-R214, WPM-D143, WPM-R136; rows 2, 3)* The duplicate check does not split a name into
   first word and last word (compare the whole name, or parts a person gave); sorting uses `Intl.Collator(i18n.locale)`.
+  **Done:** the service's `rules::duplicates` no longer has `split_name`. `name_tokens` folds the one display name (NFKC, lower case
+  with `ß`→`ss` and the final sigma, punctuation and spaces as boundaries, diacritics dropped only in Latin, Greek and Cyrillic, Arabic
+  and Hebrew optional vowel marks dropped, Devanagari and Bengali vowel signs kept); `name_similarity` compares two token lists in any
+  order (the same letters without spaces score 1; one word against several is too little; otherwise best-pair alignment weighted by
+  letters), and is symmetric. The worker number is still the matcher's comparison. The answer's `breakdown` is now `{name,
+  worker_number}` (it was the matcher's given, family, birth, email and phone fields, three of them always `null`); no UI calls the
+  route. The rule is written into WPM-R136 in [worker-matching.md](worker-matching.md). The UI sorts names and labels with
+  `compareText` (`src/lib/locale-format.ts`, `Intl.Collator` in the page's locale, numeric) in `orgViews.ts`, `/directory`, `/roles`,
+  `/skill-gaps`, `RolePicker` and `FrameworkRolePanel`; the locale-format scan now fails on a `localeCompare`. **Tests:** 16 unit
+  tests in the service (8 kept or adapted: a name alone is `review`, a number in one organization is `match`, another organization's
+  number is no evidence, a different name is not listed, one word against a longer name lists no one, at most ten, no email, phone or
+  birth score; 8 new: tokens in Latin, Greek, Cyrillic, Han, katakana, Arabic, Devanagari and Bengali; one-word names; family name
+  first in Vietnamese, Korean, Russian, Arabic, Hindi and Japanese romanized; with and without spaces in Japanese, Chinese and Korean;
+  particles and middle names (`van`, `de la`, `al-`); spelling variants; symmetry and bounds; best first), and 3 vitest (Swedish,
+  German and Spanish order, names in Cyrillic and Arabic, numeric labels, a bad locale). The existing request test passes unchanged.
+  **Not done:** no transliteration (the same person in two scripts is not found); no name parts a person gave are stored or
+  compared; the matcher's English nickname table is no longer applied (it was an English-only list); the thresholds are still tuned on
+  no data. `DataTable`'s own column sort was already the page's locale (Lily) and is unchanged.
 - [ ] WPM-T382 **Addresses, phones and world English wording.** *(WPM-R214, WPM-D143; rows 4 to 7, 32)* Neutral `en-001` labels ("Postal
   code", "State, province or region"), the British ones moved to `en-gb`; a country picker named by `Intl.DisplayNames`; an address order
   per country or one free-text block; phone digits accepted in any script and stored as ASCII.
@@ -471,8 +489,8 @@ through `rules::duplicates`.
 | # | Area | Where | What the code does | Verdict | Task |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Names | API `src/models/_entities/workers.rs:21`; UI `src/routes/workers/+page.svelte:24` | One `display_name`; no first, last, given or family field, no title, no initials, anywhere in the UI or the worker table | **Right** | — |
-| 2 | Names | API `src/rules/duplicates.rs:62-69` | The duplicate check splits `display_name` into given = first word and family = last word for the matcher | **Gap**: wrong for family-name-first orders and for names written without spaces (Chinese, Japanese) | T381 |
-| 3 | Names | UI `src/lib/orgViews.ts:45` (and `:41,65,117,141,146`, `src/routes/directory/+page.svelte:44`) | `localeCompare` with no locale, so sorting follows the runtime's collation, not the page's | **Partial** | T381 |
+| 2 | Names | API `src/rules/duplicates.rs:62-69` | The duplicate check splits `display_name` into given = first word and family = last word for the matcher | **Gap**: wrong for family-name-first orders and for names written without spaces (Chinese, Japanese). **Fixed 2026-10-30**: the whole name, in any order | T381 |
+| 3 | Names | UI `src/lib/orgViews.ts:45` (and `:41,65,117,141,146`, `src/routes/directory/+page.svelte:44`) | `localeCompare` with no locale, so sorting follows the runtime's collation, not the page's | **Partial**. **Fixed 2026-10-30**: `compareText` (`Intl.Collator`, the page's locale) | T381 |
 | 4 | Addresses | API `src/rules/contact_details.rs:115-135`; UI `src/lib/components/me/ContactDetailsPanel.svelte:16-22,93` | Two lines, city, region, postcode, country; every field optional; no postcode pattern in the UI | **Partial**: right in what is required, but the order is fixed small-to-large | T382 |
 | 5 | Addresses | API `src/rules/contact_details.rs:39-52` | A postcode is up to 12 ASCII letters, digits, spaces or hyphens | **Partial**: fits the codes known to the author; not checked against every country | T382 |
 | 6 | Addresses | UI `content/locales/en-001/ui.json:2232-2235` | World English labels are British: "Town or city", "County or region", "Postcode"; the country is a free-text "Country (two letters)" box | **Gap** | T382 |

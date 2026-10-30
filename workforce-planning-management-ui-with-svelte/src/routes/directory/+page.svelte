@@ -11,6 +11,7 @@
   import { page } from "$app/state";
   import { employeeDirectory } from "#lib/api/wpm.js";
   import { t, l, tf } from "#lib/i18n.svelte.js";
+  import { compareText } from "#lib/locale-format.js";
   import type { DirectoryEntry } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -41,7 +42,7 @@
       entries = found;
       error = null;
       departments = [...new Set([...departments, ...found.map((e) => e.department)])].sort((a, b) =>
-        a.localeCompare(b),
+        compareText(a, b),
       );
     },
     (cause) => {

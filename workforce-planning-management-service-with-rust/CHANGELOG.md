@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the duplicate check compares the whole name, in any script and order (WPM-T381, WPM-R136)
+
+`rules::duplicates` no longer splits `display_name` into a first and a last word for the matcher (`split_name` is gone). `name_tokens`
+folds the name (NFKC, lower case, punctuation as boundaries, diacritics dropped only in Latin, Greek and Cyrillic, Arabic and Hebrew
+optional vowel marks dropped) and `name_similarity` compares the tokens in any order: the same letters without spaces score 1, one word
+against several lists no one, otherwise a best-pair alignment weighted by letters. The worker number is still the matcher's rule. **API
+change:** `POST /api/workers/possible-duplicates` answers `breakdown: {name, worker_number}` instead of the matcher's five name, birth
+and contact fields (no UI calls it). `unicode-normalization` is now a direct dependency (it was already in the build). Tests: 16 unit
+tests (8 new: Latin, Greek, Cyrillic, Han, katakana, Arabic, Devanagari and Bengali names, family name first, with and without spaces,
+particles, one-word names, symmetry). **Not done:** transliteration across scripts; the matcher's English nickname table is no longer
+applied to this check.
+
 ### Added — the ISO 4217 minor-unit table; unknown currency codes are refused (WPM-T400, WPM-D151)
 
 `src/rules/currency.rs` holds `MINOR_UNITS` (the active ISO 4217 codes and their exponents, the same entries as the sibling project

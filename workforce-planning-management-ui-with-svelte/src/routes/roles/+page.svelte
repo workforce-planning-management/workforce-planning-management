@@ -22,6 +22,7 @@
     roleProgression,
   } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { compareText } from "#lib/locale-format.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
@@ -59,11 +60,11 @@
       byLabel.set(label, [...(byLabel.get(label) ?? []), p]);
     }
     return [...byLabel.entries()]
-      .sort(([a], [b]) => (a === OTHER_PROFILES ? 1 : b === OTHER_PROFILES ? -1 : a.localeCompare(b)))
+      .sort(([a], [b]) => (a === OTHER_PROFILES ? 1 : b === OTHER_PROFILES ? -1 : compareText(a, b)))
       .map(([label, items]) => ({
         label: label === OTHER_PROFILES ? t("pages.roles.other_profiles") : label,
         items: items.sort(
-          (x, y) => (x.level_order ?? 0) - (y.level_order ?? 0) || x.job_title.localeCompare(y.job_title),
+          (x, y) => (x.level_order ?? 0) - (y.level_order ?? 0) || compareText(x.job_title, y.job_title),
         ),
       }));
   });

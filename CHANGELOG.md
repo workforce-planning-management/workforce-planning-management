@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — names are compared whole and sorted by the page's locale (WPM-T381)
+
+The service's duplicate check no longer takes the first word as the given name and the last as the family name: the one display name is
+folded script-aware and compared in any token order, so a family name written first, a one-word name and a name written without spaces
+are compared correctly; the answer's breakdown is now `name` and `worker_number`. The UI sorts names and labels with `Intl.Collator` in
+the page's locale. **Not done:** transliteration across scripts (spec/worldwide.md, WPM-T381).
+
 ### Fixed — a currency's minor unit is ISO 4217's, from one table the UI and the API share (WPM-T400, WPM-D151)
 
 The UI's `money.ts` (WPM-T373) took the exponent from `Intl`, which gives Unicode CLDR's display digits; for 16 codes (HUF, IDR, COP,

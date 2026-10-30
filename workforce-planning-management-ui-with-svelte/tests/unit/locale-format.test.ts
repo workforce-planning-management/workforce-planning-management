@@ -7,6 +7,7 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  compareText,
   DASH,
   formatBasisPoints,
   formatCentiFte,
@@ -154,6 +155,61 @@ describe("numbers typed in the page's locale", () => {
   });
 });
 
+describe("names sorted in the page's locale (WPM-T381)", () => {
+  const sorted = (names: string[], loc: string) =>
+    [...names].sort((a, b) => compareText(a, b, loc));
+
+  it("follows the language's own order, not the runtime's", () => {
+    // Swedish puts å, ä, ö after z; English and German keep them beside a and o
+    expect(sorted(["Östberg", "Zola", "Åberg", "Andersson"], "sv")).toEqual([
+      "Andersson",
+      "Zola",
+      "Åberg",
+      "Östberg",
+    ]);
+    expect(sorted(["Östberg", "Zola", "Åberg", "Andersson"], "de")).toEqual([
+      "Åberg",
+      "Andersson",
+      "Östberg",
+      "Zola",
+    ]);
+    // Spanish: ñ is a letter after n
+    expect(sorted(["Ñúñez", "Nuño", "Ortiz"], "es")).toEqual([
+      "Nuño",
+      "Ñúñez",
+      "Ortiz",
+    ]);
+  });
+
+  it("sorts whole names in any script, with no first or last assumed", () => {
+    // a family name first is sorted as written: the whole display name is the key
+    expect(sorted(["Yamada Taro", "Abe Shinzo", "Taro Abe"], "en")).toEqual([
+      "Abe Shinzo",
+      "Taro Abe",
+      "Yamada Taro",
+    ]);
+    expect(
+      sorted(["Пётр Иванов", "Анна Смирнова", "Иван Петров"], "ru"),
+    ).toEqual(["Анна Смирнова", "Иван Петров", "Пётр Иванов"]);
+    expect(sorted(["يوسف", "أحمد", "محمد"], "ar")).toEqual([
+      "أحمد",
+      "محمد",
+      "يوسف",
+    ]);
+    expect(sorted(["Suharto", "ada lovelace", "Ada Byron"], "en")).toEqual([
+      "Ada Byron",
+      "ada lovelace",
+      "Suharto",
+    ]);
+  });
+
+  it("compares numbers in a label by value, and defaults to the page's locale", () => {
+    expect(sorted(["Team 10", "Team 2"], "en")).toEqual(["Team 2", "Team 10"]);
+    expect(compareText("a", "b")).toBeLessThan(0);
+    expect(compareText("same", "same", "not a locale!")).toBe(0);
+  });
+});
+
 // The scan. A line that matches is hand-rolled formatting of something a person reads. Allowed: comments, CSS, and a
 // line in ALLOW with its reason.
 const here = join(__dirname, "..", "..");
@@ -161,6 +217,7 @@ const ALLOW: Record<string, string> = {};
 const FIELD = String.raw`[\w.?]*?(?:\w+_(?:on|at|date|start|end|until|from|due|day)\b|decide_by|remedy_by|as_of|\.date\b|\.on\b|\.month\b)`;
 const RULES: [string, RegExp][] = [
   ["toFixed", /\.toFixed\(/],
+  ["localeCompare (use compareText)", /\.localeCompare\(/],
   ["toLocale*", /\.toLocale(?:String|DateString|TimeString)\(/],
   ["a percent sign glued to a number", /(?:\$\{[^}]*\}|\}|\))%(?![\w;"])/],
   [
@@ -218,6 +275,9 @@ describe("no hand-rolled number or date formatting in src/", () => {
     expect(handRolled('{tf("x", { date: r.decide_by })}')).toHaveLength(1);
     expect(handRolled("{a.performed_at.slice(0, 16)}")).toHaveLength(1);
     expect(handRolled("new Date(x).toLocaleTimeString([])")).toHaveLength(1);
+    expect(handRolled("names.sort((a, b) => a.localeCompare(b))")).toHaveLength(
+      1,
+    );
     // …and not when the value goes through the module.
     expect(handRolled("<td>{formatDate(row.target_on)}</td>")).toEqual([]);
     expect(

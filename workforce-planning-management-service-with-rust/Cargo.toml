@@ -89,6 +89,8 @@ entity-ref = { path = "crates/entity-ref", version = "0.2" }
 # `keycloak` feature above) — only `Verifier` (PASETO signature
 # verification) is `paseto`-specific.
 workforce-planning-management-matcher = "0.1"
+# Script-aware name folding for the duplicate check (WPM-T381); already in the build through the matcher.
+unicode-normalization = { version = "0.1.26" }
 authentication-verifier = { version = "0.9", features = ["fetch"] }
 
 # `keycloak` feature only: direct verification of a Keycloak-issued JWT

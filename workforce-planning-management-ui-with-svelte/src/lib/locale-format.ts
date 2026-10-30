@@ -297,3 +297,28 @@ export function numberToInput(n: Num, loc?: string): string {
     maximumFractionDigits: 20,
   }).format(n);
 }
+
+// Sorting text (WPM-T381). A name or a label sorts by the page's locale through `Intl.Collator` (Unicode collation,
+// CLDR's tailoring for the language), never by the runtime's default: "Ångström" sorts after "Zola" in Swedish and
+// beside "Angstrom" in English, and a page in Chinese, Arabic or Hindi sorts in its own order. Nothing here splits a
+// name into parts; the whole display name is compared.
+
+const collators = new Map<string, Intl.Collator>();
+
+function collator(loc: string): Intl.Collator {
+  let c = collators.get(loc);
+  if (!c) {
+    try {
+      c = new Intl.Collator(loc, { usage: "sort", numeric: true });
+    } catch {
+      c = new Intl.Collator("en", { usage: "sort", numeric: true });
+    }
+    collators.set(loc, c);
+  }
+  return c;
+}
+
+/** Compare two names or labels in the page's locale, for `sort`; numbers in them compare by value ("2" before "10"). */
+export function compareText(a: string, b: string, loc?: string): number {
+  return collator(locale(loc)).compare(a, b);
+}

@@ -5,7 +5,7 @@
   Counts only: nobody is named, and private aspirations are never included.
 -->
 <script lang="ts">
-  import { formatDecimal, formatNumber } from "#lib/locale-format.js";
+  import { compareText, formatDecimal, formatNumber } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { trainingDemand, workforceSkillGaps } from "#lib/api/wpm.js";
@@ -39,7 +39,7 @@
         error = null;
         departments = [
           ...new Set([...departments, ...result.skills.flatMap((s) => s.departments.map((d) => d.department))]),
-        ].sort((a, b) => a.localeCompare(b));
+        ].sort((a, b) => compareText(a, b));
       } catch (cause) {
         if (current) error = errorText(cause);
       }

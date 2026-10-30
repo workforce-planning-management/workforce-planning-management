@@ -7158,6 +7158,7 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber",
+ "unicode-normalization",
  "uuid",
  "workforce-planning-management-matcher",
  "workforce-planning-management-migration",
