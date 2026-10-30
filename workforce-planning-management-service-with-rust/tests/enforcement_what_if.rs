@@ -137,10 +137,18 @@ async fn the_what_if_answers_each_persona_with_counts_only_or_refuses_it() {
     let bearer = |t: String| format!("Bearer {t}");
     let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
     let hr = bearer(sign_as(&kid, &hr_p.to_string(), &[("hr", &["true"])]));
-    let planner = bearer(sign_as(&kid, &planner_p.to_string(), &[("planner", &["true"])]));
+    let planner = bearer(sign_as(
+        &kid,
+        &planner_p.to_string(),
+        &[("planner", &["true"])],
+    ));
     let manager = bearer(sign_as(&kid, &manager_p.to_string(), &[]));
     let partner = bearer(sign_as(&kid, &partner_p.to_string(), &[]));
-    let elsewhere = bearer(sign_as(&kid, &elsewhere_p.to_string(), &[("hr", &["true"])]));
+    let elsewhere = bearer(sign_as(
+        &kid,
+        &elsewhere_p.to_string(),
+        &[("hr", &["true"])],
+    ));
     let loner = bearer(sign_as(&kid, &loner_p.to_string(), &[("hr", &["true"])]));
 
     request::<App, _, _>(|request, ctx| async move {
@@ -233,6 +241,32 @@ async fn the_what_if_answers_each_persona_with_counts_only_or_refuses_it() {
         }
         assert_eq!(get(format!("/api/capacity?organization={org}"), partner.clone()).await.status_code(), 403);
         assert_eq!(get(format!("/api/capacity?organization={org}"), elsewhere.clone()).await.status_code(), 404);
+
+        // People-impact (WPM-R211, WPM-T361), under the caller's own token: an in-scope caller is told the programme's counted claim in
+        // counts only; another organization's HR is told nothing is known (not zero, and no pool of this organization); a partner is
+        // refused; signed out is refused.
+        let impact = format!("/api/capacity/people-impact?programme={mine}");
+        for (who, token) in [("hr", &hr), ("planner", &planner), ("manager", &manager)] {
+            let response = get(impact.clone(), token.clone()).await;
+            assert_eq!(response.status_code(), 200, "{who} reads people-impact");
+            let body = response.json::<Value>();
+            assert_eq!(body["over_committed_pool_months"]["known"], true, "{who}: {body}");
+            assert_eq!(body["over_committed_pool_months"]["considered"], 1, "{who}: {body}");
+            assert_counts_only(&body, who);
+            let text = body.to_string();
+            for leak in ["WIP-SECRET", "Persona Secret Name", "person:", other.as_str()] {
+                assert!(!text.contains(leak), "{who}: people-impact must not carry `{leak}`");
+            }
+        }
+        let outside = get(impact.clone(), elsewhere.clone()).await;
+        assert_eq!(outside.status_code(), 200);
+        let outside = outside.json::<Value>();
+        for part in ["workers_committed", "contingent_ending_before_end", "over_committed_pool_months"] {
+            assert_eq!(outside[part]["known"], false, "another organization learns nothing: {outside}");
+        }
+        assert!(!outside.to_string().contains(&pool), "no pool of this organization is named to another");
+        assert_eq!(get(impact.clone(), partner.clone()).await.status_code(), 403, "a partner reads packs only");
+        assert_eq!(request.get(&impact).await.status_code(), 401, "sign in");
     })
     .await;
 }

@@ -1907,3 +1907,143 @@ async fn a_linked_pool_gives_its_peer_a_floored_supply_and_every_request_is_answ
     })
     .await;
 }
+
+/// WPM-T361 (WPM-R211): people-impact for a programme is counts only, each part known or unknown with a reason, floored, with no total,
+/// and audited; a programme WPM knows nothing about is unknown throughout, never zero.
+#[tokio::test]
+#[serial]
+#[ignore = "needs a Postgres database; run with --ignored"]
+#[allow(clippy::too_many_lines)] // one scenario read top to bottom
+async fn people_impact_for_a_programme_is_counts_known_or_unknown_floored_and_audited() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = chrono::Utc::now().date_naive();
+        let early = today + chrono::Days::new(90);
+        let end = today + chrono::Days::new(365);
+        let programme = a_programme();
+        let (title_a, title_b, title_c) = (format!("Impact A {tag}"), format!("Impact B {tag}"), format!("Impact C {tag}"));
+        let mut pids = Vec::new();
+        let mut hire = async |title: &str, n: usize, basis: &str, ends: Option<chrono::NaiveDate>, funded_by: &str| {
+            let mut body = json!({
+                "person_ref": super::a_person(), "organization_ref": org,
+                "worker_number": format!("PI-{}-{}{n}", &tag[..8], &title[7..8]), "display_name": format!("Hidden Name {n}"),
+                "employment_type": basis, "fte_percent": 100,
+                "department": "engineering", "job_title": title, "hired_on": "2026-01-05",
+            });
+            if let Some(e) = ends {
+                body["engagement_ends_on"] = json!(e);
+            }
+            let made: Value = request.post("/api/workers").json(&body).await.json();
+            let pid = made["pid"].as_str().unwrap_or_else(|| panic!("{made}")).to_string();
+            request
+                .put(&format!("/api/workers/{pid}/funding"))
+                .json(&json!({ "kind": "programme", "programme_ref": funded_by }))
+                .await
+                .assert_status_ok();
+            pids.push(pid);
+        };
+        // Pool A: ten fixed-term ending before the end, two permanent. Pool B: three (under the floor). One in no pool. One on another programme.
+        for n in 0..10 {
+            hire(&title_a, n, "fixed_term", Some(early), &programme).await;
+        }
+        for n in 10..12 {
+            hire(&title_a, n, "permanent", None, &programme).await;
+        }
+        for n in 0..3 {
+            hire(&title_b, n, "permanent", None, &programme).await;
+        }
+        // A contractor whose end was never recorded (an older record: the API now asks for one), in no pool.
+        hire(&title_c, 0, "contractor", Some(end), &programme).await;
+        ctx.db
+            .execute_unprepared(&format!("UPDATE workers SET engagement_ends_on = NULL WHERE worker_number = 'PI-{}-C0'", &tag[..8]))
+            .await
+            .unwrap();
+        hire(&title_a, 99, "fixed_term", Some(early), &a_programme()).await;
+        let mut pools = Vec::new();
+        for (title, name) in [(&title_a, "A"), (&title_b, "B")] {
+            let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": title })).await.json();
+            let pool = make_pool(&request, &org, &format!("Impact pool {name} {tag}"), 0).await;
+            request
+                .post(&format!("/api/skill-pools/{pool}/members"))
+                .json(&json!({ "role_profile_pid": profile["pid"] }))
+                .await
+                .assert_status_ok();
+            pools.push(pool);
+        }
+        // The programme claims far more of pool A next month than it has.
+        let next_month = chrono::Datelike::with_day(&today, 1).unwrap().checked_add_months(chrono::Months::new(1)).unwrap();
+        request
+            .put("/api/programme-demands")
+            .json(&json!({ "programme_ref": programme, "pool_pid": pools[0], "month": next_month, "fte_centi": 5000 }))
+            .await
+            .assert_status_ok();
+        ctx.db
+            .execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'"))
+            .await
+            .unwrap();
+        let audits_before = scalar(&ctx, "SELECT count(*) AS n FROM audit_logs WHERE action = 'people_impact_asked'".to_string()).await;
+
+        let ask = |query: String| {
+            let request = &request;
+            async move { request.get(&format!("/api/capacity/people-impact?{query}")).await }
+        };
+        let pool_count = |part: &Value, pool: &str| {
+            part["pools"].as_array().unwrap().iter().find(|p| p["pool_pid"] == pool).map(|p| p["count"].clone()).unwrap()
+        };
+
+        // Without an end date: who is committed is known, what ends before the end is not, and says why.
+        let answer: Value = ask(format!("programme={programme}")).await.json();
+        let workers = &answer["workers_committed"];
+        assert_eq!(workers["known"], true, "{answer}");
+        assert_eq!(pool_count(workers, &pools[0]), json!(12), "{answer}");
+        assert_eq!(pool_count(workers, &pools[1]), Value::Null, "three is under the floor: hidden, not zero");
+        assert_eq!(workers["in_no_pool"], json!({ "count": null, "hidden": true }));
+        let ending = &answer["contingent_ending_before_end"];
+        assert_eq!(ending["known"], false);
+        assert!(ending["reason"].as_str().unwrap().contains("ends_on"), "{ending}");
+        assert_eq!(ending["pools"], Value::Null, "unknown is not zero");
+        let over = &answer["over_committed_pool_months"];
+        assert_eq!((over["known"].as_bool(), over["considered"].as_i64(), over["over"].as_i64()), (Some(true), Some(1), Some(1)), "{over}");
+        assert_eq!(over["pools"][0]["pool_pid"], pools[0].as_str());
+        assert_eq!(over["pools"][0]["over_months"], json!([next_month]));
+        assert_eq!(answer["programme_ends_on"], Value::Null);
+        assert_eq!(answer["floor"], 10);
+        assert!(answer.get("total").is_none() && workers.get("total").is_none(), "no total");
+
+        // With the end the programme's owner gives: the ten fixed-term engagements end before it; the contractor with no end is apart.
+        let with_end: Value = ask(format!("programme={programme}&ends_on={end}")).await.json();
+        let ending = &with_end["contingent_ending_before_end"];
+        assert_eq!(ending["known"], true, "{with_end}");
+        assert_eq!(pool_count(ending, &pools[0]), json!(10));
+        assert_eq!(pool_count(ending, &pools[1]), json!(0));
+        assert_eq!(ending["end_not_recorded"], json!({ "count": null, "hidden": true }), "one contractor with no end: hidden");
+        assert_eq!(with_end["programme_ends_on_source"], "caller");
+
+        // Names no one: no name, number, worker pid or person ref leaves.
+        let text = format!("{answer}{with_end}");
+        for word in ["Hidden Name", "PI-", "person:"] {
+            assert!(!text.contains(word), "{word}");
+        }
+        for pid in &pids {
+            assert!(!text.contains(pid.as_str()), "a worker pid leaked");
+        }
+
+        // A programme WPM holds nothing for is unknown in every part, not zero.
+        let stranger: Value = ask(format!("programme={}&ends_on={end}", a_programme())).await.json();
+        for part in ["workers_committed", "contingent_ending_before_end", "over_committed_pool_months"] {
+            assert_eq!(stranger[part]["known"], false, "{part}: {stranger}");
+            assert!(stranger[part]["reason"].is_string());
+        }
+
+        // Malformed requests are refused.
+        for bad in [format!("programme={}", super::a_person()), "programme=nonsense".to_string(), format!("programme={programme}&months=0")] {
+            assert_eq!(ask(bad.clone()).await.status_code(), 422, "{bad}");
+        }
+
+        // Every answered request is audited.
+        let audits_after = scalar(&ctx, "SELECT count(*) AS n FROM audit_logs WHERE action = 'people_impact_asked'".to_string()).await;
+        assert_eq!(audits_after - audits_before, 3);
+    })
+    .await;
+}

@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — people-impact for a programme, the pull PPM makes (WPM-T361)
+
+`GET /api/capacity/people-impact?programme=thing:<uuid>`: counts only, floored at ten, no total, each part known or unknown with its
+reason. See the service changelog. Not run against PPM.
+
 ### Changed — the family contract with PPM and CRM recorded; programme demand in closed (WPM-T360)
 
 At the product owner's direction (2026-10-30) [`spec/cross-app-bridges.md`](spec/cross-app-bridges.md) records the contract the three

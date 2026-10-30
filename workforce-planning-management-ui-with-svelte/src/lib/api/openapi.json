@@ -3060,6 +3060,19 @@
         ]
       }
     },
+    "/api/capacity/people-impact": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The three counts, each known or unknown"
+          }
+        },
+        "summary": "People-impact for a programme (?programme=thing:<uuid>, ?ends_on=, ?months=), counts only: the people employed today whose post the programme funds, by pool; the fixed-term and contract engagements among them that end before ends_on (unknown without it: WPM holds no programme end date); and the pool-months it holds a counted claim in that are over or cannot be said. Each part is known or unknown with a reason, never a zero for not known; a count of people under ten is hidden and no total is given. Under the caller's own token and scope, audited",
+        "tags": [
+          "capacity"
+        ]
+      }
+    },
     "/api/capacity/settings": {
       "get": {
         "responses": {

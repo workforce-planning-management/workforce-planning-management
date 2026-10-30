@@ -114,8 +114,55 @@ read as one set. **Contract with PPM: unverified** (the family contract of 2026-
   and no total gives it away. No name, no pid, no pay.
 - **Read-only, under the caller's token,** audited (WPM-D135). It is the people-impact answer of WPM-R95 to R97 for an issue or a change
   request that names a programme.
-- **A pull (2026-10-30, family contract point 4):** `GET /api/capacity/people-impact?programme=thing:<uuid>`, built as WPM-T361.
+- **A pull (2026-10-30, family contract point 4):** `GET /api/capacity/people-impact?programme=thing:<uuid>`, **built as WPM-T361**.
   Where a sub-count cannot be computed from what WPM holds, it is `unknown` with the reason, never zero.
+- **What each count rests on** (`rules::people_impact`):
+  - *Workers committed* are the people employed today whose post is recorded as funded by the programme (`post_fundings.programme_ref`,
+    funding not ended): WPM links a person to a programme only that way (WPM-D59). Each is counted in every pool they count towards
+    (the pool's role profiles or skills, as the capacity view counts them), and in `in_no_pool` when in none. **Unknown** when no
+    such post is recorded, since WPM cannot tell "nobody" from "not recorded".
+  - *Engagements ending* are, of those people, the fixed-term and contract engagements that end on or after today and before the
+    programme's end. **WPM holds no end date for a programme**, so the count is **unknown** unless the caller passes
+    `ends_on` (the date the programme's owner gives; the answer says `programme_ends_on_source: "caller"`). WPM never takes an end
+    from its own data, such as the last month with a claim. A contingent engagement with no end recorded is counted in
+    `end_not_recorded`, not as ending.
+  - *Over-committed pool-months* are, of the pool-months in which the programme holds a claim the pool counts (a linked pool the
+    peer's, an unlinked one its own, WPM-D140), those `over` in the capacity view and those that cannot be said. **Unknown** when
+    the programme holds no such claim. Over is worked out from active claims; a proposed one (as every claim PPM sends arrives) is
+    shown but not counted until a start decision (WPM-D50). A pool-month is not a person and is not floored.
+- **The floor** is ten for every count of people (the floor of the HR-only programme roll-up over the same funding data, WPM-R83),
+  since this answer reaches a caller who need not be HR. A count under it is `null` with `hidden: true`; zero is shown. **There is
+  no total across pools**: a person can count in more than one, and a total beside the cells could give a hidden one away.
+- **Who may ask:** any signed-in caller who is not partner-only (an aggregate, as the capacity view), and only about the
+  organizations in the caller's scope; a caller with none in scope is told every part is unknown. Each answer is audited
+  (`people_impact_asked` with the programme reference, the number of organizations and whether `ends_on` was given; no count).
+- **Answer** (`months` defaults to 12, from the current month):
+
+  ```json
+  {
+    "programme_ref": "thing:<uuid>", "source": "wpm", "as_of": "YYYY-MM-DD",
+    "programme_ends_on": "YYYY-MM-DD" | null, "programme_ends_on_source": "caller" | null,
+    "months": ["YYYY-MM-01", ...], "floor": 10,
+    "workers_committed": {
+      "known": true, "reason": null,
+      "pools": [{ "pool_pid": "<uuid>", "pool": "<name>", "count": 12 | null, "hidden": false | true }],
+      "in_no_pool": { "count": 0 | null, "hidden": false | true }
+    },
+    "contingent_ending_before_end": {
+      "known": true, "reason": null,
+      "pools": [ ...as above... ], "in_no_pool": { ... }, "end_not_recorded": { "count": ..., "hidden": ... }
+    },
+    "over_committed_pool_months": {
+      "known": true, "reason": null, "considered": 1, "over": 1, "unknown": 0,
+      "pools": [{ "pool_pid": "<uuid>", "pool": "<name>", "over_months": ["YYYY-MM-01"], "unknown_months": [] }]
+    },
+    "derivation": "..."
+  }
+  ```
+
+  An unknown part is `{"known": false, "reason": "<why>"}` with every figure `null`.
+- **Not done:** a push to PPM; a per-month breakdown of the people counts; a defence against differencing two answers for
+  overlapping programmes or two pools that share people.
 
 ## Working alone, and working together (WPM-R213, WPM-D138 to D141)
 

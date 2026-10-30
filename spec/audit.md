@@ -100,6 +100,10 @@ actor, and — where a detail would itself be sensitive — **without it**:
   holder in the snapshot) — duplicated in the `handover_actions` table, which
   **survives erasure** (notes scrubbed, rows kept).
 
+Cross-app bridge reads (WPM-D135) are audited with the caller as actor and no figure or personal reference: `people_impact_asked`
+on `capacity` (the programme's `thing:` reference, the number of organizations counted, whether an end date was given; WPM-T361),
+beside `capacity_what_if_asked` (WPM-T158) and `bridge_overlap_checked` on `bridge` (WPM-T357).
+
 Skill-gap and training-plan reads are derived views and are not audited
 individually; they expose no record the underlying reads do not.
 

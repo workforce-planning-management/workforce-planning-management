@@ -2112,6 +2112,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/capacity/people-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** People-impact for a programme (?programme=thing:<uuid>, ?ends_on=, ?months=), counts only: the people employed today whose post the programme funds, by pool; the fixed-term and contract engagements among them that end before ends_on (unknown without it: WPM holds no programme end date); and the pool-months it holds a counted claim in that are over or cannot be said. Each part is known or unknown with a reason, never a zero for not known; a count of people under ten is hidden and no total is given. Under the caller's own token and scope, audited */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The three counts, each known or unknown */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/capacity/settings": {
         parameters: {
             query?: never;

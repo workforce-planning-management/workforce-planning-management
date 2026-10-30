@@ -702,6 +702,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/capacity/peer-supply": {
             "get": { "tags": ["capacity"], "summary": "What a linked pool gives its peer (?pool=, ?from=, ?months=): the pool's supply by month in hundredths of an FTE, hidden (null) in any month made up of fewer than five workers. Names no worker, gives no total, answered under the caller's own token. A pool that is not linked has nothing to give", "responses": ok("The months and their supply") }
         },
+        "/api/capacity/people-impact": {
+            "get": { "tags": ["capacity"], "summary": "People-impact for a programme (?programme=thing:<uuid>, ?ends_on=, ?months=), counts only: the people employed today whose post the programme funds, by pool; the fixed-term and contract engagements among them that end before ends_on (unknown without it: WPM holds no programme end date); and the pool-months it holds a counted claim in that are over or cannot be said. Each part is known or unknown with a reason, never a zero for not known; a count of people under ten is hidden and no total is given. Under the caller's own token and scope, audited", "responses": ok("The three counts, each known or unknown") }
+        },
         "/api/absence-categories": {
             "get": { "tags": ["leave"], "summary": "The kinds of leave (?pay=paid|unpaid|policy to filter): vacation (annual), government holiday (public_holiday), illness (sick), parental, unpaid and other, each paid, unpaid or by the employer's policy, how it is held against a balance, and whether a reason may be given. Sick leave never carries a reason and there is no category for a condition or for stress", "responses": ok("The categories") }
         },

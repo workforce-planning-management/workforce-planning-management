@@ -62,6 +62,7 @@ fn pid_ref(pid: Uuid) -> serde_json::Value {
 
 mod demand;
 mod peer;
+mod people_impact;
 mod pools;
 mod settings;
 mod start_check;
@@ -72,6 +73,8 @@ mod what_if;
 use self::demand::*;
 #[allow(clippy::wildcard_imports)]
 use self::peer::*;
+#[allow(clippy::wildcard_imports)]
+use self::people_impact::*;
 #[allow(clippy::wildcard_imports)]
 use self::pools::*;
 #[allow(clippy::wildcard_imports)]
@@ -101,6 +104,7 @@ pub fn routes() -> Routes {
         .add("/skill-pools/{pid}/peer-link", put(set_peer_link))
         .add("/capacity/peer-demand", post(receive_peer_demand))
         .add("/capacity/peer-supply", get(peer_supply_view))
+        .add("/capacity/people-impact", get(people_impact))
         .add("/programme-demands", put(set_demand))
         .add("/programme-demands", get(list_demand))
         .add("/programme-demands/{pid}", delete(delete_demand))

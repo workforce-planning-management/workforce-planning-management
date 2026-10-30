@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — people-impact for a programme (WPM-T361)
+
+`GET /api/capacity/people-impact?programme=thing:<uuid>` (optional `ends_on`, `months`) and `rules::people_impact`: counts only, under
+the caller's scope, audited. The people whose post the programme funds by pool; the fixed-term and contract engagements among them
+ending before `ends_on`; the over and unknown pool-months it holds a counted claim in. Each part is known or `unknown` with a reason:
+WPM holds no programme end date, so without `ends_on` the second part is unknown, never zero. A count of people under ten is hidden
+and there is no total. **Not verified:** PPM's call to it (being built); a caller in two organizations was not tested. `cargo fmt`
+also reformatted two lines of `tests/enforcement_what_if.rs` that were already unformatted.
+
 ### Added — applicant subject access, and an appraisal's invitations swept with it (WPM-T353)
 
 `GET /api/candidates/{pid}/subject-access` (privileged, audited) gives an applicant their record, applications, interviews with the interviewers' notes, assessments and results. The retention sweep now deletes an appraisal's nominations and responses before the appraisal, which they used to outlive; `appraisal_nominations` is on the retention schedule. The inventory's three stale exemptions are gone.

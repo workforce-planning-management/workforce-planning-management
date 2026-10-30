@@ -88,6 +88,7 @@ pub mod pay_position;
 pub mod pay_range;
 pub mod pay_scale;
 pub mod payroll;
+pub mod people_impact;
 pub mod planning;
 pub mod policy;
 pub mod position;
