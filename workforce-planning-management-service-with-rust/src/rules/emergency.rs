@@ -12,14 +12,19 @@ pub const MAX_CONTACTS: usize = 5;
 /// Longest free-text field accepted.
 const MAX_TEXT: usize = 200;
 
-/// Whether `phone` could be dialled: only digits and `+ - ( ) . space`,
-/// with 5 to 15 digits (E.164 allows 15).
+/// Whether `phone` could be dialled: digits (ASCII or any set
+/// [`crate::rules::contact_details::phone_digits`] reads, so Arabic-Indic,
+/// Devanagari or full-width digits count) and `+ - ( ) . space`, with 5 to 15
+/// digits (E.164 allows 15). It is stored as typed (WPM-T382).
 #[must_use]
 pub fn phone_ok(phone: &str) -> bool {
-    let allowed = phone
+    use crate::rules::contact_details::{digit_value, fold_width};
+    // full-width forms (＋８１) are their ASCII ones; the value itself is not rewritten
+    let folded: String = phone.chars().map(fold_width).collect();
+    let allowed = folded
         .chars()
-        .all(|c| c.is_ascii_digit() || matches!(c, '+' | '-' | '(' | ')' | '.' | ' '));
-    let digits = phone.chars().filter(char::is_ascii_digit).count();
+        .all(|c| digit_value(c).is_some() || matches!(c, '+' | '-' | '(' | ')' | '.' | ' '));
+    let digits = folded.chars().filter(|c| digit_value(*c).is_some()).count();
     allowed && (5..=15).contains(&digits)
 }
 
@@ -87,6 +92,12 @@ mod tests {
         assert!(!phone_ok("+44 7700 900123 4567 89"));
         assert!(!phone_ok("call me"));
         assert!(!phone_ok(""));
+        // digits in any script count (WPM-T382)
+        assert!(phone_ok("+٩٦٦ ٥٠ ١٢٣ ٤٥٦٧"));
+        assert!(phone_ok("+৮৮০ ১৭১১ ২৩৪৫৬৭"));
+        assert!(phone_ok("＋８１ ９０-１２３４-５６７８"));
+        assert!(!phone_ok("١٢٣٤"));
+        assert!(!phone_ok("²³⁴⁵⁶"), "superscripts are not digits");
     }
 
     #[test]

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — no one country's postcode or phone digits (WPM-T382, proposed WPM-D152)
+
+`rules::contact_details::validate_postcode` no longer holds a postcode to 12 ASCII letters, digits, spaces and hyphens: any text of up to
+20 characters with no control character is taken. A telephone number's 5 to 15 digits may be ASCII, full-width (`fold_width`) or any of
+the 31 Unicode decimal digit sets in `DIGIT_ZEROS` (`digit_value`, `phone_digits`), for contact details and for emergency contacts
+(`rules::emergency::phone_ok`); the value is still stored as typed. The country error names no country (it said "such as GB").
+Tests: 2 new and 2 extended unit tests. **Not done:** the address order per country, a normalised stored number and a country picker
+are proposed WPM-D152's questions and were not built.
+
 ### Changed — the duplicate check compares the whole name, in any script and order (WPM-T381, WPM-R136)
 
 `rules::duplicates` no longer splits `display_name` into a first and a last word for the matcher (`split_name` is gone). `name_tokens`

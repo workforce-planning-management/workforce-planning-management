@@ -11,5 +11,12 @@
       "title": "Belong to more than one organisation",
       "body": "Sign in once and see every organisation you belong to at the same time — a company, a department, a peer organisation, a working group — with no separate switcher to click through. Each membership carries its own role, so being a staff partner in one team and an ordinary member of another is one sign-in, not two accounts."
     }
+  },
+  "details": {
+    "contact": {
+      "city": "Town or city",
+      "region": "County or region",
+      "postcode": "Postcode"
+    }
   }
 }

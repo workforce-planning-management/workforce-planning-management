@@ -202,7 +202,7 @@ const ALLOWED: &[(&str, &str, &str)] = &[
     (
         "contact_details.rs",
         "gb",
-        "the example in the country-code message and test inputs for the ISO 3166 shape",
+        "test inputs for the ISO 3166 shape (the message names no country since WPM-T382)",
     ),
     (
         "cost.rs",

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — world English address labels; British and US ones as overrides (WPM-T382)
+
+`en-001` says "City or locality", "State, province or region" and "Postal code" (it said "Town or city", "County or region",
+"Postcode", which move to `en-gb`); `en-us` gets its first overrides, "City", "State" and "ZIP Code". **Not done:** other `en-001` terms
+(`rota`, `redundancy`, `payslip`) were not reviewed; the translations of these labels were not re-read; the country box is still two
+letters typed (proposed WPM-D152, question 3).
+
 ### Changed — names and labels sort by the page's locale (WPM-T381)
 
 `compareText` in `src/lib/locale-format.ts` compares with `Intl.Collator` in the page's locale (numeric, one collator per locale) and

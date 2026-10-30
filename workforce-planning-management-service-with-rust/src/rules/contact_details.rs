@@ -4,6 +4,11 @@
 //! Validation is by *shape* only: a length, the characters a telephone number may hold, the
 //! outline of an e-mail address. Nothing is looked up, nothing is sent, and no address is
 //! "verified". A blank value is no value, and a worker can leave any field empty.
+//!
+//! **No one country's shapes (WPM-T382, WPM-R214).** A postcode is a short line of any script,
+//! not a pattern; a telephone number's digits may be typed in any of the decimal digit sets in
+//! [`DIGIT_ZEROS`] (Arabic-Indic, Devanagari, Bengali, full-width and others) as well as ASCII. A
+//! value is stored as typed (trimmed); nothing is rewritten to ASCII or to E.164.
 
 /// The longest any free-text line may be, in characters.
 pub const MAX_LINE: usize = 120;
@@ -11,6 +16,63 @@ pub const MAX_LINE: usize = 120;
 pub const MAX_EMAIL: usize = 254;
 /// A telephone number holds this many digits at least and at most (the international maximum).
 pub const DIGITS: std::ops::RangeInclusive<usize> = 5..=15;
+/// The longest postcode, in characters: a length, not a shape.
+pub const MAX_POSTCODE: usize = 20;
+
+/// The zero of each Unicode decimal digit set a telephone number may be typed in; the nine digits
+/// after it are 1 to 9. ASCII, and full-width (folded by [`fold_width`]), are handled before this.
+/// Arabic-Indic, Extended Arabic-Indic (Persian, Urdu), N'Ko, Devanagari, Bengali, Gurmukhi,
+/// Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam, Sinhala Lith, Thai, Lao, Tibetan, Myanmar,
+/// Myanmar Shan, Khmer, Mongolian, Limbu, New Tai Lue, Balinese, Sundanese, Lepcha, Ol Chiki, Vai,
+/// Javanese, Myanmar Tai Laing, Cham, Meetei Mayek.
+pub const DIGIT_ZEROS: [u32; 31] = [
+    0x0660, 0x06f0, 0x07c0, 0x0966, 0x09e6, 0x0a66, 0x0ae6, 0x0b66, 0x0be6, 0x0c66, 0x0ce6, 0x0d66,
+    0x0de6, 0x0e50, 0x0ed0, 0x0f20, 0x1040, 0x1090, 0x17e0, 0x1810, 0x1946, 0x19d0, 0x1b50, 0x1bb0,
+    0x1c40, 0x1c50, 0xa620, 0xa9d0, 0xa9f0, 0xaa50, 0xabf0,
+];
+
+/// A full-width form (`＋`, `８`, `（`) as its ASCII one, and the ideographic space as a space, as an
+/// East Asian keyboard types them; any other character unchanged.
+#[must_use]
+pub fn fold_width(c: char) -> char {
+    match u32::from(c) {
+        0x3000 => ' ',
+        code @ 0xff01..=0xff5e => char::from_u32(code - 0xfee0).unwrap_or(c),
+        _ => c,
+    }
+}
+
+/// The value 0 to 9 of a decimal digit in ASCII, full-width or any set in [`DIGIT_ZEROS`]; `None`
+/// otherwise (a superscript or a Roman numeral is not a digit).
+#[must_use]
+pub fn digit_value(c: char) -> Option<u32> {
+    if let Some(d) = fold_width(c).to_digit(10) {
+        return Some(d);
+    }
+    let code = u32::from(c);
+    DIGIT_ZEROS
+        .iter()
+        .find(|zero| (**zero..**zero + 10).contains(&code))
+        .map(|zero| code - zero)
+}
+
+/// How many digits a telephone number holds, or `None` when it holds a character a number does
+/// not: digits in any set above, spaces, hyphens, dots and brackets, and one leading `+`. Full-width
+/// forms (`＋８１`) count as their ASCII ones.
+#[must_use]
+pub fn phone_digits(value: &str) -> Option<usize> {
+    let folded: String = value.chars().map(fold_width).collect();
+    let body = folded.strip_prefix('+').unwrap_or(&folded);
+    let mut digits = 0;
+    for c in body.chars() {
+        if digit_value(c).is_some() {
+            digits += 1;
+        } else if !matches!(c, ' ' | '-' | '.' | '(' | ')') {
+            return None;
+        }
+    }
+    Some(digits)
+}
 
 /// Trim, and treat blank as absent.
 #[must_use]
@@ -36,18 +98,19 @@ pub fn validate_line(field: &str, value: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// A postcode: letters, digits, spaces and hyphens, up to twelve characters.
+/// A postcode: any text of up to [`MAX_POSTCODE`] characters with no control characters. No
+/// country's pattern is assumed: letters and digits of any script, and any punctuation a country's
+/// codes use (a hyphen, a dot, a slash, the Japanese postal mark), are all accepted.
 ///
 /// # Errors
 ///
-/// Any other character, or too long.
+/// Too long, or holding a control character.
 pub fn validate_postcode(value: &str) -> Result<(), String> {
-    if value.chars().count() > 12
-        || !value
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == ' ' || c == '-')
-    {
-        return Err("postcode is up to 12 letters, digits, spaces or hyphens".to_string());
+    if value.chars().count() > MAX_POSTCODE {
+        return Err(format!("postcode is longer than {MAX_POSTCODE} characters"));
+    }
+    if value.chars().any(char::is_control) {
+        return Err("postcode must not contain control characters".to_string());
     }
     Ok(())
 }
@@ -61,27 +124,22 @@ pub fn validate_country(value: &str) -> Result<(), String> {
     if value.len() == 2 && value.bytes().all(|b| b.is_ascii_uppercase()) {
         Ok(())
     } else {
-        Err("country is a two-letter ISO 3166 code such as GB".to_string())
+        Err("country is a two-letter ISO 3166-1 alpha-2 code in capital letters".to_string())
     }
 }
 
-/// A telephone number: digits, spaces, hyphens, dots and brackets, an optional leading `+`, and
-/// between five and fifteen digits.
+/// A telephone number: digits (in any set [`phone_digits`] reads), spaces, hyphens, dots and
+/// brackets, an optional leading `+`, and between five and fifteen digits. It is stored as typed.
 ///
 /// # Errors
 ///
 /// A character a number does not hold, a misplaced `+`, or too few or too many digits.
 pub fn validate_phone(field: &str, value: &str) -> Result<(), String> {
-    let body = value.strip_prefix('+').unwrap_or(value);
-    if !body
-        .chars()
-        .all(|c| c.is_ascii_digit() || matches!(c, ' ' | '-' | '.' | '(' | ')'))
-    {
+    let Some(digits) = phone_digits(value) else {
         return Err(format!(
             "{field} holds digits, spaces, hyphens, dots and brackets, with an optional leading +"
         ));
-    }
-    let digits = body.chars().filter(char::is_ascii_digit).count();
+    };
     if !DIGITS.contains(&digits) {
         return Err(format!(
             "{field} needs {} to {} digits",
@@ -220,6 +278,43 @@ mod tests {
     }
 
     #[test]
+    fn telephone_digits_may_be_typed_in_any_script() {
+        for ok in [
+            "+٩٦٦ ٥٠ ١٢٣ ٤٥٦٧",              // Arabic-Indic
+            "+۹۲ ۳۰۰ ۱۲۳۴۵۶۷",               // Extended Arabic-Indic (Urdu, Persian)
+            "+९१ ९८७६५ ४३२१०",               // Devanagari
+            "+৮৮০ ১৭১১ ২৩৪৫৬৭",              // Bengali
+            "＋８１ ９０-１２３４-５６７８", // full-width, as a Japanese keyboard types it
+            "+66 ๘๑ ๒๓๔ ๕๖๗๘",               // Thai digits after an ASCII country code
+        ] {
+            assert!(validate_phone("phone", ok).is_ok(), "{ok}");
+        }
+        assert_eq!(phone_digits("+٩٦٦ ٥٠"), Some(5));
+        assert_eq!(digit_value('৭'), Some(7));
+        assert_eq!(digit_value('²'), None, "a superscript is not a digit");
+        assert_eq!(digit_value('Ⅻ'), None);
+        assert_eq!(digit_value('８'), Some(8));
+        assert!(validate_phone("phone", "²³⁴⁵⁶").is_err());
+        assert!(
+            validate_phone("phone", "١٢٣٤").is_err(),
+            "four digits are too few in any script"
+        );
+        assert!(
+            validate_phone("phone", "٥٠+١٢٣٤٥").is_err(),
+            "a + only leads"
+        );
+        assert!(validate_phone("phone", "٥٠ ١٢٣ x").is_err());
+        // every set in the table is ten consecutive code points that Unicode calls decimal digits
+        for zero in DIGIT_ZEROS {
+            for d in 0..10 {
+                let c = char::from_u32(zero + d).expect("a char");
+                assert!(c.is_numeric(), "{zero:#x} + {d}");
+                assert_eq!(digit_value(c), Some(d));
+            }
+        }
+    }
+
+    #[test]
     fn email_is_judged_by_outline_only() {
         for ok in ["a@b.co", "first.last@example.org", "x+tag@sub.example.com"] {
             assert!(validate_email(ok).is_ok(), "{ok}");
@@ -239,11 +334,24 @@ mod tests {
         assert!(validate_line("city", &"x".repeat(MAX_LINE)).is_ok());
         assert!(validate_line("city", &"x".repeat(MAX_LINE + 1)).is_err());
         assert!(validate_line("city", "a\nb").is_err());
-        assert!(validate_postcode("LS1 4AP").is_ok());
-        assert!(validate_postcode("10115").is_ok());
-        assert!(validate_postcode("LS1 4AP; DROP").is_err());
-        assert!(validate_postcode("1234567890123").is_err());
+        // no country's pattern: any script, any punctuation, a bound on length only
+        for ok in [
+            "LS1 4AP",
+            "10115",
+            "12345-6789",
+            "〒100-0001",
+            "١١٥١١",
+            "SE-123 45",
+            "1234567890123",
+            "Box 1234/5",
+        ] {
+            assert!(validate_postcode(ok).is_ok(), "{ok}");
+        }
+        assert!(validate_postcode(&"9".repeat(MAX_POSTCODE)).is_ok());
+        assert!(validate_postcode(&"9".repeat(MAX_POSTCODE + 1)).is_err());
+        assert!(validate_postcode("100\n0001").is_err());
         assert!(validate_country("GB").is_ok());
+        assert!(validate_country("IN").is_ok());
         for bad in ["gb", "GBR", "G", "", "G1"] {
             assert!(validate_country(bad).is_err(), "{bad}");
         }

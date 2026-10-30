@@ -414,6 +414,11 @@ where it can, is English around the documents, offers only the audited themes, a
 The API and the UI take a currency's exponent from the same ISO 4217 table, never from Unicode CLDR's display digits, and
 the API refuses a code the table does not hold ([worldwide.md](worldwide.md), D151).
 
+## WPM-D152 — Addresses and telephone numbers keep what the person typed (proposed)
+
+A postcode has no pattern and a telephone number's digits may be in any script; both are stored as typed. The address order per
+country, the stored form of a number and a country picker are three questions for the product owner ([worldwide.md](worldwide.md), D152).
+
 ## WPM-D52, WPM-D54 — Secure by default; rate limits keep no history
 
 Sign-in is enforced unless explicitly turned off, production refuses an open or

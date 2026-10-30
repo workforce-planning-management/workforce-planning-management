@@ -1,1 +1,9 @@
-{}
+{
+  "details": {
+    "contact": {
+      "city": "City",
+      "region": "State",
+      "postcode": "ZIP Code"
+    }
+  }
+}

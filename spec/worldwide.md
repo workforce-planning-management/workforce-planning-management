@@ -61,6 +61,21 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   - **Not decided here:** a stored user or organization time zone and region (D144's `work_jurisdiction` could supply the region); the
     service's own "today" (the server's clock) and the working-time and holiday rules' weekend (WPM-T379, WPM-T380).
 
+- **WPM-D152 Addresses and telephone numbers keep what the person typed; their shape per country is a later, recorded choice.**
+  *Proposed, needs product-owner confirmation* (drafted 2026-10-30 by the AI assistant for WPM-T382). Nothing that depends on it is
+  built; what WPM-T382 built (any-script phone digits, no postcode pattern, neutral labels) holds whichever way it is decided.
+  - **Question 1, the address shape.** (a) Keep the structured fields (two lines, locality, region, postal code, country) and add a
+    per-country order and label table (the shape of Google's libaddressinput data; CLDR has none), so a Japanese address is shown large
+    to small and a US one with "State" and "ZIP Code"; or (b) one free-text address block plus the country, ordered by the person; or
+    (c) both, the block as the fallback for a country the table lacks. The assistant's suggestion: (c), because payroll exports in some
+    countries need the parts and no table covers every country.
+  - **Question 2, telephone numbers.** (a) Stored as typed (today); (b) stored as typed and also as ASCII digits for search and export;
+    or (c) normalised to E.164, which needs the country of a number written without `+` (D144's `work_jurisdiction`, not built). The
+    assistant's suggestion: (b), so nothing the person typed is lost and no country is guessed.
+  - **Question 3, the country field.** A picker whose names come from `Intl.DisplayNames` in the page's locale, still storing the ISO
+    3166-1 code; and whether a deployer may add a code ISO 3166-1 lacks (`XK` for Kosovo is user-assigned). The assistant's suggestion:
+    the picker, with the deployer's extra codes from D144's supranational list.
+
 - **WPM-D151 A currency's minor unit is its ISO 4217 one, from one table the API and the UI share; the API refuses a code outside it.**
   *Proposed, needs product-owner confirmation* (drafted 2026-10-30 by the AI assistant for WPM-T400, after the contact relationship
   management app's fix, its commit 37ef205, and the project portfolio management UI's, its commit 490ad5d).
@@ -322,10 +337,31 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   German and Spanish order, names in Cyrillic and Arabic, numeric labels, a bad locale). The existing request test passes unchanged.
   **Not done:** no transliteration (the same person in two scripts is not found); no name parts a person gave are stored or
   compared; the matcher's English nickname table is no longer applied (it was an English-only list); the thresholds are still tuned on
-  no data. `DataTable`'s own column sort was already the page's locale (Lily) and is unchanged.
-- [ ] WPM-T382 **Addresses, phones and world English wording.** *(WPM-R214, WPM-D143; rows 4 to 7, 32)* Neutral `en-001` labels ("Postal
+  no data. `DataTable`'s own column sort was already the page's locale (Lily) and is unchanged. **Verified (2026-10-30):** service
+  `cargo fmt`, clippy pedantic `-D warnings`, 1,048 unit tests, 185 request tests on a throwaway local PostgreSQL database; UI `pnpm
+  lint`, svelte-check (0 errors, 0 warnings), 316 vitest, Playwright 335 passed and 19 skipped; the svelte autofixer on the five changed
+  components (no issues).
+- [~] WPM-T382 **Addresses, phones and world English wording.** *(WPM-R214, WPM-D143, WPM-D152; rows 4 to 7, 32)* Neutral `en-001` labels ("Postal
   code", "State, province or region"), the British ones moved to `en-gb`; a country picker named by `Intl.DisplayNames`; an address order
   per country or one free-text block; phone digits accepted in any script and stored as ASCII.
+  **Part done (2026-10-30):** the wording and the format assumptions that need no decision. **Labels:** `en-001` now says "City or
+  locality", "State, province or region" and "Postal code"; `en-gb` overrides them with "Town or city", "County or region" and
+  "Postcode" (the old `en-001` words), and `en-us`, which had no overrides, gets "City", "State" and "ZIP Code". **Postcode:** no
+  pattern; any text of up to 20 characters with no control character (`rules::contact_details::validate_postcode`; it was up to 12 ASCII
+  letters, digits, spaces and hyphens, so "〒100-0001", "١١٥١١" and "SE-123 45" are now taken). **Phone:** the 5 to 15 digits may be
+  ASCII, full-width (`＋８１ ９０…`, folded by `fold_width`) or any of 31 Unicode decimal digit sets (`DIGIT_ZEROS`: Arabic-Indic,
+  Extended Arabic-Indic, Devanagari, Bengali, Thai and others), in a worker's contact details and in emergency contacts (`phone_digits`,
+  `rules::emergency::phone_ok`); a superscript or a Roman numeral is not a digit. **Stored as typed**, as before: the task's "stored as
+  ASCII" is a choice (D152 question 2) and was not built. The country error names no country (it said "such as GB"). **Tests:** 2 new unit tests and 2 extended (digits in six scripts and full-width, superscripts refused, every table
+  entry checked against Unicode's numeric property; postcodes of eight shapes and the bound; emergency contacts in three scripts).
+  **What remains, and why:** the address order per country or a free-text block (D152 question 1), the phone number's stored form
+  (question 2) and the country picker (question 3) wait for the product owner. **Not done either:** other `en-001` words a reader may
+  take as British (`rota`, `redundancy`, `payslip`) were left: they name features and closed vocabularies, and changing them is a
+  terminology review across 12 translations; `ar-001`, `bn-001` and the other translations of the address labels were not re-read
+  against the new English. **Not tested:** the labels in a browser in `en-us` or `en-gb` (the override files are read by the same loader
+  the parity tests cover). **Verified (2026-10-30):** service fmt, clippy pedantic, 1,049 unit tests (the country check of WPM-T369 caught
+  a first message that named three countries), 185 request tests on a throwaway database; UI lint, svelte-check, 316 vitest, Playwright
+  335 passed and 19 skipped.
 - [ ] WPM-T383 **Payroll stub is not one country's.** *(WPM-R214, WPM-D143; row 33)* The stub tax allowance and rate, the 7.5-hour day
   and the minutes in a month are parameters (or the stub says whose they are and refuses a currency it was not written for).
 - [ ] WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144; rows 34 to 36)* Each `WPM_*` default from one
@@ -491,10 +527,10 @@ through `rules::duplicates`.
 | 1 | Names | API `src/models/_entities/workers.rs:21`; UI `src/routes/workers/+page.svelte:24` | One `display_name`; no first, last, given or family field, no title, no initials, anywhere in the UI or the worker table | **Right** | — |
 | 2 | Names | API `src/rules/duplicates.rs:62-69` | The duplicate check splits `display_name` into given = first word and family = last word for the matcher | **Gap**: wrong for family-name-first orders and for names written without spaces (Chinese, Japanese). **Fixed 2026-10-30**: the whole name, in any order | T381 |
 | 3 | Names | UI `src/lib/orgViews.ts:45` (and `:41,65,117,141,146`, `src/routes/directory/+page.svelte:44`) | `localeCompare` with no locale, so sorting follows the runtime's collation, not the page's | **Partial**. **Fixed 2026-10-30**: `compareText` (`Intl.Collator`, the page's locale) | T381 |
-| 4 | Addresses | API `src/rules/contact_details.rs:115-135`; UI `src/lib/components/me/ContactDetailsPanel.svelte:16-22,93` | Two lines, city, region, postcode, country; every field optional; no postcode pattern in the UI | **Partial**: right in what is required, but the order is fixed small-to-large | T382 |
-| 5 | Addresses | API `src/rules/contact_details.rs:39-52` | A postcode is up to 12 ASCII letters, digits, spaces or hyphens | **Partial**: fits the codes known to the author; not checked against every country | T382 |
-| 6 | Addresses | UI `content/locales/en-001/ui.json:2232-2235` | World English labels are British: "Town or city", "County or region", "Postcode"; the country is a free-text "Country (two letters)" box | **Gap** | T382 |
-| 7 | Phone | API `src/rules/contact_details.rs:67-90`; UI `ContactDetailsPanel.svelte:93` (`type="tel"`, no pattern) | 5 to 15 digits, an optional `+`; no country's shape assumed. Only ASCII digits are accepted | **Partial**: no country's shape, but a number typed in Arabic-Indic or Bengali digits is refused | T382 |
+| 4 | Addresses | API `src/rules/contact_details.rs:115-135`; UI `src/lib/components/me/ContactDetailsPanel.svelte:16-22,93` | Two lines, city, region, postcode, country; every field optional; no postcode pattern in the UI | **Partial**: right in what is required, but the order is fixed small-to-large (proposed D152, question 1) | T382 |
+| 5 | Addresses | API `src/rules/contact_details.rs:39-52` | A postcode is up to 12 ASCII letters, digits, spaces or hyphens | **Partial**: fits the codes known to the author; not checked against every country. **Fixed 2026-10-30**: no pattern, up to 20 characters | T382 |
+| 6 | Addresses | UI `content/locales/en-001/ui.json:2232-2235` | World English labels are British: "Town or city", "County or region", "Postcode"; the country is a free-text "Country (two letters)" box | **Gap**. **Labels fixed 2026-10-30** (neutral `en-001`, British in `en-gb`, US in `en-us`); the country box remains (D152, question 3) | T382 |
+| 7 | Phone | API `src/rules/contact_details.rs:67-90`; UI `ContactDetailsPanel.svelte:93` (`type="tel"`, no pattern) | 5 to 15 digits, an optional `+`; no country's shape assumed. Only ASCII digits are accepted | **Partial**: no country's shape, but a number typed in Arabic-Indic or Bengali digits is refused. **Fixed 2026-10-30**: any Unicode decimal digit set, stored as typed | T382 |
 | 8 | Identifiers | API `src/models/_entities/workers.rs:11-34`; UI (no field, no pattern) | No national identifier, tax code or insurance number column or field in either; the worker number is the employer's own free text | **Right** (the spec's payroll fields, audit row 4, are not in the code) | — |
 | 9 | Dates | UI `src/lib/components/CalendarPanel.svelte:50,54,58,75`, `TrendChart.svelte:28` | `Intl.DateTimeFormat(i18n.locale, …)`; weekday names from `Intl` | **Right** | — |
 | 10 | Dates | UI `src/lib/components/me/TimeOffPanel.svelte:90`, `src/routes/groups/+page.svelte:156`, `src/routes/movements/[pid]/+page.svelte:245`, `CareerHistory.svelte:54` (and about 80 more) | Raw ISO dates in markup or placeholders; `CareerHistory` writes an English "now" | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`) | T375 |
@@ -519,7 +555,7 @@ through `rules::duplicates`.
 | 29 | Right-to-left | UI `src/app.css:128,182,191-206`, `CalendarPanel.svelte:203-204`, `src/routes/+page.svelte:369` | 11 physical declarations (against 27 logical); `text-align: left` on every table cell | **Gap**. **Fixed 2026-10-30**: all logical, and a scan fails on a new one | T377 |
 | 30 | Right-to-left | UI `TimeOffPanel.svelte:90`, `OnCall.svelte:59`, `metrics/+page.svelte:74` (and about 12 more, plus 8 catalogue strings) | A literal "→" between the ends of a range points the wrong way in `ar` and `ur` | **Gap**. **Fixed 2026-10-30**: `formatDateRange` and `arrow()` | T377 |
 | 31 | Locales | UI `content/locales/*/ui.json`, `src/lib/locales.ts` | 17 locales; all 12 translated `-001` files hold all 2,338 keys of `en-001`; `en-001` (not `en-gb`) is the default; all translations are AI-written and unreviewed (`REVIEW.md`) | **Right** in parity; **partial**: no locale is reviewed | — (recorded) |
-| 32 | Locales | UI `content/locales/en-gb/ui.json` (5 overrides), `en-us/ui.json` (0) | `en-001` is written in British wording, so `en-gb` barely differs and `en-us` has nothing to override | **Partial** | T382 |
+| 32 | Locales | UI `content/locales/en-gb/ui.json` (5 overrides), `en-us/ui.json` (0) | `en-001` is written in British wording, so `en-gb` barely differs and `en-us` has nothing to override | **Partial**. **In part 2026-10-30**: the address labels; other terms not reviewed | T382 |
 | 33 | Pay arithmetic | API `src/rules/payroll.rs:42-47`, `src/rules/workforce.rs:10` | The stub tax (20% above 104,750 minor units a month, the UK allowance divided by 12), a 7.5-hour day and 9,750 minutes a month, applied to every worker whatever the currency | **Gap** (labelled a stub; production gate WPM-G2) | T383 |
 | 34 | Statutory defaults | API `src/rules/flexible_working.rs:13-17`, `src/rules/resignation.rs:13`, `src/rules/pay_information.rs:17`, `src/rules/joint_assessment.rs:17-19`, `src/rules/privacy.rs:85-97` | Each rule takes its limit as a parameter, but the default when no `WPM_*` setting is given is one regime's value (2 months, 2 requests, 14 calendar days; 28 calendar days; 2 months; 5% and 6 months) and is not labelled as whose | **Partial**: parameterized, one deployment-wide value | T384 |
 | 35 | Statutory defaults | API `src/controllers/pay_transparency.rs:442`, `src/rules/pay_gap.rs:540-566` | `tier_for` takes the tiers, but the controller always passes the EU Directive's tiers | **Partial** | T384 |

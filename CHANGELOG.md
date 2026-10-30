@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — addresses and phones assume no one country (WPM-T382, proposed WPM-D152)
+
+A postcode has no pattern (any text up to 20 characters), a telephone number's digits may be typed in any Unicode decimal digit set or
+full width, and both are stored as typed. The world English address labels are neutral ("Postal code", "State, province or region"),
+with the British words in `en-gb` and US ones in `en-us`. The address order per country, the stored form of a number and a country
+picker are questions for the product owner (proposed WPM-D152, spec/worldwide.md); none was built.
+
 ### Changed — names are compared whole and sorted by the page's locale (WPM-T381)
 
 The service's duplicate check no longer takes the first word as the given name and the last as the family name: the one display name is
