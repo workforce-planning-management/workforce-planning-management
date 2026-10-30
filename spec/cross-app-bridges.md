@@ -240,7 +240,11 @@ CRM's source is on the same machine (`contact-relationship-management-service-wi
    set, the call carries it as `Authorization: Bearer`, only over `https` or to this machine, never logged. It is **one deployer-held
    token for every caller**, not the caller's own token forwarded, so WPM's policy and scope decide on whatever identity that token
    carries and the import sees the workers that identity may see. That is closer to WPM-D135 than no token, and not the same as it.
-   **The `worker:` against `person:` question is still open.**
+   **The `worker:` against `person:` question is settled on CRM's side (2026-10-30, CRM-T161, CRM-D17, read from CRM's spec):** the import
+   now keeps each worker's `person_ref` and stores team members by it, skipping (and counting) a worker without one; it never falls back
+   to `worker:`. Two things remain for WPM's owner, found by a live end-to-end run of the three apps on 2026-10-30: `GET /api/workers`
+   returns the whole worker record (name, job title, manager, salary unless the policy masks it) to the import's token, which keeps three
+   fields of it; and the list does not audit salary reads as the single-worker read does. Neither is changed here.
 3. **PPM's code was not found at first; it is at `~/git/project-porfolio-management/project-porfolio-management`** (the directory is spelled
    `porfolio`; the crate and docs say `portfolio`). CRM's idea contract below is still second-hand, but PPM itself was read next.
 
