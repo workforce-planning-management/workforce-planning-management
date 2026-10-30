@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The seed adds an organization paid in yen with a requisition and a benchmark in yen, and a benchmark and a benefit plan in Kuwaiti
 dinars; `scripts/demo-data.py` adds expense claims in yen and dinars, each amount in its currency's own minor unit. **Not done:** the
 example India and Japan jurisdiction profiles, which wait for the D144 registry; the yen and dinar amounts were not looked at in the UI.
+**Missed, then fixed:** the documentation site's copy of the documents was not re-synced before the push, and CI's site job failed.
 
 ### Added — whose each statutory default is (WPM-T384, part)
 

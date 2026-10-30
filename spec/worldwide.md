@@ -446,7 +446,9 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   (only D144 questions 1 to 4 are), so none is seeded; no holiday pack is loaded. **Not done either:** no worker is paid in a 3-exponent
   currency (the stub would refuse a run for one in a GBP organization, and a third organization was not added); no request test covers
   the seed (none did before). **Not looked at:** the yen and dinar amounts in the UI (its money formatting is WPM-T400's, unit-tested
-  there).
+  there). **Missed, then fixed:** the site's copy of the documents (`workforce-planning-management.github.io/src/content/docs.json`) was
+  not re-synced before the push of WPM-T383 to T385, and CI's site job failed on it (run 41118744051); it was synced, and the site's
+  check, build and 111 Playwright tests pass locally.
 - [x] (2026-10-30) WPM-T386 **The workstation checklist is content, not English code.** *(WPM-R214, WPM-D143; row 37)* The default DSE items become
   keys a locale translates, and are named as one regime's list.
   **Done:** `rules::ergonomics::DSE_ITEMS` is eight `{key, text}` pairs (`screen`, `chair`, `keyboard_mouse`, `desk_space`, `lighting`,
