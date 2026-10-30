@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the locale and convention equity check (WPM-T371)
+
+[`spec/worldwide.md`](spec/worldwide.md) records 39 findings against the UI and the API, each with file and line: 9 right, 9 partial, 21
+gaps, filed as WPM-T373 to WPM-T386. The worst: the UI shows and stores money as if every currency had two decimals (a JPY amount is a
+hundredth of its value), there are no plural rules (and one string writes an English "s" into every language), and the holiday rules fix
+the weekend at Saturday and Sunday. **Read-only:** no behaviour and no wording changed; nothing was run in a browser; the CMS was not
+examined.
+
 ### Changed — the regulatory register is by region (WPM-T370)
 
 [`spec/regulatory.md`](spec/regulatory.md) ends with a register by region: international standards, the EU, the UK, and nine more

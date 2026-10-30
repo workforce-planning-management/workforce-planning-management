@@ -66,8 +66,50 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   any region was read for this task, so no new fact was added; rows 7, 8 and 15 are covered only by the register's regions, not by edits
   to [pay-transparency.md](pay-transparency.md), [worker-unions.md](worker-unions.md) or [mhra.md](mhra.md); the regions are a
   coarse list, not a per-country register.
-- [ ] WPM-T371 **Locale and convention equity check.** *(WPM-R214, WPM-D143)* Names, addresses, dates and calendars, numbers and
-  currency, identifiers, right-to-left and plural rules: a checklist run against the UI and API, with gaps recorded as tasks.
+- [x] (2026-10-30) WPM-T371 **Locale and convention equity check.** *(WPM-R214, WPM-D143)* Names, addresses, dates and calendars,
+  numbers and currency, identifiers, right-to-left and plural rules: a checklist run against the UI and API, with gaps recorded as tasks.
+  **Done (read-only):** 39 findings with file and line in "Locale and convention equity check" below (9 right, 9 partial, 21 gaps); the
+  gaps are T373 to T386. Audit row 16 is corrected in part: the API never assumes a currency exponent, the UI assumes 2. **Not done:** no
+  behaviour and no wording changed (the wording candidates are API messages and UI strings, left to their tasks); nothing was run in a
+  browser; the CMS was not examined.
+- [ ] WPM-T373 **Money uses the currency's own exponent in the UI.** *(WPM-R214, WPM-D143; check rows 21, 24)* `money`, `moneyWhole`
+  and the three amount inputs take the minor-unit exponent from the currency (ISO 4217, through `Intl.NumberFormat#resolvedOptions` or a
+  table), not 100; `PlanForecast` passes the locale; unit tests with JPY (0) and KWD (3).
+- [ ] WPM-T374 **Plural rules.** *(WPM-R214, WPM-D143; rows 26, 27)* A `tn(key, count)` that picks a CLDR plural form with
+  `Intl.PluralRules(i18n.locale)`; the 8 "(s)" strings and the English "s" in `FrameworkRolePanel.svelte:315` replaced first; parity and
+  CMS config updated for the new keys.
+- [ ] WPM-T375 **Dates and numbers through the page's locale.** *(WPM-R214, WPM-D143; rows 10, 11, 24)* One date, date-time, number and
+  percent helper on `Intl` with `i18n.locale`, used for raw ISO dates, `toFixed`, hand-made percentages, `toLocale*([])` and the numbers
+  `tf`/`tp` put into strings; the English "now" in `CareerHistory.svelte` becomes a key.
+- [ ] WPM-T376 **No default currency; locale decimal input.** *(WPM-R214, WPM-D143; rows 22, 23)* The `"GBP"` defaults in the UI go (the
+  organization's currency when it has one, else empty); an amount typed with the locale's decimal separator is read correctly.
+- [ ] WPM-T377 **Right-to-left finish.** *(WPM-R214, WPM-D143; rows 28 to 30)* Logical CSS for the 11 physical declarations (tables
+  first); ranges as a catalogue pattern or `formatRange` instead of a literal "→"; a `ur-001` direction test beside the `ar-001` one.
+- [ ] WPM-T378 **Today, week start and weekend in the UI.** *(WPM-R214, WPM-D143, WPM-D144; rows 12, 13, 16)* "Today" in a time zone
+  (the user's or the organization's), not UTC; week start and weekend days for the calendar from a region setting separate from the
+  language. Needs the jurisdiction model (D144) or a user setting decided first.
+- [ ] WPM-T379 **Weekend days and non-Gregorian holidays in the holiday rules.** *(WPM-R214, WPM-D143, WPM-D144; rows 15, 18, 19)*
+  `rules::holiday` takes the weekend days as a parameter (the D144 `holidays.weekend_days`), so a substitute day and `is_business_day`
+  follow it; a rule kind for a holiday fixed in another calendar; an example pack of a different shape. The registry is not confirmed yet
+  (only D144 questions 1 to 4 are), so this waits for it.
+- [ ] WPM-T380 **Working-time limits as parameters.** *(WPM-R214, WPM-D143, WPM-D144; rows 14, 17)* The three constants become the D144
+  parameters `working_time.reference_weeks`, `max_average_weekly_minutes` and `min_daily_rest_minutes`, with `no limit configured` when
+  none is set (D144 question 1, confirmed) and the demo seed loading an example profile; the roll-up's week start and its partial index
+  (fixed at 2,720 minutes) follow. D144's order of work, step 3, after the resolver (step 1).
+- [ ] WPM-T381 **Names without a first and last.** *(WPM-R214, WPM-D143; rows 2, 3)* The duplicate check does not split a name into
+  first word and last word (compare the whole name, or parts a person gave); sorting uses `Intl.Collator(i18n.locale)`.
+- [ ] WPM-T382 **Addresses, phones and world English wording.** *(WPM-R214, WPM-D143; rows 4 to 7, 32)* Neutral `en-001` labels ("Postal
+  code", "State, province or region"), the British ones moved to `en-gb`; a country picker named by `Intl.DisplayNames`; an address order
+  per country or one free-text block; phone digits accepted in any script and stored as ASCII.
+- [ ] WPM-T383 **Payroll stub is not one country's.** *(WPM-R214, WPM-D143; row 33)* The stub tax allowance and rate, the 7.5-hour day
+  and the minutes in a month are parameters (or the stub says whose they are and refuses a currency it was not written for).
+- [ ] WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144; rows 34 to 36)* Each `WPM_*` default from one
+  regime (flexible working, resignation notice, pay information, joint assessment, retention) is named with its regime in the API's
+  answer and the spec, then moved to a profile when the registry exists; the pay-gap tiers become configurable.
+- [ ] WPM-T385 **A seed that is not only GBP.** *(WPM-R214, WPM-D143, WPM-D144; row 39)* The seed and `demo-data.py` include a currency
+  of another exponent and, once profiles exist, the example profiles D144 question 1 calls for (India, then Japan, labelled `example`).
+- [ ] WPM-T386 **The workstation checklist is content, not English code.** *(WPM-R214, WPM-D143; row 37)* The default DSE items become
+  keys a locale translates, and are named as one regime's list.
 
 ## Audit (WPM-T367, 2026-10-29)
 
@@ -208,6 +250,69 @@ uses one shows it, as the capacity view shows its demand's source (WPM-D140).
 4. **Where the work is done.** **Answered 2026-10-29: yes.** Is a new structured `work_jurisdiction` on the worker, set by HR, the right test, and is it HR's to set for a remote worker?
 5. **Naming the example profiles.** **Answered 2026-10-29: India first, then Japan** (the UAE as a possible third).
 
+## Locale and convention equity check (WPM-T371, 2026-10-30)
+
+Method: a read of the code, not the spec. The UI is `workforce-planning-management-ui-with-svelte` (`src/`, `content/locales/`); the API is
+`workforce-planning-management-service-with-rust` (`src/rules/`, `src/controllers/`, `src/tasks/seed.rs`, the migrations) and
+`scripts/demo-data.py`. Paths below are relative to the subproject named in the first column (UI or API) or to the repository root (root).
+Line numbers are as of commit `55e4e69`. Each gap is a task (T373 to T386). **No behaviour changed in this check, and no wording was
+changed either:** the only candidates were API error messages ("such as GBP") and UI strings, and both are visible behaviour that a test
+or a translation depends on, so they are left to their tasks. Locale key counts come from a script over `content/locales/*/ui.json`.
+**Not done:** nothing was run in a browser for this check; the CMS was not examined; the matcher crate's name handling was read only
+through `rules::duplicates`.
+
+| # | Area | Where | What the code does | Verdict | Task |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Names | API `src/models/_entities/workers.rs:21`; UI `src/routes/workers/+page.svelte:24` | One `display_name`; no first, last, given or family field, no title, no initials, anywhere in the UI or the worker table | **Right** | — |
+| 2 | Names | API `src/rules/duplicates.rs:62-69` | The duplicate check splits `display_name` into given = first word and family = last word for the matcher | **Gap**: wrong for family-name-first orders and for names written without spaces (Chinese, Japanese) | T381 |
+| 3 | Names | UI `src/lib/orgViews.ts:45` (and `:41,65,117,141,146`, `src/routes/directory/+page.svelte:44`) | `localeCompare` with no locale, so sorting follows the runtime's collation, not the page's | **Partial** | T381 |
+| 4 | Addresses | API `src/rules/contact_details.rs:115-135`; UI `src/lib/components/me/ContactDetailsPanel.svelte:16-22,93` | Two lines, city, region, postcode, country; every field optional; no postcode pattern in the UI | **Partial**: right in what is required, but the order is fixed small-to-large | T382 |
+| 5 | Addresses | API `src/rules/contact_details.rs:39-52` | A postcode is up to 12 ASCII letters, digits, spaces or hyphens | **Partial**: fits the codes known to the author; not checked against every country | T382 |
+| 6 | Addresses | UI `content/locales/en-001/ui.json:2232-2235` | World English labels are British: "Town or city", "County or region", "Postcode"; the country is a free-text "Country (two letters)" box | **Gap** | T382 |
+| 7 | Phone | API `src/rules/contact_details.rs:67-90`; UI `ContactDetailsPanel.svelte:93` (`type="tel"`, no pattern) | 5 to 15 digits, an optional `+`; no country's shape assumed. Only ASCII digits are accepted | **Partial**: no country's shape, but a number typed in Arabic-Indic or Bengali digits is refused | T382 |
+| 8 | Identifiers | API `src/models/_entities/workers.rs:11-34`; UI (no field, no pattern) | No national identifier, tax code or insurance number column or field in either; the worker number is the employer's own free text | **Right** (the spec's payroll fields, audit row 4, are not in the code) | — |
+| 9 | Dates | UI `src/lib/components/CalendarPanel.svelte:50,54,58,75`, `TrendChart.svelte:28` | `Intl.DateTimeFormat(i18n.locale, …)`; weekday names from `Intl` | **Right** | — |
+| 10 | Dates | UI `src/lib/components/me/TimeOffPanel.svelte:90`, `src/routes/groups/+page.svelte:156`, `src/routes/movements/[pid]/+page.svelte:245`, `CareerHistory.svelte:54` (and about 80 more) | Raw ISO dates in markup or placeholders; `CareerHistory` writes an English "now" | **Gap** | T375 |
+| 11 | Dates | UI `src/routes/workforce/+page.svelte:69,100` | `toLocaleTimeString([])` / `toLocaleString()`: the browser's locale, not the page's | **Gap** | T375 |
+| 12 | Time zone | UI `CalendarPanel.svelte:35`, `src/routes/rota/+page.svelte:46`, `src/lib/ceo.ts:11,87` | "Today" is the UTC date (`toISOString().slice(0, 10)`); there is no user or organization time zone | **Gap**: the wrong day near midnight far from UTC | T378 |
+| 13 | Week start | UI `CalendarPanel.svelte:95` (`locale={i18n.locale}` to the calendar, which takes the first day from the locale) | Every `-001` locale resolves to Monday; only `en-us` gives Sunday; no region setting apart from the language | **Partial** | T378 |
+| 14 | Week start | API `migration/src/m20261021_000078_time_entry_weeks.rs:32-37`; `src/controllers/workforce.rs:799` | The working-time roll-up groups by `date_trunc('week', …)`, an ISO Monday week, and its partial index is fixed at 2,720 minutes | **Gap** (tied to row 17) | T380 |
+| 15 | Weekend | API `src/rules/holiday.rs:128-130,188-192` | `is_weekend` is Saturday and Sunday; a substitute day and `is_business_day` follow it | **Gap**: a Friday and Saturday (or Friday only) weekend cannot be expressed | T379 |
+| 16 | Weekend | UI `CalendarPanel.svelte:153` (`td[data-weekend]`, never set: `weekendDays` is not passed) | No weekend is shown in any locale | **Gap** (neutral, but no weekend at all) | T378 |
+| 17 | Working time | API `src/rules/working_time.rs:9-23`; `src/controllers/workforce.rs:762,775,895` | 17 weeks, 48 hours and 11 hours of rest are constants; no other limits can be configured | **Gap**: the D144 design's first move; not refactored here (see T369) | T380 |
+| 18 | Calendars | API `src/rules/holiday.rs:79-82`; UI (no `calendar` option, no `-u-ca-`) | Gregorian only: Easter by the Gregorian algorithm; no lunar, Hijri, Hindu or other holiday rule; no non-Gregorian display | **Gap** | T379 |
+| 19 | Holidays | API `src/rules/holiday.rs:240-290` | Three example packs (GB-ENG, US, DE), labelled unverified; any region can add days by hand | **Right** in shape (data, labelled); the packs are three Western ones | T379 |
+| 20 | Currency exponent | API `src/rules/expenses.rs:65-71`, `src/rules/cost.rs:140-145`; `src/rules/display.rs:13-17` (used only for CPD amounts and FTE, not money) | The API holds and returns minor units with a code and never converts to major units, so it needs no exponent | **Right** | — |
+| 21 | Currency exponent | UI `src/lib/api/wpm.ts:100,116-117`; input at `ExpenseClaimView.svelte:115`, `src/routes/pay-scales/+page.svelte:93`, `src/routes/planning/+page.svelte:279` | `minor / 100` to show, `Math.round(x * 100)` to store, `moneyWhole` assumes cents | **Gap**: a JPY amount shows at a hundredth of its value, KWD or BHD at ten times; audit row 16 holds for the spec and the API but not the UI | T373 |
+| 22 | Currency | UI `src/lib/components/ExpenseClaims.svelte:34`, `src/routes/planning/+page.svelte:74` | `$state("GBP")` as the default currency | **Gap** | T376 |
+| 23 | Numbers | UI `ExpenseClaimView.svelte:107,211` (`Number(amount)`), `pay-scales/+page.svelte:85` | A decimal comma ("12,50") is not a number | **Gap** for de, fr, es, pt, ru, id and others | T376 |
+| 24 | Numbers | UI `src/lib/format.ts:23,66,75,85`, `CapacityHeatmap.svelte:31`, `PlanForecast.svelte:45,58,68,167-172`; `src/lib/i18n.svelte.ts` (`tf`, `tp` use `String(n)`) | Percentages and decimals by hand (`toFixed`, a `.` and `%`); `money()` without a locale; numbers in strings are not localized, so Bengali digits from `Intl` and ASCII digits mix on a page | **Gap** | T375 |
+| 25 | Numbers | UI `src/lib/components/LoadMore.svelte:23`, `src/routes/pay-gap/+page.svelte:127` | `Intl.NumberFormat(i18n.locale)` | **Right** | — |
+| 26 | Plurals | UI `src/lib/i18n.svelte.ts`; `content/locales/REVIEW.md:50-51` | No `Intl.PluralRules`; 8 en-001 strings use "(s)"; about 40 strings fill a count | **Gap**: Arabic, Russian, Welsh and others have more than two forms | T374 |
+| 27 | Plurals | UI `src/lib/components/FrameworkRolePanel.svelte:315` | `changes2: changes.length === 1 ? "" : "s"` appends an English "s" in every locale | **Gap (a bug)** | T374 |
+| 28 | Right-to-left | UI `src/hooks.server.ts:64-65`, `src/routes/+layout.svelte:200-201`, `src/lib/locales.ts` (`RTL_LANGUAGES = ["ar", "ur"]`) | `dir` set on the server and the client for `ar-001` and `ur-001`; an end-to-end test covers `ar` only | **Right**; `ur` untested | T377 |
+| 29 | Right-to-left | UI `src/app.css:128,182,191-206`, `CalendarPanel.svelte:203-204`, `src/routes/+page.svelte:369` | 11 physical declarations (against 27 logical); `text-align: left` on every table cell | **Gap** | T377 |
+| 30 | Right-to-left | UI `TimeOffPanel.svelte:90`, `OnCall.svelte:59`, `metrics/+page.svelte:74` (and about 12 more, plus 8 catalogue strings) | A literal "→" between the ends of a range points the wrong way in `ar` and `ur` | **Gap** | T377 |
+| 31 | Locales | UI `content/locales/*/ui.json`, `src/lib/locales.ts` | 17 locales; all 12 translated `-001` files hold all 2,338 keys of `en-001`; `en-001` (not `en-gb`) is the default; all translations are AI-written and unreviewed (`REVIEW.md`) | **Right** in parity; **partial**: no locale is reviewed | — (recorded) |
+| 32 | Locales | UI `content/locales/en-gb/ui.json` (5 overrides), `en-us/ui.json` (0) | `en-001` is written in British wording, so `en-gb` barely differs and `en-us` has nothing to override | **Partial** | T382 |
+| 33 | Pay arithmetic | API `src/rules/payroll.rs:42-47`, `src/rules/workforce.rs:10` | The stub tax (20% above 104,750 minor units a month, the UK allowance divided by 12), a 7.5-hour day and 9,750 minutes a month, applied to every worker whatever the currency | **Gap** (labelled a stub; production gate WPM-G2) | T383 |
+| 34 | Statutory defaults | API `src/rules/flexible_working.rs:13-17`, `src/rules/resignation.rs:13`, `src/rules/pay_information.rs:17`, `src/rules/joint_assessment.rs:17-19`, `src/rules/privacy.rs:85-97` | Each rule takes its limit as a parameter, but the default when no `WPM_*` setting is given is one regime's value (2 months, 2 requests, 14 calendar days; 28 calendar days; 2 months; 5% and 6 months) and is not labelled as whose | **Partial**: parameterized, one deployment-wide value | T384 |
+| 35 | Statutory defaults | API `src/controllers/pay_transparency.rs:442`, `src/rules/pay_gap.rs:540-566` | `tier_for` takes the tiers, but the controller always passes the EU Directive's tiers | **Partial** | T384 |
+| 36 | Pay gap | UI `src/routes/pay-gap/+page.svelte:132-133`; API `WPM_PAY_GAP_SEX_CATEGORY` | Female and male columns, the shape of the EU and UK reports; the equality categories themselves come from the server (`EqualityPanel.svelte:62`) | **Partial** | T384 |
+| 37 | Server content | API `src/rules/ergonomics.rs:6-16`, `src/controllers/ergonomics.rs:52` | The default workstation checklist is eight English sentences stored as data, "UK Display Screen Equipment shape" | **Gap**: not translatable, one regime's list | T386 |
+| 38 | Server content | API `src/rules/cutover.rs:49-59`, `src/rules/insights.rs:72-76` | English text for an API reader plus a code the UI translates | **Right** | — |
+| 39 | Seed data | API `src/tasks/seed.rs:61,100,150,175,190`; root `scripts/demo-data.py:281` | Every salary, payslip and expense claim is in GBP; names are "Test Worker 001" and "Fictitious … Worker" (neutral); no holiday pack and no example jurisdiction profile is loaded | **Gap**: the demo has one currency (exponent 2) and one country's money; D144 question 1 (confirmed) has the seed load example profiles, which do not exist yet | T385 |
+
+### What the check found, in short
+
+- **39 findings: 9 right, 9 partial, 21 gaps.** The worst are the UI's two-decimal money (row 21), the absent
+  plural rules with a bug that writes an English "s" into Arabic (rows 26, 27), and the weekend fixed at Saturday and Sunday in the
+  holiday rules (row 15).
+- **Audit row 16 is corrected in part:** the API keeps minor units and never assumes an exponent, but the UI does, on display and on input.
+- **What is already right:** one display name, no national identifier anywhere, phone and address fields with no country's shape required,
+  `Intl` dates in the calendar, `dir` for both right-to-left locales, locale parity, and server text that carries a code to translate.
+
 ## Not done
 
-Nothing is implemented here (T367 audit, T368 design). This is the requirement, the proposed decision, the tasks and the audit (T367).
+Nothing is implemented here (T367 audit, T368 design, T371 check). This is the requirement, the decisions, the tasks, the audit (T367)
+and the equity check (T371).
