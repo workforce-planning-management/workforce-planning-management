@@ -10,7 +10,7 @@ Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
 (WPM-D*), a task (WPM-T*), code and tests.
 
-Status as of 2026-10-30: tasks WPM-T1–T398 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R216; decisions up to WPM-D149; 110 migrations, 84 controllers, 56 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
+Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R217; decisions up to WPM-D150; 110 migrations, 84 controllers, 56 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
 
 ## Specification
 
@@ -83,6 +83,7 @@ Status as of 2026-10-30: tasks WPM-T1–T398 (done, open and part done counted i
 - [spec/contents-for-global-sharing-with-svelte/index.md](spec/contents-for-global-sharing-with-svelte/index.md): convention: tables of contents for global sharing with Svelte
 - [spec/glossary.md](spec/glossary.md): terms used across the spec
 - [spec/worldwide.md](spec/worldwide.md): the target is worldwide, not US or UK; jurisdiction is data, standards are profiles (WPM-R214)
+- [spec/github-pages-site.md](spec/github-pages-site.md): The static documentation site: what it shows, the locale switcher, dates in the page's locale, the subtree export; built, not published (WPM-R217, WPM-D150, WPM-T392, WPM-T399)
 - [spec/cross-app-bridges.md](spec/cross-app-bridges.md): bridges to CRM and PPM: the family contract (2026-10-30), references and counts only, the caller's token (WPM-R206 to R213)
 - [spec/mhra.md](spec/mhra.md): the MHRA as a named UK regulator; its workforce questions left open until its guidance is read (WPM-R212)
 - [spec/regulatory.md](spec/regulatory.md): regulatory position: demo software, not a production HR or payroll system
@@ -105,6 +106,7 @@ Status as of 2026-10-30: tasks WPM-T1–T398 (done, open and part done counted i
 - [workforce-planning-management-matcher-with-rust/README.md](workforce-planning-management-matcher-with-rust/README.md): the worker matcher crate (published; the service uses the crates.io copy): pure, explainable matching of worker records; no national identifiers (WPM-R134)
 - [workforce-planning-management-service-with-rust/spec/index.md](workforce-planning-management-service-with-rust/spec/index.md): the service's stack-specific spec: layout, environment variables, masking and privacy mechanics
 - [workforce-planning-management-ui-with-svelte/spec/index.md](workforce-planning-management-ui-with-svelte/spec/index.md): the UI's stack-specific spec
+- [workforce-planning-management.github.io/README.md](workforce-planning-management.github.io/README.md): The GitHub Pages documentation site: SvelteKit adapter-static, Lily pickers, 258 prerendered pages; the publish steps (make github-pages) for the owner
 
 ## Working agreements
 
@@ -122,6 +124,7 @@ Status as of 2026-10-30: tasks WPM-T1–T398 (done, open and part done counted i
 
 ## Operate
 
+- [index.md](index.md): The documentation index: the way in to the documents, and the site's home page
 - [INSTALL.md](INSTALL.md): build, run and test both subprojects, the demo, the scheduled tasks (`config/scheduler.yaml`), translations, containers
 - [README.md](README.md): what WPM is, its status and subprojects, and where the documentation is
 - [SECURITY.md](SECURITY.md): how to report a vulnerability, and what to read before exposing either subproject
@@ -141,7 +144,7 @@ Status as of 2026-10-30: tasks WPM-T1–T398 (done, open and part done counted i
 
 ## Optional
 
-- [spec/monorepo-github-pages/index.md](spec/monorepo-github-pages/index.md): Spec for a GitHub Pages sibling site: not created; WPM-T392 says what it needs
+- [spec/monorepo-github-pages/index.md](spec/monorepo-github-pages/index.md): The family pattern for a GitHub Pages site exported with git subtree; WPM applies it in spec/github-pages-site.md
 - [spec/uk-gdad-pcf/index.md](spec/uk-gdad-pcf/index.md): the UK Government Digital and Data Profession Capability Framework WPM imports
 - [spec/esco/index.md](spec/esco/index.md): the ESCO skills classification WPM imports
 - [workforce-planning-management-service-with-rust/CHANGELOG.md](workforce-planning-management-service-with-rust/CHANGELOG.md): the service's detailed history

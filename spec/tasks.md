@@ -5568,7 +5568,7 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       column of a table not keyed to a person, a table built by SeaORM migrations rather than raw SQL, and whether a statement is *right*. The retention schedule's own list of 56 tables was not
       re-derived. **Not verified:** the Keycloak suite; a restore-and-replay drill with the new statements.
 
-## Phase 25 — cross-app bridges, the MHRA and the worldwide target (WPM-R206–R216, WPM-D134–D149; [cross-app-bridges.md](cross-app-bridges.md), [mhra.md](mhra.md), [worldwide.md](worldwide.md))
+## Phase 25 — cross-app bridges, the MHRA, the worldwide target and the documentation site (WPM-R206–R217, WPM-D134–D150; [cross-app-bridges.md](cross-app-bridges.md), [mhra.md](mhra.md), [worldwide.md](worldwide.md))
 
 - [x] (2026-10-28) WPM-T354 **Spec round.** *(traces to WPM-R206–R211, WPM-D134–D136)* [cross-app-bridges.md](cross-app-bridges.md), the registries and [integrations.md](integrations.md).
       Found while writing it: the agency link already exists in part (`worker_contractor_details.supplier_ref`, validated as an `organization:` URN), and the `worker_hired` event carries no
@@ -5664,10 +5664,26 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `Duration::days` or a statutory calendar period). **Checked and left:** worldwide.md's open tasks against the UI (11 physical CSS declarations, the "→" ranges, one `type="number"` for headcount), every
       route the bridges document names against `add(...)` in the controllers and against `src/openapi.rs`. **Not done:** a sentence-by-sentence check of the other topic files; the older task entries' counts (each is
       a dated record of its own run and is left as written).
-- [ ] WPM-T392 **A GitHub Pages site, as [monorepo-github-pages](monorepo-github-pages/index.md) specifies.** Open, not started. What the spec asks for: a SvelteKit and Lily Design System subproject
-      `workforce-planning-management.github.io/` inside this repository; a `github-pages` remote for the organization's `<organization>.github.io` repository; a `Makefile` task `make github-pages` calling a POSIX
-      script `bin/make-github-pages` that runs `git subtree push --prefix=<name>.github.io github-pages main`; and the sibling read-only export only ever updated through the subtree. None of it exists, and no
-      `*.github.io` repository was found for this organization (checked 2026-10-30). It needs the maintainer to create the GitHub repository and to decide what the site shows; not a small step.
+- [x] (2026-10-30) WPM-T392 **A GitHub Pages site, built here and not published.** *(traces to WPM-R217, WPM-D150; [github-pages-site.md](github-pages-site.md), [monorepo-github-pages](monorepo-github-pages/index.md))*
+      New subproject [`workforce-planning-management.github.io/`](../workforce-planning-management.github.io/README.md): SvelteKit 3 with `adapter-static` (258 prerendered pages), Svelte 5
+      runes, Lily `ThemePicker` (light and dark, from the system preference), `TextSizePicker` and, on every list and brief, `LocalePicker`, which opens the same page in another locale by its
+      `.locale-peer-id` (brief directory names are translated). Pages: a new root [`index.md`](../index.md) (the repository had none; it is the home page), `README.md`, `INSTALL.md`, the family bridges
+      tutorial, `spec/index.md`, `spec/worldwide.md`, and 21 locale lists with 231 briefs. Dates in running text go through a port of the UI's `locale-format.ts` (`formatDate`, `formatDateRange`,
+      `formatInteger`; `src/lib/locale-format.ts`) in the page's locale inside `<time datetime>`; `<html lang dir>` are the page's locale in the prerendered HTML and the CSS is logical only, so
+      `ar-001` and `ur-001` are laid out from the right. The UI's colour tokens; a meta CSP with SvelteKit's hashes and no `style` attribute. `scripts/sync-content.mjs` copies the documents into
+      `src/content/docs.json` (CI checks it) so the exported repository builds alone; the exported repository deploys with its own pinned `.github/workflows/deploy.yml`. `make github-pages` runs
+      [`bin/make-github-pages`](../bin/make-github-pages) (`git subtree push --prefix=workforce-planning-management.github.io github-pages main`, after checking the remote, the copy and a clean
+      directory). CI job `site`; a Dependabot entry; `check-licenses.py` reads the site's `package.json`. The structure follows PPM's site (its GP-1) so the family's sites build alike.
+      **Verified (2026-10-30):** `svelte-check` 0 errors and 0 warnings; `pnpm run build`; Playwright 111 passed on `PW_PORT=4197` (every page answers 200; axe WCAG 2.2 AA, serious and critical, on the
+      6 documents, the 21 lists and one brief per locale in light and dark, with no CSP console error; the switcher en-001 → cy-001 → ar-001 on a brief and de-001 → fr-001 on a list; dates in de-001,
+      ar-001, zh-001 and en-001 and a range on the README equal `Intl`'s; no date formatted inside code; `ar-001` and `ur-001` right to left with the brand on the right, no overflow and axe clean in both
+      themes; no sideways scroll at 390 px; no `style` attribute); the svelte autofixer on every `.svelte` file; `make github-pages` stops with the missing-remote message; `shellcheck` on the script;
+      screenshots read (home light, an Arabic brief dark, the Arabic list at phone width). **Not done:** no `github-pages` remote, no exported repository, no push, no sibling clone (WPM-T399, the
+      owner's); the deploy workflow has never run. The site's own words are English only; the Bengali briefs write dates in Bengali digits, so they are left as written; two themes only; the first paint
+      uses the light fallback tokens; 210 of the 231 briefs are not axe-audited.
+- [ ] WPM-T399 **Publish the GitHub Pages site.** *(WPM-R217, WPM-D150)* The maintainer's: create the empty public repository `workforce-planning-management/workforce-planning-management.github.io`, set its
+      Pages source to GitHub Actions, add the `github-pages` remote, run `make github-pages`, and check the deployed site. The steps are in the site's
+      [README](../workforce-planning-management.github.io/README.md), "Publishing".
 - [x] (2026-10-30) WPM-T393 **Agent files accurate and current.** *(WPM-R119)* `AGENTS.md` said "Updated 2026-10-07, through WPM-T97" and listed neither the matcher crate, `scripts/`, `docs/` nor the
       workflows; it now does, and says the sibling repositories are not edited from here. `AGENTS/spec-driven-delivery.md`: the next free ids (WPM-R217, D148, T397), Phase 25 as the newest heading (it said
       Phase 11), that every task needs an entry in `tasks.md` because `status.py` counts only that file, and `[~]` for part done; it said no deferral was open. `AGENTS/testing-and-verification.md`: the

@@ -116,6 +116,7 @@ identities by `EntityRef` URN, never duplicating them.
 | [mhra.md](mhra.md) | The MHRA as a named regulator; what its landing page supports (nothing about staff) and the questions left open until its guidance is read (WPM-R212, WPM-D137) |
 | [succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md) | Proposed: succession on positions with evidence beside readiness, deputies with scoped authority, and acting up with its pay, limits and fairness (WPM-R197–R205) |
 | [positions.md](positions.md) | Proposed: positions as budgeted seats, vacancy and over-establishment, and the current-versus-target organization (WPM-R152–R153) |
+| [github-pages-site.md](github-pages-site.md) | Built, not published: the static documentation site in `workforce-planning-management.github.io/`, exported with `git subtree` as [monorepo-github-pages](monorepo-github-pages/index.md) describes (WPM-R217, WPM-D150) |
 | [worldwide.md](worldwide.md) | The target is worldwide, not US or UK: jurisdiction is data, standards adopted as profiles, locales equal (WPM-R214, WPM-D143) |
 | [regulatory.md](regulatory.md)                     | Demo status; UK GDPR / employment-records posture; subject rights (WPM-R30)               |
 | [roadmap.md](roadmap.md)                           | Beyond the v1 queue                                                                       |

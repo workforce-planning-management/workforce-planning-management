@@ -403,6 +403,12 @@ A regulator's requirements come from its guidance, not its landing page ([mhra.m
 answers the same thing ([ppm-issues-and-changes.md](ppm-issues-and-changes.md), D142). Jurisdiction is data, held as dated, sourced
 profiles; a calendar's today, week start and weekend are the reader's ([worldwide.md](worldwide.md), D143, D144, D149).
 
+## WPM-D150 — The documentation site
+
+The site carries a committed copy of the documents so the exported repository builds alone, keeps links on the site
+where it can, is English around the documents, offers only the audited themes, and is published by the owner
+([github-pages-site.md](github-pages-site.md)).
+
 ## WPM-D52, WPM-D54 — Secure by default; rate limits keep no history
 
 Sign-in is enforced unless explicitly turned off, production refuses an open or

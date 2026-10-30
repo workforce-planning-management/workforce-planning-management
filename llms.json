@@ -3,9 +3,9 @@
   "slug": "workforce-planning-management",
   "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Loco) and SvelteKit, in 17 locales. Demo software; synthetic data only.",
   "status": {
-    "tasks_delivered": "WPM-T1–T398 (done, open and part done counted in spec/implementation-status.md)",
-    "highest_requirement": "WPM-R216",
-    "highest_decision": "WPM-D149",
+    "tasks_delivered": "WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md)",
+    "highest_requirement": "WPM-R217",
+    "highest_decision": "WPM-D150",
     "deferred": [],
     "as_of": "2026-10-30",
     "counts_from": "spec/implementation-status.md"
@@ -372,6 +372,11 @@
         "description": "the target is worldwide, not US or UK; jurisdiction is data, standards are profiles (WPM-R214)"
       },
       {
+        "title": "github-pages-site.md",
+        "path": "spec/github-pages-site.md",
+        "description": "The static documentation site: what it shows, the locale switcher, dates in the page's locale, the subtree export; built, not published (WPM-R217, WPM-D150, WPM-T392, WPM-T399)"
+      },
+      {
         "title": "spec/cross-app-bridges.md",
         "path": "spec/cross-app-bridges.md",
         "description": "bridges to CRM and PPM: the family contract (2026-10-30), references and counts only, the caller's token (WPM-R206 to R213)"
@@ -467,9 +472,19 @@
         "title": "workforce-planning-management-ui-with-svelte/spec/index.md",
         "path": "workforce-planning-management-ui-with-svelte/spec/index.md",
         "description": "the UI's stack-specific spec"
+      },
+      {
+        "title": "workforce-planning-management.github.io",
+        "path": "workforce-planning-management.github.io/README.md",
+        "description": "The GitHub Pages documentation site: SvelteKit adapter-static, Lily pickers, 258 prerendered pages; the publish steps (make github-pages) for the owner"
       }
     ],
     "operate": [
+      {
+        "title": "index.md",
+        "path": "index.md",
+        "description": "The documentation index: the way in to the documents, and the site's home page"
+      },
       {
         "title": "INSTALL.md",
         "path": "INSTALL.md",
@@ -576,7 +591,7 @@
     {
       "title": "monorepo-github-pages spec",
       "path": "spec/monorepo-github-pages/index.md",
-      "description": "Spec for a GitHub Pages sibling site: not created; WPM-T392 says what it needs"
+      "description": "The family pattern for a GitHub Pages site exported with git subtree; WPM applies it in spec/github-pages-site.md"
     },
     {
       "title": "spec/uk-gdad-pcf/index.md",

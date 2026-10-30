@@ -26,6 +26,7 @@ TEXTS = {
 API = "workforce-planning-management-service-with-rust"
 UI = "workforce-planning-management-ui-with-svelte"
 MATCHER = "workforce-planning-management-matcher-with-rust"
+SITE = "workforce-planning-management.github.io"
 
 
 def manifests():
@@ -35,7 +36,14 @@ def manifests():
         package = json.load(handle)["license"]
     with open(os.path.join(ROOT, MATCHER, "Cargo.toml"), encoding="utf-8") as handle:
         matcher = re.search(r'^license\s*=\s*"([^"]+)"', handle.read(), re.M).group(1)
-    return {f"{API}/Cargo.toml": cargo, f"{UI}/package.json": package, f"{MATCHER}/Cargo.toml": matcher}
+    with open(os.path.join(ROOT, SITE, "package.json"), encoding="utf-8") as handle:
+        site = json.load(handle)["license"]
+    return {
+        f"{API}/Cargo.toml": cargo,
+        f"{UI}/package.json": package,
+        f"{MATCHER}/Cargo.toml": matcher,
+        f"{SITE}/package.json": site,
+    }
 
 
 def main():

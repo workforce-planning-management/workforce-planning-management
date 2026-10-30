@@ -9,6 +9,8 @@ authoritative for that subproject:
   `MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only`
 - **workforce-planning-management-ui-with-svelte**
   (`package.json` `license`): `MIT OR Apache-2.0`
+- **workforce-planning-management.github.io**, the documentation site
+  (`package.json` `license`): `MIT OR Apache-2.0`
 
 `OR` is the SPDX disjunction: you may use each subproject under **any
 one** of its listed licenses, at your option.

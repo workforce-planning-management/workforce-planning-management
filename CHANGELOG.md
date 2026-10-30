@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — a GitHub Pages documentation site, built and not published (WPM-T392, WPM-R217, WPM-D150)
+
+New subproject `workforce-planning-management.github.io/` (SvelteKit `adapter-static`, Svelte 5 runes, Lily pickers): the root
+`index.md` (new; the repository had none), README, INSTALL, the family bridges tutorial, the spec index, `spec/worldwide.md` and the
+231 role briefs in 21 locales, with a locale switcher that opens the same brief by its `.locale-peer-id`, dates in the page's locale
+as the UI's `locale-format.ts` shows them, and Arabic and Urdu laid out from the right. `make github-pages` runs
+`bin/make-github-pages` (`git subtree push`); CI job `site` (content copy, svelte-check, build, Playwright with axe). **Not done:** no
+`github-pages` remote, no exported repository and no push (WPM-T399, the maintainer's); the exported repository's deploy workflow
+has never run; the site's own words are English only; 210 of the 231 briefs are not axe-audited.
+
 ### Changed — the UI's today, week start and weekend are the reader's (WPM-T378, WPM-D149)
 
 Today is the reader's date, not the UTC date, and the calendars' first day and weekend follow CLDR for the reader's region. Proposed

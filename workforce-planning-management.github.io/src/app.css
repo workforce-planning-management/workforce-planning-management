@@ -1,0 +1,145 @@
+:root {
+  /* The WPM UI's design tokens (workforce-planning-management-ui-with-svelte/src/app.css), under the same names, so
+     the site and the UI share one palette. Each reads the active Lily theme's own token (ThemePicker loads light or
+     dark, from the system preference until the reader picks), with the UI's original value as the fallback for the
+     instant before a theme has loaded. */
+  --bg: var(--color-base-200, #f5f6f8);
+  --panel: var(--color-base-100, #ffffff);
+  --ink: var(--lily-text, #1a2330);
+  --muted: var(--lily-text-muted, #5b6774);
+  --line: var(--lily-border, #dde2e8);
+  --accent: var(--color-primary, #1b5fae);
+  /* Site-only: the accent as link text and as a fill, mixed with the theme's text colour so each keeps 4.5:1 on
+     its background in both themes (the dark theme's own primary is too light to be text on --bg). */
+  --link: color-mix(in oklch, var(--accent) 70%, var(--ink));
+  --accent-fill: color-mix(in oklch, var(--accent) 80%, var(--color-neutral, #1a2330));
+  --accent-fg: var(--color-primary-content, #ffffff);
+  --radius: var(--radius-field, 6px);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Lily TextSizePicker writes `data-text-size` on <html>; the same seven steps as the WPM UI. */
+:root[data-text-size="smallest"] {
+  font-size: 75%;
+}
+:root[data-text-size="smaller"] {
+  font-size: 87.5%;
+}
+:root[data-text-size="small"] {
+  font-size: 93.75%;
+}
+:root[data-text-size="large"] {
+  font-size: 112.5%;
+}
+:root[data-text-size="larger"] {
+  font-size: 125%;
+}
+:root[data-text-size="largest"] {
+  font-size: 150%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+/* A link in running text must not rely on colour alone (WCAG 1.4.1). */
+main p a,
+main li a,
+main td a,
+main th a,
+footer p a {
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+/* Rendered Markdown. Only logical properties (margin-inline, padding-inline, border-inline-start, text-align:
+   start), so a right-to-left page mirrors without a separate stylesheet. */
+.doc {
+  overflow-wrap: anywhere;
+}
+.doc h1,
+.doc h2,
+.doc h3,
+.doc h4 {
+  line-height: 1.25;
+  margin-block: 1.5em 0.5em;
+}
+.doc h1 {
+  margin-block-start: 0;
+}
+.doc ul,
+.doc ol {
+  padding-inline-start: 1.5em;
+}
+.doc blockquote {
+  margin-inline: 0;
+  padding-inline-start: 1em;
+  border-inline-start: 4px solid var(--line);
+  color: var(--muted);
+}
+.doc code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--panel);
+  border-radius: 3px;
+  padding: 0.05em 0.3em;
+}
+.doc pre {
+  overflow-x: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.75em 1em;
+  /* Code reads left to right in every locale (the one place a physical direction is meant). */
+  direction: ltr;
+  text-align: start;
+}
+.doc pre code {
+  background: none;
+  padding: 0;
+  overflow-wrap: normal;
+}
+.doc .table-scroll {
+  overflow-x: auto;
+  margin-block: 1em;
+}
+.doc table {
+  border-collapse: collapse;
+}
+.doc th,
+.doc td {
+  border: 1px solid var(--line);
+  padding: 0.35em 0.6em;
+  text-align: start;
+  vertical-align: top;
+  overflow-wrap: normal;
+}
+.doc th {
+  background: var(--panel);
+}

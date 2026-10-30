@@ -11,10 +11,15 @@
 | Agent files | `AGENTS.md` + `AGENTS/*.md` (this set), the two subproject `AGENTS.md`, `llms.txt`, `llms.json` |
 
 **Not present** (and not to be assumed, checked 2026-10-30): `CLAUDE.md`, `*-skill`
-folders, a `<repo>.github.io` site or repository (specified in
-[`spec/monorepo-github-pages`](../spec/monorepo-github-pages/index.md) but not
-created; it is WPM-T392, open). `.claude/settings.local.json` is a local tool file,
-not an agent file.
+folders, and the exported `workforce-planning-management.github.io` repository. The
+site itself is built in
+[`workforce-planning-management.github.io/`](../workforce-planning-management.github.io/README.md)
+([github-pages-site](../spec/github-pages-site.md), WPM-T392) and not published
+(WPM-T399, the maintainer's). After editing a document the site shows (the root
+`index.md`, `README.md`, `INSTALL.md`, the tutorial, `spec/index.md`,
+`spec/worldwide.md`, any role brief), run `pnpm run sync` in that directory, or
+CI's `site` job fails. `.claude/settings.local.json` is a local tool file, not an
+agent file.
 
 ## Rules for editing documentation
 
