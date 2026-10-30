@@ -10,17 +10,17 @@ Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
 (WPM-D*), a task (WPM-T*), code and tests.
 
-Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decisions up to WPM-D85; 109 migrations, 84 controllers, 56 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
+Status as of 2026-10-30: tasks WPM-T1–T396 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R216; decisions up to WPM-D147; 109 migrations, 84 controllers, 56 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
 
 ## Specification
 
 - [spec/index.md](spec/index.md): overview, topic map, status
-- [spec/tasks.md](spec/tasks.md): the live delivery checklist (WPM-T1–T225); each entry records what was verified and what was not
-- [spec/requirements.md](spec/requirements.md): requirements (WPM-R1–R38 here; R39–R133 are in the topic files below)
-- [spec/design.md](spec/design.md): design decisions (WPM-D1–D28 here; D29–D84 are in the topic files below)
+- [spec/tasks.md](spec/tasks.md): the live delivery checklist (WPM-T1–T397); each entry records what was verified and what was not; Phase 25 is the newest
+- [spec/requirements.md](spec/requirements.md): requirements (WPM-R1–R38 here; R39–R216 in the topic files, each pointed at from the end of this file)
+- [spec/design.md](spec/design.md): design decisions (WPM-D1–D28 here; D29–D147 in the topic files, each range pointed at from this file)
 - [spec/domain-model.md](spec/domain-model.md): entities
 - [spec/auth.md](spec/auth.md): personas, ABAC, masking, the sensitivity map, the activation runbook
-- [spec/audit.md](spec/audit.md): 
+- [spec/audit.md](spec/audit.md): what is audited, and the rule that a write without its audit row does not happen (WPM-D107)
 - [spec/expense-claims.md](spec/expense-claims.md): expense claims with approval by someone other than the claimant (WPM-R55)
 - [spec/job-levels.md](spec/job-levels.md): Google technical job levels L3–L11, a worker's level, a role's level and pay band (WPM-R52–R53)
 - [spec/sfia.md](spec/sfia.md): proposed SFIA and SFIAplus support, imported from the deployer's licensed download, never shipped (WPM-R109–R113)
@@ -54,7 +54,7 @@ Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decis
 - [spec/payroll-compensation.md](spec/payroll-compensation.md): runs, payslips, minor-unit money, benchmarking
 - [spec/workforce-measures.md](spec/workforce-measures.md): oversight measures computed by the service from WPM data, one reading per calendar day (WPM-R67)
 - [spec/cutover-readiness.md](spec/cutover-readiness.md): whether the people side of a programme's go-live is ready, per site and window (WPM-R70)
-- [spec/plan.md](spec/plan.md): the proposed delivery plan for those three areas
+- [spec/plan.md](spec/plan.md): the delivery plan for sections A to S (capacity, oversight, production readiness, programmes, ...), mostly built; its status line says what is not
 - [spec/governance/dpia.md](spec/governance/dpia.md): information governance: data protection impact assessment
 - [spec/governance/record-of-processing.md](spec/governance/record-of-processing.md): information governance: record of processing
 - [spec/governance/retention-schedule.md](spec/governance/retention-schedule.md): information governance: retention per record kind
@@ -86,7 +86,7 @@ Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decis
 - [spec/cross-app-bridges.md](spec/cross-app-bridges.md): bridges to CRM and PPM: the family contract (2026-10-30), references and counts only, the caller's token (WPM-R206 to R213)
 - [spec/mhra.md](spec/mhra.md): the MHRA as a named UK regulator; its workforce questions left open until its guidance is read (WPM-R212)
 - [spec/regulatory.md](spec/regulatory.md): regulatory position: demo software, not a production HR or payroll system
-- [spec/roadmap.md](spec/roadmap.md): what is delivered, proposed and deferred
+- [spec/roadmap.md](spec/roadmap.md): what is beyond the task queue: decisions, dependencies and follow-ups
 - [spec/testing.md](spec/testing.md): how to run each suite, the PostgreSQL and Podman setup
 - [spec/tolerances.md](spec/tolerances.md): WPM-R140 and WPM-D93: tolerances on a workforce plan in time, cost, resources and risk, red, amber or green, an unknown is never green
 - [spec/pay-transparency.md](spec/pay-transparency.md): WPM-R144–R146 and WPM-D99: the EU Pay Transparency Directive: seven pay gap indicators with a floor, pay information for the worker and none asked of the candidate, the joint pay assessment trigger, and what the spec round checked
@@ -100,9 +100,11 @@ Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decis
 
 ## Code
 
-- [workforce-planning-management-service-with-rust/index.md](workforce-planning-management-service-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 49 migrations
-- [workforce-planning-management-ui-with-svelte/index.md](workforce-planning-management-ui-with-svelte/index.md): the browser client; strings in `content/locales/<locale>/ui.json`
-- [workforce-planning-management-matcher-with-rust/README.md](workforce-planning-management-matcher-with-rust/README.md): the worker matcher crate: pure, explainable matching of worker records; no national identifiers (WPM-R134)
+- [workforce-planning-management-service-with-rust/index.md](workforce-planning-management-service-with-rust/index.md): the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, migrations in `migration/`, request tests in `tests/requests/`
+- [workforce-planning-management-ui-with-svelte/index.md](workforce-planning-management-ui-with-svelte/index.md): the browser client; strings in `content/locales/<locale>/ui.json`; money, numbers and dates through the page's locale
+- [workforce-planning-management-matcher-with-rust/README.md](workforce-planning-management-matcher-with-rust/README.md): the worker matcher crate (published; the service uses the crates.io copy): pure, explainable matching of worker records; no national identifiers (WPM-R134)
+- [workforce-planning-management-service-with-rust/spec/index.md](workforce-planning-management-service-with-rust/spec/index.md): the service's stack-specific spec: layout, environment variables, masking and privacy mechanics
+- [workforce-planning-management-ui-with-svelte/spec/index.md](workforce-planning-management-ui-with-svelte/spec/index.md): the UI's stack-specific spec
 
 ## Working agreements
 
@@ -112,17 +114,21 @@ Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decis
 - [AGENTS/frontend-svelte.md](AGENTS/frontend-svelte.md): Order of work, runes conventions, charts and the CEO dashboard, gotchas
 - [AGENTS/privacy-and-data-rules.md](AGENTS/privacy-and-data-rules.md): Unrepresentability, unknown is not zero, counts only; checklist for new personal data
 - [AGENTS/localization.md](AGENTS/localization.md): Adding strings and locales, routing, the CMS
-- [AGENTS/testing-and-verification.md](AGENTS/testing-and-verification.md): What to run, scratch workspace for the sibling crates, reporting
-- [AGENTS/git-and-releases.md](AGENTS/git-and-releases.md): Branching, commits, pushing, releases
-- [AGENTS/docs-and-agent-files.md](AGENTS/docs-and-agent-files.md): Editing documentation; these files; llms files
+- [AGENTS/testing-and-verification.md](AGENTS/testing-and-verification.md): What to run and the counts to expect (2026-10-30), the database setup, writing tests, reporting
+- [AGENTS/git-and-releases.md](AGENTS/git-and-releases.md): Branching, commits, pushing and watching CI, Dependabot, releases
+- [AGENTS/docs-and-agent-files.md](AGENTS/docs-and-agent-files.md): Editing documentation; these files and their size limit; the llms files
 - [workforce-planning-management-service-with-rust/AGENTS.md](workforce-planning-management-service-with-rust/AGENTS.md): Service stack-level agreements
 - [workforce-planning-management-ui-with-svelte/AGENTS.md](workforce-planning-management-ui-with-svelte/AGENTS.md): Front-end stack-level agreements
 
 ## Operate
 
-- [INSTALL.md](INSTALL.md): build, run, test, schedule `snapshot_headcount` and `rota_reminders` daily, edit translations
-- [README.md](README.md): 
-- [SECURITY.md](SECURITY.md): 
+- [INSTALL.md](INSTALL.md): build, run and test both subprojects, the demo, the scheduled tasks (`config/scheduler.yaml`), translations, containers
+- [README.md](README.md): what WPM is, its status and subprojects, and where the documentation is
+- [SECURITY.md](SECURITY.md): how to report a vulnerability, and what to read before exposing either subproject
+- [docs/tutorials/family-bridges.md](docs/tutorials/family-bridges.md): tutorial: the bridges to PPM and CRM with curl (pool link, peer demand and supply, people impact, the hire webhook, the overlap check, the lean worker list)
+- [CONTRIBUTING.md](CONTRIBUTING.md): ground rules and how to contribute; the gates a change must pass
+- [CHANGELOG.md](CHANGELOG.md): repo-level change summary; each subproject's CHANGELOG.md is the detailed history
+- [NEWS.md](NEWS.md): milestones
 
 ## Conventions an agent must keep
 
@@ -135,6 +141,18 @@ Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decis
 
 ## Optional
 
-- [spec/monorepo-github-pages/index.md](spec/monorepo-github-pages/index.md): Spec for a GitHub Pages sibling site (not yet created)
+- [spec/monorepo-github-pages/index.md](spec/monorepo-github-pages/index.md): Spec for a GitHub Pages sibling site: not created; WPM-T392 says what it needs
 - [spec/uk-gdad-pcf/index.md](spec/uk-gdad-pcf/index.md): the UK Government Digital and Data Profession Capability Framework WPM imports
 - [spec/esco/index.md](spec/esco/index.md): the ESCO skills classification WPM imports
+- [workforce-planning-management-service-with-rust/CHANGELOG.md](workforce-planning-management-service-with-rust/CHANGELOG.md): the service's detailed history
+- [workforce-planning-management-ui-with-svelte/CHANGELOG.md](workforce-planning-management-ui-with-svelte/CHANGELOG.md): the UI's detailed history
+- [workforce-planning-management-matcher-with-rust/CHANGELOG.md](workforce-planning-management-matcher-with-rust/CHANGELOG.md): the matcher's history
+- [workforce-planning-management-ui-with-svelte/tests/live/README.md](workforce-planning-management-ui-with-svelte/tests/live/README.md): the Playwright specs that run against a real service
+- [docs/united-kingdom/national-health-service/digital-technology-assessment-criteria/2.0/index.md](docs/united-kingdom/national-health-service/digital-technology-assessment-criteria/2.0/index.md): the NHS Digital Technology Assessment Criteria 2.0, and WPM's checklist against it
+- [COMPARISONS.md](COMPARISONS.md): where WPM sits relative to adjacent kinds of systems (orientation notes, not benchmarks)
+- [BENCHMARKS.md](BENCHMARKS.md): the one measurement so far, a load test (WPM-T196), and where results live
+- [GOVERNANCE.md](GOVERNANCE.md): sole-maintainer governance: who decides scope, design and releases
+- [AI_STATEMENT.md](AI_STATEMENT.md): how AI tools are used, and what they may merge and publish (sections 6 and 7)
+- [MAINTAINERS.md](MAINTAINERS.md): who maintains the project
+- [RFC.md](RFC.md): what the project wants feedback on, and how to send it
+- [LICENSE.md](LICENSE.md): the licence choices; texts in LICENSE/

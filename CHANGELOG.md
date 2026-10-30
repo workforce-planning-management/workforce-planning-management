@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — `llms.json` and `llms.txt` current (WPM-T395)
+
+The status (it said WPM-T1–T226 as of 2026-10-19), the stack and the stale descriptions are current, and every current document is
+listed, among them the tutorial and the repository's special files.
+
 ### Added — a tutorial for the family bridges (WPM-T394)
 
 [docs/tutorials/family-bridges.md](docs/tutorials/family-bridges.md) walks through the pool link, peer demand and supply, people

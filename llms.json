@@ -3,16 +3,16 @@
   "slug": "workforce-planning-management",
   "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Loco) and SvelteKit, in 17 locales. Demo software; synthetic data only.",
   "status": {
-    "tasks_delivered": "WPM-T1–T226",
-    "highest_requirement": "WPM-R134",
-    "highest_decision": "WPM-D85",
+    "tasks_delivered": "WPM-T1–T396 (done, open and part done counted in spec/implementation-status.md)",
+    "highest_requirement": "WPM-R216",
+    "highest_decision": "WPM-D147",
     "deferred": [],
-    "as_of": "2026-10-19",
+    "as_of": "2026-10-30",
     "counts_from": "spec/implementation-status.md"
   },
   "stack": {
     "api": "Rust, Loco (Axum + SeaORM), PostgreSQL 18",
-    "ui": "SvelteKit 2, Svelte 5 runes, TypeScript",
+    "ui": "SvelteKit 3, Svelte 5 runes, TypeScript",
     "tests": {
       "service_unit_declared": 1052,
       "service_request_declared": 183,
@@ -34,17 +34,17 @@
       {
         "title": "spec/tasks.md",
         "path": "spec/tasks.md",
-        "description": "the live delivery checklist (WPM-T1–T225); each entry records what was verified and what was not"
+        "description": "the live delivery checklist (WPM-T1–T397); each entry records what was verified and what was not; Phase 25 is the newest"
       },
       {
         "title": "spec/requirements.md",
         "path": "spec/requirements.md",
-        "description": "requirements (WPM-R1–R38 here; R39–R133 are in the topic files below)"
+        "description": "requirements (WPM-R1–R38 here; R39–R216 in the topic files, each pointed at from the end of this file)"
       },
       {
         "title": "spec/design.md",
         "path": "spec/design.md",
-        "description": "design decisions (WPM-D1–D28 here; D29–D84 are in the topic files below)"
+        "description": "design decisions (WPM-D1–D28 here; D29–D147 in the topic files, each range pointed at from this file)"
       },
       {
         "title": "spec/domain-model.md",
@@ -59,7 +59,7 @@
       {
         "title": "spec/audit.md",
         "path": "spec/audit.md",
-        "description": ""
+        "description": "what is audited, and the rule that a write without its audit row does not happen (WPM-D107)"
       },
       {
         "title": "spec/expense-claims.md",
@@ -229,7 +229,7 @@
       {
         "title": "spec/plan.md",
         "path": "spec/plan.md",
-        "description": "the proposed delivery plan for those three areas"
+        "description": "the delivery plan for sections A to S (capacity, oversight, production readiness, programmes, ...), mostly built; its status line says what is not"
       },
       {
         "title": "spec/governance/dpia.md",
@@ -389,7 +389,7 @@
       {
         "title": "spec/roadmap.md",
         "path": "spec/roadmap.md",
-        "description": "what is delivered, proposed and deferred"
+        "description": "what is beyond the task queue: decisions, dependencies and follow-ups"
       },
       {
         "title": "spec/testing.md",
@@ -446,34 +446,64 @@
       {
         "title": "workforce-planning-management-service-with-rust/",
         "path": "workforce-planning-management-service-with-rust/index.md",
-        "description": "the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, 49 migrations"
+        "description": "the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, migrations in `migration/`, request tests in `tests/requests/`"
       },
       {
         "title": "workforce-planning-management-ui-with-svelte/",
         "path": "workforce-planning-management-ui-with-svelte/index.md",
-        "description": "the browser client; strings in `content/locales/<locale>/ui.json`"
+        "description": "the browser client; strings in `content/locales/<locale>/ui.json`; money, numbers and dates through the page's locale"
       },
       {
         "title": "workforce-planning-management-matcher-with-rust/",
         "path": "workforce-planning-management-matcher-with-rust/README.md",
-        "description": "the worker matcher crate: pure, explainable matching of worker records; no national identifiers (WPM-R134)"
+        "description": "the worker matcher crate (published; the service uses the crates.io copy): pure, explainable matching of worker records; no national identifiers (WPM-R134)"
+      },
+      {
+        "title": "workforce-planning-management-service-with-rust/spec/index.md",
+        "path": "workforce-planning-management-service-with-rust/spec/index.md",
+        "description": "the service's stack-specific spec: layout, environment variables, masking and privacy mechanics"
+      },
+      {
+        "title": "workforce-planning-management-ui-with-svelte/spec/index.md",
+        "path": "workforce-planning-management-ui-with-svelte/spec/index.md",
+        "description": "the UI's stack-specific spec"
       }
     ],
     "operate": [
       {
         "title": "INSTALL.md",
         "path": "INSTALL.md",
-        "description": "build, run, test, schedule `snapshot_headcount` and `rota_reminders` daily, edit translations"
+        "description": "build, run and test both subprojects, the demo, the scheduled tasks (`config/scheduler.yaml`), translations, containers"
       },
       {
         "title": "README.md",
         "path": "README.md",
-        "description": ""
+        "description": "what WPM is, its status and subprojects, and where the documentation is"
       },
       {
         "title": "SECURITY.md",
         "path": "SECURITY.md",
-        "description": ""
+        "description": "how to report a vulnerability, and what to read before exposing either subproject"
+      },
+      {
+        "title": "docs/tutorials/family-bridges.md",
+        "path": "docs/tutorials/family-bridges.md",
+        "description": "tutorial: the bridges to PPM and CRM with curl (pool link, peer demand and supply, people impact, the hire webhook, the overlap check, the lean worker list)"
+      },
+      {
+        "title": "CONTRIBUTING.md",
+        "path": "CONTRIBUTING.md",
+        "description": "ground rules and how to contribute; the gates a change must pass"
+      },
+      {
+        "title": "CHANGELOG.md",
+        "path": "CHANGELOG.md",
+        "description": "repo-level change summary; each subproject's CHANGELOG.md is the detailed history"
+      },
+      {
+        "title": "NEWS.md",
+        "path": "NEWS.md",
+        "description": "milestones"
       }
     ],
     "agents": [
@@ -510,17 +540,17 @@
       {
         "title": "testing-and-verification",
         "path": "AGENTS/testing-and-verification.md",
-        "description": "What to run, scratch workspace for the sibling crates, reporting"
+        "description": "What to run and the counts to expect (2026-10-30), the database setup, writing tests, reporting"
       },
       {
         "title": "git-and-releases",
         "path": "AGENTS/git-and-releases.md",
-        "description": "Branching, commits, pushing, releases"
+        "description": "Branching, commits, pushing and watching CI, Dependabot, releases"
       },
       {
         "title": "docs-and-agent-files",
         "path": "AGENTS/docs-and-agent-files.md",
-        "description": "Editing documentation; these files; llms files"
+        "description": "Editing documentation; these files and their size limit; the llms files"
       },
       {
         "title": "API AGENTS.md",
@@ -546,7 +576,7 @@
     {
       "title": "monorepo-github-pages spec",
       "path": "spec/monorepo-github-pages/index.md",
-      "description": "Spec for a GitHub Pages sibling site (not yet created)"
+      "description": "Spec for a GitHub Pages sibling site: not created; WPM-T392 says what it needs"
     },
     {
       "title": "spec/uk-gdad-pcf/index.md",
@@ -557,6 +587,66 @@
       "title": "spec/esco/index.md",
       "path": "spec/esco/index.md",
       "description": "the ESCO skills classification WPM imports"
+    },
+    {
+      "title": "workforce-planning-management-service-with-rust/CHANGELOG.md",
+      "path": "workforce-planning-management-service-with-rust/CHANGELOG.md",
+      "description": "the service's detailed history"
+    },
+    {
+      "title": "workforce-planning-management-ui-with-svelte/CHANGELOG.md",
+      "path": "workforce-planning-management-ui-with-svelte/CHANGELOG.md",
+      "description": "the UI's detailed history"
+    },
+    {
+      "title": "workforce-planning-management-matcher-with-rust/CHANGELOG.md",
+      "path": "workforce-planning-management-matcher-with-rust/CHANGELOG.md",
+      "description": "the matcher's history"
+    },
+    {
+      "title": "workforce-planning-management-ui-with-svelte/tests/live/README.md",
+      "path": "workforce-planning-management-ui-with-svelte/tests/live/README.md",
+      "description": "the Playwright specs that run against a real service"
+    },
+    {
+      "title": "docs/united-kingdom/national-health-service/digital-technology-assessment-criteria/2.0/index.md",
+      "path": "docs/united-kingdom/national-health-service/digital-technology-assessment-criteria/2.0/index.md",
+      "description": "the NHS Digital Technology Assessment Criteria 2.0, and WPM's checklist against it"
+    },
+    {
+      "title": "COMPARISONS.md",
+      "path": "COMPARISONS.md",
+      "description": "where WPM sits relative to adjacent kinds of systems (orientation notes, not benchmarks)"
+    },
+    {
+      "title": "BENCHMARKS.md",
+      "path": "BENCHMARKS.md",
+      "description": "the one measurement so far, a load test (WPM-T196), and where results live"
+    },
+    {
+      "title": "GOVERNANCE.md",
+      "path": "GOVERNANCE.md",
+      "description": "sole-maintainer governance: who decides scope, design and releases"
+    },
+    {
+      "title": "AI_STATEMENT.md",
+      "path": "AI_STATEMENT.md",
+      "description": "how AI tools are used, and what they may merge and publish (sections 6 and 7)"
+    },
+    {
+      "title": "MAINTAINERS.md",
+      "path": "MAINTAINERS.md",
+      "description": "who maintains the project"
+    },
+    {
+      "title": "RFC.md",
+      "path": "RFC.md",
+      "description": "what the project wants feedback on, and how to send it"
+    },
+    {
+      "title": "LICENSE.md",
+      "path": "LICENSE.md",
+      "description": "the licence choices; texts in LICENSE/"
     }
   ],
   "see_also": "llms.txt"

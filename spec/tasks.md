@@ -5691,3 +5691,9 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       closed claim. Harm: a caller learns a claim's pid and status in a pool they may not see if they reuse its event id, and a peer that reuses ids across pools silently loses figures. What remains:
       a decision (scope the repeat check to the pool, programme and month, or refuse an id seen for another claim with `422`), the index to match, a request test across two organizations, and the
       contract table in [cross-app-bridges.md](cross-app-bridges.md). Not changed in the maintenance pass because it changes the family contract PPM builds against.
+- [x] (2026-10-30) WPM-T395 **`llms.json` and `llms.txt` regenerated and complete.** *(WPM-R119)* Per [AGENTS/docs-and-agent-files.md](../AGENTS/docs-and-agent-files.md): entries edited in
+      `llms.json`, then `python3 scripts/llms.py`. The status said "WPM-T1–T226", R134 and D85 as of 2026-10-19, now T1–T396, R216, D147 as of 2026-10-30; the UI was "SvelteKit 2"; the service entry
+      said 49 migrations (the generated count is 109); the descriptions of `tasks.md`, `requirements.md`, `design.md`, `plan.md`, `roadmap.md` and `audit.md` (empty) named old ranges. Added: the tutorial,
+      `CONTRIBUTING.md`, `CHANGELOG.md` and `NEWS.md` under Operate; both subprojects' `spec/index.md` under Code; the subproject changelogs, the live Playwright README, the NHS DTAC notes and the remaining
+      repository special files under Optional. Every Markdown file outside the locale pages, the test fixtures and the topic folders' duplicate `README.md` files is now listed. `llms.py --check` passes.
+      **The GitHub Pages site** that [monorepo-github-pages](monorepo-github-pages/index.md) specifies does not exist and is not a small step: WPM-T392 records what it needs. There is no `*-skill` folder.
