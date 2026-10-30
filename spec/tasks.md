@@ -3429,14 +3429,14 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       termination date) say whether a duty may apply, the latest start for consultation, and the checklist of
       notices; the period counted in calendar days. Unit tests at each threshold edge, the 90-calendar-day window,
       and a proposal that crosses it.
-      Done: `rules::consultation` (pure, no clock: `today` is an input). A `Profile` is data with a named source: `great_britain()` (20 in 90 days;
-      consultation and authority notice 30 days for 20–99 and 45 for 100 or more) and `eu_directive_98_59()` (10 / 10% rounded up / 30 by
-      establishment size over 30 days, or 20 in 90 days at any size; notice to the authority 30 days ahead; no invented fixed consultation
+      Done: `rules::consultation` (pure, no clock: `today` is an input). A `Profile` is data with a named source: `great_britain()` (20 in 90 calendar days;
+      consultation and authority notice 30 calendar days for 20–99 and 45 for 100 or more) and `eu_directive_98_59()` (10 / 10% rounded up / 30 by
+      establishment size over 30 calendar days, or 20 in 90 calendar days at any size; notice to the authority 30 calendar days ahead; no invented fixed consultation
       period), each marked for the deployer to confirm. `assess(profile, proposal, today)` returns a suggestion with its evidence (counted against
       needed, window), the latest start and notice dates, days remaining, whether late, the checklist as tokens, `deployer_to_confirm: true`;
       a count under every threshold is `may_apply: false`, not "clear", with no dates and no checklist. Dismissals count together in the best
       window that includes the proposal's date, never summed across windows. An agreed procedure only lengthens the period. A proposal is counts
-      and dates; nothing names a person. **Verified:** 10 unit tests (each threshold edge, the 89/90-day boundary both ways, windows not summed, the
+      and dates; nothing names a person. **Verified:** 10 unit tests (each threshold edge, the 89/90-calendar-day boundary both ways, windows not summed, the
       percentage rounded up, the agreed period, lateness, extreme values); two **mutation checks** (`>=` made `>`, and the window length off by one:
       both failed tests, then restored); clippy pedantic clean. **Not verified:** the thresholds and periods against the statutes (taken from the
       concept note's sources and the assistant's own knowledge of the directive, no lawyer has read them); nothing calls it yet (no endpoint,
@@ -3461,7 +3461,7 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       unit and to pay-scale and working-time references; "applies to a worker" derived, HR and payroll only,
       never shown as membership. Tests.
       Done (service only): migration 93 `collective_agreements` (title, version, effective_from/to, `source`, and four optional terms: a pay scale id the
-      service knows, max weekly hours 1–168, notice weeks 0–104, an agreed consultation period 1–365 days), tied to a bargaining unit, with no column for who it
+      service knows, max weekly hours 1–168, notice weeks 0–104, an agreed consultation period 1–365 calendar days), tied to a bargaining unit, with no column for who it
       applies to. `rules::agreement` (pure: validation, a new version must take effect after the newest, `in_force` = the newest version whose dates include the
       day). `POST/GET /api/bargaining-units/{pid}/agreements` (HR; the same title is a new version) and `GET /api/workers/{pid}/collective-agreements?on=`
       (HR and payroll; **derived** from the unit rules over the worker's department, location, employment type and job title; audited in a transaction; the answer
@@ -3483,7 +3483,7 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
       `GET/POST /api/consultations`, `POST .../{pid}/begin`, `POST .../{pid}/close`, `GET .../{pid}/timeline` (HR; writes audited without text). The timeline
       runs `rules::consultation::assess` over the record, with the other proposals at the same establishment counted into the window and the longest
       `consultation_days` of the body's agreements in force today as the agreed period, so T174's term is now used. **Verified:** 12 unit tests; a request
-      test against Postgres 18 (bad profile, topic, reference, dismissals, plan and body; topics cleaned and ordered; a 60-day agreed period beating the law's
+      test against Postgres 18 (bad profile, topic, reference, dismissals, plan and body; topics cleaned and ordered; a 60-calendar-day agreed period beating the law's
       30; 25 and 5 at one site counted as 30 while a proposal at another site is not; under the threshold nothing is due; begin once and not in the future;
       closing with a foreign agreement, a mismatched outcome, an unknown outcome and a future day all refused; closed means closed; never begun can only be
       withdrawn; the register holds no attendee, representative, minute or member); an enforcement test with real tokens (anonymous 401, a worker 403 on
@@ -3495,7 +3495,7 @@ Researched in [worker-unions.md](worker-unions.md); specified in [plan.md](plan.
 - [x] (2026-10-26) WPM-T176 **Information pack for bargaining.** *(WPM-R106)* On-request aggregates for a unit with the floor, no names, no
       individual pay; each disclosure logged. Tests that a small group is withheld.
       Done (service only): `rules::bargaining_pack` (pure) and `GET /api/bargaining-units/{pid}/information-pack` (HR). For the people the unit's rules cover: headcount and
-      FTE by department and by employment type, the pay bands people sit in (no band recorded is its own group, never zero), starters and leavers in the 365 days to
+      FTE by department and by employment type, the pay bands people sit in (no band recorded is its own group, never zero), starters and leavers in the 365 calendar days to
       today, those on a basis other than permanent, and open vacancy posts (a unit defined by location or employment type cannot be matched to a vacancy, and says
       `unknown`). Every count is shown from the floor (10) or withheld; **when exactly one group of a breakdown is withheld the smallest shown one is withheld too**,
       because the total would otherwise give it away; a unit under the floor gives nothing at all. No name, no number, no salary, no one's band, no pid.
@@ -5381,10 +5381,10 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       current assignments: a stated miss settles it as `No`, a blank category is `Unknown`, any matching assignment is `Yes`, a restricted
       audience with no assignment is `Unknown`, an empty audience is the organization), `status` (the six statuses; the latest completion
       counts; a completion after the as-of date is ignored; a transferred one counts only where the requirement accepts it; once-is-enough
-      never expires; due on the as-of day is still in date; `due_soon` inside 90 days), `rollup` (counts per status, `unknown` apart and in
+      never expires; due on the as-of day is still in date; `due_soon` inside 90 calendar days), `rollup` (counts per status, `unknown` apart and in
       neither side of the rate, rate `None` with nothing to divide by, `Hidden` below the floor, a floor of 0 read as 1),
       `requirement_problems` (basis, a source for a statutory one, a refresher of at least a month). 15 unit tests, **mutation-checked**
-      three ways (expiry on the day itself, the 90-day edge, a stated miss read as unknown), all caught; clippy clean.
+      three ways (expiry on the day itself, the 90-calendar-day edge, a stated miss read as unknown), all caught; clippy clean.
       **Not done:** the records, API and screens (T315); the CSTF mapping (a deployer's import). **Choices to confirm:** `due_soon` counts
       as in date in the rate; the window is a constant, not yet configuration; expiry is the completion date plus the months, with the
       calendar's end-of-month clamp.
@@ -5423,7 +5423,7 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       counts per manager with the floor, the people-manager audience, asking HR for help.
 - [ ] WPM-T332 **Guidance pages.** *(WPM-R187)* CMS content per locale, labelled generic, linked from each action.
 - [ ] WPM-T333 **Changing manager.** *(WPM-R188)* The "getting to know your team" item; no handover of adjustment words.
-      **Part done (2026-10-29), not ticked.** Built: the pure core `src/rules/manager_change.rs` (change detection, the dated 60-day
+      **Part done (2026-10-29), not ticked.** Built: the pure core `src/rules/manager_change.rs` (change detection, the dated 60-calendar-day
       window, `GetToKnowItem` with counts, one date and a passport yes/no, and no text field), 6 unit tests including two that fail if
       the payload or the type gains a field or a text type (mutation-checked: window bound, change detection and an added `String`
       field each fail a test). Verified: `cargo test --lib` 866 pass, `cargo clippy --all-targets -- -D warnings` clean. **Not
@@ -5507,7 +5507,7 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       specs were reformatted but not run; CI was not run (the workflow is unchanged because `pnpm run lint` was already a step); the service-side Rust gates are unchanged.
 - [x] (2026-10-28) WPM-T348 **Single-use hashed link tokens.** *(auth.md, WPM-D73 spirit)* A token that works once, stored only as a hash.
       **Done:** `rules/link_token.rs` (32 random bytes as 43 URL-safe characters; `well_formed` refuses anything else before it is hashed; `hash` is SHA-256 in hex, checked against two
-      standard vectors; a purpose of 1 to 60 snake-case characters; a life of 1 minute to 7 days; `check` with the reason, expiry exclusive); migration `000105` (`link_tokens`, hash
+      standard vectors; a purpose of 1 to 60 snake-case characters; a life of 1 minute to 7 calendar days; `check` with the reason, expiry exclusive); migration `000105` (`link_tokens`, hash
       unique and checked as 64 hex characters, a trigger that refuses any change to `used_at` once set); `models::link_tokens::{issue, consume, purge_expired}` (consume is one atomic
       `UPDATE ... RETURNING`; every refusal looks the same to the caller and the reason goes to the audit trail, never the token). 8 unit tests and a request test (bad purpose or life
       refused; no column for the token and the token text is nowhere in the table; wrong purpose refused without using it up; malformed input; works once; `used_at` cannot be cleared;
@@ -5568,7 +5568,7 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       column of a table not keyed to a person, a table built by SeaORM migrations rather than raw SQL, and whether a statement is *right*. The retention schedule's own list of 56 tables was not
       re-derived. **Not verified:** the Keycloak suite; a restore-and-replay drill with the new statements.
 
-## Phase 25 — cross-app bridges (proposed WPM-R206–R211, WPM-D134–D136; [cross-app-bridges.md](cross-app-bridges.md))
+## Phase 25 — cross-app bridges, the MHRA and the worldwide target (WPM-R206–R216, WPM-D134–D147; [cross-app-bridges.md](cross-app-bridges.md), [mhra.md](mhra.md), [worldwide.md](worldwide.md))
 
 - [x] (2026-10-28) WPM-T354 **Spec round.** *(traces to WPM-R206–R211, WPM-D134–D136)* [cross-app-bridges.md](cross-app-bridges.md), the registries and [integrations.md](integrations.md).
       Found while writing it: the agency link already exists in part (`worker_contractor_details.supplier_ref`, validated as an `organization:` URN), and the `worker_hired` event carries no
@@ -5608,11 +5608,22 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       **Done (2026-10-28):** a request test answers the view and the what-if with the peer unset, silent and removed. Doing it found a real fault: a linked pool the peer had said nothing to counted **zero** demand and so *fit*, against WPM-D141. It is now `unknown` in every month (`rules::capacity::with_demand_unknown`, and `PoolView::demand_known` so a what-if cannot make it fit), until the peer sends a claim; unlinking returns the local figures. Mutation-checked three ways (the floor, the unknown overlay, the what-if keeping it), all caught. WPM makes no outbound call, so "the peer is slow or down" is the same as "silent"; no timing was tested.
 - [x] (2026-10-29) WPM-T367 **Worldwide audit of the spec**: 19 rows, see [worldwide.md](worldwide.md). T368 to T371 remain.
 - [x] (2026-10-29) WPM-T368 **Jurisdiction profile model**: a design, proposed WPM-D144, five questions for the product owner; see [worldwide.md](worldwide.md). No code.
-- [ ] WPM-T369 and T371 **Worldwide target.** *(WPM-R214, WPM-D143)* Second-profile tests and a locale and convention equity check. See [worldwide.md](worldwide.md).
+- [ ] WPM-T369 **Second-profile tests.** *(WPM-R214, WPM-D143)* Open: for each rule with UK values, a pure-core test with a non-UK profile; what remains, rule by rule, is in [worldwide.md](worldwide.md) (it waits on the D144 resolver for the regimes that take no profile yet, T379, T380, T383, T384).
+- [x] (2026-10-30) WPM-T371 **Locale and convention equity check.** *(WPM-R214, WPM-D143)* Done as a check of the spec and the UI; the findings are rows of the audit and became T373 to T386. See [worldwide.md](worldwide.md).
 - [x] (2026-10-30) WPM-T370 **Regulatory register by region.** *(WPM-R214, WPM-D143)* Spec only: [regulatory.md](regulatory.md) ends with the register by region, the UK one region among eleven, the others *not yet read*; the wording fixes of audit rows 10 and 11. See [worldwide.md](worldwide.md).
 - [x] (2026-10-30) WPM-T373 and WPM-T376 **Money in the UI is worldwide.** *(WPM-R214, WPM-D143)* One formatter and parser (`src/lib/money.ts`, shared in behaviour with the sibling PPM UI's): the currency's own exponent (JPY 0, KWD 3), the page's locale, a decimal comma read, no starting currency. See [worldwide.md](worldwide.md). Percentages on `/planning` remain (T375).
 - [x] (2026-10-30) WPM-T375 **Dates and numbers through the page's locale.** *(WPM-R214, WPM-D143)* One module (`src/lib/locale-format.ts`) on `Intl` in the page's locale for numbers, percentages, basis points, FTE and dates; `tf`/`tp` write number placeholders in the page's format; the decimal inputs read the locale's decimal mark through `money.ts`'s parser; a scan test. See [worldwide.md](worldwide.md). Bare counts in markup done in part.
 - [x] (2026-10-30) WPM-T374 **Plural rules.** *(WPM-R214, WPM-D143)* `tn(key, count, params)` picks a CLDR plural form with `Intl.PluralRules` in the page's locale; plural groups (`x.one`/`x.other`, six forms in Arabic and Welsh) for the eight "(s)" strings and the English "s" in `FrameworkRolePanel`; a test that every locale holds its language's categories. See [worldwide.md](worldwide.md). Other count strings remain.
+- [ ] WPM-T377 **Right-to-left finish.** *(WPM-R214, WPM-D143)* Open: logical CSS for the 11 physical declarations, ranges without a literal "→", a `ur-001` direction test. See [worldwide.md](worldwide.md).
+- [ ] WPM-T378 **Today, week start and weekend in the UI.** *(WPM-R214, WPM-D143, WPM-D144)* Open: needs the jurisdiction model or a user setting decided first. See [worldwide.md](worldwide.md).
+- [ ] WPM-T379 **Weekend days and non-Gregorian holidays in the holiday rules.** *(WPM-R214, WPM-D143, WPM-D144)* Open: waits for the D144 registry. See [worldwide.md](worldwide.md).
+- [ ] WPM-T380 **Working-time limits as parameters.** *(WPM-R214, WPM-D143, WPM-D144)* Open: D144's order of work, step 3, after the resolver. See [worldwide.md](worldwide.md).
+- [ ] WPM-T381 **Names without a first and last.** *(WPM-R214, WPM-D143)* Open: the duplicate check compares whole names; sorting by `Intl.Collator`. See [worldwide.md](worldwide.md).
+- [ ] WPM-T382 **Addresses, phones and world English wording.** *(WPM-R214, WPM-D143)* Open. See [worldwide.md](worldwide.md).
+- [ ] WPM-T383 **Payroll stub is not one country's.** *(WPM-R214, WPM-D143)* Open. See [worldwide.md](worldwide.md).
+- [ ] WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144)* Open. See [worldwide.md](worldwide.md).
+- [ ] WPM-T385 **A seed that is not only GBP.** *(WPM-R214, WPM-D143, WPM-D144)* Open. See [worldwide.md](worldwide.md).
+- [ ] WPM-T386 **The workstation checklist is content, not English code.** *(WPM-R214, WPM-D143)* Open. See [worldwide.md](worldwide.md).
 - [x] (2026-10-30) WPM-T387 **The peer withdraws a demand figure, and an older event does not overwrite a newer one.** *(WPM-R215, WPM-D146, WPM-R210, WPM-R213; family contract point 3 as amended 2026-10-30)* Builds on WPM-T364. **Done:** `rules::capacity::peer_demand_outcome` (pure: a new figure is `recorded`, `updated`, `reopened`, `withdrawn`, `already_withdrawn`, `nothing_to_withdraw` or `stale`; stale only when both the event and the last applied one carry `sent_at` and it is strictly older) and `validate_peer_fte_centi` (0 to 1 000 000; a claim entered here still refuses 0). `POST /api/capacity/peer-demand` takes `fte_centi: 0` and an optional `sent_at` (RFC 3339) and answers `{pid, duplicate, outcome, status}`; a withdrawal closes the `ppm` claim, keeps its last figure and sets `peer_withdrawn_at`; an activated claim stops counting and its start decision row is not touched; a later figure reopens the claim as `proposed`. Migration `000109` adds `programme_demands.peer_sent_at` and `peer_withdrawn_at` (the latter allowed only on a closed `ppm` claim); the claim list shows both. Audited `peer_demand_withdrawn` with `was_active` and no figure; a stale event, a repeat and a no-op are not written or audited. OpenAPI and the UI's copy and types regenerated (the UI calls neither route). The contract table is in [cross-app-bridges.md](cross-app-bridges.md), WPM-R215. **Verified:** 3 new unit tests (1,029 in all); a request test (zero for no claim is `nothing_to_withdraw` with no row and the pool still unknown; a figure activated by a real start decision is counted, then withdrawn: closed, 40 kept, `peer_withdrawn_at` set, demand a known zero and `fits`, the decision still listed; the same withdrawal is a duplicate; an older figure replayed is `stale` and does not reopen; zero again is `already_withdrawn`; a new figure reopens as `proposed` and is not counted; an older one after it is stale (with a `+00:00` offset); an event without `sent_at` is applied; a negative figure 422, a bad `sent_at` refused, a local zero 422; two `peer_demand_withdrawn` audit rows naming `was_active` and no figure); the earlier peer tests unchanged. **Not done:** zero for a claim that does not exist stores nothing, so a withdrawal that overtakes its own figure leaves the figure recorded; an event without `sent_at` can still overwrite a newer one. **Not tested:** two withdrawals racing in parallel (the event-id index makes the second a 500 rather than a duplicate, as before for figures). **Not verified:** PPM's sender, changed by PPM's owner in parallel against this contract, has not been run against WPM.
 - [x] (2026-10-30) WPM-T388 **A lean worker list for bridges, and the list audits the salary it carries.** *(WPM-R216, WPM-D147, WPM-D7, WPM-D107; found by the live end-to-end run of 2026-10-30, CRM's teams import)* **Done:** `rules::worker_fields` (pure: `parse_fields` against the 20-name allowlist, a repeat kept once, unknown/empty/over 64 names refused; `includes_salary`; `project`). `GET /api/workers?fields=` returns only those fields of each row; absent is the whole record as before; filters, paging, policy, scope and the per-row mask unchanged. Whenever the answer carries a salary unmasked, a `salary_read` audit row per such worker (department, `"via": "list"`, no figure) is written in one transaction before the answer (no audit, no answer). OpenAPI and the UI copy and types regenerated (the UI's own calls do not pass `fields`). Recorded in [cross-app-bridges.md](cross-app-bridges.md) that CRM can now ask for `pid,department,person_ref`; CRM's change is CRM's. **Verified:** 5 unit tests; a request test (two salaried workers in a fresh department: `fields=pid,department,person_ref` gives exactly three keys per row, `x-total-count` 2, and no `salary_read`; `fields=pid,salary_minor` gives two keys and one `salary_read` per worker with `{department, via: list}` and no figure; the whole list is a second salary read; `pid,nmae`, empty, `id`, `pid,deleted_at` and `salary` are 422 and audit nothing); the persona binary `enforcement` (a masked colleague asking for the salary gets `null` and no salary read is recorded; payroll gets the figure and one is recorded; the lean list as payroll records none); `personal_data_inventory` passes. The full request suite, 183 tests with WPM-T387's, passed on a fresh throwaway database (an earlier run on a used one had one boot connection timeout in `skill_gaps`, which passed alone). The persona test found that the list is scoped to the caller's organizations where the single read is not, so payroll is given a membership there; the scope is unchanged. `llms.txt`/`llms.json` refreshed for the migration count T387 changed. **Not done:** the list still serves the whole record by default (a bridge must ask for less); a page of 500 salaried rows writes 500 audit rows in one transaction (not load-tested). **Not verified:** CRM's import with `fields` (CRM's change, not run).
 - [x] (2026-10-30) WPM-T389 **Dependencies, actions and images updated; the MSRV moved to N-2 where it can be.** *(WPM-R119)* **Rust:** `cargo update` in the service took 37 compatible updates and added 2 crates
@@ -5639,3 +5650,21 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       `route_coverage`, `scheduler_config` (not ignored, so neither `cargo test --lib` nor an `--ignored` run reaches them). The `api-db` job now runs all seven; a check that every file in `tests/*.rs` is named
       by a `--test` in the workflow finds none missing. **Verified locally (2026-10-30):** all seven pass against a throwaway PostgreSQL 18 database (WPM-T389's run). **Not done:** no script fails CI when a
       new test binary is added without a CI step (the same check, as a script, would be a small follow-up). **Not verified:** the jobs on GitHub's runners until CI runs this commit.
+- [x] (2026-10-30) WPM-T391 **The spec matches the code: bridges, worldwide, status, plan and roadmap.** *(WPM-R119)* A read of the spec against the code and the task list. **Fixed:**
+      `scripts/status.py` counted only task entries written `- [x] WPM-T…` and missed every dated one (`- [x] (2026-10-30) WPM-T…`), so `implementation-status.md` said 232 done and "highest done
+      WPM-T267"; it now counts both (the counts are in that generated file). Tasks kept only in topic files now have a one-line entry here: T369 and T371 are split (T371 is done), and T377 to T386 are listed
+      as open. [cross-app-bridges.md](cross-app-bridges.md): the header named only WPM-R206–R211, D134–D136 and T355–T361, now every id it holds and where the ids between them live; D134's URN list said
+      `programme:` where the family contract and the code use `thing:`; R206 said CRM's lookup was unread and nothing built, but it was read and names come from the owning service (T358); R208 now names its
+      route and body (`organization_ref` and `person_refs`); R210 described an idempotence on `(programme_ref, source_event_id)` and a `programme:` URN, now what the route does (`peer_event_id`, a linked pool,
+      `thing:`); "none of it built" under R213 is now "all built" (T363 to T366); D140 says what is not built (the "entered here" figure in the view); the delivery table said T160's persona test was open (it is
+      done) and lacked T363 to T366, T372, T387 and T388; a numbered item about PPM's directory had slipped below the R216 section and is back in its list. [design.md](design.md) points to D134–D147. The Phase
+      25 heading names its real range. [worldwide.md](worldwide.md): T376's "not done" said the `/planning` percentage inputs were still `type="number"`, but T375 moved them to the locale's decimal input.
+      [plan.md](plan.md)'s status said sections P to S were not built (T310 and T314 are done, four are part done) and named only Phases 12 to 14; [roadmap.md](roadmap.md) said "WPM-T1–T97", that Keycloak and the
+      enforcement suites were not in CI (they are), and listed the PPM bridge as not started. The twelve lines that `check-days.py` reported for a bare count of days in `auth.md` and here now say calendar days (each is a
+      `Duration::days` or a statutory calendar period). **Checked and left:** worldwide.md's open tasks against the UI (11 physical CSS declarations, the "→" ranges, one `type="number"` for headcount), every
+      route the bridges document names against `add(...)` in the controllers and against `src/openapi.rs`. **Not done:** a sentence-by-sentence check of the other topic files; the older task entries' counts (each is
+      a dated record of its own run and is left as written).
+- [ ] WPM-T392 **A GitHub Pages site, as [monorepo-github-pages](monorepo-github-pages/index.md) specifies.** Open, not started. What the spec asks for: a SvelteKit and Lily Design System subproject
+      `workforce-planning-management.github.io/` inside this repository; a `github-pages` remote for the organization's `<organization>.github.io` repository; a `Makefile` task `make github-pages` calling a POSIX
+      script `bin/make-github-pages` that runs `git subtree push --prefix=<name>.github.io github-pages main`; and the sibling read-only export only ever updated through the subtree. None of it exists, and no
+      `*.github.io` repository was found for this organization (checked 2026-10-30). It needs the maintainer to create the GitHub repository and to decide what the site shows; not a small step.

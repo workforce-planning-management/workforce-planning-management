@@ -173,8 +173,9 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   filters use the same `currencyCode`. Four new keys in all 13 `-001` locales, AI-written and unreviewed (recorded in
   `content/locales/REVIEW.md`). Playwright: the empty currency refused with nothing sent, a German claim with "1.234,50" and "12,5" sent as
   123450 and 1250 and shown as `1.247,00 €`, a non-number refused, axe (WCAG 2 A and AA) over the expense panel, and the plan budget specs
-  above. **Not done:** the percentage inputs on `/planning` (attrition, on-cost) are still `type="number"` (WPM-T375); no organization
-  currency exists to default to. **Not tested:** a person on an Arabic or Urdu page typing Arabic-Indic digits (the parser reads the
+  above. **Not done:** no organization currency exists to default to. (The percentage inputs on `/planning`, attrition and on-cost,
+  were left as `type="number"` here and moved to the locale's decimal input by WPM-T375; only the whole-number headcount input stays
+  `type="number"`.) **Not tested:** a person on an Arabic or Urdu page typing Arabic-Indic digits (the parser reads the
   locale's own digits, but `ar-001` formats with ASCII digits, so only those are tested there).
 - [ ] WPM-T377 **Right-to-left finish.** *(WPM-R214, WPM-D143; rows 28 to 30)* Logical CSS for the 11 physical declarations (tables
   first); ranges as a catalogue pattern or `formatRange` instead of a literal "→"; a `ur-001` direction test beside the `ar-001` one.

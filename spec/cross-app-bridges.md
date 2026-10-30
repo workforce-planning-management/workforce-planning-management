@@ -1,7 +1,11 @@
 # Cross-app bridges: contact-relationship-management and project-portfolio-management
 
-Proposed 2026-10-28 (spec round WPM-T354; delivery WPM-T355 to WPM-T361). Requirements **WPM-R206–R211**, decisions
-**WPM-D134–D136**. Builds on [integrations.md](integrations.md) (EntityRef URNs; the family event envelope; WPM-D101, D102, D106) and on
+Proposed 2026-10-28 (spec round WPM-T354); built 2026-10-28 to 2026-10-30. Requirements **WPM-R206–R211, WPM-R213, WPM-R215
+and WPM-R216**, decisions **WPM-D134–D136, WPM-D138–D141 and WPM-D145–D147**, tasks **WPM-T354 to WPM-T366, WPM-T372, WPM-T387
+and WPM-T388** (all done; see "Delivery" for what each leaves undone). The ids between them belong elsewhere: WPM-R212 and WPM-D137
+are the MHRA ([mhra.md](mhra.md)), WPM-R214, WPM-D143 and WPM-D144 the worldwide target ([worldwide.md](worldwide.md)), WPM-D142
+the what-if's audience ([ppm-issues-and-changes.md](ppm-issues-and-changes.md)), and WPM-T367 to T386 the worldwide tasks.
+WPM-D145 is written in [integrations.md](integrations.md). Builds on [integrations.md](integrations.md) (EntityRef URNs; the family event envelope; WPM-D101, D102, D106) and on
 the scheduling boundary of WPM-D55 and WPM-D65.
 
 WPM and its two siblings hold different facts about overlapping things. **contact-relationship-management (CRM)** holds the people and
@@ -20,7 +24,7 @@ copying a record and without carrying a personal field outward**.
 ## Decisions
 
 - **WPM-D134 A bridge carries references and aggregates, never records.** A message across a boundary names a thing by its `EntityRef`
-  URN (`person:`, `organization:`, `worker:`, `programme:`) and says what happened, or it is a count with the privacy floor applied.
+  URN (`person:`, `organization:`, `worker:`, and `thing:` for a programme, as the family contract fixes) and says what happened, or it is a count with the privacy floor applied.
   It never carries a name, a date of birth, a salary, a rating, a note or an address. The receiving app looks a name up from the owner,
   best-effort, as WPM does for person-service. Rejected: syncing a copy, which makes two places to correct and two to erase.
 - **WPM-D135 An inbound call acts under the caller's token, and there is no bridge service account.** As WPM-D101 does for the MCP
@@ -63,7 +67,10 @@ by WPM's request tests against WPM alone.
 - **Add the supplier's contact.** An optional `supplier_contact_ref`, a `person:` URN (CRM keys its contacts by `person_ref`), so a manager
   can reach the agency about this engagement. WPM stores the two refs and nothing about the agency or the contact.
 - **Names are looked up, not kept.** Where CRM offers a lookup, WPM resolves the supplier and contact display names best-effort, cached,
-  never blocking a write (the person-service pattern). **CRM's lookup route was not read: unverified, not built.**
+  never blocking a write (the person-service pattern). **CRM was read and has no lookup by reference** (see "What CRM was read to
+  say"), so both names come through `clients::display_name` from the owning service instead (WPM-T358):
+  `GET /api/workers/{pid}/contractor-details` adds `supplier_name` and `supplier_contact_name`, `null` when unresolved. Only stub
+  mode has been run.
 - **Who sees it.** As the engagement does: the worker, their managers, HR. The supplier is not a data subject here; the contact is, and is
   shown by name only to a caller who may read the engagement.
 
@@ -99,7 +106,8 @@ by WPM's request tests against WPM alone.
 - **Who may ask.** A privileged caller of the organization (HR), under their own token (WPM-D135). Each call is audited with the count, not the refs.
 - **Why it is allowed.** It discloses employment status of a person to a caller who already holds that person's ref and is HR of the
   employer; it is the same fact HR reads on the worker list. A person decides any merge of two records (the matcher's rule: [worker-matching.md](worker-matching.md)).
-- **Not done:** a bulk export of all workers' refs; a push to CRM.
+- **Built** as `POST /api/bridges/overlap` with `{"organization_ref": "organization:<uuid>", "person_refs": [...]}` (WPM-T357).
+- **Not done:** a bulk export of all workers' refs; a push to CRM; a rate limit on the route.
 
 ## PPM
 
@@ -111,10 +119,11 @@ read as one set. **Contract with PPM: unverified** (the family contract of 2026-
 
 ### WPM-R210 — Programme demand in (PPM tells WPM)
 
-- **What WPM would accept.** A signed-in caller with the planning right posts a programme's staffing demand: a `programme:` URN, a pool
-  or role, FTE per month, and the PPM event id. WPM turns it into demand lines against the programme ref it already holds (WPM-D55).
-- **Idempotent** on `(programme_ref, source_event_id)`: a repeat changes nothing. A line for a programme WPM has no planning scope for is
-  refused. WPM records the source and never invents a programme.
+- **What WPM accepts.** A caller the policy lets write capacity posts one figure: a linked WPM pool, a programme's `thing:` URN, a
+  month and centi-FTE, with the PPM event id. WPM stores it as a demand claim with `source = ppm` (WPM-T364), against the programme
+  reference, never a copy of the programme (WPM-D55).
+- **Idempotent** on the `peer_event_id` of a claim: a repeat changes nothing and answers `duplicate: true`. A pool that is not
+  linked is refused. WPM records the source and never invents a programme.
 - **The shape is fixed (2026-10-30, family contract point 3):** PPM calls `POST /api/capacity/peer-demand` with
   `{pool_pid, programme_ref, month, fte_centi, peer_event_id}` under the forwarded caller's token, for a pool linked on both sides.
   The route was built for WPM-R213 (WPM-T364); PPM's sender is being built against it and has not been run against WPM.
@@ -241,7 +250,9 @@ them without making either depend on the other.
   other app's identifier for the pool that means the same skills. It is set on both sides by someone who can see both, shown to them, and
   removed in one step. An unmapped pool stays local. Rejected: matching pool names or tags, because a name is not an identity and a wrong
   match would move real numbers.
-- **WPM-D140 For a linked pool each fact has one owner.** **Supply is WPM's** (it holds the workers, their leave and their FTE); **demand
+- **WPM-D140 For a linked pool each fact has one owner.** *(Built in part: the count follows the one owner,
+  `rules::capacity::counted_source`; the capacity view does not yet show the ignored local figure as "entered here" beside it, though
+  the claim list shows every claim with its source. WPM-T364.)* **Supply is WPM's** (it holds the workers, their leave and their FTE); **demand
   is PPM's** (it holds the plans). Each side shows the owner's figure for a linked pool, labelled with its source and the time it was
   taken. The receiving side's own entry of that kind is kept but not added: it is shown as "entered here" beside the owner's figure, so
   two numbers for one pool are visible, named and never summed.
@@ -252,7 +263,7 @@ them without making either depend on the other.
 a linked pool takes demand from PPM and gives supply to PPM, each with its source and age; the two apps' figures are never added
 together. This extends WPM-R209 and WPM-R210.
 
-What this needs on WPM's side, in order, none of it built:
+What this needs on WPM's side, in order, **all built 2026-10-28** (WPM-T363 to T366; see "Tasks for the harmonization"):
 
 1. A pool's `peer_pool_ref` (nullable), set and cleared by HR with the pool's own audit, no name or figure in the entry.
 2. Demand that arrives from the peer is stored as claims with `source = ppm`, the peer's event id, and the time received (idempotent on
@@ -271,9 +282,15 @@ people-impact. WPM does not change PPM.
 | WPM-T356 | `supplier_contact_ref` on contractor details (R206) | nothing outside WPM |
 | WPM-T357 | `POST /api/bridges/overlap` (R208) | nothing outside WPM |
 | WPM-T358 | Supplier and contact names (R206) | **Read 2026-10-28: CRM has no lookup by reference**, and holds no person's name; see "What CRM was read to say". Re-scoped to person-service |
-| WPM-T359 | Capacity what-if (R209) | the capacity model (WPM-T104 to T107); is WPM-T158 to T160. **WPM half built 2026-10-28** (`POST /api/capacity/what-if`; the contingent effect, T159, is built too; the persona test of T160 is open); PPM's side unverified |
+| WPM-T359 | Capacity what-if (R209) | the capacity model (WPM-T104 to T107); is WPM-T158 to T160, **all done** (`POST /api/capacity/what-if`, the contingent effect, the persona test). PPM's side unverified |
 | WPM-T360 | Programme demand in (R210, R213) | **Closed 2026-10-30.** The receive route exists (T364); the family contract fixes PPM as its caller. PPM's sender is being built against it; not verified end to end |
-| WPM-T361 | People-impact out (R211) | WPM-T359; a pull by PPM, fixed by the family contract (2026-10-30) |
+| WPM-T361 | People-impact out (R211) | **Built 2026-10-30:** `GET /api/capacity/people-impact`, a pull by PPM, fixed by the family contract |
+| WPM-T363 to T366 | Pool link, sourced demand, outbound supply, standalone tests (R213) | **Built 2026-10-28**; see "Tasks for the harmonization" |
+| WPM-T372 | Hire and ending handoff in the webhook payload (R207, D145) | **Built 2026-10-30.** CRM's receiver not run against it |
+| WPM-T387 | Withdrawal with zero, and `sent_at` ordering (R215, D146) | **Built 2026-10-30.** PPM's sender not run against it |
+| WPM-T388 | The lean worker list, `?fields=`, and salary-read audit on the list (R216, D147) | **Built 2026-10-30.** CRM's import not changed or run |
+
+Every route above is in the OpenAPI document.
 
 ## What CRM was read to say (2026-10-28)
 
@@ -303,6 +320,9 @@ CRM's source is on the same machine (`contact-relationship-management-service-wi
    `GET /api/workers?status=active&fields=pid,department,person_ref&limit=200&offset=` and receive those three fields of each worker
    and nothing else, under the same policy and scope; and a list that carries an unmasked salary now audits a `salary_read` for each
    such worker. **Whether and when CRM asks for the lean list is CRM's change**; nothing here has been run from CRM.
+3. **PPM's code was not found at first.** On 2026-10-28 it was at `~/git/project-porfolio-management/project-porfolio-management`
+   (the directory then spelled `porfolio`); as of 2026-10-30 it is at `~/git/project-portfolio-management/project-portfolio-management`,
+   spelled as the crate and docs spell it. PPM itself was read next (below).
 
 ### WPM-R216 — A lean worker list for a bridge
 
@@ -319,8 +339,6 @@ organization scope and the per-row salary mask are unchanged: a salary asked for
   fails, the list is not given). A list that does not carry salary, or masks it, records none. Rejected: one summary row per list
   (it cannot answer "who read this person's salary" for one person); ignoring an unknown field name (a typo would silently widen the
   answer to the whole record or narrow it to nothing).
-3. **PPM's code was not found at first; it is at `~/git/project-porfolio-management/project-porfolio-management`** (the directory is spelled
-   `porfolio`; the crate and docs say `portfolio`). CRM's idea contract below is still second-hand, but PPM itself was read next.
 
 ## What PPM was read to say (2026-10-28)
 

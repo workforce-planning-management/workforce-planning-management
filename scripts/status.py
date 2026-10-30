@@ -40,8 +40,10 @@ def count_in(pattern, regex, flags=0):
 
 def tasks():
     text = read("spec", "tasks.md")
-    done = re.findall(r"^- \[x\] WPM-T(\d+)", text, re.M)
-    open_ = re.findall(r"^- \[[ ~]\] WPM-T(\d+)", text, re.M)
+    # An entry may carry its date before the id: `- [x] (2026-10-30) WPM-T388 ...`.
+    dated = r"(?:\(\d{4}-\d\d-\d\d\) )?"
+    done = re.findall(r"^- \[x\] " + dated + r"WPM-T(\d+)", text, re.M)
+    open_ = re.findall(r"^- \[[ ~]\] " + dated + r"WPM-T(\d+)", text, re.M)
     return len(done), len(open_), max((int(n) for n in done), default=0)
 
 

@@ -392,6 +392,17 @@ owns disclosure; adjust the rule, not the record ([disability-and-adjustments.md
 a successor is told, by the software, every time; a deputy holds named authority, not confidences; acting cover does not fill a
 vacancy; who acts up is counted; the holder, or HR while the holder is unavailable, lets a deputy decide flexible working, and the default is no ([succession-deputies-and-acting-up.md](succession-deputies-and-acting-up.md), D128–D133).
 
+## WPM-D134–D147 — Cross-app bridges, a regulator's own guidance, worldwide by design
+
+A bridge carries references and counts, never records; an inbound call acts under the caller's own token; a contract that was not
+read is not built against; each app owns its model, a pool link is set by a person, a linked pool's facts have one owner and a
+silent peer is unknown, not zero; a hire or an ending tells a subscriber who, by reference; a peer withdraws a figure without
+undoing a person's decision; a list that carries a salary is a salary read
+([cross-app-bridges.md](cross-app-bridges.md), D134–D136, D138–D141, D146, D147; D145 in [integrations.md](integrations.md)).
+A regulator's requirements come from its guidance, not its landing page ([mhra.md](mhra.md), D137). The what-if tells everyone it
+answers the same thing ([ppm-issues-and-changes.md](ppm-issues-and-changes.md), D142). Jurisdiction is data, held as dated, sourced
+profiles ([worldwide.md](worldwide.md), D143, D144).
+
 ## WPM-D52, WPM-D54 — Secure by default; rate limits keep no history
 
 Sign-in is enforced unless explicitly turned off, production refuses an open or

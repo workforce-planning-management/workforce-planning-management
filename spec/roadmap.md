@@ -1,7 +1,8 @@
 # Roadmap
 
-Beyond the delivered queue ([tasks.md](tasks.md), WPM-T1–T97). Items are
-grouped by whether a decision, a dependency or just time stands in the way.
+Beyond the queue in [tasks.md](tasks.md) (WPM-T1 to WPM-T388 as of 2026-10-30; the open and part-done
+tasks there, and the proposals in [plan.md](plan.md), are not repeated here). Items are grouped by
+whether a decision, a dependency or just time stands in the way.
 
 ## Deferred by decision
 
@@ -33,8 +34,12 @@ category limits) are listed there under "Not done".
   trend line; other screens sized for other devices.
 - **Localization:** a native-speaker review of every translation; exercising the
   Sveltia CMS end to end with a GitHub login; a `<repo>.github.io` site (see
-  [monorepo-github-pages](monorepo-github-pages/index.md) — not yet created).
-- **Auth:** the Keycloak and enforcement suites are not yet in CI.
+  [monorepo-github-pages](monorepo-github-pages/index.md) — not yet created; WPM-T392).
+- **Auth:** the Keycloak, Entra and enforcement suites run in CI (`.github/workflows/ci.yml`); a
+  caller in two organizations is not covered by the people-impact tests (WPM-T361).
+- **Cross-app bridges:** PPM's sender and puller and CRM's webhook receiver and lean-list import have
+  not been run against WPM; the capacity view does not yet show an ignored local figure as "entered
+  here" (WPM-D140); see "Not done" in [cross-app-bridges.md](cross-app-bridges.md).
 
 ## Still on the original list
 
@@ -46,9 +51,10 @@ category limits) are listed there under "Not done".
   providers behind the onboarding/requisition checklists.
 - **Compensation reviews** — salary-change workflows with approval chains.
 - **Multi-org / group payroll** — consolidated reporting for a corporate group.
-- **WPM ↔ PPM bridge** ([WPM-D55](design.md): scheduling lives in PPM) —
-  allocations in project-portfolio-management
-  referencing WPM employees for capacity-vs-contract checks.
+- **WPM ↔ PPM bridge** ([WPM-D55](design.md): scheduling lives in PPM) — **built on WPM's side
+  2026-10-28 to 2026-10-30** as the pool link, peer demand and supply, the what-if and people impact
+  ([cross-app-bridges.md](cross-app-bridges.md)); allocations of named WPM employees in PPM are not
+  planned (a bridge carries counts, WPM-D134).
 - **Adjustment review cadence**, **DSE re-assessment scheduling**,
   **360 → development-plan linking**.
 
@@ -57,4 +63,8 @@ category limits) are listed there under "Not done".
 People analytics over the arithmetic dashboards (WPM-T44 metrics, T69
 insights, T83–T85 CEO dashboard), the on-call rota, the employee directory,
 skills gap analysis and training time, joiners and leavers, and the
-announcement feed.
+announcement feed; then the plan's sections A to O (Phases 12 to 23: delivery
+capacity, production readiness, programmes and the contingent workforce,
+operations, SFIA, unions, self-service, regulatory reporting, outbound
+webhooks), the cross-app bridges, and the first worldwide tasks (money, dates,
+numbers and plural rules in the page's locale).

@@ -1,9 +1,12 @@
 # Plan — delivery capacity, oversight readiness and production readiness
 
-Status: **proposed** (2026-10-09; sections N and O added 2026-10-21; sections P to S added 2026-10-27). Some sections have since
-been built; sections P to S are not. Delivery is queued as
-Phase 12 (WPM-T103–T118), Phase 13 (WPM-T123–T132, WPM-T144–T145) and Phase 14
-(WPM-T133–T143) in [tasks.md](tasks.md). When the work starts, the requirements and decisions
+Status: **proposed** (2026-10-09; sections N and O added 2026-10-21; sections P to S added 2026-10-27), and **mostly built** as of
+2026-10-30. Delivery is queued in [tasks.md](tasks.md) as Phases 12 to 24, one phase per section or group of sections. Sections A to
+O (Phases 12 to 23) are built except for the tasks still open or part done there: WPM-T103, T124, T129 to T133, T144, T155 to
+T157, T166 to T169, T178, T180, T186, T201 to T203, T254, T270, T271, T274 and T281 to T284. **Sections P to S (Phase 24) have
+only begun:** the two pure cores WPM-T310 and T314 are done, T311 to T313 and T317 are part done, and T315, T316 and T318 to T344
+are open. The cross-app bridges and the worldwide target that came after this plan are in
+[cross-app-bridges.md](cross-app-bridges.md) and [worldwide.md](worldwide.md) (Phase 25). When the work starts, the requirements and decisions
 below move into topic files (`delivery-capacity-and-oversight.md` for sections
 A to D, `production-readiness.md` for section F,
 `programmes-and-contingent-workforce.md` for section G), and the "next free ids" line in

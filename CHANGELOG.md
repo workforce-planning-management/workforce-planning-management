@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the spec matches the code (WPM-T391)
+
+`scripts/status.py` missed every dated task entry, so the generated status said 232 tasks done and the highest WPM-T267; it now
+counts 314 and WPM-T396. `spec/cross-app-bridges.md` names every id it holds and describes the routes as built; `plan.md`,
+`roadmap.md` and `worldwide.md` are current; every duration says calendar days. A GitHub Pages site is recorded as open (WPM-T392).
+
 ### Fixed — CI runs every service test binary (WPM-T396)
 
 Seven of the service's test binaries never ran in CI (three persona tests and four that are not `#[ignore]`d, which neither
