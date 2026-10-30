@@ -7,7 +7,7 @@
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
-  import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { t, tf, tn, tv } from "#lib/i18n.svelte.js";
   import { downlineAspirations } from "#lib/api/wpm.js";
 
   let { workerPid }: { workerPid: string } = $props();
@@ -41,7 +41,7 @@
   <section class="panel" data-testid="team-aspirations">
     <h2>{t("comp.teamAspirations.my_team_s_aspirations")}</h2>
     <p class="muted">
-      {tf("comp.teamAspirations.direct_report_s_indirect_only_what", { direct: direct, direct2: team.length - direct })}
+      {tn("comp.teamAspirations.direct_report_s_indirect_only_what", direct, { direct: direct, direct2: team.length - direct })}
     </p>
     <ul>
       {#each team as person (person.worker_pid)}

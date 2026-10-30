@@ -858,7 +858,11 @@
       "what_the_framework_says": "Ce que dit le référentiel",
       "this_role_lists_no_skills": "Ce poste ne liste aucune compétence.",
       "add_another_esco_skill": "Ajouter une autre compétence ESCO",
-      "save_my_skills_change": "Enregistrer mes compétences ({changes} modification(s){changes2})",
+      "save_my_skills_change": {
+        "one": "Enregistrer mes compétences ({changes} modification)",
+        "many": "Enregistrer mes compétences ({changes} de modifications)",
+        "other": "Enregistrer mes compétences ({changes} modifications)"
+      },
       "other": "Autre",
       "role_cleared": "Poste effacé. Les compétences que vous avez déclarées sont conservées.",
       "saved": "Enregistré : {declared} déclarées, {removed} retirées.",
@@ -920,7 +924,11 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "Aspirations de mon équipe",
-      "direct_report_s_indirect_only_what": "{direct} rattaché(s) direct(s), {direct2} indirect(s). Seulement ce que chaque personne a choisi de partager avec ses responsables.",
+      "direct_report_s_indirect_only_what": {
+        "one": "{direct} rattaché direct, indirects : {direct2}. Seulement ce que chaque personne a choisi de partager avec ses responsables.",
+        "many": "{direct} de rattachés directs, indirects : {direct2}. Seulement ce que chaque personne a choisi de partager avec ses responsables.",
+        "other": "{direct} rattachés directs, indirects : {direct2}. Seulement ce que chaque personne a choisi de partager avec ses responsables."
+      },
       "nothing_shared": "rien de partagé",
       "direct_report": "rattaché direct",
       "indirect_report": "rattaché indirect",
@@ -991,7 +999,11 @@
       "from": "De",
       "to": "À",
       "add": "Ajouter",
-      "requirement_s_defined": "{requirements} exigence(s) définie(s).",
+      "requirement_s_defined": {
+        "one": "{requirements} exigence définie.",
+        "many": "{requirements} d’exigences définies.",
+        "other": "{requirements} exigences définies."
+      },
       "a_worker_s_cpd": "Formation continue d'une personne",
       "worker": "Personne",
       "choose": "Choisir…",
@@ -1056,7 +1068,11 @@
       "coverage": "Couverture",
       "level_1": "Niveau 1",
       "nothing_to_show_yet": "Rien à afficher pour l'instant.",
-      "skill_s_withheld_too_few_people_to": "{withheld_below_floor} compétence(s) masquée(s) : trop peu de personnes pour les montrer sans désigner quelqu'un.",
+      "skill_s_withheld_too_few_people_to": {
+        "one": "{withheld_below_floor} compétence masquée : trop peu de personnes pour la montrer sans désigner quelqu'un.",
+        "many": "{withheld_below_floor} de compétences masquées : trop peu de personnes pour les montrer sans désigner quelqu'un.",
+        "other": "{withheld_below_floor} compétences masquées : trop peu de personnes pour les montrer sans désigner quelqu'un."
+      },
       "kind_practice": "communauté de pratique",
       "kind_interest": "communauté d'intérêt",
       "kind_group": "groupe"
@@ -1179,7 +1195,11 @@
       "source": "Source",
       "annual_cost": "Coût annuel",
       "total_annual_incl_on_cost": "Total (annuel, dont {on_cost_bp} % de charges) : {currency}",
-      "line_group_s_could_not_be_costed": "· {uncosted_groups} groupe(s) de lignes n'ont pas pu être chiffré(s)",
+      "line_group_s_could_not_be_costed": {
+        "one": "· {uncosted_groups} groupe de lignes n'a pas pu être chiffré",
+        "many": "· {uncosted_groups} de groupes de lignes n'ont pas pu être chiffrés",
+        "other": "· {uncosted_groups} groupes de lignes n'ont pas pu être chiffrés"
+      },
       "budget": "· budget {currency} ·",
       "remaining": "{within_budget} ({currency} restants)",
       "alignment_with_strategy": "Alignement avec la stratégie",
@@ -1267,7 +1287,11 @@
       "remove": "Retirer",
       "no_required_skills_yet": "Aucune compétence requise pour l'instant.",
       "next_level_up": "Niveau supérieur",
-      "new_skill_s_raised_unchanged": ": {added} nouvelle(s) compétence(s), {raised} relevée(s), {unchanged} inchangée(s)",
+      "new_skill_s_raised_unchanged": {
+        "one": ": {added} nouvelle compétence, relevées : {raised}, inchangées : {unchanged}",
+        "many": ": {added} de nouvelles compétences, relevées : {raised}, inchangées : {unchanged}",
+        "other": ": {added} nouvelles compétences, relevées : {raised}, inchangées : {unchanged}"
+      },
       "new_needs": "Nouvelle : {skill} (nécessite {min_proficiency})",
       "raised": "Relevée : {skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "C'est le niveau le plus élevé du poste.",
@@ -1303,7 +1327,11 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills} compétences ·",
       "suggested_categories": "Catégories suggérées",
-      "skill_s_have_no_suggestion": "{derivation}. {unsuggested} compétence(s) n'ont pas de suggestion.",
+      "skill_s_have_no_suggestion": {
+        "one": "{derivation}. {unsuggested} compétence n'a pas de suggestion.",
+        "many": "{derivation}. {unsuggested} de compétences n'ont pas de suggestion.",
+        "other": "{derivation}. {unsuggested} compétences n'ont pas de suggestion."
+      },
       "apply_all": "Tout appliquer ({suggestions})",
       "skill": "Compétence",
       "suggested": "Suggérée",
@@ -1921,7 +1949,11 @@
     "date": "Date",
     "programmes": "Programmes",
     "programmesHint": "ETP financés par chaque programme, mois par mois.",
-    "programmesWithheld": "{count} programme(s) plus petit(s) non affiché(s).",
+    "programmesWithheld": {
+      "one": "{count} programme plus petit non affiché.",
+      "many": "{count} de programmes plus petits non affichés.",
+      "other": "{count} programmes plus petits non affichés."
+    },
     "noProgrammes": "Aucun programme.",
     "fundedFte": "ETP financés",
     "engagementsEnding": "Engagements qui se terminent",
@@ -2471,7 +2503,11 @@
     "variable_basis": "La part variable est calculée sur",
     "all_known": "Tous ceux dont la part variable est connue",
     "recipients_only": "Seulement ceux qui en ont reçu une",
-    "reporting": "Rapport tous les {years} an(s) : le premier le {first}, le prochain le {next}",
+    "reporting": {
+      "one": "Rapport tous les {years} an : le premier le {first}, le prochain le {next}",
+      "many": "Rapport tous les {years} d’ans : le premier le {first}, le prochain le {next}",
+      "other": "Rapport tous les {years} ans : le premier le {first}, le prochain le {next}"
+    },
     "no_reporting": "Sous l'effectif qui doit publier",
     "csv": "Télécharger en CSV",
     "gap_note": "Un écart positif signifie que les hommes sont mieux payés ; un écart négatif, les femmes.",

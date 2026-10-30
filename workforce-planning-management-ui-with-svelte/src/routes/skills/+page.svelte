@@ -21,7 +21,7 @@
     searchEscoSkills,
     updateSkill,
   } from "#lib/api/wpm.js";
-  import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { t, tf, tn, tv } from "#lib/i18n.svelte.js";
   import SkillCrosswalk from "#lib/components/SkillCrosswalk.svelte";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -121,7 +121,7 @@
 
 {#if suggestions && suggestions.suggestions.length > 0}
   <h2>{t("pages.skills.suggested_categories")}</h2>
-  <p class="muted">{tf("pages.skills.skill_s_have_no_suggestion", { derivation: suggestions.derivation, unsuggested: suggestions.unsuggested })}</p>
+  <p class="muted">{tn("pages.skills.skill_s_have_no_suggestion", suggestions.unsuggested, { derivation: suggestions.derivation, unsuggested: suggestions.unsuggested })}</p>
   <p>
     <button
       type="button"

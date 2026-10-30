@@ -42,6 +42,11 @@ The currency codes in them (EUR, JPY, INR) are ISO 4217 codes and stay in Latin 
 The 2026-10-30 additions for typed numbers (WPM-T375: `common.badNumber` and `common.badNumberAtLeast`) were machine-translated by the
 same assistant, also unreviewed.
 
+The 2026-10-30 plural forms (WPM-T374: nine strings that fill a count, each now a plural group with the CLDR categories its
+language uses: six in Arabic and Welsh, four in Russian, three in Spanish, French and Portuguese, two in Bengali, German, Hindi and Urdu,
+one in Indonesian and Chinese) were written by the same assistant, also unreviewed. Read the Arabic dual and the Russian and Welsh forms
+first; the Welsh mutations after a number (`ofyniad`, `flwyddyn`) follow the spoken number and may not read well after digits.
+
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.
 
@@ -55,8 +60,8 @@ written earlier, also by the assistant. Expect inconsistent terminology between 
 2. Read it as a user would, in the app, not only as a file: the same word can need different
    forms in a heading, a button, a table column and a sentence.
 3. Check that placeholders such as `{name}` are untouched, that plurals read correctly for the
-   numbers that fill them (the interface writes forms like "skill(s)" because it has no plural
-   rules), and that right-to-left languages read correctly with Latin names and numbers.
+   numbers that fill them (a plural group, `{"one": …, "other": …}`, holds one form per CLDR
+   category the language uses; strings that are not yet plural groups still have one form), and that right-to-left languages read correctly with Latin names and numbers.
 4. Check the terms the pack depends on: the HR terms (headcount, attrition, succession),
    the framework names (ESCO, ISCO, UK GDAD PCF) and the statuses under `values.*`.
 5. Review the entries on the allow-list (`tests/unit/untranslated.allow.json`): a word the

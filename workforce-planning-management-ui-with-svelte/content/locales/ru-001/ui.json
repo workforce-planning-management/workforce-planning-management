@@ -858,7 +858,12 @@
       "what_the_framework_says": "Что говорит система компетенций",
       "this_role_lists_no_skills": "Для этой должности навыки не указаны.",
       "add_another_esco_skill": "Добавить ещё один навык ESCO",
-      "save_my_skills_change": "Сохранить мои навыки (изменений: {changes}{changes2})",
+      "save_my_skills_change": {
+        "one": "Сохранить мои навыки ({changes} изменение)",
+        "few": "Сохранить мои навыки ({changes} изменения)",
+        "many": "Сохранить мои навыки ({changes} изменений)",
+        "other": "Сохранить мои навыки ({changes} изменения)"
+      },
       "other": "Другое",
       "role_cleared": "Должность очищена. Заявленные вами навыки сохранены.",
       "saved": "Сохранено: заявлено {declared}, удалено {removed}.",
@@ -920,7 +925,12 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "Стремления моей команды",
-      "direct_report_s_indirect_only_what": "Прямых подчинённых: {direct}, косвенных: {direct2}. Только то, чем каждый решил поделиться со своими руководителями.",
+      "direct_report_s_indirect_only_what": {
+        "one": "{direct} прямой подчинённый, косвенных: {direct2}. Только то, чем каждый решил поделиться со своими руководителями.",
+        "few": "{direct} прямых подчинённых, косвенных: {direct2}. Только то, чем каждый решил поделиться со своими руководителями.",
+        "many": "{direct} прямых подчинённых, косвенных: {direct2}. Только то, чем каждый решил поделиться со своими руководителями.",
+        "other": "{direct} прямого подчинённого, косвенных: {direct2}. Только то, чем каждый решил поделиться со своими руководителями."
+      },
       "nothing_shared": "ничем не поделились",
       "direct_report": "прямой подчинённый",
       "indirect_report": "косвенный подчинённый",
@@ -991,7 +1001,12 @@
       "from": "С",
       "to": "По",
       "add": "Добавить",
-      "requirement_s_defined": "Задано требований: {requirements}.",
+      "requirement_s_defined": {
+        "one": "Задано {requirements} требование.",
+        "few": "Задано {requirements} требования.",
+        "many": "Задано {requirements} требований.",
+        "other": "Задано {requirements} требования."
+      },
       "a_worker_s_cpd": "Непрерывное развитие работника",
       "worker": "Работник",
       "choose": "Выберите…",
@@ -1056,7 +1071,12 @@
       "coverage": "Охват",
       "level_1": "Уровень 1",
       "nothing_to_show_yet": "Пока нечего показать.",
-      "skill_s_withheld_too_few_people_to": "Скрыто навыков: {withheld_below_floor} — слишком мало людей, чтобы показать их, не указывая на кого-то.",
+      "skill_s_withheld_too_few_people_to": {
+        "one": "Скрыт {withheld_below_floor} навык — слишком мало людей, чтобы показать его, не указывая на кого-то.",
+        "few": "Скрыто {withheld_below_floor} навыка — слишком мало людей, чтобы показать их, не указывая на кого-то.",
+        "many": "Скрыто {withheld_below_floor} навыков — слишком мало людей, чтобы показать их, не указывая на кого-то.",
+        "other": "Скрыто {withheld_below_floor} навыка — слишком мало людей, чтобы показать их, не указывая на кого-то."
+      },
       "kind_practice": "сообщество практики",
       "kind_interest": "сообщество по интересам",
       "kind_group": "группа"
@@ -1179,7 +1199,12 @@
       "source": "Источник",
       "annual_cost": "Годовая стоимость",
       "total_annual_incl_on_cost": "Итого (за год, с накладными {on_cost_bp} %): {currency}",
-      "line_group_s_could_not_be_costed": "· не удалось оценить групп строк: {uncosted_groups}",
+      "line_group_s_could_not_be_costed": {
+        "one": "· не удалось оценить {uncosted_groups} группу строк",
+        "few": "· не удалось оценить {uncosted_groups} группы строк",
+        "many": "· не удалось оценить {uncosted_groups} групп строк",
+        "other": "· не удалось оценить {uncosted_groups} группы строк"
+      },
       "budget": "· бюджет {currency} ·",
       "remaining": "{within_budget} (осталось {currency})",
       "alignment_with_strategy": "Согласованность со стратегией",
@@ -1267,7 +1292,12 @@
       "remove": "Удалить",
       "no_required_skills_yet": "Требуемых навыков пока нет.",
       "next_level_up": "Следующий уровень",
-      "new_skill_s_raised_unchanged": ": новых навыков {added}, повышено {raised}, без изменений {unchanged}",
+      "new_skill_s_raised_unchanged": {
+        "one": ": {added} новый навык, повышено {raised}, без изменений {unchanged}",
+        "few": ": {added} новых навыка, повышено {raised}, без изменений {unchanged}",
+        "many": ": {added} новых навыков, повышено {raised}, без изменений {unchanged}",
+        "other": ": {added} нового навыка, повышено {raised}, без изменений {unchanged}"
+      },
       "new_needs": "Новый: {skill} (требуется {min_proficiency})",
       "raised": "Повышен: {skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "Это высший уровень должности.",
@@ -1303,7 +1333,12 @@
       "page_title": "{skills} — WPM",
       "skills": "навыков: {skills} ·",
       "suggested_categories": "Предлагаемые категории",
-      "skill_s_have_no_suggestion": "{derivation}. Для навыков без предложения: {unsuggested}.",
+      "skill_s_have_no_suggestion": {
+        "one": "{derivation}. Для {unsuggested} навыка нет предложения.",
+        "few": "{derivation}. Для {unsuggested} навыков нет предложения.",
+        "many": "{derivation}. Для {unsuggested} навыков нет предложения.",
+        "other": "{derivation}. Для {unsuggested} навыка нет предложения."
+      },
       "apply_all": "Применить все ({suggestions})",
       "skill": "Навык",
       "suggested": "Предложено",
@@ -1921,7 +1956,12 @@
     "date": "Дата",
     "programmes": "Программы",
     "programmesHint": "Эквивалент полной занятости, финансируемый каждой программой, по месяцам.",
-    "programmesWithheld": "Меньших программ не показано: {count}.",
+    "programmesWithheld": {
+      "one": "Не показана {count} меньшая программа.",
+      "few": "Не показаны {count} меньшие программы.",
+      "many": "Не показано {count} меньших программ.",
+      "other": "Не показано {count} меньшей программы."
+    },
     "noProgrammes": "Программ нет.",
     "fundedFte": "Финансируемый эквивалент полной занятости",
     "engagementsEnding": "Заканчивающиеся трудовые отношения",
@@ -2471,7 +2511,12 @@
     "variable_basis": "Переменная часть считается по",
     "all_known": "Всем, у кого она известна",
     "recipients_only": "Только тем, кто её получил",
-    "reporting": "Отчёт каждые {years} г.: первый {first}, следующий {next}",
+    "reporting": {
+      "one": "Отчёт каждый {years} год: первый {first}, следующий {next}",
+      "few": "Отчёт каждые {years} года: первый {first}, следующий {next}",
+      "many": "Отчёт каждые {years} лет: первый {first}, следующий {next}",
+      "other": "Отчёт каждые {years} года: первый {first}, следующий {next}"
+    },
     "no_reporting": "Ниже численности, обязанной отчитываться",
     "csv": "Скачать в CSV",
     "gap_note": "Положительный разрыв означает, что мужчинам платят больше; отрицательный — женщинам.",

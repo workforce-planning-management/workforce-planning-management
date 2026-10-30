@@ -15,7 +15,7 @@
   import DataTable from "#lib/components/DataTable.svelte";
   import RoleGrade from "#lib/components/RoleGrade.svelte";
   import { percentWithWorkings } from "#lib/format.js";
-  import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { t, tf, tn, tv } from "#lib/i18n.svelte.js";
   import { errorText } from "#lib/write.js";
   import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
@@ -184,7 +184,7 @@
   <h3>{t("pages.roles.next_level_up")}</h3>
   {#each progression.next as step (step.pid)}
     <p data-testid="role-progression">
-      <strong>{step.job_title}</strong>{tf("pages.roles.new_skill_s_raised_unchanged", { added: step.added.length, raised: step.raised.length, unchanged: step.unchanged })}
+      <strong>{step.job_title}</strong>{tn("pages.roles.new_skill_s_raised_unchanged", step.added.length, { added: step.added.length, raised: step.raised.length, unchanged: step.unchanged })}
     </p>
     <ul>
       {#each step.added as a (a.skill)}<li>{tf("pages.roles.new_needs", { skill: a.skill, min_proficiency: a.min_proficiency })}</li>{/each}

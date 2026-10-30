@@ -858,7 +858,11 @@
       "what_the_framework_says": "O que a estrutura diz",
       "this_role_lists_no_skills": "Este cargo não lista habilidades.",
       "add_another_esco_skill": "Adicionar outra habilidade ESCO",
-      "save_my_skills_change": "Salvar minhas habilidades ({changes} alteração(ões){changes2})",
+      "save_my_skills_change": {
+        "one": "Salvar minhas habilidades ({changes} alteração)",
+        "many": "Salvar minhas habilidades ({changes} de alterações)",
+        "other": "Salvar minhas habilidades ({changes} alterações)"
+      },
       "other": "Outro",
       "role_cleared": "Cargo limpo. As habilidades que você declarou foram mantidas.",
       "saved": "Salvo: {declared} declaradas, {removed} removidas.",
@@ -920,7 +924,11 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "Aspirações da minha equipe",
-      "direct_report_s_indirect_only_what": "{direct} subordinado(s) direto(s), {direct2} indireto(s). Apenas o que cada pessoa escolheu compartilhar com seus gestores.",
+      "direct_report_s_indirect_only_what": {
+        "one": "{direct} subordinado direto, indiretos: {direct2}. Apenas o que cada pessoa escolheu compartilhar com seus gestores.",
+        "many": "{direct} de subordinados diretos, indiretos: {direct2}. Apenas o que cada pessoa escolheu compartilhar com seus gestores.",
+        "other": "{direct} subordinados diretos, indiretos: {direct2}. Apenas o que cada pessoa escolheu compartilhar com seus gestores."
+      },
       "nothing_shared": "nada compartilhado",
       "direct_report": "subordinado direto",
       "indirect_report": "subordinado indireto",
@@ -991,7 +999,11 @@
       "from": "De",
       "to": "Até",
       "add": "Adicionar",
-      "requirement_s_defined": "{requirements} requisito(s) definido(s).",
+      "requirement_s_defined": {
+        "one": "{requirements} requisito definido.",
+        "many": "{requirements} de requisitos definidos.",
+        "other": "{requirements} requisitos definidos."
+      },
       "a_worker_s_cpd": "Desenvolvimento profissional de uma pessoa",
       "worker": "Pessoa",
       "choose": "Escolher…",
@@ -1056,7 +1068,11 @@
       "coverage": "Cobertura",
       "level_1": "Nível 1",
       "nothing_to_show_yet": "Nada para mostrar ainda.",
-      "skill_s_withheld_too_few_people_to": "{withheld_below_floor} habilidade(s) oculta(s): poucas pessoas para mostrar sem apontar alguém.",
+      "skill_s_withheld_too_few_people_to": {
+        "one": "{withheld_below_floor} habilidade oculta: poucas pessoas para mostrar sem apontar alguém.",
+        "many": "{withheld_below_floor} de habilidades ocultas: poucas pessoas para mostrar sem apontar alguém.",
+        "other": "{withheld_below_floor} habilidades ocultas: poucas pessoas para mostrar sem apontar alguém."
+      },
       "kind_practice": "comunidade de prática",
       "kind_interest": "comunidade de interesse",
       "kind_group": "grupo"
@@ -1179,7 +1195,11 @@
       "source": "Fonte",
       "annual_cost": "Custo anual",
       "total_annual_incl_on_cost": "Total (anual, incl. {on_cost_bp} % de encargos): {currency}",
-      "line_group_s_could_not_be_costed": "· {uncosted_groups} grupo(s) de linhas não puderam ter o custo calculado",
+      "line_group_s_could_not_be_costed": {
+        "one": "· {uncosted_groups} grupo de linhas não pôde ter o custo calculado",
+        "many": "· {uncosted_groups} de grupos de linhas não puderam ter o custo calculado",
+        "other": "· {uncosted_groups} grupos de linhas não puderam ter o custo calculado"
+      },
       "budget": "· orçamento {currency} ·",
       "remaining": "{within_budget} ({currency} restantes)",
       "alignment_with_strategy": "Alinhamento com a estratégia",
@@ -1267,7 +1287,11 @@
       "remove": "Remover",
       "no_required_skills_yet": "Nenhuma habilidade exigida ainda.",
       "next_level_up": "Próximo nível acima",
-      "new_skill_s_raised_unchanged": ": {added} habilidade(s) nova(s), {raised} elevada(s), {unchanged} sem alteração",
+      "new_skill_s_raised_unchanged": {
+        "one": ": {added} habilidade nova, elevadas: {raised}, sem alteração: {unchanged}",
+        "many": ": {added} de habilidades novas, elevadas: {raised}, sem alteração: {unchanged}",
+        "other": ": {added} habilidades novas, elevadas: {raised}, sem alteração: {unchanged}"
+      },
       "new_needs": "Nova: {skill} (exige {min_proficiency})",
       "raised": "Elevada: {skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "Este é o nível mais alto do cargo.",
@@ -1303,7 +1327,11 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills} habilidades ·",
       "suggested_categories": "Categorias sugeridas",
-      "skill_s_have_no_suggestion": "{derivation}. {unsuggested} habilidade(s) não têm sugestão.",
+      "skill_s_have_no_suggestion": {
+        "one": "{derivation}. {unsuggested} habilidade não tem sugestão.",
+        "many": "{derivation}. {unsuggested} de habilidades não têm sugestão.",
+        "other": "{derivation}. {unsuggested} habilidades não têm sugestão."
+      },
       "apply_all": "Aplicar todas as {suggestions}",
       "skill": "Habilidade",
       "suggested": "Sugerida",
@@ -1921,7 +1949,11 @@
     "date": "Data",
     "programmes": "Programas",
     "programmesHint": "ETC financiados por cada programa, mês a mês.",
-    "programmesWithheld": "{count} programa(s) mais pequeno(s) não mostrado(s).",
+    "programmesWithheld": {
+      "one": "{count} programa mais pequeno não mostrado.",
+      "many": "{count} de programas mais pequenos não mostrados.",
+      "other": "{count} programas mais pequenos não mostrados."
+    },
     "noProgrammes": "Sem programas.",
     "fundedFte": "ETC financiados",
     "engagementsEnding": "Vínculos que terminam",
@@ -2471,7 +2503,11 @@
     "variable_basis": "A remuneração variável é calculada sobre",
     "all_known": "Todos os que têm remuneração variável conhecida",
     "recipients_only": "Só os que receberam alguma",
-    "reporting": "Relatório de {years} em {years} ano(s): o primeiro em {first}, o seguinte em {next}",
+    "reporting": {
+      "one": "Relatório a cada {years} ano: o primeiro em {first}, o seguinte em {next}",
+      "many": "Relatório a cada {years} de anos: o primeiro em {first}, o seguinte em {next}",
+      "other": "Relatório a cada {years} anos: o primeiro em {first}, o seguinte em {next}"
+    },
     "no_reporting": "Abaixo do efetivo obrigado a reportar",
     "csv": "Transferir em CSV",
     "gap_note": "Uma disparidade positiva significa que os homens ganham mais; negativa, as mulheres.",

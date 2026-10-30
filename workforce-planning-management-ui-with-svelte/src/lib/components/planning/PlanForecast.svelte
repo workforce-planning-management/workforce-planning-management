@@ -8,7 +8,7 @@
   import { money, PLAN_BASES } from "#lib/api/wpm.js";
   import type { planAlignment, planCost, planForecast } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
-  import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { t, tf, tn, tv } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
@@ -166,7 +166,7 @@
   {#if cost.salary_visible}
     <p data-testid="plan-cost-total">
       {tf("pages.planning.total_annual_incl_on_cost", { on_cost_bp: formatDecimal(cost.assumptions.on_cost_bp / 100, 1), currency: money(cost.total_annual_cost_minor, cost.currency) })}
-      {#if cost.uncosted_groups > 0}<span class="muted">{tf("pages.planning.line_group_s_could_not_be_costed", { uncosted_groups: cost.uncosted_groups })}</span>{/if}
+      {#if cost.uncosted_groups > 0}<span class="muted">{tn("pages.planning.line_group_s_could_not_be_costed", cost.uncosted_groups, { uncosted_groups: cost.uncosted_groups })}</span>{/if}
       {#if cost.affordability}
         {tf("pages.planning.budget", { currency: money(cost.affordability.budget_minor, cost.currency) })}
         <span class:warn={!cost.affordability.within_budget}>

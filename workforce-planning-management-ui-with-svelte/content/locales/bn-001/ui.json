@@ -858,7 +858,10 @@
       "what_the_framework_says": "কাঠামো কী বলে",
       "this_role_lists_no_skills": "এই ভূমিকায় কোনো দক্ষতা তালিকাভুক্ত নেই।",
       "add_another_esco_skill": "আরেকটি ESCO দক্ষতা যোগ করুন",
-      "save_my_skills_change": "আমার দক্ষতা সংরক্ষণ করুন ({changes}টি পরিবর্তন{changes2})",
+      "save_my_skills_change": {
+        "one": "আমার দক্ষতা সংরক্ষণ করুন ({changes}টি পরিবর্তন)",
+        "other": "আমার দক্ষতা সংরক্ষণ করুন ({changes}টি পরিবর্তন)"
+      },
       "other": "অন্যান্য",
       "role_cleared": "ভূমিকা মুছে ফেলা হয়েছে। আপনার ঘোষিত দক্ষতাগুলো থেকে যাবে।",
       "saved": "সংরক্ষিত: {declared}টি ঘোষিত, {removed}টি সরানো হয়েছে।",
@@ -920,7 +923,10 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "আমার দলের আকাঙ্ক্ষা",
-      "direct_report_s_indirect_only_what": "সরাসরি অধস্তন {direct} জন, পরোক্ষ {direct2} জন। প্রত্যেকে তাঁদের ব্যবস্থাপকদের সঙ্গে যা ভাগ করতে বেছে নিয়েছেন কেবল তা-ই।",
+      "direct_report_s_indirect_only_what": {
+        "one": "সরাসরি অধস্তন {direct} জন, পরোক্ষ {direct2} জন। প্রত্যেকে তাঁদের ব্যবস্থাপকদের সঙ্গে যা ভাগ করতে বেছে নিয়েছেন কেবল তা-ই।",
+        "other": "সরাসরি অধস্তন {direct} জন, পরোক্ষ {direct2} জন। প্রত্যেকে তাঁদের ব্যবস্থাপকদের সঙ্গে যা ভাগ করতে বেছে নিয়েছেন কেবল তা-ই।"
+      },
       "nothing_shared": "কিছুই ভাগ করা হয়নি",
       "direct_report": "সরাসরি অধস্তন",
       "indirect_report": "পরোক্ষ অধস্তন",
@@ -991,7 +997,10 @@
       "from": "থেকে",
       "to": "পর্যন্ত",
       "add": "যোগ করুন",
-      "requirement_s_defined": "{requirements}টি প্রয়োজনীয়তা নির্ধারিত।",
+      "requirement_s_defined": {
+        "one": "{requirements}টি প্রয়োজনীয়তা নির্ধারিত।",
+        "other": "{requirements}টি প্রয়োজনীয়তা নির্ধারিত।"
+      },
       "a_worker_s_cpd": "একজন কর্মীর ধারাবাহিক পেশাগত উন্নয়ন",
       "worker": "কর্মী",
       "choose": "বেছে নিন…",
@@ -1056,7 +1065,10 @@
       "coverage": "কভারেজ",
       "level_1": "স্তর ১",
       "nothing_to_show_yet": "এখনও দেখানোর মতো কিছু নেই।",
-      "skill_s_withheld_too_few_people_to": "{withheld_below_floor}টি দক্ষতা গোপন রাখা হয়েছে: কাউকে চিহ্নিত না করে দেখানোর মতো যথেষ্ট লোক নেই।",
+      "skill_s_withheld_too_few_people_to": {
+        "one": "{withheld_below_floor}টি দক্ষতা গোপন রাখা হয়েছে: কাউকে চিহ্নিত না করে দেখানোর মতো যথেষ্ট লোক নেই।",
+        "other": "{withheld_below_floor}টি দক্ষতা গোপন রাখা হয়েছে: কাউকে চিহ্নিত না করে দেখানোর মতো যথেষ্ট লোক নেই।"
+      },
       "kind_practice": "চর্চার সম্প্রদায়",
       "kind_interest": "আগ্রহের সম্প্রদায়",
       "kind_group": "দল"
@@ -1179,7 +1191,10 @@
       "source": "উৎস",
       "annual_cost": "বার্ষিক ব্যয়",
       "total_annual_incl_on_cost": "মোট (বার্ষিক, {on_cost_bp}% অতিরিক্ত ব্যয়সহ): {currency}",
-      "line_group_s_could_not_be_costed": "· {uncosted_groups}টি সারি-গুচ্ছের ব্যয় নির্ণয় করা যায়নি",
+      "line_group_s_could_not_be_costed": {
+        "one": "· {uncosted_groups}টি সারি-গুচ্ছের ব্যয় নির্ণয় করা যায়নি",
+        "other": "· {uncosted_groups}টি সারি-গুচ্ছের ব্যয় নির্ণয় করা যায়নি"
+      },
       "budget": "· বাজেট {currency} ·",
       "remaining": "{within_budget} ({currency} অবশিষ্ট)",
       "alignment_with_strategy": "কৌশলের সঙ্গে সামঞ্জস্য",
@@ -1267,7 +1282,10 @@
       "remove": "সরান",
       "no_required_skills_yet": "এখনও কোনো প্রয়োজনীয় দক্ষতা নেই।",
       "next_level_up": "পরবর্তী উচ্চতর স্তর",
-      "new_skill_s_raised_unchanged": ": {added}টি নতুন দক্ষতা, {raised}টি উন্নীত, {unchanged}টি অপরিবর্তিত",
+      "new_skill_s_raised_unchanged": {
+        "one": ": {added}টি নতুন দক্ষতা, {raised}টি উন্নীত, {unchanged}টি অপরিবর্তিত",
+        "other": ": {added}টি নতুন দক্ষতা, {raised}টি উন্নীত, {unchanged}টি অপরিবর্তিত"
+      },
       "new_needs": "নতুন: {skill} (প্রয়োজন {min_proficiency})",
       "raised": "উন্নীত: {skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "এটি ভূমিকার সর্বোচ্চ স্তর।",
@@ -1303,7 +1321,10 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills}টি দক্ষতা ·",
       "suggested_categories": "প্রস্তাবিত বিভাগ",
-      "skill_s_have_no_suggestion": "{derivation}। {unsuggested}টি দক্ষতার কোনো প্রস্তাব নেই।",
+      "skill_s_have_no_suggestion": {
+        "one": "{derivation}। {unsuggested}টি দক্ষতার কোনো প্রস্তাব নেই।",
+        "other": "{derivation}। {unsuggested}টি দক্ষতার কোনো প্রস্তাব নেই।"
+      },
       "apply_all": "সব {suggestions} প্রয়োগ করুন",
       "skill": "দক্ষতা",
       "suggested": "প্রস্তাবিত",
@@ -1921,7 +1942,10 @@
     "date": "তারিখ",
     "programmes": "কর্মসূচি",
     "programmesHint": "প্রতিটি কর্মসূচির অর্থায়িত পূর্ণকালীন সমতুল্য, মাসে মাসে।",
-    "programmesWithheld": "{count}টি ছোট কর্মসূচি দেখানো হয়নি।",
+    "programmesWithheld": {
+      "one": "{count}টি ছোট কর্মসূচি দেখানো হয়নি।",
+      "other": "{count}টি ছোট কর্মসূচি দেখানো হয়নি।"
+    },
     "noProgrammes": "কোনো কর্মসূচি নেই।",
     "fundedFte": "অর্থায়িত পূর্ণকালীন সমতুল্য",
     "engagementsEnding": "শেষ হওয়া নিয়োগ",
@@ -2471,7 +2495,10 @@
     "variable_basis": "পরিবর্তনশীল বেতন ধরা হয়",
     "all_known": "যাদের পরিবর্তনশীল বেতন জানা সবার",
     "recipients_only": "শুধু যারা কিছু পেয়েছেন",
-    "reporting": "প্রতি {years} বছরে প্রতিবেদন: প্রথম {first}, পরের {next}",
+    "reporting": {
+      "one": "প্রতি {years} বছরে প্রতিবেদন: প্রথম {first}, পরের {next}",
+      "other": "প্রতি {years} বছরে প্রতিবেদন: প্রথম {first}, পরের {next}"
+    },
     "no_reporting": "যে সংখ্যার ওপরে প্রতিবেদন লাগে তার নিচে",
     "csv": "CSV হিসেবে নামান",
     "gap_note": "ইতিবাচক ব্যবধান মানে পুরুষেরা বেশি পান; নেতিবাচক মানে নারীরা।",

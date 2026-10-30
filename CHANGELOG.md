@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — plural rules in the UI (WPM-T374)
+
+`tn(key, count)` chooses a CLDR plural form with `Intl.PluralRules` in the page's locale. The eight "(s)" strings and the English "s" in
+the skills save button are plural groups, with the forms each language needs (six in Arabic and Welsh, four in Russian, one in Chinese),
+machine-translated and unreviewed. **Not done:** about 30 other strings that fill a count. See the UI changelog.
+
 ### Changed — the UI's numbers and dates are in the reader's format (WPM-T375)
 
 Numbers, percentages, FTE and dates in the UI go through one module, `src/lib/locale-format.ts` (`Intl` in the page's locale): "30 Oct

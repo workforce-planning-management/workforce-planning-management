@@ -93,3 +93,58 @@ test("a requirement is corrected with its unit unchanged, and withdrawn only aft
   await expect(page.getByTestId("cpd-requirements")).toHaveCount(0);
   expect(sent[1].method).toBe("DELETE");
 });
+
+// A count chooses its plural form in the page's language (WPM-T374): English "1 requirement", Russian
+// "3 требования" and "5 требований", Arabic its own word for two.
+test.describe("the requirement count's plural form", () => {
+  const requirement = (n: number) => ({
+    pid: `r${n}`,
+    name: `Requirement ${n}`,
+    unit: "hours",
+    required: 30,
+    period_start: "2026-01-01",
+    period_end: "2026-12-31",
+    job_title: null,
+  });
+  async function stubCount(page: Page, count: number) {
+    await signIn(page);
+    await page.route("**/api/proxy/**", (route) =>
+      route.fulfill({
+        status: 404,
+        body: "unstubbed: " + route.request().url(),
+      }),
+    );
+    await page.route("**/api/proxy/workers", (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await page.route("**/api/proxy/cpd/overview", (route) =>
+      route.fulfill({
+        json: {
+          derivation: "",
+          headcount: 0,
+          requirements: [],
+          registrations: { expiring: 0, expired: 0 },
+        },
+      }),
+    );
+    await page.route("**/api/proxy/cpd-requirements", (route) =>
+      route.fulfill({
+        json: Array.from({ length: count }, (_, i) => requirement(i + 1)),
+      }),
+    );
+  }
+
+  for (const [locale, count, text] of [
+    ["en-001", 1, "1 requirement defined."],
+    ["en-001", 3, "3 requirements defined."],
+    ["ru-001", 3, "Задано 3 требования."],
+    ["ru-001", 5, "Задано 5 требований."],
+    ["ar-001", 2, "تم تحديد متطلبَين"],
+  ] as const) {
+    test(`${count} in ${locale}`, async ({ page }) => {
+      await stubCount(page, count);
+      await page.goto(`/${locale}/cpd`);
+      await expect(page.getByText(text)).toBeVisible();
+    });
+  }
+});

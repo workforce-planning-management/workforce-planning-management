@@ -858,7 +858,10 @@
       "what_the_framework_says": "Was das Rahmenwerk sagt",
       "this_role_lists_no_skills": "Diese Rolle nennt keine Fähigkeiten.",
       "add_another_esco_skill": "Weitere ESCO-Fähigkeit hinzufügen",
-      "save_my_skills_change": "Meine Fähigkeiten speichern ({changes} Änderung(en){changes2})",
+      "save_my_skills_change": {
+        "one": "Meine Fähigkeiten speichern ({changes} Änderung)",
+        "other": "Meine Fähigkeiten speichern ({changes} Änderungen)"
+      },
       "other": "Sonstige",
       "role_cleared": "Rolle zurückgesetzt. Die von Ihnen angegebenen Fähigkeiten bleiben erhalten.",
       "saved": "Gespeichert: {declared} angegeben, {removed} entfernt.",
@@ -920,7 +923,10 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "Ziele meines Teams",
-      "direct_report_s_indirect_only_what": "{direct} direkt Unterstellte(r), {direct2} indirekt. Nur das, was jede Person mit ihren Führungskräften teilen wollte.",
+      "direct_report_s_indirect_only_what": {
+        "one": "{direct} direkt unterstellte Person, {direct2} indirekt. Nur das, was jede Person mit ihren Führungskräften teilen wollte.",
+        "other": "{direct} direkt unterstellte Personen, {direct2} indirekt. Nur das, was jede Person mit ihren Führungskräften teilen wollte."
+      },
       "nothing_shared": "nichts geteilt",
       "direct_report": "direkt unterstellt",
       "indirect_report": "indirekt unterstellt",
@@ -991,7 +997,10 @@
       "from": "Von",
       "to": "Bis",
       "add": "Hinzufügen",
-      "requirement_s_defined": "{requirements} Anforderung(en) festgelegt.",
+      "requirement_s_defined": {
+        "one": "{requirements} Anforderung festgelegt.",
+        "other": "{requirements} Anforderungen festgelegt."
+      },
       "a_worker_s_cpd": "Fortbildung einer beschäftigten Person",
       "worker": "Beschäftigte(r)",
       "choose": "Auswählen…",
@@ -1056,7 +1065,10 @@
       "coverage": "Abdeckung",
       "level_1": "Stufe 1",
       "nothing_to_show_yet": "Noch nichts anzuzeigen.",
-      "skill_s_withheld_too_few_people_to": "{withheld_below_floor} Fähigkeit(en) zurückgehalten: zu wenige Personen, um sie ohne Rückschluss auf Einzelne zu zeigen.",
+      "skill_s_withheld_too_few_people_to": {
+        "one": "{withheld_below_floor} Fähigkeit zurückgehalten: zu wenige Personen, um sie ohne Rückschluss auf Einzelne zu zeigen.",
+        "other": "{withheld_below_floor} Fähigkeiten zurückgehalten: zu wenige Personen, um sie ohne Rückschluss auf Einzelne zu zeigen."
+      },
       "kind_practice": "Praxisgemeinschaft",
       "kind_interest": "Interessengemeinschaft",
       "kind_group": "Gruppe"
@@ -1179,7 +1191,10 @@
       "source": "Quelle",
       "annual_cost": "Jährliche Kosten",
       "total_annual_incl_on_cost": "Gesamt (jährlich, inkl. {on_cost_bp} % Nebenkosten): {currency}",
-      "line_group_s_could_not_be_costed": "· {uncosted_groups} Zeilengruppe(n) konnte(n) nicht bewertet werden",
+      "line_group_s_could_not_be_costed": {
+        "one": "· {uncosted_groups} Zeilengruppe konnte nicht bewertet werden",
+        "other": "· {uncosted_groups} Zeilengruppen konnten nicht bewertet werden"
+      },
       "budget": "· Budget {currency} ·",
       "remaining": "{within_budget} ({currency} verbleibend)",
       "alignment_with_strategy": "Abgleich mit der Strategie",
@@ -1267,7 +1282,10 @@
       "remove": "Entfernen",
       "no_required_skills_yet": "Noch keine geforderten Fähigkeiten.",
       "next_level_up": "Nächsthöhere Stufe",
-      "new_skill_s_raised_unchanged": ": {added} neue Fähigkeit(en), {raised} angehoben, {unchanged} unverändert",
+      "new_skill_s_raised_unchanged": {
+        "one": ": {added} neue Fähigkeit, {raised} angehoben, {unchanged} unverändert",
+        "other": ": {added} neue Fähigkeiten, {raised} angehoben, {unchanged} unverändert"
+      },
       "new_needs": "Neu: {skill} (benötigt {min_proficiency})",
       "raised": "Angehoben: {skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "Dies ist die höchste Stufe der Rolle.",
@@ -1303,7 +1321,10 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills} Fähigkeiten ·",
       "suggested_categories": "Vorgeschlagene Kategorien",
-      "skill_s_have_no_suggestion": "{derivation}. Für {unsuggested} Fähigkeit(en) gibt es keinen Vorschlag.",
+      "skill_s_have_no_suggestion": {
+        "one": "{derivation}. Für {unsuggested} Fähigkeit gibt es keinen Vorschlag.",
+        "other": "{derivation}. Für {unsuggested} Fähigkeiten gibt es keinen Vorschlag."
+      },
       "apply_all": "Alle {suggestions} anwenden",
       "skill": "Fähigkeit",
       "suggested": "Vorgeschlagen",
@@ -1921,7 +1942,10 @@
     "date": "Datum",
     "programmes": "Programme",
     "programmesHint": "Von jedem Programm finanzierte VZÄ, Monat für Monat.",
-    "programmesWithheld": "{count} kleinere(s) Programm(e) nicht angezeigt.",
+    "programmesWithheld": {
+      "one": "{count} kleineres Programm nicht angezeigt.",
+      "other": "{count} kleinere Programme nicht angezeigt."
+    },
     "noProgrammes": "Keine Programme.",
     "fundedFte": "Finanzierte VZÄ",
     "engagementsEnding": "Endende Beschäftigungsverhältnisse",
@@ -2471,7 +2495,10 @@
     "variable_basis": "Variable Vergütung bezogen auf",
     "all_known": "Alle, deren variable Vergütung bekannt ist",
     "recipients_only": "Nur diejenigen, die welche erhielten",
-    "reporting": "Bericht alle {years} Jahr(e): erstmals am {first}, nächster am {next}",
+    "reporting": {
+      "one": "Bericht alle {years} Jahr: erstmals am {first}, nächster am {next}",
+      "other": "Bericht alle {years} Jahre: erstmals am {first}, nächster am {next}"
+    },
     "no_reporting": "Unter der Beschäftigtenzahl, ab der berichtet werden muss",
     "csv": "Als CSV herunterladen",
     "gap_note": "Ein positives Gefälle heißt: Männer verdienen mehr; ein negatives: Frauen.",

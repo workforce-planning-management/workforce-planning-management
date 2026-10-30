@@ -858,7 +858,9 @@
       "what_the_framework_says": "框架的说明",
       "this_role_lists_no_skills": "此岗位未列出任何技能。",
       "add_another_esco_skill": "再添加一项 ESCO 技能",
-      "save_my_skills_change": "保存我的技能（{changes} 项更改{changes2}）",
+      "save_my_skills_change": {
+        "other": "保存我的技能（{changes} 项更改）"
+      },
       "other": "其他",
       "role_cleared": "岗位已清除。您已申报的技能予以保留。",
       "saved": "已保存：申报 {declared} 项，移除 {removed} 项。",
@@ -920,7 +922,9 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "我团队的志向",
-      "direct_report_s_indirect_only_what": "直接下属 {direct} 人，间接下属 {direct2} 人。仅显示每个人选择与其上级分享的内容。",
+      "direct_report_s_indirect_only_what": {
+        "other": "直接下属 {direct} 人，间接下属 {direct2} 人。仅显示每个人选择与其上级分享的内容。"
+      },
       "nothing_shared": "未分享任何内容",
       "direct_report": "直接下属",
       "indirect_report": "间接下属",
@@ -991,7 +995,9 @@
       "from": "开始",
       "to": "结束",
       "add": "添加",
-      "requirement_s_defined": "已定义 {requirements} 项要求。",
+      "requirement_s_defined": {
+        "other": "已定义 {requirements} 项要求。"
+      },
       "a_worker_s_cpd": "员工的继续教育",
       "worker": "员工",
       "choose": "请选择…",
@@ -1056,7 +1062,9 @@
       "coverage": "覆盖率",
       "level_1": "1 级",
       "nothing_to_show_yet": "暂无可显示的内容。",
-      "skill_s_withheld_too_few_people_to": "已隐藏 {withheld_below_floor} 项技能：人数太少，显示后可能指向具体某人。",
+      "skill_s_withheld_too_few_people_to": {
+        "other": "已隐藏 {withheld_below_floor} 项技能：人数太少，显示后可能指向具体某人。"
+      },
       "kind_practice": "实践社区",
       "kind_interest": "兴趣社区",
       "kind_group": "小组"
@@ -1179,7 +1187,9 @@
       "source": "来源",
       "annual_cost": "年度成本",
       "total_annual_incl_on_cost": "合计（年度，含 {on_cost_bp}% 附加成本）：{currency}",
-      "line_group_s_could_not_be_costed": "· 有 {uncosted_groups} 个行组无法核算成本",
+      "line_group_s_could_not_be_costed": {
+        "other": "· 有 {uncosted_groups} 个行组无法核算成本"
+      },
       "budget": "· 预算 {currency} ·",
       "remaining": "{within_budget}（剩余 {currency}）",
       "alignment_with_strategy": "与战略的一致性",
@@ -1267,7 +1277,9 @@
       "remove": "移除",
       "no_required_skills_yet": "尚无所需技能。",
       "next_level_up": "上一级",
-      "new_skill_s_raised_unchanged": "：新增技能 {added} 项，提升 {raised} 项，未变 {unchanged} 项",
+      "new_skill_s_raised_unchanged": {
+        "other": "：新增技能 {added} 项，提升 {raised} 项，未变 {unchanged} 项"
+      },
       "new_needs": "新增：{skill}（需要 {min_proficiency}）",
       "raised": "提升：{skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "这是该岗位的最高等级。",
@@ -1303,7 +1315,9 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills} 项技能 ·",
       "suggested_categories": "建议的类别",
-      "skill_s_have_no_suggestion": "{derivation}。有 {unsuggested} 项技能没有建议。",
+      "skill_s_have_no_suggestion": {
+        "other": "{derivation}。有 {unsuggested} 项技能没有建议。"
+      },
       "apply_all": "全部应用（{suggestions}）",
       "skill": "技能",
       "suggested": "建议",
@@ -1921,7 +1935,9 @@
     "date": "日期",
     "programmes": "项目",
     "programmesHint": "各项目资助的全时当量，按月显示。",
-    "programmesWithheld": "另有 {count} 个较小的项目未显示。",
+    "programmesWithheld": {
+      "other": "另有 {count} 个较小的项目未显示。"
+    },
     "noProgrammes": "没有项目。",
     "fundedFte": "资助的全时当量",
     "engagementsEnding": "结束的用工关系",
@@ -2471,7 +2487,9 @@
     "variable_basis": "可变薪酬按以下范围计算",
     "all_known": "所有可变薪酬已知者",
     "recipients_only": "仅领取过可变薪酬者",
-    "reporting": "每 {years} 年报告一次：首次 {first}，下次 {next}",
+    "reporting": {
+      "other": "每 {years} 年报告一次：首次 {first}，下次 {next}"
+    },
     "no_reporting": "低于须报告的人数",
     "csv": "下载 CSV",
     "gap_note": "正差距表示男性薪酬更高；负差距表示女性更高。",

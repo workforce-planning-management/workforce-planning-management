@@ -11,7 +11,7 @@
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { createGroup, groupMembers, groupSkills, listGroups, GROUP_KINDS, type Group } from "#lib/api/wpm.js";
   import { page } from "$app/state";
-  import { t, tf } from "#lib/i18n.svelte.js";
+  import { t, tf, tn } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,
@@ -171,7 +171,7 @@
         pageSize={25}
       />
     {/if}
-    {#if know.withheld_below_floor > 0}<p class="muted">{tf("pages.groups.skill_s_withheld_too_few_people_to", { withheld_below_floor: know.withheld_below_floor })}</p>{/if}
+    {#if know.withheld_below_floor > 0}<p class="muted">{tn("pages.groups.skill_s_withheld_too_few_people_to", know.withheld_below_floor, { withheld_below_floor: know.withheld_below_floor })}</p>{/if}
   </section>
 {/if}
 {/if}

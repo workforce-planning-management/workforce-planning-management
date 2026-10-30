@@ -858,7 +858,10 @@
       "what_the_framework_says": "What the framework says",
       "this_role_lists_no_skills": "This role lists no skills.",
       "add_another_esco_skill": "Add another ESCO skill",
-      "save_my_skills_change": "Save my skills ({changes} change{changes2})",
+      "save_my_skills_change": {
+        "one": "Save my skills ({changes} change)",
+        "other": "Save my skills ({changes} changes)"
+      },
       "other": "Other",
       "role_cleared": "Role cleared. The skills you declared are kept.",
       "saved": "Saved: {declared} declared, {removed} removed.",
@@ -920,7 +923,10 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "My team's aspirations",
-      "direct_report_s_indirect_only_what": "{direct} direct report(s), {direct2} indirect. Only what each person chose to share with their managers.",
+      "direct_report_s_indirect_only_what": {
+        "one": "{direct} direct report, {direct2} indirect. Only what each person chose to share with their managers.",
+        "other": "{direct} direct reports, {direct2} indirect. Only what each person chose to share with their managers."
+      },
       "nothing_shared": "nothing shared",
       "direct_report": "direct report",
       "indirect_report": "indirect report",
@@ -991,7 +997,10 @@
       "from": "From",
       "to": "To",
       "add": "Add",
-      "requirement_s_defined": "{requirements} requirement(s) defined.",
+      "requirement_s_defined": {
+        "one": "{requirements} requirement defined.",
+        "other": "{requirements} requirements defined."
+      },
       "a_worker_s_cpd": "A worker's CPD",
       "worker": "Worker",
       "choose": "Choose…",
@@ -1056,7 +1065,10 @@
       "coverage": "Coverage",
       "level_1": "Level 1",
       "nothing_to_show_yet": "Nothing to show yet.",
-      "skill_s_withheld_too_few_people_to": "{withheld_below_floor} skill(s) withheld: too few people to show without pointing at someone.",
+      "skill_s_withheld_too_few_people_to": {
+        "one": "{withheld_below_floor} skill withheld: too few people to show without pointing at someone.",
+        "other": "{withheld_below_floor} skills withheld: too few people to show without pointing at someone."
+      },
       "kind_practice": "community of practice",
       "kind_interest": "community of interest",
       "kind_group": "group"
@@ -1179,7 +1191,10 @@
       "source": "Source",
       "annual_cost": "Annual cost",
       "total_annual_incl_on_cost": "Total (annual, incl. {on_cost_bp}% on-cost): {currency}",
-      "line_group_s_could_not_be_costed": "· {uncosted_groups} line group(s) could not be costed",
+      "line_group_s_could_not_be_costed": {
+        "one": "· {uncosted_groups} line group could not be costed",
+        "other": "· {uncosted_groups} line groups could not be costed"
+      },
       "budget": "· budget {currency} ·",
       "remaining": "{within_budget} ({currency} remaining)",
       "alignment_with_strategy": "Alignment with strategy",
@@ -1267,7 +1282,10 @@
       "remove": "Remove",
       "no_required_skills_yet": "No required skills yet.",
       "next_level_up": "Next level up",
-      "new_skill_s_raised_unchanged": ": {added} new skill(s), {raised} raised, {unchanged} unchanged",
+      "new_skill_s_raised_unchanged": {
+        "one": ": {added} new skill, {raised} raised, {unchanged} unchanged",
+        "other": ": {added} new skills, {raised} raised, {unchanged} unchanged"
+      },
       "new_needs": "New: {skill} (needs {min_proficiency})",
       "raised": "Raised: {skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "This is the top level of the role.",
@@ -1303,7 +1321,10 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills} skills ·",
       "suggested_categories": "Suggested categories",
-      "skill_s_have_no_suggestion": "{derivation}. {unsuggested} skill(s) have no suggestion.",
+      "skill_s_have_no_suggestion": {
+        "one": "{derivation}. {unsuggested} skill has no suggestion.",
+        "other": "{derivation}. {unsuggested} skills have no suggestion."
+      },
       "apply_all": "Apply all {suggestions}",
       "skill": "Skill",
       "suggested": "Suggested",
@@ -1921,7 +1942,10 @@
     "date": "Date",
     "programmes": "Programmes",
     "programmesHint": "FTE funded by each programme, month by month.",
-    "programmesWithheld": "{count} smaller programme(s) not shown.",
+    "programmesWithheld": {
+      "one": "{count} smaller programme not shown.",
+      "other": "{count} smaller programmes not shown."
+    },
     "noProgrammes": "No programmes.",
     "fundedFte": "Funded FTE",
     "engagementsEnding": "Engagements ending",
@@ -2471,7 +2495,10 @@
     "variable_basis": "Variable pay is taken over",
     "all_known": "Everyone whose variable pay is known",
     "recipients_only": "Only those who received some",
-    "reporting": "Report due every {years} year(s): first on {first}, next on {next}",
+    "reporting": {
+      "one": "Report due every {years} year: first on {first}, next on {next}",
+      "other": "Report due every {years} years: first on {first}, next on {next}"
+    },
     "no_reporting": "Below the headcount that must report",
     "csv": "Download as CSV",
     "gap_note": "A positive gap means men are paid more; a negative one, women.",

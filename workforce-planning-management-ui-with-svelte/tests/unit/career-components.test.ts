@@ -212,7 +212,7 @@ describe("TeamAspirations and GroupsPanel", () => {
       await import("../../src/lib/components/TeamAspirations.svelte");
     render(TeamAspirations, { workerPid: "m" });
     const panel = await screen.findByTestId("team-aspirations");
-    expect(panel.textContent).toContain("1 direct report(s), 1 indirect");
+    expect(panel.textContent).toContain("1 direct report, 1 indirect");
     expect(panel.textContent).toContain("Rust → level 4");
     expect(panel.textContent).toContain("indirect report");
     expect(panel.textContent).toContain("nothing shared");

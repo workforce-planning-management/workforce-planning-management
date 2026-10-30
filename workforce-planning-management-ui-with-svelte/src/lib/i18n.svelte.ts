@@ -88,6 +88,111 @@ export type StringKey = DottedKeys<
   typeof import("../../content/locales/en-001/ui.json")
 >;
 
+/**
+ * The CLDR plural categories, in CLDR's order (WPM-T374). A string that fills a count is a *plural group*: a
+ * catalogue object whose keys are categories, `{"one": "…", "other": "…"}` in English and all six in Arabic.
+ */
+export const PLURAL_CATEGORIES = [
+  "zero",
+  "one",
+  "two",
+  "few",
+  "many",
+  "other",
+] as const;
+export type PluralCategory = (typeof PLURAL_CATEGORIES)[number];
+
+/** The base key of a plural group: `pages.cpd.requirement_s_defined` for `….one` and `….other`. */
+type PluralBase<K> = K extends `${infer B}.other`
+  ? `${B}.one` extends StringKey
+    ? B
+    : never
+  : never;
+export type PluralKey = PluralBase<StringKey>;
+
+function isPluralGroup(node: Nested): boolean {
+  const keys = Object.keys(node);
+  return (
+    keys.includes("other") &&
+    keys.every(
+      (k) =>
+        (PLURAL_CATEGORIES as readonly string[]).includes(k) &&
+        typeof node[k] === "string",
+    )
+  );
+}
+
+function pluralBases(node: Nested, prefix = ""): string[] {
+  const out: string[] = [];
+  for (const [key, value] of Object.entries(node)) {
+    if (typeof value === "string") continue;
+    if (isPluralGroup(value)) out.push(`${prefix}${key}`);
+    else out.push(...pluralBases(value, `${prefix}${key}.`));
+  }
+  return out;
+}
+
+/** Every plural group's base key, from the English catalogue. */
+export const PLURAL_KEYS = pluralBases(
+  files["../../content/locales/en-001/ui.json"] ?? {},
+) as PluralKey[];
+
+/** The plural categories `locale` uses for whole and decimal counts (`Intl.PluralRules`): the forms its file must hold. */
+export function pluralCategories(locale: string): PluralCategory[] {
+  try {
+    const have = new Intl.PluralRules(locale).resolvedOptions()
+      .pluralCategories as string[];
+    return PLURAL_CATEGORIES.filter((c) => have.includes(c));
+  } catch {
+    return ["one", "other"];
+  }
+}
+
+/** The CLDR plural category of `count` in `locale`: "one" for 1 in English, "few" for 3 in Arabic, "other" for anything in Chinese. */
+export function pluralCategory(count: number, locale: string): PluralCategory {
+  try {
+    return new Intl.PluralRules(locale).select(count) as PluralCategory;
+  } catch {
+    return count === 1 ? "one" : "other";
+  }
+}
+
+/**
+ * The form of plural group `key` for `count` in `locale`: the locale's own category, then its `-001` base, then the
+ * group's `other`, and only then English (by English's rules). Pure — unit-testable without a component.
+ */
+export function translatePlural(
+  key: PluralKey,
+  count: number,
+  locale: Locale = current,
+): string {
+  const base = `${locale.split("-")[0]}-001` as Locale;
+  const category = pluralCategory(count, locale);
+  for (const k of [`${key}.${category}`, `${key}.other`]) {
+    const found = STRINGS[locale]?.[k] ?? STRINGS[base]?.[k];
+    if (found !== undefined) return found;
+  }
+  const en = STRINGS[DEFAULT_LOCALE];
+  return (
+    en[`${key}.${pluralCategory(count, DEFAULT_LOCALE)}`] ??
+    en[`${key}.other`] ??
+    key
+  );
+}
+
+/**
+ * Reactive plural translation: `tn("pages.cpd.requirement_s_defined", n, { requirements: n })` picks the CLDR form
+ * for `n` in the page's locale and fills the placeholders (numbers in the page's format). The count is passed in
+ * `params` under the name the string uses; `count` only chooses the form.
+ */
+export function tn(
+  key: PluralKey,
+  count: number,
+  params: Record<string, unknown> = {},
+): string {
+  return fill(translatePlural(key, count, current), params, current);
+}
+
 /** Every translatable key, for the per-locale coverage test. */
 export const STRING_KEYS = Object.keys(STRINGS[DEFAULT_LOCALE]) as StringKey[];
 

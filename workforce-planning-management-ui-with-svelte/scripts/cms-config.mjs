@@ -29,12 +29,37 @@ const label = (name) =>
     .replace(/^./, (c) => c.toUpperCase());
 const q = (s) => JSON.stringify(s);
 
+// A plural group (WPM-T374): an object whose keys are CLDR plural categories, `other` among them. English holds
+// `one` and `other`; Arabic and Welsh need all six, Russian four, Chinese one. The CMS offers every category for
+// every locale, so a translator can fill the ones their language uses (the parity test says which).
+const PLURAL_CATEGORIES = ["zero", "one", "two", "few", "many", "other"];
+const isPluralGroup = (node) =>
+  typeof node === "object" &&
+  "other" in node &&
+  Object.entries(node).every(
+    ([k, v]) => PLURAL_CATEGORIES.includes(k) && typeof v === "string",
+  );
+
 /** Nested object -> Sveltia field list (indented YAML lines). */
 function fields(node, indent) {
   const pad = " ".repeat(indent);
   const out = [];
   for (const [name, value] of Object.entries(node)) {
-    if (typeof value === "string") {
+    if (isPluralGroup(value)) {
+      out.push(
+        `${pad}- name: ${q(name)}`,
+        `${pad}  label: ${q(`${label(name)} (plural forms)`)}`,
+        `${pad}  widget: object`,
+        `${pad}  collapsed: true`,
+        `${pad}  required: false`,
+        `${pad}  i18n: true`,
+        `${pad}  fields:`,
+        ...PLURAL_CATEGORIES.map(
+          (c) =>
+            `${pad}    - { name: ${q(c)}, label: ${q(label(c))}, widget: ${(value.other ?? "").length > 80 ? "text" : "string"}, required: false, i18n: true }`,
+        ),
+      );
+    } else if (typeof value === "string") {
       const widget = value.length > 80 ? "text" : "string";
       out.push(
         `${pad}- { name: ${q(name)}, label: ${q(label(name))}, widget: ${widget}, required: false, i18n: true }`,

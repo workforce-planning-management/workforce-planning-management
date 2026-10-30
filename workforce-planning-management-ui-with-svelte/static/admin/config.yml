@@ -1311,7 +1311,19 @@ collections:
                   - { name: "what_the_framework_says", label: "What_the_framework_says", widget: string, required: false, i18n: true }
                   - { name: "this_role_lists_no_skills", label: "This_role_lists_no_skills", widget: string, required: false, i18n: true }
                   - { name: "add_another_esco_skill", label: "Add_another_esco_skill", widget: string, required: false, i18n: true }
-                  - { name: "save_my_skills_change", label: "Save_my_skills_change", widget: string, required: false, i18n: true }
+                  - name: "save_my_skills_change"
+                    label: "Save_my_skills_change (plural forms)"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "zero", label: "Zero", widget: string, required: false, i18n: true }
+                      - { name: "one", label: "One", widget: string, required: false, i18n: true }
+                      - { name: "two", label: "Two", widget: string, required: false, i18n: true }
+                      - { name: "few", label: "Few", widget: string, required: false, i18n: true }
+                      - { name: "many", label: "Many", widget: string, required: false, i18n: true }
+                      - { name: "other", label: "Other", widget: string, required: false, i18n: true }
                   - { name: "other", label: "Other", widget: string, required: false, i18n: true }
                   - { name: "role_cleared", label: "Role_cleared", widget: string, required: false, i18n: true }
                   - { name: "saved", label: "Saved", widget: string, required: false, i18n: true }
@@ -1398,7 +1410,19 @@ collections:
                 i18n: true
                 fields:
                   - { name: "my_team_s_aspirations", label: "My_team_s_aspirations", widget: string, required: false, i18n: true }
-                  - { name: "direct_report_s_indirect_only_what", label: "Direct_report_s_indirect_only_what", widget: text, required: false, i18n: true }
+                  - name: "direct_report_s_indirect_only_what"
+                    label: "Direct_report_s_indirect_only_what (plural forms)"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "zero", label: "Zero", widget: text, required: false, i18n: true }
+                      - { name: "one", label: "One", widget: text, required: false, i18n: true }
+                      - { name: "two", label: "Two", widget: text, required: false, i18n: true }
+                      - { name: "few", label: "Few", widget: text, required: false, i18n: true }
+                      - { name: "many", label: "Many", widget: text, required: false, i18n: true }
+                      - { name: "other", label: "Other", widget: text, required: false, i18n: true }
                   - { name: "nothing_shared", label: "Nothing_shared", widget: string, required: false, i18n: true }
                   - { name: "direct_report", label: "Direct_report", widget: string, required: false, i18n: true }
                   - { name: "indirect_report", label: "Indirect_report", widget: string, required: false, i18n: true }
@@ -1499,7 +1523,19 @@ collections:
                   - { name: "from", label: "From", widget: string, required: false, i18n: true }
                   - { name: "to", label: "To", widget: string, required: false, i18n: true }
                   - { name: "add", label: "Add", widget: string, required: false, i18n: true }
-                  - { name: "requirement_s_defined", label: "Requirement_s_defined", widget: string, required: false, i18n: true }
+                  - name: "requirement_s_defined"
+                    label: "Requirement_s_defined (plural forms)"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "zero", label: "Zero", widget: string, required: false, i18n: true }
+                      - { name: "one", label: "One", widget: string, required: false, i18n: true }
+                      - { name: "two", label: "Two", widget: string, required: false, i18n: true }
+                      - { name: "few", label: "Few", widget: string, required: false, i18n: true }
+                      - { name: "many", label: "Many", widget: string, required: false, i18n: true }
+                      - { name: "other", label: "Other", widget: string, required: false, i18n: true }
                   - { name: "a_worker_s_cpd", label: "A_worker_s_cpd", widget: string, required: false, i18n: true }
                   - { name: "worker", label: "Worker", widget: string, required: false, i18n: true }
                   - { name: "choose", label: "Choose", widget: string, required: false, i18n: true }
@@ -1584,7 +1620,19 @@ collections:
                   - { name: "coverage", label: "Coverage", widget: string, required: false, i18n: true }
                   - { name: "level_1", label: "Level_1", widget: string, required: false, i18n: true }
                   - { name: "nothing_to_show_yet", label: "Nothing_to_show_yet", widget: string, required: false, i18n: true }
-                  - { name: "skill_s_withheld_too_few_people_to", label: "Skill_s_withheld_too_few_people_to", widget: text, required: false, i18n: true }
+                  - name: "skill_s_withheld_too_few_people_to"
+                    label: "Skill_s_withheld_too_few_people_to (plural forms)"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "zero", label: "Zero", widget: text, required: false, i18n: true }
+                      - { name: "one", label: "One", widget: text, required: false, i18n: true }
+                      - { name: "two", label: "Two", widget: text, required: false, i18n: true }
+                      - { name: "few", label: "Few", widget: text, required: false, i18n: true }
+                      - { name: "many", label: "Many", widget: text, required: false, i18n: true }
+                      - { name: "other", label: "Other", widget: text, required: false, i18n: true }
                   - { name: "kind_practice", label: "Kind_practice", widget: string, required: false, i18n: true }
                   - { name: "kind_interest", label: "Kind_interest", widget: string, required: false, i18n: true }
                   - { name: "kind_group", label: "Kind_group", widget: string, required: false, i18n: true }
@@ -1752,7 +1800,19 @@ collections:
                   - { name: "source", label: "Source", widget: string, required: false, i18n: true }
                   - { name: "annual_cost", label: "Annual_cost", widget: string, required: false, i18n: true }
                   - { name: "total_annual_incl_on_cost", label: "Total_annual_incl_on_cost", widget: string, required: false, i18n: true }
-                  - { name: "line_group_s_could_not_be_costed", label: "Line_group_s_could_not_be_costed", widget: string, required: false, i18n: true }
+                  - name: "line_group_s_could_not_be_costed"
+                    label: "Line_group_s_could_not_be_costed (plural forms)"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "zero", label: "Zero", widget: string, required: false, i18n: true }
+                      - { name: "one", label: "One", widget: string, required: false, i18n: true }
+                      - { name: "two", label: "Two", widget: string, required: false, i18n: true }
+                      - { name: "few", label: "Few", widget: string, required: false, i18n: true }
+                      - { name: "many", label: "Many", widget: string, required: false, i18n: true }
+                      - { name: "other", label: "Other", widget: string, required: false, i18n: true }
                   - { name: "budget", label: "Budget", widget: string, required: false, i18n: true }
                   - { name: "remaining", label: "Remaining", widget: string, required: false, i18n: true }
                   - { name: "alignment_with_strategy", label: "Alignment_with_strategy", widget: string, required: false, i18n: true }
@@ -1850,7 +1910,19 @@ collections:
                   - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
                   - { name: "no_required_skills_yet", label: "No_required_skills_yet", widget: string, required: false, i18n: true }
                   - { name: "next_level_up", label: "Next_level_up", widget: string, required: false, i18n: true }
-                  - { name: "new_skill_s_raised_unchanged", label: "New_skill_s_raised_unchanged", widget: string, required: false, i18n: true }
+                  - name: "new_skill_s_raised_unchanged"
+                    label: "New_skill_s_raised_unchanged (plural forms)"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "zero", label: "Zero", widget: string, required: false, i18n: true }
+                      - { name: "one", label: "One", widget: string, required: false, i18n: true }
+                      - { name: "two", label: "Two", widget: string, required: false, i18n: true }
+                      - { name: "few", label: "Few", widget: string, required: false, i18n: true }
+                      - { name: "many", label: "Many", widget: string, required: false, i18n: true }
+                      - { name: "other", label: "Other", widget: string, required: false, i18n: true }
                   - { name: "new_needs", label: "New_needs", widget: string, required: false, i18n: true }
                   - { name: "raised", label: "Raised", widget: string, required: false, i18n: true }
                   - { name: "this_is_the_top_level_of_the_role", label: "This_is_the_top_level_of_the_role", widget: string, required: false, i18n: true }
@@ -1906,7 +1978,19 @@ collections:
                   - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
                   - { name: "skills", label: "Skills", widget: string, required: false, i18n: true }
                   - { name: "suggested_categories", label: "Suggested_categories", widget: string, required: false, i18n: true }
-                  - { name: "skill_s_have_no_suggestion", label: "Skill_s_have_no_suggestion", widget: string, required: false, i18n: true }
+                  - name: "skill_s_have_no_suggestion"
+                    label: "Skill_s_have_no_suggestion (plural forms)"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "zero", label: "Zero", widget: string, required: false, i18n: true }
+                      - { name: "one", label: "One", widget: string, required: false, i18n: true }
+                      - { name: "two", label: "Two", widget: string, required: false, i18n: true }
+                      - { name: "few", label: "Few", widget: string, required: false, i18n: true }
+                      - { name: "many", label: "Many", widget: string, required: false, i18n: true }
+                      - { name: "other", label: "Other", widget: string, required: false, i18n: true }
                   - { name: "apply_all", label: "Apply_all", widget: string, required: false, i18n: true }
                   - { name: "skill", label: "Skill", widget: string, required: false, i18n: true }
                   - { name: "suggested", label: "Suggested", widget: string, required: false, i18n: true }
@@ -2623,7 +2707,19 @@ collections:
               - { name: "date", label: "Date", widget: string, required: false, i18n: true }
               - { name: "programmes", label: "Programmes", widget: string, required: false, i18n: true }
               - { name: "programmesHint", label: "Programmes Hint", widget: string, required: false, i18n: true }
-              - { name: "programmesWithheld", label: "Programmes Withheld", widget: string, required: false, i18n: true }
+              - name: "programmesWithheld"
+                label: "Programmes Withheld (plural forms)"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "zero", label: "Zero", widget: string, required: false, i18n: true }
+                  - { name: "one", label: "One", widget: string, required: false, i18n: true }
+                  - { name: "two", label: "Two", widget: string, required: false, i18n: true }
+                  - { name: "few", label: "Few", widget: string, required: false, i18n: true }
+                  - { name: "many", label: "Many", widget: string, required: false, i18n: true }
+                  - { name: "other", label: "Other", widget: string, required: false, i18n: true }
               - { name: "noProgrammes", label: "No Programmes", widget: string, required: false, i18n: true }
               - { name: "fundedFte", label: "Funded Fte", widget: string, required: false, i18n: true }
               - { name: "engagementsEnding", label: "Engagements Ending", widget: string, required: false, i18n: true }
@@ -3328,7 +3424,19 @@ collections:
               - { name: "variable_basis", label: "Variable_basis", widget: string, required: false, i18n: true }
               - { name: "all_known", label: "All_known", widget: string, required: false, i18n: true }
               - { name: "recipients_only", label: "Recipients_only", widget: string, required: false, i18n: true }
-              - { name: "reporting", label: "Reporting", widget: string, required: false, i18n: true }
+              - name: "reporting"
+                label: "Reporting (plural forms)"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "zero", label: "Zero", widget: string, required: false, i18n: true }
+                  - { name: "one", label: "One", widget: string, required: false, i18n: true }
+                  - { name: "two", label: "Two", widget: string, required: false, i18n: true }
+                  - { name: "few", label: "Few", widget: string, required: false, i18n: true }
+                  - { name: "many", label: "Many", widget: string, required: false, i18n: true }
+                  - { name: "other", label: "Other", widget: string, required: false, i18n: true }
               - { name: "no_reporting", label: "No_reporting", widget: string, required: false, i18n: true }
               - { name: "csv", label: "Csv", widget: string, required: false, i18n: true }
               - { name: "gap_note", label: "Gap_note", widget: string, required: false, i18n: true }

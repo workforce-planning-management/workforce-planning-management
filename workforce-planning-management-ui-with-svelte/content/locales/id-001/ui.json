@@ -858,7 +858,9 @@
       "what_the_framework_says": "Apa kata kerangka",
       "this_role_lists_no_skills": "Peran ini tidak mencantumkan keterampilan.",
       "add_another_esco_skill": "Tambahkan keterampilan ESCO lain",
-      "save_my_skills_change": "Simpan keterampilan saya ({changes} perubahan{changes2})",
+      "save_my_skills_change": {
+        "other": "Simpan keterampilan saya ({changes} perubahan)"
+      },
       "other": "Lainnya",
       "role_cleared": "Peran dihapus. Keterampilan yang Anda nyatakan tetap disimpan.",
       "saved": "Tersimpan: {declared} dinyatakan, {removed} dihapus.",
@@ -920,7 +922,9 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "Aspirasi tim saya",
-      "direct_report_s_indirect_only_what": "{direct} bawahan langsung, {direct2} tidak langsung. Hanya yang dipilih setiap orang untuk dibagikan kepada atasannya.",
+      "direct_report_s_indirect_only_what": {
+        "other": "{direct} bawahan langsung, {direct2} tidak langsung. Hanya yang dipilih setiap orang untuk dibagikan kepada atasannya."
+      },
       "nothing_shared": "tidak ada yang dibagikan",
       "direct_report": "bawahan langsung",
       "indirect_report": "bawahan tidak langsung",
@@ -991,7 +995,9 @@
       "from": "Dari",
       "to": "Sampai",
       "add": "Tambah",
-      "requirement_s_defined": "{requirements} persyaratan ditetapkan.",
+      "requirement_s_defined": {
+        "other": "{requirements} persyaratan ditetapkan."
+      },
       "a_worker_s_cpd": "Pengembangan profesi seorang pekerja",
       "worker": "Pekerja",
       "choose": "Pilih…",
@@ -1056,7 +1062,9 @@
       "coverage": "Cakupan",
       "level_1": "Tingkat 1",
       "nothing_to_show_yet": "Belum ada yang ditampilkan.",
-      "skill_s_withheld_too_few_people_to": "{withheld_below_floor} keterampilan disembunyikan: terlalu sedikit orang untuk ditampilkan tanpa menunjuk seseorang.",
+      "skill_s_withheld_too_few_people_to": {
+        "other": "{withheld_below_floor} keterampilan disembunyikan: terlalu sedikit orang untuk ditampilkan tanpa menunjuk seseorang."
+      },
       "kind_practice": "komunitas praktik",
       "kind_interest": "komunitas minat",
       "kind_group": "grup"
@@ -1179,7 +1187,9 @@
       "source": "Sumber",
       "annual_cost": "Biaya tahunan",
       "total_annual_incl_on_cost": "Total (tahunan, termasuk biaya tambahan {on_cost_bp}%): {currency}",
-      "line_group_s_could_not_be_costed": "· {uncosted_groups} kelompok baris tidak dapat dihitung biayanya",
+      "line_group_s_could_not_be_costed": {
+        "other": "· {uncosted_groups} kelompok baris tidak dapat dihitung biayanya"
+      },
       "budget": "· anggaran {currency} ·",
       "remaining": "{within_budget} ({currency} tersisa)",
       "alignment_with_strategy": "Keselarasan dengan strategi",
@@ -1267,7 +1277,9 @@
       "remove": "Hapus",
       "no_required_skills_yet": "Belum ada keterampilan yang diperlukan.",
       "next_level_up": "Tingkat berikutnya",
-      "new_skill_s_raised_unchanged": ": {added} keterampilan baru, {raised} dinaikkan, {unchanged} tidak berubah",
+      "new_skill_s_raised_unchanged": {
+        "other": ": {added} keterampilan baru, {raised} dinaikkan, {unchanged} tidak berubah"
+      },
       "new_needs": "Baru: {skill} (membutuhkan {min_proficiency})",
       "raised": "Dinaikkan: {skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "Ini adalah tingkat tertinggi peran tersebut.",
@@ -1303,7 +1315,9 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills} keterampilan ·",
       "suggested_categories": "Kategori yang disarankan",
-      "skill_s_have_no_suggestion": "{derivation}. {unsuggested} keterampilan tidak memiliki saran.",
+      "skill_s_have_no_suggestion": {
+        "other": "{derivation}. {unsuggested} keterampilan tidak memiliki saran."
+      },
       "apply_all": "Terapkan semua {suggestions}",
       "skill": "Keterampilan",
       "suggested": "Disarankan",
@@ -1921,7 +1935,9 @@
     "date": "Tanggal",
     "programmes": "Program",
     "programmesHint": "FTE yang didanai tiap program, bulan demi bulan.",
-    "programmesWithheld": "{count} program yang lebih kecil tidak ditampilkan.",
+    "programmesWithheld": {
+      "other": "{count} program yang lebih kecil tidak ditampilkan."
+    },
     "noProgrammes": "Tidak ada program.",
     "fundedFte": "FTE yang didanai",
     "engagementsEnding": "Keterlibatan yang berakhir",
@@ -2471,7 +2487,9 @@
     "variable_basis": "Gaji variabel dihitung atas",
     "all_known": "Semua yang gaji variabelnya diketahui",
     "recipients_only": "Hanya yang pernah menerimanya",
-    "reporting": "Laporan setiap {years} tahun: pertama {first}, berikutnya {next}",
+    "reporting": {
+      "other": "Laporan setiap {years} tahun: pertama {first}, berikutnya {next}"
+    },
     "no_reporting": "Di bawah jumlah pekerja yang wajib melapor",
     "csv": "Unduh sebagai CSV",
     "gap_note": "Kesenjangan positif berarti pria dibayar lebih; negatif, wanita.",

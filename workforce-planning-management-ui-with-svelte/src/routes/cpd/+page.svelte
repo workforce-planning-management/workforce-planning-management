@@ -25,7 +25,7 @@
     withdrawCpdRequirement,
   } from "#lib/api/wpm.js";
   import { percentWithWorkings } from "#lib/format.js";
-  import { t, tf, tv } from "#lib/i18n.svelte.js";
+  import { t, tf, tn, tv } from "#lib/i18n.svelte.js";
   import type { Worker } from "#lib/api/types.js";
   import CalendarPanel from "#lib/components/CalendarPanel.svelte";
   import DataTable from "#lib/components/DataTable.svelte";
@@ -352,7 +352,7 @@
   <label>{t("pages.cpd.to")} <input type="date" bind:value={reqEnd} required /></label>
   <button type="submit" data-testid="cpd-req-add">{t("pages.cpd.add")}</button>
 </form>
-<p class="muted">{tf("pages.cpd.requirement_s_defined", { requirements: requirements.length })}</p>
+<p class="muted">{tn("pages.cpd.requirement_s_defined", requirements.length, { requirements: requirements.length })}</p>
 {#if requirements.length > 0}
   <h3>{t("pages.cpd.requirements")}</h3>
   <ul class="requirements" data-testid="cpd-requirements">

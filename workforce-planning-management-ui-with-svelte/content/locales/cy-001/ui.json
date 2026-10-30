@@ -858,7 +858,14 @@
       "what_the_framework_says": "Beth mae'r fframwaith yn ei ddweud",
       "this_role_lists_no_skills": "Nid yw'r rôl hon yn rhestru unrhyw sgiliau.",
       "add_another_esco_skill": "Ychwanegu sgil ESCO arall",
-      "save_my_skills_change": "Cadw fy sgiliau ({changes} newid{changes2})",
+      "save_my_skills_change": {
+        "zero": "Cadw fy sgiliau ({changes} newid)",
+        "one": "Cadw fy sgiliau ({changes} newid)",
+        "two": "Cadw fy sgiliau ({changes} newid)",
+        "few": "Cadw fy sgiliau ({changes} newid)",
+        "many": "Cadw fy sgiliau ({changes} newid)",
+        "other": "Cadw fy sgiliau ({changes} newid)"
+      },
       "other": "Arall",
       "role_cleared": "Rôl wedi'i chlirio. Cedwir y sgiliau a ddatganwyd gennych.",
       "saved": "Wedi'i gadw: {declared} wedi'u datgan, {removed} wedi'u dileu.",
@@ -920,7 +927,14 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "Dyheadau fy nhîm",
-      "direct_report_s_indirect_only_what": "{direct} adroddwr uniongyrchol, {direct2} anuniongyrchol. Dim ond yr hyn y dewisodd pob person ei rannu â'u rheolwyr.",
+      "direct_report_s_indirect_only_what": {
+        "zero": "{direct} adroddwr uniongyrchol, {direct2} anuniongyrchol. Dim ond yr hyn y dewisodd pob person ei rannu â'u rheolwyr.",
+        "one": "{direct} adroddwr uniongyrchol, {direct2} anuniongyrchol. Dim ond yr hyn y dewisodd pob person ei rannu â'u rheolwyr.",
+        "two": "{direct} adroddwr uniongyrchol, {direct2} anuniongyrchol. Dim ond yr hyn y dewisodd pob person ei rannu â'u rheolwyr.",
+        "few": "{direct} adroddwr uniongyrchol, {direct2} anuniongyrchol. Dim ond yr hyn y dewisodd pob person ei rannu â'u rheolwyr.",
+        "many": "{direct} adroddwr uniongyrchol, {direct2} anuniongyrchol. Dim ond yr hyn y dewisodd pob person ei rannu â'u rheolwyr.",
+        "other": "{direct} adroddwr uniongyrchol, {direct2} anuniongyrchol. Dim ond yr hyn y dewisodd pob person ei rannu â'u rheolwyr."
+      },
       "nothing_shared": "dim wedi'i rannu",
       "direct_report": "adroddwr uniongyrchol",
       "indirect_report": "adroddwr anuniongyrchol",
@@ -991,7 +1005,14 @@
       "from": "O",
       "to": "I",
       "add": "Ychwanegu",
-      "requirement_s_defined": "{requirements} gofyniad wedi'u diffinio.",
+      "requirement_s_defined": {
+        "zero": "{requirements} gofyniad wedi'u diffinio.",
+        "one": "{requirements} gofyniad wedi'i ddiffinio.",
+        "two": "{requirements} ofyniad wedi'u diffinio.",
+        "few": "{requirements} gofyniad wedi'u diffinio.",
+        "many": "{requirements} gofyniad wedi'u diffinio.",
+        "other": "{requirements} gofyniad wedi'u diffinio."
+      },
       "a_worker_s_cpd": "DPP gweithiwr",
       "worker": "Gweithiwr",
       "choose": "Dewiswch…",
@@ -1056,7 +1077,14 @@
       "coverage": "Cwmpas",
       "level_1": "Lefel 1",
       "nothing_to_show_yet": "Dim i'w ddangos eto.",
-      "skill_s_withheld_too_few_people_to": "{withheld_below_floor} sgil wedi'u cuddio: rhy ychydig o bobl i'w dangos heb dynnu sylw at rywun.",
+      "skill_s_withheld_too_few_people_to": {
+        "zero": "{withheld_below_floor} sgil wedi'u cuddio: rhy ychydig o bobl i'w dangos heb dynnu sylw at rywun.",
+        "one": "{withheld_below_floor} sgil wedi'i chuddio: rhy ychydig o bobl i'w dangos heb dynnu sylw at rywun.",
+        "two": "{withheld_below_floor} sgil wedi'u cuddio: rhy ychydig o bobl i'w dangos heb dynnu sylw at rywun.",
+        "few": "{withheld_below_floor} sgil wedi'u cuddio: rhy ychydig o bobl i'w dangos heb dynnu sylw at rywun.",
+        "many": "{withheld_below_floor} sgil wedi'u cuddio: rhy ychydig o bobl i'w dangos heb dynnu sylw at rywun.",
+        "other": "{withheld_below_floor} sgil wedi'u cuddio: rhy ychydig o bobl i'w dangos heb dynnu sylw at rywun."
+      },
       "kind_practice": "cymuned ymarfer",
       "kind_interest": "cymuned diddordeb",
       "kind_group": "grŵp"
@@ -1179,7 +1207,14 @@
       "source": "Ffynhonnell",
       "annual_cost": "Cost flynyddol",
       "total_annual_incl_on_cost": "Cyfanswm (blynyddol, gan gynnwys cost ychwanegol o {on_cost_bp}%): {currency}",
-      "line_group_s_could_not_be_costed": "· ni ellid costio {uncosted_groups} grŵp llinellau",
+      "line_group_s_could_not_be_costed": {
+        "zero": "· ni ellid costio {uncosted_groups} grŵp llinellau",
+        "one": "· ni ellid costio {uncosted_groups} grŵp llinellau",
+        "two": "· ni ellid costio {uncosted_groups} grŵp llinellau",
+        "few": "· ni ellid costio {uncosted_groups} grŵp llinellau",
+        "many": "· ni ellid costio {uncosted_groups} grŵp llinellau",
+        "other": "· ni ellid costio {uncosted_groups} grŵp llinellau"
+      },
       "budget": "· cyllideb {currency} ·",
       "remaining": "{within_budget} ({currency} yn weddill)",
       "alignment_with_strategy": "Cyd-fynd â strategaeth",
@@ -1267,7 +1302,14 @@
       "remove": "Dileu",
       "no_required_skills_yet": "Dim sgiliau gofynnol eto.",
       "next_level_up": "Y lefel nesaf i fyny",
-      "new_skill_s_raised_unchanged": ": {added} sgil newydd, {raised} wedi'u codi, {unchanged} heb newid",
+      "new_skill_s_raised_unchanged": {
+        "zero": ": {added} sgil newydd, {raised} wedi'u codi, {unchanged} heb newid",
+        "one": ": {added} sgil newydd, {raised} wedi'u codi, {unchanged} heb newid",
+        "two": ": {added} sgil newydd, {raised} wedi'u codi, {unchanged} heb newid",
+        "few": ": {added} sgil newydd, {raised} wedi'u codi, {unchanged} heb newid",
+        "many": ": {added} sgil newydd, {raised} wedi'u codi, {unchanged} heb newid",
+        "other": ": {added} sgil newydd, {raised} wedi'u codi, {unchanged} heb newid"
+      },
       "new_needs": "Newydd: {skill} (angen {min_proficiency})",
       "raised": "Codwyd: {skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "Dyma lefel uchaf y rôl.",
@@ -1303,7 +1345,14 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills} sgil ·",
       "suggested_categories": "Categorïau a awgrymir",
-      "skill_s_have_no_suggestion": "{derivation}. Nid oes awgrym ar gyfer {unsuggested} sgil.",
+      "skill_s_have_no_suggestion": {
+        "zero": "{derivation}. Nid oes awgrym ar gyfer {unsuggested} sgil.",
+        "one": "{derivation}. Nid oes awgrym ar gyfer {unsuggested} sgil.",
+        "two": "{derivation}. Nid oes awgrym ar gyfer {unsuggested} sgil.",
+        "few": "{derivation}. Nid oes awgrym ar gyfer {unsuggested} sgil.",
+        "many": "{derivation}. Nid oes awgrym ar gyfer {unsuggested} sgil.",
+        "other": "{derivation}. Nid oes awgrym ar gyfer {unsuggested} sgil."
+      },
       "apply_all": "Cymhwyso pob {suggestions}",
       "skill": "Sgil",
       "suggested": "Awgrymwyd",
@@ -1921,7 +1970,14 @@
     "date": "Dyddiad",
     "programmes": "Rhaglenni",
     "programmesHint": "Cyfwerth ag amser llawn a ariennir gan bob rhaglen, fesul mis.",
-    "programmesWithheld": "Nid yw {count} o raglenni llai yn cael eu dangos.",
+    "programmesWithheld": {
+      "zero": "Nid yw {count} o raglenni llai yn cael eu dangos.",
+      "one": "Nid yw {count} o raglenni llai yn cael eu dangos.",
+      "two": "Nid yw {count} o raglenni llai yn cael eu dangos.",
+      "few": "Nid yw {count} o raglenni llai yn cael eu dangos.",
+      "many": "Nid yw {count} o raglenni llai yn cael eu dangos.",
+      "other": "Nid yw {count} o raglenni llai yn cael eu dangos."
+    },
     "noProgrammes": "Dim rhaglenni.",
     "fundedFte": "Cyfwerth ag amser llawn a ariennir",
     "engagementsEnding": "Ymgysylltiadau'n dod i ben",
@@ -2471,7 +2527,14 @@
     "variable_basis": "Cymerir tâl newidiol dros",
     "all_known": "Pawb y gwyddys eu tâl newidiol",
     "recipients_only": "Dim ond y rhai a gafodd rywfaint",
-    "reporting": "Adroddiad bob {years} blynedd: y cyntaf ar {first}, y nesaf ar {next}",
+    "reporting": {
+      "zero": "Adroddiad bob {years} mlynedd: y cyntaf ar {first}, y nesaf ar {next}",
+      "one": "Adroddiad bob {years} flwyddyn: y cyntaf ar {first}, y nesaf ar {next}",
+      "two": "Adroddiad bob {years} flynedd: y cyntaf ar {first}, y nesaf ar {next}",
+      "few": "Adroddiad bob {years} blynedd: y cyntaf ar {first}, y nesaf ar {next}",
+      "many": "Adroddiad bob {years} mlynedd: y cyntaf ar {first}, y nesaf ar {next}",
+      "other": "Adroddiad bob {years} mlynedd: y cyntaf ar {first}, y nesaf ar {next}"
+    },
     "no_reporting": "O dan y nifer pennau sy'n gorfod adrodd",
     "csv": "Lawrlwytho fel CSV",
     "gap_note": "Mae bwlch positif yn golygu bod dynion yn cael mwy; un negyddol, menywod.",

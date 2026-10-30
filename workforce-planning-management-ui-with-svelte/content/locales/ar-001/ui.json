@@ -858,7 +858,14 @@
       "what_the_framework_says": "ما يقوله الإطار",
       "this_role_lists_no_skills": "لا يسرد هذا الدور أي مهارات.",
       "add_another_esco_skill": "إضافة مهارة ESCO أخرى",
-      "save_my_skills_change": "حفظ مهاراتي ({changes} تغيير{changes2})",
+      "save_my_skills_change": {
+        "zero": "حفظ مهاراتي ({changes} تغيير)",
+        "one": "حفظ مهاراتي (تغيير واحد: {changes})",
+        "two": "حفظ مهاراتي (تغييران: {changes})",
+        "few": "حفظ مهاراتي ({changes} تغييرات)",
+        "many": "حفظ مهاراتي ({changes} تغييرًا)",
+        "other": "حفظ مهاراتي ({changes} تغيير)"
+      },
       "other": "أخرى",
       "role_cleared": "تم مسح الدور. تبقى المهارات التي صرّحت بها.",
       "saved": "تم الحفظ: {declared} مُصرَّح بها، {removed} أُزيلت.",
@@ -920,7 +927,14 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "طموحات فريقي",
-      "direct_report_s_indirect_only_what": "{direct} مرؤوس مباشر، {direct2} غير مباشر. فقط ما اختار كل شخص مشاركته مع مديريه.",
+      "direct_report_s_indirect_only_what": {
+        "zero": "{direct} مرؤوس مباشر، {direct2} غير مباشر. فقط ما اختار كل شخص مشاركته مع مديريه.",
+        "one": "مرؤوس مباشر واحد ({direct})، {direct2} غير مباشر. فقط ما اختار كل شخص مشاركته مع مديريه.",
+        "two": "مرؤوسان مباشران ({direct})، {direct2} غير مباشر. فقط ما اختار كل شخص مشاركته مع مديريه.",
+        "few": "{direct} مرؤوسين مباشرين، {direct2} غير مباشر. فقط ما اختار كل شخص مشاركته مع مديريه.",
+        "many": "{direct} مرؤوسًا مباشرًا، {direct2} غير مباشر. فقط ما اختار كل شخص مشاركته مع مديريه.",
+        "other": "{direct} مرؤوس مباشر، {direct2} غير مباشر. فقط ما اختار كل شخص مشاركته مع مديريه."
+      },
       "nothing_shared": "لا شيء مشارَك",
       "direct_report": "مرؤوس مباشر",
       "indirect_report": "مرؤوس غير مباشر",
@@ -991,7 +1005,14 @@
       "from": "من",
       "to": "إلى",
       "add": "إضافة",
-      "requirement_s_defined": "تم تحديد {requirements} من المتطلبات.",
+      "requirement_s_defined": {
+        "zero": "لم يُحدَّد أي متطلب ({requirements}).",
+        "one": "تم تحديد متطلب واحد ({requirements}).",
+        "two": "تم تحديد متطلبَين ({requirements}).",
+        "few": "تم تحديد {requirements} متطلبات.",
+        "many": "تم تحديد {requirements} متطلبًا.",
+        "other": "تم تحديد {requirements} متطلب."
+      },
       "a_worker_s_cpd": "التطوير المهني لعامل",
       "worker": "العامل",
       "choose": "اختر…",
@@ -1056,7 +1077,14 @@
       "coverage": "التغطية",
       "level_1": "المستوى 1",
       "nothing_to_show_yet": "لا شيء لعرضه بعد.",
-      "skill_s_withheld_too_few_people_to": "حُجبت {withheld_below_floor} مهارة: عدد الأشخاص قليل جداً بحيث لا يمكن عرضها دون الإشارة إلى شخص بعينه.",
+      "skill_s_withheld_too_few_people_to": {
+        "zero": "لم تُحجب أي مهارة ({withheld_below_floor}).",
+        "one": "حُجبت مهارة واحدة ({withheld_below_floor}): عدد الأشخاص قليل جداً بحيث لا يمكن عرضها دون الإشارة إلى شخص بعينه.",
+        "two": "حُجبت مهارتان ({withheld_below_floor}): عدد الأشخاص قليل جداً بحيث لا يمكن عرضهما دون الإشارة إلى شخص بعينه.",
+        "few": "حُجبت {withheld_below_floor} مهارات: عدد الأشخاص قليل جداً بحيث لا يمكن عرضها دون الإشارة إلى شخص بعينه.",
+        "many": "حُجبت {withheld_below_floor} مهارةً: عدد الأشخاص قليل جداً بحيث لا يمكن عرضها دون الإشارة إلى شخص بعينه.",
+        "other": "حُجبت {withheld_below_floor} مهارة: عدد الأشخاص قليل جداً بحيث لا يمكن عرضها دون الإشارة إلى شخص بعينه."
+      },
       "kind_practice": "مجتمع ممارسة",
       "kind_interest": "مجتمع اهتمام",
       "kind_group": "مجموعة"
@@ -1179,7 +1207,14 @@
       "source": "المصدر",
       "annual_cost": "التكلفة السنوية",
       "total_annual_incl_on_cost": "الإجمالي (سنوي، شاملاً {on_cost_bp}٪ تكلفة إضافية): {currency}",
-      "line_group_s_could_not_be_costed": "· تعذّر تقدير تكلفة {uncosted_groups} من مجموعات الأسطر",
+      "line_group_s_could_not_be_costed": {
+        "zero": "· لا توجد مجموعات أسطر تعذّر تقدير تكلفتها ({uncosted_groups})",
+        "one": "· تعذّر تقدير تكلفة مجموعة أسطر واحدة ({uncosted_groups})",
+        "two": "· تعذّر تقدير تكلفة مجموعتَي أسطر ({uncosted_groups})",
+        "few": "· تعذّر تقدير تكلفة {uncosted_groups} مجموعات أسطر",
+        "many": "· تعذّر تقدير تكلفة {uncosted_groups} مجموعةً من الأسطر",
+        "other": "· تعذّر تقدير تكلفة {uncosted_groups} مجموعة أسطر"
+      },
       "budget": "· الميزانية {currency} ·",
       "remaining": "{within_budget} (المتبقي {currency})",
       "alignment_with_strategy": "المواءمة مع الاستراتيجية",
@@ -1267,7 +1302,14 @@
       "remove": "إزالة",
       "no_required_skills_yet": "لا توجد مهارات مطلوبة بعد.",
       "next_level_up": "المستوى التالي الأعلى",
-      "new_skill_s_raised_unchanged": ": {added} مهارة جديدة، {raised} مرفوعة، {unchanged} دون تغيير",
+      "new_skill_s_raised_unchanged": {
+        "zero": ": لا مهارات جديدة ({added})، {raised} مرفوعة، {unchanged} دون تغيير",
+        "one": ": مهارة جديدة واحدة ({added})، {raised} مرفوعة، {unchanged} دون تغيير",
+        "two": ": مهارتان جديدتان ({added})، {raised} مرفوعة، {unchanged} دون تغيير",
+        "few": ": {added} مهارات جديدة، {raised} مرفوعة، {unchanged} دون تغيير",
+        "many": ": {added} مهارةً جديدةً، {raised} مرفوعة، {unchanged} دون تغيير",
+        "other": ": {added} مهارة جديدة، {raised} مرفوعة، {unchanged} دون تغيير"
+      },
       "new_needs": "جديدة: {skill} (يتطلب {min_proficiency})",
       "raised": "مرفوعة: {skill} {from} ← {to}",
       "this_is_the_top_level_of_the_role": "هذا هو أعلى مستوى للدور.",
@@ -1303,7 +1345,14 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills} مهارة ·",
       "suggested_categories": "الفئات المقترحة",
-      "skill_s_have_no_suggestion": "{derivation}. {unsuggested} مهارة بلا اقتراح.",
+      "skill_s_have_no_suggestion": {
+        "zero": "{derivation}. لا توجد مهارة بلا اقتراح ({unsuggested}).",
+        "one": "{derivation}. مهارة واحدة بلا اقتراح ({unsuggested}).",
+        "two": "{derivation}. مهارتان بلا اقتراح ({unsuggested}).",
+        "few": "{derivation}. {unsuggested} مهارات بلا اقتراح.",
+        "many": "{derivation}. {unsuggested} مهارةً بلا اقتراح.",
+        "other": "{derivation}. {unsuggested} مهارة بلا اقتراح."
+      },
       "apply_all": "تطبيق الكل ({suggestions})",
       "skill": "المهارة",
       "suggested": "مقترحة",
@@ -1921,7 +1970,14 @@
     "date": "التاريخ",
     "programmes": "البرامج",
     "programmesHint": "المكافئ بدوام كامل الذي يموّله كل برنامج، شهرًا بشهر.",
-    "programmesWithheld": "لم يُعرض {count} من البرامج الأصغر.",
+    "programmesWithheld": {
+      "zero": "لا توجد برامج أصغر غير معروضة ({count}).",
+      "one": "لم يُعرض برنامج أصغر واحد ({count}).",
+      "two": "لم يُعرض برنامجان أصغر ({count}).",
+      "few": "لم تُعرض {count} برامج أصغر.",
+      "many": "لم يُعرض {count} برنامجًا أصغر.",
+      "other": "لم يُعرض {count} برنامج أصغر."
+    },
     "noProgrammes": "لا توجد برامج.",
     "fundedFte": "المكافئ بدوام كامل الممول",
     "engagementsEnding": "تعاقدات تنتهي",
@@ -2471,7 +2527,14 @@
     "variable_basis": "يُحسب الأجر المتغير على",
     "all_known": "كل من يُعرف أجره المتغير",
     "recipients_only": "من تلقّى أجرًا متغيرًا فقط",
-    "reporting": "التقرير كل {years} سنة: الأول في {first} والتالي في {next}",
+    "reporting": {
+      "zero": "التقرير كل {years} سنة: الأول في {first} والتالي في {next}",
+      "one": "التقرير كل سنة ({years}): الأول في {first} والتالي في {next}",
+      "two": "التقرير كل سنتين ({years}): الأول في {first} والتالي في {next}",
+      "few": "التقرير كل {years} سنوات: الأول في {first} والتالي في {next}",
+      "many": "التقرير كل {years} سنةً: الأول في {first} والتالي في {next}",
+      "other": "التقرير كل {years} سنة: الأول في {first} والتالي في {next}"
+    },
     "no_reporting": "أقل من عدد العاملين الملزَم بالإبلاغ",
     "csv": "تنزيل بصيغة CSV",
     "gap_note": "الفجوة الموجبة تعني أن الرجال يتقاضون أكثر؛ والسالبة أن النساء كذلك.",

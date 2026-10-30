@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — plural rules (WPM-T374)
+
+`src/lib/i18n.svelte.ts` adds `tn(key, count, params)`: a *plural group* in the catalogue is an object keyed by CLDR category
+(`{"one": "…", "other": "…"}` in English; `zero`, `one`, `two`, `few`, `many`, `other` in Arabic and Welsh), and the form is chosen with
+`Intl.PluralRules` in the page's locale, falling back to the group's `other` before English. Nine strings converted: the eight "(s)" strings
+and the save button in `FrameworkRolePanel`, which appended an English "s" in every language. Every `-001` locale holds exactly the
+categories its language uses (ar, cy 6; ru 4; es, fr, pt 3; bn, de, en, hi, ur 2; id, zh 1), machine-translated and unreviewed. The CMS
+offers all six categories for a plural group. Tests: `tests/unit/plurals.test.ts` (selection in en, ar, ru, cy, zh, id; categories per
+locale; no "(s)" left), the parity test made plural-aware, five Playwright tests (the CPD requirement count in en, ru and ar). **Not done:**
+other strings that fill a count still have one form. **Not verified:** no native speaker has read a form; decimal counts; screenshots.
+
 ### Changed — numbers, percentages and dates in the page's locale (WPM-T375)
 
 One module, `src/lib/locale-format.ts`, on `Intl` with `i18n.locale`: numbers, fixed decimals, percentages, basis points and centi-FTE

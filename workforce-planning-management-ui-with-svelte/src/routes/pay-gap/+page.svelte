@@ -25,7 +25,7 @@
   import JointAssessment from "#lib/components/JointAssessment.svelte";
   import { basisPoints } from "#lib/format.js";
   import { currencyCode as readCurrency } from "#lib/money.js";
-  import { i18n, t, tf } from "#lib/i18n.svelte.js";
+  import { i18n, t, tf, tn } from "#lib/i18n.svelte.js";
 
   const organizations = $derived((page.data.scope ?? []) as string[]);
   let organization = $state("");
@@ -218,7 +218,7 @@
       <p>
         {tf("payRange.currency", { currency: answer.currency ?? "—" })}
         {#if answer.reporting}
-          · <span data-testid="pay-gap-reporting">{tf("payGap.reporting", { years: answer.reporting.every_years, first: formatDate(answer.reporting.first_report_on), next: formatDate(answer.reporting.next_report_on) })}</span>
+          · <span data-testid="pay-gap-reporting">{tn("payGap.reporting", answer.reporting.every_years, { years: answer.reporting.every_years, first: formatDate(answer.reporting.first_report_on), next: formatDate(answer.reporting.next_report_on) })}</span>
         {:else}
           · <span data-testid="pay-gap-reporting">{t("payGap.no_reporting")}</span>
         {/if}

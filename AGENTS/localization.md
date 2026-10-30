@@ -31,12 +31,17 @@ id-001 pt-001 ru-001 ur-001 zh-001`.
 2. Add the **translation to every other `-001` locale**. (A script that loads each
    JSON, sets the nested keys and writes it back with `ensure_ascii=False,
    indent=2` keeps the files consistent; never hand-edit one locale only.)
-3. Use it: `t("area.key")`; for server-derived text with placeholders,
+3. A string that fills a count is a **plural group** (`{"one": "…", "other": "…"}` in English; each
+   `-001` locale holds exactly the CLDR categories its language uses, from
+   `Intl.PluralRules#resolvedOptions`: six in `ar` and `cy`, one in `zh` and `id`;
+   `tests/unit/plurals.test.ts` checks) read with `tn("area.key", count, params)`. Never write "(s)"
+   or append a letter. (WPM-T374)
+4. Use it: `t("area.key")`; for server-derived text with placeholders,
    `tp("insights.<code>.observation", params)` (`{name}` placeholders; returns
    `null` for an unknown code so you can fall back to the server's English).
-4. `pnpm cms-config` to regenerate `static/admin/config.yml` — a unit test fails
+5. `pnpm cms-config` to regenerate `static/admin/config.yml` — a unit test fails
    if it is stale.
-5. `pnpm test` (parity) and Playwright (the locale-switch spec).
+6. `pnpm test` (parity) and Playwright (the locale-switch spec).
 
 The translations were written by an AI assistant and have **not** had a
 native-speaker review — say so if you add more, and do not present them as

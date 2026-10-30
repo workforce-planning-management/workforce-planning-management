@@ -9,7 +9,7 @@
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
-  import { t, tf } from "#lib/i18n.svelte.js";
+  import { t, tf, tn } from "#lib/i18n.svelte.js";
   import {
     clearFrameworkRole,
     frameworkRoleSkills,
@@ -313,7 +313,7 @@
     {/if}
     <p>
       <button type="button" data-testid={`save-${framework}`} disabled={changes.length === 0} onclick={() => void save()}>
-        {tf("comp.frameworkRolePanel.save_my_skills_change", { changes: changes.length, changes2: changes.length === 1 ? "" : "s" })}
+        {tn("comp.frameworkRolePanel.save_my_skills_change", changes.length, { changes: changes.length })}
       </button>
     </p>
   {/if}

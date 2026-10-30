@@ -113,9 +113,25 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   as 1,234,567 fils). A mutation that forced the exponent to 2 failed the yen and KWD specs. **Not done:** the percentages, decimals and
   `toFixed` of row 24 (WPM-T375); the remaining `/ 100` in the UI are basis points, centi-FTE and percentages, not money. **Not tested:**
   a runtime whose `Intl` lacks currency data (the fallback exponent of 2 is reached only there); screenshots were not looked at.
-- [ ] WPM-T374 **Plural rules.** *(WPM-R214, WPM-D143; rows 26, 27)* A `tn(key, count)` that picks a CLDR plural form with
+- [x] (2026-10-30) WPM-T374 **Plural rules.** *(WPM-R214, WPM-D143; rows 26, 27)* A `tn(key, count)` that picks a CLDR plural form with
   `Intl.PluralRules(i18n.locale)`; the 8 "(s)" strings and the English "s" in `FrameworkRolePanel.svelte:315` replaced first; parity and
   CMS config updated for the new keys.
+  **Done (the named strings):** a *plural group* is a catalogue object whose keys are CLDR categories (`zero one two few many other`),
+  `other` among them, so a key `x` is held as `x.one` / `x.other` in English. `src/lib/i18n.svelte.ts` adds `tn(key, count, params)`,
+  `translatePlural`, `pluralCategory`, `pluralCategories` (from `Intl.PluralRules#resolvedOptions`) and `PLURAL_KEYS`; the fallback is
+  the locale's category, its `-001` base, the group's `other`, and only then English by English's rules. The nine strings are plural
+  groups: the eight "(s)" strings (team aspirations, CPD requirements, withheld skills, uncosted line groups, a role step's new skills,
+  unsuggested skills, withheld programmes, the pay-gap reporting interval) and `FrameworkRolePanel`'s "change{changes2}" (the English
+  "s" is gone). Each locale holds exactly the categories its language uses: ar and cy six, ru four (one, few, many, other), es, fr and pt
+  three (one, many, other: CLDR's "many" is for a million and over, "1 000 000 de …"), bn, de, en, hi and ur two, id and zh one;
+  AI-written and unreviewed (`content/locales/REVIEW.md`). The French and Portuguese second counts in two strings became "label: n"
+  so they need no form. The CMS offers all six categories for a plural group in every locale. Tests: `tests/unit/plurals.test.ts`
+  (selection in en, ar, ru, cy, zh and id, a regional locale using its language's forms, no "(s)" left in English, and every plural
+  group in every `-001` locale holding exactly its language's categories); the parity test checks plural groups there instead of key
+  for key; Playwright: the CPD requirement count in English (1, 3), Russian (3, 5) and Arabic (2). **Not done:** the other strings that
+  fill a count ("{n} people", "{days} calendar days" and about 30 more) still have one form; only the count that chooses the form is
+  agreed in a string with two counts. **Not tested:** decimal counts (the "other" form of ru, the "few" of some languages for
+  fractions); a native speaker has not read any form.
 - [x] (2026-10-30) WPM-T375 **Dates and numbers through the page's locale.** *(WPM-R214, WPM-D143; rows 10, 11, 24)* One date, date-time, number and
   percent helper on `Intl` with `i18n.locale`, used for raw ISO dates, `toFixed`, hand-made percentages, `toLocale*([])` and the numbers
   `tf`/`tp` put into strings; the English "now" in `CareerHistory.svelte` becomes a key.
@@ -365,8 +381,8 @@ through `rules::duplicates`.
 | 23 | Numbers | UI `ExpenseClaimView.svelte:107,211` (`Number(amount)`), `pay-scales/+page.svelte:85` | A decimal comma ("12,50") is not a number | **Gap** for de, fr, es, pt, ru, id and others. **Fixed 2026-10-30** for amounts (`parseAmount`) | T376 |
 | 24 | Numbers | UI `src/lib/format.ts:23,66,75,85`, `CapacityHeatmap.svelte:31`, `PlanForecast.svelte:45,58,68,167-172`; `src/lib/i18n.svelte.ts` (`tf`, `tp` use `String(n)`) | Percentages and decimals by hand (`toFixed`, a `.` and `%`); `money()` without a locale; numbers in strings are not localized, so Bengali digits from `Intl` and ASCII digits mix on a page | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`), bare counts in markup in part | T375 |
 | 25 | Numbers | UI `src/lib/components/LoadMore.svelte:23`, `src/routes/pay-gap/+page.svelte:127` | `Intl.NumberFormat(i18n.locale)` | **Right** | — |
-| 26 | Plurals | UI `src/lib/i18n.svelte.ts`; `content/locales/REVIEW.md:50-51` | No `Intl.PluralRules`; 8 en-001 strings use "(s)"; about 40 strings fill a count | **Gap**: Arabic, Russian, Welsh and others have more than two forms | T374 |
-| 27 | Plurals | UI `src/lib/components/FrameworkRolePanel.svelte:315` | `changes2: changes.length === 1 ? "" : "s"` appends an English "s" in every locale | **Gap (a bug)** | T374 |
+| 26 | Plurals | UI `src/lib/i18n.svelte.ts`; `content/locales/REVIEW.md:50-51` | No `Intl.PluralRules`; 8 en-001 strings use "(s)"; about 40 strings fill a count | **Gap**: Arabic, Russian, Welsh and others have more than two forms. **Fixed 2026-10-30** for the 8 "(s)" strings (`tn`); the other count strings remain | T374 |
+| 27 | Plurals | UI `src/lib/components/FrameworkRolePanel.svelte:315` | `changes2: changes.length === 1 ? "" : "s"` appends an English "s" in every locale | **Gap (a bug)**. **Fixed 2026-10-30** (`tn`) | T374 |
 | 28 | Right-to-left | UI `src/hooks.server.ts:64-65`, `src/routes/+layout.svelte:200-201`, `src/lib/locales.ts` (`RTL_LANGUAGES = ["ar", "ur"]`) | `dir` set on the server and the client for `ar-001` and `ur-001`; an end-to-end test covers `ar` only | **Right**; `ur` untested | T377 |
 | 29 | Right-to-left | UI `src/app.css:128,182,191-206`, `CalendarPanel.svelte:203-204`, `src/routes/+page.svelte:369` | 11 physical declarations (against 27 logical); `text-align: left` on every table cell | **Gap** | T377 |
 | 30 | Right-to-left | UI `TimeOffPanel.svelte:90`, `OnCall.svelte:59`, `metrics/+page.svelte:74` (and about 12 more, plus 8 catalogue strings) | A literal "→" between the ends of a range points the wrong way in `ar` and `ur` | **Gap** | T377 |
@@ -392,5 +408,5 @@ through `rules::duplicates`.
 ## Not done
 
 Nothing is implemented here (T367 audit, T368 design, T371 check). This is the requirement, the decisions, the tasks, the audit (T367)
-and the equity check (T371). Since 2026-10-30 the UI's money (T373, T376), its numbers and dates (T375) and the pure-core checks of T369 are code; their entries
+and the equity check (T371). Since 2026-10-30 the UI's money (T373, T376), its numbers and dates (T375), its plural rules (T374) and the pure-core checks of T369 are code; their entries
 above say what each did and did not do.

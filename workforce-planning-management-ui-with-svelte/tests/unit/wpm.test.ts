@@ -9,6 +9,7 @@ import {
   LOCALES,
   STRING_KEYS,
   STRINGS_BY_LOCALE,
+  PLURAL_KEYS,
   i18n,
   tp,
   isRtl,
@@ -32,15 +33,20 @@ describe("i18n", () => {
   it("covers every key in every locale (parity)", () => {
     for (const locale of LOCALES) {
       const table = STRINGS_BY_LOCALE[locale];
+      // A plural group's forms differ by language (WPM-T374): they are checked below, not here.
+      const plain = (keys: readonly string[]) =>
+        keys.filter((k) => !PLURAL_KEYS.some((b) => k.startsWith(`${b}.`)));
       if (locale.endsWith("-001")) {
-        for (const key of STRING_KEYS) {
+        for (const key of plain(STRING_KEYS)) {
           expect(table[key], `${locale} missing ${key}`).toBeTruthy();
         }
-        expect(Object.keys(table).sort()).toEqual([...STRING_KEYS].sort());
+        expect(plain(Object.keys(table)).sort()).toEqual(
+          plain(STRING_KEYS).sort(),
+        );
       } else {
         // A regional locale (en-gb, es-es, …) holds only its overrides of
         // the language's -001 base; it must not invent keys.
-        for (const key of Object.keys(table)) {
+        for (const key of plain(Object.keys(table))) {
           expect(STRING_KEYS, `${locale} has stray ${key}`).toContain(key);
         }
       }

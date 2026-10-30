@@ -24,7 +24,7 @@
     type ProgrammeRollup,
     type Withheld,
   } from "#lib/api/wpm.js";
-  import { l, t, tf, tv } from "#lib/i18n.svelte.js";
+  import { l, t, tf, tn, tv } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
@@ -329,7 +329,7 @@
       <p class="muted">{t("contingent.programmesHint")}</p>
       {#if rollup.withheld_programmes > 0}
         <p class="muted" data-testid="programmes-withheld">
-          {tf("contingent.programmesWithheld", { count: rollup.withheld_programmes })}
+          {tn("contingent.programmesWithheld", rollup.withheld_programmes, { count: rollup.withheld_programmes })}
         </p>
       {/if}
       {#if rollup.programmes.length === 0}

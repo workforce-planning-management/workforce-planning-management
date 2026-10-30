@@ -858,7 +858,10 @@
       "what_the_framework_says": "ढाँचा क्या कहता है",
       "this_role_lists_no_skills": "इस भूमिका में कोई कौशल सूचीबद्ध नहीं है।",
       "add_another_esco_skill": "एक और ESCO कौशल जोड़ें",
-      "save_my_skills_change": "मेरे कौशल सहेजें ({changes} बदलाव{changes2})",
+      "save_my_skills_change": {
+        "one": "मेरे कौशल सहेजें ({changes} बदलाव)",
+        "other": "मेरे कौशल सहेजें ({changes} बदलाव)"
+      },
       "other": "अन्य",
       "role_cleared": "भूमिका साफ़ की गई। आपके घोषित कौशल बने रहेंगे।",
       "saved": "सहेजा गया: {declared} घोषित, {removed} हटाए गए।",
@@ -920,7 +923,10 @@
     },
     "teamAspirations": {
       "my_team_s_aspirations": "मेरी टीम की आकांक्षाएँ",
-      "direct_report_s_indirect_only_what": "{direct} प्रत्यक्ष अधीनस्थ, {direct2} अप्रत्यक्ष। केवल वही जो हर व्यक्ति ने अपने प्रबंधकों के साथ साझा करना चुना।",
+      "direct_report_s_indirect_only_what": {
+        "one": "{direct} प्रत्यक्ष अधीनस्थ, {direct2} अप्रत्यक्ष। केवल वही जो हर व्यक्ति ने अपने प्रबंधकों के साथ साझा करना चुना।",
+        "other": "{direct} प्रत्यक्ष अधीनस्थ, {direct2} अप्रत्यक्ष। केवल वही जो हर व्यक्ति ने अपने प्रबंधकों के साथ साझा करना चुना।"
+      },
       "nothing_shared": "कुछ साझा नहीं किया गया",
       "direct_report": "प्रत्यक्ष अधीनस्थ",
       "indirect_report": "अप्रत्यक्ष अधीनस्थ",
@@ -991,7 +997,10 @@
       "from": "से",
       "to": "तक",
       "add": "जोड़ें",
-      "requirement_s_defined": "{requirements} आवश्यकताएँ तय हैं।",
+      "requirement_s_defined": {
+        "one": "{requirements} आवश्यकता तय है।",
+        "other": "{requirements} आवश्यकताएँ तय हैं।"
+      },
       "a_worker_s_cpd": "कर्मचारी का सतत व्यावसायिक विकास",
       "worker": "कर्मचारी",
       "choose": "चुनें…",
@@ -1056,7 +1065,10 @@
       "coverage": "कवरेज",
       "level_1": "स्तर 1",
       "nothing_to_show_yet": "अभी दिखाने के लिए कुछ नहीं।",
-      "skill_s_withheld_too_few_people_to": "{withheld_below_floor} कौशल रोके गए: किसी की ओर इशारा किए बिना दिखाने के लिए बहुत कम लोग हैं।",
+      "skill_s_withheld_too_few_people_to": {
+        "one": "{withheld_below_floor} कौशल रोका गया: किसी की ओर इशारा किए बिना दिखाने के लिए बहुत कम लोग हैं।",
+        "other": "{withheld_below_floor} कौशल रोके गए: किसी की ओर इशारा किए बिना दिखाने के लिए बहुत कम लोग हैं।"
+      },
       "kind_practice": "अभ्यास का समुदाय",
       "kind_interest": "रुचि का समुदाय",
       "kind_group": "समूह"
@@ -1179,7 +1191,10 @@
       "source": "स्रोत",
       "annual_cost": "वार्षिक लागत",
       "total_annual_incl_on_cost": "कुल (वार्षिक, {on_cost_bp}% अतिरिक्त खर्च सहित): {currency}",
-      "line_group_s_could_not_be_costed": "· {uncosted_groups} पंक्ति-समूहों की लागत नहीं निकाली जा सकी",
+      "line_group_s_could_not_be_costed": {
+        "one": "· {uncosted_groups} पंक्ति-समूह की लागत नहीं निकाली जा सकी",
+        "other": "· {uncosted_groups} पंक्ति-समूहों की लागत नहीं निकाली जा सकी"
+      },
       "budget": "· बजट {currency} ·",
       "remaining": "{within_budget} ({currency} शेष)",
       "alignment_with_strategy": "रणनीति से तालमेल",
@@ -1267,7 +1282,10 @@
       "remove": "हटाएँ",
       "no_required_skills_yet": "अभी कोई आवश्यक कौशल नहीं।",
       "next_level_up": "अगला ऊँचा स्तर",
-      "new_skill_s_raised_unchanged": ": {added} नए कौशल, {raised} ऊँचे किए गए, {unchanged} अपरिवर्तित",
+      "new_skill_s_raised_unchanged": {
+        "one": ": {added} नया कौशल, {raised} ऊँचे किए गए, {unchanged} अपरिवर्तित",
+        "other": ": {added} नए कौशल, {raised} ऊँचे किए गए, {unchanged} अपरिवर्तित"
+      },
       "new_needs": "नया: {skill} (आवश्यक {min_proficiency})",
       "raised": "ऊँचा किया गया: {skill} {from} → {to}",
       "this_is_the_top_level_of_the_role": "यह भूमिका का सर्वोच्च स्तर है।",
@@ -1303,7 +1321,10 @@
       "page_title": "{skills} — WPM",
       "skills": "{skills} कौशल ·",
       "suggested_categories": "सुझाई गई श्रेणियाँ",
-      "skill_s_have_no_suggestion": "{derivation}। {unsuggested} कौशलों के लिए कोई सुझाव नहीं है।",
+      "skill_s_have_no_suggestion": {
+        "one": "{derivation}। {unsuggested} कौशल के लिए कोई सुझाव नहीं है।",
+        "other": "{derivation}। {unsuggested} कौशलों के लिए कोई सुझाव नहीं है।"
+      },
       "apply_all": "सभी {suggestions} लागू करें",
       "skill": "कौशल",
       "suggested": "सुझाया गया",
@@ -1921,7 +1942,10 @@
     "date": "तिथि",
     "programmes": "कार्यक्रम",
     "programmesHint": "हर कार्यक्रम द्वारा वित्तपोषित पूर्णकालिक समतुल्य, महीने दर महीने।",
-    "programmesWithheld": "{count} छोटे कार्यक्रम नहीं दिखाए गए।",
+    "programmesWithheld": {
+      "one": "{count} छोटा कार्यक्रम नहीं दिखाया गया।",
+      "other": "{count} छोटे कार्यक्रम नहीं दिखाए गए।"
+    },
     "noProgrammes": "कोई कार्यक्रम नहीं।",
     "fundedFte": "वित्तपोषित पूर्णकालिक समतुल्य",
     "engagementsEnding": "समाप्त होती नियुक्तियाँ",
@@ -2471,7 +2495,10 @@
     "variable_basis": "परिवर्तनशील वेतन किन पर लिया जाए",
     "all_known": "जिनका परिवर्तनशील वेतन ज्ञात है वे सभी",
     "recipients_only": "केवल वे जिन्हें कुछ मिला",
-    "reporting": "हर {years} वर्ष पर रिपोर्ट: पहली {first} को, अगली {next} को",
+    "reporting": {
+      "one": "हर {years} वर्ष पर रिपोर्ट: पहली {first} को, अगली {next} को",
+      "other": "हर {years} वर्ष पर रिपोर्ट: पहली {first} को, अगली {next} को"
+    },
     "no_reporting": "रिपोर्ट करने की अनिवार्य संख्या से कम",
     "csv": "CSV के रूप में डाउनलोड करें",
     "gap_note": "धनात्मक अंतर का अर्थ पुरुषों को अधिक वेतन; ऋणात्मक का अर्थ महिलाओं को।",
