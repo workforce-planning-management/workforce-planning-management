@@ -70,14 +70,78 @@ pub(super) struct PeerDemandPayload {
     pool_pid: Uuid,
     programme_ref: String,
     month: NaiveDate,
+    /// The figure, in hundredths of an FTE; `0` withdraws the peer's claim (WPM-D146).
     fte_centi: i64,
     /// The peer's id for the event that carried this figure; the same id again changes nothing.
     peer_event_id: String,
+    /// When the peer sent the event (RFC 3339). Optional; when it and the last applied event both carry one, an older event is ignored.
+    #[serde(default)]
+    sent_at: Option<chrono::DateTime<chrono::FixedOffset>>,
+}
+
+/// Write what [`rules::peer_demand_outcome`] decided: a new claim, or the existing one changed. Returns the row and whether it had been
+/// active before.
+async fn write_peer_claim(
+    txn: &sea_orm::DatabaseTransaction,
+    pool: &skill_pools::Model,
+    payload: &PeerDemandPayload,
+    event: &str,
+    sent_at: Option<chrono::DateTime<Utc>>,
+    existing: Option<programme_demands::Model>,
+    outcome: rules::PeerDemandOutcome,
+) -> Result<(programme_demands::Model, bool)> {
+    let now: chrono::DateTime<chrono::FixedOffset> = Utc::now().into();
+    if let Some(row) = existing {
+        let was_active = row.status == "active";
+        let mut active = row.into_active_model();
+        match outcome {
+            rules::PeerDemandOutcome::Withdrawn => {
+                // The last figure is kept (the column refuses zero); the claim is closed and stops counting.
+                active.status = ActiveValue::set("closed".to_string());
+                active.peer_withdrawn_at = ActiveValue::set(Some(now));
+            }
+            rules::PeerDemandOutcome::Reopened => {
+                active.fte_centi = ActiveValue::set(payload.fte_centi);
+                active.status = ActiveValue::set("proposed".to_string());
+                active.peer_withdrawn_at = ActiveValue::set(None);
+            }
+            rules::PeerDemandOutcome::Updated => {
+                active.fte_centi = ActiveValue::set(payload.fte_centi);
+            }
+            _ => {}
+        }
+        active.peer_event_id = ActiveValue::set(Some(event.to_string()));
+        active.received_at = ActiveValue::set(Some(now));
+        if sent_at.is_some() {
+            active.peer_sent_at = ActiveValue::set(payload.sent_at);
+        }
+        return Ok((active.update(txn).await?, was_active));
+    }
+    let row = programme_demands::ActiveModel {
+        pid: ActiveValue::set(Uuid::new_v4()),
+        programme_ref: ActiveValue::set(payload.programme_ref.clone()),
+        pool_pid: ActiveValue::set(pool.pid),
+        month: ActiveValue::set(payload.month),
+        fte_centi: ActiveValue::set(payload.fte_centi),
+        status: ActiveValue::set("proposed".to_string()),
+        source: ActiveValue::set("ppm".to_string()),
+        peer_event_id: ActiveValue::set(Some(event.to_string())),
+        received_at: ActiveValue::set(Some(now)),
+        peer_sent_at: ActiveValue::set(payload.sent_at),
+        deleted_at: ActiveValue::set(None),
+        ..Default::default()
+    }
+    .insert(txn)
+    .await?;
+    Ok((row, false))
 }
 
 /// `POST /api/capacity/peer-demand` — take a programme's demand on a linked pool for a month from the peer. It is stored as a claim with
 /// source `ppm`, `proposed` (a claim becomes active only through a start decision, WPM-D50), beside any claim entered here and never
-/// added to it. A pool that is not linked refuses it. **The route is WPM's own to define; the peer has not been read to call it.**
+/// added to it. A pool that is not linked refuses it. **`fte_centi: 0` withdraws the claim** (WPM-R215, WPM-D146): it is `closed` and
+/// marked withdrawn by the peer, an active one stops counting, and the start decision that activated it is kept as it was; zero for a
+/// claim that does not exist changes nothing and says so. An event older (`sent_at`) than the last one applied is ignored. The answer
+/// says what happened (`outcome`, [`rules::PeerDemandOutcome`]).
 #[debug_handler]
 pub(super) async fn receive_peer_demand(
     State(ctx): State<AppContext>,
@@ -99,7 +163,8 @@ pub(super) async fn receive_peer_demand(
     }
     ensure_valid(&problems)?;
     rules::validate_month(payload.month).map_err(|e| unprocessable(&e))?;
-    rules::validate_fte_centi(payload.fte_centi).map_err(|e| unprocessable(&e))?;
+    rules::validate_peer_fte_centi(payload.fte_centi).map_err(|e| unprocessable(&e))?;
+    let sent_at = payload.sent_at.map(|t| t.with_timezone(&Utc));
     let pool = live_pool(&ctx, &caller, &payload.pool_pid.to_string()).await?;
     if pool.peer_pool_ref.is_none() {
         return Err(unprocessable(
@@ -112,7 +177,9 @@ pub(super) async fn receive_peer_demand(
         .one(&ctx.db)
         .await?;
     if let Some(row) = repeated {
-        return format::json(json!({ "pid": row.pid, "duplicate": true }));
+        return format::json(json!({
+            "pid": row.pid, "duplicate": true, "outcome": "duplicate", "status": row.status,
+        }));
     }
     let existing = programme_demands::Entity::find()
         .filter(programme_demands::Column::ProgrammeRef.eq(&payload.programme_ref))
@@ -122,41 +189,47 @@ pub(super) async fn receive_peer_demand(
         .filter(programme_demands::Column::DeletedAt.is_null())
         .one(&ctx.db)
         .await?;
+    let outcome = rules::peer_demand_outcome(
+        payload.fte_centi,
+        sent_at,
+        existing.as_ref().map(|row| rules::PeerClaim {
+            withdrawn: row.status == "closed",
+            last_sent_at: row.peer_sent_at.map(|t| t.with_timezone(&Utc)),
+        }),
+    );
+    if !outcome.writes() {
+        return format::json(json!({
+            "pid": existing.as_ref().map(|row| row.pid),
+            "duplicate": false,
+            "outcome": outcome.as_str(),
+            "status": existing.as_ref().map(|row| row.status.clone()),
+        }));
+    }
     let txn = ctx.db.begin().await?;
-    let row = if let Some(row) = existing {
-        let mut active = row.into_active_model();
-        active.fte_centi = ActiveValue::set(payload.fte_centi);
-        active.peer_event_id = ActiveValue::set(Some(event.to_string()));
-        active.received_at = ActiveValue::set(Some(Utc::now().into()));
-        active.update(&txn).await?
-    } else {
-        programme_demands::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            programme_ref: ActiveValue::set(payload.programme_ref.clone()),
-            pool_pid: ActiveValue::set(pool.pid),
-            month: ActiveValue::set(payload.month),
-            fte_centi: ActiveValue::set(payload.fte_centi),
-            status: ActiveValue::set("proposed".to_string()),
-            source: ActiveValue::set("ppm".to_string()),
-            peer_event_id: ActiveValue::set(Some(event.to_string())),
-            received_at: ActiveValue::set(Some(Utc::now().into())),
-            deleted_at: ActiveValue::set(None),
-            ..Default::default()
+    let (row, was_active) =
+        write_peer_claim(&txn, &pool, &payload, event, sent_at, existing, outcome).await?;
+    let action = match outcome {
+        rules::PeerDemandOutcome::Withdrawn | rules::PeerDemandOutcome::AlreadyWithdrawn => {
+            "peer_demand_withdrawn"
         }
-        .insert(&txn)
-        .await?
+        _ => "peer_demand_received",
     };
+    // The audit entry says whether a withdrawn claim had been active; no figure.
+    let snapshot = (outcome == rules::PeerDemandOutcome::Withdrawn)
+        .then(|| json!({ "was_active": was_active }));
     Audit::record(
         &txn,
         "programme_demand",
         row.pid,
-        "peer_demand_received",
+        action,
         caller.actor(),
-        None,
+        snapshot,
     )
     .await?;
     txn.commit().await?;
-    format::json(json!({ "pid": row.pid, "duplicate": false }))
+    format::json(json!({
+        "pid": row.pid, "duplicate": false, "outcome": outcome.as_str(), "status": row.status,
+    }))
 }
 
 /// Query for `GET /api/capacity/peer-supply`.

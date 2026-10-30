@@ -15,7 +15,7 @@
 //! It answers a capacity question only. Scheduling the work belongs to
 //! project-portfolio-management (WPM-D55).
 
-use chrono::{Datelike, Months, NaiveDate};
+use chrono::{DateTime, Datelike, Months, NaiveDate, Utc};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
@@ -1117,6 +1117,102 @@ pub fn peer_supply(supply_centi: &[i64], workers: &[usize], floor: usize) -> Vec
         .collect()
 }
 
+/// What a figure received from the peer does to the `ppm` claim for its (pool, programme, month) (WPM-D146). A repeat of an event id
+/// already applied is caught before this (it changes nothing), so this rule sees only a new event.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PeerDemandOutcome {
+    /// A figure above zero and no claim yet: a new `proposed` claim.
+    Recorded,
+    /// A figure above zero for a live claim: the figure changes, the status (proposed or active) does not.
+    Updated,
+    /// A figure above zero for a claim the peer had withdrawn: it is `proposed` again, so it counts only after a new start decision.
+    Reopened,
+    /// Zero for a live claim: the claim is `closed`, marked withdrawn by the peer. An active claim stops counting; the start decision
+    /// that activated it is kept as it was.
+    Withdrawn,
+    /// Zero for a claim already withdrawn: nothing changes but the last event remembered.
+    AlreadyWithdrawn,
+    /// Zero and no claim: nothing to withdraw, and nothing is stored.
+    NothingToWithdraw,
+    /// The event was sent before the last one applied to the claim: ignored, nothing changes.
+    Stale,
+}
+
+impl PeerDemandOutcome {
+    /// The token the route answers with.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Recorded => "recorded",
+            Self::Updated => "updated",
+            Self::Reopened => "reopened",
+            Self::Withdrawn => "withdrawn",
+            Self::AlreadyWithdrawn => "already_withdrawn",
+            Self::NothingToWithdraw => "nothing_to_withdraw",
+            Self::Stale => "stale",
+        }
+    }
+
+    /// Whether the claim row is written (an outcome that changes nothing writes nothing and is not audited).
+    #[must_use]
+    pub const fn writes(self) -> bool {
+        !matches!(self, Self::NothingToWithdraw | Self::Stale)
+    }
+}
+
+/// The `ppm` claim a received figure lands on, as far as [`peer_demand_outcome`] needs it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PeerClaim {
+    /// Whether the peer has withdrawn it (status `closed`).
+    pub withdrawn: bool,
+    /// When the peer sent the last event applied to it, if the peer said.
+    pub last_sent_at: Option<DateTime<Utc>>,
+}
+
+/// Decide what a new peer event does (WPM-D146). `fte_centi` is already known to be zero or a valid figure. **An event is stale only
+/// when both it and the last applied event carry `sent_at` and it is strictly older**: an event without `sent_at` is applied in the
+/// order it arrives, as before, and two events sent at the same instant are applied in arrival order.
+#[must_use]
+pub fn peer_demand_outcome(
+    fte_centi: i64,
+    sent_at: Option<DateTime<Utc>>,
+    existing: Option<PeerClaim>,
+) -> PeerDemandOutcome {
+    let Some(claim) = existing else {
+        return if fte_centi == 0 {
+            PeerDemandOutcome::NothingToWithdraw
+        } else {
+            PeerDemandOutcome::Recorded
+        };
+    };
+    if let (Some(new), Some(last)) = (sent_at, claim.last_sent_at)
+        && new < last
+    {
+        return PeerDemandOutcome::Stale;
+    }
+    match (fte_centi == 0, claim.withdrawn) {
+        (true, false) => PeerDemandOutcome::Withdrawn,
+        (true, true) => PeerDemandOutcome::AlreadyWithdrawn,
+        (false, true) => PeerDemandOutcome::Reopened,
+        (false, false) => PeerDemandOutcome::Updated,
+    }
+}
+
+/// The figure a peer may send: zero (withdraw) or a valid claim.
+///
+/// # Errors
+///
+/// Negative, or above [`MAX_FTE_CENTI`].
+pub fn validate_peer_fte_centi(fte_centi: i64) -> Result<(), String> {
+    if (0..=MAX_FTE_CENTI).contains(&fte_centi) {
+        Ok(())
+    } else {
+        Err(format!(
+            "fte_centi must be between 0 (withdraw the claim) and {MAX_FTE_CENTI} (100 is one FTE), not {fte_centi}"
+        ))
+    }
+}
+
 /// Whether a contingent engagement that ends on `ends_on` would end before a programme's proposed new end. An engagement already over
 /// (`ends_on` before `today`) is not an effect of the proposal; one ending on the new end date itself covers it.
 #[must_use]
@@ -2022,6 +2118,121 @@ mod tests {
         assert!(
             DEMAND_SOURCES.contains(&counted_source(true))
                 && DEMAND_SOURCES.contains(&counted_source(false))
+        );
+    }
+
+    // Every caller wants the optional form the rule takes, so the wrap is the point.
+    #[allow(clippy::unnecessary_wraps)]
+    fn at(hour: u32) -> Option<DateTime<Utc>> {
+        Some(d(2026, 10, 30).and_hms_opt(hour, 0, 0).unwrap().and_utc())
+    }
+
+    #[test]
+    fn a_peer_figure_records_updates_withdraws_and_reopens() {
+        let live = |last| {
+            Some(PeerClaim {
+                withdrawn: false,
+                last_sent_at: last,
+            })
+        };
+        let gone = |last| {
+            Some(PeerClaim {
+                withdrawn: true,
+                last_sent_at: last,
+            })
+        };
+        assert_eq!(
+            peer_demand_outcome(40, None, None),
+            PeerDemandOutcome::Recorded
+        );
+        assert_eq!(
+            peer_demand_outcome(0, at(9), None),
+            PeerDemandOutcome::NothingToWithdraw
+        );
+        assert_eq!(
+            peer_demand_outcome(60, None, live(None)),
+            PeerDemandOutcome::Updated
+        );
+        assert_eq!(
+            peer_demand_outcome(0, None, live(None)),
+            PeerDemandOutcome::Withdrawn
+        );
+        assert_eq!(
+            peer_demand_outcome(0, at(9), gone(at(8))),
+            PeerDemandOutcome::AlreadyWithdrawn
+        );
+        assert_eq!(
+            peer_demand_outcome(30, at(10), gone(at(9))),
+            PeerDemandOutcome::Reopened
+        );
+        for outcome in [
+            PeerDemandOutcome::NothingToWithdraw,
+            PeerDemandOutcome::Stale,
+        ] {
+            assert!(!outcome.writes(), "{outcome:?}");
+        }
+        assert!(PeerDemandOutcome::Withdrawn.writes() && PeerDemandOutcome::Recorded.writes());
+    }
+
+    #[test]
+    fn an_event_sent_before_the_last_applied_one_is_stale_and_only_then() {
+        let live = |last| {
+            Some(PeerClaim {
+                withdrawn: false,
+                last_sent_at: last,
+            })
+        };
+        let gone = |last| {
+            Some(PeerClaim {
+                withdrawn: true,
+                last_sent_at: last,
+            })
+        };
+        assert_eq!(
+            peer_demand_outcome(60, at(8), live(at(9))),
+            PeerDemandOutcome::Stale
+        );
+        assert_eq!(
+            peer_demand_outcome(0, at(8), live(at(9))),
+            PeerDemandOutcome::Stale,
+            "an old withdrawal does not undo a newer figure"
+        );
+        assert_eq!(
+            peer_demand_outcome(60, at(8), gone(at(9))),
+            PeerDemandOutcome::Stale,
+            "an old figure does not reopen a newer withdrawal"
+        );
+        assert_eq!(
+            peer_demand_outcome(60, at(9), live(at(9))),
+            PeerDemandOutcome::Updated,
+            "the same instant is applied in arrival order"
+        );
+        assert_eq!(
+            peer_demand_outcome(60, None, live(at(9))),
+            PeerDemandOutcome::Updated,
+            "no sent_at: arrival order, as before"
+        );
+        assert_eq!(
+            peer_demand_outcome(60, at(8), live(None)),
+            PeerDemandOutcome::Updated,
+            "nothing to compare with"
+        );
+        assert_eq!(
+            peer_demand_outcome(0, at(1), None),
+            PeerDemandOutcome::NothingToWithdraw,
+            "no claim: never stale"
+        );
+    }
+
+    #[test]
+    fn a_peer_figure_may_be_zero_but_not_negative_or_huge() {
+        assert!(validate_peer_fte_centi(0).is_ok());
+        assert!(validate_peer_fte_centi(MAX_FTE_CENTI).is_ok());
+        assert!(validate_peer_fte_centi(-1).is_err());
+        assert!(validate_peer_fte_centi(MAX_FTE_CENTI + 1).is_err());
+        assert!(
+            validate_fte_centi(0).is_err(),
+            "a claim entered here still may not be zero"
         );
     }
 

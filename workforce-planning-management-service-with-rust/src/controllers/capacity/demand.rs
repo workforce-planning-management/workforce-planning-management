@@ -145,6 +145,7 @@ pub(super) async fn list_demand(
                     "pid": r.pid, "programme_ref": r.programme_ref, "pool_pid": r.pool_pid,
                     "month": r.month, "fte_centi": r.fte_centi, "status": r.status,
                     "source": r.source, "received_at": r.received_at,
+                    "peer_sent_at": r.peer_sent_at, "peer_withdrawn_at": r.peer_withdrawn_at,
                 })
             })
             .collect::<Vec<_>>(),

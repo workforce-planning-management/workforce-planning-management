@@ -1831,6 +1831,129 @@ async fn a_linked_pool_counts_the_peers_demand_and_not_its_own_and_unlinking_ret
     .await;
 }
 
+/// WPM-T387: the peer withdraws a figure by sending zero; a repeat changes nothing; zero for no claim is a plain no-op; an event sent
+/// before the last one applied is ignored; a withdrawn claim that had been activated stops counting and its start decision is kept.
+#[tokio::test]
+#[ignore = "needs a Postgres database; run with --ignored"]
+async fn the_peer_withdraws_a_figure_with_zero_and_an_older_event_does_not_overwrite_a_newer_one() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let title = format!("Withdraw engineer {tag}");
+        for n in 1..=2 {
+            request
+                .post("/api/workers")
+                .json(&json!({
+                    "person_ref": super::a_person(), "organization_ref": org,
+                    "worker_number": format!("PW-{}-{n}", &tag[..8]), "display_name": "Peer Worker",
+                    "employment_type": "permanent", "fte_percent": 100,
+                    "department": "engineering", "job_title": title, "hired_on": "2026-01-05",
+                }))
+                .await
+                .assert_status_ok();
+        }
+        let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": title })).await.json();
+        let pool = make_pool(&request, &org, &format!("Withdraw pool {tag}"), 0).await;
+        request.post(&format!("/api/skill-pools/{pool}/members")).json(&json!({ "role_profile_pid": profile["pid"] })).await.assert_status_ok();
+        request.put(&format!("/api/skill-pools/{pool}/peer-link")).json(&json!({ "peer_pool_ref": uuid::Uuid::new_v4().to_string() })).await.assert_status_ok();
+        let programme = a_programme();
+        let send = |event: String, fte: i64, sent_at: Option<&'static str>| {
+            let (request, pool, programme) = (&request, pool.clone(), programme.clone());
+            async move {
+                let mut body = json!({ "pool_pid": pool, "programme_ref": programme, "month": "2027-01-01", "fte_centi": fte, "peer_event_id": event });
+                if let Some(at) = sent_at {
+                    body["sent_at"] = json!(at);
+                }
+                let response = request.post("/api/capacity/peer-demand").json(&body).await;
+                response.assert_status_ok();
+                response.json::<Value>()
+            }
+        };
+        let ev = |n: &str| format!("{n}-{tag}");
+        let january = || {
+            let (request, org) = (&request, org.clone());
+            async move {
+                let view: Value = request.get(&format!("/api/capacity?organization={org}&from=2027-01-01&months=1")).await.json();
+                let ours = view["pools"].as_array().unwrap().iter().find(|p| p["name"].as_str().is_some_and(|n| n.starts_with("Withdraw pool"))).unwrap().clone();
+                (ours["cells"][0]["demand_centi"].as_i64().unwrap(), ours["cells"][0]["status"].as_str().unwrap().to_string())
+            }
+        };
+        let claim = || {
+            let (request, pool) = (&request, pool.clone());
+            async move {
+                let claims: Value = request.get(&format!("/api/programme-demands?pool={pool}")).await.json();
+                claims.as_array().unwrap().clone()
+            }
+        };
+
+        // Zero for a claim that does not exist: answered plainly, nothing stored, and the pool is still one the peer has said nothing to.
+        let none = send(ev("w0"), 0, Some("2026-10-30T08:00:00Z")).await;
+        assert_eq!((none["outcome"].as_str(), none["pid"].is_null(), none["duplicate"].as_bool()), (Some("nothing_to_withdraw"), true, Some(false)), "{none}");
+        assert_eq!(claim().await, Vec::<Value>::new());
+        assert_eq!(january().await.1, "unknown");
+
+        // A figure, activated by a real start decision, is counted.
+        let first = send(ev("w1"), 40, Some("2026-10-30T09:00:00Z")).await;
+        assert_eq!((first["outcome"].as_str(), first["status"].as_str()), (Some("recorded"), Some("proposed")), "{first}");
+        let decided = request
+            .post("/api/capacity/start-decisions")
+            .json(&json!({ "organization_ref": org, "programme_ref": programme, "decision": "proceed", "reason": "the peer asked" }))
+            .await;
+        decided.assert_status_ok();
+        assert_eq!(january().await.0, 40);
+
+        // Withdrawn: the claim is closed and marked withdrawn by the peer, keeps its last figure, and stops counting; the demand is a known
+        // zero now (the peer has spoken), not unknown. The start decision is kept as it was.
+        let gone = send(ev("w2"), 0, Some("2026-10-30T11:00:00Z")).await;
+        assert_eq!((gone["outcome"].as_str(), gone["status"].as_str(), gone["pid"].clone()), (Some("withdrawn"), Some("closed"), first["pid"].clone()), "{gone}");
+        let rows = claim().await;
+        assert_eq!(rows.len(), 1, "{rows:?}");
+        assert_eq!((rows[0]["status"].as_str(), rows[0]["fte_centi"].as_i64(), rows[0]["peer_withdrawn_at"].is_null()), (Some("closed"), Some(40), false));
+        assert_eq!(january().await, (0, "fits".to_string()));
+        let decisions: Value = request.get(&format!("/api/capacity/start-decisions?programme={programme}")).await.json();
+        assert_eq!(decisions.as_array().unwrap().len(), 1, "{decisions}");
+        assert_eq!(decisions[0]["decision"], "proceed");
+
+        // The same withdrawal again is a repeat; an older figure replayed after it is stale and does not reopen the claim.
+        let again = send(ev("w2"), 0, Some("2026-10-30T11:00:00Z")).await;
+        assert_eq!((again["duplicate"].as_bool(), again["outcome"].as_str()), (Some(true), Some("duplicate")), "{again}");
+        let old = send(ev("w-old"), 70, Some("2026-10-30T10:00:00Z")).await;
+        assert_eq!((old["outcome"].as_str(), old["status"].as_str()), (Some("stale"), Some("closed")), "{old}");
+        assert_eq!(claim().await[0]["fte_centi"], 40);
+        let twice = send(ev("w3"), 0, Some("2026-10-30T12:00:00Z")).await;
+        assert_eq!(twice["outcome"], "already_withdrawn", "{twice}");
+
+        // A new figure reopens it as proposed: it counts again only after a new start decision. An older figure after that is stale too.
+        let back = send(ev("w4"), 50, Some("2026-10-30T13:00:00Z")).await;
+        assert_eq!((back["outcome"].as_str(), back["status"].as_str()), (Some("reopened"), Some("proposed")), "{back}");
+        assert_eq!(january().await.0, 0, "a reopened claim is proposed and not counted");
+        let stale = send(ev("w5"), 90, Some("2026-10-30T12:30:00+00:00")).await;
+        assert_eq!(stale["outcome"], "stale", "{stale}");
+        let rows = claim().await;
+        assert_eq!((rows[0]["fte_centi"].as_i64(), rows[0]["peer_withdrawn_at"].is_null()), (Some(50), true));
+        // An event that carries no sent_at is applied in arrival order, as before.
+        let plain = send(ev("w6"), 60, None).await;
+        assert_eq!(plain["outcome"], "updated", "{plain}");
+
+        // Refusals: a negative figure, a sent_at that is not RFC 3339.
+        let negative = request.post("/api/capacity/peer-demand").json(&json!({ "pool_pid": pool, "programme_ref": programme, "month": "2027-01-01", "fte_centi": -1, "peer_event_id": ev("bad1") })).await;
+        assert_eq!(negative.status_code(), 422);
+        let bad_time = request.post("/api/capacity/peer-demand").json(&json!({ "pool_pid": pool, "programme_ref": programme, "month": "2027-01-01", "fte_centi": 10, "peer_event_id": ev("bad2"), "sent_at": "yesterday" })).await;
+        assert!(bad_time.status_code().is_client_error(), "{}", bad_time.status_code());
+        // A claim entered here still may not be zero.
+        let local_zero = request.put("/api/programme-demands").json(&json!({ "programme_ref": programme, "pool_pid": pool, "month": "2027-01-01", "fte_centi": 0 })).await;
+        assert_eq!(local_zero.status_code(), 422);
+
+        // The audit trail names the withdrawal and whether the claim had been active, and no figure.
+        let audits: Value = request.get(&format!("/api/audits/{}", first["pid"].as_str().unwrap())).await.json();
+        let withdrawn: Vec<&Value> = audits.as_array().unwrap().iter().filter(|a| a["action"] == "peer_demand_withdrawn").collect();
+        assert_eq!(withdrawn.len(), 2, "{audits}");
+        assert!(audits.to_string().contains("was_active"), "{audits}");
+        assert!(!audits.to_string().contains("fte_centi"), "{audits}");
+    })
+    .await;
+}
+
 /// WPM-T365, WPM-T366: what a linked pool gives its peer is floored; and every capacity request is answered with the peer unset, silent and
 /// removed, a linked pool the peer has said nothing to being unknown and not fitting.
 #[tokio::test]

@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — PPM can withdraw a demand figure it sent (WPM-T387)
+
+The family contract's demand route takes `fte_centi: 0` to withdraw a claim and an optional `sent_at` so an older event cannot overwrite
+a newer one (WPM-R215, WPM-D146; `spec/cross-app-bridges.md`). **Not verified:** PPM's sender against WPM. See the service changelog.
+
 ### Added — plural rules in the UI (WPM-T374)
 
 `tn(key, count)` chooses a CLDR plural form with `Intl.PluralRules` in the page's locale. The eight "(s)" strings and the English "s" in

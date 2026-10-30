@@ -22,6 +22,8 @@ pub struct Model {
     pub source: String,
     pub peer_event_id: Option<String>,
     pub received_at: Option<DateTimeWithTimeZone>,
+    pub peer_sent_at: Option<DateTimeWithTimeZone>,
+    pub peer_withdrawn_at: Option<DateTimeWithTimeZone>,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

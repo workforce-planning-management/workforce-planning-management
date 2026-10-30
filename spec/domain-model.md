@@ -333,7 +333,9 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
   **ProgrammeDemand** (`programme_demands`), **PartnerCommitment** (`partner_commitments`),
   **CapacitySettings** (`capacity_settings`) and **StartDecision** (`start_decisions`) — delivery
   capacity by pool; aggregate FTE in hundredths, programme and partner by URN, no personal data
-  (WPM-R56–R60; [delivery-capacity.md](delivery-capacity.md)).
+  (WPM-R56–R60; [delivery-capacity.md](delivery-capacity.md)). A claim received from the peer (`source = ppm`) keeps the peer's
+  last event id, when it arrived, when the peer says it sent it (`peer_sent_at`) and, once the peer withdraws it, `peer_withdrawn_at`
+  (WPM-R213, WPM-R215).
 - **WorkerPayPosition** (`worker_pay_positions`) — one band and step per worker on a
   reference pay scale, and the date they reached the step (WPM-R54; erased with the person).
 - **WorkerJobLevel** (`worker_job_levels`) — one current level per worker on a

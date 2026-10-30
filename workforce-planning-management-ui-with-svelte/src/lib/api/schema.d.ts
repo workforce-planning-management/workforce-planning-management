@@ -2047,7 +2047,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Take a programme's demand on a linked pool for a month from the peer (pool_pid, programme_ref, month, fte_centi, peer_event_id). Stored as a proposed claim with source ppm, beside any claim entered here and never added to it; the same peer_event_id again changes nothing. A pool that is not linked refuses it. WPM's own contract: the peer has not been read to call it */
+        /** Take a programme's demand on a linked pool for a month from the peer (pool_pid, programme_ref, month, fte_centi, peer_event_id, optional sent_at in RFC 3339). Stored as a proposed claim with source ppm, beside any claim entered here and never added to it; the same peer_event_id again changes nothing. fte_centi 0 withdraws the claim: it is closed and marked withdrawn by the peer (an active one stops counting; its start decision is kept), and zero for no claim changes nothing. An event whose sent_at is older than the last applied one is ignored. A pool that is not linked refuses it. The family contract of 2026-10-30 */
         post: {
             parameters: {
                 query?: never;
@@ -2060,7 +2060,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The pid of the claim, and whether it was a repeat */
+                /** @description The claim's pid (null when there is none), whether it was a repeat, the outcome (recorded, updated, reopened, withdrawn, already_withdrawn, nothing_to_withdraw, stale or duplicate) and the claim's status */
                 200: {
                     headers: {
                         "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];

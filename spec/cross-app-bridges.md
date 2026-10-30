@@ -41,7 +41,9 @@ here and builds its half. They sit inside WPM-D134 to D141: references and count
    `peer_pool_ref`. Each side sets its half by hand (WPM-D139).
 3. **PPM → WPM demand and supply.** PPM calls the existing `POST /api/capacity/peer-demand` with `{pool_pid: <WPM pool pid>,
    programme_ref, month: YYYY-MM-01, fte_centi, peer_event_id}`, **under the forwarded caller's bearer token** (WPM-D135). PPM pulls
-   the existing `GET /api/capacity/peer-supply`. Neither route changes for this.
+   the existing `GET /api/capacity/peer-supply`. Neither route changes for this. **Amended 2026-10-30 (at the product owner's
+   direction, WPM-R215, WPM-D146):** `fte_centi: 0` withdraws the peer's claim, and PPM sends an optional `sent_at` (RFC 3339) so an
+   older event cannot overwrite a newer one; see "Withdrawing a figure, and the order of events" below.
 4. **WPM → PPM people-impact is a pull.** PPM asks `GET /api/capacity/people-impact?programme=thing:<uuid>` under the caller's token;
    WPM answers counts only (WPM-R211, WPM-T361). WPM pushes nothing to PPM.
 5. **WPM → CRM handoff is over webhooks.** A `worker_hired`, `worker_terminated` or `worker_retired` delivery carries the handoff
@@ -117,6 +119,58 @@ read as one set. **Contract with PPM: unverified** (the family contract of 2026-
   `{pool_pid, programme_ref, month, fte_centi, peer_event_id}` under the forwarded caller's token, for a pool linked on both sides.
   The route was built for WPM-R213 (WPM-T364); PPM's sender is being built against it and has not been run against WPM.
 - **Not done:** pulling from PPM; schedule data (dates of tasks, critical path) never enters WPM (WPM-D55).
+
+### WPM-R215 — Withdrawing a figure, and the order of events (PPM tells WPM)
+
+Decided 2026-10-30 as part of the family contract, at the product owner's direction; built as **WPM-T387**. Before this the route
+refused `fte_centi: 0`, so a figure PPM dropped to zero stayed in WPM for good, and only the latest event id of a claim was remembered,
+so an older event replayed after a newer one overwrote it (recorded in WPM-T360 and T364).
+
+**WPM-R215** The peer withdraws its claim for a (pool, programme, month) by sending `fte_centi: 0` with a new `peer_event_id`. A
+withdrawal is idempotent on the event id; zero for a claim that does not exist changes nothing and says so. An event the peer says it
+sent (`sent_at`) before the last event applied to the claim is ignored and says so.
+
+- **WPM-D146 A withdrawn claim is closed and marked withdrawn by the peer; the start decision that activated it is left as it was.**
+  The claim's status becomes `closed` (the existing "finished or withdrawn" state, ignored by the view, the start check and the
+  what-if) and `peer_withdrawn_at` records when. Its last figure is kept, since the figure column refuses zero and the figure is what
+  was withdrawn. **A claim a start decision had made `active` stops counting at once**; the decision row (who, why, the fit it saw) is
+  history and is not changed or undone, and the audit entry of the withdrawal says the claim had been active (no figure). A later
+  figure above zero **reopens** the claim as `proposed`, so it counts again only after a new start decision (WPM-D50): the peer can
+  withdraw a figure, never activate one. A pool whose only claims are withdrawn has a *known* demand of zero (the peer has spoken), not
+  the unknown of a peer that has said nothing (WPM-D141). Rejected: deleting the row (the trail of what the peer said goes with it);
+  undoing the start decision (a person's recorded decision is not the peer's to change).
+- **Order.** `sent_at` is optional. An event is stale only when **both** it and the last applied event carry `sent_at` and it is
+  strictly older; the same instant, or an event without `sent_at`, is applied in arrival order, as before. A stale event changes
+  nothing, is not audited, and is not remembered (a repeat of it is stale again).
+
+**The contract** (`POST /api/capacity/peer-demand`, under the forwarded caller's token, for a pool linked on both sides):
+
+```json
+{ "pool_pid": "<WPM pool pid>", "programme_ref": "thing:<ppm plan pid>", "month": "YYYY-MM-01",
+  "fte_centi": 0..1000000, "peer_event_id": "<1 to 128 characters>", "sent_at": "2026-10-30T12:00:00Z" }
+```
+
+`sent_at` may be omitted. The answer is always `200` with `{ "pid", "duplicate", "outcome", "status" }`:
+
+| `outcome` | When | `pid` | `status` | Written and audited |
+| --- | --- | --- | --- | --- |
+| `recorded` | a figure above zero, no claim yet | the new claim | `proposed` | yes, `peer_demand_received` |
+| `updated` | a figure above zero for a live claim | the claim | unchanged (`proposed` or `active`) | yes, `peer_demand_received` |
+| `reopened` | a figure above zero for a withdrawn claim | the claim | `proposed` | yes, `peer_demand_received` |
+| `withdrawn` | zero for a live claim | the claim | `closed` | yes, `peer_demand_withdrawn` with `was_active` |
+| `already_withdrawn` | zero for a withdrawn claim | the claim | `closed` | the event id and `sent_at` are kept; `peer_demand_withdrawn` |
+| `nothing_to_withdraw` | zero and no claim | `null` | `null` | no |
+| `stale` | `sent_at` older than the last applied event's | the claim | unchanged | no |
+| `duplicate` (`duplicate: true`) | a `peer_event_id` already applied | the claim | its status | no |
+
+Refused with `422`: a negative figure or one above 1 000 000, a month that is not its first day, a `programme_ref` that is not a
+`thing:` URN, an empty or over-long event id, a pool that is not linked. A `sent_at` that is not RFC 3339 is refused by the body
+parser (a `4xx`). The claim list (`GET /api/programme-demands`) shows `peer_sent_at` and `peer_withdrawn_at`.
+
+**Not done:** zero for a claim that does not exist stores nothing, so if that withdrawal overtakes the figure it withdraws (the figure
+arrives second), the figure is recorded; PPM's ordering on its side, or sending the figure again as zero, closes it. An event without
+`sent_at` can still overwrite a newer one, as before. **Not verified:** PPM's sender (being changed by PPM's owner in parallel against
+this contract) has not been run against WPM.
 
 ### WPM-R211 — People-impact out (WPM tells PPM)
 
@@ -276,4 +330,5 @@ PPM's service (`project-portfolio-management-service-with-rust`) was read, not r
 - [x] WPM-T364 `programme_demands.source` (`local` default, `ppm`), the peer event id and received time; idempotent receive; the view and what-if show demand by source and never sum across sources.
 - [x] WPM-T365 Outbound supply for a linked pool: floored counts by month, to the caller's token.
 - [x] WPM-T366 A test that WPM answers every capacity request with the peer unset, down and slow, and that a link removed returns the local figures.
+- [x] WPM-T387 The peer withdraws a figure with `fte_centi: 0`, and an older event (`sent_at`) does not overwrite a newer one (WPM-R215, WPM-D146).
 

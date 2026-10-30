@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the peer can withdraw a demand figure, and an older event no longer overwrites a newer one (WPM-T387, WPM-R215, WPM-D146)
+
+`POST /api/capacity/peer-demand` takes `fte_centi: 0` to withdraw the `ppm` claim for that pool, programme and month (closed, last
+figure kept, `peer_withdrawn_at` set; an active claim stops counting and its start decision is kept), and an optional `sent_at`
+(RFC 3339): an event older than the last applied one is ignored. The answer gains `outcome` (`recorded`, `updated`, `reopened`,
+`withdrawn`, `already_withdrawn`, `nothing_to_withdraw`, `stale`, `duplicate`) and `status`; `pid` is `null` when there is no claim.
+Migration `000109` adds `programme_demands.peer_sent_at` and `peer_withdrawn_at`. **Not done:** a withdrawal that overtakes its own
+figure stores nothing, so the figure arriving second is recorded; an event without `sent_at` is applied in arrival order as before.
+**Not verified:** PPM's sender against WPM.
+
 ### Added — a check that the pure core names no country, and second-profile tests (WPM-T369, done in part)
 
 `src/jurisdiction_neutrality.rs` (test-only): every identifier and string literal in `src/rules/` is checked against country and
