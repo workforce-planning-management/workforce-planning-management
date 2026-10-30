@@ -77,6 +77,14 @@ async fn payroll_run_derives_reconciled_payslips() {
             .await
             .json();
         assert_eq!(calculated["payslips"], 2);
+        // The answer says whose figures the tax line used (WPM-T383).
+        assert_eq!(calculated["tax_stub"]["source"], "example");
+        assert_eq!(calculated["tax_stub"]["currency"], "GBP");
+        assert_eq!(
+            calculated["tax_stub"]["allowance_minor"],
+            rules::TAX_FREE_MINOR
+        );
+        assert_eq!(calculated["tax_stub"]["contracted_day_minutes"], 450);
         let payslips: Value = request
             .get(&format!("/api/payroll-runs/{run_pid}/payslips"))
             .await
@@ -101,7 +109,8 @@ async fn payroll_run_derives_reconciled_payslips() {
             .find(|s| s["worker_pid"].as_str() == Some(enrolled.as_str()))
             .unwrap();
         let expected_base = 400_000;
-        let expected_overtime = rules::overtime_pay_minor(expected_base, 450).unwrap();
+        let expected_overtime =
+            rules::overtime_pay_minor(expected_base, 450, rules::MONTH_MINUTES).unwrap();
         assert_eq!(
             enrolled_slip["gross_minor"].as_i64().unwrap(),
             expected_base + expected_overtime,
@@ -263,6 +272,70 @@ async fn a_contractor_gets_no_payslip() {
         assert!(paid.contains(&pids[0].as_str()), "permanent is paid");
         assert!(paid.contains(&pids[1].as_str()), "fixed-term is paid");
         assert!(!paid.contains(&pids[2].as_str()), "contractor is not");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// WPM-T383: the stub is written for one currency. A run that would pay a worker in another
+// currency is refused, names the worker and both currencies, and stays a draft with no payslip.
+async fn the_payroll_stub_refuses_a_currency_it_was_not_written_for() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let pounds = seed_worker!(&request, &org, "E-2101", Some(3_600_000)).await;
+        activate!(&request, &pounds).await;
+        let yen: Value = request
+            .post("/api/workers")
+            .json(&json!({
+                "person_ref": crate::requests::a_person(),
+                "organization_ref": org,
+                "worker_number": "E-2102",
+                "display_name": "Test Worker E-2102",
+                "employment_type": "permanent",
+                "department": "engineering",
+                "job_title": "Engineer",
+                "salary_minor": 6_000_000,
+                "salary_currency": "JPY",
+                "hired_on": "2026-01-05",
+            }))
+            .await
+            .json();
+        let yen = yen["pid"].as_str().unwrap().to_string();
+        activate!(&request, &yen).await;
+        let run: Value = request
+            .post("/api/payroll-runs")
+            .json(&json!({
+                "organization_ref": org,
+                "period_start": "2026-07-01", "period_end": "2026-07-31",
+            }))
+            .await
+            .json();
+        let run_pid = run["pid"].as_str().unwrap().to_string();
+        let refused = request
+            .post(&format!("/api/payroll-runs/{run_pid}/calculate"))
+            .await;
+        assert_eq!(refused.status_code(), 422);
+        let text = refused.text();
+        assert!(
+            text.contains("E-2102") && text.contains("GBP") && text.contains("JPY"),
+            "{text}"
+        );
+        let after: Value = request
+            .get(&format!("/api/payroll-runs/{run_pid}"))
+            .await
+            .json();
+        assert_eq!(after["status"], "draft", "a refused run is not calculated");
+        let payslips: Value = request
+            .get(&format!("/api/payroll-runs/{run_pid}/payslips"))
+            .await
+            .json();
+        assert_eq!(
+            payslips.as_array().unwrap().len(),
+            0,
+            "no payslip is written"
+        );
     })
     .await;
 }

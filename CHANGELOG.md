@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the payroll stub is not one country's (WPM-T383)
+
+The stub tax's allowance and rate, the working minutes in a month and the 7.5-hour contracted day are settings; unset, the stub is an
+example in the UK's 2025-26 shape written for GBP, the calculation says so, and a payroll run that would pay anyone in another currency
+is refused instead of being taxed with pounds read as another unit. **Not done:** a real tax table; one stub per deployment, so an
+organization paying in two currencies cannot run payroll for both. **Not tested:** the new settings themselves.
+
 ### Changed — the workstation checklist is translatable content (WPM-T386)
 
 The eight default ergonomic checklist items are stored by key (a new `ergonomic_items.item_key`, existing rows backfilled) with their

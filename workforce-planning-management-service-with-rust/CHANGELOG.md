@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the payroll stub is parameters, written for one currency (WPM-T383)
+
+`rules::payroll::TaxStub` holds the stub's currency, monthly allowance (minor units of that currency), flat rate and working minutes
+in a month; `compute_payslip`, `stub_tax_minor` and `overtime_pay_minor` take it, and `rules::workforce::overtime_minutes` and
+`contracted_day_minutes` take the full-time day. The deployer sets them with `WPM_PAYROLL_STUB_CURRENCY`,
+`WPM_PAYROLL_STUB_ALLOWANCE_MINOR`, `WPM_PAYROLL_STUB_RATE_PERCENT`, `WPM_PAYROLL_MONTH_MINUTES` and `WPM_CONTRACTED_DAY_MINUTES`;
+unset, the stub is `TaxStub::example()`, named as the UK's 2025-26 shape and written for GBP. `calculate` answers `tax_stub` and refuses
+(422, naming the worker and both currencies, nothing written) a run that would pay anyone in another currency. Tests: 3 unit tests new
+or extended, the payroll request test extended and one added. **Not done:** a real tax table; more than one stub per deployment.
+**Not tested:** the settings themselves (no test sets them).
+
 ### Changed — the default workstation checklist is stored by key (WPM-T386)
 
 `rules::ergonomics::DSE_ITEMS` holds `{key, text}` pairs and says whose list it is (an example in the shape of one regime's

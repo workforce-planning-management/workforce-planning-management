@@ -364,8 +364,32 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   335 passed and 19 skipped. **Missed, then fixed:** the persona binary `enforcement_me` was not run before the first push; it still
   expected `LS1;DROP` to be refused and failed in CI (run 41075870946). It now expects a 21-character postcode to be refused, and passes
   on a throwaway database.
-- [ ] WPM-T383 **Payroll stub is not one country's.** *(WPM-R214, WPM-D143; row 33)* The stub tax allowance and rate, the 7.5-hour day
+- [x] (2026-10-30) WPM-T383 **Payroll stub is not one country's.** *(WPM-R214, WPM-D143; row 33)* The stub tax allowance and rate, the 7.5-hour day
   and the minutes in a month are parameters (or the stub says whose they are and refuses a currency it was not written for).
+  **Done, both halves, and why:** the task offered either; the code takes both because a parameter alone is not enough. The allowance
+  is an amount of one currency's minor unit, so a single deployment-wide allowance applied to a worker paid in another currency is
+  wrong whatever its value: 104,750 read as yen is a hundredth of the pounds it was. So the stub is a parameter set (`rules::payroll::TaxStub`:
+  `currency`, `allowance_minor`, `rate_percent`, `month_minutes`) **and** written for one currency. **Parameters:** `compute_payslip`,
+  `stub_tax_minor` and `overtime_pay_minor` take the stub; `rules::workforce::overtime_minutes` and `contracted_day_minutes` take the
+  full-time day. No registry was invented: the deployer sets them as the other `WPM_*` starting points are set,
+  `WPM_PAYROLL_STUB_CURRENCY`, `WPM_PAYROLL_STUB_ALLOWANCE_MINOR` (a month, in that currency's minor unit), `WPM_PAYROLL_STUB_RATE_PERCENT`
+  (0 to 100), `WPM_PAYROLL_MONTH_MINUTES` (1 to 44,640) and `WPM_CONTRACTED_DAY_MINUTES` (1 to 1,440, also used by a worker's timesheet
+  overtime). A currency other than the example's is taken only with its own allowance and rate, so the example's figures are never read
+  in another unit; a setting that does not check is ignored with a warning, as for the other `WPM_*` settings. **Whose:** with nothing set,
+  the stub is `TaxStub::example()`, documented as the shape of the UK's income tax for 2025-26 (the £12,570 personal allowance divided by
+  12, the 20% basic rate) and written for GBP; the 7.5-hour day and 9,750 minutes a month (that day times about 21.67 working days) are starting points,
+  no regime's. `POST /api/payroll-runs/{pid}/calculate` now answers `tax_stub` (the currency, allowance, rate, month minutes, contracted
+  day, `source` `example` or `configured`, and a note that it is not any country's tax). **Refusal:** a run with a salaried worker paid in
+  a currency the stub is not written for is refused with 422 naming the worker number and both currencies, and nothing is written (the
+  run stays a draft). A worker whose salary has no currency (a hire may omit it) is taken as the stub's currency, as it was taken as GBP
+  before. **Tests:** unit tests for the stub (the example checks; a yen stub of exponent 0 taxes and reconciles; a GBP stub refuses a
+  JPY payslip and a JPY stub a GBP one; six bad stubs), the month minutes as a parameter, the contracted day (8 hours, 9 hours 36
+  minutes, clamped, checked); the payroll request test checks `tax_stub` and a new one pins the refusal (a GBP and a JPY worker: 422 naming
+  `E-2102`, GBP and JPY, the run still `draft`, no payslip). **Not done:** no real tax table of any country (gate WPM-G2); one stub per
+  deployment, so an organization paying in two currencies cannot run payroll for both (a profile per jurisdiction, D144, would carry
+  one per currency); the overtime rate's month is not derived from the contracted day (they are two settings, and a deployer changing one
+  should change the other); D144 registry keys for these parameters were not named. **Not tested:** the `WPM_PAYROLL_*` and
+  `WPM_CONTRACTED_DAY_MINUTES` settings themselves (read in the controller, not the pure core; no request test sets them).
 - [ ] WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144; rows 34 to 36)* Each `WPM_*` default from one
   regime (flexible working, resignation notice, pay information, joint assessment, retention) is named with its regime in the API's
   answer and the spec, then moved to a profile when the registry exists; the pay-gap tiers become configurable.
@@ -580,7 +604,7 @@ through `rules::duplicates`.
 | 30 | Right-to-left | UI `TimeOffPanel.svelte:90`, `OnCall.svelte:59`, `metrics/+page.svelte:74` (and about 12 more, plus 8 catalogue strings) | A literal "→" between the ends of a range points the wrong way in `ar` and `ur` | **Gap**. **Fixed 2026-10-30**: `formatDateRange` and `arrow()` | T377 |
 | 31 | Locales | UI `content/locales/*/ui.json`, `src/lib/locales.ts` | 17 locales; all 12 translated `-001` files hold all 2,338 keys of `en-001`; `en-001` (not `en-gb`) is the default; all translations are AI-written and unreviewed (`REVIEW.md`) | **Right** in parity; **partial**: no locale is reviewed | — (recorded) |
 | 32 | Locales | UI `content/locales/en-gb/ui.json` (5 overrides), `en-us/ui.json` (0) | `en-001` is written in British wording, so `en-gb` barely differs and `en-us` has nothing to override | **Partial**. **In part 2026-10-30**: the address labels; other terms not reviewed | T382 |
-| 33 | Pay arithmetic | API `src/rules/payroll.rs:42-47`, `src/rules/workforce.rs:10` | The stub tax (20% above 104,750 minor units a month, the UK allowance divided by 12), a 7.5-hour day and 9,750 minutes a month, applied to every worker whatever the currency | **Gap** (labelled a stub; production gate WPM-G2) | T383 |
+| 33 | Pay arithmetic | API `src/rules/payroll.rs:42-47`, `src/rules/workforce.rs:10` | The stub tax (20% above 104,750 minor units a month, the UK allowance divided by 12), a 7.5-hour day and 9,750 minutes a month, applied to every worker whatever the currency | **Gap** (labelled a stub; production gate WPM-G2). **Fixed 2026-10-30**: parameters, named as an example written for GBP, another currency refused | T383 |
 | 34 | Statutory defaults | API `src/rules/flexible_working.rs:13-17`, `src/rules/resignation.rs:13`, `src/rules/pay_information.rs:17`, `src/rules/joint_assessment.rs:17-19`, `src/rules/privacy.rs:85-97` | Each rule takes its limit as a parameter, but the default when no `WPM_*` setting is given is one regime's value (2 months, 2 requests, 14 calendar days; 28 calendar days; 2 months; 5% and 6 months) and is not labelled as whose | **Partial**: parameterized, one deployment-wide value | T384 |
 | 35 | Statutory defaults | API `src/controllers/pay_transparency.rs:442`, `src/rules/pay_gap.rs:540-566` | `tier_for` takes the tiers, but the controller always passes the EU Directive's tiers | **Partial** | T384 |
 | 36 | Pay gap | UI `src/routes/pay-gap/+page.svelte:132-133`; API `WPM_PAY_GAP_SEX_CATEGORY` | Female and male columns, the shape of the EU and UK reports; the equality categories themselves come from the server (`EqualityPanel.svelte:62`) | **Partial** | T384 |

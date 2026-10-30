@@ -22,6 +22,80 @@ use crate::rules::{benchmark, lifecycle, payroll as rules, workforce};
 use crate::streaming;
 use crate::validation::Problems;
 
+// ─── The stub's parameters (the deployer's, with example defaults; WPM-T383) ──
+
+fn setting(name: &str) -> Option<String> {
+    crate::compat::env_var(name).filter(|v| !v.trim().is_empty())
+}
+
+fn parsed<T: std::str::FromStr>(name: &str) -> Option<T> {
+    let text = setting(name)?;
+    let value = text.trim().parse::<T>().ok();
+    if value.is_none() {
+        tracing::warn!("{name} is not a whole number; using the example");
+    }
+    value
+}
+
+/// The full-time contracted day in minutes: `WPM_CONTRACTED_DAY_MINUTES`, 1 to 1,440, else the
+/// example's 450 (7.5 hours). Overtime is the recorded time beyond it (FTE-scaled).
+#[must_use]
+pub fn contracted_day() -> i32 {
+    parsed::<i32>("WPM_CONTRACTED_DAY_MINUTES")
+        .filter(|&m| {
+            let ok = workforce::validate_contracted_day(m).is_ok();
+            if !ok {
+                tracing::warn!("WPM_CONTRACTED_DAY_MINUTES is not 1 to 1440; using the example");
+            }
+            ok
+        })
+        .unwrap_or(workforce::CONTRACTED_DAY_MINUTES)
+}
+
+/// The payroll stub in force and whether the deployer configured it. `WPM_PAYROLL_STUB_CURRENCY`,
+/// `WPM_PAYROLL_STUB_ALLOWANCE_MINOR` (minor units of that currency, a month) and
+/// `WPM_PAYROLL_STUB_RATE_PERCENT` replace the example; `WPM_PAYROLL_MONTH_MINUTES` the working
+/// minutes in a month. A currency other than the example's is taken only with its own allowance and
+/// rate, so the example's pounds are never read as another currency's units; a setting that does not
+/// check is ignored with a warning.
+#[must_use]
+pub fn tax_stub() -> (rules::TaxStub, bool) {
+    let example = rules::TaxStub::example();
+    let currency = setting("WPM_PAYROLL_STUB_CURRENCY").map(|c| c.trim().to_string());
+    let allowance = parsed::<i64>("WPM_PAYROLL_STUB_ALLOWANCE_MINOR");
+    let rate = parsed::<i64>("WPM_PAYROLL_STUB_RATE_PERCENT");
+    let month = parsed::<i64>("WPM_PAYROLL_MONTH_MINUTES");
+    let configured = currency.is_some() || allowance.is_some() || rate.is_some() || month.is_some();
+    let mut stub = example.clone();
+    if let Some(m) = month {
+        stub.month_minutes = m;
+    }
+    match currency {
+        Some(code) if code != example.currency && (allowance.is_none() || rate.is_none()) => {
+            tracing::warn!(
+                "WPM_PAYROLL_STUB_CURRENCY needs WPM_PAYROLL_STUB_ALLOWANCE_MINOR and \
+                 WPM_PAYROLL_STUB_RATE_PERCENT for that currency; using the example"
+            );
+        }
+        other => {
+            if let Some(code) = other {
+                stub.currency = code;
+            }
+            if let Some(a) = allowance {
+                stub.allowance_minor = a;
+            }
+            if let Some(r) = rate {
+                stub.rate_percent = r;
+            }
+        }
+    }
+    if let Err(why) = stub.validate() {
+        tracing::warn!("payroll stub settings ignored: {why}");
+        return (example, false);
+    }
+    (stub, configured)
+}
+
 /// `POST /api/payroll-runs` body.
 #[derive(Debug, Deserialize)]
 struct RunPayload {
@@ -164,15 +238,18 @@ async fn calculate_run(
         .filter(payslips::Column::RunPid.eq(run.pid))
         .exec(&txn)
         .await?;
+    let (stub, stub_configured) = tax_stub();
+    let full_day = contracted_day();
     let mut count: u64 = 0;
     for worker in &staff {
         let Some(salary) = worker.salary_minor else {
             continue;
         };
+        // A salary stored before a currency was required is taken as the stub's currency.
         let currency = worker
             .salary_currency
             .clone()
-            .unwrap_or_else(|| "GBP".to_string());
+            .unwrap_or_else(|| stub.currency.clone());
         // Approved time in the period → overtime minutes.
         let entries = time_entries::Entity::find()
             .filter(time_entries::Column::WorkerPid.eq(worker.pid))
@@ -199,6 +276,7 @@ async fn calculate_run(
                     *regular,
                     *explicit,
                     worker.fte_percent,
+                    full_day,
                 ))
             })
             .sum();
@@ -221,8 +299,15 @@ async fn calculate_run(
                 benefit_costs.push((plan.name.clone(), plan.worker_cost_minor));
             }
         }
-        let slip = rules::compute_payslip(salary, worker.fte_percent, overtime, &benefit_costs)
-            .map_err(|e| unprocessable(&format!("payslip for {}: {e}", worker.worker_number)))?;
+        let slip = rules::compute_payslip(
+            &stub,
+            &currency,
+            salary,
+            worker.fte_percent,
+            overtime,
+            &benefit_costs,
+        )
+        .map_err(|e| unprocessable(&format!("payslip for {}: {e}", worker.worker_number)))?;
         // The persist gate re-checks the invariant (WPM-R13).
         rules::reconcile(&slip).map_err(|e| unprocessable(&e))?;
         payslips::ActiveModel {
@@ -266,7 +351,22 @@ async fn calculate_run(
     .await?;
     txn.commit().await?;
     Metrics::global().payroll_calculated_total.inc();
-    format::json(serde_json::json!({ "pid": row.pid, "status": row.status, "payslips": count }))
+    format::json(serde_json::json!({
+        "pid": row.pid,
+        "status": row.status,
+        "payslips": count,
+        // Whose figures the tax line used: the deployer's, or the example written for GBP (WPM-T383).
+        "tax_stub": {
+            "currency": stub.currency,
+            "allowance_minor": stub.allowance_minor,
+            "rate_percent": stub.rate_percent,
+            "month_minutes": stub.month_minutes,
+            "contracted_day_minutes": full_day,
+            "source": if stub_configured { "configured" } else { "example" },
+            "note": "a stub, not any country's tax; the example is the shape of the UK's 2025-26 personal \
+                     allowance and basic rate, written for GBP, and a payslip in another currency is refused",
+        },
+    }))
 }
 
 /// One non-calculate run transition (`draft` reopen / `approved` /

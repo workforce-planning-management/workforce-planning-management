@@ -157,7 +157,10 @@ every active employee gets a correct payslip.*
   `draft → calculated → approved → paid`; calculation generates one
   Payslip per in-scope employee from salary (FTE-pro-rated), approved
   overtime, and benefit deductions — pure-core arithmetic, stub tax
-  tables, minor units, overflow refused.
+  tables, minor units, overflow refused. The stub's allowance, rate,
+  working minutes in a month and the contracted day are parameters; the
+  stub is written for one currency and a run that would pay anyone in
+  another is refused (WPM-T383, [worldwide.md](worldwide.md)).
 - Payslip invariant `net = gross − Σ deductions` enforced before
   persist; approved runs immutable; re-calculation only in `draft`.
 

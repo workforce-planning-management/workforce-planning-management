@@ -173,7 +173,8 @@ async fn list_time_entries(
         .limit(1000)
         .all(&ctx.db)
         .await?;
-    // Per-day overtime derivation over the returned window.
+    // Per-day overtime derivation over the returned window, against the deployment's day (WPM-T383).
+    let full_day = super::payroll::contracted_day();
     let mut days: std::collections::BTreeMap<chrono::NaiveDate, (i32, i32)> =
         std::collections::BTreeMap::new();
     for entry in &rows {
@@ -189,7 +190,7 @@ async fn list_time_entries(
         .map(|(day, (regular, explicit))| {
             serde_json::json!({
                 "worked_on": day,
-                "overtime_minutes": workforce::overtime_minutes(*regular, *explicit, worker.fte_percent),
+                "overtime_minutes": workforce::overtime_minutes(*regular, *explicit, worker.fte_percent, full_day),
             })
         })
         .collect();
