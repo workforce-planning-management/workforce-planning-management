@@ -120,6 +120,7 @@ mod m20261028_000104_holidays;
 mod m20261028_000105_link_tokens;
 mod m20261028_000106_supplier_contact;
 mod m20261028_000107_peer_pool;
+mod m20261030_000108_webhook_data;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -240,6 +241,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261028_000105_link_tokens::Migration),
             Box::new(m20261028_000106_supplier_contact::Migration),
             Box::new(m20261028_000107_peer_pool::Migration),
+            Box::new(m20261030_000108_webhook_data::Migration),
             // inject-above (do not remove this comment)
         ]
     }

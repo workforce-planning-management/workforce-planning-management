@@ -11,7 +11,10 @@ use chrono::{Duration, Utc};
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management::rules::webhook::{PAYLOAD_FIELDS, verify};
+use workforce_planning_management::rules::webhook::{
+    ENDED_DATA_KEYS, HIRED_DATA_KEYS, PAYLOAD_FIELDS, PAYLOAD_FIELDS_WITH_DATA, payload_fields,
+    verify,
+};
 use workforce_planning_management::tasks::webhook_deliver::{Summary, run};
 
 use super::{a_person, an_org};
@@ -119,7 +122,14 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
             let sent: Value = serde_json::from_str(body).unwrap();
             let mut keys: Vec<&str> = sent.as_object().unwrap().keys().map(String::as_str).collect();
             keys.sort_unstable();
-            assert_eq!(keys, PAYLOAD_FIELDS);
+            assert_eq!(keys, PAYLOAD_FIELDS_WITH_DATA, "an ending carries data (proposed WPM-D145)");
+            assert_eq!(keys, payload_fields("worker_terminated"));
+            let mut data_keys: Vec<&str> = sent["data"].as_object().unwrap().keys().map(String::as_str).collect();
+            data_keys.sort_unstable();
+            assert_eq!(data_keys, ENDED_DATA_KEYS, "exactly the handoff and the status change");
+            assert_eq!((sent["data"]["from"].as_str(), sent["data"]["to"].as_str()), (Some("offboarding"), Some("terminated")));
+            assert!(sent["data"]["person_ref"].as_str().unwrap().starts_with("person:"));
+            assert!(sent["data"]["organization_ref"].as_str().unwrap().starts_with("organization:"));
             assert_eq!(sent["kind"], "worker_terminated");
             assert_eq!(sent["subject"], format!("worker:{w}"));
             assert!(!body.contains("WH-SECRET-NUMBER") && !body.contains("Secret Name"), "no name or number leaves: {body}");
@@ -199,6 +209,58 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
             request.put("/api/webhook-subscriptions/11111111-2222-4333-8444-555555555555").json(&sub(json!({}))).await.status_code(),
             404
         );
+
+        // A hire carries the handoff (who, where, from when) and nothing else; an activation carries no data at all.
+        let hires: Value = request
+            .post("/api/webhook-subscriptions")
+            .json(&json!({ "name": "Hires", "url": url, "kinds": ["worker_hired", "worker_activated"], "secret_ref": "WPM_WEBHOOK_SECRET_TEST" }))
+            .await
+            .json();
+        let person = a_person();
+        let org = an_org();
+        let created: Value = request
+            .post("/api/workers")
+            .json(&json!({
+                "person_ref": person, "organization_ref": org, "worker_number": "WH-HIRE-SECRET",
+                "display_name": "Secret Hire Person", "employment_type": "permanent",
+                "department": "engineering", "job_title": "Engineer", "hired_on": "2026-02-02",
+            }))
+            .await
+            .json();
+        let w4 = created["pid"].as_str().unwrap().to_string();
+        status(&request, &w4, "active").await;
+        *stub.answer.lock().unwrap() = 200;
+        let seen = stub.received.lock().unwrap().len();
+        assert_eq!(run(&ctx, Utc::now() + Duration::seconds(60)).await.unwrap(), Summary { delivered: 2, ..Summary::default() });
+        {
+            let received = stub.received.lock().unwrap();
+            let bodies: Vec<Value> = received[seen..].iter().map(|(_, b)| serde_json::from_str(b).unwrap()).collect();
+            let hired = bodies.iter().find(|b| b["kind"] == "worker_hired").expect("the hire was sent");
+            let mut keys: Vec<&str> = hired.as_object().unwrap().keys().map(String::as_str).collect();
+            keys.sort_unstable();
+            assert_eq!(keys, PAYLOAD_FIELDS_WITH_DATA);
+            let mut data_keys: Vec<&str> = hired["data"].as_object().unwrap().keys().map(String::as_str).collect();
+            data_keys.sort_unstable();
+            assert_eq!(data_keys, HIRED_DATA_KEYS);
+            assert_eq!(hired["data"], json!({ "person_ref": person, "organization_ref": org, "effective_on": "2026-02-02" }));
+            assert_eq!(hired["subject"], format!("worker:{w4}"));
+            let activated = bodies.iter().find(|b| b["kind"] == "worker_activated").expect("the activation was sent");
+            let mut keys: Vec<&str> = activated.as_object().unwrap().keys().map(String::as_str).collect();
+            keys.sort_unstable();
+            assert_eq!(keys, PAYLOAD_FIELDS, "an activation has no data, though its event carries from and to");
+            let text = format!("{hired}{activated}");
+            assert!(!text.contains("WH-HIRE-SECRET") && !text.contains("Secret Hire") && !text.contains("engineering"), "{text}");
+        }
+        // The log still shows no body: the kept data is not listed.
+        let hires_pid = hires["pid"].as_str().unwrap();
+        let log: Value = request.get(&format!("/api/webhook-subscriptions/{hires_pid}/deliveries")).await.json();
+        assert!(log.as_array().unwrap().iter().all(|row| row.get("data").is_none() && !row.to_string().contains("person:")), "{log}");
+        // The schema refuses data on a kind that carries none.
+        let refused = ctx.db.execute_unprepared(&format!(
+            "INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, data, occurred_at, next_attempt_at)
+             VALUES (gen_random_uuid(), '{hires_pid}', gen_random_uuid(), 'leave_approved', 'leave_request:x', '{{}}'::jsonb, now(), now())"
+        )).await;
+        assert!(refused.is_err(), "data on leave_approved is refused by the schema");
 
         // Removing the subscription removes its log.
         request.delete(&format!("/api/webhook-subscriptions/{pid}")).await.assert_status_ok();

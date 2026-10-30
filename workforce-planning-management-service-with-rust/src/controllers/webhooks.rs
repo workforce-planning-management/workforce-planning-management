@@ -218,7 +218,18 @@ async fn deliveries(
         .limit(query.limit.unwrap_or(100).clamp(1, 500))
         .all(&ctx.db)
         .await?;
-    format::json(rows.iter().map(row_json).collect::<Result<Vec<_>>>()?)
+    // The log shows how a delivery went, not what it said: the handoff `data` a hire or an ending keeps is not listed.
+    let log = rows
+        .iter()
+        .map(|row| {
+            let mut value = row_json(row)?;
+            if let Some(object) = value.as_object_mut() {
+                object.remove("data");
+            }
+            Ok(value)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    format::json(log)
 }
 
 /// The routes.

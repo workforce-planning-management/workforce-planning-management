@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — webhook payloads for a hire or an ending name the person by reference (WPM-T372, proposed WPM-D145)
+
+So CRM can tell who was hired or left: `data` with `person_ref`, `organization_ref`, `effective_on` (and `from`, `to` for an ending),
+nothing else. Proposed; CRM's receiver is being built and has not been run against it.
+
 ### Added — people-impact for a programme, the pull PPM makes (WPM-T361)
 
 `GET /api/capacity/people-impact?programme=thing:<uuid>`: counts only, floored at ten, no total, each part known or unknown with its

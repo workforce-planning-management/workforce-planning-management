@@ -364,7 +364,8 @@ section 4)
 - **AiRegisterEntry** (`ai_register_entries`: feature, Annex III category, overseer role, informed on, log retention, applies from) —
   extends the scoring register ([regulatory.md](regulatory.md), WPM-R148, WPM-D103).
 - **WebhookSubscription**, **ScimTarget** (`webhook_subscriptions`, `scim_targets`: endpoint, a reference to the secret, event kinds) —
-  no secret value ([integrations.md](integrations.md), WPM-R150–R151).
+  no secret value ([integrations.md](integrations.md), WPM-R150–R151). A **webhook delivery** (`webhook_deliveries`: event id, kind,
+  subject URN, attempts) holds no body; for a hire or an ending only, `data` keeps the handoff references and date (proposed WPM-D145).
 - **Position** (`positions`: cost centre, budgeted FTE, funding kind, state, a link to the holder) — a seat, not a person
   ([positions.md](positions.md), WPM-R152, WPM-D104).
 - **Asset**, **AssetIssue** (`assets`, `asset_issues`: kind and tag; worker, issued on, returned on) — no location

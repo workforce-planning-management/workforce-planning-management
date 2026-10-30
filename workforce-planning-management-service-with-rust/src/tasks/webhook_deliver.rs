@@ -1,6 +1,7 @@
 //! `cargo loco task webhook_deliver` — send the queued webhook deliveries (WPM-R151, WPM-D106).
 //!
-//! Each due delivery is turned into its payload (an id, a kind, a URN and a time, see [`crate::rules::webhook`]), signed with
+//! Each due delivery is turned into its payload (an id, a kind, a URN and a time, and for a hire or an ending the handoff `data`,
+//! see [`crate::rules::webhook`]), signed with
 //! the secret named by its subscription, and posted without following redirects. The answer decides what happens next:
 //! delivered, retried after a back-off, or given up on. The log keeps the status code and a short reason, never a body.
 
@@ -110,6 +111,7 @@ async fn send(
         &delivery.kind,
         &delivery.subject,
         delivery.occurred_at.with_timezone(&Utc),
+        delivery.data.as_ref(),
     )
     .to_string();
     let header = rules::signature(secret.as_bytes(), now.timestamp(), body.as_bytes());

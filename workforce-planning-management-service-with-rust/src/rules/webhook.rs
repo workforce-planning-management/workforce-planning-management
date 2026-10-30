@@ -2,7 +2,9 @@
 //!
 //! An event leaves as a **reference**: its id, its kind, the URN of the record it is about and when it happened. Never a name,
 //! a number, a date of birth or any other personal field; a subscriber that needs more reads it through the API under its own
-//! access. The body is signed with HMAC-SHA256 under a per-subscription secret that is held **by reference** (the name of an
+//! access. A hire or an ending also carries `data`, exactly the handoff of [`crate::rules::bridge::handoff_data`] (a `person:` and an
+//! `organization:` reference and a date, with `from` and `to` for an ending), so a subscriber can tell *who* by reference (proposed
+//! WPM-D145, consistent with WPM-D106 and WPM-D134). The body is signed with HMAC-SHA256 under a per-subscription secret that is held **by reference** (the name of an
 //! environment variable), so the secret is never stored or returned.
 
 use chrono::{DateTime, Utc};
@@ -30,8 +32,60 @@ pub fn kind_names() -> Vec<&'static str> {
     KINDS.iter().map(|(_, k)| *k).collect()
 }
 
-/// The only fields a payload has. Adding one is a decision (WPM-D106), and a test holds this list against the payload.
+/// The fields every payload has. Adding one is a decision (WPM-D106), and a test holds this list against the payload.
 pub const PAYLOAD_FIELDS: [&str; 4] = ["id", "kind", "occurred_at", "subject"];
+
+/// The fields of a payload that carries `data` (a hire or an ending, [`data_keys`]), sorted.
+pub const PAYLOAD_FIELDS_WITH_DATA: [&str; 5] = ["data", "id", "kind", "occurred_at", "subject"];
+
+/// The keys of a hire's `data`, sorted: [`crate::rules::bridge::HANDOFF_KEYS`].
+pub const HIRED_DATA_KEYS: [&str; 3] = crate::rules::bridge::HANDOFF_KEYS;
+
+/// The keys of an ending's `data`, sorted: the handoff and the status change.
+pub const ENDED_DATA_KEYS: [&str; 5] = [
+    "effective_on",
+    "from",
+    "organization_ref",
+    "person_ref",
+    "to",
+];
+
+/// The keys a kind's `data` holds, sorted; empty for a kind that carries no `data` (proposed WPM-D145).
+#[must_use]
+pub fn data_keys(kind: &str) -> &'static [&'static str] {
+    match kind {
+        "worker_hired" => &HIRED_DATA_KEYS,
+        "worker_terminated" | "worker_retired" => &ENDED_DATA_KEYS,
+        _ => &[],
+    }
+}
+
+/// The top-level fields of a payload of this kind, sorted.
+#[must_use]
+pub fn payload_fields(kind: &str) -> &'static [&'static str] {
+    if data_keys(kind).is_empty() {
+        &PAYLOAD_FIELDS
+    } else {
+        &PAYLOAD_FIELDS_WITH_DATA
+    }
+}
+
+/// What a delivery of this kind keeps of the event's data: exactly [`data_keys`], or nothing. A kind with no keys keeps nothing
+/// whatever the event carried (a status change's `from` and `to` on an activation stay behind), and an event that lacks one of the
+/// keys keeps nothing rather than a part, so a subscriber is never handed half a handoff.
+#[must_use]
+pub fn delivery_data(kind: &str, event_data: Option<&Value>) -> Option<Value> {
+    let keys = data_keys(kind);
+    let source = event_data?.as_object()?;
+    if keys.is_empty() || !keys.iter().all(|k| source.contains_key(*k)) {
+        return None;
+    }
+    Some(Value::Object(
+        keys.iter()
+            .map(|k| ((*k).to_string(), source[*k].clone()))
+            .collect(),
+    ))
+}
 
 /// The URN of the record an event is about.
 #[must_use]
@@ -39,15 +93,26 @@ pub fn subject(entity: &str, pid: &str) -> String {
     format!("{entity}:{pid}")
 }
 
-/// The payload: a reference and a kind.
+/// The payload: a reference and a kind, and for a hire or an ending the handoff `data` the delivery kept ([`delivery_data`]). `data` is
+/// sent only for a kind that carries it, so a stray value for another kind is dropped here too.
 #[must_use]
-pub fn payload(event_id: &str, kind: &str, subject: &str, occurred_at: DateTime<Utc>) -> Value {
-    json!({
+pub fn payload(
+    event_id: &str,
+    kind: &str,
+    subject: &str,
+    occurred_at: DateTime<Utc>,
+    data: Option<&Value>,
+) -> Value {
+    let mut body = json!({
         "id": event_id,
         "kind": kind,
         "subject": subject,
         "occurred_at": occurred_at.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-    })
+    });
+    if let (Some(data), Some(object)) = (delivery_data(kind, data), body.as_object_mut()) {
+        object.insert("data".to_string(), data);
+    }
+    body
 }
 
 const BLOCK: usize = 64;
@@ -280,22 +345,130 @@ mod tests {
         );
     }
 
+    fn sorted_keys(v: &Value) -> Vec<&str> {
+        let mut keys: Vec<&str> = v.as_object().unwrap().keys().map(String::as_str).collect();
+        keys.sort_unstable();
+        keys
+    }
+
+    /// What an ending event carries on the transport: the status change and the handoff, and here one field too many.
+    fn ending_event_data() -> Value {
+        json!({
+            "from": "offboarding", "to": "terminated",
+            "person_ref": "person:0c4f1e2a-0000-4000-8000-000000000001",
+            "organization_ref": "organization:0c4f1e2a-0000-4000-8000-0000000000aa",
+            "effective_on": "2026-10-30",
+            "display_name": "Never Sent",
+        })
+    }
+
     #[test]
     fn a_payload_is_a_reference_and_a_kind_and_nothing_else() {
         let p = payload(
             "e1",
-            "worker_hired",
+            "worker_activated",
             &subject("worker", "11111111-2222-4333-8444-555555555555"),
             at(),
+            Some(&json!({ "from": "pending", "to": "active" })),
         );
-        let mut keys: Vec<&str> = p.as_object().unwrap().keys().map(String::as_str).collect();
-        keys.sort_unstable();
         assert_eq!(
-            keys, PAYLOAD_FIELDS,
-            "a new field is a decision, not an accident"
+            sorted_keys(&p),
+            PAYLOAD_FIELDS,
+            "a new field is a decision, not an accident; an activation's from and to stay behind"
         );
         assert_eq!(p["subject"], "worker:11111111-2222-4333-8444-555555555555");
         assert_eq!(p["occurred_at"], "2026-10-24T12:00:00Z");
+        let leave = payload("e2", "leave_approved", "leave_request:x", at(), None);
+        assert_eq!(sorted_keys(&leave), PAYLOAD_FIELDS);
+    }
+
+    #[test]
+    fn the_key_sets_are_pinned_per_kind() {
+        assert_eq!(
+            data_keys("worker_hired"),
+            ["effective_on", "organization_ref", "person_ref"]
+        );
+        assert_eq!(
+            data_keys("worker_hired"),
+            crate::rules::bridge::HANDOFF_KEYS
+        );
+        for kind in ["worker_terminated", "worker_retired"] {
+            assert_eq!(
+                data_keys(kind),
+                [
+                    "effective_on",
+                    "from",
+                    "organization_ref",
+                    "person_ref",
+                    "to"
+                ]
+            );
+            assert_eq!(
+                payload_fields(kind),
+                ["data", "id", "kind", "occurred_at", "subject"]
+            );
+        }
+        for kind in ["worker_activated", "leave_approved", "updated"] {
+            assert_eq!(data_keys(kind), [] as [&str; 0]);
+            assert_eq!(payload_fields(kind), PAYLOAD_FIELDS);
+        }
+        // Every offered kind is covered by one of the two shapes.
+        for kind in kind_names() {
+            assert!(
+                payload_fields(kind) == PAYLOAD_FIELDS
+                    || payload_fields(kind) == PAYLOAD_FIELDS_WITH_DATA
+            );
+        }
+    }
+
+    #[test]
+    fn a_hire_and_an_ending_carry_exactly_the_handoff_and_nothing_else() {
+        let handoff = crate::rules::bridge::handoff_data(
+            "person:0c4f1e2a-0000-4000-8000-000000000001",
+            "organization:0c4f1e2a-0000-4000-8000-0000000000aa",
+            chrono::NaiveDate::from_ymd_opt(2026, 10, 30).unwrap(),
+        );
+        let hired = payload("e1", "worker_hired", "worker:x", at(), Some(&handoff));
+        assert_eq!(sorted_keys(&hired), PAYLOAD_FIELDS_WITH_DATA);
+        assert_eq!(sorted_keys(&hired["data"]), HIRED_DATA_KEYS);
+        assert_eq!(hired["data"], handoff);
+        for kind in ["worker_terminated", "worker_retired"] {
+            let ended = payload("e2", kind, "worker:x", at(), Some(&ending_event_data()));
+            assert_eq!(sorted_keys(&ended), PAYLOAD_FIELDS_WITH_DATA);
+            assert_eq!(
+                sorted_keys(&ended["data"]),
+                ENDED_DATA_KEYS,
+                "the extra field is dropped"
+            );
+            assert!(!ended.to_string().contains("Never Sent"));
+        }
+    }
+
+    #[test]
+    fn half_a_handoff_is_not_sent() {
+        assert_eq!(delivery_data("worker_hired", None), None);
+        assert_eq!(
+            delivery_data("worker_hired", Some(&json!({ "person_ref": "person:x" }))),
+            None
+        );
+        assert_eq!(delivery_data("worker_hired", Some(&json!("text"))), None);
+        let p = payload(
+            "e1",
+            "worker_hired",
+            "worker:x",
+            at(),
+            Some(&json!({ "person_ref": "person:x" })),
+        );
+        assert_eq!(
+            sorted_keys(&p),
+            PAYLOAD_FIELDS,
+            "no data rather than part of it"
+        );
+        assert_eq!(
+            delivery_data("worker_activated", Some(&ending_event_data())),
+            None,
+            "not a kind that carries data"
+        );
     }
 
     #[test]

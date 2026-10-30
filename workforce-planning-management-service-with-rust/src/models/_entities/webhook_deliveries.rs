@@ -1,5 +1,6 @@
 //! `SeaORM` Entity — `webhook_deliveries`. One event for one subscription: its kind, the URN it is about and how the attempts
-//! went (WPM-R151). No payload body and no personal field.
+//! went (WPM-R151). No payload body. For a hire or an ending only, `data` keeps the handoff the event carried (a `person:` and an
+//! `organization:` reference, a date, and the status change), so the payload can say who (proposed WPM-D145).
 
 #![allow(missing_docs)]
 
@@ -19,6 +20,7 @@ pub struct Model {
     pub event_id: Uuid,
     pub kind: String,
     pub subject: String,
+    pub data: Option<Json>,
     pub occurred_at: DateTimeWithTimeZone,
     pub status: String,
     pub attempts: i32,

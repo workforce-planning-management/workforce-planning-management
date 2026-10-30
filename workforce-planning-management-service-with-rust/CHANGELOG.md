@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — a hire or an ending tells a webhook subscriber who (WPM-T372, proposed WPM-D145)
+
+`worker_hired`, `worker_terminated` and `worker_retired` deliveries gain `data`: exactly `person_ref`, `organization_ref` and
+`effective_on`, plus `from` and `to` for an ending. Other kinds are unchanged; so is the signature. Migration `000108` adds
+`webhook_deliveries.data`, allowed by the schema for those three kinds only and not shown in the delivery log. **An existing
+subscriber to those kinds now receives a fifth field.** **Not verified:** CRM's receiver; `scripts/check-webhook-flow.py` was not run;
+WPM-D145 awaits the product owner's confirmation.
+
 ### Added — people-impact for a programme (WPM-T361)
 
 `GET /api/capacity/people-impact?programme=thing:<uuid>` (optional `ends_on`, `months`) and `rules::people_impact`: counts only, under

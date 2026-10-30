@@ -2,8 +2,9 @@
 """Check the outbound webhook flow end to end against a RUNNING demo service, with an independent receiver (WPM-T301).
 
 The receiver in this file knows only what spec/integrations.md says about the signature (`X-WPM-Signature: t=<unix>,v1=<hex HMAC-SHA256
-of "<t>.<body>">`) and the payload (`{id, kind, subject, occurred_at}`); it shares no code with the service. It checks that a delivery
-is signed and fresh, that the body holds nothing but those four fields, that a 5xx is retried with a back-off and a 4xx is not repeated.
+of "<t>.<body>">`) and the payload (`{id, kind, subject, occurred_at}`, plus `data` for a hire or an ending since WPM-T372); it shares
+no code with the service. It subscribes to `worker_activated`, which has no `data`, and checks that a delivery is signed and fresh, that
+the body holds nothing but those four fields, that a 5xx is retried with a back-off and a 4xx is not repeated.
 
     WPM_WEBHOOK_SECRET_E2E=some-secret python3 scripts/check-webhook-flow.py [http://localhost:5150] [--retry]
 

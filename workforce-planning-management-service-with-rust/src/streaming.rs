@@ -203,21 +203,25 @@ pub async fn emit_on<C: ConnectionTrait>(
 
 /// Queue a delivery for every active subscription that asked for this event, **on the same connection** (the mutation's
 /// transaction), so a change that rolls back tells nobody and a change that commits is never missed. Only the event id, the
-/// kind and the URN of the record are written: no body and no name (WPM-D106).
+/// kind and the URN of the record are written, and for a hire or an ending the handoff references and date the event carried
+/// (`rules::webhook::delivery_data`): no body and no name (WPM-D106, proposed WPM-D145).
 async fn enqueue_webhooks<C: ConnectionTrait>(conn: &C, env: &Envelope) -> loco_rs::Result<()> {
     if !crate::rules::webhook::offered(&env.entity, &env.kind) {
         return Ok(());
     }
     conn.execute_raw(sea_orm::Statement::from_sql_and_values(
         sea_orm::DatabaseBackend::Postgres,
-        "INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, occurred_at, next_attempt_at)
-         SELECT gen_random_uuid(), s.pid, $1, $2, $3, now(), now()
+        "INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, data, occurred_at, next_attempt_at)
+         SELECT gen_random_uuid(), s.pid, $1, $2, $3, $4, now(), now()
            FROM webhook_subscriptions s WHERE s.active AND $2 = ANY (s.kinds)
          ON CONFLICT (subscription_pid, event_id) DO NOTHING",
         [
             env.event_id.into(),
             env.kind.clone().into(),
             crate::rules::webhook::subject(&env.entity, &env.pid).into(),
+            sea_orm::Value::Json(
+                crate::rules::webhook::delivery_data(&env.kind, env.data.as_ref()).map(Box::new),
+            ),
         ],
     ))
     .await

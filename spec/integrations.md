@@ -115,6 +115,8 @@ endpoint in its core as far as this round found) or any real identity provider: 
   **delivery log that holds no payload body** (status, attempt, time).
 - **Payload.** URNs and event kinds only (`worker:<pid>`, `leave_approved`), **never a personal field** (WPM-D106). A subscriber that
   needs more reads it through the API under its own access. A test fails if a payload field outside the allow-list is added.
+  **For a hire or an ending** (`worker_hired`, `worker_terminated`, `worker_retired`) the payload also carries `data`, exactly the
+  handoff references and date (proposed WPM-D145, WPM-T372); every other kind has none.
 
 **Built (WPM-T277).** Administrators (`access=admin`; HR is refused) manage `POST/GET /api/webhook-subscriptions`,
 `PUT/DELETE /api/webhook-subscriptions/{pid}` and read `GET .../{pid}/deliveries`. A subscription has an endpoint, kinds from the
@@ -126,7 +128,9 @@ subscription), so a change that rolls back tells nobody. The task `webhook_deliv
 occurred_at}` where `subject` is the URN (`worker:<pid>`, `leave_request:<pid>`), signed `X-WPM-Signature: t=<unix>,v1=<HMAC-SHA256
 of "<t>.<body>">` with the timestamp inside the signature, no redirects followed, a 10 second timeout. 2xx is delivered; a network
 failure, `408`, `429` and `5xx` are retried with a back-off of one minute doubling to a day, ten tries in all; any other answer is a
-refusal and is not repeated. The log keeps the HTTP status and a short reason; **there is no column for a body**. Erasure deletes the
+refusal and is not repeated. The log keeps the HTTP status and a short reason; **there is no column for a body**. *(Since WPM-T372,
+proposed WPM-D145: a hire or an ending keeps its handoff `data` in the delivery row, which the schema allows for those three kinds
+only and the log does not list.)* Erasure deletes the
 deliveries that name the worker. Settings: the secret variables only. **A schedule** is in `config/scheduler.yaml` (every minute, WPM-T300). **Run against an independent receiver** (`scripts/check-webhook-flow.py`, WPM-T301): a signed, fresh delivery whose body holds exactly the four fields, a 5xx retried after the back-off and a 4xx not repeated. **Not built:** the other events in the spec's list ("movement": WPM emits no movement event on the
 transport); DNS-rebinding protection (a host name that later resolves to an internal address is not caught, only address literals
 are); the secret rotated without a gap; a screen; a replay of a failed delivery.
@@ -139,4 +143,16 @@ are); the secret rotated without a gap; a screen; a replay of a failed delivery.
   state; contact details stay with the person service (WPM-D23).
 - **WPM-D106 — Events leave as references.** Webhook and SCIM payloads carry URNs and kinds; a subscriber that needs more reads it
   through the API with its own access.
+- **WPM-D145 — A hire or an ending tells a subscriber who, by reference** *(proposed 2026-10-30; needs the product owner's
+  confirmation)*. For `worker_hired`, `worker_terminated` and `worker_retired` the webhook payload gains `data` holding **exactly**
+  the keys of `rules::bridge::handoff_data`: `person_ref`, `organization_ref` and `effective_on`, plus `from` and `to` for the two
+  endings, and nothing else. Every other kind has no `data`. The signature is unchanged (`x-wpm-signature: t=<unix>,v1=<hex
+  HMAC-SHA256 of "<t>.<body>">`). *Why:* a subject of `worker:<pid>` alone does not tell a subscriber which person was hired, and the
+  subscriber that needs it (CRM) keys its contacts by `person_ref`; asking it to read WPM's worker record under a token of its own
+  for one field is the wide read WPM-D134 and D135 avoid. *Consistent with WPM-D106:* references and a date, no name, number,
+  department, pay or any other personal field. *Consistent with WPM-D134:* it is the same handoff the event transport has carried since
+  WPM-T355, cut to the same keys. *Rejected:* `data` on every kind (an activation's `from`/`to` says nothing a subscriber needs);
+  the whole event `data` passed through (a field added to an event would leave by accident); part of a handoff when the event lacks
+  a key (none is sent rather than half). *Cost:* the delivery row keeps the handoff, a `person:` reference, for as long as the
+  delivery is kept; it is erased with the worker (erasure deletes the deliveries that name them) and is not shown in the delivery log.
 

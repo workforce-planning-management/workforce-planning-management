@@ -846,7 +846,7 @@ Requested after section R. Succession exists (WPM-R12); deputies and acting up d
 | `pay_categories` (section N) | Category of equal value, member job titles, stated basis | No |
 | `pay_information_requests` | Worker, asked on, due on, answered on | Yes (HR-only; in export; erased) |
 | `ai_register_entries` | Feature, Annex III category, overseer role, informed on, log retention | No |
-| `webhook_subscriptions`, `webhook_deliveries` | Endpoint, secret reference, event kinds; a delivery's subject URN, status and attempts, **no body** | No for subscriptions (secrets by reference only); a delivery names a worker URN (erased) |
+| `webhook_subscriptions`, `webhook_deliveries` | Endpoint, secret reference, event kinds; a delivery's subject URN, status and attempts, **no body**; for a hire or an ending, the handoff `data` (a `person:` and an `organization:` reference, a date, the status change; proposed WPM-D145) | No for subscriptions (secrets by reference only); a delivery names a worker URN and, for those kinds, a person reference (erased with the worker) |
 | `scim_pushes` | Worker, the provider's id, a fingerprint, retry state; no body | Yes (a link; erased) |
 | `plan_org_nodes` | A plan's target structure: role key, parent role, department, title, headcount | No (roles, never people) |
 | `positions` | Cost centre, budgeted FTE, funding kind, state, holder link | Holder link only (HR-only) |

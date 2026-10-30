@@ -77,6 +77,17 @@ by WPM's request tests against WPM alone.
   so CRM can restore a contact it paused. All are emitted in the transaction that makes the change (WPM-D9).
 - **Not done:** any CRM-side behaviour; replay of events a consumer missed (the outbox gives at-least-once, so a consumer must be idempotent
   on `event_id`).
+- **Over webhooks (family contract point 5; proposed WPM-D145, WPM-T372).** A webhook subscriber to these three kinds now receives the
+  same handoff in the payload's `data`, so CRM can build its receiver against `POST`s it is sent rather than read WPM's API:
+
+  ```json
+  { "id": "<event uuid>", "kind": "worker_hired", "subject": "worker:<pid>", "occurred_at": "2026-10-30T12:00:00Z",
+    "data": { "person_ref": "person:<uuid>", "organization_ref": "organization:<uuid>", "effective_on": "2026-10-30" } }
+  ```
+
+  `worker_terminated` and `worker_retired` add `"from"` and `"to"` (the status change, for example `"offboarding"` to
+  `"terminated"`) inside `data`. `worker_activated` and `leave_approved` have no `data`. Headers: `x-wpm-event`, `x-wpm-delivery`,
+  `x-wpm-signature: t=<unix>,v1=<hex HMAC-SHA256 of "<t>.<body>">`, unchanged. **CRM's receiver has not been run against it.**
 
 ### WPM-R208 — Overlap check
 
