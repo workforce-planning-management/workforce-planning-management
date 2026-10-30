@@ -10,7 +10,7 @@ Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
 (WPM-D*), a task (WPM-T*), code and tests.
 
-Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decisions up to WPM-D85; 91 migrations, 74 controllers, 53 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
+Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decisions up to WPM-D85; 108 migrations, 84 controllers, 56 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
 
 ## Specification
 
@@ -83,16 +83,18 @@ Status as of 2026-10-19: tasks WPM-T1–T226; requirements up to WPM-R134; decis
 - [spec/contents-for-global-sharing-with-svelte/index.md](spec/contents-for-global-sharing-with-svelte/index.md): convention: tables of contents for global sharing with Svelte
 - [spec/glossary.md](spec/glossary.md): terms used across the spec
 - [spec/worldwide.md](spec/worldwide.md): the target is worldwide, not US or UK; jurisdiction is data, standards are profiles (WPM-R214)
+- [spec/cross-app-bridges.md](spec/cross-app-bridges.md): bridges to CRM and PPM: the family contract (2026-10-30), references and counts only, the caller's token (WPM-R206 to R213)
+- [spec/mhra.md](spec/mhra.md): the MHRA as a named UK regulator; its workforce questions left open until its guidance is read (WPM-R212)
 - [spec/regulatory.md](spec/regulatory.md): regulatory position: demo software, not a production HR or payroll system
 - [spec/roadmap.md](spec/roadmap.md): what is delivered, proposed and deferred
 - [spec/testing.md](spec/testing.md): how to run each suite, the PostgreSQL and Podman setup
 - [spec/tolerances.md](spec/tolerances.md): WPM-R140 and WPM-D93: tolerances on a workforce plan in time, cost, resources and risk, red, amber or green, an unknown is never green
 - [spec/pay-transparency.md](spec/pay-transparency.md): WPM-R144–R146 and WPM-D99: the EU Pay Transparency Directive: seven pay gap indicators with a floor, pay information for the worker and none asked of the candidate, the joint pay assessment trigger, and what the spec round checked
 - [spec/human-capital-reporting.md](spec/human-capital-reporting.md): WPM-R147 and WPM-D100: a dated read-only report mapped to ISO 30414:2025 and the revised ESRS S1 requirement numbers, a mapping and never a copy
-- [spec/staff-records-and-pay.md](spec/staff-records-and-pay.md): proposed WPM-R161–R178, WPM-D112–D120: the electronic staff record, assignments and coding, annual service, the person-centric record, statutory and mandatory learning, the PADR, payroll information, deductions, pensions and student loans
-- [spec/absence-and-line-managers.md](spec/absence-and-line-managers.md): proposed WPM-R179–R189, WPM-D121–D124: sickness absence without reasons, return-to-work, review points without a Bradford factor, occupational health, stress assessed in the work, and the manager's action list
-- [spec/disability-and-adjustments.md](spec/disability-and-adjustments.md): proposed WPM-R190–R196, WPM-D125–D127: an adjustments passport the person owns, "working with me", absence rules that adjust, candidate adjustments, and disability measures from voluntary monitoring only
-- [spec/succession-deputies-and-acting-up.md](spec/succession-deputies-and-acting-up.md): proposed WPM-R197–R205, WPM-D128–D133: succession on positions with evidence beside readiness, deputies with scoped authority, acting up with its pay, limits and fairness
+- [spec/staff-records-and-pay.md](spec/staff-records-and-pay.md): Proposed WPM-R161–R178, WPM-D112–D120: the electronic staff record, assignments and coding, annual service, the person-centric record, statutory and mandatory learning, the PADR, payroll information, deductions, pensions and student loans
+- [spec/absence-and-line-managers.md](spec/absence-and-line-managers.md): Proposed WPM-R179–R189, WPM-D121–D124: sickness absence without reasons, return-to-work, review points, occupational health, stress assessed in the work, and the manager's action list
+- [spec/disability-and-adjustments.md](spec/disability-and-adjustments.md): Proposed WPM-R190–R196, WPM-D125–D127: an adjustments passport the person owns, working with me, absence rules that adjust, candidate adjustments, disability measures from monitoring only
+- [spec/succession-deputies-and-acting-up.md](spec/succession-deputies-and-acting-up.md): Proposed WPM-R197–R205, WPM-D128–D133: succession on positions with evidence beside readiness, deputies with scoped authority, acting up with its pay, limits and fairness
 - [spec/positions.md](spec/positions.md): WPM-R152, WPM-R153 and WPM-D104: positions as budgeted seats, vacancy and over-establishment, and the current-versus-target organization diff
 - [spec/worker-matching.md](spec/worker-matching.md): WPM-R134 and WPM-D85: matching worker records, unknown is never zero, a score proposes and never merges
 
