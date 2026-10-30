@@ -9,6 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the family contract with PPM and CRM recorded; programme demand in closed (WPM-T360)
+
+At the product owner's direction (2026-10-30) [`spec/cross-app-bridges.md`](spec/cross-app-bridges.md) records the contract the three
+apps share: a PPM plan is `thing:<plan pid>` here, each side's `peer_pool_ref` holds the other's pool pid, PPM sends demand to the
+existing `POST /api/capacity/peer-demand` and pulls `GET /api/capacity/peer-supply` under the caller's token, people-impact is a pull,
+and the hire and leaving handoff goes to CRM over webhooks. WPM-T360 is closed: the receive route already existed and no code changed.
+**Not verified:** PPM's sender and CRM's receiver are being built by their owners and have not been run against WPM. CRM's team
+import now sends one deployer-held token (CRM-R87), not the caller's own; the `worker:` against `person:` question is still open.
+
 ### Added — who may ask the capacity what-if, tested (WPM-T160; ticks WPM-T359)
 
 `tests/enforcement_what_if.rs` runs each persona against the what-if and the capacity view: the service, HR and a planner get the same counts-only answer, an ordinary manager and a partner-only caller are refused, and another organization is not found. Mutation-checked. The audience is recorded as WPM-D142, **proposed, needs product-owner confirmation**; nothing was widened. No service code changed.

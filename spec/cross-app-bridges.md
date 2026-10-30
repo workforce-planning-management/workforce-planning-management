@@ -11,9 +11,11 @@ copying a record and without carrying a personal field outward**.
 
 > ⚠️ **Demo software.** Synthetic data only. See [regulatory.md](regulatory.md).
 
-> **What was and was not readable when this was written.** CRM is on the same machine and was looked at only as far as its file list
-> and its use of `person_ref`. **PPM's code was not available at all.** Every PPM contract below is therefore an *assumed* shape, marked
-> **unverified**, and no code is built against it (WPM-D136).
+> **What was and was not readable when this was written (2026-10-28).** CRM was then looked at only as far as its file list and its
+> use of `person_ref`, and PPM's code was not found at first; every PPM contract was an *assumed* shape, marked **unverified**, and no
+> code was built against it (WPM-D136). Both were read later the same day (see "What CRM was read to say" and "What PPM was read to
+> say"). **On 2026-10-30 the product owner fixed the family contract** (next section); where it applies it replaces the "unverified"
+> notes below. What the contract does not cover (the what-if call, WPM-R209) is still unverified.
 
 ## Decisions
 
@@ -27,6 +29,28 @@ copying a record and without carrying a personal field outward**.
 - **WPM-D136 A contract that was not read is not built against.** Where the other side's API or event shape is not known, WPM specifies
   what *it* will send or accept, marks the rest unverified, and builds the WPM half only. Rejected: coding against a guessed schema and
   finding out in production.
+
+## The family contract (decided 2026-10-30, at the product owner's direction)
+
+The three apps (WPM, PPM, CRM) are being harmonized together. The product owner fixed these points for all three; WPM records them
+here and builds its half. They sit inside WPM-D134 to D141: references and counts only, the caller's own token, one owner per fact.
+
+1. **Programme identity.** A PPM plan's `pid` (a UUID) is named in WPM as `programme_ref = "thing:<ppm plan pid>"`. WPM keeps no copy
+   of the plan; it holds the reference where it already held a programme's `thing:` URN (demand claims, post funding, positions).
+2. **The pool link.** WPM's `skill_pools.peer_pool_ref` holds the **PPM pool's pid**; PPM holds the **WPM pool's pid** in its own
+   `peer_pool_ref`. Each side sets its half by hand (WPM-D139).
+3. **PPM → WPM demand and supply.** PPM calls the existing `POST /api/capacity/peer-demand` with `{pool_pid: <WPM pool pid>,
+   programme_ref, month: YYYY-MM-01, fte_centi, peer_event_id}`, **under the forwarded caller's bearer token** (WPM-D135). PPM pulls
+   the existing `GET /api/capacity/peer-supply`. Neither route changes for this.
+4. **WPM → PPM people-impact is a pull.** PPM asks `GET /api/capacity/people-impact?programme=thing:<uuid>` under the caller's token;
+   WPM answers counts only (WPM-R211, WPM-T361). WPM pushes nothing to PPM.
+5. **WPM → CRM handoff is over webhooks.** A `worker_hired`, `worker_terminated` or `worker_retired` delivery carries the handoff
+   references so a subscriber can tell who was hired or left (WPM-R207; the payload change is a decision of its own). CRM
+   builds the receiver.
+
+**What this does not verify.** No PPM or CRM code that implements its half had been run against WPM when this was written: PPM's
+sender and puller and CRM's webhook receiver were being built in parallel by their own owners. Each WPM route named here is exercised
+by WPM's request tests against WPM alone.
 
 ## CRM
 
@@ -70,7 +94,7 @@ copying a record and without carrying a personal field outward**.
 
 This is **WPM-R97** and tasks **WPM-T158 to T160**, unchanged: PPM, under its own caller's token, asks whether a proposed change fits
 capacity; WPM reads, computes and stores nothing, names no one, and says what the answer rests on. Registered here so the three bridges
-read as one set. **Contract with PPM: unverified.**
+read as one set. **Contract with PPM: unverified** (the family contract of 2026-10-30 does not cover the what-if call).
 
 ### WPM-R210 — Programme demand in (PPM tells WPM)
 
@@ -78,7 +102,9 @@ read as one set. **Contract with PPM: unverified.**
   or role, FTE per month, and the PPM event id. WPM turns it into demand lines against the programme ref it already holds (WPM-D55).
 - **Idempotent** on `(programme_ref, source_event_id)`: a repeat changes nothing. A line for a programme WPM has no planning scope for is
   refused. WPM records the source and never invents a programme.
-- **PPM's event shape and delivery are unknown: unverified.** WPM specifies the request it accepts; PPM adapts to it or this changes.
+- **The shape is fixed (2026-10-30, family contract point 3):** PPM calls `POST /api/capacity/peer-demand` with
+  `{pool_pid, programme_ref, month, fte_centi, peer_event_id}` under the forwarded caller's token, for a pool linked on both sides.
+  The route was built for WPM-R213 (WPM-T364); PPM's sender is being built against it and has not been run against WPM.
 - **Not done:** pulling from PPM; schedule data (dates of tasks, critical path) never enters WPM (WPM-D55).
 
 ### WPM-R211 — People-impact out (WPM tells PPM)
@@ -88,7 +114,8 @@ read as one set. **Contract with PPM: unverified.**
   and no total gives it away. No name, no pid, no pay.
 - **Read-only, under the caller's token,** audited (WPM-D135). It is the people-impact answer of WPM-R95 to R97 for an issue or a change
   request that names a programme.
-- **Contract with PPM: unverified.** Shares its core with WPM-R209.
+- **A pull (2026-10-30, family contract point 4):** `GET /api/capacity/people-impact?programme=thing:<uuid>`, built as WPM-T361.
+  Where a sub-count cannot be computed from what WPM holds, it is `unknown` with the reason, never zero.
 
 ## Working alone, and working together (WPM-R213, WPM-D138 to D141)
 
@@ -133,8 +160,8 @@ people-impact. WPM does not change PPM.
 | WPM-T357 | `POST /api/bridges/overlap` (R208) | nothing outside WPM |
 | WPM-T358 | Supplier and contact names (R206) | **Read 2026-10-28: CRM has no lookup by reference**, and holds no person's name; see "What CRM was read to say". Re-scoped to person-service |
 | WPM-T359 | Capacity what-if (R209) | the capacity model (WPM-T104 to T107); is WPM-T158 to T160. **WPM half built 2026-10-28** (`POST /api/capacity/what-if`; the contingent effect, T159, is built too; the persona test of T160 is open); PPM's side unverified |
-| WPM-T360 | Programme demand in (R210, R213) | decided 2026-10-28 (WPM-D138 to D141): the pool link and sourced claims first (T363, T364) |
-| WPM-T361 | People-impact out (R211) | WPM-T359; PPM has no inbound route for it (read 2026-10-28) |
+| WPM-T360 | Programme demand in (R210, R213) | **Closed 2026-10-30.** The receive route exists (T364); the family contract fixes PPM as its caller. PPM's sender is being built against it; not verified end to end |
+| WPM-T361 | People-impact out (R211) | WPM-T359; a pull by PPM, fixed by the family contract (2026-10-30) |
 
 ## What CRM was read to say (2026-10-28)
 
@@ -151,6 +178,11 @@ CRM's source is on the same machine (`contact-relationship-management-service-wi
    call is refused when authentication is required, and an open one would be reading every active worker's record to use two fields.
    And the reference is `worker:` where this document and WPM's events use `person:` (the `worker_hired` payload carries both). Neither is
    fixed here; both are for CRM's owner and for WPM-T358's successor to settle. The call was read, not run against WPM.
+   **Update 2026-10-30 (CRM's spec read again):** the import now sends a token (CRM-R87, CRM-T153): when `CRM_WORKER_SERVICE_TOKEN` is
+   set, the call carries it as `Authorization: Bearer`, only over `https` or to this machine, never logged. It is **one deployer-held
+   token for every caller**, not the caller's own token forwarded, so WPM's policy and scope decide on whatever identity that token
+   carries and the import sees the workers that identity may see. That is closer to WPM-D135 than no token, and not the same as it.
+   **The `worker:` against `person:` question is still open.**
 3. **PPM's code was not found at first; it is at `~/git/project-porfolio-management/project-porfolio-management`** (the directory is spelled
    `porfolio`; the crate and docs say `portfolio`). CRM's idea contract below is still second-hand, but PPM itself was read next.
 
@@ -171,9 +203,10 @@ PPM's service (`project-portfolio-management-service-with-rust`) was read, not r
    `/api/workers/{pid}/skills-as-of`, a different shape). Without it PPM reports `unknown`, which is honest. A route would have to return
    skills as tags WPM never uses (WPM skills are catalogue entries with proficiency), so adding one is another mapping decision.
 4. **PPM has no inbound route for people-impact, and nothing that calls WPM's what-if.** Only `POST /api/ideas` was found as an inbound
-   contract (title, pitch, tags). T361 has nowhere to send to.
+   contract (title, pitch, tags). T361 has nowhere to send to. *(Settled 2026-10-30: people-impact is a pull PPM makes of WPM; see the
+   family contract.)*
 5. **PPM names its plans `plan_pid` and its programmes by `programme`-labelled plans**; WPM's `programme_ref` is a `thing:` URN. No mapping
-   between the two was found.
+   between the two was found. *(Settled 2026-10-30: `thing:<ppm plan pid>`; see the family contract.)*
 
 ## Tasks for the harmonization (WPM-R213)
 
