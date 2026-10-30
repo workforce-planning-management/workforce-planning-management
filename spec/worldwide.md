@@ -53,8 +53,19 @@ worked cases, not the design.** This file is the rule that stops them becoming t
 - [ ] WPM-T369 **Second-profile tests.** *(WPM-R214, WPM-D143)* For each rule with UK values, a pure-core test with a non-UK profile of a
   different shape (different currency exponent, weekend, week start, limits), and a lint or test that fails if `src/rules/` names a
   country.
-- [ ] WPM-T370 **Regulatory register by region.** *(WPM-R214, WPM-D143)* Re-organize [regulatory.md](regulatory.md) so the UK is one
+- [x] (2026-10-30) WPM-T370 **Regulatory register by region.** *(WPM-R214, WPM-D143)* Re-organize [regulatory.md](regulatory.md) so the UK is one
   section among regions, with the others marked *not yet read* rather than absent.
+  **Done (spec only):** [regulatory.md](regulatory.md) now opens by saying the law is recorded by region, and ends with "The register by
+  region": international standards (ISO 14971), the European Union (GDPR, the Pay Transparency Directive, the AI Act section moved under
+  it), the United Kingdom (UK GDPR and the DPA 2018, the Equality Act 2010, right to work, the worked examples, the MHRA), and the United
+  States, Canada, Latin America and the Caribbean, Africa, the Middle East and the Gulf, South Asia (India, the planned example profile),
+  East Asia (Japan), South-East Asia and Oceania, each *not yet read*. "Production would additionally require" names the jurisdiction of
+  each UK duty. Wording fixes: row 10 ([plan.md](plan.md) WPM-R76 names the GDPR and the UK GDPR by region; [design.md](design.md) says
+  the adjustments design follows the barrier, with the UK Equality Act 2010 as the one regime read) and row 11 ([glossary.md](glossary.md)
+  "Right to work" scoped to the jurisdiction). A stray duplicated heading line in the AI Act section was removed. **Not done:** no law of
+  any region was read for this task, so no new fact was added; rows 7, 8 and 15 are covered only by the register's regions, not by edits
+  to [pay-transparency.md](pay-transparency.md), [worker-unions.md](worker-unions.md) or [mhra.md](mhra.md); the regions are a
+  coarse list, not a per-country register.
 - [ ] WPM-T371 **Locale and convention equity check.** *(WPM-R214, WPM-D143)* Names, addresses, dates and calendars, numbers and
   currency, identifiers, right-to-left and plural rules: a checklist run against the UI and API, with gaps recorded as tasks.
 

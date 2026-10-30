@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the regulatory register is by region (WPM-T370)
+
+[`spec/regulatory.md`](spec/regulatory.md) ends with a register by region: international standards, the EU, the UK, and nine more
+regions marked *not yet read*. The DPIA, adjustments and right-to-work wording names its jurisdiction (worldwide audit rows 10 and 11).
+Spec only; no law of any region was read for it.
+
 ### Changed — webhook payloads for a hire or an ending name the person by reference (WPM-T372, proposed WPM-D145)
 
 So CRM can tell who was hired or left: `data` with `person_ref`, `organization_ref`, `effective_on` (and `from`, `to` for an ending),

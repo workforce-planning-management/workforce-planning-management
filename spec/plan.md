@@ -205,8 +205,10 @@ the existing production gates WPM-G1 and WPM-G2 in [tasks.md](tasks.md).
     records the result;
   - **runbook:** who restores, how, and how the restore is announced.
 - **WPM-R76 Data protection impact assessment (DPIA).** A DPIA for the
-  processing WPM performs, as UK GDPR Article 35 expects for systematic
-  evaluation of employees and special-category data (health-related
+  processing WPM performs, as Article 35 of the GDPR (in the EU) and of the
+  UK GDPR (in the UK) expects for systematic evaluation of employees and
+  special-category data; other jurisdictions' impact-assessment duties are
+  *not yet read* ([regulatory.md](regulatory.md)) (health-related
   adjustments, wellbeing, assessments). It covers the nature, scope, context
   and purposes; necessity and proportionality; the risks to people; and the
   measures already in the design (the WPM-D17–D25 thread, masking, k-floors,

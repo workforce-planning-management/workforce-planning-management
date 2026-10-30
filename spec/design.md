@@ -288,10 +288,12 @@ flag**: the same unrepresentability move as WPM-D17 (no health cohort
 column) and WPM-D24 (no symptom field). This is not only privacy —
 it changes the conversation the tool hosts: the request is evaluated
 on whether the change is practicable, not on whether the person can
-prove a category, which is both the inclusive posture and the UK
-Equality Act's actual shape (the duty attaches to the barrier, and
-many adjustments are simply good management nobody needs to qualify
-for). The words are still sensitive — asked-for adjustments can
+prove a category. That is the inclusive posture, and it is the shape
+of the duty in the UK's Equality Act 2010 (the duty attaches to the
+barrier, and many adjustments are simply good management nobody needs
+to qualify for). The design follows the barrier, not one statute;
+other jurisdictions' duties are *not yet read*
+([regulatory.md](regulatory.md)). The words are still sensitive — asked-for adjustments can
 invite inference — so they are content-tier: masked reads keep
 category + status and withhold the words, reads are audited, erasure
 scrubs, and **no aggregate reporting surface exists**: a

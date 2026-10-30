@@ -44,7 +44,7 @@
 | **Readiness**       | Succession rating: `ready_now` / `ready_1y` / `ready_2y`                                         |
 | **Requisition**     | A funded job opening with headcount and a hiring pipeline                                        |
 | **Retention horizon** | `WPM_RETENTION_DAYS` (default 365, floor 30) — soft-deletes past it are swept                  |
-| **Right to work**   | Statutory employment-eligibility check recorded during onboarding                                |
+| **Right to work**   | A check that a person may lawfully work where the work is done, recorded during onboarding where the jurisdiction requires one (for example the UK's right-to-work check); whether there is a check, and what it is, differs by country |
 | **Subject access**  | The one-document export of everything WPM holds for an employee, exclusions named                |
 | **Tombstone URN**   | `person:00000000-…` — the valid-but-resolves-to-no-one ref an erased employee's identity becomes |
 | **Working-time guardrail** | Advisory 48 h-average / 11 h-rest flag (UK WTR shape); flags, never blocks                |

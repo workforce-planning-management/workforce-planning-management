@@ -3,6 +3,10 @@
 > ⚠️ **Demo software.** Not a production HR/payroll system; no real
 > personal data; statutory calculations are illustrative stubs.
 
+The design rules below hold wherever WPM is deployed. The law it was read against is recorded **by region** at the end of this file
+(WPM-R214, WPM-D143, WPM-T370): the UK is one region among several, and a region nobody has read says *not yet read* rather than being
+absent. A region's section is a record of what was read, never a claim of compliance.
+
 ## Observed by design
 
 - **Data minimisation** — identities are URNs; WPM stores employment
@@ -71,8 +75,43 @@
   me" are the person's own, shared only by them (WPM-D126); candidate adjustments are kept from scoring and deleted with the
   application.
 
-## AI Act duties of an employer that deploys a high-risk system (WPM-R148, WPM-D103)
- that deploys a high-risk system (WPM-R148, WPM-D103)
+## Production would additionally require
+
+- A **lawful-basis mapping per record class for each jurisdiction the deployer works in** (for example the UK GDPR and the Data
+  Protection Act 2018 in the UK, the GDPR in the EU; elsewhere *not yet read*, see the regions below).
+- **Statutory retention schedules** per jurisdiction (in the UK, payroll and right-to-work records carry multi-year duties; candidate
+  data the opposite; other jurisdictions *not yet read*).
+- Subject-access and erasure flows coordinated with the identity services.
+- Jurisdiction-correct payroll and tax engines (WPM holds parameters, not law: [worldwide.md](worldwide.md)).
+- Equality-law review of any scoring (application screening, succession readiness) under each jurisdiction's own law.
+- Works-council or union consultation where the jurisdiction requires it.
+
+Tracked as production gates in [tasks.md](tasks.md).
+
+## The register by region (WPM-T370)
+
+The target is worldwide ([worldwide.md](worldwide.md), WPM-R214). Each region says what was read, by whom and when, and what was not.
+**Not yet read** means nobody working on this specification has read that region's law for WPM; it does not mean the region has no
+such law, and it does not mean WPM fits it. Jurisdiction rules are to be held as data in profiles (proposed WPM-D144), not in this text.
+
+### International standards
+
+- **ISO 14971** (*Medical devices — Application of risk management to medical devices*), the international standard for a manufacturer's
+  risk management of a medical device. Recorded from the author's recollection, **not read**: the standard is paid-for and its text was not
+  available, and the edition in force (believed to be the 2019 third edition) is unchecked. WPM holds no device, hazard, risk-file or
+  adverse-event data and claims no conformance. Whether it bears on workforce planning at all (for example competence of the people who
+  carry out risk management) is **not established** ([mhra.md](mhra.md)).
+
+### European Union
+
+- **GDPR** (Regulation (EU) 2016/679): special-category data (health, trade-union membership) is the reason for WPM's
+  unrepresentability rules (WPM-D17 to D25, D74; [worker-unions.md](worker-unions.md)). The impact-assessment duty (Article 35) is
+  the frame of the DPIA ([plan.md](plan.md), WPM-R76). Its lawful-basis mapping per record class is a production gate (above).
+- **Pay Transparency Directive** (2023/970): [pay-transparency.md](pay-transparency.md); the threshold is configuration. Member
+  states' transposing laws are *not yet read*.
+- **AI Act** (Regulation (EU) 2024/1689), the duties of a deployer of a high-risk system in employment:
+
+#### The AI Act: duties of an employer that deploys a high-risk system (WPM-R148, WPM-D103)
 
 WPM scores people in a few places (the scoring register, [equality-impact/register.md](equality-impact/register.md), WPM-R99).
 Where a deployer uses such a feature as an AI system in employment (Annex III point 4 of Regulation (EU) 2024/1689: recruitment,
@@ -100,7 +139,7 @@ Official Journal), Article 26 puts duties on the **deployer**. The register reco
   is the provider's CE marking), and a filled-in register is not evidence of compliance (WPM-D103). Article 4 (AI literacy) and
   Article 27 (a fundamental-rights impact assessment, for some deployers) are outside this requirement.
 
-### What is built (WPM-T274)
+##### What is built (WPM-T274)
 
 - `GET /api/ai-register` (any signed-in caller: it is a notice of how people are scored) lists the eight features of the scoring
   register, S1 to S8 (`rules::ai_register::FEATURES`; S9, a risk-of-loss score, is deliberately not built), each with what is
@@ -116,27 +155,58 @@ Official Journal), Article 26 puts duties on the **deployer**. The register reco
   of WPM-T166 is still not in code, so the features are listed in `rules::ai_register` and no test yet fails when a new scoring
   function is not registered.
 
-## Production would additionally require
+### United Kingdom
 
-- UK GDPR / DPA 2018 lawful-basis mapping per record class;
-  statutory **retention schedules** (payroll and right-to-work
-  records carry multi-year duties; candidate data the opposite);
-  subject-access and erasure flows coordinated with the identity
-  services; jurisdiction-correct payroll/tax engines; equality-law
-  review of any scoring (application screening, succession
-  readiness); works-council/union consultation where applicable.
-  Tracked as production gates in [tasks.md](tasks.md).
+- **UK GDPR and the Data Protection Act 2018**: the same structure as the GDPR for this design (special-category data, Article 35
+  impact assessment); the lawful-basis mapping is a production gate (above).
+- **Equality Act 2010**: the adjustments design follows its duty's shape (the duty attaches to the barrier, not to a diagnosis;
+  [design.md](design.md)). Recorded from the design round; the Act's text was not re-read for this register.
+- **Right to work**: an employment-eligibility check recorded during onboarding ([glossary.md](glossary.md)); its rules were not
+  read here.
+- **Worked examples** (UK data in a generic model; the pay-scales title does not yet say so, [worldwide.md](worldwide.md) row 1): NHS Agenda for Change pay scales ([pay-scales.md](pay-scales.md)), NHS England's Workforce
+  Disability Equality Standard as a reporting map ([disability-and-adjustments.md](disability-and-adjustments.md)), and the England
+  and Wales public holiday pack.
+- **Regulators of sector employers:**
 
-## UK regulators of sector employers
+  - **MHRA** (Medicines and Healthcare products Regulatory Agency): regulates medicines, medical devices and blood components for
+    transfusion in the UK; an executive agency of the Department of Health and Social Care. Source:
+    <https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency>, read 2026-10-28. WPM holds no
+    licence, product, device or adverse-event data. What the MHRA requires of an employer's staff is **not yet read** ([mhra.md](mhra.md)).
 
-The target is worldwide ([worldwide.md](worldwide.md), WPM-R214); the UK is one region here, and other regions are *not yet read* (WPM-T370).
+### United States
 
-- **MHRA** (Medicines and Healthcare products Regulatory Agency): regulates medicines, medical devices and blood components for
-  transfusion in the UK; an executive agency of the Department of Health and Social Care. Source:
-  <https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency>, read 2026-10-28. WPM holds no
-  licence, product, device or adverse-event data. What the MHRA requires of an employer's staff is **not yet read** ([mhra.md](mhra.md)).
-- **ISO 14971** (*Medical devices — Application of risk management to medical devices*), the international standard for a manufacturer's
-  risk management of a medical device. Recorded from the author's recollection, **not read**: the standard is paid-for and its text was not
-  available, and the edition in force (believed to be the 2019 third edition) is unchecked. WPM holds no device, hazard, risk-file or
-  adverse-event data and claims no conformance. Whether it bears on workforce planning at all (for example competence of the people who
-  carry out risk management) is **not established** ([mhra.md](mhra.md)).
+*Not yet read*: federal law and the states' (for example employment eligibility, pay transparency, leave, and privacy law). A US
+federal public-holiday pack exists as data and is labelled unverified ([requirements.md](requirements.md)).
+
+### Canada
+
+*Not yet read*: federal and provincial law.
+
+### Latin America and the Caribbean
+
+*Not yet read.*
+
+### Africa
+
+*Not yet read.*
+
+### Middle East and the Gulf
+
+*Not yet read.*
+
+### South Asia
+
+*Not yet read.* India is the planned second example profile (WPM-D144, WPM-T369), labelled `example` and unverified; its values will
+come with their sources when the profile is written, not from this register.
+
+### East Asia
+
+*Not yet read.* Japan is the planned third example profile (WPM-D144), labelled `example` and unverified.
+
+### South-East Asia
+
+*Not yet read.*
+
+### Oceania
+
+*Not yet read.*
