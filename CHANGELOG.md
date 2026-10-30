@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — a reused peer event id no longer answers with another organization's claim (WPM-T397)
+
+The repeat check of `POST /api/capacity/peer-demand` is scoped to the event's own pool, programme and month, after the pool and scope
+checks, and the unique index matches (WPM-D148). See the service changelog for what was not verified.
+
 ### Changed — `llms.json` and `llms.txt` current (WPM-T395)
 
 The status (it said WPM-T1–T226 as of 2026-10-19), the stack and the stale descriptions are current, and every current document is

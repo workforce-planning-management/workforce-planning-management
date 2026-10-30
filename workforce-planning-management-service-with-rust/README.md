@@ -32,7 +32,7 @@ provides the HR, manager, and worker self-service client.
 since then the production-readiness, operations, capacity, programme, SFIA, union, self-service,
 regulatory-reporting, webhook and cross-app bridge work in [../spec/tasks.md](../spec/tasks.md); much is
 still proposed or part done there. Verified on 2026-10-30 on a throwaway PostgreSQL 18 database:
-`cargo fmt --check` and `clippy -D warnings` (pedantic) clean; 1,034 unit tests; 183 database-backed
+`cargo fmt --check` and `clippy -D warnings` (pedantic) clean; 1,034 unit tests; 184 database-backed
 request tests; every `enforcement_*` persona binary and the security, retention, request-log, chaos,
 route-coverage, scheduler and personal-data-inventory binaries. Not rerun that day: the Keycloak and
 Entra suites and the Redis-backed tests (CI runs them). The counts of migrations, controllers and

@@ -79,9 +79,9 @@ figures count again at once.
 
 PPM names its plan as a `thing:` reference to the plan's pid. A figure is in
 hundredths of an FTE for the first day of a month, with PPM's own event id.
-**Event ids must be unique across everything the peer sends**, not only within
-one claim: an id seen before, for any claim, is answered as a duplicate of that
-claim (see WPM-T397). Here each run makes its own:
+An event id is a repeat only for the same pool, programme and month: the same
+id for another pool, programme or month is a new event there (WPM-D148). Here
+each run makes its own:
 
 ```sh
 PLAN="thing:$(uuidgen | tr A-Z a-z)"

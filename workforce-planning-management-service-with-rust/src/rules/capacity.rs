@@ -1118,7 +1118,7 @@ pub fn peer_supply(supply_centi: &[i64], workers: &[usize], floor: usize) -> Vec
 }
 
 /// What a figure received from the peer does to the `ppm` claim for its (pool, programme, month) (WPM-D146). A repeat of an event id
-/// already applied is caught before this (it changes nothing), so this rule sees only a new event.
+/// already applied to a claim of that same key is caught before this (it changes nothing; WPM-D148), so this rule sees only a new event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PeerDemandOutcome {
     /// A figure above zero and no claim yet: a new `proposed` claim.

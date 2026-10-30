@@ -8,7 +8,7 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | Where | Command | Expect (2026-10-30) |
 | --- | --- | --- |
 | Service | `cargo test --lib` | 1,034 unit tests |
-| Service | `cargo test --test mod -- --ignored --test-threads=1` | 183 request tests (need Postgres; **serial** — they share a database) |
+| Service | `cargo test --test mod -- --ignored --test-threads=1` | 184 request tests (need Postgres; **serial** — they share a database) |
 | Service | `cargo test --test <binary> -- --ignored --test-threads=1` | one test each: `enforcement` (the auth persona matrix) and the fourteen `enforcement_*` binaries, `security`, `retention_schedule`, `request_log`, `no_union_membership`, `personal_data_inventory`, `route_coverage`, `scheduler_config`; each its own process because the auth flags are process-wide (the list CI runs is in `.github/workflows/ci.yml`) |
 | Service | `cargo test --test chaos -- --ignored --nocapture` | database faults through a proxy; the seed is printed |
 | Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers (`oidc_entra` likewise, with no container) |

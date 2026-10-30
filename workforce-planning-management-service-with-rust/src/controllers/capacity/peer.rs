@@ -72,7 +72,7 @@ pub(super) struct PeerDemandPayload {
     month: NaiveDate,
     /// The figure, in hundredths of an FTE; `0` withdraws the peer's claim (WPM-D146).
     fte_centi: i64,
-    /// The peer's id for the event that carried this figure; the same id again changes nothing.
+    /// The peer's id for the event that carried this figure; the same id again for the same pool, programme and month changes nothing.
     peer_event_id: String,
     /// When the peer sent the event (RFC 3339). Optional; when it and the last applied event both carry one, an older event is ignored.
     #[serde(default)]
@@ -141,7 +141,9 @@ async fn write_peer_claim(
 /// added to it. A pool that is not linked refuses it. **`fte_centi: 0` withdraws the claim** (WPM-R215, WPM-D146): it is `closed` and
 /// marked withdrawn by the peer, an active one stops counting, and the start decision that activated it is kept as it was; zero for a
 /// claim that does not exist changes nothing and says so. An event older (`sent_at`) than the last one applied is ignored. The answer
-/// says what happened (`outcome`, [`rules::PeerDemandOutcome`]).
+/// says what happened (`outcome`, [`rules::PeerDemandOutcome`]). The order is fixed (WPM-D148): the body is checked, then the pool under the
+/// caller's scope (unknown or out of scope is `404`, unlinked `422`, exactly as for a fresh event), and only then is a repeat looked for,
+/// among the claims of the same pool, programme and month.
 #[debug_handler]
 pub(super) async fn receive_peer_demand(
     State(ctx): State<AppContext>,
@@ -171,7 +173,13 @@ pub(super) async fn receive_peer_demand(
             "the pool is not linked to a peer pool, so it takes no demand from the peer",
         ));
     }
+    // A repeat is looked for only among the claims of this event's own key, once the pool is known to be one the caller may see and
+    // is linked (WPM-T397, WPM-D148): the same id applied to a claim of another pool, programme or month, in this organization or
+    // another, is a new event here, and the answer never says whether the id exists elsewhere.
     let repeated = programme_demands::Entity::find()
+        .filter(programme_demands::Column::PoolPid.eq(pool.pid))
+        .filter(programme_demands::Column::ProgrammeRef.eq(&payload.programme_ref))
+        .filter(programme_demands::Column::Month.eq(payload.month))
         .filter(programme_demands::Column::Source.eq("ppm"))
         .filter(programme_demands::Column::PeerEventId.eq(event))
         .one(&ctx.db)

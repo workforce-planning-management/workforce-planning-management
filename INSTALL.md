@@ -44,7 +44,7 @@ WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 5150; sign-in enforceme
 
 ```sh
 cargo test --lib           # DB-free unit tests (1,034 on 2026-10-30)
-cargo test --test mod -- --ignored --test-threads=1   # request tests (183; needs Postgres — see below)
+cargo test --test mod -- --ignored --test-threads=1   # request tests (184; needs Postgres — see below)
 cargo test --test enforcement -- --ignored --test-threads=1   # auth persona matrix
 ```
 

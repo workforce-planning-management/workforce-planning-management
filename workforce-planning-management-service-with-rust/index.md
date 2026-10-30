@@ -27,7 +27,7 @@ adjustments, notifications, subject rights), talent development
 ```bash
 cargo run -- db migrate && cargo run -- task seed && WPM_REQUIRE_AUTH=0 cargo run -- start
 cargo test --lib                    # 1,034 DB-free unit tests (2026-10-30)
-cargo test --test mod -- --ignored --test-threads=1   # 183 request tests (Postgres; serial)
+cargo test --test mod -- --ignored --test-threads=1   # 184 request tests (Postgres; serial)
 cargo test --test enforcement -- --ignored --test-threads=1   # persona matrix
 cargo loco scheduler --config config/scheduler.yaml --tag wpm   # the scheduled tasks (INSTALL.md)
 ```

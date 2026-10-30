@@ -5685,12 +5685,23 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       (counts from early October; `cargo test -- --ignored` would run the request tests in parallel on one database; the MSRV line), NEWS (a milestone for the bridges), the service README and `index.md`
       and the UI README and `index.md` (each said "through WPM-T97" with October counts). **Not verified:** the tutorial with sign-in on and forwarded tokens, the webhook against a listening receiver
       (nothing listened, so no signature was checked), people impact with a funded post, and supply from a pool with members.
-- [ ] WPM-T397 **A reused peer event id answers with another claim, across organizations.** *(WPM-R210, WPM-R215, WPM-D135)* Found 2026-10-30 while running the tutorial (WPM-T394): `POST
-      /api/capacity/peer-demand` looks for a `ppm` claim with the same `peer_event_id` **before** it uses the pool or the caller's scope, and the unique index is `(source, peer_event_id)`, so an event id
-      already applied to any claim, in any organization, is answered `duplicate: true` with that claim's pid and status. Seen: two runs reusing `ev-2` for different pools; the second got the first's
-      closed claim. Harm: a caller learns a claim's pid and status in a pool they may not see if they reuse its event id, and a peer that reuses ids across pools silently loses figures. What remains:
-      a decision (scope the repeat check to the pool, programme and month, or refuse an id seen for another claim with `422`), the index to match, a request test across two organizations, and the
-      contract table in [cross-app-bridges.md](cross-app-bridges.md). Not changed in the maintenance pass because it changes the family contract PPM builds against.
+- [x] (2026-10-30) WPM-T397 **A reused peer event id is a repeat only for its own pool, programme and month, and tells another organization nothing.** *(WPM-R210, WPM-R215, WPM-D135,
+      WPM-D148)* Found 2026-10-30 while running the tutorial (WPM-T394): `POST /api/capacity/peer-demand` looked for a `ppm` claim with the same `peer_event_id` across **every** claim, and the
+      unique index was `(source, peer_event_id)`, so an id already applied anywhere, in any organization, was answered `duplicate: true` with that claim's pid and status (seen: two runs reusing
+      `ev-2` for different pools; the second got the first's closed claim). The pool lookup and scope check already ran before that lookup in the code as found; the leak was the lookup's reach,
+      not only its place. **Fixed as the maintainer decided (WPM-D148):** the body is checked, then the pool is resolved under the caller's scope (unknown or out of scope `404`, unlinked `422`,
+      unchanged and the same whatever the id), and only then is a repeat looked for, among the `ppm` claims of that pool, programme and month. **Index:** it was global, which would have refused the
+      second key's insert with a `500` (seen by running the new test without the migration), so migration `m20261030_000110_peer_event_per_key` makes it `(pool_pid, programme_ref, month, source,
+      peer_event_id)`; its `down` clears the id on all but the earliest claim sharing it, then rebuilds the global index (that SQL was run in a rolled-back transaction on a database holding a shared
+      id; the migrator's `down` itself was not run). No pure rule changed (the repeat is a query scope); the doc of `rules::peer_demand_outcome` says what "repeat" now means. PPM is unaffected (its
+      ids name the key), recorded in [cross-app-bridges.md](cross-app-bridges.md), with the contract table and the "Not done" paragraph; the tutorial no longer says ids must be unique across
+      everything. **Tests:** a request test (`a_reused_peer_event_id_is_a_repeat_only_for_its_own_pool_programme_and_month`): one id across two organizations' pools, two programmes and two months,
+      each a fresh `recorded` with its own pid, never the other's; an unlinked pool `422` and an unknown pool `404` whether the id is reused or fresh; a repeat in the same key still `duplicate`
+      with that key's pid, changing nothing. The persona binary `enforcement_what_if`, with sign-in on: another organization's HR is refused `404` on this organization's pool for a fresh and a
+      reused id alike, and on its own linked pool the reused id is `recorded` with a new pid; each side's repeat is a `duplicate` of its own claim. The withdrawal and `stale` journey
+      (`the_peer_withdraws_…`) passes unchanged. **Mutation-checked:** with the old global lookup both new tests fail (`duplicate` with the other claim); with the new lookup and no migration the
+      request test fails with a `500`. **Verified (2026-10-30, throwaway local PostgreSQL):** `cargo fmt --check`, `clippy --all-targets -D warnings` clean; 1,034 unit; 184 request (was 183);
+      the 22 persona and policy binaries CI runs with `--ignored`. **Not run locally:** `chaos`, Keycloak, `verify-db-roles.sh`, the MSRV check. **Not verified:** PPM's sender against WPM.
 - [x] (2026-10-30) WPM-T395 **`llms.json` and `llms.txt` regenerated and complete.** *(WPM-R119)* Per [AGENTS/docs-and-agent-files.md](../AGENTS/docs-and-agent-files.md): entries edited in
       `llms.json`, then `python3 scripts/llms.py`. The status said "WPM-T1–T226", R134 and D85 as of 2026-10-19, now T1–T396, R216, D147 as of 2026-10-30; the UI was "SvelteKit 2"; the service entry
       said 49 migrations (the generated count is 109); the descriptions of `tasks.md`, `requirements.md`, `design.md`, `plan.md`, `roadmap.md` and `audit.md` (empty) named old ranges. Added: the tutorial,

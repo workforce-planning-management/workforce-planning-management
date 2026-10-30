@@ -1,4 +1,5 @@
-//! Who may ask the capacity what-if, and what every audience is told (WPM-R97, WPM-T160, WPM-D142).
+//! Who may ask the capacity what-if, and what every audience is told (WPM-R97, WPM-T160, WPM-D142); and that a reused peer event id
+//! tells another organization nothing (WPM-T397, WPM-D148).
 //!
 //! Its own test binary (the auth flag and policy are cached in process-wide `OnceLock`s). The answer
 //! is one payload for every caller who may ask: pool-month figures and counts, with no worker, no
@@ -267,6 +268,34 @@ async fn the_what_if_answers_each_persona_with_counts_only_or_refuses_it() {
         assert!(!outside.to_string().contains(&pool), "no pool of this organization is named to another");
         assert_eq!(get(impact.clone(), partner.clone()).await.status_code(), 403, "a partner reads packs only");
         assert_eq!(request.get(&impact).await.status_code(), 401, "sign in");
+
+        // Peer demand (WPM-T397, WPM-D148), under the caller's own token: another organization's caller who reuses an event id already
+        // applied here learns nothing. On this organization's pool they are refused as for a fresh id; on their own linked pool the id is
+        // a new event, answered as a fresh one, never with this organization's claim. A repeat in the same key is still a duplicate.
+        let peer_link = json!({ "peer_pool_ref": uuid::Uuid::new_v4().to_string() });
+        assert_eq!(request.put(&format!("/api/skill-pools/{pool}/peer-link")).add_header("authorization", svc.clone()).json(&peer_link).await.status_code(), 200);
+        let event = format!("ppm:{pool}:{}:2027-03:1", uuid::Uuid::new_v4());
+        let claim = |pool: &str, event: &str| json!({ "pool_pid": pool, "programme_ref": mine, "month": "2027-03-01", "fte_centi": 40, "peer_event_id": event });
+        let first = post("/api/capacity/peer-demand".into(), svc.clone(), claim(&pool, &event)).await;
+        assert_eq!(first.status_code(), 200);
+        let first = first.json::<Value>();
+        assert_eq!(first["outcome"], "recorded", "{first}");
+        let fresh_here = post("/api/capacity/peer-demand".into(), elsewhere.clone(), claim(&pool, &format!("fresh-{tag}"))).await.status_code();
+        let reused_here = post("/api/capacity/peer-demand".into(), elsewhere.clone(), claim(&pool, &event)).await.status_code();
+        assert_eq!((fresh_here.as_u16(), reused_here.as_u16()), (404, 404), "another organization's pool does not exist for them, whatever the id");
+        let theirs = post("/api/skill-pools".into(), elsewhere.clone(), json!({ "organization_ref": other_org, "name": "Elsewhere peer pool", "operations_reservation_bp": 0 })).await;
+        assert_eq!(theirs.status_code(), 200, "{}", theirs.text());
+        let theirs = theirs.json::<Value>()["pid"].as_str().unwrap().to_string();
+        assert_eq!(request.put(&format!("/api/skill-pools/{theirs}/peer-link")).add_header("authorization", elsewhere.clone()).json(&json!({ "peer_pool_ref": uuid::Uuid::new_v4().to_string() })).await.status_code(), 200);
+        let reused = post("/api/capacity/peer-demand".into(), elsewhere.clone(), claim(&theirs, &event)).await;
+        assert_eq!(reused.status_code(), 200);
+        let reused = reused.json::<Value>();
+        assert_eq!((reused["outcome"].as_str(), reused["duplicate"].as_bool(), reused["status"].as_str()), (Some("recorded"), Some(false), Some("proposed")), "{reused}");
+        assert_ne!(reused["pid"], first["pid"], "another organization's claim is not named: {reused}");
+        let again = post("/api/capacity/peer-demand".into(), svc.clone(), claim(&pool, &event)).await.json::<Value>();
+        assert_eq!((again["duplicate"].as_bool(), again["pid"].clone()), (Some(true), first["pid"].clone()), "{again}");
+        let again_there = post("/api/capacity/peer-demand".into(), elsewhere.clone(), claim(&theirs, &event)).await.json::<Value>();
+        assert_eq!((again_there["duplicate"].as_bool(), again_there["pid"].clone()), (Some(true), reused["pid"].clone()), "{again_there}");
     })
     .await;
 }

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — a reused peer event id is a repeat only for its own pool, programme and month (WPM-T397, WPM-D148)
+
+`POST /api/capacity/peer-demand` looked for a repeat of `peer_event_id` across every `ppm` claim, so a caller who reused an id was
+answered `duplicate` with another claim's pid and status, even a claim in another organization. It now checks the body, resolves the
+pool under the caller's scope (refusals unchanged), and looks for a repeat only among the claims of that pool, programme and month; the
+same id for another key is a new event there. Migration `m20261030_000110_peer_event_per_key` moves the unique index
+`programme_demands_peer_event` from `(source, peer_event_id)` to `(pool_pid, programme_ref, month, source, peer_event_id)`. PPM's ids
+name the key, so PPM is unaffected. **Not verified:** the migration's `down` through the migrator (its SQL was run in a rolled-back
+transaction); `chaos`, Keycloak and the least-privilege drill were not run locally; PPM's sender against WPM.
+
 ### Changed — dependencies (WPM-T389)
 
 `cargo update` took 37 compatible updates and added 2 crates (`arrow` 60.1, `aws-lc-rs` 1.19, `tonic` 0.14.9, `wasm-bindgen` 0.2.130 and others);

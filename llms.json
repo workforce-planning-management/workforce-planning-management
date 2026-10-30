@@ -3,9 +3,9 @@
   "slug": "workforce-planning-management",
   "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Loco) and SvelteKit, in 17 locales. Demo software; synthetic data only.",
   "status": {
-    "tasks_delivered": "WPM-T1–T396 (done, open and part done counted in spec/implementation-status.md)",
+    "tasks_delivered": "WPM-T1–T397 (done, open and part done counted in spec/implementation-status.md)",
     "highest_requirement": "WPM-R216",
-    "highest_decision": "WPM-D147",
+    "highest_decision": "WPM-D148",
     "deferred": [],
     "as_of": "2026-10-30",
     "counts_from": "spec/implementation-status.md"
@@ -15,12 +15,12 @@
     "ui": "SvelteKit 3, Svelte 5 runes, TypeScript",
     "tests": {
       "service_unit_declared": 1052,
-      "service_request_declared": 183,
+      "service_request_declared": 184,
       "ui_unit_declared": 244,
       "ui_e2e_declared": 223,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
-    "migrations": 109,
+    "migrations": 110,
     "controllers": 84,
     "pages": 56
   },
@@ -44,7 +44,7 @@
       {
         "title": "spec/design.md",
         "path": "spec/design.md",
-        "description": "design decisions (WPM-D1–D28 here; D29–D147 in the topic files, each range pointed at from this file)"
+        "description": "design decisions (WPM-D1–D28 here; D29–D148 in the topic files, each range pointed at from this file)"
       },
       {
         "title": "spec/domain-model.md",

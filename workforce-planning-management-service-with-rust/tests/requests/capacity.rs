@@ -1954,6 +1954,78 @@ async fn the_peer_withdraws_a_figure_with_zero_and_an_older_event_does_not_overw
     .await;
 }
 
+/// WPM-T397: a peer event id is a repeat only for the same pool, programme and month. The same id for another pool (here in another
+/// organization), another programme or another month is a new event there, answered as a fresh one would be, and never with the other
+/// claim's pid or status; an unknown or unlinked pool is refused exactly as for a fresh id; a repeat in the same key is still a duplicate.
+#[tokio::test]
+#[serial]
+#[ignore = "needs a Postgres database; run with --ignored"]
+async fn a_reused_peer_event_id_is_a_repeat_only_for_its_own_pool_programme_and_month() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let (org, other_org) = (an_org(), an_org());
+        let linked = |org: String, name: String| {
+            let request = &request;
+            async move {
+                let pool = make_pool(request, &org, &name, 0).await;
+                request.put(&format!("/api/skill-pools/{pool}/peer-link")).json(&json!({ "peer_pool_ref": uuid::Uuid::new_v4().to_string() })).await.assert_status_ok();
+                pool
+            }
+        };
+        let mine = linked(org.clone(), format!("Reuse pool {tag}")).await;
+        let theirs = linked(other_org.clone(), format!("Reuse pool elsewhere {tag}")).await;
+        let unlinked = make_pool(&request, &org, &format!("Reuse unlinked {tag}"), 0).await;
+        let (programme, other_programme) = (a_programme(), a_programme());
+        let event = format!("reused-{tag}");
+        let send = |pool: String, programme: String, month: &'static str, event: String, fte: i64| {
+            let request = &request;
+            async move {
+                request.post("/api/capacity/peer-demand").json(&json!({
+                    "pool_pid": pool, "programme_ref": programme, "month": month, "fte_centi": fte, "peer_event_id": event,
+                    "sent_at": "2026-10-30T09:00:00Z",
+                })).await
+            }
+        };
+
+        // The first use of the id: recorded, and then withdrawn by a later event so its status is something a leak would show.
+        let first: Value = send(mine.clone(), programme.clone(), "2027-01-01", event.clone(), 40).await.json();
+        assert_eq!(first["outcome"], "recorded", "{first}");
+        let withdrawn: Value = send(mine.clone(), programme.clone(), "2027-01-01", format!("{event}-zero"), 0).await.json();
+        assert_eq!((withdrawn["outcome"].as_str(), withdrawn["status"].as_str()), (Some("withdrawn"), Some("closed")), "{withdrawn}");
+        let applied: Value = send(mine.clone(), programme.clone(), "2027-02-01", event.clone(), 30).await.json();
+        assert_eq!(applied["outcome"], "recorded", "another month of the same pool and programme is a new event: {applied}");
+
+        // Another organization's pool, the same programme and month, the same id: answered as a fresh id is, with its own new claim.
+        let elsewhere: Value = send(theirs.clone(), programme.clone(), "2027-01-01", event.clone(), 25).await.json();
+        let fresh: Value = send(theirs.clone(), other_programme.clone(), "2027-01-01", format!("fresh-{tag}"), 25).await.json();
+        for answer in [&elsewhere, &fresh] {
+            assert_eq!((answer["outcome"].as_str(), answer["duplicate"].as_bool(), answer["status"].as_str()), (Some("recorded"), Some(false), Some("proposed")), "{answer}");
+            assert_ne!(answer["pid"], first["pid"], "no other claim's pid: {answer}");
+            assert_ne!(answer["pid"], applied["pid"], "no other claim's pid: {answer}");
+        }
+        assert_ne!(elsewhere["pid"], fresh["pid"]);
+        // Another programme on the first pool, the same id: also new.
+        let other: Value = send(mine.clone(), other_programme.clone(), "2027-01-01", event.clone(), 10).await.json();
+        assert_eq!((other["outcome"].as_str(), other["duplicate"].as_bool()), (Some("recorded"), Some(false)), "{other}");
+
+        // An unlinked pool and an unknown pool are refused as for a fresh id, whatever id is sent.
+        for id in [event.clone(), format!("never-{tag}")] {
+            assert_eq!(send(unlinked.clone(), programme.clone(), "2027-01-01", id.clone(), 40).await.status_code(), 422, "{id}");
+            assert_eq!(send(uuid::Uuid::new_v4().to_string(), programme.clone(), "2027-01-01", id.clone(), 40).await.status_code(), 404, "{id}");
+        }
+
+        // A repeat in the same key is still a duplicate, of that key's claim, and changes nothing.
+        let again: Value = send(theirs.clone(), programme.clone(), "2027-01-01", event.clone(), 99).await.json();
+        assert_eq!((again["duplicate"].as_bool(), again["outcome"].as_str(), again["pid"].clone()), (Some(true), Some("duplicate"), elsewhere["pid"].clone()), "{again}");
+        let repeat: Value = send(mine.clone(), programme.clone(), "2027-02-01", event.clone(), 99).await.json();
+        assert_eq!((repeat["duplicate"].as_bool(), repeat["pid"].clone(), repeat["status"].as_str()), (Some(true), applied["pid"].clone(), Some("proposed")), "{repeat}");
+        let claims: Value = request.get(&format!("/api/programme-demands?pool={theirs}")).await.json();
+        let figures: Vec<i64> = claims.as_array().unwrap().iter().map(|c| c["fte_centi"].as_i64().unwrap()).collect();
+        assert_eq!(figures.iter().sum::<i64>(), 50, "the repeat changed nothing: {claims}");
+    })
+    .await;
+}
+
 /// WPM-T365, WPM-T366: what a linked pool gives its peer is floored; and every capacity request is answered with the peer unset, silent and
 /// removed, a linked pool the peer has said nothing to being unknown and not fitting.
 #[tokio::test]

@@ -122,8 +122,8 @@ read as one set. **Contract with PPM: unverified** (the family contract of 2026-
 - **What WPM accepts.** A caller the policy lets write capacity posts one figure: a linked WPM pool, a programme's `thing:` URN, a
   month and centi-FTE, with the PPM event id. WPM stores it as a demand claim with `source = ppm` (WPM-T364), against the programme
   reference, never a copy of the programme (WPM-D55).
-- **Idempotent** on the `peer_event_id` of a claim: a repeat changes nothing and answers `duplicate: true`. A pool that is not
-  linked is refused. WPM records the source and never invents a programme.
+- **Idempotent** on the `peer_event_id` of a claim: a repeat for the same pool, programme and month changes nothing and answers
+  `duplicate: true` (the same id for another key is a new event there, WPM-D148). A pool that is not linked is refused. WPM records the source and never invents a programme.
 - **The shape is fixed (2026-10-30, family contract point 3):** PPM calls `POST /api/capacity/peer-demand` with
   `{pool_pid, programme_ref, month, fte_centi, peer_event_id}` under the forwarded caller's token, for a pool linked on both sides.
   The route was built for WPM-R213 (WPM-T364); PPM's sender is being built against it and has not been run against WPM.
@@ -148,6 +148,19 @@ sent (`sent_at`) before the last event applied to the claim is ignored and says 
   withdraw a figure, never activate one. A pool whose only claims are withdrawn has a *known* demand of zero (the peer has spoken), not
   the unknown of a peer that has said nothing (WPM-D141). Rejected: deleting the row (the trail of what the peer said goes with it);
   undoing the start decision (a person's recorded decision is not the peer's to change).
+- **WPM-D148 A peer event id is a repeat only within its own claim key, and is looked for only after the pool is known to be the
+  caller's.** Decided 2026-10-30 by the maintainer (WPM-T397). The route checks the body, then resolves the pool under the caller's
+  scope (unknown or out of scope `404`, unlinked `422`, answered exactly as for a fresh id), and only then looks for a claim with the
+  same `peer_event_id` **among the `ppm` claims of that pool, programme and month**. The same id for another pool, programme or month,
+  in this organization or another, is a new event for that key; the answer never says whether the id exists elsewhere. The unique
+  index `programme_demands_peer_event` moves from `(source, peer_event_id)` to `(pool_pid, programme_ref, month, source,
+  peer_event_id)` (migration `m20261030_000110`), since a global index would refuse the second key's insert (a `500`, seen when the
+  migration was left out). Idempotency within a key is unchanged. Before this, the lookup was global: an id applied to any claim was
+  answered `duplicate` with that claim's pid and status, even a claim in a pool the caller may not see, and a peer reusing ids across
+  pools silently lost figures. Rejected: refusing an id seen for another claim with `422` (it still tells the caller the id exists
+  elsewhere). **PPM is unaffected:** its event ids are `ppm:<pool>:<plan>:<YYYY-MM>:<µs>`, which name the key and so are already
+  unique per key; nothing in its sender changes. As before, only the last event id applied to a claim is remembered, so an older id
+  replayed after a newer one is not a repeat (with `sent_at`, it is `stale`).
 - **Order.** `sent_at` is optional. An event is stale only when **both** it and the last applied event carry `sent_at` and it is
   strictly older; the same instant, or an event without `sent_at`, is applied in arrival order, as before. A stale event changes
   nothing, is not audited, and is not remembered (a repeat of it is stale again).
@@ -170,7 +183,7 @@ sent (`sent_at`) before the last event applied to the claim is ignored and says 
 | `already_withdrawn` | zero for a withdrawn claim | the claim | `closed` | the event id and `sent_at` are kept; `peer_demand_withdrawn` |
 | `nothing_to_withdraw` | zero and no claim | `null` | `null` | no |
 | `stale` | `sent_at` older than the last applied event's | the claim | unchanged | no |
-| `duplicate` (`duplicate: true`) | a `peer_event_id` already applied | the claim | its status | no |
+| `duplicate` (`duplicate: true`) | a `peer_event_id` already applied to this pool, programme and month (WPM-D148) | the claim | its status | no |
 
 Refused with `422`: a negative figure or one above 1 000 000, a month that is not its first day, a `programme_ref` that is not a
 `thing:` URN, an empty or over-long event id, a pool that is not linked. A `sent_at` that is not RFC 3339 is refused by the body
@@ -178,10 +191,9 @@ parser (a `4xx`). The claim list (`GET /api/programme-demands`) shows `peer_sent
 
 **Not done:** zero for a claim that does not exist stores nothing, so if that withdrawal overtakes the figure it withdraws (the figure
 arrives second), the figure is recorded; PPM's ordering on its side, or sending the figure again as zero, closes it. An event without
-`sent_at` can still overwrite a newer one, as before. A `peer_event_id` is unique across every `ppm` claim (the index is on
-`(source, peer_event_id)`), and the repeat check looks it up before it looks at the pool or the caller's scope, so an id reused for
-another claim is answered as a duplicate of that claim, with its pid and status, even when that claim is in a pool the caller may
-not see (found 2026-10-30 while writing the tutorial; WPM-T397, open). **Not verified:** PPM's sender (being changed by PPM's owner in parallel against
+`sent_at` can still overwrite a newer one, as before. A `peer_event_id` was unique across every `ppm` claim and an id reused for
+another claim was answered as a duplicate of that claim, even in a pool the caller may not see (found 2026-10-30 while writing the
+tutorial); fixed by WPM-D148 (WPM-T397): the id is a repeat only for the same pool, programme and month. **Not verified:** PPM's sender (being changed by PPM's owner in parallel against
 this contract) has not been run against WPM.
 
 ### WPM-R211 — People-impact out (WPM tells PPM)
@@ -373,4 +385,5 @@ PPM's service (`project-portfolio-management-service-with-rust`) was read, not r
 - [x] WPM-T365 Outbound supply for a linked pool: floored counts by month, to the caller's token.
 - [x] WPM-T366 A test that WPM answers every capacity request with the peer unset, down and slow, and that a link removed returns the local figures.
 - [x] WPM-T387 The peer withdraws a figure with `fte_centi: 0`, and an older event (`sent_at`) does not overwrite a newer one (WPM-R215, WPM-D146).
+- [x] WPM-T397 A reused `peer_event_id` is a repeat only for the same pool, programme and month, and tells another organization nothing (WPM-D148).
 
