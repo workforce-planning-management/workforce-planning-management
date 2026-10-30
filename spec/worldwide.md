@@ -361,7 +361,9 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   against the new English. **Not tested:** the labels in a browser in `en-us` or `en-gb` (the override files are read by the same loader
   the parity tests cover). **Verified (2026-10-30):** service fmt, clippy pedantic, 1,049 unit tests (the country check of WPM-T369 caught
   a first message that named three countries), 185 request tests on a throwaway database; UI lint, svelte-check, 316 vitest, Playwright
-  335 passed and 19 skipped.
+  335 passed and 19 skipped. **Missed, then fixed:** the persona binary `enforcement_me` was not run before the first push; it still
+  expected `LS1;DROP` to be refused and failed in CI (run 41075870946). It now expects a 21-character postcode to be refused, and passes
+  on a throwaway database.
 - [ ] WPM-T383 **Payroll stub is not one country's.** *(WPM-R214, WPM-D143; row 33)* The stub tax allowance and rate, the 7.5-hour day
   and the minutes in a month are parameters (or the stub says whose they are and refuses a currency it was not written for).
 - [ ] WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144; rows 34 to 36)* Each `WPM_*` default from one

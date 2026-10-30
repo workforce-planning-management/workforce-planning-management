@@ -132,8 +132,8 @@ async fn a_worker_manages_only_their_own_details() {
         assert_eq!(put("/api/me/contact-details".into(), "Bearer v4.public.junk".into(), good.clone()).await.status_code(), 401);
         // A signed-in person with NO worker record has nothing to change.
         assert_eq!(put("/api/me/contact-details".into(), no_record.clone(), good.clone()).await.status_code(), 404);
-        // Bad shapes are refused, naming the field.
-        for (field, value) in [("phone_mobile", "nope"), ("personal_email", "a@b"), ("country", "GBR"), ("postcode", "LS1;DROP")] {
+        // Bad shapes are refused, naming the field. A postcode has no pattern, only a length (WPM-T382).
+        for (field, value) in [("phone_mobile", "nope"), ("personal_email", "a@b"), ("country", "GBR"), ("postcode", "123456789012345678901")] {
             let mut bad = good.clone();
             bad[field] = json!(value);
             let r = put("/api/me/contact-details".into(), me.clone(), bad).await;
