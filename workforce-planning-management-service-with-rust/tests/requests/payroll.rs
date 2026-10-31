@@ -458,3 +458,182 @@ async fn a_configured_yen_stub_calculates_and_refuses_pounds() {
     })
     .await;
 }
+
+/// A deployer's contracted day of six hours for the length of a test, removed again however it ends
+/// (WPM-T405). Read on every calculation and every timesheet read; these tests run one at a time.
+struct SixHourDay;
+
+impl SixHourDay {
+    fn new() -> Self {
+        unsafe { std::env::set_var("WPM_CONTRACTED_DAY_MINUTES", "360") };
+        Self
+    }
+}
+
+impl Drop for SixHourDay {
+    fn drop(&mut self) {
+        unsafe { std::env::remove_var("WPM_CONTRACTED_DAY_MINUTES") };
+    }
+}
+
+/// Record a time entry and approve it.
+async fn approved_time(request: &loco_rs::TestServer, worker: &str, body: Value) {
+    let entry: Value = request
+        .post(&format!("/api/workers/{worker}/time-entries"))
+        .json(&body)
+        .await
+        .json();
+    request
+        .post(&format!(
+            "/api/time-entries/{}/approve",
+            entry["pid"].as_str().expect("time entry pid")
+        ))
+        .await
+        .assert_status_ok();
+}
+
+/// The derived overtime minutes per day in a worker's timesheet.
+async fn timesheet_overtime(request: &loco_rs::TestServer, worker: &str) -> Vec<(String, i64)> {
+    let listed: Value = request
+        .get(&format!(
+            "/api/workers/{worker}/time-entries?from=2026-07-01&to=2026-07-31"
+        ))
+        .await
+        .json();
+    listed["overtime"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| {
+            (
+                d["worked_on"].as_str().unwrap().to_string(),
+                d["overtime_minutes"].as_i64().unwrap(),
+            )
+        })
+        .collect()
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// WPM-T405 (follows WPM-T401's "Not tested"): with WPM_CONTRACTED_DAY_MINUTES set to 360, the
+// timesheet's derived overtime and the payslip's overtime line both count from the deployer's day,
+// scaled by FTE, not from the 450-minute example.
+async fn overtime_counts_from_a_configured_contracted_day() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let full = seed_worker!(&request, &org, "E-2301", Some(3_600_000)).await;
+        let half: Value = request
+            .post("/api/workers")
+            .json(&json!({
+                "person_ref": crate::requests::a_person(),
+                "organization_ref": org,
+                "worker_number": "E-2302",
+                "display_name": "Test Worker E-2302",
+                "employment_type": "permanent",
+                "department": "engineering",
+                "job_title": "Engineer",
+                "salary_minor": 3_600_000,
+                "salary_currency": "GBP",
+                "fte_percent": 50,
+                "hired_on": "2026-01-05",
+            }))
+            .await
+            .json();
+        let half = half["pid"].as_str().unwrap().to_string();
+        activate!(&request, &full).await;
+        activate!(&request, &half).await;
+        // Full time: 600 regular minutes one day, 30 explicit overtime minutes the next.
+        approved_time(
+            &request,
+            &full,
+            json!({ "worked_on": "2026-07-06", "minutes": 600 }),
+        )
+        .await;
+        approved_time(
+            &request,
+            &full,
+            json!({ "worked_on": "2026-07-07", "minutes": 30, "kind": "overtime" }),
+        )
+        .await;
+        // Half time: 300 regular minutes in a day.
+        approved_time(
+            &request,
+            &half,
+            json!({ "worked_on": "2026-07-06", "minutes": 300 }),
+        )
+        .await;
+
+        // The example day first, so the configured day is seen to change the answer.
+        assert_eq!(
+            timesheet_overtime(&request, &full).await,
+            vec![
+                ("2026-07-06".to_string(), 150),
+                ("2026-07-07".to_string(), 30)
+            ]
+        );
+        assert_eq!(
+            timesheet_overtime(&request, &half).await,
+            vec![("2026-07-06".to_string(), 75)]
+        );
+
+        let _day = SixHourDay::new();
+        // Timesheet: 600 - 360 = 240, the explicit 30 as recorded; half time 300 - 180 = 120.
+        assert_eq!(
+            timesheet_overtime(&request, &full).await,
+            vec![
+                ("2026-07-06".to_string(), 240),
+                ("2026-07-07".to_string(), 30)
+            ]
+        );
+        assert_eq!(
+            timesheet_overtime(&request, &half).await,
+            vec![("2026-07-06".to_string(), 120)]
+        );
+
+        // Payroll: the same minutes feed the overtime line, and the answer names the day in force.
+        let (run_pid, status, body) = calculate_july(&request, &org).await;
+        assert_eq!(status, 200, "{body}");
+        let calculated: Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(calculated["payslips"], 2);
+        assert_eq!(calculated["tax_stub"]["contracted_day_minutes"], 360);
+        // The contracted day is its own setting: the tax stub is still the example.
+        assert_eq!(calculated["tax_stub"]["source"], "example");
+        assert_eq!(
+            calculated["tax_stub"]["month_minutes"],
+            rules::MONTH_MINUTES
+        );
+        let payslips: Value = request
+            .get(&format!("/api/payroll-runs/{run_pid}/payslips"))
+            .await
+            .json();
+        let gross = |worker: &str| {
+            payslips
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|s| s["worker_pid"].as_str() == Some(worker))
+                .unwrap()["gross_minor"]
+                .as_i64()
+                .unwrap()
+        };
+        let full_base = rules::monthly_base_minor(3_600_000, 100).unwrap();
+        let half_base = rules::monthly_base_minor(3_600_000, 50).unwrap();
+        let full_expected =
+            full_base + rules::overtime_pay_minor(full_base, 270, rules::MONTH_MINUTES).unwrap();
+        let half_expected =
+            half_base + rules::overtime_pay_minor(half_base, 120, rules::MONTH_MINUTES).unwrap();
+        assert_eq!(gross(&full), full_expected);
+        assert_eq!(gross(&half), half_expected);
+        // Not what the example day would have paid (150 + 30 and 75 minutes).
+        assert_ne!(
+            gross(&full),
+            full_base + rules::overtime_pay_minor(full_base, 180, rules::MONTH_MINUTES).unwrap()
+        );
+        assert_ne!(
+            gross(&half),
+            half_base + rules::overtime_pay_minor(half_base, 75, rules::MONTH_MINUTES).unwrap()
+        );
+    })
+    .await;
+}

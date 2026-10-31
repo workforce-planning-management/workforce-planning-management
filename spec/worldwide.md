@@ -491,7 +491,8 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   10%, 9,600 and 480; a worker paid in pounds under it is refused with 422 naming `E-2202`, JPY and GBP, the run still a draft). The
   request test sets the process environment, as the other request tests that read settings do (serial). **Not done:** a real tax table;
   one stub per deployment (unchanged). **Not tested:** the overtime line under a configured contracted day in a request (the unit tests of
-  `rules::workforce` cover the day as a parameter); the timesheet's overtime with `WPM_CONTRACTED_DAY_MINUTES` set.
+  `rules::workforce` cover the day as a parameter); the timesheet's overtime with `WPM_CONTRACTED_DAY_MINUTES` set *(both
+  request-tested by WPM-T405, 2026-10-31)*.
 - [x] (2026-10-31) WPM-T402 **The AI Act's date and the pay gap's sex category say whose they are, and the gap report is tested with
   the deployer's tiers.** *(WPM-R214, WPM-D143; follows WPM-T384's "Not done" and "Not verified")* **Done:** `src/statutory_defaults.rs`
   lists 25 settings. `WPM_AI_ACT_APPLIES_FROM` (area `ai_register`, default 2027-12-02) is `EU`, **unverified**: WPM-T268 took the date
@@ -546,6 +547,20 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   (2026-10-31):** the three `statutory_defaults` unit tests; the two request tests (statutory defaults, the gap report's tiers) on a
   throwaway local PostgreSQL; clippy and fmt clean; UI lint clean and the statutory-defaults Playwright spec (3 passed, screenshot
   read). The whole request suite, svelte-check, vitest and the whole Playwright run were not re-run for this change.
+- [x] (2026-10-31) WPM-T405 **Overtime under a configured contracted day is request-tested.** *(WPM-R4, WPM-R13, WPM-R214,
+  WPM-D143; follows WPM-T401's "Not tested")* **Done:** a request test, `overtime_counts_from_a_configured_contracted_day` in
+  `tests/requests/payroll.rs`, sets `WPM_CONTRACTED_DAY_MINUTES` to 360 in the process for its length (a guard removes it however
+  the test ends, as WPM-T401's yen stub does; serial) over a full-time and a half-time GBP worker with approved time in July: 600
+  regular minutes and, the next day, 30 explicit overtime minutes for the first; 300 regular minutes for the second. Before the
+  setting, the timesheet (`GET /api/workers/{pid}/time-entries`) derives 150 and 30, and 75 (the 450-minute example); with it, 240
+  and 30, and 120 (the day scaled by FTE to 180). The payroll calculation then says `contracted_day_minutes` 360 and still
+  `source: example` (the day is its own setting, not the tax stub), and each payslip's gross is the monthly base plus overtime pay on
+  270 and 120 minutes over the example's 9,750 month minutes, and not what the example day would pay. No code changed. **Not done:**
+  a configured day together with configured month minutes (WPM-T401's yen stub sets both but records no time). **Not tested:** the
+  rota or any other reader of the contracted day (only the timesheet and payroll read it). **Verified (2026-10-31):** the payroll
+  request tests (6) and `time_caps_and_overtime` on a throwaway local PostgreSQL, clippy and fmt clean; the whole request suite on a
+  fresh database: 189 passed, 1 failed (`assignments::a_worker_has_a_primary_assignment_…` panicked in loco's `boot_test().unwrap()`,
+  at boot, not at an assertion) and its file's 9 passed when run again.
 
 ## Audit (WPM-T367, 2026-10-29)
 

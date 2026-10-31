@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a request test of overtime under a configured contracted day (WPM-T405)
+
+`overtime_counts_from_a_configured_contracted_day`: with `WPM_CONTRACTED_DAY_MINUTES=360`, a full-time worker's 600 regular minutes
+give 240 overtime (150 under the example) and a half-time worker's 300 give 120 (75), in `GET /api/workers/{pid}/time-entries` and in
+the payslip's gross; the calculate answer says `contracted_day_minutes` 360 and `source: example`. No code changed. **Not done:** a
+configured day with configured month minutes.
+
 ### Fixed — the Directive's defaults say `unverified`, not `read` (WPM-T404)
 
 The `directive!` origin in `statutory_defaults` is `unverified` (it was `read`), and its reference says the Article was taken in

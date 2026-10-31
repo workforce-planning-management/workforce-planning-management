@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — overtime under a configured contracted day is request-tested (WPM-T405)
+
+A request test sets `WPM_CONTRACTED_DAY_MINUTES` and checks that both the timesheet's derived overtime and the payslip's overtime line
+count from the deployer's day, scaled by FTE. No code changed. **Not done:** the day together with configured month minutes. **Not
+tested:** any reader of the day other than the timesheet and payroll.
+
 ### Fixed — the Pay Transparency Directive's defaults no longer claim to have been read (WPM-T404)
 
 The five defaults that rest on Directive (EU) 2023/970 said `read`, but the Directive was only ever seen as search excerpts of its
