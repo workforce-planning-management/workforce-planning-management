@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — example profiles hold the statutory defaults (WPM-T384 step 3)
+
+`tasks::seed`: `example_profile_eu()` (an `EU` supranational code with `pay_transparency.information_months` 2,
+`pay_range_required` true, `joint_assessment_percent` 5, `joint_assessment_months` 6 and the three `reporting_tiers`, from 2026-06-07),
+loaded into the GBP organization; `example_profile_gb()` gains `flexible_working.decision_months` 2, `requests_per_year` 2 and the
+nine `refusal_reasons` (from 2024-04-06); `organization_settings.home_jurisdiction` is `GB`, `JP` and `IN` for the three seed
+organizations. Every row `example`, its source saying it was not read. No seed home is under `EU`, so its rows resolve for no one in the
+seed and the GBP organization's organization-level readers take the (identical) defaults. A unit test reads each example row through
+its setting's reader and checks it equals the default. **Verified:** the seed on a throwaway database and the list for the GBP
+organization. **Not run:** `scripts/demo-data.py`.
+
 ### Changed — statutory defaults are read from jurisdiction profiles first (WPM-T384 step 2, WPM-D153)
 
 18 registry keys: `flexible_working.{appeal_calendar_days, decision_months, refusal_reasons, requests_per_year}`,

@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — example profiles hold the statutory defaults; WPM-T384 is done (step 3)
+
+The demo seed puts the Pay Transparency Directive's values in an example `EU` profile and the flexible working values in the example
+`GB` profile, and gives each demo organization a home jurisdiction; the demo behaves as before. Every row is an example that says it
+was not read. What WPM-T384 did not move (the AI Act date, the sex category, the payroll stub) is WPM-T409, not started.
+
 ### Changed — statutory defaults are read from jurisdiction profiles first (WPM-T384 step 2, WPM-D153)
 
 Flexible working, the resignation notice, pay information, the pay range gate, the joint assessment, the pay-gap tiers and the eight

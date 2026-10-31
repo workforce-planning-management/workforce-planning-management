@@ -552,7 +552,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   should change the other); D144 registry keys for these parameters were not named. **Not tested:** the `WPM_PAYROLL_*` and
   `WPM_CONTRACTED_DAY_MINUTES` settings themselves (read in the controller, not the pure core; no request test sets them). *(Tested by
   WPM-T401, 2026-10-31.)*
-- [~] WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144; rows 34 to 36)* Each `WPM_*` default from one
+- [x] (2026-10-31) WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144; rows 34 to 36)* Each `WPM_*` default from one
   regime (flexible working, resignation notice, pay information, joint assessment, retention) is named with its regime in the API's
   answer and the spec, then moved to a profile when the registry exists; the pay-gap tiers become configurable.
   **Part done (2026-10-30): named, and the tiers configurable.** **Named:** `src/statutory_defaults.rs` (outside `src/rules/`, which names
@@ -634,7 +634,30 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   the resignation's `notice_basis` and the pay information `due_on_basis` (they are made through `/api/me`, which the request suite
   cannot sign in to; the enforcement binaries that do were run and still pass, but do not assert the new fields); the sweep itself
   deleting at a profile's horizon (the report's horizons, which the sweep shares, were tested); right to left and phone width for the
-  page's new column. **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
+  page's new column.
+  **Done (2026-10-31), step 3 of 3: the example profiles.** The seed (`cargo run -- task seed`) keeps the demo's behaviour and moves the
+  defaults' values into example profiles: an **`EU` supranational** profile in the GBP organization with the Directive's five values
+  (`pay_transparency.information_months` 2, `pay_range_required` true, `joint_assessment_percent` 5, `joint_assessment_months` 6, the
+  three `reporting_tiers`), from 2026-06-07; the **`GB`** profile gains `flexible_working.decision_months` 2, `requests_per_year` 2 and
+  the nine `refusal_reasons`, from 2024-04-06. Every row is `example` and its source says it was not read (the Directive from search
+  excerpts, WPM-T268 and WPM-T404; Part 8A modelled on common rules, WPM-T212); nothing is `read`. Each seed organization's home
+  jurisdiction is set (`GB`, `JP`, `IN`). No seed worker works in the EU and no home is under `EU`, so the `EU` rows resolve for no
+  one in the seed: the GBP organization's organization-level readers take the defaults, which are the same values; the GBP workers'
+  flexible working now comes from the `GB` profile, with the same values. **Tests:** the seed's profiles fit the registry and every
+  row says it was not read (existing test, now over four profiles); a new unit test reads each example row through its setting's own
+  reader, as a worker and as an organization, and checks it comes from the profile and equals the setting's default. **Verified
+  (2026-10-31):** on a throwaway local database, migrations then the seed, then the service with sign-in off:
+  `GET /api/statutory-defaults?organization=` for the GBP organization gave home `GB`, every value equal to its default, the flexible
+  working period, limit and reasons from the profile at `GB`, the pay information period from the profile at `EU` (by place only), and
+  the organization-level settings from the default. **Not done:** what T384 did not move is WPM-T409 (below); no seed organization is
+  placed under `EU` (the seed's example countries are not EU members, and a member state's own transposition was not read); the
+  demo filler (`scripts/demo-data.py`) was not run.
+- [ ] WPM-T409 **The statutory settings WPM-T384 did not move.** *(WPM-R214, WPM-D143, WPM-D144, WPM-D153; row 36)* Not started.
+  `WPM_AI_ACT_APPLIES_FROM` needs a date shape in the registry and a reader with an organization (the AI register is deployment-wide);
+  `WPM_PAY_GAP_SEX_CATEGORY` and the pay-gap page's female and male columns need the equality categories per jurisdiction (a `union`
+  parameter, the design's `equality.categories`); the payroll stub (`WPM_PAYROLL_STUB_*`) with `WPM_CONTRACTED_DAY_MINUTES` and
+  `WPM_PAYROLL_MONTH_MINUTES` becomes D144's statutory deduction schemes, the last step of its order of work, not a profile value. Each
+  stays one value per deployment, labelled with whose it is (`key: null` in `GET /api/statutory-defaults`), until then. **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
   and UK reports; changing them needs the equality categories per jurisdiction, which is the registry too); `WPM_PAY_GAP_SEX_CATEGORY`
   and `WPM_AI_ACT_APPLIES_FROM` are not in the table (the first names a category, not a value of a regime; the second's answer already
   names the AI Act) *(both added by WPM-T402)*; the working-time constants are WPM-T380; no UI shows the new endpoint *(a read-only page
@@ -1027,9 +1050,9 @@ through `rules::duplicates`.
 | 31 | Locales | UI `content/locales/*/ui.json`, `src/lib/locales.ts` | 17 locales; all 12 translated `-001` files hold all 2,338 keys of `en-001`; `en-001` (not `en-gb`) is the default; all translations are AI-written and unreviewed (`REVIEW.md`) | **Right** in parity; **partial**: no locale is reviewed | — (recorded) |
 | 32 | Locales | UI `content/locales/en-gb/ui.json` (5 overrides), `en-us/ui.json` (0) | `en-001` is written in British wording, so `en-gb` barely differs and `en-us` has nothing to override | **Partial**. **In part 2026-10-30**: the address labels; other terms not reviewed | T382 |
 | 33 | Pay arithmetic | API `src/rules/payroll.rs:42-47`, `src/rules/workforce.rs:10` | The stub tax (20% above 104,750 minor units a month, the UK allowance divided by 12), a 7.5-hour day and 9,750 minutes a month, applied to every worker whatever the currency | **Gap** (labelled a stub; production gate WPM-G2). **Fixed 2026-10-30**: parameters, named as an example written for GBP, another currency refused | T383 |
-| 34 | Statutory defaults | API `src/rules/flexible_working.rs:13-17`, `src/rules/resignation.rs:13`, `src/rules/pay_information.rs:17`, `src/rules/joint_assessment.rs:17-19`, `src/rules/privacy.rs:85-97` | Each rule takes its limit as a parameter, but the default when no `WPM_*` setting is given is one regime's value (2 months, 2 requests, 14 calendar days; 28 calendar days; 2 months; 5% and 6 months) and is not labelled as whose | **Partial**: parameterized, one deployment-wide value. **Labelled 2026-10-30**: each default names whose it is (`GET /api/statutory-defaults`); still one value per deployment | T384 |
-| 35 | Statutory defaults | API `src/controllers/pay_transparency.rs:442`, `src/rules/pay_gap.rs:540-566` | `tier_for` takes the tiers, but the controller always passes the EU Directive's tiers | **Partial**. **Fixed 2026-10-30**: `WPM_PAY_GAP_TIERS`, or `none` | T384 |
-| 36 | Pay gap | UI `src/routes/pay-gap/+page.svelte:132-133`; API `WPM_PAY_GAP_SEX_CATEGORY` | Female and male columns, the shape of the EU and UK reports; the equality categories themselves come from the server (`EqualityPanel.svelte:62`) | **Partial** | T384 |
+| 34 | Statutory defaults | API `src/rules/flexible_working.rs:13-17`, `src/rules/resignation.rs:13`, `src/rules/pay_information.rs:17`, `src/rules/joint_assessment.rs:17-19`, `src/rules/privacy.rs:85-97` | Each rule takes its limit as a parameter, but the default when no `WPM_*` setting is given is one regime's value (2 months, 2 requests, 14 calendar days; 28 calendar days; 2 months; 5% and 6 months) and is not labelled as whose | **Partial**: parameterized, one deployment-wide value. **Labelled 2026-10-30**: each default names whose it is (`GET /api/statutory-defaults`). **Fixed 2026-10-31**: each is read from the jurisdiction profile first (a worker's or the organization's chain, WPM-D153), the setting and the default as the fallback | T384 |
+| 35 | Statutory defaults | API `src/controllers/pay_transparency.rs:442`, `src/rules/pay_gap.rs:540-566` | `tier_for` takes the tiers, but the controller always passes the EU Directive's tiers | **Partial**. **Fixed 2026-10-30**: `WPM_PAY_GAP_TIERS`, or `none`. **Fixed 2026-10-31**: `pay_transparency.reporting_tiers` over the organization's home jurisdiction first | T384 |
+| 36 | Pay gap | UI `src/routes/pay-gap/+page.svelte:132-133`; API `WPM_PAY_GAP_SEX_CATEGORY` | Female and male columns, the shape of the EU and UK reports; the equality categories themselves come from the server (`EqualityPanel.svelte:62`) | **Partial** | T384, T409 |
 | 37 | Server content | API `src/rules/ergonomics.rs:6-16`, `src/controllers/ergonomics.rs:52` | The default workstation checklist is eight English sentences stored as data, "UK Display Screen Equipment shape" | **Gap**: not translatable, one regime's list. **Fixed 2026-10-30**: stored by key, translated, named as one regime's example | T386 |
 | 38 | Server content | API `src/rules/cutover.rs:49-59`, `src/rules/insights.rs:72-76` | English text for an API reader plus a code the UI translates | **Right** | — |
 | 39 | Seed data | API `src/tasks/seed.rs:61,100,150,175,190`; root `scripts/demo-data.py:281` | Every salary, payslip and expense claim is in GBP; names are "Test Worker 001" and "Fictitious … Worker" (neutral); no holiday pack and no example jurisdiction profile is loaded | **Gap**: the demo has one currency (exponent 2) and one country's money; D144 question 1 (confirmed) has the seed load example profiles, which do not exist yet. **Part fixed 2026-10-30**: JPY and KWD beside GBP; the example profiles wait for the registry | T385 |

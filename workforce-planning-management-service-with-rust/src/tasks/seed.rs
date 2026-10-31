@@ -365,6 +365,10 @@ impl Task for Seed {
         .insert(db)
         .await?;
         seed_profile(db, &org, &example_profile_gb()).await?;
+        // The EU Directive's values as an example supranational profile (WPM-T384). No seed worker works in the EU and no seed
+        // organization's home is under it, so these rows resolve for no one here: the GBP organization's organization-level readers
+        // still take the defaults, which are the same values, and the demo's behaviour is unchanged.
+        seed_profile(db, &org, &example_profile_eu()).await?;
         seed_profile(db, &yen_org, &example_profile_jp()).await?;
         // A third organization (WPM-T385), paid in rupees, works under the example India profile, in a state with no rows of its own,
         // so its limits come from the country's layer through the chain.
@@ -400,6 +404,16 @@ impl Task for Seed {
             .await?;
         }
         seed_profile(db, &rupee_org, &example_profile_in()).await?;
+        // Each organization's home jurisdiction (WPM-D153): the country of the example legal entity.
+        for (organization, home) in [(&org, "GB"), (&yen_org, "JP"), (&rupee_org, "IN")] {
+            db.execute_raw(sea_orm::Statement::from_sql_and_values(
+                sea_orm::DbBackend::Postgres,
+                "INSERT INTO organization_settings (organization_ref, home_jurisdiction) VALUES ($1, $2)
+                 ON CONFLICT (organization_ref) DO NOTHING",
+                [organization.as_str().into(), home.into()],
+            ))
+            .await?;
+        }
         tracing::info!(organization = %org, yen_organization = %yen_org, workers = n, "seeded synthetic demo organizations");
         println!(
             "seeded: organization {org} (GBP, example GB profile), {yen_org} (JPY, example JP profile) and {rupee_org} (INR, example IN profile), {n} workers in all"
@@ -428,13 +442,18 @@ pub struct ExampleProfile {
     )],
 }
 
-/// The example `GB` working-time profile: the shape of the Working Time Regulations 1998 (a 17-week reference period, an average of
-/// 48 hours a week, 11 hours' daily rest), the values the service used to hard-code. **Example, unverified**: not read against the
-/// Regulations in this work.
+/// The example `GB` profile: working time in the shape of the Working Time Regulations 1998 (a 17-week reference period, an average
+/// of 48 hours a week, 11 hours' daily rest), the values the service used to hard-code; and flexible working in the shape of the
+/// Employment Rights Act 1996, Part 8A as amended from 6 April 2024 (two calendar months to decide, two requests a year, the eight
+/// business reasons and `other_recorded`), the `WPM_FLEXIBLE_*` defaults (WPM-T384). **Example, unverified**: neither was read against
+/// the text in this work.
 #[must_use]
 pub const fn example_profile_gb() -> ExampleProfile {
     const SOURCE: &str = "Example in the shape of the Working Time Regulations 1998 (SI 1998/1833), regs 4 and 10; not read against \
                           the text (WPM-T380)";
+    const FLEXIBLE: &str = "Example in the shape of the Employment Rights Act 1996, Part 8A, as amended by the Employment Relations \
+                            (Flexible Working) Act 2023 from 6 April 2024; modelled on common rules, not read against the text \
+                            (WPM-T212, WPM-T384)";
     ExampleProfile {
         codes: &[("GB", "national", None, "United Kingdom (example)")],
         rows: &[
@@ -457,6 +476,80 @@ pub const fn example_profile_gb() -> ExampleProfile {
                 "working_time.min_daily_rest_minutes",
                 "660",
                 "1998-10-01",
+                SOURCE,
+            ),
+            (
+                "GB",
+                "flexible_working.decision_months",
+                "2",
+                "2024-04-06",
+                FLEXIBLE,
+            ),
+            (
+                "GB",
+                "flexible_working.requests_per_year",
+                "2",
+                "2024-04-06",
+                FLEXIBLE,
+            ),
+            (
+                "GB",
+                "flexible_working.refusal_reasons",
+                r#"["additional_cost", "cannot_meet_demand", "cannot_reorganise_work", "cannot_recruit", "quality_impact",
+                    "performance_impact", "insufficient_work_in_periods", "planned_changes", "other_recorded"]"#,
+                "2024-04-06",
+                FLEXIBLE,
+            ),
+        ],
+    }
+}
+
+/// The example `EU` profile (WPM-T384): a supranational code holding the Pay Transparency Directive's values, the
+/// `WPM_PAY_INFORMATION_MONTHS`, `WPM_REQUIRE_PAY_RANGE`, `WPM_JOINT_ASSESSMENT_*` and `WPM_PAY_GAP_TIERS` defaults (two calendar
+/// months to answer, a pay range before a vacancy opens, a 5% gap and six calendar months to remedy it, the three reporting tiers),
+/// from the date its transposition was due. **Example, unverified**: the Directive was seen only as search excerpts (WPM-T268,
+/// WPM-T404). A country is under it only where an organization records the country with `EU` as its parent; the seed records none.
+#[must_use]
+pub const fn example_profile_eu() -> ExampleProfile {
+    const SOURCE: &str = "Example in the shape of the Pay Transparency Directive (EU) 2023/970, Articles 5, 7, 9 and 10(1); taken from \
+                          search excerpts of its EUR-Lex text and the Commission's FAQ, not read against the whole text (WPM-T268, \
+                          WPM-T404, WPM-T384)";
+    ExampleProfile {
+        codes: &[("EU", "supranational", None, "European Union (example)")],
+        rows: &[
+            (
+                "EU",
+                "pay_transparency.information_months",
+                "2",
+                "2026-06-07",
+                SOURCE,
+            ),
+            (
+                "EU",
+                "pay_transparency.pay_range_required",
+                "true",
+                "2026-06-07",
+                SOURCE,
+            ),
+            (
+                "EU",
+                "pay_transparency.joint_assessment_percent",
+                "5",
+                "2026-06-07",
+                SOURCE,
+            ),
+            (
+                "EU",
+                "pay_transparency.joint_assessment_months",
+                "6",
+                "2026-06-07",
+                SOURCE,
+            ),
+            (
+                "EU",
+                "pay_transparency.reporting_tiers",
+                r#"["250:1:2027-06-07", "150:3:2027-06-07", "100:3:2031-06-07"]"#,
+                "2026-06-07",
                 SOURCE,
             ),
         ],
@@ -591,6 +684,7 @@ mod tests {
     #[test]
     fn the_example_profiles_fit_the_registry() {
         for profile in [
+            example_profile_eu(),
             example_profile_gb(),
             example_profile_in(),
             example_profile_jp(),
@@ -614,6 +708,126 @@ mod tests {
                     source.contains("not read"),
                     "an example says it was not read: {key}"
                 );
+            }
+        }
+    }
+
+    /// The example profiles hold exactly the defaults they stand for (WPM-T384), so loading them does not change what the demo
+    /// does: each row read through its setting's reader gives the setting's default.
+    #[test]
+    #[allow(clippy::too_many_lines)] // one arm per setting with an example row
+    fn the_example_profiles_hold_the_defaults() {
+        use crate::controllers::jurisdictions::{Profile, Reader, Scope};
+        use crate::controllers::{
+            flexible_working as fw, pay_assessment as pa, pay_information as pi,
+        };
+        use crate::rules::jurisdiction::{Layer, Link, Row, Status};
+        let as_of = chrono::NaiveDate::from_ymd_opt(2026, 10, 31).unwrap();
+        for (profile, start) in [(example_profile_eu(), "EU"), (example_profile_gb(), "GB")] {
+            let rows: Vec<Row> = profile
+                .rows
+                .iter()
+                .enumerate()
+                .map(|(seq, (code, key, value, from, source))| Row {
+                    code: (*code).into(),
+                    key: (*key).into(),
+                    value: crate::rules::jurisdiction::validate(
+                        key,
+                        &serde_json::from_str(value).unwrap(),
+                    )
+                    .unwrap(),
+                    effective_from: chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d").unwrap(),
+                    effective_to: None,
+                    source: (*source).into(),
+                    status: Status::Example,
+                    seq: i64::try_from(seq).unwrap(),
+                })
+                .collect();
+            let links: Vec<Link> = profile
+                .codes
+                .iter()
+                .map(|(code, layer, parent, _)| Link {
+                    code: (*code).into(),
+                    layer: Layer::parse(layer).unwrap(),
+                    parent: parent.map(Into::into),
+                })
+                .collect();
+            for reader in [Reader::Worker, Reader::Organization] {
+                let scope = Scope {
+                    organization: "organization:seed".into(),
+                    reader,
+                    start: Some(start.into()),
+                    profile: Profile {
+                        links: links.clone(),
+                        rows: rows.clone(),
+                    },
+                };
+                let s = Some(&scope);
+                let listed = crate::statutory_defaults::DEFAULTS.iter().filter(|d| {
+                    d.key
+                        .is_some_and(|key| profile.rows.iter().any(|row| row.1 == key))
+                });
+                for d in listed {
+                    let came = |c: &serde_json::Value| c["kind"] == "profile";
+                    let (value, from_profile) = match d.setting {
+                        "WPM_FLEXIBLE_DECISION_MONTHS" => (
+                            fw::decision_months(s, as_of).value.to_string(),
+                            came(&fw::decision_months(s, as_of).came_from),
+                        ),
+                        "WPM_FLEXIBLE_REQUESTS_PER_YEAR" => (
+                            fw::requests_per_year(s, as_of).value.to_string(),
+                            came(&fw::requests_per_year(s, as_of).came_from),
+                        ),
+                        "WPM_FLEXIBLE_REFUSAL_REASONS" => {
+                            let found = fw::refusal_reasons(s, as_of);
+                            let mut want: Vec<String> =
+                                crate::rules::flexible_working::DEFAULT_REFUSAL_REASONS
+                                    .iter()
+                                    .map(|r| (*r).to_string())
+                                    .collect();
+                            want.sort();
+                            let mut got = found.value.clone();
+                            got.sort();
+                            assert_eq!(got, want);
+                            (d.default.to_string(), came(&found.came_from))
+                        }
+                        "WPM_PAY_INFORMATION_MONTHS" => (
+                            pi::answer_months(s, as_of).value.to_string(),
+                            came(&pi::answer_months(s, as_of).came_from),
+                        ),
+                        "WPM_REQUIRE_PAY_RANGE" => {
+                            let found = pi::pay_range_required(s, as_of);
+                            (
+                                (if found.value { "on" } else { "off" }).to_string(),
+                                came(&found.came_from),
+                            )
+                        }
+                        "WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT" => {
+                            let c = pa::configured(s, as_of);
+                            (
+                                (c.config.threshold_bp / 100).to_string(),
+                                came(&c.threshold_from),
+                            )
+                        }
+                        "WPM_JOINT_ASSESSMENT_MONTHS" => {
+                            let c = pa::configured(s, as_of);
+                            (c.config.remedy_months.to_string(), came(&c.months_from))
+                        }
+                        "WPM_PAY_GAP_TIERS" => {
+                            let found =
+                                crate::controllers::pay_transparency::reporting_tiers(s, as_of);
+                            assert_eq!(found.value, crate::rules::pay_gap::directive_tiers());
+                            (d.default.to_string(), came(&found.came_from))
+                        }
+                        other => panic!("{other} has an example row but no check here"),
+                    };
+                    assert!(from_profile, "{}: read from the example profile", d.setting);
+                    assert_eq!(
+                        value, d.default,
+                        "{}: the example holds the default",
+                        d.setting
+                    );
+                }
             }
         }
     }
