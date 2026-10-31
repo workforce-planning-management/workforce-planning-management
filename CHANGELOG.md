@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `zizmor` runs in CI (`workflow-lint`). Checkouts no longer persist credentials; the release job uses no build cache.
 - `scripts/check-actions-pinned.py` gained `--actions-only`, ignores `*:local` images and YAML aliases, and checks anchored images (the same file is now in PPM and CRM, which pin every image by digest too).
+- `rust-toolchain.toml` pins Rust 1.99.1 for the whole repository, as PPM and CRM do (CI used whatever stable the runner had). `cargo fmt --check` is clean under it; the MSRV job names its own toolchain.
 - README: "Works on its own".
 
 ### Added — example profiles hold the statutory defaults; WPM-T384 is done (step 3)

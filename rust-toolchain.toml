@@ -1,0 +1,11 @@
+# Pin the Rust toolchain for the whole Workforce Planning Management repository.
+#
+# Every crate in this tree (the API service, the matcher, the migrations) inherits this pin, so `cargo build`,
+# `cargo clippy` and especially `cargo fmt` give the same result on every machine and in CI. The MSRV job
+# (`cargo +1.97 ...`) names its own toolchain and is not affected. The same file is in the two sibling repositories.
+#
+# Bump deliberately (in one commit, re-running `cargo fmt` across all crates) rather than letting `rustup` float.
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"
