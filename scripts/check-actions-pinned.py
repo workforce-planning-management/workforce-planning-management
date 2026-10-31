@@ -9,7 +9,8 @@ digest are fine.
 Container images (service containers in workflows, `image:` in compose files, `FROM` and `COPY --from`
 in a Containerfile, a registry name in a script) must carry `@sha256:<digest>` (WPM-T231): a tag moves.
 
-    python3 scripts/check-actions-pinned.py
+    python3 scripts/check-actions-pinned.py                  # actions and images
+    python3 scripts/check-actions-pinned.py --actions-only   # actions only
 """
 import subprocess
 import re
@@ -21,7 +22,7 @@ USES = re.compile(r"^\s*(?:-\s+)?uses:\s*(\S+)")
 PINNED = re.compile(r"^[\w.-]+/[\w./-]+@[0-9a-f]{40}$")
 
 
-IMAGE_KEY = re.compile(r"^\s*image:\s*[\"']?([^\s\"']+)")
+IMAGE_KEY = re.compile(r"^\s*(?:image:|-\s+&\w+)\s*[\"']?([^\s\"']+)")
 FROM = re.compile(r"^FROM\s+(?:--platform=\S+\s+)?(\S+)(?:\s+AS\s+(\S+))?", re.IGNORECASE)
 COPY_FROM = re.compile(r"--from=(\S+)")
 REGISTRY = re.compile(r"\b((?:docker\.io|quay\.io|ghcr\.io)/[\w./:@-]+)")
@@ -59,7 +60,9 @@ def unpinned_images() -> list[str]:
             elif path.suffix == ".sh":
                 refs += REGISTRY.findall(line)
             for ref in refs:
-                if "$" in ref or DIGEST in ref:
+                # `$VAR` is resolved elsewhere, `*alias` points at an anchor checked where it is defined, and
+                # `name:local` is an image the same compose file builds itself.
+                if "$" in ref or ref.startswith("*") or ref.endswith(":local") or DIGEST in ref:
                     continue
                 bad.append(f"{name}:{number}: image {ref} has no @sha256 digest")
     return bad
@@ -77,10 +80,12 @@ def main() -> int:
                 continue
             if not PINNED.match(ref):
                 bad.append(f"{path.relative_to(ROOT)}:{number}: {ref} is not pinned to a commit SHA")
-    bad += unpinned_images()
+    actions_only = "--actions-only" in sys.argv[1:]
+    if not actions_only:
+        bad += unpinned_images()
     for line in bad:
         print(line)
-    print("all actions and images are pinned" if not bad else f"{len(bad)} unpinned reference(s)")
+    print(("all actions are pinned" if actions_only else "all actions and images are pinned") if not bad else f"{len(bad)} unpinned reference(s)")
     return 1 if bad else 0
 
 

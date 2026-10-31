@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security — workflow lint matched across the family (2026-10-31)
+
+- `zizmor` runs in CI (`workflow-lint`). Checkouts no longer persist credentials; the release job uses no build cache.
+- `scripts/check-actions-pinned.py` gained `--actions-only`, ignores `*:local` images and YAML aliases, and checks anchored images (the same file is now in PPM and CRM, which pin every image by digest too).
+- README: "Works on its own".
+
 ### Added — example profiles hold the statutory defaults; WPM-T384 is done (step 3)
 
 The demo seed puts the Pay Transparency Directive's values in an example `EU` profile and the flexible working values in the example

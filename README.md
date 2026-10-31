@@ -94,6 +94,13 @@ A change starts in `requirements.md`, is shaped in `design.md`, is
 queued in `tasks.md`, and only then lands as code. **No code lands
 without the spec describing it.**
 
+## Works on its own
+
+This repository builds, runs and is tested **without** the contact-relationship (CRM) or project-portfolio (PPM)
+repositories: nothing here depends on their code. The bridges are opt-in: a peer-pool link set by hand, a webhook
+subscription you create, and routes that answer only under the caller's own token. A bridge carries references and
+counts, never a record. Walk-through: [docs/tutorials/family-bridges.md](docs/tutorials/family-bridges.md).
+
 ## Documentation
 
 - [spec/index.md](spec/index.md) — the cross-cutting specification
