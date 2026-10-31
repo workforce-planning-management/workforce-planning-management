@@ -166,6 +166,8 @@ pub enum HorizonSource {
     Legacy,
     /// The kind's own `WPM_RETENTION_<KIND>_DAYS`.
     Override,
+    /// A jurisdiction profile's `retention.<kind>.days` (WPM-T384): its floor, or its ceiling where it gives none.
+    Profile,
 }
 
 impl HorizonSource {
@@ -176,6 +178,7 @@ impl HorizonSource {
             Self::Default => "default",
             Self::Legacy => "WPM_RETENTION_DAYS",
             Self::Override => "override",
+            Self::Profile => "profile",
         }
     }
 }
@@ -206,6 +209,17 @@ pub fn horizon_for(kind: RecordKind, own: Option<&str>, legacy: Option<&str>) ->
         days: days.max(RETENTION_FLOOR_DAYS),
         source,
     }
+}
+
+/// The horizon a profile's `bounded` range gives (WPM-T384): its floor, so a record is kept as long as
+/// the strictest floor requires and no longer; where only a ceiling is given, the ceiling. Always floored
+/// at [`RETENTION_FLOOR_DAYS`]. `None` when the range gives neither.
+#[must_use]
+pub fn horizon_from_range(min: Option<i64>, max: Option<i64>) -> Option<Horizon> {
+    min.or(max).map(|days| Horizon {
+        days: days.max(RETENTION_FLOOR_DAYS),
+        source: HorizonSource::Profile,
+    })
 }
 
 /// Every table with a `deleted_at` column, for the retention sweep.
@@ -275,6 +289,19 @@ pub const SOFT_DELETED_TABLES: &[&str] = &[
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A profile's range gives its floor, or its ceiling where there is no floor, never below the 30-day floor.
+    #[test]
+    fn a_profile_range_gives_its_floor_then_its_ceiling() {
+        let days = |min, max| horizon_from_range(min, max).map(|h| (h.days, h.source.label()));
+        assert_eq!(days(Some(400), Some(900)), Some((400, "profile")));
+        assert_eq!(days(None, Some(900)), Some((900, "profile")));
+        assert_eq!(
+            days(Some(10), None),
+            Some((RETENTION_FLOOR_DAYS, "profile"))
+        );
+        assert_eq!(days(None, None), None);
+    }
 
     #[test]
     fn erasure_requires_a_closed_employment() {

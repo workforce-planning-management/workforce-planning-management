@@ -2831,6 +2831,21 @@
       "payroll": "Cyflogres",
       "resignation": "Ymddiswyddo",
       "retention": "Cadw"
+    },
+    "organization": "Sefydliad",
+    "deployment": "Y gosodiad (dim sefydliad)",
+    "home": "Awdurdodaeth gartref: {code}. Darllenir gosodiadau'r sefydliad o'i broffil yn gyntaf.",
+    "no_home": "Nid oes awdurdodaeth gartref wedi'i chofnodi ar gyfer y sefydliad hwn: mae gosodiadau'r sefydliad yn defnyddio'r gosodiad neu'r rhagosodiad.",
+    "came_from": "O ble y daeth",
+    "from_profile": "Proffil: {codes} ({status})",
+    "from_setting": "Gosodiad y gosodiad hwn",
+    "from_default": "Y rhagosodiad",
+    "reader": "Darllenir ar gyfer",
+    "by_place": "Yn ôl man gwaith",
+    "readers": {
+      "worker": "Man gwaith pob gweithiwr",
+      "organization": "Awdurdodaeth gartref y sefydliad",
+      "deployment": "Y gosodiad cyfan"
     }
   }
 }

@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — statutory defaults are read from jurisdiction profiles first (WPM-T384 step 2, WPM-D153)
+
+Flexible working, the resignation notice, pay information, the pay range gate, the joint assessment, the pay-gap tiers and the eight
+retention horizons are now read from the organization's jurisdiction profile first (a worker's place of work, or the organization's
+home jurisdiction), then the `WPM_*` setting, then the default; the statutory defaults page says, per organization, which. **Not
+moved:** the AI Act date, the sex category and the payroll stub, each with its reason in the task. **Not tested:** the new `*_basis`
+fields on the three `/api/me` answers.
+
 ### Added — an organization's home jurisdiction (WPM-T384 step 1, WPM-D153)
 
 The product owner's decision of 2026-10-31 is recorded: a reader about the organization as a whole uses the chain of the

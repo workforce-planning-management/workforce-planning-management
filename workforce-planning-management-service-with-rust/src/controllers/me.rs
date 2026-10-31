@@ -646,7 +646,8 @@ async fn cancel_my_leave(
 async fn my_resignation(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
     let row = latest(&ctx, worker.pid).await?;
-    format::json(json!({ "resignation": row.as_ref().map(own_json) }))
+    let notice = super::resignations::notice_for(&ctx, &worker).await?;
+    format::json(json!({ "resignation": row.as_ref().map(|r| own_json(r, &notice)) }))
 }
 
 /// `POST /api/me/resignation` — log an intent to resign (a proposed last day that allows the

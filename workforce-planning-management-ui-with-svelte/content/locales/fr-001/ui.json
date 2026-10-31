@@ -2804,6 +2804,21 @@
       "payroll": "Paie",
       "resignation": "Démission",
       "retention": "Conservation"
+    },
+    "organization": "Organisation",
+    "deployment": "Le déploiement (aucune organisation)",
+    "home": "Juridiction du siège : {code}. Les réglages de l'organisation sont d'abord lus dans son profil.",
+    "no_home": "Aucune juridiction du siège n'est enregistrée pour cette organisation : les réglages de l'organisation utilisent le réglage ou la valeur par défaut.",
+    "came_from": "Provenance",
+    "from_profile": "Profil : {codes} ({status})",
+    "from_setting": "Le réglage de ce déploiement",
+    "from_default": "La valeur par défaut",
+    "reader": "Lu pour",
+    "by_place": "Par lieu de travail",
+    "readers": {
+      "worker": "Le lieu de travail de chaque personne",
+      "organization": "La juridiction du siège de l'organisation",
+      "deployment": "Tout le déploiement"
     }
   }
 }

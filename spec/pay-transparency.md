@@ -188,6 +188,11 @@ So the defaults that rest on the Directive (`WPM_PAY_INFORMATION_MONTHS`, `WPM_R
 `/statutory-defaults` page; their references keep the Article and say they came from search excerpts (WPM-T404, 2026-10-31; they
 said `read` from WPM-T384 until then).
 
+Since WPM-T384's second step (WPM-D153, 2026-10-31) each of these is read from a jurisdiction profile first: the pay information
+period over the asking worker's `work_jurisdiction`, and the pay range gate, the joint assessment's threshold and period and the
+reporting tiers over the organization's home jurisdiction; the `WPM_*` setting and then the default follow. Each `*_basis` adds
+`came_from` (`profile` with the rows behind it, `setting` or `default`).
+
 ## Sources
 
 - Directive (EU) 2023/970, [EUR-Lex](https://eur-lex.europa.eu/eli/dir/2023/970/oj/eng).

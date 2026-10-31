@@ -94,8 +94,9 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   - **Readers about one worker** (flexible working, the resignation notice, pay information) resolve over the chain of that worker's
     `work_jurisdiction` (WPM-D144), never the organization's home.
   - **The order is profile, then setting, then default.** Where the chain is not recorded, or no profile row applies, the reader falls
-    back to its `WPM_*` setting and then to its current default, exactly as before this decision. Every answer that uses one says which
-    of the three it came from (the profile's code, layer, status and source; the setting's name; or whose the default is).
+    back to its `WPM_*` setting and then to its current default, exactly as before this decision. `GET /api/statutory-defaults` says,
+    for an organization, which of the three each value came from (the profile's code, layer, status and source; the setting's name; or
+    whose the default is), and so does every answer that states a basis.
   - **The home is not the workers' place.** It is never used as a worker's `work_jurisdiction`, and an unset home is unknown, not the
     country of any worker.
 
@@ -598,7 +599,42 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   is unknown with the reason `no_work_jurisdiction` or `no_home_jurisdiction`. **Tests:** a request test (set, the profile shows it, three
   malformed codes and a bad organization 422, a chain that cannot be built 422 and changes nothing, cleared by `null` and by blank, three
   audit rows naming the code and no person); `enforcement_me` (the worker, a neighbour and a caller with no record are refused with 403,
-  no token 401, HR sets it). **Not done in this step:** no reader resolves over a scope yet (steps 2 and 3). **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
+  no token 401, HR sets it). **Not done in this step:** no reader resolves over a scope yet (steps 2 and 3).
+  **Part done (2026-10-31), step 2 of 3: the readers.** **Registry:** 18 keys (the registry table above): four for flexible working,
+  `resignation.notice_calendar_days`, five for pay transparency, and `retention.<kind>.days` for each of the eight kinds; the pure core
+  gains a `flag` shape (`pay_transparency.pay_range_required`, `strictest_min`: on anywhere in the chain is on). `src/statutory_defaults.rs`
+  names each moved setting's `key` and `reader` (`worker` or `organization`, WPM-D153). **One order:**
+  `controllers::statutory_defaults::pick` takes the profile's value over the reader's chain, else the setting where it is set and
+  checks, else the default, and returns `came_from` (`profile` with the rows behind it, `setting`, or `default` with whose it is; a
+  profile looked at and not used says why: unknown with its reason, a conflict, or a value the reader cannot use). **Worker readers**
+  (over `work_jurisdiction`): the flexible working period, limit, appeal window and refusal reasons (the request's answer adds `basis`);
+  the resignation notice (`notice_basis`); the pay information period (`due_on_basis`). **Organization readers** (over the home
+  jurisdiction): the pay range gate on opening a vacancy, the joint assessment's threshold and period, the reporting tiers (each
+  `*_basis` adds `came_from`), and the retention horizons (`GET /api/retention/schedule?organization=`; a range gives its floor, else
+  its ceiling, never below 30 calendar days). **The sweep** is one pass over every organization's rows, and a row does not always say
+  whose it is, so it takes for each kind the longest of the deployment's horizon and every organization's profile: a profile can make it
+  keep a record longer, never delete one sooner. A refusal-reasons or tiers row the reader could not parse is refused with 422 when HR
+  writes it. **The list:** `GET /api/statutory-defaults?organization=` (in scope, else 404) gives each setting `key`, `reader` and
+  `came_from`, an organization-level one over the home's chain, a worker-level one as a worker with no place recorded gets it, plus
+  `by_place` for every code the organization keeps or has rows for; `/statutory-defaults` gains an organization picker, the home, a
+  "came from" column, "read for" and "by place of work". **Not moved, and why:** `WPM_AI_ACT_APPLIES_FROM` (a date the registry has no
+  shape for, and one Regulation's, read by a deployment-wide register); `WPM_PAY_GAP_SEX_CATEGORY` (the name of a monitored category,
+  not a regime's value); the payroll stub and `WPM_CONTRACTED_DAY_MINUTES` / `WPM_PAYROLL_MONTH_MINUTES` (D144's order of work moves
+  deductions and payroll fields last, as statutory deduction schemes, not as a stub). They keep `key: null`. **Tests:** unit (the
+  order with a two-layer profile: profile over setting, setting with no place, default with neither, no organization looks at no
+  profile, a place with no row; the organization chain and `no_home_jurisdiction`; an unusable value falls through; a flag under
+  `strictest_min`; a range's floor then ceiling; every moved key is in the registry); request tests: a worker reader (refusal
+  reasons: the worker's profile wins over the setting, a worker with no place gets the setting and never the home's row, neither gives
+  the defaults; the list's `by_place` and `came_from`; an organization reader resolving over the home's chain and not over a bloc it is
+  not under; unparseable rows 422) and an organization reader (the pay range gate: the home's profile wins over a setting that turns it
+  off and over the default, a row at a code that is not the home is not used, no home takes the setting; the retention schedule for an
+  organization; a shorter profile does not shorten the sweep's horizon, a longer one lengthens it and the report names the
+  organization, the home cleared at once so no later test reads it); Playwright (the organization picker, the home, came from, by place) and
+  axe on the page. **Not done in this step:** the example profiles (step 3). **Not tested:** the flexible working request's `basis`,
+  the resignation's `notice_basis` and the pay information `due_on_basis` (they are made through `/api/me`, which the request suite
+  cannot sign in to; the enforcement binaries that do were run and still pass, but do not assert the new fields); the sweep itself
+  deleting at a profile's horizon (the report's horizons, which the sweep shares, were tested); right to left and phone width for the
+  page's new column. **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
   and UK reports; changing them needs the equality categories per jurisdiction, which is the registry too); `WPM_PAY_GAP_SEX_CATEGORY`
   and `WPM_AI_ACT_APPLIES_FROM` are not in the table (the first names a category, not a value of a regime; the second's answer already
   names the AI Act) *(both added by WPM-T402)*; the working-time constants are WPM-T380; no UI shows the new endpoint *(a read-only page
@@ -895,13 +931,32 @@ key outside it is refused.
 | Key | Shape and unit | Combination |
 | --- | --- | --- |
 | `calendar.week_start` | one ISO weekday, 1 (Monday) to 7 (Sunday) | `most_specific` |
+| `flexible_working.appeal_calendar_days` | whole calendar days, 0 to 366 (WPM-T384; a worker's chain) | `strictest_min` (the longest) |
+| `flexible_working.decision_months` | whole calendar months, 1 to 12 (WPM-T384; a worker's chain) | `strictest_max` (the shortest) |
+| `flexible_working.refusal_reasons` | a set of lowercase tokens (WPM-T384; a worker's chain) | `most_specific` |
+| `flexible_working.requests_per_year` | a whole number, 0 to 100, 0 for no limit (WPM-T384; a worker's chain) | `most_specific` |
 | `holidays.weekend_days` | a set of ISO weekdays, at most six; empty means no weekly rest day | `most_specific` |
+| `pay_transparency.information_months` | whole calendar months, 1 to 12 (WPM-T384; a worker's chain) | `strictest_max` (the shortest) |
+| `pay_transparency.joint_assessment_months` | whole calendar months, 1 to 24 (WPM-T384; the organization's chain) | `strictest_max` (the shortest) |
+| `pay_transparency.joint_assessment_percent` | a whole percent, 1 to 50 (WPM-T384; the organization's chain) | `strictest_max` (the lowest) |
+| `pay_transparency.pay_range_required` | a flag, `true` or `false` (WPM-T384; the organization's chain) | `strictest_min` (on anywhere is on) |
+| `pay_transparency.reporting_tiers` | a set of `from_workers:every_years:first_report_on` names, or the one name `none` (WPM-T384; the organization's chain) | `most_specific` |
+| `resignation.notice_calendar_days` | whole calendar days, 0 to 366 (WPM-T384; a worker's chain) | `strictest_max` (the shortest) |
+| `retention.employment.days` | `{"min": n?, "max": n?}` in calendar days, 0 to 36,500 (WPM-T384; the organization's chain) | `bounded` |
+| `retention.learning.days` | as above | `bounded` |
+| `retention.pay.days` | as above | `bounded` |
+| `retention.performance.days` | as above | `bounded` |
+| `retention.planning.days` | as above | `bounded` |
+| `retention.recruitment.days` | as above | `bounded` |
+| `retention.time_and_leave.days` | as above | `bounded` |
+| `retention.wellbeing.days` | as above | `bounded` |
 | `working_time.max_average_weekly_minutes` | whole minutes, 1 to 10,080 | `strictest_max` (the lowest) |
 | `working_time.min_daily_rest_minutes` | whole minutes, 1 to 1,440 | `strictest_min` (the highest) |
 | `working_time.reference_weeks` | whole weeks of seven calendar days, 1 to 52 | `strictest_max` (the shortest) |
 
-Entries for retention, pay transparency and the other `WPM_*` settings are added as each rule moves (D144's order of work, step 3).
-The `union` and `bounded` rules are built and unit-tested with test-only entries; no shipped entry uses them yet.
+The flexible working, resignation, pay transparency and retention entries were added by WPM-T384, one for each `WPM_*` setting that
+moved (D144's order of work, step 3); the settings that did not move are listed in WPM-T384's entry with the reason. The `bounded`
+rule is used by the eight retention entries; `union` is built and unit-tested with a test-only entry, and no shipped entry uses it yet.
 
 ### What the registry chose (WPM-T407)
 

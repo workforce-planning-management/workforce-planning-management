@@ -11919,7 +11919,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Retention schedule: each record kind, its tables, its horizon in calendar days and where it came from (default, WPM_RETENTION_DAYS or WPM_RETENTION_<KIND>_DAYS) */
+        /** Retention schedule: each record kind, its tables, its horizon in calendar days and where it came from (default, WPM_RETENTION_DAYS, WPM_RETENTION_<KIND>_DAYS, or with ?organization= that organization's profile retention.<kind>.days over its home jurisdiction, WPM-D153) */
         get: {
             parameters: {
                 query?: never;
@@ -14215,7 +14215,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Whose each default is: every WPM_* setting whose default is one regime's value (or a starting point), its value in force, whether it was set, and the jurisdiction code and source of its default (WPM-T384) */
+        /** Whose each default is: every WPM_* setting whose default is one regime's value (or a starting point), its value in force, whether it was set, the jurisdiction code and source of its default, its profile registry key and reader, and came_from (profile, setting or default). ?organization= resolves an organization-level setting over the organization's home jurisdiction and lists a worker-level one by_place for each code the organization keeps (WPM-T384, WPM-D153) */
         get: {
             parameters: {
                 query?: never;

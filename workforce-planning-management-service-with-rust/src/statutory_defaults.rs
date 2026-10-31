@@ -7,10 +7,13 @@
 //! no regime's says so (`regime: None`), rather than passing as one.
 //!
 //! It lives outside `src/rules/` because it names jurisdictions, which the pure core does not
-//! (WPM-T369). It is a label, not the registry D144 proposes: moving these defaults into dated,
-//! sourced profiles waits for that registry to be confirmed.
+//! (WPM-T369). Where a setting has moved into the jurisdiction profiles (WPM-T384), `key` names its
+//! registry entry and `reader` whose chain it resolves over (WPM-D153): the profile is read first,
+//! then the setting, then the default here.
 
 use serde::Serialize;
+
+pub use crate::controllers::jurisdictions::Reader;
 
 /// Where a default came from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -34,6 +37,11 @@ pub struct Default {
     pub area: &'static str,
     /// The default, as text (the unit is in the setting's name or the area's documentation).
     pub default: &'static str,
+    /// The jurisdiction profile's registry key for it (WPM-D144, WPM-T384), or `None` where the setting has not moved into a
+    /// profile and is one value per deployment.
+    pub key: Option<&'static str>,
+    /// Whose chain its reader resolves over (WPM-D153): a worker's or the organization's; `None` where it has not moved.
+    pub reader: Option<Reader>,
     /// Whose it is.
     pub origin: Origin,
 }
@@ -99,150 +107,200 @@ pub const DEFAULTS: &[Default] = &[
         setting: "WPM_AI_ACT_APPLIES_FROM",
         area: "ai_register",
         default: "2027-12-02",
+        key: None,
+        reader: None,
         origin: AI_ACT,
     },
     Default {
         setting: "WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS",
         area: "flexible_working",
         default: "14",
+        key: Some("flexible_working.appeal_calendar_days"),
+        reader: Some(Reader::Worker),
         origin: STARTING_POINT,
     },
     Default {
         setting: "WPM_FLEXIBLE_DECISION_MONTHS",
         area: "flexible_working",
         default: "2",
+        key: Some("flexible_working.decision_months"),
+        reader: Some(Reader::Worker),
         origin: FLEXIBLE_GB,
     },
     Default {
         setting: "WPM_FLEXIBLE_REFUSAL_REASONS",
         area: "flexible_working",
         default: "the eight business reasons of that Part, and other_recorded",
+        key: Some("flexible_working.refusal_reasons"),
+        reader: Some(Reader::Worker),
         origin: FLEXIBLE_GB,
     },
     Default {
         setting: "WPM_FLEXIBLE_REQUESTS_PER_YEAR",
         area: "flexible_working",
         default: "2",
+        key: Some("flexible_working.requests_per_year"),
+        reader: Some(Reader::Worker),
         origin: FLEXIBLE_GB,
     },
     Default {
         setting: "WPM_JOINT_ASSESSMENT_MONTHS",
         area: "pay_transparency",
         default: "6",
+        key: Some("pay_transparency.joint_assessment_months"),
+        reader: Some(Reader::Organization),
         origin: directive!("Article 10(1)"),
     },
     Default {
         setting: "WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
         area: "pay_transparency",
         default: "5",
+        key: Some("pay_transparency.joint_assessment_percent"),
+        reader: Some(Reader::Organization),
         origin: directive!("Article 10(1)"),
     },
     Default {
         setting: "WPM_PAY_GAP_SEX_CATEGORY",
         area: "pay_transparency",
         default: "sex",
+        key: None,
+        reader: None,
         origin: SEX_CATEGORY,
     },
     Default {
         setting: "WPM_PAY_GAP_TIERS",
         area: "pay_transparency",
         default: "250:1:2027-06-07,150:3:2027-06-07,100:3:2031-06-07",
+        key: Some("pay_transparency.reporting_tiers"),
+        reader: Some(Reader::Organization),
         origin: directive!("Article 9"),
     },
     Default {
         setting: "WPM_PAY_INFORMATION_MONTHS",
         area: "pay_transparency",
         default: "2",
+        key: Some("pay_transparency.information_months"),
+        reader: Some(Reader::Worker),
         origin: directive!("Article 7"),
     },
     Default {
         setting: "WPM_REQUIRE_PAY_RANGE",
         area: "pay_transparency",
         default: "on",
+        key: Some("pay_transparency.pay_range_required"),
+        reader: Some(Reader::Organization),
         origin: directive!("Article 5"),
     },
     Default {
         setting: "WPM_CONTRACTED_DAY_MINUTES",
         area: "payroll",
         default: "450",
+        key: None,
+        reader: None,
         origin: STARTING_POINT,
     },
     Default {
         setting: "WPM_PAYROLL_MONTH_MINUTES",
         area: "payroll",
         default: "9750",
+        key: None,
+        reader: None,
         origin: STARTING_POINT,
     },
     Default {
         setting: "WPM_PAYROLL_STUB_ALLOWANCE_MINOR",
         area: "payroll",
         default: "104750",
+        key: None,
+        reader: None,
         origin: PAYROLL_STUB,
     },
     Default {
         setting: "WPM_PAYROLL_STUB_CURRENCY",
         area: "payroll",
         default: "GBP",
+        key: None,
+        reader: None,
         origin: PAYROLL_STUB,
     },
     Default {
         setting: "WPM_PAYROLL_STUB_RATE_PERCENT",
         area: "payroll",
         default: "20",
+        key: None,
+        reader: None,
         origin: PAYROLL_STUB,
     },
     Default {
         setting: "WPM_RESIGNATION_NOTICE_CALENDAR_DAYS",
         area: "resignation",
         default: "28",
+        key: Some("resignation.notice_calendar_days"),
+        reader: Some(Reader::Worker),
         origin: STARTING_POINT,
     },
     Default {
         setting: "WPM_RETENTION_EMPLOYMENT_DAYS",
         area: "retention",
         default: "2190",
+        key: Some("retention.employment.days"),
+        reader: Some(Reader::Organization),
         origin: RETENTION,
     },
     Default {
         setting: "WPM_RETENTION_LEARNING_DAYS",
         area: "retention",
         default: "1095",
+        key: Some("retention.learning.days"),
+        reader: Some(Reader::Organization),
         origin: RETENTION,
     },
     Default {
         setting: "WPM_RETENTION_PAY_DAYS",
         area: "retention",
         default: "2190",
+        key: Some("retention.pay.days"),
+        reader: Some(Reader::Organization),
         origin: RETENTION,
     },
     Default {
         setting: "WPM_RETENTION_PERFORMANCE_DAYS",
         area: "retention",
         default: "730",
+        key: Some("retention.performance.days"),
+        reader: Some(Reader::Organization),
         origin: RETENTION,
     },
     Default {
         setting: "WPM_RETENTION_PLANNING_DAYS",
         area: "retention",
         default: "365",
+        key: Some("retention.planning.days"),
+        reader: Some(Reader::Organization),
         origin: RETENTION,
     },
     Default {
         setting: "WPM_RETENTION_RECRUITMENT_DAYS",
         area: "retention",
         default: "180",
+        key: Some("retention.recruitment.days"),
+        reader: Some(Reader::Organization),
         origin: RETENTION,
     },
     Default {
         setting: "WPM_RETENTION_TIME_AND_LEAVE_DAYS",
         area: "retention",
         default: "730",
+        key: Some("retention.time_and_leave.days"),
+        reader: Some(Reader::Organization),
         origin: RETENTION,
     },
     Default {
         setting: "WPM_RETENTION_WELLBEING_DAYS",
         area: "retention",
         default: "365",
+        key: Some("retention.wellbeing.days"),
+        reader: Some(Reader::Organization),
         origin: RETENTION,
     },
 ];

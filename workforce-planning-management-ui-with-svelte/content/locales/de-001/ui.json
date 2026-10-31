@@ -2795,6 +2795,21 @@
       "payroll": "Gehaltsabrechnung",
       "resignation": "Kündigung",
       "retention": "Aufbewahrung"
+    },
+    "organization": "Organisation",
+    "deployment": "Die Installation (keine Organisation)",
+    "home": "Sitz-Rechtsordnung: {code}. Einstellungen für die Organisation werden zuerst aus ihrem Profil gelesen.",
+    "no_home": "Für diese Organisation ist keine Sitz-Rechtsordnung erfasst: Einstellungen für die Organisation nutzen die Einstellung oder die Voreinstellung.",
+    "came_from": "Herkunft",
+    "from_profile": "Profil: {codes} ({status})",
+    "from_setting": "Einstellung dieser Installation",
+    "from_default": "Die Voreinstellung",
+    "reader": "Gelesen für",
+    "by_place": "Nach Arbeitsort",
+    "readers": {
+      "worker": "Den Arbeitsort jeder beschäftigten Person",
+      "organization": "Die Sitz-Rechtsordnung der Organisation",
+      "deployment": "Die ganze Installation"
     }
   }
 }

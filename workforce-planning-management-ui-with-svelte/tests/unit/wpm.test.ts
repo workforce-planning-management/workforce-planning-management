@@ -470,6 +470,7 @@ describe("api path map", () => {
     });
     await wpm.checkDecisionGate("organization:abc", "other");
     await wpm.getStatutoryDefaults();
+    await wpm.getStatutoryDefaults("organization:abc");
     expect(calls).toEqual([
       "/api/proxy/workers?department=engineering",
       "/api/proxy/workers/p1",
@@ -694,6 +695,7 @@ describe("api path map", () => {
       "/api/proxy/decision-gates",
       "/api/proxy/decision-gates/check?organization=organization%3Aabc&change=other",
       "/api/proxy/statutory-defaults",
+      "/api/proxy/statutory-defaults?organization=organization%3Aabc",
     ]);
     vi.unstubAllGlobals();
   });

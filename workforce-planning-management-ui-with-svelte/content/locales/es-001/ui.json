@@ -2804,6 +2804,21 @@
       "payroll": "Nómina",
       "resignation": "Dimisión",
       "retention": "Conservación"
+    },
+    "organization": "Organización",
+    "deployment": "La implantación (ninguna organización)",
+    "home": "Jurisdicción de la sede: {code}. Los ajustes de la organización se leen primero de su perfil.",
+    "no_home": "No consta una jurisdicción de la sede para esta organización: los ajustes de la organización usan el ajuste o el valor predeterminado.",
+    "came_from": "Procedencia",
+    "from_profile": "Perfil: {codes} ({status})",
+    "from_setting": "El ajuste de esta implantación",
+    "from_default": "El valor predeterminado",
+    "reader": "Se lee para",
+    "by_place": "Por lugar de trabajo",
+    "readers": {
+      "worker": "El lugar de trabajo de cada persona",
+      "organization": "La jurisdicción de la sede de la organización",
+      "deployment": "Toda la implantación"
     }
   }
 }

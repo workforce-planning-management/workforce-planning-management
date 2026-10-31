@@ -2786,6 +2786,21 @@
       "payroll": "薪资发放",
       "resignation": "辞职",
       "retention": "保留"
+    },
+    "organization": "组织",
+    "deployment": "整个部署（不指定组织）",
+    "home": "注册地法域：{code}。组织层面的设置首先从其档案读取。",
+    "no_home": "此组织未记录注册地法域：组织层面的设置使用部署设置或默认值。",
+    "came_from": "来源",
+    "from_profile": "档案：{codes}（{status}）",
+    "from_setting": "此部署的设置",
+    "from_default": "默认值",
+    "reader": "适用于",
+    "by_place": "按工作地点",
+    "readers": {
+      "worker": "每位员工的工作地点",
+      "organization": "组织的注册地法域",
+      "deployment": "整个部署"
     }
   }
 }

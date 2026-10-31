@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the statutory defaults page says where each value came from (WPM-T384 step 2, WPM-D153)
+
+`/statutory-defaults` has an organization picker (the deployment, or an organization in scope); with one chosen it shows the home
+jurisdiction, and each row says what it is read for (a worker's place of work, the organization's home, the whole deployment), where its
+value came from (the profile's codes and status, this deployment's setting, or the default) and, for a worker-level setting, the value
+at each place the organization keeps. `getStatutoryDefaults(organization?)`. 13 new strings in the 13 `-001` locales are machine drafts,
+unreviewed. **Not tested:** right to left and phone width for the new columns.
+
 ### Changed — the API copy names the home jurisdiction route (WPM-T384 step 1, WPM-D153)
 
 `src/lib/api/openapi.json` and `schema.d.ts` regenerated for `PUT /api/home-jurisdiction`. No client function or screen uses it yet.

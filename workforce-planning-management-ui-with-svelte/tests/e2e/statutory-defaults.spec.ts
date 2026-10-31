@@ -172,6 +172,97 @@ test.describe("Statutory defaults", () => {
     );
   });
 
+  test("for one organization, each value says whether it came from the profile, the setting or the default (WPM-D153)", async ({
+    page,
+  }) => {
+    const org = "organization:44444444-4444-4444-8444-444444444444";
+    const profile = (code: string) => ({
+      kind: "profile",
+      status: "example",
+      from: [
+        {
+          code,
+          layer: "national",
+          status: "example",
+          source: "synthetic",
+          effective_from: "2000-01-01",
+        },
+      ],
+    });
+    const asked: string[] = [];
+    await page.route(/\/api\/proxy\/statutory-defaults(\?.*)?$/, (route) => {
+      const url = new URL(route.request().url());
+      asked.push(url.search);
+      const forOrg = url.searchParams.get("organization") === org;
+      return route.fulfill({
+        json: {
+          organization_ref: forOrg ? org : null,
+          home_jurisdiction: forOrg ? "XB" : null,
+          derivation: "",
+          settings: [
+            {
+              ...SETTINGS[2],
+              key: "pay_transparency.reporting_tiers",
+              reader: "organization",
+              came_from: forOrg
+                ? profile("XB")
+                : { kind: "default", setting: "WPM_PAY_GAP_TIERS" },
+            },
+            {
+              ...SETTINGS[1],
+              key: "flexible_working.decision_months",
+              reader: "worker",
+              came_from: {
+                kind: "setting",
+                setting: "WPM_FLEXIBLE_DECISION_MONTHS",
+              },
+              ...(forOrg
+                ? {
+                    by_place: [
+                      { code: "XA", value: 1, came_from: profile("XA") },
+                    ],
+                  }
+                : {}),
+            },
+            {
+              ...SETTINGS[5],
+              key: null,
+              reader: null,
+              came_from: { kind: "default" },
+            },
+          ],
+        },
+      });
+    });
+    await page.goto("/en-001/statutory-defaults");
+    const tiers = page.getByTestId("default-WPM_PAY_GAP_TIERS");
+    await expect(tiers).toContainText("The default");
+    await expect(tiers).toContainText("The organization's home jurisdiction");
+    await expect(page.getByTestId("defaults-home")).toHaveCount(0);
+
+    await page.getByTestId("defaults-organization").selectOption(org);
+    await expect(page.getByTestId("defaults-home")).toContainText(
+      "Home jurisdiction: XB",
+    );
+    await expect(tiers).toContainText(
+      "Profile: XB (An example in a regime's shape)",
+    );
+    const months = page.getByTestId("default-WPM_FLEXIBLE_DECISION_MONTHS");
+    await expect(months).toContainText("This deployment's setting");
+    await expect(months).toContainText("Each worker's place of work");
+    await expect(months).toContainText(
+      "XA: 1 (Profile: XA (An example in a regime's shape))",
+    );
+    await expect(
+      page.getByTestId("default-WPM_PAYROLL_STUB_CURRENCY"),
+    ).toContainText("The whole deployment");
+    expect(asked).toEqual(["", `?organization=${encodeURIComponent(org)}`]);
+    await page.screenshot({
+      path: "test-results/statutory-defaults-organization.png",
+      fullPage: true,
+    });
+  });
+
   test("a failed read says so in the page's words and shows no table", async ({
     page,
   }) => {

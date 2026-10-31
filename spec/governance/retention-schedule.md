@@ -14,6 +14,13 @@ irreversible one). A kind is overridden with `WPM_RETENTION_<KIND>_DAYS`; the ol
 `WPM_RETENTION_DAYS` applies to every kind that has no override of its own. A junk value is
 ignored.
 
+**A jurisdiction profile comes first** (WPM-T384, WPM-D153). An organization whose HR has recorded a home jurisdiction may hold a
+`retention.<kind>.days` row (a floor, a ceiling or both, in calendar days, combined `bounded` across the chain); for that
+organization the horizon is the resolved floor, or the ceiling where no floor is given, still never below 30 calendar days, and
+`GET /api/retention/schedule?organization=` says where each came from. The sweep is one pass over every organization's rows, and a
+soft-deleted row does not always say whose it is, so for each kind it takes the **longest** of the deployment's horizon (the
+variables above) and every organization's profile: a profile can make the sweep keep a record longer, never delete one sooner.
+
 | Kind | Default | Override variable | Tables | Why this default (to replace) | Deployer's basis |
 | --- | ---: | --- | --- | --- | --- |
 | `recruitment` | 180 | `WPM_RETENTION_RECRUITMENT_DAYS` | `applications`, `candidates`, `interviews`, `onboarding_items`, `requisitions` | Short: a rejected candidate has no continuing employment relationship; enough time to answer a challenge to a decision. Pool candidates are also bounded by their own consent date | deployer to complete |

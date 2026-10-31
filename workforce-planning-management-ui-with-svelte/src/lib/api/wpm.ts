@@ -5913,20 +5913,63 @@ export type DefaultOrigin = {
   status: string;
 };
 
+/** One profile row behind a resolved value: its jurisdiction code, layer, status and source (WPM-D144). */
+export type ProfileOrigin = {
+  code: string;
+  layer: string;
+  status: string;
+  source: string;
+  effective_from: string;
+};
+
+/**
+ * Where a value in force came from (WPM-D153): the jurisdiction profile (with the rows behind it), the deployer's
+ * `WPM_*` setting, or the default. `profile` says why a profile that was looked at gave nothing usable.
+ */
+export type CameFrom = {
+  kind: "profile" | "setting" | "default";
+  setting?: string;
+  status?: string;
+  from?: ProfileOrigin[];
+  profile?: { resolution?: { state?: string; reason?: string } };
+};
+
 export type StatutoryDefault = {
   setting: string;
   area: string;
+  /** The jurisdiction profile's registry key, or null where the setting is one value per deployment. */
+  key: string | null;
+  /** Whose chain the reader resolves over: one worker's place of work, or the organization's home jurisdiction. */
+  reader: "worker" | "organization" | null;
   /** The value in force, as its feature reads it: a number, text, a flag, a list of reasons or of reporting tiers. */
   value: unknown;
   /** Whether the deployer set it (a value that does not check is set, and the default is then in force). */
   set: boolean;
   default: string;
   default_from: DefaultOrigin;
+  came_from: CameFrom;
+  /** For a worker-level setting asked for one organization: the value for work done at each code the organization keeps. */
+  by_place?: { code: string; value: unknown; came_from: CameFrom }[];
 };
 
-/** Every setting whose default is one regime's value or a starting point, and whose it is. Any signed-in caller. */
+export type StatutoryDefaults = {
+  organization_ref: string | null;
+  home_jurisdiction: string | null;
+  settings: StatutoryDefault[];
+  derivation: string;
+};
+
+/**
+ * Every setting whose default is one regime's value or a starting point, whose it is, and where the value in force came
+ * from. With an organization, its home jurisdiction's profile for an organization-level setting, and each place for a
+ * worker-level one (WPM-D153). Any signed-in caller in scope.
+ */
 export function getStatutoryDefaults(
+  organization?: string,
   init?: FetchLike,
-): Promise<{ settings: StatutoryDefault[]; derivation: string }> {
-  return api("/statutory-defaults", init);
+): Promise<StatutoryDefaults> {
+  const query = organization
+    ? `?organization=${encodeURIComponent(organization)}`
+    : "";
+  return api(`/statutory-defaults${query}`, init);
 }

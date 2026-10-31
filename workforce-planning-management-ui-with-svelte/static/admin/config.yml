@@ -3829,3 +3829,23 @@ collections:
                   - { name: "payroll", label: "Payroll", widget: string, required: false, i18n: true }
                   - { name: "resignation", label: "Resignation", widget: string, required: false, i18n: true }
                   - { name: "retention", label: "Retention", widget: string, required: false, i18n: true }
+              - { name: "organization", label: "Organization", widget: string, required: false, i18n: true }
+              - { name: "deployment", label: "Deployment", widget: string, required: false, i18n: true }
+              - { name: "home", label: "Home", widget: text, required: false, i18n: true }
+              - { name: "no_home", label: "No_home", widget: text, required: false, i18n: true }
+              - { name: "came_from", label: "Came_from", widget: string, required: false, i18n: true }
+              - { name: "from_profile", label: "From_profile", widget: string, required: false, i18n: true }
+              - { name: "from_setting", label: "From_setting", widget: string, required: false, i18n: true }
+              - { name: "from_default", label: "From_default", widget: string, required: false, i18n: true }
+              - { name: "reader", label: "Reader", widget: string, required: false, i18n: true }
+              - { name: "by_place", label: "By_place", widget: string, required: false, i18n: true }
+              - name: "readers"
+                label: "Readers"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "worker", label: "Worker", widget: string, required: false, i18n: true }
+                  - { name: "organization", label: "Organization", widget: string, required: false, i18n: true }
+                  - { name: "deployment", label: "Deployment", widget: string, required: false, i18n: true }

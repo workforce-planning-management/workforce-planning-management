@@ -56,6 +56,10 @@ The 2026-10-31 statutory defaults page (WPM-T403: `nav.statutoryDefaults`, its t
 machine-drafted by the same assistant in all 12 languages, unreviewed. Read the hint first: a default is a starting point to confirm,
 never a statement that the deployment is under that regime. The four source statuses (read against the text, not checked, an
 example, a starting point) carry meaning; "regime" was rendered as a legal system or regime, which a reviewer may want to change.
+The 2026-10-31 additions to that page (WPM-T384: 13 `statutoryDefaults.*` strings for the organization picker, the home
+jurisdiction, where a value came from and the three readers) were machine-drafted by the same assistant in all 12 languages,
+unreviewed. "Home jurisdiction" means the legal entity's registered jurisdiction (WPM-D153), not where anyone lives; several
+languages render it as the jurisdiction of registration or of the seat, which a reviewer should confirm.
 
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.

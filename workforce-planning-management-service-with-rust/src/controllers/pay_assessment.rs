@@ -17,18 +17,61 @@ use crate::models::audit_logs::Model as Audit;
 use crate::rules::joint_assessment::{self as rules, Config, Record};
 use crate::validation::Problems;
 
-/// The threshold (percent, a whole number) and the period (calendar months) from the environment, else the Directive's.
-pub(crate) fn configured() -> Config {
-    let threshold = crate::compat::env_var("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT")
-        .and_then(|v| v.trim().parse::<i64>().ok())
-        .map_or(rules::DEFAULT_THRESHOLD_BP, |p| p * 100);
-    let months = crate::compat::env_var("WPM_JOINT_ASSESSMENT_MONTHS")
-        .and_then(|v| v.trim().parse::<u32>().ok())
-        .unwrap_or(rules::DEFAULT_REMEDY_MONTHS);
-    rules::config(threshold, months).unwrap_or_else(|why| {
-        tracing::warn!("joint assessment settings ignored: {why}");
-        Config::default()
-    })
+use super::jurisdictions::Scope;
+use super::statutory_defaults as statutory;
+
+/// The joint assessment's threshold and period in force, and where each came from.
+pub(crate) struct Configured {
+    /// The threshold and the period.
+    pub config: Config,
+    /// Where the threshold came from (WPM-D153).
+    pub threshold_from: serde_json::Value,
+    /// Where the period came from.
+    pub months_from: serde_json::Value,
+}
+
+/// The threshold (percent, a whole number) and the period (calendar months): the organization's
+/// profile over its home jurisdiction's chain (`pay_transparency.joint_assessment_percent`,
+/// `pay_transparency.joint_assessment_months`), else the environment, else the Directive's. A pair
+/// that does not check together falls back to the defaults with a warning.
+pub(crate) fn configured(scope: Option<&Scope>, as_of: NaiveDate) -> Configured {
+    let threshold_setting = crate::compat::env_var("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT")
+        .and_then(|v| v.trim().parse::<i64>().ok());
+    let months_setting = crate::compat::env_var("WPM_JOINT_ASSESSMENT_MONTHS")
+        .and_then(|v| v.trim().parse::<u32>().ok());
+    let percent = statutory::integer(
+        scope,
+        "WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
+        as_of,
+        threshold_setting,
+        rules::DEFAULT_THRESHOLD_BP / 100,
+    );
+    let months = statutory::integer(
+        scope,
+        "WPM_JOINT_ASSESSMENT_MONTHS",
+        as_of,
+        months_setting,
+        rules::DEFAULT_REMEDY_MONTHS,
+    );
+    match rules::config(percent.value * 100, months.value) {
+        Ok(config) => Configured {
+            config,
+            threshold_from: percent.came_from,
+            months_from: months.came_from,
+        },
+        Err(why) => {
+            tracing::warn!("joint assessment settings ignored: {why}");
+            let default = |setting: &str| {
+                serde_json::json!({ "kind": "default", "setting": setting,
+                    "default_from": crate::statutory_defaults::find(setting).map(|d| d.origin) })
+            };
+            Configured {
+                config: Config::default(),
+                threshold_from: default("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT"),
+                months_from: default("WPM_JOINT_ASSESSMENT_MONTHS"),
+            }
+        }
+    }
 }
 
 fn organization_problems(value: &str) -> Vec<String> {
@@ -79,7 +122,11 @@ pub(crate) async fn signals(
         },
     )
     .await?;
-    let config = configured();
+    let configured = configured(
+        Some(&Scope::for_organization(&ctx.db, &query.organization).await?),
+        chrono::Utc::now().date_naive(),
+    );
+    let config = configured.config;
     let records = pay_assessment_records::Entity::find()
         .filter(pay_assessment_records::Column::OrganizationRef.eq(&query.organization))
         .order_by_desc(pay_assessment_records::Column::ReportedOn)
@@ -123,8 +170,8 @@ pub(crate) async fn signals(
         "threshold_bp": config.threshold_bp,
         "remedy_months": config.remedy_months,
         // Whose threshold and period these are (WPM-T384).
-        "threshold_basis": super::statutory_defaults::basis("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT"),
-        "remedy_basis": super::statutory_defaults::basis("WPM_JOINT_ASSESSMENT_MONTHS"),
+        "threshold_basis": statutory::basis("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT", &configured.threshold_from),
+        "remedy_basis": statutory::basis("WPM_JOINT_ASSESSMENT_MONTHS", &configured.months_from),
         "categories": out,
         "derivation": "A joint pay assessment is due when a category's average pay gap in basic pay is at or over the threshold, \
                        either way, the employer has not recorded a justification on objective, gender-neutral criteria, and has \

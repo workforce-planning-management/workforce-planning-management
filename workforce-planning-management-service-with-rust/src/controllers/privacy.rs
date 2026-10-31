@@ -9,6 +9,7 @@ use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait};
 use uuid::Uuid;
 
+use super::statutory_defaults::{self as statutory, InForce};
 use super::{forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
@@ -576,46 +577,123 @@ async fn erase(
     }))
 }
 
-/// The horizon for every record kind, read from the environment: a kind's own
-/// `WPM_RETENTION_<KIND>_DAYS`, else the legacy `WPM_RETENTION_DAYS`, else the
-/// kind's default; floored at 30 calendar days (WPM-R91, WPM-D22, WPM-D60).
-pub(crate) fn horizons() -> Vec<(rules::RecordKind, rules::Horizon)> {
+/// The horizon for every record kind and where it came from: the organization's profile over its
+/// home jurisdiction's chain (`retention.<kind>.days`, WPM-D153) when `scope` is given, else a kind's
+/// own `WPM_RETENTION_<KIND>_DAYS`, else the legacy `WPM_RETENTION_DAYS`, else the kind's default;
+/// floored at 30 calendar days (WPM-R91, WPM-D22, WPM-D60).
+pub(crate) fn horizons(
+    scope: Option<&super::jurisdictions::Scope>,
+    as_of: chrono::NaiveDate,
+) -> Vec<(rules::RecordKind, InForce<rules::Horizon>)> {
     let legacy = crate::compat::env_var("WPM_RETENTION_DAYS");
     rules::RecordKind::ALL
         .iter()
         .map(|&kind| {
-            let own = crate::compat::env_var(&kind.env_name());
-            (
-                kind,
-                rules::horizon_for(kind, own.as_deref(), legacy.as_deref()),
-            )
+            let name = kind.env_name();
+            let own = crate::compat::env_var(&name);
+            let configured = rules::horizon_for(kind, own.as_deref(), legacy.as_deref());
+            let mut found = statutory::pick(
+                scope,
+                &name,
+                as_of,
+                |value| match value {
+                    crate::rules::jurisdiction::Value::Range { min, max } => {
+                        rules::horizon_from_range(*min, *max)
+                    }
+                    _ => None,
+                },
+                (configured.source != rules::HorizonSource::Default).then_some(configured),
+                configured,
+            );
+            if found.value.source == rules::HorizonSource::Legacy {
+                found.came_from["setting"] = serde_json::json!("WPM_RETENTION_DAYS");
+            }
+            (kind, found)
         })
         .collect()
 }
 
+/// The horizons the sweep and the report use. The sweep is one pass over every organization's rows,
+/// and a row does not always say whose it is, so for each kind it takes the **longest** of the
+/// deployment's horizon and every horizon an organization's profile gives over its home
+/// jurisdiction: a profile can make the sweep keep a record longer, never delete one sooner.
+async fn sweep_horizons(
+    ctx: &AppContext,
+) -> Result<Vec<(rules::RecordKind, InForce<rules::Horizon>)>> {
+    let as_of = chrono::Utc::now().date_naive();
+    let mut all = horizons(None, as_of);
+    for organization in super::jurisdictions::organizations_with_a_home(&ctx.db).await? {
+        let scope = super::jurisdictions::Scope::for_organization(&ctx.db, &organization).await?;
+        for (kind, found) in horizons(Some(&scope), as_of) {
+            if found.value.source != rules::HorizonSource::Profile {
+                continue;
+            }
+            if let Some((_, held)) = all.iter_mut().find(|(k, _)| *k == kind)
+                && found.value.days > held.value.days
+            {
+                let mut came_from = found.came_from;
+                came_from["organization_ref"] = serde_json::json!(organization);
+                *held = InForce {
+                    value: found.value,
+                    came_from,
+                };
+            }
+        }
+    }
+    Ok(all)
+}
+
 /// The horizon in calendar days for one table.
-fn days_for(table: &str, all: &[(rules::RecordKind, rules::Horizon)]) -> i64 {
+fn days_for(table: &str, all: &[(rules::RecordKind, InForce<rules::Horizon>)]) -> i64 {
     rules::kind_of(table)
         .and_then(|kind| all.iter().find(|(k, _)| *k == kind))
-        .map_or(rules::RETENTION_DEFAULT_DAYS, |(_, horizon)| horizon.days)
+        .map_or(rules::RETENTION_DEFAULT_DAYS, |(_, found)| found.value.days)
 }
 
 /// The horizons as `{kind: days}`, for the report, the sweep and its audit row.
-fn horizon_map(all: &[(rules::RecordKind, rules::Horizon)]) -> serde_json::Value {
+fn horizon_map(all: &[(rules::RecordKind, InForce<rules::Horizon>)]) -> serde_json::Value {
     serde_json::Value::Object(
         all.iter()
-            .map(|(kind, horizon)| (kind.key().to_string(), serde_json::json!(horizon.days)))
+            .map(|(kind, found)| (kind.key().to_string(), serde_json::json!(found.value.days)))
             .collect(),
     )
 }
 
-/// `GET /api/retention/schedule` — each record kind, its tables, and the
-/// horizon in force with where it came from. Configuration, not personal data.
+/// Where each horizon came from, as `{kind: came_from}`.
+fn horizon_sources(all: &[(rules::RecordKind, InForce<rules::Horizon>)]) -> serde_json::Value {
+    serde_json::Value::Object(
+        all.iter()
+            .map(|(kind, found)| (kind.key().to_string(), found.came_from.clone()))
+            .collect(),
+    )
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct ScheduleQuery {
+    organization: Option<String>,
+}
+
+/// `GET /api/retention/schedule?organization=` — each record kind, its tables, and the horizon in
+/// force with where it came from: the deployment's, or with `organization` that organization's over
+/// its home jurisdiction's profile. Configuration, not personal data.
 #[debug_handler]
-async fn retention_schedule() -> Result<Response> {
-    let kinds: Vec<serde_json::Value> = horizons()
+async fn retention_schedule(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axum::extract::Query(q): axum::extract::Query<ScheduleQuery>,
+) -> Result<Response> {
+    let as_of = chrono::Utc::now().date_naive();
+    let scope = match &q.organization {
+        Some(org) => {
+            super::ensure_valid(&super::pay_transparency::organization_problems(org))?;
+            super::ensure_org_in_scope(&ctx, &caller, org).await?;
+            Some(super::jurisdictions::Scope::for_organization(&ctx.db, org).await?)
+        }
+        None => None,
+    };
+    let kinds: Vec<serde_json::Value> = horizons(scope.as_ref(), as_of)
         .into_iter()
-        .map(|(kind, horizon)| {
+        .map(|(kind, found)| {
             let tables: Vec<&str> = rules::SOFT_DELETED_TABLES
                 .iter()
                 .copied()
@@ -623,21 +701,27 @@ async fn retention_schedule() -> Result<Response> {
                 .collect();
             serde_json::json!({
                 "kind": kind.key(),
-                "days": horizon.days,
-                "source": horizon.source.label(),
+                "days": found.value.days,
+                "source": found.value.source.label(),
+                "came_from": found.came_from,
                 "default_days": kind.default_days(),
                 "override_variable": kind.env_name(),
+                "profile_key": format!("retention.{}.days", kind.key()),
                 "tables": tables,
             })
         })
         .collect();
     format::json(serde_json::json!({
+        "organization_ref": q.organization,
         "floor_days": rules::RETENTION_FLOOR_DAYS,
         "kinds": kinds,
         "derivation": "calendar days after a record is soft-deleted before the sweep \
-                       hard-deletes it; a kind's own WPM_RETENTION_<KIND>_DAYS wins, \
-                       then the legacy WPM_RETENTION_DAYS, then the default; every value \
-                       is floored (WPM-D22, WPM-D60). The defaults are starting points a \
+                       hard-deletes it; with an organization, its profile's retention.<kind>.days \
+                       over its home jurisdiction (the floor, else the ceiling) wins; then a kind's own \
+                       WPM_RETENTION_<KIND>_DAYS, then the legacy WPM_RETENTION_DAYS, then the default; \
+                       every value is floored (WPM-D22, WPM-D60). The sweep takes, for each kind, the \
+                       longest of the deployment's horizon and every organization's profile, so a \
+                       profile never makes it delete sooner. The defaults are starting points a \
                        deployer replaces with their own legal basis, not legal advice.",
     }))
 }
@@ -648,7 +732,7 @@ async fn retention_schedule() -> Result<Response> {
 /// destructive POST.
 #[debug_handler]
 async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
-    let all = horizons();
+    let all = sweep_horizons(&ctx).await?;
     let mut tables = serde_json::Map::new();
     for table in rules::SOFT_DELETED_TABLES {
         let days = days_for(table, &all);
@@ -680,6 +764,7 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
     format::json(serde_json::json!({
         "as_of": chrono::Utc::now(),
         "horizons": horizon_map(&all),
+        "horizons_from": horizon_sources(&all),
         "soft_deleted_past_horizon": tables,
         "expired_consent_candidates": expired_candidates,
         "derivation": "soft-deleted rows older than their kind's horizon are hard-deleted \
@@ -696,7 +781,7 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
 /// audited with counts.
 #[debug_handler]
 async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let all = horizons();
+    let all = sweep_horizons(&ctx).await?;
     let recruitment_days = days_for("candidates", &all);
     let txn = ctx.db.begin().await?;
     let mut deleted = serde_json::Map::new();

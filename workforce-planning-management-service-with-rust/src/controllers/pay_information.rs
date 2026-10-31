@@ -28,23 +28,41 @@ use crate::rules::pay_category as category_rules;
 use crate::rules::pay_gap::Reason;
 use crate::rules::pay_information as rules;
 
-/// Calendar months an answer may take: `WPM_PAY_INFORMATION_MONTHS`, default 2 (the Directive's), 1 to 12.
-pub(crate) fn answer_months() -> u32 {
-    crate::compat::env_var("WPM_PAY_INFORMATION_MONTHS")
+use super::jurisdictions::Scope;
+use super::statutory_defaults::{self as statutory, InForce};
+
+/// Calendar months an answer may take: the worker's profile (`pay_transparency.information_months`),
+/// else `WPM_PAY_INFORMATION_MONTHS` (1 to 12), else 2 (the Directive's).
+pub(crate) fn answer_months(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32> {
+    let configured = crate::compat::env_var("WPM_PAY_INFORMATION_MONTHS")
         .and_then(|v| v.trim().parse::<u32>().ok())
-        .filter(|n| (1..=rules::MAX_ANSWER_MONTHS).contains(n))
-        .unwrap_or(rules::DEFAULT_ANSWER_MONTHS)
+        .filter(|n| (1..=rules::MAX_ANSWER_MONTHS).contains(n));
+    statutory::integer(
+        scope,
+        "WPM_PAY_INFORMATION_MONTHS",
+        as_of,
+        configured,
+        rules::DEFAULT_ANSWER_MONTHS,
+    )
 }
 
-/// Whether a vacancy must state its pay range before it is opened: on unless `WPM_REQUIRE_PAY_RANGE` is off. A deployment
-/// outside the Directive's reach may turn it off; the default follows Article 5.
+/// Whether a vacancy must state its pay range before it is opened: the organization's profile
+/// (`pay_transparency.pay_range_required`, over its home jurisdiction's chain), else on unless
+/// `WPM_REQUIRE_PAY_RANGE` is off. A deployment outside the Directive's reach may turn it off; the
+/// default follows Article 5.
 #[must_use]
-pub fn pay_range_required() -> bool {
-    !matches!(
-        crate::compat::env_var("WPM_REQUIRE_PAY_RANGE")
-            .map(|v| v.trim().to_lowercase())
-            .as_deref(),
-        Some("0" | "false" | "no" | "off")
+pub fn pay_range_required(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<bool> {
+    let configured = crate::compat::env_var("WPM_REQUIRE_PAY_RANGE")
+        .map(|v| v.trim().to_lowercase())
+        .filter(|v| !v.is_empty())
+        .map(|v| !matches!(v.as_str(), "0" | "false" | "no" | "off"));
+    statutory::pick(
+        scope,
+        "WPM_REQUIRE_PAY_RANGE",
+        as_of,
+        crate::rules::jurisdiction::Value::as_flag,
+        configured,
+        true,
     )
 }
 
@@ -87,7 +105,9 @@ pub(crate) async fn ask_for(
         > 0;
     rules::may_ask(open).map_err(|e| unprocessable(&e))?;
     let today = Utc::now().date_naive();
-    let due_on = rules::due_on(today, answer_months())
+    let scope = Scope::for_worker(&ctx.db, worker).await?;
+    let months = answer_months(Some(&scope), today);
+    let due_on = rules::due_on(today, months.value)
         .ok_or_else(|| unprocessable("the due date runs past the supported calendar"))?;
     let txn = ctx.db.begin().await?;
     let row = pay_information_requests::ActiveModel {
@@ -109,7 +129,12 @@ pub(crate) async fn ask_for(
     )
     .await?;
     txn.commit().await?;
-    format::json(json!({ "pid": row.pid, "due_on": due_on }))
+    format::json(json!({
+        "pid": row.pid,
+        "due_on": due_on,
+        // Where the period came from: the worker's profile, the setting or the default (WPM-D153).
+        "due_on_basis": months.came_from,
+    }))
 }
 
 #[derive(Debug, Deserialize)]

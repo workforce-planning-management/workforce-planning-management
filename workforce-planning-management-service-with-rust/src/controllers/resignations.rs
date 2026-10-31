@@ -26,22 +26,36 @@ use crate::models::{memberships, records};
 use crate::rules::pulse::K_ANONYMITY;
 use crate::rules::resignation::{self as rules, Action, Status};
 
-/// The deployment's notice period in calendar days: `WPM_RESIGNATION_NOTICE_CALENDAR_DAYS`, else
-/// 28. An invalid setting is ignored with a warning, never silently shortened.
+use super::jurisdictions::Scope;
+use super::statutory_defaults::{self as statutory, InForce};
+
+/// The notice period in calendar days: the worker's profile (`resignation.notice_calendar_days`),
+/// else `WPM_RESIGNATION_NOTICE_CALENDAR_DAYS`, else 28. An invalid setting is ignored with a warning,
+/// never silently shortened.
 #[must_use]
-pub fn notice_days() -> i64 {
-    match crate::compat::env_var("WPM_RESIGNATION_NOTICE_CALENDAR_DAYS") {
-        None => rules::DEFAULT_NOTICE_CALENDAR_DAYS,
-        Some(text) => match text.trim().parse::<i64>() {
-            Ok(n) if rules::validate_notice(n).is_ok() => n,
+pub fn notice_days(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<i64> {
+    let name = "WPM_RESIGNATION_NOTICE_CALENDAR_DAYS";
+    let configured =
+        crate::compat::env_var(name).and_then(|text| match text.trim().parse::<i64>() {
+            Ok(n) if rules::validate_notice(n).is_ok() => Some(n),
             _ => {
-                tracing::warn!(
-                    "WPM_RESIGNATION_NOTICE_CALENDAR_DAYS is not 0 to 366; using the default"
-                );
-                rules::DEFAULT_NOTICE_CALENDAR_DAYS
+                tracing::warn!("{name} is not 0 to 366; ignored");
+                None
             }
-        },
-    }
+        });
+    statutory::integer(
+        scope,
+        name,
+        as_of,
+        configured,
+        rules::DEFAULT_NOTICE_CALENDAR_DAYS,
+    )
+}
+
+/// [`notice_days`] for `worker`, over their own chain.
+pub(crate) async fn notice_for(ctx: &AppContext, worker: &workers::Model) -> Result<InForce<i64>> {
+    let scope = Scope::for_worker(&ctx.db, worker).await?;
+    Ok(notice_days(Some(&scope), Utc::now().date_naive()))
 }
 
 /// The worker's latest resignation of any status.
@@ -60,8 +74,8 @@ fn status_of(row: &resignations::Model) -> Result<Status> {
     Status::parse(&row.status).ok_or_else(|| super::internal("a resignation has an unknown status"))
 }
 
-/// What the worker themself sees, with their reason.
-pub(crate) fn own_json(row: &resignations::Model) -> serde_json::Value {
+/// What the worker themself sees, with their reason and the notice that applies to them.
+pub(crate) fn own_json(row: &resignations::Model, notice: &InForce<i64>) -> serde_json::Value {
     json!({
         "pid": row.pid,
         "status": row.status,
@@ -69,7 +83,9 @@ pub(crate) fn own_json(row: &resignations::Model) -> serde_json::Value {
         "proposed_last_day": row.proposed_last_day,
         "agreed_last_day": row.agreed_last_day,
         "reason": row.reason,
-        "notice_calendar_days": notice_days(),
+        "notice_calendar_days": notice.value,
+        // Where the notice came from: the worker's profile, the setting or the default (WPM-D153).
+        "notice_basis": notice.came_from,
     })
 }
 
@@ -105,8 +121,8 @@ pub(crate) async fn log_for(
     }
     rules::validate_reason(payload.reason.as_deref()).map_err(|e| unprocessable(&e))?;
     let today = Utc::now().date_naive();
-    let notice = notice_days();
-    rules::validate_proposal(today, payload.proposed_last_day, notice)
+    let notice = notice_for(ctx, worker).await?;
+    rules::validate_proposal(today, payload.proposed_last_day, notice.value)
         .map_err(|e| unprocessable(&e))?;
     let txn = ctx.db.begin().await?;
     let row = resignations::ActiveModel {
@@ -151,8 +167,9 @@ pub(crate) async fn log_for(
     txn.commit().await?;
     format::json(json!({
         "pid": row.pid,
-        "earliest_last_day": rules::earliest_last_day(today, notice),
-        "notice_calendar_days": notice,
+        "earliest_last_day": rules::earliest_last_day(today, notice.value),
+        "notice_calendar_days": notice.value,
+        "notice_basis": notice.came_from,
     }))
 }
 
@@ -178,7 +195,7 @@ pub(crate) async fn withdraw_for(
     )
     .await?;
     txn.commit().await?;
-    format::json(own_json(&saved))
+    format::json(own_json(&saved, &notice_for(ctx, worker).await?))
 }
 
 async fn resignation_and_worker(

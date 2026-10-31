@@ -188,6 +188,8 @@ pub enum Shape {
     Weekdays,
     /// One ISO weekday, 1 to 7.
     Weekday,
+    /// On or off (`true` or `false`). For the strictest rules, on is the stricter.
+    Flag,
     /// A set of short names (each 1 to 64 characters, at most 64 names).
     Names,
     /// `{"min": n?, "max": n?}` in the entry's unit, each within `0..=max`, at least one given, `min <= max`.
@@ -222,11 +224,137 @@ pub const REGISTRY: &[Parameter] = &[
         meaning: "the first day of the working week",
     },
     Parameter {
+        key: "flexible_working.appeal_calendar_days",
+        shape: Shape::Integer { min: 0, max: 366 },
+        unit: "calendar_days",
+        combine: Combine::StrictestMin,
+        meaning: "the time a worker has to appeal a refused flexible working request; 0 is no appeal window",
+    },
+    Parameter {
+        key: "flexible_working.decision_months",
+        shape: Shape::Integer { min: 1, max: 12 },
+        unit: "months",
+        combine: Combine::StrictestMax,
+        meaning: "the time a flexible working request may take to decide, in calendar months",
+    },
+    Parameter {
+        key: "flexible_working.refusal_reasons",
+        shape: Shape::Names,
+        unit: "",
+        combine: Combine::MostSpecific,
+        meaning: "the reasons a flexible working request may be refused for, as lowercase tokens",
+    },
+    Parameter {
+        key: "flexible_working.requests_per_year",
+        shape: Shape::Integer { min: 0, max: 100 },
+        unit: "",
+        combine: Combine::MostSpecific,
+        meaning: "the flexible working requests a worker may make in any 12 calendar months; 0 is no limit",
+    },
+    Parameter {
         key: "holidays.weekend_days",
         shape: Shape::Weekdays,
         unit: "",
         combine: Combine::MostSpecific,
         meaning: "the weekly rest days a holiday's weekend policy and business days follow",
+    },
+    Parameter {
+        key: "pay_transparency.information_months",
+        shape: Shape::Integer { min: 1, max: 12 },
+        unit: "months",
+        combine: Combine::StrictestMax,
+        meaning: "the time an answer to a worker's request for pay information may take, in calendar months",
+    },
+    Parameter {
+        key: "pay_transparency.joint_assessment_months",
+        shape: Shape::Integer { min: 1, max: 24 },
+        unit: "months",
+        combine: Combine::StrictestMax,
+        meaning: "the time from the date of reporting to remedy a gap before a joint pay assessment is due, in calendar months",
+    },
+    Parameter {
+        key: "pay_transparency.joint_assessment_percent",
+        shape: Shape::Integer { min: 1, max: 50 },
+        unit: "percent",
+        combine: Combine::StrictestMax,
+        meaning: "the gap in a category's pay, either way, from which a joint pay assessment may be due",
+    },
+    Parameter {
+        key: "pay_transparency.pay_range_required",
+        shape: Shape::Flag,
+        unit: "",
+        combine: Combine::StrictestMin,
+        meaning: "whether a vacancy states its pay range before it is opened",
+    },
+    Parameter {
+        key: "pay_transparency.reporting_tiers",
+        shape: Shape::Names,
+        unit: "",
+        combine: Combine::MostSpecific,
+        meaning: "the pay gap reporting tiers, each from_workers:every_years:first_report_on, or the one name none",
+    },
+    Parameter {
+        key: "resignation.notice_calendar_days",
+        shape: Shape::Integer { min: 0, max: 366 },
+        unit: "calendar_days",
+        combine: Combine::StrictestMax,
+        meaning: "the notice a worker gives when they resign",
+    },
+    Parameter {
+        key: "retention.employment.days",
+        shape: Shape::Range { max: 36_500 },
+        unit: "calendar_days",
+        combine: Combine::Bounded,
+        meaning: "how long a deleted employment record is kept: a floor, a ceiling or both",
+    },
+    Parameter {
+        key: "retention.learning.days",
+        shape: Shape::Range { max: 36_500 },
+        unit: "calendar_days",
+        combine: Combine::Bounded,
+        meaning: "how long a deleted learning record is kept: a floor, a ceiling or both",
+    },
+    Parameter {
+        key: "retention.pay.days",
+        shape: Shape::Range { max: 36_500 },
+        unit: "calendar_days",
+        combine: Combine::Bounded,
+        meaning: "how long a deleted pay record is kept: a floor, a ceiling or both",
+    },
+    Parameter {
+        key: "retention.performance.days",
+        shape: Shape::Range { max: 36_500 },
+        unit: "calendar_days",
+        combine: Combine::Bounded,
+        meaning: "how long a deleted performance record is kept: a floor, a ceiling or both",
+    },
+    Parameter {
+        key: "retention.planning.days",
+        shape: Shape::Range { max: 36_500 },
+        unit: "calendar_days",
+        combine: Combine::Bounded,
+        meaning: "how long a deleted planning record is kept: a floor, a ceiling or both",
+    },
+    Parameter {
+        key: "retention.recruitment.days",
+        shape: Shape::Range { max: 36_500 },
+        unit: "calendar_days",
+        combine: Combine::Bounded,
+        meaning: "how long a deleted recruitment record is kept: a floor, a ceiling or both",
+    },
+    Parameter {
+        key: "retention.time_and_leave.days",
+        shape: Shape::Range { max: 36_500 },
+        unit: "calendar_days",
+        combine: Combine::Bounded,
+        meaning: "how long a deleted time and leave record is kept: a floor, a ceiling or both",
+    },
+    Parameter {
+        key: "retention.wellbeing.days",
+        shape: Shape::Range { max: 36_500 },
+        unit: "calendar_days",
+        combine: Combine::Bounded,
+        meaning: "how long a deleted wellbeing record is kept: a floor, a ceiling or both",
     },
     Parameter {
         key: "working_time.max_average_weekly_minutes",
@@ -264,6 +392,8 @@ pub fn parameter(key: &str) -> Option<&'static Parameter> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Value {
+    /// On or off.
+    Flag(bool),
     /// A whole number, or one weekday.
     Integer(i64),
     /// A set of weekdays or of names, sorted and unique.
@@ -285,6 +415,36 @@ impl Value {
     pub const fn as_integer(&self) -> Option<i64> {
         match self {
             Self::Integer(n) => Some(*n),
+            _ => None,
+        }
+    }
+
+    /// The flag, if this is one.
+    #[must_use]
+    pub const fn as_flag(&self) -> Option<bool> {
+        match self {
+            Self::Flag(on) => Some(*on),
+            _ => None,
+        }
+    }
+
+    /// The names, if this is a set of them.
+    #[must_use]
+    pub fn as_names(&self) -> Option<Vec<String>> {
+        match self {
+            Self::Set(items) => items
+                .iter()
+                .map(|item| item.as_str().map(str::to_string))
+                .collect(),
+            _ => None,
+        }
+    }
+
+    /// The value as a number the strictest rules compare: a whole number as itself, a flag as 0 (off) or 1 (on).
+    const fn rank(&self) -> Option<i64> {
+        match self {
+            Self::Integer(n) => Some(*n),
+            Self::Flag(on) => Some(if *on { 1 } else { 0 }),
             _ => None,
         }
     }
@@ -327,6 +487,10 @@ pub fn validate_entry(entry: &Parameter, raw: &serde_json::Value) -> Result<Valu
             .filter(|n| (min..=max).contains(n))
             .map(Value::Integer)
             .ok_or_else(|| format!("{key} must be a whole number from {min} to {max}")),
+        Shape::Flag => raw
+            .as_bool()
+            .map(Value::Flag)
+            .ok_or_else(|| format!("{key} must be true or false")),
         Shape::Weekday => weekday(raw)
             .map(Value::Integer)
             .ok_or_else(|| format!("{key} must be an ISO weekday, 1 (Monday) to 7 (Sunday)")),
@@ -586,8 +750,7 @@ pub fn resolve_entry(
         Combine::StrictestMax | Combine::StrictestMin => {
             let mut best = found[0];
             for pair in &found[1..] {
-                let (Some(now), Some(new)) = (best.1.value.as_integer(), pair.1.value.as_integer())
-                else {
+                let (Some(now), Some(new)) = (best.1.value.rank(), pair.1.value.rank()) else {
                     continue;
                 };
                 let stricter = if entry.combine == Combine::StrictestMax {
@@ -1011,6 +1174,48 @@ mod tests {
             panic!()
         };
         assert_eq!(from[0].code, "XA");
+    }
+
+    /// A flag is true or false only; under `strictest_min`, on anywhere in the chain is on, and the origin is the layer that set it.
+    #[test]
+    fn a_flag_is_on_where_any_layer_turns_it_on() {
+        let key = "pay_transparency.pay_range_required";
+        assert_eq!(validate(key, &json!(true)), Ok(Value::Flag(true)));
+        for bad in [json!(1), json!("on"), json!(null)] {
+            assert!(validate(key, &bad).is_err(), "{bad}");
+        }
+        let steps = chain("XA-01", &federal()).unwrap();
+        let rows = [
+            row("XA-01", key, json!(false), day(2020, 1, 1), 1),
+            row("QZ", key, json!(true), day(2020, 1, 1), 2),
+        ];
+        let Resolution::Resolved { value, from, .. } =
+            resolve(key, Some(&steps), &rows, day(2026, 1, 1)).unwrap()
+        else {
+            panic!()
+        };
+        assert_eq!(value.as_flag(), Some(true));
+        assert_eq!(from[0].code, "QZ");
+        let off = [row("XA-01", key, json!(false), day(2020, 1, 1), 1)];
+        let resolved = resolve(key, Some(&steps), &off, day(2026, 1, 1)).unwrap();
+        assert!(matches!(
+            resolved,
+            Resolution::Resolved {
+                value: Value::Flag(false),
+                ..
+            }
+        ));
+        // Names come back as names; a reporting tier is a name the reader parses.
+        let tiers = validate(
+            "pay_transparency.reporting_tiers",
+            &json!(["250:1:2027-06-07", "none"]),
+        )
+        .unwrap();
+        assert_eq!(
+            tiers.as_names(),
+            Some(vec!["250:1:2027-06-07".to_string(), "none".to_string()])
+        );
+        assert_eq!(Value::Integer(3).as_names(), None);
     }
 
     #[test]

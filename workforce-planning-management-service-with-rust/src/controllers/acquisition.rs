@@ -293,7 +293,17 @@ async fn requisition_status(
     .map_err(|e| unprocessable(&e))?;
     // Applicants are owed the pay range before the interview (Article 5 of the Pay Transparency Directive), so a
     // vacancy states it before it is opened.
-    if payload.to == "open" && super::pay_information::pay_range_required() {
+    // Over the organization's home jurisdiction's chain (WPM-D153), else the setting, else on.
+    let pay_range_required = if payload.to == "open" {
+        let scope =
+            super::jurisdictions::Scope::for_organization(&ctx.db, &requisition.organization_ref)
+                .await?;
+        super::pay_information::pay_range_required(Some(&scope), chrono::Utc::now().date_naive())
+            .value
+    } else {
+        false
+    };
+    if pay_range_required {
         crate::rules::pay_information::require_range(
             requisition.salary_min_minor,
             requisition.salary_max_minor,

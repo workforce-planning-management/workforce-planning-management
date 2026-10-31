@@ -280,6 +280,23 @@ pub async fn deployer_countries<C: ConnectionTrait>(
     Ok(out)
 }
 
+/// What a reader needs of a value beyond its registry shape (WPM-T384): refusal reasons are lowercase tokens, and reporting tiers
+/// parse as the gap report reads them. A row the reader could not use is refused here rather than ignored later.
+fn reader_check(key: &str, value: &rules::Value) -> Result<(), String> {
+    let joined = || value.as_names().unwrap_or_default().join(",");
+    match key {
+        "flexible_working.refusal_reasons" => {
+            crate::rules::flexible_working::parse_reasons(&joined())
+                .map(|_| ())
+                .map_err(|why| format!("{key}: {why}"))
+        }
+        "pay_transparency.reporting_tiers" => crate::rules::pay_gap::parse_tiers(&joined())
+            .map(|_| ())
+            .map_err(|why| format!("{key}: {why}")),
+        _ => Ok(()),
+    }
+}
+
 async fn hr_only(ctx: &AppContext, caller: &MaybeAuthUser, organization: &str) -> Result<()> {
     ensure_valid(&organization_problems(organization))?;
     ensure_org_in_scope(ctx, caller, organization).await?;
@@ -482,8 +499,13 @@ async fn add_parameter(
         problems.push("code must be a jurisdiction code".to_string());
     }
     let value = rules::validate(&p.key, &p.value);
-    if let Err(message) = &value {
-        problems.push(message.clone());
+    match &value {
+        Err(message) => problems.push(message.clone()),
+        Ok(value) => {
+            if let Err(message) = reader_check(&p.key, value) {
+                problems.push(message);
+            }
+        }
     }
     if p.effective_to.is_some_and(|to| to < p.effective_from) {
         problems.push("effective_to must not be before effective_from".to_string());

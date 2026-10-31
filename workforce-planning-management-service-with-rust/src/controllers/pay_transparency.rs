@@ -437,16 +437,33 @@ pub(crate) fn sex_category() -> String {
     )
 }
 
-/// The reporting tiers: `WPM_PAY_GAP_TIERS` (`from_workers:every_years:first_report_on`, comma-separated, or `none`), else
-/// the Directive's own (Article 9). A setting that does not parse is ignored with a warning, never half-applied (WPM-T384).
-pub(crate) fn reporting_tiers() -> Vec<pay_gap::Obligation> {
-    match crate::compat::env_var("WPM_PAY_GAP_TIERS").filter(|v| !v.trim().is_empty()) {
-        None => pay_gap::directive_tiers(),
-        Some(text) => pay_gap::parse_tiers(&text).unwrap_or_else(|why| {
-            tracing::warn!("WPM_PAY_GAP_TIERS ignored: {why}; using the Directive's tiers");
-            pay_gap::directive_tiers()
-        }),
-    }
+/// The reporting tiers: the organization's profile over its home jurisdiction's chain
+/// (`pay_transparency.reporting_tiers`), else `WPM_PAY_GAP_TIERS` (`from_workers:every_years:first_report_on`,
+/// comma-separated, or `none`), else the Directive's own (Article 9). A value that does not parse is
+/// ignored with a warning, never half-applied (WPM-T384).
+pub(crate) fn reporting_tiers(
+    scope: Option<&super::jurisdictions::Scope>,
+    as_of: NaiveDate,
+) -> super::statutory_defaults::InForce<Vec<pay_gap::Obligation>> {
+    let configured = crate::compat::env_var("WPM_PAY_GAP_TIERS")
+        .filter(|v| !v.trim().is_empty())
+        .and_then(|text| {
+            pay_gap::parse_tiers(&text)
+                .inspect_err(|why| tracing::warn!("WPM_PAY_GAP_TIERS ignored: {why}"))
+                .ok()
+        });
+    super::statutory_defaults::pick(
+        scope,
+        "WPM_PAY_GAP_TIERS",
+        as_of,
+        |value| {
+            value
+                .as_names()
+                .and_then(|names| pay_gap::parse_tiers(&names.join(",")).ok())
+        },
+        configured,
+        pay_gap::directive_tiers(),
+    )
 }
 
 /// `GET /api/pay-transparency/gap-report?organization=&as_of=&currency=&variable=` — the seven indicators.
@@ -459,8 +476,9 @@ pub(crate) async fn gap_report(
 ) -> Result<Response> {
     let built = build(&ctx, &caller, &query).await?;
     audit_read(&ctx, &caller, &built, false).await?;
-    let tiers = reporting_tiers();
-    let tier = pay_gap::tier_for(built.headcount, &tiers);
+    let scope = super::jurisdictions::Scope::for_organization(&ctx.db, &built.organization).await?;
+    let tiers = reporting_tiers(Some(&scope), built.as_of);
+    let tier = pay_gap::tier_for(built.headcount, &tiers.value);
     format::json(json!({
         "organization": built.organization,
         "as_of": built.as_of,
@@ -479,7 +497,7 @@ pub(crate) async fn gap_report(
             "next_report_on": pay_gap::next_due(t, built.as_of),
         })),
         // Whose tiers these are: the deployer's, or the Directive's by default (WPM-T384).
-        "reporting_basis": super::statutory_defaults::basis("WPM_PAY_GAP_TIERS"),
+        "reporting_basis": super::statutory_defaults::basis("WPM_PAY_GAP_TIERS", &tiers.came_from),
         "report": built.report,
         "derivation": "Counts and means come from the pay on the worker record and the sex each worker chose to declare. \
                        A figure shows only when both sexes reach the floor in it; a side with nobody is unknown; no figure \

@@ -2786,6 +2786,21 @@
       "payroll": "Penggajian",
       "resignation": "Pengunduran diri",
       "retention": "Penyimpanan"
+    },
+    "organization": "Organisasi",
+    "deployment": "Seluruh penerapan (tanpa organisasi)",
+    "home": "Yurisdiksi terdaftar: {code}. Pengaturan tingkat organisasi dibaca dari profilnya terlebih dahulu.",
+    "no_home": "Tidak ada yurisdiksi terdaftar yang dicatat untuk organisasi ini: pengaturan tingkat organisasi memakai pengaturan atau nilai bawaan.",
+    "came_from": "Asal",
+    "from_profile": "Profil: {codes} ({status})",
+    "from_setting": "Pengaturan penerapan ini",
+    "from_default": "Nilai bawaan",
+    "reader": "Dibaca untuk",
+    "by_place": "Menurut tempat kerja",
+    "readers": {
+      "worker": "Tempat kerja setiap pekerja",
+      "organization": "Yurisdiksi terdaftar organisasi",
+      "deployment": "Seluruh penerapan"
     }
   }
 }

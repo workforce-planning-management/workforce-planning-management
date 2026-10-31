@@ -30,73 +30,109 @@ use crate::rules::access::Relation;
 use crate::rules::flexible_working::{self as rules, Action, Status};
 use crate::validation::Problems;
 
-// ─── Configuration (the deployer's, with starting-point defaults) ────────────
+use super::jurisdictions::Scope;
+use super::statutory_defaults::{self as statutory, InForce};
+
+// ─── Configuration (the profile's, else the deployer's, else starting-point defaults) ─────
 
 fn setting(name: &str) -> Option<String> {
     crate::compat::env_var(name).filter(|v| !v.trim().is_empty())
 }
 
-fn number(name: &str, default: u32, max: u32) -> u32 {
-    match setting(name) {
-        None => default,
-        Some(text) => match text.trim().parse::<u32>() {
-            Ok(n) if n <= max => n,
-            _ => {
-                tracing::warn!("{name} is not 0 to {max}; using the default");
-                default
-            }
-        },
-    }
-}
-
-/// Calendar months a decision may take: `WPM_FLEXIBLE_DECISION_MONTHS`, default 2, at most 12.
-#[must_use]
-pub fn decision_months() -> u32 {
-    number(
-        "WPM_FLEXIBLE_DECISION_MONTHS",
-        rules::DEFAULT_DECISION_MONTHS,
-        12,
-    )
-    .max(1)
-}
-
-/// Requests a worker may make in 12 calendar months: `WPM_FLEXIBLE_REQUESTS_PER_YEAR`, default 2,
-/// `0` for no limit.
-#[must_use]
-pub fn requests_per_year() -> u32 {
-    number(
-        "WPM_FLEXIBLE_REQUESTS_PER_YEAR",
-        rules::DEFAULT_REQUESTS_PER_YEAR,
-        100,
-    )
-}
-
-/// Calendar days to appeal a refusal: `WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS`, default 14.
-#[must_use]
-pub fn appeal_calendar_days() -> u32 {
-    number(
-        "WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS",
-        rules::DEFAULT_APPEAL_CALENDAR_DAYS,
-        366,
-    )
-}
-
-/// The allowed refusal reasons: `WPM_FLEXIBLE_REFUSAL_REASONS` (comma-separated lowercase tokens)
-/// or the defaults.
-#[must_use]
-pub fn refusal_reasons() -> Vec<String> {
-    if let Some(text) = setting("WPM_FLEXIBLE_REFUSAL_REASONS") {
-        match rules::parse_reasons(&text) {
-            Ok(list) => return list,
-            Err(error) => {
-                tracing::warn!(%error, "WPM_FLEXIBLE_REFUSAL_REASONS ignored; using the defaults");
-            }
+/// The deployer's whole-number setting, if set and `0..=max`; a value that does not check is
+/// ignored with a warning.
+fn number(name: &str, max: u32) -> Option<u32> {
+    let text = setting(name)?;
+    match text.trim().parse::<u32>() {
+        Ok(n) if n <= max => Some(n),
+        _ => {
+            tracing::warn!("{name} is not 0 to {max}; ignored");
+            None
         }
     }
-    rules::DEFAULT_REFUSAL_REASONS
-        .iter()
-        .map(|s| (*s).to_string())
-        .collect()
+}
+
+/// Calendar months a decision may take: the worker's profile
+/// (`flexible_working.decision_months`), else `WPM_FLEXIBLE_DECISION_MONTHS` (at most 12, at least
+/// 1), else 2.
+#[must_use]
+pub fn decision_months(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32> {
+    let name = "WPM_FLEXIBLE_DECISION_MONTHS";
+    statutory::integer(
+        scope,
+        name,
+        as_of,
+        number(name, 12).map(|n| n.max(1)),
+        rules::DEFAULT_DECISION_MONTHS,
+    )
+}
+
+/// Requests a worker may make in 12 calendar months: the profile's
+/// (`flexible_working.requests_per_year`), else `WPM_FLEXIBLE_REQUESTS_PER_YEAR`, else 2; `0` for no
+/// limit.
+#[must_use]
+pub fn requests_per_year(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32> {
+    let name = "WPM_FLEXIBLE_REQUESTS_PER_YEAR";
+    statutory::integer(
+        scope,
+        name,
+        as_of,
+        number(name, 100),
+        rules::DEFAULT_REQUESTS_PER_YEAR,
+    )
+}
+
+/// Calendar days to appeal a refusal: the profile's (`flexible_working.appeal_calendar_days`), else
+/// `WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS`, else 14.
+#[must_use]
+pub fn appeal_calendar_days(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32> {
+    let name = "WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS";
+    statutory::integer(
+        scope,
+        name,
+        as_of,
+        number(name, 366),
+        rules::DEFAULT_APPEAL_CALENDAR_DAYS,
+    )
+}
+
+/// The allowed refusal reasons: the profile's (`flexible_working.refusal_reasons`), else
+/// `WPM_FLEXIBLE_REFUSAL_REASONS` (comma-separated lowercase tokens), else the defaults.
+#[must_use]
+pub fn refusal_reasons(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<Vec<String>> {
+    let name = "WPM_FLEXIBLE_REFUSAL_REASONS";
+    let configured = setting(name).and_then(|text| match rules::parse_reasons(&text) {
+        Ok(list) => Some(list),
+        Err(error) => {
+            tracing::warn!(%error, "{name} ignored");
+            None
+        }
+    });
+    statutory::pick(
+        scope,
+        name,
+        as_of,
+        |value| {
+            value
+                .as_names()
+                .and_then(|names| rules::parse_reasons(&names.join(",")).ok())
+        },
+        configured,
+        rules::DEFAULT_REFUSAL_REASONS
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect(),
+    )
+}
+
+/// The calendar days `worker` has to appeal, from their own chain.
+async fn appeal_days_for(
+    ctx: &AppContext,
+    worker: &workers::Model,
+    as_of: NaiveDate,
+) -> Result<u32> {
+    let scope = Scope::for_worker(&ctx.db, worker).await?;
+    Ok(appeal_calendar_days(Some(&scope), as_of).value)
 }
 
 // ─── Views ──────────────────────────────────────────────────────────────────
@@ -105,7 +141,7 @@ fn status_of(row: &requests::Model) -> Result<Status> {
     Status::parse(&row.status).ok_or_else(|| super::internal("a request has an unknown status"))
 }
 
-fn view(row: &requests::Model, today: NaiveDate) -> serde_json::Value {
+fn view(row: &requests::Model, today: NaiveDate, appeal_days: u32) -> serde_json::Value {
     let status = Status::parse(&row.status);
     let overdue = status.is_some_and(|s| rules::is_overdue(s, row.decide_by, today));
     json!({
@@ -128,7 +164,7 @@ fn view(row: &requests::Model, today: NaiveDate) -> serde_json::Value {
         "appealed_on": row.appealed_on,
         "appeal_note": row.appeal_note,
         "can_appeal": status == Some(Status::Refused)
-            && row.decided_on.is_some_and(|on| rules::can_appeal(on, today, appeal_calendar_days())),
+            && row.decided_on.is_some_and(|on| rules::can_appeal(on, today, appeal_days)),
         // The software never changes a contract: an agreed change of hours is for HR to apply.
         "hr_to_apply_fte_percent": if status.is_some_and(Status::is_agreed) {
             if status == Some(Status::Accepted) { row.counter_fte_percent.or(row.proposed_fte_percent) } else { row.proposed_fte_percent }
@@ -191,13 +227,16 @@ pub(crate) async fn create_for(
         .iter()
         .filter_map(|r| Some((r.requested_on, Status::parse(&r.status)?)))
         .collect();
-    let limit = requests_per_year();
+    let scope = Scope::for_worker(&ctx.db, worker).await?;
+    let per_year = requests_per_year(Some(&scope), today);
+    let limit = per_year.value;
     if !rules::within_limit(&previous, today, limit) {
         return Err(unprocessable(&format!(
             "you have already made {limit} requests in the last 12 calendar months"
         )));
     }
-    let decide_by = rules::decide_by(today, decision_months())
+    let months = decision_months(Some(&scope), today);
+    let decide_by = rules::decide_by(today, months.value)
         .ok_or_else(|| unprocessable("the decision date runs past the supported calendar"))?;
     let txn = ctx.db.begin().await?;
     let row = requests::ActiveModel {
@@ -238,7 +277,12 @@ pub(crate) async fn create_for(
     )
     .await?;
     txn.commit().await?;
-    format::json(json!({ "pid": row.pid, "decide_by": decide_by }))
+    format::json(json!({
+        "pid": row.pid,
+        "decide_by": decide_by,
+        // Where the period and the limit came from: the worker's profile, the setting or the default (WPM-D153).
+        "basis": { "decision_months": months.came_from, "requests_per_year": per_year.came_from },
+    }))
 }
 
 /// The worker's own requests, newest first. Shared with `/api/me/flexible-working`.
@@ -249,7 +293,12 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
         .order_by_desc(requests::Column::Id)
         .all(&ctx.db)
         .await?;
-    format::json(rows.iter().map(|r| view(r, today)).collect::<Vec<_>>())
+    let appeal_days = appeal_days_for(ctx, worker, today).await?;
+    format::json(
+        rows.iter()
+            .map(|r| view(r, today, appeal_days))
+            .collect::<Vec<_>>(),
+    )
 }
 
 async fn own_request(
@@ -303,7 +352,12 @@ pub(crate) async fn withdraw_for(
         |_| {},
     )
     .await?;
-    format::json(view(&saved, Utc::now().date_naive()))
+    let today = Utc::now().date_naive();
+    format::json(view(
+        &saved,
+        today,
+        appeal_days_for(ctx, worker, today).await?,
+    ))
 }
 
 /// `POST /api/me/flexible-working/{pid}/respond` body.
@@ -333,7 +387,12 @@ pub(crate) async fn respond_for(
         "flexible_working_declined"
     };
     let saved = move_to(ctx, caller, worker, row, action, event, |_| {}).await?;
-    format::json(view(&saved, Utc::now().date_naive()))
+    let today = Utc::now().date_naive();
+    format::json(view(
+        &saved,
+        today,
+        appeal_days_for(ctx, worker, today).await?,
+    ))
 }
 
 /// `POST /api/me/flexible-working/{pid}/appeal` body.
@@ -358,14 +417,14 @@ pub(crate) async fn appeal_for(
     super::ensure_valid(&problems.into_vec())?;
     let row = own_request(ctx, worker, pid).await?;
     let today = Utc::now().date_naive();
+    let appeal_days = appeal_days_for(ctx, worker, today).await?;
     if status_of(&row)? == Status::Refused
         && !row
             .decided_on
-            .is_some_and(|on| rules::can_appeal(on, today, appeal_calendar_days()))
+            .is_some_and(|on| rules::can_appeal(on, today, appeal_days))
     {
         return Err(unprocessable(&format!(
-            "an appeal must be made within {} calendar days of the refusal",
-            appeal_calendar_days()
+            "an appeal must be made within {appeal_days} calendar days of the refusal"
         )));
     }
     let note = clean(payload.note.as_ref());
@@ -395,7 +454,7 @@ pub(crate) async fn appeal_for(
         )
         .await?;
     }
-    format::json(view(&saved, today))
+    format::json(view(&saved, today, appeal_days))
 }
 
 // ─── The deciding side ──────────────────────────────────────────────────────
@@ -490,7 +549,8 @@ async fn decide(
         "counter" => (Action::Counter, "flexible_working_counter_proposed"),
         _ => return Err(unprocessable("outcome must be approve, refuse or counter")),
     };
-    let allowed = refusal_reasons();
+    let scope = Scope::for_worker(&ctx.db, &worker).await?;
+    let allowed = refusal_reasons(Some(&scope), today).value;
     let allowed_refs: Vec<&str> = allowed.iter().map(String::as_str).collect();
     match action {
         Action::Refuse => {
@@ -550,7 +610,8 @@ async fn decide(
         json!({ "request_pid": saved.pid, "outcome": saved.status }),
     )
     .await?;
-    format::json(view(&saved, today))
+    let appeal_days = appeal_calendar_days(Some(&scope), today).value;
+    format::json(view(&saved, today, appeal_days))
 }
 
 /// `POST /api/flexible-working/{pid}/appeal-decision` body.
@@ -606,7 +667,11 @@ async fn decide_appeal(
         json!({ "request_pid": saved.pid, "outcome": saved.status }),
     )
     .await?;
-    format::json(view(&saved, today))
+    format::json(view(
+        &saved,
+        today,
+        appeal_days_for(&ctx, &worker, today).await?,
+    ))
 }
 
 /// Query for the list.
@@ -639,6 +704,8 @@ async fn list(
         select = select.filter(requests::Column::Status.eq(s));
     }
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    // Each worker's appeal window is from their own chain; an organization's profile is loaded once.
+    let mut profiles: std::collections::BTreeMap<String, Scope> = std::collections::BTreeMap::new();
     let mut out = Vec::new();
     for row in select.all(&ctx.db).await? {
         let Some(worker) = workers::Entity::find()
@@ -664,7 +731,21 @@ async fn list(
                 continue;
             }
         }
-        let mut item = view(&row, today);
+        if !profiles.contains_key(&worker.organization_ref) {
+            let loaded = Scope::for_worker(&ctx.db, &worker).await?;
+            profiles.insert(worker.organization_ref.clone(), loaded);
+        }
+        let appeal_days = profiles.get(&worker.organization_ref).map_or(
+            rules::DEFAULT_APPEAL_CALENDAR_DAYS,
+            |org| {
+                let place = Scope {
+                    start: worker.work_jurisdiction.clone(),
+                    ..org.clone()
+                };
+                appeal_calendar_days(Some(&place), today).value
+            },
+        );
+        let mut item = view(&row, today, appeal_days);
         if query.overdue == Some(true) && item["overdue"] != json!(true) {
             continue;
         }

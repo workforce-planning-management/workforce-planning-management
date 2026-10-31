@@ -2795,6 +2795,21 @@
       "payroll": "Payroll",
       "resignation": "Resignation",
       "retention": "Retention"
+    },
+    "organization": "Organization",
+    "deployment": "The deployment (no organization)",
+    "home": "Home jurisdiction: {code}. Organization-level settings are read from its profile first.",
+    "no_home": "No home jurisdiction is recorded for this organization: organization-level settings use the setting or the default.",
+    "came_from": "Came from",
+    "from_profile": "Profile: {codes} ({status})",
+    "from_setting": "This deployment's setting",
+    "from_default": "The default",
+    "reader": "Read for",
+    "by_place": "By place of work",
+    "readers": {
+      "worker": "Each worker's place of work",
+      "organization": "The organization's home jurisdiction",
+      "deployment": "The whole deployment"
     }
   }
 }

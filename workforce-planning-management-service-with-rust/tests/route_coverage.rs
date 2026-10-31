@@ -41,11 +41,6 @@ const BUILT_FROM_A_VARIABLE: &[(&str, &str, &str)] = &[
     ),
     (
         "POST",
-        "/api/flexible-working/{pid}/decide",
-        "enforcement_flexible.rs: the `decide` closure",
-    ),
-    (
-        "POST",
         "/api/me/leave-requests",
         "enforcement_me.rs: the `mine` helper",
     ),

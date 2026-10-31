@@ -2804,6 +2804,21 @@
       "payroll": "Processamento salarial",
       "resignation": "Demissão",
       "retention": "Conservação"
+    },
+    "organization": "Organização",
+    "deployment": "A implantação (nenhuma organização)",
+    "home": "Jurisdição da sede: {code}. As definições da organização são lidas primeiro do seu perfil.",
+    "no_home": "Não há jurisdição da sede registada para esta organização: as definições da organização usam a definição ou o valor predefinido.",
+    "came_from": "Origem",
+    "from_profile": "Perfil: {codes} ({status})",
+    "from_setting": "A definição desta implantação",
+    "from_default": "O valor predefinido",
+    "reader": "Lido para",
+    "by_place": "Por local de trabalho",
+    "readers": {
+      "worker": "O local de trabalho de cada pessoa",
+      "organization": "A jurisdição da sede da organização",
+      "deployment": "Toda a implantação"
     }
   }
 }

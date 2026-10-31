@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — statutory defaults are read from jurisdiction profiles first (WPM-T384 step 2, WPM-D153)
+
+18 registry keys: `flexible_working.{appeal_calendar_days, decision_months, refusal_reasons, requests_per_year}`,
+`resignation.notice_calendar_days`, `pay_transparency.{information_months, joint_assessment_months, joint_assessment_percent,
+pay_range_required, reporting_tiers}` and `retention.<kind>.days` for the eight kinds; a `flag` shape in `rules::jurisdiction`.
+`controllers::statutory_defaults::pick` is the one order: the profile over the reader's chain (a worker's `work_jurisdiction` or the
+organization's home), else the setting, else the default, with `came_from`. **API additions:** `GET /api/statutory-defaults` takes
+`?organization=` and adds `key`, `reader`, `came_from` and, for a worker-level setting, `by_place`; `GET /api/retention/schedule`
+takes `?organization=` and adds `came_from` and `profile_key`; `GET /api/retention` adds `horizons_from`; the gap report's and the joint
+assessment's `*_basis` add `came_from`; the flexible working request's answer adds `basis`, the resignation's `notice_basis`, the pay
+information request's `due_on_basis`. `POST /api/jurisdiction-parameters` refuses refusal reasons that are not lowercase tokens and
+tiers that do not parse. **Behaviour:** the retention sweep takes, per kind, the longest of the deployment's horizon and every
+organization's profile (never sooner). **Not moved:** `WPM_AI_ACT_APPLIES_FROM`, `WPM_PAY_GAP_SEX_CATEGORY`, the payroll stub settings
+and `WPM_CONTRACTED_DAY_MINUTES`. **Not tested:** the three `/api/me` answers' new fields; the sweep's deletions at a profile's horizon.
+
 ### Added — an organization's home jurisdiction (WPM-T384 step 1, WPM-D153)
 
 Migration `000115`: `organization_settings (organization_ref PRIMARY KEY, home_jurisdiction)`, a jurisdiction code or `NULL`. New route
