@@ -124,6 +124,34 @@ pub async fn profiles_for<C: ConnectionTrait>(
     Ok(out)
 }
 
+/// The country codes `organization` has added that ISO 3166-1 lacks (WPM-D152 question 3): its national jurisdiction codes of
+/// two letters that are not ISO 3166-1's, such as `XK`, with the name it recorded. A contact address may use them.
+///
+/// # Errors
+///
+/// A database error.
+pub async fn deployer_countries<C: ConnectionTrait>(
+    db: &C,
+    organization: &str,
+) -> Result<Vec<(String, Option<String>)>> {
+    let mut out = Vec::new();
+    for row in db
+        .query_all_raw(Statement::from_sql_and_values(
+            DbBackend::Postgres,
+            "SELECT code, name FROM jurisdictions
+              WHERE organization_ref = $1 AND layer = 'national' AND code ~ '^[A-Z]{2}$' ORDER BY code",
+            [organization.into()],
+        ))
+        .await?
+    {
+        let code: String = row.try_get("", "code")?;
+        if !crate::rules::contact_details::is_iso_country(&code) {
+            out.push((code, row.try_get("", "name")?));
+        }
+    }
+    Ok(out)
+}
+
 async fn hr_only(ctx: &AppContext, caller: &MaybeAuthUser, organization: &str) -> Result<()> {
     ensure_valid(&organization_problems(organization))?;
     ensure_org_in_scope(ctx, caller, organization).await?;

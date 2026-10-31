@@ -3147,6 +3147,7 @@ collections:
                   - { name: "digits", label: "Digits", widget: string, required: false, i18n: true }
                   - { name: "e164", label: "E164", widget: string, required: false, i18n: true }
                   - { name: "noE164", label: "No E164", widget: text, required: false, i18n: true }
+                  - { name: "countryNone", label: "Country None", widget: string, required: false, i18n: true }
               - name: "time"
                 label: "Time"
                 widget: object

@@ -4671,6 +4671,13 @@ export function setMyContactDetails(
   return api("/me/contact-details", { method: "PUT", body });
 }
 
+/** The country codes the caller's organization added that ISO 3166-1 lacks (WPM-D152), for the country picker. */
+export function getMyCountries(
+  init?: FetchLike,
+): Promise<{ deployer_codes: Array<{ code: string; name: string | null }> }> {
+  return api("/me/countries", init);
+}
+
 /** Remove every contact detail held for the caller. */
 export function clearMyContactDetails(): Promise<
   Answer<"/api/me/contact-details", "delete">

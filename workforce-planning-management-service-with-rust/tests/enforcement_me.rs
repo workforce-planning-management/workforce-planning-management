@@ -167,6 +167,20 @@ async fn a_worker_manages_only_their_own_details() {
         assert_eq!(found.status_code(), 200, "{}", found.text());
         let found: Value = found.json();
         assert_eq!(found["workers"][0]["pid"], w1.as_str());
+        // The country is ISO 3166-1, or a code the organization added (WPM-D152): XK is refused until HR records it.
+        let kosovo = json!({ "country": "XK", "city": "Prishtina" });
+        let refused = put("/api/me/contact-details".into(), me.clone(), kosovo.clone()).await;
+        assert_eq!(refused.status_code(), 422);
+        assert!(refused.text().contains("country"));
+        let none: Value = request.get("/api/me/countries").add_header("authorization", me.clone()).await.json();
+        assert_eq!(none["deployer_codes"], json!([]));
+        request.post("/api/jurisdictions").add_header("authorization", hr.clone())
+            .json(&json!({ "organization_ref": org, "code": "XK", "layer": "national", "name": "Kosovo" })).await.assert_status_ok();
+        let added: Value = request.get("/api/me/countries").add_header("authorization", me.clone()).await.json();
+        assert_eq!(added["deployer_codes"], json!([{ "code": "XK", "name": "Kosovo" }]));
+        assert_eq!(put("/api/me/contact-details".into(), me.clone(), kosovo).await.status_code(), 200);
+        assert_eq!(put("/api/me/contact-details".into(), me.clone(), json!({ "country": "QZ" })).await.status_code(), 422, "not added");
+        put("/api/me/contact-details".into(), me.clone(), good.clone()).await.assert_status_ok();
         // It is replaced as a whole: a field left out is cleared.
         let replaced: Value = put("/api/me/contact-details".into(), me.clone(), json!({ "city": "York" })).await.json();
         assert_eq!(replaced["contact_details"]["city"], "York");

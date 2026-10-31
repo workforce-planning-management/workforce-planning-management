@@ -129,6 +129,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("learning/training-analytics", Open),
     ("contact-details/search", ControllerDecides),
     ("me/contact-details", ControllerDecides),
+    ("me/countries", ControllerDecides),
     ("me/equality-monitoring", ControllerDecides),
     ("me/emergency-contacts", ControllerDecides),
     ("me/flexible-working", ControllerDecides),

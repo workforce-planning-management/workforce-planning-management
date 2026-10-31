@@ -170,6 +170,38 @@ pub fn validate_country(value: &str) -> Result<(), String> {
     }
 }
 
+/// The ISO 3166-1 alpha-2 codes, one per line, with `#` comment lines (a code list kept as data).
+const ISO_3166_1: &str = include_str!("data/iso-3166-1-alpha-2.txt");
+
+/// Every officially assigned ISO 3166-1 alpha-2 code, in order.
+pub fn iso_countries() -> impl Iterator<Item = &'static str> {
+    ISO_3166_1
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+}
+
+/// Whether `code` is an officially assigned ISO 3166-1 alpha-2 code.
+#[must_use]
+pub fn is_iso_country(code: &str) -> bool {
+    iso_countries().any(|c| c == code)
+}
+
+/// A country that may be stored (WPM-D152 question 3): an ISO 3166-1 alpha-2 code, or one of `deployer_codes`, the codes
+/// ISO 3166-1 lacks that the worker's organization has added (its national jurisdiction codes).
+///
+/// # Errors
+///
+/// Not two capital letters, or a code that is neither ISO 3166-1 nor the deployer's.
+pub fn validate_country_known(value: &str, deployer_codes: &[String]) -> Result<(), String> {
+    validate_country(value)?;
+    if is_iso_country(value) || deployer_codes.iter().any(|c| c == value) {
+        Ok(())
+    } else {
+        Err("country is neither an ISO 3166-1 code nor one the organization has added".to_string())
+    }
+}
+
 /// A telephone number: digits (in any set [`phone_digits`] reads), spaces, hyphens, dots and
 /// brackets, an optional leading `+`, and between five and fifteen digits. It is stored as typed.
 ///
@@ -427,6 +459,38 @@ mod tests {
             ..Details::default()
         };
         assert!(validate(&bad).unwrap_err().contains("address_text"));
+    }
+
+    #[test]
+    fn a_country_is_iso_3166_1_or_the_deployer_s_own() {
+        let all: Vec<&str> = iso_countries().collect();
+        assert_eq!(all.len(), 249, "the officially assigned codes");
+        let mut sorted = all.clone();
+        sorted.sort_unstable();
+        sorted.dedup();
+        assert_eq!(sorted, all, "sorted, no repeats");
+        assert!(all.iter().all(|c| validate_country(c).is_ok()));
+        for code in ["KR", "NP", "AX", "SS", "BQ"] {
+            assert!(validate_country_known(code, &[]).is_ok(), "{code}");
+        }
+        // User-assigned and reserved codes are not ISO 3166-1's: a deployer adds one, or it is refused.
+        for code in ["XK", "QZ", "ZZ", "AA", "EU", "UK"] {
+            assert!(!is_iso_country(code), "{code}");
+            assert!(
+                validate_country_known(code, &[])
+                    .unwrap_err()
+                    .contains("neither"),
+                "{code}"
+            );
+        }
+        let added = vec!["XK".to_string()];
+        assert!(validate_country_known("XK", &added).is_ok());
+        assert!(validate_country_known("QZ", &added).is_err());
+        assert!(
+            validate_country_known("xk", &added)
+                .unwrap_err()
+                .contains("capital")
+        );
     }
 
     #[test]

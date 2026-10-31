@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — a contact address's country is ISO 3166-1 or the organization's own (WPM-T382, WPM-D152)
+
+**Breaking for API clients:** `PUT /api/me/contact-details` refuses (422) a two-letter country that is not an officially assigned ISO
+3166-1 code (`src/rules/data/iso-3166-1-alpha-2.txt`, 249 codes) unless the worker's organization has recorded it as a national
+jurisdiction code (such as `XK`). New `GET /api/me/countries` lists those added codes. **Not verified:** the code list against ISO's
+own platform. **Not done:** stored rows with a code now refused are not rewritten.
+
 ### Added — a telephone number kept as typed, as ASCII digits and as E.164; search by number (WPM-T382, WPM-D152)
 
 `rules::phone` derives a number's ASCII digits (any digit set the shape rule reads) and its E.164 form, only from a `+` number or, for

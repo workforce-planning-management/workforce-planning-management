@@ -2271,14 +2271,15 @@
       "city": "城市",
       "region": "省或地区",
       "postcode": "邮政编码",
-      "country": "国家（两个字母）",
+      "country": "国家或地区",
       "phone_mobile": "手机",
       "phone_home": "住宅电话",
       "personal_email": "个人电子邮箱",
       "clear": "删除我的所有联系方式",
       "digits": "数字（用于搜索）：{digits}",
       "e164": "国际格式（E.164）：{e164}",
-      "noE164": "没有国际格式：号码没有 +，且 WPM 没有该号码已知国家的编号计划。"
+      "noE164": "没有国际格式：号码没有 +，且 WPM 没有该号码已知国家的编号计划。",
+      "countryNone": "未填写"
     },
     "time": {
       "title": "我的休假",

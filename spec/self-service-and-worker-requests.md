@@ -41,7 +41,8 @@ A worker updates, without HR: **home address**, **telephone numbers**, **persona
   fields, an address may be one free-text block (`address_text`, up to 500 characters on up to 10 lines) in the person's own order,
   which the UI offers for a country its address table lacks. A telephone number is kept as typed and, derived beside it, as
   ASCII digits (search and export) and as E.164 where it can be derived without guessing (`rules::phone`): HR finds a
-  worker by number over those forms, never the typed text.
+  worker by number over those forms, never the typed text. The country is an ISO 3166-1 alpha-2 code, or one the worker's
+  organization added as a national jurisdiction code (such as `XK`); any other is refused.
 
 ## WPM-R125 — Equality and diversity monitoring (bounded, off by default)
 

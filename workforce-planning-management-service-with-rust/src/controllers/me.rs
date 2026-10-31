@@ -159,6 +159,20 @@ async fn get_my_details(State(ctx): State<AppContext>, caller: MaybeAuthUser) ->
     format::json(json!({ "contact_details": row.as_ref().map(details_json) }))
 }
 
+/// `GET /api/me/countries` — the country codes the caller's organization has added that ISO 3166-1 lacks (WPM-D152), for the
+/// contact details picker; the ISO 3166-1 codes themselves are the UI's own list, named by the browser.
+#[debug_handler]
+async fn my_countries(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
+    let worker = me_worker(&ctx, &caller).await?;
+    let added = super::jurisdictions::deployer_countries(&ctx.db, &worker.organization_ref).await?;
+    format::json(json!({
+        "deployer_codes": added
+            .into_iter()
+            .map(|(code, name)| json!({ "code": code, "name": name }))
+            .collect::<Vec<_>>(),
+    }))
+}
+
 /// `PUT /api/me/contact-details` body. A field left out, or blank, is cleared: this replaces the
 /// whole record.
 #[derive(Debug, Default, Deserialize)]
@@ -215,6 +229,15 @@ async fn set_my_details(
     let worker = me_worker(&ctx, &caller).await?;
     let details = payload.cleaned();
     contact_rules::validate(&details).map_err(|e| unprocessable(&e))?;
+    if let Some(country) = &details.country {
+        let added: Vec<String> =
+            super::jurisdictions::deployer_countries(&ctx.db, &worker.organization_ref)
+                .await?
+                .into_iter()
+                .map(|(code, _)| code)
+                .collect();
+        contact_rules::validate_country_known(country, &added).map_err(|e| unprocessable(&e))?;
+    }
     let recorded_by = caller.actor().map(ToString::to_string);
     let (mobile, home) = phone_forms(
         details.country.as_deref(),
@@ -814,6 +837,7 @@ pub fn routes() -> Routes {
         .add("/me/contact-details", get(get_my_details))
         .add("/me/contact-details", put(set_my_details))
         .add("/me/contact-details", delete(clear_my_details))
+        .add("/me/countries", get(my_countries))
         .add("/me/emergency-contacts", get(list_my_contacts))
         .add("/me/emergency-contacts", post(add_my_contact))
         .add("/me/emergency-contacts/{pid}", put(update_my_contact))

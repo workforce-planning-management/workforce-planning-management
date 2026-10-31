@@ -186,6 +186,7 @@ describe("api path map", () => {
     });
     await wpm.updateEmergencyContact("c1", { priority: 2 });
     await wpm.removeEmergencyContact("c1");
+    await wpm.getMyCountries();
     await wpm.listBackups("w1");
     await wpm.addBackup("w1", { backup_pid: "w2" });
     await wpm.removeBackup("b1");
@@ -537,6 +538,7 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/emergency-contacts",
       "/api/proxy/emergency-contacts/c1",
       "/api/proxy/emergency-contacts/c1",
+      "/api/proxy/me/countries",
       "/api/proxy/workers/w1/backups",
       "/api/proxy/workers/w1/backups",
       "/api/proxy/backups/b1",

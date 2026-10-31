@@ -422,7 +422,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   `cargo fmt`, clippy pedantic `-D warnings`, 1,048 unit tests, 185 request tests on a throwaway local PostgreSQL database; UI `pnpm
   lint`, svelte-check (0 errors, 0 warnings), 316 vitest, Playwright 335 passed and 19 skipped; the svelte autofixer on the five changed
   components (no issues).
-- [~] WPM-T382 **Addresses, phones and world English wording.** *(WPM-R214, WPM-D143, WPM-D152; rows 4 to 7, 32)* Neutral `en-001` labels ("Postal
+- [x] (2026-10-31) WPM-T382 **Addresses, phones and world English wording.** *(WPM-R214, WPM-D143, WPM-D152; rows 4 to 7, 32)* Neutral `en-001` labels ("Postal
   code", "State, province or region"), the British ones moved to `en-gb`; a country picker named by `Intl.DisplayNames`; an address order
   per country or one free-text block; phone digits accepted in any script and stored as ASCII.
   **Part done (2026-10-30):** the wording and the format assumptions that need no decision. **Labels:** `en-001` now says "City or
@@ -483,7 +483,24 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   E.164 and the national plans. **Verified (2026-10-31):** service fmt, clippy pedantic `-D warnings`, 1,094 unit tests, 195 request
   tests, `enforcement_me`, `route_coverage` and `personal_data_inventory` on throwaway local databases; UI lint, svelte-check, 325
   vitest, Playwright 343 passed and 19 skipped, build. **Not run locally:** the MSRV check, the least-privilege drill.
-  **What remains, and why:** the country picker (question 3). **Not done either:** other `en-001` words a reader may
+  **Part 3 of the rest done (2026-10-31), D152 question 3, the picker:** the country field is a `<select>` whose names come from
+  `Intl.DisplayNames` in the page's locale and are sorted in that locale (`src/lib/countries.ts`); the stored value is the ISO 3166-1
+  alpha-2 code. The 249 codes are `src/rules/data/iso-3166-1-alpha-2.txt` in the service and a copy in the UI that a vitest test holds
+  equal; **written from the AI assistant's knowledge, not read against ISO's own platform (unverified).** **Deployer-added codes, the
+  choice made:** they come from D144's registry as it fits: the worker's organization's `jurisdictions` rows of layer `national` whose
+  code is two capital letters and not ISO 3166-1 (`XK`, recorded by HR with `POST /api/jurisdictions`), listed to the worker by `GET
+  /api/me/countries` with the recorded name; the browser's name is used where it has one. A supranational code (`EU`) is not a country.
+  `PUT /api/me/contact-details` refuses (422) a country that is neither ISO 3166-1 nor so added. A stored value on neither list is
+  still shown in the picker, not lost. Two new strings in the 13 `-001` locales are machine drafts, unreviewed. **Tests:** 1 new
+  service unit test (249 codes, sorted; user-assigned and reserved codes refused unless added), `enforcement_me` extended (XK refused,
+  then listed and accepted once HR records it, QZ still refused); 3 vitest (the list equals the service's, names and sort in German,
+  French, Chinese and English, added and held codes); 1 Playwright test (German names and order, the deployer's XK, the code sent,
+  English names after a locale change). The phone-width screenshot of the panel was looked at. **Not done:** the API does not check a
+  country elsewhere (emergency contacts hold none); a deployer code is not shared between organizations.
+  **Verified (2026-10-31):** service fmt, clippy pedantic `-D warnings`, 1,095 unit tests, 195 request tests, `enforcement_me`,
+  `route_coverage` and `personal_data_inventory` on throwaway local databases; UI lint, svelte-check, 328 vitest, Playwright 344 passed
+  and 19 skipped, build. **Not run locally:** the MSRV check, the least-privilege drill.
+  **Not done in this task, and why:** the other `en-001` words a reader may take as British (above). **Not done either:** other `en-001` words a reader may
   take as British (`rota`, `redundancy`, `payslip`) were left: they name features and closed vocabularies, and changing them is a
   terminology review across 12 translations; `ar-001`, `bn-001` and the other translations of the address labels were not re-read
   against the new English. **Not tested:** the labels in a browser in `en-us` or `en-gb` (the override files are read by the same loader
@@ -901,8 +918,8 @@ through `rules::duplicates`.
 | 3 | Names | UI `src/lib/orgViews.ts:45` (and `:41,65,117,141,146`, `src/routes/directory/+page.svelte:44`) | `localeCompare` with no locale, so sorting follows the runtime's collation, not the page's | **Partial**. **Fixed 2026-10-30**: `compareText` (`Intl.Collator`, the page's locale) | T381 |
 | 4 | Addresses | API `src/rules/contact_details.rs:115-135`; UI `src/lib/components/me/ContactDetailsPanel.svelte:16-22,93` | Two lines, city, region, postcode, country; every field optional; no postcode pattern in the UI | **Partial**: right in what is required, but the order is fixed small-to-large (proposed D152, question 1). **Fixed 2026-10-31**: a per-country order and label table for ten countries (unverified), a free-text block for the rest | T382 |
 | 5 | Addresses | API `src/rules/contact_details.rs:39-52` | A postcode is up to 12 ASCII letters, digits, spaces or hyphens | **Partial**: fits the codes known to the author; not checked against every country. **Fixed 2026-10-30**: no pattern, up to 20 characters | T382 |
-| 6 | Addresses | UI `content/locales/en-001/ui.json:2232-2235` | World English labels are British: "Town or city", "County or region", "Postcode"; the country is a free-text "Country (two letters)" box | **Gap**. **Labels fixed 2026-10-30** (neutral `en-001`, British in `en-gb`, US in `en-us`); the country box remains (D152, question 3) | T382 |
-| 7 | Phone | API `src/rules/contact_details.rs:67-90`; UI `ContactDetailsPanel.svelte:93` (`type="tel"`, no pattern) | 5 to 15 digits, an optional `+`; no country's shape assumed. Only ASCII digits are accepted | **Partial**: no country's shape, but a number typed in Arabic-Indic or Bengali digits is refused. **Fixed 2026-10-30**: any Unicode decimal digit set, stored as typed | T382 |
+| 6 | Addresses | UI `content/locales/en-001/ui.json:2232-2235` | World English labels are British: "Town or city", "County or region", "Postcode"; the country is a free-text "Country (two letters)" box | **Gap**. **Labels fixed 2026-10-30** (neutral `en-001`, British in `en-gb`, US in `en-us`). **Fixed 2026-10-31**: a picker named by `Intl.DisplayNames`, storing the ISO code, with deployer-added codes | T382 |
+| 7 | Phone | API `src/rules/contact_details.rs:67-90`; UI `ContactDetailsPanel.svelte:93` (`type="tel"`, no pattern) | 5 to 15 digits, an optional `+`; no country's shape assumed. Only ASCII digits are accepted | **Partial**: no country's shape, but a number typed in Arabic-Indic or Bengali digits is refused. **Fixed 2026-10-30**: any Unicode decimal digit set, stored as typed; **2026-10-31**: also as ASCII digits and as E.164 where derivable | T382 |
 | 8 | Identifiers | API `src/models/_entities/workers.rs:11-34`; UI (no field, no pattern) | No national identifier, tax code or insurance number column or field in either; the worker number is the employer's own free text | **Right** (the spec's payroll fields, audit row 4, are not in the code) | — |
 | 9 | Dates | UI `src/lib/components/CalendarPanel.svelte:50,54,58,75`, `TrendChart.svelte:28` | `Intl.DateTimeFormat(i18n.locale, …)`; weekday names from `Intl` | **Right** | — |
 | 10 | Dates | UI `src/lib/components/me/TimeOffPanel.svelte:90`, `src/routes/groups/+page.svelte:156`, `src/routes/movements/[pid]/+page.svelte:245`, `CareerHistory.svelte:54` (and about 80 more) | Raw ISO dates in markup or placeholders; `CareerHistory` writes an English "now" | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`) | T375 |

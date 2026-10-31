@@ -6085,6 +6085,19 @@
         ]
       }
     },
+    "/api/me/countries": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Deployer-added country codes"
+          }
+        },
+        "summary": "The country codes the caller's organization has added that ISO 3166-1 lacks (its national jurisdiction codes, such as XK), for the contact details picker; the contact details refuse a country that is neither (WPM-D152)",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/api/me/credentials": {
       "get": {
         "responses": {

@@ -6862,6 +6862,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The country codes the caller's organization has added that ISO 3166-1 lacks (its national jurisdiction codes, such as XK), for the contact details picker; the contact details refuse a country that is neither (WPM-D152) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deployer-added country codes */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/credentials": {
         parameters: {
             query?: never;

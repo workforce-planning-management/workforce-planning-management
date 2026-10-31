@@ -211,6 +211,16 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "test inputs for the ISO 3166 shape (the message names no country since WPM-T382)",
     ),
     (
+        "contact_details.rs",
+        "uk",
+        "a test input: a reserved code that ISO 3166-1 does not assign is refused",
+    ),
+    (
+        "contact_details.rs",
+        "eu",
+        "a test input: a supranational code is not an ISO 3166-1 country",
+    ),
+    (
         "phone.rs",
         "eu",
         "a test input: a supranational place of work has no numbering plan, so derives no E.164 form",

@@ -10,10 +10,12 @@
   import {
     clearMyContactDetails,
     getMyContactDetails,
+    getMyCountries,
     setMyContactDetails,
     type MyContactDetails,
   } from "#lib/api/wpm.js";
-  import { t, tp } from "#lib/i18n.svelte.js";
+  import { i18n, t, tp } from "#lib/i18n.svelte.js";
+  import { countryOptions } from "#lib/countries.js";
   import { addressLayout } from "#lib/address-formats.js";
 
   const FIELDS = [
@@ -33,6 +35,9 @@
 
   let form = $state<Record<Field, string>>(blank());
   const layout = $derived(addressLayout(form.country, form));
+  // The organization's added codes (WPM-D152); a failed read leaves the ISO 3166-1 list alone.
+  let added = $state<Array<{ code: string; name: string | null }>>([]);
+  const countries = $derived(countryOptions(i18n.locale, added, form.country));
   let held = $state(false);
   // What the service stored beside each number (WPM-D152): shown for the saved value, not while typing.
   let stored = $state<MyContactDetails | null>(null);
@@ -59,6 +64,18 @@
         error = message(cause);
       }
     })();
+  });
+
+  $effect(() => {
+    let stale = false;
+    void getMyCountries()
+      .then((r) => {
+        if (!stale) added = r.deployer_codes;
+      })
+      .catch(() => {});
+    return () => {
+      stale = true;
+    };
   });
 
   async function save() {
@@ -96,7 +113,12 @@
   >
     <label>
       {t("details.contact.country")}
-      <input data-testid="contact-country" type="text" autocomplete="off" bind:value={form.country} />
+      <select data-testid="contact-country" bind:value={form.country}>
+        <option value="">{t("details.contact.countryNone")}</option>
+        {#each countries as c (c.code)}
+          <option value={c.code}>{c.name}</option>
+        {/each}
+      </select>
     </label>
     <fieldset class="cd-address" data-testid="contact-address" data-mode={layout.mode}>
       <legend>{t("details.address.title")}</legend>

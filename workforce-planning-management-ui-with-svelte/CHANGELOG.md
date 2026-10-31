@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the country is a picker named in the page's language (WPM-T382, WPM-D152)
+
+The contact details country is a list of every ISO 3166-1 country named by `Intl.DisplayNames` in the page's locale and sorted in it,
+plus the organization's added codes (`getMyCountries`); the code is stored. A held value on neither list stays. Two strings in the 13
+`-001` locales are machine drafts, unreviewed. **Not tested:** right to left; against a real service.
+
 ### Added — a saved number shows its digits and its international form (WPM-T382, WPM-D152)
 
 Under each saved telephone number the contact details panel shows the ASCII digits the service stored for search and its E.164 form,

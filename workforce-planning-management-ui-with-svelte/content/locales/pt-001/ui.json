@@ -2287,14 +2287,15 @@
       "city": "Localidade",
       "region": "Distrito ou região",
       "postcode": "Código postal",
-      "country": "País (duas letras)",
+      "country": "País",
       "phone_mobile": "Telemóvel",
       "phone_home": "Telefone fixo",
       "personal_email": "E-mail pessoal",
       "clear": "Remover todos os meus dados de contacto",
       "digits": "Dígitos, para pesquisa: {digits}",
       "e164": "Forma internacional (E.164): {e164}",
-      "noE164": "Sem forma internacional: o número não tem + e o WPM não tem plano de numeração para um país conhecido do número."
+      "noE164": "Sem forma internacional: o número não tem + e o WPM não tem plano de numeração para um país conhecido do número.",
+      "countryNone": "Não indicado"
     },
     "time": {
       "title": "As minhas ausências",

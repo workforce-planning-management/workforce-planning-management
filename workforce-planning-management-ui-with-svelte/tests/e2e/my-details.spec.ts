@@ -122,6 +122,11 @@ async function stub(
   await page.route("**/api/proxy/workers/w1/emergency-contacts", (route) =>
     route.fulfill({ json: [] }),
   );
+  await page.route("**/api/proxy/me/countries", (route) =>
+    route.fulfill({
+      json: { deployer_codes: [{ code: "XK", name: "Kosovo" }] },
+    }),
+  );
   await page.route("**/api/proxy/me/contact-details", (route) => {
     record(route);
     const method = route.request().method();
@@ -316,7 +321,7 @@ test("the address follows the country's order and labels, and a country the tabl
   await expect(address).toHaveAttribute("data-mode", "neutral");
   await expect(address.getByText("Postal code")).toBeVisible();
   // Japan: large to small, the postal code first, "Prefecture".
-  await page.getByTestId("contact-country").fill("JP");
+  await page.getByTestId("contact-country").selectOption("JP");
   await expect(address).toHaveAttribute("data-mode", "table");
   expect(await order()).toEqual([
     "contact-postcode",
@@ -327,7 +332,7 @@ test("the address follows the country's order and labels, and a country the tabl
   ]);
   await expect(address.getByText("Prefecture")).toBeVisible();
   // The United States: the city, the state and the ZIP code on one line, last.
-  await page.getByTestId("contact-country").fill("us");
+  await page.getByTestId("contact-country").selectOption("US");
   expect(await order()).toEqual([
     "contact-address_line1",
     "contact-address_line2",
@@ -339,7 +344,7 @@ test("the address follows the country's order and labels, and a country the tabl
   await expect(address.getByText("State", { exact: true })).toBeVisible();
   await page.getByTestId("contact-city").fill("Springfield");
   // A country the table lacks: the block, and the city already typed stays in view.
-  await page.getByTestId("contact-country").fill("NP");
+  await page.getByTestId("contact-country").selectOption("NP");
   await expect(address).toHaveAttribute("data-mode", "block");
   await expect(page.getByTestId("contact-address-order")).toContainText(
     "no address order for this country",
@@ -407,6 +412,36 @@ test("a saved number shows its stored digits and its E.164 form, or says there i
   await expect(page.getByTestId("contact-phone_home-forms")).toContainText(
     "No international form",
   );
+});
+
+test("the country is picked by its name in the page's language and stored as its code, the deployer's codes too", async ({
+  page,
+}) => {
+  await signIn(page);
+  const sent = await stub(page);
+  await page.goto("/de-001/me/details");
+  const picker = page.getByTestId("contact-country");
+  await expect(picker).toBeVisible();
+  await expect(picker.locator("option[value='DE']")).toHaveText("Deutschland");
+  await expect(picker.locator("option[value='JP']")).toHaveText("Japan");
+  await expect(picker.locator("option[value='XK']")).toHaveCount(1);
+  // Sorted by the German names: Österreich is among the Os, not after Z.
+  const codes = await picker
+    .locator("option")
+    .evaluateAll((o) => o.map((x) => (x as HTMLOptionElement).value));
+  expect(codes.indexOf("AT")).toBeGreaterThan(codes.indexOf("NO"));
+  expect(codes.indexOf("AT")).toBeLessThan(codes.indexOf("PL"));
+  await picker.selectOption("XK");
+  await page.getByTestId("contact-save").click();
+  await expect(page.getByTestId("contact-saved")).toBeVisible();
+  expect(sent.find((s) => s.method === "PUT")?.body).toMatchObject({
+    country: "XK",
+  });
+  await page.goto("/en-001/me/details");
+  await expect(
+    page.getByTestId("contact-country").locator("option[value='DE']"),
+  ).toHaveText("Germany");
+  await expect(page.getByTestId("contact-country")).toHaveValue("XK");
 });
 
 test("time off: the balance, a cancellable request, and a request without a reason for sick leave", async ({

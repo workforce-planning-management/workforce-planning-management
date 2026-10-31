@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the country picker; WPM-T382 is done (WPM-D152 question 3)
+
+The country of an address is picked by name in the page's language and stored as its ISO 3166-1 code; an organization may add a code
+ISO 3166-1 lacks (such as `XK`) as a national jurisdiction code, and the API refuses any other. **Not verified:** the 249-code list.
+
 ### Added — telephone numbers kept three ways (WPM-T382, WPM-D152 question 2)
 
 A number is kept as typed, as ASCII digits (search, export) and as E.164 where it can be derived from a `+` or a known country, never
