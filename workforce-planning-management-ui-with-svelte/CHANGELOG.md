@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the API copy names the home jurisdiction route (WPM-T384 step 1, WPM-D153)
+
+`src/lib/api/openapi.json` and `schema.d.ts` regenerated for `PUT /api/home-jurisdiction`. No client function or screen uses it yet.
+
 ### Changed — the country is a picker named in the page's language (WPM-T382, WPM-D152)
 
 The contact details country is a list of every ISO 3166-1 country named by `Intl.DisplayNames` in the page's locale and sorted in it,

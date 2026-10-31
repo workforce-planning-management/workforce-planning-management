@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — an organization's home jurisdiction (WPM-T384 step 1, WPM-D153)
+
+Migration `000115`: `organization_settings (organization_ref PRIMARY KEY, home_jurisdiction)`, a jurisdiction code or `NULL`. New route
+`PUT /api/home-jurisdiction` (`{organization_ref, home_jurisdiction}`; `null` or blank clears), HR of the organization only, refused
+with 422 for a malformed code or one whose chain over the organization's recorded links cannot be built, audited
+`home_jurisdiction_set` with the code before and after. `GET /api/jurisdiction-profiles` adds `home_jurisdiction`.
+`controllers::jurisdictions::Scope` gives a reader its chain: a worker's `work_jurisdiction` or the organization's home (an unrecorded
+one is unknown, `no_work_jurisdiction` or `no_home_jurisdiction`). **Not done:** no reader uses `Scope` yet. **Tested:** one request
+test, and the 403s under sign-in in `enforcement_me`. **Not run locally:** the least-privilege drill, the MSRV check.
+
 ### Changed — a contact address's country is ISO 3166-1 or the organization's own (WPM-T382, WPM-D152)
 
 **Breaking for API clients:** `PUT /api/me/contact-details` refuses (422) a two-letter country that is not an officially assigned ISO

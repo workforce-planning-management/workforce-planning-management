@@ -379,6 +379,8 @@ section 4)
   organization, code, registry key, JSON value, effective from and to, source, checked on, status `example`/`unverified`/`read`,
   **append-only**, a database trigger refusing an update or a delete) — a deployer's dated, sourced statements, no personal data
   ([worldwide.md](worldwide.md), WPM-D144, WPM-T380).
+- **OrganizationSettings** (`organization_settings`: organization reference, `home_jurisdiction?`, a jurisdiction code) — the legal
+  entity's registered jurisdiction, whose chain the organization-level readers resolve; set by HR, absent = unknown (WPM-D153, WPM-T384).
 - **Asset**, **AssetIssue** (`assets`, `asset_issues`: kind and tag; worker, issued on, returned on) — no location
   ([joiners-and-leavers.md](joiners-and-leavers.md), WPM-R155).
 - **Policy**, **PolicyAcknowledgement** (`policies`, `policy_acknowledgements`: version and audience; worker, version, date) — text held

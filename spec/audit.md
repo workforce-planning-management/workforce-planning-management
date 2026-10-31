@@ -105,7 +105,8 @@ actor, and — where a detail would itself be sensitive — **without it**:
 
 Jurisdiction profiles (WPM-D144, WPM-T380): `jurisdiction_recorded` on `jurisdiction` (code, layer, parent) and
 `jurisdiction_parameter_added` on `jurisdiction_parameter` (code, key, effective from, status; not the value). A profile holds no
-personal data, and neither entry names a person.
+personal data, and neither entry names a person. `home_jurisdiction_set` on `organization_settings` (the organization, the code before
+and after; WPM-D153, WPM-T384) names no person either.
 
 Cross-app bridge reads (WPM-D135) are audited with the caller as actor and no figure or personal reference: `people_impact_asked`
 on `capacity` (the programme's `thing:` reference, the number of organizations counted, whether an end date was given; WPM-T361),

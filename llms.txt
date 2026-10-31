@@ -10,7 +10,7 @@ Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
 (WPM-D*), a task (WPM-T*), code and tests.
 
-Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R217; decisions up to WPM-D150; 114 migrations, 86 controllers, 57 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
+Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R217; decisions up to WPM-D150; 115 migrations, 86 controllers, 57 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
 
 ## Specification
 

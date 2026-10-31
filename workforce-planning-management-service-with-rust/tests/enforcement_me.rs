@@ -176,6 +176,14 @@ async fn a_worker_manages_only_their_own_details() {
         assert_eq!(none["deployer_codes"], json!([]));
         request.post("/api/jurisdictions").add_header("authorization", hr.clone())
             .json(&json!({ "organization_ref": org, "code": "XK", "layer": "national", "name": "Kosovo" })).await.assert_status_ok();
+        // The organization's home jurisdiction is HR's to set (WPM-D153): the worker and a neighbour are refused, HR is not.
+        let home = json!({ "organization_ref": org, "home_jurisdiction": "XK" });
+        for (token, who) in [(me.clone(), "the worker"), (neighbour.clone(), "a neighbour"), (no_record.clone(), "no record")] {
+            assert_eq!(put("/api/home-jurisdiction".into(), token, home.clone()).await.status_code(), 403, "{who}");
+        }
+        assert_eq!(request.put("/api/home-jurisdiction").json(&home).await.status_code(), 401, "no token");
+        let set: Value = put("/api/home-jurisdiction".into(), hr.clone(), home.clone()).await.json();
+        assert_eq!(set["home_jurisdiction"], "XK");
         let added: Value = request.get("/api/me/countries").add_header("authorization", me.clone()).await.json();
         assert_eq!(added["deployer_codes"], json!([{ "code": "XK", "name": "Kosovo" }]));
         assert_eq!(put("/api/me/contact-details".into(), me.clone(), kosovo).await.status_code(), 200);

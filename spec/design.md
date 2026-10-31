@@ -401,7 +401,8 @@ undoing a person's decision, and a reused event id is a repeat only within its o
 ([cross-app-bridges.md](cross-app-bridges.md), D134–D136, D138–D141, D146–D148; D145 in [integrations.md](integrations.md)).
 A regulator's requirements come from its guidance, not its landing page ([mhra.md](mhra.md), D137). The what-if tells everyone it
 answers the same thing ([ppm-issues-and-changes.md](ppm-issues-and-changes.md), D142). Jurisdiction is data, held as dated, sourced
-profiles; a calendar's today, week start and weekend are the reader's ([worldwide.md](worldwide.md), D143, D144, D149).
+profiles; a calendar's today, week start and weekend are the reader's; an organization-level reader uses the organization's home
+jurisdiction ([worldwide.md](worldwide.md), D143, D144, D149, D153).
 
 ## WPM-D150 — The documentation site
 
@@ -419,6 +420,12 @@ the API refuses a code the table does not hold ([worldwide.md](worldwide.md), D1
 A postcode has no pattern and a telephone number's digits may be in any script; both are stored as typed. Confirmed 2026-10-31: a
 per-country address order and label table with a free-text fallback; a number kept as typed, as ASCII digits and as E.164 where it
 can be derived (never guessed); a country picker storing the ISO 3166-1 code, with deployer-added codes ([worldwide.md](worldwide.md), D152).
+
+## WPM-D153 — Whose chain a reader resolves
+
+A reader about the organization as a whole resolves the chain of the organization's home jurisdiction, which HR sets; a reader about
+one worker, that worker's `work_jurisdiction`. Unset, or with no row, either falls back to its `WPM_*` setting and then its default,
+and says which it used. Confirmed by the product owner, 2026-10-31 ([worldwide.md](worldwide.md), D153).
 
 ## WPM-D52, WPM-D54 — Secure by default; rate limits keep no history
 

@@ -5642,6 +5642,35 @@
         ]
       }
     },
+    "/api/home-jurisdiction": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The organization's home jurisdiction",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Set or clear (null or blank) the organization's home jurisdiction: the legal entity's registered jurisdiction, whose chain the organization-level readers (the pay gap report, the joint assessment, retention) resolve over; unset, they fall back to the WPM_* setting and then the default. HR of the organization, audited with the code (WPM-D153)",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
     "/api/interviews/{pid}": {
       "put": {
         "parameters": [
@@ -5746,7 +5775,7 @@
             "description": "The profile"
           }
         },
-        "summary": "An organization's jurisdiction profile (?organization=): its codes with layer and parent, every dated, sourced parameter row (append-only, so the history too) and the parameter registry. HR (WPM-D144, WPM-T380)",
+        "summary": "An organization's jurisdiction profile (?organization=): its home jurisdiction (WPM-D153), its codes with layer and parent, every dated, sourced parameter row (append-only, so the history too) and the parameter registry. HR (WPM-D144, WPM-T380)",
         "tags": [
           "reporting"
         ]

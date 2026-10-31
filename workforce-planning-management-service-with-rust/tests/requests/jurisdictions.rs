@@ -230,3 +230,60 @@ async fn holiday_substitutes_follow_the_profiles_weekend() {
     })
     .await;
 }
+
+/// The organization's home jurisdiction (WPM-D153): HR sets it to a code, clears it with `null` or blank, and is refused a
+/// malformed code or a chain that cannot be built; the profile shows it and the audit names the code, no person.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_home_jurisdiction_is_set_cleared_and_audited() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let home = |value: Value| json!({ "organization_ref": org, "home_jurisdiction": value });
+        let profile = || {
+            let (request, org) = (&request, org.clone());
+            async move { request.get(&format!("/api/jurisdiction-profiles?organization={org}")).await.json::<Value>() }
+        };
+        assert_eq!(profile().await["home_jurisdiction"], Value::Null, "unset is null, never a guess");
+        for (value, why) in [(json!("xa"), "lower case"), (json!("XA-"), "an empty subdivision"), (json!("XAAA"), "too long")] {
+            assert_eq!(request.put("/api/home-jurisdiction").json(&home(value)).await.status_code(), 422, "{why}");
+        }
+        let bad_org = json!({ "organization_ref": "nope", "home_jurisdiction": "XA" });
+        assert_eq!(request.put("/api/home-jurisdiction").json(&bad_org).await.status_code(), 422);
+        let set: Value = request.put("/api/home-jurisdiction").json(&home(json!("XA"))).await.json();
+        assert_eq!(set["home_jurisdiction"], "XA");
+        assert_eq!(profile().await["home_jurisdiction"], "XA");
+        // A cycle recorded behind HR's back (the API refuses one) makes the chain unbuildable: the setter refuses it.
+        ctx.db
+            .execute_unprepared(&format!(
+                "INSERT INTO jurisdictions (organization_ref, code, layer, parent_code) VALUES \
+                 ('{org}', 'XB', 'national', 'QY'), ('{org}', 'QY', 'supranational', 'XB')"
+            ))
+            .await
+            .unwrap();
+        assert_eq!(request.put("/api/home-jurisdiction").json(&home(json!("XB"))).await.status_code(), 422);
+        assert_eq!(profile().await["home_jurisdiction"], "XA", "a refusal changes nothing");
+        for clear in [Value::Null, json!("  ")] {
+            let cleared: Value = request.put("/api/home-jurisdiction").json(&home(clear)).await.json();
+            assert_eq!(cleared["home_jurisdiction"], Value::Null);
+        }
+        let audits = ctx
+            .db
+            .query_all_raw(sea_orm::Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!(
+                    "SELECT snapshot::text AS s FROM audit_logs WHERE action = 'home_jurisdiction_set' \
+                     AND snapshot->>'organization_ref' = '{org}' ORDER BY id"
+                ),
+            ))
+            .await
+            .unwrap();
+        let snapshots: Vec<Value> =
+            audits.iter().map(|row| serde_json::from_str(&row.try_get::<String>("", "s").unwrap()).unwrap()).collect();
+        assert_eq!(snapshots.len(), 3, "set, cleared, cleared");
+        assert_eq!(snapshots[0]["to"], "XA");
+        assert_eq!(snapshots[1]["from"], "XA");
+        assert_eq!(snapshots[1]["to"], Value::Null);
+    })
+    .await;
+}

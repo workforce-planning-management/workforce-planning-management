@@ -84,6 +84,21 @@ worked cases, not the design.** This file is the rule that stops them becoming t
     3166-1 code; and whether a deployer may add a code ISO 3166-1 lacks (`XK` for Kosovo is user-assigned). The assistant's suggestion:
     the picker, with the deployer's extra codes from D144's supranational list.
 
+- **WPM-D153 A reader about the organization resolves the chain of the organization's home jurisdiction; a reader about one worker,
+  that worker's.**
+  *Confirmed by the product owner, 2026-10-31* (the open question WPM-T384 left: which chain a reader with no single worker uses).
+  - **Organization-level readers** (the pay gap report and its reporting tiers, the joint pay assessment, the retention horizons, and any
+    other reader with no single worker) resolve over the chain of the organization's **home jurisdiction**: the jurisdiction code of the
+    legal entity's registered jurisdiction. HR of the organization sets it (`PUT /api/home-jurisdiction`), and only HR; each change is
+    audited with the code before and after, which names no person.
+  - **Readers about one worker** (flexible working, the resignation notice, pay information) resolve over the chain of that worker's
+    `work_jurisdiction` (WPM-D144), never the organization's home.
+  - **The order is profile, then setting, then default.** Where the chain is not recorded, or no profile row applies, the reader falls
+    back to its `WPM_*` setting and then to its current default, exactly as before this decision. Every answer that uses one says which
+    of the three it came from (the profile's code, layer, status and source; the setting's name; or whose the default is).
+  - **The home is not the workers' place.** It is never used as a worker's `work_jurisdiction`, and an unset home is unknown, not the
+    country of any worker.
+
 - **WPM-D151 A currency's minor unit is its ISO 4217 one, from one table the API and the UI share; the API refuses a code outside it.**
   *Confirmed by the product owner, 2026-10-31* (drafted 2026-10-30 by the AI assistant for WPM-T400, after the contact relationship
   management app's fix, its commit 37ef205, and the project portfolio management UI's, its commit 490ad5d).
@@ -572,7 +587,18 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   one value per deployment. *(Update 2026-10-31: the registry and resolver now exist, WPM-T407, and the working-time limits moved,
   WPM-T380; none of the settings in this table has moved yet: each needs a registry entry, a chain for its reader (a worker's for
   flexible working, notice and pay information; an organization-level rule, not yet decided, for the gap report, joint assessment and
-  retention), and the order the design gives, profile first and the `WPM_*` setting as the fallback.)* **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
+  retention), and the order the design gives, profile first and the `WPM_*` setting as the fallback.)*
+  **Part done (2026-10-31), step 1 of 3: whose chain.** The product owner decided the open question (WPM-D153): an organization-level
+  reader resolves the chain of the organization's **home jurisdiction**, a worker reader that worker's `work_jurisdiction`; unset or with
+  no row, the `WPM_*` setting and then the default, as before. **Done:** migration 115, `organization_settings (organization_ref,
+  home_jurisdiction)` (there is no organizations table; an organization is a reference); `PUT /api/home-jurisdiction` (HR of the
+  organization; a code or `null`/blank to clear; a malformed code, or one whose chain over the organization's recorded links cannot be
+  built, is 422; audited `home_jurisdiction_set` with the code before and after); `GET /api/jurisdiction-profiles` shows it;
+  `controllers::jurisdictions::Scope` is the one way a reader gets its chain (`for_worker`, `for_organization`), and an unrecorded start
+  is unknown with the reason `no_work_jurisdiction` or `no_home_jurisdiction`. **Tests:** a request test (set, the profile shows it, three
+  malformed codes and a bad organization 422, a chain that cannot be built 422 and changes nothing, cleared by `null` and by blank, three
+  audit rows naming the code and no person); `enforcement_me` (the worker, a neighbour and a caller with no record are refused with 403,
+  no token 401, HR sets it). **Not done in this step:** no reader resolves over a scope yet (steps 2 and 3). **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
   and UK reports; changing them needs the equality categories per jurisdiction, which is the registry too); `WPM_PAY_GAP_SEX_CATEGORY`
   and `WPM_AI_ACT_APPLIES_FROM` are not in the table (the first names a category, not a value of a regime; the second's answer already
   names the AI Act) *(both added by WPM-T402)*; the working-time constants are WPM-T380; no UI shows the new endpoint *(a read-only page

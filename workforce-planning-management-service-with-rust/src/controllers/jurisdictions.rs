@@ -3,6 +3,10 @@
 //! refuses an update or a delete). The audit names the code and the key, never a person or a figure about one.
 //!
 //! [`profiles_for`] loads what the rules resolve over: the organization's links and rows, for `rules::jurisdiction`.
+//!
+//! **Whose chain** (WPM-D153): a reader about one worker resolves over that worker's `work_jurisdiction`; a reader about the
+//! organization as a whole (no single worker) over the organization's **home jurisdiction**, the legal entity's registered
+//! jurisdiction, which HR sets (`PUT /api/home-jurisdiction`). [`Scope`] is the one place a reader gets its chain.
 
 use std::collections::BTreeMap;
 
@@ -16,6 +20,7 @@ use uuid::Uuid;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, forbidden, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::models::_entities::workers;
 use crate::models::audit_logs::Model as Audit;
 use crate::rules::jurisdiction::{self as rules, Layer, Link, Row, Status};
 
@@ -53,6 +58,129 @@ impl Profile {
             },
         }
     }
+}
+
+/// Whose chain a reader resolves over (WPM-D153).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Reader {
+    /// A reader about one worker: the chain of where that worker's work is done.
+    Worker,
+    /// A reader about the organization as a whole: the chain of its home jurisdiction.
+    Organization,
+}
+
+impl Reader {
+    /// The reason an unrecorded start gives.
+    const fn missing(self) -> &'static str {
+        match self {
+            Self::Worker => "no_work_jurisdiction",
+            Self::Organization => "no_home_jurisdiction",
+        }
+    }
+}
+
+/// One reader's chain start and the organization's profile, loaded once per request.
+#[derive(Clone, Debug)]
+pub struct Scope {
+    /// The organization whose profile it is.
+    pub organization: String,
+    /// Whose chain.
+    pub reader: Reader,
+    /// Where the chain starts: the worker's `work_jurisdiction` or the organization's home jurisdiction; `None` when not recorded.
+    pub start: Option<String>,
+    /// The organization's links and rows.
+    pub profile: Profile,
+}
+
+impl Scope {
+    /// The chain of where `worker`'s work is done, over their organization's profile.
+    ///
+    /// # Errors
+    ///
+    /// A database error.
+    pub async fn for_worker<C: ConnectionTrait>(db: &C, worker: &workers::Model) -> Result<Self> {
+        let organization = worker.organization_ref.clone();
+        let profile = profiles_for(db, std::slice::from_ref(&organization))
+            .await?
+            .remove(&organization)
+            .unwrap_or_default();
+        Ok(Self {
+            organization,
+            reader: Reader::Worker,
+            start: worker.work_jurisdiction.clone(),
+            profile,
+        })
+    }
+
+    /// The chain of `organization`'s home jurisdiction, over its profile.
+    ///
+    /// # Errors
+    ///
+    /// A database error.
+    pub async fn for_organization<C: ConnectionTrait>(db: &C, organization: &str) -> Result<Self> {
+        let profile = profiles_for(db, &[organization.to_string()])
+            .await?
+            .remove(organization)
+            .unwrap_or_default();
+        Ok(Self {
+            organization: organization.to_string(),
+            reader: Reader::Organization,
+            start: home_jurisdiction(db, organization).await?,
+            profile,
+        })
+    }
+
+    /// Resolve `key` over this scope's chain as of `as_of`. An unrecorded start is unknown with the reader's reason
+    /// (`no_work_jurisdiction` or `no_home_jurisdiction`), never the organization's country or a guess.
+    #[must_use]
+    pub fn resolve(&self, key: &str, as_of: NaiveDate) -> rules::Resolution {
+        match self.profile.resolve(key, self.start.as_deref(), as_of) {
+            rules::Resolution::Unknown {
+                reason: "no_work_jurisdiction",
+            } => rules::Resolution::Unknown {
+                reason: self.reader.missing(),
+            },
+            other => other,
+        }
+    }
+}
+
+/// The home jurisdiction HR recorded for `organization` (WPM-D153), if any.
+///
+/// # Errors
+///
+/// A database error.
+pub async fn home_jurisdiction<C: ConnectionTrait>(
+    db: &C,
+    organization: &str,
+) -> Result<Option<String>> {
+    Ok(db
+        .query_one_raw(Statement::from_sql_and_values(
+            DbBackend::Postgres,
+            "SELECT home_jurisdiction FROM organization_settings WHERE organization_ref = $1",
+            [organization.into()],
+        ))
+        .await?
+        .map(|row| row.try_get::<Option<String>>("", "home_jurisdiction"))
+        .transpose()?
+        .flatten())
+}
+
+/// Every organization with a home jurisdiction recorded, by reference.
+///
+/// # Errors
+///
+/// A database error.
+pub async fn organizations_with_a_home<C: ConnectionTrait>(db: &C) -> Result<Vec<String>> {
+    db.query_all_raw(Statement::from_string(
+        DbBackend::Postgres,
+        "SELECT organization_ref FROM organization_settings WHERE home_jurisdiction IS NOT NULL ORDER BY organization_ref",
+    ))
+    .await?
+    .into_iter()
+    .map(|row| row.try_get::<String>("", "organization_ref").map_err(Into::into))
+    .collect()
 }
 
 /// Load the profiles of `organizations` (missing ones are empty).
@@ -219,8 +347,10 @@ async fn list(
             }))
         })
         .collect::<Result<Vec<_>, _>>()?;
+    let home = home_jurisdiction(&ctx.db, &q.organization).await?;
     format::json(json!({
         "organization_ref": q.organization,
+        "home_jurisdiction": home,
         "jurisdictions": codes,
         "parameters": parameters,
         "registry": rules::REGISTRY,
@@ -414,6 +544,68 @@ async fn add_parameter(
     }))
 }
 
+#[derive(Debug, Deserialize)]
+struct HomePayload {
+    organization_ref: String,
+    /// A jurisdiction code, or `null` or blank to clear.
+    #[serde(default)]
+    home_jurisdiction: Option<String>,
+}
+
+/// `PUT /api/home-jurisdiction` — set (or clear, with `null` or blank) the organization's home jurisdiction: the legal entity's
+/// registered jurisdiction, whose chain the organization-level readers resolve over (WPM-D153). Refused when the chain from it
+/// would be malformed. HR of the organization; audited with the code, which names no person.
+#[debug_handler]
+async fn set_home(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(p): Json<HomePayload>,
+) -> Result<Response> {
+    hr_only(&ctx, &caller, &p.organization_ref).await?;
+    let code = p
+        .home_jurisdiction
+        .as_deref()
+        .map(str::trim)
+        .filter(|code| !code.is_empty())
+        .map(str::to_string);
+    if let Some(code) = &code {
+        if !rules::valid_code(code) {
+            return Err(unprocessable(
+                "home_jurisdiction must be a jurisdiction code (2 or 3 capital letters or digits, optionally - and 1 to 3 more)",
+            ));
+        }
+        let profile = profiles_for(&ctx.db, std::slice::from_ref(&p.organization_ref))
+            .await?
+            .remove(&p.organization_ref)
+            .unwrap_or_default();
+        if let Err(error) = rules::chain(code, &profile.links) {
+            return Err(unprocessable(&format!(
+                "the chain from {code} is malformed: {error:?}"
+            )));
+        }
+    }
+    let previous = home_jurisdiction(&ctx.db, &p.organization_ref).await?;
+    let txn = ctx.db.begin().await?;
+    txn.execute_raw(Statement::from_sql_and_values(
+        DbBackend::Postgres,
+        "INSERT INTO organization_settings (organization_ref, home_jurisdiction) VALUES ($1, $2)
+         ON CONFLICT (organization_ref) DO UPDATE SET home_jurisdiction = EXCLUDED.home_jurisdiction, updated_at = now()",
+        [p.organization_ref.clone().into(), code.clone().into()],
+    ))
+    .await?;
+    Audit::record(
+        &txn,
+        "organization_settings",
+        Uuid::new_v4(),
+        "home_jurisdiction_set",
+        caller.actor(),
+        Some(json!({ "organization_ref": p.organization_ref, "from": previous, "to": code })),
+    )
+    .await?;
+    txn.commit().await?;
+    format::json(json!({ "organization_ref": p.organization_ref, "home_jurisdiction": code }))
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -421,4 +613,5 @@ pub fn routes() -> Routes {
         .add("/jurisdiction-profiles", get(list))
         .add("/jurisdictions", post(record_code))
         .add("/jurisdiction-parameters", post(add_parameter))
+        .add("/home-jurisdiction", put(set_home))
 }

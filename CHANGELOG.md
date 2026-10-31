@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — an organization's home jurisdiction (WPM-T384 step 1, WPM-D153)
+
+The product owner's decision of 2026-10-31 is recorded: a reader about the organization as a whole uses the chain of the
+organization's home jurisdiction, which HR sets; a reader about one worker uses that worker's. The service stores it and HR can set it;
+**no reader uses it yet** (the next steps of WPM-T384).
+
 ### Changed — the country picker; WPM-T382 is done (WPM-D152 question 3)
 
 The country of an address is picked by name in the page's language and stored as its ISO 3166-1 code; an organization may add a code
