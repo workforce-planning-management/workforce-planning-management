@@ -362,7 +362,7 @@ async fn the_report_uses_the_deployers_tiers_and_says_whose_they_are() {
         assert_eq!(default["reporting_basis"]["setting"], "WPM_PAY_GAP_TIERS");
         assert_eq!(default["reporting_basis"]["set"], false);
         assert_eq!(default["reporting_basis"]["default_from"]["regime"], "EU");
-        assert_eq!(default["reporting_basis"]["default_from"]["status"], "read");
+        assert_eq!(default["reporting_basis"]["default_from"]["status"], "unverified");
 
         // A deployer's tier from ten workers, every two years from 1 January 2026: due, and next on 1 January 2028.
         let ten = read(Some("10:2:2026-01-01")).await;

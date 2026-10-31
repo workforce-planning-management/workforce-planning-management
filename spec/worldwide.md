@@ -396,7 +396,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   answer and the spec, then moved to a profile when the registry exists; the pay-gap tiers become configurable.
   **Part done (2026-10-30): named, and the tiers configurable.** **Named:** `src/statutory_defaults.rs` (outside `src/rules/`, which names
   no country, WPM-T369) lists 23 settings, each with its default and whose it is: a jurisdiction code in D144's shape, what it rests on,
-  and a status, `read` (checked against the text), `unverified` (modelled on it, not checked), `example` (a worked example in a regime's
+  and a status, `read` (checked against the whole text), `unverified` (modelled on it, or taken from parts of it, not checked against the whole text), `example` (a worked example in a regime's
   shape) or `starting_point` (no regime's). The table, as shipped:
 
   | Setting | Default | Whose (status) |
@@ -404,7 +404,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   | `WPM_FLEXIBLE_DECISION_MONTHS`, `WPM_FLEXIBLE_REQUESTS_PER_YEAR`, `WPM_FLEXIBLE_REFUSAL_REASONS` | 2 calendar months, 2 a year, the nine reasons | `GB`: Employment Rights Act 1996, Part 8A, as amended from 6 April 2024 (**unverified**: WPM-T212 modelled them on common rules and did not check a text) |
   | `WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS` | 14 | none (starting point) |
   | `WPM_RESIGNATION_NOTICE_CALENDAR_DAYS` | 28 | none (starting point) |
-  | `WPM_PAY_INFORMATION_MONTHS`, `WPM_REQUIRE_PAY_RANGE`, `WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, `WPM_JOINT_ASSESSMENT_MONTHS`, `WPM_PAY_GAP_TIERS` | 2, on, 5, 6, the three tiers | `EU`: Directive (EU) 2023/970, Articles 7, 5, 10(1), 10(1) and 9 (**read**, WPM-T268, 2026-10-24) |
+  | `WPM_PAY_INFORMATION_MONTHS`, `WPM_REQUIRE_PAY_RANGE`, `WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, `WPM_JOINT_ASSESSMENT_MONTHS`, `WPM_PAY_GAP_TIERS` | 2, on, 5, 6, the three tiers | `EU`: Directive (EU) 2023/970, Articles 7, 5, 10(1), 10(1) and 9 (**unverified**: WPM-T268, 2026-10-24, saw the Directive only as search excerpts of its EUR-Lex text and the Commission's FAQ, not as a whole document; shipped as `read` and corrected by WPM-T404) |
   | `WPM_RETENTION_<KIND>_DAYS` (eight) | 180 to 2,190 calendar days | none (starting point, [retention-schedule](governance/retention-schedule.md)) |
   | `WPM_PAYROLL_STUB_CURRENCY`, `_ALLOWANCE_MINOR`, `_RATE_PERCENT` | GBP, 104,750, 20 | `GB` (**example**: the UK's 2025-26 shape, a stub, WPM-T383) |
   | `WPM_PAYROLL_MONTH_MINUTES`, `WPM_CONTRACTED_DAY_MINUTES` | 9,750, 450 | none (starting point) |
@@ -420,7 +420,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   `WPM_PAY_GAP_TIERS` feeds the gap report through it, and a value that does not parse is ignored with a warning, never half-applied.
   **Tests:** 3 unit tests (the parser: the Directive's tiers written out equal the defaults, a one-tier and a two-tier shape, `none`,
   ten refusals and the limit; the table equals the code; sorted, unique, a regime exactly where the status is not a starting point,
-  every value readable); a request test (the five areas listed; `GB` unverified, a starting point, `EU` read with its Article; then
+  every value readable); a request test (the five areas listed; `GB` unverified, a starting point, `EU` read with its Article *(`EU` unverified since WPM-T404)*; then
   three settings set in the process: a value of 3 shown as set, `none` giving no tiers, a junk notice set but not used; and back).
   **What remains, and why:** moving these defaults into dated, sourced profiles under a jurisdiction code is D144's registry and
   resolver, which the product owner has not confirmed (only D144 questions 1 to 4 are), so nothing was moved and the `WPM_*` settings stay
@@ -503,7 +503,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   information answer now share; it trims the value, which it did not before). **Tests:** the unit test that holds the table equal to the
   code covers both; the statutory-defaults request test checks both entries, their regime and status, and a set value of each; a new
   request test of the gap report (twelve workers, monitoring on): by default no tier applies and `reporting_basis` is unset and `EU`
-  read; `10:2:2026-01-01` gives a tier every two years, next due 2028-01-01, `set` true and the default still named; of two tiers the
+  read *(unverified since WPM-T404)*; `10:2:2026-01-01` gives a tier every two years, next due 2028-01-01, `set` true and the default still named; of two tiers the
   larger reached applies; `none` gives none; a list with one bad entry is not half-applied (the Directive's tiers, none reached); an
   unmonitored `WPM_PAY_GAP_SEX_CATEGORY` is 422 naming the setting and a padded `sex` works. **Not done:** the profiles (D144, not
   confirmed); the Digital Omnibus was not read here either. **Not tested:** the gap report's CSV with configured tiers (it carries no
@@ -527,6 +527,25 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   UI lint, svelte-check (0 errors, 0 warnings), 320 vitest, build, Playwright 340 passed and 19 skipped (in the whole run one unrelated
   test, `pickers.spec.ts` "hovering a picker button does not move it", failed once and passed when its file was run again); the site's
   copy synced, its check and build pass.
+- [x] (2026-10-31) WPM-T404 **The Pay Transparency Directive's defaults say `unverified`, not `read`.** *(WPM-R214, WPM-D143; corrects
+  WPM-T384)* WPM-T268's own note ([pay-transparency.md](pay-transparency.md#what-was-checked-and-what-was-not)) says EUR-Lex refused
+  scripted access, so the Directive was seen only as search-engine excerpts of its EUR-Lex text and the Commission's FAQ, not as a whole
+  document; WPM-T384 nonetheless marked its five defaults `read`. **Done:** the `directive!` origin in `src/statutory_defaults.rs` is now
+  `unverified`, and its reference keeps the Article and says it was taken from search excerpts, not the whole text; so
+  `GET /api/statutory-defaults`, the gap report's `reporting_basis`, the joint assessment's `threshold_basis` and `remedy_basis`, and the
+  `/statutory-defaults` page say "not checked against the text" for `WPM_PAY_INFORMATION_MONTHS`, `WPM_REQUIRE_PAY_RANGE`,
+  `WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, `WPM_JOINT_ASSESSMENT_MONTHS` and `WPM_PAY_GAP_TIERS`. The meaning of `unverified` is
+  widened to "modelled on the source, or taken from parts of it, and not checked against its whole text"; no new status was added, so
+  the UI, its 13 catalogues, the OpenAPI document and the TypeScript types are unchanged. No entry is `read` now; the status stays in the
+  vocabulary for a source read whole. The spec's wording (this file's table, [pay-transparency.md](pay-transparency.md), the WPM-T384
+  line in [tasks.md](tasks.md)) is corrected. **Tests:** a unit test that every entry citing 2023/970 is `unverified`, names an
+  Article and says "search excerpts"; the statutory-defaults and gap-report request tests expect `unverified`; the Playwright stub's
+  Directive rows are `unverified` and the tiers row shows "Not checked against the text". **Not done:** the Directive was not fetched or
+  read in this task, so nothing about the values themselves was checked; the AI Act entry was already `unverified` and is unchanged.
+  **Not tested:** the "Read against the text" label in the page now has no row that uses it in the Playwright spec. **Verified
+  (2026-10-31):** the three `statutory_defaults` unit tests; the two request tests (statutory defaults, the gap report's tiers) on a
+  throwaway local PostgreSQL; clippy and fmt clean; UI lint clean and the statutory-defaults Playwright spec (3 passed, screenshot
+  read). The whole request suite, svelte-check, vitest and the whole Playwright run were not re-run for this change.
 
 ## Audit (WPM-T367, 2026-10-29)
 

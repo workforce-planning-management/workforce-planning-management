@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the Directive's defaults say `unverified`, not `read` (WPM-T404)
+
+The `directive!` origin in `statutory_defaults` is `unverified` (it was `read`), and its reference says the Article was taken in
+WPM-T268 from search excerpts of the EUR-Lex text and the Commission's FAQ, not the whole text. This changes `default_from.status` for
+`WPM_PAY_INFORMATION_MONTHS`, `WPM_REQUIRE_PAY_RANGE`, `WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, `WPM_JOINT_ASSESSMENT_MONTHS` and
+`WPM_PAY_GAP_TIERS` in `GET /api/statutory-defaults`, `reporting_basis`, `threshold_basis` and `remedy_basis`. No status was added, so
+the OpenAPI document is unchanged. Tests: a unit test `the_directive_is_not_claimed_as_read`; the statutory-defaults and gap-report
+request tests expect `unverified`. **Not done:** the Directive was not read in this change.
+
 ### Added — `WPM_AI_ACT_APPLIES_FROM` and `WPM_PAY_GAP_SEX_CATEGORY` in the statutory defaults (WPM-T402)
 
 `statutory_defaults::DEFAULTS` holds 25 settings: `WPM_AI_ACT_APPLIES_FROM` (area `ai_register`, `EU`, `unverified`) and

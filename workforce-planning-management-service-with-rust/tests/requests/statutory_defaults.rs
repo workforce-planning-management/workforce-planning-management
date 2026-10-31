@@ -42,13 +42,11 @@ async fn each_default_names_its_regime_and_a_setting_replaces_it() {
         assert_eq!(notice["value"], 28);
         let months = entry(&list, "WPM_PAY_INFORMATION_MONTHS");
         assert_eq!(months["default_from"]["regime"], "EU");
-        assert_eq!(months["default_from"]["status"], "read");
-        assert!(
-            months["default_from"]["reference"]
-                .as_str()
-                .unwrap()
-                .contains("Article 7")
-        );
+        // The Directive was seen only as search excerpts (WPM-T268), so it is not `read` (WPM-T404).
+        assert_eq!(months["default_from"]["status"], "unverified");
+        let reference = months["default_from"]["reference"].as_str().unwrap();
+        assert!(reference.contains("Article 7"));
+        assert!(reference.contains("search excerpts"));
         let threshold = entry(&list, "WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT");
         assert_eq!(threshold["value"], 5);
         assert_eq!(threshold["default_from"]["regime"], "EU");

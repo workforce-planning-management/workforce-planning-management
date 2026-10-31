@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the statutory-defaults spec's Directive rows are `unverified` (WPM-T404)
+
+The Playwright stub for `/statutory-defaults` gives the Directive's rows `unverified`, as the service now does, and the tiers row is
+checked for "Not checked against the text". No page code or string changed. **Not tested:** the "Read against the text" label, which no
+stubbed row uses now.
+
 ### Added — `/statutory-defaults`, whose each default is (WPM-T403)
 
 A read-only page over `GET /api/statutory-defaults` (`getStatutoryDefaults` in `src/lib/api/wpm.ts`): one `DataTable` (Lily data grid)

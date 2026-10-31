@@ -191,4 +191,24 @@ mod tests {
         assert_eq!(basis("WPM_NOT_LISTED"), Value::Null);
         assert_eq!(basis("WPM_PAY_GAP_TIERS")["default_from"]["regime"], "EU");
     }
+
+    /// The Pay Transparency Directive was seen only as search excerpts of its EUR-Lex text and the
+    /// Commission's FAQ (WPM-T268), so no entry resting on it says `read`, and each says so (WPM-T404).
+    #[test]
+    fn the_directive_is_not_claimed_as_read() {
+        let directive: Vec<_> = DEFAULTS
+            .iter()
+            .filter(|d| d.origin.reference.contains("2023/970"))
+            .collect();
+        assert_eq!(directive.len(), 5);
+        for d in directive {
+            assert_eq!(d.origin.status, "unverified", "{}", d.setting);
+            assert!(
+                d.origin.reference.contains("search excerpts"),
+                "{}",
+                d.setting
+            );
+            assert!(d.origin.reference.contains("Article "), "{}", d.setting);
+        }
+    }
 }

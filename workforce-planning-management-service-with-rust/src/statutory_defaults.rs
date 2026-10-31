@@ -19,8 +19,8 @@ pub struct Origin {
     pub regime: Option<&'static str>,
     /// What the default rests on, in words.
     pub reference: &'static str,
-    /// `read` (the source was checked, as `reference` says when), `unverified` (modelled on the
-    /// source, not checked against its text), `example` (a worked example in a regime's shape, not
+    /// `read` (the whole source was checked, as `reference` says when), `unverified` (modelled on
+    /// the source, or taken from parts of it, and not checked against its whole text), `example` (a worked example in a regime's shape, not
     /// that regime's rule) or `starting_point` (no regime's: a value to replace).
     pub status: &'static str,
 }
@@ -44,7 +44,9 @@ const FLEXIBLE_GB: Origin = Origin {
                 (Flexible Working) Act 2023 from 6 April 2024",
     status: "unverified",
 };
-/// A reference to one Article of the Pay Transparency Directive, read in WPM-T268.
+/// A reference to one Article of the Pay Transparency Directive. WPM-T268 saw the Directive only as
+/// search-engine excerpts of its EUR-Lex text and the Commission's FAQ, not as a whole document, so
+/// these are `unverified`, not `read` (WPM-T404).
 macro_rules! directive {
     ($article:literal) => {
         Origin {
@@ -52,9 +54,10 @@ macro_rules! directive {
             reference: concat!(
                 "European Union: Pay Transparency Directive (EU) 2023/970, ",
                 $article,
-                "; read against the Directive's text in WPM-T268, 2026-10-24"
+                "; taken in WPM-T268, 2026-10-24, from search excerpts of the Directive's EUR-Lex text and the \
+                 Commission's FAQ, not from the whole text"
             ),
-            status: "read",
+            status: "unverified",
         }
     };
 }

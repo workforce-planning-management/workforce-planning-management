@@ -45,8 +45,8 @@ const SETTINGS = [
     default: "250:1:2027-06-07,150:3:2027-06-07,100:3:2031-06-07",
     default_from: origin(
       "EU",
-      "read",
-      "European Union: Pay Transparency Directive (EU) 2023/970, Article 9",
+      "unverified",
+      "European Union: Pay Transparency Directive (EU) 2023/970, Article 9; from search excerpts",
     ),
   },
   {
@@ -57,8 +57,8 @@ const SETTINGS = [
     default: "on",
     default_from: origin(
       "EU",
-      "read",
-      "European Union: Pay Transparency Directive (EU) 2023/970, Article 5",
+      "unverified",
+      "European Union: Pay Transparency Directive (EU) 2023/970, Article 5; from search excerpts",
     ),
   },
   {
@@ -127,7 +127,8 @@ test.describe("Statutory defaults", () => {
     await expect(tiers).toContainText(
       "workers, at least: 250; years between reports: 1; first report: 7 Jun 2027",
     );
-    await expect(tiers).toContainText("Read against the text");
+    // The Directive was read only as search excerpts, so its defaults are not checked (WPM-T404).
+    await expect(tiers).toContainText("Not checked against the text");
     await expect(
       page.getByTestId("default-WPM_REQUIRE_PAY_RANGE"),
     ).toContainText("On");

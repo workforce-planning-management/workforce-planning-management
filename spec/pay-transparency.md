@@ -3,8 +3,8 @@
 What the EU Pay Transparency Directive (2023/970) asks of an employer, and what WPM does about it: the pay gap
 indicators an employer must report (WPM-R144), what a worker or a candidate may ask about pay (WPM-R145), and the signal
 that a joint pay assessment is due (WPM-R146). Proposed in [plan.md](plan.md) section N; the facts below were checked
-against the Directive's text and the Commission's guidance in the spec round (WPM-T268, 2026-10-24: see
-[what was checked](#what-was-checked-and-what-was-not)).
+against search excerpts of the Directive's text and the Commission's guidance, not against the whole Directive, in the spec
+round (WPM-T268, 2026-10-24: see [what was checked](#what-was-checked-and-what-was-not)).
 
 > ⚠️ **Not legal advice, and not a filing.** WPM computes and shows the indicators from the data it holds. It submits
 > nothing to any authority, and a figure here is not a statement that an employer meets a national law. The Directive
@@ -181,6 +181,12 @@ read as search-engine excerpts of its EUR-Lex text plus the Commission's FAQ PDF
 paragraph numbers inside Articles 5 and 7; the Directive's rule on how pay is put on a comparable basis for the indicators; any
 national transposition (none was read); and how a country defines "category of workers" in its own law. WPM-T269 and WPM-T270
 start by reading those from the Official Journal.
+
+So the defaults that rest on the Directive (`WPM_PAY_INFORMATION_MONTHS`, `WPM_REQUIRE_PAY_RANGE`,
+`WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, `WPM_JOINT_ASSESSMENT_MONTHS`, `WPM_PAY_GAP_TIERS`) say `unverified`, not `read`, in
+`GET /api/statutory-defaults`, the gap report's `reporting_basis`, the joint assessment's `threshold_basis` and `remedy_basis`, and the
+`/statutory-defaults` page; their references keep the Article and say they came from search excerpts (WPM-T404, 2026-10-31; they
+said `read` from WPM-T384 until then).
 
 ## Sources
 

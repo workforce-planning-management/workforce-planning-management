@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the Pay Transparency Directive's defaults no longer claim to have been read (WPM-T404)
+
+The five defaults that rest on Directive (EU) 2023/970 said `read`, but the Directive was only ever seen as search excerpts of its
+EUR-Lex text and the Commission's FAQ (WPM-T268). They now say `unverified` in `GET /api/statutory-defaults`, the gap report and joint
+assessment bases, and the `/statutory-defaults` page; each reference keeps its Article and says it came from excerpts. **Not done:** the
+Directive was not fetched or read now, so the values themselves are no better checked than before. **Not tested:** the page's
+"read" label, which no row uses any more.
+
 ### Added — a page that shows whose each default is (WPM-T403)
 
 `/statutory-defaults` in the UI shows, read only, each setting's value in force, whose its default is, whether that source was read, and
