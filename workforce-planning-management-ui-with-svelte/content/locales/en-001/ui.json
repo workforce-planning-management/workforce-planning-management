@@ -51,7 +51,8 @@
     "aiRegister": "AI and scoring register",
     "bargaining": "Bargaining",
     "consultations": "Consultations",
-    "decisionGates": "Decision gates"
+    "decisionGates": "Decision gates",
+    "statutoryDefaults": "Statutory defaults"
   },
   "pr": {
     "retention": "Retention",
@@ -1478,6 +1479,9 @@
     },
     "decisionGates": {
       "page_title": "{decisionGates} — WPM"
+    },
+    "statutoryDefaults": {
+      "page_title": "{statutoryDefaults} — WPM"
     }
   },
   "titles": {
@@ -1520,7 +1524,8 @@
     "aiRegister": "AI and scoring register — WPM",
     "bargaining": "Bargaining — WPM",
     "consultations": "Consultations — WPM",
-    "decisionGates": "Decision gates — WPM"
+    "decisionGates": "Decision gates — WPM",
+    "statutoryDefaults": "Statutory defaults — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -2731,6 +2736,39 @@
       "no_gate": "No gate is set for this kind of change.",
       "reference_needed": "{n} body or bodies to consult: record the consultation reference with the change.",
       "reference_given": "A consultation reference was given. WPM does not judge whether it is enough."
+    }
+  },
+  "statutoryDefaults": {
+    "hint": "Each setting whose default is one regime's value, or a starting point that is no regime's: the value in force, whether this deployment set it, and whose the default is. A default is a starting point to confirm, never a statement that this deployment is under that regime. This page only reads; a setting is changed in the service's configuration.",
+    "reference_note": "The default and what it rests on are the service's own text, in English.",
+    "setting": "Setting",
+    "area": "Area",
+    "value": "In force",
+    "set": "Set",
+    "default": "Default",
+    "regime": "Whose default",
+    "status": "Source",
+    "reference": "What it rests on",
+    "set_here": "Set by this deployment",
+    "default_used": "Not set: the default",
+    "no_regime": "No regime's",
+    "on": "On",
+    "off": "Off",
+    "none": "None",
+    "tier": "workers, at least: {workers}; years between reports: {years}; first report: {date}",
+    "statuses": {
+      "read": "Read against the text",
+      "unverified": "Not checked against the text",
+      "example": "An example in a regime's shape",
+      "starting_point": "A starting point"
+    },
+    "areas": {
+      "ai_register": "AI register",
+      "flexible_working": "Flexible working",
+      "pay_transparency": "Pay transparency",
+      "payroll": "Payroll",
+      "resignation": "Resignation",
+      "retention": "Retention"
     }
   }
 }

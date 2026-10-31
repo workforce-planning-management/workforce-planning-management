@@ -5854,3 +5854,29 @@ export function checkDecisionGate(
     init,
   );
 }
+
+/** Whose a default is: a jurisdiction code (`EU`, `GB`) or none, what it rests on, and whether that was read (WPM-T384). */
+export type DefaultOrigin = {
+  regime: string | null;
+  reference: string;
+  /** `read`, `unverified`, `example` or `starting_point`. */
+  status: string;
+};
+
+export type StatutoryDefault = {
+  setting: string;
+  area: string;
+  /** The value in force, as its feature reads it: a number, text, a flag, a list of reasons or of reporting tiers. */
+  value: unknown;
+  /** Whether the deployer set it (a value that does not check is set, and the default is then in force). */
+  set: boolean;
+  default: string;
+  default_from: DefaultOrigin;
+};
+
+/** Every setting whose default is one regime's value or a starting point, and whose it is. Any signed-in caller. */
+export function getStatutoryDefaults(
+  init?: FetchLike,
+): Promise<{ settings: StatutoryDefault[]; derivation: string }> {
+  return api("/statutory-defaults", init);
+}

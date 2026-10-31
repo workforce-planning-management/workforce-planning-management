@@ -427,7 +427,8 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   one value per deployment. **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
   and UK reports; changing them needs the equality categories per jurisdiction, which is the registry too); `WPM_PAY_GAP_SEX_CATEGORY`
   and `WPM_AI_ACT_APPLIES_FROM` are not in the table (the first names a category, not a value of a regime; the second's answer already
-  names the AI Act) *(both added by WPM-T402)*; the working-time constants are WPM-T380; no UI shows the new endpoint. **Not verified:** the `GB` references were
+  names the AI Act) *(both added by WPM-T402)*; the working-time constants are WPM-T380; no UI shows the new endpoint *(a read-only page
+  since WPM-T403)*. **Not verified:** the `GB` references were
   not read against the Act's text in this task, which is why they say `unverified`; the gap report's `reporting_basis` with a configured
   `WPM_PAY_GAP_TIERS` in a request (the parser is unit-tested and the endpoint's `none` case is request-tested; the gap report needs
   equality monitoring on, which its own binary sets) *(request-tested by WPM-T402, 2026-10-31)*.
@@ -507,6 +508,25 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   unmonitored `WPM_PAY_GAP_SEX_CATEGORY` is 422 naming the setting and a padded `sex` works. **Not done:** the profiles (D144, not
   confirmed); the Digital Omnibus was not read here either. **Not tested:** the gap report's CSV with configured tiers (it carries no
   tier); the AI register's own answer with the setting changed (its `applies_from` is the value the endpoint shows, read by one function).
+- [x] (2026-10-31) WPM-T403 **A page that shows whose each default is.** *(WPM-R214, WPM-D143; follows WPM-T384's "no UI shows the
+  new endpoint")* **Done:** `/statutory-defaults` in the UI, read only, for anyone signed in (the endpoint's own audience), linked from
+  the navigation after the AI register. One Lily data grid (`DataTable`, sortable) with a row per setting: the setting, its area, the
+  value in force in the page's language (a number and a date in the page's format, a flag as on or off, an empty tier list as none, a
+  tier as its size, years between reports and first report), whose the default is (the jurisdiction code, or "no regime's"), whether
+  its source was read (the four statuses, translated), whether this deployment set it, the default, and what it rests on. The default
+  and the reference are the service's English text, and the page says so. A failed read shows the catalogue's words, never the
+  service's. `getStatutoryDefaults` in `src/lib/api/wpm.ts` with its types. Strings: `nav.statutoryDefaults`, its title and page title,
+  and 27 `statutoryDefaults.*` keys in all 13 `-001` locales, machine drafts recorded unreviewed in `content/locales/REVIEW.md`; the
+  tier is worded as labels and figures so that it needs no plural form. **Tests:** the path-map test; a Playwright spec of three
+  tests (the values, regimes, statuses and set or default shown, a starting point naming no regime, 2,190 grouped, no input on the page
+  and no write; German with 2.190 and the English reference kept; a 500 shows the error note without the service's text and no table);
+  axe on the new route. The screenshot was read: the long texts make the table scroll inside its own box, so whose the default is comes
+  before them. **Not done:** changing a setting from the page (a deployer's configuration, by design); the jurisdiction code is shown
+  as the code (`EU`, `GB`), not a translated name; the `derivation` text is not shown. **Not tested:** right to left and phone width
+  for this page beyond axe (the table is the shared component the other pages test); against a real service. **Verified (2026-10-31):**
+  UI lint, svelte-check (0 errors, 0 warnings), 320 vitest, build, Playwright 340 passed and 19 skipped (in the whole run one unrelated
+  test, `pickers.spec.ts` "hovering a picker button does not move it", failed once and passed when its file was run again); the site's
+  copy synced, its check and build pass.
 
 ## Audit (WPM-T367, 2026-10-29)
 

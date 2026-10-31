@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `/statutory-defaults`, whose each default is (WPM-T403)
+
+A read-only page over `GET /api/statutory-defaults` (`getStatutoryDefaults` in `src/lib/api/wpm.ts`): one `DataTable` (Lily data grid)
+with the setting, area, value in force (numbers and dates in the page's format, a flag as on or off, reporting tiers as labelled
+figures), whose the default is, whether its source was read, whether it was set, the default and its reference (the service's English,
+said on the page). Linked from the navigation; in `tests/e2e/axe-routes.ts`. Strings: `nav.statutoryDefaults`, its titles and 27
+`statutoryDefaults.*` keys in all 13 `-001` locales (machine drafts, unreviewed, in `content/locales/REVIEW.md`); `static/admin/config.yml`
+regenerated. Tests: the path-map test; `tests/e2e/statutory-defaults.spec.ts` (3 tests) and its axe check. **Not done:** editing a
+setting; a translated name for the jurisdiction code. **Not tested:** right to left and phone width beyond axe; a real service.
+
 ### Changed — the API description has `GET /api/statutory-defaults` (WPM-T384)
 
 `src/lib/api/openapi.json` and `schema.d.ts` regenerated from the service for the new route. No screen calls it yet.

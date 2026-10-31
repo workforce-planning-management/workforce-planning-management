@@ -54,6 +54,7 @@ export const ROUTES: Record<string, string> = {
   "/signin": "/signin",
   "/skill-gaps": "/skill-gaps",
   "/skills": "/skills",
+  "/statutory-defaults": "/statutory-defaults",
   "/tour": "/tour",
   "/verify": "/verify",
   "/verify/sso": "/verify/sso",

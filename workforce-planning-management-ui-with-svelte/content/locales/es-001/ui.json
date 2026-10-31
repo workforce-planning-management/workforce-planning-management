@@ -51,7 +51,8 @@
     "aiRegister": "Registro de IA y puntuaciones",
     "bargaining": "Negociación colectiva",
     "consultations": "Consultas",
-    "decisionGates": "Puertas de decisión"
+    "decisionGates": "Puertas de decisión",
+    "statutoryDefaults": "Valores legales por defecto"
   },
   "pr": {
     "retention": "Retención",
@@ -1485,6 +1486,9 @@
     },
     "decisionGates": {
       "page_title": "{decisionGates} — WPM"
+    },
+    "statutoryDefaults": {
+      "page_title": "{statutoryDefaults} — WPM"
     }
   },
   "titles": {
@@ -1527,7 +1531,8 @@
     "aiRegister": "Registro de IA y puntuaciones — WPM",
     "bargaining": "Negociación colectiva — WPM",
     "consultations": "Consultas — WPM",
-    "decisionGates": "Puertas de decisión — WPM"
+    "decisionGates": "Puertas de decisión — WPM",
+    "statutoryDefaults": "Valores legales por defecto — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2740,6 +2745,39 @@
       "no_gate": "No hay puerta definida para este tipo de cambio.",
       "reference_needed": "{n} órgano(s) a consultar: registra la referencia de la consulta con el cambio.",
       "reference_given": "Se dio una referencia de consulta. WPM no juzga si es suficiente."
+    }
+  },
+  "statutoryDefaults": {
+    "hint": "Cada ajuste cuyo valor por defecto es el de un régimen, o un punto de partida que no es de ningún régimen: el valor vigente, si esta instalación lo fijó y de quién es el valor por defecto. Un valor por defecto es un punto de partida que hay que confirmar, nunca una afirmación de que esta instalación está sujeta a ese régimen. Esta página solo lee; un ajuste se cambia en la configuración del servicio.",
+    "reference_note": "El valor por defecto y aquello en lo que se basa son el texto propio del servicio, en inglés.",
+    "setting": "Ajuste",
+    "area": "Área",
+    "value": "Vigente",
+    "set": "Fijado",
+    "default": "Por defecto",
+    "regime": "De quién es",
+    "status": "Fuente",
+    "reference": "En qué se basa",
+    "set_here": "Fijado por esta instalación",
+    "default_used": "Sin fijar: el valor por defecto",
+    "no_regime": "De ningún régimen",
+    "on": "Activado",
+    "off": "Desactivado",
+    "none": "Ninguno",
+    "tier": "trabajadores, al menos: {workers}; años entre informes: {years}; primer informe: {date}",
+    "statuses": {
+      "read": "Leído contra el texto",
+      "unverified": "No comprobado contra el texto",
+      "example": "Un ejemplo con la forma de un régimen",
+      "starting_point": "Un punto de partida"
+    },
+    "areas": {
+      "ai_register": "Registro de IA",
+      "flexible_working": "Trabajo flexible",
+      "pay_transparency": "Transparencia retributiva",
+      "payroll": "Nómina",
+      "resignation": "Dimisión",
+      "retention": "Conservación"
     }
   }
 }

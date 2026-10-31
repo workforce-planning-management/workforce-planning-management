@@ -51,7 +51,8 @@
     "aiRegister": "Registo de IA e pontuações",
     "bargaining": "Negociação coletiva",
     "consultations": "Consultas",
-    "decisionGates": "Pontos de decisão"
+    "decisionGates": "Pontos de decisão",
+    "statutoryDefaults": "Valores legais por omissão"
   },
   "pr": {
     "retention": "Retenção",
@@ -1485,6 +1486,9 @@
     },
     "decisionGates": {
       "page_title": "{decisionGates} — WPM"
+    },
+    "statutoryDefaults": {
+      "page_title": "{statutoryDefaults} — WPM"
     }
   },
   "titles": {
@@ -1527,7 +1531,8 @@
     "aiRegister": "Registo de IA e pontuações — WPM",
     "bargaining": "Negociação coletiva — WPM",
     "consultations": "Consultas — WPM",
-    "decisionGates": "Pontos de decisão — WPM"
+    "decisionGates": "Pontos de decisão — WPM",
+    "statutoryDefaults": "Valores legais por omissão — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2740,6 +2745,39 @@
       "no_gate": "Não há ponto de decisão definido para este tipo de alteração.",
       "reference_needed": "{n} órgão(s) a consultar: registe a referência da consulta com a alteração.",
       "reference_given": "Foi dada uma referência de consulta. O WPM não julga se é suficiente."
+    }
+  },
+  "statutoryDefaults": {
+    "hint": "Cada definição cujo valor por omissão é o de um regime, ou um ponto de partida que não pertence a nenhum regime: o valor em vigor, se esta instalação o definiu e de quem é o valor por omissão. Um valor por omissão é um ponto de partida a confirmar, nunca uma afirmação de que esta instalação está sujeita a esse regime. Esta página apenas lê; uma definição é alterada na configuração do serviço.",
+    "reference_note": "O valor por omissão e aquilo em que assenta são o texto do próprio serviço, em inglês.",
+    "setting": "Definição",
+    "area": "Área",
+    "value": "Em vigor",
+    "set": "Definido",
+    "default": "Por omissão",
+    "regime": "De quem",
+    "status": "Fonte",
+    "reference": "Em que assenta",
+    "set_here": "Definido por esta instalação",
+    "default_used": "Não definido: o valor por omissão",
+    "no_regime": "De nenhum regime",
+    "on": "Ativado",
+    "off": "Desativado",
+    "none": "Nenhum",
+    "tier": "trabalhadores, pelo menos: {workers}; anos entre relatórios: {years}; primeiro relatório: {date}",
+    "statuses": {
+      "read": "Lido face ao texto",
+      "unverified": "Não verificado face ao texto",
+      "example": "Um exemplo com a forma de um regime",
+      "starting_point": "Um ponto de partida"
+    },
+    "areas": {
+      "ai_register": "Registo de IA",
+      "flexible_working": "Trabalho flexível",
+      "pay_transparency": "Transparência salarial",
+      "payroll": "Processamento salarial",
+      "resignation": "Demissão",
+      "retention": "Conservação"
     }
   }
 }

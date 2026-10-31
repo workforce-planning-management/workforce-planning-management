@@ -51,7 +51,8 @@
     "aiRegister": "Register für KI und Bewertungen",
     "bargaining": "Tarifverhandlungen",
     "consultations": "Konsultationen",
-    "decisionGates": "Entscheidungsschranken"
+    "decisionGates": "Entscheidungsschranken",
+    "statutoryDefaults": "Gesetzliche Voreinstellungen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -1478,6 +1479,9 @@
     },
     "decisionGates": {
       "page_title": "{decisionGates} — WPM"
+    },
+    "statutoryDefaults": {
+      "page_title": "{statutoryDefaults} — WPM"
     }
   },
   "titles": {
@@ -1520,7 +1524,8 @@
     "aiRegister": "Register für KI und Bewertungen — WPM",
     "bargaining": "Tarifverhandlungen — WPM",
     "consultations": "Konsultationen — WPM",
-    "decisionGates": "Entscheidungsschranken — WPM"
+    "decisionGates": "Entscheidungsschranken — WPM",
+    "statutoryDefaults": "Gesetzliche Voreinstellungen — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2731,6 +2736,39 @@
       "no_gate": "Für diese Art von Änderung ist keine Schranke gesetzt.",
       "reference_needed": "{n} Vertretung(en) zu konsultieren: Erfasse den Konsultationsverweis bei der Änderung.",
       "reference_given": "Ein Konsultationsverweis wurde angegeben. WPM beurteilt nicht, ob er genügt."
+    }
+  },
+  "statutoryDefaults": {
+    "hint": "Jede Einstellung, deren Voreinstellung der Wert einer Rechtsordnung ist oder ein Ausgangspunkt, der zu keiner gehört: der geltende Wert, ob diese Installation ihn gesetzt hat und wessen Voreinstellung es ist. Eine Voreinstellung ist ein zu bestätigender Ausgangspunkt, nie die Aussage, dass diese Installation jener Rechtsordnung unterliegt. Diese Seite liest nur; eine Einstellung wird in der Konfiguration des Dienstes geändert.",
+    "reference_note": "Die Voreinstellung und worauf sie beruht sind der eigene Text des Dienstes, auf Englisch.",
+    "setting": "Einstellung",
+    "area": "Bereich",
+    "value": "Geltend",
+    "set": "Gesetzt",
+    "default": "Voreinstellung",
+    "regime": "Wessen Voreinstellung",
+    "status": "Quelle",
+    "reference": "Worauf sie beruht",
+    "set_here": "Von dieser Installation gesetzt",
+    "default_used": "Nicht gesetzt: die Voreinstellung",
+    "no_regime": "Keiner Rechtsordnung",
+    "on": "An",
+    "off": "Aus",
+    "none": "Keine",
+    "tier": "Beschäftigte, mindestens: {workers}; Jahre zwischen Berichten: {years}; erster Bericht: {date}",
+    "statuses": {
+      "read": "Am Text geprüft",
+      "unverified": "Nicht am Text geprüft",
+      "example": "Ein Beispiel in der Form einer Rechtsordnung",
+      "starting_point": "Ein Ausgangspunkt"
+    },
+    "areas": {
+      "ai_register": "KI-Register",
+      "flexible_working": "Flexibles Arbeiten",
+      "pay_transparency": "Entgelttransparenz",
+      "payroll": "Gehaltsabrechnung",
+      "resignation": "Kündigung",
+      "retention": "Aufbewahrung"
     }
   }
 }

@@ -51,7 +51,8 @@
     "aiRegister": "Registre de l'IA et des scores",
     "bargaining": "Négociation collective",
     "consultations": "Procédures de consultation",
-    "decisionGates": "Points de décision"
+    "decisionGates": "Points de décision",
+    "statutoryDefaults": "Valeurs légales par défaut"
   },
   "pr": {
     "retention": "Conservation",
@@ -1485,6 +1486,9 @@
     },
     "decisionGates": {
       "page_title": "{decisionGates} — WPM"
+    },
+    "statutoryDefaults": {
+      "page_title": "{statutoryDefaults} — WPM"
     }
   },
   "titles": {
@@ -1527,7 +1531,8 @@
     "aiRegister": "Registre de l'IA et des scores — WPM",
     "bargaining": "Négociation collective — WPM",
     "consultations": "Procédures de consultation — WPM",
-    "decisionGates": "Points de décision — WPM"
+    "decisionGates": "Points de décision — WPM",
+    "statutoryDefaults": "Valeurs légales par défaut — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2740,6 +2745,39 @@
       "no_gate": "Aucun point de décision n'est défini pour ce type de changement.",
       "reference_needed": "{n} instance(s) à consulter : joignez la référence de la consultation au changement.",
       "reference_given": "Une référence de consultation a été fournie. WPM ne juge pas si elle suffit."
+    }
+  },
+  "statutoryDefaults": {
+    "hint": "Chaque paramètre dont la valeur par défaut est celle d'un régime, ou un point de départ qui n'appartient à aucun régime : la valeur en vigueur, si ce déploiement l'a fixée et à qui appartient la valeur par défaut. Une valeur par défaut est un point de départ à confirmer, jamais l'affirmation que ce déploiement relève de ce régime. Cette page ne fait que lire ; un paramètre se modifie dans la configuration du service.",
+    "reference_note": "La valeur par défaut et ce sur quoi elle repose sont le texte du service lui-même, en anglais.",
+    "setting": "Paramètre",
+    "area": "Domaine",
+    "value": "En vigueur",
+    "set": "Fixé",
+    "default": "Par défaut",
+    "regime": "À qui",
+    "status": "Source",
+    "reference": "Sur quoi elle repose",
+    "set_here": "Fixé par ce déploiement",
+    "default_used": "Non fixé : la valeur par défaut",
+    "no_regime": "Aucun régime",
+    "on": "Activé",
+    "off": "Désactivé",
+    "none": "Aucun",
+    "tier": "salariés, au moins : {workers} ; années entre rapports : {years} ; premier rapport : {date}",
+    "statuses": {
+      "read": "Lu par rapport au texte",
+      "unverified": "Non vérifié par rapport au texte",
+      "example": "Un exemple sur le modèle d'un régime",
+      "starting_point": "Un point de départ"
+    },
+    "areas": {
+      "ai_register": "Registre IA",
+      "flexible_working": "Travail flexible",
+      "pay_transparency": "Transparence salariale",
+      "payroll": "Paie",
+      "resignation": "Démission",
+      "retention": "Conservation"
     }
   }
 }

@@ -1,8 +1,8 @@
 # AGENTS.md — working agreements
 
 A pocket guide for human and AI collaborators working in this
-subproject. Read this **before** opening a PR. (Updated 2026-10-30,
-through WPM-T396.)
+subproject. Read this **before** opening a PR. (Updated 2026-10-31,
+through WPM-T403.)
 
 ## What this project is
 
@@ -16,8 +16,8 @@ insights), `/directory`, `/rota`, `/announcements`, `/skill-gaps`,
 dashboard and, since WPM-T118, `/capacity`, `/resilience`, `/oversight` (with the monthly
 pack), `/cutover` and `/warnings`; later the pay pages (`/pay-gap`, `/pay-information`,
 `/pay-range`, `/pay-scales`), `/positions`, `/job-levels`, `/bargaining`, `/consultations`,
-`/policies`, `/ai-register`, `/expenses`, `/contingent`, `/decision-gates` and the `/demo`
-tour: 56 pages in all (2026-10-30). The bridges to the sibling apps have no screen; the UI
+`/policies`, `/ai-register`, `/expenses`, `/contingent`, `/decision-gates`, `/statutory-defaults`
+and the `/demo` tour: 57 pages in all (2026-10-31). The bridges to the sibling apps have no screen; the UI
 calls none of their routes. Money, numbers, dates and plurals go through the page's locale
 (`src/lib/money.ts`, `src/lib/locale-format.ts`, `tn`; [worldwide](../spec/worldwide.md)). The app owns no data; every page round-trips through the API, and
 masked fields render as first-class masked states, never errors or fake zeros.

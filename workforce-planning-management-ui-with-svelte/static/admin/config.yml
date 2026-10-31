@@ -84,6 +84,7 @@ collections:
               - { name: "bargaining", label: "Bargaining", widget: string, required: false, i18n: true }
               - { name: "consultations", label: "Consultations", widget: string, required: false, i18n: true }
               - { name: "decisionGates", label: "Decision Gates", widget: string, required: false, i18n: true }
+              - { name: "statutoryDefaults", label: "Statutory Defaults", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -2229,6 +2230,14 @@ collections:
                 i18n: true
                 fields:
                   - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
+              - name: "statutoryDefaults"
+                label: "Statutory Defaults"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "page_title", label: "Page_title", widget: string, required: false, i18n: true }
           - name: "titles"
             label: "Titles"
             widget: object
@@ -2276,6 +2285,7 @@ collections:
               - { name: "bargaining", label: "Bargaining", widget: string, required: false, i18n: true }
               - { name: "consultations", label: "Consultations", widget: string, required: false, i18n: true }
               - { name: "decisionGates", label: "Decision Gates", widget: string, required: false, i18n: true }
+              - { name: "statutoryDefaults", label: "Statutory Defaults", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -3725,3 +3735,51 @@ collections:
                   - { name: "no_gate", label: "No_gate", widget: string, required: false, i18n: true }
                   - { name: "reference_needed", label: "Reference_needed", widget: text, required: false, i18n: true }
                   - { name: "reference_given", label: "Reference_given", widget: string, required: false, i18n: true }
+          - name: "statutoryDefaults"
+            label: "Statutory Defaults"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "reference_note", label: "Reference_note", widget: string, required: false, i18n: true }
+              - { name: "setting", label: "Setting", widget: string, required: false, i18n: true }
+              - { name: "area", label: "Area", widget: string, required: false, i18n: true }
+              - { name: "value", label: "Value", widget: string, required: false, i18n: true }
+              - { name: "set", label: "Set", widget: string, required: false, i18n: true }
+              - { name: "default", label: "Default", widget: string, required: false, i18n: true }
+              - { name: "regime", label: "Regime", widget: string, required: false, i18n: true }
+              - { name: "status", label: "Status", widget: string, required: false, i18n: true }
+              - { name: "reference", label: "Reference", widget: string, required: false, i18n: true }
+              - { name: "set_here", label: "Set_here", widget: string, required: false, i18n: true }
+              - { name: "default_used", label: "Default_used", widget: string, required: false, i18n: true }
+              - { name: "no_regime", label: "No_regime", widget: string, required: false, i18n: true }
+              - { name: "on", label: "On", widget: string, required: false, i18n: true }
+              - { name: "off", label: "Off", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "tier", label: "Tier", widget: text, required: false, i18n: true }
+              - name: "statuses"
+                label: "Statuses"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "read", label: "Read", widget: string, required: false, i18n: true }
+                  - { name: "unverified", label: "Unverified", widget: string, required: false, i18n: true }
+                  - { name: "example", label: "Example", widget: string, required: false, i18n: true }
+                  - { name: "starting_point", label: "Starting_point", widget: string, required: false, i18n: true }
+              - name: "areas"
+                label: "Areas"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "ai_register", label: "Ai_register", widget: string, required: false, i18n: true }
+                  - { name: "flexible_working", label: "Flexible_working", widget: string, required: false, i18n: true }
+                  - { name: "pay_transparency", label: "Pay_transparency", widget: string, required: false, i18n: true }
+                  - { name: "payroll", label: "Payroll", widget: string, required: false, i18n: true }
+                  - { name: "resignation", label: "Resignation", widget: string, required: false, i18n: true }
+                  - { name: "retention", label: "Retention", widget: string, required: false, i18n: true }

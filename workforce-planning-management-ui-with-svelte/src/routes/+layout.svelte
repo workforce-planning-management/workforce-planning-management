@@ -40,6 +40,7 @@
     ["/pay-gap", "nav.payGap"],
     ["/pay-information", "nav.payInformation"],
     ["/ai-register", "nav.aiRegister"],
+    ["/statutory-defaults", "nav.statutoryDefaults"],
     ["/bargaining", "nav.bargaining"],
     ["/consultations", "nav.consultations"],
     ["/decision-gates", "nav.decisionGates"],

@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — a page that shows whose each default is (WPM-T403)
+
+`/statutory-defaults` in the UI shows, read only, each setting's value in force, whose its default is, whether that source was read, and
+whether the deployment set it. Its strings in the 12 other languages are machine drafts, unreviewed. **Not done:** changing a setting
+from the page (by design); the jurisdiction shown as a translated name. **Not tested:** right to left and phone width beyond axe; against
+a real service.
+
 ### Added — whose the AI Act date and the pay gap's sex category are (WPM-T402)
 
 `GET /api/statutory-defaults` now also lists `WPM_AI_ACT_APPLIES_FROM` (the EU's, **unverified**: the date came from the Commission's

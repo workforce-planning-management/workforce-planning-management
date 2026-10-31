@@ -52,6 +52,10 @@ stored as English text until then) were machine-drafted by the same assistant in
 equipment terms (lumbar support, glare, footrest) and for whether each reads as a checklist line, not a sentence about the person.
 The 2026-10-30 address labels in `en-001` ("City or locality", "State, province or region", "Postal code", WPM-T382) changed the English
 the translations were made from; the translated labels were not re-read against it.
+The 2026-10-31 statutory defaults page (WPM-T403: `nav.statutoryDefaults`, its title, and the 27 `statutoryDefaults.*` strings) was
+machine-drafted by the same assistant in all 12 languages, unreviewed. Read the hint first: a default is a starting point to confirm,
+never a statement that the deployment is under that regime. The four source statuses (read against the text, not checked, an
+example, a starting point) carry meaning; "regime" was rendered as a legal system or regime, which a reviewer may want to change.
 
 The regional locales (`de-de`, `en-gb`, `en-us`, `es-es`) hold only overrides of their language
 and have the same status as their language.

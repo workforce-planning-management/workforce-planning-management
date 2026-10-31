@@ -51,7 +51,8 @@
     "aiRegister": "Register AI dan penilaian",
     "bargaining": "Perundingan bersama",
     "consultations": "Konsultasi",
-    "decisionGates": "Gerbang keputusan"
+    "decisionGates": "Gerbang keputusan",
+    "statutoryDefaults": "Bawaan menurut undang-undang"
   },
   "pr": {
     "retention": "Retensi",
@@ -1471,6 +1472,9 @@
     },
     "decisionGates": {
       "page_title": "{decisionGates} — WPM"
+    },
+    "statutoryDefaults": {
+      "page_title": "{statutoryDefaults} — WPM"
     }
   },
   "titles": {
@@ -1513,7 +1517,8 @@
     "aiRegister": "Register AI dan penilaian — WPM",
     "bargaining": "Perundingan bersama — WPM",
     "consultations": "Konsultasi — WPM",
-    "decisionGates": "Gerbang keputusan — WPM"
+    "decisionGates": "Gerbang keputusan — WPM",
+    "statutoryDefaults": "Bawaan menurut undang-undang — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2722,6 +2727,39 @@
       "no_gate": "Tidak ada gerbang untuk jenis perubahan ini.",
       "reference_needed": "{n} badan untuk dikonsultasikan: catat rujukan konsultasi bersama perubahan.",
       "reference_given": "Rujukan konsultasi telah diberikan. WPM tidak menilai apakah itu cukup."
+    }
+  },
+  "statutoryDefaults": {
+    "hint": "Setiap pengaturan yang nilai bawaannya adalah nilai satu rezim, atau titik awal yang bukan milik rezim mana pun: nilai yang berlaku, apakah penerapan ini menetapkannya, dan milik siapa nilai bawaan itu. Nilai bawaan adalah titik awal untuk dikonfirmasi, bukan pernyataan bahwa penerapan ini tunduk pada rezim itu. Halaman ini hanya membaca; pengaturan diubah di konfigurasi layanan.",
+    "reference_note": "Nilai bawaan dan dasarnya adalah teks layanan itu sendiri, dalam bahasa Inggris.",
+    "setting": "Pengaturan",
+    "area": "Bidang",
+    "value": "Berlaku",
+    "set": "Ditetapkan",
+    "default": "Bawaan",
+    "regime": "Milik siapa",
+    "status": "Sumber",
+    "reference": "Dasarnya",
+    "set_here": "Ditetapkan oleh penerapan ini",
+    "default_used": "Tidak ditetapkan: nilai bawaan",
+    "no_regime": "Bukan milik rezim mana pun",
+    "on": "Aktif",
+    "off": "Nonaktif",
+    "none": "Tidak ada",
+    "tier": "pekerja, sekurang-kurangnya: {workers}; tahun antarlaporan: {years}; laporan pertama: {date}",
+    "statuses": {
+      "read": "Dibaca terhadap teksnya",
+      "unverified": "Tidak diperiksa terhadap teksnya",
+      "example": "Contoh dalam bentuk suatu rezim",
+      "starting_point": "Titik awal"
+    },
+    "areas": {
+      "ai_register": "Register AI",
+      "flexible_working": "Kerja fleksibel",
+      "pay_transparency": "Transparansi upah",
+      "payroll": "Penggajian",
+      "resignation": "Pengunduran diri",
+      "retention": "Penyimpanan"
     }
   }
 }

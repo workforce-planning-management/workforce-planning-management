@@ -51,7 +51,8 @@
     "aiRegister": "Cofrestr AI a sgorio",
     "bargaining": "Bargeinio ar y cyd",
     "consultations": "Ymgynghoriadau",
-    "decisionGates": "Pyrth penderfynu"
+    "decisionGates": "Pyrth penderfynu",
+    "statutoryDefaults": "Rhagosodiadau statudol"
   },
   "pr": {
     "retention": "Cadw data",
@@ -1506,6 +1507,9 @@
     },
     "decisionGates": {
       "page_title": "{decisionGates} — WPM"
+    },
+    "statutoryDefaults": {
+      "page_title": "{statutoryDefaults} — WPM"
     }
   },
   "titles": {
@@ -1548,7 +1552,8 @@
     "aiRegister": "Cofrestr AI a sgorio — WPM",
     "bargaining": "Bargeinio ar y cyd — WPM",
     "consultations": "Ymgynghoriadau — WPM",
-    "decisionGates": "Pyrth penderfynu — WPM"
+    "decisionGates": "Pyrth penderfynu — WPM",
+    "statutoryDefaults": "Rhagosodiadau statudol — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -2767,6 +2772,39 @@
       "no_gate": "Nid oes porth wedi'i osod ar gyfer y math hwn o newid.",
       "reference_needed": "{n} corff i ymgynghori â nhw: cofnodwch gyfeirnod yr ymgynghoriad gyda'r newid.",
       "reference_given": "Rhoddwyd cyfeirnod ymgynghori. Nid yw WPM yn barnu a yw'n ddigon."
+    }
+  },
+  "statutoryDefaults": {
+    "hint": "Pob gosodiad y mae ei ragosodiad yn werth un drefn, neu'n fan cychwyn nad yw'n perthyn i unrhyw drefn: y gwerth sydd mewn grym, a osododd y gosodiad hwn ef, ac eiddo pwy yw'r rhagosodiad. Man cychwyn i'w gadarnhau yw rhagosodiad, nid datganiad bod y gosodiad hwn o dan y drefn honno. Darllen yn unig y mae'r dudalen hon; newidir gosodiad yng nghyfluniad y gwasanaeth.",
+    "reference_note": "Testun y gwasanaeth ei hun, yn Saesneg, yw'r rhagosodiad a'r hyn y mae'n seiliedig arno.",
+    "setting": "Gosodiad",
+    "area": "Maes",
+    "value": "Mewn grym",
+    "set": "Wedi'i osod",
+    "default": "Rhagosodiad",
+    "regime": "Rhagosodiad pwy",
+    "status": "Ffynhonnell",
+    "reference": "Yr hyn y mae'n seiliedig arno",
+    "set_here": "Wedi'i osod gan y gosodiad hwn",
+    "default_used": "Heb ei osod: y rhagosodiad",
+    "no_regime": "Dim un drefn",
+    "on": "Ymlaen",
+    "off": "I ffwrdd",
+    "none": "Dim",
+    "tier": "gweithwyr, o leiaf: {workers}; blynyddoedd rhwng adroddiadau: {years}; adroddiad cyntaf: {date}",
+    "statuses": {
+      "read": "Wedi'i ddarllen yn erbyn y testun",
+      "unverified": "Heb ei wirio yn erbyn y testun",
+      "example": "Enghraifft ar ffurf un drefn",
+      "starting_point": "Man cychwyn"
+    },
+    "areas": {
+      "ai_register": "Cofrestr DA",
+      "flexible_working": "Gweithio hyblyg",
+      "pay_transparency": "Tryloywder cyflog",
+      "payroll": "Cyflogres",
+      "resignation": "Ymddiswyddo",
+      "retention": "Cadw"
     }
   }
 }

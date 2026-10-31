@@ -51,7 +51,8 @@
     "aiRegister": "人工智能与评分登记册",
     "bargaining": "集体谈判",
     "consultations": "磋商",
-    "decisionGates": "决策关口"
+    "decisionGates": "决策关口",
+    "statutoryDefaults": "法定默认值"
   },
   "pr": {
     "retention": "保留",
@@ -1471,6 +1472,9 @@
     },
     "decisionGates": {
       "page_title": "{decisionGates} — WPM"
+    },
+    "statutoryDefaults": {
+      "page_title": "{statutoryDefaults} — WPM"
     }
   },
   "titles": {
@@ -1513,7 +1517,8 @@
     "aiRegister": "人工智能与评分登记册 — WPM",
     "bargaining": "集体谈判 — WPM",
     "consultations": "磋商 — WPM",
-    "decisionGates": "决策关口 — WPM"
+    "decisionGates": "决策关口 — WPM",
+    "statutoryDefaults": "法定默认值 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -2722,6 +2727,39 @@
       "no_gate": "此类变更未设置关口。",
       "reference_needed": "需磋商 {n} 个机构：请将磋商引用与变更一并记录。",
       "reference_given": "已提供磋商引用。WPM 不判断其是否足够。"
+    }
+  },
+  "statutoryDefaults": {
+    "hint": "默认值为某一法律制度之值，或不属于任何制度的起点的每项设置：当前生效的值、本部署是否设置了它，以及该默认值属于谁。默认值是需要确认的起点，绝不表示本部署受该制度管辖。本页仅供查看；设置在服务的配置中更改。",
+    "reference_note": "默认值及其依据是服务自身的英文文本。",
+    "setting": "设置",
+    "area": "领域",
+    "value": "生效值",
+    "set": "已设置",
+    "default": "默认值",
+    "regime": "默认值属于",
+    "status": "来源",
+    "reference": "依据",
+    "set_here": "由本部署设置",
+    "default_used": "未设置：使用默认值",
+    "no_regime": "不属于任何制度",
+    "on": "开",
+    "off": "关",
+    "none": "无",
+    "tier": "员工人数下限：{workers}；报告间隔年数：{years}；首次报告：{date}",
+    "statuses": {
+      "read": "已对照原文阅读",
+      "unverified": "未对照原文核实",
+      "example": "某一制度形式的示例",
+      "starting_point": "起点"
+    },
+    "areas": {
+      "ai_register": "AI 登记册",
+      "flexible_working": "弹性工作",
+      "pay_transparency": "薪酬透明",
+      "payroll": "薪资发放",
+      "resignation": "辞职",
+      "retention": "保留"
     }
   }
 }

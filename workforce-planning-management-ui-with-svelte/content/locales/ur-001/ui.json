@@ -51,7 +51,8 @@
     "aiRegister": "اے آئی اور اسکورنگ رجسٹر",
     "bargaining": "اجتماعی سودے بازی",
     "consultations": "مشاورت",
-    "decisionGates": "فیصلہ دروازے"
+    "decisionGates": "فیصلہ دروازے",
+    "statutoryDefaults": "قانونی طے شدہ اقدار"
   },
   "pr": {
     "retention": "ڈیٹا برقراری",
@@ -1478,6 +1479,9 @@
     },
     "decisionGates": {
       "page_title": "{decisionGates} — WPM"
+    },
+    "statutoryDefaults": {
+      "page_title": "{statutoryDefaults} — WPM"
     }
   },
   "titles": {
@@ -1520,7 +1524,8 @@
     "aiRegister": "اے آئی اور اسکورنگ رجسٹر — WPM",
     "bargaining": "اجتماعی سودے بازی — WPM",
     "consultations": "مشاورت — WPM",
-    "decisionGates": "فیصلہ دروازے — WPM"
+    "decisionGates": "فیصلہ دروازے — WPM",
+    "statutoryDefaults": "قانونی طے شدہ اقدار — WPM"
   },
   "values": {
     "abandoned": "ترک شدہ",
@@ -2731,6 +2736,39 @@
       "no_gate": "اس قسم کی تبدیلی کے لیے کوئی دروازہ نہیں۔",
       "reference_needed": "مشاورت کے لیے {n} ادارے: تبدیلی کے ساتھ مشاورت کا حوالہ درج کریں۔",
       "reference_given": "مشاورت کا حوالہ دیا گیا۔ WPM یہ نہیں پرکھتا کہ یہ کافی ہے یا نہیں۔"
+    }
+  },
+  "statutoryDefaults": {
+    "hint": "ہر وہ ترتیب جس کی طے شدہ قدر کسی ایک قانونی نظام کی قدر ہے، یا ایسا نقطۂ آغاز جو کسی نظام کا نہیں: نافذ قدر، کیا اس تنصیب نے اسے مقرر کیا، اور طے شدہ قدر کس کی ہے۔ طے شدہ قدر تصدیق کے لیے ایک نقطۂ آغاز ہے، یہ کبھی یہ بیان نہیں کہ یہ تنصیب اس نظام کے تحت ہے۔ یہ صفحہ صرف پڑھتا ہے؛ ترتیب سروس کی کنفیگریشن میں بدلی جاتی ہے۔",
+    "reference_note": "طے شدہ قدر اور جس پر وہ مبنی ہے، سروس کی اپنی تحریر ہے، انگریزی میں۔",
+    "setting": "ترتیب",
+    "area": "شعبہ",
+    "value": "نافذ",
+    "set": "مقرر",
+    "default": "طے شدہ",
+    "regime": "کس کی طے شدہ",
+    "status": "ماخذ",
+    "reference": "کس پر مبنی",
+    "set_here": "اس تنصیب نے مقرر کی",
+    "default_used": "مقرر نہیں: طے شدہ قدر",
+    "no_regime": "کسی نظام کی نہیں",
+    "on": "چالو",
+    "off": "بند",
+    "none": "کوئی نہیں",
+    "tier": "کارکن، کم از کم: {workers}؛ رپورٹوں کے درمیان سال: {years}؛ پہلی رپورٹ: {date}",
+    "statuses": {
+      "read": "متن سے ملا کر پڑھا گیا",
+      "unverified": "متن سے جانچا نہیں گیا",
+      "example": "کسی نظام کی شکل میں ایک مثال",
+      "starting_point": "ایک نقطۂ آغاز"
+    },
+    "areas": {
+      "ai_register": "اے آئی رجسٹر",
+      "flexible_working": "لچکدار کام",
+      "pay_transparency": "تنخواہ کی شفافیت",
+      "payroll": "پے رول",
+      "resignation": "استعفیٰ",
+      "retention": "محفوظ رکھنا"
     }
   }
 }
