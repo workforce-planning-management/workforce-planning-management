@@ -96,7 +96,7 @@ async fn a_worker_manages_only_their_own_details() {
     let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
     let hr = bearer(sign_as(&kid, "hr-user", &[("hr", &["true"])]));
 
-    request::<App, _, _>(|request, _ctx| async move {
+    request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         let make = |person: uuid::Uuid, number: &'static str| {
             let request = &request;
@@ -143,7 +143,30 @@ async fn a_worker_manages_only_their_own_details() {
         // The worker writes their own, past a policy that lets only HR write.
         let saved = put("/api/me/contact-details".into(), me.clone(), good.clone()).await;
         assert_eq!(saved.status_code(), 200);
-        assert_eq!(saved.json::<Value>()["contact_details"]["country"], "GB", "country is stored in capitals");
+        let saved: Value = saved.json();
+        assert_eq!(saved["contact_details"]["country"], "GB", "country is stored in capitals");
+        // The number is kept as typed, as ASCII digits and in E.164 (WPM-D152).
+        assert_eq!(saved["contact_details"]["phone_mobile"], "+44 7700 900123");
+        assert_eq!(saved["contact_details"]["phone_mobile_digits"], "447700900123");
+        assert_eq!(saved["contact_details"]["phone_mobile_e164"], "+447700900123");
+        assert_eq!(saved["contact_details"]["phone_home_e164"], Value::Null);
+        // Only HR searches by number: the worker is refused, HR finds them.
+        let search = |token: String| {
+            let (request, org) = (&request, org.clone());
+            async move {
+                request.get("/api/contact-details/search").add_header("authorization", token)
+                    .add_query_param("organization", org).add_query_param("phone", "07700 900123").await
+            }
+        };
+        // HR searches within an organization it belongs to; the worker belongs to none here.
+        sea_orm::ConnectionTrait::execute_unprepared(&ctx.db, &format!(
+            "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
+             VALUES ('{}', 'person:hr-user', '{org}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+        assert_eq!(search(me.clone()).await.status_code(), 404, "outside the organizations the worker may search: not found");
+        let found = search(hr.clone()).await;
+        assert_eq!(found.status_code(), 200, "{}", found.text());
+        let found: Value = found.json();
+        assert_eq!(found["workers"][0]["pid"], w1.as_str());
         // It is replaced as a whole: a field left out is cleared.
         let replaced: Value = put("/api/me/contact-details".into(), me.clone(), json!({ "city": "York" })).await.json();
         assert_eq!(replaced["contact_details"]["city"], "York");

@@ -24,6 +24,10 @@ pub struct Model {
     pub phone_mobile: Option<String>,
     pub phone_home: Option<String>,
     pub personal_email: Option<String>,
+    pub phone_mobile_digits: Option<String>,
+    pub phone_mobile_e164: Option<String>,
+    pub phone_home_digits: Option<String>,
+    pub phone_home_e164: Option<String>,
     pub recorded_by: Option<String>,
     pub on_behalf: bool,
 }

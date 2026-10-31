@@ -39,7 +39,9 @@ A worker updates, without HR: **home address**, **telephone numbers**, **persona
   lists (Arabic-Indic, Devanagari, Bengali, Thai and others), for contact details and emergency contacts alike. Values are stored as
   typed (trimmed); how an address is ordered and how a number is stored are WPM-D152 (confirmed 2026-10-31). Beside the structured
   fields, an address may be one free-text block (`address_text`, up to 500 characters on up to 10 lines) in the person's own order,
-  which the UI offers for a country its address table lacks.
+  which the UI offers for a country its address table lacks. A telephone number is kept as typed and, derived beside it, as
+  ASCII digits (search and export) and as E.164 where it can be derived without guessing (`rules::phone`): HR finds a
+  worker by number over those forms, never the typed text.
 
 ## WPM-R125 — Equality and diversity monitoring (bounded, off by default)
 

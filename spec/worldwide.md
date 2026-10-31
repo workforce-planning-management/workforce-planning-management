@@ -455,7 +455,35 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   throwaway local databases; UI lint, svelte-check (0 errors, 0 warnings), 325 vitest, Playwright 342 passed and 19 skipped, build;
   the block screenshot looked at (light, desktop width). **Not run locally:** the MSRV check (no 1.97 toolchain here), gitleaks, the
   least-privilege drill.
-  **What remains, and why:** the phone number's stored form (question 2) and the country picker (question 3). **Not done either:** other `en-001` words a reader may
+  **Part 2 of the rest done (2026-10-31), D152 question 2, all three forms:** a number is stored as typed (unchanged), and beside it
+  as ASCII digits and as E.164 where derivable (`rules::phone`; migration 114 adds `phone_mobile_digits`, `phone_mobile_e164`,
+  `phone_home_digits` and `phone_home_e164` to `worker_contact_details`, and `phone_digits`, `phone_e164`, `alt_phone_digits` and
+  `alt_phone_e164` to `emergency_contacts`, and backfills every existing row in SQL). **E.164 is derived only** from a number written
+  with `+`, or, for a worker's own number, read in the address's country, else the country of `work_jurisdiction` (WPM-T380), when
+  that country is in `src/rules/data/calling-codes.tsv`: 91 countries with their calling code and trunk prefix. The trunk prefixes are
+  those of the contact relationship management matcher 0.2.0's `TRUNK_PREFIXES` (keyed there by calling code, themselves "not checked
+  against each regulator"); the country for each calling code was written by the AI assistant and **not read against the ITU list:
+  the table is unverified**. A national number loses its plan's trunk prefix; the plan with calling code 1 takes ten digits, or eleven
+  starting `1`; a number starting `00`, a country not in the table, an address country with no plan (the place of work's is then not
+  tried), or a result over 15 digits has **no** E.164 form (null), never a guess. An emergency contact's number is never read in the
+  worker's country: only `+` gives it an E.164 form. When HR changes a worker's `work_jurisdiction` the E.164 forms are re-derived in
+  the same transaction. **Search:** `GET /api/contact-details/search?organization=&phone=` (HR of the organization) compares the
+  stored digits (leading zeros aside) and E.164 forms, never the typed text; the answer names the workers and which number matched,
+  never a number; each worker found is audited `contact_details_found`. **Export:** both reads, the emergency contact list and the
+  subject-access export carry the derived forms. The UI shows them under each saved number, or says there is no international form.
+  **The backfill is SQL** (the migration crate is published and stays independent of the service); a unit test checks its frozen copies
+  of the digit sets and the calling-code table equal the rule's, and a request test runs it over six workers' rows and a contact and
+  checks it agrees with the rule. **Tests:** 9 new service unit tests (digits in five scripts, `+` numbers, national numbers and trunk
+  prefixes of four shapes, the plan with code 1, which country is used, both forms and the search key, the matcher, the table, the frozen
+  copies), 2 new request tests (the backfill against the rule, re-derivation on a change of place, the search, its refusals and its
+  audit), `enforcement_me` extended (three forms on a self-service write; the worker gets a 404 from the search, HR of the organization
+  finds them); 1 Playwright test (the forms shown after a save). **Not done:** no UI for the search; an extension (`x123`) is not split
+  off (the shape rule refuses one); a number written without `+` in a country the table lacks has no E.164 form; the contact
+  relationship management family's own normalizer was not changed or shared. **Not verified:** the calling-code table against ITU-T
+  E.164 and the national plans. **Verified (2026-10-31):** service fmt, clippy pedantic `-D warnings`, 1,094 unit tests, 195 request
+  tests, `enforcement_me`, `route_coverage` and `personal_data_inventory` on throwaway local databases; UI lint, svelte-check, 325
+  vitest, Playwright 343 passed and 19 skipped, build. **Not run locally:** the MSRV check, the least-privilege drill.
+  **What remains, and why:** the country picker (question 3). **Not done either:** other `en-001` words a reader may
   take as British (`rota`, `redundancy`, `payslip`) were left: they name features and closed vocabularies, and changing them is a
   terminology review across 12 translations; `ar-001`, `bn-001` and the other translations of the address labels were not re-read
   against the new English. **Not tested:** the labels in a browser in `en-us` or `en-gb` (the override files are read by the same loader

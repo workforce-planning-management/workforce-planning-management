@@ -2904,6 +2904,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/contact-details/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** HR finds an organization's workers by one of their own telephone numbers (?organization=&phone=); compared over the stored ASCII digits and E.164 forms, never the typed text; names the workers and which number matched, never a number; each worker found is audited (WPM-D152) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Workers found */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/conversion-plans": {
         parameters: {
             query?: never;

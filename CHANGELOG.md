@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — telephone numbers kept three ways (WPM-T382, WPM-D152 question 2)
+
+A number is kept as typed, as ASCII digits (search, export) and as E.164 where it can be derived from a `+` or a known country, never
+guessed; existing rows are backfilled; HR can find a worker by number. **Not verified:** the calling-code table (91 countries). Also
+fixes the stale `spec/implementation-status.md` of the previous push (counted from files not yet committed).
+
 ### Changed — addresses follow the country's order, or are one free-text block (WPM-T382, WPM-D152 question 1)
 
 The contact details form shows the address in the chosen country's order and with its labels for ten countries, and offers one

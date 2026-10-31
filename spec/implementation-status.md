@@ -15,13 +15,13 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Database migrations | 114 |
 | Controllers | 86 |
 | Pure rule modules | 117 |
-| OpenAPI paths | 450 |
-| Rust unit tests (`#[test]` in `src/`) | 1110 |
-| Rust request tests (`tests/requests/`) | 193 |
+| OpenAPI paths | 451 |
+| Rust unit tests (`#[test]` in `src/`) | 1112 |
+| Rust request tests (`tests/requests/`) | 195 |
 | Rust test binaries beside the request suite | 26 |
 | Front-end unit test files | 39 |
 | Front-end unit tests (`it(` / `test(`) | 278 |
-| Playwright tests (`test(`) | 237 |
+| Playwright tests (`test(`) | 238 |
 | Front-end pages (`+page.svelte`) | 57 |
 | Content locales | 17 |
 | Topic files in `spec/` (not counting this one) | 58 |

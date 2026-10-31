@@ -91,6 +91,8 @@ actor, and — where a detail would itself be sensitive — **without it**:
 - `job_level_set|cleared` on a worker (never the level), `grade_set|cleared` on a
   role profile (the level and band named — a role is not a person),
 - `emergency_contact_added|updated|removed` (never the contact's details),
+  `contact_details_set|cleared|read` and `contact_details_found` (a worker found by HR's search by telephone number,
+  WPM-D152) on a worker (never a value or the number searched for),
   `backup_added|updated|removed`;
 - `created|updated|retired` and `swap_added|swap_removed|swap_requested|
   swap_accepted|swap_declined|swap_cancelled` on a rota;

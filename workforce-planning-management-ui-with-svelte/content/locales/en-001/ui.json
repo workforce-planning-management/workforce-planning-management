@@ -2283,7 +2283,10 @@
       "phone_mobile": "Mobile telephone",
       "phone_home": "Home telephone",
       "personal_email": "Personal e-mail",
-      "clear": "Remove all my contact details"
+      "clear": "Remove all my contact details",
+      "digits": "Digits, for search: {digits}",
+      "e164": "International form (E.164): {e164}",
+      "noE164": "No international form: the number has no + and WPM has no numbering plan for a country known for it."
     },
     "time": {
       "title": "My time off",

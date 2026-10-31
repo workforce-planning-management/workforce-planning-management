@@ -13,7 +13,7 @@
     setMyContactDetails,
     type MyContactDetails,
   } from "#lib/api/wpm.js";
-  import { t } from "#lib/i18n.svelte.js";
+  import { t, tp } from "#lib/i18n.svelte.js";
   import { addressLayout } from "#lib/address-formats.js";
 
   const FIELDS = [
@@ -34,6 +34,8 @@
   let form = $state<Record<Field, string>>(blank());
   const layout = $derived(addressLayout(form.country, form));
   let held = $state(false);
+  // What the service stored beside each number (WPM-D152): shown for the saved value, not while typing.
+  let stored = $state<MyContactDetails | null>(null);
   let saved = $state(false);
   let error = $state<string | null>(null);
 
@@ -44,6 +46,7 @@
 
   function fill(details: MyContactDetails | null) {
     held = details !== null;
+    stored = details;
     form = blank();
     if (details) for (const f of FIELDS) form[f] = details[f] ?? "";
   }
@@ -129,6 +132,14 @@
           bind:value={form[f]}
         />
       </label>
+      {#if (f === "phone_mobile" || f === "phone_home") && stored?.[f]}
+        {@const digits = stored[`${f}_digits`]}
+        {@const e164 = stored[`${f}_e164`]}
+        <p class="muted cd-forms" data-testid="contact-{f}-forms">
+          {#if digits}<span>{tp("details.contact.digits", { digits })}</span>{/if}
+          <span>{e164 ? tp("details.contact.e164", { e164 }) : t("details.contact.noE164")}</span>
+        </p>
+      {/if}
     {/each}
     <button type="submit" data-testid="contact-save">{t("common.save")}</button>
     {#if held}
@@ -152,6 +163,15 @@
   }
   .cd-line > label {
     flex: 1 1 10em;
+  }
+  .cd-forms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1em;
+    margin-block: 0 0.5em;
+  }
+  .cd-forms span {
+    unicode-bidi: plaintext;
   }
   textarea {
     inline-size: 100%;

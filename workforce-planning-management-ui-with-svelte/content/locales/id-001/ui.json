@@ -2275,7 +2275,10 @@
       "phone_mobile": "Telepon seluler",
       "phone_home": "Telepon rumah",
       "personal_email": "E-mail pribadi",
-      "clear": "Hapus semua detail kontak saya"
+      "clear": "Hapus semua detail kontak saya",
+      "digits": "Digit, untuk pencarian: {digits}",
+      "e164": "Bentuk internasional (E.164): {e164}",
+      "noE164": "Tidak ada bentuk internasional: nomor tidak memakai + dan WPM tidak memiliki rencana penomoran untuk negara yang diketahui bagi nomor ini."
     },
     "time": {
       "title": "Cuti saya",

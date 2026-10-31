@@ -25,6 +25,10 @@ pub struct Model {
     pub recorded_by: Option<String>,
     pub on_behalf: bool,
     pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub phone_digits: Option<String>,
+    pub phone_e164: Option<String>,
+    pub alt_phone_digits: Option<String>,
+    pub alt_phone_e164: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

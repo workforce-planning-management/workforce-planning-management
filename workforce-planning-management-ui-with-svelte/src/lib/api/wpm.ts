@@ -4648,6 +4648,11 @@ export type MyContactDetails = {
   country: string | null;
   phone_mobile: string | null;
   phone_home: string | null;
+  /** Derived by the service (WPM-D152): the number's ASCII digits, and its E.164 form where derivable, else null. */
+  phone_mobile_digits?: string | null;
+  phone_mobile_e164?: string | null;
+  phone_home_digits?: string | null;
+  phone_home_e164?: string | null;
   personal_email: string | null;
   on_behalf: boolean;
 };

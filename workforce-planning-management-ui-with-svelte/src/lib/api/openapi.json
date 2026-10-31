@@ -3594,6 +3594,19 @@
         ]
       }
     },
+    "/api/contact-details/search": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Workers found"
+          }
+        },
+        "summary": "HR finds an organization's workers by one of their own telephone numbers (?organization=&phone=); compared over the stored ASCII digits and E.164 forms, never the typed text; names the workers and which number matched, never a number; each worker found is audited (WPM-D152)",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/api/conversion-plans": {
       "get": {
         "responses": {

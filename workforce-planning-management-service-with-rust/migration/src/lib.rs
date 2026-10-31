@@ -126,6 +126,7 @@ mod m20261030_000110_peer_event_per_key;
 mod m20261030_000111_ergonomic_item_keys;
 mod m20261031_000112_jurisdiction_profiles;
 mod m20261031_000113_address_text;
+pub mod m20261031_000114_phone_forms;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -252,6 +253,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261030_000111_ergonomic_item_keys::Migration),
             Box::new(m20261031_000112_jurisdiction_profiles::Migration),
             Box::new(m20261031_000113_address_text::Migration),
+            Box::new(m20261031_000114_phone_forms::Migration),
             // inject-above (do not remove this comment)
         ]
     }

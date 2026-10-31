@@ -211,6 +211,11 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "test inputs for the ISO 3166 shape (the message names no country since WPM-T382)",
     ),
     (
+        "phone.rs",
+        "eu",
+        "a test input: a supranational place of work has no numbering plan, so derives no E.164 form",
+    ),
+    (
         "cost.rs",
         "gb",
         "a test input: a two-letter string is not an ISO 4217 code",

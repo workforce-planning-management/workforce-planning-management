@@ -527,6 +527,10 @@ async fn update_worker(
         active.engagement_ends_on = ActiveValue::set(Some(v));
     }
     let row = active.update(&txn).await?;
+    if row.work_jurisdiction != worker.work_jurisdiction {
+        // A number written without + is read in the place of work's country where no address country is given.
+        super::me::refresh_phone_forms(&txn, &row).await?;
+    }
     Audit::record(
         &txn,
         "worker",

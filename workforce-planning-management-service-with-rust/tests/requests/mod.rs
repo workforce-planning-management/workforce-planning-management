@@ -54,6 +54,7 @@ mod pay_range;
 mod pay_scales;
 mod pay_transparency;
 mod payroll;
+mod phone_forms;
 mod plan_views;
 mod policies;
 mod positions;

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a saved number shows its digits and its international form (WPM-T382, WPM-D152)
+
+Under each saved telephone number the contact details panel shows the ASCII digits the service stored for search and its E.164 form,
+or says there is none. Three new strings in the 13 `-001` locales are machine drafts, unreviewed. **Not done:** no screen for HR's
+search by number. **Not tested:** right to left and phone width for the new lines.
+
 ### Changed — the address follows the country's order and labels, with a free-text block for the rest (WPM-T382, WPM-D152)
 
 `src/lib/address-formats.ts` is a per-country order and label table in the shape of Google libaddressinput data, for ten countries

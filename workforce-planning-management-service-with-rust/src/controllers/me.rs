@@ -17,7 +17,7 @@
 use chrono::{Datelike, Utc};
 use loco_rs::controller::ErrorDetail;
 use loco_rs::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
+use sea_orm::{ActiveValue, ConnectionTrait, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -47,6 +47,7 @@ use crate::models::_entities::{
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::contact_details as contact_rules;
+use crate::rules::phone as phone_rules;
 use crate::rules::time_off as time_rules;
 
 /// The caller's own worker record. A person with several records (in several organizations) gets
@@ -82,7 +83,11 @@ fn details_json(row: &worker_contact_details::Model) -> serde_json::Value {
         "address_text": row.address_text,
         "country": row.country,
         "phone_mobile": row.phone_mobile,
+        "phone_mobile_digits": row.phone_mobile_digits,
+        "phone_mobile_e164": row.phone_mobile_e164,
         "phone_home": row.phone_home,
+        "phone_home_digits": row.phone_home_digits,
+        "phone_home_e164": row.phone_home_e164,
         "personal_email": row.personal_email,
         "on_behalf": row.on_behalf,
     })
@@ -96,6 +101,54 @@ async fn details_of(
         .filter(worker_contact_details::Column::WorkerPid.eq(worker_pid))
         .one(&ctx.db)
         .await?)
+}
+
+/// The derived forms of a worker's two numbers (WPM-D152): ASCII digits, and E.164 read in the address's country, else
+/// the country of the place the work is done.
+fn phone_forms(
+    country: Option<&str>,
+    mobile: Option<&str>,
+    home: Option<&str>,
+    work_jurisdiction: Option<&str>,
+) -> (phone_rules::Forms, phone_rules::Forms) {
+    let country = phone_rules::country_for(country, work_jurisdiction);
+    (
+        phone_rules::forms(mobile, country),
+        phone_rules::forms(home, country),
+    )
+}
+
+/// Re-derive the E.164 forms of `worker`'s numbers after the place of work changed (an address country, where there is
+/// one, still wins). Runs on the caller's connection or transaction.
+///
+/// # Errors
+///
+/// A database error.
+pub(crate) async fn refresh_phone_forms<C: ConnectionTrait>(
+    db: &C,
+    worker: &workers::Model,
+) -> Result<()> {
+    let Some(row) = worker_contact_details::Entity::find()
+        .filter(worker_contact_details::Column::WorkerPid.eq(worker.pid))
+        .one(db)
+        .await?
+    else {
+        return Ok(());
+    };
+    let (mobile, home) = phone_forms(
+        row.country.as_deref(),
+        row.phone_mobile.as_deref(),
+        row.phone_home.as_deref(),
+        worker.work_jurisdiction.as_deref(),
+    );
+    if mobile.e164 == row.phone_mobile_e164 && home.e164 == row.phone_home_e164 {
+        return Ok(());
+    }
+    let mut active: worker_contact_details::ActiveModel = row.into();
+    active.phone_mobile_e164 = ActiveValue::set(mobile.e164);
+    active.phone_home_e164 = ActiveValue::set(home.e164);
+    active.update(db).await?;
+    Ok(())
 }
 
 /// `GET /api/me/contact-details` — the caller's own, or `null`.
@@ -163,6 +216,12 @@ async fn set_my_details(
     let details = payload.cleaned();
     contact_rules::validate(&details).map_err(|e| unprocessable(&e))?;
     let recorded_by = caller.actor().map(ToString::to_string);
+    let (mobile, home) = phone_forms(
+        details.country.as_deref(),
+        details.phone_mobile.as_deref(),
+        details.phone_home.as_deref(),
+        worker.work_jurisdiction.as_deref(),
+    );
     let existing = details_of(&ctx, worker.pid).await?;
     let txn = ctx.db.begin().await?;
     let saved = if let Some(row) = existing {
@@ -176,6 +235,10 @@ async fn set_my_details(
         active.country = ActiveValue::set(details.country);
         active.phone_mobile = ActiveValue::set(details.phone_mobile);
         active.phone_home = ActiveValue::set(details.phone_home);
+        active.phone_mobile_digits = ActiveValue::set(mobile.digits);
+        active.phone_mobile_e164 = ActiveValue::set(mobile.e164);
+        active.phone_home_digits = ActiveValue::set(home.digits);
+        active.phone_home_e164 = ActiveValue::set(home.e164);
         active.personal_email = ActiveValue::set(details.personal_email);
         active.recorded_by = ActiveValue::set(recorded_by);
         active.on_behalf = ActiveValue::set(false);
@@ -192,6 +255,10 @@ async fn set_my_details(
             country: ActiveValue::set(details.country),
             phone_mobile: ActiveValue::set(details.phone_mobile),
             phone_home: ActiveValue::set(details.phone_home),
+            phone_mobile_digits: ActiveValue::set(mobile.digits),
+            phone_mobile_e164: ActiveValue::set(mobile.e164),
+            phone_home_digits: ActiveValue::set(home.digits),
+            phone_home_e164: ActiveValue::set(home.e164),
             personal_email: ActiveValue::set(details.personal_email),
             recorded_by: ActiveValue::set(recorded_by),
             on_behalf: ActiveValue::set(false),
@@ -266,6 +333,100 @@ async fn get_worker_details(
         .await?;
     }
     format::json(json!({ "contact_details": row.as_ref().map(details_json) }))
+}
+
+#[derive(Debug, Deserialize)]
+struct PhoneSearch {
+    organization: String,
+    phone: String,
+}
+
+/// `GET /api/contact-details/search?organization=&phone=` — HR finds the workers of an organization whose own mobile or
+/// home number is `phone` (WPM-D152). The comparison is over the stored ASCII digits and E.164 forms, never the typed
+/// text, so a number typed in Arabic-Indic digits is found by one typed in ASCII. The answer names the workers and
+/// which of their numbers matched, never a number; each worker found is audited (`contact_details_found`), without it.
+#[debug_handler]
+async fn search_by_phone(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axum::extract::Query(q): axum::extract::Query<PhoneSearch>,
+) -> Result<Response> {
+    super::ensure_valid(&super::pay_transparency::organization_problems(
+        &q.organization,
+    ))?;
+    super::ensure_org_in_scope(&ctx, &caller, &q.organization).await?;
+    if !super::policies::privileged(&ctx, &caller, &q.organization).await? {
+        return Err(super::forbidden(
+            "searching contact details by telephone number is HR's",
+        ));
+    }
+    if phone_rules::search_digits(&q.phone).is_none_or(|k| k.len() < phone_rules::SEARCH_MIN) {
+        return Err(unprocessable(&format!(
+            "phone must be a telephone number with at least {} digits after any leading zeros",
+            phone_rules::SEARCH_MIN
+        )));
+    }
+    let members: std::collections::HashMap<uuid::Uuid, workers::Model> = workers::Entity::find()
+        .filter(workers::Column::OrganizationRef.eq(q.organization.clone()))
+        .filter(workers::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|w| (w.pid, w))
+        .collect();
+    let rows = worker_contact_details::Entity::find()
+        .filter(worker_contact_details::Column::WorkerPid.is_in(members.keys().copied()))
+        .all(&ctx.db)
+        .await?;
+    let mut found = Vec::new();
+    for details in rows {
+        let Some(worker) = members.get(&details.worker_pid).cloned() else {
+            continue;
+        };
+        let matched: Vec<&str> = [
+            (
+                "phone_mobile",
+                &details.phone_mobile_digits,
+                &details.phone_mobile_e164,
+            ),
+            (
+                "phone_home",
+                &details.phone_home_digits,
+                &details.phone_home_e164,
+            ),
+        ]
+        .into_iter()
+        .filter(|(_, digits, e164)| {
+            phone_rules::matches(digits.as_deref(), e164.as_deref(), &q.phone)
+        })
+        .map(|(field, _, _)| field)
+        .collect();
+        if !matched.is_empty() {
+            found.push((worker, matched));
+        }
+    }
+    found.sort_by(|a, b| a.0.worker_number.cmp(&b.0.worker_number));
+    let txn = ctx.db.begin().await?;
+    for (worker, _) in &found {
+        Audit::record(
+            &txn,
+            "worker",
+            worker.pid,
+            "contact_details_found",
+            caller.actor(),
+            None,
+        )
+        .await?;
+    }
+    txn.commit().await?;
+    format::json(json!({
+        "workers": found.iter().map(|(w, matched)| json!({
+            "pid": w.pid,
+            "worker_number": w.worker_number,
+            "display_name": w.display_name,
+            "matched": matched,
+        })).collect::<Vec<_>>(),
+    }))
 }
 
 // ─── Emergency contacts ─────────────────────────────────────────────────────
@@ -693,4 +854,5 @@ pub fn routes() -> Routes {
         .add("/me/resignation/withdraw", post(withdraw_my_resignation))
         .add("/me/leave-requests/{pid}/cancel", post(cancel_my_leave))
         .add("/workers/{pid}/contact-details", get(get_worker_details))
+        .add("/contact-details/search", get(search_by_phone))
 }

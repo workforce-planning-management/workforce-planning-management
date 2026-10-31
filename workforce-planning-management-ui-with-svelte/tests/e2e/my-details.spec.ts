@@ -362,6 +362,53 @@ test("the address follows the country's order and labels, and a country the tabl
     });
 });
 
+test("a saved number shows its stored digits and its E.164 form, or says there is none", async ({
+  page,
+}) => {
+  await signIn(page);
+  await stub(page);
+  let body: Record<string, unknown> | null = null;
+  await page.route("**/api/proxy/me/contact-details", (route) => {
+    if (route.request().method() === "PUT") {
+      body = route.request().postDataJSON() as Record<string, unknown>;
+      return route.fulfill({
+        json: {
+          contact_details: {
+            ...body,
+            phone_mobile_digits: "01012345678",
+            phone_mobile_e164: "+821012345678",
+            phone_home_digits: "025550100",
+            phone_home_e164: null,
+            on_behalf: false,
+          },
+        },
+      });
+    }
+    return route.fulfill({ json: { contact_details: null } });
+  });
+  await page.goto("/en-001/me/details");
+  await expect(page.getByTestId("my-contact-details")).toBeVisible();
+  await expect(page.getByTestId("contact-phone_mobile-forms")).toHaveCount(0);
+  await page.getByTestId("contact-phone_mobile").fill("٠١٠-١٢٣٤-٥٦٧٨");
+  await page.getByTestId("contact-phone_home").fill("02 555 0100");
+  await page.getByTestId("contact-save").click();
+  await expect(page.getByTestId("contact-saved")).toBeVisible();
+  expect(body).toMatchObject({ phone_mobile: "٠١٠-١٢٣٤-٥٦٧٨" });
+  // As typed in the box; beside it, what the service derived.
+  await expect(page.getByTestId("contact-phone_mobile")).toHaveValue(
+    "٠١٠-١٢٣٤-٥٦٧٨",
+  );
+  await expect(page.getByTestId("contact-phone_mobile-forms")).toContainText(
+    "Digits, for search: 01012345678",
+  );
+  await expect(page.getByTestId("contact-phone_mobile-forms")).toContainText(
+    "(E.164): +821012345678",
+  );
+  await expect(page.getByTestId("contact-phone_home-forms")).toContainText(
+    "No international form",
+  );
+});
+
 test("time off: the balance, a cancellable request, and a request without a reason for sick leave", async ({
   page,
 }) => {

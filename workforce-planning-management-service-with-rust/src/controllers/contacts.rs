@@ -15,7 +15,10 @@
 //! Both follow the aspirations pattern: edits record who made them and
 //! whether on the person's behalf, and write an audit entry.
 
+// An emergency contact's number is not read in the worker's country (the contact may live elsewhere): only a number
+// written with `+` has an E.164 form (WPM-D152).
 use super::writable_worker;
+use crate::rules::phone as phone_rules;
 use chrono::{NaiveDate, Utc};
 use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -48,6 +51,10 @@ fn contact_row(c: &emergency_contacts::Model) -> serde_json::Value {
         "relationship": c.relationship,
         "phone": c.phone,
         "alt_phone": c.alt_phone,
+        "phone_digits": c.phone_digits,
+        "phone_e164": c.phone_e164,
+        "alt_phone_digits": c.alt_phone_digits,
+        "alt_phone_e164": c.alt_phone_e164,
         "email": c.email,
         "priority": c.priority,
         "note": c.note,
@@ -153,6 +160,16 @@ pub(crate) async fn add_contact_for(
         name: ActiveValue::set(payload.name.trim().to_string()),
         relationship: ActiveValue::set(payload.relationship.trim().to_string()),
         phone: ActiveValue::set(payload.phone.trim().to_string()),
+        phone_digits: ActiveValue::set(phone_rules::ascii_digits(payload.phone.trim())),
+        phone_e164: ActiveValue::set(phone_rules::e164(payload.phone.trim(), None)),
+        alt_phone_digits: ActiveValue::set(
+            alt_phone.as_deref().and_then(phone_rules::ascii_digits),
+        ),
+        alt_phone_e164: ActiveValue::set(
+            alt_phone
+                .as_deref()
+                .and_then(|p| phone_rules::e164(p, None)),
+        ),
         alt_phone: ActiveValue::set(alt_phone),
         email: ActiveValue::set(email),
         priority: ActiveValue::set(priority),
@@ -256,6 +273,15 @@ pub(crate) async fn update_contact_for(
     active.name = ActiveValue::set(name.trim().to_string());
     active.relationship = ActiveValue::set(relationship.trim().to_string());
     active.phone = ActiveValue::set(phone.trim().to_string());
+    active.phone_digits = ActiveValue::set(phone_rules::ascii_digits(phone.trim()));
+    active.phone_e164 = ActiveValue::set(phone_rules::e164(phone.trim(), None));
+    active.alt_phone_digits =
+        ActiveValue::set(alt_phone.as_deref().and_then(phone_rules::ascii_digits));
+    active.alt_phone_e164 = ActiveValue::set(
+        alt_phone
+            .as_deref()
+            .and_then(|p| phone_rules::e164(p, None)),
+    );
     active.alt_phone = ActiveValue::set(alt_phone);
     active.email = ActiveValue::set(email);
     active.priority = ActiveValue::set(priority);

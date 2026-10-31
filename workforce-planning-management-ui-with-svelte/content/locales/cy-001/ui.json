@@ -2315,7 +2315,10 @@
       "phone_mobile": "Ffôn symudol",
       "phone_home": "Ffôn cartref",
       "personal_email": "E-bost personol",
-      "clear": "Dileu fy holl fanylion cyswllt"
+      "clear": "Dileu fy holl fanylion cyswllt",
+      "digits": "Digidau, i chwilio: {digits}",
+      "e164": "Ffurf ryngwladol (E.164): {e164}",
+      "noE164": "Dim ffurf ryngwladol: nid oes + yn y rhif ac nid oes gan WPM gynllun rhifo ar gyfer gwlad hysbys iddo."
     },
     "time": {
       "title": "Fy amser i ffwrdd",

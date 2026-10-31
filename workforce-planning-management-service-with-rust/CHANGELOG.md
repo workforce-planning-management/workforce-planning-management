@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a telephone number kept as typed, as ASCII digits and as E.164; search by number (WPM-T382, WPM-D152)
+
+`rules::phone` derives a number's ASCII digits (any digit set the shape rule reads) and its E.164 form, only from a `+` number or, for
+a worker's own number, from the address's country else the `work_jurisdiction` country, when `src/rules/data/calling-codes.tsv` (91
+countries, unverified) holds it; otherwise null. Migration 114 adds the derived columns to `worker_contact_details` and
+`emergency_contacts` and backfills existing rows in SQL. Writes fill them; a change of `work_jurisdiction` re-derives them. The
+contact-details reads, the emergency contact list and the subject-access export carry them. New `GET /api/contact-details/search`
+(HR of the organization) matches over the stored forms, names no number, and audits `contact_details_found` per worker found.
+**Not done:** an extension is not split off; no country outside the table gets a derived form. **Not verified:** the calling-code
+table against ITU-T E.164.
+
 ### Added — an address as one free-text block (WPM-T382, WPM-D152)
 
 Migration 113 adds `worker_contact_details.address_text`: the whole address as one block in the person's own order, beside the

@@ -42,6 +42,7 @@ applied to HR.
 | a worker's pay band and step (is a salary) | high — the person + HR only; the audit entry and the reminder name no band, step or amount (WPM-D41) |
 | a worker's job level (seniority; tracks pay) | high — the person + HR only; the audit entry names no level (WPM-D40) |
 | emergency contacts (third-party personal data) | high — the person + HR only; a manager cannot read them |
+| a worker's own contact details, and finding a worker by telephone number | high — the person, HR and payroll read them; only HR of the organization searches by number (`GET /api/contact-details/search`, outside its organizations a 404); the answer names the workers and which number matched, never a number; each worker found is audited (WPM-D152) |
 | skill aspirations | private unless shared (`manager` / `everyone`); never in workforce roll-ups |
 | directory, backups, on-call, announcements (live) | low — anyone who can read the organization; the directory shows *away*, never why |
 | scheduled / expired announcements; posting, editing | `hr_admin` / `org_admin` of that organization (when auth is on) |

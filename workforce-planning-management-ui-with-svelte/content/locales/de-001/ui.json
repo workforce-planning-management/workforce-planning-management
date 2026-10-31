@@ -2283,7 +2283,10 @@
       "phone_mobile": "Mobiltelefon",
       "phone_home": "Festnetztelefon",
       "personal_email": "Private E-Mail-Adresse",
-      "clear": "Alle meine Kontaktdaten entfernen"
+      "clear": "Alle meine Kontaktdaten entfernen",
+      "digits": "Ziffern, für die Suche: {digits}",
+      "e164": "Internationale Form (E.164): {e164}",
+      "noE164": "Keine internationale Form: Die Nummer hat kein + und WPM kennt keinen Rufnummernplan für ein dazu bekanntes Land."
     },
     "time": {
       "title": "Meine Abwesenheit",
