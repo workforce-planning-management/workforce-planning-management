@@ -242,7 +242,10 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
             .filter(|n| n["kind"] == "expense_decided")
             .collect();
         assert_eq!(decided.len(), 2, "approved and reimbursed");
-        assert!(!serde_json::to_string(&decided).unwrap().contains("5500"));
+        assert!(!names_figure(
+            &serde_json::to_string(&decided).unwrap(),
+            "5500"
+        ));
 
         // Audit: events recorded, no amount or title.
         let audit = serde_json::to_string(
@@ -254,7 +257,7 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
         .unwrap();
         assert!(audit.contains("expense_claim_reimbursed"), "{audit}");
         assert!(
-            !audit.contains("5500") && !audit.contains("Leeds"),
+            !names_figure(&audit, "5500") && !audit.contains("Leeds"),
             "{audit}"
         );
 
@@ -450,4 +453,15 @@ async fn currencies_are_checked_against_the_iso_4217_table() {
         request.post("/api/requisitions").json(&requisition("PKR")).await.assert_status_ok();
     })
     .await;
+}
+
+/// Whether `text` holds `figure` as a token of its own: not inside a hash, a UUID or a longer number, where four
+/// hex digits occur by chance (the audit trail's chain hashes once held "5500", turning CI red).
+fn names_figure(text: &str, figure: &str) -> bool {
+    let part = |c: char| c.is_ascii_alphanumeric() || c == '-';
+    text.match_indices(figure).any(|(at, _)| {
+        let before = text[..at].chars().next_back();
+        let after = text[at + figure.len()..].chars().next();
+        !before.is_some_and(part) && !after.is_some_and(part)
+    })
 }

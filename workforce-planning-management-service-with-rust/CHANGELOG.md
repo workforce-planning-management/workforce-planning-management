@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the expense journey's audit check is not tripped by a hash (WPM-T408)
+
+`a_claim_goes_from_draft_to_reimbursed` checked that the audit trail held no `5500` with a substring test, which a chain hash or UUID can
+satisfy by chance (CI run 41182740353). It now looks for the figure as a token of its own. Test code only. **Not done:** two other
+substring checks of a figure (`45000`, `000000`) were left; they have not failed.
+
 ### Added — the jurisdiction parameter registry and resolver (WPM-T407)
 
 `rules::jurisdiction` (pure): jurisdiction codes and layers, `chain` from the place of work over the organization's recorded parents
