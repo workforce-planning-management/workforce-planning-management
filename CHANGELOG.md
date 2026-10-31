@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the product owner's decisions of 2026-10-31 are recorded (WPM-T406)
+
+WPM-D144 (the jurisdiction profile design as written), WPM-D145, WPM-D149 and WPM-D151 now say they are confirmed; WPM-D152 records
+the answers (both address forms, a telephone number kept as typed, as ASCII digits and as E.164 where it can be derived, the country
+picker with deployer-added codes); CRM's one deployer-held HR token (CRM-D16) is recorded as the accepted design in
+`spec/cross-app-bridges.md`. Spec only. **Not done:** nothing that depends on these decisions is built by this change.
+
 ### Added — overtime under a configured contracted day is request-tested (WPM-T405)
 
 A request test sets `WPM_CONTRACTED_DAY_MINUTES` and checks that both the timesheet's derived overtime and the payslip's overtime line

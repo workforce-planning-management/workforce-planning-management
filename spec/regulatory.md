@@ -92,7 +92,7 @@ Tracked as production gates in [tasks.md](tasks.md).
 
 The target is worldwide ([worldwide.md](worldwide.md), WPM-R214). Each region says what was read, by whom and when, and what was not.
 **Not yet read** means nobody working on this specification has read that region's law for WPM; it does not mean the region has no
-such law, and it does not mean WPM fits it. Jurisdiction rules are to be held as data in profiles (proposed WPM-D144), not in this text.
+such law, and it does not mean WPM fits it. Jurisdiction rules are to be held as data in profiles (WPM-D144, confirmed 2026-10-31), not in this text.
 
 ### International standards
 

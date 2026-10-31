@@ -40,12 +40,12 @@ worked cases, not the design.** This file is the rule that stops them becoming t
     expressible for a second, differently shaped jurisdiction (a test with two profiles).
 
 - **WPM-D144 Jurisdiction rules are held as dated, sourced profiles by jurisdiction code, resolved by one pure function.**
-  *Confirmed in part by the product owner, 2026-10-29: questions 1 to 4 of the design (the demo seed always loads example profiles; HR of the organization edits a profile; ISO 3166 plus a deployer-extended supranational list; a structured `work_jurisdiction` set by HR). Question 5 answered "y" to the assistant's suggestion: the second example profile is India, then Japan, both labelled `example`/unverified.* The design is in "Jurisdiction profile design" below: parameters with no default, layers
+  *Confirmed by the product owner, 2026-10-31, as written in full* (questions 1 to 4 of the design were confirmed on 2026-10-29: the demo seed always loads example profiles; HR of the organization edits a profile; ISO 3166 plus a deployer-extended supranational list; a structured `work_jurisdiction` set by HR. Question 5 was answered "y" to the assistant's suggestion: the second example profile is India, then Japan, both labelled `example`/unverified. On 2026-10-31 the registry and resolver design itself was confirmed too). The design is in "Jurisdiction profile design" below: parameters with no default, layers
   (supranational, national, subnational) chained per organization, a combination rule per parameter, the applicable chain taken from the
   place the work is done, and append-only rows with a source and a status.
 
 - **WPM-D149 A calendar's "today", week start and weekend are the reader's, from the browser, until a user or organization setting exists.**
-  *Proposed, needs product-owner confirmation* (drafted 2026-10-30 by the AI assistant for WPM-T378). The UI only; the API keeps ISO
+  *Confirmed by the product owner, 2026-10-31* (drafted 2026-10-30 by the AI assistant for WPM-T378). The UI only; the API keeps ISO
   dates and is unchanged.
   - **Today** is the date in the reader's own time zone (the browser's `Intl.DateTimeFormat().resolvedOptions().timeZone`), never the
     UTC date: near midnight far from UTC the two differ by a day. A timestamp placed on a calendar day (a shift) is placed on its day in
@@ -61,9 +61,17 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   - **Not decided here:** a stored user or organization time zone and region (D144's `work_jurisdiction` could supply the region); the
     service's own "today" (the server's clock) and the working-time and holiday rules' weekend (WPM-T379, WPM-T380).
 
-- **WPM-D152 Addresses and telephone numbers keep what the person typed; their shape per country is a later, recorded choice.**
-  *Proposed, needs product-owner confirmation* (drafted 2026-10-30 by the AI assistant for WPM-T382). Nothing that depends on it is
-  built; what WPM-T382 built (any-script phone digits, no postcode pattern, neutral labels) holds whichever way it is decided.
+- **WPM-D152 Addresses and telephone numbers keep what the person typed; their shape per country is a recorded choice.**
+  *Confirmed by the product owner, 2026-10-31, with the answers below* (drafted 2026-10-30 by the AI assistant for WPM-T382). What
+  WPM-T382 built (any-script phone digits, no postcode pattern, neutral labels) holds.
+  - **The answers (2026-10-31).** **Question 1: (c), both.** The structured fields stay, with a per-country order and label table, and a
+    free-text address block is the fallback for a country the table lacks. **Question 2: all three forms are kept.** A number is stored
+    as typed; beside it as ASCII digits (for search and export); and as E.164 where it can be derived: the number was written with `+`,
+    or its country is known (the address's country, else the worker's `work_jurisdiction` country). A country is never guessed, and
+    where none of these holds the E.164 form is absent, not invented. **Question 3: the picker.** Names come from `Intl.DisplayNames` in
+    the page's locale, the stored value is the ISO 3166-1 code, and a deployer may add a code ISO 3166-1 lacks (for example `XK`) from
+    D144's supranational and deployer-extended list.
+  - *As drafted, for the record:*
   - **Question 1, the address shape.** (a) Keep the structured fields (two lines, locality, region, postal code, country) and add a
     per-country order and label table (the shape of Google's libaddressinput data; CLDR has none), so a Japanese address is shown large
     to small and a US one with "State" and "ZIP Code"; or (b) one free-text address block plus the country, ordered by the person; or
@@ -77,7 +85,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
     the picker, with the deployer's extra codes from D144's supranational list.
 
 - **WPM-D151 A currency's minor unit is its ISO 4217 one, from one table the API and the UI share; the API refuses a code outside it.**
-  *Proposed, needs product-owner confirmation* (drafted 2026-10-30 by the AI assistant for WPM-T400, after the contact relationship
+  *Confirmed by the product owner, 2026-10-31* (drafted 2026-10-30 by the AI assistant for WPM-T400, after the contact relationship
   management app's fix, its commit 37ef205, and the project portfolio management UI's, its commit 490ad5d).
   - **The stored unit is ISO 4217's.** An amount is an integer count of the currency's ISO 4217 minor unit: HUF, IDR, COP and PKR have 2
     decimal places, IQD 3, JPY 0, KWD 3, CLF 4. Unicode CLDR's *display* digits are not the minor unit: CLDR shows 0 places for 16 codes
@@ -99,7 +107,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
 ## Tasks
 
 - [x] (2026-10-29) WPM-T367 **Worldwide audit of the spec.** *(WPM-R214, WPM-D143)* Done: 19 rows in the audit table above. `spec/` only: code, seed data and UI strings are not audited. Wording fixes (rows 10, 11) are left to T370.
-- [x] (2026-10-29) WPM-T368 **Jurisdiction profile model.** *(Done: see the design section below; proposed WPM-D144; questions for the product owner at its end.)* Original text: *(WPM-R214, WPM-D143)* A design for per-organization, per-layer (national, regional,
+- [x] (2026-10-29) WPM-T368 **Jurisdiction profile model.** *(Done: see the design section below; WPM-D144, confirmed 2026-10-31; the product owner's answers at its end.)* Original text: *(WPM-R214, WPM-D143)* A design for per-organization, per-layer (national, regional,
   supranational) profiles with effective dates, and what each existing rule (working-time guardrails, retention, pay transparency,
   equality categories) reads from it. Design first; no code.
 - [~] WPM-T369 **Second-profile tests.** *(WPM-R214, WPM-D143)* For each rule with UK values, a pure-core test with a non-UK profile of a
@@ -605,8 +613,9 @@ is changed by this audit; each row becomes a follow-up. **Not done:** the code, 
 
 ## Jurisdiction profile design (WPM-T368, 2026-10-29)
 
-*Design only: no code, migration or test changed. WPM-D144; questions 1 to 4 below were answered yes by the product owner on 2026-10-29
-(HR edits), question 5 answered: India first, then Japan.*
+*Written as a design only (no code, migration or test changed by WPM-T368). WPM-D144; questions 1 to 4 below were answered yes by the
+product owner on 2026-10-29 (HR edits), question 5 answered: India first, then Japan; the whole design was confirmed as written on
+2026-10-31.*
 
 ### What exists today
 

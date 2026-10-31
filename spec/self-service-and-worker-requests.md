@@ -37,7 +37,7 @@ A worker updates, without HR: **home address**, **telephone numbers**, **persona
   characters), never by lookup. No country's shape is assumed (WPM-T382): a postcode is any text of up to 20 characters with no
   control character; a telephone number's 5 to 15 digits may be typed in ASCII, full-width or any Unicode decimal digit set the rule
   lists (Arabic-Indic, Devanagari, Bengali, Thai and others), for contact details and emergency contacts alike. Values are stored as
-  typed (trimmed); how an address is ordered and whether a number is normalised are proposed WPM-D152.
+  typed (trimmed); how an address is ordered and how a number is stored are WPM-D152 (confirmed 2026-10-31).
 
 ## WPM-R125 — Equality and diversity monitoring (bounded, off by default)
 

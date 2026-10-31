@@ -86,7 +86,7 @@ by WPM's request tests against WPM alone.
   so CRM can restore a contact it paused. All are emitted in the transaction that makes the change (WPM-D9).
 - **Not done:** any CRM-side behaviour; replay of events a consumer missed (the outbox gives at-least-once, so a consumer must be idempotent
   on `event_id`).
-- **Over webhooks (family contract point 5; proposed WPM-D145, WPM-T372).** A webhook subscriber to these three kinds now receives the
+- **Over webhooks (family contract point 5; WPM-D145, WPM-T372).** A webhook subscriber to these three kinds now receives the
   same handoff in the payload's `data`, so CRM can build its receiver against `POST`s it is sent rather than read WPM's API:
 
   ```json
@@ -104,6 +104,10 @@ by WPM's request tests against WPM alone.
 - **The answer** is, per supplied ref, `worker: true | false`, and nothing more: no pid, no role, no dates, no department. The caller can
   learn only about refs it already has. At most 500 refs a call.
 - **Who may ask.** A privileged caller of the organization (HR), under their own token (WPM-D135). Each call is audited with the count, not the refs.
+- **What CRM sends (accepted, 2026-10-31).** CRM calls the overlap check with one deployer-held HR token, not the token of the CRM user
+  who asked (CRM-D16, read from CRM's spec). The product owner confirmed CRM-D16 on 2026-10-31 as the accepted design, so this is no
+  longer an open gap: WPM's policy and scope decide on the identity that token carries, the audit row names that identity, and WPM
+  cannot tell which CRM user asked. WPM-D135 is unchanged for every other caller. No code changed for this.
 - **Why it is allowed.** It discloses employment status of a person to a caller who already holds that person's ref and is HR of the
   employer; it is the same fact HR reads on the worker list. A person decides any merge of two records (the matcher's rule: [worker-matching.md](worker-matching.md)).
 - **Built** as `POST /api/bridges/overlap` with `{"organization_ref": "organization:<uuid>", "person_refs": [...]}` (WPM-T357).
@@ -327,6 +331,8 @@ CRM's source is on the same machine (`contact-relationship-management-service-wi
    set, the call carries it as `Authorization: Bearer`, only over `https` or to this machine, never logged. It is **one deployer-held
    token for every caller**, not the caller's own token forwarded, so WPM's policy and scope decide on whatever identity that token
    carries and the import sees the workers that identity may see. That is closer to WPM-D135 than no token, and not the same as it.
+   **Accepted 2026-10-31:** the product owner confirmed CRM's one deployer-held token (CRM-D16, which CRM applies to the overlap check
+   too) as the design, so the difference from WPM-D135 is a recorded choice for CRM's calls, not an open gap.
    **The `worker:` against `person:` question is settled on CRM's side (2026-10-30, CRM-T161, CRM-D17, read from CRM's spec):** the import
    now keeps each worker's `person_ref` and stores team members by it, skipping (and counting) a worker without one; it never falls back
    to `worker:`. Two things remain for WPM's owner, found by a live end-to-end run of the three apps on 2026-10-30: `GET /api/workers`
