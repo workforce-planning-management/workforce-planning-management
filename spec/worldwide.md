@@ -389,7 +389,8 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   deployment, so an organization paying in two currencies cannot run payroll for both (a profile per jurisdiction, D144, would carry
   one per currency); the overtime rate's month is not derived from the contracted day (they are two settings, and a deployer changing one
   should change the other); D144 registry keys for these parameters were not named. **Not tested:** the `WPM_PAYROLL_*` and
-  `WPM_CONTRACTED_DAY_MINUTES` settings themselves (read in the controller, not the pure core; no request test sets them).
+  `WPM_CONTRACTED_DAY_MINUTES` settings themselves (read in the controller, not the pure core; no request test sets them). *(Tested by
+  WPM-T401, 2026-10-31.)*
 - [~] WPM-T384 **Say whose each statutory default is.** *(WPM-R214, WPM-D143, WPM-D144; rows 34 to 36)* Each `WPM_*` default from one
   regime (flexible working, resignation notice, pay information, joint assessment, retention) is named with its regime in the API's
   answer and the spec, then moved to a profile when the registry exists; the pay-gap tiers become configurable.
@@ -473,6 +474,21 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   (service and migration crate), 1,052 unit tests, 185 request tests and the `personal_data_inventory` and `route_coverage` binaries on
   a throwaway database; UI lint, svelte-check (0 errors, 0 warnings), 320 vitest, Playwright 336 passed and 19 skipped; the svelte
   autofixer on both changed components (no issues).
+- [x] (2026-10-31) WPM-T401 **The payroll stub's settings are tested.** *(WPM-R214, WPM-D143; follows WPM-T383's "Not tested")*
+  **Done:** the controller reads the five settings through a lookup (`tax_stub_from`, `contracted_day_from` in
+  `controllers/payroll.rs`), the environment in the service and a table in a test, so the parsing is tested without touching the
+  process environment. **Fixed on the way:** a currency other than GBP set without its own allowance or rate left the example in force
+  but the calculate answer still said `source: configured`; it now says `configured` only when a deployer's value is in force (the month
+  minutes, a separate setting, still apply then and do count). **Tests:** 6 unit tests (nothing or blanks set is the example and not
+  configured; a whole yen stub with its month minutes is taken; JPY with no allowance, no rate, or an allowance that is not a number
+  keeps the example; GBP's own figures may change one at a time; a code not in ISO 4217, a lower-case code, a rate of 101, a negative
+  allowance and month minutes of 0 or past 44,640 drop the whole stub, the month minutes with it; a decimal is ignored; the contracted
+  day takes 1 to 1,440 and falls back on 0, 1,441, a negative, text or blank); a request test (with the five settings set to a yen
+  stub, a worker on 6,000,000 yen a year gets 500,000 gross, 40,000 tax and 460,000 net, the answer says `configured`, JPY, 100,000,
+  10%, 9,600 and 480; a worker paid in pounds under it is refused with 422 naming `E-2202`, JPY and GBP, the run still a draft). The
+  request test sets the process environment, as the other request tests that read settings do (serial). **Not done:** a real tax table;
+  one stub per deployment (unchanged). **Not tested:** the overtime line under a configured contracted day in a request (the unit tests of
+  `rules::workforce` cover the day as a parameter); the timesheet's overtime with `WPM_CONTRACTED_DAY_MINUTES` set.
 
 ## Audit (WPM-T367, 2026-10-29)
 

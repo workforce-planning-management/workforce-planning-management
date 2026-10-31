@@ -339,3 +339,122 @@ async fn the_payroll_stub_refuses_a_currency_it_was_not_written_for() {
     })
     .await;
 }
+
+/// A deployer's yen stub for the length of a test, removed again however it ends (WPM-T401). The
+/// settings are read on every calculation, and these tests run one at a time.
+struct YenStub;
+
+const YEN_STUB: [(&str, &str); 5] = [
+    ("WPM_PAYROLL_STUB_CURRENCY", "JPY"),
+    ("WPM_PAYROLL_STUB_ALLOWANCE_MINOR", "100000"),
+    ("WPM_PAYROLL_STUB_RATE_PERCENT", "10"),
+    ("WPM_PAYROLL_MONTH_MINUTES", "9600"),
+    ("WPM_CONTRACTED_DAY_MINUTES", "480"),
+];
+
+impl YenStub {
+    fn new() -> Self {
+        for (name, value) in YEN_STUB {
+            unsafe { std::env::set_var(name, value) };
+        }
+        Self
+    }
+}
+
+impl Drop for YenStub {
+    fn drop(&mut self) {
+        for (name, _) in YEN_STUB {
+            unsafe { std::env::remove_var(name) };
+        }
+    }
+}
+
+/// Open and calculate a July run for `org`: the run, the status code and the body.
+async fn calculate_july(request: &loco_rs::TestServer, org: &str) -> (String, u16, String) {
+    let run: Value = request
+        .post("/api/payroll-runs")
+        .json(&json!({
+            "organization_ref": org,
+            "period_start": "2026-07-01", "period_end": "2026-07-31",
+        }))
+        .await
+        .json();
+    let run_pid = run["pid"].as_str().unwrap().to_string();
+    let response = request
+        .post(&format!("/api/payroll-runs/{run_pid}/calculate"))
+        .await;
+    (run_pid, response.status_code().as_u16(), response.text())
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// WPM-T401: a deployer's stub in another currency (yen, exponent 0) calculates, the answer says it is
+// the deployer's, and a run that would pay someone in pounds under it is refused.
+async fn a_configured_yen_stub_calculates_and_refuses_pounds() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let _stub = YenStub::new();
+        let org = an_org();
+        let yen: Value = request
+            .post("/api/workers")
+            .json(&json!({
+                "person_ref": crate::requests::a_person(),
+                "organization_ref": org,
+                "worker_number": "E-2201",
+                "display_name": "Test Worker E-2201",
+                "employment_type": "permanent",
+                "department": "engineering",
+                "job_title": "Engineer",
+                "salary_minor": 6_000_000,
+                "salary_currency": "JPY",
+                "hired_on": "2026-01-05",
+            }))
+            .await
+            .json();
+        let yen = yen["pid"].as_str().unwrap().to_string();
+        activate!(&request, &yen).await;
+        let (run_pid, status, body) = calculate_july(&request, &org).await;
+        assert_eq!(status, 200, "{body}");
+        let calculated: Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(calculated["payslips"], 1);
+        assert_eq!(calculated["tax_stub"]["source"], "configured");
+        assert_eq!(calculated["tax_stub"]["currency"], "JPY");
+        assert_eq!(calculated["tax_stub"]["allowance_minor"], 100_000);
+        assert_eq!(calculated["tax_stub"]["rate_percent"], 10);
+        assert_eq!(calculated["tax_stub"]["month_minutes"], 9_600);
+        assert_eq!(calculated["tax_stub"]["contracted_day_minutes"], 480);
+        let payslips: Value = request
+            .get(&format!("/api/payroll-runs/{run_pid}/payslips"))
+            .await
+            .json();
+        let slip = &payslips.as_array().unwrap()[0];
+        // 6,000,000 yen a year is 500,000 a month; tax is 10% of what is above 100,000.
+        assert_eq!(slip["currency"], "JPY");
+        assert_eq!(slip["gross_minor"], 500_000);
+        let tax = slip["deductions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|d| d["label"] == "tax")
+            .unwrap();
+        assert_eq!(tax["amount_minor"], 40_000);
+        assert_eq!(slip["net_minor"], 460_000);
+
+        // Under the yen stub a worker paid in pounds is refused, naming both currencies; nothing written.
+        let other = an_org();
+        let pounds = seed_worker!(&request, &other, "E-2202", Some(3_600_000)).await;
+        activate!(&request, &pounds).await;
+        let (refused_pid, status, text) = calculate_july(&request, &other).await;
+        assert_eq!(status, 422);
+        assert!(
+            text.contains("E-2202") && text.contains("JPY") && text.contains("GBP"),
+            "{text}"
+        );
+        let after: Value = request
+            .get(&format!("/api/payroll-runs/{refused_pid}"))
+            .await
+            .json();
+        assert_eq!(after["status"], "draft");
+    })
+    .await;
+}

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the payroll stub's settings are tested (WPM-T401)
+
+`controllers::payroll::tax_stub` and `contracted_day` read through a lookup (`tax_stub_from`, `contracted_day_from`), so the parsing
+is unit-tested with a table instead of the process environment. `tax_stub_from` reports `configured` only when a deployer's value is in
+force: a non-GBP `WPM_PAYROLL_STUB_CURRENCY` without its own allowance and rate keeps the example and is no longer reported as
+configured. Tests: 6 unit tests (valid, blank, invalid and out-of-range values, the currency rule, the contracted day's range) and a
+request test (`a_configured_yen_stub_calculates_and_refuses_pounds`: 500,000 yen gross, 40,000 tax, 460,000 net; a GBP worker under the
+yen stub is 422). **Not done:** a real tax table. **Not tested:** overtime under a configured contracted day in a request.
+
 ### Changed — the seed is not only GBP (WPM-T385, part)
 
 `cargo run -- task seed` adds a second organization of three workers paid in JPY (exponent 0), a JPY requisition and benchmark, and a

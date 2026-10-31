@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the payroll stub's settings are tested (WPM-T401)
+
+The payroll stub's five settings are now tested: unit tests for every valid and invalid shape, and a request test that a deployer's
+yen stub calculates and refuses a worker paid in pounds. A calculation no longer says its stub was `configured` when a currency was
+refused for want of its own allowance and rate and the example stayed in force. **Not done:** a real tax table; more than one stub per
+deployment. **Not tested:** the overtime line and the timesheet's overtime with a configured contracted day, in a request.
+
 ### Changed — the demo data is not only GBP (WPM-T385, part)
 
 The seed adds an organization paid in yen with a requisition and a benchmark in yen, and a benchmark and a benefit plan in Kuwaiti
