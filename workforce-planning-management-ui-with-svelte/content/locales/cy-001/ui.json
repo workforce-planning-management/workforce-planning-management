@@ -2392,6 +2392,27 @@
       "recorded": "cofnodwyd {date}",
       "due": "yn ddyledus {date}",
       "reminder": "Mae nodyn atgoffa'n ddyledus."
+    },
+    "address": {
+      "title": "Cyfeiriad cartref",
+      "ordered": "Yn y drefn yr ysgrifennir cyfeiriadau yn y wlad hon.",
+      "blockHint": "Nid oes gan WPM drefn cyfeiriad ar gyfer y wlad hon eto: ysgrifennwch y cyfeiriad fel y dylai ymddangos, un llinell ar y tro.",
+      "text": "Cyfeiriad",
+      "locality": {
+        "city": "Dinas",
+        "post_town": "Tref bost"
+      },
+      "region": {
+        "state": "Talaith",
+        "province": "Talaith (province)",
+        "prefecture": "Prefectur",
+        "do_si": "Talaith neu ddinas fetropolitan"
+      },
+      "postal": {
+        "postal": "Cod post",
+        "zip": "Cod ZIP",
+        "pin": "Cod PIN"
+      }
     }
   },
   "errors": {

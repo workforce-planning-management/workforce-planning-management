@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — addresses follow the country's order, or are one free-text block (WPM-T382, WPM-D152 question 1)
+
+The contact details form shows the address in the chosen country's order and with its labels for ten countries, and offers one
+free-text block (a new column) for a country the table lacks. **Not verified:** the ten entries were not read against their source
+(Google libaddressinput data). The stored forms of a telephone number and the country picker (D152 questions 2 and 3) follow.
+
 ### Added — example India and Japan jurisdiction profiles in the demo (WPM-T385)
 
 The seed and `scripts/demo-data.py` load example profiles for India (a federal chain: a state under the country) and Japan beside the

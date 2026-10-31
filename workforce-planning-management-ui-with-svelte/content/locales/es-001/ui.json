@@ -2368,6 +2368,27 @@
       "recorded": "registrado el {date}",
       "due": "vence el {date}",
       "reminder": "Hay un recordatorio pendiente."
+    },
+    "address": {
+      "title": "Domicilio",
+      "ordered": "En el orden en que se escriben las direcciones en este país.",
+      "blockHint": "WPM aún no tiene el orden de las direcciones de este país: escriba la dirección como debe aparecer, una línea cada vez.",
+      "text": "Dirección",
+      "locality": {
+        "city": "Ciudad",
+        "post_town": "Localidad postal"
+      },
+      "region": {
+        "state": "Estado",
+        "province": "Provincia",
+        "prefecture": "Prefectura",
+        "do_si": "Provincia o ciudad metropolitana"
+      },
+      "postal": {
+        "postal": "Código postal",
+        "zip": "Código ZIP",
+        "pin": "Código PIN"
+      }
     }
   },
   "errors": {

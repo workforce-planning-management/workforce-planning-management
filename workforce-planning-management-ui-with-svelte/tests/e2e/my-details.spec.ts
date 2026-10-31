@@ -299,6 +299,69 @@ test("contact details are replaced as a whole and can be removed", async ({
   await expect(page.getByTestId("contact-city")).toHaveValue("");
 });
 
+test("the address follows the country's order and labels, and a country the table lacks gets a free-text block", async ({
+  page,
+}) => {
+  await signIn(page);
+  const sent = await stub(page);
+  await page.goto("/en-001/me/details");
+  const address = page.getByTestId("contact-address");
+  const order = async () =>
+    address
+      .locator("input")
+      .evaluateAll((inputs) =>
+        inputs.map((i) => i.getAttribute("data-testid")),
+      );
+  // No country: the neutral order and labels.
+  await expect(address).toHaveAttribute("data-mode", "neutral");
+  await expect(address.getByText("Postal code")).toBeVisible();
+  // Japan: large to small, the postal code first, "Prefecture".
+  await page.getByTestId("contact-country").fill("JP");
+  await expect(address).toHaveAttribute("data-mode", "table");
+  expect(await order()).toEqual([
+    "contact-postcode",
+    "contact-region",
+    "contact-city",
+    "contact-address_line1",
+    "contact-address_line2",
+  ]);
+  await expect(address.getByText("Prefecture")).toBeVisible();
+  // The United States: the city, the state and the ZIP code on one line, last.
+  await page.getByTestId("contact-country").fill("us");
+  expect(await order()).toEqual([
+    "contact-address_line1",
+    "contact-address_line2",
+    "contact-city",
+    "contact-region",
+    "contact-postcode",
+  ]);
+  await expect(address.getByText("ZIP code")).toBeVisible();
+  await expect(address.getByText("State", { exact: true })).toBeVisible();
+  await page.getByTestId("contact-city").fill("Springfield");
+  // A country the table lacks: the block, and the city already typed stays in view.
+  await page.getByTestId("contact-country").fill("NP");
+  await expect(address).toHaveAttribute("data-mode", "block");
+  await expect(page.getByTestId("contact-address-order")).toContainText(
+    "no address order for this country",
+  );
+  await expect(page.getByTestId("contact-city")).toHaveValue("Springfield");
+  await expect(page.getByTestId("contact-postcode")).toHaveCount(0);
+  await page
+    .getByTestId("contact-address_text")
+    .fill("Ward 4\nThamel\nKathmandu 44600");
+  await page.getByTestId("contact-save").click();
+  await expect(page.getByTestId("contact-saved")).toBeVisible();
+  expect(sent.find((s) => s.method === "PUT")?.body).toMatchObject({
+    country: "NP",
+    city: "Springfield",
+    address_text: "Ward 4\nThamel\nKathmandu 44600",
+  });
+  if (process.env.MY_DETAILS_SHOTS)
+    await page.getByTestId("my-contact-details").screenshot({
+      path: `${process.env.MY_DETAILS_SHOTS}/address-block.png`,
+    });
+});
+
 test("time off: the balance, a cancellable request, and a request without a reason for sick leave", async ({
   page,
 }) => {

@@ -318,7 +318,8 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
   requirement an area sets and, per worker, a status and two dates, never a reason; off unless a lawful basis is recorded;
   health data (WPM-R128, WPM-D75). **EqualityDeclaration** (`equality_declarations`) — a worker's voluntary answer to a category the
   deployer defines; off unless a lawful basis is recorded; special-category data (WPM-R125, WPM-D74).
-- **WorkerContactDetails** (`worker_contact_details`) — a worker's own home address, telephone numbers and personal
+- **WorkerContactDetails** (`worker_contact_details`) — a worker's own home address (structured fields, and
+  `address_text`, one free-text block in the person's own order, WPM-D152), telephone numbers and personal
   e-mail; replaced as a whole, no history, audited without values, exported and erased with the worker
   (WPM-R124; [self-service-and-worker-requests.md](self-service-and-worker-requests.md)).
 - **Engagement** — `workers.engagement_ends_on` (the last day), **EngagementExtension**

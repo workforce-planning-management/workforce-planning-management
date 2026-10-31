@@ -2352,6 +2352,27 @@
       "recorded": "dicatat {date}",
       "due": "jatuh tempo {date}",
       "reminder": "Pengingat sudah jatuh tempo."
+    },
+    "address": {
+      "title": "Alamat rumah",
+      "ordered": "Dalam urutan penulisan alamat di negara ini.",
+      "blockHint": "WPM belum memiliki urutan alamat untuk negara ini: tulis alamat sebagaimana mestinya, satu baris demi satu baris.",
+      "text": "Alamat",
+      "locality": {
+        "city": "Kota",
+        "post_town": "Kota pos"
+      },
+      "region": {
+        "state": "Negara bagian",
+        "province": "Provinsi",
+        "prefecture": "Prefektur",
+        "do_si": "Provinsi atau kota metropolitan"
+      },
+      "postal": {
+        "postal": "Kode pos",
+        "zip": "Kode ZIP",
+        "pin": "Kode PIN"
+      }
     }
   },
   "errors": {

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — an address as one free-text block (WPM-T382, WPM-D152)
+
+Migration 113 adds `worker_contact_details.address_text`: the whole address as one block in the person's own order, beside the
+structured fields, which stay. `PUT /api/me/contact-details` takes it (up to 500 characters on up to 10 lines; line breaks unified to
+`\n`; any other control character refused with 422) and both reads return it; the subject-access export carries it with the row.
+**Not done:** the service does not format an address for export or payroll, and holds no per-country order (the UI's table does).
+
 ### Added — example India and Japan profiles in the seed (WPM-T385)
 
 `cargo run -- task seed` loads an `example` `JP` profile for the yen organization (its workers at `JP`) and adds a third organization of

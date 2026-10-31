@@ -2368,6 +2368,27 @@
       "recorded": "enregistré le {date}",
       "due": "échéance le {date}",
       "reminder": "Un rappel est dû."
+    },
+    "address": {
+      "title": "Adresse du domicile",
+      "ordered": "Dans l’ordre où les adresses s’écrivent dans ce pays.",
+      "blockHint": "WPM n’a pas encore l’ordre des adresses de ce pays : écrivez l’adresse telle qu’elle doit apparaître, une ligne à la fois.",
+      "text": "Adresse",
+      "locality": {
+        "city": "Ville",
+        "post_town": "Ville postale"
+      },
+      "region": {
+        "state": "État",
+        "province": "Province",
+        "prefecture": "Préfecture",
+        "do_si": "Province ou ville métropolitaine"
+      },
+      "postal": {
+        "postal": "Code postal",
+        "zip": "Code ZIP",
+        "pin": "Code PIN"
+      }
     }
   },
   "errors": {

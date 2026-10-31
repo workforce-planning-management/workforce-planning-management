@@ -1,6 +1,8 @@
 <!--
   My contact details (WPM-R124): home address, telephone numbers and personal e-mail, written by the worker.
   Replaced as a whole; HR and payroll can read them, a manager cannot; the previous value is not kept.
+  The address follows the chosen country's order and labels (WPM-D152, `#lib/address-formats`); for a country the
+  table lacks it is one free-text block in the person's own order. A field that holds a value is never hidden.
 -->
 <script lang="ts">
   import { errorText } from "#lib/write.js";
@@ -12,6 +14,7 @@
     type MyContactDetails,
   } from "#lib/api/wpm.js";
   import { t } from "#lib/i18n.svelte.js";
+  import { addressLayout } from "#lib/address-formats.js";
 
   const FIELDS = [
     "address_line1",
@@ -19,14 +22,17 @@
     "city",
     "region",
     "postcode",
+    "address_text",
     "country",
     "phone_mobile",
     "phone_home",
     "personal_email",
   ] as const;
   type Field = (typeof FIELDS)[number];
+  const OTHER = ["phone_mobile", "phone_home", "personal_email"] as const;
 
   let form = $state<Record<Field, string>>(blank());
+  const layout = $derived(addressLayout(form.country, form));
   let held = $state(false);
   let saved = $state(false);
   let error = $state<string | null>(null);
@@ -85,12 +91,40 @@
       void save();
     }}
   >
-    {#each FIELDS as f (f)}
+    <label>
+      {t("details.contact.country")}
+      <input data-testid="contact-country" type="text" autocomplete="off" bind:value={form.country} />
+    </label>
+    <fieldset class="cd-address" data-testid="contact-address" data-mode={layout.mode}>
+      <legend>{t("details.address.title")}</legend>
+      {#if layout.mode === "table" && layout.format}
+        <p class="muted" data-testid="contact-address-order">{t("details.address.ordered")}</p>
+      {:else if layout.mode === "block"}
+        <p class="muted" data-testid="contact-address-order">{t("details.address.blockHint")}</p>
+      {/if}
+      {#if layout.block}
+        <label>
+          {t("details.address.text")}
+          <textarea data-testid="contact-address_text" rows="5" autocomplete="off" bind:value={form.address_text}></textarea>
+        </label>
+      {/if}
+      {#each layout.lines as line, i (i)}
+        <div class="cd-line" data-testid="contact-line">
+          {#each line as placed (placed.field)}
+            <label>
+              {t(placed.label)}
+              <input data-testid="contact-{placed.field}" type="text" autocomplete="off" bind:value={form[placed.field]} />
+            </label>
+          {/each}
+        </div>
+      {/each}
+    </fieldset>
+    {#each OTHER as f (f)}
       <label>
         {t(`details.contact.${f}`)}
         <input
           data-testid="contact-{f}"
-          type={f === "personal_email" ? "email" : f.startsWith("phone") ? "tel" : "text"}
+          type={f === "personal_email" ? "email" : "tel"}
           autocomplete="off"
           bind:value={form[f]}
         />
@@ -103,3 +137,24 @@
     {#if saved}<span class="muted" role="status" data-testid="contact-saved">{t("details.saved")}</span>{/if}
   </form>
 </section>
+
+<style>
+  .cd-address {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-inline-size: 0;
+  }
+  .cd-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1em;
+  }
+  .cd-line > label {
+    flex: 1 1 10em;
+  }
+  textarea {
+    inline-size: 100%;
+    font: inherit;
+  }
+</style>

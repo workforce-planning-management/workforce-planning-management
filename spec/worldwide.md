@@ -435,8 +435,27 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   `rules::emergency::phone_ok`); a superscript or a Roman numeral is not a digit. **Stored as typed**, as before: the task's "stored as
   ASCII" is a choice (D152 question 2) and was not built. The country error names no country (it said "such as GB"). **Tests:** 2 new unit tests and 2 extended (digits in six scripts and full-width, superscripts refused, every table
   entry checked against Unicode's numeric property; postcodes of eight shapes and the bound; emergency contacts in three scripts).
-  **What remains, and why:** the address order per country or a free-text block (D152 question 1), the phone number's stored form
-  (question 2) and the country picker (question 3) wait for the product owner. **Not done either:** other `en-001` words a reader may
+  **Part 1 of the rest done (2026-10-31), D152 question 1, answer (c):** the structured fields stay; the UI's
+  `src/lib/address-formats.ts` holds a per-country order and label table in the shape of Google libaddressinput data (its `fmt`
+  lines and its locality, state and postal-code name types) for ten countries of several orders: `DE`, `FR`, `GB`, `US`, `IN`,
+  `BR`, `SA` small to large, `JP`, `CN`, `KR` large to small, the postal code first, between or last. **Every entry is labelled
+  `unverified`, its source "as recalled by the AI assistant on 2026-10-31; not read":** none was checked against the
+  libaddressinput data. With no country chosen the form keeps the neutral order and labels; for a country in the table it shows the
+  fields in that country's lines with its labels ("Prefecture", "ZIP code", "PIN code", "Post town"); for a country the table lacks it
+  offers one free-text block (`address_text`, migration 113, up to 500 characters on up to 10 lines, line breaks unified to `\n`, no
+  other control character, stored in the person's own order). A field that holds a value is never hidden: one the country's format
+  does not use, or one under the block, is shown last with its neutral label. The API stores the fields as typed and does not read
+  the table. 13 new catalogue strings in the 13 `-001` locales are machine drafts, unreviewed. **Tests:** 1 new service unit test
+  (the block's cleaning and bounds), the `enforcement_me` request test extended (a Japanese block round trip, a refused tab), 5 vitest
+  (orders, labels, the neutral and block modes, nothing hidden, every entry sourced and every label in the catalogue), 1 Playwright
+  test (Japan's and the United States' order and labels, a country the table lacks gets the block, the typed city stays). **Not
+  done:** the API does not format an address for export or payroll; the block is not split into parts; the table has no entry for
+  a sub-locality (`%D`), a sorting code (`%X`) or an organisation line, and holds no upper-casing rule.
+  **Verified (2026-10-31):** service fmt, clippy pedantic `-D warnings`, 1,085 unit tests, 193 request tests and `enforcement_me` on
+  throwaway local databases; UI lint, svelte-check (0 errors, 0 warnings), 325 vitest, Playwright 342 passed and 19 skipped, build;
+  the block screenshot looked at (light, desktop width). **Not run locally:** the MSRV check (no 1.97 toolchain here), gitleaks, the
+  least-privilege drill.
+  **What remains, and why:** the phone number's stored form (question 2) and the country picker (question 3). **Not done either:** other `en-001` words a reader may
   take as British (`rota`, `redundancy`, `payslip`) were left: they name features and closed vocabularies, and changing them is a
   terminology review across 12 translations; `ar-001`, `bn-001` and the other translations of the address labels were not re-read
   against the new English. **Not tested:** the labels in a browser in `en-us` or `en-gb` (the override files are read by the same loader
@@ -852,7 +871,7 @@ through `rules::duplicates`.
 | 1 | Names | API `src/models/_entities/workers.rs:21`; UI `src/routes/workers/+page.svelte:24` | One `display_name`; no first, last, given or family field, no title, no initials, anywhere in the UI or the worker table | **Right** | — |
 | 2 | Names | API `src/rules/duplicates.rs:62-69` | The duplicate check splits `display_name` into given = first word and family = last word for the matcher | **Gap**: wrong for family-name-first orders and for names written without spaces (Chinese, Japanese). **Fixed 2026-10-30**: the whole name, in any order | T381 |
 | 3 | Names | UI `src/lib/orgViews.ts:45` (and `:41,65,117,141,146`, `src/routes/directory/+page.svelte:44`) | `localeCompare` with no locale, so sorting follows the runtime's collation, not the page's | **Partial**. **Fixed 2026-10-30**: `compareText` (`Intl.Collator`, the page's locale) | T381 |
-| 4 | Addresses | API `src/rules/contact_details.rs:115-135`; UI `src/lib/components/me/ContactDetailsPanel.svelte:16-22,93` | Two lines, city, region, postcode, country; every field optional; no postcode pattern in the UI | **Partial**: right in what is required, but the order is fixed small-to-large (proposed D152, question 1) | T382 |
+| 4 | Addresses | API `src/rules/contact_details.rs:115-135`; UI `src/lib/components/me/ContactDetailsPanel.svelte:16-22,93` | Two lines, city, region, postcode, country; every field optional; no postcode pattern in the UI | **Partial**: right in what is required, but the order is fixed small-to-large (proposed D152, question 1). **Fixed 2026-10-31**: a per-country order and label table for ten countries (unverified), a free-text block for the rest | T382 |
 | 5 | Addresses | API `src/rules/contact_details.rs:39-52` | A postcode is up to 12 ASCII letters, digits, spaces or hyphens | **Partial**: fits the codes known to the author; not checked against every country. **Fixed 2026-10-30**: no pattern, up to 20 characters | T382 |
 | 6 | Addresses | UI `content/locales/en-001/ui.json:2232-2235` | World English labels are British: "Town or city", "County or region", "Postcode"; the country is a free-text "Country (two letters)" box | **Gap**. **Labels fixed 2026-10-30** (neutral `en-001`, British in `en-gb`, US in `en-us`); the country box remains (D152, question 3) | T382 |
 | 7 | Phone | API `src/rules/contact_details.rs:67-90`; UI `ContactDetailsPanel.svelte:93` (`type="tel"`, no pattern) | 5 to 15 digits, an optional `+`; no country's shape assumed. Only ASCII digits are accepted | **Partial**: no country's shape, but a number typed in Arabic-Indic or Bengali digits is refused. **Fixed 2026-10-30**: any Unicode decimal digit set, stored as typed | T382 |

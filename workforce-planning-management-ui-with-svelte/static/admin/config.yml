@@ -3245,6 +3245,47 @@ collections:
                   - { name: "recorded", label: "Recorded", widget: string, required: false, i18n: true }
                   - { name: "due", label: "Due", widget: string, required: false, i18n: true }
                   - { name: "reminder", label: "Reminder", widget: string, required: false, i18n: true }
+              - name: "address"
+                label: "Address"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "ordered", label: "Ordered", widget: string, required: false, i18n: true }
+                  - { name: "blockHint", label: "Block Hint", widget: text, required: false, i18n: true }
+                  - { name: "text", label: "Text", widget: string, required: false, i18n: true }
+                  - name: "locality"
+                    label: "Locality"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "city", label: "City", widget: string, required: false, i18n: true }
+                      - { name: "post_town", label: "Post_town", widget: string, required: false, i18n: true }
+                  - name: "region"
+                    label: "Region"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "state", label: "State", widget: string, required: false, i18n: true }
+                      - { name: "province", label: "Province", widget: string, required: false, i18n: true }
+                      - { name: "prefecture", label: "Prefecture", widget: string, required: false, i18n: true }
+                      - { name: "do_si", label: "Do_si", widget: string, required: false, i18n: true }
+                  - name: "postal"
+                    label: "Postal"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "postal", label: "Postal", widget: string, required: false, i18n: true }
+                      - { name: "zip", label: "Zip", widget: string, required: false, i18n: true }
+                      - { name: "pin", label: "Pin", widget: string, required: false, i18n: true }
           - name: "errors"
             label: "Errors"
             widget: object

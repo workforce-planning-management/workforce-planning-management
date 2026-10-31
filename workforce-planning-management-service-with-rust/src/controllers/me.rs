@@ -79,6 +79,7 @@ fn details_json(row: &worker_contact_details::Model) -> serde_json::Value {
         "city": row.city,
         "region": row.region,
         "postcode": row.postcode,
+        "address_text": row.address_text,
         "country": row.country,
         "phone_mobile": row.phone_mobile,
         "phone_home": row.phone_home,
@@ -119,6 +120,9 @@ struct DetailsPayload {
     region: Option<String>,
     #[serde(default)]
     postcode: Option<String>,
+    /// The whole address as one free-text block (WPM-D152), for a country the UI's table lacks.
+    #[serde(default)]
+    address_text: Option<String>,
     #[serde(default)]
     country: Option<String>,
     #[serde(default)]
@@ -138,6 +142,7 @@ impl DetailsPayload {
             city: c(&self.city),
             region: c(&self.region),
             postcode: c(&self.postcode),
+            address_text: contact_rules::clean_block(self.address_text.as_deref()),
             country: c(&self.country).map(|v| v.to_ascii_uppercase()),
             phone_mobile: c(&self.phone_mobile),
             phone_home: c(&self.phone_home),
@@ -167,6 +172,7 @@ async fn set_my_details(
         active.city = ActiveValue::set(details.city);
         active.region = ActiveValue::set(details.region);
         active.postcode = ActiveValue::set(details.postcode);
+        active.address_text = ActiveValue::set(details.address_text);
         active.country = ActiveValue::set(details.country);
         active.phone_mobile = ActiveValue::set(details.phone_mobile);
         active.phone_home = ActiveValue::set(details.phone_home);
@@ -182,6 +188,7 @@ async fn set_my_details(
             city: ActiveValue::set(details.city),
             region: ActiveValue::set(details.region),
             postcode: ActiveValue::set(details.postcode),
+            address_text: ActiveValue::set(details.address_text),
             country: ActiveValue::set(details.country),
             phone_mobile: ActiveValue::set(details.phone_mobile),
             phone_home: ActiveValue::set(details.phone_home),

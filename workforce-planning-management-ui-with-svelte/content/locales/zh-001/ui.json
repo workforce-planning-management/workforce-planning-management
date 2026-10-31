@@ -2352,6 +2352,27 @@
       "recorded": "记录于 {date}",
       "due": "到期日 {date}",
       "reminder": "有一项提醒到期。"
+    },
+    "address": {
+      "title": "住址",
+      "ordered": "按照该国书写地址的顺序。",
+      "blockHint": "WPM 尚无该国的地址顺序：请按地址应有的样子逐行填写。",
+      "text": "地址",
+      "locality": {
+        "city": "城市",
+        "post_town": "邮政城镇"
+      },
+      "region": {
+        "state": "州",
+        "province": "省",
+        "prefecture": "都道府县",
+        "do_si": "道或广域市"
+      },
+      "postal": {
+        "postal": "邮政编码",
+        "zip": "ZIP 邮编",
+        "pin": "PIN 邮编"
+      }
     }
   },
   "errors": {

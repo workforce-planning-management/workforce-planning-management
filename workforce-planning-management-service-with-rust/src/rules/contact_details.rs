@@ -18,6 +18,11 @@ pub const MAX_EMAIL: usize = 254;
 pub const DIGITS: std::ops::RangeInclusive<usize> = 5..=15;
 /// The longest postcode, in characters: a length, not a shape.
 pub const MAX_POSTCODE: usize = 20;
+/// The longest free-text address block, in characters (WPM-D152: the fallback for a country the UI's
+/// address table lacks).
+pub const MAX_ADDRESS_TEXT: usize = 500;
+/// The most lines a free-text address block may have.
+pub const MAX_ADDRESS_LINES: usize = 10;
 
 /// The zero of each Unicode decimal digit set a telephone number may be typed in; the nine digits
 /// after it are 1 to 9. ASCII, and full-width (folded by [`fold_width`]), are handled before this.
@@ -81,6 +86,43 @@ pub fn clean(value: Option<&str>) -> Option<String> {
         .map(str::trim)
         .filter(|v| !v.is_empty())
         .map(ToString::to_string)
+}
+
+/// A free-text address block as typed, in the person's own order: line endings become `\n`, each
+/// line loses its trailing spaces, and blank lines at the start and the end are dropped. Blank is
+/// absent. Nothing inside a line is rewritten.
+#[must_use]
+pub fn clean_block(value: Option<&str>) -> Option<String> {
+    let value = value?.replace("\r\n", "\n").replace('\r', "\n");
+    let lines: Vec<&str> = value.split('\n').map(str::trim_end).collect();
+    let first = lines.iter().position(|l| !l.trim().is_empty())?;
+    let last = lines.iter().rposition(|l| !l.trim().is_empty())?;
+    Some(lines[first..=last].join("\n"))
+}
+
+/// A free-text address block: up to [`MAX_ADDRESS_TEXT`] characters on up to [`MAX_ADDRESS_LINES`]
+/// lines, with no control character other than the line break. No country's order is assumed.
+///
+/// # Errors
+///
+/// Too long, too many lines, or holding a control character.
+pub fn validate_address_text(value: &str) -> Result<(), String> {
+    if value.chars().count() > MAX_ADDRESS_TEXT {
+        return Err(format!(
+            "address_text is longer than {MAX_ADDRESS_TEXT} characters"
+        ));
+    }
+    if value.split('\n').count() > MAX_ADDRESS_LINES {
+        return Err(format!(
+            "address_text has more than {MAX_ADDRESS_LINES} lines"
+        ));
+    }
+    if value.chars().any(|c| c.is_control() && c != '\n') {
+        return Err(
+            "address_text must not contain control characters other than a line break".to_string(),
+        );
+    }
+    Ok(())
 }
 
 /// A line of an address, a city or a region: not too long, no control characters.
@@ -187,6 +229,9 @@ pub struct Details {
     pub region: Option<String>,
     /// Postcode.
     pub postcode: Option<String>,
+    /// The whole address as one free-text block, in the person's own order (WPM-D152), for a
+    /// country the UI's address table lacks.
+    pub address_text: Option<String>,
     /// Country, two capital letters.
     pub country: Option<String>,
     /// Mobile telephone number.
@@ -223,6 +268,9 @@ pub fn validate(details: &Details) -> Result<(), String> {
     }
     if let Some(v) = &details.postcode {
         validate_postcode(v)?;
+    }
+    if let Some(v) = &details.address_text {
+        validate_address_text(v)?;
     }
     if let Some(v) = &details.country {
         validate_country(v)?;
@@ -355,6 +403,30 @@ mod tests {
         for bad in ["gb", "GBR", "G", "", "G1"] {
             assert!(validate_country(bad).is_err(), "{bad}");
         }
+    }
+
+    #[test]
+    fn a_free_text_block_keeps_its_lines_and_order() {
+        assert_eq!(clean_block(None), None);
+        assert_eq!(clean_block(Some(" \n  \r\n")), None);
+        assert_eq!(
+            clean_block(Some("\r\n〒100-0001  \r\n東京都千代田区\r\n  1-1 \n\n")),
+            Some("〒100-0001\n東京都千代田区\n  1-1".to_string()),
+            "line endings unified, trailing spaces and outer blank lines gone, the rest as typed"
+        );
+        assert_eq!(clean_block(Some("a\rb")), Some("a\nb".to_string()));
+        assert!(validate_address_text("Flat 2\n10 Rue X\n75001 Ville").is_ok());
+        assert!(validate_address_text(&"x".repeat(MAX_ADDRESS_TEXT)).is_ok());
+        assert!(validate_address_text(&"x".repeat(MAX_ADDRESS_TEXT + 1)).is_err());
+        assert!(validate_address_text(&["a"; MAX_ADDRESS_LINES].join("\n")).is_ok());
+        assert!(validate_address_text(&["a"; MAX_ADDRESS_LINES + 1].join("\n")).is_err());
+        assert!(validate_address_text("a\tb").is_err());
+        assert!(validate_address_text("a\u{0}b").is_err());
+        let bad = Details {
+            address_text: Some("a\u{7}".into()),
+            ..Details::default()
+        };
+        assert!(validate(&bad).unwrap_err().contains("address_text"));
     }
 
     #[test]

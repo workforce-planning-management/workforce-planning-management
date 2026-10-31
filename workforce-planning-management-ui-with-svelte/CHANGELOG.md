@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the address follows the country's order and labels, with a free-text block for the rest (WPM-T382, WPM-D152)
+
+`src/lib/address-formats.ts` is a per-country order and label table in the shape of Google libaddressinput data, for ten countries
+(`DE`, `FR`, `GB`, `US`, `IN`, `BR`, `SA`, `JP`, `CN`, `KR`). The contact details panel asks for the country first, then shows the
+address fields in that country's lines with its labels; for a country the table lacks it offers one free-text block; with none, the
+neutral order. A field that holds a value is never hidden. 13 new strings in the 13 `-001` locales are machine drafts, unreviewed.
+**Not verified:** every table entry is `unverified`, written from the AI assistant's recollection of the libaddressinput data, not read
+against it. **Not tested:** the panel at phone width and right to left, and against a real service.
+
 ### Changed — the working-time panel shows each worker's own limit (WPM-T380)
 
 `/workforce` reads `over_average` and `limits` from the API and shows the limit with the code it came from ("Over the 40h average limit

@@ -2360,6 +2360,27 @@
       "recorded": "recorded {date}",
       "due": "due {date}",
       "reminder": "A reminder is due."
+    },
+    "address": {
+      "title": "Home address",
+      "ordered": "In the order addresses are written in this country.",
+      "blockHint": "WPM has no address order for this country yet: write the address as it should appear, one line at a time.",
+      "text": "Address",
+      "locality": {
+        "city": "City",
+        "post_town": "Post town"
+      },
+      "region": {
+        "state": "State",
+        "province": "Province",
+        "prefecture": "Prefecture",
+        "do_si": "Province or metropolitan city"
+      },
+      "postal": {
+        "postal": "Postal code",
+        "zip": "ZIP code",
+        "pin": "PIN code"
+      }
     }
   },
   "errors": {

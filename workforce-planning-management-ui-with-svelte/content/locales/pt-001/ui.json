@@ -2368,6 +2368,27 @@
       "recorded": "registado em {date}",
       "due": "vence em {date}",
       "reminder": "Há um lembrete pendente."
+    },
+    "address": {
+      "title": "Morada",
+      "ordered": "Na ordem em que os endereços se escrevem neste país.",
+      "blockHint": "O WPM ainda não tem a ordem dos endereços deste país: escreva o endereço como deve aparecer, uma linha de cada vez.",
+      "text": "Endereço",
+      "locality": {
+        "city": "Cidade",
+        "post_town": "Localidade postal"
+      },
+      "region": {
+        "state": "Estado",
+        "province": "Província",
+        "prefecture": "Prefeitura",
+        "do_si": "Província ou cidade metropolitana"
+      },
+      "postal": {
+        "postal": "Código postal",
+        "zip": "Código ZIP",
+        "pin": "Código PIN"
+      }
     }
   },
   "errors": {

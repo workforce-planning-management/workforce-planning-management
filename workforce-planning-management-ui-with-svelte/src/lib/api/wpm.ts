@@ -4643,6 +4643,8 @@ export type MyContactDetails = {
   city: string | null;
   region: string | null;
   postcode: string | null;
+  /** The whole address as one free-text block in the person's own order (WPM-D152). */
+  address_text: string | null;
   country: string | null;
   phone_mobile: string | null;
   phone_home: string | null;

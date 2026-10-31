@@ -6772,7 +6772,7 @@ export interface paths {
                 };
             };
         };
-        /** Replace the caller's own contact details (a field left out is cleared; shapes validated, nothing verified); a self-service write allowed past the HR-only write policy; the audit entry says they changed, never what they were */
+        /** Replace the caller's own contact details (a field left out is cleared; shapes validated, nothing verified; address_text is a free-text block in the person's own order, WPM-D152); a self-service write allowed past the HR-only write policy; the audit entry says they changed, never what they were */
         put: {
             parameters: {
                 query?: never;

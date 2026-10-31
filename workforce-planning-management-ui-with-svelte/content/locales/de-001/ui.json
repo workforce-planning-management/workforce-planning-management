@@ -2360,6 +2360,27 @@
       "recorded": "erfasst am {date}",
       "due": "fällig am {date}",
       "reminder": "Eine Erinnerung ist fällig."
+    },
+    "address": {
+      "title": "Wohnanschrift",
+      "ordered": "In der Reihenfolge, in der Anschriften in diesem Land geschrieben werden.",
+      "blockHint": "WPM kennt die Anschriftenreihenfolge dieses Landes noch nicht: Schreiben Sie die Anschrift so, wie sie erscheinen soll, Zeile für Zeile.",
+      "text": "Anschrift",
+      "locality": {
+        "city": "Ort",
+        "post_town": "Postort"
+      },
+      "region": {
+        "state": "Bundesstaat",
+        "province": "Provinz",
+        "prefecture": "Präfektur",
+        "do_si": "Provinz oder Großstadt"
+      },
+      "postal": {
+        "postal": "Postleitzahl",
+        "zip": "ZIP-Code",
+        "pin": "PIN-Code"
+      }
     }
   },
   "errors": {

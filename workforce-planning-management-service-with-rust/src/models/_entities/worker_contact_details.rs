@@ -19,6 +19,7 @@ pub struct Model {
     pub city: Option<String>,
     pub region: Option<String>,
     pub postcode: Option<String>,
+    pub address_text: Option<String>,
     pub country: Option<String>,
     pub phone_mobile: Option<String>,
     pub phone_home: Option<String>,

@@ -148,6 +148,14 @@ async fn a_worker_manages_only_their_own_details() {
         let replaced: Value = put("/api/me/contact-details".into(), me.clone(), json!({ "city": "York" })).await.json();
         assert_eq!(replaced["contact_details"]["city"], "York");
         assert_eq!(replaced["contact_details"]["phone_mobile"], Value::Null);
+        // The free-text block (WPM-D152) is kept in the person's own order, its line breaks unified; a control character is refused.
+        let block: Value = put("/api/me/contact-details".into(), me.clone(),
+            json!({ "address_text": "\r\n〒100-0001  \r\n東京都千代田区\r\n1-1\n", "country": "JP" })).await.json();
+        assert_eq!(block["contact_details"]["address_text"], "〒100-0001\n東京都千代田区\n1-1");
+        assert_eq!(block["contact_details"]["address_line1"], Value::Null);
+        let r = put("/api/me/contact-details".into(), me.clone(), json!({ "address_text": "a\tb" })).await;
+        assert_eq!(r.status_code(), 422);
+        assert!(r.text().contains("address_text"));
         put("/api/me/contact-details".into(), me.clone(), good.clone()).await.assert_status_ok();
 
         // Everything else stays refused for the same person: the allow-list is not a loophole.
