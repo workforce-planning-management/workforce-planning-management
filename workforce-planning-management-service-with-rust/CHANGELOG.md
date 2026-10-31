@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the jurisdiction parameter registry and resolver (WPM-T407)
+
+`rules::jurisdiction` (pure): jurisdiction codes and layers, `chain` from the place of work over the organization's recorded parents
+(no parent guessed), `REGISTRY` (five parameters: `calendar.week_start`, `holidays.weekend_days` and the three `working_time` limits,
+each with a shape, unit and combination rule), `validate`, and `resolve`, which gives a value with every row it came from, `unknown`
+(`no_work_jurisdiction` or `not_configured`) or a `conflict`. 14 unit tests, among them two profiles of a different shape and the spec's
+registry table held equal to the code. **Not done:** nothing reads it yet: no table, endpoint or rule (WPM-T380 is next); no shipped
+entry uses the `union` or `bounded` rules.
+
 ### Added — a request test of overtime under a configured contracted day (WPM-T405)
 
 `overtime_counts_from_a_configured_contracted_day`: with `WPM_CONTRACTED_DAY_MINUTES=360`, a full-time worker's 600 regular minutes

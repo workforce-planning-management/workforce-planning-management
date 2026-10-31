@@ -131,8 +131,8 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   regime's values take no profile yet: the working-time limits and the roll-up week (WPM-T380), the weekend days of the holiday rules
   and `is_business_day` (WPM-T379), the payroll stub's allowance, rate, day and month (WPM-T383); the pay-gap tiers are a parameter of
   the rule but not of the controller (WPM-T384). Week start has no rule in the API to test; the UI's money exponent is WPM-T373. These
-  follow D144's order of work, whose resolver and parameter registry are not among the parts the product owner confirmed (questions 1
-  to 4), so none was built here. Not tested: the deployment-wide `WPM_*` settings that feed these parameters (controllers, not the
+  follow D144's order of work, whose resolver and parameter registry were not then among the parts the product owner confirmed (questions 1
+  to 4), so none was built here *(the registry and resolver were confirmed on 2026-10-31 and built by WPM-T407)*. Not tested: the deployment-wide `WPM_*` settings that feed these parameters (controllers, not the
   pure core).
 - [x] (2026-10-30) WPM-T370 **Regulatory register by region.** *(WPM-R214, WPM-D143)* Re-organize [regulatory.md](regulatory.md) so the UK is one
   section among regions, with the others marked *not yet read* rather than absent.
@@ -318,6 +318,22 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   **Not tested:** a browser without `getWeekInfo`/`weekInfo` (the table is unit-tested, not run in such a browser; Lily's own fallback
   then reads the first day from the tag's region, so an `-001` page would start on Monday whatever the reader's country); the weekend
   shading in dark mode; other calendars than the CPD one (they share `CalendarPanel`).
+- [x] (2026-10-31) WPM-T407 **The parameter registry and the one resolver.** *(WPM-R214, WPM-D143, WPM-D144; D144's order of work, step 1)*
+  **Done:** `src/rules/jurisdiction.rs` in the service, pure (no database, no clock): the jurisdiction code shape (the holidays'),
+  three layers, `chain` (from the place of work outward over the organization's recorded parents), the registry of five parameters
+  (each with a shape, a unit and a combination rule), `validate` (a value against its entry, sets made sorted and unique), and
+  `resolve(key, chain, rows, as_of)`, which answers `resolved` (the value, the least-checked status, and every row it came from with
+  code, layer, status, source and date), `unknown` (`no_work_jurisdiction` or `not_configured`, never a number) or `conflict` (a
+  bounded parameter whose layers do not meet). The choices the design left open are in "What the registry chose" above. **Tests:** 14
+  unit tests: the spec's registry table equal to the code's; the registry sorted and keyed `area.name`; code shapes and layers; the chain (a federal shape of a bloc, a country and a
+  state; an unrecorded code alone, no parent guessed); refused chains (a cycle, an upside-down layer, a malformed code or parent, too
+  long); values (ranges, weekday sets including an empty weekend, names, bounds); unknown (nothing configured, no work jurisdiction, a
+  row for a code outside the chain); dated rows (before any row, the inclusive last day, a same-day tie, a later row taking over);
+  `most_specific`, `strictest_max` and `strictest_min` (with a tie), `union`, `bounded` and its conflict; the status of a mixed answer;
+  and two profiles of a different shape resolving independently (D143's equity test). The codes are ISO 3166 user-assigned ones (`QZ`,
+  `XA`, `XA-01`, `XB`), so no test names a country. **Not done:** no table, endpoint, screen or rule reads the resolver yet (the tables
+  are D144's step 2, the working-time rule step 3: WPM-T380); no shipped entry uses `union` or `bounded`. **Verified:** `cargo test
+  --lib` (the 13 new tests and the country check pass), `cargo fmt`, `cargo clippy --all-targets -- -D warnings`.
 - [ ] WPM-T379 **Weekend days and non-Gregorian holidays in the holiday rules.** *(WPM-R214, WPM-D143, WPM-D144; rows 15, 18, 19)*
   `rules::holiday` takes the weekend days as a parameter (the D144 `holidays.weekend_days`), so a substitute day and `is_business_day`
   follow it; a rule kind for a holiday fixed in another calendar; an example pack of a different shape. The registry is not confirmed yet
@@ -709,6 +725,45 @@ uses one shows it, as the capacity view shows its demand's source (WPM-D140).
 3. **Subnational and bloc codes.** **Answered 2026-10-29: yes.** Is ISO 3166 plus a deployer-extended supranational list acceptable, or is a different registry wanted?
 4. **Where the work is done.** **Answered 2026-10-29: yes.** Is a new structured `work_jurisdiction` on the worker, set by HR, the right test, and is it HR's to set for a remote worker?
 5. **Naming the example profiles.** **Answered 2026-10-29: India first, then Japan** (the UAE as a possible third).
+
+### The parameter registry (WPM-T407, 2026-10-31)
+
+`rules::jurisdiction::REGISTRY` in the service is the registry; this table is its copy and a change to one is a change to both. A
+key outside it is refused.
+
+| Key | Shape and unit | Combination |
+| --- | --- | --- |
+| `calendar.week_start` | one ISO weekday, 1 (Monday) to 7 (Sunday) | `most_specific` |
+| `holidays.weekend_days` | a set of ISO weekdays, at most six; empty means no weekly rest day | `most_specific` |
+| `working_time.max_average_weekly_minutes` | whole minutes, 1 to 10,080 | `strictest_max` (the lowest) |
+| `working_time.min_daily_rest_minutes` | whole minutes, 1 to 1,440 | `strictest_min` (the highest) |
+| `working_time.reference_weeks` | whole weeks of seven calendar days, 1 to 52 | `strictest_max` (the shortest) |
+
+Entries for retention, pay transparency and the other `WPM_*` settings are added as each rule moves (D144's order of work, step 3).
+The `union` and `bounded` rules are built and unit-tested with test-only entries; no shipped entry uses them yet.
+
+### What the registry chose (WPM-T407)
+
+The design left these details open; the pure core chose as follows, minimally, and each is a test in `rules::jurisdiction`.
+
+- **Which name is which.** `strictest_max` applies to a maximum (a ceiling, a window, a deadline) and takes the **lowest** value of all
+  layers; `strictest_min` applies to a minimum (a rest floor) and takes the **highest**. The reference window is a maximum: a shorter
+  window averages over fewer weeks, which protects more. Each parameter combines on its own, so a ceiling and a window may come from
+  different layers; the answer names both origins.
+- **A tie** between layers keeps the more specific layer as the origin.
+- **Dates.** `effective_to` is the last day in force (inclusive). Of a code's rows for a key, the one in force on the date is the one
+  with the latest `effective_from` not after it; two rows with the same `effective_from` resolve to the later-recorded one.
+- **The chain.** It starts at the work jurisdiction and follows the parents the organization recorded. A code the organization has not
+  recorded is a chain of itself alone, at the layer its shape implies (with a subdivision part, subnational; otherwise national); its
+  parent is **not** guessed from its prefix, and a supranational layer is never inferred. A parent narrower than its child, a cycle, a
+  malformed code or more than eight links is refused. A code with a subdivision part is only subnational; one without is national or
+  supranational. The chain is the organization's current one: it is not dated (a past decision is explained by the rows in force that
+  day, over today's chain).
+- **The answer's status** is the least-checked of the rows that gave it (`example` below `unverified` below `read`), so a value is
+  `read` only when every row behind it was read.
+- **Unknown has two reasons:** `no_work_jurisdiction` (the place of work is not recorded) and `not_configured` (no row applies; for a
+  limit, "no limit configured"). A bounded parameter whose floors and ceilings do not meet is a `conflict` that names the clashing rows.
+- **A stored row that no longer fits the registry** (a range tightened later) is skipped as if absent, not trusted.
 
 ## Locale and convention equity check (WPM-T371, 2026-10-30)
 

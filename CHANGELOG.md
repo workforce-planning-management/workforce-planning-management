@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the jurisdiction parameter registry and its one resolver (WPM-T407)
+
+The pure core of WPM-D144 in the service: a registry of five parameters, the chain of jurisdiction codes from the place of work, and
+`resolve`, which says where each value came from and answers "unknown", never a number, when nothing is configured. **Not done:** no
+table, endpoint or rule uses it yet.
+
 ### Changed — the product owner's decisions of 2026-10-31 are recorded (WPM-T406)
 
 WPM-D144 (the jurisdiction profile design as written), WPM-D145, WPM-D149 and WPM-D151 now say they are confirmed; WPM-D152 records
