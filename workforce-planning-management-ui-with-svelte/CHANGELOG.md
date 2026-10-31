@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the working-time panel shows each worker's own limit (WPM-T380)
+
+`/workforce` reads `over_average` and `limits` from the API and shows the limit with the code it came from ("Over the 40h average limit
+(QZ)", "Rest gap under 12h"), and a line counting workers with no limit configured. `wf.over48` and `wf.restBreach` are replaced by
+`wf.overAverage`, `wf.restUnder` and the new `wf.notConfigured`; the 12 translations are machine drafts, unreviewed. Playwright covers
+both. **Not tested:** right to left and phone width for the new line; against a real service.
+
 ### Changed — the statutory-defaults spec's Directive rows are `unverified` (WPM-T404)
 
 The Playwright stub for `/statutory-defaults` gives the Directive's rows `unverified`, as the service now does, and the tiers row is

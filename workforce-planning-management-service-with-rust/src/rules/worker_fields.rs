@@ -10,7 +10,7 @@ use serde_json::{Map, Value};
 
 /// The fields a caller may name, in the record's order. The serial `id` and `deleted_at` are not offered: the one is internal and the
 /// other is always null on a listed row.
-pub const LIST_FIELDS: [&str; 20] = [
+pub const LIST_FIELDS: [&str; 21] = [
     "pid",
     "person_ref",
     "upstream_worker_ref",
@@ -23,6 +23,7 @@ pub const LIST_FIELDS: [&str; 20] = [
     "department",
     "job_title",
     "location",
+    "work_jurisdiction",
     "manager_pid",
     "salary_minor",
     "salary_currency",
@@ -146,7 +147,7 @@ mod tests {
         let record = json!({
             "created_at": "t", "updated_at": "t", "id": 1, "pid": "p", "person_ref": "person:x", "upstream_worker_ref": null,
             "organization_ref": "organization:x", "worker_number": "1", "display_name": "n", "status": "active",
-            "employment_type": "permanent", "fte_percent": 100, "department": "d", "job_title": "j", "location": null,
+            "employment_type": "permanent", "fte_percent": 100, "department": "d", "job_title": "j", "location": null, "work_jurisdiction": null,
             "manager_pid": null, "salary_minor": 1, "salary_currency": "GBP", "hired_on": "2026-01-05", "terminated_on": null,
             "engagement_ends_on": null, "deleted_at": null,
         });

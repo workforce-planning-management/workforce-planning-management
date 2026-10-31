@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — working-time limits come from jurisdiction profiles (WPM-T380)
+
+The working-time guardrails no longer hold 17 weeks, 48 hours and 11 hours in code: each worker's limits come from their organization's
+profile for where the work is done, a worker with none configured is counted as "no limit configured" (never as a pass), and the demo
+seed loads an `example` profile in the UK's shape. HR records codes and append-only parameter rows through three new endpoints.
+**Not done:** a screen for profiles. **Not tested:** the HR-only refusals under sign-in.
+
 ### Added — the jurisdiction parameter registry and its one resolver (WPM-T407)
 
 The pure core of WPM-D144 in the service: a registry of five parameters, the chain of jurisdiction codes from the place of work, and

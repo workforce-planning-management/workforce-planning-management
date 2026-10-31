@@ -53,6 +53,7 @@ pub mod hr_core;
 pub mod human_capital;
 pub mod intelligence;
 pub mod job_levels;
+pub mod jurisdictions;
 pub mod key_person;
 pub mod learning;
 pub mod lms;

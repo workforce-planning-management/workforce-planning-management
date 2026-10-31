@@ -203,9 +203,10 @@
     "reject": "Tolak",
     "rota": "Jadwal",
     "workingTime": "Waktu kerja",
-    "over48": "Rata-rata di atas 48 jam",
-    "restBreach": "Istirahat kurang dari 11 jam",
-    "allClear": "Tidak ada tanda waktu kerja"
+    "overAverage": "Di atas batas rata-rata {limit} jam ({from})",
+    "restUnder": "Istirahat kurang dari {limit} jam",
+    "allClear": "Tidak ada tanda waktu kerja",
+    "notConfigured": "Tidak ada batas yang dikonfigurasi: rata-rata mingguan untuk {average} dan jeda istirahat untuk {rest} dari {total} pekerja (tidak ada profil yurisdiksi yang berlaku untuk tempat mereka bekerja)"
   },
   "dev": {
     "cycles": "Siklus penilaian",

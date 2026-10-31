@@ -41,6 +41,7 @@ Benchmark (job_title × currency)
 | `department` | text | ABAC scoping attribute (`resource.department`) |
 | `job_title` | text | benchmarking key |
 | `location?` | text (≤ 100) | free-text work location; blank/absent = unknown, never a default place |
+| `work_jurisdiction?` | code | where the work is done (a jurisdiction code, WPM-D144), set by HR; never nationality, citizenship or residence; absent = unknown, never the organization's country |
 | `manager_pid` | UUID? | another Employee — the org-chart edge |
 | `hire_date` | date | |
 | `termination_date` / `termination_reason` | date? / enum? | `resignation` \| `dismissal` \| `redundancy` \| `retirement` \| `end_of_contract` |
@@ -371,6 +372,10 @@ section 4)
   subject URN, attempts) holds no body; for a hire or an ending only, `data` keeps the handoff references and date (WPM-D145).
 - **Position** (`positions`: cost centre, budgeted FTE, funding kind, state, a link to the holder) — a seat, not a person
   ([positions.md](positions.md), WPM-R152, WPM-D104).
+- **Jurisdiction**, **JurisdictionParameter** (`jurisdictions`: organization, code, layer, parent, name; `jurisdiction_parameters`:
+  organization, code, registry key, JSON value, effective from and to, source, checked on, status `example`/`unverified`/`read`,
+  **append-only**, a database trigger refusing an update or a delete) — a deployer's dated, sourced statements, no personal data
+  ([worldwide.md](worldwide.md), WPM-D144, WPM-T380).
 - **Asset**, **AssetIssue** (`assets`, `asset_issues`: kind and tag; worker, issued on, returned on) — no location
   ([joiners-and-leavers.md](joiners-and-leavers.md), WPM-R155).
 - **Policy**, **PolicyAcknowledgement** (`policies`, `policy_acknowledgements`: version and audience; worker, version, date) — text held

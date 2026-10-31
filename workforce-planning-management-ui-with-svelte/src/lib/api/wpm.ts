@@ -3205,26 +3205,62 @@ export function mentorshipStatus(
   return api(`/mentorships/${pid}/status`, { method: "POST", body: { to } });
 }
 
-/** The advisory working-time guardrail signals (WPM-R27; flags only). */
+/** One resolved jurisdiction parameter (WPM-D144): a value with where it came from, or unknown, never a number. */
+export type ResolvedLimit =
+  | {
+      state: "resolved";
+      value: number | number[] | string[] | { min?: number; max?: number };
+      status: "example" | "unverified" | "read";
+      from: Array<{
+        code: string;
+        layer: string;
+        status: string;
+        source: string;
+        effective_from: string;
+      }>;
+    }
+  | { state: "unknown"; reason: string }
+  | {
+      state: "conflict";
+      from: Array<{
+        code: string;
+        layer: string;
+        status: string;
+        source: string;
+      }>;
+    };
+
+/** The advisory working-time guardrail signals (WPM-R27; flags only). Each worker's limits are their jurisdiction
+ * profile's (WPM-D144, WPM-T380); a worker with none configured is counted in `not_configured`, never flagged or passed. */
 export function workingTime(
   department?: string,
   init?: FetchLike,
 ): Promise<{
   as_of: string;
-  reference_weeks: number;
   rest_window_days: number;
   workers_checked: number;
   derivation: string;
+  not_configured: {
+    average: number;
+    rest: number;
+    no_work_jurisdiction: number;
+  };
   flagged: Array<{
     worker_pid: string;
     display_name: string;
     department: string;
+    work_jurisdiction: string | null;
     average_weekly: {
       numerator_minutes: number;
       denominator_weeks: number;
       value_minutes_per_week: number | null;
+    } | null;
+    over_average: boolean;
+    limits: {
+      reference_weeks: ResolvedLimit;
+      max_average_weekly_minutes: ResolvedLimit;
+      min_daily_rest_minutes: ResolvedLimit;
     };
-    over_48h: boolean;
     rest_breaches: Array<{
       prev_end: string;
       next_start: string;

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — working-time limits come from jurisdiction profiles (WPM-T380)
+
+**Breaking for API readers of `GET /api/workforce/working-time`:** `over_48h` is now `over_average`, `reference_weeks` is gone from the
+answer (each flagged row's `average_weekly.denominator_weeks` and `limits` say it), `average_weekly` is `null` where the average is not
+configured, and `not_configured` counts workers with no limit. Each worker's limits resolve from their organization's profile over the
+chain of their `work_jurisdiction`; with none configured nothing is flagged and the worker is counted, never passed. Migration
+`000112`: `jurisdictions`, append-only `jurisdiction_parameters`, `workers.work_jurisdiction` (HR-only through `PUT /api/workers/{pid}`),
+and an index on `time_entry_weeks (week_start, minutes, worker_pid)` in place of the partial index fixed at 2,720 minutes. New routes,
+HR of the organization, audited by code and key: `GET /api/jurisdiction-profiles`, `POST /api/jurisdictions`, `POST
+/api/jurisdiction-parameters`. `rules::working_time` holds no constant. The seed loads an `example` `GB` profile (17 weeks, 48 hours,
+11 hours, not read against the Regulations) for the GBP organization. **Not tested:** the 403s under sign-in (no enforcement binary
+added); the least-privilege drill (left to CI). **Not done:** `work_jurisdiction` on create; a profile screen.
+
 ### Fixed — the expense journey's audit check is not tripped by a hash (WPM-T408)
 
 `a_claim_goes_from_draft_to_reimbursed` checked that the audit trail held no `5500` with a substring test, which a chain hash or UUID can

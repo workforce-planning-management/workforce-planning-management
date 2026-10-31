@@ -63,6 +63,9 @@ struct WorkerUpdate {
     /// A blank string clears the location.
     #[serde(default)]
     location: Option<String>,
+    /// Where the work is done, a jurisdiction code (WPM-D144); a blank string clears it. HR only.
+    #[serde(default)]
+    work_jurisdiction: Option<String>,
     #[serde(default)]
     fte_percent: Option<i32>,
     #[serde(default)]
@@ -417,6 +420,7 @@ fn end_date_problem(worker: &workers::Model, end: Option<chrono::NaiveDate>) -> 
 /// `PUT /api/workers/{pid}` — update mutable employment facts.
 /// A manager change runs the org-chart cycle check (WPM-R7).
 #[debug_handler]
+#[allow(clippy::too_many_lines)] // one optional field after another, validated then applied
 async fn update_worker(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -445,6 +449,19 @@ async fn update_worker(
     if let Err(message) = org::normalize_location(payload.location.as_deref()) {
         problems.push(message);
     }
+    let work_jurisdiction = payload.work_jurisdiction.as_deref().map(|code| {
+        Some(code.trim())
+            .filter(|code| !code.is_empty())
+            .map(str::to_string)
+    });
+    if let Some(Some(code)) = &work_jurisdiction
+        && !crate::rules::jurisdiction::valid_code(code)
+    {
+        problems.push(
+            "work_jurisdiction must be a jurisdiction code (2 or 3 capital letters or digits, optionally - and 1 to 3 more)"
+                .to_string(),
+        );
+    }
     if payload.salary_minor.is_some_and(|s| s < 0) {
         problems.push("salary_minor must be non-negative".to_string());
     }
@@ -458,6 +475,12 @@ async fn update_worker(
         problems.push(message);
     }
     ensure_valid(&problems.into_vec())?;
+    // Where the work is done decides which rules apply to the worker, so it is HR's to set, not the person's (WPM-D144).
+    if work_jurisdiction.is_some()
+        && !super::policies::privileged(&ctx, &caller, &worker.organization_ref).await?
+    {
+        return Err(super::forbidden("where the work is done is set by HR"));
+    }
     if let Some(manager) = payload.manager_pid {
         records::find_worker(&ctx.db, manager).await?;
         let map = manager_map(&ctx.db).await?;
@@ -479,6 +502,9 @@ async fn update_worker(
     if let Some(v) = payload.location.as_deref() {
         // Validated above; a blank value clears the location.
         active.location = ActiveValue::set(org::normalize_location(Some(v)).unwrap_or(None));
+    }
+    if let Some(v) = work_jurisdiction {
+        active.work_jurisdiction = ActiveValue::set(v);
     }
     if let Some(v) = payload.fte_percent {
         active.fte_percent = ActiveValue::set(v);

@@ -203,9 +203,10 @@
     "reject": "Reject",
     "rota": "Rota",
     "workingTime": "Working time",
-    "over48": "Over 48h average",
-    "restBreach": "Rest gap under 11h",
-    "allClear": "No working-time flags"
+    "overAverage": "Over the {limit}h average limit ({from})",
+    "restUnder": "Rest gap under {limit}h",
+    "allClear": "No working-time flags",
+    "notConfigured": "No limit configured: the weekly average for {average} and the rest gap for {rest} of {total} workers (no jurisdiction profile applies to where their work is done)"
   },
   "dev": {
     "cycles": "Review cycles",

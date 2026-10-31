@@ -203,9 +203,10 @@
     "reject": "Ablehnen",
     "rota": "Dienstplan",
     "workingTime": "Arbeitszeit",
-    "over48": "Über 48-h-Durchschnitt",
-    "restBreach": "Ruhezeit unter 11 h",
-    "allClear": "Keine Arbeitszeit-Hinweise"
+    "overAverage": "Über dem Durchschnittslimit von {limit} h ({from})",
+    "restUnder": "Ruhezeit unter {limit} h",
+    "allClear": "Keine Arbeitszeit-Hinweise",
+    "notConfigured": "Kein Limit konfiguriert: der Wochendurchschnitt für {average} und die Ruhezeit für {rest} von {total} Beschäftigten (für ihren Arbeitsort gilt kein Rechtsraumprofil)"
   },
   "dev": {
     "cycles": "Beurteilungszyklen",

@@ -858,6 +858,7 @@ mod tests {
     ) -> crate::models::_entities::workers::Model {
         crate::models::_entities::workers::Model {
             location: None,
+            work_jurisdiction: None,
             created_at: chrono::Utc::now().into(),
             updated_at: chrono::Utc::now().into(),
             id: 1,

@@ -203,9 +203,10 @@
     "reject": "Gwrthod",
     "rota": "Rota",
     "workingTime": "Oriau gwaith",
-    "over48": "Dros gyfartaledd 48 awr",
-    "restBreach": "Bwlch gorffwys o dan 11 awr",
-    "allClear": "Dim rhybuddion oriau gwaith"
+    "overAverage": "Dros y terfyn cyfartalog o {limit} awr ({from})",
+    "restUnder": "Bwlch gorffwys o dan {limit} awr",
+    "allClear": "Dim rhybuddion oriau gwaith",
+    "notConfigured": "Dim terfyn wedi'i osod: y cyfartaledd wythnosol i {average} a'r bwlch gorffwys i {rest} o {total} o weithwyr (nid oes proffil awdurdodaeth yn berthnasol i ble mae eu gwaith yn cael ei wneud)"
   },
   "dev": {
     "cycles": "Cylchoedd adolygu",

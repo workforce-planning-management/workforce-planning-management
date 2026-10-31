@@ -148,16 +148,18 @@
 
 {#snippet averageCell({ row }: { row: DataGridRow })}
   {@const flag = row as unknown as NonNullable<typeof signals>["flagged"][number]}
-  {#if flag.over_48h}
-    <span class="chip">{t("wf.over48")}</span>
+  {@const ceiling = flag.limits.max_average_weekly_minutes}
+  {#if flag.over_average && flag.average_weekly && ceiling.state === "resolved" && typeof ceiling.value === "number"}
+    <span class="chip">{tf("wf.overAverage", { limit: Math.round(ceiling.value / 60), from: ceiling.from[0]?.code ?? "" })}</span>
     {tf("pages.workforce.h_wk", { value_minutes_per_week: Math.round((flag.average_weekly.value_minutes_per_week ?? 0) / 60) })}
   {/if}
 {/snippet}
 
 {#snippet restCell({ row }: { row: DataGridRow })}
   {@const flag = row as unknown as NonNullable<typeof signals>["flagged"][number]}
+  {@const floor = flag.limits.min_daily_rest_minutes}
   {#each flag.rest_breaches as breach (breach.prev_end)}
-    <span class="chip">{t("wf.restBreach")}: {Math.floor(breach.gap_minutes / 60)}h{breach.gap_minutes % 60 ? ` ${breach.gap_minutes % 60}m` : ""}</span>
+    <span class="chip">{tf("wf.restUnder", { limit: floor.state === "resolved" && typeof floor.value === "number" ? Math.round(floor.value / 60) : "?" })}: {Math.floor(breach.gap_minutes / 60)}h{breach.gap_minutes % 60 ? ` ${breach.gap_minutes % 60}m` : ""}</span>
   {/each}
 {/snippet}
 
@@ -206,6 +208,13 @@
   {#if signals}
     <h2>{t("wf.workingTime")}</h2>
     <p class="muted">{signals.derivation}</p>
+    {#if signals.not_configured.average > 0 || signals.not_configured.rest > 0}
+      <p data-testid="working-time-not-configured">{tf("wf.notConfigured", {
+        average: signals.not_configured.average,
+        rest: signals.not_configured.rest,
+        total: signals.workers_checked,
+      })}</p>
+    {/if}
     {#if signals.flagged.length === 0}
       <p data-testid="working-time-clear">{t("wf.allClear")}</p>
     {:else}

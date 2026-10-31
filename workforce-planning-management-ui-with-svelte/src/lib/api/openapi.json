@@ -5697,6 +5697,77 @@
         ]
       }
     },
+    "/api/jurisdiction-parameters": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The row",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Append one dated, sourced parameter row (code, registry key, value, effective_from, effective_to?, source, checked_on?, status example|unverified|read). Rows are never changed: a later effective_from supersedes. HR, audited by code and key (WPM-D144)",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/jurisdiction-profiles": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The profile"
+          }
+        },
+        "summary": "An organization's jurisdiction profile (?organization=): its codes with layer and parent, every dated, sourced parameter row (append-only, so the history too) and the parameter registry. HR (WPM-D144, WPM-T380)",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/jurisdictions": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The code",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record a jurisdiction code the organization keeps, its layer (supranational, national, subnational) and parent; refused when a chain through it would be malformed. HR, audited without figures (WPM-D144)",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
     "/api/learning-paths": {
       "get": {
         "responses": {
@@ -11401,7 +11472,7 @@
             "description": "Workers, or the fields asked for of each"
           }
         },
-        "summary": "List workers (?department=&status=&limit=&offset=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does",
+        "summary": "List workers (?department=&status=&limit=&offset=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does",
         "tags": [
           "hr-core"
         ]
@@ -11524,7 +11595,7 @@
             "$ref": "#/components/responses/IdempotencyRefused"
           }
         },
-        "summary": "Update employment facts (manager change is cycle-checked)",
+        "summary": "Update employment facts (manager change is cycle-checked; work_jurisdiction, where the work is done, is HR's to set, WPM-D144)",
         "tags": [
           "hr-core"
         ]
@@ -14318,7 +14389,7 @@
             "description": "Signals"
           }
         },
-        "summary": "Advisory working-time guardrails (?department=&as_of=): 17-week 48h average over recorded minutes + 11h rest-gap breaches across recent and planned assignments; flags only, nothing refused (WPM-D19)",
+        "summary": "Advisory working-time guardrails (?department=&as_of=): each worker's average over recorded minutes and rest-gap breaches across recent and planned assignments, against the limits their jurisdiction profile resolves to (WPM-D144, WPM-T380); a limit with no profile row is counted as not configured, never as a pass; flags only, nothing refused (WPM-D19)",
         "tags": [
           "workforce"
         ]

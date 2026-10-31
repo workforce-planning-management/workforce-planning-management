@@ -343,14 +343,21 @@ and recorded time don't quietly drift into unsafe or unlawful
 patterns.*
 
 - Derived **entirely from data WPM already holds** — time entries and
-  the shift rota; no new stored state. Signals (UK Working Time
-  Regulations shapes, advisory):
-  - **48-hour average** — average weekly recorded minutes over the
-    17-week reference window, with WPM-D16 terms; flagged when the
-    average exceeds 48 h. All recorded (non-deleted) time counts, not
-    just approved — a safety signal must not wait for approval.
-  - **11-hour daily rest** — consecutive shift assignments (recent and
-    planned) with less than 11 h between them.
+  the shift rota, against each worker's limits from their
+  organization's jurisdiction profile for where the work is done
+  (WPM-D144, WPM-T380; the demo seed's example profile has the shape of
+  the UK Working Time Regulations: 17 weeks, 48 hours, 11 hours).
+  Signals (advisory):
+  - **Average weekly hours** — average weekly recorded minutes over the
+    profile's reference window, with WPM-D16 terms; flagged when the
+    average exceeds the profile's ceiling. All recorded (non-deleted)
+    time counts, not just approved — a safety signal must not wait for
+    approval.
+  - **Daily rest** — consecutive shift assignments (recent and planned)
+    closer together than the profile's rest floor.
+  - **No limit configured** — a worker whose profile gives no value (or
+    who has no `work_jurisdiction`) is counted as not configured, never
+    flagged and never passed.
 - **Advisory, never blocking** ([design.md](design.md) WPM-D19): the
   view flags; it refuses nothing, and assignment/time endpoints are
   unchanged.

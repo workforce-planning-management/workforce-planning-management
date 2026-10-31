@@ -301,6 +301,15 @@ async fn working_time_guardrails() {
             .assert_status_ok();
         let far = seed_worker!(&request, &org, "WT-4", None).await;
         activate!(&request, &far).await;
+        // The four work where a 17-week, 48-hour, 11-hour profile applies (a synthetic code).
+        crate::requests::working_time_profile(
+            &request,
+            &org,
+            "XW",
+            (17, 2_880, 660),
+            &[&heavy, &light, &rest_only, &far],
+        )
+        .await;
         for (who, starts, ends) in [
             (&rest_only, "2026-07-12T14:00:00Z", "2026-07-12T22:00:00Z"),
             (&rest_only, "2026-07-13T08:00:00Z", "2026-07-13T16:00:00Z"),
@@ -333,7 +342,11 @@ async fn working_time_guardrails() {
             .iter()
             .find(|f| f["worker_pid"] == heavy.as_str())
             .expect("heavy worker flagged");
-        assert_eq!(row["over_48h"], true);
+        assert_eq!(row["over_average"], true);
+        assert_eq!(row["work_jurisdiction"], "XW");
+        assert_eq!(row["limits"]["max_average_weekly_minutes"]["value"], 2_880);
+        assert_eq!(row["limits"]["reference_weeks"]["from"][0]["code"], "XW");
+        assert_eq!(row["limits"]["min_daily_rest_minutes"]["status"], "example");
         assert_eq!(row["average_weekly"]["numerator_minutes"], 50_400);
         assert_eq!(row["average_weekly"]["denominator_weeks"], 17);
         assert_eq!(row["rest_breaches"].as_array().unwrap().len(), 1);
@@ -346,7 +359,7 @@ async fn working_time_guardrails() {
             .iter()
             .find(|f| f["worker_pid"] == rest_only.as_str())
             .expect("a rest breach alone flags");
-        assert_eq!(rest["over_48h"], false);
+        assert_eq!(rest["over_average"], false);
         assert_eq!(rest["average_weekly"]["numerator_minutes"], 600);
         assert_eq!(rest["rest_breaches"][0]["gap_minutes"], 600);
         assert!(
@@ -390,6 +403,7 @@ async fn working_time_window_edges_and_rollup_follow_the_entries() {
         let org = an_org();
         let who = seed_worker!(&request, &org, "WT-EDGE", None).await;
         activate!(&request, &who).await;
+        crate::requests::working_time_profile(&request, &org, "XW", (17, 2_880, 660), &[&who]).await;
         let record = |day: chrono::NaiveDate, minutes: i32| {
             let request = &request;
             let who = &who;

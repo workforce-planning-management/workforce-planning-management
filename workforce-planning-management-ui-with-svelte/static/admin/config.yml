@@ -315,9 +315,10 @@ collections:
               - { name: "reject", label: "Reject", widget: string, required: false, i18n: true }
               - { name: "rota", label: "Rota", widget: string, required: false, i18n: true }
               - { name: "workingTime", label: "Working Time", widget: string, required: false, i18n: true }
-              - { name: "over48", label: "Over48", widget: string, required: false, i18n: true }
-              - { name: "restBreach", label: "Rest Breach", widget: string, required: false, i18n: true }
+              - { name: "overAverage", label: "Over Average", widget: string, required: false, i18n: true }
+              - { name: "restUnder", label: "Rest Under", widget: string, required: false, i18n: true }
               - { name: "allClear", label: "All Clear", widget: string, required: false, i18n: true }
+              - { name: "notConfigured", label: "Not Configured", widget: text, required: false, i18n: true }
           - name: "dev"
             label: "Dev"
             widget: object

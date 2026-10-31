@@ -203,9 +203,10 @@
     "reject": "Rechazar",
     "rota": "Turnos",
     "workingTime": "Tiempo de trabajo",
-    "over48": "Media superior a 48 h",
-    "restBreach": "Descanso inferior a 11 h",
-    "allClear": "Sin alertas de tiempo de trabajo"
+    "overAverage": "Por encima del límite medio de {limit} h ({from})",
+    "restUnder": "Descanso inferior a {limit} h",
+    "allClear": "Sin alertas de tiempo de trabajo",
+    "notConfigured": "Sin límite configurado: la media semanal para {average} y el descanso para {rest} de {total} personas trabajadoras (ningún perfil de jurisdicción se aplica al lugar donde trabajan)"
   },
   "dev": {
     "cycles": "Ciclos de evaluación",

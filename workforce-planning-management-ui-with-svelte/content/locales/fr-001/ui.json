@@ -203,9 +203,10 @@
     "reject": "Rejeter",
     "rota": "Planning",
     "workingTime": "Temps de travail",
-    "over48": "Moyenne au-delà de 48 h",
-    "restBreach": "Repos inférieur à 11 h",
-    "allClear": "Aucun signal de temps de travail"
+    "overAverage": "Au-delà de la limite moyenne de {limit} h ({from})",
+    "restUnder": "Repos inférieur à {limit} h",
+    "allClear": "Aucun signal de temps de travail",
+    "notConfigured": "Aucune limite configurée : la moyenne hebdomadaire pour {average} et le repos pour {rest} des {total} personnes (aucun profil de juridiction ne s'applique au lieu où elles travaillent)"
   },
   "dev": {
     "cycles": "Cycles d'évaluation",

@@ -128,7 +128,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   3 months), the pay-information period, pay-gap reporting tiers (one band from 50 workers every two years), flexible working (3
   months, one request a year, 30 calendar days to appeal, its own refusal list), resignation notice (90 and 0 calendar days), and money
   (JPY and KWD codes valid; the API never divides by 100). **Not done, and why:** no rule was refactored. The rules that hard-code one
-  regime's values take no profile yet: the working-time limits and the roll-up week (WPM-T380), the weekend days of the holiday rules
+  regime's values take no profile yet: the working-time limits and the roll-up week (WPM-T380, *done 2026-10-31*), the weekend days of the holiday rules
   and `is_business_day` (WPM-T379), the payroll stub's allowance, rate, day and month (WPM-T383); the pay-gap tiers are a parameter of
   the rule but not of the controller (WPM-T384). Week start has no rule in the API to test; the UI's money exponent is WPM-T373. These
   follow D144's order of work, whose resolver and parameter registry were not then among the parts the product owner confirmed (questions 1
@@ -338,10 +338,44 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   `rules::holiday` takes the weekend days as a parameter (the D144 `holidays.weekend_days`), so a substitute day and `is_business_day`
   follow it; a rule kind for a holiday fixed in another calendar; an example pack of a different shape. The registry is not confirmed yet
   (only D144 questions 1 to 4 are), so this waits for it.
-- [ ] WPM-T380 **Working-time limits as parameters.** *(WPM-R214, WPM-D143, WPM-D144; rows 14, 17)* The three constants become the D144
+- [x] (2026-10-31) WPM-T380 **Working-time limits as parameters.** *(WPM-R214, WPM-D143, WPM-D144; rows 14, 17)* The three constants become the D144
   parameters `working_time.reference_weeks`, `max_average_weekly_minutes` and `min_daily_rest_minutes`, with `no limit configured` when
   none is set (D144 question 1, confirmed) and the demo seed loading an example profile; the roll-up's week start and its partial index
   (fixed at 2,720 minutes) follow. D144's order of work, step 3, after the resolver (step 1).
+  **Done, with D144's step 2 (the tables) as far as this needs:** migration `000112` adds `jurisdictions` (organization, code, layer,
+  parent, name; unique per organization and code), `jurisdiction_parameters` (append-only: a trigger refuses an update or a delete;
+  a `read` row needs `checked_on`) and `workers.work_jurisdiction` (a code, HR-only through `PUT /api/workers/{pid}`; a blank clears
+  it; a person editing their own record cannot set it). `controllers::jurisdictions`: `GET /api/jurisdiction-profiles?organization=`
+  (codes, every row, the registry), `POST /api/jurisdictions` (refused when any chain through the code would be malformed) and `POST
+  /api/jurisdiction-parameters` (validated against the registry), HR of the organization, audited by code and key. **Rule:**
+  `rules::working_time` holds no limit: `over_average(total, weeks, ceiling)`, `rest_breaches(intervals, min_rest)`,
+  `breaches_by_worker(assignments, rest_of)` (a worker with no floor is not checked) and `heavy_week_minutes(ceiling, weeks)`.
+  **View:** `GET /api/workforce/working-time` resolves each worker's three limits from their organization's profile over the chain of
+  their `work_jurisdiction`; groups workers by (window, ceiling) and runs the rollup query once per group; each flagged row carries
+  `work_jurisdiction`, `over_average` (was `over_48h`), `average_weekly` (null when the average is not configured) and `limits` (each
+  resolution with its origins); the answer drops `reference_weeks` (it is per worker now) and adds `not_configured` (counts of workers
+  with no average limit, no rest floor, no work jurisdiction; names no one). **The roll-up follows:** the partial index fixed at 2,720
+  minutes is replaced by an index on `(week_start, minutes, worker_pid)` that serves any floor; the floor is computed per group. The
+  rollup's own week stays the ISO Monday week, **by choice**: the window is a trailing run of whole weeks of seven calendar days, not
+  calendar weeks, so it touches at most `weeks + 1` rollup weeks whatever day those start on, and the rollup is only a superset
+  filter; a unit test checks every week start and window end. `calendar.week_start` is therefore not read here. **Seed:** the GBP
+  organization gets an `example` `GB` profile in the shape of the Working Time Regulations 1998 (17 weeks, 2,880 minutes, 660
+  minutes; its source says it was not read against the text), and its workers `work_jurisdiction = GB`; the JPY organization has none
+  yet (WPM-T385). **UI:** `/workforce` shows the limit and its code ("Over the 40h average limit (QZ)", "Rest gap under 12h") and a
+  line counting workers with no limit configured; the three strings are machine drafts in the 12 translated locales, unreviewed.
+  **Tests:** unit: the limits of two profile shapes at the boundary, a floor per worker, the heavy floor for five shapes, the window
+  against every week start, the keys in the registry, the seed's example rows against the registry. Request: `jurisdictions.rs` (codes
+  and refusals, rows and refusals, the history listed, the database refusing an update and a delete, the audit naming the key and not
+  the value, `work_jurisdiction` set, refused and cleared) and the two-profile working-time journey (a federal chain whose bloc gives
+  the lower ceiling; the same minutes over one worker's limit and under the other's; a worker with no place counted, not flagged); the
+  two existing working-time journeys now set a profile first. Playwright: the limit and code shown, the not-configured line. **Not
+  done:** a screen to read or edit a profile (D144's step 4); `work_jurisdiction` on `POST /api/workers` (only the update sets it);
+  a dated chain; the shift calendar's week start. **Not tested:** the HR-only refusals (403) under sign-in: the request suite runs
+  with sign-in off and no enforcement binary was added; the least-privilege drill was left to CI. **Not verified:** the `GB` values
+  against the Regulations (they are labelled `example`). **Verified (2026-10-31):** service fmt, clippy pedantic (default and
+  `keycloak`), 1,081 unit tests, the route-coverage, inventory and union checks, 192 request tests on a fresh local database, and the
+  seed run on it (the three `GB` example rows, 40 workers at `GB`); UI lint, svelte-check, 320 vitest, Playwright 341 passed and 19
+  skipped.
 - [x] (2026-10-30) WPM-T381 **Names without a first and last.** *(WPM-R214, WPM-D143, WPM-R136; rows 2, 3)* The duplicate check does not split a name into
   first word and last word (compare the whole name, or parts a person gave); sorting uses `Intl.Collator(i18n.locale)`.
   **Done:** the service's `rules::duplicates` no longer has `split_name`. `name_tokens` folds the one display name (NFKC, lower case
@@ -791,10 +825,10 @@ through `rules::duplicates`.
 | 11 | Dates | UI `src/routes/workforce/+page.svelte:69,100` | `toLocaleTimeString([])` / `toLocaleString()`: the browser's locale, not the page's | **Gap**. **Fixed 2026-10-30** (`src/lib/locale-format.ts`) | T375 |
 | 12 | Time zone | UI `CalendarPanel.svelte:35`, `src/routes/rota/+page.svelte:46`, `src/lib/ceo.ts:11,87` | "Today" is the UTC date (`toISOString().slice(0, 10)`); there is no user or organization time zone | **Gap**: the wrong day near midnight far from UTC. **Fixed 2026-10-30**: the reader's zone (D149) | T378 |
 | 13 | Week start | UI `CalendarPanel.svelte:95` (`locale={i18n.locale}` to the calendar, which takes the first day from the locale) | Every `-001` locale resolves to Monday; only `en-us` gives Sunday; no region setting apart from the language | **Partial**. **Fixed 2026-10-30**: CLDR for the reader's region (D149) | T378 |
-| 14 | Week start | API `migration/src/m20261021_000078_time_entry_weeks.rs:32-37`; `src/controllers/workforce.rs:799` | The working-time roll-up groups by `date_trunc('week', …)`, an ISO Monday week, and its partial index is fixed at 2,720 minutes | **Gap** (tied to row 17) | T380 |
+| 14 | Week start | API `migration/src/m20261021_000078_time_entry_weeks.rs:32-37`; `src/controllers/workforce.rs:799` | The working-time roll-up groups by `date_trunc('week', …)`, an ISO Monday week, and its partial index is fixed at 2,720 minutes | **Gap** (tied to row 17). **Fixed 2026-10-31**: the index serves any floor; the Monday bucket cannot change an answer (tested) | T380 |
 | 15 | Weekend | API `src/rules/holiday.rs:128-130,188-192` | `is_weekend` is Saturday and Sunday; a substitute day and `is_business_day` follow it | **Gap**: a Friday and Saturday (or Friday only) weekend cannot be expressed | T379 |
 | 16 | Weekend | UI `CalendarPanel.svelte:153` (`td[data-weekend]`, never set: `weekendDays` is not passed) | No weekend is shown in any locale | **Gap** (neutral, but no weekend at all). **Fixed 2026-10-30**: the reader's CLDR weekend | T378 |
-| 17 | Working time | API `src/rules/working_time.rs:9-23`; `src/controllers/workforce.rs:762,775,895` | 17 weeks, 48 hours and 11 hours of rest are constants; no other limits can be configured | **Gap**: the D144 design's first move; not refactored here (see T369) | T380 |
+| 17 | Working time | API `src/rules/working_time.rs:9-23`; `src/controllers/workforce.rs:762,775,895` | 17 weeks, 48 hours and 11 hours of rest are constants; no other limits can be configured | **Gap**: the D144 design's first move; not refactored here (see T369). **Fixed 2026-10-31**: profile parameters, "no limit configured" when unset | T380 |
 | 18 | Calendars | API `src/rules/holiday.rs:79-82`; UI (no `calendar` option, no `-u-ca-`) | Gregorian only: Easter by the Gregorian algorithm; no lunar, Hijri, Hindu or other holiday rule; no non-Gregorian display | **Gap** | T379 |
 | 19 | Holidays | API `src/rules/holiday.rs:240-290` | Three example packs (GB-ENG, US, DE), labelled unverified; any region can add days by hand | **Right** in shape (data, labelled); the packs are three Western ones | T379 |
 | 20 | Currency exponent | API `src/rules/expenses.rs:65-71`, `src/rules/cost.rs:140-145`; `src/rules/display.rs:13-17` (used only for CPD amounts and FTE, not money) | The API holds and returns minor units with a code and never converts to major units, so it needs no exponent | **Right** | — |

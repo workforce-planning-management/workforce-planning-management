@@ -744,23 +744,40 @@ const REST_WINDOW_DAYS: i64 = 28;
 /// One shift's `(starts, ends)` in UTC, for the rest-gap check.
 type ShiftInterval = (chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>);
 
+/// One worker's three resolved working-time limits.
+struct WorkerLimits {
+    weeks: crate::rules::jurisdiction::Resolution,
+    ceiling: crate::rules::jurisdiction::Resolution,
+    rest: crate::rules::jurisdiction::Resolution,
+}
+
+impl WorkerLimits {
+    /// The window and ceiling, when both are configured.
+    fn average(&self) -> Option<(i64, i64)> {
+        Some((self.weeks.integer()?, self.ceiling.integer()?))
+    }
+}
+
 /// `GET /api/workforce/working-time` — the advisory working-time
-/// guardrails (WPM-R27): per worker, the 17-week average of
-/// **recorded** minutes (all non-deleted entries — a safety signal
-/// does not wait for approval) with WPM-D16 terms and the 48-hour
-/// flag, plus 11-hour rest-gap breaches across recent and planned
-/// shift assignments. Flags only — nothing is refused (WPM-D19).
-/// Visibility equals the rota's: flagged workers are named.
+/// guardrails (WPM-R27): per worker, the average of **recorded** minutes
+/// (all non-deleted entries — a safety signal does not wait for approval)
+/// over the trailing reference window, with WPM-D16 terms and the ceiling
+/// flag, plus rest-gap breaches across recent and planned shift assignments.
+/// Each worker's three limits come from their organization's jurisdiction
+/// profile over the chain of their `work_jurisdiction` (WPM-D144, WPM-T380);
+/// a limit with no row is **not configured**, counted, never a pass.
+/// Flags only — nothing is refused (WPM-D19). Visibility equals the rota's:
+/// flagged workers are named.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // minutes → shifts → rest breaches → flagged, linearly
+#[allow(clippy::too_many_lines)] // limits → minutes → shifts → rest breaches → flagged, linearly
 async fn working_time(
     axum::extract::Query(query): axum::extract::Query<WorkingTimeQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
+    use crate::rules::jurisdiction::Resolution;
     let as_of = query
         .as_of
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
-    let window_start = as_of - chrono::Duration::weeks(working_time::REFERENCE_WEEKS);
     let department = query.department.as_deref();
     let live_workers = || {
         let mut find = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
@@ -769,57 +786,90 @@ async fn working_time(
         }
         find
     };
-    let workers_checked = live_workers().count(&ctx.db).await?;
-    // Recorded minutes per worker over the reference window, summed by the database: only the
-    // workers over the ceiling come back (the same comparison as `working_time::over_average`).
-    let ceiling =
-        working_time::MAX_AVG_WEEKLY_MINUTES.saturating_mul(working_time::REFERENCE_WEEKS);
-    let windowed_minutes = || {
-        time_entries::Entity::find()
-            .select_only()
-            .column(time_entries::Column::WorkerPid)
-            .column_as(
-                sea_orm::sea_query::Expr::col(time_entries::Column::Minutes).sum(),
-                "total",
-            )
-            .filter(time_entries::Column::DeletedAt.is_null())
-            .filter(time_entries::Column::WorkedOn.gt(window_start))
-            .filter(time_entries::Column::WorkedOn.lte(as_of))
-            .group_by(time_entries::Column::WorkerPid)
-    };
-    // The weekly rollup (`time_entry_weeks`, kept by triggers) names every worker whose weeks touching
-    // the window add up to more than the ceiling: a superset of the answer. Only workers with a heavy week
-    // (a partial index) can be over, so only their weeks are summed.
-    // Only those workers' entries are then summed over the exact window, so the result is unchanged.
-    let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = ctx
-        .db
-        .query_all_raw(sea_orm::Statement::from_sql_and_values(
-            sea_orm::DbBackend::Postgres,
-            "WITH heavy AS (
-                 SELECT DISTINCT worker_pid FROM time_entry_weeks
-                  WHERE week_start >= date_trunc('week', $1::date + 1)::date AND week_start <= $2
-                    AND minutes >= $4),
-                  maybe AS (
-                 SELECT w.worker_pid FROM time_entry_weeks w
-                  WHERE w.worker_pid IN (SELECT worker_pid FROM heavy)
-                    AND w.week_start >= date_trunc('week', $1::date + 1)::date AND w.week_start <= $2
-                  GROUP BY w.worker_pid HAVING SUM(w.minutes) > $3)
-             SELECT t.worker_pid, SUM(t.minutes)::bigint AS total
-               FROM time_entries t
-              WHERE t.worker_pid IN (SELECT worker_pid FROM maybe)
-                AND t.deleted_at IS NULL AND t.worked_on > $1 AND t.worked_on <= $2
-              GROUP BY t.worker_pid HAVING SUM(t.minutes) > $3",
-            [
-                window_start.into(),
-                as_of.into(),
-                ceiling.into(),
-                working_time::HEAVY_WEEK_MINUTES.into(),
-            ],
-        ))
-        .await?
+    // Every worker in scope, with where their work is done: the limits are per worker.
+    let places: Vec<(Uuid, String, Option<String>)> = live_workers()
+        .select_only()
+        .column(workers::Column::Pid)
+        .column(workers::Column::OrganizationRef)
+        .column(workers::Column::WorkJurisdiction)
+        .into_tuple()
+        .all(&ctx.db)
+        .await?;
+    let workers_checked = places.len();
+    let organizations: Vec<String> = places
+        .iter()
+        .map(|(_, org, _)| org.clone())
+        .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
-        .map(|row| Ok((row.try_get("", "worker_pid")?, row.try_get("", "total")?)))
-        .collect::<Result<_, sea_orm::DbErr>>()?;
+        .collect();
+    let profiles = super::jurisdictions::profiles_for(&ctx.db, &organizations).await?;
+    let empty = super::jurisdictions::Profile::default();
+    let limits: std::collections::BTreeMap<Uuid, WorkerLimits> = places
+        .iter()
+        .map(|(pid, org, place)| {
+            let profile = profiles.get(org).unwrap_or(&empty);
+            let get = |key| profile.resolve(key, place.as_deref(), as_of);
+            (
+                *pid,
+                WorkerLimits {
+                    weeks: get(working_time::REFERENCE_WEEKS_KEY),
+                    ceiling: get(working_time::MAX_AVERAGE_WEEKLY_MINUTES_KEY),
+                    rest: get(working_time::MIN_DAILY_REST_MINUTES_KEY),
+                },
+            )
+        })
+        .collect();
+    // Workers grouped by their (window, ceiling): one database pass per distinct pair.
+    let mut groups: std::collections::BTreeMap<(i64, i64), Vec<Uuid>> =
+        std::collections::BTreeMap::new();
+    for (pid, limit) in &limits {
+        if let Some(pair) = limit.average() {
+            groups.entry(pair).or_default().push(*pid);
+        }
+    }
+    // Recorded minutes per worker over their window, summed by the database: only the workers over
+    // their ceiling come back (the same comparison as `working_time::over_average`). The weekly
+    // rollup (`time_entry_weeks`, kept by triggers) first names the workers whose weeks touching the
+    // window add up to more than the ceiling, a superset of the answer, looking only at workers with
+    // a week at the heavy floor; only their entries are then summed over the exact window.
+    let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = std::collections::BTreeMap::new();
+    for (&(weeks, ceiling), pids) in &groups {
+        let window_start = as_of - chrono::Duration::weeks(weeks);
+        let total_ceiling = ceiling.saturating_mul(weeks);
+        let heavy = working_time::heavy_week_minutes(ceiling, weeks).unwrap_or(0);
+        for batch in pids.chunks(IN_BATCH) {
+            let rows = ctx
+                .db
+                .query_all_raw(sea_orm::Statement::from_sql_and_values(
+                    sea_orm::DbBackend::Postgres,
+                    "WITH heavy AS (
+                         SELECT DISTINCT worker_pid FROM time_entry_weeks
+                          WHERE week_start >= date_trunc('week', $1::date + 1)::date AND week_start <= $2
+                            AND minutes >= $4 AND worker_pid = ANY($5)),
+                          maybe AS (
+                         SELECT w.worker_pid FROM time_entry_weeks w
+                          WHERE w.worker_pid IN (SELECT worker_pid FROM heavy)
+                            AND w.week_start >= date_trunc('week', $1::date + 1)::date AND w.week_start <= $2
+                          GROUP BY w.worker_pid HAVING SUM(w.minutes) > $3)
+                     SELECT t.worker_pid, SUM(t.minutes)::bigint AS total
+                       FROM time_entries t
+                      WHERE t.worker_pid IN (SELECT worker_pid FROM maybe)
+                        AND t.deleted_at IS NULL AND t.worked_on > $1 AND t.worked_on <= $2
+                      GROUP BY t.worker_pid HAVING SUM(t.minutes) > $3",
+                    [
+                        window_start.into(),
+                        as_of.into(),
+                        total_ceiling.into(),
+                        heavy.into(),
+                        batch.to_vec().into(),
+                    ],
+                ))
+                .await?;
+            for row in rows {
+                minutes_of.insert(row.try_get("", "worker_pid")?, row.try_get("", "total")?);
+            }
+        }
+    }
     // Shift intervals per worker around `as_of` (recent + planned): only the shifts in the window.
     let rest_start = as_of - chrono::Duration::days(REST_WINDOW_DAYS);
     let rest_end = as_of + chrono::Duration::days(REST_WINDOW_DAYS);
@@ -860,21 +910,31 @@ async fn working_time(
             }
         }
     }
-    let breaches_of = working_time::breaches_by_worker(&assigned);
-    // A worker flagged only for rest still shows their total: read just those.
-    let rest_only: Vec<Uuid> = breaches_of
-        .keys()
-        .filter(|pid| !minutes_of.contains_key(pid))
-        .copied()
-        .collect();
-    for pids in rest_only.chunks(IN_BATCH) {
-        minutes_of.extend(
-            windowed_minutes()
-                .filter(time_entries::Column::WorkerPid.is_in(pids.to_vec()))
-                .into_tuple::<(Uuid, i64)>()
-                .all(&ctx.db)
-                .await?,
-        );
+    let breaches_of = working_time::breaches_by_worker(&assigned, |pid| {
+        limits.get(&pid).and_then(|limit| limit.rest.integer())
+    });
+    // A worker flagged only for rest still shows their total over their own window (if configured).
+    for pid in breaches_of.keys() {
+        if minutes_of.contains_key(pid) {
+            continue;
+        }
+        let Some((weeks, _)) = limits.get(pid).and_then(WorkerLimits::average) else {
+            continue;
+        };
+        let total: Option<Option<i64>> = time_entries::Entity::find()
+            .select_only()
+            .column_as(
+                sea_orm::sea_query::Expr::col(time_entries::Column::Minutes).sum(),
+                "total",
+            )
+            .filter(time_entries::Column::DeletedAt.is_null())
+            .filter(time_entries::Column::WorkerPid.eq(*pid))
+            .filter(time_entries::Column::WorkedOn.gt(as_of - chrono::Duration::weeks(weeks)))
+            .filter(time_entries::Column::WorkedOn.lte(as_of))
+            .into_tuple()
+            .one(&ctx.db)
+            .await?;
+        minutes_of.insert(*pid, total.flatten().unwrap_or(0));
     }
     let mut candidates: Vec<Uuid> = minutes_of
         .keys()
@@ -884,6 +944,7 @@ async fn working_time(
         .into_iter()
         .collect();
     candidates.sort_unstable();
+    let limit_json = |resolution: &Resolution| serde_json::to_value(resolution).unwrap_or_default();
     let mut flagged = Vec::new();
     for pids in candidates.chunks(IN_BATCH) {
         let people = live_workers()
@@ -892,23 +953,34 @@ async fn working_time(
             .all(&ctx.db)
             .await?;
         for worker in &people {
+            let Some(limit) = limits.get(&worker.pid) else {
+                continue;
+            };
             let total_minutes = minutes_of.get(&worker.pid).copied().unwrap_or(0);
-            let over = working_time::over_average(total_minutes, working_time::REFERENCE_WEEKS);
+            let average = limit.average();
+            let over = average.is_some_and(|(weeks, ceiling)| {
+                working_time::over_average(total_minutes, weeks, ceiling)
+            });
             let breaches = breaches_of.get(&worker.pid).map_or(&[][..], Vec::as_slice);
-            if !working_time::is_flagged(total_minutes, breaches.len()) {
+            if !working_time::is_flagged(over, breaches.len()) {
                 continue;
             }
             flagged.push(serde_json::json!({
                 "worker_pid": worker.pid,
                 "display_name": worker.display_name,
                 "department": worker.department,
-                "average_weekly": {
+                "work_jurisdiction": worker.work_jurisdiction,
+                "average_weekly": average.map(|(weeks, _)| serde_json::json!({
                     "numerator_minutes": total_minutes,
-                    "denominator_weeks": working_time::REFERENCE_WEEKS,
-                    "value_minutes_per_week":
-                        working_time::weekly_average(total_minutes, working_time::REFERENCE_WEEKS),
+                    "denominator_weeks": weeks,
+                    "value_minutes_per_week": working_time::weekly_average(total_minutes, weeks),
+                })),
+                "over_average": over,
+                "limits": {
+                    "reference_weeks": limit_json(&limit.weeks),
+                    "max_average_weekly_minutes": limit_json(&limit.ceiling),
+                    "min_daily_rest_minutes": limit_json(&limit.rest),
                 },
-                "over_48h": over,
                 "rest_breaches": breaches.iter().map(|breach| serde_json::json!({
                     "prev_end": breach.prev_end,
                     "next_start": breach.next_start,
@@ -917,16 +989,25 @@ async fn working_time(
             }));
         }
     }
+    // Counts only: who has no limit is not a flag and names no one.
+    let count =
+        |test: &dyn Fn(&WorkerLimits) -> bool| limits.values().filter(|limit| test(limit)).count();
+    let not_configured = serde_json::json!({
+        "average": count(&|limit| limit.average().is_none()),
+        "rest": count(&|limit| limit.rest.integer().is_none()),
+        "no_work_jurisdiction": places.iter().filter(|(_, _, place)| place.is_none()).count(),
+    });
     format::json(serde_json::json!({
         "as_of": as_of,
-        "reference_weeks": working_time::REFERENCE_WEEKS,
         "rest_window_days": REST_WINDOW_DAYS,
         "workers_checked": workers_checked,
         "flagged": flagged,
-        "derivation": "advisory only, nothing is refused (WPM-D19); average = all \
-                       recorded (not merely approved) minutes over the trailing 17 \
-                       weeks; rest breaches = consecutive shift assignments (recent \
-                       and planned, ±28 days) under 11 hours apart",
+        "not_configured": not_configured,
+        "derivation": "advisory only, nothing is refused (WPM-D19); each worker's limits come from their organization's \
+                       jurisdiction profile for where the work is done (WPM-D144), and a limit with no profile row is \
+                       not configured, never a pass; average = all recorded (not merely approved) minutes over the \
+                       trailing reference window; rest breaches = consecutive shift assignments (recent and planned, \
+                       ±28 days) closer than the rest floor",
     }))
 }
 

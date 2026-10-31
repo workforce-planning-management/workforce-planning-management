@@ -25,6 +25,7 @@ pub struct Model {
     pub department: String,
     pub job_title: String,
     pub location: Option<String>,
+    pub work_jurisdiction: Option<String>,
     pub manager_pid: Option<Uuid>,
     pub salary_minor: Option<i64>,
     pub salary_currency: Option<String>,

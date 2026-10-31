@@ -49,6 +49,7 @@ impl Task for Seed {
                 person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
                 upstream_worker_ref: ActiveValue::set(Some(format!("worker:{}", Uuid::new_v4()))),
                 organization_ref: ActiveValue::set(org.clone()),
+                work_jurisdiction: ActiveValue::set(Some("GB".to_string())),
                 worker_number: ActiveValue::set(format!("E-{n:04}")),
                 display_name: ActiveValue::set(format!("Test Head {n:03}")),
                 status: ActiveValue::set("active".to_string()),
@@ -79,6 +80,7 @@ impl Task for Seed {
                     person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
                     upstream_worker_ref: ActiveValue::set(None),
                     organization_ref: ActiveValue::set(org.clone()),
+                    work_jurisdiction: ActiveValue::set(Some("GB".to_string())),
                     worker_number: ActiveValue::set(format!("E-{n:04}")),
                     display_name: ActiveValue::set(format!("Test Worker {n:03}")),
                     status: ActiveValue::set(
@@ -361,8 +363,140 @@ impl Task for Seed {
         }
         .insert(db)
         .await?;
+        seed_profile(db, &org, &example_profile_gb()).await?;
         tracing::info!(organization = %org, yen_organization = %yen_org, workers = n, "seeded synthetic demo organizations");
         println!("seeded: organization {org} (GBP) and {yen_org} (JPY), {n} workers in all");
         Ok(())
+    }
+}
+
+/// One example jurisdiction profile for the demo: the codes and the parameter rows, every row labelled `example` (D144 question 1:
+/// the demo always loads example profiles; none is the default and none is claimed as read).
+pub struct ExampleProfile {
+    /// `(code, layer, parent, name)`.
+    pub codes: &'static [(
+        &'static str,
+        &'static str,
+        Option<&'static str>,
+        &'static str,
+    )],
+    /// `(code, key, value, effective_from, source)`.
+    pub rows: &'static [(&'static str, &'static str, i64, &'static str, &'static str)],
+}
+
+/// The example `GB` working-time profile: the shape of the Working Time Regulations 1998 (a 17-week reference period, an average of
+/// 48 hours a week, 11 hours' daily rest), the values the service used to hard-code. **Example, unverified**: not read against the
+/// Regulations in this work.
+#[must_use]
+pub const fn example_profile_gb() -> ExampleProfile {
+    const SOURCE: &str = "Example in the shape of the Working Time Regulations 1998 (SI 1998/1833), regs 4 and 10; not read against \
+                          the text (WPM-T380)";
+    ExampleProfile {
+        codes: &[("GB", "national", None, "United Kingdom (example)")],
+        rows: &[
+            (
+                "GB",
+                "working_time.reference_weeks",
+                17,
+                "1998-10-01",
+                SOURCE,
+            ),
+            (
+                "GB",
+                "working_time.max_average_weekly_minutes",
+                2_880,
+                "1998-10-01",
+                SOURCE,
+            ),
+            (
+                "GB",
+                "working_time.min_daily_rest_minutes",
+                660,
+                "1998-10-01",
+                SOURCE,
+            ),
+        ],
+    }
+}
+
+/// Load `profile` for `organization`: its codes, then its rows (validated against the registry; a row that does not fit is an
+/// error, so the seed cannot ship a value the API would refuse).
+///
+/// # Errors
+///
+/// A database error, or a row the registry refuses.
+pub async fn seed_profile<C: sea_orm::ConnectionTrait>(
+    db: &C,
+    organization: &str,
+    profile: &ExampleProfile,
+) -> Result<()> {
+    use sea_orm::{DbBackend, Statement};
+    for (code, layer, parent, name) in profile.codes {
+        db.execute_raw(Statement::from_sql_and_values(
+            DbBackend::Postgres,
+            "INSERT INTO jurisdictions (organization_ref, code, layer, parent_code, name) VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (organization_ref, code) DO NOTHING",
+            [
+                organization.into(),
+                (*code).into(),
+                (*layer).into(),
+                parent.map(str::to_string).into(),
+                (*name).into(),
+            ],
+        ))
+        .await?;
+    }
+    for (code, key, value, from, source) in profile.rows {
+        let value = crate::rules::jurisdiction::validate(key, &serde_json::json!(value))
+            .map_err(Error::Message)?;
+        let from = chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d")
+            .map_err(|e| Error::Message(e.to_string()))?;
+        db.execute_raw(Statement::from_sql_and_values(
+            DbBackend::Postgres,
+            "INSERT INTO jurisdiction_parameters (pid, organization_ref, code, key, value, effective_from, source, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'example')",
+            [
+                Uuid::new_v4().into(),
+                organization.into(),
+                (*code).into(),
+                (*key).into(),
+                serde_json::to_value(value).unwrap_or_default().into(),
+                from.into(),
+                (*source).into(),
+            ],
+        ))
+        .await?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every example row fits the registry and every code is well formed, so the seed cannot fail on its own data.
+    #[test]
+    fn the_example_profiles_fit_the_registry() {
+        for profile in [example_profile_gb()] {
+            for (code, layer, _, _) in profile.codes {
+                let layer = crate::rules::jurisdiction::Layer::parse(layer).unwrap();
+                assert!(
+                    crate::rules::jurisdiction::layer_fits(code, layer),
+                    "{code}"
+                );
+            }
+            for (code, key, value, from, source) in profile.rows {
+                assert!(crate::rules::jurisdiction::valid_code(code));
+                assert!(
+                    crate::rules::jurisdiction::validate(key, &serde_json::json!(value)).is_ok(),
+                    "{key}"
+                );
+                assert!(chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d").is_ok());
+                assert!(
+                    source.contains("not read"),
+                    "an example says it was not read: {key}"
+                );
+            }
+        }
     }
 }

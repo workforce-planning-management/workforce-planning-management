@@ -196,6 +196,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("absence-categories", Open),
     ("holiday-regions", Open),
     ("holidays", Open),
+    ("jurisdiction-profiles", Privileged),
     ("cost-centres", Open),
     ("cost-centres/unmatched", Privileged),
     ("assignments/breakdown", Open),

@@ -37,6 +37,7 @@ mod human_capital;
 mod idempotency;
 mod intelligence_overview;
 mod job_levels;
+mod jurisdictions;
 mod learning;
 mod lists;
 mod lms_links;
@@ -77,6 +78,38 @@ pub fn a_person() -> String {
 }
 
 /// A fresh synthetic `organization:` URN.
+/// Give `org` a working-time profile under the code `code` (`(weeks, ceiling minutes, rest minutes)`, `example` rows from
+/// 2000-01-01) and record `workers` as working there (WPM-D144, WPM-T380). Returns nothing; each call asserts success.
+pub async fn working_time_profile(
+    request: &loco_rs::TestServer,
+    org: &str,
+    code: &str,
+    (weeks, ceiling, rest): (i64, i64, i64),
+    workers: &[&str],
+) {
+    for (key, value) in [
+        ("working_time.reference_weeks", weeks),
+        ("working_time.max_average_weekly_minutes", ceiling),
+        ("working_time.min_daily_rest_minutes", rest),
+    ] {
+        request
+            .post("/api/jurisdiction-parameters")
+            .json(&serde_json::json!({
+                "organization_ref": org, "code": code, "key": key, "value": value,
+                "effective_from": "2000-01-01", "source": "synthetic test profile", "status": "example",
+            }))
+            .await
+            .assert_status_ok();
+    }
+    for worker in workers {
+        request
+            .put(&format!("/api/workers/{worker}"))
+            .json(&serde_json::json!({ "work_jurisdiction": code }))
+            .await
+            .assert_status_ok();
+    }
+}
+
 pub fn an_org() -> String {
     format!("organization:{}", uuid::Uuid::new_v4())
 }

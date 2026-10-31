@@ -203,9 +203,10 @@
     "reject": "拒绝",
     "rota": "排班",
     "workingTime": "工时",
-    "over48": "平均超过48小时",
-    "restBreach": "休息不足11小时",
-    "allClear": "无工时警示"
+    "overAverage": "超过平均上限{limit}小时（{from}）",
+    "restUnder": "休息不足{limit}小时",
+    "allClear": "无工时警示",
+    "notConfigured": "未配置上限：{total}名员工中{average}名的每周平均工时和{rest}名的休息间隔（其工作地点没有适用的司法辖区配置）"
   },
   "dev": {
     "cycles": "评估周期",

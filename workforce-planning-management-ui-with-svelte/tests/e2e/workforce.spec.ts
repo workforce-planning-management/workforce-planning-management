@@ -32,6 +32,11 @@ async function stubWorkforce(
   options: {
     requests?: unknown[];
     flagged?: unknown[];
+    notConfigured?: {
+      average: number;
+      rest: number;
+      no_work_jurisdiction: number;
+    };
     issues?: unknown[];
   } = {},
 ) {
@@ -50,10 +55,14 @@ async function stubWorkforce(
     route.fulfill({
       json: {
         as_of: "2026-10-24",
-        reference_weeks: 17,
         rest_window_days: 7,
         workers_checked: 2,
         derivation: "Average weekly minutes over the reference weeks.",
+        not_configured: options.notConfigured ?? {
+          average: 0,
+          rest: 0,
+          no_work_jurisdiction: 0,
+        },
         flagged: options.flagged ?? [],
       },
     }),
@@ -134,13 +143,64 @@ test.describe("Workforce", () => {
           worker_pid: WORKER.pid,
           display_name: "Test Worker 001",
           department: "engineering",
+          work_jurisdiction: "XA-01",
           average_weekly: {
             numerator_minutes: 3000,
             denominator_weeks: 1,
             value_minutes_per_week: 3000,
           },
-          over_48h: true,
-          rest_breaches: [],
+          over_average: true,
+          limits: {
+            reference_weeks: {
+              state: "resolved",
+              value: 1,
+              status: "example",
+              from: [
+                {
+                  code: "XA",
+                  layer: "national",
+                  status: "example",
+                  source: "s",
+                  effective_from: "2000-01-01",
+                },
+              ],
+            },
+            max_average_weekly_minutes: {
+              state: "resolved",
+              value: 2400,
+              status: "example",
+              from: [
+                {
+                  code: "QZ",
+                  layer: "supranational",
+                  status: "example",
+                  source: "s",
+                  effective_from: "2000-01-01",
+                },
+              ],
+            },
+            min_daily_rest_minutes: {
+              state: "resolved",
+              value: 720,
+              status: "example",
+              from: [
+                {
+                  code: "XA-01",
+                  layer: "subnational",
+                  status: "example",
+                  source: "s",
+                  effective_from: "2000-01-01",
+                },
+              ],
+            },
+          },
+          rest_breaches: [
+            {
+              prev_end: "2026-10-20T22:00:00Z",
+              next_start: "2026-10-21T06:00:00Z",
+              gap_minutes: 480,
+            },
+          ],
         },
       ],
       issues: [
@@ -160,8 +220,31 @@ test.describe("Workforce", () => {
     await expect(page.getByTestId("working-time")).toContainText(
       "Test Worker 001",
     );
+    // The limit is the profile's, and says where it came from.
+    await expect(page.getByTestId("working-time")).toContainText(
+      "Over the 40h average limit (QZ)",
+    );
+    await expect(page.getByTestId("working-time")).toContainText(
+      "Rest gap under 12h: 8h",
+    );
     await expect(page.getByTestId("working-time-clear")).toHaveCount(0);
+    await expect(page.getByTestId("working-time-not-configured")).toHaveCount(
+      0,
+    );
     await expect(page.getByTestId("ergonomic-issues")).toContainText("Desk 4");
+  });
+
+  test("workers with no limit configured are counted, not passed", async ({
+    page,
+  }) => {
+    await stubWorkforce(page, {
+      notConfigured: { average: 2, rest: 1, no_work_jurisdiction: 2 },
+    });
+    await page.goto("/workforce");
+    await expect(page.getByTestId("working-time-clear")).toBeVisible();
+    await expect(page.getByTestId("working-time-not-configured")).toContainText(
+      "No limit configured: the weekly average for 2 and the rest gap for 1 of 2 workers",
+    );
   });
 
   test("one failed read is the page's error and nothing is drawn as empty", async ({
