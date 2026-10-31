@@ -95,6 +95,7 @@ FIN_GO_LIVE, PLAT_101, PLAT_201 = course(0xF1), course(0x101), course(0x201)
 step("more organizations: three regions and a parent that contains them all")
 REGIONS = [("north", "North region"), ("south", "South region"), ("central", "Central services")]
 region_orgs = []
+region_workers = {}
 for slug, title in REGIONS:
     org = "organization:" + str(uuid.uuid4())
     region_orgs.append(org)
@@ -109,10 +110,36 @@ for slug, title in REGIONS:
         })
         if w:
             call("POST", f"/workers/{w['pid']}/status", {"to": "active"}, quiet=True)
+            region_workers.setdefault(org, []).append(w["pid"])
     call("POST", "/governance-commitments", {"organization_ref": org, "name": f"{title} monthly review", "role": "Regional lead", "senior": True, "kind": "review", "frequency": "monthly", "minutes": 60, "holders": 2})
     lv = [call("POST", "/oversight/levels", {"organization_ref": org, "ordinal": n, "name": f"Level {n}"}) for n in (1, 2, 3)]
     if lv[0]:
         call("POST", "/oversight/positions", {"organization_ref": org, "level_pid": lv[0]["pid"], "effective_on": day(-60), "deciding_body": "Fictitious regional board", "reason": "Fictitious starting position"})
+# Example jurisdiction profiles (WPM-D144, WPM-T385): India for the north region (its workers in a state with no rows of its own, so
+# the country's layer applies through the chain), then Japan for the south; the central region has none, so its working-time limits
+# read "no limit configured". Every row is labelled example: none was read against its law.
+EXAMPLE_PROFILES = {
+    "north": ([("IN", "national", None), ("IN-MH", "subnational", "IN")], "IN-MH", [
+        ("IN", "working_time.reference_weeks", 1), ("IN", "working_time.max_average_weekly_minutes", 2880),
+        ("IN", "holidays.weekend_days", [7])],
+        "Example in the shape of India's Factories Act 1948, sections 51 and 52; not read against the text (WPM-T385)"),
+    "south": ([("JP", "national", None)], "JP", [
+        ("JP", "working_time.reference_weeks", 1), ("JP", "working_time.max_average_weekly_minutes", 2400),
+        ("JP", "holidays.weekend_days", [6, 7])],
+        "Example in the shape of Japan's Labour Standards Act 1947, Articles 32 and 35; not read against the text (WPM-T385)"),
+}
+step("example jurisdiction profiles: India (north), then Japan (south)")
+for (slug, _), org in zip(REGIONS, region_orgs):
+    if slug not in EXAMPLE_PROFILES:
+        continue
+    codes, place, rows, source = EXAMPLE_PROFILES[slug]
+    for code, layer, parent in codes:
+        call("POST", "/jurisdictions", {"organization_ref": org, "code": code, "layer": layer, "parent_code": parent})
+    for code, key, value in rows:
+        call("POST", "/jurisdiction-parameters", {"organization_ref": org, "code": code, "key": key, "value": value,
+                                                  "effective_from": "2000-01-01", "source": source, "status": "example"})
+    for pid in region_workers.get(org, []):
+        call("PUT", f"/workers/{pid}", {"work_jurisdiction": place}, quiet=True)
 PARENT = "organization:" + str(uuid.uuid4())
 for child in [ORG] + region_orgs:
     call("POST", "/organization-confederations", {"parent_organization_ref": PARENT, "child_organization_ref": child, "starts_on": day(-400)})

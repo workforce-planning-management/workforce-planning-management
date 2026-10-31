@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — example India and Japan jurisdiction profiles in the demo (WPM-T385)
+
+The seed and `scripts/demo-data.py` load example profiles for India (a federal chain: a state under the country) and Japan beside the
+UK-shaped one, every value labelled `example`, none read against its law. **Not done:** moving the other `WPM_*` defaults into profiles
+(WPM-T384 remains open).
+
 ### Changed — public holidays follow the organization's weekend, and one rule kind is not Gregorian (WPM-T379)
 
 A substitute holiday follows the weekend days in the organization's jurisdiction profile (or the example pack's own), a holiday can be a

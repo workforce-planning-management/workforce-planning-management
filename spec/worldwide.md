@@ -504,8 +504,11 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   every value readable); a request test (the five areas listed; `GB` unverified, a starting point, `EU` read with its Article *(`EU` unverified since WPM-T404)*; then
   three settings set in the process: a value of 3 shown as set, `none` giving no tiers, a junk notice set but not used; and back).
   **What remains, and why:** moving these defaults into dated, sourced profiles under a jurisdiction code is D144's registry and
-  resolver, which the product owner has not confirmed (only D144 questions 1 to 4 are), so nothing was moved and the `WPM_*` settings stay
-  one value per deployment. **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
+  resolver, which the product owner had not then confirmed (only D144 questions 1 to 4 were), so nothing was moved and the `WPM_*` settings stay
+  one value per deployment. *(Update 2026-10-31: the registry and resolver now exist, WPM-T407, and the working-time limits moved,
+  WPM-T380; none of the settings in this table has moved yet: each needs a registry entry, a chain for its reader (a worker's for
+  flexible working, notice and pay information; an organization-level rule, not yet decided, for the gap report, joint assessment and
+  retention), and the order the design gives, profile first and the `WPM_*` setting as the fallback.)* **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
   and UK reports; changing them needs the equality categories per jurisdiction, which is the registry too); `WPM_PAY_GAP_SEX_CATEGORY`
   and `WPM_AI_ACT_APPLIES_FROM` are not in the table (the first names a category, not a value of a regime; the second's answer already
   names the AI Act) *(both added by WPM-T402)*; the working-time constants are WPM-T380; no UI shows the new endpoint *(a read-only page
@@ -513,7 +516,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   not read against the Act's text in this task, which is why they say `unverified`; the gap report's `reporting_basis` with a configured
   `WPM_PAY_GAP_TIERS` in a request (the parser is unit-tested and the endpoint's `none` case is request-tested; the gap report needs
   equality monitoring on, which its own binary sets) *(request-tested by WPM-T402, 2026-10-31)*.
-- [~] WPM-T385 **A seed that is not only GBP.** *(WPM-R214, WPM-D143, WPM-D144; row 39)* The seed and `demo-data.py` include a currency
+- [x] (2026-10-31) WPM-T385 **A seed that is not only GBP.** *(WPM-R214, WPM-D143, WPM-D144; row 39)* The seed and `demo-data.py` include a currency
   of another exponent and, once profiles exist, the example profiles D144 question 1 calls for (India, then Japan, labelled `example`).
   **Part done (2026-10-30): the currencies.** The seed (`cargo run -- task seed`) adds, beside the GBP organization (exponent 2), a second
   organization of three workers paid in **JPY** (exponent 0: a salary of 6,000,000 is 6,000,000 yen) with an open requisition in yen, a
@@ -526,11 +529,22 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   service started with sign-in off and `demo-data.py` run against it: the three claims were stored with items of 12,450 GBP, 4,800 JPY
   and 12,345 KWD minor units, the GBP organization's run was calculated (36 payslips) and the script's organization was the GBP one. One
   step failed, a `POST /workers` answered 503 "could not check the Idempotency-Key" (the log says the connection pool timed out, at the
-  first write after start); it is not caused by this change and was not investigated. **What remains, and why:** the example profiles
-  for India and then Japan (D144 question 1 and 5) need the profile registry and resolver, which the product owner has not confirmed
-  (only D144 questions 1 to 4 are), so none is seeded; no holiday pack is loaded. **Not done either:** no worker is paid in a 3-exponent
-  currency (the stub would refuse a run for one in a GBP organization, and a third organization was not added); no request test covers
-  the seed (none did before). **Not looked at:** the yen and dinar amounts in the UI (its money formatting is WPM-T400's, unit-tested
+  first write after start); it is not caused by this change and was not investigated. **What remained then:** the example profiles
+  for India and then Japan (D144 question 1 and 5), which needed the registry. **Done (2026-10-31), the example profiles:** the seed loads
+  three, every row `example` with a source that says it was not read: `GB` for the GBP organization (WPM-T380), `JP` for the yen one
+  (its workers at `JP`: a one-week window, a 40-hour week, a Saturday and Sunday weekend, no rest floor; the shape of the Labour
+  Standards Act 1947, Articles 32 and 35), and `IN` for a **new third organization of three workers paid in INR** at `IN-MH` (a state
+  recorded under `IN` with no rows of its own, so its limits come through the chain: a one-week window, a 48-hour week, a Sunday-only
+  weekend, no rest floor; the shape of the Factories Act 1948, sections 51 and 52). `scripts/demo-data.py` records India for the north
+  region (codes `IN` and `IN-MH`, its twelve workers at `IN-MH`) and then Japan for the south one through the API; the central region has
+  none, so its limits read "no limit configured". Neither the India nor the Japan values were read against their Acts; the rest floor is
+  left unset in both rather than guessed, and no state shops and establishments act is modelled. `tasks::seed` has a unit test that every
+  example row fits the registry and says it was not read. **Verified (2026-10-31):** on a fresh local database, migrations, the seed (46
+  workers: 40 at `GB`, 3 at `JP`, 3 at `IN-MH`; nine example rows) and, with the service started (sign-in off), `demo-data.py` (0 steps
+  failed; twelve more workers each at `IN-MH` and `JP`); `GET /api/workforce/working-time` then counted 93 workers, 23 with no work
+  jurisdiction and 53 with no rest floor, and flagged none. No holiday pack is loaded by the seed. **Not done either:** no worker is paid in a 3-exponent
+  currency (the stub would refuse a run for one in a GBP organization; the third organization is paid in INR, exponent 2); no request
+  test covers the seed (none did before); payroll is not run for the yen or rupee organizations. **Not looked at:** the yen and dinar amounts in the UI (its money formatting is WPM-T400's, unit-tested
   there). **Missed, then fixed:** the site's copy of the documents (`workforce-planning-management.github.io/src/content/docs.json`) was
   not re-synced before the push of WPM-T383 to T385, and CI's site job failed on it (run 41118744051); it was synced, and the site's
   check, build and 111 Playwright tests pass locally.

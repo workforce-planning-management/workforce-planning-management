@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — example India and Japan profiles in the seed (WPM-T385)
+
+`cargo run -- task seed` loads an `example` `JP` profile for the yen organization (its workers at `JP`) and adds a third organization of
+three workers paid in INR at `IN-MH` under an `example` `IN` profile (the state recorded under the country, with no rows of its own).
+Each source says it was not read against its Act; no rest floor is set in either. `ExampleProfile` rows hold their value as JSON text.
+**Not done:** payroll for the yen or rupee organizations; a request test of the seed.
+
 ### Changed — the holiday rules' weekend is a parameter; a tabular Islamic day; a pack of another shape (WPM-T379)
 
 `rules::holiday::generate` and `is_business_day` take the weekend days; `Weekend::Nearest` is the nearest working day (unchanged for a

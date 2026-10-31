@@ -222,6 +222,7 @@ impl Task for Seed {
                 person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
                 upstream_worker_ref: ActiveValue::set(None),
                 organization_ref: ActiveValue::set(yen_org.clone()),
+                work_jurisdiction: ActiveValue::set(Some("JP".to_string())),
                 worker_number: ActiveValue::set(format!("E-{n:04}")),
                 display_name: ActiveValue::set(format!("Test Worker {n:03}")),
                 status: ActiveValue::set("active".to_string()),
@@ -364,8 +365,45 @@ impl Task for Seed {
         .insert(db)
         .await?;
         seed_profile(db, &org, &example_profile_gb()).await?;
+        seed_profile(db, &yen_org, &example_profile_jp()).await?;
+        // A third organization (WPM-T385), paid in rupees, works under the example India profile, in a state with no rows of its own,
+        // so its limits come from the country's layer through the chain.
+        let rupee_org = format!("organization:{}", Uuid::new_v4());
+        for (title, salary) in [
+            ("Engineer", 180_000_000_i64),
+            ("Analyst", 120_000_000),
+            ("Coordinator", 90_000_000),
+        ] {
+            n += 1;
+            workers::ActiveModel {
+                pid: ActiveValue::set(Uuid::new_v4()),
+                person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
+                organization_ref: ActiveValue::set(rupee_org.clone()),
+                work_jurisdiction: ActiveValue::set(Some("IN-MH".to_string())),
+                worker_number: ActiveValue::set(format!("E-{n:04}")),
+                display_name: ActiveValue::set(format!("Test Worker {n:03}")),
+                status: ActiveValue::set("active".to_string()),
+                employment_type: ActiveValue::set("permanent".to_string()),
+                fte_percent: ActiveValue::set(100),
+                department: ActiveValue::set("engineering".to_string()),
+                job_title: ActiveValue::set(title.to_string()),
+                salary_minor: ActiveValue::set(Some(salary)),
+                salary_currency: ActiveValue::set(Some("INR".to_string())),
+                hired_on: ActiveValue::set(
+                    chrono::NaiveDate::from_ymd_opt(2025, 4, 1).ok_or_else(|| {
+                        Error::string("seed data: invalid rupee worker hired_on date")
+                    })?,
+                ),
+                ..Default::default()
+            }
+            .insert(db)
+            .await?;
+        }
+        seed_profile(db, &rupee_org, &example_profile_in()).await?;
         tracing::info!(organization = %org, yen_organization = %yen_org, workers = n, "seeded synthetic demo organizations");
-        println!("seeded: organization {org} (GBP) and {yen_org} (JPY), {n} workers in all");
+        println!(
+            "seeded: organization {org} (GBP, example GB profile), {yen_org} (JPY, example JP profile) and {rupee_org} (INR, example IN profile), {n} workers in all"
+        );
         Ok(())
     }
 }
@@ -380,8 +418,14 @@ pub struct ExampleProfile {
         Option<&'static str>,
         &'static str,
     )],
-    /// `(code, key, value, effective_from, source)`.
-    pub rows: &'static [(&'static str, &'static str, i64, &'static str, &'static str)],
+    /// `(code, key, value as JSON, effective_from, source)`.
+    pub rows: &'static [(
+        &'static str,
+        &'static str,
+        &'static str,
+        &'static str,
+        &'static str,
+    )],
 }
 
 /// The example `GB` working-time profile: the shape of the Working Time Regulations 1998 (a 17-week reference period, an average of
@@ -397,22 +441,90 @@ pub const fn example_profile_gb() -> ExampleProfile {
             (
                 "GB",
                 "working_time.reference_weeks",
-                17,
+                "17",
                 "1998-10-01",
                 SOURCE,
             ),
             (
                 "GB",
                 "working_time.max_average_weekly_minutes",
-                2_880,
+                "2880",
                 "1998-10-01",
                 SOURCE,
             ),
             (
                 "GB",
                 "working_time.min_daily_rest_minutes",
-                660,
+                "660",
                 "1998-10-01",
+                SOURCE,
+            ),
+        ],
+    }
+}
+
+/// The example `IN` profile, the first of the two D144 question 5 named (India, then Japan): a federal shape (a state, `IN-MH`,
+/// under the country, with no rows of its own), a one-week window, a 48-hour week, a Sunday-only weekend and **no** daily rest floor
+/// (none was taken, so the view says "no limit configured" for it). In the shape of the Factories Act 1948, sections 51 and 52.
+/// **Example, unverified**: not read against the Act in this work; a state's shops and establishments act is not modelled.
+#[must_use]
+pub const fn example_profile_in() -> ExampleProfile {
+    const SOURCE: &str = "Example in the shape of India's Factories Act 1948, sections 51 (48 hours in a week) and 52 (a weekly \
+                          holiday, here Sunday); not read against the text (WPM-T385)";
+    ExampleProfile {
+        codes: &[
+            ("IN", "national", None, "India (example)"),
+            ("IN-MH", "subnational", Some("IN"), "Maharashtra (example)"),
+        ],
+        rows: &[
+            (
+                "IN",
+                "working_time.reference_weeks",
+                "1",
+                "1948-09-23",
+                SOURCE,
+            ),
+            (
+                "IN",
+                "working_time.max_average_weekly_minutes",
+                "2880",
+                "1948-09-23",
+                SOURCE,
+            ),
+            ("IN", "holidays.weekend_days", "[7]", "1948-09-23", SOURCE),
+        ],
+    }
+}
+
+/// The example `JP` profile, the second D144 question 5 named: a one-week window, a 40-hour week, a Saturday and Sunday weekend (a
+/// common practice, not a statute: the Act asks for one rest day a week) and no daily rest floor. In the shape of the Labour
+/// Standards Act 1947, Articles 32 and 35. **Example, unverified**: not read against the Act in this work.
+#[must_use]
+pub const fn example_profile_jp() -> ExampleProfile {
+    const SOURCE: &str = "Example in the shape of Japan's Labour Standards Act 1947, Articles 32 (40 hours a week) and 35 (a \
+                          weekly rest day; the Saturday and Sunday weekend is common practice); not read against the text (WPM-T385)";
+    ExampleProfile {
+        codes: &[("JP", "national", None, "Japan (example)")],
+        rows: &[
+            (
+                "JP",
+                "working_time.reference_weeks",
+                "1",
+                "1947-09-01",
+                SOURCE,
+            ),
+            (
+                "JP",
+                "working_time.max_average_weekly_minutes",
+                "2400",
+                "1947-09-01",
+                SOURCE,
+            ),
+            (
+                "JP",
+                "holidays.weekend_days",
+                "[6, 7]",
+                "1947-09-01",
                 SOURCE,
             ),
         ],
@@ -447,8 +559,9 @@ pub async fn seed_profile<C: sea_orm::ConnectionTrait>(
         .await?;
     }
     for (code, key, value, from, source) in profile.rows {
-        let value = crate::rules::jurisdiction::validate(key, &serde_json::json!(value))
-            .map_err(Error::Message)?;
+        let raw: serde_json::Value =
+            serde_json::from_str(value).map_err(|e| Error::Message(e.to_string()))?;
+        let value = crate::rules::jurisdiction::validate(key, &raw).map_err(Error::Message)?;
         let from = chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d")
             .map_err(|e| Error::Message(e.to_string()))?;
         db.execute_raw(Statement::from_sql_and_values(
@@ -477,7 +590,11 @@ mod tests {
     /// Every example row fits the registry and every code is well formed, so the seed cannot fail on its own data.
     #[test]
     fn the_example_profiles_fit_the_registry() {
-        for profile in [example_profile_gb()] {
+        for profile in [
+            example_profile_gb(),
+            example_profile_in(),
+            example_profile_jp(),
+        ] {
             for (code, layer, _, _) in profile.codes {
                 let layer = crate::rules::jurisdiction::Layer::parse(layer).unwrap();
                 assert!(
@@ -487,8 +604,9 @@ mod tests {
             }
             for (code, key, value, from, source) in profile.rows {
                 assert!(crate::rules::jurisdiction::valid_code(code));
+                let raw: serde_json::Value = serde_json::from_str(value).unwrap();
                 assert!(
-                    crate::rules::jurisdiction::validate(key, &serde_json::json!(value)).is_ok(),
+                    crate::rules::jurisdiction::validate(key, &raw).is_ok(),
                     "{key}"
                 );
                 assert!(chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d").is_ok());
