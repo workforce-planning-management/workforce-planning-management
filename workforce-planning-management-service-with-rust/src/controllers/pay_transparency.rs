@@ -35,7 +35,7 @@ use crate::rules::pay_gap::{
 use crate::validation::Problems;
 
 /// The equality category that holds a worker's sex; the deployer may name another.
-const DEFAULT_SEX_CATEGORY: &str = "sex";
+pub(crate) const DEFAULT_SEX_CATEGORY: &str = "sex";
 
 /// What the pay figures are made of, said in every report.
 const PAY_BASIS: &str = "Annual full-time-equivalent basic salary as recorded on the worker record, in one currency. \
@@ -306,8 +306,7 @@ pub(crate) async fn build(
     let (_, config, floor) = equality_monitoring::on().map_err(|_| {
         unprocessable("equality monitoring is off on this deployment, so no sex is recorded and there is nothing to compare")
     })?;
-    let sex_category = crate::compat::env_var("WPM_PAY_GAP_SEX_CATEGORY")
-        .unwrap_or_else(|| DEFAULT_SEX_CATEGORY.to_string());
+    let sex_category = sex_category();
     if !config.has_category(&sex_category) {
         return Err(unprocessable(
             "the sex category is not monitored on this deployment (WPM_PAY_GAP_SEX_CATEGORY names it)",
@@ -427,6 +426,15 @@ async fn audit_read(
         .await?;
     }
     Ok(())
+}
+
+/// The equality category read as female or male: `WPM_PAY_GAP_SEX_CATEGORY` (trimmed), else `sex`. It names a category
+/// the deployment monitors (`WPM_EQUALITY_CATEGORIES`), not a value of a regime (WPM-T402).
+pub(crate) fn sex_category() -> String {
+    crate::compat::env_var("WPM_PAY_GAP_SEX_CATEGORY").map_or_else(
+        || DEFAULT_SEX_CATEGORY.to_string(),
+        |v| v.trim().to_string(),
+    )
 }
 
 /// The reporting tiers: `WPM_PAY_GAP_TIERS` (`from_workers:every_years:first_report_on`, comma-separated, or `none`), else

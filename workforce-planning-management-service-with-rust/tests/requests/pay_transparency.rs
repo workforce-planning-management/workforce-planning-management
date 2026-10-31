@@ -327,3 +327,74 @@ async fn the_report_is_an_aggregate_that_names_no_one_and_withholds_a_small_cell
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+// WPM-T402: the deployer's reporting tiers and sex category feed the gap report, and the report says whose its tiers are.
+async fn the_report_uses_the_deployers_tiers_and_says_whose_they_are() {
+    crate::requests::request_open(|request, ctx| async move {
+        let _on = MonitoringOn::new();
+        let org = an_org();
+        hire(&request, &ctx, &org, "Tier", Some("female"), 9_000_000, 6).await;
+        hire(&request, &ctx, &org, "Tier", Some("male"), 10_000_000, 6).await;
+        let url = format!("/api/pay-transparency/gap-report?organization={org}&currency=GBP&as_of=2026-10-31");
+        let read = |tiers: Option<&'static str>| {
+            let request = &request;
+            let url = url.clone();
+            async move {
+                unsafe {
+                    match tiers {
+                        Some(v) => std::env::set_var("WPM_PAY_GAP_TIERS", v),
+                        None => std::env::remove_var("WPM_PAY_GAP_TIERS"),
+                    }
+                }
+                let response = request.get(&url).await;
+                unsafe { std::env::remove_var("WPM_PAY_GAP_TIERS") };
+                assert_eq!(response.status_code(), 200, "{}", response.text());
+                response.json::<Value>()
+            }
+        };
+
+        // The Directive's tiers by default: twelve workers are below every one, and the basis says whose they are.
+        let default = read(None).await;
+        assert!(default["reporting"].is_null());
+        assert_eq!(default["reporting_basis"]["setting"], "WPM_PAY_GAP_TIERS");
+        assert_eq!(default["reporting_basis"]["set"], false);
+        assert_eq!(default["reporting_basis"]["default_from"]["regime"], "EU");
+        assert_eq!(default["reporting_basis"]["default_from"]["status"], "read");
+
+        // A deployer's tier from ten workers, every two years from 1 January 2026: due, and next on 1 January 2028.
+        let ten = read(Some("10:2:2026-01-01")).await;
+        assert_eq!(
+            ten["reporting"],
+            json!({ "every_years": 2, "first_report_on": "2026-01-01", "next_report_on": "2028-01-01" })
+        );
+        assert_eq!(ten["reporting_basis"]["set"], true);
+        // The basis still names whose the default is, beside the fact that it was replaced.
+        assert_eq!(ten["reporting_basis"]["default_from"]["regime"], "EU");
+        // Two tiers: the larger one the head count reaches is the one that applies.
+        let two = read(Some("5:3:2027-06-07,12:1:2026-06-01")).await;
+        assert_eq!(two["reporting"]["every_years"], 1);
+        assert_eq!(two["reporting"]["next_report_on"], "2027-06-01");
+        // No reporting duty.
+        let none = read(Some("none")).await;
+        assert!(none["reporting"].is_null());
+        assert_eq!(none["reporting_basis"]["set"], true);
+        // A value that does not parse is not half-applied: the Directive's tiers, and twelve is below them.
+        let junk = read(Some("10:2:2026-01-01,ten:2:2026-01-01")).await;
+        assert!(junk["reporting"].is_null());
+        assert_eq!(junk["reporting_basis"]["set"], true);
+
+        // The sex category is the deployer's too: one the deployment does not monitor is refused, and spaces are trimmed.
+        unsafe { std::env::set_var("WPM_PAY_GAP_SEX_CATEGORY", "gender") };
+        let refused = request.get(&url).await;
+        unsafe { std::env::set_var("WPM_PAY_GAP_SEX_CATEGORY", " sex ") };
+        let trimmed = request.get(&url).await;
+        unsafe { std::env::remove_var("WPM_PAY_GAP_SEX_CATEGORY") };
+        assert_eq!(refused.status_code(), 422);
+        assert!(refused.text().contains("WPM_PAY_GAP_SEX_CATEGORY"), "{}", refused.text());
+        assert_eq!(trimmed.status_code(), 200, "{}", trimmed.text());
+    })
+    .await;
+}

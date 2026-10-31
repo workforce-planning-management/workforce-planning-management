@@ -27,7 +27,7 @@ fn entry_of(m: &ai_register_entries::Model) -> Entry {
 }
 
 /// The date the Annex III duties apply: `WPM_AI_ACT_APPLIES_FROM` (YYYY-MM-DD), else the default.
-fn applies_from() -> NaiveDate {
+pub(crate) fn applies_from() -> NaiveDate {
     crate::compat::env_var("WPM_AI_ACT_APPLIES_FROM")
         .and_then(|v| NaiveDate::parse_from_str(v.trim(), "%Y-%m-%d").ok())
         .unwrap_or_else(rules::default_applies_from)

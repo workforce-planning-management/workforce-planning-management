@@ -19,6 +19,8 @@ fn is_set(setting: &str) -> bool {
 fn value_of(setting: &str) -> Value {
     use super::{flexible_working, pay_assessment, pay_information, pay_transparency, payroll};
     match setting {
+        "WPM_AI_ACT_APPLIES_FROM" => json!(super::ai_register::applies_from()),
+        "WPM_PAY_GAP_SEX_CATEGORY" => json!(pay_transparency::sex_category()),
         "WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS" => json!(flexible_working::appeal_calendar_days()),
         "WPM_FLEXIBLE_DECISION_MONTHS" => json!(flexible_working::decision_months()),
         "WPM_FLEXIBLE_REFUSAL_REASONS" => json!(flexible_working::refusal_reasons()),
@@ -121,6 +123,14 @@ mod tests {
         assert_eq!(
             rules::pay_gap::parse_tiers(&text("WPM_PAY_GAP_TIERS")).unwrap(),
             rules::pay_gap::directive_tiers()
+        );
+        assert_eq!(
+            text("WPM_AI_ACT_APPLIES_FROM"),
+            rules::ai_register::default_applies_from().to_string()
+        );
+        assert_eq!(
+            text("WPM_PAY_GAP_SEX_CATEGORY"),
+            crate::controllers::pay_transparency::DEFAULT_SEX_CATEGORY
         );
         let stub = rules::payroll::TaxStub::example();
         assert_eq!(text("WPM_PAYROLL_STUB_CURRENCY"), stub.currency);

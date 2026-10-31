@@ -220,8 +220,7 @@ async fn pools_for(
     let Ok(Gate::On { config, floor, .. }) = equality_monitoring::gate_from_env() else {
         return Ok((DEFAULT_FLOOR, Err(Reason::NoSexRecorded)));
     };
-    let sex_category =
-        crate::compat::env_var("WPM_PAY_GAP_SEX_CATEGORY").unwrap_or_else(|| "sex".to_string());
+    let sex_category = super::pay_transparency::sex_category();
     if !config.has_category(&sex_category) {
         return Ok((floor, Err(Reason::NoSexRecorded)));
     }

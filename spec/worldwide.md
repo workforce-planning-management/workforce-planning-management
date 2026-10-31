@@ -408,6 +408,8 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   | `WPM_RETENTION_<KIND>_DAYS` (eight) | 180 to 2,190 calendar days | none (starting point, [retention-schedule](governance/retention-schedule.md)) |
   | `WPM_PAYROLL_STUB_CURRENCY`, `_ALLOWANCE_MINOR`, `_RATE_PERCENT` | GBP, 104,750, 20 | `GB` (**example**: the UK's 2025-26 shape, a stub, WPM-T383) |
   | `WPM_PAYROLL_MONTH_MINUTES`, `WPM_CONTRACTED_DAY_MINUTES` | 9,750, 450 | none (starting point) |
+  | `WPM_AI_ACT_APPLIES_FROM` *(added by WPM-T402)* | 2027-12-02 | `EU`: AI Act, Article 113 as amended by the Digital Omnibus on AI (**unverified**: the date as the Commission's AI Act Service Desk showed it in WPM-T268; the amending act was not read) |
+  | `WPM_PAY_GAP_SEX_CATEGORY` *(added by WPM-T402)* | `sex` | none (starting point: the name of a monitored equality category) |
 
   **In the API's answer:** `GET /api/statutory-defaults` (any signed-in caller: configuration, no personal data) gives each setting's
   area, the value in force (read as its feature reads it), whether the deployer set it, the default and `default_from` (`regime`,
@@ -425,10 +427,10 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   one value per deployment. **Not done either:** the female and male columns of the pay-gap page (row 36: they are the shape of the EU
   and UK reports; changing them needs the equality categories per jurisdiction, which is the registry too); `WPM_PAY_GAP_SEX_CATEGORY`
   and `WPM_AI_ACT_APPLIES_FROM` are not in the table (the first names a category, not a value of a regime; the second's answer already
-  names the AI Act); the working-time constants are WPM-T380; no UI shows the new endpoint. **Not verified:** the `GB` references were
+  names the AI Act) *(both added by WPM-T402)*; the working-time constants are WPM-T380; no UI shows the new endpoint. **Not verified:** the `GB` references were
   not read against the Act's text in this task, which is why they say `unverified`; the gap report's `reporting_basis` with a configured
   `WPM_PAY_GAP_TIERS` in a request (the parser is unit-tested and the endpoint's `none` case is request-tested; the gap report needs
-  equality monitoring on, which its own binary sets).
+  equality monitoring on, which its own binary sets) *(request-tested by WPM-T402, 2026-10-31)*.
 - [~] WPM-T385 **A seed that is not only GBP.** *(WPM-R214, WPM-D143, WPM-D144; row 39)* The seed and `demo-data.py` include a currency
   of another exponent and, once profiles exist, the example profiles D144 question 1 calls for (India, then Japan, labelled `example`).
   **Part done (2026-10-30): the currencies.** The seed (`cargo run -- task seed`) adds, beside the GBP organization (exponent 2), a second
@@ -489,6 +491,22 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   request test sets the process environment, as the other request tests that read settings do (serial). **Not done:** a real tax table;
   one stub per deployment (unchanged). **Not tested:** the overtime line under a configured contracted day in a request (the unit tests of
   `rules::workforce` cover the day as a parameter); the timesheet's overtime with `WPM_CONTRACTED_DAY_MINUTES` set.
+- [x] (2026-10-31) WPM-T402 **The AI Act's date and the pay gap's sex category say whose they are, and the gap report is tested with
+  the deployer's tiers.** *(WPM-R214, WPM-D143; follows WPM-T384's "Not done" and "Not verified")* **Done:** `src/statutory_defaults.rs`
+  lists 25 settings. `WPM_AI_ACT_APPLIES_FROM` (area `ai_register`, default 2027-12-02) is `EU`, **unverified**: WPM-T268 took the date
+  from the Commission's AI Act Service Desk page for the amended Article 113 and did not read the Digital Omnibus itself
+  ([regulatory.md](regulatory.md) says so), so it is not marked `read`. `WPM_PAY_GAP_SEX_CATEGORY` (default `sex`) is a
+  **starting point**, no regime's: it names one of the deployment's own equality categories; the female and male comparison it feeds is
+  the Directive's shape and stays row 36. `GET /api/statutory-defaults` gives each one's value in force as its feature reads it
+  (`controllers::ai_register::applies_from`, and `controllers::pay_transparency::sex_category`, which the gap report and the pay
+  information answer now share; it trims the value, which it did not before). **Tests:** the unit test that holds the table equal to the
+  code covers both; the statutory-defaults request test checks both entries, their regime and status, and a set value of each; a new
+  request test of the gap report (twelve workers, monitoring on): by default no tier applies and `reporting_basis` is unset and `EU`
+  read; `10:2:2026-01-01` gives a tier every two years, next due 2028-01-01, `set` true and the default still named; of two tiers the
+  larger reached applies; `none` gives none; a list with one bad entry is not half-applied (the Directive's tiers, none reached); an
+  unmonitored `WPM_PAY_GAP_SEX_CATEGORY` is 422 naming the setting and a padded `sex` works. **Not done:** the profiles (D144, not
+  confirmed); the Digital Omnibus was not read here either. **Not tested:** the gap report's CSV with configured tiers (it carries no
+  tier); the AI register's own answer with the setting changed (its `applies_from` is the value the endpoint shows, read by one function).
 
 ## Audit (WPM-T367, 2026-10-29)
 

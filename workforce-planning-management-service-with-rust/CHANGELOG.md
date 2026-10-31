@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `WPM_AI_ACT_APPLIES_FROM` and `WPM_PAY_GAP_SEX_CATEGORY` in the statutory defaults (WPM-T402)
+
+`statutory_defaults::DEFAULTS` holds 25 settings: `WPM_AI_ACT_APPLIES_FROM` (area `ai_register`, `EU`, `unverified`) and
+`WPM_PAY_GAP_SEX_CATEGORY` (`pay_transparency`, `starting_point`). `controllers::ai_register::applies_from` is `pub(crate)`;
+`controllers::pay_transparency::sex_category` is new and shared by the gap report and the pay information answer (the value is now
+trimmed). Tests: the table-equals-code unit test covers both; the statutory-defaults request test checks both and a set value of each;
+`the_report_uses_the_deployers_tiers_and_says_whose_they_are` (a configured tier, two tiers, `none`, a list with a bad entry, an
+unmonitored sex category 422, a padded one accepted). **Not done:** the D144 profiles. **Not tested:** the CSV with configured tiers.
+
 ### Fixed — the payroll stub's settings are tested (WPM-T401)
 
 `controllers::payroll::tax_stub` and `contracted_day` read through a lookup (`tax_stub_from`, `contracted_day_from`), so the parsing

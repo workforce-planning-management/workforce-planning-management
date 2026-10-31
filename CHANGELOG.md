@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — whose the AI Act date and the pay gap's sex category are (WPM-T402)
+
+`GET /api/statutory-defaults` now also lists `WPM_AI_ACT_APPLIES_FROM` (the EU's, **unverified**: the date came from the Commission's
+AI Act Service Desk, not the amending act) and `WPM_PAY_GAP_SEX_CATEGORY` (a starting point, no regime's), and the pay gap report is
+request-tested with the deployer's own reporting tiers. **Not done:** moving the defaults into jurisdiction profiles (waits for the
+D144 registry); the Digital Omnibus itself was not read. **Not tested:** the CSV and the AI register's answer with the settings changed.
+
 ### Fixed — the payroll stub's settings are tested (WPM-T401)
 
 The payroll stub's five settings are now tested: unit tests for every valid and invalid shape, and a request test that a deployer's
