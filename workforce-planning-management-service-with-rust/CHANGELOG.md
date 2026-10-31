@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the holiday rules' weekend is a parameter; a tabular Islamic day; a pack of another shape (WPM-T379)
+
+`rules::holiday::generate` and `is_business_day` take the weekend days; `Weekend::Nearest` is the nearest working day (unchanged for a
+Saturday and Sunday weekend). `When::Hijri` gives a fixed day of the tabular Islamic calendar (an approximation of a sighted or announced
+date). A new unverified `SA` example pack: a Friday and Saturday weekend, two Eids, two fixed days. `POST /api/holidays/generate` uses the
+organization's `holidays.weekend_days` for the region, else the pack's weekend, and answers `weekend_days` and `weekend_from`; `GET
+/api/holiday-regions` lists each pack's weekend and now has four packs. **Not done:** lunisolar calendars; the length of each Eid
+holiday. **Not verified:** the `SA` pack against an official source.
+
 ### Changed — working-time limits come from jurisdiction profiles (WPM-T380)
 
 **Breaking for API readers of `GET /api/workforce/working-time`:** `over_48h` is now `over_average`, `reference_weeks` is gone from the

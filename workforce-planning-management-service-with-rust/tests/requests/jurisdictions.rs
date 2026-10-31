@@ -166,3 +166,67 @@ async fn working_time_follows_each_workers_profile() {
     })
     .await;
 }
+
+/// The holiday rules' weekend is the profile's `holidays.weekend_days` for the region (WPM-T379), else the pack's own example
+/// weekend, and the answer says which. New Year's Day 2027 is a Friday: a working day under a Saturday and Sunday weekend, a
+/// weekend day (moved to the Sunday) under a Friday and Saturday one.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn holiday_substitutes_follow_the_profiles_weekend() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let generate = |org: String, region: &'static str| {
+            let request = &request;
+            async move {
+                request
+                    .post("/api/holidays/generate")
+                    .json(&json!({ "organization_ref": org, "region": region, "year": 2027 }))
+                    .await
+                    .json::<Value>()
+            }
+        };
+        let new_year = |org: String| {
+            let request = &request;
+            async move {
+                let list: Value = request
+                    .get(&format!("/api/holidays?organization={org}&region=GB-ENG&year=2027"))
+                    .await
+                    .json();
+                list["holidays"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|h| h["name"] == "New Year's Day")
+                    .map(|h| h["observed_on"].as_str().unwrap().to_string())
+                    .unwrap()
+            }
+        };
+        let plain = an_org();
+        let answer = generate(plain.clone(), "GB-ENG").await;
+        assert_eq!(answer["weekend_days"], json!([6, 7]));
+        assert_eq!(answer["weekend_from"]["state"], "pack_example");
+        assert_eq!(new_year(plain).await, "2027-01-01");
+
+        let configured = an_org();
+        request
+            .post("/api/jurisdiction-parameters")
+            .json(&json!({ "organization_ref": configured, "code": "GB-ENG", "key": "holidays.weekend_days",
+                           "value": [5, 6], "effective_from": "2000-01-01", "source": "synthetic", "status": "example" }))
+            .await
+            .assert_status_ok();
+        let answer = generate(configured.clone(), "GB-ENG").await;
+        assert_eq!(answer["weekend_days"], json!([5, 6]));
+        assert_eq!(answer["weekend_from"]["state"], "resolved");
+        assert_eq!(answer["weekend_from"]["from"][0]["code"], "GB-ENG");
+        assert_eq!(new_year(configured).await, "2027-01-03");
+
+        // The pack of another shape: its own Friday and Saturday weekend, and tabular Islamic days.
+        let other = an_org();
+        let answer = generate(other.clone(), "SA").await;
+        assert_eq!(answer["weekend_days"], json!([5, 6]));
+        assert_eq!(answer["verified"], false);
+        let list: Value = request.get(&format!("/api/holidays?organization={other}&region=SA&year=2027")).await.json();
+        assert!(list["holidays"].as_array().unwrap().iter().any(|h| h["name"] == "Eid al-Fitr"), "{list}");
+    })
+    .await;
+}

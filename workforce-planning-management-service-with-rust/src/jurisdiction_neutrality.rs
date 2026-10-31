@@ -176,6 +176,12 @@ const ALLOWED: &[(&str, &str, &str)] = &[
     ("holiday.rs", "germany", "the DE example pack's name"),
     (
         "holiday.rs",
+        "SA",
+        "the SA example pack of another shape (a Friday and Saturday weekend, tabular Islamic days), unverified",
+    ),
+    ("holiday.rs", "saudi arabia", "the SA example pack's name"),
+    (
+        "holiday.rs",
         "FR",
         "a test that a region with no shipped pack has none",
     ),

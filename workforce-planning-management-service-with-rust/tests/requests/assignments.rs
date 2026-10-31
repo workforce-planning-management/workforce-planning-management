@@ -417,7 +417,7 @@ async fn holidays_are_generated_per_region_safely_repeated_and_kept_apart_from_h
         // The regions with a pack are listed and none claims to be verified.
         let regions: Value = request.get("/api/holiday-regions").await.json();
         let list = regions["regions"].as_array().unwrap();
-        assert_eq!(list.iter().map(|r| r["region"].as_str().unwrap()).collect::<Vec<_>>(), ["GB-ENG", "US", "DE"]);
+        assert_eq!(list.iter().map(|r| r["region"].as_str().unwrap()).collect::<Vec<_>>(), ["GB-ENG", "US", "DE", "SA"]);
         assert!(list.iter().all(|r| r["verified"] == false), "{regions}");
 
         // Generating: a region with no pack, a bad code and a year out of range are refused.

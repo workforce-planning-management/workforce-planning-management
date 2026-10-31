@@ -72,10 +72,11 @@ I can approve or reject it.*
   them. **There is no category for a condition and none for workplace stress**: stress is assessed in the work, not recorded in the
   person (WPM-D121), and a test fails if a category names one.
 - **Public holidays are generated, not typed** (2026-10-28). A region's holidays are rules (a fixed date, the nth or last weekday of a month,
-  or a day counted from Easter) with a weekend policy (stay, the next free weekday, or Friday and Monday). `POST /api/holidays/generate` fills
+  a day counted from Easter, or a fixed day of the tabular Islamic calendar) with a weekend policy (stay, the next free working day, or the
+  nearest working day). The weekend is the organization's `holidays.weekend_days` for the region (WPM-D144, WPM-T379), else the pack's own. `POST /api/holidays/generate` fills
   an organization's calendar for a region and year and is safe to repeat; a day the rules cannot know (a local or one-off holiday) is added by
-  hand and never overwritten. **The shipped packs (England and Wales, the United States federal days, Germany nationwide) are unverified
-  examples** and say so in every listing; an employer confirms a region against its government's published list. Scottish, Northern Irish,
+  hand and never overwritten. **The shipped packs (England and Wales, the United States federal days, Germany nationwide, and Saudi Arabia as a
+  shape with a Friday and Saturday weekend and tabular Islamic days) are unverified examples** and say so in every listing; an employer confirms a region against its government's published list. Scottish, Northern Irish,
   state and local days are not in any pack.
 
 ## WPM-R6 — Shift scheduling

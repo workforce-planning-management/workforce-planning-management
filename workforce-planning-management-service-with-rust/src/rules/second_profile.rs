@@ -5,8 +5,8 @@
 //! `jurisdiction_neutrality.rs` covers this file too). Their only job is to prove that the rule accepts another shape,
 //! so that a deployer elsewhere can configure it without a code change.
 //!
-//! Rules that hard-code one regime's values instead (the working-time limits, the weekend days of the holiday rules,
-//! the payroll stub) cannot be tested this way yet: they are WPM-T380, WPM-T379 and WPM-T383.
+//! The working-time limits (WPM-T380) and the holiday rules' weekend days (WPM-T379) are parameters since 2026-10-31 and are
+//! tested with a second shape in their own modules and below; the payroll stub's is WPM-T383.
 
 use chrono::{NaiveDate, Weekday};
 
@@ -113,7 +113,7 @@ fn holiday_rules_of_another_shape_keep_a_weekend_day_where_it_falls() {
             weekend: holiday::Weekend::Stays,
         },
     ];
-    let h = holiday::generate(&stays, 2028);
+    let h = holiday::generate(&stays, 2028, holiday::SATURDAY_SUNDAY);
     // 1 January 2028 is a Saturday; with this policy it is not moved.
     assert_eq!(
         h.iter().map(|x| x.observed_on).collect::<Vec<_>>(),
@@ -124,9 +124,28 @@ fn holiday_rules_of_another_shape_keep_a_weekend_day_where_it_falls() {
         ..stays[0]
     }];
     assert_eq!(
-        holiday::generate(&nearest, 2028)[0].observed_on,
+        holiday::generate(&nearest, 2028, holiday::SATURDAY_SUNDAY)[0].observed_on,
         day(2027, 12, 31),
         "the nearest weekday may be in the year before"
+    );
+    // A Thursday and Friday weekend (a shape no shipped pack has): 1 January 2026 is a Thursday, so the nearest working day is the
+    // Wednesday before, and the substitute policy gives the Saturday after.
+    let thu_fri = [Weekday::Thu, Weekday::Fri];
+    assert_eq!(
+        holiday::generate(&nearest, 2026, &thu_fri)[0].observed_on,
+        day(2025, 12, 31)
+    );
+    let substitute = [holiday::Rule {
+        weekend: holiday::Weekend::NextWeekday,
+        ..stays[0]
+    }];
+    assert_eq!(
+        holiday::generate(&substitute, 2026, &thu_fri)[0].observed_on,
+        day(2026, 1, 3)
+    );
+    assert!(
+        holiday::is_business_day(&[], day(2026, 1, 4), &thu_fri),
+        "a Sunday works there"
     );
 }
 

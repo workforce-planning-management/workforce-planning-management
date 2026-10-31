@@ -24,11 +24,19 @@ const YEARS: std::ops::RangeInclusive<i32> = 1970..=2100;
 async fn regions() -> Result<Response> {
     let packs: Vec<_> = rules::PACKS
         .iter()
-        .map(|p| json!({ "region": p.region, "name": p.name, "rules": p.rules.len(), "verified": p.verified }))
+        .map(|p| {
+            json!({
+                "region": p.region,
+                "name": p.name,
+                "rules": p.rules.len(),
+                "verified": p.verified,
+                "weekend_days": rules::weekend_to_iso(p.weekend),
+            })
+        })
         .collect();
     format::json(json!({
         "regions": packs,
-        "note": "These packs are worked examples, not an official source. Confirm a region against its government's published list; add a local day by hand.",
+        "note": "These packs are worked examples, not an official source. Confirm a region against its government's published list; add a local day by hand. A pack's weekend_days are used only where the organization's profile sets no holidays.weekend_days for the region. A day of the tabular Islamic calendar can differ by a day or two from an announced one.",
     }))
 }
 
@@ -107,9 +115,31 @@ async fn generate(
     if !YEARS.contains(&p.year) {
         return Err(unprocessable("year must be between 1970 and 2100"));
     }
+    // The weekend is the organization's `holidays.weekend_days` for the region (WPM-D144, WPM-T379), resolved as of 1 January of
+    // the year; where the profile has none, the pack's own example weekend, and the answer says which.
+    let profile =
+        super::jurisdictions::profiles_for(&ctx.db, std::slice::from_ref(&p.organization_ref))
+            .await?
+            .remove(&p.organization_ref)
+            .unwrap_or_default();
+    let on = NaiveDate::from_ymd_opt(p.year, 1, 1).unwrap_or_default();
+    let resolved = profile.resolve("holidays.weekend_days", Some(&p.region), on);
+    let configured = match &resolved {
+        crate::rules::jurisdiction::Resolution::Resolved { value, .. } => value
+            .as_weekdays()
+            .and_then(|days| rules::weekend_from_iso(&days)),
+        _ => None,
+    };
+    let (weekend, weekend_from) = match configured {
+        Some(days) => (days, serde_json::to_value(&resolved).unwrap_or_default()),
+        None => (
+            pack.weekend.to_vec(),
+            json!({ "state": "pack_example", "region": pack.region, "verified": pack.verified }),
+        ),
+    };
     let (mut created, mut updated, mut unchanged, mut kept_manual) = (0, 0, 0, 0);
     let txn = ctx.db.begin().await?;
-    for h in rules::generate(pack.rules, p.year) {
+    for h in rules::generate(pack.rules, p.year, &weekend) {
         let existing = holidays::Entity::find()
             .filter(holidays::Column::OrganizationRef.eq(&p.organization_ref))
             .filter(holidays::Column::Region.eq(&p.region))
@@ -159,6 +189,8 @@ async fn generate(
         "region": p.region,
         "year": p.year,
         "verified": pack.verified,
+        "weekend_days": rules::weekend_to_iso(&weekend),
+        "weekend_from": weekend_from,
         "created": created,
         "updated": updated,
         "unchanged": unchanged,

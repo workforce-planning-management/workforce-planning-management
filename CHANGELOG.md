@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — public holidays follow the organization's weekend, and one rule kind is not Gregorian (WPM-T379)
+
+A substitute holiday follows the weekend days in the organization's jurisdiction profile (or the example pack's own), a holiday can be a
+fixed day of the tabular Islamic calendar, and a fourth example pack (Saudi Arabia, unverified) has a Friday and Saturday weekend.
+**Not done:** lunisolar calendars. **Not verified:** the new pack.
+
 ### Changed — working-time limits come from jurisdiction profiles (WPM-T380)
 
 The working-time guardrails no longer hold 17 weeks, 48 hours and 11 hours in code: each worker's limits come from their organization's

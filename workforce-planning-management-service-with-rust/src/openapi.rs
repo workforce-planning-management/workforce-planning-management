@@ -682,14 +682,14 @@ fn add_integration_paths(document: &mut Value) {
             "post": { "tags": ["assignments"], "summary": "Close a cost centre on a day not before it opened. Never deleted; a closed one is not reopened here. HR", "responses": ok("The closing day") }
         },
         "/api/holiday-regions": {
-            "get": { "tags": ["leave"], "summary": "The regions that have a public-holiday rule pack, each marked verified or not. Every shipped pack is an unverified example, not an official source", "responses": ok("The regions") }
+            "get": { "tags": ["leave"], "summary": "The regions that have a public-holiday rule pack, each marked verified or not, with the weekend days (ISO 1 to 7) it was written for. Every shipped pack is an unverified example, not an official source; one uses tabular Islamic dates and a Friday and Saturday weekend", "responses": ok("The regions") }
         },
         "/api/holidays": {
             "get": { "tags": ["leave"], "summary": "An organization's public holidays (?organization=, optional ?region= and ?year=), by the day each is taken. A weekend date may be taken on a weekday", "responses": ok("The holidays") },
             "post": { "tags": ["leave"], "summary": "Add a holiday by hand (a local or one-off day): a region code, a name and a date. HR", "responses": ok("The pid of the holiday") }
         },
         "/api/holidays/generate": {
-            "post": { "tags": ["leave"], "summary": "Generate a region's holidays for a year from its rule pack. Safe to repeat: rows it made are brought up to date, rows added by hand are never changed. A region with no pack is refused. HR", "responses": ok("Counts of rows created, updated, unchanged and kept") }
+            "post": { "tags": ["leave"], "summary": "Generate a region's holidays for a year from its rule pack. Safe to repeat: rows it made are brought up to date, rows added by hand are never changed. A region with no pack is refused. The weekend a substitute day follows is the organization's holidays.weekend_days for the region (WPM-T379), else the pack's own; weekend_days and weekend_from say which. HR", "responses": ok("Counts of rows created, updated, unchanged and kept") }
         },
         "/api/bridges/overlap": {
             "post": { "tags": ["bridges"], "summary": "Of up to 500 person: references the caller already holds (organization_ref and person_refs), which are workers of the organization today? A yes or no for each reference supplied and nothing else. HR under their own token; audited with the count, never the references", "responses": ok("Per reference, worker true or false") }

@@ -334,10 +334,33 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   `XA`, `XA-01`, `XB`), so no test names a country. **Not done:** no table, endpoint, screen or rule reads the resolver yet (the tables
   are D144's step 2, the working-time rule step 3: WPM-T380); no shipped entry uses `union` or `bounded`. **Verified:** `cargo test
   --lib` (the 13 new tests and the country check pass), `cargo fmt`, `cargo clippy --all-targets -- -D warnings`.
-- [ ] WPM-T379 **Weekend days and non-Gregorian holidays in the holiday rules.** *(WPM-R214, WPM-D143, WPM-D144; rows 15, 18, 19)*
+- [x] (2026-10-31) WPM-T379 **Weekend days and non-Gregorian holidays in the holiday rules.** *(WPM-R214, WPM-D143, WPM-D144; rows 15, 18, 19)*
   `rules::holiday` takes the weekend days as a parameter (the D144 `holidays.weekend_days`), so a substitute day and `is_business_day`
-  follow it; a rule kind for a holiday fixed in another calendar; an example pack of a different shape. The registry is not confirmed yet
-  (only D144 questions 1 to 4 are), so this waits for it.
+  follow it; a rule kind for a holiday fixed in another calendar; an example pack of a different shape.
+  **Done:** `generate(rules, year, weekend)` and `is_business_day(holidays, date, weekend)` take any set of weekdays (empty: nothing
+  moves); `Weekend::Nearest` is now the nearest working day, the earlier on a tie (the same as before for a Saturday and Sunday
+  weekend); `NextWeekday` is the next working day not already a holiday. **Another calendar:** `When::Hijri { month, day }`, the
+  **tabular** Islamic calendar (civil epoch, the 30-year leap cycle), with `natural_dates` giving zero to two dates in a Gregorian year.
+  It is an arithmetic approximation, chosen because it needs no table and no sighting: where a day is fixed by a sighting or an
+  announced calendar (Umm al-Qura), the tabular date can differ by a day or two (2024's Eid al-Adha is 17 June in it, and was announced
+  for 16 June in Saudi Arabia), and the deployer adds the announced day by hand. No lunisolar calendar (Chinese, Hindu, Hebrew) is
+  built. **A pack of another shape:** `SA`, "Saudi Arabia (example of another shape)": a Friday and Saturday weekend, Eid al-Fitr (1
+  Shawwal) and Eid al-Adha (10 Dhu al-Hijja) in the tabular calendar, Founding Day (22 February) and National Day (23 September),
+  every day `Stays`; **unverified**, written from the author's knowledge like the other packs: the length of each Eid holiday (several
+  days in practice), any substitute rule and the official calendar were not read. Each pack carries the weekend it was written for
+  (`Pack::weekend`). **Controller:** `POST /api/holidays/generate` resolves `holidays.weekend_days` from the organization's profile over
+  the region code's chain as of 1 January of the year; where none is configured it uses the pack's weekend, and the answer gives
+  `weekend_days` and `weekend_from` (the resolution with its origin, or `pack_example`), choosing the pack's over refusing so that a
+  deployment with no profile keeps working, and saying so rather than presenting it as configured. `GET /api/holiday-regions` lists
+  each pack's weekend. **Tests:** unit: tabular dates (the epoch, 2024 and 2026 Eids, two 1 Muharrams in 2008, a day a month lacks,
+  leap years, 1970 to 2100); the weekend as a parameter (a Friday and Saturday, a Friday-only and an empty weekend, `Nearest` both ways,
+  a substitute skipping a holiday, business days); the `SA` pack (four to six days a year, its own weekend); the second-profile test
+  with a Thursday and Friday weekend. Request: the same pack (`GB-ENG`) under the pack's weekend and under a profile's Friday and
+  Saturday one (New Year's Day 2027, a Friday, moves to the Sunday), and the `SA` pack generated. The country check allows `SA` and its
+  name in `holiday.rs` only. **Not done:** a profile's weekend for `is_business_day`'s callers (it has none in the service); a dated
+  weekend within a year (resolved on 1 January); `calendar.week_start` read anywhere in the API; a UI for the weekend. **Not
+  verified:** the `SA` pack against an official source. **Verified (2026-10-31):** fmt, clippy pedantic, 1,084 unit tests (the country check
+  among them), 193 request tests on a fresh local database. The UI was not changed (its OpenAPI copy and types were regenerated).
 - [x] (2026-10-31) WPM-T380 **Working-time limits as parameters.** *(WPM-R214, WPM-D143, WPM-D144; rows 14, 17)* The three constants become the D144
   parameters `working_time.reference_weeks`, `max_average_weekly_minutes` and `min_daily_rest_minutes`, with `no limit configured` when
   none is set (D144 question 1, confirmed) and the demo seed loading an example profile; the roll-up's week start and its partial index
@@ -826,11 +849,11 @@ through `rules::duplicates`.
 | 12 | Time zone | UI `CalendarPanel.svelte:35`, `src/routes/rota/+page.svelte:46`, `src/lib/ceo.ts:11,87` | "Today" is the UTC date (`toISOString().slice(0, 10)`); there is no user or organization time zone | **Gap**: the wrong day near midnight far from UTC. **Fixed 2026-10-30**: the reader's zone (D149) | T378 |
 | 13 | Week start | UI `CalendarPanel.svelte:95` (`locale={i18n.locale}` to the calendar, which takes the first day from the locale) | Every `-001` locale resolves to Monday; only `en-us` gives Sunday; no region setting apart from the language | **Partial**. **Fixed 2026-10-30**: CLDR for the reader's region (D149) | T378 |
 | 14 | Week start | API `migration/src/m20261021_000078_time_entry_weeks.rs:32-37`; `src/controllers/workforce.rs:799` | The working-time roll-up groups by `date_trunc('week', …)`, an ISO Monday week, and its partial index is fixed at 2,720 minutes | **Gap** (tied to row 17). **Fixed 2026-10-31**: the index serves any floor; the Monday bucket cannot change an answer (tested) | T380 |
-| 15 | Weekend | API `src/rules/holiday.rs:128-130,188-192` | `is_weekend` is Saturday and Sunday; a substitute day and `is_business_day` follow it | **Gap**: a Friday and Saturday (or Friday only) weekend cannot be expressed | T379 |
+| 15 | Weekend | API `src/rules/holiday.rs:128-130,188-192` | `is_weekend` is Saturday and Sunday; a substitute day and `is_business_day` follow it | **Gap**: a Friday and Saturday (or Friday only) weekend cannot be expressed. **Fixed 2026-10-31**: a parameter, from the profile | T379 |
 | 16 | Weekend | UI `CalendarPanel.svelte:153` (`td[data-weekend]`, never set: `weekendDays` is not passed) | No weekend is shown in any locale | **Gap** (neutral, but no weekend at all). **Fixed 2026-10-30**: the reader's CLDR weekend | T378 |
 | 17 | Working time | API `src/rules/working_time.rs:9-23`; `src/controllers/workforce.rs:762,775,895` | 17 weeks, 48 hours and 11 hours of rest are constants; no other limits can be configured | **Gap**: the D144 design's first move; not refactored here (see T369). **Fixed 2026-10-31**: profile parameters, "no limit configured" when unset | T380 |
-| 18 | Calendars | API `src/rules/holiday.rs:79-82`; UI (no `calendar` option, no `-u-ca-`) | Gregorian only: Easter by the Gregorian algorithm; no lunar, Hijri, Hindu or other holiday rule; no non-Gregorian display | **Gap** | T379 |
-| 19 | Holidays | API `src/rules/holiday.rs:240-290` | Three example packs (GB-ENG, US, DE), labelled unverified; any region can add days by hand | **Right** in shape (data, labelled); the packs are three Western ones | T379 |
+| 18 | Calendars | API `src/rules/holiday.rs:79-82`; UI (no `calendar` option, no `-u-ca-`) | Gregorian only: Easter by the Gregorian algorithm; no lunar, Hijri, Hindu or other holiday rule; no non-Gregorian display | **Gap**. **In part 2026-10-31**: tabular Hijri days; no lunisolar rule, no display | T379 |
+| 19 | Holidays | API `src/rules/holiday.rs:240-290` | Three example packs (GB-ENG, US, DE), labelled unverified; any region can add days by hand | **Right** in shape (data, labelled); the packs are three Western ones. **2026-10-31**: a fourth, `SA`, of another shape |  T379 |
 | 20 | Currency exponent | API `src/rules/expenses.rs:65-71`, `src/rules/cost.rs:140-145`; `src/rules/display.rs:13-17` (used only for CPD amounts and FTE, not money) | The API holds and returns minor units with a code and never converts to major units, so it needs no exponent | **Right** | — |
 | 21 | Currency exponent | UI `src/lib/api/wpm.ts:100,116-117`; input at `ExpenseClaimView.svelte:115`, `src/routes/pay-scales/+page.svelte:93`, `src/routes/planning/+page.svelte:279` | `minor / 100` to show, `Math.round(x * 100)` to store, `moneyWhole` assumes cents | **Gap**: a JPY amount shows at a hundredth of its value, KWD or BHD at ten times; audit row 16 holds for the spec and the API but not the UI. **Fixed 2026-10-30** (`src/lib/money.ts`); the exponent was CLDR's, wrong for 16 codes, **corrected 2026-10-30** to ISO 4217's (D151) | T373, T400 |
 | 22 | Currency | UI `src/lib/components/ExpenseClaims.svelte:34`, `src/routes/planning/+page.svelte:74` | `$state("GBP")` as the default currency | **Gap**. **Fixed 2026-10-30**: no starting currency | T376 |

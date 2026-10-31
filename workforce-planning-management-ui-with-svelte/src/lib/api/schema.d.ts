@@ -5953,7 +5953,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The regions that have a public-holiday rule pack, each marked verified or not. Every shipped pack is an unverified example, not an official source */
+        /** The regions that have a public-holiday rule pack, each marked verified or not, with the weekend days (ISO 1 to 7) it was written for. Every shipped pack is an unverified example, not an official source; one uses tabular Islamic dates and a Friday and Saturday weekend */
         get: {
             parameters: {
                 query?: never;
@@ -6047,7 +6047,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Generate a region's holidays for a year from its rule pack. Safe to repeat: rows it made are brought up to date, rows added by hand are never changed. A region with no pack is refused. HR */
+        /** Generate a region's holidays for a year from its rule pack. Safe to repeat: rows it made are brought up to date, rows added by hand are never changed. A region with no pack is refused. The weekend a substitute day follows is the organization's holidays.weekend_days for the region (WPM-T379), else the pack's own; weekend_days and weekend_from say which. HR */
         post: {
             parameters: {
                 query?: never;
