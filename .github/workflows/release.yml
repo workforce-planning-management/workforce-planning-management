@@ -96,7 +96,8 @@ jobs:
       - name: GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.meta.outputs.image }}
         run: |
           gh release create "${GITHUB_REF_NAME}" sbom.cdx.json \
             --title "${GITHUB_REF_NAME}" --generate-notes \
-            --notes "Image: ${{ steps.meta.outputs.image }}:${GITHUB_REF_NAME} (also :${GITHUB_SHA}). Sign-in enforcement is on by default; see spec/auth.md."
+            --notes "Image: ${IMAGE}:${GITHUB_REF_NAME} (also :${GITHUB_SHA}). Sign-in enforcement is on by default; see spec/auth.md."
