@@ -107,6 +107,7 @@ such law, and it does not mean WPM fits it. Jurisdiction rules are to be held as
 - **GDPR** (Regulation (EU) 2016/679): special-category data (health, trade-union membership) is the reason for WPM's
   unrepresentability rules (WPM-D17 to D25, D74; [worker-unions.md](worker-unions.md)). The impact-assessment duty (Article 35) is
   the frame of the DPIA ([plan.md](plan.md), WPM-R76). Its lawful-basis mapping per record class is a production gate (above).
+- **Spain, France, Sweden, Denmark** (the product owner's list, 2026-11-01; first pass from search excerpts, [statutory-pay-protections.md](statutory-pay-protections.md) section 5): Spain's SMI for 2026 (Real Decreto 126/2026) and France's SMIC (two rates in 2026) were found; Sweden and Denmark were found to set **no statutory minimum wage**, leaving floors to collective agreements. The national laws were not read.
 - **Adequate Minimum Wages Directive** (2022/2041): sets no wage; the Court of Justice annulled Article 5(2) and parts of Articles 5(1) and 5(3) on 11 November 2025 (Case C-19/23). Read from search excerpts of law firm notes, 2026-11-01: [statutory-pay-protections.md](statutory-pay-protections.md).
 - **Pay Transparency Directive** (2023/970): [pay-transparency.md](pay-transparency.md); the threshold is configuration. Member
   states' transposing laws are *not yet read*.
@@ -198,12 +199,12 @@ federal public-holiday pack exists as data and is labelled unverified ([requirem
 
 ### South Asia
 
-*Not yet read.* India is the planned second example profile (WPM-D144, WPM-T369), labelled `example` and unverified; its values will
+*Read in part, 2026-11-01, from search excerpts only:* minimum wages are the states' and the Code on Wages' national floor wage was not yet notified ([statutory-pay-protections.md](statutory-pay-protections.md)). *Not yet read:* the rest. India is the planned second example profile (WPM-D144, WPM-T369), labelled `example` and unverified; its values will
 come with their sources when the profile is written, not from this register.
 
 ### East Asia
 
-*Not yet read.* Japan is the planned third example profile (WPM-D144), labelled `example` and unverified.
+*Read in part, 2026-11-01, from search excerpts only:* Japan's prefectural minimum wage, South Korea's 2026 rate and China's provincial minimum wages and overtime multipliers ([statutory-pay-protections.md](statutory-pay-protections.md)). *Not yet read:* the rest. Japan is the planned third example profile (WPM-D144), labelled `example` and unverified.
 
 ### South-East Asia
 
