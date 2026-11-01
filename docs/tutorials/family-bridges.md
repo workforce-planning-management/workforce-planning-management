@@ -21,8 +21,9 @@ one WPM answers `404`, not `403`, so it does not reveal that the organization ex
 **What this tutorial does not show.** Here `curl` plays both siblings. Two live runs
 (2026-10-31 and 2026-11-01) have since put the real ones against WPM: PPM's demand,
 withdrawal, unlink and supply reading, and CRM's receipt of a hire and a leave over
-the webhook (a hire marked the contact as an employee, a leave cleared it). Not yet
-run live: CRM's overlap check and teams import, and the UIs. If a delivery is refused
+the webhook (a hire marked the contact as an employee, a leave cleared it). CRM's overlap
+check and teams import were also run against WPM with sign-in on (no token is `401`; a
+token without an HR membership is `403`). Not yet run live: the UIs. If a delivery is refused
 with `HTTP 401` and your clocks differ by more than five minutes (a container VM
 that slept is the usual cause), set the clock first: the receiver rejects a stale
 signature on purpose, and WPM marks that delivery `failed` after one attempt and does
