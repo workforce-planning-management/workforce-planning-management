@@ -10354,6 +10354,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payroll-runs/{pid}/minimum-wage-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Advisory minimum-wage floor check: each payslip's gross against the floor for the worker's age band (HR and payroll; indicative; audited with counts; unknown is never ok; none_by_law is its own answer) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Minimum-wage check */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payroll-runs/{pid}/pay": {
         parameters: {
             query?: never;

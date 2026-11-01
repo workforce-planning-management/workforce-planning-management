@@ -448,15 +448,81 @@ pub struct ExampleProfile {
 /// business reasons and `other_recorded`), the `WPM_FLEXIBLE_*` defaults (WPM-T384). **Example, unverified**: neither was read against
 /// the text in this work.
 #[must_use]
+#[allow(clippy::too_many_lines)] // a table of example rows
 pub const fn example_profile_gb() -> ExampleProfile {
     const SOURCE: &str = "Example in the shape of the Working Time Regulations 1998 (SI 1998/1833), regs 4 and 10; not read against \
                           the text (WPM-T380)";
     const FLEXIBLE: &str = "Example in the shape of the Employment Rights Act 1996, Part 8A, as amended by the Employment Relations \
                             (Flexible Working) Act 2023 from 6 April 2024; modelled on common rules, not read against the text \
                             (WPM-T212, WPM-T384)";
+    const WAGE: &str = "Example from the GOV.UK press release (the adult rate) and a Business Wales summary citing GOV.UK (the other bands); the \
+                        GOV.UK rate table was not read, apprentices are not modelled (WPM-T410, WPM-T413; to be read in WPM-T411)";
     ExampleProfile {
         codes: &[("GB", "national", None, "United Kingdom (example)")],
         rows: &[
+            (
+                "GB",
+                "minimum_wage.currency",
+                r#"["GBP"]"#,
+                "2025-04-01",
+                WAGE,
+            ),
+            (
+                "GB",
+                "minimum_wage.adult_from_age",
+                "21",
+                "2025-04-01",
+                WAGE,
+            ),
+            (
+                "GB",
+                "minimum_wage.young_adult_from_age",
+                "18",
+                "2025-04-01",
+                WAGE,
+            ),
+            (
+                "GB",
+                "minimum_wage.hourly_minor.adult",
+                "1221",
+                "2025-04-01",
+                WAGE,
+            ),
+            (
+                "GB",
+                "minimum_wage.hourly_minor.young_adult",
+                "1000",
+                "2025-04-01",
+                WAGE,
+            ),
+            (
+                "GB",
+                "minimum_wage.hourly_minor.youth",
+                "755",
+                "2025-04-01",
+                WAGE,
+            ),
+            (
+                "GB",
+                "minimum_wage.hourly_minor.adult",
+                "1271",
+                "2026-04-01",
+                WAGE,
+            ),
+            (
+                "GB",
+                "minimum_wage.hourly_minor.young_adult",
+                "1085",
+                "2026-04-01",
+                WAGE,
+            ),
+            (
+                "GB",
+                "minimum_wage.hourly_minor.youth",
+                "800",
+                "2026-04-01",
+                WAGE,
+            ),
             (
                 "GB",
                 "working_time.reference_weeks",

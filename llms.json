@@ -14,8 +14,8 @@
     "api": "Rust, Loco (Axum + SeaORM), PostgreSQL 18",
     "ui": "SvelteKit 3, Svelte 5 runes, TypeScript",
     "tests": {
-      "service_unit_declared": 1118,
-      "service_request_declared": 198,
+      "service_unit_declared": 1133,
+      "service_request_declared": 199,
       "ui_unit_declared": 281,
       "ui_e2e_declared": 240,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
@@ -414,7 +414,7 @@
       {
         "title": "spec/statutory-pay-protections.md",
         "path": "spec/statutory-pay-protections.md",
-        "description": "WPM-R218–R223 and WPM-D154–D162 (D161 confirmed, the rest proposed): minimum wage, overtime, workers' compensation and unemployment insurance: the research with its confidence, what WPM holds today, and the advice (check and record, never decide or file)"
+        "description": "WPM-R218–R223 and WPM-D154–D162 (decisions confirmed 2026-11-01): minimum wage, overtime, workers' compensation and unemployment insurance: the research with its confidence, what WPM holds today, and the advice (check and record, never decide or file)"
       },
       {
         "title": "spec/human-capital-reporting.md",

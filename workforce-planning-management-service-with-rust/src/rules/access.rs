@@ -168,6 +168,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("payroll-runs", Privileged),
     ("payroll-runs/{}", Privileged),
     ("payroll-runs/{}/payslips", Privileged),
+    ("payroll-runs/{}/minimum-wage-check", Privileged),
     ("workforce-intelligence/pipelines", Open),
     ("workforce-intelligence/training-demand", Open),
     ("programme-demands", Open),

@@ -959,6 +959,18 @@ key outside it is refused.
 | `flexible_working.refusal_reasons` | a set of lowercase tokens (WPM-T384; a worker's chain) | `most_specific` |
 | `flexible_working.requests_per_year` | a whole number, 0 to 100, 0 for no limit (WPM-T384; a worker's chain) | `most_specific` |
 | `holidays.weekend_days` | a set of ISO weekdays, at most six; empty means no weekly rest day | `most_specific` |
+| `minimum_wage.adult_from_age` | whole years, 0 to 100; 0 or none means every worker is adult and no date of birth is read (WPM-T413; a worker's chain) | `most_specific` |
+| `minimum_wage.currency` | a set of names, one ISO 4217 code in use; a floor is compared only with pay in that currency (WPM-T413) | `most_specific` |
+| `minimum_wage.hourly_minor.adult` | minor units an hour, 0 to 1,000,000,000: the adult band's statutory minimum (WPM-T413; a worker's chain) | `strictest_min` (the highest) |
+| `minimum_wage.hourly_minor.young_adult` | minor units an hour, 0 to 1,000,000,000: the young-adult band's (WPM-T413) | `strictest_min` (the highest) |
+| `minimum_wage.hourly_minor.youth` | minor units an hour, 0 to 1,000,000,000: the youth band's (WPM-T413) | `strictest_min` (the highest) |
+| `minimum_wage.monthly_minor.adult` | minor units a month as the law states it, 0 to 1,000,000,000: the adult band's (WPM-T413) | `strictest_min` (the highest) |
+| `minimum_wage.monthly_minor.young_adult` | minor units a month as the law states it: the young-adult band's (WPM-T413) | `strictest_min` (the highest) |
+| `minimum_wage.monthly_minor.youth` | minor units a month as the law states it: the youth band's (WPM-T413) | `strictest_min` (the highest) |
+| `minimum_wage.near_margin_bp` | basis points, 0 to 5000; the margin above the floor within which the check says near; 0 or none means no near result (WPM-T413) | `most_specific` |
+| `minimum_wage.none_by_law` | on or off; on where the jurisdiction sets no statutory minimum wage and pay floors sit in collective agreements, distinct from not configured (WPM-D160, WPM-T413) | `most_specific` |
+| `minimum_wage.payments_per_year` | whole payments, 1 to 24; the payments a year a monthly floor is stated for (Spain: 14); none means twelve (WPM-T413) | `most_specific` |
+| `minimum_wage.young_adult_from_age` | whole years, 0 to 100; the age from which the young-adult band applies (WPM-T413) | `most_specific` |
 | `pay_transparency.information_months` | whole calendar months, 1 to 12 (WPM-T384; a worker's chain) | `strictest_max` (the shortest) |
 | `pay_transparency.joint_assessment_months` | whole calendar months, 1 to 24 (WPM-T384; the organization's chain) | `strictest_max` (the shortest) |
 | `pay_transparency.joint_assessment_percent` | a whole percent, 1 to 50 (WPM-T384; the organization's chain) | `strictest_max` (the lowest) |

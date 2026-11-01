@@ -637,3 +637,150 @@ async fn overtime_counts_from_a_configured_contracted_day() {
     })
     .await;
 }
+
+// WPM-R218, WPM-D156, WPM-D160 (WPM-T415): the advisory minimum-wage check follows each worker's place of work. Six payslips for July,
+// each with 160 recorded hours: pay well above, just above (inside the margin), and below the floor; a worker whose place of work is
+// not recorded; a jurisdiction recorded as setting no floor; and one that is recorded but configures nothing. Unknown is never ok,
+// "none by law" is its own answer, nothing is refused, and the audit entry holds counts and no worker.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
+    use sea_orm::{ConnectionTrait, Statement};
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        // Annual salaries of 36 000.00, 24 960.00 and 12 000.00 pay 3 000.00, 2 080.00 and 1 000.00 for a month: 18.75, 13.00 and
+        // 6.25 an hour over 160 hours. The floor below is 12.71.
+        let mut slips = Vec::new();
+        for (number, salary) in [
+            ("MW-ABOVE", 3_600_000),
+            ("MW-NEAR", 2_496_000),
+            ("MW-BELOW", 1_200_000),
+            ("MW-NOWHERE", 3_600_000),
+            ("MW-NOFLOOR", 3_600_000),
+            ("MW-BLANK", 3_600_000),
+        ] {
+            let pid = seed_worker!(&request, &org, number, Some(salary)).await;
+            activate!(&request, &pid).await;
+            let mut day = chrono::NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
+            for _ in 0..20 {
+                request
+                    .post(&format!("/api/workers/{pid}/time-entries"))
+                    .json(&json!({ "worked_on": day, "minutes": 480 }))
+                    .await
+                    .assert_status_ok();
+                day += chrono::Duration::days(1);
+            }
+            slips.push((number, pid));
+        }
+        let pid_of = |number: &str| slips.iter().find(|(n, _)| *n == number).unwrap().1.clone();
+
+        for body in [
+            json!({ "organization_ref": org, "code": "XA", "layer": "national" }),
+            json!({ "organization_ref": org, "code": "XB", "layer": "national" }),
+            json!({ "organization_ref": org, "code": "XC", "layer": "national" }),
+        ] {
+            request.post("/api/jurisdictions").json(&body).await.assert_status_ok();
+        }
+        for (code, key, value) in [
+            ("XA", "minimum_wage.currency", json!(["GBP"])),
+            ("XA", "minimum_wage.hourly_minor.adult", json!(1271)),
+            ("XA", "minimum_wage.near_margin_bp", json!(500)),
+            ("XB", "minimum_wage.none_by_law", json!(true)),
+        ] {
+            request
+                .post("/api/jurisdiction-parameters")
+                .json(&json!({ "organization_ref": org, "code": code, "key": key, "value": value,
+                               "effective_from": "2000-01-01", "source": "synthetic test profile", "status": "example" }))
+                .await
+                .assert_status_ok();
+        }
+        for (number, code) in [
+            ("MW-ABOVE", "XA"),
+            ("MW-NEAR", "XA"),
+            ("MW-BELOW", "XA"),
+            ("MW-NOFLOOR", "XB"),
+            ("MW-BLANK", "XC"),
+        ] {
+            request
+                .put(&format!("/api/workers/{}", pid_of(number)))
+                .json(&json!({ "work_jurisdiction": code }))
+                .await
+                .assert_status_ok();
+        }
+
+        let run: Value = request
+            .post("/api/payroll-runs")
+            .json(&json!({ "organization_ref": org, "period_start": "2026-07-01", "period_end": "2026-07-31" }))
+            .await
+            .json();
+        let run_pid = run["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/payroll-runs/{run_pid}/calculate")).await.assert_status_ok();
+
+        let check: Value = request
+            .get(&format!("/api/payroll-runs/{run_pid}/minimum-wage-check"))
+            .await
+            .json();
+        assert_eq!(check["indicative"], true);
+        assert!(check["note"].as_str().unwrap().contains("not a statement that an employer complies"));
+        assert_eq!(check["payslips"], 6);
+        assert_eq!(check["counts"]["ok"], 1);
+        assert_eq!(check["counts"]["near"], 1);
+        assert_eq!(check["counts"]["below"], 1);
+        assert_eq!(check["counts"]["none_by_law"], 1);
+        assert_eq!(check["counts"]["unknown"], 2);
+        assert_eq!(check["unknown_reasons"]["no_work_jurisdiction"], 1);
+        assert_eq!(check["unknown_reasons"]["no_floor_configured"], 1);
+        let outcome = |number: &str| -> (String, Value) {
+            let row = check["workers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|w| w["worker_pid"] == pid_of(number).as_str())
+                .unwrap();
+            (row["outcome"].as_str().unwrap().to_string(), row["reason"].clone())
+        };
+        assert_eq!(outcome("MW-ABOVE").0, "ok");
+        assert_eq!(outcome("MW-NEAR").0, "near");
+        assert_eq!(outcome("MW-BELOW").0, "below");
+        assert_eq!(outcome("MW-NOFLOOR").0, "none_by_law");
+        assert_eq!(outcome("MW-NOWHERE"), ("unknown".to_string(), json!("no_work_jurisdiction")));
+        assert_eq!(outcome("MW-BLANK"), ("unknown".to_string(), json!("no_floor_configured")));
+        // One floor for everyone: no age bands, so no birth date was needed and none is returned.
+        assert!(check["workers"][0]["band"] == "adult");
+        let text = check.to_string();
+        assert!(!text.contains("birth") && !text.contains("\"age\""), "no birth date or age in the answer: {text}");
+
+        // Advisory: the run is unchanged and can still be approved.
+        request.post(&format!("/api/payroll-runs/{run_pid}/approve")).await.assert_status_ok();
+
+        // The audit entry holds the counts and no worker.
+        let counted: i64 = ctx
+            .db
+            .query_one_raw(Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!("SELECT count(*) AS n FROM audit_logs WHERE entity_pid = '{run_pid}' AND action = 'minimum_wage_checked' AND snapshot->'counts'->>'below' = '1'"),
+            ))
+            .await
+            .unwrap()
+            .unwrap()
+            .try_get("", "n")
+            .unwrap();
+        assert_eq!(counted, 1);
+        for (_, pid) in &slips {
+            let leaked: i64 = ctx
+                .db
+                .query_one_raw(Statement::from_string(
+                    sea_orm::DatabaseBackend::Postgres,
+                    format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'minimum_wage_checked' AND snapshot::text LIKE '%{pid}%'"),
+                ))
+                .await
+                .unwrap()
+                .unwrap()
+                .try_get("", "n")
+                .unwrap();
+            assert_eq!(leaked, 0, "a worker is named in the audit entry");
+        }
+    })
+    .await;
+}

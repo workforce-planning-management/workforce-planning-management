@@ -75,6 +75,7 @@ pub mod manager_change;
 pub mod mandatory_learning;
 pub mod mcp;
 pub mod metrics;
+pub mod minimum_wage;
 pub mod mobility;
 pub mod movements;
 pub mod notify;

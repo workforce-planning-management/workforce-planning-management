@@ -1,9 +1,8 @@
 # Statutory pay protections: minimum wage, overtime, workers' compensation, and unemployment insurance
 
 What the law asks of an employer on four protections that touch pay, what WPM holds and does about each today, and what we advise
-WPM does next. Researched, assessed and advised on 2026-11-01 (WPM-T410). **Nothing here is built.** Proposed in
-[plan.md](plan.md) section T; requirements WPM-R218 to WPM-R223; decisions WPM-D154 to WPM-D162 (**D154 to D160 and D162 proposed by the AI assistant, not
-yet confirmed by the product owner; D161 confirmed 2026-11-01**); tasks in [tasks.md](tasks.md) Phase 26 (WPM-T410 to WPM-T426).
+WPM does next. Researched, assessed and advised on 2026-11-01 (WPM-T410). **Built so far (2026-11-01): the minimum-wage floor check, in part** (see [what is built](#what-is-built-and-what-is-not)). Everything else here is not built. Proposed in
+[plan.md](plan.md) section T; requirements WPM-R218 to WPM-R223; decisions WPM-D154 to WPM-D162 (**drafted by the AI assistant and confirmed by the product owner on 2026-11-01**); tasks in [tasks.md](tasks.md) Phase 26 (WPM-T410 to WPM-T427).
 
 **The jurisdictions in scope** were named by the product owner on 2026-11-01 (answer to question 1): **the United States, the United Kingdom, Germany, Spain,
 France, Sweden, Denmark, Japan, South Korea, China and India.** The first-pass research for all eleven is in [section 5](#5-the-eleven-jurisdictions), and
@@ -251,7 +250,9 @@ benefit; or ship any default figure marked `read` that a person has not read in 
 - **WPM-R222 Separation record.** From the leaver record: last day worked, a standard reason code, the final pay date, a pay summary reference; an export for HR.
 - **WPM-R223 Employer-side statutory cost lines.** Parameter-driven stub lines, not deducted from net, shown in payroll cost.
 
-## Decisions (proposed 2026-11-01 by the AI assistant; not confirmed)
+## Decisions (drafted 2026-11-01 by the AI assistant; confirmed by the product owner the same day)
+
+**Confirmed 2026-11-01.** The product owner answered "confirm all" to the list of D154 to D160 and D162 (D161 had been confirmed earlier, as option (a) of question 6). The requirements WPM-R218 to WPM-R223 stay proposed; questions 3 and 4 (the injury record, the separation record) are still open, so WPM-R221 and WPM-R222 are not started.
 
 - **WPM-D154 WPM checks and warns; it never decides an entitlement, pays a benefit or files.** The authority and the arithmetic of record stay with a payroll,
   tax or insurance service, as WPM-D58 keeps contractors off payroll.
@@ -264,7 +265,7 @@ benefit; or ship any default figure marked `read` that a person has not read in 
   [data protection impact assessment](governance/dpia.md)), and [scope.md](scope.md) already refuses clinical and occupational-health records
   (WPM-D17, WPM-D24, WPM-D25): no symptom, diagnosis or condition is storable, and this record keeps to that. A report sees counts at or above the floor.
 - **WPM-D159 Employer contributions are cost lines, never deductions from net,** stubbed by parameter, and never remitted or filed by WPM.
-- **WPM-D162 Overtime is a sequence of bands, and an employer rate may follow a class the deployer sets.** Proposed 2026-11-01 from the second research round. A band has a period (day, week or month), a threshold in minutes and a multiplier in basis points; premiums that overlap add (Korea: overtime plus night is 200 percent); a rule may apply only above an establishment size (Korea: five employees); kind-of-day multipliers (rest day, public holiday) and
+- **WPM-D162 Overtime is a sequence of bands, and an employer rate may follow a class the deployer sets.** Drafted 2026-11-01 from the second research round. A band has a period (day, week or month), a threshold in minutes and a multiplier in basis points; premiums that overlap add (Korea: overtime plus night is 200 percent); a rule may apply only above an establishment size (Korea: five employees); kind-of-day multipliers (rest day, public holiday) and
   caps (monthly, annual) sit beside it as parameters. An employer contribution rate may be one rate, or a table keyed by a class (industry, risk tier, activity) that the deployer sets on the organization. WPM never picks a class from what the organization is called.
 - **WPM-D161 A collective-agreement floor may be entered, narrowly. *Confirmed by the product owner, 2026-11-01* (option (a) of question 6).** An organization-layer parameter holds one floor figure (or a few, each with its basis) with the agreement's name, a clause or table reference, and
   valid-from and valid-to dates. WPM compares pay to the figure and **never reads the agreement**; the screen says "the floor you entered, not a statement that it is correct", and warns when the entry is past its valid-to date or missing. Grade and step tables, allowances,
@@ -333,6 +334,19 @@ Method: web searches on 2026-11-01 (standard mode), reading result excerpts, **n
 **Not found or not researched (WPM-T412 closes these):** after the third round, for the eleven: **a statutory overtime premium in Germany (none found; understood to come from contract or agreement); unemployment cover in India; the a-kassa funding in Sweden and Denmark; Korea's employment insurance rate; Japan's accident rate table; the Employees' Compensation Act in India; official (not payroll-guide) schedules for China**; also the US federal and state minimum wage rates; first-report-of-injury deadlines; RIDDOR and OSHA recording rules;
 UK holiday pay and overtime, the accommodation offset and apprentices; the 2026 FUTA credit reduction states; separation-record duties in any country. Canada and Australia were researched only in part and are **not** in the eleven (they are kept as findings, not as scope).
 
-## Not built
+## What is built and what is not
 
-Everything above. This file adds no code, migration, parameter or test. The only repository change in WPM-T410 is the specification.
+**Built (2026-11-01, WPM-T413 to WPM-T415 in part):** the minimum-wage floor check (WPM-R218). Twelve registry parameters (floors by band on an hourly or a monthly basis, the age cut-offs, the currency, the payments
+a year, a near margin, and the `none_by_law` flag); the pure core `rules::minimum_wage`; `GET /api/payroll-runs/{pid}/minimum-wage-check` (HR and payroll, organization-scoped, advisory, audited with counts); the example `GB` rows for the 2025
+and 2026 rates; the OpenAPI path and the UI's types; a request test. The answers are `below`, `near`, `ok`, `none_by_law` and `unknown` with a reason, and `unknown` is never `ok`.
+
+**Limits of what is built:**
+
+- **The date of birth is not stored** (it is not a column yet: WPM-T319). It is read from the person service, only where a profile has age bands. With no person service a banded profile such as the `GB` example answers
+  `no_date_of_birth` for every worker; WPM-T427 makes it still say `below` where pay is under the lowest band's floor.
+- **Hours** are the recorded time entries in the period, except on-call; **pay** is the payslip's gross, overtime included. Both are indicative. Apprentices, accommodation, tips and piece work are not modelled.
+- **No result is kept** beyond the audit entry's counts, so the retention a profile might set (UK: six years) is not met by WPM. That is the rest of WPM-T415.
+- **No screen yet** (WPM-T416). The figures in the `GB` example are `example`, and none has been read in its source (WPM-T411).
+
+**Not built:** WPM-R219 to WPM-R223 (statutory overtime, coverage evidence, the injury record, the separation record, employer cost lines), WPM-T416 to WPM-T426 and WPM-T427, and the research tasks WPM-T411 and WPM-T412. WPM-R221 and WPM-R222 also wait for
+questions 3 and 4.

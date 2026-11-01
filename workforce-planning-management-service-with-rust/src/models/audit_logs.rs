@@ -230,6 +230,8 @@ mod tests {
         ),
         ("controllers/programmes.rs", "programme_rollup_read"),
         ("controllers/payroll.rs", "payslips_read"),
+        // A read: the minimum-wage check changes nothing, and its entry holds counts (WPM-D156).
+        ("controllers/payroll.rs", "minimum_wage_checked"),
         ("controllers/payroll.rs", "comparison_read"),
     ];
 

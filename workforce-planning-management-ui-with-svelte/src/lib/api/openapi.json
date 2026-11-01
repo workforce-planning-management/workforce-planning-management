@@ -8437,6 +8437,19 @@
         ]
       }
     },
+    "/api/payroll-runs/{pid}/minimum-wage-check": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Minimum-wage check"
+          }
+        },
+        "summary": "Advisory minimum-wage floor check: each payslip's gross against the floor for the worker's age band (HR and payroll; indicative; audited with counts; unknown is never ok; none_by_law is its own answer)",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
     "/api/payroll-runs/{pid}/pay": {
       "post": {
         "parameters": [

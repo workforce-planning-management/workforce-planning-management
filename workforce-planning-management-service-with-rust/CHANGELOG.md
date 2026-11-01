@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the advisory minimum-wage floor check (WPM-R218, WPM-T413 to WPM-T415 in part, WPM-D154 to WPM-D162)
+
+`GET /api/payroll-runs/{pid}/minimum-wage-check`: HR and payroll only, organization-scoped, advisory. Each payslip's gross against the floor for the worker's age band, as of the period's last day, from jurisdiction parameters resolved from
+the worker's place of work: `below`, `near`, `ok`, `none_by_law` or `unknown` with a reason, and `unknown` is never `ok`. Twelve registry keys (`minimum_wage.*`), the pure core `rules::minimum_wage` (15 unit tests), the example `GB` rates for 2025 and 2026
+(`example`, the source not read), the OpenAPI path and the UI's types, a request test, and a counts-only audit entry `minimum_wage_checked`. **Not done:** keeping results, a screen, apprentices, and the answer when the date of birth is unknown (WPM-T427); the
+birth date is read from the person service only where a profile has bands, and is stored nowhere.
+
 ### Added — example profiles hold the statutory defaults (WPM-T384 step 3)
 
 `tasks::seed`: `example_profile_eu()` (an `EU` supranational code with `pay_transparency.information_months` 2,

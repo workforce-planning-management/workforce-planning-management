@@ -331,6 +331,10 @@ mod tests {
             "validates a band the deployer chose for a wellbeing answer",
         ),
         (
+            "band_for",
+            "places a worker in the age band a statutory minimum wage sets, from the whole-year age at the period end; the band chooses a legal floor, scores and ranks no one, the birth date is read only where the profile has bands and is stored nowhere (WPM-D114, WPM-D156)",
+        ),
+        (
             "resolve_band",
             "looks up a recorded pay band; a band is a fact someone recorded, not a derived score",
         ),

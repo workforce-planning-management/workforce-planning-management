@@ -136,6 +136,7 @@ pub fn spec() -> Value {
             "/api/payroll-runs/{pid}/pay": { "post": { "tags": ["payroll"], "summary": "Mark paid", "responses": transition } },
             "/api/payroll-runs/{pid}/reopen": { "post": { "tags": ["payroll"], "summary": "Reopen calculated → draft", "responses": transition } },
             "/api/payroll-runs/{pid}/payslips": { "get": { "tags": ["payroll"], "summary": "The run's payslips (audited; mask honoured)", "responses": ok("Payslips") } },
+            "/api/payroll-runs/{pid}/minimum-wage-check": { "get": { "tags": ["payroll"], "summary": "Advisory minimum-wage floor check: each payslip's gross against the floor for the worker's age band (HR and payroll; indicative; audited with counts; unknown is never ok; none_by_law is its own answer)", "responses": ok("Minimum-wage check") } },
             "/api/workers/{pid}/payslips": { "get": { "tags": ["payroll"], "summary": "One worker's payslips (self-service; audited; mask honoured)", "responses": ok("Payslips") } },
             "/api/benchmarks": {
                 "post": { "tags": ["compensation"], "summary": "Record a market band (min ≤ median ≤ max)", "responses": created },

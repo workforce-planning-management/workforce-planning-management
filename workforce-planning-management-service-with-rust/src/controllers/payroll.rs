@@ -661,6 +661,180 @@ async fn benchmark_comparison(
     format::json(serde_json::json!({ "organization": params.organization, "rows": rows }))
 }
 
+/// What the minimum-wage check says about itself on every answer (WPM-D156).
+const MINIMUM_WAGE_NOTE: &str = "Indicative only. Each payslip's gross is compared with the minimum wage for the worker's age band \
+     where the worker's place of work is recorded and a floor is configured. Accommodation, tips, piece work, apprentices and which pay \
+     the law counts are not modelled. An ok is not a statement that an employer complies, and nothing here blocks the run.";
+
+/// `GET /api/payroll-runs/{pid}/minimum-wage-check` — an advisory comparison of each payslip's gross with the minimum wage for the
+/// worker's age band, as of the period's last day (WPM-R218, WPM-D156, WPM-D160). HR and payroll only, and only for organizations the
+/// caller holds. The floors are jurisdiction parameters resolved from each worker's place of work; with none configured the answer is
+/// `unknown`, never `ok`, and a jurisdiction recorded as setting no statutory floor answers `none_by_law`. The date of birth is used
+/// only to pick a band and no age is returned or stored. The audit entry holds counts, never names.
+#[debug_handler]
+#[allow(clippy::too_many_lines)] // payslips → workers → hours → floors → outcome, linearly
+async fn minimum_wage_check(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    use crate::rules::jurisdiction::Resolution;
+    use crate::rules::minimum_wage as mw;
+    use serde_json::json;
+    use std::collections::BTreeMap;
+    use std::str::FromStr;
+
+    let run = records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?;
+    super::ensure_org_in_scope(&ctx, &caller, &run.organization_ref).await?;
+    let slips = payslips::Entity::find()
+        .filter(payslips::Column::RunPid.eq(run.pid))
+        .filter(payslips::Column::DeletedAt.is_null())
+        .order_by_asc(payslips::Column::Id)
+        .all(&ctx.db)
+        .await?;
+    let worker_pids: Vec<Uuid> = slips.iter().map(|slip| slip.worker_pid).collect();
+    let people: BTreeMap<Uuid, workers::Model> = workers::Entity::find()
+        .filter(workers::Column::Pid.is_in(worker_pids.clone()))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|worker| (worker.pid, worker))
+        .collect();
+    // Recorded minutes in the period, by worker. On-call entries are not hours worked.
+    let entries: Vec<(Uuid, i32)> = time_entries::Entity::find()
+        .filter(time_entries::Column::WorkerPid.is_in(worker_pids))
+        .filter(time_entries::Column::WorkedOn.gte(run.period_start))
+        .filter(time_entries::Column::WorkedOn.lte(run.period_end))
+        .filter(time_entries::Column::Kind.ne("on_call"))
+        .filter(time_entries::Column::DeletedAt.is_null())
+        .select_only()
+        .column(time_entries::Column::WorkerPid)
+        .column(time_entries::Column::Minutes)
+        .into_tuple()
+        .all(&ctx.db)
+        .await?;
+    let mut minutes: BTreeMap<Uuid, i64> = BTreeMap::new();
+    for (worker, entry_minutes) in entries {
+        *minutes.entry(worker).or_default() += i64::from(entry_minutes);
+    }
+    let profiles =
+        super::jurisdictions::profiles_for(&ctx.db, std::slice::from_ref(&run.organization_ref))
+            .await?;
+    let empty = super::jurisdictions::Profile::default();
+    let profile = profiles.get(&run.organization_ref).unwrap_or(&empty);
+    let as_of = run.period_end;
+    let period_days = (run.period_end - run.period_start).num_days() + 1;
+
+    let mut counts: BTreeMap<&'static str, u64> = ["below", "near", "ok", "none_by_law", "unknown"]
+        .into_iter()
+        .map(|name| (name, 0))
+        .collect();
+    let mut reasons: BTreeMap<&'static str, u64> = BTreeMap::new();
+    let mut rows = Vec::with_capacity(slips.len());
+    for slip in &slips {
+        let Some(worker) = people.get(&slip.worker_pid) else {
+            *counts.entry("unknown").or_default() += 1;
+            *reasons.entry("worker_not_found").or_default() += 1;
+            rows.push(json!({ "worker_pid": slip.worker_pid, "outcome": "unknown", "reason": "worker_not_found", "band": null }));
+            continue;
+        };
+        let place = worker.work_jurisdiction.as_deref();
+        let (outcome, band_name) = if place.is_none() {
+            (mw::Outcome::Unknown("no_work_jurisdiction"), None)
+        } else {
+            let get = |key: &str| profile.resolve(key, place, as_of);
+            let int = |key: &str| get(key).integer();
+            let mut floors = mw::Floors::default();
+            for band in mw::Band::ALL {
+                let floor = mw::Floor {
+                    hourly_minor: int(band.hourly_key()),
+                    monthly_minor: int(band.monthly_key()),
+                };
+                match band {
+                    mw::Band::Adult => floors.adult = floor,
+                    mw::Band::YoungAdult => floors.young_adult = floor,
+                    mw::Band::Youth => floors.youth = floor,
+                }
+            }
+            let none_by_law = matches!(
+                get(mw::NONE_BY_LAW_KEY),
+                Resolution::Resolved { value, .. } if value.as_flag() == Some(true)
+            );
+            let currency = match get(mw::CURRENCY_KEY) {
+                Resolution::Resolved { value, .. } => {
+                    value.as_names().and_then(|names| names.into_iter().next())
+                }
+                _ => None,
+            };
+            // The birth date is read from the person service only when the profile has age bands, used for the whole-year age
+            // at the period's end, and stored nowhere (WPM-D114, WPM-D156). None where it is not known.
+            let adult_from = int(mw::ADULT_FROM_AGE_KEY);
+            let age = if adult_from.is_some_and(|years| years > 0) {
+                match entity_ref::EntityRef::from_str(&worker.person_ref) {
+                    Ok(person) => crate::clients::birth_date(&person)
+                        .await
+                        .map(|born| mw::completed_years(born, as_of)),
+                    Err(_) => None,
+                }
+            } else {
+                None
+            };
+            let band = mw::band_for(age, adult_from, int(mw::YOUNG_ADULT_FROM_AGE_KEY));
+            let inputs = mw::Inputs {
+                pay_minor: slip.gross_minor,
+                worked_minutes: minutes.get(&slip.worker_pid).copied().unwrap_or(0),
+                period_days,
+                fte_percent: i64::from(worker.fte_percent),
+                payments_per_year: int(mw::PAYMENTS_PER_YEAR_KEY)
+                    .unwrap_or(mw::DEFAULT_PAYMENTS_PER_YEAR),
+                near_margin_bp: int(mw::NEAR_MARGIN_BP_KEY).unwrap_or(0),
+            };
+            let outcome = mw::check(
+                band,
+                &floors,
+                none_by_law,
+                currency.as_deref(),
+                &slip.currency,
+                &inputs,
+            );
+            (
+                outcome,
+                band.ok().filter(|_| floors.any()).map(mw::Band::name),
+            )
+        };
+        *counts.entry(outcome.name()).or_default() += 1;
+        if let Some(reason) = outcome.reason() {
+            *reasons.entry(reason).or_default() += 1;
+        }
+        rows.push(json!({
+            "worker_pid": slip.worker_pid,
+            "outcome": outcome.name(),
+            "reason": outcome.reason(),
+            "band": band_name,
+        }));
+    }
+    Audit::record(
+        &ctx.db,
+        "payroll_run",
+        run.pid,
+        "minimum_wage_checked",
+        caller.actor(),
+        Some(json!({ "payslips": slips.len(), "counts": counts, "unknown_reasons": reasons })),
+    )
+    .await?;
+    format::json(json!({
+        "run_pid": run.pid,
+        "period_start": run.period_start,
+        "period_end": run.period_end,
+        "indicative": true,
+        "note": MINIMUM_WAGE_NOTE,
+        "payslips": slips.len(),
+        "counts": counts,
+        "unknown_reasons": reasons,
+        "workers": rows,
+    }))
+}
+
 /// The payroll routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -673,6 +847,10 @@ pub fn routes() -> Routes {
         .add("/payroll-runs/{pid}/pay", post(pay_run))
         .add("/payroll-runs/{pid}/reopen", post(reopen_run))
         .add("/payroll-runs/{pid}/payslips", get(run_payslips))
+        .add(
+            "/payroll-runs/{pid}/minimum-wage-check",
+            get(minimum_wage_check),
+        )
         .add("/workers/{pid}/payslips", get(worker_payslips))
         .add("/benchmarks", post(create_benchmark))
         .add("/benchmarks", get(list_benchmarks))

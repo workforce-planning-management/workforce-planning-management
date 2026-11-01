@@ -847,7 +847,7 @@ separation record.
 - **WPM-D133 The holder, or HR while the holder is unavailable, lets a deputy decide flexible working, and the default is no.**
   The ABAC operation `flexible_working:decide` permits a deputy only when the grant is `true`; `null`, missing and `false` deny.
   HR's grant lapses when the holder is available again.
-- **WPM-D154 to D162** (D154 to D160 and D162 proposed 2026-11-01, **not yet confirmed by the product owner**; full text in
+- **WPM-D154 to D162** (drafted 2026-11-01 by the AI assistant and **confirmed by the product owner the same day**; full text in
   [statutory-pay-protections.md](statutory-pay-protections.md)): WPM checks and warns and never decides an entitlement or files (D154); every
   statutory figure is a dated, sourced registry parameter, `unverified` until a person reads the source (D155); the minimum-wage check is
   indicative, advisory in v1 and keeps no age (D156); contractual overtime stays, statutory premium is parameters, and exempt status is a
