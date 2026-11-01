@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Security — the matcher crate gets a cargo-deny gate (2026-11-01)
 
-The matcher now has a `deny.toml` (the policy CRM's matcher uses) and the `deny` CI job checks it, as it already checked the service. The zizmor lint exits clean: every Dependabot entry has a 7-day cooldown, release steps pass expressions through `env`, and the matcher crate is watched.
+The matcher now has a `deny.toml` (the policy CRM's matcher uses) and the `deny` CI job checks it, as it already checked the service. The zizmor lint exits clean: every Dependabot entry has a cooldown of 7 calendar days, release steps pass expressions through `env`, and the matcher crate is watched.
 
 ### Security — workflow lint matched across the family (2026-10-31)
 
