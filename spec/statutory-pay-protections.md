@@ -2,8 +2,8 @@
 
 What the law asks of an employer on four protections that touch pay, what WPM holds and does about each today, and what we advise
 WPM does next. Researched, assessed and advised on 2026-11-01 (WPM-T410). **Nothing here is built.** Proposed in
-[plan.md](plan.md) section T; requirements WPM-R218 to WPM-R223; decisions WPM-D154 to WPM-D160 (**proposed by the AI assistant, not
-yet confirmed by the product owner**); tasks in [tasks.md](tasks.md) Phase 26 (WPM-T410 to WPM-T426).
+[plan.md](plan.md) section T; requirements WPM-R218 to WPM-R223; decisions WPM-D154 to WPM-D161 (**D154 to D160 proposed by the AI assistant, not
+yet confirmed by the product owner; D161 confirmed 2026-11-01**); tasks in [tasks.md](tasks.md) Phase 26 (WPM-T410 to WPM-T426).
 
 **The jurisdictions in scope** were named by the product owner on 2026-11-01 (answer to question 1): **the United States, the United Kingdom, Germany, Spain,
 France, Sweden, Denmark, Japan, South Korea, China and India.** The first-pass research for all eleven is in [section 5](#5-the-eleven-jurisdictions), and
@@ -211,7 +211,7 @@ The eleven were not in view when the advice above was first written. The researc
 1. **"None by law" is a value, not an absence.** Sweden and Denmark set no statutory minimum wage or overtime premium; collective agreements do. A parameter that is
    unset means *not configured* and must never read as *no rule*. The registry gains an explicit `none_by_law` state per parameter and jurisdiction, with a
    source, so the screen says "no statutory floor here; check the collective agreement" and never a green tick (WPM-D160).
-2. **A collective-agreement floor is an organization-layer parameter sourced to an agreement.** A deployer may enter one; WPM never reads or interprets the
+2. **A collective-agreement floor is an organization-layer parameter sourced to an agreement** (WPM-D161, confirmed). A deployer may enter one; WPM never reads or interprets the
    agreement (union and agreement rule engines stay out of scope: [scope.md](scope.md), [worker-unions.md](worker-unions.md)).
 3. **Floors are set below the nation.** US states and cities, Japan's 47 prefectures, China's provinces and tiers, and India's states: the floor is resolved from the
    place the work is done through the existing chain (WPM-D144, `Combine::StrictestMin`), so the subnational layer is the normal case, not the exception.
@@ -259,6 +259,9 @@ benefit; or ship any default figure marked `read` that a person has not read in 
   [data protection impact assessment](governance/dpia.md)), and [scope.md](scope.md) already refuses clinical and occupational-health records
   (WPM-D17, WPM-D24, WPM-D25): no symptom, diagnosis or condition is storable, and this record keeps to that. A report sees counts at or above the floor.
 - **WPM-D159 Employer contributions are cost lines, never deductions from net,** stubbed by parameter, and never remitted or filed by WPM.
+- **WPM-D161 A collective-agreement floor may be entered, narrowly. *Confirmed by the product owner, 2026-11-01* (option (a) of question 6).** An organization-layer parameter holds one floor figure (or a few, each with its basis) with the agreement's name, a clause or table reference, and
+  valid-from and valid-to dates. WPM compares pay to the figure and **never reads the agreement**; the screen says "the floor you entered, not a statement that it is correct", and warns when the entry is past its valid-to date or missing. Grade and step tables, allowances,
+  overtime tiers and any rule that interprets an agreement stay out ([scope.md](scope.md)): that would be a union-rules engine. A longer table is a pay scale ([pay-scales.md](pay-scales.md)), not a floor.
 - **WPM-D160 "None by law" is a recorded value, and a floor has a basis.** A jurisdiction found to set no statutory minimum wage or overtime premium (Sweden and Denmark, from the first-pass research) is recorded as
   `none_by_law` with a source, distinct from *not configured*; a collective-agreement floor is an organization-layer parameter sourced to the agreement; a floor states its basis (hourly, daily or monthly) and the check converts.
 
@@ -275,7 +278,7 @@ benefit; or ship any default figure marked `read` that a person has not read in 
 4. **Does a separation record belong in WPM?** It is thin and reuses the leaver record, but some deployers hand all of this to payroll.
 5. **Legal review.** Who confirms each profile's figures against the source, and how often? Rates change at least yearly; France changed twice in 2026, the UK on 1 April 2026, and Germany changes again on 1 January 2027.
    Eleven jurisdictions in several languages and scripts need reviewers who can read the primary source in the original language (the Official Gazette notice, BOE, Légifrance, the e-Gov and MHLW pages, the provincial notices).
-6. **Collective-agreement floors.** For Sweden and Denmark the only floor is in agreements. May a deployer enter an agreement's floor as a parameter (we advise yes, sourced to the agreement, never interpreted by WPM), or is that a union-rule engine and out of scope?
+6. **Collective-agreement floors.** **Answered 2026-11-01 by the product owner: option (a), yes**: a deployer may enter an agreement's floor as a parameter, sourced to the agreement and never interpreted by WPM (WPM-D161).
 
 ## What was checked, and what was not
 
