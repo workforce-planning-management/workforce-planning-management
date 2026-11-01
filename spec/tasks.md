@@ -5745,3 +5745,43 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
 - [x] (2026-10-31) WPM-T407 **The parameter registry and the one resolver.** *(WPM-R214, WPM-D143, WPM-D144)* `rules::jurisdiction`: codes, layers, the chain from the place of work, a registry of five parameters with a combination rule each, `validate` and `resolve` (resolved with its origins, unknown, or a conflict). 14 unit tests, two profiles of a different shape among them, and one holding the spec's registry table equal to the code's. No table or rule uses it yet. See [worldwide.md](worldwide.md).
 - [x] (2026-10-31) WPM-T408 **The expense journey's "no amount in the audit" check no longer trips on a hash.** *(WPM-R214; CI run 41182740353)* The least-privilege drill failed `requests::expenses::a_claim_goes_from_draft_to_reimbursed` at its check that the audit trail does not contain `5500` (the claim's amount): the check was a substring test, and the audit JSON's chain hashes and UUIDs hold four hex digits like `5500` by chance. It now looks for the figure as a token of its own (not inside a hash, a UUID or a longer number), in the audit and in the notification check. Not caused by WPM-T406 (spec only); found on its push. **Verified:** the three expense request tests on a throwaway local database, fmt and clippy. **Not done:** the other request tests that test a figure by substring (`engagements.rs` `45000`, `pay_information.rs` `000000`) were not changed; they did not fail.
 - [ ] WPM-T409 **The statutory settings WPM-T384 did not move.** *(WPM-R214, WPM-D143, WPM-D144, WPM-D153)* Not started. `WPM_AI_ACT_APPLIES_FROM` (needs a date shape in the registry), `WPM_PAY_GAP_SEX_CATEGORY` and the pay-gap page's female and male columns (row 36: the equality categories per jurisdiction, a `union` parameter), and the payroll stub with `WPM_CONTRACTED_DAY_MINUTES` and `WPM_PAYROLL_MONTH_MINUTES` (D144's statutory deduction schemes, the last step of its order of work). Each stays one value per deployment until then. See [worldwide.md](worldwide.md).
+
+## Phase 26 — statutory pay protections: minimum wage, overtime, workers' compensation, unemployment insurance (proposed WPM-R218–R223, WPM-D154–D159; [statutory-pay-protections.md](statutory-pay-protections.md))
+
+- [x] (2026-11-01) WPM-T410 **Spec round: research, assessment and advice.** *(traces to WPM-R218–R223, WPM-D154–D159)* [statutory-pay-protections.md](statutory-pay-protections.md), plan.md
+      section T, the register in [regulatory.md](regulatory.md), scope, index, glossary and the human capital gap row. Researched on 2026-11-01 from web search excerpts (not full texts, not
+      the primary sources): UK, EU, Germany, US federal and some states, Canada and Australia, with a confidence for each fact and a list of what was not found. **Decisions D154 to D159 are
+      proposed by the AI assistant and not confirmed by the product owner.** No code, migration, parameter or test changed in this task.
+- [ ] WPM-T411 **Verify every researched figure against its primary source and mark it `read`.** *(WPM-D155)* Needed before any figure ships in an `example` profile: GOV.UK's
+      minimum wage table and HMRC's manual; legislation.gov.uk (National Minimum Wage Regulations 2015, the Employers' Liability Acts, the Employment Rights Act 2025 record rule); the Court's press release
+      for C-19/23; the Federal Register notice restoring the 2019 overtime levels; the California Labor Code, Alaska, Nevada and Colorado overtime sources; the IRS FUTA pages; the Government of
+      Canada EI notice; the Fair Work Commission decision; Destatis or the Federal Ministry of Labour for Germany. The low-confidence rows of the table in the topic file first.
+- [ ] WPM-T412 **Research what was not found.** *(WPM-R221, WPM-D155)* US federal and state minimum wage rates; first-report-of-injury deadlines and OSHA recording; RIDDOR and UK injury
+      benefits; German statutory accident insurance and unemployment contributions; Canada's provincial minimum wages and compensation boards; Australia's state schemes; UK holiday pay and
+      overtime, the accommodation offset and apprentices; the EU overtime premium by country; the 2026 FUTA credit reduction states; separation-record duties by country. Output: the same
+      table with sources, and the fields WPM-R221 may hold.
+- [ ] WPM-T413 **Minimum-wage parameters in the registry.** *(WPM-R218, WPM-D144, WPM-D155, WPM-D156)* `minimum_wage.hourly_minor.{adult, age_18_to_20, under_18, apprentice}` and the age cut-offs, in
+      `rules::jurisdiction`, combined strictest-min, dated, with a source and a status; an `example` `GB` profile marked `unverified` until WPM-T411.
+- [ ] WPM-T414 **The pure core `rules::minimum_wage`.** *(WPM-R218, WPM-D156)* Effective hourly pay from pay and hours; the band on the last day of the period; the outcome `below`, `near`, `ok` or
+      `unknown`. Unit tests: the day a rate changes, a part period, no hours, no date of birth, a floor not configured, a worker in two bands in one period, overflow. DB-free and clock-free.
+- [ ] WPM-T415 **The check in the API and the payroll run.** *(WPM-R218, WPM-D156)* `GET /api/payroll-runs/{pid}/minimum-wage-check`, HR only, the audit entry holding counts, advisory (never blocks a run);
+      the result kept for the retention a profile sets; request tests including a non-HR caller and an organization the caller does not hold.
+- [ ] WPM-T416 **The minimum-wage screen and its strings.** *(WPM-R218)* A panel beside the payroll run that says the check is indicative; strings in every locale; an accessibility check.
+- [ ] WPM-T417 **Overtime parameters and the exempt status.** *(WPM-R219, WPM-D157)* `overtime.{weekly_threshold_minutes, daily_threshold_minutes, double_time_threshold_minutes, multiplier_bp, double_multiplier_bp,
+      exempt_salary_floor_minor_weekly}` in the registry; a migration for the post's `overtime_status` (`exempt`, `non_exempt`, `unknown`, default `unknown`); the UI, API docs and payslip line call today's derivation
+      *contractual overtime*.
+- [ ] WPM-T418 **Statutory overtime in the pure core and the payslip.** *(WPM-R219, WPM-D157)* Weekly, daily and double-time derivation beside `rules::workforce::overtime_minutes`; the payslip line uses the resolved rules;
+      example `US` and `US-CA` profiles marked `unverified`; unit and request tests (a 40-hour week, an 8-hour day, a 12-hour day, an exempt post, no rules configured is `no limit configured`). v1 uses the base hourly rate for the
+      regular rate and says so.
+- [ ] WPM-T419 **The exempt salary check.** *(WPM-R219, WPM-D157)* An advisory comparison of an `exempt` post's salary with the resolved weekly floor; never classifies a role from its duties; UI string and test.
+- [ ] WPM-T420 **Coverage evidence and its expiry reminder.** *(WPM-R220, WPM-D154)* A record per organization and jurisdiction (kind, insurer and policy reference, minimum cover, valid from and to, certificate
+      document reference); the expiry reminder reuses the reminder machinery; HR only; tests.
+- [ ] WPM-T421 **The injury and illness notification record.** *(WPM-R221, WPM-D158)* After WPM-T412. Worker reference, date, severity class, reported-to-authority flag and reference; no narrative and no clinical
+      detail (WPM-D17, WPM-D24, WPM-D25); readable by HR and the health and safety lead, never a line manager; counts at or above the floor to the report; a test that no free text is accepted.
+- [ ] WPM-T422 **The separation record.** *(WPM-R222, WPM-D159)* Built from the leaver record: last day worked, a standard reason code, the final pay date, a pay summary reference; an export for HR; read by HR only; tests.
+- [ ] WPM-T423 **Employer-side cost lines.** *(WPM-R223, WPM-D159)* `employer_contribution.<name>.{rate_bp, wage_base_minor}` parameters; cost lines that are not deducted from net; workforce cost includes them; labelled stub;
+      invariant tests that net is unchanged.
+- [ ] WPM-T424 **Governance for the new data.** *(WPM-R218, WPM-R221, WPM-R222, WPM-D156, WPM-D158)* The data protection impact assessment, the personal data inventory, the record of processing and the retention
+      schedule for the injury record, the separation record, and the date of birth's use for the age band; the equality impact note that the check scores no one.
+- [ ] WPM-T425 **Close the human capital gap row.** *(WPM-R221, WPM-R218)* The report shows counts of work-related injuries at or above the floor and the share of pay periods with a `below` result, and still names any metric
+      WPM does not cover.

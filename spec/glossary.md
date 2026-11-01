@@ -9,6 +9,9 @@
 | **`-001` locale**  | A language's general-purpose locale (UN M.49 "world"): holds every UI key; `cy-001` is Welsh, `en-001` English, the source |
 | **Regional locale** | A locale such as `en-gb` or `de-de` that holds only **overrides** of its language's `-001` locale and falls back to it |
 | **Locale address** | The one URL prefix a locale is served under, its full code (`/cy-001/…`); a bare language (`/cy/`) is not a route, only a tag that matches its `-001` locale |
+| **Contractual overtime** | Time worked beyond the worker's contracted day, as WPM derives it; not the legal overtime premium ([statutory-pay-protections.md](statutory-pay-protections.md)) |
+| **Exempt (overtime)** | A US term: a worker the overtime law does not cover, recorded by HR as a fact on the post; WPM never infers it from duties |
+| **Minimum-wage floor check** | An advisory comparison of effective hourly pay with the legal floor for the worker's age band; indicative, never a statement of compliance |
 | **Worker matcher**  | The pure crate that scores whether two worker records are the same person; says `match`, `review`, `no_match` or `insufficient`, and shows each field's score ([worker-matching](worker-matching.md)) |
 | **Accrual**         | Leave entitlement earned over time; v1 grants annual entitlements, accrual schedules are roadmap |
 | **Pay scale**       | A banded public-sector pay and grading scale, transcribed from the government's yearly pay circular ([pay-scales.md](pay-scales.md)) |

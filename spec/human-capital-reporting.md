@@ -54,7 +54,7 @@ workforce) (WPM-R147, WPM-D100). Proposed in [plan.md](plan.md) section N; the s
   | Workforce cost (payroll cost, where visible) | Costs | gap (not an ESRS S1 datapoint) |
   | Pay gap indicators ([pay-transparency.md](pay-transparency.md)) | Diversity | Remuneration metrics |
   | Succession coverage (critical roles with a ready successor) | Succession planning | gap |
-  | Health and safety, work-life balance, adequate wages, social protection, disability, discrimination incidents | | **gap**: WPM holds no such record, or is built not to |
+  | Health and safety, work-life balance, adequate wages, social protection, disability, discrimination incidents | | **gap**: WPM holds no such record, or is built not to. Proposed: counts of work-related injuries (WPM-R221) and a minimum-wage check (WPM-R218), see [statutory-pay-protections.md](statutory-pay-protections.md) |
 
 - **A gap is shown as a gap.** The report lists the named metrics WPM does not cover, so an omission is visible rather than silent.
 - **Aggregates only.** Every figure is a count or a rate over a group at or above the floor (WPM-D32); no table in the report

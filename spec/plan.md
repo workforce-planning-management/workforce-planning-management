@@ -1,6 +1,6 @@
 # Plan — delivery capacity, oversight readiness and production readiness
 
-Status: **proposed** (2026-10-09; sections N and O added 2026-10-21; sections P to S added 2026-10-27), and **mostly built** as of
+Status: **proposed** (2026-10-09; sections N and O added 2026-10-21; sections P to S added 2026-10-27; section T added 2026-11-01), and **mostly built** as of
 2026-10-30. Delivery is queued in [tasks.md](tasks.md) as Phases 12 to 24, one phase per section or group of sections. Sections A to
 O (Phases 12 to 23) are built except for the tasks still open or part done there: WPM-T103, T124, T129 to T133, T144, T155 to
 T157, T166 to T169, T178, T180, T186, T201 to T203, T254, T270, T271, T274 and T281 to T284. **Sections P to S (Phase 24) have
@@ -711,6 +711,22 @@ Requested after section R. Succession exists (WPM-R12); deputies and acting up d
   vacancy). **WPM-R204 Pay while acting up**. **WPM-R205 Limits and fairness**.
 - **WPM-D128–D133**: see section 3.
 
+### T. Statutory pay protections: minimum wage, overtime, workers' compensation, unemployment insurance (researched and advised 2026-11-01)
+
+Requested after section S: "research minimum wage protections, overtime, workers' compensation, and unemployment insurance; assess and
+advise." Full text, the research with its confidence, the assessment and the advice in
+[statutory-pay-protections.md](statutory-pay-protections.md). **Proposed, not built.** WPM already derives contractual overtime and holds
+dated jurisdiction parameters (WPM-D144); it has no minimum wage check, no statutory overtime rules, no injury or coverage record and no
+separation record.
+
+- **WPM-R218 Minimum-wage floor check** (advisory; effective hourly pay against the floor for the worker's age band; `no floor configured` when unset).
+  **WPM-R219 Overtime rules and exempt status** (contractual overtime named so; weekly, daily and double-time rules as parameters; a recorded
+  `overtime_status`). **WPM-R220 Workers' compensation and employer's liability coverage evidence** (with an expiry reminder).
+  **WPM-R221 Work-related injury and illness notification record** (the fact, never clinical detail; counts above the floor).
+  **WPM-R222 Separation record** (from the leaver record; an export for HR). **WPM-R223 Employer-side statutory cost lines** (stubs, not
+  deducted from net).
+- **WPM-D154–D159**: see section 3.
+
 ## 3. Design decisions (proposed)
 
 - **WPM-D45 Capacity is planned by pool, not by person.** Supply comes from
@@ -828,6 +844,12 @@ Requested after section R. Succession exists (WPM-R12); deputies and acting up d
 - **WPM-D133 The holder, or HR while the holder is unavailable, lets a deputy decide flexible working, and the default is no.**
   The ABAC operation `flexible_working:decide` permits a deputy only when the grant is `true`; `null`, missing and `false` deny.
   HR's grant lapses when the holder is available again.
+- **WPM-D154 to D159** (proposed 2026-11-01, **not yet confirmed by the product owner**; full text in
+  [statutory-pay-protections.md](statutory-pay-protections.md)): WPM checks and warns and never decides an entitlement or files (D154); every
+  statutory figure is a dated, sourced registry parameter, `unverified` until a person reads the source (D155); the minimum-wage check is
+  indicative, advisory in v1 and keeps no age (D156); contractual overtime stays, statutory premium is parameters, and exempt status is a
+  human-recorded fact (D157); injury records hold the fact and never the medical detail (D158); employer contributions are cost lines and
+  never deductions from net (D159).
 
 ## 4. Data and privacy summary
 
@@ -920,6 +942,11 @@ else, because the later phases add controllers that should start from the shared
 scope helpers. Then Phase 23 (section N): the regulatory set (R144–R148), then integration
 (R149–R151), then planning depth (R152–R154), then the rest.
 
+For section T (2026-11-01): the research round that closes the gaps in what is known (WPM-T411, WPM-T412) first, because every
+figure is a parameter a person must read in its source. Then the minimum-wage floor check (R218), which needs no new data; then overtime (R219),
+coverage evidence (R220) and the separation record (R222); the injury notification (R221) only after the research on what authorities require; employer cost
+lines (R223) last.
+
 For sections P, Q and R (2026-10-27): the spec round (WPM-T309) first; then section P from assignments and categories outward,
 because coding, learning audiences, the action list and pensions read them; then section Q, whose action list (R186) reads P's
 learning, PADR and step readiness; then section R, whose absence adjustment (R193) needs Q's review points. The two screens that
@@ -963,6 +990,9 @@ on positions needs assignments (R161); deputies need the action list (R186); act
   should the worker row's department, title and FTE columns later be retired in favour of the primary assignment?
 - Section Q: should "related to work" on an episode be offered at all, or should the stress risk assessment simply be offered
   after every episode? Who writes the generic guidance pages, and who reviews them before a deployer relies on them?
+- Section T: advisory or blocking for the minimum-wage check; which jurisdictions first (we advise `GB`, then `US` and `US-CA`, then `DE`); whether the
+  injury record is wanted and who may read it; whether a separation record belongs in WPM; who confirms each profile's figures against the source, and how often.
+  Full list in [statutory-pay-protections.md](statutory-pay-protections.md).
 - Section R: is the HR-only count of in-place adjustments in a change's impact view (WPM-D127) the right exception to WPM-D25, or
   should a change only prompt HR to ask the people in scope?
 

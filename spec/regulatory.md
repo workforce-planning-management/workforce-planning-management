@@ -107,6 +107,7 @@ such law, and it does not mean WPM fits it. Jurisdiction rules are to be held as
 - **GDPR** (Regulation (EU) 2016/679): special-category data (health, trade-union membership) is the reason for WPM's
   unrepresentability rules (WPM-D17 to D25, D74; [worker-unions.md](worker-unions.md)). The impact-assessment duty (Article 35) is
   the frame of the DPIA ([plan.md](plan.md), WPM-R76). Its lawful-basis mapping per record class is a production gate (above).
+- **Adequate Minimum Wages Directive** (2022/2041): sets no wage; the Court of Justice annulled Article 5(2) and parts of Articles 5(1) and 5(3) on 11 November 2025 (Case C-19/23). Read from search excerpts of law firm notes, 2026-11-01: [statutory-pay-protections.md](statutory-pay-protections.md).
 - **Pay Transparency Directive** (2023/970): [pay-transparency.md](pay-transparency.md); the threshold is configuration. Member
   states' transposing laws are *not yet read*.
 - **AI Act** (Regulation (EU) 2024/1689), the duties of a deployer of a high-risk system in employment:
@@ -159,6 +160,7 @@ Official Journal), Article 26 puts duties on the **deployer**. The register reco
 
 - **UK GDPR and the Data Protection Act 2018**: the same structure as the GDPR for this design (special-category data, Article 35
   impact assessment); the lawful-basis mapping is a production gate (above).
+- **National Minimum Wage, Employers' Liability insurance and Statutory Sick Pay:** read in part from search excerpts, 2026-11-01 (the National Living Wage rates from 1 April 2026, unpaid hours counting, six-year records, the £5 million cover); see [statutory-pay-protections.md](statutory-pay-protections.md). The legislation and GOV.UK tables were not read.
 - **Equality Act 2010**: the adjustments design follows its duty's shape (the duty attaches to the barrier, not to a diagnosis;
   [design.md](design.md)). Recorded from the design round; the Act's text was not re-read for this register.
 - **Right to work**: an employment-eligibility check recorded during onboarding ([glossary.md](glossary.md)); its rules were not
@@ -175,12 +177,12 @@ Official Journal), Article 26 puts duties on the **deployer**. The register reco
 
 ### United States
 
-*Not yet read*: federal law and the states' (for example employment eligibility, pay transparency, leave, and privacy law). A US
+*Read in part, 2026-11-01, from search excerpts only* ([statutory-pay-protections.md](statutory-pay-protections.md)): the federal overtime rule and its salary floors, some state daily overtime rules, Texas's elective workers' compensation, and the federal unemployment tax with the 2025 credit reduction. *Not yet read*: the rest of federal law and the states' (for example employment eligibility, pay transparency, leave, and privacy law, and minimum wage rates). A US
 federal public-holiday pack exists as data and is labelled unverified ([requirements.md](requirements.md)).
 
 ### Canada
 
-*Not yet read*: federal and provincial law.
+*Read in part, 2026-11-01, from search excerpts only*: the 2026 Employment Insurance premium rates ([statutory-pay-protections.md](statutory-pay-protections.md)). *Not yet read*: the rest of federal and provincial law (provincial minimum wages and workers' compensation boards among them).
 
 ### Latin America and the Caribbean
 

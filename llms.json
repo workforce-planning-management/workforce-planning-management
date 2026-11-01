@@ -412,6 +412,11 @@
         "description": "WPM-R144–R146 and WPM-D99: the EU Pay Transparency Directive: seven pay gap indicators with a floor, pay information for the worker and none asked of the candidate, the joint pay assessment trigger, and what the spec round checked"
       },
       {
+        "title": "spec/statutory-pay-protections.md",
+        "path": "spec/statutory-pay-protections.md",
+        "description": "WPM-R218–R223 and WPM-D154–D159 (proposed): minimum wage, overtime, workers' compensation and unemployment insurance: the research with its confidence, what WPM holds today, and the advice (check and record, never decide or file)"
+      },
+      {
         "title": "spec/human-capital-reporting.md",
         "path": "spec/human-capital-reporting.md",
         "description": "WPM-R147 and WPM-D100: a dated read-only report mapped to ISO 30414:2025 and the revised ESRS S1 requirement numbers, a mapping and never a copy"

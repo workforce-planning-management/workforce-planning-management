@@ -50,6 +50,8 @@
   status + payslips.
 - Learning content authoring — course-service owns courses.
 - Union/CBA rule engines; multi-country labor-law engines.
+- Computing or paying a statutory entitlement (minimum wage back pay, overtime premium as the legal amount, a workers' compensation or unemployment benefit) and
+  filing with any authority. WPM **checks, warns and records** ([statutory-pay-protections.md](statutory-pay-protections.md), WPM-D154).
 - Outbound notification channels (email/push/chat) — WPM holds no
   contact details; notifications are in-app (WPM-D23).
 - Clinical and occupational-health records — no vaccination status,
