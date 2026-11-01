@@ -2,7 +2,7 @@
 
 What the law asks of an employer on four protections that touch pay, what WPM holds and does about each today, and what we advise
 WPM does next. Researched, assessed and advised on 2026-11-01 (WPM-T410). **Nothing here is built.** Proposed in
-[plan.md](plan.md) section T; requirements WPM-R218 to WPM-R223; decisions WPM-D154 to WPM-D161 (**D154 to D160 proposed by the AI assistant, not
+[plan.md](plan.md) section T; requirements WPM-R218 to WPM-R223; decisions WPM-D154 to WPM-D162 (**D154 to D160 and D162 proposed by the AI assistant, not
 yet confirmed by the product owner; D161 confirmed 2026-11-01**); tasks in [tasks.md](tasks.md) Phase 26 (WPM-T410 to WPM-T426).
 
 **The jurisdictions in scope** were named by the product owner on 2026-11-01 (answer to question 1): **the United States, the United Kingdom, Germany, Spain,
@@ -117,21 +117,22 @@ First-pass research on 2026-11-01, from search excerpts (see [what was checked](
 | --- | --- | --- | --- | --- |
 | **US** | Federal rate not confirmed; states and cities higher | 1.5 times over 40 hours a week; some states daily (CA, AK, NV, CO); exempt salary floor $684 a week | State schemes; Texas elective | FUTA 6.0 percent of the first $7,000, credit up to 5.4; state schemes |
 | **GB** | NLW £12.71 from 1 April 2026; age bands | No statutory premium; unpaid hours count to the minimum | Employers' Liability insurance, at least £5 million | ? (not researched) |
-| **Germany** | €13.90 from 1 January 2026; €14.60 from 1 January 2027 | ? | ? (statutory accident insurance, unverified) | ? |
-| **Spain** | SMI €1,221 a month in 14 payments (€17,094 a year; €40.70 a day), Real Decreto 126/2026 | ? | ? | ? |
-| **France** | SMIC €12.02 an hour from 1 January 2026, **€12.31 from 1 June 2026** | ? (25 and 50 percent bands are from general knowledge, unverified) | ? | ? |
-| **Sweden** | **None by law**; collective agreements, about 90 percent of workers covered | Working Hours Act: 40 hours a week normal, overtime capped at 48 hours over four weeks and 200 hours a year; **no statutory premium** (agreements often 150 to 200 percent) | ? | ? (employer social contribution 31.42 percent in 2025, one source) |
-| **Denmark** | **None by law**; collective agreements | Set by agreements (typically a 37-hour week); no statute found | One commercial source says compulsory: **unverified** | a-kasse is voluntary for the worker and funded by members and the state (one source): **unverified** |
-| **Japan** | Set **by prefecture**; fiscal 2025 average ¥1,121; a panel proposed +¥55 (4.9 percent) to an average ¥1,176 for fiscal 2026 | ? (25 percent, and 50 percent over 60 hours a month, are from general knowledge, unverified) | ? | ? |
-| **South Korea** | ₩10,320 an hour from 1 January 2026 (+2.9 percent); about ₩2,156,880 a month on 209 paid hours | ? (50 percent premium: general knowledge, unverified) | ? | ? |
-| **China** | **No national minimum; set by province** in tiers (reports: about RMB 1,750 to 2,740 a month; Shanghai 2,740) | 150 percent on a weekday, **200 percent on a rest day, 300 percent on a statutory holiday**; capped at 36 hours a month | ? | ? (employer social insurance about 26 to 28 percent in all, by city; no split by type) |
-| **India** | Minimum wages are the **states'**; the Code on Wages national **floor wage is not yet notified** (the Central Rules were notified 8 May 2026); an unofficial 2019 reference of Rs 375 a day | ? (a double-rate rule is from general knowledge, not confirmed) | ? | ? |
+| **Germany** | €13.90 from 1 January 2026; €14.60 from 1 January 2027 | The Working Hours Act sets limits; **no premium was found** (understood to come from contract or agreement: unverified) | Employer-funded statutory accident insurance, a separate cost; **rate not found** | **2.6 percent of pay, employer 1.3 percent** (2026, unchanged), up to a ceiling of €8,450 a month; the employer's statutory contributions are about 21 percent in all |
+| **Spain** | SMI €1,221 a month in 14 payments (€17,094 a year; €40.70 a day), Real Decreto 126/2026 | **At most 80 hours a year** (Estatuto de los Trabajadores art. 35); voluntary unless agreed; compensated in pay or by rest within four months; the premium comes from agreement or contract | The employer pays the whole premium; **the rate follows the activity's tariff** (no single rate) | Indefinite contracts: **employer 5.50 percent**, worker 1.55 percent (2026) |
+| **France** | SMIC €12.02 an hour from 1 January 2026, **€12.31 from 1 June 2026** | **25 percent for the first eight overtime hours (the 36th to 43rd hour in a week), 50 percent from the 44th**; an agreement may set another rate, never below 10 percent (Code du travail L3121-36) | ? (a company-specific rate set by the insurer: general knowledge, unverified) | ? (employer 4.05 percent: general knowledge, unverified) |
+| **Sweden** | **None by law**; collective agreements, about 90 percent of workers covered | Working Hours Act: 40 hours a week normal, overtime capped at 48 hours over four weeks and 200 hours a year; **no statutory premium** (agreements often 150 to 200 percent) | Work injury contribution **0.10 percent** of pay in 2026 (0.20 before), inside the 31.42 percent employer total (Skatteverket) | Labour market contribution **2.64 percent** of pay; how the a-kassa is funded was not found |
+| **Denmark** | **None by law**; collective agreements | Set by agreements (typically a 37-hour week); no statute found | Compulsory occupational injury insurance **bought from a private insurer** (premium estimates DKK 1,150 to 4,000 a year, conflicting) and an occupational disease levy by industry (DKK 284 to 2,911 a year per full-time worker): payroll guides, **not the statute** | The a-kassa is voluntary for the worker, funded by members and the state (one source); the employer pays two thirds of the ATP pension contribution: **unverified** |
+| **Japan** | Set **by prefecture**; fiscal 2025 average ¥1,121; a panel proposed +¥55 (4.9 percent) to an average ¥1,176 for fiscal 2026 | **25 percent; 50 percent beyond 60 hours a month**, for small and medium employers too from April 2023 (one guide says 2025: conflict); time off may replace the 50 percent portion by agreement | Employer-paid; an unsourced guide gives 0.30 percent: **unverified** | An unsourced guide gives 0.9 percent: **unverified** |
+| **South Korea** | ₩10,320 an hour from 1 January 2026 (+2.9 percent); about ₩2,156,880 a month on 209 paid hours | ? (a 50 percent premium and a 52-hour week: general knowledge, unverified) | The employer pays the whole premium, **0.56 to 18.56 percent by industry** (a 2026 source) | Employment insurance rate not confirmed (an older source: 0.9 percent each); wage claim guarantee fund 0.09 percent; pension 9.5 percent split 4.75 each; health 7.19 percent split |
+| **China** | **No national minimum; set by province** in tiers (reports: about RMB 1,750 to 2,740 a month; Shanghai 2,740) | 150 percent on a weekday, **200 percent on a rest day, 300 percent on a statutory holiday**; capped at 36 hours a month | The employer pays; **the rate follows the industry's risk, in eight tiers** since 2015, and is adjusted locally by the employer's record (a secondary source: 0.2 to 1.9 percent) | ? (employer social insurance about 26 to 28 percent in all, by city; no split by type) |
+| **India** | Minimum wages are the **states'**; the Code on Wages national **floor wage is not yet notified** (the Central Rules were notified 8 May 2026); an unofficial 2019 reference of Rs 375 a day | ? (a double-rate rule is from general knowledge, not confirmed) | State insurance (ESIC, which covers employment injury and sickness): **employer 3.25 percent, worker 0.75 percent** since 1 July 2019, for pay up to Rs 21,000 a month; the Employees' Compensation Act was not confirmed | ? |
 
 Notes the research added:
 
 - **Source conflicts.** Japan's rise is "from next April" in one report and "from around October 2026" in another (the panel's figure is a recommendation;
   each prefecture decides, and at least 17 were reported likely to exceed it). A Beijing and Shanghai figure differs across sites. A Spanish source mentions a
   further 3 percent rise to about €1,258 that was **not confirmed**. Korea's rate is from the Official Gazette notice as reported by Bloomberg Law.
+- **Second research round (2026-11-01, same day).** It filled most of the "?" cells above for overtime, workers' compensation and unemployment insurance. What it did not fill: the rest of the overtime cells (South Korea, India, and the premium in Germany), France's accident and unemployment rates, China's unemployment rate, India's unemployment, and Denmark and Sweden's unemployment funding. Several rates are from payroll guides, not the authority.
 - **France changes twice in 2026**, so the rate depends on the date, which is why WPM's floor is a **dated** parameter.
 - **A statutory floor can be monthly, not hourly** (Spain, Korea, China, and most Indian states): the check must convert, and Spain's 14 payments change what a "monthly" figure means.
 
@@ -206,7 +207,7 @@ Keep the evidence the law asks for: the check's inputs and result are kept for *
 
 ### What the eleven jurisdictions change
 
-The eleven were not in view when the advice above was first written. The research changes the design in six ways (WPM-D160 and edits to WPM-R218 and WPM-R219):
+The eleven were not in view when the advice above was first written, and the second round of research (below the table) added items 7 and 8. The research changes the design in eight ways (WPM-D160, WPM-D162 and edits to WPM-R218, WPM-R219 and WPM-R223):
 
 1. **"None by law" is a value, not an absence.** Sweden and Denmark set no statutory minimum wage or overtime premium; collective agreements do. A parameter that is
    unset means *not configured* and must never read as *no rule*. The registry gains an explicit `none_by_law` state per parameter and jurisdiction, with a
@@ -223,6 +224,10 @@ The eleven were not in view when the advice above was first written. The researc
 6. **Social insurance is a bundle in half of these countries.** Germany, France, Spain, Japan, Korea and China fold accident, unemployment and more into
    statutory contributions, often by city or prefecture. Coverage evidence therefore gets a kind `statutory_scheme` (the duty is registration and contribution, not buying a policy),
    and the employer cost lines (R223) take the contribution as named lines where the split is known and one `social` line where it is not.
+7. **Overtime is a list of bands, not two thresholds.** France pays 25 percent for the first eight overtime hours of a week and 50 percent after; Japan pays 25 percent and 50 percent beyond 60 hours a month; the US adds a daily
+   band in some states; China prices by kind of day. The rule is therefore a **sequence of bands**, each with a period (day, week, month), a threshold and a multiplier, plus the kind-of-day multipliers (WPM-D162).
+8. **Some employer rates follow a class, or the company.** Korea's accident rate runs from 0.56 to 18.56 percent by industry, China's follows eight risk tiers, Spain's follows the activity tariff, and France's is company-specific. The employer cost parameter may therefore be
+   **set by the deployer for the organization** (one rate, a class and its rate, or a rate table keyed by a class the deployer sets), never per worker and never inferred from the organization's name (WPM-D162).
 
 ### Order, and what not to do
 
@@ -259,6 +264,8 @@ benefit; or ship any default figure marked `read` that a person has not read in 
   [data protection impact assessment](governance/dpia.md)), and [scope.md](scope.md) already refuses clinical and occupational-health records
   (WPM-D17, WPM-D24, WPM-D25): no symptom, diagnosis or condition is storable, and this record keeps to that. A report sees counts at or above the floor.
 - **WPM-D159 Employer contributions are cost lines, never deductions from net,** stubbed by parameter, and never remitted or filed by WPM.
+- **WPM-D162 Overtime is a sequence of bands, and an employer rate may follow a class the deployer sets.** Proposed 2026-11-01 from the second research round. A band has a period (day, week or month), a threshold in minutes and a multiplier in basis points; kind-of-day multipliers (rest day, public holiday) and
+  caps (monthly, annual) sit beside it as parameters. An employer contribution rate may be one rate, or a table keyed by a class (industry, risk tier, activity) that the deployer sets on the organization. WPM never picks a class from what the organization is called.
 - **WPM-D161 A collective-agreement floor may be entered, narrowly. *Confirmed by the product owner, 2026-11-01* (option (a) of question 6).** An organization-layer parameter holds one floor figure (or a few, each with its basis) with the agreement's name, a clause or table reference, and
   valid-from and valid-to dates. WPM compares pay to the figure and **never reads the agreement**; the screen says "the floor you entered, not a statement that it is correct", and warns when the entry is past its valid-to date or missing. Grade and step tables, allowances,
   overtime tiers and any rule that interprets an agreement stay out ([scope.md](scope.md)): that would be a union-rules engine. A longer table is a pay scale ([pay-scales.md](pay-scales.md)), not a floor.
@@ -307,11 +314,18 @@ Method: web searches on 2026-11-01 (standard mode), reading result excerpts, **n
 | South Korea ₩10,320 | Bloomberg Law, WageIndicator, ActivPayroll | Moderate to high |
 | China overtime 150, 200, 300 percent and the 36-hour cap; provincial tiers | Consultancy sites and L&E Global | Moderate (Beijing and Shanghai figures conflict) |
 | India: national floor wage not notified; Central Rules 8 May 2026 | Law-firm and tax blogs, no gazette | **Low to moderate** |
+| Germany unemployment 2.6 percent, employer 1.3; ceilings | Several payroll guides and a health insurer | Moderate |
+| France overtime 25 and 50 percent bands (L3121-36) | Legal publishers, parliamentary question, the Code's page named | Moderate to high |
+| Spain overtime 80 hours a year; unemployment 5.50 and 1.55 percent | Spanish legal and payroll sites, a 2026 labour handbook | Moderate |
+| Sweden work injury 0.10 percent, labour market 2.64 percent, total 31.42 percent | Skatteverket's table as reported, Business Sweden | Moderate to high (third-party guides conflict) |
+| Denmark injury insurance and levies | Payroll guides; no statute cited | **Low to moderate** |
+| Japan 25 and 50 percent overtime; 60-hour band | Law-firm and payroll guides (one conflicting date) | Moderate |
+| South Korea accident insurance 0.56 to 18.56 percent; pension 9.5 percent | One 2026 guide and others | **Low to moderate** |
+| China work injury insurance, eight risk tiers | Law and consultancy pages, a municipal notice | Moderate |
+| India ESIC 3.25 and 0.75 percent, Rs 21,000 | Several payroll and law sites (older sources conflict) | Moderate |
 
-**Not found or not researched (WPM-T412 closes these):** for the eleven jurisdictions, **overtime premiums in Germany, Spain, France, Japan, South Korea and India; workers' compensation in every one
-except the US and the UK; unemployment insurance in every one except the US**, and the rest of the table's "?" cells; also the US federal and state minimum wage rates; first-report-of-injury deadlines; RIDDOR and OSHA recording rules;
-UK holiday pay and overtime, the accommodation offset and apprentices; the 2026 FUTA credit reduction states; separation-record duties in any country. Canada and Australia were researched only in part and are **not** in the eleven (they are
-kept as findings, not as scope).
+**Not found or not researched (WPM-T412 closes these):** after the second round, for the eleven: **overtime in South Korea and India, and a premium in Germany; accident and unemployment rates in France; unemployment in China, India, Japan (unsourced), Korea (unconfirmed) and the a-kassa funding in Sweden and Denmark; Germany's accident-insurance rate; the Employees' Compensation Act in India**; also the US federal and state minimum wage rates; first-report-of-injury deadlines; RIDDOR and OSHA recording rules;
+UK holiday pay and overtime, the accommodation offset and apprentices; the 2026 FUTA credit reduction states; separation-record duties in any country. Canada and Australia were researched only in part and are **not** in the eleven (they are kept as findings, not as scope).
 
 ## Not built
 

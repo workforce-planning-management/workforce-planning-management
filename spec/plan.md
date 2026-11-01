@@ -725,7 +725,7 @@ separation record.
   **WPM-R221 Work-related injury and illness notification record** (the fact, never clinical detail; counts above the floor).
   **WPM-R222 Separation record** (from the leaver record; an export for HR). **WPM-R223 Employer-side statutory cost lines** (stubs, not
   deducted from net).
-- **WPM-D154–D161**: see section 3.
+- **WPM-D154–D162**: see section 3.
 - **Jurisdictions in scope (product owner, 2026-11-01):** the United States, the United Kingdom, Germany, Spain, France, Sweden, Denmark, Japan, South Korea, China and
   India. The first-pass research for them, and what it changes (a recorded "none by law", a floor with a basis, floors set below the nation, overtime by kind of day), is in
   [statutory-pay-protections.md](statutory-pay-protections.md).
@@ -847,12 +847,12 @@ separation record.
 - **WPM-D133 The holder, or HR while the holder is unavailable, lets a deputy decide flexible working, and the default is no.**
   The ABAC operation `flexible_working:decide` permits a deputy only when the grant is `true`; `null`, missing and `false` deny.
   HR's grant lapses when the holder is available again.
-- **WPM-D154 to D161** (D154 to D160 proposed 2026-11-01, **not yet confirmed by the product owner**; full text in
+- **WPM-D154 to D162** (D154 to D160 and D162 proposed 2026-11-01, **not yet confirmed by the product owner**; full text in
   [statutory-pay-protections.md](statutory-pay-protections.md)): WPM checks and warns and never decides an entitlement or files (D154); every
   statutory figure is a dated, sourced registry parameter, `unverified` until a person reads the source (D155); the minimum-wage check is
   indicative, advisory in v1 and keeps no age (D156); contractual overtime stays, statutory premium is parameters, and exempt status is a
   human-recorded fact (D157); injury records hold the fact and never the medical detail (D158); employer contributions are cost lines and
-  never deductions from net (D159); "none by law" is a recorded value, and a floor has a basis (D160); a collective-agreement floor may be entered, narrowly (D161, *confirmed by the product owner 2026-11-01*).
+  never deductions from net (D159); "none by law" is a recorded value, and a floor has a basis (D160); a collective-agreement floor may be entered, narrowly (D161, *confirmed by the product owner 2026-11-01*); overtime is a sequence of bands and an employer rate may follow a class the deployer sets (D162).
 
 ## 4. Data and privacy summary
 
