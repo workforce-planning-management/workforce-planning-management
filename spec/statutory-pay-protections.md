@@ -265,8 +265,10 @@ benefit; or ship any default figure marked `read` that a person has not read in 
 ## Questions for the product owner
 
 1. **Which jurisdictions?** **Answered 2026-11-01 by the product owner: the United States, the United Kingdom, Germany, Spain, France, Sweden, Denmark, Japan, South Korea, China and India.**
-   *Still open:* the **order**. We advise the arithmetic is built once and generic (it is, as parameters), the `GB` example first because it is already in the product, then `US` with `US-CA` for
-   the daily shape, then `DE`, `FR` and `ES` (one regional framework), then `SE` and `DK` (the `none_by_law` case), then `JP`, `KR`, `CN` and `IN` (subnational floors; [worldwide.md](worldwide.md) already plans India and Japan as example profiles).
+   **The order was answered the same day: by population size**, as the product owner chose: India, China, the United States, Japan, Germany, the United Kingdom, France, South Korea, Spain, Sweden, Denmark
+   (the populations are from general knowledge, and the UK and France, and South Korea and Spain, are close). The arithmetic is built once and is generic, so the order decides which example profile is written and verified first. **Cost to know:** the
+   first two are the jurisdictions with the weakest research so far (India has no notified national floor and minimums are the states'; China's are provincial tiers, with conflicting figures), and the `none_by_law`
+   case (Sweden, Denmark) comes last, so WPM-T426 still lands before any profile. Verifying the first profiles needs reviewers who read Indian and Chinese primary sources.
 2. **Advisory or blocking?** We advise advisory for v1. A deployer option to hold payroll approval while a worker is `below` is cheap to add later.
 3. **Is the injury record wanted at all, and who may see it?** It is the one new health-data record. We advise building it only after WPM-T412, readable by HR and the
    health and safety lead, never by a line manager.

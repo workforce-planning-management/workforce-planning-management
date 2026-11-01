@@ -993,7 +993,7 @@ on positions needs assignments (R161); deputies need the action list (R186); act
   should the worker row's department, title and FTE columns later be retired in favour of the primary assignment?
 - Section Q: should "related to work" on an episode be offered at all, or should the stress risk assessment simply be offered
   after every episode? Who writes the generic guidance pages, and who reviews them before a deployer relies on them?
-- Section T: advisory or blocking for the minimum-wage check; the **order** of the eleven jurisdictions the product owner named on 2026-11-01 (the set is answered); whether a collective-agreement floor may be entered; whether the
+- Section T: advisory or blocking for the minimum-wage check; the set and the order of the eleven jurisdictions are answered (2026-11-01: by population size, India first); whether a collective-agreement floor may be entered; whether the
   injury record is wanted and who may read it; whether a separation record belongs in WPM; who confirms each profile's figures against the source, and how often.
   Full list in [statutory-pay-protections.md](statutory-pay-protections.md).
 - Section R: is the HR-only count of in-place adjustments in a change's impact view (WPM-D127) the right exception to WPM-D25, or
