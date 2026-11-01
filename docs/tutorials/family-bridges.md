@@ -13,7 +13,10 @@ Every bridge carries **references and counts, never records** (WPM-D134), and
 every inbound call acts **under the caller's own token** (WPM-D135). Here
 sign-in is turned off, so no token is sent; in a real deployment PPM and CRM
 forward their user's `Authorization: Bearer` token, and WPM's policy decides
-exactly as it does for that user on the same route.
+exactly as it does for that user on the same route. With sign-in on, that user must
+also hold a live membership (`organization_memberships`) in the organization: without
+one WPM answers `404`, not `403`, so it does not reveal that the organization exists
+([spec/auth.md](../../spec/auth.md)).
 
 **What this tutorial does not show.** Here `curl` plays both siblings. Two live runs
 (2026-10-31 and 2026-11-01) have since put the real ones against WPM: PPM's demand,
