@@ -22,7 +22,10 @@ the webhook (a hire marked the contact as an employee, a leave cleared it). Not 
 run live: CRM's overlap check and teams import, and the UIs. If a delivery is refused
 with `HTTP 401` and your clocks differ by more than five minutes (a container VM
 that slept is the usual cause), set the clock first: the receiver rejects a stale
-signature on purpose, and WPM marked that delivery `failed` after one attempt (whether a later run retries it was not checked).
+signature on purpose, and WPM marks that delivery `failed` after one attempt and does
+not retry it: only a network failure, 408, 429 and 5xx are retried (up to 10 tries, with
+back-off); any other answer counts as the subscriber saying no (`after_attempt` in
+`src/rules/webhook.rs`). After fixing the clock, make a new event.
 
 ## 0. Start a throwaway service
 
