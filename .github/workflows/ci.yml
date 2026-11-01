@@ -397,6 +397,9 @@ jobs:
           key: deny
       - run: cargo install cargo-deny --locked
       - run: cargo deny check
+      - name: cargo deny (the matcher crate)
+        working-directory: workforce-planning-management-matcher-with-rust
+        run: cargo deny check
 
   ui:
     name: ui · check, unit, build, lint, Playwright
