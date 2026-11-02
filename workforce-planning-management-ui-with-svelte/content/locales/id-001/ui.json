@@ -2836,6 +2836,8 @@
     "not_applicable": "Tidak berlaku",
     "unknown": "Tidak diketahui",
     "mine": "Pelatihan wajib saya",
-    "unknownNote": "Tidak diketahui berarti catatan Anda tidak menyebut kelompok Anda."
+    "unknownNote": "Tidak diketahui berarti catatan Anda tidak menyebut kelompok Anda.",
+    "team": "Pelatihan wajib tim saya",
+    "teamNone": "Tidak ada anggota tim Anda yang perlu perhatian."
   }
 }

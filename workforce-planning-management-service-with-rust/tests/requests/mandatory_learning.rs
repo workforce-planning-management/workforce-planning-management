@@ -122,3 +122,61 @@ async fn a_requirement_is_checked_against_recorded_completions_and_unknown_is_ne
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_manager_sees_their_team_by_name_with_unknown_kept_unknown() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let boss = seed_worker!(&request, &org, format!("MT-M-{tag}"), None).await;
+        activate!(&request, &boss).await;
+        let direct = seed_worker!(&request, &org, format!("MT-D-{tag}"), None).await;
+        activate!(&request, &direct).await;
+        let indirect = seed_worker!(&request, &org, format!("MT-I-{tag}"), None).await;
+        activate!(&request, &indirect).await;
+        let outsider = seed_worker!(&request, &org, format!("MT-O-{tag}"), None).await;
+        activate!(&request, &outsider).await;
+        for (who, over) in [(&direct, &boss), (&indirect, &direct)] {
+            let res = request
+                .put(&format!("/api/workers/{who}"))
+                .json(&json!({ "manager_pid": over }))
+                .await;
+            assert_eq!(res.status_code(), 200, "{}", res.text());
+        }
+        make_nurse(&request, &direct).await;
+        let made = request
+            .post("/api/learning-requirements")
+            .json(&json!({ "organization": org, "subject": format!("Fire {tag}"), "basis": "mandatory",
+                "staff_groups": ["nurse"] }))
+            .await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+
+        let team: Value = request
+            .get(&format!("/api/workers/{boss}/team-mandatory-learning"))
+            .await
+            .json();
+        let people = team["people"].as_array().unwrap();
+        let find = |pid: &str| people.iter().find(|p| p["worker_pid"] == pid).cloned();
+        let d = find(&direct).expect("a direct report is listed");
+        assert_eq!(d["report_kind"], "direct");
+        assert!(d["display_name"].as_str().unwrap().starts_with("Test Worker"));
+        let status_of = |p: &Value| {
+            p["requirements"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|r| r["subject"] == format!("Fire {tag}"))
+                .map(|r| r["status"].clone())
+        };
+        assert_eq!(status_of(&d), Some(json!("never_completed")));
+        // The indirect report's staff group is not recorded: unknown, said as unknown.
+        let i = find(&indirect).expect("an indirect report is listed");
+        assert_eq!(i["report_kind"], "indirect");
+        assert_eq!(status_of(&i), Some(json!("unknown")));
+        assert!(find(&outsider).is_none(), "someone outside the line is not listed");
+        assert!(find(&boss).is_none(), "the manager is not their own report");
+    })
+    .await;
+}

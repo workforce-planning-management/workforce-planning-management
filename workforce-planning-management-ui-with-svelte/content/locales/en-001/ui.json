@@ -2845,6 +2845,8 @@
     "not_applicable": "Not applicable",
     "unknown": "Unknown",
     "mine": "My statutory and mandatory learning",
-    "unknownNote": "Unknown means your record does not say which group you are in."
+    "unknownNote": "Unknown means your record does not say which group you are in.",
+    "team": "My team's statutory and mandatory learning",
+    "teamNone": "Nobody in your team needs attention."
   }
 }

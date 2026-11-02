@@ -2854,6 +2854,8 @@
     "not_applicable": "No aplica",
     "unknown": "Desconocido",
     "mine": "Mi formación legal y obligatoria",
-    "unknownNote": "Desconocido significa que su registro no indica a qué grupo pertenece."
+    "unknownNote": "Desconocido significa que su registro no indica a qué grupo pertenece.",
+    "team": "Formación legal y obligatoria de mi equipo",
+    "teamNone": "Nadie de su equipo requiere atención."
   }
 }

@@ -2854,6 +2854,8 @@
     "not_applicable": "Sans objet",
     "unknown": "Inconnu",
     "mine": "Mes formations légales et obligatoires",
-    "unknownNote": "Inconnu signifie que votre dossier n'indique pas à quel groupe vous appartenez."
+    "unknownNote": "Inconnu signifie que votre dossier n'indique pas à quel groupe vous appartenez.",
+    "team": "Formations légales et obligatoires de mon équipe",
+    "teamNone": "Personne dans votre équipe n'appelle d'attention."
   }
 }

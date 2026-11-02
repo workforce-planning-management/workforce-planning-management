@@ -212,6 +212,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("workers/{}/equipment", ControllerDecides),
     ("workers/{}/assignments", ControllerDecides),
     ("workers/{}/mandatory-learning", ControllerDecides),
+    ("workers/{}/team-mandatory-learning", ControllerDecides),
     ("learning-requirements", ControllerDecides),
     ("learning-requirements/rollup", ControllerDecides),
     ("workers/{}/team-equipment-count", ControllerDecides),

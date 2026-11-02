@@ -473,6 +473,74 @@ async fn rollup(
     )
 }
 
+/// `GET /api/workers/{pid}/team-mandatory-learning` — for a manager: each person below them, by name, with their status against every
+/// requirement that applies. Read as the manager `{pid}`; anyone else needs HR's access (WPM-R170: a work record, not a sensitive one,
+/// so a manager sees their reports by name). Only people in the manager's own organization; unknown stays unknown.
+#[debug_handler]
+async fn team(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    ensure_org_in_scope(&ctx, &caller, &manager.organization_ref).await?;
+    if crate::auth::acting_for_other(&caller, &manager.person_ref)
+        && !super::policies::privileged(&ctx, &caller, &manager.organization_ref).await?
+    {
+        return Err(forbidden("a team's learning is for that team's manager"));
+    }
+    let today = Utc::now().date_naive();
+    let staff = workers::Entity::find()
+        .filter(workers::Column::OrganizationRef.eq(&manager.organization_ref))
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::TerminatedOn.is_null());
+    ensure_scale(&ctx, staff.clone()).await?;
+    let staff = staff.all(&ctx.db).await?;
+    let mut reports_of: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
+        std::collections::BTreeMap::new();
+    for w in &staff {
+        if let Some(boss) = w.manager_pid {
+            reports_of.entry(boss).or_default().push(w.pid);
+        }
+    }
+    let below = crate::rules::org::downline(manager.pid, &reports_of);
+    let by_pid: HashMap<Uuid, &workers::Model> = staff.iter().map(|w| (w.pid, w)).collect();
+    let team: Vec<workers::Model> = below
+        .iter()
+        .filter_map(|(p, _)| by_pid.get(p).map(|w| (*w).clone()))
+        .collect();
+    let pids: Vec<Uuid> = team.iter().map(|w| w.pid).collect();
+    let reqs = live_requirements(&ctx, &manager.organization_ref, today).await?;
+    let cats = categories_of(&ctx, &pids, today).await?;
+    let comps = completions_of(&ctx, &team, &reqs).await?;
+    let none: Vec<rules::Categories> = Vec::new();
+    let people: Vec<Value> = below
+        .iter()
+        .filter_map(|(p, depth)| by_pid.get(p).map(|w| (*w, *depth)))
+        .map(|(w, depth)| {
+            let items: Vec<Value> = reqs
+                .iter()
+                .filter_map(|r| {
+                    let done = comps.get(&(w.pid, r.pid)).cloned().unwrap_or_default();
+                    let e = evaluate(r, cats.get(&w.pid).unwrap_or(&none), &done, today);
+                    (e.status != rules::Status::NotApplicable).then(|| {
+                        json!({
+                            "requirement_pid": r.pid, "subject": r.subject, "basis": r.basis,
+                            "status": status_name(e.status), "expires_on": e.expires_on,
+                        })
+                    })
+                })
+                .collect();
+            json!({
+                "worker_pid": w.pid, "display_name": w.display_name,
+                "report_kind": crate::rules::org::report_kind(depth).map(crate::rules::org::ReportKind::as_str),
+                "requirements": items,
+            })
+        })
+        .collect();
+    format::json(json!({ "manager_pid": manager.pid, "as_of": today, "people": people }))
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -485,4 +553,5 @@ pub fn routes() -> Routes {
             post(record_completion),
         )
         .add("/workers/{pid}/mandatory-learning", get(of_worker))
+        .add("/workers/{pid}/team-mandatory-learning", get(team))
 }

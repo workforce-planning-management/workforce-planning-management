@@ -13718,6 +13718,19 @@
         ]
       }
     },
+    "/api/workers/{pid}/team-mandatory-learning": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The team"
+          }
+        },
+        "summary": "For a manager: each person below them, by name and direct or indirect, with their status against every requirement that applies (a work record, not a sensitive one). Read as the manager; anyone else needs HR's access. Unknown stays unknown",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
     "/api/workers/{pid}/team-policy-counts": {
       "get": {
         "responses": {

@@ -3894,3 +3894,5 @@ collections:
               - { name: "unknown", label: "Unknown", widget: string, required: false, i18n: true }
               - { name: "mine", label: "Mine", widget: string, required: false, i18n: true }
               - { name: "unknownNote", label: "Unknown Note", widget: string, required: false, i18n: true }
+              - { name: "team", label: "Team", widget: string, required: false, i18n: true }
+              - { name: "teamNone", label: "Team None", widget: string, required: false, i18n: true }

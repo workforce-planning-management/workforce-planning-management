@@ -781,3 +781,17 @@ export interface LearningRollupRow {
   unknown?: number;
   rate?: number | null;
 }
+
+/** One person below a manager, by name, with their status against each requirement that applies to them. */
+export interface TeamLearningPerson {
+  worker_pid: string;
+  display_name: string;
+  report_kind: "direct" | "indirect" | null;
+  requirements: {
+    requirement_pid: string;
+    subject: string;
+    basis: "statutory" | "mandatory";
+    status: LearningStatus;
+    expires_on: string | null;
+  }[];
+}

@@ -2845,6 +2845,8 @@
     "not_applicable": "Nicht zutreffend",
     "unknown": "Unbekannt",
     "mine": "Meine vorgeschriebenen Schulungen",
-    "unknownNote": "Unbekannt heißt: Aus Ihrer Akte geht nicht hervor, zu welcher Gruppe Sie gehören."
+    "unknownNote": "Unbekannt heißt: Aus Ihrer Akte geht nicht hervor, zu welcher Gruppe Sie gehören.",
+    "team": "Vorgeschriebene Schulungen meines Teams",
+    "teamNone": "Niemand in Ihrem Team braucht Aufmerksamkeit."
   }
 }

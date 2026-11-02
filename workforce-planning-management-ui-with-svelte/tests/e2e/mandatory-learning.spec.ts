@@ -100,7 +100,51 @@ test.describe("Statutory and mandatory learning", () => {
           },
         }),
     );
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/team-mandatory-learning`,
+      (route) =>
+        route.fulfill({
+          json: {
+            manager_pid: WORKER.pid,
+            as_of: "2026-11-02",
+            people: [
+              {
+                worker_pid: "99999999-9999-4999-8999-999999999999",
+                display_name: "Report One",
+                report_kind: "direct",
+                requirements: [
+                  {
+                    requirement_pid: "r1",
+                    subject: "Fire safety",
+                    basis: "statutory",
+                    status: "expired",
+                    expires_on: "2026-10-01",
+                  },
+                ],
+              },
+              {
+                worker_pid: "88888888-8888-4888-8888-888888888888",
+                display_name: "Report Two",
+                report_kind: "direct",
+                requirements: [
+                  {
+                    requirement_pid: "r1",
+                    subject: "Fire safety",
+                    basis: "statutory",
+                    status: "compliant",
+                    expires_on: "2027-06-01",
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+    );
     await page.goto("/me");
+    const team = page.getByTestId("team-learning");
+    await expect(team).toContainText("Report One");
+    await expect(team).toContainText("Expired");
+    await expect(team).not.toContainText("Report Two");
     const panel = page.getByTestId("my-learning");
     await expect(panel).toContainText("Fire safety");
     await expect(panel.getByTestId("learning-due_soon")).toContainText(

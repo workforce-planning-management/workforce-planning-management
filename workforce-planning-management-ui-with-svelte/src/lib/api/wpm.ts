@@ -60,6 +60,7 @@ import type {
   LearningRollupRow,
   MinimumWageCheck,
   MyLearningRow,
+  TeamLearningPerson,
   PayrollRun,
   Ratio,
   Requisition,
@@ -584,6 +585,18 @@ export function workerMandatoryLearning(
   requirements: MyLearningRow[];
 }> {
   return api(`/workers/${pid}/mandatory-learning`, init);
+}
+
+/** For a manager: each person below them, by name, with their status against each requirement that applies. */
+export function teamMandatoryLearning(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  manager_pid: string;
+  as_of: string;
+  people: TeamLearningPerson[];
+}> {
+  return api(`/workers/${pid}/team-mandatory-learning`, init);
 }
 
 /** HR: per requirement, counts per status and the rate in date, from the floor. Names no one. */

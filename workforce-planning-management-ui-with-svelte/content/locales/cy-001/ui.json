@@ -2881,6 +2881,8 @@
     "not_applicable": "Ddim yn berthnasol",
     "unknown": "Anhysbys",
     "mine": "Fy hyfforddiant statudol a gorfodol",
-    "unknownNote": "Ystyr anhysbys yw nad yw eich cofnod yn dweud i ba grŵp yr ydych yn perthyn."
+    "unknownNote": "Ystyr anhysbys yw nad yw eich cofnod yn dweud i ba grŵp yr ydych yn perthyn.",
+    "team": "Hyfforddiant statudol a gorfodol fy nhîm",
+    "teamNone": "Nid oes angen sylw ar neb yn eich tîm."
   }
 }
