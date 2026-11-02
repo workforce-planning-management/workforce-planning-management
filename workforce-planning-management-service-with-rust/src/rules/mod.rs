@@ -99,6 +99,7 @@ pub mod position;
 pub mod privacy;
 pub mod programmes;
 pub mod pulse;
+pub mod qualification;
 pub mod resignation;
 pub mod roles;
 pub mod rota;
