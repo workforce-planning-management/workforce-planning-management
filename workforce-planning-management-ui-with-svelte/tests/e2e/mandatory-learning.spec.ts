@@ -155,4 +155,76 @@ test.describe("Statutory and mandatory learning", () => {
     );
     await expect(panel).not.toContainText("Theatre safety");
   });
+
+  test("HR adds a requirement, records a completion and retires one, and the roll-up is read again", async ({
+    page,
+  }) => {
+    const org = WORKER.organization_ref;
+    const sent: { url: string; body: unknown }[] = [];
+    let reqs: { pid: string; subject: string; basis: string }[] = [];
+    await page.route(
+      "**/api/proxy/learning-requirements/rollup?organization=*",
+      (route) =>
+        route.fulfill({
+          json: {
+            organization: org,
+            as_of: "2026-11-02",
+            floor: 10,
+            requirements: [],
+          },
+        }),
+    );
+    await page.route(
+      "**/api/proxy/learning-requirements?organization=*",
+      (route) => route.fulfill({ json: reqs }),
+    );
+    await page.route("**/api/proxy/learning-requirements", (route) => {
+      sent.push({ url: "add", body: route.request().postDataJSON() });
+      reqs = [{ pid: "q1", subject: "Fire safety", basis: "statutory" }];
+      return route.fulfill({ json: { pid: "q1" } });
+    });
+    await page.route(
+      "**/api/proxy/learning-requirements/q1/completions",
+      (route) => {
+        sent.push({ url: "completion", body: route.request().postDataJSON() });
+        return route.fulfill({ json: { pid: "c1" } });
+      },
+    );
+    await page.route(
+      "**/api/proxy/learning-requirements/q1/retire",
+      (route) => {
+        sent.push({ url: "retire", body: null });
+        reqs = [];
+        return route.fulfill({ json: { pid: "q1" } });
+      },
+    );
+    await page.goto("/en-001/mandatory-learning");
+    await page.getByTestId("learning-organization").selectOption(org);
+    await page.getByTestId("req-subject").fill("Fire safety");
+    await page.getByTestId("req-basis").selectOption("statutory");
+    await page.getByTestId("req-source").fill("Fire Safety Order");
+    await page.getByTestId("req-refresher").fill("12");
+    await page.getByTestId("req-staff-groups").fill("nurse, doctor");
+    await page.getByTestId("req-save").click();
+    await expect(page.getByTestId("req-row")).toContainText("Fire safety");
+    expect(sent[0]?.body).toMatchObject({
+      organization: org,
+      basis: "statutory",
+      source: "Fire Safety Order",
+      refresher_months: 12,
+      staff_groups: ["nurse", "doctor"],
+    });
+    await page.getByTestId("comp-requirement").selectOption("q1");
+    await page.getByTestId("comp-worker").selectOption(WORKER.pid);
+    await page.getByTestId("comp-date").fill("2026-10-01");
+    await page.getByTestId("comp-save").click();
+    await expect(page.getByTestId("admin-saved")).toBeVisible();
+    expect(sent[1]?.body).toMatchObject({
+      worker_pid: WORKER.pid,
+      completed_on: "2026-10-01",
+    });
+    await page.getByRole("button", { name: "Retire" }).click();
+    await expect(page.getByTestId("req-row")).toHaveCount(0);
+    expect(sent.map((s) => s.url)).toEqual(["add", "completion", "retire"]);
+  });
 });

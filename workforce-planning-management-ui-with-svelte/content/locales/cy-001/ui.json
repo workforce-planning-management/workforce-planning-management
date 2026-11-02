@@ -2883,6 +2883,20 @@
     "mine": "Fy hyfforddiant statudol a gorfodol",
     "unknownNote": "Ystyr anhysbys yw nad yw eich cofnod yn dweud i ba grŵp yr ydych yn perthyn.",
     "team": "Hyfforddiant statudol a gorfodol fy nhîm",
-    "teamNone": "Nid oes angen sylw ar neb yn eich tîm."
+    "teamNone": "Nid oes angen sylw ar neb yn eich tîm.",
+    "addTitle": "Ychwanegu gofyniad",
+    "refresher": "Gloywi (misoedd)",
+    "staffGroups": "Grwpiau staff (wedi'u gwahanu gan atalnodau)",
+    "jobRoles": "Rolau swydd (wedi'u gwahanu gan atalnodau)",
+    "areasOfWork": "Meysydd gwaith (wedi'u gwahanu gan atalnodau)",
+    "save": "Cadw",
+    "retire": "Ymddeol",
+    "recordTitle": "Cofnodi cwblhau",
+    "worker": "Person",
+    "requirement": "Gofyniad",
+    "completedOn": "Cwblhawyd ar",
+    "whereDone": "Lle y gwnaed",
+    "saved": "Cadwyd",
+    "requirements": "Gofynion"
   }
 }

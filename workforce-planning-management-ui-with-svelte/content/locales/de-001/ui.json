@@ -2847,6 +2847,20 @@
     "mine": "Meine vorgeschriebenen Schulungen",
     "unknownNote": "Unbekannt heißt: Aus Ihrer Akte geht nicht hervor, zu welcher Gruppe Sie gehören.",
     "team": "Vorgeschriebene Schulungen meines Teams",
-    "teamNone": "Niemand in Ihrem Team braucht Aufmerksamkeit."
+    "teamNone": "Niemand in Ihrem Team braucht Aufmerksamkeit.",
+    "addTitle": "Anforderung hinzufügen",
+    "refresher": "Auffrischung (Monate)",
+    "staffGroups": "Personalgruppen (durch Komma getrennt)",
+    "jobRoles": "Stellenrollen (durch Komma getrennt)",
+    "areasOfWork": "Tätigkeitsbereiche (durch Komma getrennt)",
+    "save": "Speichern",
+    "retire": "Beenden",
+    "recordTitle": "Abschluss erfassen",
+    "worker": "Person",
+    "requirement": "Anforderung",
+    "completedOn": "Abgeschlossen am",
+    "whereDone": "Wo absolviert",
+    "saved": "Gespeichert",
+    "requirements": "Anforderungen"
   }
 }

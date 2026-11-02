@@ -682,6 +682,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/learning-requirements/{pid}/completions": {
             "post": { "tags": ["learning"], "summary": "HR records training done elsewhere: a worker, a date not in the future, where it was done. No certificate. Another organization of the person marks it transferred, counted only where the requirement accepts it", "responses": ok("The pid of the completion") }
         },
+        "/api/learning-requirements/{pid}/retire": {
+            "post": { "tags": ["learning"], "summary": "HR retires a requirement from today: no longer listed or counted; its recorded completions are kept. Retiring twice keeps the first date", "responses": ok("The pid and the day it was retired") }
+        },
         "/api/workers/{pid}/team-mandatory-learning": {
             "get": { "tags": ["learning"], "summary": "For a manager: each person below them, by name and direct or indirect, with their status against every requirement that applies (a work record, not a sensitive one). Read as the manager; anyone else needs HR's access. Unknown stays unknown", "responses": ok("The team") }
         },

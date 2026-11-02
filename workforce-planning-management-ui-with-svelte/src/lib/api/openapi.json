@@ -5974,6 +5974,35 @@
         ]
       }
     },
+    "/api/learning-requirements/{pid}/retire": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid and the day it was retired",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "HR retires a requirement from today: no longer listed or counted; its recorded completions are kept. Retiring twice keeps the first date",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
     "/api/learning/mentorship-overview": {
       "get": {
         "responses": {

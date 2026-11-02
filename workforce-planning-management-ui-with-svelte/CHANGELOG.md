@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — statutory and mandatory learning screens (WPM-R170, WPM-T315 in part)
 
-`/mandatory-learning`: HR's roll-up for an organization (counts per status, the rate, a small group shown as too few people, unknown counted apart, no name). A panel on `/me`: the person's own status against each requirement, with the last completion and expiry; unknown is said in words. 22 strings in the 13 `-001` locales (AI-written, unreviewed). A panel on `/me` for a manager lists the people below them by name who are due soon, expired, never completed or unknown. **Not done:** screenshots looked at; forms to add a requirement or record a completion.
+`/mandatory-learning`: HR's roll-up for an organization (counts per status, the rate, a small group shown as too few people, unknown counted apart, no name). A panel on `/me`: the person's own status against each requirement, with the last completion and expiry; unknown is said in words. 22 strings in the 13 `-001` locales (AI-written, unreviewed). A panel on `/me` for a manager lists the people below them by name who are due soon, expired, never completed or unknown. HR forms on `/mandatory-learning` to add a requirement, record a completion and retire one. **Not done:** screenshots looked at (WPM-T434).
 
 ### Added — the minimum-wage check on a payroll run (WPM-R218, WPM-T416)
 

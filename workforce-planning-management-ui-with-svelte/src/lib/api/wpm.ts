@@ -599,6 +599,51 @@ export function teamMandatoryLearning(
   return api(`/workers/${pid}/team-mandatory-learning`, init);
 }
 
+/** The requirements in force for an organization (policy, not a person's record). */
+export function listLearningRequirements(
+  organization: string,
+  init?: FetchLike,
+): Promise<
+  { pid: string; subject: string; basis: "statutory" | "mandatory" }[]
+> {
+  return api(
+    `/learning-requirements?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** HR adds a requirement. A statutory one names its source. */
+export function addLearningRequirement(body: {
+  organization: string;
+  subject: string;
+  basis: string;
+  source?: string;
+  refresher_months?: number;
+  staff_groups?: string[];
+  job_roles?: string[];
+  areas_of_work?: string[];
+}): Promise<{ pid: string }> {
+  return api("/learning-requirements", { method: "POST", body });
+}
+
+/** HR retires a requirement from today; its recorded completions are kept. */
+export function retireLearningRequirement(
+  pid: string,
+): Promise<{ pid: string }> {
+  return api(`/learning-requirements/${pid}/retire`, { method: "POST" });
+}
+
+/** HR records training done elsewhere. */
+export function recordLearningCompletion(
+  pid: string,
+  body: { worker_pid: string; completed_on: string; source?: string },
+): Promise<{ pid: string }> {
+  return api(`/learning-requirements/${pid}/completions`, {
+    method: "POST",
+    body,
+  });
+}
+
 /** HR: per requirement, counts per status and the rate in date, from the floor. Names no one. */
 export function learningRollup(
   organization: string,

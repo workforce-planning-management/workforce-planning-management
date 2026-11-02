@@ -2838,6 +2838,20 @@
     "mine": "我的法定及必修培训",
     "unknownNote": "“未知”表示您的记录中没有说明您所属的群体。",
     "team": "我团队的法定及必修培训",
-    "teamNone": "团队中无人需要关注。"
+    "teamNone": "团队中无人需要关注。",
+    "addTitle": "添加要求",
+    "refresher": "复训周期（月）",
+    "staffGroups": "员工组（以逗号分隔）",
+    "jobRoles": "岗位角色（以逗号分隔）",
+    "areasOfWork": "工作领域（以逗号分隔）",
+    "save": "保存",
+    "retire": "停用",
+    "recordTitle": "记录完成情况",
+    "worker": "人员",
+    "requirement": "要求",
+    "completedOn": "完成日期",
+    "whereDone": "完成地点",
+    "saved": "已保存",
+    "requirements": "要求"
   }
 }

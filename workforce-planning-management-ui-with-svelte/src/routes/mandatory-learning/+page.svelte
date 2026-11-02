@@ -10,6 +10,7 @@
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import DataTable from "#lib/components/DataTable.svelte";
+  import LearningAdmin from "#lib/components/LearningAdmin.svelte";
   import { learningRollup } from "#lib/api/wpm.js";
   import type { LearningRollupRow } from "#lib/api/types.js";
   import { t } from "#lib/i18n.svelte.js";
@@ -23,11 +24,17 @@
   let rows = $state<LearningRollupRow[] | null>(null);
   let error = $state<string | null>(null);
 
+  // Bumped after HR changes something, so the roll-up is read again.
+  let reads = $state(0);
+
   $effect(() => {
     const chosen = organization;
-    rows = null;
+    void reads;
     error = null;
-    if (!chosen) return;
+    if (!chosen) {
+      rows = null;
+      return;
+    }
     let stale = false;
     void (async () => {
       try {
@@ -99,4 +106,7 @@
       rowId={(row) => String(row.requirement_pid)}
     />
   {/if}
+{/if}
+{#if organization}
+  <LearningAdmin {organization} changed={() => (reads += 1)} />
 {/if}

@@ -3896,3 +3896,17 @@ collections:
               - { name: "unknownNote", label: "Unknown Note", widget: string, required: false, i18n: true }
               - { name: "team", label: "Team", widget: string, required: false, i18n: true }
               - { name: "teamNone", label: "Team None", widget: string, required: false, i18n: true }
+              - { name: "addTitle", label: "Add Title", widget: string, required: false, i18n: true }
+              - { name: "refresher", label: "Refresher", widget: string, required: false, i18n: true }
+              - { name: "staffGroups", label: "Staff Groups", widget: string, required: false, i18n: true }
+              - { name: "jobRoles", label: "Job Roles", widget: string, required: false, i18n: true }
+              - { name: "areasOfWork", label: "Areas Of Work", widget: string, required: false, i18n: true }
+              - { name: "save", label: "Save", widget: string, required: false, i18n: true }
+              - { name: "retire", label: "Retire", widget: string, required: false, i18n: true }
+              - { name: "recordTitle", label: "Record Title", widget: string, required: false, i18n: true }
+              - { name: "worker", label: "Worker", widget: string, required: false, i18n: true }
+              - { name: "requirement", label: "Requirement", widget: string, required: false, i18n: true }
+              - { name: "completedOn", label: "Completed On", widget: string, required: false, i18n: true }
+              - { name: "whereDone", label: "Where Done", widget: string, required: false, i18n: true }
+              - { name: "saved", label: "Saved", widget: string, required: false, i18n: true }
+              - { name: "requirements", label: "Requirements", widget: string, required: false, i18n: true }

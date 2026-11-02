@@ -2856,6 +2856,20 @@
     "mine": "A minha formação legal e obrigatória",
     "unknownNote": "Desconhecido significa que o seu registo não indica a que grupo pertence.",
     "team": "Formação legal e obrigatória da minha equipa",
-    "teamNone": "Ninguém na sua equipa precisa de atenção."
+    "teamNone": "Ninguém na sua equipa precisa de atenção.",
+    "addTitle": "Adicionar um requisito",
+    "refresher": "Atualização (meses)",
+    "staffGroups": "Grupos de pessoal (separados por vírgulas)",
+    "jobRoles": "Funções (separadas por vírgulas)",
+    "areasOfWork": "Áreas de trabalho (separadas por vírgulas)",
+    "save": "Guardar",
+    "retire": "Retirar",
+    "recordTitle": "Registar uma conclusão",
+    "worker": "Pessoa",
+    "requirement": "Requisito",
+    "completedOn": "Concluído em",
+    "whereDone": "Onde foi feito",
+    "saved": "Guardado",
+    "requirements": "Requisitos"
   }
 }

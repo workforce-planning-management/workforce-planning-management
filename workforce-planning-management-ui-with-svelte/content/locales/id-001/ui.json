@@ -2838,6 +2838,20 @@
     "mine": "Pelatihan wajib saya",
     "unknownNote": "Tidak diketahui berarti catatan Anda tidak menyebut kelompok Anda.",
     "team": "Pelatihan wajib tim saya",
-    "teamNone": "Tidak ada anggota tim Anda yang perlu perhatian."
+    "teamNone": "Tidak ada anggota tim Anda yang perlu perhatian.",
+    "addTitle": "Tambah persyaratan",
+    "refresher": "Penyegaran (bulan)",
+    "staffGroups": "Kelompok staf (dipisahkan koma)",
+    "jobRoles": "Peran jabatan (dipisahkan koma)",
+    "areasOfWork": "Bidang kerja (dipisahkan koma)",
+    "save": "Simpan",
+    "retire": "Hentikan",
+    "recordTitle": "Catat penyelesaian",
+    "worker": "Orang",
+    "requirement": "Persyaratan",
+    "completedOn": "Diselesaikan pada",
+    "whereDone": "Tempat pelaksanaan",
+    "saved": "Tersimpan",
+    "requirements": "Persyaratan"
   }
 }

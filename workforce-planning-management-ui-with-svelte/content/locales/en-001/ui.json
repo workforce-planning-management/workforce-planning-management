@@ -2847,6 +2847,20 @@
     "mine": "My statutory and mandatory learning",
     "unknownNote": "Unknown means your record does not say which group you are in.",
     "team": "My team's statutory and mandatory learning",
-    "teamNone": "Nobody in your team needs attention."
+    "teamNone": "Nobody in your team needs attention.",
+    "addTitle": "Add a requirement",
+    "refresher": "Refresher (months)",
+    "staffGroups": "Staff groups (comma separated)",
+    "jobRoles": "Job roles (comma separated)",
+    "areasOfWork": "Areas of work (comma separated)",
+    "save": "Save",
+    "retire": "Retire",
+    "recordTitle": "Record a completion",
+    "worker": "Person",
+    "requirement": "Requirement",
+    "completedOn": "Completed on",
+    "whereDone": "Where it was done",
+    "saved": "Saved",
+    "requirements": "Requirements"
   }
 }

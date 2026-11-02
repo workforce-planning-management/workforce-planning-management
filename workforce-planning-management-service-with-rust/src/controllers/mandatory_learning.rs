@@ -541,6 +541,40 @@ async fn team(
     format::json(json!({ "manager_pid": manager.pid, "as_of": today, "people": people }))
 }
 
+/// `POST /api/learning-requirements/{pid}/retire` — HR retires a requirement from today: it is no longer listed or counted, and the
+/// completions recorded against it are kept. Retiring twice keeps the first date.
+#[debug_handler]
+async fn retire(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+) -> Result<Response> {
+    let req = learning_requirements::Entity::find()
+        .filter(learning_requirements::Column::Pid.eq(pid))
+        .one(&ctx.db)
+        .await?
+        .ok_or(Error::NotFound)?;
+    ensure_hr(&ctx, &caller, &req.organization_ref).await?;
+    let on = req.retired_on.unwrap_or_else(|| Utc::now().date_naive());
+    let txn = ctx.db.begin().await?;
+    if req.retired_on.is_none() {
+        let mut row: learning_requirements::ActiveModel = req.clone().into();
+        row.retired_on = ActiveValue::set(Some(on));
+        row.update(&txn).await?;
+        Audit::record(
+            &txn,
+            "learning_requirement",
+            req.pid,
+            "learning_requirement_retired",
+            caller.actor(),
+            None,
+        )
+        .await?;
+    }
+    txn.commit().await?;
+    format::json(json!({ "pid": req.pid, "retired_on": on }))
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -548,6 +582,7 @@ pub fn routes() -> Routes {
         .add("/learning-requirements", get(list))
         .add("/learning-requirements", post(create))
         .add("/learning-requirements/rollup", get(rollup))
+        .add("/learning-requirements/{pid}/retire", post(retire))
         .add(
             "/learning-requirements/{pid}/completions",
             post(record_completion),

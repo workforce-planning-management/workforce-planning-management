@@ -127,6 +127,17 @@ describe("api path map", () => {
     await wpm.workerMandatoryLearning("w1");
     await wpm.teamMandatoryLearning("w1");
     await wpm.learningRollup("organization:abc");
+    await wpm.listLearningRequirements("organization:abc");
+    await wpm.addLearningRequirement({
+      organization: "organization:abc",
+      subject: "Fire",
+      basis: "mandatory",
+    });
+    await wpm.retireLearningRequirement("q1");
+    await wpm.recordLearningCompletion("q1", {
+      worker_pid: "w1",
+      completed_on: "2026-11-01",
+    });
     await wpm.benchmarkComparison("organization:abc");
     await wpm.listSkills();
     await wpm.categorySuggestions();
@@ -488,6 +499,10 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/mandatory-learning",
       "/api/proxy/workers/w1/team-mandatory-learning",
       "/api/proxy/learning-requirements/rollup?organization=organization%3Aabc",
+      "/api/proxy/learning-requirements?organization=organization%3Aabc",
+      "/api/proxy/learning-requirements",
+      "/api/proxy/learning-requirements/q1/retire",
+      "/api/proxy/learning-requirements/q1/completions",
       "/api/proxy/benchmarks/comparison?organization=organization%3Aabc",
       "/api/proxy/skills",
       "/api/proxy/skills/category-suggestions",

@@ -2856,6 +2856,20 @@
     "mine": "Mes formations légales et obligatoires",
     "unknownNote": "Inconnu signifie que votre dossier n'indique pas à quel groupe vous appartenez.",
     "team": "Formations légales et obligatoires de mon équipe",
-    "teamNone": "Personne dans votre équipe n'appelle d'attention."
+    "teamNone": "Personne dans votre équipe n'appelle d'attention.",
+    "addTitle": "Ajouter une exigence",
+    "refresher": "Remise à niveau (mois)",
+    "staffGroups": "Groupes de personnel (séparés par des virgules)",
+    "jobRoles": "Rôles (séparés par des virgules)",
+    "areasOfWork": "Domaines de travail (séparés par des virgules)",
+    "save": "Enregistrer",
+    "retire": "Retirer",
+    "recordTitle": "Enregistrer une réalisation",
+    "worker": "Personne",
+    "requirement": "Exigence",
+    "completedOn": "Réalisée le",
+    "whereDone": "Où elle a eu lieu",
+    "saved": "Enregistré",
+    "requirements": "Exigences"
   }
 }

@@ -119,6 +119,22 @@ async fn a_requirement_is_checked_against_recorded_completions_and_unknown_is_ne
             .unwrap();
         assert_eq!(cell["hidden"], true, "{cell}");
         assert!(!roll.to_string().contains(&nurse), "a roll-up names no one");
+
+        // Retiring takes it off the list and the roll-up; doing it twice keeps the first day.
+        let first: Value = request
+            .post(&format!("/api/learning-requirements/{req}/retire"))
+            .await
+            .json();
+        let again: Value = request
+            .post(&format!("/api/learning-requirements/{req}/retire"))
+            .await
+            .json();
+        assert_eq!(first["retired_on"], again["retired_on"]);
+        let list: Value = request
+            .get(&format!("/api/learning-requirements?organization={org}"))
+            .await
+            .json();
+        assert!(!list.as_array().unwrap().iter().any(|r| r["pid"] == req));
     })
     .await;
 }
