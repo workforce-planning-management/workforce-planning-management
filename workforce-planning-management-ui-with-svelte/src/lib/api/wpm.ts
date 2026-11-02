@@ -62,6 +62,7 @@ import type {
   MyLearningRow,
   QualificationList,
   TeamLearningPerson,
+  TeamQualificationPerson,
   PayrollRun,
   Ratio,
   Requisition,
@@ -598,6 +599,18 @@ export function teamMandatoryLearning(
   people: TeamLearningPerson[];
 }> {
   return api(`/workers/${pid}/team-mandatory-learning`, init);
+}
+
+/** For a manager: each person below them, by name, with their qualifications and the gap against their current role. */
+export function teamQualifications(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  manager_pid: string;
+  as_of: string;
+  people: TeamQualificationPerson[];
+}> {
+  return api(`/workers/${pid}/team-qualifications`, init);
 }
 
 /** The requirements in force for an organization (policy, not a person's record). */

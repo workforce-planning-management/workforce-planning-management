@@ -2899,6 +2899,8 @@
     "framework": "Cadre (par exemple RQF)",
     "level": "Niveau",
     "awardedOn": "Obtenue le",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "team": "Qualifications de mon équipe",
+    "teamNone": "Personne sous votre responsabilité n'a d'écart de qualification."
   }
 }

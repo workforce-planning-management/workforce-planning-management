@@ -2881,6 +2881,8 @@
     "framework": "框架（例如 RQF）",
     "level": "等级",
     "awardedOn": "颁发日期",
-    "save": "保存"
+    "save": "保存",
+    "team": "我团队的资质",
+    "teamNone": "您下属中没有人存在资质缺口。"
   }
 }

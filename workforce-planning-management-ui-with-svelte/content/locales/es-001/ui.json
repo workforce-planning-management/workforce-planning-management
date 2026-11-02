@@ -2899,6 +2899,8 @@
     "framework": "Marco (por ejemplo RQF)",
     "level": "Nivel",
     "awardedOn": "Otorgada el",
-    "save": "Guardar"
+    "save": "Guardar",
+    "team": "Cualificaciones de mi equipo",
+    "teamNone": "Nadie a su cargo tiene una carencia de cualificación."
   }
 }

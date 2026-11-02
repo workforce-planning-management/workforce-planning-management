@@ -3944,3 +3944,5 @@ collections:
               - { name: "level", label: "Level", widget: string, required: false, i18n: true }
               - { name: "awardedOn", label: "Awarded On", widget: string, required: false, i18n: true }
               - { name: "save", label: "Save", widget: string, required: false, i18n: true }
+              - { name: "team", label: "Team", widget: string, required: false, i18n: true }
+              - { name: "teamNone", label: "Team None", widget: string, required: false, i18n: true }

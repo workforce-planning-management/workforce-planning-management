@@ -112,3 +112,64 @@ async fn a_declared_qualification_is_not_met_until_hr_verifies_it() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_manager_reads_their_reports_qualifications_by_name() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let boss = seed_worker!(&request, &org, format!("Q-B-{tag}"), None).await;
+        activate!(&request, &boss).await;
+        let direct = seed_worker!(&request, &org, format!("Q-D-{tag}"), None).await;
+        activate!(&request, &direct).await;
+        let outsider = seed_worker!(&request, &org, format!("Q-O-{tag}"), None).await;
+        activate!(&request, &outsider).await;
+        request
+            .put(&format!("/api/workers/{direct}"))
+            .json(&json!({ "manager_pid": boss }))
+            .await
+            .assert_status_ok();
+        request
+            .post(&format!("/api/workers/{direct}/qualifications"))
+            .json(&json!({ "kind": "licence", "title": format!("Forklift {tag}") }))
+            .await
+            .assert_status_ok();
+        request
+            .post(&format!("/api/workers/{outsider}/qualifications"))
+            .json(&json!({ "kind": "licence", "title": format!("Crane {tag}") }))
+            .await
+            .assert_status_ok();
+
+        let team: Value = request
+            .get(&format!("/api/workers/{boss}/team-qualifications"))
+            .await
+            .json();
+        let people = team["people"].as_array().unwrap();
+        let d = people
+            .iter()
+            .find(|p| p["worker_pid"] == direct.as_str())
+            .expect("a direct report is listed");
+        assert_eq!(d["report_kind"], "direct");
+        assert!(
+            d["display_name"]
+                .as_str()
+                .unwrap()
+                .starts_with("Test Worker")
+        );
+        assert_eq!(d["qualifications"][0]["title"], format!("Forklift {tag}"));
+        assert_eq!(d["qualifications"][0]["status"], "declared");
+        assert!(
+            d["role"].is_null(),
+            "no role recorded is null, not a clean gap"
+        );
+        assert!(
+            !people
+                .iter()
+                .any(|p| p["worker_pid"] == outsider.as_str() || p["worker_pid"] == boss.as_str()),
+            "only people below the manager are listed"
+        );
+    })
+    .await;
+}

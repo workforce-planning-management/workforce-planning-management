@@ -109,4 +109,61 @@ test.describe("Qualifications", () => {
     expect(posted).toMatchObject({ kind: "licence" });
     await expect.poll(() => reads).toBeGreaterThan(before);
   });
+
+  test("a manager sees reports whose role asks for a qualification they do not hold verified, by name", async ({
+    page,
+  }) => {
+    await stubSignedIn(page);
+    await page.route(URL, (route) => route.fulfill({ json: list({}) }));
+    const gap = (title: string, standing: string) => ({
+      title,
+      kind: null,
+      framework: null,
+      min_level: null,
+      standing,
+    });
+    await page.route(
+      `**/api/proxy/workers/${WORKER.pid}/team-qualifications`,
+      (route) =>
+        route.fulfill({
+          json: {
+            manager_pid: WORKER.pid,
+            as_of: "2026-11-02",
+            people: [
+              {
+                worker_pid: "99999999-9999-4999-8999-999999999999",
+                display_name: "Report One",
+                report_kind: "direct",
+                qualifications: [],
+                role: { pid: "r1", job_title: "Tester" },
+                gap: [gap("First aid", "declared_only"), gap("Degree", "met")],
+              },
+              {
+                worker_pid: "88888888-8888-4888-8888-888888888888",
+                display_name: "Report Two",
+                report_kind: "direct",
+                qualifications: [],
+                role: { pid: "r1", job_title: "Tester" },
+                gap: [gap("First aid", "met")],
+              },
+              {
+                worker_pid: "77777777-7777-4777-8777-777777777777",
+                display_name: "Report Three",
+                report_kind: "indirect",
+                qualifications: [],
+                role: null,
+                gap: [],
+              },
+            ],
+          },
+        }),
+    );
+    await page.goto("/me");
+    const team = page.getByTestId("team-qualifications");
+    await expect(team).toContainText("Report One");
+    await expect(team).toContainText("First aid: Declared, not yet verified");
+    await expect(team).not.toContainText("Degree");
+    await expect(team).not.toContainText("Report Two");
+    await expect(team).not.toContainText("Report Three");
+  });
 });

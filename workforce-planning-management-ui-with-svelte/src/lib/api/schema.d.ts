@@ -18932,6 +18932,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workers/{pid}/team-qualifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** For a manager: each person below them, by name and direct or indirect, with their qualifications and how each qualification their current role asks for stands (a work record). Read as the manager; anyone else needs HR's access. No role recorded gives role null, not a clean gap */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The team */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workers/{pid}/time-entries": {
         parameters: {
             query?: never;

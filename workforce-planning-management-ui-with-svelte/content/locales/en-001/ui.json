@@ -2890,6 +2890,8 @@
     "framework": "Framework (for example RQF)",
     "level": "Level",
     "awardedOn": "Awarded on",
-    "save": "Save"
+    "save": "Save",
+    "team": "My team's qualifications",
+    "teamNone": "Nobody below you has a qualification gap to look at."
   }
 }

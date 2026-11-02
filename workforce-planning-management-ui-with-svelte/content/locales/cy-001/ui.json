@@ -2926,6 +2926,8 @@
     "framework": "Fframwaith (er enghraifft RQF)",
     "level": "Lefel",
     "awardedOn": "Dyfarnwyd ar",
-    "save": "Cadw"
+    "save": "Cadw",
+    "team": "Cymwysterau fy nhîm",
+    "teamNone": "Nid oes gan neb odanoch fwlch cymhwyster."
   }
 }

@@ -13911,6 +13911,19 @@
         ]
       }
     },
+    "/api/workers/{pid}/team-qualifications": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The team"
+          }
+        },
+        "summary": "For a manager: each person below them, by name and direct or indirect, with their qualifications and how each qualification their current role asks for stands (a work record). Read as the manager; anyone else needs HR's access. No role recorded gives role null, not a clean gap",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
     "/api/workers/{pid}/time-entries": {
       "get": {
         "responses": {

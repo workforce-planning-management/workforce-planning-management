@@ -2881,6 +2881,8 @@
     "framework": "Kerangka (misalnya RQF)",
     "level": "Tingkat",
     "awardedOn": "Diberikan pada",
-    "save": "Simpan"
+    "save": "Simpan",
+    "team": "Kualifikasi tim saya",
+    "teamNone": "Tidak ada anggota di bawah Anda yang memiliki kesenjangan kualifikasi."
   }
 }

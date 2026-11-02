@@ -17,6 +17,7 @@
   import MyMandatoryLearning from "#lib/components/MyMandatoryLearning.svelte";
   import MyQualifications from "#lib/components/MyQualifications.svelte";
   import TeamMandatoryLearning from "#lib/components/TeamMandatoryLearning.svelte";
+import TeamQualifications from "#lib/components/TeamQualifications.svelte";
   import EquipmentPanel from "#lib/components/EquipmentPanel.svelte";
   import MyCredentials from "#lib/components/MyCredentials.svelte";
   import TeamPolicies from "#lib/components/TeamPolicies.svelte";
@@ -90,6 +91,7 @@
   <MyMandatoryLearning {workerPid} />
   <MyQualifications {workerPid} />
   <TeamMandatoryLearning {workerPid} />
+  <TeamQualifications {workerPid} />
   <TeamPolicies {workerPid} />
   <TeamEquipment {workerPid} />
   <EquipmentPanel {workerPid} organizationRef={memberships.find((m) => m.worker_pid === workerPid)?.organization_ref ?? ""} />

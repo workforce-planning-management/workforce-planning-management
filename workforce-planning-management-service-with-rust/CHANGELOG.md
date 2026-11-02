@@ -1238,6 +1238,7 @@ malformed-policy safety) and 5 front-end tests
 
 ### Added
 
+- **A manager reads their reports' qualifications (WPM-T435, 2026-11-02).** `GET /api/workers/{pid}/team-qualifications`: each person below the manager by name, with their qualifications and the gap against their current role; read as the manager or HR. A shared `role_and_gap` helper now serves this and the person's own list.
 - 2026-07-18 — WPM-T1–T17 implementation round: full Loco service
   (copy-adapted from patient-flow). 7 migrations / 25 tables, pure
   `rules/` core (lifecycle machines for employee / requisition /

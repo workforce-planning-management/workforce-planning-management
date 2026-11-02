@@ -244,6 +244,100 @@ async fn current_role(
         .await?)
 }
 
+/// The worker's current role and how each of its requirements stands for `held`. No role recorded is `Null`, not a clean gap.
+async fn role_and_gap(
+    ctx: &AppContext,
+    worker: &workers::Model,
+    held: &[rules::Held],
+    today: NaiveDate,
+) -> Result<(Value, Vec<Value>)> {
+    let Some(profile) = current_role(ctx, worker).await? else {
+        return Ok((Value::Null, Vec::new()));
+    };
+    let reqs = role_qualification_requirements::Entity::find()
+        .filter(role_qualification_requirements::Column::RoleProfilePid.eq(profile.pid))
+        .order_by_asc(role_qualification_requirements::Column::Title)
+        .all(&ctx.db)
+        .await?;
+    let gap = reqs
+        .iter()
+        .map(|r| {
+            let req = rules::Requirement {
+                title: r.title.clone(),
+                kind: r.kind.clone(),
+                framework: r.framework.clone(),
+                min_level: r.min_level,
+            };
+            json!({
+                "title": r.title, "kind": r.kind, "framework": r.framework, "min_level": r.min_level,
+                "standing": standing_name(rules::standing(&req, held, today)),
+            })
+        })
+        .collect();
+    Ok((
+        json!({ "pid": profile.pid, "job_title": profile.job_title }),
+        gap,
+    ))
+}
+
+/// `GET /api/workers/{pid}/team-qualifications` — for a manager: each person below them, by name, with their qualifications and the gap
+/// against their current role. Read as the manager `{pid}`; anyone else needs HR's access (WPM-R171: a work record, so a manager sees
+/// their reports by name). Only people in the manager's own organization; no role recorded is `role: null`, never a clean gap.
+#[debug_handler]
+async fn team(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    super::ensure_org_in_scope(&ctx, &caller, &manager.organization_ref).await?;
+    if crate::auth::acting_for_other(&caller, &manager.person_ref)
+        && !super::policies::privileged(&ctx, &caller, &manager.organization_ref).await?
+    {
+        return Err(super::forbidden(
+            "a team's qualifications are for that team's manager",
+        ));
+    }
+    let today = Utc::now().date_naive();
+    let staff = workers::Entity::find()
+        .filter(workers::Column::OrganizationRef.eq(&manager.organization_ref))
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::TerminatedOn.is_null());
+    super::ensure_scale(&ctx, staff.clone()).await?;
+    let staff = staff.all(&ctx.db).await?;
+    let mut reports_of: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
+        std::collections::BTreeMap::new();
+    for w in &staff {
+        if let Some(boss) = w.manager_pid {
+            reports_of.entry(boss).or_default().push(w.pid);
+        }
+    }
+    let below = crate::rules::org::downline(manager.pid, &reports_of);
+    let by_pid: std::collections::HashMap<Uuid, &workers::Model> =
+        staff.iter().map(|w| (w.pid, w)).collect();
+    let pids: Vec<Uuid> = below.iter().map(|(p, _)| *p).collect();
+    let all = qualifications::Entity::find()
+        .filter(qualifications::Column::WorkerPid.is_in(pids))
+        .order_by_asc(qualifications::Column::Title)
+        .all(&ctx.db)
+        .await?;
+    let mut people: Vec<Value> = Vec::new();
+    for (p, depth) in &below {
+        let Some(w) = by_pid.get(p) else { continue };
+        let mine: Vec<&qualifications::Model> =
+            all.iter().filter(|q| q.worker_pid == w.pid).collect();
+        let held: Vec<rules::Held> = mine.iter().map(|q| held_of(q)).collect();
+        let (role, gap) = role_and_gap(&ctx, w, &held, today).await?;
+        people.push(json!({
+            "worker_pid": w.pid, "display_name": w.display_name,
+            "report_kind": crate::rules::org::report_kind(*depth).map(crate::rules::org::ReportKind::as_str),
+            "qualifications": mine.iter().map(|q| row(q, today)).collect::<Vec<_>>(),
+            "role": role, "gap": gap,
+        }));
+    }
+    format::json(json!({ "manager_pid": manager.pid, "as_of": today, "people": people }))
+}
+
 /// `GET /api/workers/{pid}/qualifications` — the person's qualifications and how each requirement of their current role stands:
 /// the person themself and HR. No role recorded is `role: null`, not a clean gap.
 #[debug_handler]
@@ -260,35 +354,7 @@ async fn of_worker(
         .all(&ctx.db)
         .await?;
     let held: Vec<rules::Held> = mine.iter().map(held_of).collect();
-    let (role, gap) = match current_role(&ctx, &worker).await? {
-        None => (Value::Null, Vec::new()),
-        Some(profile) => {
-            let reqs = role_qualification_requirements::Entity::find()
-                .filter(role_qualification_requirements::Column::RoleProfilePid.eq(profile.pid))
-                .order_by_asc(role_qualification_requirements::Column::Title)
-                .all(&ctx.db)
-                .await?;
-            let gap = reqs
-                .iter()
-                .map(|r| {
-                    let req = rules::Requirement {
-                        title: r.title.clone(),
-                        kind: r.kind.clone(),
-                        framework: r.framework.clone(),
-                        min_level: r.min_level,
-                    };
-                    json!({
-                        "title": r.title, "kind": r.kind, "framework": r.framework, "min_level": r.min_level,
-                        "standing": standing_name(rules::standing(&req, &held, today)),
-                    })
-                })
-                .collect();
-            (
-                json!({ "pid": profile.pid, "job_title": profile.job_title }),
-                gap,
-            )
-        }
-    };
+    let (role, gap) = role_and_gap(&ctx, &worker, &held, today).await?;
     format::json(json!({
         "worker_pid": worker.pid, "as_of": today,
         "qualifications": mine.iter().map(|q| row(q, today)).collect::<Vec<_>>(),
@@ -398,6 +464,7 @@ pub fn routes() -> Routes {
         .prefix("/api")
         .add("/workers/{pid}/qualifications", get(of_worker))
         .add("/workers/{pid}/qualifications", post(add))
+        .add("/workers/{pid}/team-qualifications", get(team))
         .add("/qualifications/{pid}/verify", post(verify))
         .add("/qualifications/{pid}", delete(remove))
         .add(

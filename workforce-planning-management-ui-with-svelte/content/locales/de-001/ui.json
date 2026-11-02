@@ -2890,6 +2890,8 @@
     "framework": "Rahmen (zum Beispiel RQF)",
     "level": "Stufe",
     "awardedOn": "Verliehen am",
-    "save": "Speichern"
+    "save": "Speichern",
+    "team": "Qualifikationen meines Teams",
+    "teamNone": "Bei niemandem unter Ihnen gibt es eine Qualifikationslücke."
   }
 }

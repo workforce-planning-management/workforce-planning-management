@@ -2899,6 +2899,8 @@
     "framework": "Quadro (por exemplo RQF)",
     "level": "Nível",
     "awardedOn": "Concedida em",
-    "save": "Salvar"
+    "save": "Salvar",
+    "team": "Qualificações da minha equipa",
+    "teamNone": "Ninguém abaixo de si tem uma lacuna de qualificação."
   }
 }

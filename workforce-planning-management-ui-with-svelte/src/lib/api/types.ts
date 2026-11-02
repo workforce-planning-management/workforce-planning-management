@@ -829,3 +829,13 @@ export interface QualificationList {
   role: { pid: string; job_title: string } | null;
   gap: QualificationGapRow[];
 }
+
+/** One person below a manager, by name, with their qualifications and the gap against their current role. */
+export interface TeamQualificationPerson {
+  worker_pid: string;
+  display_name: string;
+  report_kind: "direct" | "indirect" | null;
+  qualifications: Qualification[];
+  role: { pid: string; job_title: string } | null;
+  gap: QualificationGapRow[];
+}

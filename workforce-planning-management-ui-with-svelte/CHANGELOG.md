@@ -662,6 +662,7 @@ first, verified green (all 12 Playwright + 10 vitest tests pass). See
 
 ### Added
 
+- **My team's qualifications (WPM-T435, 2026-11-02).** A panel on `/me` for a manager lists reports whose role asks for a qualification not held verified and in date; two strings in 13 locales (AI-written, unreviewed).
 - 2026-07-19 — SVAR strong fit: the **/requisitions** board upgrades from custom CSS columns to
   the SVAR Kanban: drag between status columns drives the pipeline
   transition endpoint (the service's state machine still refuses

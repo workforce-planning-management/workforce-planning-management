@@ -695,6 +695,9 @@ fn add_integration_paths(document: &mut Value) {
             "get": { "tags": ["learning"], "summary": "A person's qualifications, declared or verified, and how each qualification their current role asks for stands: met (a verified match in date), declared_only, expired or missing. No role recorded gives role null, not a clean gap. The person themself and HR", "responses": ok("The qualifications and the gap") },
             "post": { "tags": ["learning"], "summary": "Add a qualification (kind, title, optional awarding body, framework with level, awarded and expiry dates); it is declared. The person or HR", "responses": ok("The pid of the qualification") }
         },
+        "/api/workers/{pid}/team-qualifications": {
+            "get": { "tags": ["learning"], "summary": "For a manager: each person below them, by name and direct or indirect, with their qualifications and how each qualification their current role asks for stands (a work record). Read as the manager; anyone else needs HR's access. No role recorded gives role null, not a clean gap", "responses": ok("The team") }
+        },
         "/api/qualifications/{pid}/verify": {
             "post": { "tags": ["learning"], "summary": "HR marks a qualification verified with a reference to where the proof is held (no certificate is stored). Verifying twice keeps the first", "responses": ok("The pid and status") }
         },
