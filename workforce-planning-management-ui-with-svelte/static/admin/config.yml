@@ -2671,6 +2671,10 @@ collections:
               - { name: "mandatory", label: "Mandatory", widget: string, required: false, i18n: true }
               - { name: "performance", label: "Performance", widget: string, required: false, i18n: true }
               - { name: "padr", label: "Padr", widget: string, required: false, i18n: true }
+              - { name: "academic", label: "Academic", widget: string, required: false, i18n: true }
+              - { name: "professional", label: "Professional", widget: string, required: false, i18n: true }
+              - { name: "vocational", label: "Vocational", widget: string, required: false, i18n: true }
+              - { name: "licence", label: "Licence", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

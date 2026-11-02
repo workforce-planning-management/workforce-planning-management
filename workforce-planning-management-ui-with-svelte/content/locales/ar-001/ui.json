@@ -1933,7 +1933,11 @@
     "occupation_code": "رمز المهنة",
     "mandatory": "إلزامي",
     "performance": "الأداء",
-    "padr": "مراجعة التطوير الشخصي"
+    "padr": "مراجعة التطوير الشخصي",
+    "academic": "أكاديمي",
+    "professional": "مهني",
+    "vocational": "تقني",
+    "licence": "ترخيص"
   },
   "engagement": {
     "title": "التعاقد",

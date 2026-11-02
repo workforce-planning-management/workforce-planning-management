@@ -1898,7 +1898,11 @@
     "occupation_code": "职业代码",
     "mandatory": "强制",
     "performance": "绩效",
-    "padr": "个人发展评审"
+    "padr": "个人发展评审",
+    "academic": "学历",
+    "professional": "职业资格",
+    "vocational": "职业技能",
+    "licence": "执照"
   },
   "engagement": {
     "title": "用工关系",

@@ -1905,7 +1905,11 @@
     "occupation_code": "occupation code",
     "mandatory": "mandatory",
     "performance": "performance",
-    "padr": "personal development review"
+    "padr": "personal development review",
+    "academic": "academic",
+    "professional": "professional",
+    "vocational": "vocational",
+    "licence": "licence"
   },
   "engagement": {
     "title": "Engagement",

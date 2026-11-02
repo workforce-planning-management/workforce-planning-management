@@ -1905,7 +1905,11 @@
     "occupation_code": "পেশার কোড",
     "mandatory": "বাধ্যতামূলক",
     "performance": "কর্মক্ষমতা",
-    "padr": "ব্যক্তিগত উন্নয়ন পর্যালোচনা"
+    "padr": "ব্যক্তিগত উন্নয়ন পর্যালোচনা",
+    "academic": "একাডেমিক",
+    "professional": "পেশাদার",
+    "vocational": "বৃত্তিমূলক",
+    "licence": "লাইসেন্স"
   },
   "engagement": {
     "title": "নিয়োগ",

@@ -1912,7 +1912,11 @@
     "occupation_code": "código de ocupación",
     "mandatory": "obligatorio",
     "performance": "desempeño",
-    "padr": "revisión de desarrollo personal"
+    "padr": "revisión de desarrollo personal",
+    "academic": "académica",
+    "professional": "profesional",
+    "vocational": "formación profesional",
+    "licence": "licencia"
   },
   "engagement": {
     "title": "Contratación",

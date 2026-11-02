@@ -1912,7 +1912,11 @@
     "occupation_code": "código de ocupação",
     "mandatory": "obrigatório",
     "performance": "desempenho",
-    "padr": "avaliação de desenvolvimento pessoal"
+    "padr": "avaliação de desenvolvimento pessoal",
+    "academic": "acadêmica",
+    "professional": "profissional",
+    "vocational": "vocacional",
+    "licence": "licença"
   },
   "engagement": {
     "title": "Vínculo",

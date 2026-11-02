@@ -1898,7 +1898,11 @@
     "occupation_code": "kode pekerjaan",
     "mandatory": "wajib",
     "performance": "kinerja",
-    "padr": "tinjauan pengembangan pribadi"
+    "padr": "tinjauan pengembangan pribadi",
+    "academic": "akademik",
+    "professional": "profesional",
+    "vocational": "vokasional",
+    "licence": "lisensi"
   },
   "engagement": {
     "title": "Keterlibatan",

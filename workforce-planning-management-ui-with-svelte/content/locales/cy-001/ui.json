@@ -1933,7 +1933,11 @@
     "occupation_code": "cod galwedigaeth",
     "mandatory": "gorfodol",
     "performance": "perfformiad",
-    "padr": "adolygiad datblygu personol"
+    "padr": "adolygiad datblygu personol",
+    "academic": "academaidd",
+    "professional": "proffesiynol",
+    "vocational": "galwedigaethol",
+    "licence": "trwydded"
   },
   "engagement": {
     "title": "Ymgysylltiad",

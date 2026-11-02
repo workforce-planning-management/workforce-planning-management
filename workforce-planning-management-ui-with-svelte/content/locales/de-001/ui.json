@@ -1905,7 +1905,11 @@
     "occupation_code": "Berufsschlüssel",
     "mandatory": "verpflichtend",
     "performance": "Leistung",
-    "padr": "persönliches Entwicklungsgespräch"
+    "padr": "persönliches Entwicklungsgespräch",
+    "academic": "akademisch",
+    "professional": "beruflich",
+    "vocational": "berufspraktisch",
+    "licence": "Lizenz"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",

@@ -1905,7 +1905,11 @@
     "occupation_code": "پیشے کا کوڈ",
     "mandatory": "لازمی",
     "performance": "کارکردگی",
-    "padr": "ذاتی ترقی کا جائزہ"
+    "padr": "ذاتی ترقی کا جائزہ",
+    "academic": "تعلیمی",
+    "professional": "پیشہ ورانہ",
+    "vocational": "فنی",
+    "licence": "لائسنس"
   },
   "engagement": {
     "title": "تقرری",

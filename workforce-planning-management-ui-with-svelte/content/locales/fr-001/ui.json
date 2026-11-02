@@ -1912,7 +1912,11 @@
     "occupation_code": "code de profession",
     "mandatory": "obligatoire",
     "performance": "performance",
-    "padr": "entretien de développement personnel"
+    "padr": "entretien de développement personnel",
+    "academic": "universitaire",
+    "professional": "professionnelle",
+    "vocational": "vocationnelle",
+    "licence": "licence d'exercice"
   },
   "engagement": {
     "title": "Engagement",

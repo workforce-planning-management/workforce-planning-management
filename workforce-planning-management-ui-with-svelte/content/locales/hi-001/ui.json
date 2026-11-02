@@ -1905,7 +1905,11 @@
     "occupation_code": "व्यवसाय कोड",
     "mandatory": "अनिवार्य",
     "performance": "प्रदर्शन",
-    "padr": "व्यक्तिगत विकास समीक्षा"
+    "padr": "व्यक्तिगत विकास समीक्षा",
+    "academic": "शैक्षणिक",
+    "professional": "व्यावसायिक",
+    "vocational": "वृत्तिपरक",
+    "licence": "लाइसेंस"
   },
   "engagement": {
     "title": "नियुक्ति",
