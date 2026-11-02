@@ -9157,6 +9157,19 @@
         ]
       }
     },
+    "/api/qualifications/unverified": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The queue"
+          }
+        },
+        "summary": "HR's queue (?organization=): the qualifications people declared that nobody has verified, oldest first, each with the person's name. A list of records to check, not a ranking",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
     "/api/qualifications/{pid}": {
       "delete": {
         "parameters": [

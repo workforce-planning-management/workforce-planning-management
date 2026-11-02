@@ -458,6 +458,51 @@ async fn add_requirement(
     format::json(json!({ "pid": id }))
 }
 
+#[derive(Debug, Deserialize)]
+struct OrgQuery {
+    organization: String,
+}
+
+/// `GET /api/qualifications/unverified?organization=` — HR's queue: the qualifications people in the organization declared that nobody
+/// has verified, oldest first, each with the person's name. A queue of records to check, not a ranking of people.
+#[debug_handler]
+async fn unverified(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Query(q): Query<OrgQuery>,
+) -> Result<Response> {
+    ensure_hr(&ctx, &caller, &q.organization).await?;
+    let today = Utc::now().date_naive();
+    let in_org = workers::Entity::find()
+        .filter(workers::Column::OrganizationRef.eq(&q.organization))
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::TerminatedOn.is_null());
+    super::ensure_scale(&ctx, in_org.clone()).await?;
+    let people = in_org.all(&ctx.db).await?;
+    let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
+    let waiting = qualifications::Entity::find()
+        .filter(qualifications::Column::WorkerPid.is_in(pids))
+        .filter(qualifications::Column::VerifiedOn.is_null())
+        .order_by_asc(qualifications::Column::CreatedAt)
+        .all(&ctx.db)
+        .await?;
+    let name_of: std::collections::HashMap<Uuid, &str> = people
+        .iter()
+        .map(|w| (w.pid, w.display_name.as_str()))
+        .collect();
+    let queue: Vec<Value> = waiting
+        .iter()
+        .map(|w| {
+            let mut v = row(w, today);
+            v["worker_pid"] = json!(w.worker_pid);
+            v["display_name"] = json!(name_of.get(&w.worker_pid));
+            v["declared_on"] = json!(w.created_at.date_naive());
+            v
+        })
+        .collect();
+    format::json(json!({ "organization": q.organization, "as_of": today, "queue": queue }))
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -465,6 +510,7 @@ pub fn routes() -> Routes {
         .add("/workers/{pid}/qualifications", get(of_worker))
         .add("/workers/{pid}/qualifications", post(add))
         .add("/workers/{pid}/team-qualifications", get(team))
+        .add("/qualifications/unverified", get(unverified))
         .add("/qualifications/{pid}/verify", post(verify))
         .add("/qualifications/{pid}", delete(remove))
         .add(

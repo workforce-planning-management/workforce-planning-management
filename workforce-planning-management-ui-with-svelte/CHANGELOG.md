@@ -662,6 +662,7 @@ first, verified green (all 12 Playwright + 10 vitest tests pass). See
 
 ### Added
 
+- **A `/qualifications` screen for HR (WPM-T435, 2026-11-02).** The queue of declared qualifications with a field for where the proof is held and a Verify button; a nav entry; five strings in 13 locales (AI-written, unreviewed).
 - **My team's qualifications (WPM-T435, 2026-11-02).** A panel on `/me` for a manager lists reports whose role asks for a qualification not held verified and in date; two strings in 13 locales (AI-written, unreviewed).
 - 2026-07-19 — SVAR strong fit: the **/requisitions** board upgrades from custom CSS columns to
   the SVAR Kanban: drag between status columns drives the pipeline

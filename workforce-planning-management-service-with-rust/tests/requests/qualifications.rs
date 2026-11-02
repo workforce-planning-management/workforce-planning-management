@@ -173,3 +173,55 @@ async fn a_manager_reads_their_reports_qualifications_by_name() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn hrs_queue_lists_declared_qualifications_until_they_are_verified() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let me = seed_worker!(&request, &org, format!("Q-Q-{tag}"), None).await;
+        activate!(&request, &me).await;
+        let made: Value = request
+            .post(&format!("/api/workers/{me}/qualifications"))
+            .json(&json!({ "kind": "licence", "title": format!("Welding {tag}") }))
+            .await
+            .json();
+        let pid = made["pid"].as_str().unwrap().to_string();
+        let url = format!(
+            "/api/qualifications/unverified?organization={}",
+            org.replace(':', "%3A")
+        );
+        let queue: Value = request.get(&url).await.json();
+        let item = queue["queue"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|q| q["pid"] == pid.as_str())
+            .cloned()
+            .expect("a declared qualification is queued");
+        assert_eq!(item["worker_pid"], me.as_str());
+        assert!(
+            item["display_name"]
+                .as_str()
+                .unwrap()
+                .starts_with("Test Worker")
+        );
+        request
+            .post(&format!("/api/qualifications/{pid}/verify"))
+            .json(&json!({ "evidence_ref": "HR file 12" }))
+            .await
+            .assert_status_ok();
+        let after: Value = request.get(&url).await.json();
+        assert!(
+            !after["queue"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|q| q["pid"] == pid.as_str()),
+            "a verified qualification leaves the queue"
+        );
+    })
+    .await;
+}

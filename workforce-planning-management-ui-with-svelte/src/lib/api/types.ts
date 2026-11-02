@@ -830,6 +830,13 @@ export interface QualificationList {
   gap: QualificationGapRow[];
 }
 
+/** A declared qualification in HR's queue, with the person's name and the day it was declared. */
+export interface QueuedQualification extends Qualification {
+  worker_pid: string;
+  display_name: string | null;
+  declared_on: string;
+}
+
 /** One person below a manager, by name, with their qualifications and the gap against their current role. */
 export interface TeamQualificationPerson {
   worker_pid: string;

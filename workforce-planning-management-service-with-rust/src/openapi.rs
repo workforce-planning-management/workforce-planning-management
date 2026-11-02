@@ -698,6 +698,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/workers/{pid}/team-qualifications": {
             "get": { "tags": ["learning"], "summary": "For a manager: each person below them, by name and direct or indirect, with their qualifications and how each qualification their current role asks for stands (a work record). Read as the manager; anyone else needs HR's access. No role recorded gives role null, not a clean gap", "responses": ok("The team") }
         },
+        "/api/qualifications/unverified": {
+            "get": { "tags": ["learning"], "summary": "HR's queue (?organization=): the qualifications people declared that nobody has verified, oldest first, each with the person's name. A list of records to check, not a ranking", "responses": ok("The queue") }
+        },
         "/api/qualifications/{pid}/verify": {
             "post": { "tags": ["learning"], "summary": "HR marks a qualification verified with a reference to where the proof is held (no certificate is stored). Verifying twice keeps the first", "responses": ok("The pid and status") }
         },

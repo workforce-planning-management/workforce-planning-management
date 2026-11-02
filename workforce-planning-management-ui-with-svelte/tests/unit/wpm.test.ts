@@ -128,6 +128,7 @@ describe("api path map", () => {
     await wpm.workerQualifications("w1");
     await wpm.teamMandatoryLearning("w1");
     await wpm.teamQualifications("w1");
+    await wpm.unverifiedQualifications("organization:abc");
     await wpm.learningRollup("organization:abc");
     await wpm.listLearningRequirements("organization:abc");
     await wpm.addLearningRequirement({
@@ -502,6 +503,7 @@ describe("api path map", () => {
       "/api/proxy/workers/w1/qualifications",
       "/api/proxy/workers/w1/team-mandatory-learning",
       "/api/proxy/workers/w1/team-qualifications",
+      "/api/proxy/qualifications/unverified?organization=organization%3Aabc",
       "/api/proxy/learning-requirements/rollup?organization=organization%3Aabc",
       "/api/proxy/learning-requirements?organization=organization%3Aabc",
       "/api/proxy/learning-requirements",

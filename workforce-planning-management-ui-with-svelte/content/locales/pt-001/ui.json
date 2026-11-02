@@ -53,7 +53,8 @@
     "consultations": "Consultas",
     "decisionGates": "Pontos de decisão",
     "statutoryDefaults": "Valores legais por omissão",
-    "mandatoryLearning": "Formação obrigatória"
+    "mandatoryLearning": "Formação obrigatória",
+    "qualifications": "Qualificações"
   },
   "pr": {
     "retention": "Retenção",
@@ -2901,6 +2902,9 @@
     "awardedOn": "Concedida em",
     "save": "Salvar",
     "team": "Qualificações da minha equipa",
-    "teamNone": "Ninguém abaixo de si tem uma lacuna de qualificação."
+    "teamNone": "Ninguém abaixo de si tem uma lacuna de qualificação.",
+    "queueTitle": "Qualificações a aguardar verificação",
+    "queueHint": "A fila dos RH: as qualificações que as pessoas declararam e que ninguém verificou ainda. Verifique uma indicando onde está guardada a prova. É uma lista de registos a conferir, não uma classificação de pessoas.",
+    "queueNone": "Nada está a aguardar verificação."
   }
 }

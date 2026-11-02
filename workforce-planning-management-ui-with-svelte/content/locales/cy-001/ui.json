@@ -53,7 +53,8 @@
     "consultations": "Ymgynghoriadau",
     "decisionGates": "Pyrth penderfynu",
     "statutoryDefaults": "Rhagosodiadau statudol",
-    "mandatoryLearning": "Hyfforddiant gorfodol"
+    "mandatoryLearning": "Hyfforddiant gorfodol",
+    "qualifications": "Cymwysterau"
   },
   "pr": {
     "retention": "Cadw data",
@@ -2928,6 +2929,9 @@
     "awardedOn": "Dyfarnwyd ar",
     "save": "Cadw",
     "team": "Cymwysterau fy nhîm",
-    "teamNone": "Nid oes gan neb odanoch fwlch cymhwyster."
+    "teamNone": "Nid oes gan neb odanoch fwlch cymhwyster.",
+    "queueTitle": "Cymwysterau yn aros i'w gwirio",
+    "queueHint": "Ciw'r adran AD: y cymwysterau a ddatganodd pobl ac nad oes neb wedi'u gwirio eto. Gwiriwch un drwy ddweud ble mae'r prawf yn cael ei gadw. Rhestr o gofnodion i'w gwirio yw hon, nid safle o bobl.",
+    "queueNone": "Does dim yn aros i'w wirio."
   }
 }

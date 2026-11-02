@@ -11486,6 +11486,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qualifications/unverified": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** HR's queue (?organization=): the qualifications people declared that nobody has verified, oldest first, each with the person's name. A list of records to check, not a ranking */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The queue */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qualifications/{pid}": {
         parameters: {
             query?: never;

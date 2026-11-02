@@ -63,6 +63,7 @@ import type {
   QualificationList,
   TeamLearningPerson,
   TeamQualificationPerson,
+  QueuedQualification,
   PayrollRun,
   Ratio,
   Requisition,
@@ -599,6 +600,21 @@ export function teamMandatoryLearning(
   people: TeamLearningPerson[];
 }> {
   return api(`/workers/${pid}/team-mandatory-learning`, init);
+}
+
+/** HR's queue: the qualifications people in the organization declared that nobody has verified, oldest first. */
+export function unverifiedQualifications(
+  organization: string,
+  init?: FetchLike,
+): Promise<{
+  organization: string;
+  as_of: string;
+  queue: QueuedQualification[];
+}> {
+  return api(
+    `/qualifications/unverified?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
 }
 
 /** For a manager: each person below them, by name, with their qualifications and the gap against their current role. */

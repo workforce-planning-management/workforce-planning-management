@@ -53,7 +53,8 @@
     "consultations": "Procédures de consultation",
     "decisionGates": "Points de décision",
     "statutoryDefaults": "Valeurs légales par défaut",
-    "mandatoryLearning": "Formations obligatoires"
+    "mandatoryLearning": "Formations obligatoires",
+    "qualifications": "Qualifications"
   },
   "pr": {
     "retention": "Conservation",
@@ -2901,6 +2902,9 @@
     "awardedOn": "Obtenue le",
     "save": "Enregistrer",
     "team": "Qualifications de mon équipe",
-    "teamNone": "Personne sous votre responsabilité n'a d'écart de qualification."
+    "teamNone": "Personne sous votre responsabilité n'a d'écart de qualification.",
+    "queueTitle": "Qualifications en attente de vérification",
+    "queueHint": "La file des RH : les qualifications déclarées par les personnes et que personne n'a encore vérifiées. Vérifiez-en une en indiquant où se trouve la preuve. C'est une liste de dossiers à contrôler, pas un classement de personnes.",
+    "queueNone": "Rien n'attend de vérification."
   }
 }

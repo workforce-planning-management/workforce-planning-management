@@ -42,6 +42,7 @@
     ["/ai-register", "nav.aiRegister"],
     ["/statutory-defaults", "nav.statutoryDefaults"],
     ["/mandatory-learning", "nav.mandatoryLearning"],
+    ["/qualifications", "nav.qualifications"],
     ["/bargaining", "nav.bargaining"],
     ["/consultations", "nav.consultations"],
     ["/decision-gates", "nav.decisionGates"],

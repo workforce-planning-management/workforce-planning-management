@@ -53,7 +53,8 @@
     "consultations": "Consultations",
     "decisionGates": "Decision gates",
     "statutoryDefaults": "Statutory defaults",
-    "mandatoryLearning": "Mandatory learning"
+    "mandatoryLearning": "Mandatory learning",
+    "qualifications": "Qualifications"
   },
   "pr": {
     "retention": "Retention",
@@ -2892,6 +2893,9 @@
     "awardedOn": "Awarded on",
     "save": "Save",
     "team": "My team's qualifications",
-    "teamNone": "Nobody below you has a qualification gap to look at."
+    "teamNone": "Nobody below you has a qualification gap to look at.",
+    "queueTitle": "Qualifications awaiting verification",
+    "queueHint": "HR's queue of the qualifications people declared that nobody has verified yet. Verify one by saying where the proof is held. This is a list of records to check, not a ranking of people.",
+    "queueNone": "Nothing is waiting for verification."
   }
 }

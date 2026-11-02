@@ -53,7 +53,8 @@
     "consultations": "Konsultasi",
     "decisionGates": "Gerbang keputusan",
     "statutoryDefaults": "Bawaan menurut undang-undang",
-    "mandatoryLearning": "Pelatihan wajib"
+    "mandatoryLearning": "Pelatihan wajib",
+    "qualifications": "Kualifikasi"
   },
   "pr": {
     "retention": "Retensi",
@@ -2883,6 +2884,9 @@
     "awardedOn": "Diberikan pada",
     "save": "Simpan",
     "team": "Kualifikasi tim saya",
-    "teamNone": "Tidak ada anggota di bawah Anda yang memiliki kesenjangan kualifikasi."
+    "teamNone": "Tidak ada anggota di bawah Anda yang memiliki kesenjangan kualifikasi.",
+    "queueTitle": "Kualifikasi menunggu verifikasi",
+    "queueHint": "Antrean HR berisi kualifikasi yang dinyatakan orang dan belum diverifikasi siapa pun. Verifikasi satu dengan menyebutkan di mana bukti disimpan. Ini daftar catatan untuk diperiksa, bukan peringkat orang.",
+    "queueNone": "Tidak ada yang menunggu verifikasi."
   }
 }

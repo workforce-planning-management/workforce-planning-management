@@ -53,7 +53,8 @@
     "consultations": "Consultas",
     "decisionGates": "Puertas de decisión",
     "statutoryDefaults": "Valores legales por defecto",
-    "mandatoryLearning": "Formación obligatoria"
+    "mandatoryLearning": "Formación obligatoria",
+    "qualifications": "Cualificaciones"
   },
   "pr": {
     "retention": "Retención",
@@ -2901,6 +2902,9 @@
     "awardedOn": "Otorgada el",
     "save": "Guardar",
     "team": "Cualificaciones de mi equipo",
-    "teamNone": "Nadie a su cargo tiene una carencia de cualificación."
+    "teamNone": "Nadie a su cargo tiene una carencia de cualificación.",
+    "queueTitle": "Cualificaciones pendientes de verificación",
+    "queueHint": "La cola de RR. HH. con las cualificaciones que las personas declararon y que nadie ha verificado aún. Verifique una indicando dónde se guarda la prueba. Es una lista de registros que comprobar, no una clasificación de personas.",
+    "queueNone": "Nada está pendiente de verificación."
   }
 }

@@ -15,7 +15,7 @@ A person's qualifications, declared until HR verifies them with an evidence refe
 
 ### Added — managers read their reports' qualifications (WPM-R171, WPM-T435, 2026-11-02)
 
-`GET /api/workers/{pid}/team-qualifications` lists each person below a manager by name with their qualifications and the gap against their current role (a work record, as for mandatory learning), and a panel on `/me` lists reports whose role asks for something not held verified and in date. No role recorded is not shown as clean.
+`GET /api/workers/{pid}/team-qualifications` lists each person below a manager by name with their qualifications and the gap against their current role (a work record, as for mandatory learning), and a panel on `/me` lists reports whose role asks for something not held verified and in date. No role recorded is not shown as clean. HR also gets a queue of declared qualifications awaiting verification (`GET /api/qualifications/unverified`, a `/qualifications` screen).
 
 ### Security — the matcher crate gets a cargo-deny gate (2026-11-01)
 

@@ -53,7 +53,8 @@
     "consultations": "磋商",
     "decisionGates": "决策关口",
     "statutoryDefaults": "法定默认值",
-    "mandatoryLearning": "必修培训"
+    "mandatoryLearning": "必修培训",
+    "qualifications": "资格"
   },
   "pr": {
     "retention": "保留",
@@ -2883,6 +2884,9 @@
     "awardedOn": "颁发日期",
     "save": "保存",
     "team": "我团队的资质",
-    "teamNone": "您下属中没有人存在资质缺口。"
+    "teamNone": "您下属中没有人存在资质缺口。",
+    "queueTitle": "等待核实的资质",
+    "queueHint": "人力资源的队列：员工自行申报、尚无人核实的资质。请说明证明材料存放在哪里来核实。这是待核查的记录清单，不是对人的排名。",
+    "queueNone": "没有等待核实的资质。"
   }
 }

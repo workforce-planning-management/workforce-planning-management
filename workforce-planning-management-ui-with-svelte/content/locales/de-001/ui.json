@@ -53,7 +53,8 @@
     "consultations": "Konsultationen",
     "decisionGates": "Entscheidungsschranken",
     "statutoryDefaults": "Gesetzliche Voreinstellungen",
-    "mandatoryLearning": "Pflichtschulungen"
+    "mandatoryLearning": "Pflichtschulungen",
+    "qualifications": "Qualifikationen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -2892,6 +2893,9 @@
     "awardedOn": "Verliehen am",
     "save": "Speichern",
     "team": "Qualifikationen meines Teams",
-    "teamNone": "Bei niemandem unter Ihnen gibt es eine Qualifikationslücke."
+    "teamNone": "Bei niemandem unter Ihnen gibt es eine Qualifikationslücke.",
+    "queueTitle": "Qualifikationen, die auf Prüfung warten",
+    "queueHint": "Die Warteschlange der HR: Qualifikationen, die Personen angegeben haben und die noch niemand geprüft hat. Prüfen Sie eine, indem Sie angeben, wo der Nachweis liegt. Das ist eine Liste von Einträgen zur Prüfung, keine Rangliste von Personen.",
+    "queueNone": "Nichts wartet auf eine Prüfung."
   }
 }
