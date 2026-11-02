@@ -2847,5 +2847,16 @@
       "organization": "Awdurdodaeth gartref y sefydliad",
       "deployment": "Y gosodiad cyfan"
     }
+  },
+  "minWage": {
+    "title": "Gwirio'r isafswm cyflog",
+    "run": "Cymharu â'r isafswm cyflog",
+    "result": "Canlyniad",
+    "why": "Rheswm",
+    "below": "O dan",
+    "near": "Agos",
+    "ok": "Iawn",
+    "none_by_law": "Dim yn ôl y gyfraith",
+    "unknown": "Dim digon i gymharu"
   }
 }

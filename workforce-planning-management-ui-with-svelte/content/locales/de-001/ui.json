@@ -2811,5 +2811,16 @@
       "organization": "Die Sitz-Rechtsordnung der Organisation",
       "deployment": "Die ganze Installation"
     }
+  },
+  "minWage": {
+    "title": "Mindestlohn-Prüfung",
+    "run": "Mit dem Mindestlohn abgleichen",
+    "result": "Ergebnis",
+    "why": "Grund",
+    "below": "Darunter",
+    "near": "Knapp darüber",
+    "ok": "In Ordnung",
+    "none_by_law": "Gesetzlich keiner",
+    "unknown": "Nicht genug zum Vergleichen"
   }
 }

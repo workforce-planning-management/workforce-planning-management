@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the minimum-wage check on a payroll run (WPM-R218, WPM-T416)
+
+A panel on `/payroll/[pid]` (not for a draft run) with a button that runs the advisory check on request, because the read is audited. It shows the server's indicative note, a count per outcome and a row per worker (outcome, reason, band; never an age). Nine strings in the 13 `-001` locales (AI-written, unreviewed). **Not done:** an axe run, a look at a screenshot, and a translation of the server's note.
+
 ### Changed — the statutory defaults page says where each value came from (WPM-T384 step 2, WPM-D153)
 
 `/statutory-defaults` has an organization picker (the deployment, or an organization in scope); with one chosen it shows the home

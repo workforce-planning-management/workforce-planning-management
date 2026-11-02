@@ -2802,5 +2802,16 @@
       "organization": "组织的注册地法域",
       "deployment": "整个部署"
     }
+  },
+  "minWage": {
+    "title": "最低工资检查",
+    "run": "与最低工资比较",
+    "result": "结果",
+    "why": "原因",
+    "below": "低于",
+    "near": "接近",
+    "ok": "正常",
+    "none_by_law": "法律未规定",
+    "unknown": "信息不足，无法比较"
   }
 }

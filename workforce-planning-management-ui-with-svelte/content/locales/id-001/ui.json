@@ -2802,5 +2802,16 @@
       "organization": "Yurisdiksi terdaftar organisasi",
       "deployment": "Seluruh penerapan"
     }
+  },
+  "minWage": {
+    "title": "Pemeriksaan upah minimum",
+    "run": "Bandingkan dengan upah minimum",
+    "result": "Hasil",
+    "why": "Alasan",
+    "below": "Di bawah",
+    "near": "Mendekati",
+    "ok": "Sesuai",
+    "none_by_law": "Tidak ada menurut hukum",
+    "unknown": "Tidak cukup untuk dibandingkan"
   }
 }

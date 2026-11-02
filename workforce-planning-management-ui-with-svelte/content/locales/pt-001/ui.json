@@ -2820,5 +2820,16 @@
       "organization": "A jurisdição da sede da organização",
       "deployment": "Toda a implantação"
     }
+  },
+  "minWage": {
+    "title": "Verificação do salário mínimo",
+    "run": "Comparar com o salário mínimo",
+    "result": "Resultado",
+    "why": "Motivo",
+    "below": "Abaixo",
+    "near": "Próximo",
+    "ok": "Correto",
+    "none_by_law": "Nenhum por lei",
+    "unknown": "Dados insuficientes para comparar"
   }
 }

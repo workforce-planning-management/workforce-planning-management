@@ -725,3 +725,24 @@ export interface SuccessionEntry {
     rank: number;
   }[];
 }
+
+/** One worker's minimum-wage result: never an age, and `unknown` always carries a reason. */
+export interface MinimumWageRow {
+  worker_pid: string;
+  outcome: "below" | "near" | "ok" | "none_by_law" | "unknown";
+  reason: string | null;
+  band: string | null;
+}
+
+/** The advisory minimum-wage check of a payroll run. Indicative; never blocks the run. */
+export interface MinimumWageCheck {
+  run_pid: string;
+  period_start: string;
+  period_end: string;
+  indicative: true;
+  note: string;
+  payslips: number;
+  counts: Record<string, number>;
+  unknown_reasons: Record<string, number>;
+  workers: MinimumWageRow[];
+}

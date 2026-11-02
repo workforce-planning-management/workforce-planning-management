@@ -3,10 +3,21 @@
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import { page } from "$app/state";
-  import { getRun, money, runAction, runPayslips } from "#lib/api/wpm.js";
+  import {
+    getRun,
+    minimumWageCheck,
+    money,
+    runAction,
+    runPayslips,
+  } from "#lib/api/wpm.js";
   import { i18n, t, l, tv } from "#lib/i18n.svelte.js";
   import { createLoader } from "#lib/loader.svelte.js";
-  import type { Payslip, PayrollRun } from "#lib/api/types.js";
+  import type {
+    MinimumWageCheck,
+    MinimumWageRow,
+    Payslip,
+    PayrollRun,
+  } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,
@@ -22,6 +33,10 @@
   };
 
   let actionError = $state<string | null>(null);
+  // The check is an audited read, so it runs only when asked, and is dropped when the run changes.
+  let wage = $state<MinimumWageCheck | null>(null);
+  let wageError = $state<string | null>(null);
+  let wageBusy = $state(false);
 
   const pid = $derived(page.params.pid ?? "");
 
@@ -40,6 +55,29 @@
     if (pid) void load();
   });
 
+  $effect(() => {
+    void pid;
+    wage = null;
+    wageError = null;
+  });
+
+  async function checkWage() {
+    const asked = pid;
+    wageBusy = true;
+    wageError = null;
+    try {
+      const answer = await minimumWageCheck(asked);
+      if (asked === pid) wage = answer;
+    } catch (cause) {
+      if (asked === pid) wageError = errorText(cause);
+    } finally {
+      wageBusy = false;
+    }
+  }
+
+  /** A reason or band the locale has no words for falls back to its own name, never to nothing. */
+  const words = (value: string | null) => (value === null ? "—" : tv(value));
+
   async function act(action: "calculate" | "approve" | "pay" | "reopen") {
     actionError = null;
     try {
@@ -49,6 +87,32 @@
       actionError = errorText(cause);
     }
   }
+
+  const wageColumns = $derived<DataGridColumn[]>([
+    {
+      id: "worker_pid",
+      header: t("nav.workers"),
+      sortable: true,
+      accessor: (r) => String((r as unknown as MinimumWageRow).worker_pid).slice(0, 8),
+      cell: wageWorkerCell,
+    },
+    {
+      id: "outcome",
+      header: t("minWage.result"),
+      sortable: true,
+      accessor: (r) => t(`minWage.${(r as unknown as MinimumWageRow).outcome}`),
+    },
+    {
+      id: "reason",
+      header: t("minWage.why"),
+      accessor: (r) => words((r as unknown as MinimumWageRow).reason),
+    },
+    {
+      id: "band",
+      header: t("payScales.band"),
+      accessor: (r) => words((r as unknown as MinimumWageRow).band),
+    },
+  ]);
 
   const columns = $derived<DataGridColumn[]>([
     {
@@ -81,6 +145,11 @@
 {#snippet workerCell({ row, formatted }: { row: DataGridRow; formatted: string })}
   {@const slip = row as unknown as Payslip}
   <a href={l(`/workers/${slip.worker_pid}`)}>{formatted}</a>
+{/snippet}
+
+{#snippet wageWorkerCell({ row, formatted }: { row: DataGridRow; formatted: string })}
+  {@const entry = row as unknown as MinimumWageRow}
+  <a href={l(`/workers/${entry.worker_pid}`)}>{formatted}</a>
 {/snippet}
 
 {#snippet deductionsCell({ row }: { row: DataGridRow })}
@@ -119,4 +188,34 @@
     rowId={(row) => String(row.pid)}
     pageSize={25}
   />
+
+  {#if run.status !== "draft"}
+    <h2>{t("minWage.title")}</h2>
+    <div class="panel" data-testid="min-wage">
+      <button data-testid="min-wage-run" disabled={wageBusy} onclick={() => void checkWage()}>
+        {t("minWage.run")}
+      </button>
+      {#if wageError}
+        <ErrorNote testid="min-wage-error" message={wageError} />
+      {/if}
+      {#if wage}
+        <p data-testid="min-wage-note">{wage.note}</p>
+        <p>
+          {#each Object.entries(wage.counts) as [outcome, count] (outcome)}
+            <span class="chip" data-testid={`min-wage-count-${outcome}`}
+              >{t(`minWage.${outcome}` as "minWage.ok")}: {count}</span
+            >
+          {/each}
+        </p>
+        <DataTable
+          testid="min-wage-rows"
+          label={t("minWage.title")}
+          columns={wageColumns}
+          rows={wage.workers as unknown as DataGridRow[]}
+          rowId={(row) => String(row.worker_pid)}
+          pageSize={25}
+        />
+      {/if}
+    </div>
+  {/if}
 {/if}

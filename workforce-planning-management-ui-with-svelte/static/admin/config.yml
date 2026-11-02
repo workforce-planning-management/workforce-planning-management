@@ -3849,3 +3849,19 @@ collections:
                   - { name: "worker", label: "Worker", widget: string, required: false, i18n: true }
                   - { name: "organization", label: "Organization", widget: string, required: false, i18n: true }
                   - { name: "deployment", label: "Deployment", widget: string, required: false, i18n: true }
+          - name: "minWage"
+            label: "Min Wage"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "run", label: "Run", widget: string, required: false, i18n: true }
+              - { name: "result", label: "Result", widget: string, required: false, i18n: true }
+              - { name: "why", label: "Why", widget: string, required: false, i18n: true }
+              - { name: "below", label: "Below", widget: string, required: false, i18n: true }
+              - { name: "near", label: "Near", widget: string, required: false, i18n: true }
+              - { name: "ok", label: "Ok", widget: string, required: false, i18n: true }
+              - { name: "none_by_law", label: "None_by_law", widget: string, required: false, i18n: true }
+              - { name: "unknown", label: "Unknown", widget: string, required: false, i18n: true }

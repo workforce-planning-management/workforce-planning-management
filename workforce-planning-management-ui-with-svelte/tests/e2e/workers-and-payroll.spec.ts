@@ -52,4 +52,69 @@ test.describe("Workers and payroll", () => {
     await expect(payslips).toContainText("£2,609.50");
     await expect(payslips).toContainText("tax");
   });
+
+  test("the minimum-wage check runs only when asked and shows no age", async ({
+    page,
+  }) => {
+    const run = {
+      pid: "88888888-8888-4888-8888-888888888888",
+      organization_ref: WORKER.organization_ref,
+      period_start: "2026-07-01",
+      period_end: "2026-07-31",
+      status: "calculated",
+    };
+    let asked = 0;
+    await page.route(`**/api/proxy/payroll-runs/${run.pid}`, (route) =>
+      route.fulfill({ json: run }),
+    );
+    await page.route(`**/api/proxy/payroll-runs/${run.pid}/payslips`, (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await page.route(
+      `**/api/proxy/payroll-runs/${run.pid}/minimum-wage-check`,
+      (route) => {
+        asked += 1;
+        return route.fulfill({
+          json: {
+            run_pid: run.pid,
+            period_start: run.period_start,
+            period_end: run.period_end,
+            indicative: true,
+            note: "Indicative only. An ok is not a statement that an employer complies.",
+            payslips: 2,
+            counts: { below: 1, unknown: 1 },
+            unknown_reasons: { no_date_of_birth: 1 },
+            workers: [
+              {
+                worker_pid: WORKER.pid,
+                outcome: "below",
+                reason: null,
+                band: "adult",
+              },
+              {
+                worker_pid: "99999999-9999-4999-8999-999999999999",
+                outcome: "unknown",
+                reason: "no_date_of_birth",
+                band: null,
+              },
+            ],
+          },
+        });
+      },
+    );
+    await page.goto(`/payroll/${run.pid}`);
+    await expect(page.getByTestId("min-wage-run")).toBeVisible();
+    expect(asked, "an audited read is never made on page load").toBe(0);
+    await page.getByTestId("min-wage-run").click();
+    await expect(page.getByTestId("min-wage-note")).toContainText(
+      "Indicative only",
+    );
+    await expect(page.getByTestId("min-wage-count-below")).toContainText(
+      "Below: 1",
+    );
+    const rows = page.getByTestId("min-wage-rows");
+    await expect(rows).toContainText("no date of birth");
+    await expect(rows).not.toContainText(/\b\d{2} years\b/);
+    expect(asked).toBe(1);
+  });
 });

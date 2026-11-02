@@ -2820,5 +2820,16 @@
       "organization": "La juridiction du siège de l'organisation",
       "deployment": "Tout le déploiement"
     }
+  },
+  "minWage": {
+    "title": "Vérification du salaire minimum",
+    "run": "Comparer au salaire minimum",
+    "result": "Résultat",
+    "why": "Motif",
+    "below": "En dessous",
+    "near": "Proche",
+    "ok": "Correct",
+    "none_by_law": "Aucun par la loi",
+    "unknown": "Pas assez d'éléments pour comparer"
   }
 }

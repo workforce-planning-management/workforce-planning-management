@@ -2811,5 +2811,16 @@
       "organization": "The organization's home jurisdiction",
       "deployment": "The whole deployment"
     }
+  },
+  "minWage": {
+    "title": "Minimum wage check",
+    "run": "Check against minimum wage",
+    "result": "Result",
+    "why": "Why",
+    "below": "Below",
+    "near": "Near",
+    "ok": "Ok",
+    "none_by_law": "None by law",
+    "unknown": "Not enough to compare"
   }
 }

@@ -57,6 +57,7 @@ import type {
   OnboardingItem,
   OrgNode,
   Payslip,
+  MinimumWageCheck,
   PayrollRun,
   Ratio,
   Requisition,
@@ -561,6 +562,14 @@ export function runAction(
 /** A run's payslips. */
 export function runPayslips(pid: string, init?: FetchLike): Promise<Payslip[]> {
   return api(`/payroll-runs/${pid}/payslips`, init);
+}
+
+/** The advisory minimum-wage check of a run. HR and payroll only; audited with counts, so ask for it on purpose. */
+export function minimumWageCheck(
+  pid: string,
+  init?: FetchLike,
+): Promise<MinimumWageCheck> {
+  return api(`/payroll-runs/${pid}/minimum-wage-check`, init);
 }
 
 /** One worker's payslips (self-service). */
