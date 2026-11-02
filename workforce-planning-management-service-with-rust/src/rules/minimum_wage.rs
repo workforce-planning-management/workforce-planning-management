@@ -123,6 +123,16 @@ impl Floors {
         }
     }
 
+    /// The lowest hourly and the lowest monthly floor across the bands: pay under this is below every band's floor.
+    #[must_use]
+    pub fn lowest(&self) -> Floor {
+        let bands = [self.adult, self.young_adult, self.youth];
+        Floor {
+            hourly_minor: bands.iter().filter_map(|f| f.hourly_minor).min(),
+            monthly_minor: bands.iter().filter_map(|f| f.monthly_minor).min(),
+        }
+    }
+
     /// Whether any band has a floor.
     #[must_use]
     pub const fn any(&self) -> bool {
@@ -288,12 +298,24 @@ pub fn check(
     }
     let band = match band {
         Ok(band) => band,
-        Err(reason) => return Outcome::Unknown(reason),
+        Err(reason) => {
+            // The band is unknown, so the floor is unknown, but pay under the lowest floor of any band is below whichever applies.
+            let lowest = floors.lowest();
+            return match evaluate(&lowest, inputs) {
+                Outcome::Below => Outcome::Below,
+                _ => Outcome::Unknown(reason),
+            };
+        }
     };
     let floor = floors.of(band);
     if !floor.is_set() {
         return Outcome::Unknown("no_floor_for_band");
     }
+    evaluate(&floor, inputs)
+}
+
+/// Compare one worker's period with one band's floor (hourly and monthly both checked; the worse result wins).
+fn evaluate(floor: &Floor, inputs: &Inputs) -> Outcome {
     let pay = i128::from(inputs.pay_minor);
     let mut results: Vec<Outcome> = Vec::with_capacity(2);
     if let Some(hourly) = floor.hourly_minor
@@ -661,6 +683,25 @@ mod tests {
             ),
             Outcome::Unknown("no_date_of_birth")
         );
+    }
+
+    #[test]
+    fn an_unknown_age_still_reports_pay_below_the_lowest_floor() {
+        let needs_age = band_for(None, Some(21), Some(18));
+        let run = |pay| {
+            check(
+                needs_age,
+                &three_bands(),
+                false,
+                Some("GBP"),
+                "GBP",
+                &inputs(pay, 600),
+            )
+        };
+        // 600 minutes = 10 hours; the lowest floor (youth) is 800 an hour = 8 000.
+        assert_eq!(run(7_999), Outcome::Below);
+        assert_eq!(run(8_000), Outcome::Unknown("no_date_of_birth"));
+        assert_eq!(run(12_710), Outcome::Unknown("no_date_of_birth"));
     }
 
     #[test]

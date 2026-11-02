@@ -343,10 +343,10 @@ and 2026 rates; the OpenAPI path and the UI's types; a request test. The answers
 **Limits of what is built:**
 
 - **The date of birth is not stored** (it is not a column yet: WPM-T319). It is read from the person service, only where a profile has age bands. With no person service a banded profile such as the `GB` example answers
-  `no_date_of_birth` for every worker; WPM-T427 makes it still say `below` where pay is under the lowest band's floor.
+  `no_date_of_birth`, except that pay under the lowest band's floor is still `below` (WPM-T427).
 - **Hours** are the recorded time entries in the period, except on-call; **pay** is the payslip's gross, overtime included. Both are indicative. Apprentices, accommodation, tips and piece work are not modelled.
 - **No result is kept** beyond the audit entry's counts, so the retention a profile might set (UK: six years) is not met by WPM. That is the rest of WPM-T415.
 - **No screen yet** (WPM-T416). The figures in the `GB` example are `example`, and none has been read in its source (WPM-T411).
 
-**Not built:** WPM-R219 to WPM-R223 (statutory overtime, coverage evidence, the injury record, the separation record, employer cost lines), WPM-T416 to WPM-T426 and WPM-T427, and the research tasks WPM-T411 and WPM-T412. WPM-R221 and WPM-R222 also wait for
+**Not built:** WPM-R219 to WPM-R223 (statutory overtime, coverage evidence, the injury record, the separation record, employer cost lines), WPM-T416 to WPM-T426, and the research tasks WPM-T411 and WPM-T412. WPM-R221 and WPM-R222 also wait for
 questions 3 and 4.
