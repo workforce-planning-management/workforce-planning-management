@@ -2905,6 +2905,11 @@
     "teamNone": "Ninguém abaixo de si tem uma lacuna de qualificação.",
     "queueTitle": "Qualificações a aguardar verificação",
     "queueHint": "A fila dos RH: as qualificações que as pessoas declararam e que ninguém verificou ainda. Verifique uma indicando onde está guardada a prova. É uma lista de registos a conferir, não uma classificação de pessoas.",
-    "queueNone": "Nada está a aguardar verificação."
+    "queueNone": "Nada está a aguardar verificação.",
+    "reqTitle": "O que cada função exige",
+    "reqHint": "Escolha uma função para ver as qualificações que exige e juntar uma. A página da pessoa compara-as com o que ela tem.",
+    "reqRole": "Escolha uma função",
+    "reqNone": "Esta função ainda não exige qualificações.",
+    "reqAdd": "Adicionar um requisito"
   }
 }

@@ -3950,3 +3950,8 @@ collections:
               - { name: "queueTitle", label: "Queue Title", widget: string, required: false, i18n: true }
               - { name: "queueHint", label: "Queue Hint", widget: text, required: false, i18n: true }
               - { name: "queueNone", label: "Queue None", widget: string, required: false, i18n: true }
+              - { name: "reqTitle", label: "Req Title", widget: string, required: false, i18n: true }
+              - { name: "reqHint", label: "Req Hint", widget: text, required: false, i18n: true }
+              - { name: "reqRole", label: "Req Role", widget: string, required: false, i18n: true }
+              - { name: "reqNone", label: "Req None", widget: string, required: false, i18n: true }
+              - { name: "reqAdd", label: "Req Add", widget: string, required: false, i18n: true }

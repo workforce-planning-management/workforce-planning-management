@@ -8,6 +8,7 @@
   import { formatDate } from "#lib/locale-format.js";
   import { attempt, errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
+  import RoleQualificationRequirements from "#lib/components/RoleQualificationRequirements.svelte";
   import { unverifiedQualifications, verifyQualification } from "#lib/api/wpm.js";
   import type { QueuedQualification } from "#lib/api/types.js";
   import { l, t } from "#lib/i18n.svelte.js";
@@ -90,3 +91,5 @@
     </ul>
   {/if}
 {/if}
+
+<RoleQualificationRequirements />

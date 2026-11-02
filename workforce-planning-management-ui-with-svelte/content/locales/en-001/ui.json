@@ -2896,6 +2896,11 @@
     "teamNone": "Nobody below you has a qualification gap to look at.",
     "queueTitle": "Qualifications awaiting verification",
     "queueHint": "HR's queue of the qualifications people declared that nobody has verified yet. Verify one by saying where the proof is held. This is a list of records to check, not a ranking of people.",
-    "queueNone": "Nothing is waiting for verification."
+    "queueNone": "Nothing is waiting for verification.",
+    "reqTitle": "What each role asks for",
+    "reqHint": "Choose a role to see the qualifications it asks for, and add one. A person's own page compares them with what they hold.",
+    "reqRole": "Choose a role",
+    "reqNone": "This role asks for no qualifications yet.",
+    "reqAdd": "Add a requirement"
   }
 }

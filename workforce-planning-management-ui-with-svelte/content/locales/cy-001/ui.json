@@ -2932,6 +2932,11 @@
     "teamNone": "Nid oes gan neb odanoch fwlch cymhwyster.",
     "queueTitle": "Cymwysterau yn aros i'w gwirio",
     "queueHint": "Ciw'r adran AD: y cymwysterau a ddatganodd pobl ac nad oes neb wedi'u gwirio eto. Gwiriwch un drwy ddweud ble mae'r prawf yn cael ei gadw. Rhestr o gofnodion i'w gwirio yw hon, nid safle o bobl.",
-    "queueNone": "Does dim yn aros i'w wirio."
+    "queueNone": "Does dim yn aros i'w wirio.",
+    "reqTitle": "Beth mae pob rôl yn ei ofyn",
+    "reqHint": "Dewiswch rôl i weld y cymwysterau mae'n eu gofyn, ac ychwanegu un. Mae tudalen yr unigolyn yn eu cymharu â'r hyn sydd ganddo.",
+    "reqRole": "Dewiswch rôl",
+    "reqNone": "Nid yw'r rôl hon yn gofyn am gymwysterau eto.",
+    "reqAdd": "Ychwanegu gofyniad"
   }
 }

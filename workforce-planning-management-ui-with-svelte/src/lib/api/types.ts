@@ -846,3 +846,12 @@ export interface TeamQualificationPerson {
   role: { pid: string; job_title: string } | null;
   gap: QualificationGapRow[];
 }
+
+/** A qualification a role profile asks for (policy, not a person's record). */
+export interface QualificationRequirement {
+  pid: string;
+  title: string;
+  kind: Qualification["kind"] | null;
+  framework: string | null;
+  min_level: number | null;
+}

@@ -2896,6 +2896,11 @@
     "teamNone": "Bei niemandem unter Ihnen gibt es eine Qualifikationslücke.",
     "queueTitle": "Qualifikationen, die auf Prüfung warten",
     "queueHint": "Die Warteschlange der HR: Qualifikationen, die Personen angegeben haben und die noch niemand geprüft hat. Prüfen Sie eine, indem Sie angeben, wo der Nachweis liegt. Das ist eine Liste von Einträgen zur Prüfung, keine Rangliste von Personen.",
-    "queueNone": "Nichts wartet auf eine Prüfung."
+    "queueNone": "Nichts wartet auf eine Prüfung.",
+    "reqTitle": "Was jede Rolle verlangt",
+    "reqHint": "Wählen Sie eine Rolle, um ihre geforderten Qualifikationen zu sehen und eine hinzuzufügen. Die Seite der Person vergleicht sie mit dem, was sie besitzt.",
+    "reqRole": "Rolle wählen",
+    "reqNone": "Diese Rolle verlangt noch keine Qualifikationen.",
+    "reqAdd": "Anforderung hinzufügen"
   }
 }

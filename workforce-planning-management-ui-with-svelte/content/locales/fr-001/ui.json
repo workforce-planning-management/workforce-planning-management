@@ -2905,6 +2905,11 @@
     "teamNone": "Personne sous votre responsabilité n'a d'écart de qualification.",
     "queueTitle": "Qualifications en attente de vérification",
     "queueHint": "La file des RH : les qualifications déclarées par les personnes et que personne n'a encore vérifiées. Vérifiez-en une en indiquant où se trouve la preuve. C'est une liste de dossiers à contrôler, pas un classement de personnes.",
-    "queueNone": "Rien n'attend de vérification."
+    "queueNone": "Rien n'attend de vérification.",
+    "reqTitle": "Ce que demande chaque poste",
+    "reqHint": "Choisissez un poste pour voir les qualifications qu'il demande et en ajouter une. La page de la personne les compare à ce qu'elle détient.",
+    "reqRole": "Choisir un poste",
+    "reqNone": "Ce poste ne demande pas encore de qualification.",
+    "reqAdd": "Ajouter une exigence"
   }
 }

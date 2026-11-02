@@ -2887,6 +2887,11 @@
     "teamNone": "Tidak ada anggota di bawah Anda yang memiliki kesenjangan kualifikasi.",
     "queueTitle": "Kualifikasi menunggu verifikasi",
     "queueHint": "Antrean HR berisi kualifikasi yang dinyatakan orang dan belum diverifikasi siapa pun. Verifikasi satu dengan menyebutkan di mana bukti disimpan. Ini daftar catatan untuk diperiksa, bukan peringkat orang.",
-    "queueNone": "Tidak ada yang menunggu verifikasi."
+    "queueNone": "Tidak ada yang menunggu verifikasi.",
+    "reqTitle": "Apa yang diminta tiap peran",
+    "reqHint": "Pilih peran untuk melihat kualifikasi yang diminta dan menambahkannya. Halaman tiap orang membandingkannya dengan yang dimiliki.",
+    "reqRole": "Pilih peran",
+    "reqNone": "Peran ini belum meminta kualifikasi.",
+    "reqAdd": "Tambah persyaratan"
   }
 }

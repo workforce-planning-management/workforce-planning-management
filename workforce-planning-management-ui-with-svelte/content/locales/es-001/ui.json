@@ -2905,6 +2905,11 @@
     "teamNone": "Nadie a su cargo tiene una carencia de cualificación.",
     "queueTitle": "Cualificaciones pendientes de verificación",
     "queueHint": "La cola de RR. HH. con las cualificaciones que las personas declararon y que nadie ha verificado aún. Verifique una indicando dónde se guarda la prueba. Es una lista de registros que comprobar, no una clasificación de personas.",
-    "queueNone": "Nada está pendiente de verificación."
+    "queueNone": "Nada está pendiente de verificación.",
+    "reqTitle": "Qué pide cada puesto",
+    "reqHint": "Elija un puesto para ver las cualificaciones que pide y añadir una. La página de cada persona las compara con lo que tiene.",
+    "reqRole": "Elija un puesto",
+    "reqNone": "Este puesto aún no pide cualificaciones.",
+    "reqAdd": "Añadir un requisito"
   }
 }

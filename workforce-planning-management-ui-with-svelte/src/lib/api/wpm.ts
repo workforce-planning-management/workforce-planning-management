@@ -64,6 +64,7 @@ import type {
   TeamLearningPerson,
   TeamQualificationPerson,
   QueuedQualification,
+  QualificationRequirement,
   PayrollRun,
   Ratio,
   Requisition,
@@ -6142,4 +6143,31 @@ export function verifyQualification(
 /** Remove a qualification. */
 export function removeQualification(pid: string): Promise<{ pid: string }> {
   return api(`/qualifications/${pid}`, { method: "DELETE" });
+}
+
+/** The qualifications a role profile asks for. */
+export function roleQualificationRequirements(
+  rolePid: string,
+  init?: FetchLike,
+): Promise<{
+  role_profile_pid: string;
+  requirements: QualificationRequirement[];
+}> {
+  return api(`/role-profiles/${rolePid}/qualification-requirements`, init);
+}
+
+/** Add a qualification requirement to a role profile; a framework and its minimum level go together. */
+export function addRoleQualificationRequirement(
+  rolePid: string,
+  body: {
+    title: string;
+    kind?: string;
+    framework?: string;
+    min_level?: number;
+  },
+): Promise<{ pid: string }> {
+  return api(`/role-profiles/${rolePid}/qualification-requirements`, {
+    method: "POST",
+    body,
+  });
 }
