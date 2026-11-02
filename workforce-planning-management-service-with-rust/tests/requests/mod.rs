@@ -11,6 +11,7 @@ mod announcements;
 mod appraisals;
 mod assessments;
 mod assignments;
+mod mandatory_learning;
 mod audit_chain;
 mod audit_export;
 mod bargaining;

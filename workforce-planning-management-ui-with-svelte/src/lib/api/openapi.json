@@ -5892,6 +5892,88 @@
         ]
       }
     },
+    "/api/learning-requirements": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The requirements"
+          }
+        },
+        "summary": "An organization's statutory and mandatory learning requirements in force (?organization=): subject, basis, source, refresher, courses and audience. Policy, not a person's record",
+        "tags": [
+          "learning"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the requirement",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add a requirement (HR). A statutory one names its source; a refresher is at least a month; an audience of staff groups, job roles, areas of work and positions, or the whole organization",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
+    "/api/learning-requirements/rollup": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The roll-up"
+          }
+        },
+        "summary": "HR: per requirement, counts per status and the rate in date among those counted, from the floor. Unknown (a category the audience needs is not recorded) is counted apart and in neither side of the rate; a rate with nothing to divide by is null. No name",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
+    "/api/learning-requirements/{pid}/completions": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the completion",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "HR records training done elsewhere: a worker, a date not in the future, where it was done. No certificate. Another organization of the person marks it transferred, counted only where the requirement accepts it",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
     "/api/learning/mentorship-overview": {
       "get": {
         "responses": {
@@ -13047,6 +13129,19 @@
         "summary": "Request leave (annual over-balance 422; sick flags negative)",
         "tags": [
           "workforce"
+        ]
+      }
+    },
+    "/api/workers/{pid}/mandatory-learning": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The statuses"
+          }
+        },
+        "summary": "One person's status against each requirement in force: compliant, due_soon, expired, never_completed, not_applicable or unknown, with the last completion and the day it expires. The person themself and HR",
+        "tags": [
+          "learning"
         ]
       }
     },

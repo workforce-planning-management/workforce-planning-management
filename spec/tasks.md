@@ -5390,6 +5390,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       calendar's end-of-month clamp.
 - [ ] WPM-T315 **Statutory and mandatory learning, records, API and screens.** *(WPM-R170)* Requirements, recorded completions, the
       person's, manager's and HR's views, roll-ups with the floor; extends the existing compliance view.
+      **Done (API, 2026-11-02):** migration `m20261102_000116` (`learning_requirements`, `learning_completions`); `controllers/mandatory_learning.rs`:
+      `GET` and `POST /api/learning-requirements` (HR adds; a statutory one names its source), `POST .../{pid}/completions` (HR records training done
+      elsewhere; a future date is refused; another organization of the person marks it transferred), `GET /api/workers/{pid}/mandatory-learning`
+      (the person and HR: status, last completion, expiry), `GET /api/learning-requirements/rollup` (HR: per requirement counts and rate with the
+      floor, `unknown` apart, nothing named). A completed training enrolment in one of a requirement's courses counts without a row. The completions
+      table is in the subject-access export and the erasure statements (appended last). One request test. **Not done:** the screens and strings; the
+      manager's view by name; a roll-up by department and staff group; retiring a requirement (the column exists, no route); position audiences (positions
+      have no `number` column yet, so an audience that names positions reads `unknown`); the CSTF import; the 90-calendar-day window as configuration.
 - [ ] WPM-T316 **Qualifications.** *(WPM-R171)* Declared and verified, role requirements and the qualification gap beside the skill gap.
 - [~] (2026-10-28) WPM-T317 **The PADR.** *(WPM-R172)* Review kind, two sign-offs, frozen versions, the due date (pure).
       **Part done (2026-10-28), the pure core:** `rules/padr.rs`: kinds `performance` and `padr`; `SignOffs` (complete when both have signed, completed

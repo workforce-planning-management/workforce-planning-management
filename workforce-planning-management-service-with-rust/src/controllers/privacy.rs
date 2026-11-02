@@ -20,11 +20,11 @@ use crate::models::_entities::{
     engagement_extensions, engagement_reminders, engagement_status_assessments,
     entitlement_acknowledgements, equality_declarations, ergonomic_assessments, expense_claims,
     expense_items, flexible_working_requests, group_members, handover_actions, interviews,
-    leave_entitlements, leave_requests, mentorships, mobility_interests, movements, notifications,
-    onboarding_items, organization_memberships, path_enrollments, pay_information_requests,
-    payslips, pipeline_members, policy_acknowledgements, positions, post_fundings,
-    professional_registrations, program_placements, resignations, reviews, rota_members,
-    rota_overrides, rota_swap_requests, scim_pushes, shift_assignments, time_entries,
+    learning_completions, leave_entitlements, leave_requests, mentorships, mobility_interests,
+    movements, notifications, onboarding_items, organization_memberships, path_enrollments,
+    pay_information_requests, payslips, pipeline_members, policy_acknowledgements, positions,
+    post_fundings, professional_registrations, program_placements, resignations, reviews,
+    rota_members, rota_overrides, rota_swap_requests, scim_pushes, shift_assignments, time_entries,
     training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
     worker_contractor_details, worker_framework_roles, worker_health_records, worker_job_levels,
     worker_pay_positions, worker_skill_history, worker_skills, workers,
@@ -165,6 +165,7 @@ async fn subject_access(
         "scim_pushes": rows_for!(db, scim_pushes, WorkerPid, epid),
         "asset_issues": rows_for!(db, asset_issues, WorkerPid, epid),
         "assignments": rows_for!(db, assignments, WorkerPid, epid),
+        "learning_completions": rows_for!(db, learning_completions, WorkerPid, epid),
         "policy_acknowledgements": rows_for!(db, policy_acknowledgements, WorkerPid, epid),
         "credential_issuances": rows_for!(db, credential_issuances, WorkerPid, epid),
         "positions_held": rows_for!(db, positions, HolderWorkerPid, epid),
@@ -396,6 +397,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM organization_memberships WHERE worker_pid = '{epid}'"),
         format!("UPDATE onboarding_items SET waived_reason = NULL WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM succession_candidates WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM learning_completions WHERE worker_pid = '{epid}'"),
     ]
 }
 

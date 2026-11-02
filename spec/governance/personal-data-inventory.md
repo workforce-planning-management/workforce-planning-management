@@ -43,6 +43,7 @@ Applicants have their own export, `GET /api/candidates/{pid}/subject-access`; er
 | `flexible_working_requests` | `worker_pid` | yes | yes | none |  |
 | `group_members` | `worker_pid` | yes | yes | none |  |
 | `handover_actions` | `from_worker`, `to_worker` | yes | yes | none |  |
+| `learning_completions` | `worker_pid` | yes | yes | none |  |
 | `leave_entitlements` | `worker_pid` | yes | no | timeandleave |  |
 | `leave_requests` | `worker_pid` | yes | no | timeandleave |  |
 | `mobility_interests` | `worker_pid` | yes | yes | performance |  |

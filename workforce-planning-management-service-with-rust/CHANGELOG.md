@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — statutory and mandatory learning: records and API (WPM-R170, WPM-T315 in part, WPM-D117)
+
+Requirements (`statutory`, which names its source, or `mandatory`) with a refresher, courses and an audience; completions HR records for training done elsewhere (a completed training enrolment in one of the courses counts without a row); `GET /api/workers/{pid}/mandatory-learning` for the person and HR; `GET /api/learning-requirements/rollup` for HR, counts and a rate with the floor, `unknown` counted apart, no name. Two tables (migration `m20261102_000116`), wired into the subject-access export and erasure. **Not done:** screens, the manager's view, a roll-up by department, retiring a requirement, position audiences.
+
 ### Added — the advisory minimum-wage floor check (WPM-R218, WPM-T413 to WPM-T415 in part, WPM-D154 to WPM-D162)
 
 `GET /api/payroll-runs/{pid}/minimum-wage-check`: HR and payroll only, organization-scoped, advisory. Each payslip's gross against the floor for the worker's age band, as of the period's last day, from jurisdiction parameters resolved from

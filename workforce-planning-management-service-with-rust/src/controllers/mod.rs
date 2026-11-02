@@ -57,6 +57,7 @@ pub mod jurisdictions;
 pub mod key_person;
 pub mod learning;
 pub mod lms;
+pub mod mandatory_learning;
 pub mod mcp;
 pub mod me;
 pub mod metrics;

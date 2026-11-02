@@ -128,6 +128,7 @@ mod m20261031_000112_jurisdiction_profiles;
 mod m20261031_000113_address_text;
 pub mod m20261031_000114_phone_forms;
 pub mod m20261031_000115_organization_home_jurisdiction;
+pub mod m20261102_000116_mandatory_learning;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -256,6 +257,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261031_000113_address_text::Migration),
             Box::new(m20261031_000114_phone_forms::Migration),
             Box::new(m20261031_000115_organization_home_jurisdiction::Migration),
+            Box::new(m20261102_000116_mandatory_learning::Migration),
             // inject-above (do not remove this comment)
         ]
     }

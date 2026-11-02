@@ -672,6 +672,19 @@ fn add_integration_paths(document: &mut Value) {
         "/api/asset-issues/{pid}/return": {
             "post": { "tags": ["equipment"], "summary": "Close an open issue as returned, or written_off with a reason, on a day not before it was issued and not in the future", "responses": ok("The outcome") }
         },
+        "/api/learning-requirements": {
+            "get": { "tags": ["learning"], "summary": "An organization's statutory and mandatory learning requirements in force (?organization=): subject, basis, source, refresher, courses and audience. Policy, not a person's record", "responses": ok("The requirements") },
+            "post": { "tags": ["learning"], "summary": "Add a requirement (HR). A statutory one names its source; a refresher is at least a month; an audience of staff groups, job roles, areas of work and positions, or the whole organization", "responses": ok("The pid of the requirement") }
+        },
+        "/api/learning-requirements/rollup": {
+            "get": { "tags": ["learning"], "summary": "HR: per requirement, counts per status and the rate in date among those counted, from the floor. Unknown (a category the audience needs is not recorded) is counted apart and in neither side of the rate; a rate with nothing to divide by is null. No name", "responses": ok("The roll-up") }
+        },
+        "/api/learning-requirements/{pid}/completions": {
+            "post": { "tags": ["learning"], "summary": "HR records training done elsewhere: a worker, a date not in the future, where it was done. No certificate. Another organization of the person marks it transferred, counted only where the requirement accepts it", "responses": ok("The pid of the completion") }
+        },
+        "/api/workers/{pid}/mandatory-learning": {
+            "get": { "tags": ["learning"], "summary": "One person's status against each requirement in force: compliant, due_soon, expired, never_completed, not_applicable or unknown, with the last completion and the day it expires. The person themself and HR", "responses": ok("The statuses") }
+        },
         "/api/assignments/breakdown": {
             "get": { "tags": ["assignments"], "summary": "Headcount and FTE of the assignments in force today, by staff_group, job_role or area_of_work (?organization=&by=), from the floor: a cell under it shows nothing and no total is given. A category nobody recorded is its own unknown cell. No name, no worker, no pay", "responses": ok("The cells") }
         },
