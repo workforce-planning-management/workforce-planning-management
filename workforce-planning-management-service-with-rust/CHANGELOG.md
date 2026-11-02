@@ -1238,6 +1238,7 @@ malformed-policy safety) and 5 front-end tests
 
 ### Added
 
+- **Qualification expiry reminders (WPM-T435, WPM-D167, 2026-11-02).** The daily task `qualification_expiry_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` tells the person and their manager about a qualification expiring within the window (default 60 calendar days) or lapsed within it, once per qualification, expiry date and kind; migration `m20261102_000118_qualification_reminders`; in the subject-access export and erasure; scheduled at 07:20.
 - **The qualification gap rolled up by role (WPM-T435, 2026-11-02).** `GET /api/qualifications/rollup?organization=`: per role people currently hold and per requirement, the counts met, declared_only, expired and missing and the share met, from the floor; HR only; names no one.
 - **HR's queue of unverified qualifications (WPM-T435, 2026-11-02).** `GET /api/qualifications/unverified?organization=`: the declared qualifications nobody has verified, oldest first, with the person's name; HR only.
 - **A manager reads their reports' qualifications (WPM-T435, 2026-11-02).** `GET /api/workers/{pid}/team-qualifications`: each person below the manager by name, with their qualifications and the gap against their current role; read as the manager or HR. A shared `role_and_gap` helper now serves this and the person's own list.

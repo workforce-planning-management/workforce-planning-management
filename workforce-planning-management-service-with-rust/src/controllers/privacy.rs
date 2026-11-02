@@ -23,11 +23,12 @@ use crate::models::_entities::{
     learning_completions, leave_entitlements, leave_requests, mentorships, mobility_interests,
     movements, notifications, onboarding_items, organization_memberships, path_enrollments,
     pay_information_requests, payslips, pipeline_members, policy_acknowledgements, positions,
-    post_fundings, professional_registrations, program_placements, qualifications, resignations,
-    reviews, rota_members, rota_overrides, rota_swap_requests, scim_pushes, shift_assignments,
-    time_entries, training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
-    worker_contractor_details, worker_framework_roles, worker_health_records, worker_job_levels,
-    worker_pay_positions, worker_skill_history, worker_skills, workers,
+    post_fundings, professional_registrations, program_placements, qualification_reminders,
+    qualifications, resignations, reviews, rota_members, rota_overrides, rota_swap_requests,
+    scim_pushes, shift_assignments, time_entries, training_enrollments, worker_aspirations,
+    worker_backups, worker_contact_details, worker_contractor_details, worker_framework_roles,
+    worker_health_records, worker_job_levels, worker_pay_positions, worker_skill_history,
+    worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -167,6 +168,7 @@ async fn subject_access(
         "assignments": rows_for!(db, assignments, WorkerPid, epid),
         "learning_completions": rows_for!(db, learning_completions, WorkerPid, epid),
         "qualifications": rows_for!(db, qualifications, WorkerPid, epid),
+        "qualification_reminders": rows_for!(db, qualification_reminders, WorkerPid, epid),
         "policy_acknowledgements": rows_for!(db, policy_acknowledgements, WorkerPid, epid),
         "credential_issuances": rows_for!(db, credential_issuances, WorkerPid, epid),
         "positions_held": rows_for!(db, positions, HolderWorkerPid, epid),
@@ -401,6 +403,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM succession_candidates WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM learning_completions WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM qualifications WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM qualification_reminders WHERE worker_pid = '{epid}'"),
     ]
 }
 

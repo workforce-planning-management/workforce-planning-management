@@ -142,6 +142,58 @@ pub fn rollup(standings: &[Standing], floor: usize) -> Rollup {
     }
 }
 
+/// Calendar days ahead a reminder is sent when none is configured.
+pub const DEFAULT_REMINDER_WINDOW_DAYS: i64 = 60;
+/// The longest window a deployment may ask for.
+pub const MAX_REMINDER_WINDOW_DAYS: i64 = 366;
+
+/// Which reminder a qualification's expiry needs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Reminder {
+    /// The expiry is today or within the window.
+    Expiring,
+    /// The expiry passed within the window: told once, then left alone.
+    Expired,
+}
+
+impl Reminder {
+    /// The word stored and sent.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Expiring => "expiring",
+            Self::Expired => "expired",
+        }
+    }
+}
+
+/// The reminder a qualification expiring on `expires_on` needs on `today`, if any. An expiry that passed more than `window_days` ago is
+/// a past fact, not an alert, so a first run on old data does not tell anyone about years-old lapses.
+#[must_use]
+pub fn reminder_for(expires_on: NaiveDate, today: NaiveDate, window_days: i64) -> Option<Reminder> {
+    let until = (expires_on - today).num_days();
+    if until < 0 {
+        (-until <= window_days).then_some(Reminder::Expired)
+    } else {
+        (until <= window_days).then_some(Reminder::Expiring)
+    }
+}
+
+/// A window is 1 to [`MAX_REMINDER_WINDOW_DAYS`] calendar days.
+///
+/// # Errors
+///
+/// A sentence naming the limit.
+pub fn validate_reminder_window(days: i64) -> Result<(), String> {
+    if (1..=MAX_REMINDER_WINDOW_DAYS).contains(&days) {
+        Ok(())
+    } else {
+        Err(format!(
+            "the window is 1 to {MAX_REMINDER_WINDOW_DAYS} calendar days, not {days}"
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -310,5 +362,50 @@ mod tests {
             }
             Rollup::Hidden => panic!("shown"),
         }
+    }
+
+    #[test]
+    fn expiring_today_and_on_the_last_day_of_the_window_are_reminded() {
+        let today = d(2026, 11, 2);
+        assert_eq!(
+            reminder_for(d(2026, 11, 2), today, 60),
+            Some(Reminder::Expiring)
+        );
+        assert_eq!(
+            reminder_for(d(2027, 1, 1), today, 60),
+            Some(Reminder::Expiring)
+        );
+        assert_eq!(
+            reminder_for(d(2027, 1, 2), today, 60),
+            None,
+            "61 days ahead is outside the window"
+        );
+    }
+
+    #[test]
+    fn a_recent_lapse_is_reminded_once_and_an_old_one_is_not() {
+        let today = d(2026, 11, 2);
+        assert_eq!(
+            reminder_for(d(2026, 11, 1), today, 60),
+            Some(Reminder::Expired)
+        );
+        assert_eq!(
+            reminder_for(d(2026, 9, 3), today, 60),
+            Some(Reminder::Expired),
+            "60 days ago"
+        );
+        assert_eq!(
+            reminder_for(d(2026, 9, 2), today, 60),
+            None,
+            "61 days ago is a past fact"
+        );
+    }
+
+    #[test]
+    fn a_window_is_one_to_366_days() {
+        assert!(validate_reminder_window(1).is_ok());
+        assert!(validate_reminder_window(366).is_ok());
+        assert!(validate_reminder_window(0).is_err());
+        assert!(validate_reminder_window(367).is_err());
     }
 }

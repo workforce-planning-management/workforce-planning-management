@@ -336,3 +336,121 @@ async fn the_gap_roll_up_hides_a_small_group_and_counts_a_large_one() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn expiry_reminders_tell_the_person_and_their_manager_once() {
+    use sea_orm::ConnectionTrait;
+    use workforce_planning_management::tasks::qualification_expiry_reminders::send_reminders;
+
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = Utc::now().date_naive();
+        let day = |n: i64| (today + Duration::days(n)).to_string();
+        let boss = seed_worker!(&request, &org, format!("Q-M-{tag}"), None).await;
+        activate!(&request, &boss).await;
+        let me = seed_worker!(&request, &org, format!("Q-P-{tag}"), None).await;
+        activate!(&request, &me).await;
+        request
+            .put(&format!("/api/workers/{me}"))
+            .json(&json!({ "manager_pid": boss }))
+            .await
+            .assert_status_ok();
+        let add = |title: String, expires: Option<String>| {
+            let (request, me) = (&request, me.clone());
+            async move {
+                let mut body = json!({ "kind": "licence", "title": title });
+                if let Some(e) = expires {
+                    body["expires_on"] = json!(e);
+                }
+                let r = request
+                    .post(&format!("/api/workers/{me}/qualifications"))
+                    .json(&body)
+                    .await;
+                assert_eq!(r.status_code(), 200, "{}", r.text());
+                r.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let soon = add(format!("Forklift {tag}"), Some(day(30))).await;
+        let _far = add(format!("Scaffold {tag}"), Some(day(120))).await;
+        let _lapsed = add(format!("Crane {tag}"), Some(day(-10))).await;
+        let _old = add(format!("Welding {tag}"), Some(day(-200))).await;
+        let _never = add(format!("Degree {tag}"), None).await;
+
+        send_reminders(&ctx, today, 60).await.unwrap();
+        let notes = |pid: &str| {
+            let request = &request;
+            let pid = pid.to_string();
+            async move {
+                serde_json::to_string(
+                    &request
+                        .get(&format!("/api/workers/{pid}/notifications"))
+                        .await
+                        .json::<Value>(),
+                )
+                .unwrap()
+            }
+        };
+        let mine = notes(&me).await;
+        let theirs = notes(&boss).await;
+        assert!(
+            mine.contains(&format!("Your Forklift {tag} expires on {}", day(30))),
+            "{mine}"
+        );
+        assert!(
+            mine.contains(&format!("Your Crane {tag} expired on {}", day(-10))),
+            "{mine}"
+        );
+        assert!(
+            theirs.contains("Test Worker") && theirs.contains(&format!("Forklift {tag}")),
+            "{theirs}"
+        );
+        assert!(
+            theirs.contains(&format!("Crane {tag}")),
+            "the manager hears of a recent lapse too"
+        );
+        for text in [&mine, &theirs] {
+            assert!(
+                !text.contains(&format!("Scaffold {tag}")),
+                "outside the window"
+            );
+            assert!(
+                !text.contains(&format!("Welding {tag}")),
+                "a lapse older than the window is a past fact"
+            );
+            assert!(
+                !text.contains(&format!("Degree {tag}")),
+                "no expiry, no reminder"
+            );
+        }
+        assert_eq!(mine.matches("qualification_expiring").count(), 1);
+
+        // Idempotent: a re-run tells no one twice.
+        send_reminders(&ctx, today, 60).await.unwrap();
+        assert_eq!(
+            notes(&me).await.matches("qualification_expiring").count(),
+            1
+        );
+        assert_eq!(
+            notes(&boss).await.matches("qualification_expiring").count(),
+            1
+        );
+
+        // A renewal is a new expiry date and so a new reminder.
+        ctx.db
+            .execute_unprepared(&format!(
+                "UPDATE qualifications SET expires_on = '{}' WHERE pid = '{soon}'",
+                day(50)
+            ))
+            .await
+            .unwrap();
+        send_reminders(&ctx, today, 60).await.unwrap();
+        assert_eq!(
+            notes(&me).await.matches("qualification_expiring").count(),
+            2
+        );
+    })
+    .await;
+}

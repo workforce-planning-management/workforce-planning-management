@@ -120,6 +120,7 @@ pub mod program_placements;
 pub mod programme_demands;
 pub mod pulse_responses;
 pub mod pulse_surveys;
+pub mod qualification_reminders;
 pub mod qualifications;
 pub mod recognised_bodies;
 pub mod requisitions;

@@ -60,6 +60,7 @@ Applicants have their own export, `GET /api/candidates/{pid}/subject-access`; er
 | `post_fundings` | `worker_pid` | yes | yes | none |  |
 | `professional_registrations` | `worker_pid` | yes | yes | learning |  |
 | `program_placements` | `worker_pid` | yes | no | performance |  |
+| `qualification_reminders` | `worker_pid` | yes | yes | none |  |
 | `qualifications` | `worker_pid` | yes | yes | none |  |
 | `resignations` | `worker_pid` | yes | yes | none |  |
 | `reviews` | `worker_pid` | yes | no | performance |  |

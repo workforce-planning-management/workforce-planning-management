@@ -112,6 +112,7 @@ fn every_cron_has_six_or_seven_fields_and_a_job_that_needs_settings_is_not_in_th
         "rota_reminders",
         "pay_progression_reminders",
         "policy_reminders",
+        "qualification_expiry_reminders",
         "verify_audit_chain",
     ];
     for name in daily_or_more {

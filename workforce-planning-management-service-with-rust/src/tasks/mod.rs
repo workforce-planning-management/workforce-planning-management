@@ -9,6 +9,7 @@ pub mod import_sfiaplus;
 pub mod oversight_pack_freeze;
 pub mod pay_progression_reminders;
 pub mod policy_reminders;
+pub mod qualification_expiry_reminders;
 pub mod replay_erasures;
 pub mod rota_reminders;
 pub mod scim_push;

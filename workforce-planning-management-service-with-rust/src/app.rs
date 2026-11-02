@@ -367,6 +367,7 @@ impl Hooks for App {
         tasks.register(tasks::replay_erasures::ReplayErasures);
         tasks.register(tasks::import_framework::ImportFramework);
         tasks.register(tasks::engagement_end_reminders::EngagementEndReminders);
+        tasks.register(tasks::qualification_expiry_reminders::QualificationExpiryReminders);
         tasks.register(tasks::early_warning_sweep::EarlyWarningSweep);
         tasks.register(tasks::oversight_pack_freeze::OversightPackFreeze);
         tasks.register(tasks::import_esco::ImportEsco);

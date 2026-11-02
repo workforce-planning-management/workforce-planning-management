@@ -285,6 +285,11 @@ adds what is missing and says how the pieces assemble.
   reference, never a reason (an overpayment's cause, a loan's purpose). Union check-off is out of scope.
 - **WPM-D120 Progression readiness reports evidence; a person moves the step.** A formal process is recorded as live or not with
   a date, never what it is.
+- **WPM-D167 A qualification's expiry is told to the person and their manager, once.** A daily task (`qualification_expiry_reminders`,
+  60 calendar days ahead by default, 1 to 366) notifies the person ("Your title expires on a date") and their manager (the person's
+  name, the title, the date), once per qualification, expiry date and kind, so a renewal gets a new reminder. A lapse older than the
+  window is a past fact, not an alert. HR is not told: it reads the queue and the roll-up. Nothing else rides in the notification: no
+  level, awarding body or evidence reference. Confirmed by the product owner 2026-11-02 ("both").
 
 ## Order of delivery
 

@@ -51,6 +51,10 @@ jobs:
     run: pay_progression_reminders
     schedule: "0 10 7 * * *"
     tags: ["wpm"]
+  qualification_expiry_reminders:
+    run: qualification_expiry_reminders
+    schedule: "0 20 7 * * *"
+    tags: ["wpm"]
   policy_reminders:
     run: policy_reminders
     schedule: "0 15 7 * * *"
