@@ -56,6 +56,10 @@ async fn a_declared_qualification_is_not_met_until_hr_verifies_it() {
             .await
             .assert_status_ok();
 
+        let listed: Value = request.get(&reqs).await.json();
+        assert_eq!(listed["requirements"].as_array().unwrap().len(), 1);
+        assert_eq!(listed["requirements"][0]["min_level"], 6);
+
         let standing = |v: &Value| v["gap"][0]["standing"].as_str().unwrap().to_string();
         let seen: Value = request.get(&quals).await.json();
         assert_eq!(standing(&seen), "missing");
