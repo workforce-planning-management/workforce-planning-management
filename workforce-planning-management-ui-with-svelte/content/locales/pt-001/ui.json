@@ -2910,6 +2910,10 @@
     "reqHint": "Escolha uma função para ver as qualificações que exige e juntar uma. A página da pessoa compara-as com o que ela tem.",
     "reqRole": "Escolha uma função",
     "reqNone": "Esta função ainda não exige qualificações.",
-    "reqAdd": "Adicionar um requisito"
+    "reqAdd": "Adicionar um requisito",
+    "rollupTitle": "A lacuna por função",
+    "rollupHint": "Para cada função que as pessoas ocupam atualmente, quantas cumprem cada qualificação exigida. Um grupo abaixo do mínimo não mostra nada. Não nomeia ninguém e quem não tem função registada não é contado.",
+    "rollupNone": "Nenhuma função ocupada exige qualificações.",
+    "rollupRole": "Função"
   }
 }

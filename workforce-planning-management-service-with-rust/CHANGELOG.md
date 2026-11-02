@@ -1238,6 +1238,7 @@ malformed-policy safety) and 5 front-end tests
 
 ### Added
 
+- **The qualification gap rolled up by role (WPM-T435, 2026-11-02).** `GET /api/qualifications/rollup?organization=`: per role people currently hold and per requirement, the counts met, declared_only, expired and missing and the share met, from the floor; HR only; names no one.
 - **HR's queue of unverified qualifications (WPM-T435, 2026-11-02).** `GET /api/qualifications/unverified?organization=`: the declared qualifications nobody has verified, oldest first, with the person's name; HR only.
 - **A manager reads their reports' qualifications (WPM-T435, 2026-11-02).** `GET /api/workers/{pid}/team-qualifications`: each person below the manager by name, with their qualifications and the gap against their current role; read as the manager or HR. A shared `role_and_gap` helper now serves this and the person's own list.
 - 2026-07-18 — WPM-T1–T17 implementation round: full Loco service

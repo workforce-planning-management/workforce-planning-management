@@ -11486,6 +11486,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qualifications/rollup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** HR (?organization=): for each role people currently hold, per qualification it asks for, the counts met, declared_only, expired and missing and the share met, from the floor: a group under it shows nothing. A role nobody holds and a person with no role recorded are not in it. No name */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The cells */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/qualifications/unverified": {
         parameters: {
             query?: never;

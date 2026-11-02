@@ -701,6 +701,9 @@ fn add_integration_paths(document: &mut Value) {
         "/api/qualifications/unverified": {
             "get": { "tags": ["learning"], "summary": "HR's queue (?organization=): the qualifications people declared that nobody has verified, oldest first, each with the person's name. A list of records to check, not a ranking", "responses": ok("The queue") }
         },
+        "/api/qualifications/rollup": {
+            "get": { "tags": ["learning"], "summary": "HR (?organization=): for each role people currently hold, per qualification it asks for, the counts met, declared_only, expired and missing and the share met, from the floor: a group under it shows nothing. A role nobody holds and a person with no role recorded are not in it. No name", "responses": ok("The cells") }
+        },
         "/api/qualifications/{pid}/verify": {
             "post": { "tags": ["learning"], "summary": "HR marks a qualification verified with a reference to where the proof is held (no certificate is stored). Verifying twice keeps the first", "responses": ok("The pid and status") }
         },

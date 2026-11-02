@@ -3955,3 +3955,7 @@ collections:
               - { name: "reqRole", label: "Req Role", widget: string, required: false, i18n: true }
               - { name: "reqNone", label: "Req None", widget: string, required: false, i18n: true }
               - { name: "reqAdd", label: "Req Add", widget: string, required: false, i18n: true }
+              - { name: "rollupTitle", label: "Rollup Title", widget: string, required: false, i18n: true }
+              - { name: "rollupHint", label: "Rollup Hint", widget: text, required: false, i18n: true }
+              - { name: "rollupNone", label: "Rollup None", widget: string, required: false, i18n: true }
+              - { name: "rollupRole", label: "Rollup Role", widget: string, required: false, i18n: true }

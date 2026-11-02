@@ -2901,6 +2901,10 @@
     "reqHint": "Wählen Sie eine Rolle, um ihre geforderten Qualifikationen zu sehen und eine hinzuzufügen. Die Seite der Person vergleicht sie mit dem, was sie besitzt.",
     "reqRole": "Rolle wählen",
     "reqNone": "Diese Rolle verlangt noch keine Qualifikationen.",
-    "reqAdd": "Anforderung hinzufügen"
+    "reqAdd": "Anforderung hinzufügen",
+    "rollupTitle": "Die Lücke nach Rolle",
+    "rollupHint": "Für jede Rolle, die Personen derzeit innehaben: wie viele die einzelnen verlangten Qualifikationen erfüllen. Eine Gruppe unter der Mindestgröße zeigt nichts. Es nennt niemanden, und wer keine Rolle hinterlegt hat, wird nicht gezählt.",
+    "rollupNone": "Keine von Personen innegehabte Rolle verlangt Qualifikationen.",
+    "rollupRole": "Rolle"
   }
 }

@@ -225,3 +225,114 @@ async fn hrs_queue_lists_declared_qualifications_until_they_are_verified() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_gap_roll_up_hides_a_small_group_and_counts_a_large_one() {
+    use workforce_planning_management::rules::framework::LevelMapping;
+    use workforce_planning_management::tasks::import_framework::import_pcf;
+
+    crate::requests::request_open(|request, ctx| async move {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+        import_pcf(
+            &ctx.db,
+            &root.join("pcf-mini"),
+            LevelMapping::Identity,
+            false,
+        )
+        .await
+        .expect("pcf");
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let profiles: Value = request
+            .get("/api/role-profiles?framework=uk-gdad-pcf")
+            .await
+            .json();
+        let tester = profiles
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|p| p["job_title"] == "Tester")
+            .unwrap()["pid"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        let title = format!("Degree {tag}");
+        request
+            .post(&format!(
+                "/api/role-profiles/{tester}/qualification-requirements"
+            ))
+            .json(&json!({ "title": title, "kind": "academic" }))
+            .await
+            .assert_status_ok();
+        let url = format!(
+            "/api/qualifications/rollup?organization={}",
+            org.replace(':', "%3A")
+        );
+        let cell = |body: &Value| {
+            body["requirements"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|c| c["title"] == title.as_str())
+                .cloned()
+                .expect("the requirement is listed once someone holds the role")
+        };
+        let mut everyone = Vec::new();
+        for i in 0..10 {
+            let w = seed_worker!(&request, &org, format!("Q-R{i}-{tag}"), None).await;
+            activate!(&request, &w).await;
+            request
+                .put(&format!("/api/workers/{w}/framework-roles/uk-gdad-pcf"))
+                .json(&json!({ "role_profile_pid": tester }))
+                .await
+                .assert_status_ok();
+            everyone.push(w);
+            if i == 8 {
+                let nine: Value = request.get(&url).await.json();
+                assert_eq!(
+                    cell(&nine)["hidden"],
+                    true,
+                    "nine people are under the floor of ten"
+                );
+                assert!(
+                    cell(&nine).get("met").is_none(),
+                    "a hidden cell carries no counts"
+                );
+            }
+        }
+        // Six verified, two declared only, two with nothing.
+        for (i, w) in everyone.iter().take(8).enumerate() {
+            let made: Value = request
+                .post(&format!("/api/workers/{w}/qualifications"))
+                .json(&json!({ "kind": "academic", "title": title }))
+                .await
+                .json();
+            if i < 6 {
+                request
+                    .post(&format!(
+                        "/api/qualifications/{}/verify",
+                        made["pid"].as_str().unwrap()
+                    ))
+                    .json(&json!({ "evidence_ref": "HR file" }))
+                    .await
+                    .assert_status_ok();
+            }
+        }
+        let ten: Value = request.get(&url).await.json();
+        let c = cell(&ten);
+        assert_eq!(c["hidden"], false);
+        assert_eq!(
+            (
+                c["met"].as_u64(),
+                c["declared_only"].as_u64(),
+                c["missing"].as_u64()
+            ),
+            (Some(6), Some(2), Some(2))
+        );
+        assert!((c["rate"].as_f64().unwrap() - 0.6).abs() < 1e-9);
+        assert!(c.get("worker_pid").is_none(), "the roll-up names no one");
+    })
+    .await;
+}

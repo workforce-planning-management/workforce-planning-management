@@ -65,6 +65,7 @@ import type {
   TeamQualificationPerson,
   QueuedQualification,
   QualificationRequirement,
+  QualificationRollupRow,
   PayrollRun,
   Ratio,
   Requisition,
@@ -6170,4 +6171,20 @@ export function addRoleQualificationRequirement(
     method: "POST",
     body,
   });
+}
+
+/** HR's roll-up of the qualification gap per role and requirement, from the floor. */
+export function qualificationRollup(
+  organization: string,
+  init?: FetchLike,
+): Promise<{
+  organization: string;
+  as_of: string;
+  floor: number;
+  requirements: QualificationRollupRow[];
+}> {
+  return api(
+    `/qualifications/rollup?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
 }

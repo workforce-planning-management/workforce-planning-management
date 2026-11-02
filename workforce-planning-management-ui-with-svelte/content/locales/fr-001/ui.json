@@ -2910,6 +2910,10 @@
     "reqHint": "Choisissez un poste pour voir les qualifications qu'il demande et en ajouter une. La page de la personne les compare à ce qu'elle détient.",
     "reqRole": "Choisir un poste",
     "reqNone": "Ce poste ne demande pas encore de qualification.",
-    "reqAdd": "Ajouter une exigence"
+    "reqAdd": "Ajouter une exigence",
+    "rollupTitle": "L'écart par poste",
+    "rollupHint": "Pour chaque poste actuellement occupé, combien de personnes satisfont chaque qualification demandée. Un groupe sous le seuil n'affiche rien. Personne n'est nommé, et une personne sans poste enregistré n'est pas comptée.",
+    "rollupNone": "Aucun poste occupé ne demande de qualification.",
+    "rollupRole": "Poste"
   }
 }

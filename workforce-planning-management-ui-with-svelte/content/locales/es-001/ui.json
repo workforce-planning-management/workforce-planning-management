@@ -2910,6 +2910,10 @@
     "reqHint": "Elija un puesto para ver las cualificaciones que pide y añadir una. La página de cada persona las compara con lo que tiene.",
     "reqRole": "Elija un puesto",
     "reqNone": "Este puesto aún no pide cualificaciones.",
-    "reqAdd": "Añadir un requisito"
+    "reqAdd": "Añadir un requisito",
+    "rollupTitle": "La brecha por puesto",
+    "rollupHint": "Para cada puesto que las personas ocupan ahora, cuántas cumplen cada cualificación que pide. Un grupo por debajo del mínimo no muestra nada. No nombra a nadie y no cuenta a quien no tiene puesto registrado.",
+    "rollupNone": "Ningún puesto ocupado pide cualificaciones.",
+    "rollupRole": "Puesto"
   }
 }

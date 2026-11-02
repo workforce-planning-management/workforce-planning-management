@@ -40,6 +40,16 @@ test.describe("Qualification queue", () => {
         },
       }),
     );
+    await page.route("**/api/proxy/qualifications/rollup?*", (route) =>
+      route.fulfill({
+        json: {
+          organization: WORKER.organization_ref,
+          as_of: "2026-11-02",
+          floor: 10,
+          requirements: [],
+        },
+      }),
+    );
     await page.route("**/api/proxy/qualifications/q1/verify", (route) => {
       sent = route.request().postDataJSON();
       queue = [];
@@ -59,6 +69,16 @@ test.describe("Qualification queue", () => {
   });
 
   test("an empty queue says nothing is waiting", async ({ page }) => {
+    await page.route("**/api/proxy/qualifications/rollup?*", (route) =>
+      route.fulfill({
+        json: {
+          organization: WORKER.organization_ref,
+          as_of: "2026-11-02",
+          floor: 10,
+          requirements: [],
+        },
+      }),
+    );
     await page.route("**/api/proxy/qualifications/unverified?*", (route) =>
       route.fulfill({
         json: {
@@ -133,4 +153,58 @@ test.describe("Role qualification requirements", () => {
       min_level: 6,
     });
   });
+});
+
+test("the gap roll-up shows counts, hides a small group and names no one", async ({
+  page,
+}) => {
+  await stubSignedIn(page);
+  await page.route("**/api/proxy/qualifications/unverified?*", (route) =>
+    route.fulfill({
+      json: {
+        organization: WORKER.organization_ref,
+        as_of: "2026-11-02",
+        queue: [],
+      },
+    }),
+  );
+  const row = (title: string, rest: Record<string, unknown>) => ({
+    role_profile_pid: "r1",
+    job_title: "Tester",
+    title,
+    kind: null,
+    framework: null,
+    min_level: null,
+    ...rest,
+  });
+  await page.route("**/api/proxy/qualifications/rollup?*", (route) =>
+    route.fulfill({
+      json: {
+        organization: WORKER.organization_ref,
+        as_of: "2026-11-02",
+        floor: 10,
+        requirements: [
+          row("Degree", {
+            hidden: false,
+            met: 6,
+            declared_only: 2,
+            expired: 0,
+            missing: 2,
+            rate: 0.6,
+          }),
+          row("First aid", { hidden: true }),
+        ],
+      },
+    }),
+  );
+  await page.goto("/en-001/qualifications");
+  await page
+    .getByTestId("queue-organization")
+    .selectOption(WORKER.organization_ref);
+  const table = page.getByTestId("qualification-rollup-table");
+  const degree = table.getByRole("row", { name: /Degree/ });
+  await expect(degree).toContainText("60");
+  await expect(degree).toContainText("6");
+  const small = table.getByRole("row", { name: /First aid/ });
+  await expect(small).toContainText("Too few");
 });

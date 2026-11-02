@@ -855,3 +855,19 @@ export interface QualificationRequirement {
   framework: string | null;
   min_level: number | null;
 }
+
+/** One requirement of one role, rolled up over the people who currently hold that role; `hidden` when the group is under the floor. */
+export interface QualificationRollupRow {
+  role_profile_pid: string;
+  job_title: string;
+  title: string;
+  kind: Qualification["kind"] | null;
+  framework: string | null;
+  min_level: number | null;
+  hidden: boolean;
+  met?: number;
+  declared_only?: number;
+  expired?: number;
+  missing?: number;
+  rate?: number;
+}

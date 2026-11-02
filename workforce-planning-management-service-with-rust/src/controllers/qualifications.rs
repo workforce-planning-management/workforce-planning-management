@@ -503,6 +503,112 @@ async fn unverified(
     format::json(json!({ "organization": q.organization, "as_of": today, "queue": queue }))
 }
 
+/// `GET /api/qualifications/rollup?organization=` — HR: for each role profile that people in the organization currently hold and that asks
+/// for qualifications, per requirement the counts of met, declared-only, expired and missing, and the share met. A group under the floor
+/// shows nothing; a role nobody holds, and a person with no role recorded, are not in it. It names no one.
+#[debug_handler]
+async fn rollup(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Query(q): Query<OrgQuery>,
+) -> Result<Response> {
+    ensure_hr(&ctx, &caller, &q.organization).await?;
+    let today = Utc::now().date_naive();
+    let in_org = workers::Entity::find()
+        .filter(workers::Column::OrganizationRef.eq(&q.organization))
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::TerminatedOn.is_null());
+    super::ensure_scale(&ctx, in_org.clone()).await?;
+    let people = in_org.all(&ctx.db).await?;
+    let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
+    let links = worker_framework_roles::Entity::find()
+        .filter(worker_framework_roles::Column::WorkerPid.is_in(pids.clone()))
+        .filter(worker_framework_roles::Column::EndedAt.is_null())
+        .filter(worker_framework_roles::Column::RoleProfilePid.is_not_null())
+        .order_by_desc(worker_framework_roles::Column::StartedAt)
+        .all(&ctx.db)
+        .await?;
+    // Each person's newest current role, as the person's own list reads it.
+    let mut role_of: std::collections::HashMap<Uuid, Uuid> = std::collections::HashMap::new();
+    for l in &links {
+        if let Some(r) = l.role_profile_pid {
+            role_of.entry(l.worker_pid).or_insert(r);
+        }
+    }
+    let mut holders: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
+        std::collections::BTreeMap::new();
+    for (w, r) in &role_of {
+        holders.entry(*r).or_default().push(*w);
+    }
+    let role_pids: Vec<Uuid> = holders.keys().copied().collect();
+    let profiles = role_profiles::Entity::find()
+        .filter(role_profiles::Column::Pid.is_in(role_pids.clone()))
+        .filter(role_profiles::Column::DeletedAt.is_null())
+        .all(&ctx.db)
+        .await?;
+    let reqs = role_qualification_requirements::Entity::find()
+        .filter(role_qualification_requirements::Column::RoleProfilePid.is_in(role_pids))
+        .order_by_asc(role_qualification_requirements::Column::Title)
+        .all(&ctx.db)
+        .await?;
+    let all = qualifications::Entity::find()
+        .filter(qualifications::Column::WorkerPid.is_in(pids))
+        .all(&ctx.db)
+        .await?;
+    let mut held_by: std::collections::HashMap<Uuid, Vec<rules::Held>> =
+        std::collections::HashMap::new();
+    for qual in &all {
+        held_by
+            .entry(qual.worker_pid)
+            .or_default()
+            .push(held_of(qual));
+    }
+    let floor = crate::rules::equality_monitoring::DEFAULT_FLOOR;
+    let mut cells: Vec<Value> = Vec::new();
+    for profile in &profiles {
+        let group = holders.get(&profile.pid).cloned().unwrap_or_default();
+        for r in reqs.iter().filter(|r| r.role_profile_pid == profile.pid) {
+            let req = rules::Requirement {
+                title: r.title.clone(),
+                kind: r.kind.clone(),
+                framework: r.framework.clone(),
+                min_level: r.min_level,
+            };
+            let none: Vec<rules::Held> = Vec::new();
+            let standings: Vec<rules::Standing> = group
+                .iter()
+                .map(|w| rules::standing(&req, held_by.get(w).unwrap_or(&none), today))
+                .collect();
+            let head = json!({
+                "role_profile_pid": profile.pid, "job_title": profile.job_title,
+                "title": r.title, "kind": r.kind, "framework": r.framework, "min_level": r.min_level,
+            });
+            let mut cell = head;
+            match rules::rollup(&standings, floor) {
+                rules::Rollup::Hidden => cell["hidden"] = json!(true),
+                rules::Rollup::Shown {
+                    met,
+                    declared_only,
+                    expired,
+                    missing,
+                    rate,
+                } => {
+                    cell["hidden"] = json!(false);
+                    cell["met"] = json!(met);
+                    cell["declared_only"] = json!(declared_only);
+                    cell["expired"] = json!(expired);
+                    cell["missing"] = json!(missing);
+                    cell["rate"] = json!(rate);
+                }
+            }
+            cells.push(cell);
+        }
+    }
+    format::json(
+        json!({ "organization": q.organization, "as_of": today, "floor": floor, "requirements": cells }),
+    )
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -511,6 +617,7 @@ pub fn routes() -> Routes {
         .add("/workers/{pid}/qualifications", post(add))
         .add("/workers/{pid}/team-qualifications", get(team))
         .add("/qualifications/unverified", get(unverified))
+        .add("/qualifications/rollup", get(rollup))
         .add("/qualifications/{pid}/verify", post(verify))
         .add("/qualifications/{pid}", delete(remove))
         .add(

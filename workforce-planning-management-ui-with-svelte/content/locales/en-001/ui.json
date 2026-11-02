@@ -2901,6 +2901,10 @@
     "reqHint": "Choose a role to see the qualifications it asks for, and add one. A person's own page compares them with what they hold.",
     "reqRole": "Choose a role",
     "reqNone": "This role asks for no qualifications yet.",
-    "reqAdd": "Add a requirement"
+    "reqAdd": "Add a requirement",
+    "rollupTitle": "The gap by role",
+    "rollupHint": "For each role people currently hold, how many meet each qualification it asks for. A group under the floor shows nothing. It names no one, and a person with no role recorded is not counted.",
+    "rollupNone": "No role that people hold asks for qualifications.",
+    "rollupRole": "Role"
   }
 }

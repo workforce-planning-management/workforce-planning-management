@@ -8,6 +8,7 @@
   import { formatDate } from "#lib/locale-format.js";
   import { attempt, errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
+  import QualificationRollup from "#lib/components/QualificationRollup.svelte";
   import RoleQualificationRequirements from "#lib/components/RoleQualificationRequirements.svelte";
   import { unverifiedQualifications, verifyQualification } from "#lib/api/wpm.js";
   import type { QueuedQualification } from "#lib/api/types.js";
@@ -90,6 +91,9 @@
       {/each}
     </ul>
   {/if}
+{/if}
+{#if organization}
+  <QualificationRollup {organization} {reads} />
 {/if}
 
 <RoleQualificationRequirements />

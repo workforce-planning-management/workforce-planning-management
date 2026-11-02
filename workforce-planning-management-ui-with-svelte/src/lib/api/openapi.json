@@ -9157,6 +9157,19 @@
         ]
       }
     },
+    "/api/qualifications/rollup": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The cells"
+          }
+        },
+        "summary": "HR (?organization=): for each role people currently hold, per qualification it asks for, the counts met, declared_only, expired and missing and the share met, from the floor: a group under it shows nothing. A role nobody holds and a person with no role recorded are not in it. No name",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
     "/api/qualifications/unverified": {
       "get": {
         "responses": {

@@ -662,6 +662,7 @@ first, verified green (all 12 Playwright + 10 vitest tests pass). See
 
 ### Added
 
+- **The gap by role on `/qualifications` (WPM-T435, 2026-11-02).** A table of the roll-up; a small group reads "Too few people to show"; four strings in 13 locales (AI-written, unreviewed).
 - **Role qualification requirements on `/qualifications` (WPM-T435, 2026-11-02).** Choose a role profile, read what it asks for, add a requirement; five strings in 13 locales (AI-written, unreviewed).
 - **A `/qualifications` screen for HR (WPM-T435, 2026-11-02).** The queue of declared qualifications with a field for where the proof is held and a Verify button; a nav entry; five strings in 13 locales (AI-written, unreviewed).
 - **My team's qualifications (WPM-T435, 2026-11-02).** A panel on `/me` for a manager lists reports whose role asks for a qualification not held verified and in date; two strings in 13 locales (AI-written, unreviewed).

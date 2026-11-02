@@ -103,6 +103,45 @@ fn better(a: Standing, b: Standing) -> Standing {
     if rank(b) > rank(a) { b } else { a }
 }
 
+/// Counts per standing for the people who hold one role, against one requirement of that role.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Rollup {
+    /// The group is smaller than the floor: nothing is shown.
+    Hidden,
+    /// Counts per standing and the share that is met.
+    Shown {
+        /// A verified match in date.
+        met: usize,
+        /// A match declared and not verified.
+        declared_only: usize,
+        /// A match past its expiry.
+        expired: usize,
+        /// No match.
+        missing: usize,
+        /// `met / everyone in the group`; the group is never empty here.
+        rate: f64,
+    },
+}
+
+/// Roll a group up. A group smaller than `floor` (0 is read as 1) shows nothing, and neither does an empty one.
+#[must_use]
+pub fn rollup(standings: &[Standing], floor: usize) -> Rollup {
+    if standings.is_empty() || !super::suppression::visible(standings.len(), floor) {
+        return Rollup::Hidden;
+    }
+    let n = |s: Standing| standings.iter().filter(|x| **x == s).count();
+    let met = n(Standing::Met);
+    #[allow(clippy::cast_precision_loss)]
+    let rate = met as f64 / standings.len() as f64;
+    Rollup::Shown {
+        met,
+        declared_only: n(Standing::DeclaredOnly),
+        expired: n(Standing::Expired),
+        missing: n(Standing::Missing),
+        rate,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -228,5 +267,48 @@ mod tests {
             standing(&r, &[held("Degree", true, None)], d(2026, 11, 2)),
             Standing::Missing
         );
+    }
+
+    #[test]
+    fn a_group_under_the_floor_shows_nothing_and_at_the_floor_shows_counts() {
+        let few = vec![Standing::Met; 9];
+        assert_eq!(rollup(&few, 10), Rollup::Hidden);
+        let mut ten = vec![Standing::Met; 6];
+        ten.extend([
+            Standing::DeclaredOnly,
+            Standing::DeclaredOnly,
+            Standing::Expired,
+            Standing::Missing,
+        ]);
+        match rollup(&ten, 10) {
+            Rollup::Shown {
+                met,
+                declared_only,
+                expired,
+                missing,
+                rate,
+            } => {
+                assert_eq!((met, declared_only, expired, missing), (6, 2, 1, 1));
+                assert!((rate - 0.6).abs() < 1e-9);
+            }
+            Rollup::Hidden => panic!("ten people meet a floor of ten"),
+        }
+    }
+
+    #[test]
+    fn an_empty_group_shows_nothing_even_with_no_floor() {
+        assert_eq!(rollup(&[], 0), Rollup::Hidden);
+    }
+
+    #[test]
+    fn declared_only_does_not_count_toward_the_met_share() {
+        let all_declared = vec![Standing::DeclaredOnly; 10];
+        match rollup(&all_declared, 10) {
+            Rollup::Shown { met, rate, .. } => {
+                assert_eq!(met, 0);
+                assert!(rate.abs() < f64::EPSILON);
+            }
+            Rollup::Hidden => panic!("shown"),
+        }
     }
 }
