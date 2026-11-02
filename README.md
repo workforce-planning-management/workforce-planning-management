@@ -74,7 +74,7 @@ commands.
 | --- | --- |
 | Hiring and the record | requisitions, applicant pipeline, onboarding, worker records, org chart, reporting lines, groups |
 | Workforce | time and leave, shifts with working-time guardrails, **the on-call rota** (swaps, reminders), emergency contacts, **backups**, **the directory** |
-| Development | reviews, 360°s, assessments, learning, CPD, **skills gap analysis**, **training time recommendations**, succession |
+| Development | reviews, 360°s, assessments, learning, CPD, **skills gap analysis**, **training time recommendations**, **mandatory learning** (compliant, due soon, expired, never completed; a small group is never shown), **qualifications** (declared, then verified by HR, with a gap against the role), succession |
 | Leadership | strategic workforce planning, metrics and **insights**, **a CEO dashboard on one iPad screen** |
 | Joiners and leavers | dated checklists; a leaver's **last-day handover** with an audit trail |
 | Communication | **announcements** with audiences, links and read counts |
