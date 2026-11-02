@@ -9157,6 +9157,64 @@
         ]
       }
     },
+    "/api/qualifications/{pid}": {
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "The person or HR removes a qualification; audited",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
+    "/api/qualifications/{pid}/verify": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid and status",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "HR marks a qualification verified with a reference to where the proof is held (no certificate is stored). Verifying twice keeps the first",
+        "tags": [
+          "learning"
+        ]
+      }
+    },
     "/api/recognised-bodies": {
       "get": {
         "responses": {
@@ -9961,6 +10019,46 @@
         "summary": "What changes going up a level in the same role of the same framework",
         "tags": [
           "roles"
+        ]
+      }
+    },
+    "/api/role-profiles/{pid}/qualification-requirements": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The requirements"
+          }
+        },
+        "summary": "The qualifications a role profile asks for: a title, an optional kind, an optional minimum level on a named framework. Policy, not a person's record",
+        "tags": [
+          "learning"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the requirement",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add a qualification requirement to a role profile; a framework and its minimum level go together",
+        "tags": [
+          "learning"
         ]
       }
     },
@@ -13436,6 +13534,46 @@
         "summary": "The newest version in force of each policy aimed at the worker and where they stand: done, waiting or overdue (flagged, never forced), with a count waiting. The worker themself and HR",
         "tags": [
           "policies"
+        ]
+      }
+    },
+    "/api/workers/{pid}/qualifications": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The qualifications and the gap"
+          }
+        },
+        "summary": "A person's qualifications, declared or verified, and how each qualification their current role asks for stands: met (a verified match in date), declared_only, expired or missing. No role recorded gives role null, not a clean gap. The person themself and HR",
+        "tags": [
+          "learning"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the qualification",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add a qualification (kind, title, optional awarding body, framework with level, awarded and expiry dates); it is declared. The person or HR",
+        "tags": [
+          "learning"
         ]
       }
     },

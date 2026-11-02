@@ -691,6 +691,20 @@ fn add_integration_paths(document: &mut Value) {
         "/api/workers/{pid}/mandatory-learning": {
             "get": { "tags": ["learning"], "summary": "One person's status against each requirement in force: compliant, due_soon, expired, never_completed, not_applicable or unknown, with the last completion and the day it expires. The person themself and HR", "responses": ok("The statuses") }
         },
+        "/api/workers/{pid}/qualifications": {
+            "get": { "tags": ["learning"], "summary": "A person's qualifications, declared or verified, and how each qualification their current role asks for stands: met (a verified match in date), declared_only, expired or missing. No role recorded gives role null, not a clean gap. The person themself and HR", "responses": ok("The qualifications and the gap") },
+            "post": { "tags": ["learning"], "summary": "Add a qualification (kind, title, optional awarding body, framework with level, awarded and expiry dates); it is declared. The person or HR", "responses": ok("The pid of the qualification") }
+        },
+        "/api/qualifications/{pid}/verify": {
+            "post": { "tags": ["learning"], "summary": "HR marks a qualification verified with a reference to where the proof is held (no certificate is stored). Verifying twice keeps the first", "responses": ok("The pid and status") }
+        },
+        "/api/qualifications/{pid}": {
+            "delete": { "tags": ["learning"], "summary": "The person or HR removes a qualification; audited", "responses": ok("The pid") }
+        },
+        "/api/role-profiles/{pid}/qualification-requirements": {
+            "get": { "tags": ["learning"], "summary": "The qualifications a role profile asks for: a title, an optional kind, an optional minimum level on a named framework. Policy, not a person's record", "responses": ok("The requirements") },
+            "post": { "tags": ["learning"], "summary": "Add a qualification requirement to a role profile; a framework and its minimum level go together", "responses": ok("The pid of the requirement") }
+        },
         "/api/assignments/breakdown": {
             "get": { "tags": ["assignments"], "summary": "Headcount and FTE of the assignments in force today, by staff_group, job_role or area_of_work (?organization=&by=), from the floor: a cell under it shows nothing and no total is given. A category nobody recorded is its own unknown cell. No name, no worker, no pay", "responses": ok("The cells") }
         },

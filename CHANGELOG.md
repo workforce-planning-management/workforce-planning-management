@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — qualifications and the qualification gap (WPM-R171, WPM-T316, 2026-11-02)
+
+A person's qualifications, declared until HR verifies them with an evidence reference (no certificate stored), and the gap against the qualifications their current role asks for. A declared one is never shown as met. Details in the service and UI changelogs; the rest is WPM-T435.
+
 ### Security — the matcher crate gets a cargo-deny gate (2026-11-01)
 
 The matcher now has a `deny.toml` (the policy CRM's matcher uses) and the `deny` CI job checks it, as it already checked the service. The zizmor lint exits clean: every Dependabot entry has a cooldown of 7 calendar days, release steps pass expressions through `env`, and the matcher crate is watched.

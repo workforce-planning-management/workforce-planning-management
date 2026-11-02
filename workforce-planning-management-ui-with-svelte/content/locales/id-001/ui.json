@@ -2857,5 +2857,30 @@
     "whereDone": "Tempat pelaksanaan",
     "saved": "Tersimpan",
     "requirements": "Persyaratan"
+  },
+  "qualifications": {
+    "title": "Kualifikasi",
+    "none": "Belum ada kualifikasi yang dicatat.",
+    "declared": "Dinyatakan",
+    "verified": "Terverifikasi",
+    "expiresOn": "Berakhir pada",
+    "evidence": "Tempat bukti disimpan",
+    "verify": "Verifikasi",
+    "remove": "Hapus",
+    "gapTitle": "Yang diminta peran saya",
+    "noRole": "Belum ada peran yang dicatat untuk Anda, jadi belum ada yang dapat dibandingkan.",
+    "noRequirements": "Peran saya tidak meminta kualifikasi.",
+    "standingMet": "Terpenuhi",
+    "standingDeclared": "Dinyatakan, belum diverifikasi",
+    "standingExpired": "Kedaluwarsa",
+    "standingMissing": "Tidak dimiliki",
+    "add": "Tambah kualifikasi",
+    "kind": "Jenis",
+    "name": "Judul",
+    "awardingBody": "Lembaga penerbit",
+    "framework": "Kerangka (misalnya RQF)",
+    "level": "Tingkat",
+    "awardedOn": "Diberikan pada",
+    "save": "Simpan"
   }
 }

@@ -141,6 +141,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::absence_categories::routes())
         .add_route(controllers::assignments::routes())
         .add_route(controllers::mandatory_learning::routes())
+        .add_route(controllers::qualifications::routes())
         .add_route(controllers::bridges::routes())
         .add_route(controllers::category_vocabulary::routes())
         .add_route(controllers::cost_centres::routes())

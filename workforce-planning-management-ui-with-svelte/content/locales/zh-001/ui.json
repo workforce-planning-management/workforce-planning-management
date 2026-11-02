@@ -2857,5 +2857,30 @@
     "whereDone": "完成地点",
     "saved": "已保存",
     "requirements": "要求"
+  },
+  "qualifications": {
+    "title": "资格",
+    "none": "尚未记录任何资格。",
+    "declared": "已申报",
+    "verified": "已核实",
+    "expiresOn": "到期日",
+    "evidence": "证明存放处",
+    "verify": "核实",
+    "remove": "移除",
+    "gapTitle": "我的岗位要求",
+    "noRole": "尚未记录您的岗位，因此暂时无从比较。",
+    "noRequirements": "我的岗位没有资格要求。",
+    "standingMet": "已满足",
+    "standingDeclared": "已申报，尚未核实",
+    "standingExpired": "已过期",
+    "standingMissing": "未持有",
+    "add": "添加资格",
+    "kind": "类别",
+    "name": "名称",
+    "awardingBody": "颁发机构",
+    "framework": "框架（例如 RQF）",
+    "level": "等级",
+    "awardedOn": "颁发日期",
+    "save": "保存"
   }
 }

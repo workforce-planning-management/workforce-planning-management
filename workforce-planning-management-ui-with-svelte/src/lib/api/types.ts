@@ -795,3 +795,37 @@ export interface TeamLearningPerson {
     expires_on: string | null;
   }[];
 }
+
+/** A qualification a person holds: declared, or verified by HR. */
+export interface Qualification {
+  pid: string;
+  kind: "academic" | "professional" | "vocational" | "licence";
+  title: string;
+  awarding_body: string | null;
+  framework: string | null;
+  level: number | null;
+  awarded_on: string | null;
+  expires_on: string | null;
+  status: "declared" | "verified";
+  expired: boolean;
+  verified_on: string | null;
+  evidence_ref: string | null;
+}
+
+/** How one qualification a role asks for stands for the person. */
+export interface QualificationGapRow {
+  title: string;
+  kind: string | null;
+  framework: string | null;
+  min_level: number | null;
+  standing: "met" | "declared_only" | "expired" | "missing";
+}
+
+/** A person's qualifications and the gap against their current role (`role` is null when none is recorded). */
+export interface QualificationList {
+  worker_pid: string;
+  as_of: string;
+  qualifications: Qualification[];
+  role: { pid: string; job_title: string } | null;
+  gap: QualificationGapRow[];
+}

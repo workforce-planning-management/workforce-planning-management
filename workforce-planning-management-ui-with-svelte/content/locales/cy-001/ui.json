@@ -2902,5 +2902,30 @@
     "whereDone": "Lle y gwnaed",
     "saved": "Cadwyd",
     "requirements": "Gofynion"
+  },
+  "qualifications": {
+    "title": "Cymwysterau",
+    "none": "Nid oes cymwysterau wedi'u cofnodi.",
+    "declared": "Wedi'i ddatgan",
+    "verified": "Wedi'i wirio",
+    "expiresOn": "Yn dod i ben ar",
+    "evidence": "Lle mae'r prawf yn cael ei gadw",
+    "verify": "Gwirio",
+    "remove": "Tynnu",
+    "gapTitle": "Beth mae fy rôl yn gofyn amdano",
+    "noRole": "Nid oes rôl wedi'i chofnodi i chi, felly nid oes dim i'w gymharu eto.",
+    "noRequirements": "Nid yw fy rôl yn gofyn am gymwysterau.",
+    "standingMet": "Wedi'i fodloni",
+    "standingDeclared": "Wedi'i ddatgan, heb ei wirio eto",
+    "standingExpired": "Wedi dod i ben",
+    "standingMissing": "Heb ei ddal",
+    "add": "Ychwanegu cymhwyster",
+    "kind": "Math",
+    "name": "Teitl",
+    "awardingBody": "Corff dyfarnu",
+    "framework": "Fframwaith (er enghraifft RQF)",
+    "level": "Lefel",
+    "awardedOn": "Dyfarnwyd ar",
+    "save": "Cadw"
   }
 }

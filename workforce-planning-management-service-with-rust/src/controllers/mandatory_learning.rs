@@ -23,7 +23,11 @@ use crate::models::records;
 use crate::rules::mandatory_learning as rules;
 
 /// HR of the organization, or anyone when sign-in is off.
-async fn ensure_hr(ctx: &AppContext, caller: &MaybeAuthUser, organization: &str) -> Result<()> {
+pub(crate) async fn ensure_hr(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    organization: &str,
+) -> Result<()> {
     ensure_org_in_scope(ctx, caller, organization).await?;
     if !super::policies::privileged(ctx, caller, organization).await? {
         return Err(forbidden("this is done by HR"));

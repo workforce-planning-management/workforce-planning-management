@@ -80,6 +80,7 @@ pub mod policies;
 pub mod positions;
 pub mod privacy;
 pub mod programmes;
+pub mod qualifications;
 pub mod reporting;
 pub mod resignations;
 pub mod roles;

@@ -2866,5 +2866,30 @@
     "whereDone": "Where it was done",
     "saved": "Saved",
     "requirements": "Requirements"
+  },
+  "qualifications": {
+    "title": "Qualifications",
+    "none": "No qualifications recorded.",
+    "declared": "Declared",
+    "verified": "Verified",
+    "expiresOn": "Expires on",
+    "evidence": "Where the proof is held",
+    "verify": "Verify",
+    "remove": "Remove",
+    "gapTitle": "What my role asks for",
+    "noRole": "No role is recorded for you, so there is nothing to compare yet.",
+    "noRequirements": "My role asks for no qualifications.",
+    "standingMet": "Met",
+    "standingDeclared": "Declared, not yet verified",
+    "standingExpired": "Expired",
+    "standingMissing": "Not held",
+    "add": "Add a qualification",
+    "kind": "Kind",
+    "name": "Title",
+    "awardingBody": "Awarding body",
+    "framework": "Framework (for example RQF)",
+    "level": "Level",
+    "awardedOn": "Awarded on",
+    "save": "Save"
   }
 }

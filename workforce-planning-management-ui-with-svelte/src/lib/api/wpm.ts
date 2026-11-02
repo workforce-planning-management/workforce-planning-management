@@ -60,6 +60,7 @@ import type {
   LearningRollupRow,
   MinimumWageCheck,
   MyLearningRow,
+  QualificationList,
   TeamLearningPerson,
   PayrollRun,
   Ratio,
@@ -6069,4 +6070,47 @@ export function getStatutoryDefaults(
     ? `?organization=${encodeURIComponent(organization)}`
     : "";
   return api(`/statutory-defaults${query}`, init);
+}
+
+/** A person's qualifications and the gap against their current role. The person and HR. */
+export function workerQualifications(
+  pid: string,
+  init?: FetchLike,
+): Promise<QualificationList> {
+  return api(`/workers/${pid}/qualifications`, init);
+}
+
+/** Add a qualification; it is declared until HR verifies it. */
+export function addQualification(
+  pid: string,
+  body: {
+    kind: string;
+    title: string;
+    awarding_body?: string;
+    framework?: string;
+    level?: number;
+    awarded_on?: string;
+    expires_on?: string;
+  },
+): Promise<{ pid: string }> {
+  return api(`/workers/${pid}/qualifications`, {
+    method: "POST",
+    body,
+  });
+}
+
+/** HR verifies a qualification with a reference to where the proof is held. */
+export function verifyQualification(
+  pid: string,
+  evidenceRef: string,
+): Promise<{ pid: string; status: string }> {
+  return api(`/qualifications/${pid}/verify`, {
+    method: "POST",
+    body: { evidence_ref: evidenceRef },
+  });
+}
+
+/** Remove a qualification. */
+export function removeQualification(pid: string): Promise<{ pid: string }> {
+  return api(`/qualifications/${pid}`, { method: "DELETE" });
 }

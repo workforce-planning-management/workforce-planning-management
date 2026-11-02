@@ -215,6 +215,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("workers/{}/team-mandatory-learning", ControllerDecides),
     ("learning-requirements", ControllerDecides),
     ("learning-requirements/rollup", ControllerDecides),
+    ("workers/{}/qualifications", ControllerDecides),
+    ("role-profiles/{}/qualification-requirements", Open),
     ("workers/{}/team-equipment-count", ControllerDecides),
     ("retention/schedule", Privileged),
     ("statutory-defaults", Open),

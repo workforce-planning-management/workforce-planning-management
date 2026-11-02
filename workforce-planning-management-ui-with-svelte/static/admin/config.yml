@@ -3914,3 +3914,33 @@ collections:
               - { name: "whereDone", label: "Where Done", widget: string, required: false, i18n: true }
               - { name: "saved", label: "Saved", widget: string, required: false, i18n: true }
               - { name: "requirements", label: "Requirements", widget: string, required: false, i18n: true }
+          - name: "qualifications"
+            label: "Qualifications"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "declared", label: "Declared", widget: string, required: false, i18n: true }
+              - { name: "verified", label: "Verified", widget: string, required: false, i18n: true }
+              - { name: "expiresOn", label: "Expires On", widget: string, required: false, i18n: true }
+              - { name: "evidence", label: "Evidence", widget: string, required: false, i18n: true }
+              - { name: "verify", label: "Verify", widget: string, required: false, i18n: true }
+              - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
+              - { name: "gapTitle", label: "Gap Title", widget: string, required: false, i18n: true }
+              - { name: "noRole", label: "No Role", widget: string, required: false, i18n: true }
+              - { name: "noRequirements", label: "No Requirements", widget: string, required: false, i18n: true }
+              - { name: "standingMet", label: "Standing Met", widget: string, required: false, i18n: true }
+              - { name: "standingDeclared", label: "Standing Declared", widget: string, required: false, i18n: true }
+              - { name: "standingExpired", label: "Standing Expired", widget: string, required: false, i18n: true }
+              - { name: "standingMissing", label: "Standing Missing", widget: string, required: false, i18n: true }
+              - { name: "add", label: "Add", widget: string, required: false, i18n: true }
+              - { name: "kind", label: "Kind", widget: string, required: false, i18n: true }
+              - { name: "name", label: "Name", widget: string, required: false, i18n: true }
+              - { name: "awardingBody", label: "Awarding Body", widget: string, required: false, i18n: true }
+              - { name: "framework", label: "Framework", widget: string, required: false, i18n: true }
+              - { name: "level", label: "Level", widget: string, required: false, i18n: true }
+              - { name: "awardedOn", label: "Awarded On", widget: string, required: false, i18n: true }
+              - { name: "save", label: "Save", widget: string, required: false, i18n: true }

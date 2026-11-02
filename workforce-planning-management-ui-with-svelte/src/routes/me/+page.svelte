@@ -15,6 +15,7 @@
   import ExpenseClaims from "#lib/components/ExpenseClaims.svelte";
   import MyPolicies from "#lib/components/MyPolicies.svelte";
   import MyMandatoryLearning from "#lib/components/MyMandatoryLearning.svelte";
+  import MyQualifications from "#lib/components/MyQualifications.svelte";
   import TeamMandatoryLearning from "#lib/components/TeamMandatoryLearning.svelte";
   import EquipmentPanel from "#lib/components/EquipmentPanel.svelte";
   import MyCredentials from "#lib/components/MyCredentials.svelte";
@@ -87,6 +88,7 @@
   <MyPayInformation {workerPid} />
   <MyPolicies {workerPid} />
   <MyMandatoryLearning {workerPid} />
+  <MyQualifications {workerPid} />
   <TeamMandatoryLearning {workerPid} />
   <TeamPolicies {workerPid} />
   <TeamEquipment {workerPid} />

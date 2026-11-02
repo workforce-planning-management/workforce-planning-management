@@ -2875,5 +2875,30 @@
     "whereDone": "Onde foi feito",
     "saved": "Guardado",
     "requirements": "Requisitos"
+  },
+  "qualifications": {
+    "title": "Qualificações",
+    "none": "Nenhuma qualificação registrada.",
+    "declared": "Declarada",
+    "verified": "Verificada",
+    "expiresOn": "Expira em",
+    "evidence": "Onde está a comprovação",
+    "verify": "Verificar",
+    "remove": "Remover",
+    "gapTitle": "O que meu cargo exige",
+    "noRole": "Nenhum cargo está registrado para você, então ainda não há o que comparar.",
+    "noRequirements": "Meu cargo não exige qualificações.",
+    "standingMet": "Atendida",
+    "standingDeclared": "Declarada, ainda não verificada",
+    "standingExpired": "Expirada",
+    "standingMissing": "Não possui",
+    "add": "Adicionar uma qualificação",
+    "kind": "Tipo",
+    "name": "Título",
+    "awardingBody": "Entidade que concedeu",
+    "framework": "Quadro (por exemplo RQF)",
+    "level": "Nível",
+    "awardedOn": "Concedida em",
+    "save": "Salvar"
   }
 }

@@ -2875,5 +2875,30 @@
     "whereDone": "Où elle a eu lieu",
     "saved": "Enregistré",
     "requirements": "Exigences"
+  },
+  "qualifications": {
+    "title": "Qualifications",
+    "none": "Aucune qualification enregistrée.",
+    "declared": "Déclarée",
+    "verified": "Vérifiée",
+    "expiresOn": "Expire le",
+    "evidence": "Où se trouve la preuve",
+    "verify": "Vérifier",
+    "remove": "Retirer",
+    "gapTitle": "Ce que demande mon poste",
+    "noRole": "Aucun poste n'est enregistré pour vous, il n'y a donc encore rien à comparer.",
+    "noRequirements": "Mon poste ne demande aucune qualification.",
+    "standingMet": "Satisfaite",
+    "standingDeclared": "Déclarée, pas encore vérifiée",
+    "standingExpired": "Expirée",
+    "standingMissing": "Non détenue",
+    "add": "Ajouter une qualification",
+    "kind": "Type",
+    "name": "Intitulé",
+    "awardingBody": "Organisme délivrant",
+    "framework": "Cadre (par exemple RQF)",
+    "level": "Niveau",
+    "awardedOn": "Obtenue le",
+    "save": "Enregistrer"
   }
 }

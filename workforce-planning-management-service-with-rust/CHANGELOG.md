@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — qualifications and the qualification gap (WPM-R171, WPM-T316)
+
+`rules::qualification` (met, declared_only, expired, missing); tables `qualifications` and `role_qualification_requirements` (migration `m20261102_000117`), in the subject-access export and erasure; `GET`/`POST /api/workers/{pid}/qualifications`, `POST /api/qualifications/{pid}/verify` (HR, evidence reference required), `DELETE /api/qualifications/{pid}`, `GET`/`POST /api/role-profiles/{pid}/qualification-requirements`. No role recorded gives `role: null`. **Not done:** the manager's view, an HR requirements screen (WPM-T435).
+
 ### Added — statutory and mandatory learning: records and API (WPM-R170, WPM-T315 in part, WPM-D117)
 
 Requirements (`statutory`, which names its source, or `mandatory`) with a refresher, courses and an audience; completions HR records for training done elsewhere (a completed training enrolment in one of the courses counts without a row); `GET /api/workers/{pid}/mandatory-learning` for the person and HR; `GET /api/learning-requirements/rollup` for HR, counts and a rate with the floor, `unknown` counted apart, no name. Two tables (migration `m20261102_000116`), wired into the subject-access export and erasure. `GET /api/workers/{pid}/team-mandatory-learning` gives a manager their reports by name with status per requirement. `POST /api/learning-requirements/{pid}/retire`. **Not done:** a roll-up by department, position audiences (WPM-T434).

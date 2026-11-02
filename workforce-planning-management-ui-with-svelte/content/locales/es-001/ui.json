@@ -2875,5 +2875,30 @@
     "whereDone": "Dónde se hizo",
     "saved": "Guardado",
     "requirements": "Requisitos"
+  },
+  "qualifications": {
+    "title": "Cualificaciones",
+    "none": "No hay cualificaciones registradas.",
+    "declared": "Declarada",
+    "verified": "Verificada",
+    "expiresOn": "Caduca el",
+    "evidence": "Dónde se guarda la prueba",
+    "verify": "Verificar",
+    "remove": "Quitar",
+    "gapTitle": "Lo que pide mi puesto",
+    "noRole": "No hay un puesto registrado para usted, así que aún no hay nada que comparar.",
+    "noRequirements": "Mi puesto no pide cualificaciones.",
+    "standingMet": "Cumplida",
+    "standingDeclared": "Declarada, aún sin verificar",
+    "standingExpired": "Caducada",
+    "standingMissing": "No la tiene",
+    "add": "Añadir una cualificación",
+    "kind": "Tipo",
+    "name": "Título",
+    "awardingBody": "Entidad que la otorga",
+    "framework": "Marco (por ejemplo RQF)",
+    "level": "Nivel",
+    "awardedOn": "Otorgada el",
+    "save": "Guardar"
   }
 }

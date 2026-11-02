@@ -60,6 +60,7 @@ mod plan_views;
 mod policies;
 mod positions;
 mod privacy;
+mod qualifications;
 mod removals;
 mod rotas;
 mod scale;

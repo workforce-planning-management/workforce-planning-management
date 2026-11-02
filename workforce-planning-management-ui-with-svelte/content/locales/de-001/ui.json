@@ -2866,5 +2866,30 @@
     "whereDone": "Wo absolviert",
     "saved": "Gespeichert",
     "requirements": "Anforderungen"
+  },
+  "qualifications": {
+    "title": "Qualifikationen",
+    "none": "Keine Qualifikationen erfasst.",
+    "declared": "Angegeben",
+    "verified": "Geprüft",
+    "expiresOn": "Läuft ab am",
+    "evidence": "Wo der Nachweis liegt",
+    "verify": "Prüfen",
+    "remove": "Entfernen",
+    "gapTitle": "Was meine Rolle verlangt",
+    "noRole": "Für Sie ist keine Rolle erfasst, also gibt es noch nichts zu vergleichen.",
+    "noRequirements": "Meine Rolle verlangt keine Qualifikationen.",
+    "standingMet": "Erfüllt",
+    "standingDeclared": "Angegeben, noch nicht geprüft",
+    "standingExpired": "Abgelaufen",
+    "standingMissing": "Nicht vorhanden",
+    "add": "Qualifikation hinzufügen",
+    "kind": "Art",
+    "name": "Bezeichnung",
+    "awardingBody": "Verleihende Stelle",
+    "framework": "Rahmen (zum Beispiel RQF)",
+    "level": "Stufe",
+    "awardedOn": "Verliehen am",
+    "save": "Speichern"
   }
 }

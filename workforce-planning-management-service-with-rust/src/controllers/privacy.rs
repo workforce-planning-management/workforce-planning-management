@@ -23,9 +23,9 @@ use crate::models::_entities::{
     learning_completions, leave_entitlements, leave_requests, mentorships, mobility_interests,
     movements, notifications, onboarding_items, organization_memberships, path_enrollments,
     pay_information_requests, payslips, pipeline_members, policy_acknowledgements, positions,
-    post_fundings, professional_registrations, program_placements, resignations, reviews,
-    rota_members, rota_overrides, rota_swap_requests, scim_pushes, shift_assignments, time_entries,
-    training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
+    post_fundings, professional_registrations, program_placements, qualifications, resignations,
+    reviews, rota_members, rota_overrides, rota_swap_requests, scim_pushes, shift_assignments,
+    time_entries, training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
     worker_contractor_details, worker_framework_roles, worker_health_records, worker_job_levels,
     worker_pay_positions, worker_skill_history, worker_skills, workers,
 };
@@ -166,6 +166,7 @@ async fn subject_access(
         "asset_issues": rows_for!(db, asset_issues, WorkerPid, epid),
         "assignments": rows_for!(db, assignments, WorkerPid, epid),
         "learning_completions": rows_for!(db, learning_completions, WorkerPid, epid),
+        "qualifications": rows_for!(db, qualifications, WorkerPid, epid),
         "policy_acknowledgements": rows_for!(db, policy_acknowledgements, WorkerPid, epid),
         "credential_issuances": rows_for!(db, credential_issuances, WorkerPid, epid),
         "positions_held": rows_for!(db, positions, HolderWorkerPid, epid),
@@ -290,6 +291,7 @@ async fn candidate_subject_access(
 /// that are about them only (WPM-D22). One list, used by the live erasure and by
 /// the replay after a restore (WPM-D63), so the two cannot drift. The order is
 /// pinned: the audit snapshot indexes the row counts by position.
+#[allow(clippy::too_many_lines)] // one ordered list; splitting it would risk the pinned order
 fn erasure_statements(epid: Uuid) -> Vec<String> {
     vec![
         format!("UPDATE time_entries SET notes = NULL WHERE worker_pid = '{epid}'"),
@@ -398,6 +400,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("UPDATE onboarding_items SET waived_reason = NULL WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM succession_candidates WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM learning_completions WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM qualifications WHERE worker_pid = '{epid}'"),
     ]
 }
 

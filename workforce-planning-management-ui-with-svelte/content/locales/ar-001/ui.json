@@ -2902,5 +2902,30 @@
     "whereDone": "مكان الإنجاز",
     "saved": "تم الحفظ",
     "requirements": "المتطلبات"
+  },
+  "qualifications": {
+    "title": "المؤهلات",
+    "none": "لا توجد مؤهلات مسجلة.",
+    "declared": "مُعلَن",
+    "verified": "تم التحقق",
+    "expiresOn": "تنتهي في",
+    "evidence": "أين يُحفظ الإثبات",
+    "verify": "تحقق",
+    "remove": "إزالة",
+    "gapTitle": "ما يطلبه دوري",
+    "noRole": "لا يوجد دور مسجل لك، فلا شيء للمقارنة بعد.",
+    "noRequirements": "دوري لا يتطلب مؤهلات.",
+    "standingMet": "مستوفى",
+    "standingDeclared": "مُعلَن ولم يتم التحقق بعد",
+    "standingExpired": "منتهي",
+    "standingMissing": "غير حاصل عليه",
+    "add": "إضافة مؤهل",
+    "kind": "النوع",
+    "name": "العنوان",
+    "awardingBody": "الجهة المانحة",
+    "framework": "الإطار (مثل RQF)",
+    "level": "المستوى",
+    "awardedOn": "مُنح في",
+    "save": "حفظ"
   }
 }
