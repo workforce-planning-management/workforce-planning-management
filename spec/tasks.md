@@ -5798,3 +5798,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       collective agreement (WPM-D161, confirmed 2026-11-01: one figure with its agreement, clause and validity dates; a warning when past its valid-to date); example profiles for `SE` or `DK` (none by law), `CN` (rest-day and holiday multipliers, a 36-hour monthly cap) and `ES` (a monthly floor in 14 payments), `FR` (banded overtime) and `KR` (premiums that add, a size threshold, and an accident rate by industry class), all `unverified` until WPM-T411 (WPM-D162).
 - [x] WPM-T427 **When the age is unknown, still say `below` where pay is under the lowest band's floor.** *(WPM-R218, WPM-D156)* The date of birth is not a column yet (WPM-T319) and is read from the person service, so in a deployment with none, a profile with age bands (the `GB`
       example) answers `no_date_of_birth` for every worker. The pay is `below` for certain when it is under the lowest configured floor whatever the band: say so, and keep `unknown` only where it could be either. Pure-core change and tests.
+
+## Phase 27 — Individual goals tied to reviews (proposed, 2026-11-02)
+
+Spec: [individual-goals.md](individual-goals.md). Decisions WPM-D163 to WPM-D166 are proposals until the product owner confirms them.
+
+- [ ] WPM-T428 **Goals, pure core.** *(WPM-R224, WPM-D163)* Validity (title, period, measures), status moves, check-ins, the snapshot a review keeps; no score is computed.
+- [ ] WPM-T429 **Tables, migration and rights.** *(WPM-R224, WPM-R226)* `goals`, `goal_measures`, `goal_check_ins`; wired into the subject-access export and erasure.
+- [ ] WPM-T430 **Goals API.** *(WPM-R224, WPM-D164)* Propose, agree, update, check in, withdraw; ABAC-masked reads, audited; organization-scoped; OpenAPI.
+- [ ] WPM-T431 **The review tie-in.** *(WPM-R225, WPM-D165)* A PADR's objectives are goals; a performance review lists the goals of its period with outcomes; a signed review keeps a snapshot.
+- [ ] WPM-T432 **Screens and strings.** *(WPM-R224, WPM-R225)* The person's goals, the manager's view by name, the review's goals panel; strings in every locale.
+- [ ] WPM-T433 **HR roll-up and guards.** *(WPM-R226, WPM-D163)* Counts by status and department with the floor; the scoring guard test covers every new function.
