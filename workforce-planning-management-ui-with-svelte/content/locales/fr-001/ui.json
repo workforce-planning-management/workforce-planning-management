@@ -52,7 +52,8 @@
     "bargaining": "Négociation collective",
     "consultations": "Procédures de consultation",
     "decisionGates": "Points de décision",
-    "statutoryDefaults": "Valeurs légales par défaut"
+    "statutoryDefaults": "Valeurs légales par défaut",
+    "mandatoryLearning": "Formations obligatoires"
   },
   "pr": {
     "retention": "Conservation",
@@ -2831,5 +2832,28 @@
     "ok": "Correct",
     "none_by_law": "Aucun par la loi",
     "unknown": "Pas assez d'éléments pour comparer"
+  },
+  "mandatoryLearning": {
+    "title": "Formations légales et obligatoires",
+    "hint": "Chaque exigence face aux personnes visées. Inconnu signifie que le dossier n'indique pas à quel groupe appartient la personne ; c'est compté à part, ni à jour ni manquant. Un groupe sous le seuil n'affiche rien.",
+    "organization": "Organisation",
+    "subject": "Sujet",
+    "basis": "Fondement",
+    "statutory": "Légale",
+    "mandatory": "Obligatoire",
+    "source": "Source",
+    "rate": "À jour",
+    "hidden": "Trop peu de personnes pour l'afficher",
+    "none": "Aucune exigence pour l'instant",
+    "lastDone": "Dernière réalisation",
+    "expires": "Expire",
+    "compliant": "À jour",
+    "due_soon": "Bientôt échue",
+    "expired": "Expirée",
+    "never_completed": "Jamais réalisée",
+    "not_applicable": "Sans objet",
+    "unknown": "Inconnu",
+    "mine": "Mes formations légales et obligatoires",
+    "unknownNote": "Inconnu signifie que votre dossier n'indique pas à quel groupe vous appartenez."
   }
 }

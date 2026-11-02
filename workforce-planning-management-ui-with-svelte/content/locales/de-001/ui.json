@@ -52,7 +52,8 @@
     "bargaining": "Tarifverhandlungen",
     "consultations": "Konsultationen",
     "decisionGates": "Entscheidungsschranken",
-    "statutoryDefaults": "Gesetzliche Voreinstellungen"
+    "statutoryDefaults": "Gesetzliche Voreinstellungen",
+    "mandatoryLearning": "Pflichtschulungen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -2822,5 +2823,28 @@
     "ok": "In Ordnung",
     "none_by_law": "Gesetzlich keiner",
     "unknown": "Nicht genug zum Vergleichen"
+  },
+  "mandatoryLearning": {
+    "title": "Gesetzlich und betrieblich vorgeschriebene Schulungen",
+    "hint": "Jede Anforderung für die Personen, an die sie sich richtet. Unbekannt heißt: Aus der Akte geht nicht hervor, zu welcher Gruppe jemand gehört; das wird gesondert gezählt und gilt weder als aktuell noch als fehlend. Eine Gruppe unter der Mindestzahl zeigt nichts.",
+    "organization": "Organisation",
+    "subject": "Thema",
+    "basis": "Grundlage",
+    "statutory": "Gesetzlich",
+    "mandatory": "Betrieblich",
+    "source": "Quelle",
+    "rate": "Aktuell",
+    "hidden": "Zu wenige Personen zur Anzeige",
+    "none": "Noch keine Anforderungen",
+    "lastDone": "Zuletzt abgeschlossen",
+    "expires": "Läuft ab",
+    "compliant": "Aktuell",
+    "due_soon": "Bald fällig",
+    "expired": "Abgelaufen",
+    "never_completed": "Nie abgeschlossen",
+    "not_applicable": "Nicht zutreffend",
+    "unknown": "Unbekannt",
+    "mine": "Meine vorgeschriebenen Schulungen",
+    "unknownNote": "Unbekannt heißt: Aus Ihrer Akte geht nicht hervor, zu welcher Gruppe Sie gehören."
   }
 }

@@ -21,8 +21,8 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Rust test binaries beside the request suite | 26 |
 | Front-end unit test files | 40 |
 | Front-end unit tests (`it(` / `test(`) | 281 |
-| Playwright tests (`test(`) | 241 |
-| Front-end pages (`+page.svelte`) | 57 |
+| Playwright tests (`test(`) | 243 |
+| Front-end pages (`+page.svelte`) | 58 |
 | Content locales | 17 |
 | Topic files in `spec/` (not counting this one) | 60 |
 | Assessment checklist answers: met | 16 |

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — statutory and mandatory learning screens (WPM-R170, WPM-T315 in part)
+
+`/mandatory-learning`: HR's roll-up for an organization (counts per status, the rate, a small group shown as too few people, unknown counted apart, no name). A panel on `/me`: the person's own status against each requirement, with the last completion and expiry; unknown is said in words. 22 strings in the 13 `-001` locales (AI-written, unreviewed). **Not done:** screenshots looked at; forms to add a requirement or record a completion; the manager's view.
+
 ### Added — the minimum-wage check on a payroll run (WPM-R218, WPM-T416)
 
 A panel on `/payroll/[pid]` (not for a draft run) with a button that runs the advisory check on request, because the read is audited. It shows the server's indicative note, a count per outcome and a row per worker (outcome, reason, band; never an age). Nine strings in the 13 `-001` locales (AI-written, unreviewed). **Not done:** an axe run, a look at a screenshot, and a translation of the server's note.

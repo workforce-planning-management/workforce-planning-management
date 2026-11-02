@@ -52,7 +52,8 @@
     "bargaining": "Bargeinio ar y cyd",
     "consultations": "Ymgynghoriadau",
     "decisionGates": "Pyrth penderfynu",
-    "statutoryDefaults": "Rhagosodiadau statudol"
+    "statutoryDefaults": "Rhagosodiadau statudol",
+    "mandatoryLearning": "Hyfforddiant gorfodol"
   },
   "pr": {
     "retention": "Cadw data",
@@ -2858,5 +2859,28 @@
     "ok": "Iawn",
     "none_by_law": "Dim yn ôl y gyfraith",
     "unknown": "Dim digon i gymharu"
+  },
+  "mandatoryLearning": {
+    "title": "Hyfforddiant statudol a gorfodol",
+    "hint": "Pob gofyniad yn erbyn y bobl y mae wedi'i anelu atynt. Ystyr anhysbys yw nad yw cofnod yn dweud i ba grŵp y mae rhywun yn perthyn; caiff ei gyfrif ar wahân ac nid yw'n gyfredol nac ar goll. Nid yw grŵp o dan y trothwy yn dangos dim.",
+    "organization": "Sefydliad",
+    "subject": "Pwnc",
+    "basis": "Sail",
+    "statutory": "Statudol",
+    "mandatory": "Gorfodol",
+    "source": "Ffynhonnell",
+    "rate": "Cyfredol",
+    "hidden": "Rhy ychydig o bobl i'w dangos",
+    "none": "Dim gofynion eto",
+    "lastDone": "Cwblhawyd ddiwethaf",
+    "expires": "Yn dod i ben",
+    "compliant": "Cyfredol",
+    "due_soon": "Yn ddyledus cyn bo hir",
+    "expired": "Wedi dod i ben",
+    "never_completed": "Heb ei gwblhau erioed",
+    "not_applicable": "Ddim yn berthnasol",
+    "unknown": "Anhysbys",
+    "mine": "Fy hyfforddiant statudol a gorfodol",
+    "unknownNote": "Ystyr anhysbys yw nad yw eich cofnod yn dweud i ba grŵp yr ydych yn perthyn."
   }
 }

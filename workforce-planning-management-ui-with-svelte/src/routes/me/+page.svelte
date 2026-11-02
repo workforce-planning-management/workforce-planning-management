@@ -14,6 +14,7 @@
   import DottedLinePanel from "#lib/components/DottedLinePanel.svelte";
   import ExpenseClaims from "#lib/components/ExpenseClaims.svelte";
   import MyPolicies from "#lib/components/MyPolicies.svelte";
+  import MyMandatoryLearning from "#lib/components/MyMandatoryLearning.svelte";
   import EquipmentPanel from "#lib/components/EquipmentPanel.svelte";
   import MyCredentials from "#lib/components/MyCredentials.svelte";
   import TeamPolicies from "#lib/components/TeamPolicies.svelte";
@@ -84,6 +85,7 @@
   <PayPosition {workerPid} />
   <MyPayInformation {workerPid} />
   <MyPolicies {workerPid} />
+  <MyMandatoryLearning {workerPid} />
   <TeamPolicies {workerPid} />
   <TeamEquipment {workerPid} />
   <EquipmentPanel {workerPid} organizationRef={memberships.find((m) => m.worker_pid === workerPid)?.organization_ref ?? ""} />

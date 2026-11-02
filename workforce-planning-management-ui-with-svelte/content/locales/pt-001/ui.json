@@ -52,7 +52,8 @@
     "bargaining": "Negociação coletiva",
     "consultations": "Consultas",
     "decisionGates": "Pontos de decisão",
-    "statutoryDefaults": "Valores legais por omissão"
+    "statutoryDefaults": "Valores legais por omissão",
+    "mandatoryLearning": "Formação obrigatória"
   },
   "pr": {
     "retention": "Retenção",
@@ -2831,5 +2832,28 @@
     "ok": "Correto",
     "none_by_law": "Nenhum por lei",
     "unknown": "Dados insuficientes para comparar"
+  },
+  "mandatoryLearning": {
+    "title": "Formação legal e obrigatória",
+    "hint": "Cada requisito diante das pessoas a quem se destina. Desconhecido significa que um registo não indica a que grupo alguém pertence; conta-se à parte e não está em dia nem em falta. Um grupo abaixo do mínimo não mostra nada.",
+    "organization": "Organização",
+    "subject": "Assunto",
+    "basis": "Base",
+    "statutory": "Legal",
+    "mandatory": "Obrigatória",
+    "source": "Fonte",
+    "rate": "Em dia",
+    "hidden": "Poucas pessoas para mostrar",
+    "none": "Ainda não há requisitos",
+    "lastDone": "Última conclusão",
+    "expires": "Expira",
+    "compliant": "Em dia",
+    "due_soon": "A vencer",
+    "expired": "Expirado",
+    "never_completed": "Nunca concluído",
+    "not_applicable": "Não aplicável",
+    "unknown": "Desconhecido",
+    "mine": "A minha formação legal e obrigatória",
+    "unknownNote": "Desconhecido significa que o seu registo não indica a que grupo pertence."
   }
 }

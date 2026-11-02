@@ -52,7 +52,8 @@
     "bargaining": "Bargaining",
     "consultations": "Consultations",
     "decisionGates": "Decision gates",
-    "statutoryDefaults": "Statutory defaults"
+    "statutoryDefaults": "Statutory defaults",
+    "mandatoryLearning": "Mandatory learning"
   },
   "pr": {
     "retention": "Retention",
@@ -2822,5 +2823,28 @@
     "ok": "Ok",
     "none_by_law": "None by law",
     "unknown": "Not enough to compare"
+  },
+  "mandatoryLearning": {
+    "title": "Statutory and mandatory learning",
+    "hint": "Each requirement against the people it is aimed at. Unknown means a record does not say which group someone is in; it is counted apart and is neither in date nor missing. A group below the floor shows nothing.",
+    "organization": "Organization",
+    "subject": "Subject",
+    "basis": "Basis",
+    "statutory": "Statutory",
+    "mandatory": "Mandatory",
+    "source": "Source",
+    "rate": "In date",
+    "hidden": "Too few people to show",
+    "none": "No requirements yet",
+    "lastDone": "Last completed",
+    "expires": "Expires",
+    "compliant": "In date",
+    "due_soon": "Due soon",
+    "expired": "Expired",
+    "never_completed": "Never completed",
+    "not_applicable": "Not applicable",
+    "unknown": "Unknown",
+    "mine": "My statutory and mandatory learning",
+    "unknownNote": "Unknown means your record does not say which group you are in."
   }
 }

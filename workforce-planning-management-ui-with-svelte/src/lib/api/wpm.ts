@@ -57,7 +57,9 @@ import type {
   OnboardingItem,
   OrgNode,
   Payslip,
+  LearningRollupRow,
   MinimumWageCheck,
+  MyLearningRow,
   PayrollRun,
   Ratio,
   Requisition,
@@ -570,6 +572,34 @@ export function minimumWageCheck(
   init?: FetchLike,
 ): Promise<MinimumWageCheck> {
   return api(`/payroll-runs/${pid}/minimum-wage-check`, init);
+}
+
+/** One person's status against each statutory and mandatory requirement in force. The person and HR. */
+export function workerMandatoryLearning(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  worker_pid: string;
+  as_of: string;
+  requirements: MyLearningRow[];
+}> {
+  return api(`/workers/${pid}/mandatory-learning`, init);
+}
+
+/** HR: per requirement, counts per status and the rate in date, from the floor. Names no one. */
+export function learningRollup(
+  organization: string,
+  init?: FetchLike,
+): Promise<{
+  organization: string;
+  as_of: string;
+  floor: number;
+  requirements: LearningRollupRow[];
+}> {
+  return api(
+    `/learning-requirements/rollup?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
 }
 
 /** One worker's payslips (self-service). */

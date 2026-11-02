@@ -746,3 +746,38 @@ export interface MinimumWageCheck {
   unknown_reasons: Record<string, number>;
   workers: MinimumWageRow[];
 }
+
+/** The six statuses of a person against a requirement; `unknown` is never in date and never missing. */
+export type LearningStatus =
+  | "compliant"
+  | "due_soon"
+  | "expired"
+  | "never_completed"
+  | "not_applicable"
+  | "unknown";
+
+/** One person's status against one statutory or mandatory learning requirement. */
+export interface MyLearningRow {
+  requirement_pid: string;
+  subject: string;
+  basis: "statutory" | "mandatory";
+  source: string | null;
+  status: LearningStatus;
+  last_completed_on: string | null;
+  expires_on: string | null;
+}
+
+/** A requirement's roll-up for a group: counts and a rate, or nothing under the floor. */
+export interface LearningRollupRow {
+  requirement_pid: string;
+  subject: string;
+  basis: "statutory" | "mandatory";
+  hidden: boolean;
+  compliant?: number;
+  due_soon?: number;
+  expired?: number;
+  never_completed?: number;
+  not_applicable?: number;
+  unknown?: number;
+  rate?: number | null;
+}

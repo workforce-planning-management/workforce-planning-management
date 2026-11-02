@@ -41,6 +41,7 @@
     ["/pay-information", "nav.payInformation"],
     ["/ai-register", "nav.aiRegister"],
     ["/statutory-defaults", "nav.statutoryDefaults"],
+    ["/mandatory-learning", "nav.mandatoryLearning"],
     ["/bargaining", "nav.bargaining"],
     ["/consultations", "nav.consultations"],
     ["/decision-gates", "nav.decisionGates"],

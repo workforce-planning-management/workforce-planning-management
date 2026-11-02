@@ -52,7 +52,8 @@
     "bargaining": "集体谈判",
     "consultations": "磋商",
     "decisionGates": "决策关口",
-    "statutoryDefaults": "法定默认值"
+    "statutoryDefaults": "法定默认值",
+    "mandatoryLearning": "必修培训"
   },
   "pr": {
     "retention": "保留",
@@ -2813,5 +2814,28 @@
     "ok": "正常",
     "none_by_law": "法律未规定",
     "unknown": "信息不足，无法比较"
+  },
+  "mandatoryLearning": {
+    "title": "法定及必修培训",
+    "hint": "每项要求对应其适用的人员。“未知”表示记录中没有说明某人所属的群体；单独计数，既不算有效也不算缺失。人数低于下限的群体不显示任何内容。",
+    "organization": "组织",
+    "subject": "主题",
+    "basis": "依据",
+    "statutory": "法定",
+    "mandatory": "必修",
+    "source": "来源",
+    "rate": "有效",
+    "hidden": "人数过少，无法显示",
+    "none": "尚无要求",
+    "lastDone": "最近完成",
+    "expires": "到期",
+    "compliant": "有效",
+    "due_soon": "即将到期",
+    "expired": "已过期",
+    "never_completed": "从未完成",
+    "not_applicable": "不适用",
+    "unknown": "未知",
+    "mine": "我的法定及必修培训",
+    "unknownNote": "“未知”表示您的记录中没有说明您所属的群体。"
   }
 }

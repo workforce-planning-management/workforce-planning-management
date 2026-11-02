@@ -52,7 +52,8 @@
     "bargaining": "Negociación colectiva",
     "consultations": "Consultas",
     "decisionGates": "Puertas de decisión",
-    "statutoryDefaults": "Valores legales por defecto"
+    "statutoryDefaults": "Valores legales por defecto",
+    "mandatoryLearning": "Formación obligatoria"
   },
   "pr": {
     "retention": "Retención",
@@ -2831,5 +2832,28 @@
     "ok": "Correcto",
     "none_by_law": "Ninguno por ley",
     "unknown": "No hay datos suficientes para comparar"
+  },
+  "mandatoryLearning": {
+    "title": "Formación legal y obligatoria",
+    "hint": "Cada requisito frente a las personas a las que va dirigido. Desconocido significa que un registro no indica a qué grupo pertenece alguien; se cuenta aparte y no figura ni al día ni como pendiente. Un grupo por debajo del mínimo no muestra nada.",
+    "organization": "Organización",
+    "subject": "Asunto",
+    "basis": "Base",
+    "statutory": "Legal",
+    "mandatory": "Obligatoria",
+    "source": "Fuente",
+    "rate": "Al día",
+    "hidden": "Muy pocas personas para mostrarlo",
+    "none": "Aún no hay requisitos",
+    "lastDone": "Última realización",
+    "expires": "Caduca",
+    "compliant": "Al día",
+    "due_soon": "Próximo a vencer",
+    "expired": "Caducado",
+    "never_completed": "Nunca realizado",
+    "not_applicable": "No aplica",
+    "unknown": "Desconocido",
+    "mine": "Mi formación legal y obligatoria",
+    "unknownNote": "Desconocido significa que su registro no indica a qué grupo pertenece."
   }
 }
