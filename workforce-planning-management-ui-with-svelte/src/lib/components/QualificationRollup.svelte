@@ -67,7 +67,7 @@
     { id: "declared_only", header: t("qualifications.standingDeclared"), align: "end" },
     { id: "expired", header: t("qualifications.standingExpired"), align: "end" },
     { id: "missing", header: t("qualifications.standingMissing"), align: "end" },
-    { id: "rate", header: t("mandatoryLearning.rate"), align: "end" },
+    { id: "rate", header: t("qualifications.rollupRate"), align: "end" },
   ]);
 </script>
 

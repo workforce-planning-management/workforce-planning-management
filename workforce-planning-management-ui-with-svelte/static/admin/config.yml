@@ -3959,3 +3959,4 @@ collections:
               - { name: "rollupHint", label: "Rollup Hint", widget: text, required: false, i18n: true }
               - { name: "rollupNone", label: "Rollup None", widget: string, required: false, i18n: true }
               - { name: "rollupRole", label: "Rollup Role", widget: string, required: false, i18n: true }
+              - { name: "rollupRate", label: "Rollup Rate", widget: string, required: false, i18n: true }

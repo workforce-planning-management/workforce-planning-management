@@ -2914,6 +2914,7 @@
     "rollupTitle": "A lacuna por função",
     "rollupHint": "Para cada função que as pessoas ocupam atualmente, quantas cumprem cada qualificação exigida. Um grupo abaixo do mínimo não mostra nada. Não nomeia ninguém e quem não tem função registada não é contado.",
     "rollupNone": "Nenhuma função ocupada exige qualificações.",
-    "rollupRole": "Função"
+    "rollupRole": "Função",
+    "rollupRate": "Proporção cumprida"
   }
 }

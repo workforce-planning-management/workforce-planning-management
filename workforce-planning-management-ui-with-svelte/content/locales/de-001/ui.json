@@ -2905,6 +2905,7 @@
     "rollupTitle": "Die Lücke nach Rolle",
     "rollupHint": "Für jede Rolle, die Personen derzeit innehaben: wie viele die einzelnen verlangten Qualifikationen erfüllen. Eine Gruppe unter der Mindestgröße zeigt nichts. Es nennt niemanden, und wer keine Rolle hinterlegt hat, wird nicht gezählt.",
     "rollupNone": "Keine von Personen innegehabte Rolle verlangt Qualifikationen.",
-    "rollupRole": "Rolle"
+    "rollupRole": "Rolle",
+    "rollupRate": "Anteil erfüllt"
   }
 }

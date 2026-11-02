@@ -2914,6 +2914,7 @@
     "rollupTitle": "L'écart par poste",
     "rollupHint": "Pour chaque poste actuellement occupé, combien de personnes satisfont chaque qualification demandée. Un groupe sous le seuil n'affiche rien. Personne n'est nommé, et une personne sans poste enregistré n'est pas comptée.",
     "rollupNone": "Aucun poste occupé ne demande de qualification.",
-    "rollupRole": "Poste"
+    "rollupRole": "Poste",
+    "rollupRate": "Part satisfaite"
   }
 }

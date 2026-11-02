@@ -2896,6 +2896,7 @@
     "rollupTitle": "Kesenjangan menurut peran",
     "rollupHint": "Untuk setiap peran yang kini dipegang orang, berapa banyak yang memenuhi tiap kualifikasi yang diminta. Kelompok di bawah batas minimum tidak menampilkan apa pun. Tidak menyebut siapa pun, dan orang tanpa peran tercatat tidak dihitung.",
     "rollupNone": "Tidak ada peran yang dipegang yang meminta kualifikasi.",
-    "rollupRole": "Peran"
+    "rollupRole": "Peran",
+    "rollupRate": "Persentase terpenuhi"
   }
 }

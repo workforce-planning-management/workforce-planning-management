@@ -2905,6 +2905,7 @@
     "rollupTitle": "The gap by role",
     "rollupHint": "For each role people currently hold, how many meet each qualification it asks for. A group under the floor shows nothing. It names no one, and a person with no role recorded is not counted.",
     "rollupNone": "No role that people hold asks for qualifications.",
-    "rollupRole": "Role"
+    "rollupRole": "Role",
+    "rollupRate": "Share met"
   }
 }

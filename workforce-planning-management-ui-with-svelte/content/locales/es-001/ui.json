@@ -2914,6 +2914,7 @@
     "rollupTitle": "La brecha por puesto",
     "rollupHint": "Para cada puesto que las personas ocupan ahora, cuántas cumplen cada cualificación que pide. Un grupo por debajo del mínimo no muestra nada. No nombra a nadie y no cuenta a quien no tiene puesto registrado.",
     "rollupNone": "Ningún puesto ocupado pide cualificaciones.",
-    "rollupRole": "Puesto"
+    "rollupRole": "Puesto",
+    "rollupRate": "Proporción cumplida"
   }
 }

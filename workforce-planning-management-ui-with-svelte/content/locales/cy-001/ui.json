@@ -2941,6 +2941,7 @@
     "rollupTitle": "Y bwlch yn ôl rôl",
     "rollupHint": "Ar gyfer pob rôl sydd gan bobl ar hyn o bryd, faint sy'n bodloni pob cymhwyster mae'n ei ofyn. Nid yw grŵp o dan y trothwy yn dangos dim. Nid yw'n enwi neb, ac ni chyfrifir rhywun heb rôl wedi'i chofnodi.",
     "rollupNone": "Nid oes unrhyw rôl a ddelir gan bobl yn gofyn am gymwysterau.",
-    "rollupRole": "Rôl"
+    "rollupRole": "Rôl",
+    "rollupRate": "Cyfran sy'n bodloni"
   }
 }
