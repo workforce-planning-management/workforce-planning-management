@@ -3876,6 +3876,36 @@ collections:
               - { name: "ok", label: "Ok", widget: string, required: false, i18n: true }
               - { name: "none_by_law", label: "None_by_law", widget: string, required: false, i18n: true }
               - { name: "unknown", label: "Unknown", widget: string, required: false, i18n: true }
+          - name: "overtimeCheck"
+            label: "Overtime Check"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "run", label: "Run", widget: string, required: false, i18n: true }
+              - { name: "result", label: "Result", widget: string, required: false, i18n: true }
+              - { name: "why", label: "Why", widget: string, required: false, i18n: true }
+              - { name: "minutes", label: "Minutes", widget: string, required: false, i18n: true }
+              - { name: "premium", label: "Premium", widget: string, required: false, i18n: true }
+              - { name: "floor", label: "Floor", widget: string, required: false, i18n: true }
+              - { name: "floor_not_configured", label: "Floor_not_configured", widget: string, required: false, i18n: true }
+              - { name: "floor_below", label: "Floor_below", widget: string, required: false, i18n: true }
+              - { name: "floor_ok", label: "Floor_ok", widget: string, required: false, i18n: true }
+              - { name: "derived", label: "Derived", widget: string, required: false, i18n: true }
+              - { name: "exempt", label: "Exempt", widget: string, required: false, i18n: true }
+              - { name: "unknown", label: "Unknown", widget: string, required: false, i18n: true }
+              - { name: "no_limit_configured", label: "No_limit_configured", widget: string, required: false, i18n: true }
+              - { name: "none_by_law", label: "None_by_law", widget: string, required: false, i18n: true }
+              - { name: "not_derived", label: "Not_derived", widget: string, required: false, i18n: true }
+              - { name: "reason_worker_not_found", label: "Reason_worker_not_found", widget: string, required: false, i18n: true }
+              - { name: "reason_no_work_jurisdiction", label: "Reason_no_work_jurisdiction", widget: string, required: false, i18n: true }
+              - { name: "reason_no_position", label: "Reason_no_position", widget: string, required: false, i18n: true }
+              - { name: "reason_positions_disagree", label: "Reason_positions_disagree", widget: string, required: false, i18n: true }
+              - { name: "reason_status_not_recorded", label: "Reason_status_not_recorded", widget: string, required: false, i18n: true }
+              - { name: "reason_bands_unreadable", label: "Reason_bands_unreadable", widget: string, required: false, i18n: true }
+              - { name: "reason_monthly_band", label: "Reason_monthly_band", widget: string, required: false, i18n: true }
           - name: "mandatoryLearning"
             label: "Mandatory Learning"
             widget: object

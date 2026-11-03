@@ -124,6 +124,7 @@ describe("api path map", () => {
     await wpm.listRunsPage(500, 500);
     await wpm.runPayslips("r1");
     await wpm.minimumWageCheck("r1");
+    await wpm.overtimeCheck("r1");
     await wpm.workerMandatoryLearning("w1");
     await wpm.workerQualifications("w1");
     await wpm.teamMandatoryLearning("w1");
@@ -502,6 +503,7 @@ describe("api path map", () => {
       "/api/proxy/payroll-runs?limit=500&offset=500",
       "/api/proxy/payroll-runs/r1/payslips",
       "/api/proxy/payroll-runs/r1/minimum-wage-check",
+      "/api/proxy/payroll-runs/r1/overtime-check",
       "/api/proxy/workers/w1/mandatory-learning",
       "/api/proxy/workers/w1/qualifications",
       "/api/proxy/workers/w1/team-mandatory-learning",

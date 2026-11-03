@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the statutory overtime check on a payroll run (WPM-R219, WPM-T419)
+
+A button on `/payroll/{run}` asks for the advisory check; nothing is read on page load, because the read is audited. Each person shows a result, a reason in words where it cannot be derived (no status, no position, no place of work), overtime minutes, an indicative premium, and for an exempt post whether it is below the weekly floor or no floor is configured. It changes no payslip. 23 strings in 13 locales (AI-written, unreviewed).
+
 ### Added — my qualifications on `/me` (WPM-R171, WPM-T316)
 
 A panel listing the person's qualifications (declared or verified), a form to add one, Verify (HR) and Remove, and the gap against their role: met, declared but not verified, expired, or not held; with no role recorded it says there is nothing to compare. 41 strings in 13 locales (AI-written, unreviewed). The vocabulary test also needed labels for the four qualification kinds.

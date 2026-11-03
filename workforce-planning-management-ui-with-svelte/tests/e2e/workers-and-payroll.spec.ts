@@ -117,4 +117,78 @@ test.describe("Workers and payroll", () => {
     await expect(rows).not.toContainText(/\b\d{2} years\b/);
     expect(asked).toBe(1);
   });
+
+  test("the overtime check runs only when asked, says not enough where it cannot tell, and changes no pay", async ({
+    page,
+  }) => {
+    const run = {
+      pid: "88888888-8888-4888-8888-888888888888",
+      organization_ref: WORKER.organization_ref,
+      period_start: "2026-07-01",
+      period_end: "2026-07-31",
+      status: "calculated",
+    };
+    let asked = 0;
+    await page.route(`**/api/proxy/payroll-runs/${run.pid}`, (route) =>
+      route.fulfill({ json: run }),
+    );
+    await page.route(`**/api/proxy/payroll-runs/${run.pid}/payslips`, (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await page.route(
+      `**/api/proxy/payroll-runs/${run.pid}/overtime-check`,
+      (route) => {
+        asked += 1;
+        return route.fulfill({
+          json: {
+            run_pid: run.pid,
+            period_start: run.period_start,
+            period_end: run.period_end,
+            indicative: true,
+            note: "Indicative only. Nothing here changes a payslip.",
+            payslips: 3,
+            counts: { derived: 1, exempt: 1, unknown: 1 },
+            reasons: { status_not_recorded: 1 },
+            workers: [
+              {
+                worker_pid: WORKER.pid,
+                outcome: "derived",
+                reason: null,
+                overtime_minutes: 360,
+                minutes_at: { "15000": 360 },
+                premium_minor: 4500,
+                currency: "GBP",
+              },
+              {
+                worker_pid: "99999999-9999-4999-8999-999999999999",
+                outcome: "exempt",
+                reason: null,
+                below_exempt_floor: null,
+              },
+              {
+                worker_pid: "77777777-7777-4777-8777-777777777777",
+                outcome: "unknown",
+                reason: "status_not_recorded",
+              },
+            ],
+          },
+        });
+      },
+    );
+    await page.goto(`/payroll/${run.pid}`);
+    await expect(page.getByTestId("overtime-run")).toBeVisible();
+    expect(asked, "an audited read is never made on page load").toBe(0);
+    await page.getByTestId("overtime-run").click();
+    await expect(page.getByTestId("overtime-note")).toContainText(
+      "changes a payslip",
+    );
+    await expect(page.getByTestId("overtime-count-derived")).toContainText(
+      "Derived: 1",
+    );
+    const rows = page.getByTestId("overtime-rows");
+    await expect(rows).toContainText("Overtime status not recorded");
+    await expect(rows).toContainText("No floor configured");
+    await expect(rows).toContainText("360");
+    expect(asked).toBe(1);
+  });
 });

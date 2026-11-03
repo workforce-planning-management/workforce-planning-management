@@ -747,6 +747,38 @@ export interface MinimumWageCheck {
   workers: MinimumWageRow[];
 }
 
+/** One worker's row of the advisory overtime check; the figures are present only when derived. */
+export interface OvertimeRow {
+  worker_pid: string;
+  outcome:
+    | "derived"
+    | "exempt"
+    | "unknown"
+    | "no_limit_configured"
+    | "none_by_law"
+    | "not_derived";
+  reason: string | null;
+  overtime_minutes?: number;
+  minutes_at?: Record<string, number>;
+  premium_minor?: number | null;
+  currency?: string;
+  /** For an exempt post: below the configured weekly floor, or null where none is configured. */
+  below_exempt_floor?: boolean | null;
+}
+
+/** The advisory statutory-overtime check of a payroll run. Indicative; changes no payslip. */
+export interface OvertimeCheck {
+  run_pid: string;
+  period_start: string;
+  period_end: string;
+  indicative: true;
+  note: string;
+  payslips: number;
+  counts: Record<string, number>;
+  reasons: Record<string, number>;
+  workers: OvertimeRow[];
+}
+
 /** The six statuses of a person against a requirement; `unknown` is never in date and never missing. */
 export type LearningStatus =
   | "compliant"

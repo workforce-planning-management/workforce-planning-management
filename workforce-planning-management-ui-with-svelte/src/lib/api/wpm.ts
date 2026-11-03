@@ -59,6 +59,7 @@ import type {
   Payslip,
   LearningRollupRow,
   MinimumWageCheck,
+  OvertimeCheck,
   MyLearningRow,
   QualificationList,
   TeamLearningPerson,
@@ -578,6 +579,14 @@ export function minimumWageCheck(
   init?: FetchLike,
 ): Promise<MinimumWageCheck> {
   return api(`/payroll-runs/${pid}/minimum-wage-check`, init);
+}
+
+/** The advisory statutory-overtime check of a run. HR and payroll only; audited with counts, so ask for it on purpose. */
+export function overtimeCheck(
+  pid: string,
+  init?: FetchLike,
+): Promise<OvertimeCheck> {
+  return api(`/payroll-runs/${pid}/overtime-check`, init);
 }
 
 /** One person's status against each statutory and mandatory requirement in force. The person and HR. */

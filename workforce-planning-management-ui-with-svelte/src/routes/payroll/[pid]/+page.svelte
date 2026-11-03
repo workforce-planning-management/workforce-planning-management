@@ -19,6 +19,7 @@
     PayrollRun,
   } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
+  import OvertimeCheck from "#lib/components/OvertimeCheck.svelte";
   import type {
     DataGridColumn,
     DataGridRow,
@@ -217,5 +218,9 @@
         />
       {/if}
     </div>
+  {/if}
+
+  {#if run.status !== "draft"}
+    <OvertimeCheck {pid} />
   {/if}
 {/if}
