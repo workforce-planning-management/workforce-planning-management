@@ -113,6 +113,7 @@ pub mod service;
 pub mod sfia;
 pub mod skill_gap;
 pub mod skill_merge;
+pub mod statutory_overtime;
 pub mod suppression;
 pub mod talent;
 pub mod time_off;
