@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — an advisory statutory-overtime check for a payroll run (WPM-R219, WPM-D157, WPM-T418, WPM-T419, 2026-11-03)
+
+`GET /api/payroll-runs/{pid}/overtime-check` (HR and payroll) derives each worker's statutory overtime for the run's period from approved time, week by week, using the bands configured for their place of work and the overtime status a person recorded on their seat. An exempt seat is `exempt` (with whether its salary is below the configured weekly floor), a seat nobody recorded or a worker with no seat is `unknown`, and a place with no bands is `no_limit_configured`; none of them reads as no overtime. It changes no payslip, and a monthly band is not derived.
+
 ### Added — overtime parameters and a position's overtime status (WPM-R219, WPM-D157, WPM-T417, 2026-11-03)
 
 Four registry parameters (`overtime.bands`, `overtime.premiums_add`, `overtime.none_by_law`, `overtime.exempt_salary_floor_minor_weekly`) and a position's `overtime_status` (`exempt`, `non_exempt`, `unknown`; migration `m20261103_000119`; default `unknown`, a person's entry and never inferred). `/positions` shows it and takes it when a seat is planned. The API docs call today's derivation contractual overtime. No figure is built in; nothing reads the parameters yet.

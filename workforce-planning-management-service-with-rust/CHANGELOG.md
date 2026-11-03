@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — an advisory statutory-overtime check (WPM-R219, WPM-D157, WPM-T418, WPM-T419)
+
+`GET /api/payroll-runs/{pid}/overtime-check`; `rules::statutory_overtime::{weeks, derive_period, exempt_below_floor, Outcome::NotDerived}`; `Derived::premium_minor(rate, per_minutes)`. One request test; the audit entry (`overtime_checked`) is a read holding counts.
+
 ### Added — overtime parameters and a position's overtime status (WPM-R219, WPM-D157, WPM-T417)
 
 Registry keys `overtime.bands`, `overtime.premiums_add`, `overtime.none_by_law`, `overtime.exempt_salary_floor_minor_weekly`; `rules::statutory_overtime::{parse_premiums, Status}`; migration `m20261103_000119_position_overtime_status`; `overtime_status` on `POST`/`PUT /api/positions`. One request test.

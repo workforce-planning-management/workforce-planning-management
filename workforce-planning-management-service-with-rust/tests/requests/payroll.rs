@@ -784,3 +784,127 @@ async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
     })
     .await;
 }
+
+// WPM-R219, WPM-D157, WPM-D160, WPM-D162 (WPM-T418): the advisory overtime check. Weekly bands follow the worker's place of work and the
+// status a person recorded on the seat they hold; the premium is the extra over the base rate and no payslip changes. An exempt seat
+// is `exempt` (with the weekly-floor flag), a seat nobody recorded and a worker with no seat are `unknown`, a place that sets none by
+// law says so, and a place with no bands says `no_limit_configured`. Never a silent zero.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[allow(clippy::too_many_lines)] // one scenario read top to bottom
+async fn the_overtime_check_is_advisory_and_follows_the_seat_and_the_place() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let mut pids = std::collections::BTreeMap::new();
+        for (number, salary, code, status) in [
+            ("OT-NONEX", 3_600_000, "XA", Some("non_exempt")),
+            ("OT-EXEMPT", 2_400_000, "XA", Some("exempt")),
+            ("OT-UNREC", 3_600_000, "XA", Some("unknown")),
+            ("OT-NOSEAT", 3_600_000, "XA", None),
+            ("OT-NONE", 3_600_000, "XB", Some("non_exempt")),
+            ("OT-BLANK", 3_600_000, "XC", Some("non_exempt")),
+        ] {
+            let pid = seed_worker!(&request, &org, number, Some(salary)).await;
+            activate!(&request, &pid).await;
+            request
+                .put(&format!("/api/workers/{pid}"))
+                .json(&json!({ "work_jurisdiction": code }))
+                .await
+                .assert_status_ok();
+            if let Some(status) = status {
+                let seat: Value = request
+                    .post("/api/positions")
+                    .json(&json!({ "organization_ref": org, "cost_centre": "CC-OT", "title": number,
+                                   "budget_fte_percent": 100, "funding_kind": "core", "overtime_status": status }))
+                    .await
+                    .json();
+                let seat = seat["pid"].as_str().unwrap().to_string();
+                request
+                    .post(&format!("/api/positions/{seat}/status"))
+                    .json(&json!({ "to": "approved" }))
+                    .await
+                    .assert_status_ok();
+                request
+                    .put(&format!("/api/positions/{seat}/holder"))
+                    .json(&json!({ "worker_pid": pid }))
+                    .await
+                    .assert_status_ok();
+            }
+            pids.insert(number, pid);
+        }
+        // Monday 2026-07-06 to Friday 2026-07-10: nine hours a day, forty-five in the week.
+        for day in 6..=10 {
+            approved_time(
+                &request,
+                &pids["OT-NONEX"],
+                json!({ "worked_on": format!("2026-07-{day:02}"), "minutes": 540 }),
+            )
+            .await;
+        }
+        for body in [
+            json!({ "organization_ref": org, "code": "XA", "layer": "national" }),
+            json!({ "organization_ref": org, "code": "XB", "layer": "national" }),
+            json!({ "organization_ref": org, "code": "XC", "layer": "national" }),
+        ] {
+            request.post("/api/jurisdictions").json(&body).await.assert_status_ok();
+        }
+        for (code, key, value) in [
+            ("XA", "overtime.bands", json!(["week:2400:15000"])),
+            ("XA", "overtime.exempt_salary_floor_minor_weekly", json!(100_000)),
+            ("XB", "overtime.none_by_law", json!(true)),
+        ] {
+            request
+                .post("/api/jurisdiction-parameters")
+                .json(&json!({ "organization_ref": org, "code": code, "key": key, "value": value,
+                               "effective_from": "2000-01-01", "source": "synthetic test profile", "status": "example" }))
+                .await
+                .assert_status_ok();
+        }
+        let run: Value = request
+            .post("/api/payroll-runs")
+            .json(&json!({ "organization_ref": org, "period_start": "2026-07-01", "period_end": "2026-07-31" }))
+            .await
+            .json();
+        let run_pid = run["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/payroll-runs/{run_pid}/calculate")).await.assert_status_ok();
+        let before: Value = request.get(&format!("/api/payroll-runs/{run_pid}/payslips")).await.json();
+
+        let check: Value = request
+            .get(&format!("/api/payroll-runs/{run_pid}/overtime-check"))
+            .await
+            .json();
+        assert_eq!(check["indicative"], true);
+        let of = |number: &str| {
+            check["workers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|w| w["worker_pid"].as_str() == Some(pids[number].as_str()))
+                .cloned()
+                .unwrap()
+        };
+        let non_exempt = of("OT-NONEX");
+        assert_eq!(non_exempt["outcome"], "derived", "{non_exempt}");
+        assert_eq!(non_exempt["overtime_minutes"], 300, "five hours past forty");
+        let base = rules::monthly_base_minor(3_600_000, 100).unwrap();
+        let expected = rules::overtime_pay_minor(base, 300, rules::MONTH_MINUTES).unwrap() / 2;
+        let premium = non_exempt["premium_minor"].as_i64().unwrap();
+        assert!((premium - expected).abs() <= 1, "half the base rate on 300 minutes: {premium} vs {expected}");
+        let exempt = of("OT-EXEMPT");
+        assert_eq!(exempt["outcome"], "exempt");
+        assert_eq!(exempt["below_exempt_floor"], true, "461.54 a week is under 1000.00");
+        assert_eq!(of("OT-UNREC")["outcome"], "unknown");
+        assert_eq!(of("OT-UNREC")["reason"], "status_not_recorded");
+        assert_eq!(of("OT-NOSEAT")["reason"], "no_position");
+        assert_eq!(of("OT-NONE")["outcome"], "none_by_law");
+        assert_eq!(of("OT-BLANK")["outcome"], "no_limit_configured");
+        assert_eq!(check["counts"]["derived"], 1);
+        assert!(!check.to_string().contains("OT-NONEX"), "no worker number or name");
+
+        // Advisory: no payslip moved.
+        let after: Value = request.get(&format!("/api/payroll-runs/{run_pid}/payslips")).await.json();
+        assert_eq!(before, after);
+    })
+    .await;
+}

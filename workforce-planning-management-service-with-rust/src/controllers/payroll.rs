@@ -14,7 +14,8 @@ use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::metrics::Metrics;
 use crate::models::_entities::{
-    benchmarks, benefit_enrollments, benefit_plans, payroll_runs, payslips, time_entries, workers,
+    benchmarks, benefit_enrollments, benefit_plans, payroll_runs, payslips, positions,
+    time_entries, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
@@ -835,6 +836,228 @@ async fn minimum_wage_check(
     }))
 }
 
+/// What the overtime check says about itself on every answer (WPM-D157).
+const OVERTIME_NOTE: &str = "Indicative only. Statutory overtime is derived from approved time, week by week, using the bands configured for the \
+     worker's place of work, and only for a post a person recorded as not exempt. The premium is the extra over the base rate (the \
+     monthly base over the minutes in a month), and it is not added to the payslip. Which pay the law counts, a regular rate with bonuses, \
+     rest days and holidays are not modelled, and a monthly band is not derived. Exemption is a person's entry, never worked out from duties.";
+
+/// `GET /api/payroll-runs/{pid}/overtime-check` — an advisory derivation of statutory overtime for each payslip's worker over the run's
+/// period (WPM-R219, WPM-D157, WPM-D162). HR and payroll only, for organizations the caller holds. It changes no payslip. The bands are
+/// jurisdiction parameters resolved from the worker's place of work; with none configured the answer is `no_limit_configured`, a
+/// jurisdiction that sets none by law answers `none_by_law`, an exempt post answers `exempt` (with whether its salary is below the
+/// configured weekly floor, or `null` where none is configured), and a post nobody recorded answers `unknown`, never "no overtime".
+/// The audit entry holds counts, never names.
+#[debug_handler]
+#[allow(clippy::too_many_lines)] // payslips → workers → posts → time → rules → outcome, linearly
+async fn overtime_check(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    use crate::rules::jurisdiction::Resolution;
+    use crate::rules::statutory_overtime as ot;
+    use serde_json::json;
+    use std::collections::BTreeMap;
+
+    let run = records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?;
+    super::ensure_org_in_scope(&ctx, &caller, &run.organization_ref).await?;
+    let slips = payslips::Entity::find()
+        .filter(payslips::Column::RunPid.eq(run.pid))
+        .filter(payslips::Column::DeletedAt.is_null())
+        .order_by_asc(payslips::Column::Id)
+        .all(&ctx.db)
+        .await?;
+    let worker_pids: Vec<Uuid> = slips.iter().map(|slip| slip.worker_pid).collect();
+    let people: BTreeMap<Uuid, workers::Model> = workers::Entity::find()
+        .filter(workers::Column::Pid.is_in(worker_pids.clone()))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|worker| (worker.pid, worker))
+        .collect();
+    // The status a person recorded on each seat a worker holds.
+    let mut seats: BTreeMap<Uuid, Vec<String>> = BTreeMap::new();
+    for seat in positions::Entity::find()
+        .filter(positions::Column::HolderWorkerPid.is_in(worker_pids.clone()))
+        .filter(positions::Column::State.ne("abolished"))
+        .all(&ctx.db)
+        .await?
+    {
+        if let Some(holder) = seat.holder_worker_pid {
+            seats.entry(holder).or_default().push(seat.overtime_status);
+        }
+    }
+    // Approved minutes by worker and day. On-call entries are not hours worked.
+    let entries: Vec<(Uuid, chrono::NaiveDate, i32)> = time_entries::Entity::find()
+        .filter(time_entries::Column::WorkerPid.is_in(worker_pids))
+        .filter(time_entries::Column::Status.eq("approved"))
+        .filter(time_entries::Column::WorkedOn.gte(run.period_start))
+        .filter(time_entries::Column::WorkedOn.lte(run.period_end))
+        .filter(time_entries::Column::Kind.ne("on_call"))
+        .filter(time_entries::Column::DeletedAt.is_null())
+        .select_only()
+        .column(time_entries::Column::WorkerPid)
+        .column(time_entries::Column::WorkedOn)
+        .column(time_entries::Column::Minutes)
+        .into_tuple()
+        .all(&ctx.db)
+        .await?;
+    let mut days: BTreeMap<Uuid, BTreeMap<chrono::NaiveDate, u32>> = BTreeMap::new();
+    for (worker, on, minutes) in entries {
+        *days.entry(worker).or_default().entry(on).or_default() +=
+            u32::try_from(minutes.max(0)).unwrap_or(0);
+    }
+    let profiles =
+        super::jurisdictions::profiles_for(&ctx.db, std::slice::from_ref(&run.organization_ref))
+            .await?;
+    let empty = super::jurisdictions::Profile::default();
+    let profile = profiles.get(&run.organization_ref).unwrap_or(&empty);
+    let as_of = run.period_end;
+    let month_minutes = tax_stub().0.month_minutes;
+
+    let mut counts: BTreeMap<&'static str, u64> = [
+        "derived",
+        "exempt",
+        "unknown",
+        "no_limit_configured",
+        "none_by_law",
+        "not_derived",
+    ]
+    .into_iter()
+    .map(|name| (name, 0))
+    .collect();
+    let mut reasons: BTreeMap<&'static str, u64> = BTreeMap::new();
+    let mut rows = Vec::with_capacity(slips.len());
+    for slip in &slips {
+        let unknown = |reason: &'static str| (reason, "unknown");
+        let mut extra = json!({});
+        let (reason, name): (Option<&'static str>, &'static str) = 'outcome: {
+            let Some(worker) = people.get(&slip.worker_pid) else {
+                let (r, n) = unknown("worker_not_found");
+                break 'outcome (Some(r), n);
+            };
+            let Some(place) = worker.work_jurisdiction.as_deref() else {
+                let (r, n) = unknown("no_work_jurisdiction");
+                break 'outcome (Some(r), n);
+            };
+            let get = |key: &str| profile.resolve(key, Some(place), as_of);
+            if matches!(
+                get("overtime.none_by_law"),
+                Resolution::Resolved { value, .. } if value.as_flag() == Some(true)
+            ) {
+                break 'outcome (None, "none_by_law");
+            }
+            let recorded = seats.get(&slip.worker_pid).cloned().unwrap_or_default();
+            let status = match recorded.as_slice() {
+                [] => {
+                    let (r, n) = unknown("no_position");
+                    break 'outcome (Some(r), n);
+                }
+                [first, rest @ ..] if rest.iter().all(|s| s == first) => {
+                    ot::Status::parse(first).unwrap_or(ot::Status::Unknown)
+                }
+                _ => {
+                    let (r, n) = unknown("positions_disagree");
+                    break 'outcome (Some(r), n);
+                }
+            };
+            if status == ot::Status::Exempt {
+                let below = ot::exempt_below_floor(
+                    worker.salary_minor.unwrap_or(0),
+                    worker.fte_percent,
+                    get("overtime.exempt_salary_floor_minor_weekly").integer(),
+                );
+                extra = json!({ "below_exempt_floor": below });
+                break 'outcome (None, "exempt");
+            }
+            if status == ot::Status::Unknown {
+                let (r, n) = unknown("status_not_recorded");
+                break 'outcome (Some(r), n);
+            }
+            let bands = match get("overtime.bands") {
+                Resolution::Resolved { value, .. } => {
+                    value.as_names().map(|names| ot::parse_premiums(&names))
+                }
+                _ => None,
+            };
+            let bands = match bands {
+                None => break 'outcome (None, "no_limit_configured"),
+                Some(Err(_)) => {
+                    let (r, n) = unknown("bands_unreadable");
+                    break 'outcome (Some(r), n);
+                }
+                Some(Ok(bands)) => bands,
+            };
+            let rules = ot::Rules {
+                bands,
+                stacking: if matches!(
+                    get("overtime.premiums_add"),
+                    Resolution::Resolved { value, .. } if value.as_flag() == Some(true)
+                ) {
+                    ot::Stacking::Add
+                } else {
+                    ot::Stacking::Highest
+                },
+            };
+            let week_start = get("calendar.week_start")
+                .integer()
+                .and_then(|d| u32::try_from(d).ok())
+                .unwrap_or(1);
+            let on_days = days.get(&slip.worker_pid).cloned().unwrap_or_default();
+            match ot::derive_period(status, &rules, &ot::weeks(&on_days, week_start)) {
+                ot::Outcome::Derived(d) => {
+                    let base = rules::monthly_base_minor(
+                        worker.salary_minor.unwrap_or(0),
+                        worker.fte_percent,
+                    )
+                    .ok();
+                    extra = json!({
+                        "overtime_minutes": d.overtime_minutes(),
+                        "minutes_at": d.minutes_at,
+                        "premium_minor": base.and_then(|b| d.premium_minor(b, month_minutes)),
+                        "currency": slip.currency,
+                    });
+                    (None, "derived")
+                }
+                ot::Outcome::NotDerived(why) => (Some(why), "not_derived"),
+                ot::Outcome::NoLimitConfigured => (None, "no_limit_configured"),
+                ot::Outcome::Exempt => (None, "exempt"),
+                ot::Outcome::Unknown => (Some("status_not_recorded"), "unknown"),
+            }
+        };
+        *counts.entry(name).or_default() += 1;
+        if let Some(reason) = reason {
+            *reasons.entry(reason).or_default() += 1;
+        }
+        let mut row = json!({ "worker_pid": slip.worker_pid, "outcome": name, "reason": reason });
+        if let (Some(object), Some(more)) = (row.as_object_mut(), extra.as_object()) {
+            object.extend(more.clone());
+        }
+        rows.push(row);
+    }
+    Audit::record(
+        &ctx.db,
+        "payroll_run",
+        run.pid,
+        "overtime_checked",
+        caller.actor(),
+        Some(json!({ "payslips": slips.len(), "counts": counts, "reasons": reasons })),
+    )
+    .await?;
+    format::json(json!({
+        "run_pid": run.pid,
+        "period_start": run.period_start,
+        "period_end": run.period_end,
+        "indicative": true,
+        "note": OVERTIME_NOTE,
+        "payslips": slips.len(),
+        "counts": counts,
+        "reasons": reasons,
+        "workers": rows,
+    }))
+}
+
 /// The payroll routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -851,6 +1074,7 @@ pub fn routes() -> Routes {
             "/payroll-runs/{pid}/minimum-wage-check",
             get(minimum_wage_check),
         )
+        .add("/payroll-runs/{pid}/overtime-check", get(overtime_check))
         .add("/workers/{pid}/payslips", get(worker_payslips))
         .add("/benchmarks", post(create_benchmark))
         .add("/benchmarks", get(list_benchmarks))

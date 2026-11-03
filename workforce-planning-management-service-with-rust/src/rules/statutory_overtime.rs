@@ -11,6 +11,8 @@
 
 use std::collections::BTreeMap;
 
+use chrono::{Datelike, Duration, NaiveDate};
+
 /// Basis points in 100 percent: the regular rate.
 pub const REGULAR_BP: u32 = 10_000;
 
@@ -129,6 +131,59 @@ impl Status {
     }
 }
 
+/// Group worked minutes by week, each week's days in date order, with a week starting on ISO weekday `week_start` (1 Monday to 7
+/// Sunday; anything else is read as Monday). Days with no entry are left out, which does not change a derivation.
+#[must_use]
+pub fn weeks(days: &BTreeMap<NaiveDate, u32>, week_start: u32) -> Vec<Vec<u32>> {
+    let start = i64::from(if (1..=7).contains(&week_start) {
+        week_start
+    } else {
+        1
+    });
+    let mut by_week: BTreeMap<NaiveDate, Vec<u32>> = BTreeMap::new();
+    for (date, minutes) in days {
+        let back = (i64::from(date.weekday().number_from_monday()) - start).rem_euclid(7);
+        let first = *date - Duration::days(back);
+        by_week.entry(first).or_default().push(*minutes);
+    }
+    by_week.into_values().collect()
+}
+
+/// Derive a run's period: each week on its own, the minutes at each multiplier added up. A monthly band is not derived across weeks
+/// here (it needs the month's earlier minutes), so it says so rather than leaving it out.
+#[must_use]
+pub fn derive_period(status: Status, rules: &Rules, weeks: &[Vec<u32>]) -> Outcome {
+    if status == Status::NonExempt && rules.bands.iter().any(|b| b.period == Period::Month) {
+        return Outcome::NotDerived("monthly_band");
+    }
+    // The status and the rules decide first; only a derivable post has weeks to add up.
+    if !matches!(derive(status, rules, &[], 0), Outcome::Derived(_)) {
+        return derive(status, rules, &[], 0);
+    }
+    let mut total: BTreeMap<u32, u32> = BTreeMap::new();
+    for week in weeks {
+        if let Outcome::Derived(d) = derive(status, rules, week, 0) {
+            for (bp, m) in d.minutes_at {
+                *total.entry(bp).or_insert(0) += m;
+            }
+        }
+    }
+    Outcome::Derived(Derived { minutes_at: total })
+}
+
+/// Whether an exempt post's weekly salary is below the configured weekly floor: `Some(true)` below, `Some(false)` at or above, `None`
+/// with no floor configured (not "fine"). Advisory; it never classifies a role from its duties (WPM-D157).
+#[must_use]
+pub fn exempt_below_floor(
+    annual_salary_minor: i64,
+    fte_percent: i32,
+    floor_weekly_minor: Option<i64>,
+) -> Option<bool> {
+    let floor = floor_weekly_minor?;
+    let weekly = i128::from(annual_salary_minor) * i128::from(fte_percent.clamp(0, 100)) / 100 / 52;
+    Some(weekly < i128::from(floor))
+}
+
 /// What the derivation comes to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Outcome {
@@ -140,6 +195,8 @@ pub enum Outcome {
     NoLimitConfigured,
     /// Minutes by multiplier (basis points), the regular rate included.
     Derived(Derived),
+    /// A rule this derivation does not do yet, with the reason; never read as no overtime.
+    NotDerived(&'static str),
 }
 
 /// Minutes by effective multiplier.
@@ -160,16 +217,20 @@ impl Derived {
             .sum()
     }
 
-    /// The premium pay in minor units: the extra over the regular rate, on the base hourly rate, rounded half up once at the end.
-    /// `None` when the arithmetic would overflow, never a wrong figure.
+    /// The premium pay in minor units: the extra over the regular rate, where `rate_minor` is the base pay for `per_minutes` minutes
+    /// (an hourly rate is 60; a monthly base is the minutes in a month), rounded half up once at the end. `None` when the
+    /// arithmetic would overflow or `per_minutes` is not positive, never a wrong figure.
     #[must_use]
-    pub fn premium_minor(&self, hourly_minor: i64) -> Option<i64> {
+    pub fn premium_minor(&self, rate_minor: i64, per_minutes: i64) -> Option<i64> {
+        if per_minutes <= 0 {
+            return None;
+        }
         let mut total: i128 = 0;
         for (bp, minutes) in &self.minutes_at {
             let extra = i128::from(*bp) - i128::from(REGULAR_BP);
-            total += i128::from(*minutes) * i128::from(hourly_minor) * extra;
+            total += i128::from(*minutes) * i128::from(rate_minor) * extra;
         }
-        let unit = 60 * i128::from(REGULAR_BP);
+        let unit = i128::from(per_minutes) * i128::from(REGULAR_BP);
         let rounded = (total * 2 + unit * total.signum()) / (2 * unit);
         i64::try_from(rounded).ok()
     }
@@ -402,6 +463,65 @@ mod tests {
     }
 
     #[test]
+    fn days_group_into_weeks_that_start_where_the_calendar_says() {
+        let d = |day| NaiveDate::from_ymd_opt(2026, 11, day).unwrap();
+        // 2026-11-01 is a Sunday. Monday weeks: {1} then {2..4}; Sunday weeks: {1..4}.
+        let days = BTreeMap::from([(d(1), 60), (d(2), 120), (d(4), 180)]);
+        assert_eq!(weeks(&days, 1), vec![vec![60], vec![120, 180]]);
+        assert_eq!(weeks(&days, 7), vec![vec![60, 120, 180]]);
+        assert_eq!(weeks(&days, 0), weeks(&days, 1), "a stray start is Monday");
+    }
+
+    #[test]
+    fn a_period_adds_its_weeks_and_a_monthly_band_says_it_is_not_derived() {
+        let two = vec![vec![9 * H; 5], vec![9 * H; 5]];
+        let d = derived(derive_period(Status::NonExempt, &weekly40(), &two));
+        assert_eq!(
+            d.overtime_minutes(),
+            10 * H,
+            "five hours past forty in each week"
+        );
+        let monthly = Rules {
+            bands: vec![band(Period::Month, 100, 15_000)],
+            stacking: Stacking::Highest,
+        };
+        assert_eq!(
+            derive_period(Status::NonExempt, &monthly, &two),
+            Outcome::NotDerived("monthly_band")
+        );
+        assert_eq!(
+            derive_period(Status::Exempt, &monthly, &two),
+            Outcome::Exempt
+        );
+        assert_eq!(
+            derive_period(Status::Unknown, &weekly40(), &two),
+            Outcome::Unknown
+        );
+        let nothing = derived(derive_period(Status::NonExempt, &weekly40(), &[]));
+        assert_eq!(nothing.overtime_minutes(), 0);
+    }
+
+    #[test]
+    fn an_exempt_salary_is_compared_with_the_weekly_floor_and_no_floor_is_not_fine() {
+        // 52,000.00 a year is 1,000.00 a week.
+        assert_eq!(
+            exempt_below_floor(5_200_000, 100, Some(100_000)),
+            Some(false),
+            "at the floor"
+        );
+        assert_eq!(
+            exempt_below_floor(5_200_000, 100, Some(100_001)),
+            Some(true)
+        );
+        assert_eq!(
+            exempt_below_floor(5_200_000, 50, Some(100_000)),
+            Some(true),
+            "half time halves the week"
+        );
+        assert_eq!(exempt_below_floor(5_200_000, 100, None), None);
+    }
+
+    #[test]
     fn a_day_is_capped_at_the_minutes_in_it() {
         let d = derived(derive(Status::NonExempt, &weekly40(), &[5_000], 0));
         assert_eq!(d.minutes_at.values().sum::<u32>(), 1_440);
@@ -411,17 +531,17 @@ mod tests {
     fn the_premium_is_the_extra_over_the_regular_rate_rounded_once() {
         // 5 hours at one and a half times on 20.00 an hour: 5 * 20.00 * 0.5 = 50.00.
         let d = derived(derive(Status::NonExempt, &weekly40(), &[9 * H; 5], 0));
-        assert_eq!(d.premium_minor(2_000), Some(5_000));
+        assert_eq!(d.premium_minor(2_000, 60), Some(5_000));
         // One minute at 150% on 20.01 an hour: 2001 * 0.5 / 60 = 16.675 -> 17.
         let one = Derived {
             minutes_at: BTreeMap::from([(15_000, 1)]),
         };
-        assert_eq!(one.premium_minor(2_001), Some(17));
+        assert_eq!(one.premium_minor(2_001, 60), Some(17));
         let huge = Derived {
             minutes_at: BTreeMap::from([(15_000, u32::MAX)]),
         };
         assert_eq!(
-            huge.premium_minor(i64::MAX),
+            huge.premium_minor(i64::MAX, 60),
             None,
             "overflow is None, not a wrong figure"
         );

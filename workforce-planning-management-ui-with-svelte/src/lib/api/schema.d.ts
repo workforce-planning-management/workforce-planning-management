@@ -10560,6 +10560,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payroll-runs/{pid}/overtime-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Advisory statutory-overtime derivation for each payslip's worker over the run's period (HR and payroll). Weekly and daily bands are the jurisdiction parameters for the worker's place of work, applied only to a seat a person recorded as non_exempt; the premium is the extra over the base rate and no payslip changes. exempt, unknown (a seat nobody recorded, no seat, no place of work), none_by_law and no_limit_configured are each said, never read as no overtime. Indicative only */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The derivation per worker, with counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payroll-runs/{pid}/pay": {
         parameters: {
             query?: never;

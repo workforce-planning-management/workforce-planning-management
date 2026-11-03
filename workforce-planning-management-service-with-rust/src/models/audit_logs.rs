@@ -232,6 +232,8 @@ mod tests {
         ("controllers/payroll.rs", "payslips_read"),
         // A read: the minimum-wage check changes nothing, and its entry holds counts (WPM-D156).
         ("controllers/payroll.rs", "minimum_wage_checked"),
+        // A read: the overtime check changes nothing, and its entry holds counts (WPM-D157).
+        ("controllers/payroll.rs", "overtime_checked"),
         ("controllers/payroll.rs", "comparison_read"),
     ];
 
