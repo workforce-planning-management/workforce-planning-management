@@ -60,6 +60,8 @@ cargo loco scheduler --config config/scheduler.yaml --tag scim    # only where W
 cargo loco scheduler --config config/scheduler.yaml --list        # what is scheduled, and when
 ```
 
+The mandatory-learning "due soon" window is 90 calendar days; set `WPM_LEARNING_DUE_SOON_DAYS` (1 to 366) on the service to change it.
+
 Or schedule the same tasks yourself (cron, a systemd timer, a Kubernetes CronJob) with `cargo run -- task <name>`; the table in
 [spec/operations/deployment.md](spec/operations/deployment.md) says how often each one wants to run.
 

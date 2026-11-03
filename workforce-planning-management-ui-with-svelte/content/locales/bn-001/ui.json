@@ -2866,7 +2866,13 @@
     "completedOn": "সম্পন্ন হয়েছে",
     "whereDone": "কোথায় করা হয়েছে",
     "saved": "সংরক্ষিত",
-    "requirements": "শর্তসমূহ"
+    "requirements": "শর্তসমূহ",
+    "by": "অনুযায়ী সংক্ষিপ্ত করুন",
+    "by_none": "প্রতিটি প্রয়োজনীয়তার জন্য একটি সারি",
+    "by_department": "বিভাগ",
+    "by_staff_group": "কর্মী গোষ্ঠী",
+    "groupNotRecorded": "নথিভুক্ত নয়",
+    "rollupRate": "হালনাগাদের হার"
   },
   "qualifications": {
     "title": "যোগ্যতা",

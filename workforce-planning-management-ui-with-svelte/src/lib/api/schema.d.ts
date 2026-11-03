@@ -6605,7 +6605,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** HR: per requirement, counts per status and the rate in date among those counted, from the floor. Unknown (a category the audience needs is not recorded) is counted apart and in neither side of the rate; a rate with nothing to divide by is null. No name */
+        /** HR: per requirement, counts per status and the rate in date among those counted, from the floor. Unknown (a category the audience needs is not recorded) is counted apart and in neither side of the rate; a rate with nothing to divide by is null. With ?by=department or ?by=staff_group, also per group, each group meeting the floor on its own and a group not recorded its own row; a person with two contracts counts in both groups. No name */
         get: {
             parameters: {
                 query?: never;

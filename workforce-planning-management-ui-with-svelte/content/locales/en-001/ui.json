@@ -2866,7 +2866,13 @@
     "completedOn": "Completed on",
     "whereDone": "Where it was done",
     "saved": "Saved",
-    "requirements": "Requirements"
+    "requirements": "Requirements",
+    "by": "Roll up by",
+    "by_none": "One row per requirement",
+    "by_department": "Department",
+    "by_staff_group": "Staff group",
+    "groupNotRecorded": "Not recorded",
+    "rollupRate": "Share in date"
   },
   "qualifications": {
     "title": "Qualifications",

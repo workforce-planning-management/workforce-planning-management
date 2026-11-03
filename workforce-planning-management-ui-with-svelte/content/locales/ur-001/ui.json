@@ -2866,7 +2866,13 @@
     "completedOn": "مکمل کیا گیا",
     "whereDone": "کہاں کیا گیا",
     "saved": "محفوظ ہو گیا",
-    "requirements": "تقاضے"
+    "requirements": "تقاضے",
+    "by": "اس کے مطابق خلاصہ",
+    "by_none": "ہر تقاضے کی ایک قطار",
+    "by_department": "شعبہ",
+    "by_staff_group": "عملے کا گروپ",
+    "groupNotRecorded": "درج نہیں",
+    "rollupRate": "درست کا حصہ"
   },
   "qualifications": {
     "title": "اہلیتیں",

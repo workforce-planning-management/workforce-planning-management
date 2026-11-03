@@ -677,7 +677,7 @@ fn add_integration_paths(document: &mut Value) {
             "post": { "tags": ["learning"], "summary": "Add a requirement (HR). A statutory one names its source; a refresher is at least a month; an audience of staff groups, job roles, areas of work and positions, or the whole organization", "responses": ok("The pid of the requirement") }
         },
         "/api/learning-requirements/rollup": {
-            "get": { "tags": ["learning"], "summary": "HR: per requirement, counts per status and the rate in date among those counted, from the floor. Unknown (a category the audience needs is not recorded) is counted apart and in neither side of the rate; a rate with nothing to divide by is null. No name", "responses": ok("The roll-up") }
+            "get": { "tags": ["learning"], "summary": "HR: per requirement, counts per status and the rate in date among those counted, from the floor. Unknown (a category the audience needs is not recorded) is counted apart and in neither side of the rate; a rate with nothing to divide by is null. With ?by=department or ?by=staff_group, also per group, each group meeting the floor on its own and a group not recorded its own row; a person with two contracts counts in both groups. No name", "responses": ok("The roll-up") }
         },
         "/api/learning-requirements/{pid}/completions": {
             "post": { "tags": ["learning"], "summary": "HR records training done elsewhere: a worker, a date not in the future, where it was done. No certificate. Another organization of the person marks it transferred, counted only where the requirement accepts it", "responses": ok("The pid of the completion") }

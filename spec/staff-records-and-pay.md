@@ -290,6 +290,13 @@ adds what is missing and says how the pieces assemble.
   name, the title, the date), once per qualification, expiry date and kind, so a renewal gets a new reminder. A lapse older than the
   window is a past fact, not an alert. HR is not told: it reads the queue and the roll-up. Nothing else rides in the notification: no
   level, awarding body or evidence reference. Confirmed by the product owner 2026-11-02 ("both").
+- **WPM-D168 Mandatory-learning roll-ups by group, and a configurable due-soon window.** `GET /api/learning-requirements/rollup`
+  takes `by=department` or `by=staff_group` and then also returns each requirement's counts per group, **each group meeting the
+  floor on its own** (a small department shows nothing even in a large organization). A group not recorded is its own row, never
+  folded into another; a person with two contracts in force counts in both groups, so group rows can add to more than the organization
+  row; no one is named. The due-soon window is the deployment's setting `WPM_LEARNING_DUE_SOON_DAYS` (calendar days, 1 to 366); an
+  absent, non-numeric or out-of-range value is the default 90, never zero. A per-requirement window is not built. Recorded 2026-11-03
+  while doing WPM-T434, as a design choice within WPM-R170 and not a separate owner question.
 
 ## Order of delivery
 

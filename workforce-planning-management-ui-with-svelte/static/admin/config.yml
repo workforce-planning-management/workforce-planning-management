@@ -3915,6 +3915,12 @@ collections:
               - { name: "whereDone", label: "Where Done", widget: string, required: false, i18n: true }
               - { name: "saved", label: "Saved", widget: string, required: false, i18n: true }
               - { name: "requirements", label: "Requirements", widget: string, required: false, i18n: true }
+              - { name: "by", label: "By", widget: string, required: false, i18n: true }
+              - { name: "by_none", label: "By_none", widget: string, required: false, i18n: true }
+              - { name: "by_department", label: "By_department", widget: string, required: false, i18n: true }
+              - { name: "by_staff_group", label: "By_staff_group", widget: string, required: false, i18n: true }
+              - { name: "groupNotRecorded", label: "Group Not Recorded", widget: string, required: false, i18n: true }
+              - { name: "rollupRate", label: "Rollup Rate", widget: string, required: false, i18n: true }
           - name: "qualifications"
             label: "Qualifications"
             widget: object

@@ -2884,7 +2884,13 @@
     "completedOn": "Пройдено",
     "whereDone": "Где пройдено",
     "saved": "Сохранено",
-    "requirements": "Требования"
+    "requirements": "Требования",
+    "by": "Группировать по",
+    "by_none": "Одна строка на требование",
+    "by_department": "Отдел",
+    "by_staff_group": "Группа персонала",
+    "groupNotRecorded": "Не указано",
+    "rollupRate": "Доля в срок"
   },
   "qualifications": {
     "title": "Квалификации",

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — mandatory learning by group, a configurable due-soon window (WPM-R170, WPM-D168, WPM-T434)
+
+`rules::mandatory_learning::rollup_by` and `due_soon_window`; `?by=department|staff_group` on the learning roll-up (the floor applies to each group; a bad value is 400); `WPM_LEARNING_DUE_SOON_DAYS` (1 to 366 calendar days, else 90). One request test.
+
 ### Added — qualifications and the qualification gap (WPM-R171, WPM-T316)
 
 `rules::qualification` (met, declared_only, expired, missing); tables `qualifications` and `role_qualification_requirements` (migration `m20261102_000117`), in the subject-access export and erasure; `GET`/`POST /api/workers/{pid}/qualifications`, `POST /api/qualifications/{pid}/verify` (HR, evidence reference required), `DELETE /api/qualifications/{pid}`, `GET`/`POST /api/role-profiles/{pid}/qualification-requirements`. No role recorded gives `role: null`. **Not done:** the manager's view, an HR requirements screen (WPM-T435).

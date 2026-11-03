@@ -2857,7 +2857,13 @@
     "completedOn": "完成日期",
     "whereDone": "完成地点",
     "saved": "已保存",
-    "requirements": "要求"
+    "requirements": "要求",
+    "by": "汇总方式",
+    "by_none": "每项要求一行",
+    "by_department": "部门",
+    "by_staff_group": "员工组",
+    "groupNotRecorded": "未记录",
+    "rollupRate": "在有效期内的比例"
   },
   "qualifications": {
     "title": "资格",

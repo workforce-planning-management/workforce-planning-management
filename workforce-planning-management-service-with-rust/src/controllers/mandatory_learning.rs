@@ -71,6 +71,11 @@ struct Evaluation {
     expires_on: Option<NaiveDate>,
 }
 
+/// The deployment's due-soon window in calendar days: `WPM_LEARNING_DUE_SOON_DAYS`, 1 to 366, else 90 (WPM-T434).
+fn due_soon_days() -> i64 {
+    rules::due_soon_window(std::env::var("WPM_LEARNING_DUE_SOON_DAYS").ok().as_deref())
+}
+
 fn evaluate(
     req: &learning_requirements::Model,
     categories: &[rules::Categories],
@@ -85,6 +90,7 @@ fn evaluate(
         req.accepts_transferred,
         refresher,
         today,
+        due_soon_days(),
     );
     let last = completions
         .iter()
@@ -419,15 +425,82 @@ async fn of_worker(
     format::json(json!({ "worker_pid": worker.pid, "as_of": today, "requirements": rows }))
 }
 
-/// `GET /api/learning-requirements/rollup?organization=` — HR: per requirement, counts per status and the rate in date among those
-/// counted, with the floor. `unknown` is counted apart; a group under the floor shows nothing; a rate with nothing to divide by is null.
+#[derive(Debug, Deserialize)]
+struct RollupQuery {
+    organization: String,
+    /// `department` or `staff_group`: roll up per group as well, each group meeting the floor on its own.
+    by: Option<String>,
+}
+
+/// The counts of one roll-up as JSON fields (hidden says nothing else).
+fn rollup_fields(r: &rules::Rollup) -> Value {
+    match r {
+        rules::Rollup::Hidden => json!({ "hidden": true }),
+        rules::Rollup::Shown {
+            compliant,
+            due_soon,
+            expired,
+            never_completed,
+            not_applicable,
+            unknown,
+            rate,
+        } => json!({
+            "hidden": false, "compliant": compliant, "due_soon": due_soon, "expired": expired,
+            "never_completed": never_completed, "not_applicable": not_applicable,
+            "unknown": unknown, "rate": rate,
+        }),
+    }
+}
+
+/// The groups each person is in on `today`, from the assignments in force: one entry per distinct department or staff group, so a
+/// person with two contracts in two departments counts in both; `None` when the group is not recorded (or there is no assignment).
+async fn groups_of(
+    ctx: &AppContext,
+    pids: &[Uuid],
+    today: NaiveDate,
+    by: &str,
+) -> Result<HashMap<Uuid, Vec<Option<String>>>> {
+    let mut out: HashMap<Uuid, Vec<Option<String>>> = HashMap::new();
+    for a in assignments::Entity::find()
+        .filter(assignments::Column::WorkerPid.is_in(pids.to_vec()))
+        .all(&ctx.db)
+        .await?
+    {
+        if a.starts_on <= today && a.ends_on.is_none_or(|e| e >= today) {
+            let g = if by == "department" {
+                Some(a.department).filter(|d| !d.trim().is_empty())
+            } else {
+                a.staff_group
+            };
+            let v = out.entry(a.worker_pid).or_default();
+            if !v.contains(&g) {
+                v.push(g);
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// `GET /api/learning-requirements/rollup?organization=[&by=department|staff_group]` — HR: per requirement, counts per status and the
+/// rate in date among those counted, with the floor. `unknown` is counted apart; a group under the floor shows nothing; a rate with
+/// nothing to divide by is null. With `by`, the same per department or staff group, each group meeting the floor on its own (WPM-T434);
+/// a group not recorded is its own row, and no one is named.
 #[debug_handler]
 async fn rollup(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    Query(q): Query<OrgQuery>,
+    Query(q): Query<RollupQuery>,
 ) -> Result<Response> {
     ensure_hr(&ctx, &caller, &q.organization).await?;
+    let by = match q.by.as_deref() {
+        None => None,
+        Some(b @ ("department" | "staff_group")) => Some(b),
+        Some(_) => {
+            return Err(Error::BadRequest(
+                "by must be department or staff_group".into(),
+            ));
+        }
+    };
     let today = Utc::now().date_naive();
     let in_org = workers::Entity::find()
         .filter(workers::Column::OrganizationRef.eq(&q.organization))
@@ -439,41 +512,67 @@ async fn rollup(
     let reqs = live_requirements(&ctx, &q.organization, today).await?;
     let cats = categories_of(&ctx, &pids, today).await?;
     let comps = completions_of(&ctx, &people, &reqs).await?;
+    let groups = match by {
+        Some(b) => groups_of(&ctx, &pids, today, b).await?,
+        None => HashMap::new(),
+    };
     let floor = crate::rules::equality_monitoring::DEFAULT_FLOOR;
     let none: Vec<rules::Categories> = Vec::new();
     let cells: Vec<Value> = reqs
         .iter()
         .map(|r| {
-            let statuses: Vec<rules::Status> = people
+            let statuses: Vec<(Uuid, rules::Status)> = people
                 .iter()
                 .map(|w| {
                     let done = comps.get(&(w.pid, r.pid)).cloned().unwrap_or_default();
-                    evaluate(r, cats.get(&w.pid).unwrap_or(&none), &done, today).status
+                    (
+                        w.pid,
+                        evaluate(r, cats.get(&w.pid).unwrap_or(&none), &done, today).status,
+                    )
                 })
                 .collect();
-            match rules::rollup(&statuses, floor) {
-                rules::Rollup::Hidden => json!({
-                    "requirement_pid": r.pid, "subject": r.subject, "basis": r.basis, "hidden": true,
-                }),
-                rules::Rollup::Shown {
-                    compliant,
-                    due_soon,
-                    expired,
-                    never_completed,
-                    not_applicable,
-                    unknown,
-                    rate,
-                } => json!({
-                    "requirement_pid": r.pid, "subject": r.subject, "basis": r.basis, "hidden": false,
-                    "compliant": compliant, "due_soon": due_soon, "expired": expired,
-                    "never_completed": never_completed, "not_applicable": not_applicable,
-                    "unknown": unknown, "rate": rate,
-                }),
+            let all: Vec<rules::Status> = statuses.iter().map(|(_, s)| *s).collect();
+            let mut cell =
+                json!({ "requirement_pid": r.pid, "subject": r.subject, "basis": r.basis });
+            if let (Some(obj), Value::Object(f)) = (
+                cell.as_object_mut(),
+                rollup_fields(&rules::rollup(&all, floor)),
+            ) {
+                obj.extend(f);
             }
+            if by.is_some() {
+                let items: Vec<(Option<String>, rules::Status)> = statuses
+                    .iter()
+                    .flat_map(|(pid, s)| {
+                        groups
+                            .get(pid)
+                            .cloned()
+                            .unwrap_or_else(|| vec![None])
+                            .into_iter()
+                            .map(move |g| (g, *s))
+                    })
+                    .collect();
+                let rows: Vec<Value> = rules::rollup_by(&items, floor)
+                    .into_iter()
+                    .map(|(g, r)| {
+                        let mut row = json!({ "group": g });
+                        if let (Some(obj), Value::Object(f)) =
+                            (row.as_object_mut(), rollup_fields(&r))
+                        {
+                            obj.extend(f);
+                        }
+                        row
+                    })
+                    .collect();
+                if let Some(obj) = cell.as_object_mut() {
+                    obj.insert("groups".into(), Value::Array(rows));
+                }
+            }
+            cell
         })
         .collect();
     format::json(
-        json!({ "organization": q.organization, "as_of": today, "floor": floor, "requirements": cells }),
+        json!({ "organization": q.organization, "as_of": today, "floor": floor, "by": by, "requirements": cells }),
     )
 }
 

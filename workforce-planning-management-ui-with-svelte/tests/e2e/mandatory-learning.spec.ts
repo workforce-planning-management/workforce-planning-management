@@ -58,6 +58,65 @@ test.describe("Statutory and mandatory learning", () => {
     await expect(small).not.toContainText("0%");
   });
 
+  test("rolled up by staff group, each group is a row and a small one shows nothing", async ({
+    page,
+  }) => {
+    let asked = "";
+    await page.route(
+      "**/api/proxy/learning-requirements/rollup?organization=*",
+      (route) => {
+        asked = route.request().url();
+        const shown = {
+          hidden: false,
+          compliant: 8,
+          due_soon: 2,
+          expired: 0,
+          never_completed: 0,
+          not_applicable: 0,
+          unknown: 0,
+          rate: 1,
+        };
+        return route.fulfill({
+          json: {
+            organization: WORKER.organization_ref,
+            as_of: "2026-11-02",
+            floor: 10,
+            by: "staff_group",
+            requirements: [
+              {
+                requirement_pid: "r1",
+                subject: "Fire safety",
+                basis: "statutory",
+                ...shown,
+                groups: [
+                  { group: "nurse", ...shown },
+                  { group: "porter", hidden: true },
+                  { group: null, hidden: true },
+                ],
+              },
+            ],
+          },
+        });
+      },
+    );
+    await page.goto("/en-001/mandatory-learning");
+    await page
+      .getByTestId("learning-organization")
+      .selectOption(WORKER.organization_ref);
+    await page.getByTestId("learning-by").selectOption("staff_group");
+    const table = page.getByTestId("learning-rollup");
+    await expect(table.getByRole("row", { name: /nurse/ })).toContainText(
+      "100%",
+    );
+    await expect(table.getByRole("row", { name: /porter/ })).toContainText(
+      "Too few people to show",
+    );
+    await expect(
+      table.getByRole("row", { name: /Not recorded/ }),
+    ).toContainText("Too few people to show");
+    expect(asked).toContain("by=staff_group");
+  });
+
   test("a person sees their own status, and unknown is said in words", async ({
     page,
   }) => {

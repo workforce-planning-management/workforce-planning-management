@@ -2857,7 +2857,13 @@
     "completedOn": "Diselesaikan pada",
     "whereDone": "Tempat pelaksanaan",
     "saved": "Tersimpan",
-    "requirements": "Persyaratan"
+    "requirements": "Persyaratan",
+    "by": "Rangkum menurut",
+    "by_none": "Satu baris per persyaratan",
+    "by_department": "Departemen",
+    "by_staff_group": "Kelompok staf",
+    "groupNotRecorded": "Tidak dicatat",
+    "rollupRate": "Persentase terkini"
   },
   "qualifications": {
     "title": "Kualifikasi",

@@ -196,3 +196,80 @@ async fn a_manager_sees_their_team_by_name_with_unknown_kept_unknown() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_roll_up_by_staff_group_applies_the_floor_to_each_group_on_its_own() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        for i in 0..10 {
+            let w = seed_worker!(&request, &org, format!("ML-G{i}-{tag}"), None).await;
+            activate!(&request, &w).await;
+            make_nurse(&request, &w).await;
+        }
+        for i in 0..3 {
+            let w = seed_worker!(&request, &org, format!("ML-U{i}-{tag}"), None).await;
+            activate!(&request, &w).await;
+        }
+        let made = request
+            .post("/api/learning-requirements")
+            .json(
+                &json!({ "organization": org, "subject": format!("Manual handling {tag}"),
+                "basis": "mandatory", "refresher_months": 12 }),
+            )
+            .await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+        let req = made.json::<Value>()["pid"].as_str().unwrap().to_string();
+
+        let url = |by: &str| {
+            format!(
+                "/api/learning-requirements/rollup?organization={}{by}",
+                org.replace(':', "%3A")
+            )
+        };
+        let plain: Value = request.get(&url("")).await.json();
+        let plain_cell = plain["requirements"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["requirement_pid"] == req)
+            .unwrap();
+        assert!(plain_cell.get("groups").is_none(), "no groups unless asked");
+
+        let by: Value = request.get(&url("&by=staff_group")).await.json();
+        assert_eq!(by["by"], "staff_group");
+        let cell = by["requirements"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["requirement_pid"] == req)
+            .unwrap();
+        let groups = cell["groups"].as_array().unwrap();
+        let nurse = groups
+            .iter()
+            .find(|g| g["group"] == "nurse")
+            .expect("nurse");
+        assert_eq!(nurse["hidden"], false, "ten people meet the floor of ten");
+        assert_eq!(nurse["never_completed"], 10);
+        let unrecorded = groups
+            .iter()
+            .find(|g| g["group"].is_null())
+            .expect("unrecorded");
+        assert_eq!(
+            unrecorded["hidden"], true,
+            "three people are under the floor"
+        );
+        assert!(
+            unrecorded.get("never_completed").is_none(),
+            "a hidden group shows no counts"
+        );
+
+        let bad = request.get(&url("&by=salary")).await;
+        assert_eq!(bad.status_code(), 400, "{}", bad.text());
+        let dept: Value = request.get(&url("&by=department")).await.json();
+        assert_eq!(dept["by"], "department");
+    })
+    .await;
+}

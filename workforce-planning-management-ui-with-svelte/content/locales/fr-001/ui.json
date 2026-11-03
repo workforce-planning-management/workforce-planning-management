@@ -2875,7 +2875,13 @@
     "completedOn": "Réalisée le",
     "whereDone": "Où elle a eu lieu",
     "saved": "Enregistré",
-    "requirements": "Exigences"
+    "requirements": "Exigences",
+    "by": "Regrouper par",
+    "by_none": "Une ligne par exigence",
+    "by_department": "Service",
+    "by_staff_group": "Groupe de personnel",
+    "groupNotRecorded": "Non renseigné",
+    "rollupRate": "Part à jour"
   },
   "qualifications": {
     "title": "Qualifications",

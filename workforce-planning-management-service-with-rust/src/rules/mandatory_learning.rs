@@ -13,6 +13,19 @@ pub const BASES: &[&str] = &["statutory", "mandatory"];
 /// The days before a refresher falls due that a person reads `due_soon`, as the existing compliance view.
 pub const DUE_SOON_DAYS: i64 = 90;
 
+/// The longest due-soon window a deployment may configure, in calendar days.
+pub const MAX_DUE_SOON_DAYS: i64 = 366;
+
+/// The due-soon window a deployment configured (`configured` is the raw setting), in calendar days: 1 to 366, else the default
+/// of 90. A value that is not a whole number in range is the default, never a silent zero (a zero window would show nothing as due).
+#[must_use]
+pub fn due_soon_window(configured: Option<&str>) -> i64 {
+    configured
+        .and_then(|v| v.trim().parse::<i64>().ok())
+        .filter(|d| (1..=MAX_DUE_SOON_DAYS).contains(d))
+        .unwrap_or(DUE_SOON_DAYS)
+}
+
 /// Which people a requirement is aimed at. An empty list does not restrict that category; all four empty is the organization.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Audience {
@@ -148,6 +161,7 @@ pub fn status(
     accepts_transferred: bool,
     refresher_months: Option<u32>,
     as_of: NaiveDate,
+    due_soon_days: i64,
 ) -> Status {
     match applies {
         Applies::No => return Status::NotApplicable,
@@ -166,7 +180,7 @@ pub fn status(
         None if refresher_months.is_none() => Status::Compliant,
         None => Status::Unknown,
         Some(e) if as_of > e => Status::Expired,
-        Some(e) if (e - as_of).num_days() <= DUE_SOON_DAYS => Status::DueSoon,
+        Some(e) if (e - as_of).num_days() <= due_soon_days => Status::DueSoon,
         Some(_) => Status::Compliant,
     }
 }
@@ -220,6 +234,35 @@ pub fn rollup(statuses: &[Status], floor: usize) -> Rollup {
         unknown: n(Status::Unknown),
         rate,
     }
+}
+
+/// Roll people up by a group they belong to (a department, a staff group). Each item is one person's group (`None` when it is not
+/// recorded) and their status; the floor is applied to each group on its own, so a small group shows nothing even when the
+/// organization is large. Groups come back in order, with the unrecorded one last.
+#[must_use]
+pub fn rollup_by<K: Ord + Clone>(
+    items: &[(Option<K>, Status)],
+    floor: usize,
+) -> Vec<(Option<K>, Rollup)> {
+    let mut keys: Vec<Option<K>> = items.iter().map(|(k, _)| k.clone()).collect();
+    keys.sort_by(|a, b| match (a, b) {
+        (Some(x), Some(y)) => x.cmp(y),
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => std::cmp::Ordering::Equal,
+    });
+    keys.dedup();
+    keys.into_iter()
+        .map(|k| {
+            let group: Vec<Status> = items
+                .iter()
+                .filter(|(g, _)| *g == k)
+                .map(|(_, s)| *s)
+                .collect();
+            let r = rollup(&group, floor);
+            (k, r)
+        })
+        .collect()
 }
 
 /// Problems with a requirement: a known basis, a source for a statutory one, and a refresher of at least one month if any.
@@ -327,7 +370,7 @@ mod tests {
 
     #[test]
     fn never_completed_and_not_applicable_and_unknown() {
-        let s = |ap, c: &[Completion]| status(ap, c, false, Some(12), NOW());
+        let s = |ap, c: &[Completion]| status(ap, c, false, Some(12), NOW(), DUE_SOON_DAYS);
         assert_eq!(s(Applies::Yes, &[]), Status::NeverCompleted);
         assert_eq!(s(Applies::No, &[own(d(2026, 1, 1))]), Status::NotApplicable);
         assert_eq!(s(Applies::Unknown, &[own(d(2026, 1, 1))]), Status::Unknown);
@@ -335,7 +378,16 @@ mod tests {
 
     #[test]
     fn in_date_due_soon_and_expired() {
-        let s = |on| status(Applies::Yes, &[own(on)], false, Some(12), NOW());
+        let s = |on| {
+            status(
+                Applies::Yes,
+                &[own(on)],
+                false,
+                Some(12),
+                NOW(),
+                DUE_SOON_DAYS,
+            )
+        };
         assert_eq!(s(d(2026, 6, 1)), Status::Compliant);
         assert_eq!(s(d(2025, 12, 1)), Status::DueSoon);
         assert_eq!(
@@ -348,7 +400,16 @@ mod tests {
 
     #[test]
     fn the_due_soon_window_is_ninety_days() {
-        let s = |on| status(Applies::Yes, &[own(on)], false, Some(12), NOW());
+        let s = |on| {
+            status(
+                Applies::Yes,
+                &[own(on)],
+                false,
+                Some(12),
+                NOW(),
+                DUE_SOON_DAYS,
+            )
+        };
         assert_eq!(
             s(d(2026, 1, 26)),
             Status::DueSoon,
@@ -358,10 +419,65 @@ mod tests {
     }
 
     #[test]
+    fn a_shorter_window_calls_fewer_people_due_soon() {
+        let s = |days| {
+            status(
+                Applies::Yes,
+                &[own(d(2026, 1, 26))],
+                false,
+                Some(12),
+                NOW(),
+                days,
+            )
+        };
+        assert_eq!(s(90), Status::DueSoon);
+        assert_eq!(
+            s(60),
+            Status::Compliant,
+            "90 days off is outside a 60-day window"
+        );
+    }
+
+    #[test]
+    fn the_configured_window_is_a_whole_number_of_days_in_range_else_the_default() {
+        assert_eq!(due_soon_window(None), 90);
+        assert_eq!(due_soon_window(Some("30")), 30);
+        assert_eq!(due_soon_window(Some(" 366 ")), 366);
+        for bad in ["0", "-5", "367", "ninety", "", "1.5"] {
+            assert_eq!(due_soon_window(Some(bad)), 90, "{bad:?} is the default");
+        }
+    }
+
+    #[test]
+    fn each_group_meets_the_floor_on_its_own() {
+        let mut items: Vec<(Option<&str>, Status)> = Vec::new();
+        items.extend((0..3).map(|_| (Some("Nursing"), Status::Compliant)));
+        items.extend((0..2).map(|_| (Some("Estates"), Status::Expired)));
+        items.extend((0..3).map(|_| (None, Status::Unknown)));
+        let out = rollup_by(&items, 3);
+        let names: Vec<_> = out.iter().map(|(k, _)| *k).collect();
+        assert_eq!(
+            names,
+            vec![Some("Estates"), Some("Nursing"), None],
+            "sorted, unrecorded last"
+        );
+        assert_eq!(
+            out[0].1,
+            Rollup::Hidden,
+            "two people is under the floor of three"
+        );
+        assert!(matches!(out[1].1, Rollup::Shown { compliant: 3, .. }));
+        assert!(
+            matches!(out[2].1, Rollup::Shown { unknown: 3, .. }),
+            "not recorded is its own group"
+        );
+    }
+
+    #[test]
     fn the_latest_completion_is_the_one_that_counts() {
         let list = [own(d(2020, 1, 1)), own(d(2026, 6, 1))];
         assert_eq!(
-            status(Applies::Yes, &list, false, Some(12), NOW()),
+            status(Applies::Yes, &list, false, Some(12), NOW(), DUE_SOON_DAYS),
             Status::Compliant
         );
     }
@@ -370,11 +486,11 @@ mod tests {
     fn once_is_enough_never_expires() {
         let list = [own(d(1999, 1, 1))];
         assert_eq!(
-            status(Applies::Yes, &list, false, None, NOW()),
+            status(Applies::Yes, &list, false, None, NOW(), DUE_SOON_DAYS),
             Status::Compliant
         );
         assert_eq!(
-            status(Applies::Yes, &[], false, None, NOW()),
+            status(Applies::Yes, &[], false, None, NOW(), DUE_SOON_DAYS),
             Status::NeverCompleted
         );
     }
@@ -383,7 +499,7 @@ mod tests {
     fn a_completion_after_the_as_of_date_is_ignored() {
         let list = [own(d(2026, 11, 1))];
         assert_eq!(
-            status(Applies::Yes, &list, false, Some(12), NOW()),
+            status(Applies::Yes, &list, false, Some(12), NOW(), DUE_SOON_DAYS),
             Status::NeverCompleted
         );
     }
@@ -395,11 +511,11 @@ mod tests {
             transferred: true,
         }];
         assert_eq!(
-            status(Applies::Yes, &list, false, Some(12), NOW()),
+            status(Applies::Yes, &list, false, Some(12), NOW(), DUE_SOON_DAYS),
             Status::NeverCompleted
         );
         assert_eq!(
-            status(Applies::Yes, &list, true, Some(12), NOW()),
+            status(Applies::Yes, &list, true, Some(12), NOW(), DUE_SOON_DAYS),
             Status::Compliant
         );
     }

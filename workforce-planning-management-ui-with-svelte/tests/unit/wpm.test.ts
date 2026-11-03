@@ -132,6 +132,7 @@ describe("api path map", () => {
     await wpm.roleQualificationRequirements("r1");
     await wpm.qualificationRollup("organization:abc");
     await wpm.learningRollup("organization:abc");
+    await wpm.learningRollup("organization:abc", undefined, "department");
     await wpm.listLearningRequirements("organization:abc");
     await wpm.addLearningRequirement({
       organization: "organization:abc",
@@ -509,6 +510,7 @@ describe("api path map", () => {
       "/api/proxy/role-profiles/r1/qualification-requirements",
       "/api/proxy/qualifications/rollup?organization=organization%3Aabc",
       "/api/proxy/learning-requirements/rollup?organization=organization%3Aabc",
+      "/api/proxy/learning-requirements/rollup?organization=organization%3Aabc&by=department",
       "/api/proxy/learning-requirements?organization=organization%3Aabc",
       "/api/proxy/learning-requirements",
       "/api/proxy/learning-requirements/q1/retire",

@@ -680,14 +680,17 @@ export function recordLearningCompletion(
 export function learningRollup(
   organization: string,
   init?: FetchLike,
+  by?: "department" | "staff_group",
 ): Promise<{
   organization: string;
   as_of: string;
   floor: number;
+  by: string | null;
   requirements: LearningRollupRow[];
 }> {
+  const group = by ? `&by=${by}` : "";
   return api(
-    `/learning-requirements/rollup?organization=${encodeURIComponent(organization)}`,
+    `/learning-requirements/rollup?organization=${encodeURIComponent(organization)}${group}`,
     init,
   );
 }

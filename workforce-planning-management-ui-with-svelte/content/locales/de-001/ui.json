@@ -2866,7 +2866,13 @@
     "completedOn": "Abgeschlossen am",
     "whereDone": "Wo absolviert",
     "saved": "Gespeichert",
-    "requirements": "Anforderungen"
+    "requirements": "Anforderungen",
+    "by": "Zusammenfassen nach",
+    "by_none": "Eine Zeile je Anforderung",
+    "by_department": "Abteilung",
+    "by_staff_group": "Personalgruppe",
+    "groupNotRecorded": "Nicht erfasst",
+    "rollupRate": "Anteil aktuell"
   },
   "qualifications": {
     "title": "Qualifikationen",

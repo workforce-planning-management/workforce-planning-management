@@ -2875,7 +2875,13 @@
     "completedOn": "Concluído em",
     "whereDone": "Onde foi feito",
     "saved": "Guardado",
-    "requirements": "Requisitos"
+    "requirements": "Requisitos",
+    "by": "Agrupar por",
+    "by_none": "Uma linha por requisito",
+    "by_department": "Departamento",
+    "by_staff_group": "Grupo de pessoal",
+    "groupNotRecorded": "Não registado",
+    "rollupRate": "Proporção em dia"
   },
   "qualifications": {
     "title": "Qualificações",

@@ -2866,7 +2866,13 @@
     "completedOn": "पूरा किया गया",
     "whereDone": "कहाँ किया गया",
     "saved": "सहेजा गया",
-    "requirements": "आवश्यकताएँ"
+    "requirements": "आवश्यकताएँ",
+    "by": "इसके अनुसार सारांश",
+    "by_none": "प्रत्येक आवश्यकता के लिए एक पंक्ति",
+    "by_department": "विभाग",
+    "by_staff_group": "स्टाफ समूह",
+    "groupNotRecorded": "दर्ज नहीं",
+    "rollupRate": "मान्य का हिस्सा"
   },
   "qualifications": {
     "title": "योग्यताएँ",

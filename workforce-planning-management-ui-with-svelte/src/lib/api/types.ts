@@ -780,7 +780,15 @@ export interface LearningRollupRow {
   not_applicable?: number;
   unknown?: number;
   rate?: number | null;
+  /** Present with `by`: the same counts per department or staff group; `group` is null when it is not recorded. */
+  groups?: LearningRollupGroup[];
 }
+
+/** One department or staff group's counts for a requirement; hidden under the floor. */
+export type LearningRollupGroup = Omit<
+  LearningRollupRow,
+  "requirement_pid" | "subject" | "basis" | "groups"
+> & { group: string | null };
 
 /** One person below a manager, by name, with their status against each requirement that applies to them. */
 export interface TeamLearningPerson {

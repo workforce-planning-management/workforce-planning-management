@@ -2902,7 +2902,13 @@
     "completedOn": "أُنجز في",
     "whereDone": "مكان الإنجاز",
     "saved": "تم الحفظ",
-    "requirements": "المتطلبات"
+    "requirements": "المتطلبات",
+    "by": "تجميع حسب",
+    "by_none": "صف واحد لكل متطلب",
+    "by_department": "القسم",
+    "by_staff_group": "فئة الموظفين",
+    "groupNotRecorded": "غير مسجّل",
+    "rollupRate": "نسبة السارية"
   },
   "qualifications": {
     "title": "المؤهلات",

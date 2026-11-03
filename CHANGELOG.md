@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — mandatory learning rolled up by group, and a configurable due-soon window (WPM-R170, WPM-D168, WPM-T434, 2026-11-03)
+
+`GET /api/learning-requirements/rollup?by=department` (or `staff_group`) adds each requirement's counts per group, each group meeting the floor of ten on its own; a group not recorded is its own row and a person with two contracts counts in both. `/mandatory-learning` has a "Roll up by" choice, and the share column is headed "Share in date" so it no longer repeats the count's heading. The due-soon window is set by `WPM_LEARNING_DUE_SOON_DAYS` (1 to 366 calendar days; anything else is the default 90). Five more strings in 13 locales (AI-written, unreviewed). Not done: position audiences and the England framework import.
+
 ### Added — qualifications and the qualification gap (WPM-R171, WPM-T316, 2026-11-02)
 
 A person's qualifications, declared until HR verifies them with an evidence reference (no certificate stored), and the gap against the qualifications their current role asks for. A declared one is never shown as met. Details in the service and UI changelogs; the rest is WPM-T435.

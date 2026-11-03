@@ -2902,7 +2902,13 @@
     "completedOn": "Cwblhawyd ar",
     "whereDone": "Lle y gwnaed",
     "saved": "Cadwyd",
-    "requirements": "Gofynion"
+    "requirements": "Gofynion",
+    "by": "Crynhoi yn ôl",
+    "by_none": "Un rhes i bob gofyniad",
+    "by_department": "Adran",
+    "by_staff_group": "Grŵp staff",
+    "groupNotRecorded": "Heb ei gofnodi",
+    "rollupRate": "Cyfran mewn dyddiad"
   },
   "qualifications": {
     "title": "Cymwysterau",
