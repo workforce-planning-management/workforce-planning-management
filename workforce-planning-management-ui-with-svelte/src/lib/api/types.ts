@@ -913,3 +913,24 @@ export interface QualificationRollupRow {
   missing?: number;
   rate?: number;
 }
+
+/** A record of an organization's cover for a jurisdiction (WPM-T420), with its standing today. HR only. */
+export interface CoverageRecord {
+  pid: string;
+  organization_ref: string;
+  jurisdiction: string;
+  kind:
+    "statutory_scheme" | "private_insurance" | "self_insured" | "elective_none";
+  insurer: string | null;
+  policy_reference: string | null;
+  minimum_cover_minor: number | null;
+  currency: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  /** Where the certificate is kept: a reference, never the document. */
+  certificate_ref: string | null;
+  standing:
+    "not_yet_valid" | "in_force" | "ending_soon" | "expired" | "no_end_date";
+  days_left: number | null;
+  retired_on: string | null;
+}

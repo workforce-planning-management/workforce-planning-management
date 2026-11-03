@@ -51,7 +51,9 @@ test.describe("Workers and payroll", () => {
     const payslips = page.getByTestId("payslips");
     await expect(payslips).toContainText("£3,000.00");
     await expect(payslips).toContainText("£2,609.50");
-    await expect(payslips).toContainText("Statutory overtime premium (in gross)");
+    await expect(payslips).toContainText(
+      "Statutory overtime premium (in gross)",
+    );
     await expect(payslips).toContainText("£45.00");
     await expect(payslips).toContainText("tax");
   });

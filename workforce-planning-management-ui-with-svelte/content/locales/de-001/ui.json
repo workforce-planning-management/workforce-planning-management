@@ -54,6 +54,7 @@
     "decisionGates": "Entscheidungsschranken",
     "statutoryDefaults": "Gesetzliche Voreinstellungen",
     "mandatoryLearning": "Pflichtschulungen",
+    "coverageEvidence": "Versicherungsnachweise",
     "qualifications": "Qualifikationen"
   },
   "pr": {
@@ -2945,5 +2946,36 @@
     "rollupNone": "Keine von Personen innegehabte Rolle verlangt Qualifikationen.",
     "rollupRole": "Rolle",
     "rollupRate": "Anteil erfüllt"
+  },
+  "coverageEvidence": {
+    "title": "Versicherungsnachweise",
+    "hint": "Was belegt, dass die Organisation dort abgesichert ist, wo sie Menschen beschäftigt: gesetzliche Regelung, private Police, Selbstversicherung oder eine festgehaltene Entscheidung für keine. Ein Eintrag ohne Enddatum sagt das; er gilt nie als gültig. Ein Zertifikat ist ein Verweis auf den Aufbewahrungsort, nie das Dokument.",
+    "organization": "Organisation",
+    "jurisdiction": "Rechtsraum",
+    "kind": "Art",
+    "standing": "Stand",
+    "validFrom": "Gültig ab",
+    "validTo": "Gültig bis",
+    "cover": "Mindestdeckung",
+    "coverMinor": "Mindestdeckung (Cent)",
+    "currency": "Währung",
+    "actions": "Aktionen",
+    "retire": "Beenden",
+    "none": "Noch keine Nachweise",
+    "addTitle": "Nachweis hinzufügen",
+    "insurer": "Versicherer",
+    "policy": "Policennummer",
+    "certificate": "Zertifikatsverweis",
+    "save": "Speichern",
+    "saved": "Gespeichert",
+    "statutory_scheme": "Gesetzliche Regelung",
+    "private_insurance": "Private Versicherung",
+    "self_insured": "Selbstversichert",
+    "elective_none": "Bewusst keine",
+    "not_yet_valid": "Noch nicht gültig",
+    "in_force": "In Kraft",
+    "ending_soon": "Läuft bald ab",
+    "expired": "Abgelaufen",
+    "no_end_date": "Kein Enddatum"
   }
 }

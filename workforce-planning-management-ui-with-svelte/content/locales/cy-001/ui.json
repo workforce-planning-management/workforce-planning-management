@@ -54,6 +54,7 @@
     "decisionGates": "Pyrth penderfynu",
     "statutoryDefaults": "Rhagosodiadau statudol",
     "mandatoryLearning": "Hyfforddiant gorfodol",
+    "coverageEvidence": "Tystiolaeth yswiriant",
     "qualifications": "Cymwysterau"
   },
   "pr": {
@@ -2981,5 +2982,36 @@
     "rollupNone": "Nid oes unrhyw rôl a ddelir gan bobl yn gofyn am gymwysterau.",
     "rollupRole": "Rôl",
     "rollupRate": "Cyfran sy'n bodloni"
+  },
+  "coverageEvidence": {
+    "title": "Tystiolaeth yswiriant",
+    "hint": "Yr hyn sy'n dangos bod y sefydliad wedi'i yswirio lle mae'n cyflogi pobl: cynllun statudol, polisi preifat, hunanyswiriant, neu ddewis cofnodedig i beidio â chael dim. Mae cofnod heb ddyddiad gorffen yn dweud hynny; ni chaiff byth ei ddarllen fel un dilys. Cyfeiriad at ble mae tystysgrif yn cael ei chadw yw hi, nid y ddogfen.",
+    "organization": "Sefydliad",
+    "jurisdiction": "Awdurdodaeth",
+    "kind": "Math",
+    "standing": "Statws",
+    "validFrom": "Dilys o",
+    "validTo": "Dilys tan",
+    "cover": "Yswiriant lleiaf",
+    "coverMinor": "Yswiriant lleiaf (unedau lleiaf)",
+    "currency": "Arian cyfred",
+    "actions": "Camau",
+    "retire": "Dod â therfyn",
+    "none": "Dim cofnodion eto",
+    "addTitle": "Ychwanegu cofnod",
+    "insurer": "Yswiriwr",
+    "policy": "Cyfeirnod y polisi",
+    "certificate": "Cyfeirnod y dystysgrif",
+    "save": "Cadw",
+    "saved": "Wedi cadw",
+    "statutory_scheme": "Cynllun statudol",
+    "private_insurance": "Yswiriant preifat",
+    "self_insured": "Hunanyswiriant",
+    "elective_none": "Dim, trwy ddewis",
+    "not_yet_valid": "Heb ddechrau eto",
+    "in_force": "Mewn grym",
+    "ending_soon": "Yn dod i ben cyn hir",
+    "expired": "Wedi dod i ben",
+    "no_end_date": "Dim dyddiad gorffen"
   }
 }

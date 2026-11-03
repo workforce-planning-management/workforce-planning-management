@@ -54,6 +54,7 @@
     "decisionGates": "Points de décision",
     "statutoryDefaults": "Valeurs légales par défaut",
     "mandatoryLearning": "Formations obligatoires",
+    "coverageEvidence": "Preuves de couverture",
     "qualifications": "Qualifications"
   },
   "pr": {
@@ -2954,5 +2955,36 @@
     "rollupNone": "Aucun poste occupé ne demande de qualification.",
     "rollupRole": "Poste",
     "rollupRate": "Part satisfaite"
+  },
+  "coverageEvidence": {
+    "title": "Preuves de couverture",
+    "hint": "Ce qui montre que l'organisation est couverte là où elle emploie des personnes : régime légal, police privée, auto-assurance ou choix consigné de n'avoir rien. Une fiche sans date de fin le dit ; elle n'est jamais lue comme valide. Un certificat est une référence à son lieu de conservation, jamais le document.",
+    "organization": "Organisation",
+    "jurisdiction": "Juridiction",
+    "kind": "Type",
+    "standing": "Situation",
+    "validFrom": "Valide à partir du",
+    "validTo": "Valide jusqu'au",
+    "cover": "Couverture minimale",
+    "coverMinor": "Couverture minimale (centimes)",
+    "currency": "Devise",
+    "actions": "Actions",
+    "retire": "Clore",
+    "none": "Aucune preuve pour l'instant",
+    "addTitle": "Ajouter une preuve",
+    "insurer": "Assureur",
+    "policy": "Référence de la police",
+    "certificate": "Référence du certificat",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "statutory_scheme": "Régime légal",
+    "private_insurance": "Assurance privée",
+    "self_insured": "Auto-assurance",
+    "elective_none": "Aucune par choix",
+    "not_yet_valid": "Pas encore valide",
+    "in_force": "En vigueur",
+    "ending_soon": "Bientôt échue",
+    "expired": "Échue",
+    "no_end_date": "Pas de date de fin"
   }
 }

@@ -54,6 +54,7 @@
     "decisionGates": "决策关口",
     "statutoryDefaults": "法定默认值",
     "mandatoryLearning": "必修培训",
+    "coverageEvidence": "保障证明",
     "qualifications": "资格"
   },
   "pr": {
@@ -2936,5 +2937,36 @@
     "rollupNone": "没有任何在任角色要求资质。",
     "rollupRole": "角色",
     "rollupRate": "达标比例"
+  },
+  "coverageEvidence": {
+    "title": "保障证明",
+    "hint": "说明本组织在雇用人员的地方受到保障的凭据：法定计划、私人保单、自保，或已记录的选择不投保。没有结束日期的记录会如实说明，绝不视为有效。证书只是指向其存放处的引用，而非文件本身。",
+    "organization": "组织",
+    "jurisdiction": "司法辖区",
+    "kind": "类型",
+    "standing": "状态",
+    "validFrom": "生效日期",
+    "validTo": "截止日期",
+    "cover": "最低保额",
+    "coverMinor": "最低保额（最小货币单位）",
+    "currency": "货币",
+    "actions": "操作",
+    "retire": "终止",
+    "none": "暂无记录",
+    "addTitle": "添加记录",
+    "insurer": "保险公司",
+    "policy": "保单编号",
+    "certificate": "证书引用",
+    "save": "保存",
+    "saved": "已保存",
+    "statutory_scheme": "法定计划",
+    "private_insurance": "私人保险",
+    "self_insured": "自保",
+    "elective_none": "选择不投保",
+    "not_yet_valid": "尚未生效",
+    "in_force": "有效",
+    "ending_soon": "即将到期",
+    "expired": "已到期",
+    "no_end_date": "无结束日期"
   }
 }

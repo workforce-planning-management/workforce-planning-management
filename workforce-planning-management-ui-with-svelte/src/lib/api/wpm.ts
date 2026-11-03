@@ -60,6 +60,7 @@ import type {
   LearningRollupRow,
   MinimumWageCheck,
   OvertimeCheck,
+  CoverageRecord,
   MyLearningRow,
   QualificationList,
   TeamLearningPerson,
@@ -6207,4 +6208,36 @@ export function qualificationRollup(
     `/qualifications/rollup?organization=${encodeURIComponent(organization)}`,
     init,
   );
+}
+
+/** HR: the organization's coverage records in force, each with its standing today. */
+export function listCoverageEvidence(
+  organization: string,
+  init?: FetchLike,
+): Promise<CoverageRecord[]> {
+  return api(
+    `/coverage-evidence?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** HR adds a coverage record. A private policy names its insurer and policy reference; a certificate is a reference, never a file. */
+export function addCoverageEvidence(body: {
+  organization: string;
+  jurisdiction: string;
+  kind: string;
+  insurer?: string;
+  policy_reference?: string;
+  minimum_cover_minor?: number;
+  currency?: string;
+  valid_from?: string;
+  valid_to?: string;
+  certificate_ref?: string;
+}): Promise<{ pid: string }> {
+  return api("/coverage-evidence", { method: "POST", body });
+}
+
+/** HR retires a record from today. */
+export function retireCoverageEvidence(pid: string): Promise<{ pid: string }> {
+  return api(`/coverage-evidence/${pid}/retire`, { method: "POST" });
 }

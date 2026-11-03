@@ -54,6 +54,7 @@
     "decisionGates": "Pontos de decisão",
     "statutoryDefaults": "Valores legais por omissão",
     "mandatoryLearning": "Formação obrigatória",
+    "coverageEvidence": "Comprovativo de cobertura",
     "qualifications": "Qualificações"
   },
   "pr": {
@@ -2954,5 +2955,36 @@
     "rollupNone": "Nenhuma função ocupada exige qualificações.",
     "rollupRole": "Função",
     "rollupRate": "Proporção cumprida"
+  },
+  "coverageEvidence": {
+    "title": "Comprovativo de cobertura",
+    "hint": "O que mostra que a organização está coberta onde emprega pessoas: um regime legal, uma apólice privada, autosseguro ou a escolha registada de não ter nenhuma. Um registo sem data de fim di-lo; nunca é lido como válido. Um certificado é uma referência ao local onde está guardado, nunca o documento.",
+    "organization": "Organização",
+    "jurisdiction": "Jurisdição",
+    "kind": "Tipo",
+    "standing": "Situação",
+    "validFrom": "Válido desde",
+    "validTo": "Válido até",
+    "cover": "Cobertura mínima",
+    "coverMinor": "Cobertura mínima (cêntimos)",
+    "currency": "Moeda",
+    "actions": "Ações",
+    "retire": "Encerrar",
+    "none": "Ainda sem registos",
+    "addTitle": "Adicionar um registo",
+    "insurer": "Seguradora",
+    "policy": "Referência da apólice",
+    "certificate": "Referência do certificado",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "statutory_scheme": "Regime legal",
+    "private_insurance": "Seguro privado",
+    "self_insured": "Autosseguro",
+    "elective_none": "Nenhuma por escolha",
+    "not_yet_valid": "Ainda não válido",
+    "in_force": "Em vigor",
+    "ending_soon": "Termina em breve",
+    "expired": "Expirado",
+    "no_end_date": "Sem data de fim"
   }
 }

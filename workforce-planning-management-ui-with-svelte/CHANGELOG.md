@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the coverage evidence screen (WPM-T420)
+
+`/coverage-evidence` for HR: each record's standing, an add form (a private policy names its insurer and policy reference) and retire. 29 strings in 13 locales (AI-written, unreviewed).
+
 ### Added — a due-soon window on a learning requirement (WPM-T434)
 
 The add-requirement form takes an optional window in days; blank uses the deployment's. One string in 13 locales (AI-written, unreviewed). The payroll page also shows the statutory overtime premium column (WPM-D169).

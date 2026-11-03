@@ -54,6 +54,7 @@
     "decisionGates": "Gerbang keputusan",
     "statutoryDefaults": "Bawaan menurut undang-undang",
     "mandatoryLearning": "Pelatihan wajib",
+    "coverageEvidence": "Bukti perlindungan",
     "qualifications": "Kualifikasi"
   },
   "pr": {
@@ -2936,5 +2937,36 @@
     "rollupNone": "Tidak ada peran yang dipegang yang meminta kualifikasi.",
     "rollupRole": "Peran",
     "rollupRate": "Persentase terpenuhi"
+  },
+  "coverageEvidence": {
+    "title": "Bukti perlindungan",
+    "hint": "Yang menunjukkan organisasi terlindungi di tempat ia mempekerjakan orang: skema wajib, polis swasta, asuransi mandiri, atau pilihan tanpa perlindungan yang dicatat. Catatan tanpa tanggal berakhir menyatakannya; tidak pernah dianggap berlaku. Sertifikat adalah rujukan ke tempat penyimpanannya, bukan dokumennya.",
+    "organization": "Organisasi",
+    "jurisdiction": "Yurisdiksi",
+    "kind": "Jenis",
+    "standing": "Status",
+    "validFrom": "Berlaku dari",
+    "validTo": "Berlaku sampai",
+    "cover": "Pertanggungan minimum",
+    "coverMinor": "Pertanggungan minimum (satuan terkecil)",
+    "currency": "Mata uang",
+    "actions": "Tindakan",
+    "retire": "Akhiri",
+    "none": "Belum ada catatan",
+    "addTitle": "Tambah catatan",
+    "insurer": "Penanggung",
+    "policy": "Referensi polis",
+    "certificate": "Referensi sertifikat",
+    "save": "Simpan",
+    "saved": "Tersimpan",
+    "statutory_scheme": "Skema wajib",
+    "private_insurance": "Asuransi swasta",
+    "self_insured": "Asuransi mandiri",
+    "elective_none": "Tanpa perlindungan (pilihan)",
+    "not_yet_valid": "Belum berlaku",
+    "in_force": "Berlaku",
+    "ending_soon": "Segera berakhir",
+    "expired": "Kedaluwarsa",
+    "no_end_date": "Tanpa tanggal berakhir"
   }
 }

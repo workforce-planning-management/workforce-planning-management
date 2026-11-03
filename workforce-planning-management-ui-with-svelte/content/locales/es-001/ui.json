@@ -54,6 +54,7 @@
     "decisionGates": "Puertas de decisión",
     "statutoryDefaults": "Valores legales por defecto",
     "mandatoryLearning": "Formación obligatoria",
+    "coverageEvidence": "Prueba de cobertura",
     "qualifications": "Cualificaciones"
   },
   "pr": {
@@ -2954,5 +2955,36 @@
     "rollupNone": "Ningún puesto ocupado pide cualificaciones.",
     "rollupRole": "Puesto",
     "rollupRate": "Proporción cumplida"
+  },
+  "coverageEvidence": {
+    "title": "Prueba de cobertura",
+    "hint": "Lo que demuestra que la organización está cubierta donde emplea personas: un régimen legal, una póliza privada, autoseguro o la decisión registrada de no tener ninguna. Un registro sin fecha de fin lo dice; nunca se lee como vigente. Un certificado es una referencia a dónde se guarda, nunca el documento.",
+    "organization": "Organización",
+    "jurisdiction": "Jurisdicción",
+    "kind": "Tipo",
+    "standing": "Situación",
+    "validFrom": "Válido desde",
+    "validTo": "Válido hasta",
+    "cover": "Cobertura mínima",
+    "coverMinor": "Cobertura mínima (céntimos)",
+    "currency": "Moneda",
+    "actions": "Acciones",
+    "retire": "Retirar",
+    "none": "Aún no hay registros",
+    "addTitle": "Añadir un registro",
+    "insurer": "Aseguradora",
+    "policy": "Referencia de la póliza",
+    "certificate": "Referencia del certificado",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "statutory_scheme": "Régimen legal",
+    "private_insurance": "Seguro privado",
+    "self_insured": "Autoasegurado",
+    "elective_none": "Ninguna por decisión",
+    "not_yet_valid": "Aún no vigente",
+    "in_force": "Vigente",
+    "ending_soon": "Vence pronto",
+    "expired": "Vencido",
+    "no_end_date": "Sin fecha de fin"
   }
 }

@@ -54,6 +54,7 @@
     "decisionGates": "Decision gates",
     "statutoryDefaults": "Statutory defaults",
     "mandatoryLearning": "Mandatory learning",
+    "coverageEvidence": "Coverage evidence",
     "qualifications": "Qualifications"
   },
   "pr": {
@@ -2945,5 +2946,36 @@
     "rollupNone": "No role that people hold asks for qualifications.",
     "rollupRole": "Role",
     "rollupRate": "Share met"
+  },
+  "coverageEvidence": {
+    "title": "Coverage evidence",
+    "hint": "What shows this organization is covered where it employs people: a statutory scheme, a private policy, self-insurance, or a recorded choice of none. A record with no end date says so; it is never read as valid. A certificate is a reference to where it is kept, never the document.",
+    "organization": "Organization",
+    "jurisdiction": "Jurisdiction",
+    "kind": "Kind",
+    "standing": "Standing",
+    "validFrom": "Valid from",
+    "validTo": "Valid to",
+    "cover": "Minimum cover",
+    "coverMinor": "Minimum cover (minor units)",
+    "currency": "Currency",
+    "actions": "Actions",
+    "retire": "Retire",
+    "none": "No coverage records yet",
+    "addTitle": "Add a coverage record",
+    "insurer": "Insurer",
+    "policy": "Policy reference",
+    "certificate": "Certificate reference",
+    "save": "Save",
+    "saved": "Saved",
+    "statutory_scheme": "Statutory scheme",
+    "private_insurance": "Private insurance",
+    "self_insured": "Self-insured",
+    "elective_none": "Chosen none",
+    "not_yet_valid": "Not yet valid",
+    "in_force": "In force",
+    "ending_soon": "Ending soon",
+    "expired": "Expired",
+    "no_end_date": "No end date"
   }
 }

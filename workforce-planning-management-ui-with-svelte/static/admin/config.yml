@@ -86,6 +86,7 @@ collections:
               - { name: "decisionGates", label: "Decision Gates", widget: string, required: false, i18n: true }
               - { name: "statutoryDefaults", label: "Statutory Defaults", widget: string, required: false, i18n: true }
               - { name: "mandatoryLearning", label: "Mandatory Learning", widget: string, required: false, i18n: true }
+              - { name: "coverageEvidence", label: "Coverage Evidence", widget: string, required: false, i18n: true }
               - { name: "qualifications", label: "Qualifications", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
@@ -4003,3 +4004,39 @@ collections:
               - { name: "rollupNone", label: "Rollup None", widget: string, required: false, i18n: true }
               - { name: "rollupRole", label: "Rollup Role", widget: string, required: false, i18n: true }
               - { name: "rollupRate", label: "Rollup Rate", widget: string, required: false, i18n: true }
+          - name: "coverageEvidence"
+            label: "Coverage Evidence"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "organization", label: "Organization", widget: string, required: false, i18n: true }
+              - { name: "jurisdiction", label: "Jurisdiction", widget: string, required: false, i18n: true }
+              - { name: "kind", label: "Kind", widget: string, required: false, i18n: true }
+              - { name: "standing", label: "Standing", widget: string, required: false, i18n: true }
+              - { name: "validFrom", label: "Valid From", widget: string, required: false, i18n: true }
+              - { name: "validTo", label: "Valid To", widget: string, required: false, i18n: true }
+              - { name: "cover", label: "Cover", widget: string, required: false, i18n: true }
+              - { name: "coverMinor", label: "Cover Minor", widget: string, required: false, i18n: true }
+              - { name: "currency", label: "Currency", widget: string, required: false, i18n: true }
+              - { name: "actions", label: "Actions", widget: string, required: false, i18n: true }
+              - { name: "retire", label: "Retire", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "addTitle", label: "Add Title", widget: string, required: false, i18n: true }
+              - { name: "insurer", label: "Insurer", widget: string, required: false, i18n: true }
+              - { name: "policy", label: "Policy", widget: string, required: false, i18n: true }
+              - { name: "certificate", label: "Certificate", widget: string, required: false, i18n: true }
+              - { name: "save", label: "Save", widget: string, required: false, i18n: true }
+              - { name: "saved", label: "Saved", widget: string, required: false, i18n: true }
+              - { name: "statutory_scheme", label: "Statutory_scheme", widget: string, required: false, i18n: true }
+              - { name: "private_insurance", label: "Private_insurance", widget: string, required: false, i18n: true }
+              - { name: "self_insured", label: "Self_insured", widget: string, required: false, i18n: true }
+              - { name: "elective_none", label: "Elective_none", widget: string, required: false, i18n: true }
+              - { name: "not_yet_valid", label: "Not_yet_valid", widget: string, required: false, i18n: true }
+              - { name: "in_force", label: "In_force", widget: string, required: false, i18n: true }
+              - { name: "ending_soon", label: "Ending_soon", widget: string, required: false, i18n: true }
+              - { name: "expired", label: "Expired", widget: string, required: false, i18n: true }
+              - { name: "no_end_date", label: "No_end_date", widget: string, required: false, i18n: true }
