@@ -55,6 +55,10 @@ jobs:
     run: qualification_expiry_reminders
     schedule: "0 20 7 * * *"
     tags: ["wpm"]
+  coverage_expiry_reminders:
+    run: coverage_expiry_reminders
+    schedule: "0 25 7 * * *"
+    tags: ["wpm"]
   policy_reminders:
     run: policy_reminders
     schedule: "0 15 7 * * *"

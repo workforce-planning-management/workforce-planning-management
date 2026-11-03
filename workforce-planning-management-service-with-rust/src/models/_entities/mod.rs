@@ -28,6 +28,8 @@ pub mod collective_agreements;
 pub mod consultations;
 pub mod conversion_plans;
 pub mod cost_centres;
+pub mod coverage_evidence;
+pub mod coverage_reminders;
 pub mod cpd_entries;
 pub mod cpd_requirements;
 pub mod credential_issuances;

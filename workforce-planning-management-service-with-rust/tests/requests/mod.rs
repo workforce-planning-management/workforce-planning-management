@@ -18,6 +18,7 @@ mod capacity;
 mod change;
 mod consultations;
 mod contacts;
+mod coverage_evidence;
 mod cpd_overview;
 mod cpd_requirements;
 mod crosswalk;

@@ -141,6 +141,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::absence_categories::routes())
         .add_route(controllers::assignments::routes())
         .add_route(controllers::mandatory_learning::routes())
+        .add_route(controllers::coverage_evidence::routes())
         .add_route(controllers::qualifications::routes())
         .add_route(controllers::bridges::routes())
         .add_route(controllers::category_vocabulary::routes())
@@ -368,6 +369,7 @@ impl Hooks for App {
         tasks.register(tasks::import_framework::ImportFramework);
         tasks.register(tasks::engagement_end_reminders::EngagementEndReminders);
         tasks.register(tasks::qualification_expiry_reminders::QualificationExpiryReminders);
+        tasks.register(tasks::coverage_expiry_reminders::CoverageExpiryReminders);
         tasks.register(tasks::early_warning_sweep::EarlyWarningSweep);
         tasks.register(tasks::oversight_pack_freeze::OversightPackFreeze);
         tasks.register(tasks::import_esco::ImportEsco);

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — coverage evidence and its expiry reminder (WPM-R220, WPM-D154, WPM-T420)
+
+`GET/POST /api/coverage-evidence`, `POST /api/coverage-evidence/{pid}/retire` (HR only; audited); migrations `m20261103_000122` (`coverage_evidence`) and `m20261103_000123` (`coverage_reminders`); `rules::coverage_evidence::{standing, problems}`; the daily task `coverage_expiry_reminders` (scheduled 07:25, idempotent). A record with no end date is `no_end_date`, never valid. The certificate is a reference, never a copy.
+
 ### Added — a learning requirement's own due-soon window (WPM-D168, WPM-T434)
 
 `POST /api/learning-requirements` takes `due_soon_days` (1 to 366, else 422); null uses `WPM_LEARNING_DUE_SOON_DAYS`, else 90. Migration `m20261103_000121`; `rules::mandatory_learning::window_for`.

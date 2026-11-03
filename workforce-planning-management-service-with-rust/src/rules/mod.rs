@@ -29,6 +29,7 @@ pub mod contact_details;
 pub mod conversion;
 pub mod cost;
 pub mod cover;
+pub mod coverage_evidence;
 pub mod cpd;
 pub mod credential;
 pub mod crosswalk;

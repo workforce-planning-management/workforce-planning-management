@@ -3789,6 +3789,75 @@
         ]
       }
     },
+    "/api/coverage-evidence": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Coverage records"
+          }
+        },
+        "summary": "An organization's workers' compensation or employer's liability cover per jurisdiction, each with its standing today (in force, ending soon, expired, not yet valid, or no end date, which is never read as valid). HR only. A record of the fact and its dates, never a decision that the organization is covered",
+        "tags": [
+          "payroll"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coverage record",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add a coverage record: kind (statutory scheme, private insurance, self-insured, elective none), insurer and policy reference, minimum cover with its currency, validity dates and a certificate reference (never the document). HR only; audited",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
+    "/api/coverage-evidence/{pid}/retire": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Retired record",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Retire a coverage record from today (HR only; audited)",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
     "/api/cpd-entries/{pid}": {
       "delete": {
         "parameters": [
