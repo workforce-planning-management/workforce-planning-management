@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a learning requirement's own due-soon window (WPM-D168, WPM-T434)
+
+`POST /api/learning-requirements` takes `due_soon_days` (1 to 366, else 422); null uses `WPM_LEARNING_DUE_SOON_DAYS`, else 90. Migration `m20261103_000121`; `rules::mandatory_learning::window_for`.
+
 ### Changed — a payroll calculation adds the statutory overtime premium to gross (WPM-D169, WPM-T418)
 
 `POST /api/payroll-runs/{pid}/calculate` derives each worker's statutory overtime with the function the advisory check uses (now one shared `statutory_outcome`) and adds the premium to gross; `payslips.statutory_overtime_minor` (migration `m20261103_000120`, default 0) says how much of the gross it is, and masking zeroes it. `rules::payroll::compute_payslip_with_premium`; `compute_payslip` is the same with no premium. A payslip changes only where a seat is marked non-exempt, a place of work is set and bands are configured for it; with nothing configured every payslip is as before. Contractual overtime is unchanged and the two add.

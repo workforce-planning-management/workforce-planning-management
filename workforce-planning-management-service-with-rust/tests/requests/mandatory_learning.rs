@@ -273,3 +273,58 @@ async fn the_roll_up_by_staff_group_applies_the_floor_to_each_group_on_its_own()
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_requirement_may_carry_its_own_due_soon_window() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let nurse = seed_worker!(&request, &org, format!("ML-W-{tag}"), None).await;
+        activate!(&request, &nurse).await;
+        make_nurse(&request, &nurse).await;
+        let add = |subject: &'static str, window: Value| {
+            let request = &request;
+            let org = org.clone();
+            async move {
+                let made = request
+                    .post("/api/learning-requirements")
+                    .json(&json!({ "organization": org, "subject": subject, "basis": "mandatory",
+                        "refresher_months": 12, "staff_groups": ["nurse"], "due_soon_days": window }))
+                    .await;
+                (made.status_code(), made.json::<Value>())
+            }
+        };
+        // Out of range is refused, not clamped.
+        assert_eq!(add("Too long", json!(400)).await.0, 422);
+        assert_eq!(add("Zero", json!(0)).await.0, 422);
+        let (_, short) = add("Short window", json!(30)).await;
+        let (_, plain) = add("Deployment window", Value::Null).await;
+        let short = short["pid"].as_str().unwrap().to_string();
+        let plain = plain["pid"].as_str().unwrap().to_string();
+        // Sixty days left on a twelve month refresher: due soon under the default 90, in date under a window of 30.
+        let expires = Utc::now().date_naive() + Duration::days(60);
+        let completed = expires - chrono::Months::new(12);
+        for req in [&short, &plain] {
+            let res = request
+                .post(&format!("/api/learning-requirements/{req}/completions"))
+                .json(&json!({ "worker_pid": nurse, "completed_on": completed.to_string() }))
+                .await;
+            assert_eq!(res.status_code(), 200, "{}", res.text());
+        }
+        let mine: Value = request.get(&format!("/api/workers/{nurse}/mandatory-learning")).await.json();
+        let status = |req: &str| {
+            mine["requirements"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|r| r["requirement_pid"] == req)
+                .unwrap()["status"]
+                .clone()
+        };
+        assert_eq!(status(&short), "compliant", "60 days left is outside its 30 day window");
+        assert_eq!(status(&plain), "due_soon", "and inside the deployment's 90");
+    })
+    .await;
+}

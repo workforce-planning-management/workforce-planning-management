@@ -2877,6 +2877,7 @@
     "teamNone": "Tidak ada anggota tim Anda yang perlu perhatian.",
     "addTitle": "Tambah persyaratan",
     "refresher": "Penyegaran (bulan)",
+    "dueSoonDays": "Jendela \"segera jatuh tempo\" (hari; kosong memakai milik penerapan)",
     "staffGroups": "Kelompok staf (dipisahkan koma)",
     "jobRoles": "Peran jabatan (dipisahkan koma)",
     "areasOfWork": "Bidang kerja (dipisahkan koma)",

@@ -27,6 +27,7 @@
   let basis = $state("mandatory");
   let source = $state("");
   let refresher = $state("");
+  let dueSoon = $state("");
   let staffGroups = $state("");
   let jobRoles = $state("");
   let areas = $state("");
@@ -74,6 +75,7 @@
   async function add(event: SubmitEvent) {
     event.preventDefault();
     const months = Number.parseInt(refresher, 10);
+    const window = Number.parseInt(dueSoon, 10);
     const ok = await done(() =>
       addLearningRequirement({
         organization,
@@ -81,6 +83,7 @@
         basis,
         source: source.trim() || undefined,
         refresher_months: Number.isFinite(months) ? months : undefined,
+        due_soon_days: Number.isFinite(window) ? window : undefined,
         staff_groups: list(staffGroups),
         job_roles: list(jobRoles),
         areas_of_work: list(areas),
@@ -90,6 +93,7 @@
       subject = "";
       source = "";
       refresher = "";
+      dueSoon = "";
       staffGroups = jobRoles = areas = "";
     }
   }
@@ -120,6 +124,7 @@
     </label>
     <label>{t("mandatoryLearning.source")} <input bind:value={source} maxlength="200" data-testid="req-source" required={basis === "statutory"} /></label>
     <label>{t("mandatoryLearning.refresher")} <input bind:value={refresher} inputmode="numeric" data-testid="req-refresher" /></label>
+    <label>{t("mandatoryLearning.dueSoonDays")} <input bind:value={dueSoon} inputmode="numeric" data-testid="req-due-soon" /></label>
     <label>{t("mandatoryLearning.staffGroups")} <input bind:value={staffGroups} data-testid="req-staff-groups" /></label>
     <label>{t("mandatoryLearning.jobRoles")} <input bind:value={jobRoles} /></label>
     <label>{t("mandatoryLearning.areasOfWork")} <input bind:value={areas} /></label>

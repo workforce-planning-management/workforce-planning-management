@@ -263,6 +263,7 @@ test.describe("Statutory and mandatory learning", () => {
     await page.getByTestId("req-basis").selectOption("statutory");
     await page.getByTestId("req-source").fill("Fire Safety Order");
     await page.getByTestId("req-refresher").fill("12");
+    await page.getByTestId("req-due-soon").fill("30");
     await page.getByTestId("req-staff-groups").fill("nurse, doctor");
     await page.getByTestId("req-save").click();
     await expect(page.getByTestId("req-row")).toContainText("Fire safety");
@@ -271,6 +272,7 @@ test.describe("Statutory and mandatory learning", () => {
       basis: "statutory",
       source: "Fire Safety Order",
       refresher_months: 12,
+      due_soon_days: 30,
       staff_groups: ["nurse", "doctor"],
     });
     await page.getByTestId("comp-requirement").selectOption("q1");

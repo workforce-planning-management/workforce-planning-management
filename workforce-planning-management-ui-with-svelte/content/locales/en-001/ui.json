@@ -2886,6 +2886,7 @@
     "teamNone": "Nobody in your team needs attention.",
     "addTitle": "Add a requirement",
     "refresher": "Refresher (months)",
+    "dueSoonDays": "Due-soon window (days; blank uses the deployment's)",
     "staffGroups": "Staff groups (comma separated)",
     "jobRoles": "Job roles (comma separated)",
     "areasOfWork": "Areas of work (comma separated)",

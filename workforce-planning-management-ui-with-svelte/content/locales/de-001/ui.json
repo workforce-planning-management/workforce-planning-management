@@ -2886,6 +2886,7 @@
     "teamNone": "Niemand in Ihrem Team braucht Aufmerksamkeit.",
     "addTitle": "Anforderung hinzufügen",
     "refresher": "Auffrischung (Monate)",
+    "dueSoonDays": "Fenster für „bald fällig“ (Tage; leer nimmt den Wert der Installation)",
     "staffGroups": "Personalgruppen (durch Komma getrennt)",
     "jobRoles": "Stellenrollen (durch Komma getrennt)",
     "areasOfWork": "Tätigkeitsbereiche (durch Komma getrennt)",

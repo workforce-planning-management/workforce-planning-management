@@ -23,6 +23,7 @@ pub struct Model {
     pub audience: Json,
     pub accepts_transferred: bool,
     pub retired_on: Option<Date>,
+    pub due_soon_days: Option<i32>,
     pub recorded_by: Option<String>,
 }
 

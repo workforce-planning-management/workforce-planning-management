@@ -133,6 +133,7 @@ pub mod m20261102_000117_qualifications;
 pub mod m20261102_000118_qualification_reminders;
 pub mod m20261103_000119_position_overtime_status;
 pub mod m20261103_000120_payslip_statutory_overtime;
+pub mod m20261103_000121_learning_requirement_due_soon;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -266,6 +267,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261102_000118_qualification_reminders::Migration),
             Box::new(m20261103_000119_position_overtime_status::Migration),
             Box::new(m20261103_000120_payslip_statutory_overtime::Migration),
+            Box::new(m20261103_000121_learning_requirement_due_soon::Migration),
             // inject-above (do not remove this comment)
         ]
     }

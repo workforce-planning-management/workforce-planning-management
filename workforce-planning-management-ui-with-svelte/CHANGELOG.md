@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a due-soon window on a learning requirement (WPM-T434)
+
+The add-requirement form takes an optional window in days; blank uses the deployment's. One string in 13 locales (AI-written, unreviewed). The payroll page also shows the statutory overtime premium column (WPM-D169).
+
 ### Added — the statutory overtime check on a payroll run (WPM-R219, WPM-T419)
 
 A button on `/payroll/{run}` asks for the advisory check; nothing is read on page load, because the read is audited. Each person shows a result, a reason in words where it cannot be derived (no status, no position, no place of work), overtime minutes, an indicative premium, and for an exempt post whether it is below the weekly floor or no floor is configured. It changes no payslip. 23 strings in 13 locales (AI-written, unreviewed).

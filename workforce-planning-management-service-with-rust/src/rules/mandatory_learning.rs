@@ -26,6 +26,15 @@ pub fn due_soon_window(configured: Option<&str>) -> i64 {
         .unwrap_or(DUE_SOON_DAYS)
 }
 
+/// The window that applies to one requirement: its own when it has one in range (1 to 366), else the deployment's `fallback`. A stored
+/// value out of range is the fallback, never a silent zero (WPM-T434).
+#[must_use]
+pub fn window_for(own: Option<i32>, fallback: i64) -> i64 {
+    own.map(i64::from)
+        .filter(|d| (1..=MAX_DUE_SOON_DAYS).contains(d))
+        .unwrap_or(fallback)
+}
+
 /// Which people a requirement is aimed at. An empty list does not restrict that category; all four empty is the organization.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Audience {
@@ -396,6 +405,19 @@ mod tests {
             "due today is still in date"
         );
         assert_eq!(s(d(2025, 10, 27)), Status::Expired);
+    }
+
+    #[test]
+    fn a_requirements_own_window_wins_and_a_bad_one_is_the_deployments() {
+        assert_eq!(window_for(Some(30), 90), 30);
+        assert_eq!(window_for(None, 90), 90);
+        assert_eq!(
+            window_for(Some(0), 90),
+            90,
+            "zero would show nothing as due"
+        );
+        assert_eq!(window_for(Some(367), 90), 90);
+        assert_eq!(window_for(Some(-5), 45), 45);
     }
 
     #[test]

@@ -3939,6 +3939,7 @@ collections:
               - { name: "teamNone", label: "Team None", widget: string, required: false, i18n: true }
               - { name: "addTitle", label: "Add Title", widget: string, required: false, i18n: true }
               - { name: "refresher", label: "Refresher", widget: string, required: false, i18n: true }
+              - { name: "dueSoonDays", label: "Due Soon Days", widget: string, required: false, i18n: true }
               - { name: "staffGroups", label: "Staff Groups", widget: string, required: false, i18n: true }
               - { name: "jobRoles", label: "Job Roles", widget: string, required: false, i18n: true }
               - { name: "areasOfWork", label: "Areas Of Work", widget: string, required: false, i18n: true }

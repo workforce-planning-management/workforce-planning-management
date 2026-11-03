@@ -660,6 +660,8 @@ export function addLearningRequirement(body: {
   basis: string;
   source?: string;
   refresher_months?: number;
+  /** This requirement's own due-soon window in calendar days (1 to 366); absent uses the deployment's. */
+  due_soon_days?: number;
   staff_groups?: string[];
   job_roles?: string[];
   areas_of_work?: string[];

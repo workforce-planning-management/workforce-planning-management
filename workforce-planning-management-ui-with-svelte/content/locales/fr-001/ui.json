@@ -2895,6 +2895,7 @@
     "teamNone": "Personne dans votre équipe n'appelle d'attention.",
     "addTitle": "Ajouter une exigence",
     "refresher": "Remise à niveau (mois)",
+    "dueSoonDays": "Fenêtre « bientôt dû » (jours ; vide utilise celle du déploiement)",
     "staffGroups": "Groupes de personnel (séparés par des virgules)",
     "jobRoles": "Rôles (séparés par des virgules)",
     "areasOfWork": "Domaines de travail (séparés par des virgules)",

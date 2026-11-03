@@ -2895,6 +2895,7 @@
     "teamNone": "Ninguém na sua equipa precisa de atenção.",
     "addTitle": "Adicionar um requisito",
     "refresher": "Atualização (meses)",
+    "dueSoonDays": "Janela de «a vencer» (dias; em branco usa a da instalação)",
     "staffGroups": "Grupos de pessoal (separados por vírgulas)",
     "jobRoles": "Funções (separadas por vírgulas)",
     "areasOfWork": "Áreas de trabalho (separadas por vírgulas)",

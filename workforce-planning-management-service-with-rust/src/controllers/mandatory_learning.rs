@@ -61,6 +61,7 @@ fn requirement_json(r: &learning_requirements::Model) -> Value {
         "pid": r.pid, "organization_ref": r.organization_ref, "subject": r.subject, "basis": r.basis,
         "source": r.source, "refresher_months": r.refresher_months, "courses": r.courses,
         "audience": r.audience, "accepts_transferred": r.accepts_transferred, "retired_on": r.retired_on,
+        "due_soon_days": r.due_soon_days,
     })
 }
 
@@ -90,7 +91,7 @@ fn evaluate(
         req.accepts_transferred,
         refresher,
         today,
-        due_soon_days(),
+        rules::window_for(req.due_soon_days, due_soon_days()),
     );
     let last = completions
         .iter()
@@ -232,6 +233,8 @@ struct CreatePayload {
     basis: String,
     source: Option<String>,
     refresher_months: Option<u32>,
+    /// This requirement's own due-soon window in calendar days, 1 to 366; absent means the deployment's window.
+    due_soon_days: Option<u32>,
     #[serde(default)]
     courses: Vec<String>,
     #[serde(default)]
@@ -285,6 +288,9 @@ async fn create(
     if p.refresher_months.is_some_and(|m| m > 600) {
         problems.push("refresher_months must be at most 600".to_string());
     }
+    if p.due_soon_days.is_some_and(|d| !(1..=366).contains(&d)) {
+        problems.push("due_soon_days must be 1 to 366".to_string());
+    }
     let courses = clean_list(&p.courses, "courses", 255, &mut problems);
     let audience = json!({
         "staff_groups": clean_list(&p.staff_groups, "staff_groups", 60, &mut problems),
@@ -305,6 +311,7 @@ async fn create(
         courses: ActiveValue::set(json!(courses)),
         audience: ActiveValue::set(audience),
         accepts_transferred: ActiveValue::set(p.accepts_transferred.unwrap_or(true)),
+        due_soon_days: ActiveValue::set(p.due_soon_days.and_then(|d| i32::try_from(d).ok())),
         recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         ..Default::default()
     }

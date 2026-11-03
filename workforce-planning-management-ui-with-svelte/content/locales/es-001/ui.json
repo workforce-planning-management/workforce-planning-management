@@ -2895,6 +2895,7 @@
     "teamNone": "Nadie de su equipo requiere atención.",
     "addTitle": "Añadir un requisito",
     "refresher": "Repaso (meses)",
+    "dueSoonDays": "Ventana de «vence pronto» (días; en blanco usa la de la instalación)",
     "staffGroups": "Grupos de personal (separados por comas)",
     "jobRoles": "Puestos (separados por comas)",
     "areasOfWork": "Áreas de trabajo (separadas por comas)",

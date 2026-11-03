@@ -2877,6 +2877,7 @@
     "teamNone": "团队中无人需要关注。",
     "addTitle": "添加要求",
     "refresher": "复训周期（月）",
+    "dueSoonDays": "“即将到期”窗口（天数；留空则使用部署的设置）",
     "staffGroups": "员工组（以逗号分隔）",
     "jobRoles": "岗位角色（以逗号分隔）",
     "areasOfWork": "工作领域（以逗号分隔）",
