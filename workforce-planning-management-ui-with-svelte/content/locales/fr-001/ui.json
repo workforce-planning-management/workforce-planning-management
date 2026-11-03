@@ -219,6 +219,7 @@
     "calculate": "Calculer",
     "pay": "Marquer payé",
     "gross": "Brut",
+    "statutoryOvertime": "Majoration légale des heures supplémentaires (comprise dans le brut)",
     "net": "Net",
     "deductions": "Retenues"
   },

@@ -130,6 +130,12 @@
       align: "end",
       format: (v, r) => money(Number(v), (r as unknown as Payslip).currency, i18n.locale),
     },
+    {
+      id: "statutory_overtime_minor",
+      header: t("pay.statutoryOvertime"),
+      align: "end",
+      format: (v, r) => money(Number(v ?? 0), (r as unknown as Payslip).currency, i18n.locale),
+    },
     { id: "deductions", header: t("pay.deductions"), cell: deductionsCell },
     {
       id: "net_minor",

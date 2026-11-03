@@ -793,7 +793,7 @@ async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
-async fn the_overtime_check_is_advisory_and_follows_the_seat_and_the_place() {
+async fn the_overtime_premium_is_in_gross_and_the_check_follows_the_seat_and_the_place() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let mut pids = std::collections::BTreeMap::new();
@@ -902,9 +902,33 @@ async fn the_overtime_check_is_advisory_and_follows_the_seat_and_the_place() {
         assert_eq!(check["counts"]["derived"], 1);
         assert!(!check.to_string().contains("OT-NONEX"), "no worker number or name");
 
-        // Advisory: no payslip moved.
+        // The check moves no payslip, and the calculation that came first already holds the premium (WPM-D169): in gross, shown as its
+        // own line, and for nobody who could not be derived.
         let after: Value = request.get(&format!("/api/payroll-runs/{run_pid}/payslips")).await.json();
         assert_eq!(before, after);
+        let slip = |number: &str| {
+            before
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|s| s["worker_pid"].as_str() == Some(pids[number].as_str()))
+                .cloned()
+                .unwrap()
+        };
+        let paid = slip("OT-NONEX");
+        assert_eq!(paid["statutory_overtime_minor"].as_i64(), Some(premium), "the same premium the check shows");
+        // Nine hours a day against the example 7.5 hour contracted day: 450 minutes of contractual overtime, paid at the base rate. The
+        // statutory premium is the extra over that rate, so the two add and never pay the same minute twice.
+        let contractual = rules::overtime_pay_minor(base, 450, rules::MONTH_MINUTES).unwrap();
+        assert_eq!(
+            paid["gross_minor"].as_i64(),
+            Some(base + contractual + premium),
+            "the premium is in gross, beside the contractual overtime"
+        );
+        for other in ["OT-EXEMPT", "OT-UNREC", "OT-NOSEAT", "OT-NONE", "OT-BLANK"] {
+            assert_eq!(slip(other)["statutory_overtime_minor"], 0, "{other} adds nothing");
+        }
+        assert_eq!(slip("OT-UNREC")["gross_minor"].as_i64(), Some(base), "an unrecorded post is never paid a guess");
     })
     .await;
 }

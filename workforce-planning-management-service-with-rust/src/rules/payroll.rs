@@ -192,7 +192,8 @@ pub fn stub_tax_minor(stub: &TaxStub, gross_minor: i64) -> Result<i64, String> {
 
 /// Compute one payslip from the period inputs: monthly base (salary ×
 /// FTE), overtime pay, then deductions (stub tax + the benefit
-/// worker-costs). The net is derived, never supplied.
+/// worker-costs). The net is derived, never supplied. This is
+/// [`compute_payslip_with_premium`] with no statutory overtime premium.
 ///
 /// # Errors
 ///
@@ -206,11 +207,42 @@ pub fn compute_payslip(
     overtime_minutes: i64,
     benefit_costs: &[(String, i64)],
 ) -> Result<Payslip, String> {
+    compute_payslip_with_premium(
+        stub,
+        currency,
+        annual_salary_minor,
+        fte_percent,
+        overtime_minutes,
+        0,
+        benefit_costs,
+    )
+}
+
+/// Compute one payslip with a **statutory overtime premium** (WPM-D169): the extra over the base rate that a jurisdiction's overtime
+/// bands require, already derived from approved time. It is part of gross, so the stub tax sees it, and it is separate from the
+/// contractual overtime pay, which pays minutes at the base rate: the two add and never overlap.
+///
+/// # Errors
+///
+/// A negative premium, a currency the stub is not written for, overflow anywhere, or a negative benefit cost.
+pub fn compute_payslip_with_premium(
+    stub: &TaxStub,
+    currency: &str,
+    annual_salary_minor: i64,
+    fte_percent: i32,
+    overtime_minutes: i64,
+    statutory_premium_minor: i64,
+    benefit_costs: &[(String, i64)],
+) -> Result<Payslip, String> {
+    if statutory_premium_minor < 0 {
+        return Err("the statutory overtime premium must not be negative".to_string());
+    }
     stub.accepts(currency)?;
     let base = monthly_base_minor(annual_salary_minor, fte_percent)?;
     let overtime = overtime_pay_minor(base, overtime_minutes, stub.month_minutes)?;
     let gross = base
         .checked_add(overtime)
+        .and_then(|v| v.checked_add(statutory_premium_minor))
         .ok_or_else(|| "gross overflows".to_string())?;
     let mut deductions = vec![Deduction {
         label: "tax".to_string(),
@@ -296,6 +328,23 @@ mod tests {
                 .unwrap_err()
                 .contains("overflow")
         );
+    }
+
+    /// A statutory premium is part of gross, so tax sees it, and it never overflows quietly.
+    #[test]
+    fn a_statutory_premium_is_part_of_gross_and_taxed() {
+        let stub = TaxStub::example();
+        let plain = compute_payslip(&stub, "GBP", 3_600_000, 100, 0, &[]).unwrap();
+        let with =
+            compute_payslip_with_premium(&stub, "GBP", 3_600_000, 100, 0, 4_500, &[]).unwrap();
+        assert_eq!(with.gross_minor, plain.gross_minor + 4_500);
+        assert!(with.deductions[0].amount_minor >= plain.deductions[0].amount_minor);
+        assert_eq!(
+            with.net_minor,
+            with.gross_minor - with.deductions.iter().map(|d| d.amount_minor).sum::<i64>()
+        );
+        assert!(compute_payslip_with_premium(&stub, "GBP", 3_600_000, 100, 0, -1, &[]).is_err());
+        assert!(compute_payslip_with_premium(&stub, "GBP", i64::MAX, 100, 0, 1, &[]).is_err());
     }
 
     /// Overtime pay derives from the monthly rate; non-positive

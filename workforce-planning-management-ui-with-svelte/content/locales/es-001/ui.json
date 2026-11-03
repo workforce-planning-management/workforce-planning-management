@@ -219,6 +219,7 @@
     "calculate": "Calcular",
     "pay": "Marcar pagado",
     "gross": "Bruto",
+    "statutoryOvertime": "Recargo legal por horas extra (incluido en el bruto)",
     "net": "Neto",
     "deductions": "Deducciones"
   },

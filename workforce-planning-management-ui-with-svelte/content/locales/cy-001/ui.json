@@ -219,6 +219,7 @@
     "calculate": "Cyfrifo",
     "pay": "Nodi fel talwyd",
     "gross": "Gros",
+    "statutoryOvertime": "Premiwm goramser statudol (yn y gros)",
     "net": "Net",
     "deductions": "Didyniadau"
   },

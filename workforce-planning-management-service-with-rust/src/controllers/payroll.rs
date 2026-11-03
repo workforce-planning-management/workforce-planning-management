@@ -264,6 +264,12 @@ async fn calculate_run(
         .await?;
     let (stub, stub_configured) = tax_stub();
     let full_day = contracted_day();
+    // Jurisdiction parameters for the statutory overtime premium (WPM-D169), resolved once for the organization.
+    let profiles =
+        super::jurisdictions::profiles_for(&txn, std::slice::from_ref(&run.organization_ref))
+            .await?;
+    let no_profile = super::jurisdictions::Profile::default();
+    let profile = profiles.get(&run.organization_ref).unwrap_or(&no_profile);
     let mut count: u64 = 0;
     for worker in &staff {
         let Some(salary) = worker.salary_minor else {
@@ -323,12 +329,43 @@ async fn calculate_run(
                 benefit_costs.push((plan.name.clone(), plan.worker_cost_minor));
             }
         }
-        let slip = rules::compute_payslip(
+        // The statutory premium: derived only for a person recorded as non-exempt, in a place with bands configured. Anything else adds
+        // nothing, and the advisory check says why (WPM-D169).
+        let seats: Vec<String> = positions::Entity::find()
+            .filter(positions::Column::HolderWorkerPid.eq(worker.pid))
+            .filter(positions::Column::State.ne("abolished"))
+            .all(&txn)
+            .await?
+            .into_iter()
+            .map(|seat| seat.overtime_status)
+            .collect();
+        let mut worked: std::collections::BTreeMap<chrono::NaiveDate, u32> =
+            std::collections::BTreeMap::new();
+        for entry in entries.iter().filter(|entry| entry.kind != "on_call") {
+            *worked.entry(entry.worked_on).or_default() +=
+                u32::try_from(entry.minutes.max(0)).unwrap_or(0);
+        }
+        let found = statutory_outcome(
+            Some(worker),
+            &seats,
+            &worked,
+            profile,
+            run.period_end,
+            &currency,
+            stub.month_minutes,
+        );
+        let premium = if found.name == "derived" {
+            found.extra["premium_minor"].as_i64().unwrap_or(0).max(0)
+        } else {
+            0
+        };
+        let slip = rules::compute_payslip_with_premium(
             &stub,
             &currency,
             salary,
             worker.fte_percent,
             overtime,
+            premium,
             &benefit_costs,
         )
         .map_err(|e| unprocessable(&format!("payslip for {}: {e}", worker.worker_number)))?;
@@ -344,6 +381,7 @@ async fn calculate_run(
                 serde_json::to_value(&slip.deductions).unwrap_or_default(),
             ),
             net_minor: ActiveValue::set(slip.net_minor),
+            statutory_overtime_minor: ActiveValue::set(premium),
             deleted_at: ActiveValue::set(None),
             ..Default::default()
         }
@@ -839,8 +877,135 @@ async fn minimum_wage_check(
 /// What the overtime check says about itself on every answer (WPM-D157).
 const OVERTIME_NOTE: &str = "Indicative only. Statutory overtime is derived from approved time, week by week, using the bands configured for the \
      worker's place of work, and only for a post a person recorded as not exempt. The premium is the extra over the base rate (the \
-     monthly base over the minutes in a month), and it is not added to the payslip. Which pay the law counts, a regular rate with bonuses, \
+     monthly base over the minutes in a month). A calculated payslip includes this premium in gross (WPM-D169), so this check shows what a calculation adds. Which pay the law counts, a regular rate with bonuses, \
      rest days and holidays are not modelled, and a monthly band is not derived. Exemption is a person's entry, never worked out from duties.";
+
+/// One worker's statutory-overtime outcome for a period (WPM-R219, WPM-D157, WPM-D162): the reason it could not be derived (if any),
+/// the outcome name, and any extra fields (`overtime_minutes`, `minutes_at`, `premium_minor`, `currency`, or `below_exempt_floor`).
+/// Shared by the advisory check and by the payroll calculation, so the two can never disagree. It reads nothing; every input is passed.
+struct StatutoryOutcome {
+    /// Why the answer is `unknown` or `not_derived`; `None` for every other outcome.
+    reason: Option<&'static str>,
+    /// `derived`, `exempt`, `unknown`, `no_limit_configured`, `none_by_law` or `not_derived`.
+    name: &'static str,
+    /// The figures of a derived or exempt row; an empty object otherwise.
+    extra: serde_json::Value,
+}
+
+/// Derives [`StatutoryOutcome`] for one worker. `seats` is the overtime status recorded on each seat the worker holds, `on_days` the
+/// approved minutes worked by day (on-call excluded), `as_of` the date the jurisdiction parameters are resolved at.
+#[allow(clippy::too_many_lines)] // worker → place → seats → status → bands → period, linearly
+fn statutory_outcome(
+    worker: Option<&workers::Model>,
+    seats: &[String],
+    on_days: &std::collections::BTreeMap<chrono::NaiveDate, u32>,
+    profile: &super::jurisdictions::Profile,
+    as_of: chrono::NaiveDate,
+    currency: &str,
+    month_minutes: i64,
+) -> StatutoryOutcome {
+    use crate::rules::jurisdiction::Resolution;
+    use crate::rules::statutory_overtime as ot;
+    use serde_json::json;
+
+    let unknown = |reason: &'static str| (reason, "unknown");
+    let mut extra = json!({});
+    let (reason, name): (Option<&'static str>, &'static str) = 'outcome: {
+        let Some(worker) = worker else {
+            let (r, n) = unknown("worker_not_found");
+            break 'outcome (Some(r), n);
+        };
+        let Some(place) = worker.work_jurisdiction.as_deref() else {
+            let (r, n) = unknown("no_work_jurisdiction");
+            break 'outcome (Some(r), n);
+        };
+        let get = |key: &str| profile.resolve(key, Some(place), as_of);
+        if matches!(
+            get("overtime.none_by_law"),
+            Resolution::Resolved { value, .. } if value.as_flag() == Some(true)
+        ) {
+            break 'outcome (None, "none_by_law");
+        }
+        let status = match seats {
+            [] => {
+                let (r, n) = unknown("no_position");
+                break 'outcome (Some(r), n);
+            }
+            [first, rest @ ..] if rest.iter().all(|s| s == first) => {
+                ot::Status::parse(first).unwrap_or(ot::Status::Unknown)
+            }
+            _ => {
+                let (r, n) = unknown("positions_disagree");
+                break 'outcome (Some(r), n);
+            }
+        };
+        if status == ot::Status::Exempt {
+            let below = ot::exempt_below_floor(
+                worker.salary_minor.unwrap_or(0),
+                worker.fte_percent,
+                get("overtime.exempt_salary_floor_minor_weekly").integer(),
+            );
+            extra = json!({ "below_exempt_floor": below });
+            break 'outcome (None, "exempt");
+        }
+        if status == ot::Status::Unknown {
+            let (r, n) = unknown("status_not_recorded");
+            break 'outcome (Some(r), n);
+        }
+        let bands = match get("overtime.bands") {
+            Resolution::Resolved { value, .. } => {
+                value.as_names().map(|names| ot::parse_premiums(&names))
+            }
+            _ => None,
+        };
+        let bands = match bands {
+            None => break 'outcome (None, "no_limit_configured"),
+            Some(Err(_)) => {
+                let (r, n) = unknown("bands_unreadable");
+                break 'outcome (Some(r), n);
+            }
+            Some(Ok(bands)) => bands,
+        };
+        let rules = ot::Rules {
+            bands,
+            stacking: if matches!(
+                get("overtime.premiums_add"),
+                Resolution::Resolved { value, .. } if value.as_flag() == Some(true)
+            ) {
+                ot::Stacking::Add
+            } else {
+                ot::Stacking::Highest
+            },
+        };
+        let week_start = get("calendar.week_start")
+            .integer()
+            .and_then(|d| u32::try_from(d).ok())
+            .unwrap_or(1);
+        match ot::derive_period(status, &rules, &ot::weeks(on_days, week_start)) {
+            ot::Outcome::Derived(d) => {
+                let base =
+                    rules::monthly_base_minor(worker.salary_minor.unwrap_or(0), worker.fte_percent)
+                        .ok();
+                extra = json!({
+                    "overtime_minutes": d.overtime_minutes(),
+                    "minutes_at": d.minutes_at,
+                    "premium_minor": base.and_then(|b| d.premium_minor(b, month_minutes)),
+                    "currency": currency,
+                });
+                (None, "derived")
+            }
+            ot::Outcome::NotDerived(why) => (Some(why), "not_derived"),
+            ot::Outcome::NoLimitConfigured => (None, "no_limit_configured"),
+            ot::Outcome::Exempt => (None, "exempt"),
+            ot::Outcome::Unknown => (Some("status_not_recorded"), "unknown"),
+        }
+    };
+    StatutoryOutcome {
+        reason,
+        name,
+        extra,
+    }
+}
 
 /// `GET /api/payroll-runs/{pid}/overtime-check` — an advisory derivation of statutory overtime for each payslip's worker over the run's
 /// period (WPM-R219, WPM-D157, WPM-D162). HR and payroll only, for organizations the caller holds. It changes no payslip. The bands are
@@ -855,8 +1020,6 @@ async fn overtime_check(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    use crate::rules::jurisdiction::Resolution;
-    use crate::rules::statutory_overtime as ot;
     use serde_json::json;
     use std::collections::BTreeMap;
 
@@ -928,104 +1091,19 @@ async fn overtime_check(
     .map(|name| (name, 0))
     .collect();
     let mut reasons: BTreeMap<&'static str, u64> = BTreeMap::new();
+    let no_days = BTreeMap::new();
     let mut rows = Vec::with_capacity(slips.len());
     for slip in &slips {
-        let unknown = |reason: &'static str| (reason, "unknown");
-        let mut extra = json!({});
-        let (reason, name): (Option<&'static str>, &'static str) = 'outcome: {
-            let Some(worker) = people.get(&slip.worker_pid) else {
-                let (r, n) = unknown("worker_not_found");
-                break 'outcome (Some(r), n);
-            };
-            let Some(place) = worker.work_jurisdiction.as_deref() else {
-                let (r, n) = unknown("no_work_jurisdiction");
-                break 'outcome (Some(r), n);
-            };
-            let get = |key: &str| profile.resolve(key, Some(place), as_of);
-            if matches!(
-                get("overtime.none_by_law"),
-                Resolution::Resolved { value, .. } if value.as_flag() == Some(true)
-            ) {
-                break 'outcome (None, "none_by_law");
-            }
-            let recorded = seats.get(&slip.worker_pid).cloned().unwrap_or_default();
-            let status = match recorded.as_slice() {
-                [] => {
-                    let (r, n) = unknown("no_position");
-                    break 'outcome (Some(r), n);
-                }
-                [first, rest @ ..] if rest.iter().all(|s| s == first) => {
-                    ot::Status::parse(first).unwrap_or(ot::Status::Unknown)
-                }
-                _ => {
-                    let (r, n) = unknown("positions_disagree");
-                    break 'outcome (Some(r), n);
-                }
-            };
-            if status == ot::Status::Exempt {
-                let below = ot::exempt_below_floor(
-                    worker.salary_minor.unwrap_or(0),
-                    worker.fte_percent,
-                    get("overtime.exempt_salary_floor_minor_weekly").integer(),
-                );
-                extra = json!({ "below_exempt_floor": below });
-                break 'outcome (None, "exempt");
-            }
-            if status == ot::Status::Unknown {
-                let (r, n) = unknown("status_not_recorded");
-                break 'outcome (Some(r), n);
-            }
-            let bands = match get("overtime.bands") {
-                Resolution::Resolved { value, .. } => {
-                    value.as_names().map(|names| ot::parse_premiums(&names))
-                }
-                _ => None,
-            };
-            let bands = match bands {
-                None => break 'outcome (None, "no_limit_configured"),
-                Some(Err(_)) => {
-                    let (r, n) = unknown("bands_unreadable");
-                    break 'outcome (Some(r), n);
-                }
-                Some(Ok(bands)) => bands,
-            };
-            let rules = ot::Rules {
-                bands,
-                stacking: if matches!(
-                    get("overtime.premiums_add"),
-                    Resolution::Resolved { value, .. } if value.as_flag() == Some(true)
-                ) {
-                    ot::Stacking::Add
-                } else {
-                    ot::Stacking::Highest
-                },
-            };
-            let week_start = get("calendar.week_start")
-                .integer()
-                .and_then(|d| u32::try_from(d).ok())
-                .unwrap_or(1);
-            let on_days = days.get(&slip.worker_pid).cloned().unwrap_or_default();
-            match ot::derive_period(status, &rules, &ot::weeks(&on_days, week_start)) {
-                ot::Outcome::Derived(d) => {
-                    let base = rules::monthly_base_minor(
-                        worker.salary_minor.unwrap_or(0),
-                        worker.fte_percent,
-                    )
-                    .ok();
-                    extra = json!({
-                        "overtime_minutes": d.overtime_minutes(),
-                        "minutes_at": d.minutes_at,
-                        "premium_minor": base.and_then(|b| d.premium_minor(b, month_minutes)),
-                        "currency": slip.currency,
-                    });
-                    (None, "derived")
-                }
-                ot::Outcome::NotDerived(why) => (Some(why), "not_derived"),
-                ot::Outcome::NoLimitConfigured => (None, "no_limit_configured"),
-                ot::Outcome::Exempt => (None, "exempt"),
-                ot::Outcome::Unknown => (Some("status_not_recorded"), "unknown"),
-            }
-        };
+        let found = statutory_outcome(
+            people.get(&slip.worker_pid),
+            seats.get(&slip.worker_pid).map_or(&[][..], Vec::as_slice),
+            days.get(&slip.worker_pid).unwrap_or(&no_days),
+            profile,
+            as_of,
+            &slip.currency,
+            month_minutes,
+        );
+        let (reason, name, extra) = (found.reason, found.name, found.extra);
         *counts.entry(name).or_default() += 1;
         if let Some(reason) = reason {
             *reasons.entry(reason).or_default() += 1;

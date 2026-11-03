@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — a payroll calculation adds the statutory overtime premium to gross (WPM-D169, WPM-T418)
+
+`POST /api/payroll-runs/{pid}/calculate` derives each worker's statutory overtime with the function the advisory check uses (now one shared `statutory_outcome`) and adds the premium to gross; `payslips.statutory_overtime_minor` (migration `m20261103_000120`, default 0) says how much of the gross it is, and masking zeroes it. `rules::payroll::compute_payslip_with_premium`; `compute_payslip` is the same with no premium. A payslip changes only where a seat is marked non-exempt, a place of work is set and bands are configured for it; with nothing configured every payslip is as before. Contractual overtime is unchanged and the two add.
+
 ### Added — an advisory statutory-overtime check (WPM-R219, WPM-D157, WPM-T418, WPM-T419)
 
 `GET /api/payroll-runs/{pid}/overtime-check`; `rules::statutory_overtime::{weeks, derive_period, exempt_below_floor, Outcome::NotDerived}`; `Derived::premium_minor(rate, per_minutes)`. One request test; the audit entry (`overtime_checked`) is a read holding counts.

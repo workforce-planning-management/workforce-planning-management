@@ -219,6 +219,7 @@
     "calculate": "Berechnen",
     "pay": "Als bezahlt markieren",
     "gross": "Brutto",
+    "statutoryOvertime": "Gesetzlicher Überstundenzuschlag (im Brutto)",
     "net": "Netto",
     "deductions": "Abzüge"
   },

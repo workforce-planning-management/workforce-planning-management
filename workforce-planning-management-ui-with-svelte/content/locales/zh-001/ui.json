@@ -219,6 +219,7 @@
     "calculate": "计算",
     "pay": "标记已付",
     "gross": "总额",
+    "statutoryOvertime": "法定加班费（已计入应发工资）",
     "net": "净额",
     "deductions": "扣除"
   },

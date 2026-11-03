@@ -219,6 +219,7 @@
     "calculate": "Calcular",
     "pay": "Marcar como pago",
     "gross": "Bruto",
+    "statutoryOvertime": "Acréscimo legal de horas extra (incluído no bruto)",
     "net": "Líquido",
     "deductions": "Deduções"
   },

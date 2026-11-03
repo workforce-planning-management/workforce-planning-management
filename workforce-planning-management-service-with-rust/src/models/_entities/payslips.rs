@@ -20,6 +20,7 @@ pub struct Model {
     pub gross_minor: i64,
     pub deductions: Json,
     pub net_minor: i64,
+    pub statutory_overtime_minor: i64,
     pub deleted_at: Option<DateTimeWithTimeZone>,
 }
 

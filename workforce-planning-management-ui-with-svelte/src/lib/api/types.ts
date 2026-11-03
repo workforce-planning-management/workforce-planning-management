@@ -651,6 +651,8 @@ export interface Payslip {
   gross_minor: number;
   deductions: { label: string; amount_minor: number }[];
   net_minor: number;
+  /** The statutory overtime premium inside `gross_minor` (WPM-D169); 0 where none was derived. */
+  statutory_overtime_minor: number;
 }
 
 /** One benchmark band. */

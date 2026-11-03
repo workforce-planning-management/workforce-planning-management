@@ -341,6 +341,7 @@ collections:
               - { name: "calculate", label: "Calculate", widget: string, required: false, i18n: true }
               - { name: "pay", label: "Pay", widget: string, required: false, i18n: true }
               - { name: "gross", label: "Gross", widget: string, required: false, i18n: true }
+              - { name: "statutoryOvertime", label: "Statutory Overtime", widget: string, required: false, i18n: true }
               - { name: "net", label: "Net", widget: string, required: false, i18n: true }
               - { name: "deductions", label: "Deductions", widget: string, required: false, i18n: true }
           - name: "bench"

@@ -10489,7 +10489,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Derive payslips (salary × FTE + approved contractual overtime − deductions; stub tax; net invariant enforced) */
+        /** Derive payslips (salary × FTE + approved contractual overtime + statutory overtime premium where derived − deductions; stub tax; net invariant enforced) */
         post: {
             parameters: {
                 query?: never;
@@ -10567,7 +10567,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Advisory statutory-overtime derivation for each payslip's worker over the run's period (HR and payroll). Weekly and daily bands are the jurisdiction parameters for the worker's place of work, applied only to a seat a person recorded as non_exempt; the premium is the extra over the base rate and no payslip changes. exempt, unknown (a seat nobody recorded, no seat, no place of work), none_by_law and no_limit_configured are each said, never read as no overtime. Indicative only */
+        /** Advisory statutory-overtime derivation for each payslip's worker over the run's period (HR and payroll). Weekly and daily bands are the jurisdiction parameters for the worker's place of work, applied only to a seat a person recorded as non_exempt; the premium is the extra over the base rate; the check changes no payslip, and a calculation adds the same premium to gross (WPM-D169). exempt, unknown (a seat nobody recorded, no seat, no place of work), none_by_law and no_limit_configured are each said, never read as no overtime. Indicative only */
         get: {
             parameters: {
                 query?: never;

@@ -219,6 +219,7 @@
     "calculate": "Calculate",
     "pay": "Mark paid",
     "gross": "Gross",
+    "statutoryOvertime": "Statutory overtime premium (in gross)",
     "net": "Net",
     "deductions": "Deductions"
   },

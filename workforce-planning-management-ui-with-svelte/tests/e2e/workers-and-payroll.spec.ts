@@ -40,6 +40,7 @@ test.describe("Workers and payroll", () => {
             gross_minor: 300000,
             deductions: [{ label: "tax", amount_minor: 39050 }],
             net_minor: 260950,
+            statutory_overtime_minor: 4500,
           },
         ],
       }),
@@ -50,6 +51,8 @@ test.describe("Workers and payroll", () => {
     const payslips = page.getByTestId("payslips");
     await expect(payslips).toContainText("£3,000.00");
     await expect(payslips).toContainText("£2,609.50");
+    await expect(payslips).toContainText("Statutory overtime premium (in gross)");
+    await expect(payslips).toContainText("£45.00");
     await expect(payslips).toContainText("tax");
   });
 
