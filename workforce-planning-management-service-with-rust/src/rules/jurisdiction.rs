@@ -361,6 +361,37 @@ pub const REGISTRY: &[Parameter] = &[
         meaning: "the age from which the young-adult minimum wage applies, up to the adult age",
     },
     Parameter {
+        key: "overtime.bands",
+        shape: Shape::Names,
+        unit: "",
+        combine: Combine::MostSpecific,
+        meaning: "the statutory overtime bands, each period:threshold_minutes:multiplier_bp (period day, week or month; 15000 is one and a half times), or the one name none (WPM-D162)",
+    },
+    Parameter {
+        key: "overtime.exempt_salary_floor_minor_weekly",
+        shape: Shape::Integer {
+            min: 0,
+            max: 1_000_000_000,
+        },
+        unit: "minor_per_week",
+        combine: Combine::StrictestMin,
+        meaning: "the weekly salary below which a post recorded as exempt is flagged for a check, in minor units; advisory, and WPM never decides exemption from duties",
+    },
+    Parameter {
+        key: "overtime.none_by_law",
+        shape: Shape::Flag,
+        unit: "",
+        combine: Combine::MostSpecific,
+        meaning: "on where the jurisdiction sets no statutory overtime premium; distinct from not configured (WPM-D160)",
+    },
+    Parameter {
+        key: "overtime.premiums_add",
+        shape: Shape::Flag,
+        unit: "",
+        combine: Combine::MostSpecific,
+        meaning: "on where premiums for overlapping overtime bands add; off or none means the highest multiplier applies, with no pyramiding",
+    },
+    Parameter {
         key: "pay_transparency.information_months",
         shape: Shape::Integer { min: 1, max: 12 },
         unit: "months",

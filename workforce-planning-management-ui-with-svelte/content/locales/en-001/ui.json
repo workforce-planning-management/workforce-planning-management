@@ -1429,7 +1429,12 @@
       "budget_percent": "Budget (FTE percent)",
       "funding_ends": "Funding ends",
       "programme": "Programme (thing: reference)",
-      "plan": "Plan"
+      "plan": "Plan",
+      "overtime": "Statutory overtime",
+      "overtime_exempt": "Exempt",
+      "overtime_non_exempt": "Not exempt",
+      "overtime_unknown": "Not recorded",
+      "overtime_note": "You record this; WPM never works it out from a role's duties. Not recorded is not the same as not exempt."
     },
     "orgshape": {
       "page_title": "The organization now and as planned — WPM",

@@ -2136,6 +2136,11 @@ collections:
                   - { name: "funding_ends", label: "Funding_ends", widget: string, required: false, i18n: true }
                   - { name: "programme", label: "Programme", widget: string, required: false, i18n: true }
                   - { name: "plan", label: "Plan", widget: string, required: false, i18n: true }
+                  - { name: "overtime", label: "Overtime", widget: string, required: false, i18n: true }
+                  - { name: "overtime_exempt", label: "Overtime_exempt", widget: string, required: false, i18n: true }
+                  - { name: "overtime_non_exempt", label: "Overtime_non_exempt", widget: string, required: false, i18n: true }
+                  - { name: "overtime_unknown", label: "Overtime_unknown", widget: string, required: false, i18n: true }
+                  - { name: "overtime_note", label: "Overtime_note", widget: text, required: false, i18n: true }
               - name: "orgshape"
                 label: "Orgshape"
                 widget: object

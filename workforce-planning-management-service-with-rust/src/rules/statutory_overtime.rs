@@ -57,6 +57,47 @@ pub struct Rules {
     pub stacking: Stacking,
 }
 
+/// Read a bands setting: each name is `period:threshold_minutes:multiplier_bp`, and the one name `none` is no bands. A name that does not
+/// read is an error naming it, never skipped (a skipped band would pay too little).
+///
+/// # Errors
+/// A name that is not `period:minutes:bp` with a known period, whole numbers, a threshold of at most a month and a multiplier above
+/// the regular rate (and at most 1000 percent).
+pub fn parse_premiums(names: &[String]) -> Result<Vec<Band>, String> {
+    if names.len() == 1 && names[0] == "none" {
+        return Ok(Vec::new());
+    }
+    names
+        .iter()
+        .map(|n| {
+            let bad = || format!("{n:?} is not period:threshold_minutes:multiplier_bp");
+            let mut parts = n.split(':');
+            let (Some(p), Some(t), Some(m), None) =
+                (parts.next(), parts.next(), parts.next(), parts.next())
+            else {
+                return Err(bad());
+            };
+            let period = match p {
+                "day" => Period::Day,
+                "week" => Period::Week,
+                "month" => Period::Month,
+                _ => return Err(bad()),
+            };
+            let threshold_minutes: u32 = t.parse().map_err(|_| bad())?;
+            let multiplier_bp: u32 = m.parse().map_err(|_| bad())?;
+            if threshold_minutes > 44_640 || multiplier_bp <= REGULAR_BP || multiplier_bp > 100_000
+            {
+                return Err(bad());
+            }
+            Ok(Band {
+                period,
+                threshold_minutes,
+                multiplier_bp,
+            })
+        })
+        .collect()
+}
+
 /// The recorded exemption of a post: a human's entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
@@ -66,6 +107,26 @@ pub enum Status {
     NonExempt,
     /// Nobody recorded it.
     Unknown,
+}
+
+impl Status {
+    /// The stored name.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Status::Exempt => "exempt",
+            Status::NonExempt => "non_exempt",
+            Status::Unknown => "unknown",
+        }
+    }
+
+    /// Read a stored or submitted name; anything else is `None`, never a guess.
+    #[must_use]
+    pub fn parse(name: &str) -> Option<Status> {
+        [Status::Exempt, Status::NonExempt, Status::Unknown]
+            .into_iter()
+            .find(|s| s.as_str() == name)
+    }
 }
 
 /// What the derivation comes to.
@@ -302,6 +363,41 @@ mod tests {
         assert_eq!(
             d.minutes_at.keys().copied().collect::<Vec<_>>(),
             vec![REGULAR_BP]
+        );
+    }
+
+    #[test]
+    fn a_status_name_reads_back_and_a_stray_one_is_refused() {
+        for s in [Status::Exempt, Status::NonExempt, Status::Unknown] {
+            assert_eq!(Status::parse(s.as_str()), Some(s));
+        }
+        assert_eq!(Status::parse("Exempt"), None);
+        assert_eq!(Status::parse(""), None);
+    }
+
+    #[test]
+    fn bands_read_from_names_and_a_bad_name_is_an_error_not_a_skipped_band() {
+        let ok = parse_premiums(&["day:480:15000".into(), "week:2400:15000".into()]).unwrap();
+        assert_eq!(
+            ok,
+            vec![band(Period::Day, 8, 15_000), band(Period::Week, 40, 15_000)]
+        );
+        assert_eq!(parse_premiums(&["none".into()]).unwrap(), vec![]);
+        for bad in [
+            "day:480",
+            "year:480:15000",
+            "day:x:15000",
+            "day:480:10000",
+            "day:480:15000:1",
+            "day:99999:15000",
+            "day:480:100001",
+            "",
+        ] {
+            assert!(parse_premiums(&[bad.to_string()]).is_err(), "{bad:?}");
+        }
+        assert!(
+            parse_premiums(&["day:480:15000".into(), "oops".into()]).is_err(),
+            "one bad name fails them all"
         );
     }
 

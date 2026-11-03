@@ -1436,7 +1436,12 @@
       "budget_percent": "Presupuesto (porcentaje de FTE)",
       "funding_ends": "Fin de la financiación",
       "programme": "Programa (referencia thing:)",
-      "plan": "Planificar"
+      "plan": "Planificar",
+      "overtime": "Horas extra legales",
+      "overtime_exempt": "Exento",
+      "overtime_non_exempt": "No exento",
+      "overtime_unknown": "Sin registrar",
+      "overtime_note": "Lo registra una persona; WPM nunca lo deduce de las funciones del puesto. Sin registrar no es lo mismo que no exento."
     },
     "orgshape": {
       "page_title": "La organización ahora y según el plan — WPM",

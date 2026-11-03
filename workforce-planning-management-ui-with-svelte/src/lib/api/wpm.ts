@@ -1606,6 +1606,9 @@ export const POSITION_STATES = [
   "abolished",
 ] as const;
 
+/** The overtime statuses a person may record for a position (WPM-D157); `unknown` until someone does. */
+export const OVERTIME_STATUSES = ["unknown", "exempt", "non_exempt"] as const;
+
 /** A position: a budgeted seat (WPM-R152). `holder_worker_pid` is shown to HR only; others get `held`. */
 export type Position = {
   pid: string;
@@ -1617,6 +1620,8 @@ export type Position = {
   funding_ends_on: string | null;
   programme_ref: string | null;
   state: (typeof POSITION_STATES)[number];
+  /** A person's entry about statutory overtime; never inferred from duties. */
+  overtime_status: (typeof OVERTIME_STATUSES)[number];
   holder_worker_pid?: string | null;
   held?: boolean;
   requisition_pid: string | null;
@@ -1676,6 +1681,7 @@ export function createPosition(body: {
   funding_kind: string;
   funding_ends_on?: string;
   programme_ref?: string;
+  overtime_status?: (typeof OVERTIME_STATUSES)[number];
 }): Promise<{ pid: string }> {
   return api("/positions", { method: "POST", body });
 }

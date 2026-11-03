@@ -1436,7 +1436,12 @@
       "budget_percent": "Orçamento (percentagem de ETC)",
       "funding_ends": "Fim do financiamento",
       "programme": "Programa (referência thing:)",
-      "plan": "Planear"
+      "plan": "Planear",
+      "overtime": "Horas extra legais",
+      "overtime_exempt": "Isento",
+      "overtime_non_exempt": "Não isento",
+      "overtime_unknown": "Não registado",
+      "overtime_note": "É uma pessoa que o regista; o WPM nunca o deduz das funções do cargo. Não registado não é o mesmo que não isento."
     },
     "orgshape": {
       "page_title": "A organização agora e conforme o plano — WPM",

@@ -1422,7 +1422,12 @@
       "budget_percent": "预算（FTE 百分比）",
       "funding_ends": "经费结束",
       "programme": "项目（thing: 引用）",
-      "plan": "规划"
+      "plan": "规划",
+      "overtime": "法定加班",
+      "overtime_exempt": "豁免",
+      "overtime_non_exempt": "不豁免",
+      "overtime_unknown": "未记录",
+      "overtime_note": "由人员记录;WPM 绝不根据岗位职责推断。未记录不等于不豁免。"
     },
     "orgshape": {
       "page_title": "组织现状与规划 — WPM",

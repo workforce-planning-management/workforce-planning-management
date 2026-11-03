@@ -1436,7 +1436,12 @@
       "budget_percent": "Budget (pourcentage d'ETP)",
       "funding_ends": "Fin du financement",
       "programme": "Programme (référence thing:)",
-      "plan": "Planifier"
+      "plan": "Planifier",
+      "overtime": "Heures supplémentaires légales",
+      "overtime_exempt": "Exempté",
+      "overtime_non_exempt": "Non exempté",
+      "overtime_unknown": "Non renseigné",
+      "overtime_note": "Vous l'indiquez; WPM ne le déduit jamais des fonctions d'un poste. Non renseigné n'est pas non exempté."
     },
     "orgshape": {
       "page_title": "L'organisation aujourd'hui et selon le plan — WPM",

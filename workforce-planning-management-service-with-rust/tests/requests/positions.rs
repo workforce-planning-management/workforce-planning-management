@@ -173,3 +173,52 @@ async fn a_seat_moves_with_its_facts_and_the_establishment_never_nets() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn overtime_status_starts_unknown_is_recorded_by_a_person_and_a_stray_value_is_refused() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let pid = seat(&request, &org, "CC-OT", 100).await;
+        let read = || async {
+            let list: Value = request
+                .get(&format!("/api/positions?organization={org}"))
+                .await
+                .json();
+            list["positions"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|p| p["pid"] == pid.as_str())
+                .cloned()
+                .unwrap()
+        };
+        assert_eq!(read().await["overtime_status"], "unknown", "never inferred");
+
+        let body = |extra: Value| {
+            let mut b = json!({ "cost_centre": "CC-OT", "title": "Engineer", "budget_fte_percent": 100, "funding_kind": "core" });
+            b.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
+            b
+        };
+        let stray = request
+            .put(&format!("/api/positions/{pid}"))
+            .json(&body(json!({ "overtime_status": "salaried" })))
+            .await;
+        assert_eq!(stray.status_code(), 422, "{}", stray.text());
+        assert_eq!(read().await["overtime_status"], "unknown");
+
+        let set = request
+            .put(&format!("/api/positions/{pid}"))
+            .json(&body(json!({ "overtime_status": "exempt" })))
+            .await;
+        assert_eq!(set.status_code(), 200, "{}", set.text());
+        assert_eq!(read().await["overtime_status"], "exempt");
+
+        // An update that says nothing about it keeps what a person recorded.
+        let keep = request.put(&format!("/api/positions/{pid}")).json(&body(json!({ "title": "Senior engineer" }))).await;
+        assert_eq!(keep.status_code(), 200, "{}", keep.text());
+        assert_eq!(read().await["overtime_status"], "exempt");
+    })
+    .await;
+}

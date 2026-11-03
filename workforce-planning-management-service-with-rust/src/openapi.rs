@@ -77,7 +77,7 @@ pub fn spec() -> Value {
             "/api/onboarding-items/{pid}/waive": { "post": { "tags": ["acquisition"], "summary": "Waive an item (reason required, audited)", "responses": ok("Item") } },
             "/api/workers/{pid}/time-entries": {
                 "post": { "tags": ["workforce"], "summary": "Record time (minutes; day capped at 24h)", "responses": created },
-                "get": { "tags": ["workforce"], "summary": "Entries + derived per-day overtime (?from=&to=)", "responses": ok("Entries") }
+                "get": { "tags": ["workforce"], "summary": "Entries + derived per-day contractual overtime (minutes beyond the contracted day; not a statutory premium) (?from=&to=)", "responses": ok("Entries") }
             },
             "/api/time-entries/{pid}/approve": { "post": { "tags": ["workforce"], "summary": "Approve (only approved time feeds payroll)", "responses": ok("Entry") } },
             "/api/workers/{pid}/leave-entitlements": {
@@ -131,7 +131,7 @@ pub fn spec() -> Value {
                 "get": { "tags": ["payroll"], "summary": "List runs", "responses": ok("Runs") }
             },
             "/api/payroll-runs/{pid}": { "get": { "tags": ["payroll"], "summary": "Fetch a run", "responses": ok("Run") } },
-            "/api/payroll-runs/{pid}/calculate": { "post": { "tags": ["payroll"], "summary": "Derive payslips (salary × FTE + approved overtime − deductions; stub tax; net invariant enforced)", "responses": transition } },
+            "/api/payroll-runs/{pid}/calculate": { "post": { "tags": ["payroll"], "summary": "Derive payslips (salary × FTE + approved contractual overtime − deductions; stub tax; net invariant enforced)", "responses": transition } },
             "/api/payroll-runs/{pid}/approve": { "post": { "tags": ["payroll"], "summary": "Approve (immutable thereafter)", "responses": transition } },
             "/api/payroll-runs/{pid}/pay": { "post": { "tags": ["payroll"], "summary": "Mark paid", "responses": transition } },
             "/api/payroll-runs/{pid}/reopen": { "post": { "tags": ["payroll"], "summary": "Reopen calculated → draft", "responses": transition } },
@@ -587,7 +587,7 @@ fn add_integration_paths(document: &mut Value) {
         },
         "/api/positions": {
             "get": { "tags": ["positions"], "summary": "Positions of an organization (?organization=&state=&cost_centre=): cost centre, title, budget in FTE percent, funding kind and end, state, and links to the requisition and the plan demand line. The holder is shown only to HR, payroll, service and administrators; others see whether the seat is held. No pay", "responses": ok("The positions") },
-            "post": { "tags": ["positions"], "summary": "Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it", "responses": ok("The pid") }
+            "post": { "tags": ["positions"], "summary": "Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it. An optional overtime_status (exempt, non_exempt or unknown) is a person's entry, never inferred from duties; left out it is unknown", "responses": ok("The pid") }
         },
         "/api/positions/establishment": {
             "get": { "tags": ["positions"], "summary": "The establishment per cost centre (?organization=): positions, budget, held, vacant, over, the vacancy sitting in frozen positions and positions by state. Approved, open, filled and frozen positions count. Over-establishment is never netted against a vacancy elsewhere; an unknown holder FTE is unknown; no holder is named, and a caller who may not see holders gets held, vacant and over withheld for a centre under the floor", "responses": ok("The establishment") }

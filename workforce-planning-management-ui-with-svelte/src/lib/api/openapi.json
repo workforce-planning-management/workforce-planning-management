@@ -8542,7 +8542,7 @@
             "description": "Illegal transition (names the current state)"
           }
         },
-        "summary": "Derive payslips (salary × FTE + approved overtime − deductions; stub tax; net invariant enforced)",
+        "summary": "Derive payslips (salary × FTE + approved contractual overtime − deductions; stub tax; net invariant enforced)",
         "tags": [
           "payroll"
         ]
@@ -8806,7 +8806,7 @@
             "$ref": "#/components/responses/IdempotencyRefused"
           }
         },
-        "summary": "Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it",
+        "summary": "Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it. An optional overtime_status (exempt, non_exempt or unknown) is a person's entry, never inferred from duties; left out it is unknown",
         "tags": [
           "positions"
         ]
@@ -13957,7 +13957,7 @@
             "description": "Entries"
           }
         },
-        "summary": "Entries + derived per-day overtime (?from=&to=)",
+        "summary": "Entries + derived per-day contractual overtime (minutes beyond the contracted day; not a statutory premium) (?from=&to=)",
         "tags": [
           "workforce"
         ]

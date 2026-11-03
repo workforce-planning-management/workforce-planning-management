@@ -1429,7 +1429,12 @@
       "budget_percent": "Budget (VZÄ-Prozent)",
       "funding_ends": "Finanzierung endet",
       "programme": "Programm (thing:-Verweis)",
-      "plan": "Planen"
+      "plan": "Planen",
+      "overtime": "Gesetzliche Überstunden",
+      "overtime_exempt": "Ausgenommen",
+      "overtime_non_exempt": "Nicht ausgenommen",
+      "overtime_unknown": "Nicht erfasst",
+      "overtime_note": "Das tragen Sie ein; WPM leitet es nie aus den Aufgaben einer Stelle ab. Nicht erfasst heißt nicht „nicht ausgenommen“."
     },
     "orgshape": {
       "page_title": "Die Organisation jetzt und wie geplant — WPM",

@@ -14,6 +14,7 @@
     createPosition,
     listPositions,
     movePosition,
+    OVERTIME_STATUSES,
     positionEstablishment,
     POSITION_STATES,
     type CostCentre,
@@ -40,6 +41,7 @@
   let funding = $state<string>("core");
   let fundingEnds = $state("");
   let programme = $state("");
+  let overtime = $state<(typeof OVERTIME_STATUSES)[number]>("unknown");
   const FUNDING_KINDS = ["core", "time_limited", "external", "programme"] as const;
 
   const fte = (f: PositionFte) =>
@@ -64,6 +66,7 @@
     { id: "title", header: t("pages.positions.title"), sortable: true },
     { id: "budget_fte_percent", header: t("pages.positions.budgeted"), sortable: true, align: "end", format: (v) => formatCentiFte(v as number) },
     { id: "funding_kind", header: t("pages.positions.funding"), sortable: true, accessor: (r) => t(`values.${r.funding_kind as string}` as never) },
+    { id: "overtime_status", header: t("pages.positions.overtime"), sortable: true, accessor: (r) => t(`pages.positions.overtime_${r.overtime_status as string}` as never) },
     { id: "state", header: t("pages.positions.state"), sortable: true, accessor: (r) => t(`values.${r.state as string}` as never) },
     { id: "held", header: t("pages.positions.holder"), accessor: (r) => (r.holder_worker_pid ? String(r.holder_worker_pid) : r.held ? t("pages.positions.held") : t("pages.positions.not_held")) },
     { id: "move", header: t("pages.positions.move"), cell: moveCell },
@@ -110,6 +113,7 @@
         title: title.trim(),
         budget_fte_percent: budget,
         funding_kind: funding,
+        ...(overtime !== "unknown" ? { overtime_status: overtime } : {}),
         ...(fundingEnds ? { funding_ends_on: fundingEnds } : {}),
         ...(funding === "programme" && programme.trim() ? { programme_ref: programme.trim() } : {}),
       });
@@ -196,6 +200,13 @@
     {#if funding === "programme"}
       <label>{t("pages.positions.programme")} <input bind:value={programme} required /></label>
     {/if}
+    <label>
+      {t("pages.positions.overtime")}
+      <select bind:value={overtime} data-testid="position-overtime">
+        {#each OVERTIME_STATUSES as k (k)}<option value={k}>{t(`pages.positions.overtime_${k}` as never)}</option>{/each}
+      </select>
+    </label>
+    <p class="muted">{t("pages.positions.overtime_note")}</p>
     <button type="submit">{t("pages.positions.plan")}</button>
   </form>
 {/if}

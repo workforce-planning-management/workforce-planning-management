@@ -26,6 +26,7 @@ pub struct Model {
     pub holder_worker_pid: Option<Uuid>,
     pub requisition_pid: Option<Uuid>,
     pub demand_line_pid: Option<Uuid>,
+    pub overtime_status: String,
     pub recorded_by: Option<String>,
 }
 

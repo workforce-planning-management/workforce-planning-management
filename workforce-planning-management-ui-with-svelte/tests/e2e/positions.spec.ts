@@ -15,6 +15,7 @@ const SEAT = {
   funding_ends_on: null,
   programme_ref: null,
   state: "approved",
+  overtime_status: "unknown",
   requisition_pid: null,
   demand_line_pid: null,
 };
@@ -109,6 +110,48 @@ test.describe("Positions", () => {
         funding_kind: "core",
       },
     ]);
+  });
+
+  test("a person records a seat as exempt, and a seat nobody recorded says so", async ({
+    page,
+  }) => {
+    const seats = [{ ...SEAT, holder_worker_pid: null }];
+    const planned: Record<string, unknown>[] = [];
+    await page.route(
+      "**/api/proxy/positions/establishment?organization=*",
+      (route) =>
+        route.fulfill({
+          json: { small_group_floor: null, cost_centres: [], derivation: "" },
+        }),
+    );
+    await page.route("**/api/proxy/positions?organization=*", (route) =>
+      route.fulfill({ json: { states: [], positions: seats } }),
+    );
+    await page.route("**/api/proxy/positions", (route) => {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      planned.push(body);
+      seats.push({
+        ...SEAT,
+        pid: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        title: "Director",
+        overtime_status: body.overtime_status as string,
+        holder_worker_pid: null,
+      });
+      return route.fulfill({
+        json: { pid: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
+      });
+    });
+    await page.goto("/positions");
+    const list = page.getByTestId("position-list");
+    await expect(list).toContainText("Not recorded");
+    await page.getByRole("textbox", { name: /Cost centre/ }).fill("CC-300");
+    await page.getByRole("textbox", { name: /Title/ }).fill("Director");
+    await page.getByTestId("position-overtime").selectOption("exempt");
+    await page.getByRole("button", { name: "Plan", exact: true }).click();
+    await expect.poll(() => planned[0]?.overtime_status).toBe("exempt");
+    await expect(list.getByRole("row", { name: /Director/ })).toContainText(
+      "Exempt",
+    );
   });
 
   test("says unknown and withheld in words, and that a seat is held without saying by whom", async ({

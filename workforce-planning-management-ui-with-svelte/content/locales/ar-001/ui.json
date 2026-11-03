@@ -1457,7 +1457,12 @@
       "budget_percent": "الميزانية (نسبة FTE)",
       "funding_ends": "ينتهي التمويل",
       "programme": "البرنامج (مرجع thing:)",
-      "plan": "تخطيط"
+      "plan": "تخطيط",
+      "overtime": "العمل الإضافي القانوني",
+      "overtime_exempt": "معفى",
+      "overtime_non_exempt": "غير معفى",
+      "overtime_unknown": "غير مسجّل",
+      "overtime_note": "يسجّله شخص؛ ولا يستنتجه WPM أبدًا من مهام الوظيفة. غير مسجّل لا يعني غير معفى."
     },
     "orgshape": {
       "page_title": "المؤسسة الآن وكما هي مخططة — WPM",

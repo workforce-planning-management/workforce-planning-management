@@ -1422,7 +1422,12 @@
       "budget_percent": "Anggaran (persen FTE)",
       "funding_ends": "Pendanaan berakhir",
       "programme": "Program (referensi thing:)",
-      "plan": "Rencanakan"
+      "plan": "Rencanakan",
+      "overtime": "Lembur menurut undang-undang",
+      "overtime_exempt": "Dikecualikan",
+      "overtime_non_exempt": "Tidak dikecualikan",
+      "overtime_unknown": "Tidak dicatat",
+      "overtime_note": "Seseorang yang mencatatnya; WPM tidak pernah menyimpulkannya dari tugas jabatan. Tidak dicatat tidak sama dengan tidak dikecualikan."
     },
     "orgshape": {
       "page_title": "Organisasi sekarang dan menurut rencana — WPM",

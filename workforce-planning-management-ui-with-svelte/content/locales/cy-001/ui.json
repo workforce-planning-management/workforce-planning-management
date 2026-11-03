@@ -1457,7 +1457,12 @@
       "budget_percent": "Cyllideb (canran FTE)",
       "funding_ends": "Diwedd cyllido",
       "programme": "Rhaglen (cyfeirnod thing:)",
-      "plan": "Cynllunio"
+      "plan": "Cynllunio",
+      "overtime": "Goramser statudol",
+      "overtime_exempt": "Wedi'i eithrio",
+      "overtime_non_exempt": "Heb ei eithrio",
+      "overtime_unknown": "Heb ei gofnodi",
+      "overtime_note": "Person sy'n cofnodi hyn; nid yw WPM byth yn ei gyfrif o ddyletswyddau rôl. Nid yw heb ei gofnodi yr un peth â heb ei eithrio."
     },
     "orgshape": {
       "page_title": "Y sefydliad nawr ac fel y cynllunnir — WPM",

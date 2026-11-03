@@ -100,6 +100,9 @@ pub(crate) struct Payload {
     programme_ref: Option<String>,
     /// The plan demand line this position came from, if any. Recorded when a person chooses it, never silently.
     demand_line_pid: Option<Uuid>,
+    /// `exempt`, `non_exempt` or `unknown`: a person's entry about statutory overtime, never inferred (WPM-D157). Left out, a new
+    /// position is `unknown` and an update keeps what is recorded.
+    overtime_status: Option<String>,
 }
 
 fn problems(p: &Payload) -> Vec<String> {
@@ -114,6 +117,12 @@ fn problems(p: &Payload) -> Vec<String> {
     .unwrap_or_default();
     if !(1..=120).contains(&p.title.trim().chars().count()) {
         out.push("title is 1 to 120 characters".to_string());
+    }
+    if p.overtime_status
+        .as_deref()
+        .is_some_and(|s| crate::rules::statutory_overtime::Status::parse(s).is_none())
+    {
+        out.push("overtime_status must be exempt, non_exempt or unknown".to_string());
     }
     out
 }
@@ -155,6 +164,12 @@ async fn create(
         funding_ends_on: ActiveValue::set(payload.funding_ends_on),
         programme_ref: ActiveValue::set(payload.programme_ref.clone()),
         state: ActiveValue::set("planned".to_string()),
+        overtime_status: ActiveValue::set(
+            payload
+                .overtime_status
+                .clone()
+                .unwrap_or_else(|| "unknown".to_string()),
+        ),
         demand_line_pid: ActiveValue::set(payload.demand_line_pid),
         recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         ..Default::default()
@@ -208,6 +223,7 @@ async fn update(
             "position is \"abolished\"; an ended position is not changed",
         ));
     }
+    let before_status = row.overtime_status.clone();
     let txn = ctx.db.begin().await?;
     let mut active: positions::ActiveModel = row.into();
     active.cost_centre = ActiveValue::set(payload.cost_centre.trim().to_string());
@@ -216,6 +232,13 @@ async fn update(
     active.funding_kind = ActiveValue::set(payload.funding_kind.clone());
     active.funding_ends_on = ActiveValue::set(payload.funding_ends_on);
     active.programme_ref = ActiveValue::set(payload.programme_ref.clone());
+    let status_changed = payload
+        .overtime_status
+        .as_ref()
+        .is_some_and(|s| *s != before_status);
+    if let Some(s) = &payload.overtime_status {
+        active.overtime_status = ActiveValue::set(s.clone());
+    }
     active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.update(&txn).await?;
     Audit::record(
@@ -224,7 +247,7 @@ async fn update(
         pid,
         "position_updated",
         caller.actor(),
-        None,
+        status_changed.then(|| json!({ "overtime_status": payload.overtime_status })),
     )
     .await?;
     txn.commit().await?;

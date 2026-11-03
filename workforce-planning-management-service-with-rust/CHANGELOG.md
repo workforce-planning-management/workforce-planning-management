@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — overtime parameters and a position's overtime status (WPM-R219, WPM-D157, WPM-T417)
+
+Registry keys `overtime.bands`, `overtime.premiums_add`, `overtime.none_by_law`, `overtime.exempt_salary_floor_minor_weekly`; `rules::statutory_overtime::{parse_premiums, Status}`; migration `m20261103_000119_position_overtime_status`; `overtime_status` on `POST`/`PUT /api/positions`. One request test.
+
 ### Added — mandatory learning by group, a configurable due-soon window (WPM-R170, WPM-D168, WPM-T434)
 
 `rules::mandatory_learning::rollup_by` and `due_soon_window`; `?by=department|staff_group` on the learning roll-up (the floor applies to each group; a bad value is 400); `WPM_LEARNING_DUE_SOON_DAYS` (1 to 366 calendar days, else 90). One request test.

@@ -1429,7 +1429,12 @@
       "budget_percent": "بجٹ (FTE فیصد)",
       "funding_ends": "مالی معاونت ختم",
       "programme": "پروگرام (thing: حوالہ)",
-      "plan": "منصوبہ بندی"
+      "plan": "منصوبہ بندی",
+      "overtime": "قانونی اوور ٹائم",
+      "overtime_exempt": "مستثنیٰ",
+      "overtime_non_exempt": "غیر مستثنیٰ",
+      "overtime_unknown": "درج نہیں",
+      "overtime_note": "اسے کوئی شخص درج کرتا ہے؛ WPM اسے کبھی عہدے کے فرائض سے اخذ نہیں کرتا۔ درج نہ ہونا، غیر مستثنیٰ ہونے کے برابر نہیں۔"
     },
     "orgshape": {
       "page_title": "تنظیم اب اور منصوبے کے مطابق — WPM",

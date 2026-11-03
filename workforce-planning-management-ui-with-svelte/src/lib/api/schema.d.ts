@@ -10489,7 +10489,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Derive payslips (salary × FTE + approved overtime − deductions; stub tax; net invariant enforced) */
+        /** Derive payslips (salary × FTE + approved contractual overtime − deductions; stub tax; net invariant enforced) */
         post: {
             parameters: {
                 query?: never;
@@ -10931,7 +10931,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it */
+        /** Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it. An optional overtime_status (exempt, non_exempt or unknown) is a person's entry, never inferred from duties; left out it is unknown */
         post: {
             parameters: {
                 query?: never;
@@ -19041,7 +19041,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Entries + derived per-day overtime (?from=&to=) */
+        /** Entries + derived per-day contractual overtime (minutes beyond the contracted day; not a statutory premium) (?from=&to=) */
         get: {
             parameters: {
                 query?: never;

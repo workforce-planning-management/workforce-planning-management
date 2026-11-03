@@ -971,6 +971,10 @@ key outside it is refused.
 | `minimum_wage.none_by_law` | on or off; on where the jurisdiction sets no statutory minimum wage and pay floors sit in collective agreements, distinct from not configured (WPM-D160, WPM-T413) | `most_specific` |
 | `minimum_wage.payments_per_year` | whole payments, 1 to 24; the payments a year a monthly floor is stated for (Spain: 14); none means twelve (WPM-T413) | `most_specific` |
 | `minimum_wage.young_adult_from_age` | whole years, 0 to 100; the age from which the young-adult band applies (WPM-T413) | `most_specific` |
+| `overtime.bands` | names, each `period:threshold_minutes:multiplier_bp` (period day, week or month; 15000 is one and a half times), or the one name `none`; a name that does not read is an error, never skipped (WPM-D162, WPM-T417) | `most_specific` |
+| `overtime.exempt_salary_floor_minor_weekly` | whole minor units a week; below it a post recorded as exempt is flagged for a check, advisory (WPM-D157, WPM-T417) | `strictest_min` (the highest) |
+| `overtime.none_by_law` | on or off; on where the jurisdiction sets no statutory overtime premium, distinct from not configured (WPM-D160, WPM-T417) | `most_specific` |
+| `overtime.premiums_add` | on or off; on where premiums for overlapping bands add, otherwise the highest applies with no pyramiding (WPM-D162, WPM-T417) | `most_specific` |
 | `pay_transparency.information_months` | whole calendar months, 1 to 12 (WPM-T384; a worker's chain) | `strictest_max` (the shortest) |
 | `pay_transparency.joint_assessment_months` | whole calendar months, 1 to 24 (WPM-T384; the organization's chain) | `strictest_max` (the shortest) |
 | `pay_transparency.joint_assessment_percent` | a whole percent, 1 to 50 (WPM-T384; the organization's chain) | `strictest_max` (the lowest) |

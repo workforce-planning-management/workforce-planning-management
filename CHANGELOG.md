@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — overtime parameters and a position's overtime status (WPM-R219, WPM-D157, WPM-T417, 2026-11-03)
+
+Four registry parameters (`overtime.bands`, `overtime.premiums_add`, `overtime.none_by_law`, `overtime.exempt_salary_floor_minor_weekly`) and a position's `overtime_status` (`exempt`, `non_exempt`, `unknown`; migration `m20261103_000119`; default `unknown`, a person's entry and never inferred). `/positions` shows it and takes it when a seat is planned. The API docs call today's derivation contractual overtime. No figure is built in; nothing reads the parameters yet.
+
 ### Added — statutory overtime as bands, the pure core (WPM-R219, WPM-D162, WPM-T418, 2026-11-03)
 
 `rules::statutory_overtime`: bands per day, week or month (a threshold in minutes and a multiplier in basis points); where bands overlap the rule set takes the highest or adds the premiums; an exempt post, an unrecorded status and no configured rules are each said and never read as no overtime; the premium on the base hourly rate is rounded once. Nothing is wired to the registry, the payslip or the API yet, and no figure is built in.
