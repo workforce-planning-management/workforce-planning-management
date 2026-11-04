@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — my payslips (WPM-R178, WPM-T324)
+
+`/me/payslips` with the year to date, a query form and a print stylesheet; a link on `/me`; `PayslipQueries` on `/payroll`; 23 strings in 13 locales (AI-written, unreviewed).
+
 ### Added — the employer cost of a payroll run (WPM-T423)
 
 The run page totals the employer cost of its payslips, one total per currency, never mixed. A line that could not be resolved adds nothing. One string (`pay.employerTotal`) in 13 locales (AI-written, unreviewed).

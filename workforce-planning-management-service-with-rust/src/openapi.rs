@@ -556,6 +556,18 @@ fn add_governance_paths(document: &mut Value) {
         "/api/pay-information-requests/{pid}/answered": {
             "post": { "tags": ["pay-transparency"], "summary": "Record that the answer was given, and when; the figures are not recorded", "responses": ok("The request") }
         },
+        "/api/me/payslips": {
+            "get": { "tags": ["payroll"], "summary": "The caller's payslips from approved and paid runs, newest first, with the year to date per tax year and currency; year_to_date is null where no tax year start is configured. Audited." }
+        },
+        "/api/me/payslips/{pid}/query": {
+            "post": { "tags": ["payroll"], "summary": "Flag your own payslip with a short comment for payroll. Changes no amount; one query is open at a time." }
+        },
+        "/api/payslip-queries": {
+            "get": { "tags": ["payroll"], "summary": "Payslip queries to deal with (?status=open|closed, default open), oldest first, in the organizations the caller holds. HR and payroll. Audited." }
+        },
+        "/api/payslip-queries/{pid}/close": {
+            "post": { "tags": ["payroll"], "summary": "Close a payslip query. Changes no amount." }
+        },
         "/api/pay-transparency/joint-assessment": {
             "get": { "tags": ["pay-transparency"], "summary": "For each category of workers, whether a joint pay assessment with workers' representatives is due, pending or not due (?organization=&reported_on=&as_of=&currency=): the category's gap in basic pay at or over the threshold (default 5%, either way), not justified, not remedied within the period (default six calendar months) from the date of reporting. Reports only; a person records. Needs unmasked salary read; audited with no figure", "responses": ok("The signals") }
         },

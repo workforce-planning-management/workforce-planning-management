@@ -858,6 +858,11 @@ pub fn routes() -> Routes {
             get(my_pay_information_requests),
         )
         .add("/me/pay-information-requests", post(ask_pay_information))
+        .add("/me/payslips", get(super::my_payslips::my_payslips))
+        .add(
+            "/me/payslips/{pid}/query",
+            post(super::my_payslips::raise_query),
+        )
         .add("/me/credentials", post(super::credentials::issue))
         .add("/me/credentials", get(super::credentials::mine))
         .add(

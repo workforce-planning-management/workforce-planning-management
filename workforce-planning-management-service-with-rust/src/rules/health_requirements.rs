@@ -281,8 +281,10 @@ mod tests {
         )
         .unwrap();
         let flat = text.split_whitespace().collect::<Vec<_>>().join(" ");
-        for (attribute, method, _) in crate::rules::self_service::ATTRIBUTE_WRITES {
-            assert_eq!(*attribute, "occupational_health");
+        for (_, method, _) in crate::rules::self_service::ATTRIBUTE_WRITES
+            .iter()
+            .filter(|(attribute, _, _)| *attribute == "occupational_health")
+        {
             let token = format!(
                 "\"/workers/{{pid}}/health-requirements/{{req_pid}}\", {}(",
                 method.to_ascii_lowercase()

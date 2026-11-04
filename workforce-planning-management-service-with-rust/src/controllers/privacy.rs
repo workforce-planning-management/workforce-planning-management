@@ -22,13 +22,13 @@ use crate::models::_entities::{
     expense_items, flexible_working_requests, group_members, handover_actions, interviews,
     learning_completions, leave_entitlements, leave_requests, mentorships, mobility_interests,
     movements, notifications, onboarding_items, organization_memberships, path_enrollments,
-    pay_information_requests, payslips, pipeline_members, policy_acknowledgements, positions,
-    post_fundings, professional_registrations, program_placements, qualification_reminders,
-    qualifications, resignations, reviews, rota_members, rota_overrides, rota_swap_requests,
-    scim_pushes, shift_assignments, time_entries, training_enrollments, worker_aspirations,
-    worker_backups, worker_contact_details, worker_contractor_details, worker_framework_roles,
-    worker_health_records, worker_job_levels, worker_pay_positions, worker_skill_history,
-    worker_skills, workers,
+    pay_information_requests, payslip_queries, payslips, pipeline_members, policy_acknowledgements,
+    positions, post_fundings, professional_registrations, program_placements,
+    qualification_reminders, qualifications, resignations, reviews, rota_members, rota_overrides,
+    rota_swap_requests, scim_pushes, shift_assignments, time_entries, training_enrollments,
+    worker_aspirations, worker_backups, worker_contact_details, worker_contractor_details,
+    worker_framework_roles, worker_health_records, worker_job_levels, worker_pay_positions,
+    worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -194,6 +194,7 @@ async fn subject_access(
         "professional_registrations": rows_for!(db, professional_registrations, WorkerPid, epid),
         "program_placements": rows_for!(db, program_placements, WorkerPid, epid),
         "payslips": rows_for!(db, payslips, WorkerPid, epid),
+        "payslip_queries": rows_for!(db, payslip_queries, WorkerPid, epid),
         "onboarding_items": rows_for!(db, onboarding_items, WorkerPid, epid),
         "organization_memberships": rows_for!(db, organization_memberships, WorkerPid, epid),
         "time_entry_weeks": weekly_time(db, epid).await?,
@@ -404,6 +405,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM learning_completions WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM qualifications WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM qualification_reminders WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM payslip_queries WHERE worker_pid = '{epid}'"),
     ]
 }
 

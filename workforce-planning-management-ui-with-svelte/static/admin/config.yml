@@ -2300,6 +2300,7 @@ collections:
               - { name: "consultations", label: "Consultations", widget: string, required: false, i18n: true }
               - { name: "decisionGates", label: "Decision Gates", widget: string, required: false, i18n: true }
               - { name: "statutoryDefaults", label: "Statutory Defaults", widget: string, required: false, i18n: true }
+              - { name: "myPayslips", label: "My Payslips", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -4045,3 +4046,34 @@ collections:
               - { name: "ending_soon", label: "Ending_soon", widget: string, required: false, i18n: true }
               - { name: "expired", label: "Expired", widget: string, required: false, i18n: true }
               - { name: "no_end_date", label: "No_end_date", widget: string, required: false, i18n: true }
+          - name: "payslips"
+            label: "Payslips"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "link", label: "Link", widget: string, required: false, i18n: true }
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "period", label: "Period", widget: string, required: false, i18n: true }
+              - { name: "ytd", label: "Ytd", widget: string, required: false, i18n: true }
+              - { name: "ytdTaxYear", label: "Ytd Tax Year", widget: string, required: false, i18n: true }
+              - { name: "ytdPayslips", label: "Ytd Payslips", widget: string, required: false, i18n: true }
+              - { name: "ytdNone", label: "Ytd None", widget: text, required: false, i18n: true }
+              - { name: "print", label: "Print", widget: string, required: false, i18n: true }
+              - { name: "query", label: "Query", widget: string, required: false, i18n: true }
+              - { name: "queryComment", label: "Query Comment", widget: string, required: false, i18n: true }
+              - { name: "queryHint", label: "Query Hint", widget: text, required: false, i18n: true }
+              - { name: "querySend", label: "Query Send", widget: string, required: false, i18n: true }
+              - { name: "queryCancel", label: "Query Cancel", widget: string, required: false, i18n: true }
+              - { name: "queryOpen", label: "Query Open", widget: string, required: false, i18n: true }
+              - { name: "queryClosed", label: "Query Closed", widget: string, required: false, i18n: true }
+              - { name: "queueTitle", label: "Queue Title", widget: string, required: false, i18n: true }
+              - { name: "queueHint", label: "Queue Hint", widget: text, required: false, i18n: true }
+              - { name: "queueNone", label: "Queue None", widget: string, required: false, i18n: true }
+              - { name: "queuePerson", label: "Queue Person", widget: string, required: false, i18n: true }
+              - { name: "queueComment", label: "Queue Comment", widget: string, required: false, i18n: true }
+              - { name: "queueRaised", label: "Queue Raised", widget: string, required: false, i18n: true }
+              - { name: "close", label: "Close", widget: string, required: false, i18n: true }

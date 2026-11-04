@@ -23,6 +23,7 @@ use super::_entities::{
 };
 
 impl ActiveModelBehavior for workers::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::payslip_queries::ActiveModel {}
 impl ActiveModelBehavior for requisitions::ActiveModel {}
 impl ActiveModelBehavior for assessment_instruments::ActiveModel {}
 impl ActiveModelBehavior for assessments::ActiveModel {}

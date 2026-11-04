@@ -1546,7 +1546,8 @@
     "bargaining": "Negociação coletiva — WPM",
     "consultations": "Consultas — WPM",
     "decisionGates": "Pontos de decisão — WPM",
-    "statutoryDefaults": "Valores legais por omissão — WPM"
+    "statutoryDefaults": "Valores legais por omissão — WPM",
+    "myPayslips": "Os meus recibos de vencimento — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2991,5 +2992,31 @@
     "ending_soon": "Termina em breve",
     "expired": "Expirado",
     "no_end_date": "Sem data de fim"
+  },
+  "payslips": {
+    "link": "Os meus recibos de vencimento",
+    "title": "Os meus recibos de vencimento",
+    "hint": "Recibos de processamentos aprovados e pagos. Um processamento em rascunho ou calculado ainda pode mudar, por isso não aparece aqui.",
+    "none": "Ainda não tem recibos de vencimento.",
+    "period": "Período",
+    "ytd": "Acumulado do ano",
+    "ytdTaxYear": "Ano fiscal {range}",
+    "ytdPayslips": "Totais dos seus recibos em {currency}: {count}",
+    "ytdNone": "O início do ano fiscal não está configurado para o seu local de trabalho, por isso não são mostrados valores acumulados.",
+    "print": "Imprimir este recibo",
+    "query": "Questionar este recibo",
+    "queryComment": "Qual é a sua questão?",
+    "queryHint": "O processamento salarial vê o seu comentário e encerra a questão. Uma questão não altera nenhum montante.",
+    "querySend": "Enviar questão",
+    "queryCancel": "Cancelar",
+    "queryOpen": "Questão de {day}: com o processamento salarial",
+    "queryClosed": "Questão encerrada em {day}",
+    "queueTitle": "Questões sobre recibos",
+    "queueHint": "Questões das pessoas sobre os seus recibos, as mais antigas primeiro. Encerrar uma questão não altera nenhum montante; uma correção é feita no processamento.",
+    "queueNone": "Sem questões em aberto.",
+    "queuePerson": "Pessoa",
+    "queueComment": "Comentário",
+    "queueRaised": "Data",
+    "close": "Encerrar questão"
   }
 }

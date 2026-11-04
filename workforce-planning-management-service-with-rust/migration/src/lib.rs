@@ -138,6 +138,7 @@ pub mod m20261103_000122_coverage_evidence;
 pub mod m20261103_000123_coverage_reminders;
 pub mod m20261103_000124_position_number;
 pub mod m20261103_000125_payslip_employer_costs;
+pub mod m20261104_000126_payslip_queries;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -276,6 +277,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261103_000123_coverage_reminders::Migration),
             Box::new(m20261103_000124_position_number::Migration),
             Box::new(m20261103_000125_payslip_employer_costs::Migration),
+            Box::new(m20261104_000126_payslip_queries::Migration),
             // inject-above (do not remove this comment)
         ]
     }

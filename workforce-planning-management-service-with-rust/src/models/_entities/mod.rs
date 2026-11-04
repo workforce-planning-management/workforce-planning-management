@@ -104,6 +104,7 @@ pub mod pay_assessment_records;
 pub mod pay_categories;
 pub mod pay_information_requests;
 pub mod payroll_runs;
+pub mod payslip_queries;
 pub mod payslips;
 pub mod pipeline_members;
 pub mod plan_demand_lines;

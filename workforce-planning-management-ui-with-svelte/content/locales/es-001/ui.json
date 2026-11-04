@@ -1546,7 +1546,8 @@
     "bargaining": "Negociación colectiva — WPM",
     "consultations": "Consultas — WPM",
     "decisionGates": "Puertas de decisión — WPM",
-    "statutoryDefaults": "Valores legales por defecto — WPM"
+    "statutoryDefaults": "Valores legales por defecto — WPM",
+    "myPayslips": "Mis nóminas — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2991,5 +2992,31 @@
     "ending_soon": "Vence pronto",
     "expired": "Vencido",
     "no_end_date": "Sin fecha de fin"
+  },
+  "payslips": {
+    "link": "Mis nóminas",
+    "title": "Mis nóminas",
+    "hint": "Nóminas de ejecuciones aprobadas y pagadas. Una ejecución en borrador o calculada aún puede cambiar, por lo que no se muestra aquí.",
+    "none": "Aún no tiene nóminas.",
+    "period": "Periodo",
+    "ytd": "Acumulado del año",
+    "ytdTaxYear": "Año fiscal {range}",
+    "ytdPayslips": "Totales de sus nóminas en {currency}: {count}",
+    "ytdNone": "El inicio del año fiscal no está configurado para su lugar de trabajo, por lo que no se muestran cifras acumuladas.",
+    "print": "Imprimir esta nómina",
+    "query": "Consultar esta nómina",
+    "queryComment": "¿Cuál es su consulta?",
+    "queryHint": "Nóminas ve su comentario y cierra la consulta. Una consulta no cambia ningún importe.",
+    "querySend": "Enviar consulta",
+    "queryCancel": "Cancelar",
+    "queryOpen": "Consulta del {day}: en Nóminas",
+    "queryClosed": "Consulta cerrada el {day}",
+    "queueTitle": "Consultas de nóminas",
+    "queueHint": "Consultas de las personas sobre sus nóminas, las más antiguas primero. Cerrar una consulta no cambia ningún importe; la corrección se hace en la ejecución de nómina.",
+    "queueNone": "No hay consultas abiertas.",
+    "queuePerson": "Persona",
+    "queueComment": "Comentario",
+    "queueRaised": "Fecha",
+    "close": "Cerrar consulta"
   }
 }

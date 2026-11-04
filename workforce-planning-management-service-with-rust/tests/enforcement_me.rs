@@ -513,3 +513,257 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
     })
     .await;
 }
+
+/// My payslips (WPM-R178, WPM-T324): a person sees approved and paid runs only and never another person's payslip; the year
+/// to date is withheld with no tax year start and derived with one; a query reaches payroll, who close it, and it changes
+/// no amount.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_me -- --ignored`"]
+#[allow(clippy::too_many_lines)] // one scenario read top to bottom
+async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
+    let (keys, kid) = keys_and_kid();
+    unsafe {
+        std::env::set_var("WPM_REQUIRE_AUTH", "1");
+        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
+        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+    }
+    let (p1, p2) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
+    let bearer = |t: String| format!("Bearer {t}");
+    let me = bearer(sign_as(&kid, &p1.to_string(), &[]));
+    let neighbour = bearer(sign_as(&kid, &p2.to_string(), &[]));
+    let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
+    let payroll = bearer(sign_as(&kid, "payroll-user", &[("payroll", &["true"])]));
+    let hr = bearer(sign_as(&kid, "hr-user", &[("hr", &["true"])]));
+    let payroll_elsewhere = bearer(sign_as(
+        &kid,
+        "payroll-elsewhere",
+        &[("payroll", &["true"])],
+    ));
+
+    request::<App, _, _>(|request, ctx| async move {
+        let org = format!("organization:{}", uuid::Uuid::new_v4());
+        for person in ["hr-user", "payroll-user"] {
+            sea_orm::ConnectionTrait::execute_unprepared(
+                &ctx.db,
+                &format!(
+                    "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
+                     VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
+                    uuid::Uuid::new_v4()
+                ),
+            )
+            .await
+            .unwrap();
+        }
+        let mut workers = Vec::new();
+        for (person, number) in [(p1, "PS-1"), (p2, "PS-2")] {
+            let created: Value = request
+                .post("/api/workers")
+                .add_header("authorization", svc.clone())
+                .json(&json!({
+                    "person_ref": format!("person:{person}"), "organization_ref": org,
+                    "worker_number": number, "display_name": format!("Person {number}"),
+                    "employment_type": "permanent", "department": "engineering",
+                    "job_title": "Engineer", "hired_on": "2020-01-05",
+                    "salary_minor": 3_600_000, "salary_currency": "GBP",
+                }))
+                .await
+                .json();
+            let pid = created["pid"].as_str().expect("worker pid").to_string();
+            request
+                .post(&format!("/api/workers/{pid}/status"))
+                .add_header("authorization", svc.clone())
+                .json(&json!({ "to": "active" }))
+                .await
+                .assert_status_ok();
+            workers.push(pid);
+        }
+        let run: Value = request
+            .post("/api/payroll-runs")
+            .add_header("authorization", svc.clone())
+            .json(&json!({ "organization_ref": org, "period_start": "2026-07-01", "period_end": "2026-07-31" }))
+            .await
+            .json();
+        let run_pid = run["pid"].as_str().expect("run pid").to_string();
+        request
+            .post(&format!("/api/payroll-runs/{run_pid}/calculate"))
+            .add_header("authorization", svc.clone())
+            .await
+            .assert_status_ok();
+
+        // A calculated run can still change, so the person does not see it and cannot query it.
+        let mine = |token: String| {
+            let request = &request;
+            async move {
+                let response = request
+                    .get("/api/me/payslips")
+                    .add_header("authorization", token)
+                    .await;
+                response.assert_status_ok();
+                response.json::<Value>()
+            }
+        };
+        assert_eq!(mine(me.clone()).await["payslips"], json!([]));
+        let slips: Value = request
+            .get(&format!("/api/workers/{}/payslips", workers[0]))
+            .add_header("authorization", svc.clone())
+            .await
+            .json();
+        let slip_pid = slips[0]["pid"].as_str().expect("payslip pid").to_string();
+        let query_url = format!("/api/me/payslips/{slip_pid}/query");
+        let early = request
+            .post(&query_url)
+            .add_header("authorization", me.clone())
+            .json(&json!({ "comment": "Too soon" }))
+            .await;
+        assert_eq!(early.status_code(), 404);
+
+        request
+            .post(&format!("/api/payroll-runs/{run_pid}/approve"))
+            .add_header("authorization", svc.clone())
+            .await
+            .assert_status_ok();
+
+        // Approved: visible, with the lines, and only the person's own. No tax year start, so no year to date.
+        let seen = mine(me.clone()).await;
+        let listed = seen["payslips"].as_array().expect("payslips");
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0]["pid"], slip_pid.as_str());
+        assert_eq!(listed[0]["period_end"], "2026-07-31");
+        assert_eq!(listed[0]["query"], Value::Null);
+        assert!(listed[0]["net_minor"].as_i64().expect("net") > 0);
+        assert!(!listed[0]["deductions"].as_array().expect("lines").is_empty());
+        assert_eq!(seen["year_to_date"], Value::Null, "never a guessed tax year");
+        let net_before = listed[0]["net_minor"].clone();
+
+        // With a tax year start, the year to date is derived and matches the one payslip.
+        request
+            .post("/api/jurisdictions")
+            .add_header("authorization", hr.clone())
+            .json(&json!({ "organization_ref": org, "code": "XA", "layer": "national" }))
+            .await
+            .assert_status_ok();
+        request
+            .post("/api/jurisdiction-parameters")
+            .add_header("authorization", hr.clone())
+            .json(&json!({ "organization_ref": org, "code": "XA", "key": "payroll.tax_year_start", "value": 406,
+                           "effective_from": "2000-01-01", "source": "synthetic test profile", "status": "example" }))
+            .await
+            .assert_status_ok();
+        request
+            .put(&format!("/api/workers/{}", workers[0]))
+            .add_header("authorization", svc.clone())
+            .json(&json!({ "work_jurisdiction": "XA" }))
+            .await
+            .assert_status_ok();
+        let seen = mine(me.clone()).await;
+        let year = &seen["year_to_date"][0];
+        assert_eq!(year["starts_on"], "2026-04-06");
+        assert_eq!(year["ends_on"], "2027-04-05");
+        assert_eq!(year["payslips"], 1);
+        assert_eq!(year["net_minor"], net_before);
+
+        // Someone else's payslip does not exist for this caller; an empty comment is refused.
+        let other = request
+            .post(&query_url)
+            .add_header("authorization", neighbour.clone())
+            .json(&json!({ "comment": "Not mine" }))
+            .await;
+        assert_eq!(other.status_code(), 404);
+        let empty = request
+            .post(&query_url)
+            .add_header("authorization", me.clone())
+            .json(&json!({ "comment": "   " }))
+            .await;
+        assert_eq!(empty.status_code(), 422);
+
+        // A query: one open at a time, seen by payroll with its period, refused to anyone else.
+        let raised: Value = request
+            .post(&query_url)
+            .add_header("authorization", me.clone())
+            .json(&json!({ "comment": " The overtime looks short " }))
+            .await
+            .json();
+        assert_eq!(raised["comment"], "The overtime looks short");
+        assert_eq!(raised["open"], true);
+        let again = request
+            .post(&query_url)
+            .add_header("authorization", me.clone())
+            .json(&json!({ "comment": "Again" }))
+            .await;
+        assert_eq!(again.status_code(), 422);
+        let refused = request
+            .get("/api/payslip-queries")
+            .add_header("authorization", neighbour.clone())
+            .await;
+        assert_eq!(refused.status_code(), 403);
+        let queue: Value = request
+            .get("/api/payslip-queries")
+            .add_header("authorization", payroll.clone())
+            .await
+            .json();
+        let found = queue
+            .as_array()
+            .expect("queries")
+            .iter()
+            .find(|q| q["pid"] == raised["pid"])
+            .expect("payroll sees the query");
+        assert_eq!(found["display_name"], "Person PS-1");
+        assert_eq!(found["period_end"], "2026-07-31");
+        assert_eq!(found["comment"], "The overtime looks short");
+
+        // Payroll with no seat in this organization neither sees it nor can close it.
+        let elsewhere: Value = request
+            .get("/api/payslip-queries")
+            .add_header("authorization", payroll_elsewhere.clone())
+            .await
+            .json();
+        assert!(
+            elsewhere
+                .as_array()
+                .expect("queries")
+                .iter()
+                .all(|q| q["pid"] != raised["pid"]),
+            "a query stays in its organization"
+        );
+
+        // Only payroll or HR closes it, once, and the payslip is unchanged.
+        let close_url = format!(
+            "/api/payslip-queries/{}/close",
+            raised["pid"].as_str().expect("query pid")
+        );
+        let not_theirs = request
+            .post(&close_url)
+            .add_header("authorization", me.clone())
+            .await;
+        assert_eq!(not_theirs.status_code(), 403);
+        let outside = request
+            .post(&close_url)
+            .add_header("authorization", payroll_elsewhere.clone())
+            .await;
+        assert_eq!(outside.status_code(), 404);
+        let closed: Value = request
+            .post(&close_url)
+            .add_header("authorization", payroll.clone())
+            .await
+            .json();
+        assert_eq!(closed["open"], false);
+        let twice = request
+            .post(&close_url)
+            .add_header("authorization", payroll.clone())
+            .await;
+        assert_eq!(twice.status_code(), 422);
+        let after = mine(me.clone()).await;
+        assert_eq!(after["payslips"][0]["net_minor"], net_before);
+        assert_eq!(after["payslips"][0]["query"]["open"], false);
+
+        // A person may raise a new query once the last is closed.
+        request
+            .post(&query_url)
+            .add_header("authorization", me.clone())
+            .json(&json!({ "comment": "One more thing" }))
+            .await
+            .assert_status_ok();
+    })
+    .await;
+}

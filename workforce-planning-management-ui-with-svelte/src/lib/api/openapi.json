@@ -6895,6 +6895,35 @@
         ]
       }
     },
+    "/api/me/payslips": {
+      "get": {
+        "summary": "The caller's payslips from approved and paid runs, newest first, with the year to date per tax year and currency; year_to_date is null where no tax year start is configured. Audited.",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
+    "/api/me/payslips/{pid}/query": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Flag your own payslip with a short comment for payroll. Changes no amount; one query is open at a time.",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
     "/api/me/policies": {
       "get": {
         "responses": {
@@ -8709,6 +8738,35 @@
           }
         },
         "summary": "Reopen calculated → draft",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
+    "/api/payslip-queries": {
+      "get": {
+        "summary": "Payslip queries to deal with (?status=open|closed, default open), oldest first, in the organizations the caller holds. HR and payroll. Audited.",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
+    "/api/payslip-queries/{pid}/close": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Close a payslip query. Changes no amount.",
         "tags": [
           "payroll"
         ]

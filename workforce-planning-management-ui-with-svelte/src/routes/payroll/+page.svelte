@@ -6,6 +6,7 @@
   import { t, l, tv } from "#lib/i18n.svelte.js";
   import { createPagedLoader } from "#lib/paged.svelte.js";
   import LoadMore from "#lib/components/LoadMore.svelte";
+  import PayslipQueries from "#lib/components/PayslipQueries.svelte";
   import type { PayrollRun } from "#lib/api/types.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
@@ -51,6 +52,7 @@
 {/snippet}
 
 <h1>{t("nav.payroll")}</h1>
+<PayslipQueries />
 
 {#if error}
   <ErrorNote testid="error" prefixed message={error} />

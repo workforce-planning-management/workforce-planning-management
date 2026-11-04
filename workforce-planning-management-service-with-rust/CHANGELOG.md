@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — my payslips (WPM-R178, WPM-T324)
+
+`GET /api/me/payslips`, `POST /api/me/payslips/{pid}/query`, `GET /api/payslip-queries` and `POST /api/payslip-queries/{pid}/close`; `rules::my_payslips`; the parameter `payroll.tax_year_start`; migration `m20261104_000126_payslip_queries`. Payroll may close a query through `ATTRIBUTE_WRITES`.
+
 ### Added — advisory overtime caps (WPM-T426)
 
 Parameters `overtime.max_monthly_minutes` and `overtime.max_annual_minutes`. For a non-exempt worker with bands (or day-kind multipliers) configured, `GET /api/payroll-runs/{pid}/overtime-check` adds `caps`: for each configured cap, its limit, the worker's overtime minutes and whether that is `over` it. The month runs to the end of the run and the year from 1 January; a week counts toward the month or year it begins in and is never split. A cap not configured is absent, never "within". The caps change no pay and no payslip. `rules::statutory_overtime` gained `weeks_beginning_between` and `over_cap`.

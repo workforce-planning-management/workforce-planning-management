@@ -6246,3 +6246,84 @@ export function addCoverageEvidence(body: {
 export function retireCoverageEvidence(pid: string): Promise<{ pid: string }> {
   return api(`/coverage-evidence/${pid}/retire`, { method: "POST" });
 }
+
+/** A deduction line on a payslip. */
+export type PayslipDeduction = { label: string; amount_minor: number };
+
+/** A payslip query as its owner sees it (WPM-R178). */
+export type PayslipQuery = {
+  pid: string;
+  comment: string;
+  raised_on: string;
+  closed_on: string | null;
+  open: boolean;
+};
+
+/** One of the caller's own payslips, from an approved or paid run. */
+export type MyPayslip = {
+  pid: string;
+  period_start: string;
+  period_end: string;
+  run_status: string;
+  currency: string;
+  gross_minor: number;
+  statutory_overtime_minor: number;
+  deductions: PayslipDeduction[];
+  net_minor: number;
+  query: PayslipQuery | null;
+};
+
+/** The totals of one tax year in one currency, derived from the payslips. */
+export type PayslipYearToDate = {
+  starts_on: string;
+  ends_on: string;
+  currency: string;
+  payslips: number;
+  gross_minor: number;
+  deductions: PayslipDeduction[];
+  net_minor: number;
+};
+
+/** `year_to_date` is null where no tax year start is configured: never a guess. */
+export type MyPayslips = {
+  payslips: MyPayslip[];
+  year_to_date: PayslipYearToDate[] | null;
+};
+
+/** A query in payroll's list. */
+export type PayslipQueryRow = PayslipQuery & {
+  worker_pid: string;
+  display_name: string;
+  payslip_pid: string;
+  run_pid: string | null;
+  period_start: string | null;
+  period_end: string | null;
+};
+
+/** The caller's own payslips and year to date; the read is audited. */
+export function myPayslips(init?: FetchLike): Promise<MyPayslips> {
+  return api("/me/payslips", init);
+}
+
+/** Flag one of your own payslips for payroll. Changes no amount. */
+export function raisePayslipQuery(
+  pid: string,
+  comment: string,
+): Promise<PayslipQuery> {
+  return api(`/me/payslips/${pid}/query`, {
+    method: "POST",
+    body: { comment },
+  });
+}
+
+/** Open payslip queries, oldest first (HR and payroll). */
+export function listPayslipQueries(
+  init?: FetchLike,
+): Promise<PayslipQueryRow[]> {
+  return api("/payslip-queries", init);
+}
+
+/** Close a payslip query. Changes no amount. */
+export function closePayslipQuery(pid: string): Promise<PayslipQuery> {
+  return api(`/payslip-queries/${pid}/close`, { method: "POST" });
+}

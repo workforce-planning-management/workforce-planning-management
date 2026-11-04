@@ -1,7 +1,7 @@
 # The electronic staff record: assignments, coding, learning, reviews and pay deductions
 
 Proposed 2026-10-27 ([plan.md](plan.md) section P; spec round WPM-T309, delivery Phase 24, WPM-T310–T325). Requirements
-**WPM-R161–R178**, decisions **WPM-D112–D120**. Nothing here is built.
+**WPM-R161–R178**, decisions **WPM-D112–D120**. Parts are built: see each task in [tasks.md](tasks.md); WPM-R178 (my payslips) is built apart from the lines that wait for WPM-T321 to T323.
 
 An **electronic staff record** is the one place an employer keeps everything about a person's employment: what they do, where,
 on what terms, how it is coded in the ledger, what they must train in, what they hold, how they are reviewed and what comes off
@@ -256,6 +256,8 @@ adds what is missing and says how the pieces assemble.
 - **A payslip query**: the person may flag one payslip as queried, with a short comment, which payroll sees and closes. No
   amount is edited through a query.
 - Every read is audited (the existing rule).
+
+Built by WPM-T324. The start of the tax year is the parameter `payroll.tax_year_start` and has no default: with none configured no year to date is shown, and the screen says why. Each tax year and currency has its own totals. A payslip falls in the tax year of its period's last day.
 
 ## Design decisions
 

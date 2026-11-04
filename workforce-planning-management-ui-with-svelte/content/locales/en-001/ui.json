@@ -1539,7 +1539,8 @@
     "bargaining": "Bargaining — WPM",
     "consultations": "Consultations — WPM",
     "decisionGates": "Decision gates — WPM",
-    "statutoryDefaults": "Statutory defaults — WPM"
+    "statutoryDefaults": "Statutory defaults — WPM",
+    "myPayslips": "My payslips — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -2982,5 +2983,31 @@
     "ending_soon": "Ending soon",
     "expired": "Expired",
     "no_end_date": "No end date"
+  },
+  "payslips": {
+    "link": "My payslips",
+    "title": "My payslips",
+    "hint": "Payslips from approved and paid payroll runs. A draft or calculated run can still change, so it is not shown here.",
+    "none": "You have no payslips yet.",
+    "period": "Period",
+    "ytd": "Year to date",
+    "ytdTaxYear": "Tax year {range}",
+    "ytdPayslips": "Totals from your payslips in {currency}: {count}",
+    "ytdNone": "The start of the tax year is not configured for your place of work, so no year-to-date figures are shown.",
+    "print": "Print this payslip",
+    "query": "Query this payslip",
+    "queryComment": "What is your query?",
+    "queryHint": "Payroll sees your comment and closes the query. A query does not change any amount.",
+    "querySend": "Send query",
+    "queryCancel": "Cancel",
+    "queryOpen": "Query raised {day}: with payroll",
+    "queryClosed": "Query closed {day}",
+    "queueTitle": "Payslip queries",
+    "queueHint": "Queries people have raised about their payslips, oldest first. Closing a query changes no amount; a correction is made in the payroll run.",
+    "queueNone": "No open payslip queries.",
+    "queuePerson": "Person",
+    "queueComment": "Comment",
+    "queueRaised": "Raised",
+    "close": "Close query"
   }
 }

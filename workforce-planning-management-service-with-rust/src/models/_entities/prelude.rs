@@ -93,6 +93,7 @@ pub use super::pay_assessment_records::Entity as PayAssessmentRecords;
 pub use super::pay_categories::Entity as PayCategories;
 pub use super::pay_information_requests::Entity as PayInformationRequests;
 pub use super::payroll_runs::Entity as PayrollRuns;
+pub use super::payslip_queries::Entity as PayslipQueries;
 pub use super::payslips::Entity as Payslips;
 pub use super::pipeline_members::Entity as PipelineMembers;
 pub use super::plan_demand_lines::Entity as PlanDemandLines;

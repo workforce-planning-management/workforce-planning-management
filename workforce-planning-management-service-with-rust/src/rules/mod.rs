@@ -80,6 +80,7 @@ pub mod metrics;
 pub mod minimum_wage;
 pub mod mobility;
 pub mod movements;
+pub mod my_payslips;
 pub mod notify;
 pub mod org;
 pub mod org_access;

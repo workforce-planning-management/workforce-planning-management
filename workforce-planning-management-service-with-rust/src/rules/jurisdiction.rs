@@ -481,6 +481,16 @@ pub const REGISTRY: &[Parameter] = &[
         meaning: "the pay gap reporting tiers, each from_workers:every_years:first_report_on, or the one name none",
     },
     Parameter {
+        key: "payroll.tax_year_start",
+        shape: Shape::Integer {
+            min: 101,
+            max: 1231,
+        },
+        unit: "month and day as MMDD",
+        combine: Combine::MostSpecific,
+        meaning: "the first day of the tax year, for a person's year to date; with none configured no year to date is shown",
+    },
+    Parameter {
         key: "resignation.notice_calendar_days",
         shape: Shape::Integer { min: 0, max: 366 },
         unit: "calendar_days",

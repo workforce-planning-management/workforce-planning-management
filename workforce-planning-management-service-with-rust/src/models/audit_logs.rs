@@ -211,6 +211,8 @@ mod tests {
         ),
         ("controllers/pay_transparency.rs", "pay_gap_report_exported"),
         ("controllers/adjustments.rs", "adjustments_read"),
+        ("controllers/my_payslips.rs", "my_payslips_read"),
+        ("controllers/my_payslips.rs", "payslip_queries_read"),
         ("controllers/development.rs", "review_content_read"),
         ("controllers/development.rs", "succession_read"),
         ("controllers/conversion_plans.rs", "conversion_plans_read"),

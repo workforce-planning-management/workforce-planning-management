@@ -53,6 +53,7 @@ import TeamQualifications from "#lib/components/TeamQualifications.svelte";
 <svelte:head><title>{tf("pages.me.page_title", { me: t("nav.me") })}</title></svelte:head>
 
 <h1>{t("nav.me")}</h1>
+<p><a href={l("/me/payslips")} data-testid="my-payslips-link">{t("payslips.link")}</a></p>
 <p><a href={l("/me/details")} data-testid="my-details-link">{t("details.link")}</a></p>
 {#if error}<ErrorNote testid="error" message={error} />{/if}
 

@@ -1546,7 +1546,8 @@
     "bargaining": "Négociation collective — WPM",
     "consultations": "Procédures de consultation — WPM",
     "decisionGates": "Points de décision — WPM",
-    "statutoryDefaults": "Valeurs légales par défaut — WPM"
+    "statutoryDefaults": "Valeurs légales par défaut — WPM",
+    "myPayslips": "Mes bulletins de paie — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2991,5 +2992,31 @@
     "ending_soon": "Bientôt échue",
     "expired": "Échue",
     "no_end_date": "Pas de date de fin"
+  },
+  "payslips": {
+    "link": "Mes bulletins de paie",
+    "title": "Mes bulletins de paie",
+    "hint": "Bulletins issus des paies approuvées et versées. Une paie en brouillon ou calculée peut encore changer ; elle n'apparaît donc pas ici.",
+    "none": "Vous n'avez pas encore de bulletin de paie.",
+    "period": "Période",
+    "ytd": "Cumul annuel",
+    "ytdTaxYear": "Année fiscale {range}",
+    "ytdPayslips": "Totaux de vos bulletins en {currency} : {count}",
+    "ytdNone": "Le début de l'année fiscale n'est pas configuré pour votre lieu de travail ; aucun cumul annuel n'est donc affiché.",
+    "print": "Imprimer ce bulletin",
+    "query": "Poser une question sur ce bulletin",
+    "queryComment": "Quelle est votre question ?",
+    "queryHint": "Le service paie voit votre commentaire et clôture la question. Une question ne modifie aucun montant.",
+    "querySend": "Envoyer la question",
+    "queryCancel": "Annuler",
+    "queryOpen": "Question du {day} : auprès du service paie",
+    "queryClosed": "Question clôturée le {day}",
+    "queueTitle": "Questions sur les bulletins",
+    "queueHint": "Questions posées sur les bulletins de paie, les plus anciennes d'abord. Clôturer une question ne modifie aucun montant ; une correction se fait dans la paie.",
+    "queueNone": "Aucune question ouverte.",
+    "queuePerson": "Personne",
+    "queueComment": "Commentaire",
+    "queueRaised": "Posée le",
+    "close": "Clôturer la question"
   }
 }

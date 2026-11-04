@@ -1532,7 +1532,8 @@
     "bargaining": "集体谈判 — WPM",
     "consultations": "磋商 — WPM",
     "decisionGates": "决策关口 — WPM",
-    "statutoryDefaults": "法定默认值 — WPM"
+    "statutoryDefaults": "法定默认值 — WPM",
+    "myPayslips": "我的工资单 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -2973,5 +2974,31 @@
     "ending_soon": "即将到期",
     "expired": "已到期",
     "no_end_date": "无结束日期"
+  },
+  "payslips": {
+    "link": "我的工资单",
+    "title": "我的工资单",
+    "hint": "来自已批准和已支付薪资批次的工资单。草稿或已计算的批次仍可能更改，因此不在此显示。",
+    "none": "您还没有工资单。",
+    "period": "期间",
+    "ytd": "本年累计",
+    "ytdTaxYear": "税务年度 {range}",
+    "ytdPayslips": "您的 {currency} 工资单合计：{count}",
+    "ytdNone": "尚未为您的工作地点配置税务年度开始日期，因此不显示本年累计数字。",
+    "print": "打印此工资单",
+    "query": "对此工资单提出疑问",
+    "queryComment": "您的疑问是什么？",
+    "queryHint": "薪资人员会看到您的说明并关闭疑问。疑问不会更改任何金额。",
+    "querySend": "发送疑问",
+    "queryCancel": "取消",
+    "queryOpen": "已于 {day} 提出疑问：薪资人员处理中",
+    "queryClosed": "疑问已于 {day} 关闭",
+    "queueTitle": "工资单疑问",
+    "queueHint": "员工就其工资单提出的疑问，最早的在前。关闭疑问不会更改任何金额；更正在薪资批次中进行。",
+    "queueNone": "没有未关闭的工资单疑问。",
+    "queuePerson": "人员",
+    "queueComment": "说明",
+    "queueRaised": "提出日期",
+    "close": "关闭疑问"
   }
 }

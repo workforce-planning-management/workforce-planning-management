@@ -64,6 +64,7 @@ pub mod me;
 pub mod metrics;
 pub mod mobility;
 pub mod movements;
+pub mod my_payslips;
 pub mod notifications;
 pub mod organizations;
 pub mod oversight;

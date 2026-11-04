@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — my payslips (WPM-R178, WPM-T324, 2026-11-04)
+
+A person's own payslips from approved and paid runs at `/me/payslips`, with the year to date per tax year and currency, a printable payslip, and a query that payroll sees and closes and that changes no amount. The tax year start is the parameter `payroll.tax_year_start`, with no default: with none configured no year to date is shown. Details in the service and UI changelogs.
+
 ### Fixed — the tutorial says how the service finds its database (WPM-T457, 2026-11-04)
 
 Run end to end for the first time, the tutorial left a reader with a connection timeout: step 2 now gives `DATABASE_URL` and its default.

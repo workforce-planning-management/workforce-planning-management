@@ -1539,7 +1539,8 @@
     "bargaining": "Tarifverhandlungen — WPM",
     "consultations": "Konsultationen — WPM",
     "decisionGates": "Entscheidungsschranken — WPM",
-    "statutoryDefaults": "Gesetzliche Voreinstellungen — WPM"
+    "statutoryDefaults": "Gesetzliche Voreinstellungen — WPM",
+    "myPayslips": "Meine Gehaltsabrechnungen — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2982,5 +2983,31 @@
     "ending_soon": "Läuft bald ab",
     "expired": "Abgelaufen",
     "no_end_date": "Kein Enddatum"
+  },
+  "payslips": {
+    "link": "Meine Gehaltsabrechnungen",
+    "title": "Meine Gehaltsabrechnungen",
+    "hint": "Abrechnungen aus genehmigten und bezahlten Lohnläufen. Ein Entwurf oder berechneter Lauf kann sich noch ändern und wird hier nicht angezeigt.",
+    "none": "Sie haben noch keine Gehaltsabrechnungen.",
+    "period": "Zeitraum",
+    "ytd": "Jahr bis heute",
+    "ytdTaxYear": "Steuerjahr {range}",
+    "ytdPayslips": "Summen aus Ihren Abrechnungen in {currency}: {count}",
+    "ytdNone": "Der Beginn des Steuerjahres ist für Ihren Arbeitsort nicht konfiguriert, daher werden keine Jahreswerte angezeigt.",
+    "print": "Diese Abrechnung drucken",
+    "query": "Rückfrage zu dieser Abrechnung",
+    "queryComment": "Was ist Ihre Rückfrage?",
+    "queryHint": "Die Lohnabrechnung sieht Ihren Kommentar und schließt die Rückfrage. Eine Rückfrage ändert keinen Betrag.",
+    "querySend": "Rückfrage senden",
+    "queryCancel": "Abbrechen",
+    "queryOpen": "Rückfrage vom {day}: bei der Lohnabrechnung",
+    "queryClosed": "Rückfrage geschlossen am {day}",
+    "queueTitle": "Rückfragen zu Abrechnungen",
+    "queueHint": "Rückfragen von Personen zu ihren Abrechnungen, die ältesten zuerst. Das Schließen ändert keinen Betrag; eine Korrektur erfolgt im Lohnlauf.",
+    "queueNone": "Keine offenen Rückfragen.",
+    "queuePerson": "Person",
+    "queueComment": "Kommentar",
+    "queueRaised": "Gestellt",
+    "close": "Rückfrage schließen"
   }
 }

@@ -1532,7 +1532,8 @@
     "bargaining": "Perundingan bersama — WPM",
     "consultations": "Konsultasi — WPM",
     "decisionGates": "Gerbang keputusan — WPM",
-    "statutoryDefaults": "Bawaan menurut undang-undang — WPM"
+    "statutoryDefaults": "Bawaan menurut undang-undang — WPM",
+    "myPayslips": "Slip gaji saya — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2973,5 +2974,31 @@
     "ending_soon": "Segera berakhir",
     "expired": "Kedaluwarsa",
     "no_end_date": "Tanpa tanggal berakhir"
+  },
+  "payslips": {
+    "link": "Slip gaji saya",
+    "title": "Slip gaji saya",
+    "hint": "Slip gaji dari penggajian yang disetujui dan dibayar. Penggajian draf atau terhitung masih dapat berubah, jadi tidak ditampilkan di sini.",
+    "none": "Anda belum memiliki slip gaji.",
+    "period": "Periode",
+    "ytd": "Tahun berjalan",
+    "ytdTaxYear": "Tahun pajak {range}",
+    "ytdPayslips": "Total dari slip gaji Anda dalam {currency}: {count}",
+    "ytdNone": "Awal tahun pajak belum dikonfigurasi untuk tempat kerja Anda, jadi angka tahun berjalan tidak ditampilkan.",
+    "print": "Cetak slip gaji ini",
+    "query": "Tanyakan slip gaji ini",
+    "queryComment": "Apa pertanyaan Anda?",
+    "queryHint": "Bagian penggajian melihat komentar Anda dan menutup pertanyaan. Pertanyaan tidak mengubah jumlah apa pun.",
+    "querySend": "Kirim pertanyaan",
+    "queryCancel": "Batal",
+    "queryOpen": "Pertanyaan {day}: di bagian penggajian",
+    "queryClosed": "Pertanyaan ditutup {day}",
+    "queueTitle": "Pertanyaan slip gaji",
+    "queueHint": "Pertanyaan tentang slip gaji, yang terlama lebih dahulu. Menutup pertanyaan tidak mengubah jumlah apa pun; koreksi dilakukan dalam penggajian.",
+    "queueNone": "Tidak ada pertanyaan terbuka.",
+    "queuePerson": "Orang",
+    "queueComment": "Komentar",
+    "queueRaised": "Diajukan",
+    "close": "Tutup pertanyaan"
   }
 }

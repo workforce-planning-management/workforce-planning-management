@@ -26,6 +26,7 @@ pub const WRITES: &[(&str, &str)] = &[
     ("POST", "me/flexible-working/{}/respond"),
     ("POST", "me/flexible-working/{}/appeal"),
     ("POST", "me/pay-information-requests"),
+    ("POST", "me/payslips/{}/query"),
     ("POST", "me/policy-acknowledgements"),
     ("POST", "me/credentials"),
     ("POST", "me/credentials/{}/revoke"),
@@ -35,7 +36,8 @@ pub const WRITES: &[(&str, &str)] = &[
 /// where the policy has no way to name the role: `(attribute, method, route under /api)`. The
 /// handler still checks the attribute itself, and a caller without it falls through to the ordinary
 /// policy (which for these routes the handler then refuses). Today only occupational health, who
-/// record a worker's status against a workplace health requirement (WPM-R128).
+/// record a worker's status against a workplace health requirement (WPM-R128), and payroll
+/// closes a payslip query (WPM-R178).
 pub const ATTRIBUTE_WRITES: &[(&str, &str, &str)] = &[
     (
         "occupational_health",
@@ -47,6 +49,8 @@ pub const ATTRIBUTE_WRITES: &[(&str, &str, &str)] = &[
         "DELETE",
         "workers/{}/health-requirements/{}",
     ),
+    // Payroll reads pay and writes nothing under the reference policy, but a payslip query is theirs to close (WPM-R178).
+    ("payroll", "POST", "payslip-queries/{}/close"),
 ];
 
 /// The attribute that lets this request past the action check, if it is on the attribute list.

@@ -986,6 +986,7 @@ key outside it is refused.
 | `pay_transparency.joint_assessment_percent` | a whole percent, 1 to 50 (WPM-T384; the organization's chain) | `strictest_max` (the lowest) |
 | `pay_transparency.pay_range_required` | a flag, `true` or `false` (WPM-T384; the organization's chain) | `strictest_min` (on anywhere is on) |
 | `pay_transparency.reporting_tiers` | a set of `from_workers:every_years:first_report_on` names, or the one name `none` (WPM-T384; the organization's chain) | `most_specific` |
+| `payroll.tax_year_start` | month and day as `MMDD`, 101 to 1231 (`406` is 6 April; 29 February is refused), the first day of the tax year for a person's year to date; none configured means no year to date is shown (WPM-R178) | `most_specific` |
 | `resignation.notice_calendar_days` | whole calendar days, 0 to 366 (WPM-T384; a worker's chain) | `strictest_max` (the shortest) |
 | `retention.employment.days` | `{"min": n?, "max": n?}` in calendar days, 0 to 36,500 (WPM-T384; the organization's chain) | `bounded` |
 | `retention.learning.days` | as above | `bounded` |

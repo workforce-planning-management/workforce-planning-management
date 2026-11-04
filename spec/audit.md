@@ -52,6 +52,8 @@ an entry names no pay figure and no personal field in its snapshot.
 
 ## Audited by the Phase 24 proposals (spec round WPM-T309)
 
+Built: `my_payslips_read` (a person reads their own payslips), `payslip_query_raised`, `payslip_query_closed` and `payslip_queries_read` (a count, with no worker). None holds a query's comment.
+
 Once built, each writes an audit row without values: an **assignment** started, changed or ended; a **cost centre**, **coding
 structure** or **subjective rule** change; **recognised prior service** recorded; a **date of birth** written or read by HR or
 payroll; a **learning completion** recorded by HR; a **qualification verified**; a **PADR signed** or versioned; a **formal-process

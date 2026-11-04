@@ -1567,7 +1567,8 @@
     "bargaining": "Bargeinio ar y cyd — WPM",
     "consultations": "Ymgynghoriadau — WPM",
     "decisionGates": "Pyrth penderfynu — WPM",
-    "statutoryDefaults": "Rhagosodiadau statudol — WPM"
+    "statutoryDefaults": "Rhagosodiadau statudol — WPM",
+    "myPayslips": "Fy slipiau cyflog — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -3018,5 +3019,31 @@
     "ending_soon": "Yn dod i ben cyn hir",
     "expired": "Wedi dod i ben",
     "no_end_date": "Dim dyddiad gorffen"
+  },
+  "payslips": {
+    "link": "Fy slipiau cyflog",
+    "title": "Fy slipiau cyflog",
+    "hint": "Slipiau cyflog o rediadau cyflogres a gymeradwywyd ac a dalwyd. Gall rhediad drafft neu wedi'i gyfrifo newid o hyd, felly ni ddangosir yma.",
+    "none": "Nid oes gennych slipiau cyflog eto.",
+    "period": "Cyfnod",
+    "ytd": "Blwyddyn hyd yma",
+    "ytdTaxYear": "Blwyddyn dreth {range}",
+    "ytdPayslips": "Cyfansymiau o'ch slipiau cyflog yn {currency}: {count}",
+    "ytdNone": "Nid yw dechrau'r flwyddyn dreth wedi'i ffurfweddu ar gyfer eich man gwaith, felly ni ddangosir ffigurau blwyddyn hyd yma.",
+    "print": "Argraffu'r slip cyflog hwn",
+    "query": "Holi am y slip cyflog hwn",
+    "queryComment": "Beth yw eich ymholiad?",
+    "queryHint": "Mae'r gyflogres yn gweld eich sylw ac yn cau'r ymholiad. Nid yw ymholiad yn newid unrhyw swm.",
+    "querySend": "Anfon ymholiad",
+    "queryCancel": "Canslo",
+    "queryOpen": "Ymholiad wedi'i godi {day}: gyda'r gyflogres",
+    "queryClosed": "Ymholiad wedi'i gau {day}",
+    "queueTitle": "Ymholiadau slipiau cyflog",
+    "queueHint": "Ymholiadau y mae pobl wedi'u codi am eu slipiau cyflog, yr hynaf yn gyntaf. Nid yw cau ymholiad yn newid unrhyw swm; gwneir cywiriad yn y rhediad cyflogres.",
+    "queueNone": "Dim ymholiadau slipiau cyflog agored.",
+    "queuePerson": "Person",
+    "queueComment": "Sylw",
+    "queueRaised": "Codwyd",
+    "close": "Cau'r ymholiad"
   }
 }

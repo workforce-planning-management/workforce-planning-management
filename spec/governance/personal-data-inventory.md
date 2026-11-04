@@ -54,6 +54,7 @@ Applicants have their own export, `GET /api/candidates/{pid}/subject-access`; er
 | `organization_memberships` | `worker_pid`, `person_ref` | yes | yes | none |  |
 | `path_enrollments` | `worker_pid` | yes | no | learning |  |
 | `pay_information_requests` | `worker_pid` | yes | yes | pay |  |
+| `payslip_queries` | `worker_pid` | yes | yes | pay |  |
 | `payslips` | `worker_pid` | yes | no | pay |  |
 | `policy_acknowledgements` | `worker_pid` | yes | yes | none |  |
 | `positions` | `holder_worker_pid` | yes | yes | none |  |
