@@ -976,6 +976,8 @@ key outside it is refused.
 | `overtime.bands` | names, each `period:threshold_minutes:multiplier_bp` (period day, week or month; 15000 is one and a half times), or the one name `none`; a name that does not read is an error, never skipped (WPM-D162, WPM-T417) | `most_specific` |
 | `overtime.exempt_salary_floor_minor_weekly` | whole minor units a week; below it a post recorded as exempt is flagged for a check, advisory (WPM-D157, WPM-T417) | `strictest_min` (the highest) |
 | `overtime.holiday_multiplier_bp` | whole number of basis points, 10000 to 100000; the multiplier for every minute worked on a stored public holiday of the place of work, combined with the bands as one more band (WPM-T426) | `most_specific` |
+| `overtime.max_annual_minutes` | whole minutes, 0 to 527040; the most overtime a non-exempt worker may work in a calendar year over the weeks that begin in it; advisory, the overtime check flags it and no pay changes (WPM-T426) | `most_specific` |
+| `overtime.max_monthly_minutes` | whole minutes, 0 to 44640; the same for a calendar month, up to the end of the run (WPM-T426) | `most_specific` |
 | `overtime.none_by_law` | on or off; on where the jurisdiction sets no statutory overtime premium, distinct from not configured (WPM-D160, WPM-T417) | `most_specific` |
 | `overtime.premiums_add` | on or off; on where premiums for overlapping bands add, otherwise the highest applies with no pyramiding (WPM-D162, WPM-T417) | `most_specific` |
 | `overtime.rest_day_multiplier_bp` | whole number of basis points, 10000 to 100000; the multiplier for every minute worked on a day in `holidays.weekend_days`, with none configured meaning no rest day (WPM-T426) | `most_specific` |

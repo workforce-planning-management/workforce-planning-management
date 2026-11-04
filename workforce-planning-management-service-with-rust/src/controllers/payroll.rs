@@ -372,6 +372,7 @@ async fn calculate_run(
             Some(worker),
             &seats,
             &worked,
+            None,
             &OutcomeContext {
                 profile,
                 as_of: run.period_end,
@@ -1021,6 +1022,7 @@ fn statutory_outcome(
     worker: Option<&workers::Model>,
     seats: &[String],
     on_days: &std::collections::BTreeMap<chrono::NaiveDate, u32>,
+    year_days: Option<&std::collections::BTreeMap<chrono::NaiveDate, u32>>,
     at: &OutcomeContext<'_>,
 ) -> StatutoryOutcome {
     use crate::rules::jurisdiction::Resolution;
@@ -1152,6 +1154,45 @@ fn statutory_outcome(
                     "premium_minor": base.and_then(|b| d.premium_minor(b, month_minutes)),
                     "currency": currency,
                 });
+                // The advisory caps: overtime in the calendar month up to the run's end and in the calendar year, over the weeks that
+                // begin there. A cap that is not configured is absent, never "within".
+                if let Some(year_days) = year_days {
+                    use chrono::Datelike;
+                    let month_start = as_of.with_day(1).unwrap_or(as_of);
+                    let year_start =
+                        chrono::NaiveDate::from_ymd_opt(as_of.year(), 1, 1).unwrap_or(as_of);
+                    let used = |from: chrono::NaiveDate| {
+                        let days = ot::weeks_beginning_between(year_days, week_start, from, as_of);
+                        match ot::derive_period_kinds(
+                            status,
+                            &rules,
+                            &ot::weeks_with(&days, week_start, kind_of),
+                        ) {
+                            ot::Outcome::Derived(d) => Some(d.overtime_minutes()),
+                            _ => None,
+                        }
+                    };
+                    let mut caps = serde_json::Map::new();
+                    for (name, key, from) in [
+                        ("monthly", "overtime.max_monthly_minutes", month_start),
+                        ("annual", "overtime.max_annual_minutes", year_start),
+                    ] {
+                        let limit = get(key).integer();
+                        if let (Some(limit), Some(minutes)) = (limit, used(from)) {
+                            caps.insert(
+                                name.to_string(),
+                                json!({
+                                    "limit_minutes": limit,
+                                    "overtime_minutes": minutes,
+                                    "over": ot::over_cap(minutes, Some(limit)),
+                                }),
+                            );
+                        }
+                    }
+                    if let Some(object) = extra.as_object_mut() {
+                        object.insert("caps".to_string(), serde_json::Value::Object(caps));
+                    }
+                }
                 (None, "derived")
             }
             ot::Outcome::NotDerived(why) => (Some(why), "not_derived"),
@@ -1211,11 +1252,18 @@ async fn overtime_check(
             seats.entry(holder).or_default().push(seat.overtime_status);
         }
     }
+    // The caps count whole weeks from the start of the year, so the time and the holidays are read from a week before 1 January.
+    let year_from = {
+        use chrono::Datelike;
+        chrono::NaiveDate::from_ymd_opt(run.period_end.year(), 1, 1).unwrap_or(run.period_start)
+            - chrono::Duration::days(6)
+    }
+    .min(run.period_start);
     // Approved minutes by worker and day. On-call entries are not hours worked.
     let entries: Vec<(Uuid, chrono::NaiveDate, i32)> = time_entries::Entity::find()
         .filter(time_entries::Column::WorkerPid.is_in(worker_pids))
         .filter(time_entries::Column::Status.eq("approved"))
-        .filter(time_entries::Column::WorkedOn.gte(run.period_start))
+        .filter(time_entries::Column::WorkedOn.gte(year_from))
         .filter(time_entries::Column::WorkedOn.lte(run.period_end))
         .filter(time_entries::Column::Kind.ne("on_call"))
         .filter(time_entries::Column::DeletedAt.is_null())
@@ -1227,9 +1275,13 @@ async fn overtime_check(
         .all(&ctx.db)
         .await?;
     let mut days: BTreeMap<Uuid, BTreeMap<chrono::NaiveDate, u32>> = BTreeMap::new();
+    let mut year_days: BTreeMap<Uuid, BTreeMap<chrono::NaiveDate, u32>> = BTreeMap::new();
     for (worker, on, minutes) in entries {
-        *days.entry(worker).or_default().entry(on).or_default() +=
-            u32::try_from(minutes.max(0)).unwrap_or(0);
+        let minutes = u32::try_from(minutes.max(0)).unwrap_or(0);
+        *year_days.entry(worker).or_default().entry(on).or_default() += minutes;
+        if on >= run.period_start {
+            *days.entry(worker).or_default().entry(on).or_default() += minutes;
+        }
     }
     let profiles =
         super::jurisdictions::profiles_for(&ctx.db, std::slice::from_ref(&run.organization_ref))
@@ -1252,19 +1304,14 @@ async fn overtime_check(
     .collect();
     let mut reasons: BTreeMap<&'static str, u64> = BTreeMap::new();
     let no_days = BTreeMap::new();
-    let holidays = holiday_dates(
-        &ctx.db,
-        &run.organization_ref,
-        run.period_start,
-        run.period_end,
-    )
-    .await?;
+    let holidays = holiday_dates(&ctx.db, &run.organization_ref, year_from, run.period_end).await?;
     let mut rows = Vec::with_capacity(slips.len());
     for slip in &slips {
         let found = statutory_outcome(
             people.get(&slip.worker_pid),
             seats.get(&slip.worker_pid).map_or(&[][..], Vec::as_slice),
             days.get(&slip.worker_pid).unwrap_or(&no_days),
+            Some(year_days.get(&slip.worker_pid).unwrap_or(&no_days)),
             &OutcomeContext {
                 profile,
                 as_of,

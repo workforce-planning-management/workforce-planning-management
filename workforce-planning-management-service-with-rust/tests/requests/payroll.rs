@@ -1038,6 +1038,106 @@ async fn a_rest_day_and_a_holiday_are_paid_at_the_places_multipliers_and_never_g
     .await;
 }
 
+// The advisory caps (WPM-T426): overtime in the month up to the run's end and in the year, over the weeks that begin there. A week
+// from the month before counts toward the year and not the month; a place with no cap configured shows none, never "within".
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_overtime_check_flags_a_worker_over_the_monthly_and_the_annual_cap() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let mut pids = std::collections::BTreeMap::new();
+        for (number, code) in [("CAP-A", "XA"), ("CAP-B", "XB")] {
+            let pid = seed_worker!(&request, &org, number, Some(3_600_000)).await;
+            activate!(&request, &pid).await;
+            request
+                .put(&format!("/api/workers/{pid}"))
+                .json(&json!({ "work_jurisdiction": code }))
+                .await
+                .assert_status_ok();
+            let seat: Value = request
+                .post("/api/positions")
+                .json(&json!({ "organization_ref": org, "cost_centre": "CC-CAP", "title": number,
+                               "budget_fte_percent": 100, "funding_kind": "core", "overtime_status": "non_exempt" }))
+                .await
+                .json();
+            let seat = seat["pid"].as_str().unwrap().to_string();
+            request
+                .post(&format!("/api/positions/{seat}/status"))
+                .json(&json!({ "to": "approved" }))
+                .await
+                .assert_status_ok();
+            request
+                .put(&format!("/api/positions/{seat}/holder"))
+                .json(&json!({ "worker_pid": pid }))
+                .await
+                .assert_status_ok();
+            // Three weeks of nine-hour days, Monday to Friday: 300 overtime minutes each, beginning 8 June, 6 July and 13 July.
+            for start in [(6, 8), (7, 6), (7, 13)] {
+                for offset in 0..5 {
+                    approved_time(
+                        &request,
+                        &pid,
+                        json!({ "worked_on": format!("2026-{:02}-{:02}", start.0, start.1 + offset), "minutes": 540 }),
+                    )
+                    .await;
+                }
+            }
+            pids.insert(number, pid);
+        }
+        for code in ["XA", "XB"] {
+            request
+                .post("/api/jurisdictions")
+                .json(&json!({ "organization_ref": org, "code": code, "layer": "national" }))
+                .await
+                .assert_status_ok();
+        }
+        for (code, key, value) in [
+            ("XA", "overtime.bands", json!(["week:2400:15000"])),
+            ("XA", "overtime.max_monthly_minutes", json!(500)),
+            ("XA", "overtime.max_annual_minutes", json!(1000)),
+            ("XB", "overtime.bands", json!(["week:2400:15000"])),
+        ] {
+            request
+                .post("/api/jurisdiction-parameters")
+                .json(&json!({ "organization_ref": org, "code": code, "key": key, "value": value,
+                               "effective_from": "2000-01-01", "source": "synthetic test profile", "status": "example" }))
+                .await
+                .assert_status_ok();
+        }
+        let run: Value = request
+            .post("/api/payroll-runs")
+            .json(&json!({ "organization_ref": org, "period_start": "2026-07-01", "period_end": "2026-07-31" }))
+            .await
+            .json();
+        let run_pid = run["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/payroll-runs/{run_pid}/calculate")).await.assert_status_ok();
+        let check: Value = request
+            .get(&format!("/api/payroll-runs/{run_pid}/overtime-check"))
+            .await
+            .json();
+        let of = |number: &str| {
+            check["workers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|w| w["worker_pid"].as_str() == Some(pids[number].as_str()))
+                .cloned()
+                .unwrap()
+        };
+        let a = of("CAP-A");
+        assert_eq!(a["overtime_minutes"], 600, "the run's two July weeks");
+        assert_eq!(a["caps"]["monthly"]["overtime_minutes"], 600, "the June week is not in July");
+        assert_eq!(a["caps"]["monthly"]["over"], true, "600 is past 500");
+        assert_eq!(a["caps"]["annual"]["overtime_minutes"], 900, "the June week counts toward the year");
+        assert_eq!(a["caps"]["annual"]["over"], false, "900 is within 1000");
+        let b = of("CAP-B");
+        assert_eq!(b["outcome"], "derived");
+        assert_eq!(b["caps"], json!({}), "no cap configured shows none");
+    })
+    .await;
+}
+
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]

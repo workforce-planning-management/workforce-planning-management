@@ -199,6 +199,36 @@ pub fn weeks_with(
     by_week.into_values().collect()
 }
 
+/// The days of the weeks that **begin** on or after `from` and on or before `to`, whole weeks only. A week counts toward the month or
+/// year in which it begins, so a week is never split between two (WPM-T426). `week_start` is read as for [`weeks`].
+#[must_use]
+pub fn weeks_beginning_between(
+    days: &BTreeMap<NaiveDate, u32>,
+    week_start: u32,
+    from: NaiveDate,
+    to: NaiveDate,
+) -> BTreeMap<NaiveDate, u32> {
+    let start = i64::from(if (1..=7).contains(&week_start) {
+        week_start
+    } else {
+        1
+    });
+    days.iter()
+        .filter(|(date, _)| {
+            let back = (i64::from(date.weekday().number_from_monday()) - start).rem_euclid(7);
+            let first = **date - Duration::days(back);
+            first >= from && first <= to
+        })
+        .map(|(date, minutes)| (*date, *minutes))
+        .collect()
+}
+
+/// Whether `minutes` is past a cap: `Some(true)` over, `Some(false)` at or under, `None` where no cap is configured (never "fine").
+#[must_use]
+pub fn over_cap(minutes: u32, cap_minutes: Option<i64>) -> Option<bool> {
+    cap_minutes.map(|cap| i64::from(minutes) > cap)
+}
+
 /// Derive a run's period: each week on its own, the minutes at each multiplier added up. A monthly band is not derived across weeks
 /// here (it needs the month's earlier minutes), so it says so rather than leaving it out.
 #[must_use]
@@ -742,5 +772,27 @@ mod tests {
             weeks,
             vec![vec![(60, DayKind::Ordinary), (120, DayKind::Rest)]]
         );
+    }
+
+    #[test]
+    fn a_week_counts_toward_the_period_it_begins_in_and_is_never_split() {
+        let mut days = BTreeMap::new();
+        days.insert(d(2026, 6, 29), 60); // Monday, week begins in June
+        days.insert(d(2026, 7, 2), 60); // Thursday of that same week
+        days.insert(d(2026, 7, 6), 60); // Monday, week begins in July
+        let july = weeks_beginning_between(&days, 1, d(2026, 7, 1), d(2026, 7, 31));
+        assert_eq!(
+            july.keys().copied().collect::<Vec<_>>(),
+            vec![d(2026, 7, 6)]
+        );
+        let june = weeks_beginning_between(&days, 1, d(2026, 6, 1), d(2026, 6, 30));
+        assert_eq!(june.len(), 2, "both days of the June week");
+    }
+
+    #[test]
+    fn a_cap_is_over_only_past_it_and_unknown_with_none() {
+        assert_eq!(over_cap(36 * H, Some(i64::from(36 * H))), Some(false));
+        assert_eq!(over_cap(36 * H + 1, Some(i64::from(36 * H))), Some(true));
+        assert_eq!(over_cap(5, None), None);
     }
 }

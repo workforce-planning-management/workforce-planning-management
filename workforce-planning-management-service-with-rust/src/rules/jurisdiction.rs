@@ -402,6 +402,26 @@ pub const REGISTRY: &[Parameter] = &[
         meaning: "the pay multiplier for every minute a non-exempt worker works on a public holiday of the place of work, in basis points (20000 is double time); it combines with the overtime bands as one more band, and a holiday outranks a rest day (WPM-T426)",
     },
     Parameter {
+        key: "overtime.max_annual_minutes",
+        shape: Shape::Integer {
+            min: 0,
+            max: 527_040,
+        },
+        unit: "minutes",
+        combine: Combine::MostSpecific,
+        meaning: "the most overtime minutes a non-exempt worker may work in a calendar year, counted over the weeks that begin in the year; advisory, the overtime check flags a worker over it and no pay changes (WPM-T426)",
+    },
+    Parameter {
+        key: "overtime.max_monthly_minutes",
+        shape: Shape::Integer {
+            min: 0,
+            max: 44_640,
+        },
+        unit: "minutes",
+        combine: Combine::MostSpecific,
+        meaning: "the most overtime minutes a non-exempt worker may work in a calendar month, counted over the weeks that begin in the month, up to the end of the run; advisory, the overtime check flags a worker over it and no pay changes (WPM-T426)",
+    },
+    Parameter {
         key: "overtime.none_by_law",
         shape: Shape::Flag,
         unit: "",
