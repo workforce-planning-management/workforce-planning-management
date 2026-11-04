@@ -270,6 +270,13 @@ async fn calculate_run(
             .await?;
     let no_profile = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&no_profile);
+    let holidays = holiday_dates(
+        &txn,
+        &run.organization_ref,
+        run.period_start,
+        run.period_end,
+    )
+    .await?;
     // Earlier runs of the same calendar year, for the wage base of an employer cost line (WPM-D170): approved or paid, ending before
     // this period starts.
     let earlier_runs: Vec<Uuid> = {
@@ -365,10 +372,13 @@ async fn calculate_run(
             Some(worker),
             &seats,
             &worked,
-            profile,
-            run.period_end,
-            &currency,
-            stub.month_minutes,
+            &OutcomeContext {
+                profile,
+                as_of: run.period_end,
+                currency: &currency,
+                month_minutes: stub.month_minutes,
+                holidays: &holidays,
+            },
         );
         let premium = if found.name == "derived" {
             found.extra["premium_minor"].as_i64().unwrap_or(0).max(0)
@@ -969,6 +979,41 @@ struct StatutoryOutcome {
     extra: serde_json::Value,
 }
 
+/// The observed dates of an organization's stored holidays between two dates, by region. A holiday is a day of the place it was recorded
+/// for, never of another.
+async fn holiday_dates(
+    db: &impl sea_orm::ConnectionTrait,
+    organization: &str,
+    from: chrono::NaiveDate,
+    to: chrono::NaiveDate,
+) -> Result<std::collections::BTreeMap<String, std::collections::BTreeSet<chrono::NaiveDate>>> {
+    let mut found: std::collections::BTreeMap<
+        String,
+        std::collections::BTreeSet<chrono::NaiveDate>,
+    > = std::collections::BTreeMap::new();
+    for h in crate::models::_entities::holidays::Entity::find()
+        .filter(crate::models::_entities::holidays::Column::OrganizationRef.eq(organization))
+        .filter(crate::models::_entities::holidays::Column::ObservedOn.gte(from))
+        .filter(crate::models::_entities::holidays::Column::ObservedOn.lte(to))
+        .all(db)
+        .await?
+    {
+        found.entry(h.region).or_default().insert(h.observed_on);
+    }
+    Ok(found)
+}
+
+/// What [`statutory_outcome`] reads besides the worker: the organization's resolved profile, the date it is resolved at, the currency,
+/// the minutes in a pay month and the stored holidays by region.
+#[derive(Clone, Copy)]
+struct OutcomeContext<'a> {
+    profile: &'a super::jurisdictions::Profile,
+    as_of: chrono::NaiveDate,
+    currency: &'a str,
+    month_minutes: i64,
+    holidays: &'a std::collections::BTreeMap<String, std::collections::BTreeSet<chrono::NaiveDate>>,
+}
+
 /// Derives [`StatutoryOutcome`] for one worker. `seats` is the overtime status recorded on each seat the worker holds, `on_days` the
 /// approved minutes worked by day (on-call excluded), `as_of` the date the jurisdiction parameters are resolved at.
 #[allow(clippy::too_many_lines)] // worker → place → seats → status → bands → period, linearly
@@ -976,15 +1021,19 @@ fn statutory_outcome(
     worker: Option<&workers::Model>,
     seats: &[String],
     on_days: &std::collections::BTreeMap<chrono::NaiveDate, u32>,
-    profile: &super::jurisdictions::Profile,
-    as_of: chrono::NaiveDate,
-    currency: &str,
-    month_minutes: i64,
+    at: &OutcomeContext<'_>,
 ) -> StatutoryOutcome {
     use crate::rules::jurisdiction::Resolution;
     use crate::rules::statutory_overtime as ot;
     use serde_json::json;
 
+    let OutcomeContext {
+        profile,
+        as_of,
+        currency,
+        month_minutes,
+        holidays,
+    } = *at;
     let unknown = |reason: &'static str| (reason, "unknown");
     let mut extra = json!({});
     let (reason, name): (Option<&'static str>, &'static str) = 'outcome: {
@@ -1035,8 +1084,19 @@ fn statutory_outcome(
             }
             _ => None,
         };
+        let kinds = ot::Kinds {
+            rest_day_bp: get("overtime.rest_day_multiplier_bp")
+                .integer()
+                .and_then(|n| u32::try_from(n).ok()),
+            holiday_bp: get("overtime.holiday_multiplier_bp")
+                .integer()
+                .and_then(|n| u32::try_from(n).ok()),
+        };
         let bands = match bands {
-            None => break 'outcome (None, "no_limit_configured"),
+            None if kinds == ot::Kinds::default() => {
+                break 'outcome (None, "no_limit_configured");
+            }
+            None => Vec::new(),
             Some(Err(_)) => {
                 let (r, n) = unknown("bands_unreadable");
                 break 'outcome (Some(r), n);
@@ -1053,12 +1113,35 @@ fn statutory_outcome(
             } else {
                 ot::Stacking::Highest
             },
+            kinds,
         };
         let week_start = get("calendar.week_start")
             .integer()
             .and_then(|d| u32::try_from(d).ok())
             .unwrap_or(1);
-        match ot::derive_period(status, &rules, &ot::weeks(on_days, week_start)) {
+        // A day's kind comes from the place's stored holidays and its configured weekend. With no weekend configured no day is a
+        // rest day: it is never guessed.
+        let weekend = match get("holidays.weekend_days") {
+            Resolution::Resolved { value, .. } => value
+                .as_weekdays()
+                .and_then(|days| crate::rules::holiday::weekend_from_iso(&days))
+                .unwrap_or_default(),
+            _ => Vec::new(),
+        };
+        let kind_of = |date: chrono::NaiveDate| {
+            if holidays.get(place).is_some_and(|set| set.contains(&date)) {
+                ot::DayKind::Holiday
+            } else if weekend.contains(&chrono::Datelike::weekday(&date)) {
+                ot::DayKind::Rest
+            } else {
+                ot::DayKind::Ordinary
+            }
+        };
+        match ot::derive_period_kinds(
+            status,
+            &rules,
+            &ot::weeks_with(on_days, week_start, kind_of),
+        ) {
             ot::Outcome::Derived(d) => {
                 let base =
                     rules::monthly_base_minor(worker.salary_minor.unwrap_or(0), worker.fte_percent)
@@ -1169,16 +1252,26 @@ async fn overtime_check(
     .collect();
     let mut reasons: BTreeMap<&'static str, u64> = BTreeMap::new();
     let no_days = BTreeMap::new();
+    let holidays = holiday_dates(
+        &ctx.db,
+        &run.organization_ref,
+        run.period_start,
+        run.period_end,
+    )
+    .await?;
     let mut rows = Vec::with_capacity(slips.len());
     for slip in &slips {
         let found = statutory_outcome(
             people.get(&slip.worker_pid),
             seats.get(&slip.worker_pid).map_or(&[][..], Vec::as_slice),
             days.get(&slip.worker_pid).unwrap_or(&no_days),
-            profile,
-            as_of,
-            &slip.currency,
-            month_minutes,
+            &OutcomeContext {
+                profile,
+                as_of,
+                currency: &slip.currency,
+                month_minutes,
+                holidays: &holidays,
+            },
         );
         let (reason, name, extra) = (found.reason, found.name, found.extra);
         *counts.entry(name).or_default() += 1;

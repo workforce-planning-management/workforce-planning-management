@@ -392,6 +392,16 @@ pub const REGISTRY: &[Parameter] = &[
         meaning: "the weekly salary below which a post recorded as exempt is flagged for a check, in minor units; advisory, and WPM never decides exemption from duties",
     },
     Parameter {
+        key: "overtime.holiday_multiplier_bp",
+        shape: Shape::Integer {
+            min: 10_000,
+            max: 100_000,
+        },
+        unit: "bp",
+        combine: Combine::MostSpecific,
+        meaning: "the pay multiplier for every minute a non-exempt worker works on a public holiday of the place of work, in basis points (20000 is double time); it combines with the overtime bands as one more band, and a holiday outranks a rest day (WPM-T426)",
+    },
+    Parameter {
         key: "overtime.none_by_law",
         shape: Shape::Flag,
         unit: "",
@@ -404,6 +414,16 @@ pub const REGISTRY: &[Parameter] = &[
         unit: "",
         combine: Combine::MostSpecific,
         meaning: "on where premiums for overlapping overtime bands add; off or none means the highest multiplier applies, with no pyramiding",
+    },
+    Parameter {
+        key: "overtime.rest_day_multiplier_bp",
+        shape: Shape::Integer {
+            min: 10_000,
+            max: 100_000,
+        },
+        unit: "bp",
+        combine: Combine::MostSpecific,
+        meaning: "the pay multiplier for every minute a non-exempt worker works on a weekly rest day (a day in the place's holidays.weekend_days; none configured means no day is a rest day), in basis points; it combines with the overtime bands as one more band (WPM-T426)",
     },
     Parameter {
         key: "pay_transparency.information_months",

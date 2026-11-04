@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — overtime by kind of day (WPM-T426)
+
+Parameters `overtime.rest_day_multiplier_bp` and `overtime.holiday_multiplier_bp` (10000 to 100000). A minute a non-exempt worker works on a stored public holiday of the place of work, or on a day in its `holidays.weekend_days`, is paid at that multiplier, combined with the overtime bands as one more band (the highest applies, or the premiums add where `overtime.premiums_add` is on). A holiday outranks a rest day. With no weekend configured no day is a rest day; it is never guessed. A place with only these parameters and no bands now derives. `rules::statutory_overtime` gained `DayKind`, `Kinds`, `derive_kinds` and `weeks_with`.
+
 ### Added — employer-side cost lines on a payslip (WPM-R223, WPM-D170, WPM-T423)
 
 Parameters `employer_contribution.lines` and `employer_contribution.class`; `payslips.employer_costs` and `employer_cost_minor` (migration `m20261103_000125`); `rules::employer_contribution`. A calculation costs each line on gross up to a yearly wage base, never deducts it from net, and says a class-keyed rate with no class set is unresolved instead of costing it as nothing.

@@ -933,6 +933,111 @@ async fn the_overtime_premium_is_in_gross_and_the_check_follows_the_seat_and_the
     .await;
 }
 
+// A rest day and a stored holiday are paid at their own multipliers where the place sets them (WPM-T426); a place with neither
+// parameter pays them as ordinary days, and a place with no weekend configured never guesses a rest day.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_rest_day_and_a_holiday_are_paid_at_the_places_multipliers_and_never_guessed() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let mut pids = std::collections::BTreeMap::new();
+        for (number, code) in [("KD-A", "XD"), ("KD-B", "XE")] {
+            let pid = seed_worker!(&request, &org, number, Some(3_600_000)).await;
+            activate!(&request, &pid).await;
+            request
+                .put(&format!("/api/workers/{pid}"))
+                .json(&json!({ "work_jurisdiction": code }))
+                .await
+                .assert_status_ok();
+            let seat: Value = request
+                .post("/api/positions")
+                .json(&json!({ "organization_ref": org, "cost_centre": "CC-KD", "title": number,
+                               "budget_fte_percent": 100, "funding_kind": "core", "overtime_status": "non_exempt" }))
+                .await
+                .json();
+            let seat = seat["pid"].as_str().unwrap().to_string();
+            request
+                .post(&format!("/api/positions/{seat}/status"))
+                .json(&json!({ "to": "approved" }))
+                .await
+                .assert_status_ok();
+            request
+                .put(&format!("/api/positions/{seat}/holder"))
+                .json(&json!({ "worker_pid": pid }))
+                .await
+                .assert_status_ok();
+            // Friday 2026-07-03 (a holiday), Saturday 2026-07-04 (the weekend) and Monday 2026-07-06 (ordinary).
+            for (day, minutes) in [(3, 180), (4, 120), (6, 240)] {
+                approved_time(
+                    &request,
+                    &pid,
+                    json!({ "worked_on": format!("2026-07-{day:02}"), "minutes": minutes }),
+                )
+                .await;
+            }
+            pids.insert(number, pid);
+        }
+        for code in ["XD", "XE"] {
+            request
+                .post("/api/jurisdictions")
+                .json(&json!({ "organization_ref": org, "code": code, "layer": "national" }))
+                .await
+                .assert_status_ok();
+        }
+        for (code, key, value) in [
+            ("XD", "overtime.holiday_multiplier_bp", json!(20_000)),
+            ("XD", "overtime.rest_day_multiplier_bp", json!(15_000)),
+            ("XD", "holidays.weekend_days", json!([6, 7])),
+            // XE sets only a holiday multiplier and no weekend: a Saturday is not guessed to be a rest day.
+            ("XE", "overtime.holiday_multiplier_bp", json!(20_000)),
+        ] {
+            request
+                .post("/api/jurisdiction-parameters")
+                .json(&json!({ "organization_ref": org, "code": code, "key": key, "value": value,
+                               "effective_from": "2000-01-01", "source": "synthetic test profile", "status": "example" }))
+                .await
+                .assert_status_ok();
+        }
+        for code in ["XD", "XE"] {
+            request
+                .post("/api/holidays")
+                .json(&json!({ "organization_ref": org, "region": code, "name": "Test day", "on": "2026-07-03" }))
+                .await
+                .assert_status_ok();
+        }
+        let run: Value = request
+            .post("/api/payroll-runs")
+            .json(&json!({ "organization_ref": org, "period_start": "2026-07-01", "period_end": "2026-07-31" }))
+            .await
+            .json();
+        let run_pid = run["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/payroll-runs/{run_pid}/calculate")).await.assert_status_ok();
+        let check: Value = request
+            .get(&format!("/api/payroll-runs/{run_pid}/overtime-check"))
+            .await
+            .json();
+        let of = |number: &str| {
+            check["workers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|w| w["worker_pid"].as_str() == Some(pids[number].as_str()))
+                .cloned()
+                .unwrap()
+        };
+        let a = of("KD-A");
+        assert_eq!(a["outcome"], "derived", "{a}");
+        assert_eq!(a["minutes_at"]["20000"], 180, "the holiday");
+        assert_eq!(a["minutes_at"]["15000"], 120, "the Saturday");
+        assert_eq!(a["minutes_at"]["10000"], 240, "the Monday");
+        let b = of("KD-B");
+        assert_eq!(b["minutes_at"]["20000"], 180, "the holiday");
+        assert_eq!(b["minutes_at"]["10000"], 360, "no weekend configured: Saturday is an ordinary day");
+    })
+    .await;
+}
+
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]

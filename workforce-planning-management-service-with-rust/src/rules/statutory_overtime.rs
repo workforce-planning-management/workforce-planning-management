@@ -41,22 +41,56 @@ pub struct Band {
     pub multiplier_bp: u32,
 }
 
+/// What kind of day a minute was worked on. A public holiday outranks a rest day that falls on the same date.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DayKind {
+    /// An ordinary working day.
+    #[default]
+    Ordinary,
+    /// The worker's weekly rest day (the jurisdiction's weekend).
+    Rest,
+    /// A public holiday of the worker's place of work.
+    Holiday,
+}
+
+/// The multipliers for work on a rest day or a holiday, each in basis points; `None` is not configured (the day pays as any other).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Kinds {
+    /// Every minute worked on a rest day.
+    pub rest_day_bp: Option<u32>,
+    /// Every minute worked on a public holiday.
+    pub holiday_bp: Option<u32>,
+}
+
+impl Kinds {
+    fn bp(self, kind: DayKind) -> Option<u32> {
+        match kind {
+            DayKind::Ordinary => None,
+            DayKind::Rest => self.rest_day_bp,
+            DayKind::Holiday => self.holiday_bp,
+        }
+    }
+}
+
 /// How overlapping bands combine for one minute.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Stacking {
     /// The highest multiplier of the bands that apply: no pyramiding.
+    #[default]
     Highest,
     /// The premiums (each multiplier less the regular rate) add.
     Add,
 }
 
 /// A configured rule set.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Rules {
     /// The bands. Empty means no limit is configured.
     pub bands: Vec<Band>,
     /// How overlapping bands combine.
     pub stacking: Stacking,
+    /// The multipliers for a rest day and a holiday. They combine with the bands as another band would.
+    pub kinds: Kinds,
 }
 
 /// Read a bands setting: each name is `period:threshold_minutes:multiplier_bp`, and the one name `none` is no bands. A name that does not
@@ -135,16 +169,32 @@ impl Status {
 /// Sunday; anything else is read as Monday). Days with no entry are left out, which does not change a derivation.
 #[must_use]
 pub fn weeks(days: &BTreeMap<NaiveDate, u32>, week_start: u32) -> Vec<Vec<u32>> {
+    weeks_with(days, week_start, |_| DayKind::Ordinary)
+        .into_iter()
+        .map(|week| week.into_iter().map(|(m, _)| m).collect())
+        .collect()
+}
+
+/// [`weeks`] with each day's kind, given by `kind_of`.
+#[must_use]
+pub fn weeks_with(
+    days: &BTreeMap<NaiveDate, u32>,
+    week_start: u32,
+    kind_of: impl Fn(NaiveDate) -> DayKind,
+) -> Vec<Vec<(u32, DayKind)>> {
     let start = i64::from(if (1..=7).contains(&week_start) {
         week_start
     } else {
         1
     });
-    let mut by_week: BTreeMap<NaiveDate, Vec<u32>> = BTreeMap::new();
+    let mut by_week: BTreeMap<NaiveDate, Vec<(u32, DayKind)>> = BTreeMap::new();
     for (date, minutes) in days {
         let back = (i64::from(date.weekday().number_from_monday()) - start).rem_euclid(7);
         let first = *date - Duration::days(back);
-        by_week.entry(first).or_default().push(*minutes);
+        by_week
+            .entry(first)
+            .or_default()
+            .push((*minutes, kind_of(*date)));
     }
     by_week.into_values().collect()
 }
@@ -153,16 +203,30 @@ pub fn weeks(days: &BTreeMap<NaiveDate, u32>, week_start: u32) -> Vec<Vec<u32>> 
 /// here (it needs the month's earlier minutes), so it says so rather than leaving it out.
 #[must_use]
 pub fn derive_period(status: Status, rules: &Rules, weeks: &[Vec<u32>]) -> Outcome {
+    let weeks: Vec<Vec<(u32, DayKind)>> = weeks
+        .iter()
+        .map(|w| w.iter().map(|m| (*m, DayKind::Ordinary)).collect())
+        .collect();
+    derive_period_kinds(status, rules, &weeks)
+}
+
+/// [`derive_period`] with the kind of each day.
+#[must_use]
+pub fn derive_period_kinds(
+    status: Status,
+    rules: &Rules,
+    weeks: &[Vec<(u32, DayKind)>],
+) -> Outcome {
     if status == Status::NonExempt && rules.bands.iter().any(|b| b.period == Period::Month) {
         return Outcome::NotDerived("monthly_band");
     }
     // The status and the rules decide first; only a derivable post has weeks to add up.
-    if !matches!(derive(status, rules, &[], 0), Outcome::Derived(_)) {
-        return derive(status, rules, &[], 0);
+    if !matches!(derive_kinds(status, rules, &[], 0), Outcome::Derived(_)) {
+        return derive_kinds(status, rules, &[], 0);
     }
     let mut total: BTreeMap<u32, u32> = BTreeMap::new();
     for week in weeks {
-        if let Outcome::Derived(d) = derive(status, rules, week, 0) {
+        if let Outcome::Derived(d) = derive_kinds(status, rules, week, 0) {
             for (bp, m) in d.minutes_at {
                 *total.entry(bp).or_insert(0) += m;
             }
@@ -236,48 +300,63 @@ impl Derived {
     }
 }
 
-fn multiplier(rules: &Rules, day_pos: u32, week_pos: u32, month_pos: u32) -> u32 {
-    let hits = rules.bands.iter().filter(|b| {
-        let pos = match b.period {
-            Period::Day => day_pos,
-            Period::Week => week_pos,
-            Period::Month => month_pos,
-        };
-        pos > b.threshold_minutes
-    });
+fn multiplier(rules: &Rules, day_pos: u32, week_pos: u32, month_pos: u32, kind: DayKind) -> u32 {
+    let hits = rules
+        .bands
+        .iter()
+        .filter(|b| {
+            let pos = match b.period {
+                Period::Day => day_pos,
+                Period::Week => week_pos,
+                Period::Month => month_pos,
+            };
+            pos > b.threshold_minutes
+        })
+        .map(|b| b.multiplier_bp)
+        .chain(rules.kinds.bp(kind));
     match rules.stacking {
-        Stacking::Highest => hits
-            .map(|b| b.multiplier_bp)
-            .max()
-            .unwrap_or(REGULAR_BP)
-            .max(REGULAR_BP),
-        Stacking::Add => {
-            REGULAR_BP
-                + hits
-                    .map(|b| b.multiplier_bp.saturating_sub(REGULAR_BP))
-                    .sum::<u32>()
-        }
+        Stacking::Highest => hits.max().unwrap_or(REGULAR_BP).max(REGULAR_BP),
+        Stacking::Add => REGULAR_BP + hits.map(|bp| bp.saturating_sub(REGULAR_BP)).sum::<u32>(),
     }
 }
 
 /// Derive one week. `days` are the minutes worked each day, in order (a day is capped at 1440). `month_before_minutes` is what the
-/// person had worked earlier in the same month before this week, for a monthly band.
+/// person had worked earlier in the same month before this week, for a monthly band. Every day is read as an ordinary one; see
+/// [`derive_kinds`].
 #[must_use]
 pub fn derive(status: Status, rules: &Rules, days: &[u32], month_before_minutes: u32) -> Outcome {
+    let days: Vec<(u32, DayKind)> = days.iter().map(|m| (*m, DayKind::Ordinary)).collect();
+    derive_kinds(status, rules, &days, month_before_minutes)
+}
+
+/// [`derive`] with the kind of each day, so a rest day or a holiday is paid at its own multiplier where the rules set one.
+#[must_use]
+pub fn derive_kinds(
+    status: Status,
+    rules: &Rules,
+    days: &[(u32, DayKind)],
+    month_before_minutes: u32,
+) -> Outcome {
     match status {
         Status::Exempt => return Outcome::Exempt,
         Status::Unknown => return Outcome::Unknown,
         Status::NonExempt => {}
     }
-    if rules.bands.is_empty() {
+    if rules.bands.is_empty() && rules.kinds == Kinds::default() {
         return Outcome::NoLimitConfigured;
     }
     let mut minutes_at: BTreeMap<u32, u32> = BTreeMap::new();
     let mut week_pos: u32 = 0;
-    for worked in days {
+    for (worked, kind) in days {
         for day_pos in 1..=(*worked).min(DAY) {
             week_pos += 1;
-            let bp = multiplier(rules, day_pos, week_pos, month_before_minutes + week_pos);
+            let bp = multiplier(
+                rules,
+                day_pos,
+                week_pos,
+                month_before_minutes + week_pos,
+                *kind,
+            );
             *minutes_at.entry(bp).or_insert(0) += 1;
         }
     }
@@ -302,6 +381,7 @@ mod tests {
         Rules {
             bands: vec![band(Period::Week, 40, 15_000)],
             stacking: Stacking::Highest,
+            kinds: Kinds::default(),
         }
     }
 
@@ -327,6 +407,7 @@ mod tests {
         let rules = Rules {
             bands: vec![band(Period::Day, 8, 15_000), band(Period::Day, 12, 20_000)],
             stacking: Stacking::Highest,
+            kinds: Kinds::default(),
         };
         let eight = derived(derive(Status::NonExempt, &rules, &[8 * H], 0));
         assert_eq!(eight.overtime_minutes(), 0, "an 8-hour day is not overtime");
@@ -354,6 +435,7 @@ mod tests {
             &Rules {
                 bands: bands.clone(),
                 stacking: Stacking::Highest,
+                kinds: Kinds::default(),
             },
             &days,
             0,
@@ -369,6 +451,7 @@ mod tests {
             &Rules {
                 bands,
                 stacking: Stacking::Add,
+                kinds: Kinds::default(),
             },
             &days,
             0,
@@ -385,6 +468,7 @@ mod tests {
         let rules = Rules {
             bands: vec![band(Period::Month, 100, 15_000)],
             stacking: Stacking::Highest,
+            kinds: Kinds::default(),
         };
         let d = derived(derive(Status::NonExempt, &rules, &[8 * H; 5], 80 * H));
         assert_eq!(
@@ -407,6 +491,7 @@ mod tests {
         let none = Rules {
             bands: vec![],
             stacking: Stacking::Highest,
+            kinds: Kinds::default(),
         };
         assert_eq!(
             derive(Status::NonExempt, &none, &[12 * H; 5], 0),
@@ -419,6 +504,7 @@ mod tests {
         let rules = Rules {
             bands: vec![band(Period::Week, 1, 5_000)],
             stacking: Stacking::Highest,
+            kinds: Kinds::default(),
         };
         let d = derived(derive(Status::NonExempt, &rules, &[2 * H], 0));
         assert_eq!(
@@ -484,6 +570,7 @@ mod tests {
         let monthly = Rules {
             bands: vec![band(Period::Month, 100, 15_000)],
             stacking: Stacking::Highest,
+            kinds: Kinds::default(),
         };
         assert_eq!(
             derive_period(Status::NonExempt, &monthly, &two),
@@ -544,6 +631,116 @@ mod tests {
             huge.premium_minor(i64::MAX, 60),
             None,
             "overflow is None, not a wrong figure"
+        );
+    }
+
+    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    }
+
+    #[test]
+    fn a_rest_day_and_a_holiday_pay_their_own_multiplier_and_an_ordinary_day_is_untouched() {
+        let rules = Rules {
+            bands: vec![band(Period::Week, 40, 15_000)],
+            stacking: Stacking::Highest,
+            kinds: Kinds {
+                rest_day_bp: Some(20_000),
+                holiday_bp: Some(30_000),
+            },
+        };
+        let days = [
+            (8 * H, DayKind::Ordinary),
+            (8 * H, DayKind::Rest),
+            (8 * H, DayKind::Holiday),
+        ];
+        let d = derived(derive_kinds(Status::NonExempt, &rules, &days, 0));
+        assert_eq!(d.minutes_at[&REGULAR_BP], 8 * H);
+        assert_eq!(d.minutes_at[&20_000], 8 * H);
+        assert_eq!(d.minutes_at[&30_000], 8 * H);
+    }
+
+    #[test]
+    fn a_kind_with_no_multiplier_pays_as_an_ordinary_day() {
+        let rules = Rules {
+            bands: vec![band(Period::Day, 8, 15_000)],
+            stacking: Stacking::Highest,
+            kinds: Kinds {
+                rest_day_bp: None,
+                holiday_bp: Some(20_000),
+            },
+        };
+        let d = derived(derive_kinds(
+            Status::NonExempt,
+            &rules,
+            &[(9 * H, DayKind::Rest)],
+            0,
+        ));
+        assert_eq!(d.minutes_at[&REGULAR_BP], 8 * H);
+        assert_eq!(d.minutes_at[&15_000], H);
+    }
+
+    #[test]
+    fn where_premiums_add_a_holiday_adds_to_the_long_day_and_otherwise_the_highest_wins() {
+        let kinds = Kinds {
+            rest_day_bp: None,
+            holiday_bp: Some(20_000),
+        };
+        let add = Rules {
+            bands: vec![band(Period::Day, 8, 15_000)],
+            stacking: Stacking::Add,
+            kinds,
+        };
+        let day = [(9 * H, DayKind::Holiday)];
+        let got = derived(derive_kinds(Status::NonExempt, &add, &day, 0));
+        assert_eq!(got.minutes_at[&20_000], 8 * H);
+        assert_eq!(got.minutes_at[&25_000], H);
+        let highest = Rules {
+            stacking: Stacking::Highest,
+            ..add
+        };
+        let got = derived(derive_kinds(Status::NonExempt, &highest, &day, 0));
+        assert_eq!(got.minutes_at[&20_000], 9 * H);
+    }
+
+    #[test]
+    fn a_holiday_multiplier_alone_is_a_rule_set_but_nothing_at_all_is_not() {
+        let only = Rules {
+            kinds: Kinds {
+                rest_day_bp: None,
+                holiday_bp: Some(20_000),
+            },
+            ..Rules::default()
+        };
+        assert!(matches!(
+            derive_kinds(Status::NonExempt, &only, &[(H, DayKind::Holiday)], 0),
+            Outcome::Derived(_)
+        ));
+        assert_eq!(
+            derive_kinds(
+                Status::NonExempt,
+                &Rules::default(),
+                &[(H, DayKind::Holiday)],
+                0
+            ),
+            Outcome::NoLimitConfigured
+        );
+    }
+
+    #[test]
+    fn weeks_with_labels_each_day_by_its_date() {
+        let mut days = BTreeMap::new();
+        days.insert(d(2026, 11, 2), 60); // Monday
+        days.insert(d(2026, 11, 7), 120); // Saturday
+        let weeks = weeks_with(&days, 1, |date| {
+            if date.weekday().number_from_monday() == 6 {
+                DayKind::Rest
+            } else {
+                DayKind::Ordinary
+            }
+        });
+        assert_eq!(
+            weeks,
+            vec![vec![(60, DayKind::Ordinary), (120, DayKind::Rest)]]
         );
     }
 }
