@@ -374,7 +374,7 @@
       {
         "title": "github-pages-site.md",
         "path": "spec/github-pages-site.md",
-        "description": "The static documentation site: what it shows, the locale switcher, dates in the page's locale, the subtree export; built, not published (WPM-R217, WPM-D150, WPM-T392, WPM-T399)"
+        "description": "The static documentation site: what it shows, the locale switcher, dates in the page's locale, the subtree export; published 2026-11-04 (WPM-R217, WPM-D150, WPM-T392, WPM-T399)"
       },
       {
         "title": "spec/cross-app-bridges.md",
@@ -496,7 +496,7 @@
       {
         "title": "workforce-planning-management.github.io",
         "path": "workforce-planning-management.github.io/README.md",
-        "description": "The GitHub Pages documentation site: SvelteKit adapter-static, Lily pickers, 258 prerendered pages; the publish steps (make github-pages) for the owner"
+        "description": "The GitHub Pages documentation site: SvelteKit adapter-static, Lily pickers, 258 prerendered pages; the publish steps (make github-pages)"
       }
     ],
     "operate": [

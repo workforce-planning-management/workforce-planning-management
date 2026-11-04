@@ -5691,9 +5691,11 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       screenshots read (home light, an Arabic brief dark, the Arabic list at phone width). **Not done:** no `github-pages` remote, no exported repository, no push, no sibling clone (WPM-T399, the
       owner's); the deploy workflow has never run. The site's own words are English only; the Bengali briefs write dates in Bengali digits, so they are left as written; two themes only; the first paint
       uses the light fallback tokens; 210 of the 231 briefs are not axe-audited.
-- [ ] WPM-T399 **Publish the GitHub Pages site.** *(WPM-R217, WPM-D150)* The maintainer's: create the empty public repository `workforce-planning-management/workforce-planning-management.github.io`, set its
-      Pages source to GitHub Actions, add the `github-pages` remote, run `make github-pages`, and check the deployed site. The steps are in the site's
-      [README](../workforce-planning-management.github.io/README.md), "Publishing".
+- [x] (2026-11-04) WPM-T399 **Publish the GitHub Pages site.** *(WPM-R217, WPM-D150)* At the maintainer's direction: created the public repository `workforce-planning-management/workforce-planning-management.github.io`, set
+      its Pages source to GitHub Actions, added the `github-pages` remote and ran `make github-pages`; the first run of the deploy workflow passed, and the site is at <https://workforce-planning-management.github.io/>.
+      **Verified:** before the push the content copy was current, `svelte-check` found 0 errors, the build wrote 258 pages and all 111 Playwright and axe tests passed. On the live site a crawl of every internal link reached 258 pages
+      with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
+      **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-10-30) WPM-T393 **Agent files accurate and current.** *(WPM-R119)* `AGENTS.md` said "Updated 2026-10-07, through WPM-T97" and listed neither the matcher crate, `scripts/`, `docs/` nor the
       workflows; it now does, and says the sibling repositories are not edited from here. `AGENTS/spec-driven-delivery.md`: the next free ids (WPM-R217, D148, T397), Phase 25 as the newest heading (it said
       Phase 11), that every task needs an entry in `tasks.md` because `status.py` counts only that file, and `[~]` for part done; it said no deferral was open. `AGENTS/testing-and-verification.md`: the

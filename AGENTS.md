@@ -50,7 +50,7 @@ stack-level detail. (Updated 2026-10-30, through WPM-T398; the site, WPM-T392.)
 - `scripts/` — the checks CI runs (`check-links.py`, `check-days.py`, `check-licenses.py`, `check-actions-pinned.py`,
   `status.py`, `llms.py`), the demo filler, backup and restore, and the least-privilege drill (`verify-db-roles.sh`).
 - `workforce-planning-management.github.io/` — the static documentation site (SvelteKit, Lily), exported with `git subtree` by
-  `make github-pages` (`bin/make-github-pages`); built, not published ([spec/github-pages-site.md](spec/github-pages-site.md)).
+  `make github-pages` (`bin/make-github-pages`); published at <https://workforce-planning-management.github.io/> ([spec/github-pages-site.md](spec/github-pages-site.md)).
 - `docs/` — guides beside the spec: [the family bridges tutorial](docs/tutorials/family-bridges.md) and the UK NHS notes.
 - `.github/workflows/` — `ci.yml` (every gate) and `release.yml`; every action and image pinned to a digest.
 - `.sota/` — the 2026-10-05 benchmark scan record (`last-scan.json`, the rubric).

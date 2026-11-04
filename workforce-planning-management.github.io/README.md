@@ -13,9 +13,9 @@ says. Change the site here; never work in the exported repository. What the site
 does, and why, is [`../spec/github-pages-site.md`](../spec/github-pages-site.md)
 (WPM-R217, WPM-D150, WPM-T392).
 
-**Status (2026-10-30): built, not published.** No `github-pages` remote is
-configured, the exported repository does not exist yet, and nothing has been
-pushed. The steps to publish are below.
+**Status (2026-11-04): published** at
+<https://workforce-planning-management.github.io/>. To publish a change, see
+"Publishing" below.
 
 ## What it shows
 
@@ -82,8 +82,8 @@ published as a project site rather than the organization site.
 
 ## Publishing
 
-The owner of the `workforce-planning-management` GitHub organization does this
-once; nothing in this repository has done any of it.
+Steps 1 to 3 were done once, on 2026-11-04 (WPM-T399); a new clone needs only
+step 3. Every later publish is step 4.
 
 1. On GitHub, create the empty public repository
    `workforce-planning-management/workforce-planning-management.github.io` (no
@@ -133,4 +133,5 @@ Every later publish is step 4 again (and a `git pull` in the sibling export).
 - GitHub Pages cannot send HTTP headers, so the content security policy is a
   `<meta http-equiv>` tag, which cannot carry `frame-ancestors`.
 - Axe audits every document and list but one brief per locale (21 of 231).
-- The deploy workflow has never run, and the published site has not been seen.
+- The site has no `404.html`, so a wrong address gets GitHub's own 404 page, not
+  the site's.

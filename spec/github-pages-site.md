@@ -1,7 +1,7 @@
 # The GitHub Pages documentation site
 
-WPM-R217, WPM-D150; tasks WPM-T392 (built, not published) and WPM-T399 (publish,
-open). The family pattern is [monorepo-github-pages](monorepo-github-pages/index.md);
+WPM-R217, WPM-D150; tasks WPM-T392 (built) and WPM-T399 (published 2026-11-04, at
+<https://workforce-planning-management.github.io/>). The family pattern is [monorepo-github-pages](monorepo-github-pages/index.md);
 this file says how WPM applies it. The site itself is
 [`workforce-planning-management.github.io/`](../workforce-planning-management.github.io/README.md).
 
@@ -59,9 +59,10 @@ Acceptance criteria:
 - **The CSP is a meta tag.** GitHub Pages sends no custom headers, so the policy
   is SvelteKit's `<meta http-equiv>` (no `frame-ancestors`). It is stricter than the
   UI's in one way: no `unsafe-inline` styles.
-- **Published by the owner, not by an agent.** Creating the organization's
+- **Published at the owner's direction.** Creating the organization's
   `*.github.io` repository, adding the `github-pages` remote and the first push are
-  the maintainer's (WPM-T399); the site's README lists the steps. The exported
+  the maintainer's decision; the maintainer asked for them on 2026-11-04 and an agent
+  ran them (WPM-T399). The site's README lists the steps. The exported
   repository, and any sibling clone of it, is read-only: it changes only through the
   subtree.
 

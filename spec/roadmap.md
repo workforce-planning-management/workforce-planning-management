@@ -34,7 +34,7 @@ category limits) are listed there under "Not done".
   trend line; other screens sized for other devices.
 - **Localization:** a native-speaker review of every translation; exercising the
   Sveltia CMS end to end with a GitHub login; publishing the `<repo>.github.io` site (see
-  [github-pages-site.md](github-pages-site.md) — built, not published; WPM-T399).
+  [github-pages-site.md](github-pages-site.md) — published 2026-11-04, WPM-T399).
 - **Auth:** the Keycloak, Entra and enforcement suites run in CI (`.github/workflows/ci.yml`); a
   caller in two organizations is not covered by the people-impact tests (WPM-T361).
 - **Cross-app bridges:** PPM's sender and puller and CRM's webhook receiver and lean-list import have

@@ -83,7 +83,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [spec/contents-for-global-sharing-with-svelte/index.md](spec/contents-for-global-sharing-with-svelte/index.md): convention: tables of contents for global sharing with Svelte
 - [spec/glossary.md](spec/glossary.md): terms used across the spec
 - [spec/worldwide.md](spec/worldwide.md): the target is worldwide, not US or UK; jurisdiction is data, standards are profiles (WPM-R214)
-- [spec/github-pages-site.md](spec/github-pages-site.md): The static documentation site: what it shows, the locale switcher, dates in the page's locale, the subtree export; built, not published (WPM-R217, WPM-D150, WPM-T392, WPM-T399)
+- [spec/github-pages-site.md](spec/github-pages-site.md): The static documentation site: what it shows, the locale switcher, dates in the page's locale, the subtree export; published 2026-11-04 (WPM-R217, WPM-D150, WPM-T392, WPM-T399)
 - [spec/cross-app-bridges.md](spec/cross-app-bridges.md): bridges to CRM and PPM: the family contract (2026-10-30), references and counts only, the caller's token (WPM-R206 to R213)
 - [spec/mhra.md](spec/mhra.md): the MHRA as a named UK regulator; its workforce questions left open until its guidance is read (WPM-R212)
 - [spec/regulatory.md](spec/regulatory.md): regulatory position: demo software, not a production HR or payroll system
@@ -110,7 +110,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [workforce-planning-management-matcher-with-rust/README.md](workforce-planning-management-matcher-with-rust/README.md): the worker matcher crate (published; the service uses the crates.io copy): pure, explainable matching of worker records; no national identifiers (WPM-R134)
 - [workforce-planning-management-service-with-rust/spec/index.md](workforce-planning-management-service-with-rust/spec/index.md): the service's stack-specific spec: layout, environment variables, masking and privacy mechanics
 - [workforce-planning-management-ui-with-svelte/spec/index.md](workforce-planning-management-ui-with-svelte/spec/index.md): the UI's stack-specific spec
-- [workforce-planning-management.github.io/README.md](workforce-planning-management.github.io/README.md): The GitHub Pages documentation site: SvelteKit adapter-static, Lily pickers, 258 prerendered pages; the publish steps (make github-pages) for the owner
+- [workforce-planning-management.github.io/README.md](workforce-planning-management.github.io/README.md): The GitHub Pages documentation site: SvelteKit adapter-static, Lily pickers, 258 prerendered pages; the publish steps (make github-pages)
 
 ## Working agreements
 

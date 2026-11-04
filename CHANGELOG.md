@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the GitHub Pages documentation site is published (WPM-T399, WPM-R217, WPM-D150, 2026-11-04)
+
+The site built in WPM-T392 is live at <https://workforce-planning-management.github.io/>, exported with `make github-pages` to the new repository `workforce-planning-management/workforce-planning-management.github.io` and deployed by its GitHub Actions workflow. Not done: a sibling clone of the export, and a `404.html` for the site.
+
 ### Added — an advisory statutory-overtime check for a payroll run (WPM-R219, WPM-D157, WPM-T418, WPM-T419, 2026-11-03)
 
 `GET /api/payroll-runs/{pid}/overtime-check` (HR and payroll) derives each worker's statutory overtime for the run's period from approved time, week by week, using the bands configured for their place of work and the overtime status a person recorded on their seat. An exempt seat is `exempt` (with whether its salary is below the configured weekly floor), a seat nobody recorded or a worker with no seat is `unknown`, and a place with no bands is `no_limit_configured`; none of them reads as no overtime. It changes no payslip, and a monthly band is not derived.
