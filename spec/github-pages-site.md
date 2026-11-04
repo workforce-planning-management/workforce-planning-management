@@ -116,7 +116,6 @@ Acceptance criteria:
 
 Machine translations (Welsh, Mandarin) have had no native-speaker review. The other 13
 locales have no landing page or tutorial, and English chrome around their briefs; README,
-Install, the specification and `/compare/` are English. Theme names are English. The
-tutorial's commands come from `INSTALL.md` and were not run end to end.
+Install, the specification and `/compare/` are English. Theme names are English.
 
 See the site's README, "Not done", and WPM-T392 in [tasks.md](tasks.md).

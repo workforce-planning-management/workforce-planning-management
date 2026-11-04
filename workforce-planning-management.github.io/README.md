@@ -131,7 +131,6 @@ Every later publish is step 4 again (and a `git pull` in the sibling export).
 - The site's own words are in English, Welsh and Mandarin only. The other 13 locales
   have no landing page or tutorial, and README, Install, the specification and
   `/compare/` are English. Theme names are English.
-- The tutorial's commands come from `INSTALL.md` and have not been run end to end.
 - The Bengali briefs write their dates in Bengali digits, not ISO, so those dates
   are left as written.
 - Before the theme stylesheet loads (the first paint, or with JavaScript off) the

@@ -22,7 +22,7 @@ cd workforce-planning-management
 
 ## 第 2 步：启动服务
 
-准备空数据库并启动 API。仅此实例关闭登录，并为导览提高速率限制。
+服务读取 `DATABASE_URL`，默认值为 `postgres://loco:loco@localhost:5432/workforce_planning_management_development`；如果您的数据库使用其他名称、用户或端口，请设置此变量。准备空数据库并启动 API。仅此实例关闭登录，并为导览提高速率限制。
 
 ```sh
 cd workforce-planning-management-service-with-rust

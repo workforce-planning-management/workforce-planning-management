@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the tutorial says how the service finds its database (WPM-T457, 2026-11-04)
+
+Run end to end for the first time, the tutorial left a reader with a connection timeout: step 2 now gives `DATABASE_URL` and its default.
+
 ### Added — the website's own not-found page (WPM-T456, WPM-R231, 2026-11-04)
 
 A wrong address on the site now shows a page in English, Welsh and Mandarin with a link home, in place of GitHub's generic error.
@@ -19,7 +23,7 @@ The landing pages, tutorial and comparison pages read as a business analyst's de
 
 ### Changed — the website welcomes visitors: picker bar, translations, tutorial and comparisons (WPM-T454, WPM-R231, WPM-D175, 2026-11-04)
 
-<https://workforce-planning-management.github.io/> is now a landing page (benefits, features, a comparison, who it is for), with a guided tutorial at `/<locale>/start/`, comparisons at `/compare/<slug>/`, the full Lily picker bar (all 57 themes, search and share), the site's own words in English, Welsh and Mandarin (AI-written, unreviewed), and sitemaps. The document index moved from `/` to `/docs/`. Not done: the other 13 locales have no landing page, and the tutorial was not run end to end.
+<https://workforce-planning-management.github.io/> is now a landing page (benefits, features, a comparison, who it is for), with a guided tutorial at `/<locale>/start/`, comparisons at `/compare/<slug>/`, the full Lily picker bar (all 57 themes, search and share), the site's own words in English, Welsh and Mandarin (AI-written, unreviewed), and sitemaps. The document index moved from `/` to `/docs/`. Not done: the other 13 locales have no landing page.
 
 ### Added — the GitHub Pages documentation site is published (WPM-T399, WPM-R217, WPM-D150, 2026-11-04)
 

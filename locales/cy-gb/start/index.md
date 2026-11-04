@@ -22,7 +22,7 @@ cd workforce-planning-management
 
 ## Cam 2: Cychwyn y gwasanaeth
 
-Paratowch y gronfa ddata wag a chychwyn yr API. Mae mewngofnodi wedi'i ddiffodd ar gyfer yr enghraifft hon yn unig, a chodir y terfyn cyfradd ar gyfer y daith.
+Mae'r gwasanaeth yn darllen `DATABASE_URL`. Ei ragosodiad yw `postgres://loco:loco@localhost:5432/workforce_planning_management_development`; gosodwch y newidyn os oes gan eich cronfa ddata enw, defnyddiwr neu borth arall. Paratowch y gronfa ddata wag a chychwyn yr API. Mae mewngofnodi wedi'i ddiffodd ar gyfer yr enghraifft hon yn unig, a chodir y terfyn cyfradd ar gyfer y daith.
 
 ```sh
 cd workforce-planning-management-service-with-rust
