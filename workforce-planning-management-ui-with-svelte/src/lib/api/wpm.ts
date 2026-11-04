@@ -664,6 +664,8 @@ export function addLearningRequirement(body: {
   /** This requirement's own due-soon window in calendar days (1 to 366); absent uses the deployment's. */
   due_soon_days?: number;
   staff_groups?: string[];
+  /** Position numbers; a person who holds no numbered seat is `unknown` against these. */
+  positions?: string[];
   job_roles?: string[];
   areas_of_work?: string[];
 }): Promise<{ pid: string }> {
@@ -1627,6 +1629,8 @@ export type Position = {
   organization_ref: string;
   cost_centre: string;
   title: string;
+  /** The number the post is known by in an establishment list; unique in the organization. */
+  number?: string | null;
   budget_fte_percent: number;
   funding_kind: "core" | "time_limited" | "external" | "programme";
   funding_ends_on: string | null;
@@ -1694,6 +1698,7 @@ export function createPosition(body: {
   funding_ends_on?: string;
   programme_ref?: string;
   overtime_status?: (typeof OVERTIME_STATUSES)[number];
+  number?: string;
 }): Promise<{ pid: string }> {
   return api("/positions", { method: "POST", body });
 }

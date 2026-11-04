@@ -15,12 +15,12 @@
     "ui": "SvelteKit 3, Svelte 5 runes, TypeScript",
     "tests": {
       "service_unit_declared": 1168,
-      "service_request_declared": 212,
+      "service_request_declared": 213,
       "ui_unit_declared": 281,
       "ui_e2e_declared": 257,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
-    "migrations": 123,
+    "migrations": 124,
     "controllers": 89,
     "pages": 60
   },

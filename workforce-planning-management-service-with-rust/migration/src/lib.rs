@@ -136,6 +136,7 @@ pub mod m20261103_000120_payslip_statutory_overtime;
 pub mod m20261103_000121_learning_requirement_due_soon;
 pub mod m20261103_000122_coverage_evidence;
 pub mod m20261103_000123_coverage_reminders;
+pub mod m20261103_000124_position_number;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -272,6 +273,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261103_000121_learning_requirement_due_soon::Migration),
             Box::new(m20261103_000122_coverage_evidence::Migration),
             Box::new(m20261103_000123_coverage_reminders::Migration),
+            Box::new(m20261103_000124_position_number::Migration),
             // inject-above (do not remove this comment)
         ]
     }

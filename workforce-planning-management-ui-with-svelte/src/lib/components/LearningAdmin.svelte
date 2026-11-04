@@ -31,6 +31,7 @@
   let staffGroups = $state("");
   let jobRoles = $state("");
   let areas = $state("");
+  let positionNumbers = $state("");
 
   let requirementPid = $state("");
   let workerPid = $state("");
@@ -87,6 +88,7 @@
         staff_groups: list(staffGroups),
         job_roles: list(jobRoles),
         areas_of_work: list(areas),
+        positions: list(positionNumbers),
       }),
     );
     if (ok) {
@@ -94,7 +96,7 @@
       source = "";
       refresher = "";
       dueSoon = "";
-      staffGroups = jobRoles = areas = "";
+      staffGroups = jobRoles = areas = positionNumbers = "";
     }
   }
 
@@ -128,6 +130,7 @@
     <label>{t("mandatoryLearning.staffGroups")} <input bind:value={staffGroups} data-testid="req-staff-groups" /></label>
     <label>{t("mandatoryLearning.jobRoles")} <input bind:value={jobRoles} /></label>
     <label>{t("mandatoryLearning.areasOfWork")} <input bind:value={areas} /></label>
+    <label>{t("mandatoryLearning.positions")} <input bind:value={positionNumbers} data-testid="req-positions" /></label>
     <button type="submit" data-testid="req-save">{t("mandatoryLearning.save")}</button>
   </form>
 

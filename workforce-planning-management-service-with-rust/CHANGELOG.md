@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — position audiences for learning requirements (WPM-T434)
+
+`positions.number` (migration `m20261103_000124`; optional, unique within an organization), accepted on `POST` and `PUT /api/positions`. A learning requirement whose audience names positions is matched on the number of the one numbered seat a person holds; no seat, an unnumbered seat or several numbered seats read `unknown`.
+
 ### Added — coverage evidence and its expiry reminder (WPM-R220, WPM-D154, WPM-T420)
 
 `GET/POST /api/coverage-evidence`, `POST /api/coverage-evidence/{pid}/retire` (HR only; audited); migrations `m20261103_000122` (`coverage_evidence`) and `m20261103_000123` (`coverage_reminders`); `rules::coverage_evidence::{standing, problems}`; the daily task `coverage_expiry_reminders` (scheduled 07:25, idempotent). A record with no end date is `no_end_date`, never valid. The certificate is a reference, never a copy.

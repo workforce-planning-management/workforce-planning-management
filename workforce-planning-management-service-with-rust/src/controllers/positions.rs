@@ -103,6 +103,17 @@ pub(crate) struct Payload {
     /// `exempt`, `non_exempt` or `unknown`: a person's entry about statutory overtime, never inferred (WPM-D157). Left out, a new
     /// position is `unknown` and an update keeps what is recorded.
     overtime_status: Option<String>,
+    /// The number the post is known by in an establishment list, unique in the organization (WPM-T434). Left out, a new position has
+    /// none and an update keeps what is recorded; blank is the same as left out.
+    number: Option<String>,
+}
+
+/// The number as it is kept: trimmed, and blank is none.
+fn clean_number(number: Option<&str>) -> Option<String> {
+    number
+        .map(str::trim)
+        .filter(|n| !n.is_empty())
+        .map(ToString::to_string)
 }
 
 fn problems(p: &Payload) -> Vec<String> {
@@ -124,7 +135,33 @@ fn problems(p: &Payload) -> Vec<String> {
     {
         out.push("overtime_status must be exempt, non_exempt or unknown".to_string());
     }
+    if clean_number(p.number.as_deref()).is_some_and(|n| n.chars().count() > 40) {
+        out.push("number is 1 to 40 characters".to_string());
+    }
     out
+}
+
+/// A number names one position in an organization, so a second use is refused in words, not left to a constraint error.
+async fn ensure_number_free(
+    ctx: &AppContext,
+    organization: &str,
+    number: Option<&str>,
+    except: Option<Uuid>,
+) -> Result<()> {
+    let Some(number) = number else {
+        return Ok(());
+    };
+    let taken = positions::Entity::find()
+        .filter(positions::Column::OrganizationRef.eq(organization))
+        .filter(positions::Column::Number.eq(number))
+        .one(&ctx.db)
+        .await?;
+    if taken.is_some_and(|t| Some(t.pid) != except) {
+        return Err(unprocessable(
+            "number is already used by another position in this organization",
+        ));
+    }
+    Ok(())
 }
 
 async fn ensure_demand_line(ctx: &AppContext, pid: Option<Uuid>) -> Result<()> {
@@ -152,6 +189,8 @@ async fn create(
     ensure_org_in_scope(&ctx, &caller, &organization).await?;
     ensure_valid(&problems(&payload))?;
     ensure_demand_line(&ctx, payload.demand_line_pid).await?;
+    let number = clean_number(payload.number.as_deref());
+    ensure_number_free(&ctx, &organization, number.as_deref(), None).await?;
     let pid = Uuid::new_v4();
     let txn = ctx.db.begin().await?;
     positions::ActiveModel {
@@ -171,6 +210,7 @@ async fn create(
                 .unwrap_or_else(|| "unknown".to_string()),
         ),
         demand_line_pid: ActiveValue::set(payload.demand_line_pid),
+        number: ActiveValue::set(number),
         recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
         ..Default::default()
     }
@@ -223,6 +263,8 @@ async fn update(
             "position is \"abolished\"; an ended position is not changed",
         ));
     }
+    let number = clean_number(payload.number.as_deref());
+    ensure_number_free(&ctx, &row.organization_ref, number.as_deref(), Some(pid)).await?;
     let before_status = row.overtime_status.clone();
     let txn = ctx.db.begin().await?;
     let mut active: positions::ActiveModel = row.into();
@@ -238,6 +280,9 @@ async fn update(
         .is_some_and(|s| *s != before_status);
     if let Some(s) = &payload.overtime_status {
         active.overtime_status = ActiveValue::set(s.clone());
+    }
+    if number.is_some() {
+        active.number = ActiveValue::set(number);
     }
     active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
     active.update(&txn).await?;

@@ -2126,6 +2126,7 @@ collections:
                   - { name: "unknown", label: "Unknown", widget: string, required: false, i18n: true }
                   - { name: "no_positions", label: "No_positions", widget: string, required: false, i18n: true }
                   - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "number", label: "Number", widget: string, required: false, i18n: true }
                   - { name: "funding", label: "Funding", widget: string, required: false, i18n: true }
                   - { name: "state", label: "State", widget: string, required: false, i18n: true }
                   - { name: "holder", label: "Holder", widget: string, required: false, i18n: true }
@@ -3944,6 +3945,7 @@ collections:
               - { name: "staffGroups", label: "Staff Groups", widget: string, required: false, i18n: true }
               - { name: "jobRoles", label: "Job Roles", widget: string, required: false, i18n: true }
               - { name: "areasOfWork", label: "Areas Of Work", widget: string, required: false, i18n: true }
+              - { name: "positions", label: "Positions", widget: string, required: false, i18n: true }
               - { name: "save", label: "Save", widget: string, required: false, i18n: true }
               - { name: "retire", label: "Retire", widget: string, required: false, i18n: true }
               - { name: "recordTitle", label: "Record Title", widget: string, required: false, i18n: true }

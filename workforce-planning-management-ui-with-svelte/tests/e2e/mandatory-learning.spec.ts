@@ -265,6 +265,7 @@ test.describe("Statutory and mandatory learning", () => {
     await page.getByTestId("req-refresher").fill("12");
     await page.getByTestId("req-due-soon").fill("30");
     await page.getByTestId("req-staff-groups").fill("nurse, doctor");
+    await page.getByTestId("req-positions").fill("N-001, N-002");
     await page.getByTestId("req-save").click();
     await expect(page.getByTestId("req-row")).toContainText("Fire safety");
     expect(sent[0]?.body).toMatchObject({
@@ -274,6 +275,7 @@ test.describe("Statutory and mandatory learning", () => {
       refresher_months: 12,
       due_soon_days: 30,
       staff_groups: ["nurse", "doctor"],
+      positions: ["N-001", "N-002"],
     });
     await page.getByTestId("comp-requirement").selectOption("q1");
     await page.getByTestId("comp-worker").selectOption(WORKER.pid);

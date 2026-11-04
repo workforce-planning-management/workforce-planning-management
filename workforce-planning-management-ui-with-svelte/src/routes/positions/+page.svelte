@@ -37,6 +37,7 @@
   let error = $state<string | null>(null);
   let costCentre = $state("");
   let title = $state("");
+  let number = $state("");
   let budget = $state(100);
   let funding = $state<string>("core");
   let fundingEnds = $state("");
@@ -63,6 +64,7 @@
 
   const seatColumns = $derived<DataGridColumn[]>([
     { id: "cost_centre", header: t("pages.positions.cost_centre"), sortable: true, rowHeader: true },
+    { id: "number", header: t("pages.positions.number"), sortable: true, accessor: (r) => (r.number as string | null) ?? "—" },
     { id: "title", header: t("pages.positions.title"), sortable: true },
     { id: "budget_fte_percent", header: t("pages.positions.budgeted"), sortable: true, align: "end", format: (v) => formatCentiFte(v as number) },
     { id: "funding_kind", header: t("pages.positions.funding"), sortable: true, accessor: (r) => t(`values.${r.funding_kind as string}` as never) },
@@ -111,6 +113,7 @@
         organization_ref: organization,
         cost_centre: costCentre.trim(),
         title: title.trim(),
+        ...(number.trim() ? { number: number.trim() } : {}),
         budget_fte_percent: budget,
         funding_kind: funding,
         ...(overtime !== "unknown" ? { overtime_status: overtime } : {}),
@@ -118,6 +121,7 @@
         ...(funding === "programme" && programme.trim() ? { programme_ref: programme.trim() } : {}),
       });
       title = "";
+      number = "";
       await load();
     } catch (cause) {
       error = errorText(cause);
@@ -189,6 +193,7 @@
   <form onsubmit={plan}>
     <label>{t("pages.positions.cost_centre")} <input bind:value={costCentre} required maxlength="80" /></label>
     <label>{t("pages.positions.title")} <input bind:value={title} required maxlength="120" /></label>
+    <label>{t("pages.positions.number")} <input bind:value={number} maxlength="40" data-testid="position-number" /></label>
     <label>{t("pages.positions.budget_percent")} <input type="number" bind:value={budget} min="1" max="100" required /></label>
     <label>
       {t("pages.positions.funding")}

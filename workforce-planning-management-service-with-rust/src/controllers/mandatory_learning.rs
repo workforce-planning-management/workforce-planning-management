@@ -16,7 +16,8 @@ use uuid::Uuid;
 use super::{ensure_org_in_scope, ensure_scale, ensure_valid, forbidden, writable_worker};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    assignments, learning_completions, learning_requirements, training_enrollments, workers,
+    assignments, learning_completions, learning_requirements, positions, training_enrollments,
+    workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -116,6 +117,28 @@ fn status_name(s: rules::Status) -> &'static str {
     }
 }
 
+/// The number of the one numbered position each worker holds. A person who holds none, one with no number, or more than one numbered
+/// position is left out, so an audience that names positions reads `unknown` for them, never a guess (WPM-T434). An abolished
+/// position is not held.
+async fn position_numbers(ctx: &AppContext, pids: &[Uuid]) -> Result<HashMap<Uuid, String>> {
+    let mut held: HashMap<Uuid, Vec<String>> = HashMap::new();
+    for p in positions::Entity::find()
+        .filter(positions::Column::HolderWorkerPid.is_in(pids.to_vec()))
+        .filter(positions::Column::State.ne("abolished"))
+        .filter(positions::Column::Number.is_not_null())
+        .all(&ctx.db)
+        .await?
+    {
+        if let (Some(holder), Some(number)) = (p.holder_worker_pid, p.number) {
+            held.entry(holder).or_default().push(number);
+        }
+    }
+    Ok(held
+        .into_iter()
+        .filter_map(|(w, mut n)| (n.len() == 1).then(|| (w, n.remove(0))))
+        .collect())
+}
+
 /// The categories of each worker's assignments in force on `today`.
 async fn categories_of(
     ctx: &AppContext,
@@ -123,6 +146,7 @@ async fn categories_of(
     today: NaiveDate,
 ) -> Result<HashMap<Uuid, Vec<rules::Categories>>> {
     let mut out: HashMap<Uuid, Vec<rules::Categories>> = HashMap::new();
+    let numbers = position_numbers(ctx, pids).await?;
     for a in assignments::Entity::find()
         .filter(assignments::Column::WorkerPid.is_in(pids.to_vec()))
         .all(&ctx.db)
@@ -135,8 +159,7 @@ async fn categories_of(
                     staff_group: a.staff_group,
                     job_role: a.job_role,
                     area_of_work: a.area_of_work,
-                    // Position numbers are not a column yet, so an audience that names positions is `unknown`, never a guess.
-                    position: None,
+                    position: numbers.get(&a.worker_pid).cloned(),
                 });
         }
     }

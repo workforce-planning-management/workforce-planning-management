@@ -143,7 +143,8 @@ adds what is missing and says how the pieces assemble.
 
 - **A requirement** has a subject, a **basis**, either `statutory` (required by law or a regulator; the source is named) or
   `mandatory` (required by the organization), a refresher period in months (or none: once is enough), the course URNs that
-  satisfy it, and an **audience**: the organization, or some of staff group, job role, area of work and position.
+  satisfy it, and an **audience**: the organization, or some of staff group, job role, area of work and position. A position is named by its number (`positions.number`, unique in the organization); a person who does
+  not hold exactly one numbered seat is `unknown` against a position audience, never not-applicable.
 - **Status per person and requirement**: `compliant`, `due_soon` (inside a configured window, 90 calendar days as the existing
   compliance view), `expired`, `never_completed`, `not_applicable`, or **`unknown`** when the person's assignments do not record
   the category the audience is defined by (WPM-D117). Unknown is never counted as compliant or as missing.

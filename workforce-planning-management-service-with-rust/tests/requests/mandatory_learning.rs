@@ -328,3 +328,79 @@ async fn a_requirement_may_carry_its_own_due_soon_window() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_position_audience_matches_the_number_of_the_seat_held_and_otherwise_says_unknown() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut people = Vec::new();
+        for n in 0..3 {
+            let w = seed_worker!(&request, &org, format!("ML-P{n}-{tag}"), None).await;
+            activate!(&request, &w).await;
+            people.push(w);
+        }
+        let seat = |number: Option<&'static str>| {
+            let request = &request;
+            let org = org.clone();
+            async move {
+                request
+                    .post("/api/positions")
+                    .json(&json!({ "organization_ref": org, "cost_centre": "CC-ML", "title": "Nurse", "budget_fte_percent": 100,
+                        "funding_kind": "core", "number": number }))
+                    .await
+            }
+        };
+        let first = seat(Some("N-001")).await;
+        assert_eq!(first.status_code(), 200, "{}", first.text());
+        let first = first.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let second = seat(Some("N-002")).await.json::<Value>()["pid"].as_str().unwrap().to_string();
+        // A number names one seat in an organization.
+        let again = seat(Some(" N-001 ")).await;
+        assert_eq!(again.status_code(), 422, "{}", again.text());
+        // Blank is no number, and two seats may both have none.
+        assert_eq!(seat(Some("  ")).await.status_code(), 200);
+        assert_eq!(seat(None).await.status_code(), 200);
+
+        for (seat_pid, who) in [(&first, &people[0]), (&second, &people[1])] {
+            let approved = request
+                .post(&format!("/api/positions/{seat_pid}/status"))
+                .json(&json!({ "to": "approved" }))
+                .await;
+            assert_eq!(approved.status_code(), 200, "{}", approved.text());
+            let held = request
+                .put(&format!("/api/positions/{seat_pid}/holder"))
+                .json(&json!({ "worker_pid": who }))
+                .await;
+            assert_eq!(held.status_code(), 200, "{}", held.text());
+        }
+        let made = request
+            .post("/api/learning-requirements")
+            .json(&json!({ "organization": org, "subject": "Ward safety", "basis": "mandatory", "positions": ["N-001"] }))
+            .await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+        let req = made.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let status_of = |who: &str| {
+            let request = &request;
+            let url = format!("/api/workers/{who}/mandatory-learning");
+            let req = req.clone();
+            async move {
+                let mine: Value = request.get(&url).await.json();
+                mine["requirements"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|r| r["requirement_pid"] == req.as_str())
+                    .map(|r| r["status"].clone())
+            }
+        };
+        assert_eq!(status_of(&people[0]).await, Some(json!("never_completed")), "holds N-001");
+        // Holding N-002, a seat that is not in the audience, is not applicable (and not listed for the person).
+        assert_ne!(status_of(&people[1]).await, Some(json!("never_completed")));
+        // Holding no seat: nobody recorded where they are, so the answer is unknown, never "not applicable".
+        assert_eq!(status_of(&people[2]).await, Some(json!("unknown")));
+    })
+    .await;
+}
