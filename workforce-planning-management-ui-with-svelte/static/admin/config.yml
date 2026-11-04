@@ -345,6 +345,7 @@ collections:
               - { name: "statutoryOvertime", label: "Statutory Overtime", widget: string, required: false, i18n: true }
               - { name: "employerCost", label: "Employer Cost", widget: string, required: false, i18n: true }
               - { name: "employerUnresolved", label: "Employer Unresolved", widget: string, required: false, i18n: true }
+              - { name: "employerTotal", label: "Employer Total", widget: string, required: false, i18n: true }
               - { name: "net", label: "Net", widget: string, required: false, i18n: true }
               - { name: "deductions", label: "Deductions", widget: string, required: false, i18n: true }
           - name: "bench"

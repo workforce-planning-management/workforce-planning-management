@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the employer cost of a payroll run (WPM-T423)
+
+The run page totals the employer cost of its payslips, one total per currency, never mixed. A line that could not be resolved adds nothing. One string (`pay.employerTotal`) in 13 locales (AI-written, unreviewed).
+
 ### Added — employer cost on the payslip (WPM-T423)
 
 A payslip column of employer cost lines, marked as not deducted, with an unresolved rate said in words. Two strings in 13 locales (AI-written, unreviewed).

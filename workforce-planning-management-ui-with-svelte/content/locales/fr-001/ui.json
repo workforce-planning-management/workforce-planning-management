@@ -223,6 +223,7 @@
     "statutoryOvertime": "Majoration légale des heures supplémentaires (comprise dans le brut)",
     "employerCost": "Coût employeur (non déduit du net)",
     "employerUnresolved": "Taux non déterminé",
+    "employerTotal": "Coût employeur total de cette exécution",
     "net": "Net",
     "deductions": "Retenues"
   },

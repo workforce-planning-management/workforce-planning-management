@@ -223,6 +223,7 @@
     "statutoryOvertime": "法定加班费（已计入应发工资）",
     "employerCost": "雇主成本（不从净额中扣除）",
     "employerUnresolved": "费率未确定",
+    "employerTotal": "本次运行的雇主成本合计",
     "net": "净额",
     "deductions": "扣除"
   },

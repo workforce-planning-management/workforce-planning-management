@@ -223,6 +223,7 @@
     "statutoryOvertime": "Statutory overtime premium (in gross)",
     "employerCost": "Employer cost (not deducted from net)",
     "employerUnresolved": "Rate not resolved",
+    "employerTotal": "Employer cost in this run, total",
     "net": "Net",
     "deductions": "Deductions"
   },

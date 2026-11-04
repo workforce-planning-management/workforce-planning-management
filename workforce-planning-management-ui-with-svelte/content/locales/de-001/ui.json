@@ -223,6 +223,7 @@
     "statutoryOvertime": "Gesetzlicher Überstundenzuschlag (im Brutto)",
     "employerCost": "Arbeitgeberkosten (nicht vom Netto abgezogen)",
     "employerUnresolved": "Satz nicht ermittelt",
+    "employerTotal": "Arbeitgeberkosten in diesem Lauf, gesamt",
     "net": "Netto",
     "deductions": "Abzüge"
   },

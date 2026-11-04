@@ -63,6 +63,7 @@ test.describe("Workers and payroll", () => {
     await expect(payslips).toContainText("tax");
     await expect(payslips).toContainText("pension: £90.00");
     await expect(payslips).toContainText("injury: Rate not resolved");
+    await expect(page.getByTestId("employer-total")).toContainText("£120.00");
   });
 
   test("the minimum-wage check runs only when asked and shows no age", async ({

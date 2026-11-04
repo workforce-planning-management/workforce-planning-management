@@ -49,6 +49,17 @@
   });
   const run = $derived(loader.data?.run ?? null);
   const payslips = $derived(loader.data?.payslips ?? []);
+  // The employer cost of the run, per currency: a total never mixes currencies. A line that could not be resolved adds nothing, and the
+  // payslip says so beside it.
+  const employerTotals = $derived.by(() => {
+    const totals = new Map<string, number>();
+    for (const slip of payslips) {
+      if ((slip.employer_cost_minor ?? 0) > 0) {
+        totals.set(slip.currency, (totals.get(slip.currency) ?? 0) + slip.employer_cost_minor);
+      }
+    }
+    return [...totals];
+  });
   const error = $derived(loader.error);
   const load = () => loader.load();
 
@@ -207,6 +218,12 @@
     rowId={(row) => String(row.pid)}
     pageSize={25}
   />
+  {#if employerTotals.length > 0}
+    <p data-testid="employer-total">
+      {t("pay.employerTotal")}:
+      {#each employerTotals as [currency, minor], i (currency)}{i > 0 ? ", " : ""}{money(minor, currency, i18n.locale)}{/each}
+    </p>
+  {/if}
 
   {#if run.status !== "draft"}
     <h2>{t("minWage.title")}</h2>

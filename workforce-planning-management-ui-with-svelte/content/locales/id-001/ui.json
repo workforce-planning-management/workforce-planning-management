@@ -223,6 +223,7 @@
     "statutoryOvertime": "Premi lembur menurut undang-undang (termasuk dalam bruto)",
     "employerCost": "Biaya pemberi kerja (tidak dipotong dari bersih)",
     "employerUnresolved": "Tarif belum ditentukan",
+    "employerTotal": "Total biaya pemberi kerja dalam proses ini",
     "net": "Bersih",
     "deductions": "Potongan"
   },

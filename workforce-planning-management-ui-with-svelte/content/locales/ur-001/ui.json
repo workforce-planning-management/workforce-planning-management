@@ -223,6 +223,7 @@
     "statutoryOvertime": "قانونی اوور ٹائم اضافی ادائیگی (مجموعی میں شامل)",
     "employerCost": "آجر کی لاگت (خالص سے نہیں کاٹی جاتی)",
     "employerUnresolved": "شرح طے نہیں ہوئی",
+    "employerTotal": "اس رن میں آجر کی کل لاگت",
     "net": "خالص",
     "deductions": "کٹوتیاں"
   },

@@ -223,6 +223,7 @@
     "statutoryOvertime": "Acréscimo legal de horas extra (incluído no bruto)",
     "employerCost": "Custo do empregador (não deduzido do líquido)",
     "employerUnresolved": "Taxa não determinada",
+    "employerTotal": "Custo total do empregador nesta execução",
     "net": "Líquido",
     "deductions": "Deduções"
   },
