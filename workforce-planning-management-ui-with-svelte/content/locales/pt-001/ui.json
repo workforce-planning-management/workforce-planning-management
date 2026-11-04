@@ -221,6 +221,8 @@
     "pay": "Marcar como pago",
     "gross": "Bruto",
     "statutoryOvertime": "Acréscimo legal de horas extra (incluído no bruto)",
+    "employerCost": "Custo do empregador (não deduzido do líquido)",
+    "employerUnresolved": "Taxa não determinada",
     "net": "Líquido",
     "deductions": "Deduções"
   },

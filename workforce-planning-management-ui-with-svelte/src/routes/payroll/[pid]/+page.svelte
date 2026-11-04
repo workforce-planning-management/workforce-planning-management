@@ -137,6 +137,7 @@
       format: (v, r) => money(Number(v ?? 0), (r as unknown as Payslip).currency, i18n.locale),
     },
     { id: "deductions", header: t("pay.deductions"), cell: deductionsCell },
+    { id: "employer_costs", header: t("pay.employerCost"), cell: employerCostCell },
     {
       id: "net_minor",
       header: t("pay.net"),
@@ -157,6 +158,17 @@
 {#snippet wageWorkerCell({ row, formatted }: { row: DataGridRow; formatted: string })}
   {@const entry = row as unknown as MinimumWageRow}
   <a href={l(`/workers/${entry.worker_pid}`)}>{formatted}</a>
+{/snippet}
+
+{#snippet employerCostCell({ row }: { row: DataGridRow })}
+  {@const slip = row as unknown as Payslip}
+  {#each slip.employer_costs ?? [] as line (line.name)}
+    <span class="chip"
+      >{line.name}: {line.unresolved
+        ? t("pay.employerUnresolved")
+        : money(line.amount_minor ?? 0, slip.currency, i18n.locale)}</span
+    >
+  {/each}
 {/snippet}
 
 {#snippet deductionsCell({ row }: { row: DataGridRow })}

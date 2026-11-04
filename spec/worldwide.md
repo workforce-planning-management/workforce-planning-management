@@ -954,6 +954,8 @@ key outside it is refused.
 | Key | Shape and unit | Combination |
 | --- | --- | --- |
 | `calendar.week_start` | one ISO weekday, 1 (Monday) to 7 (Sunday) | `most_specific` |
+| `employer_contribution.class` | one lowercase token, the class the deployer sets for an organization's class-keyed employer rates (WPM-D170; an organization's layer) | `most_specific` |
+| `employer_contribution.lines` | a set of lines `name:rate_bp:wage_base_minor` or `name@class:rate_bp:wage_base_minor` (a wage base of 0 is no cap), or the one name `none`; a stub cost, never deducted from net (WPM-T423; a worker's chain) | `most_specific` |
 | `flexible_working.appeal_calendar_days` | whole calendar days, 0 to 366 (WPM-T384; a worker's chain) | `strictest_min` (the longest) |
 | `flexible_working.decision_months` | whole calendar months, 1 to 12 (WPM-T384; a worker's chain) | `strictest_max` (the shortest) |
 | `flexible_working.refusal_reasons` | a set of lowercase tokens (WPM-T384; a worker's chain) | `most_specific` |

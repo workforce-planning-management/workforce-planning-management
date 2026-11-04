@@ -43,6 +43,7 @@ pub mod display;
 pub mod duplicates;
 pub mod early_warning;
 pub mod emergency;
+pub mod employer_contribution;
 pub mod engagement;
 pub mod equality_monitoring;
 pub mod equipment;

@@ -293,6 +293,17 @@ fn reader_check(key: &str, value: &rules::Value) -> Result<(), String> {
         "pay_transparency.reporting_tiers" => crate::rules::pay_gap::parse_tiers(&joined())
             .map(|_| ())
             .map_err(|why| format!("{key}: {why}")),
+        "employer_contribution.lines" => {
+            crate::rules::employer_contribution::parse_lines(&value.as_names().unwrap_or_default())
+                .map(|_| ())
+                .map_err(|why| format!("{key}: {why}"))
+        }
+        "employer_contribution.class" => match value.as_names().as_deref() {
+            Some([one]) if crate::rules::employer_contribution::is_token(one) => Ok(()),
+            _ => Err(format!(
+                "{key} is one lowercase token of 1 to 32 letters, digits or underscores"
+            )),
+        },
         _ => Ok(()),
     }
 }

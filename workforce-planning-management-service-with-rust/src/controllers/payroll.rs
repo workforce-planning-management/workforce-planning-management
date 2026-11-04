@@ -270,6 +270,22 @@ async fn calculate_run(
             .await?;
     let no_profile = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&no_profile);
+    // Earlier runs of the same calendar year, for the wage base of an employer cost line (WPM-D170): approved or paid, ending before
+    // this period starts.
+    let earlier_runs: Vec<Uuid> = {
+        use chrono::Datelike;
+        payroll_runs::Entity::find()
+            .filter(payroll_runs::Column::OrganizationRef.eq(&run.organization_ref))
+            .filter(payroll_runs::Column::Status.is_in(["approved", "paid"]))
+            .filter(payroll_runs::Column::PeriodEnd.lt(run.period_start))
+            .filter(payroll_runs::Column::Pid.ne(run.pid))
+            .all(&txn)
+            .await?
+            .into_iter()
+            .filter(|r| r.period_end.year() == run.period_end.year())
+            .map(|r| r.pid)
+            .collect()
+    };
     let mut count: u64 = 0;
     for worker in &staff {
         let Some(salary) = worker.salary_minor else {
@@ -371,6 +387,24 @@ async fn calculate_run(
         .map_err(|e| unprocessable(&format!("payslip for {}: {e}", worker.worker_number)))?;
         // The persist gate re-checks the invariant (WPM-R13).
         rules::reconcile(&slip).map_err(|e| unprocessable(&e))?;
+        let earlier: i64 = if earlier_runs.is_empty() {
+            0
+        } else {
+            payslips::Entity::find()
+                .filter(payslips::Column::RunPid.is_in(earlier_runs.clone()))
+                .filter(payslips::Column::WorkerPid.eq(worker.pid))
+                .filter(payslips::Column::DeletedAt.is_null())
+                .all(&txn)
+                .await?
+                .iter()
+                .map(|s| s.gross_minor)
+                .sum()
+        };
+        let (employer_cost, employer_costs) =
+            employer_costs_for(profile, worker, run.period_end, slip.gross_minor, earlier)
+                .map_err(|e| {
+                    unprocessable(&format!("payslip for {}: {e}", worker.worker_number))
+                })?;
         payslips::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
             run_pid: ActiveValue::set(run.pid),
@@ -382,6 +416,8 @@ async fn calculate_run(
             ),
             net_minor: ActiveValue::set(slip.net_minor),
             statutory_overtime_minor: ActiveValue::set(premium),
+            employer_cost_minor: ActiveValue::set(employer_cost),
+            employer_costs: ActiveValue::set(employer_costs),
             deleted_at: ActiveValue::set(None),
             ..Default::default()
         }
@@ -872,6 +908,47 @@ async fn minimum_wage_check(
         "unknown_reasons": reasons,
         "workers": rows,
     }))
+}
+
+/// The employer-side cost lines for one payslip, from the worker's place of work (WPM-R223, WPM-D159, WPM-D170): the total and the JSON
+/// stored on the payslip. Nothing configured, or no place of work, is no lines; a class-keyed line with no class set is stored as
+/// `{"name", "unresolved": true}` and costs nothing, so it is said and never read as zero cost. A setting that does not read refuses the
+/// calculation, because skipping a line would understate cost.
+fn employer_costs_for(
+    profile: &super::jurisdictions::Profile,
+    worker: &workers::Model,
+    as_of: chrono::NaiveDate,
+    gross_minor: i64,
+    earlier_gross_minor: i64,
+) -> std::result::Result<(i64, serde_json::Value), String> {
+    use crate::rules::employer_contribution as ec;
+    use crate::rules::jurisdiction::Resolution;
+    let Some(place) = worker.work_jurisdiction.as_deref() else {
+        return Ok((0, serde_json::json!([])));
+    };
+    let get = |key: &str| profile.resolve(key, Some(place), as_of);
+    let Resolution::Resolved { value, .. } = get("employer_contribution.lines") else {
+        return Ok((0, serde_json::json!([])));
+    };
+    let lines = ec::parse_lines(&value.as_names().unwrap_or_default())?;
+    let class = match get("employer_contribution.class") {
+        Resolution::Resolved { value, .. } => {
+            value.as_names().and_then(|names| names.into_iter().next())
+        }
+        _ => None,
+    };
+    let outcome = ec::cost_lines(&lines, class.as_deref(), gross_minor, earlier_gross_minor)?;
+    let total = outcome.total_minor()?;
+    let mut shown = serde_json::to_value(&outcome.costs).map_err(|e| e.to_string())?;
+    if let Some(list) = shown.as_array_mut() {
+        list.extend(
+            outcome
+                .unresolved
+                .iter()
+                .map(|n| serde_json::json!({ "name": n, "unresolved": true })),
+        );
+    }
+    Ok((total, shown))
 }
 
 /// What the overtime check says about itself on every answer (WPM-D157).

@@ -224,6 +224,20 @@ pub const REGISTRY: &[Parameter] = &[
         meaning: "the first day of the working week",
     },
     Parameter {
+        key: "employer_contribution.class",
+        shape: Shape::Names,
+        unit: "",
+        combine: Combine::MostSpecific,
+        meaning: "the class (an industry, a risk tier, an activity) the deployer sets for an organization's class-keyed employer contribution rates, as one lowercase token; WPM never picks it (WPM-D170)",
+    },
+    Parameter {
+        key: "employer_contribution.lines",
+        shape: Shape::Names,
+        unit: "",
+        combine: Combine::MostSpecific,
+        meaning: "the employer-side cost lines, each name:rate_bp:wage_base_minor, or name@class:rate_bp:wage_base_minor for a class-keyed rate (a wage base of 0 is no cap), or the one name none; a stub cost, never deducted from net (WPM-D159, WPM-D170)",
+    },
+    Parameter {
         key: "flexible_working.appeal_calendar_days",
         shape: Shape::Integer { min: 0, max: 366 },
         unit: "calendar_days",

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — employer-side cost lines on a payslip (WPM-R223, WPM-D170, WPM-T423)
+
+Parameters `employer_contribution.lines` and `employer_contribution.class`; `payslips.employer_costs` and `employer_cost_minor` (migration `m20261103_000125`); `rules::employer_contribution`. A calculation costs each line on gross up to a yearly wage base, never deducts it from net, and says a class-keyed rate with no class set is unresolved instead of costing it as nothing.
+
 ### Added — position audiences for learning requirements (WPM-T434)
 
 `positions.number` (migration `m20261103_000124`; optional, unique within an organization), accepted on `POST` and `PUT /api/positions`. A learning requirement whose audience names positions is matched on the number of the one numbered seat a person holds; no seat, an unnumbered seat or several numbered seats read `unknown`.

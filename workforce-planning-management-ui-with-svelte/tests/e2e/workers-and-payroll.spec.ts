@@ -41,6 +41,11 @@ test.describe("Workers and payroll", () => {
             deductions: [{ label: "tax", amount_minor: 39050 }],
             net_minor: 260950,
             statutory_overtime_minor: 4500,
+            employer_cost_minor: 12000,
+            employer_costs: [
+              { name: "pension", amount_minor: 9000 },
+              { name: "injury", unresolved: true },
+            ],
           },
         ],
       }),
@@ -56,6 +61,8 @@ test.describe("Workers and payroll", () => {
     );
     await expect(payslips).toContainText("£45.00");
     await expect(payslips).toContainText("tax");
+    await expect(payslips).toContainText("pension: £90.00");
+    await expect(payslips).toContainText("injury: Rate not resolved");
   });
 
   test("the minimum-wage check runs only when asked and shows no age", async ({

@@ -653,6 +653,17 @@ export interface Payslip {
   net_minor: number;
   /** The statutory overtime premium inside `gross_minor` (WPM-D169); 0 where none was derived. */
   statutory_overtime_minor: number;
+  /** The employer's stub cost lines: never deducted from net (WPM-D170). */
+  employer_cost_minor: number;
+  employer_costs: {
+    name: string;
+    class?: string;
+    rate_bp?: number;
+    base_minor?: number;
+    amount_minor?: number;
+    /** A class-keyed rate with no class set: costed at nothing and said. */
+    unresolved?: boolean;
+  }[];
 }
 
 /** One benchmark band. */

@@ -221,6 +221,8 @@
     "pay": "标记已付",
     "gross": "总额",
     "statutoryOvertime": "法定加班费（已计入应发工资）",
+    "employerCost": "雇主成本（不从净额中扣除）",
+    "employerUnresolved": "费率未确定",
     "net": "净额",
     "deductions": "扣除"
   },

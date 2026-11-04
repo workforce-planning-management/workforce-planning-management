@@ -221,6 +221,8 @@
     "pay": "Marcar pagado",
     "gross": "Bruto",
     "statutoryOvertime": "Recargo legal por horas extra (incluido en el bruto)",
+    "employerCost": "Coste del empleador (no se descuenta del neto)",
+    "employerUnresolved": "Tarifa sin determinar",
     "net": "Neto",
     "deductions": "Deducciones"
   },

@@ -221,6 +221,8 @@
     "pay": "Mark paid",
     "gross": "Gross",
     "statutoryOvertime": "Statutory overtime premium (in gross)",
+    "employerCost": "Employer cost (not deducted from net)",
+    "employerUnresolved": "Rate not resolved",
     "net": "Net",
     "deductions": "Deductions"
   },

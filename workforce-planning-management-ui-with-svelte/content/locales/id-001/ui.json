@@ -221,6 +221,8 @@
     "pay": "Tandai dibayar",
     "gross": "Bruto",
     "statutoryOvertime": "Premi lembur menurut undang-undang (termasuk dalam bruto)",
+    "employerCost": "Biaya pemberi kerja (tidak dipotong dari bersih)",
+    "employerUnresolved": "Tarif belum ditentukan",
     "net": "Bersih",
     "deductions": "Potongan"
   },

@@ -932,3 +932,106 @@ async fn the_overtime_premium_is_in_gross_and_the_check_follows_the_seat_and_the
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn employer_cost_lines_follow_the_place_the_class_and_the_wage_base_and_never_touch_net() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let mut pids = std::collections::BTreeMap::new();
+        for (number, code) in [("EC-XA", Some("XA")), ("EC-XB", Some("XB")), ("EC-NOPLACE", None)] {
+            let pid = seed_worker!(&request, &org, number, Some(3_600_000)).await;
+            activate!(&request, &pid).await;
+            if let Some(code) = code {
+                request
+                    .put(&format!("/api/workers/{pid}"))
+                    .json(&json!({ "work_jurisdiction": code }))
+                    .await
+                    .assert_status_ok();
+            }
+            pids.insert(number, pid);
+        }
+        for code in ["XA", "XB"] {
+            request
+                .post("/api/jurisdictions")
+                .json(&json!({ "organization_ref": org, "code": code, "layer": "national" }))
+                .await
+                .assert_status_ok();
+        }
+        let set = |code: &'static str, key: &'static str, value: Value, from: &'static str| {
+            let request = &request;
+            let org = org.clone();
+            async move {
+                request
+                    .post("/api/jurisdiction-parameters")
+                    .json(&json!({ "organization_ref": org, "code": code, "key": key, "value": value,
+                                   "effective_from": from, "source": "synthetic test profile", "status": "example" }))
+                    .await
+            }
+        };
+        // XA has three lines: a capped rate, a class-keyed rate with no class set yet, and a flat rate. XB configures nothing.
+        let lines = json!(["unemployment:100:450000", "injury@low:50:0", "injury@high:400:0", "pension:300:0"]);
+        set("XA", "employer_contribution.lines", lines, "2000-01-01").await.assert_status_ok();
+        // A line that does not read is refused when it is set, not skipped later.
+        assert_eq!(set("XA", "employer_contribution.lines", json!(["tax:10001:0"]), "2000-02-01").await.status_code(), 422);
+
+        let calc = |start: &'static str, end: &'static str| {
+            let request = &request;
+            let org = org.clone();
+            async move {
+                let run: Value = request
+                    .post("/api/payroll-runs")
+                    .json(&json!({ "organization_ref": org, "period_start": start, "period_end": end }))
+                    .await
+                    .json();
+                let pid = run["pid"].as_str().unwrap().to_string();
+                request.post(&format!("/api/payroll-runs/{pid}/calculate")).await.assert_status_ok();
+                let slips: Value = request.get(&format!("/api/payroll-runs/{pid}/payslips")).await.json();
+                (pid, slips)
+            }
+        };
+        let slip_of = |slips: &Value, number: &str| {
+            slips
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|s| s["worker_pid"].as_str() == Some(pids[number].as_str()))
+                .cloned()
+                .unwrap()
+        };
+        let line = |slip: &Value, name: &str| {
+            slip["employer_costs"].as_array().unwrap().iter().find(|c| c["name"] == name).cloned()
+        };
+        let base = rules::monthly_base_minor(3_600_000, 100).unwrap();
+
+        // May: no class is set, so the injury line is said to be unresolved and costs nothing; it is never the nearest rate.
+        let (may, slips) = calc("2026-05-01", "2026-05-31").await;
+        let a = slip_of(&slips, "EC-XA");
+        assert_eq!(line(&a, "unemployment").unwrap()["amount_minor"], base / 100, "one percent, under the wage base");
+        assert_eq!(line(&a, "pension").unwrap()["amount_minor"], base * 3 / 100);
+        assert_eq!(line(&a, "injury").unwrap()["unresolved"], true);
+        assert_eq!(a["employer_cost_minor"].as_i64(), Some(base / 100 + base * 3 / 100));
+        // Never deducted from net: no deduction carries an employer line, and gross less deductions is still net.
+        let deducted: i64 = a["deductions"].as_array().unwrap().iter().map(|d| d["amount_minor"].as_i64().unwrap()).sum();
+        assert_eq!(a["gross_minor"].as_i64().unwrap() - deducted, a["net_minor"].as_i64().unwrap());
+        assert!(!a["deductions"].to_string().contains("unemployment") && !a["deductions"].to_string().contains("pension"));
+        // A place with nothing configured, and a worker with no place, have no lines: nothing is made up.
+        for number in ["EC-XB", "EC-NOPLACE"] {
+            let s = slip_of(&slips, number);
+            assert_eq!((s["employer_cost_minor"].as_i64(), s["employer_costs"].clone()), (Some(0), json!([])), "{number}");
+        }
+        request.post(&format!("/api/payroll-runs/{may}/approve")).await.assert_status_ok();
+
+        // June: the deployer sets a class; the injury rate follows it. The wage base of 4 500.00 had 3 000.00 used in May, so only
+        // 1 500.00 of June's pay is costed for the capped line.
+        set("XA", "employer_contribution.class", json!(["low"]), "2026-06-01").await.assert_status_ok();
+        let (_, slips) = calc("2026-06-01", "2026-06-30").await;
+        let a = slip_of(&slips, "EC-XA");
+        let injury = line(&a, "injury").unwrap();
+        assert_eq!((injury["class"].clone(), injury["amount_minor"].as_i64()), (json!("low"), Some(base / 200)));
+        let capped = line(&a, "unemployment").unwrap();
+        assert_eq!((capped["base_minor"].as_i64(), capped["amount_minor"].as_i64()), (Some(150_000), Some(1_500)));
+    })
+    .await;
+}

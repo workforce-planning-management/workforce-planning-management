@@ -221,6 +221,8 @@
     "pay": "Als bezahlt markieren",
     "gross": "Brutto",
     "statutoryOvertime": "Gesetzlicher Überstundenzuschlag (im Brutto)",
+    "employerCost": "Arbeitgeberkosten (nicht vom Netto abgezogen)",
+    "employerUnresolved": "Satz nicht ermittelt",
     "net": "Netto",
     "deductions": "Abzüge"
   },

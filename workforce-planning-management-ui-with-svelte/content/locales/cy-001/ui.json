@@ -221,6 +221,8 @@
     "pay": "Nodi fel talwyd",
     "gross": "Gros",
     "statutoryOvertime": "Premiwm goramser statudol (yn y gros)",
+    "employerCost": "Cost y cyflogwr (heb ei didynnu o'r net)",
+    "employerUnresolved": "Cyfradd heb ei phenderfynu",
     "net": "Net",
     "deductions": "Didyniadau"
   },

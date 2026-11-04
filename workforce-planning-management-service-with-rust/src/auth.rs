@@ -479,6 +479,8 @@ pub fn mask_payslip(mut payslip: payslips::Model) -> payslips::Model {
     payslip.gross_minor = 0;
     payslip.net_minor = 0;
     payslip.statutory_overtime_minor = 0;
+    payslip.employer_cost_minor = 0;
+    payslip.employer_costs = serde_json::json!([]);
     payslip.deductions = serde_json::json!([]);
     payslip
 }
@@ -979,6 +981,8 @@ mod tests {
             deductions: serde_json::json!([{"label": "tax", "amount_minor": 39_050}]),
             net_minor: 260_950,
             statutory_overtime_minor: 0,
+            employer_cost_minor: 0,
+            employer_costs: serde_json::json!([]),
             deleted_at: None,
         };
         let slip = mask_payslip(slip);

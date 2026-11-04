@@ -221,6 +221,8 @@
     "pay": "Marquer payé",
     "gross": "Brut",
     "statutoryOvertime": "Majoration légale des heures supplémentaires (comprise dans le brut)",
+    "employerCost": "Coût employeur (non déduit du net)",
+    "employerUnresolved": "Taux non déterminé",
     "net": "Net",
     "deductions": "Retenues"
   },

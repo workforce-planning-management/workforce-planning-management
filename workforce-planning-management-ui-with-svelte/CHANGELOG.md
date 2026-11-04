@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — employer cost on the payslip (WPM-T423)
+
+A payslip column of employer cost lines, marked as not deducted, with an unresolved rate said in words. Two strings in 13 locales (AI-written, unreviewed).
+
 ### Added — position numbers (WPM-T434)
 
 A position number on the plan-a-seat form and list, and a position field on the add-requirement form. Two strings in 13 locales (AI-written, unreviewed).
