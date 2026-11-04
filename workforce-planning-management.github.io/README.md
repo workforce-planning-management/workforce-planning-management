@@ -35,6 +35,7 @@ does, and why, is [`../spec/github-pages-site.md`](../spec/github-pages-site.md)
 | `/<locale>/for/<role>/` | a role brief (11 roles in each locale; the directory name is translated) |
 | `/search/`, `/<locale>/search/` | search, in the browser, over the static `/search-index.json` |
 | `/sitemap.xml`, `/<locale>/sitemap.xml` | the whole site, and one locale |
+| `/404.html` | the not-found page, in each catalogue's language |
 
 - A link between two of these documents stays on the site; a link to any other
   file in the repository goes to that file on GitHub. Raw HTML in the Markdown is
@@ -138,5 +139,3 @@ Every later publish is step 4 again (and a `git pull` in the sibling export).
 - GitHub Pages cannot send HTTP headers, so the content security policy is a
   `<meta http-equiv>` tag, which cannot carry `frame-ancestors`.
 - Axe audits every document and list but one brief per locale (21 of 231).
-- The site has no `404.html`, so a wrong address gets GitHub's own 404 page, not
-  the site's.

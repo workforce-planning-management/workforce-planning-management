@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the website's own not-found page (WPM-T456, WPM-R231, 2026-11-04)
+
+A wrong address on the site now shows a page in English, Welsh and Mandarin with a link home, in place of GitHub's generic error.
+
 ### Changed — the website's wording is neutral (WPM-T455, WPM-D175, 2026-11-04)
 
 The landing pages, tutorial and comparison pages read as a business analyst's description, in English, Welsh and Mandarin (AI-written, unreviewed). The facts are unchanged.

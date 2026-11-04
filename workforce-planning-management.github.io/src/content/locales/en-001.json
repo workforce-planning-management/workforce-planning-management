@@ -60,5 +60,10 @@
     "noscript": "Searching this site needs JavaScript.",
     "failed": "The search index could not be loaded, so this search has not run.",
     "count": "Pages with every word of “{query}”: {count}"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This address does not exist on the site.",
+    "home": "Go to the home page"
   }
 }

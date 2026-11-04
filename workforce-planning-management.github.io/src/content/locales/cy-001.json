@@ -60,5 +60,10 @@
     "noscript": "Mae angen JavaScript i chwilio'r wefan hon.",
     "failed": "Methu llwytho'r mynegai chwilio, felly nid yw'r chwiliad hwn wedi rhedeg.",
     "count": "Tudalennau gyda phob gair o “{query}”: {count}"
+  },
+  "notFound": {
+    "title": "Heb ganfod y dudalen",
+    "body": "Nid yw'r cyfeiriad hwn yn bodoli ar y wefan.",
+    "home": "Mynd i'r hafan"
   }
 }

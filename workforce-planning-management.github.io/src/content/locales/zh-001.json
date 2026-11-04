@@ -60,5 +60,10 @@
     "noscript": "搜索本站需要 JavaScript。",
     "failed": "无法加载搜索索引，因此本次搜索未运行。",
     "count": "包含“{query}”全部词语的页面：{count}"
+  },
+  "notFound": {
+    "title": "未找到页面",
+    "body": "本站不存在此地址。",
+    "home": "前往首页"
   }
 }

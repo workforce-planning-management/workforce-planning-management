@@ -92,6 +92,7 @@ Acceptance criteria:
 5. On `cy-*` and `zh-*` pages the site's own words and wordmark are in that language, and
    `/<locale>/search/` keeps the reader in it.
 6. `/sitemap.xml` lists the site and `/<locale>/sitemap.xml` a locale's pages.
+7. `/404.html` is the site's own not-found page, in each catalogue's language, because the address does not say which locale the reader wants.
 
 ## WPM-D175 — Promotion that stays honest; content stays Markdown
 

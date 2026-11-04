@@ -438,6 +438,15 @@ test("/compare/ links to every comparison, and the landing page links to /compar
   await expect(page.locator('main a[href$="compare/"]')).toBeVisible();
 });
 
+test("the not-found page speaks each catalogue's language and links home", async ({ page }) => {
+  await page.goto("/404.html", { waitUntil: "networkidle" });
+  await expect(page.getByTestId("not-found")).toHaveCount(Object.keys(catalogues).length);
+  await expect(page.locator("main h1")).toHaveText("Page not found");
+  expect(await axe(page)).toEqual([]);
+  await page.getByRole("link", { name: ui("cy-001").notFound.home }).click();
+  await expect(page).toHaveURL(/\/cy-001\/$/);
+});
+
 test("en-us and en-gb keep their own spelling", async ({ request }) => {
   const us = await (await request.get("/en-us/")).text();
   const gb = await (await request.get("/en-gb/")).text();

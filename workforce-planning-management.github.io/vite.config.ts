@@ -11,10 +11,11 @@ export default defineConfig({
     sveltekit({
       preprocess: vitePreprocess(),
       adapter: adapter({ pages: "build", assets: "build", fallback: undefined, strict: true }),
-      paths: { base: (process.env.BASE_PATH ?? "") as "" | `/${string}` },
+      // Absolute, because GitHub Pages serves 404.html at whatever address was asked for, where a relative path breaks.
+      paths: { base: (process.env.BASE_PATH ?? "") as "" | `/${string}`, relative: false },
       // /search/, its index and the sitemap are reached by no link, so the crawl needs telling.
       prerender: {
-        entries: ["*", "/search/", "/search-index.json", "/sitemap.xml"],
+        entries: ["*", "/404", "/search/", "/search-index.json", "/sitemap.xml"],
         handleHttpError: "fail",
         handleMissingId: "fail",
       },
