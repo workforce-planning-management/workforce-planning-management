@@ -21,32 +21,38 @@ does, and why, is [`../spec/github-pages-site.md`](../spec/github-pages-site.md)
 
 | Route | Document |
 | --- | --- |
-| `/` | [`index.md`](../index.md) |
+| `/` | the landing page, [`locales/en-001/index.md`](../locales/en-001/index.md) |
+| `/<locale>/` | a locale's landing page, `locales/<locale>/index.md` (8 locales) |
+| `/<locale>/start/` | the guided tutorial, `locales/<locale>/start/index.md` (8 locales) |
+| `/compare/`, `/compare/<slug>/` | [`docs/compare/`](../docs/compare/index.md) (11 products, English) |
+| `/docs/` | [`index.md`](../index.md) |
 | `/readme/` | [`README.md`](../README.md) |
 | `/install/` | [`INSTALL.md`](../INSTALL.md) |
 | `/family-bridges/` | [`docs/tutorials/family-bridges.md`](../docs/tutorials/family-bridges.md) |
 | `/spec/` | [`spec/index.md`](../spec/index.md) |
 | `/worldwide/` | [`spec/worldwide.md`](../spec/worldwide.md) |
-| `/<locale>/for/` | a locale's list of role briefs, [`locales/<locale>/for/index.md`](../locales/en-001/for/index.md) (21 locales) |
-| `/<locale>/for/<role>/` | a role brief, `locales/<locale>/for/<role>/index.md` (11 roles in each locale; the directory name is translated) |
+| `/<locale>/for/` | a locale's list of role briefs (21 locales) |
+| `/<locale>/for/<role>/` | a role brief (11 roles in each locale; the directory name is translated) |
+| `/search/`, `/<locale>/search/` | search, in the browser, over the static `/search-index.json` |
+| `/sitemap.xml`, `/<locale>/sitemap.xml` | the whole site, and one locale |
 
 - A link between two of these documents stays on the site; a link to any other
   file in the repository goes to that file on GitHub. Raw HTML in the Markdown is
   shown as text.
-- On a list or a brief, the header's language button (Lily `LocalePicker`) opens
-  the same page in another locale, matched by its `.locale-peer-id` (the directory
-  names differ: `chief-risk-officer`, `prif-swyddog-risg`, `رئيس-المخاطر`).
-  `<html lang dir>` are the page's locale from the first paint, so an Arabic or
-  Urdu page is laid out from the right; the CSS uses logical properties only, as
-  the WPM UI does (WPM-T377).
-- An ISO date in running text ("2026-10-11") is shown as the WPM UI's
-  `locale-format.ts` shows one, in the page's locale ("11 Oct 2026",
-  "11.10.2026"), and two dates joined by "to" or a dash as one range
-  (`formatRange`, the locale's own separator), inside `<time datetime>`. A date in
-  code is left as written. The site's English pages use `en-001`.
-- The theme follows the system's light or dark preference until the reader picks
-  (Lily `ThemePicker`, the `light` and `dark` themes only); the colour tokens are
-  the WPM UI's. Text size uses Lily `TextSizePicker`.
+- The header is the full Lily `PickerBar`: pages, search, theme (all 57), language,
+  text size (all 7) and share. Choosing a language opens the same page in that
+  locale, matched by its `.locale-peer-id`; a page with no translation of itself opens
+  the locale's landing page, or its list of briefs.
+- The site's own words are in `src/content/locales/` (`en-001`, `cy-001`, `zh-001`) and
+  read through `ui(locale)` in `src/lib/i18n.ts`; a test checks that every catalogue has
+  every key. Other locales read English. The translations were written by an AI
+  assistant and have not been reviewed by a native speaker.
+- A landing page is plain Markdown: a section's list becomes cards, a numbered list
+  steps, and a paragraph of only links a row of buttons.
+- `<html lang dir>` are the page's locale from the first paint; the CSS uses logical
+  properties only (WPM-T377). An ISO date in running text is shown in the page's locale
+  inside `<time datetime>`; a date in code is left as written.
+- The colour tokens hold 4.5:1 in all of Lily's themes; the tests sweep each one.
 
 ## Content
 
@@ -60,7 +66,7 @@ pnpm run sync          # rewrite src/content/docs.json
 pnpm run sync:check    # CI runs this: fails if the copy is stale
 ```
 
-The Lily theme stylesheets are copied from the installed `@lilydesignsystem/themes`
+All 57 Lily theme stylesheets are copied from the installed `@lilydesignsystem/themes`
 into `static/assets/themes/` on every install (`scripts/sync-themes.mjs`, as in the
 UI) and are not committed.
 
@@ -72,7 +78,7 @@ Node 26 and pnpm.
 pnpm install
 pnpm run check                                  # svelte-check
 pnpm run build                                  # prerenders every page into build/
-PW_PORT=4197 CI=true pnpm exec playwright test  # every page, axe in light and dark, locale switch, right to left, dates
+PW_PORT=4197 CI=true pnpm exec playwright test  # every page, axe, every picker, every theme, locales, search, sitemaps
 ```
 
 Another project on the same machine may hold Playwright's default port, 4173;
@@ -121,13 +127,12 @@ Every later publish is step 4 again (and a `git pull` in the sibling export).
 
 ## Not done
 
-- The site's own words (navigation, picker labels, footer) are English only; the
-  lists and briefs are in their locales, and "back to the list" uses the list's
-  own title.
+- The site's own words are in English, Welsh and Mandarin only. The other 13 locales
+  have no landing page or tutorial, and README, Install, the specification and
+  `/compare/` are English. Theme names are English.
+- The tutorial's commands come from `INSTALL.md` and have not been run end to end.
 - The Bengali briefs write their dates in Bengali digits, not ISO, so those dates
   are left as written.
-- Only the `light` and `dark` Lily themes are offered and audited; the UI offers
-  all of Lily's.
 - Before the theme stylesheet loads (the first paint, or with JavaScript off) the
   page uses the light fallbacks of the tokens, whatever the system preference.
 - GitHub Pages cannot send HTTP headers, so the content security policy is a

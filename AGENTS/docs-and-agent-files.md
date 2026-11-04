@@ -16,7 +16,7 @@ site is built in
 ([github-pages-site](../spec/github-pages-site.md), WPM-T392) and published to its
 read-only exported repository with `make github-pages` (WPM-T399). After editing a document the site shows (the root
 `index.md`, `README.md`, `INSTALL.md`, the tutorial, `spec/index.md`,
-`spec/worldwide.md`, any role brief), run `pnpm run sync` in that directory, or
+`spec/worldwide.md`, a locale's `index.md` or `start/index.md`, `docs/compare/`, any role brief), run `pnpm run sync` in that directory, or
 CI's `site` job fails. `.claude/settings.local.json` is a local tool file, not an
 agent file.
 

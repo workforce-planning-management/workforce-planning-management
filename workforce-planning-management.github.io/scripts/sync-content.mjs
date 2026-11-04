@@ -49,15 +49,36 @@ function briefs() {
   return { lists, pages };
 }
 
+// Each locale's translated home and tutorial, locales/<locale>/index.md and start/index.md, for the locales with one.
+function homes() {
+  return readdirSync(join(ROOT, "locales"))
+    .sort()
+    .filter((locale) => existsSync(join(ROOT, "locales", locale, "index.md")))
+    .map((locale) => ({
+      locale,
+      path: `locales/${locale}/index.md`,
+      start: `locales/${locale}/start/index.md`,
+      peer: peer(`locales/${locale}`),
+    }));
+}
+
+// The comparison pages, docs/compare/index.md and docs/compare/<slug>/index.md.
+function compares() {
+  const root = join(ROOT, "docs", "compare");
+  const slugs = readdirSync(root).filter((s) => existsSync(join(root, s, "index.md"))).sort();
+  return ["docs/compare/index.md", ...slugs.map((s) => `docs/compare/${s}/index.md`)];
+}
+
 function render() {
   const { lists, pages } = briefs();
+  const home = homes();
   /** @type {Record<string, string>} */
   const files = {};
-  for (const p of [...DOCS, ...lists.map((l) => l.path), ...pages.map((b) => b.path)])
+  for (const p of [...DOCS, ...compares(), ...home.flatMap((h) => [h.path, h.start]), ...lists.map((l) => l.path), ...pages.map((b) => b.path)])
     files[p] = readFileSync(join(ROOT, p), "utf8");
   return (
     JSON.stringify(
-      { generated: "by scripts/sync-content.mjs from the monorepo; do not edit by hand", lists, briefs: pages, files },
+      { generated: "by scripts/sync-content.mjs from the monorepo; do not edit by hand", homes: home, lists, briefs: pages, files },
       null,
       2,
     ) + "\n"

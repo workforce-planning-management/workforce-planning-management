@@ -1,0 +1,64 @@
+{
+  "locale": "zh-001",
+  "brand": "劳动力规划管理",
+  "skip": "跳到正文",
+  "siteNav": "网站",
+  "nav": {
+    "home": "首页",
+    "readme": "README",
+    "install": "安装",
+    "familyBridges": "家族桥接",
+    "spec": "规范",
+    "worldwide": "全球",
+    "briefs": "角色文档",
+    "start": "快速开始",
+    "docs": "文档",
+    "compare": "比较"
+  },
+  "pickers": {
+    "pages": "页面",
+    "search": "搜索本站",
+    "searchInput": "要查找的词",
+    "searchSubmit": "搜索",
+    "theme": "主题",
+    "language": "语言",
+    "textSize": "文字大小",
+    "share": "分享"
+  },
+  "textSizes": {
+    "largest": "最大",
+    "larger": "较大",
+    "large": "大",
+    "normal": "标准",
+    "small": "小",
+    "smaller": "较小",
+    "smallest": "最小"
+  },
+  "share": {
+    "copy": "复制链接",
+    "copied": "链接已复制",
+    "copyFailed": "无法复制链接",
+    "email": "通过电子邮件发送链接",
+    "linkedin": "分享到 LinkedIn",
+    "reddit": "分享到 Reddit",
+    "bluesky": "分享到 Bluesky",
+    "mastodon": "分享到 Mastodon"
+  },
+  "footer": {
+    "builtFrom": "根据以下位置的文档构建：",
+    "repository": "劳动力规划管理代码仓库",
+    "counts": "{documents} 份文档和 {briefs} 份角色文档，共 {locales} 个语言区域",
+    "notice": "演示软件，只使用合成数据；译文由人工智能助手撰写，未经母语人士审校。",
+    "export": "本站是该仓库的 {directory} 目录，通过 {tool} 导出。"
+  },
+  "translations": "译文：",
+  "source": "来源：",
+  "search": {
+    "title": "搜索",
+    "label": "要查找的词",
+    "submit": "搜索",
+    "noscript": "搜索本站需要 JavaScript。",
+    "failed": "无法加载搜索索引，因此本次搜索未运行。",
+    "count": "包含“{query}”全部词语的页面：{count}"
+  }
+}

@@ -1,7 +1,25 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { REPO_URL } from "#lib/site.js";
+  import { ui } from "#lib/i18n.js";
 
-  let { html, path }: { html: string; path: string } = $props();
+  // A landing page passes its `hero` and the rest as `html`, and the `Translations` line as children, between the two.
+  let {
+    html,
+    path,
+    locale = null,
+    hero = "",
+    landing = false,
+    children,
+  }: {
+    html: string;
+    path: string;
+    locale?: string | null;
+    hero?: string;
+    landing?: boolean;
+    children?: Snippet;
+  } = $props();
+  const s = $derived(ui(locale));
 
   // A brief's path has translated (non-ASCII) directory names: encode each segment for the GitHub URL.
   const sourceUrl = $derived(`${REPO_URL}/blob/main/${path.split("/").map(encodeURIComponent).join("/")}`);
@@ -9,13 +27,22 @@
 
 <!-- The HTML is rendered at build time from the repository's own Markdown, with raw HTML escaped
      (#lib/server/content.ts), so nothing a reader supplies reaches it. -->
-<article class="doc">
+<article class="doc" class:landing>
+  {#if hero}
+    <div class="landing-hero">
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+      {@html hero}
+      {@render children?.()}
+    </div>
+  {/if}
   <!-- eslint-disable-next-line svelte/no-at-html-tags -->
   {@html html}
 </article>
-<p class="source" lang="en" dir="ltr">
-  Source: <a href={sourceUrl}><code>{path}</code></a>
-</p>
+{#if !landing}
+  <p class="source" lang={s.locale} dir="ltr">
+    {s.source} <a href={sourceUrl}><code>{path}</code></a>
+  </p>
+{/if}
 
 <style>
   .source {

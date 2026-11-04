@@ -1,9 +1,10 @@
 import type { PageServerLoad } from "./$types";
-import { render } from "#lib/server/content.js";
+import { homeAlternates, render, splitHero } from "#lib/server/content.js";
 import { href } from "#lib/href.js";
-import { SITE_LOCALE } from "#lib/site.js";
+import { ROOT_HOME_LOCALE } from "#lib/site.js";
 
 export const load: PageServerLoad = () => {
-  const { title, html } = render("index.md", href, SITE_LOCALE);
-  return { title, html, path: "index.md" };
+  const path = `locales/${ROOT_HOME_LOCALE}/index.md`;
+  const { title, html } = render(path, href, ROOT_HOME_LOCALE);
+  return { title, ...splitHero(html), path, alternates: homeAlternates() };
 };

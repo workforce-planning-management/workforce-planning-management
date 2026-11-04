@@ -12,7 +12,12 @@ export default defineConfig({
       preprocess: vitePreprocess(),
       adapter: adapter({ pages: "build", assets: "build", fallback: undefined, strict: true }),
       paths: { base: (process.env.BASE_PATH ?? "") as "" | `/${string}` },
-      prerender: { handleHttpError: "fail", handleMissingId: "fail" },
+      // /search/, its index and the sitemap are reached by no link, so the crawl needs telling.
+      prerender: {
+        entries: ["*", "/search/", "/search-index.json", "/sitemap.xml"],
+        handleHttpError: "fail",
+        handleMissingId: "fail",
+      },
       // GitHub Pages cannot send headers, so the policy is a <meta http-equiv> that SvelteKit writes into each
       // prerendered page with the hashes of its own inline scripts. Stricter than the WPM UI's policy (which allows
       // 'unsafe-inline' styles and is sent as a header): no element carries a `style="…"` attribute, and

@@ -6,14 +6,16 @@
   --bg: var(--color-base-200, #f5f6f8);
   --panel: var(--color-base-100, #ffffff);
   --ink: var(--lily-text, #1a2330);
-  --muted: var(--lily-text-muted, #5b6774);
+  /* Site-only strength: mixed with the text colour so it keeps 4.5:1 on --bg and --panel in all of Lily's themes. */
+  --muted: color-mix(in oklch, var(--lily-text-muted, #5b6774) 15%, var(--ink));
   --line: var(--lily-border, #dde2e8);
   --accent: var(--color-primary, #1b5fae);
-  /* Site-only: the accent as link text and as a fill, mixed with the theme's text colour so each keeps 4.5:1 on
-     its background in both themes (the dark theme's own primary is too light to be text on --bg). */
-  --link: color-mix(in oklch, var(--accent) 70%, var(--ink));
-  --accent-fill: color-mix(in oklch, var(--accent) 80%, var(--color-neutral, #1a2330));
-  --accent-fg: var(--color-primary-content, #ffffff);
+  /* Site-only: link text is the accent mixed well into the theme's text colour, and a filled control is the theme's
+     text and panel colours inverted. A theme's own primary can be too light to be text on --bg, and its pair of primary
+     and primary-content is not always 4.5:1; these two hold in all of Lily's themes (the test sweeps every one). */
+  --link: color-mix(in oklch, var(--accent) 15%, var(--ink));
+  --accent-fill: var(--ink);
+  --accent-fg: var(--panel);
   --radius: var(--radius-field, 6px);
   font-family:
     system-ui,
@@ -142,4 +144,114 @@ footer p a {
 }
 .doc th {
   background: var(--panel);
+}
+
+/* The landing pages. The content is Markdown (locales/<locale>/index.md, so a translator edits text and not a
+   template): a section's list becomes cards, its numbered list steps, and a paragraph of two or more links a row of
+   buttons. Only theme tokens and logical properties, so all of Lily's themes and a right-to-left page work. */
+main:has(.landing) {
+  max-width: 72rem;
+}
+.landing .landing-hero {
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  border-radius: calc(var(--radius) * 2);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-block-start: 6px solid var(--accent);
+}
+.landing .landing-hero h1 {
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  line-height: 1.1;
+}
+.landing .landing-hero h1 + p {
+  font-size: clamp(1.15rem, 3vw, 1.5rem);
+  line-height: 1.35;
+  margin-block: 0.75rem 1rem;
+}
+.landing .landing-hero > p {
+  max-width: 48rem;
+}
+.landing .landing-hero blockquote {
+  max-width: 48rem;
+  font-size: 0.9375rem;
+}
+.doc p.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block: 1.5rem;
+}
+.doc p.actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.125rem;
+  border: 2px solid var(--link);
+  border-radius: var(--radius);
+  color: var(--link);
+  font-weight: 600;
+  text-decoration: none;
+}
+.doc p.actions a:first-child {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--accent-fg);
+}
+.doc p.actions a:hover {
+  text-decoration: underline;
+}
+.landing .translations {
+  margin-block-end: 0;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+.landing h2 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  margin-block-start: 2.5em;
+}
+.landing h2 + ul,
+.landing h2 + p + ul,
+.landing h2 + ol,
+.landing h2 + p + ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.landing li {
+  padding: 1.125rem 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.landing h2 + ol,
+.landing h2 + p + ol {
+  counter-reset: step;
+}
+.landing ol > li {
+  counter-increment: step;
+}
+.landing ol > li::before {
+  content: counter(step);
+  display: block;
+  inline-size: 2rem;
+  block-size: 2rem;
+  margin-block-end: 0.5rem;
+  border-radius: 50%;
+  background: var(--accent-fill);
+  color: var(--accent-fg);
+  font-weight: 700;
+  line-height: 2rem;
+  text-align: center;
+}
+.landing th:nth-child(2),
+.landing td:nth-child(2) {
+  border-inline-start: 3px solid var(--accent);
+  background: var(--panel);
+}
+.landing td {
+  min-width: 10rem;
+  overflow-wrap: normal;
 }

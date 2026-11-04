@@ -3,25 +3,25 @@
   import type { Snippet } from "svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import ThemePicker from "@lilydesignsystem/svelte-theme-picker";
-  import LocalePicker from "@lilydesignsystem/svelte-locale-picker";
-  import TextSizePicker from "@lilydesignsystem/svelte-text-size-picker";
+  import type { ComponentProps } from "svelte";
+  import PickerBar from "@lilydesignsystem/svelte-picker-bar";
   import { href } from "#lib/href.js";
   import { formatInteger } from "#lib/locale-format.js";
+  import { fill, ui } from "#lib/i18n.js";
   import {
-    BRIEF_LOCALES,
     DEFAULT_BRIEF_LOCALE,
     DOC_PAGES,
     LOCALE_LABELS,
     REPO_URL,
+    ROOT_HOME_LOCALE,
     SITE_LOCALE,
+    hasHome,
     isBriefLocale,
+    localeLanding,
     isRtl,
+    pickerLocales,
   } from "#lib/site.js";
   import type { LayoutProps } from "./$types";
-
-  // Lily's seven-step scale, largest first, as the WPM UI's PickerBar uses it (app.css has the rules).
-  const TEXT_SIZES = ["largest", "larger", "large", "normal", "small", "smaller", "smallest"];
 
   // The WPM UI's storage keys, so the choices read the same way (each origin keeps its own).
   const THEME_KEY = "mxi.wpm.theme";
@@ -33,7 +33,9 @@
   const locale = $derived(page.data.locale ?? null);
   const dir = $derived(locale && isRtl(locale) ? "rtl" : "ltr");
   const alternates = $derived(page.data.alternates ?? {});
-  const switchable = $derived(BRIEF_LOCALES.filter((l) => alternates[l] !== undefined));
+  const pickable = $derived(pickerLocales(locale));
+  // The site's own words, in the language of the page's locale (`ui`, English where there is no catalogue yet).
+  const s = $derived(ui(locale));
 
   // Keep <html lang dir> in step on client-side navigation; the prerendered HTML already carries them
   // (hooks.server.ts).
@@ -43,29 +45,86 @@
   });
 
   // The locale switcher opens the same page in the chosen locale: the brief with the same `.locale-peer-id`, or the
-  // locale's list. The picker also reports the locale it starts on, which is this page's own: nothing to do then.
+  // locale's list. A page with no translation of itself (the English documents) opens the locale's home, or its list
+  // where it has no home yet. The search page keeps the query. The picker also reports the locale it starts on, which
+  // is this page's own: nothing to do then.
   function switchLocale(code: string) {
-    if (!isBriefLocale(code) || code === locale) return;
-    const route = alternates[code];
-    if (route) void goto(href(route));
+    if (!isBriefLocale(code) || code === (locale ?? SITE_LOCALE)) return;
+    void goto(`${href(alternates[code] ?? localeLanding(code))}${page.url.search}`);
   }
 
+  const home = $derived(locale && hasHome(locale) ? `/${locale}/` : "/");
   const nav = $derived([
-    ...DOC_PAGES.map((d) => ({ label: d.nav, route: d.slug ? `/${d.slug}/` : "/" })),
-    { label: "Role briefs", route: `/${locale ?? DEFAULT_BRIEF_LOCALE}/for/` },
+    { label: s.nav.home, route: home },
+    { label: s.nav.start, route: `/${locale && hasHome(locale) ? locale : ROOT_HOME_LOCALE}/start/` },
+    { label: s.nav.briefs, route: `/${locale ?? DEFAULT_BRIEF_LOCALE}/for/` },
+    { label: s.nav.compare, route: "/compare/" },
+    { label: s.nav.docs, route: "/docs/" },
+  ]);
+  // The header names only the few places a newcomer wants; the pages picker lists them all.
+  const allPages = $derived([
+    ...nav,
+    ...DOC_PAGES.filter((d) => d.key !== "docs").map((d) => ({ label: s.nav[d.key], route: `/${d.slug}/` })),
   ]);
   function current(route: string): boolean {
     if (route.endsWith("/for/")) return /\/for\//.test(page.url.pathname);
+    if (route === "/compare/") return /\/compare\//.test(page.url.pathname);
+    if (route.endsWith("/start/")) return /\/start\/$/.test(page.url.pathname);
     return page.url.pathname === new URL(href(route), page.url.href).pathname;
   }
+
+  const links = $derived(
+    allPages.map((item) => ({ id: item.route, label: item.label, href: href(item.route), current: current(item.route) })),
+  );
+
+  // The bar sends `<action>?<query>`; /search/ reads `?q=`, so a result page has an address worth sharing.
+  function searchTo(destination: string) {
+    const query = decodeURIComponent(destination.split("?")[1] ?? "");
+    void goto(`${href(locale ? `/${locale}/search/` : "/search/")}?q=${encodeURIComponent(query)}`);
+  }
+
+  // The destinations the picker bar spec names, as the WPM UI builds them; Lily ships no third-party URLs. SharePicker
+  // uses the browser's share sheet instead wherever there is one.
+  type ShareTarget = NonNullable<ComponentProps<typeof PickerBar>["shareTargets"]>[number];
+  const shareTargets: ShareTarget[] = $derived([
+    {
+      id: "email",
+      label: s.share.email,
+      href: (url, title) => `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}`,
+      newTab: false,
+    },
+    {
+      id: "linkedin",
+      label: s.share.linkedin,
+      href: (url) => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+    },
+    {
+      id: "reddit",
+      label: s.share.reddit,
+      href: (url, title) =>
+        `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
+    },
+    {
+      id: "bluesky",
+      label: s.share.bluesky,
+      href: (url, title) => `https://bsky.app/intent/compose?text=${encodeURIComponent(`${title} ${url}`)}`,
+    },
+    {
+      id: "mastodon",
+      label: s.share.mastodon,
+      href: (url, title) =>
+        `https://mastodonshare.com/?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+    },
+  ]);
+  const pageTitle = $derived(page.data.title ?? s.brand);
 
   const themesUrl = $derived(`${href("/")}assets/themes/`.replace(/\/{2,}assets/, "/assets"));
 </script>
 
-<a class="skip" href="#main" lang="en">Skip to content</a>
-<header class="site-header" lang="en" {dir}>
-  <a class="brand" href={href("/")}>Workforce Planning Management</a>
-  <nav aria-label="Site">
+<a class="skip" href="#main" lang={s.locale}>{s.skip}</a>
+<header class="site-header" lang={s.locale} {dir}>
+  <a class="brand" href={href(home)}>{s.brand}</a>
+  <nav aria-label={s.siteNav}>
     <ul>
       {#each nav as item (item.route)}
         <li>
@@ -75,41 +134,54 @@
     </ul>
   </nav>
   <div class="pickers">
-    <ThemePicker
-      label="Theme"
+    <PickerBar
+      {links}
+      linkProps={{ navigate: (to: string) => void goto(to) }}
+      searchProps={{ navigate: searchTo }}
+      labels={{
+        link: s.pickers.pages,
+        search: s.pickers.search,
+        searchInput: s.pickers.searchInput,
+        searchSubmit: s.pickers.searchSubmit,
+        theme: s.pickers.theme,
+        locale: s.pickers.language,
+        textSize: s.pickers.textSize,
+        share: s.pickers.share,
+      }}
       {themesUrl}
-      themes={["light", "dark"]}
-      storageKey={THEME_KEY}
-      detectFromSystem
-      defaultValue="light"
+      themeProps={{ storageKey: THEME_KEY, detectFromSystem: true, defaultValue: "light" }}
+      locales={pickable}
+      localeProps={{
+        value: locale ?? SITE_LOCALE,
+        localeLabels: LOCALE_LABELS,
+        applyDir: false,
+        onChange: switchLocale,
+      }}
+      textSizeProps={{ storageKey: TEXT_SIZE_KEY, sizeLabels: s.textSizes }}
+      {shareTargets}
+      shareProps={{
+        title: pageTitle,
+        copyLabel: s.share.copy,
+        copiedLabel: s.share.copied,
+        copyFailedLabel: s.share.copyFailed,
+      }}
     />
-    {#if locale && switchable.length > 1}
-      <LocalePicker
-        label="Language of this page"
-        locales={switchable}
-        value={locale}
-        localeLabels={LOCALE_LABELS}
-        applyDir={false}
-        onChange={switchLocale}
-      />
-    {/if}
-    <TextSizePicker label="Text size" sizes={TEXT_SIZES} defaultValue="normal" storageKey={TEXT_SIZE_KEY} />
   </div>
 </header>
 
 <main id="main" tabindex="-1">{@render children()}</main>
 
-<footer class="site-footer" lang="en" dir="ltr">
+<footer class="site-footer" lang={s.locale} dir="ltr">
   <p>
-    Built from the documents in <a href={REPO_URL}>the Workforce Planning Management repository</a>: <span
-      data-testid="site-counts"
-      >{formatInteger(data.counts.documents, SITE_LOCALE)} documents and {formatInteger(
-        data.counts.briefs,
-        SITE_LOCALE,
-      )} role briefs in {formatInteger(data.counts.locales, SITE_LOCALE)} locales</span
-    >. Demonstration software with synthetic data only; the translations were written by an AI assistant and have not
-    been reviewed by a native speaker. This site is the repository's <code>workforce-planning-management.github.io/</code>
-    directory, exported with <code>git subtree</code>.
+    {s.footer.builtFrom} <a href={REPO_URL}>{s.footer.repository}</a>:
+    <span data-testid="site-counts"
+      >{fill(s.footer.counts, {
+        documents: formatInteger(data.counts.documents, s.locale),
+        briefs: formatInteger(data.counts.briefs, s.locale),
+        locales: formatInteger(data.counts.locales, s.locale),
+      })}</span
+    >. {s.footer.notice}
+    {fill(s.footer.export, { directory: "workforce-planning-management.github.io/", tool: "git subtree" })}
   </p>
 </footer>
 
@@ -161,32 +233,49 @@
     font-weight: 700;
     text-decoration: underline;
   }
-  /* Lily pickers: the theme stylesheet styles the buttons and places each popup; as in the WPM UI, this only lines
-     the buttons up and sizes the popups so they stay inside the screen. */
+  /* The Lily picker bar: the theme stylesheet styles the buttons and places each popup; as in the WPM UI, this only
+     lines the buttons up and sizes the popups so they stay inside the screen. */
   .pickers {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
     margin-inline-start: auto;
     position: relative;
   }
-  .pickers :global(.theme-picker),
-  .pickers :global(.locale-picker),
-  .pickers :global(.text-size-picker) {
+  .pickers :global(.picker-bar) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .pickers :global(:is(.link-picker, .search-picker, .theme-picker, .locale-picker, .text-size-picker, .share-picker)) {
     display: inline-flex;
     align-items: center;
   }
-  .pickers :global(.theme-picker-button),
-  .pickers :global(.locale-picker-button),
-  .pickers :global(.text-size-picker-button) {
+  .pickers
+    :global(
+      :is(
+        .link-picker-button,
+        .search-picker-button,
+        .theme-picker-button,
+        .locale-picker-button,
+        .text-size-picker-button,
+        .share-picker-button
+      )
+    ) {
     box-sizing: border-box;
     width: 2.5rem;
     height: 2.5rem;
     margin: 0;
   }
-  .pickers :global(.theme-picker-list),
-  .pickers :global(.locale-picker-list),
-  .pickers :global(.text-size-picker-list) {
+  .pickers
+    :global(
+      :is(
+        .link-picker-list,
+        .search-picker-panel,
+        .theme-picker-list,
+        .locale-picker-list,
+        .text-size-picker-list,
+        .share-picker-list
+      )
+    ) {
     z-index: 40;
     box-sizing: border-box;
     min-width: 0;
@@ -195,10 +284,27 @@
     max-height: 70vh;
     overflow-y: auto;
   }
-  .pickers :global(.theme-picker-option),
-  .pickers :global(.locale-picker-option),
-  .pickers :global(.text-size-picker-option) {
+  /* A long name (the NHS themes) wraps inside a popup at phone width instead of running out of it. */
+  .pickers :global(:is(.theme-picker-option, .locale-picker-option, .text-size-picker-option)) {
+    overflow-wrap: anywhere;
+  }
+  /* The share button's icon is an arrow pointing forward (Lily draws it pointing right); on a right-to-left page
+     forward is to the left, as in the WPM UI (WPM-T377). */
+  :global(:root[dir="rtl"] .share-picker-icon) {
+    transform: scaleX(-1);
+  }
+  /* SharePicker always renders its live region: visually hidden, not display: none, which would silence it. Left in
+     flow, it knocks the share button out of line with the others. */
+  .pickers :global(.share-picker-status) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
     white-space: nowrap;
+    border: 0;
   }
   /* The pickers' hover tooltips, as in the WPM UI: out of flow under the bar, so a hover never widens a picker's box
      and moves the button from under the pointer; never a click target. */

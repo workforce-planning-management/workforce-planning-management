@@ -1,0 +1,64 @@
+{
+  "locale": "en-001",
+  "brand": "Workforce Planning Management",
+  "skip": "Skip to content",
+  "siteNav": "Site",
+  "nav": {
+    "home": "Home",
+    "readme": "README",
+    "install": "Install",
+    "familyBridges": "Family bridges",
+    "spec": "Specification",
+    "worldwide": "Worldwide",
+    "briefs": "Role briefs",
+    "start": "Get started",
+    "docs": "Documentation",
+    "compare": "Compare"
+  },
+  "pickers": {
+    "pages": "Pages",
+    "search": "Search this site",
+    "searchInput": "Words to find",
+    "searchSubmit": "Search",
+    "theme": "Theme",
+    "language": "Language",
+    "textSize": "Text size",
+    "share": "Share"
+  },
+  "textSizes": {
+    "largest": "Largest",
+    "larger": "Larger",
+    "large": "Large",
+    "normal": "Normal",
+    "small": "Small",
+    "smaller": "Smaller",
+    "smallest": "Smallest"
+  },
+  "share": {
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "copyFailed": "The link could not be copied",
+    "email": "Email link",
+    "linkedin": "Share on LinkedIn",
+    "reddit": "Share on Reddit",
+    "bluesky": "Share on Bluesky",
+    "mastodon": "Share on Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Built from the documents in",
+    "repository": "the Workforce Planning Management repository",
+    "counts": "{documents} documents and {briefs} role briefs in {locales} locales",
+    "notice": "Demonstration software with synthetic data only; the translations were written by an AI assistant and have not been reviewed by a native speaker.",
+    "export": "This site is the repository's {directory} directory, exported with {tool}."
+  },
+  "translations": "Translations:",
+  "source": "Source:",
+  "search": {
+    "title": "Search",
+    "label": "Words to find",
+    "submit": "Search",
+    "noscript": "Searching this site needs JavaScript.",
+    "failed": "The search index could not be loaded, so this search has not run.",
+    "count": "Pages with every word of “{query}”: {count}"
+  }
+}

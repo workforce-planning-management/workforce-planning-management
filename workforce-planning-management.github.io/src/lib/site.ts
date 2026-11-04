@@ -3,16 +3,16 @@
 
 export const REPO_URL = "https://github.com/workforce-planning-management/workforce-planning-management";
 
-/** A page made from one repository document. `slug` is the route under the site root ("" is the home page). */
-export type DocPage = { slug: string; path: string; nav: string };
+/** A page made from one repository document. `slug` is the route under the site root; `key` names its label in the catalogue (`#lib/i18n.ts`). */
+export type DocPage = { slug: string; path: string; key: "docs" | "readme" | "install" | "familyBridges" | "spec" | "worldwide" };
 
 export const DOC_PAGES: readonly DocPage[] = [
-  { slug: "", path: "index.md", nav: "Home" },
-  { slug: "readme", path: "README.md", nav: "README" },
-  { slug: "install", path: "INSTALL.md", nav: "Install" },
-  { slug: "family-bridges", path: "docs/tutorials/family-bridges.md", nav: "Family bridges" },
-  { slug: "spec", path: "spec/index.md", nav: "Specification" },
-  { slug: "worldwide", path: "spec/worldwide.md", nav: "Worldwide" },
+  { slug: "docs", path: "index.md", key: "docs" },
+  { slug: "readme", path: "README.md", key: "readme" },
+  { slug: "install", path: "INSTALL.md", key: "install" },
+  { slug: "family-bridges", path: "docs/tutorials/family-bridges.md", key: "familyBridges" },
+  { slug: "spec", path: "spec/index.md", key: "spec" },
+  { slug: "worldwide", path: "spec/worldwide.md", key: "worldwide" },
 ];
 
 /**
@@ -44,6 +44,43 @@ export const BRIEF_LOCALES = [
 ] as const;
 export type BriefLocale = (typeof BRIEF_LOCALES)[number];
 
+/**
+ * The locales with a translated home (`locales/<locale>/index.md`), at `/<locale>/`, in the rule's order of languages:
+ * English, then Welsh and Mandarin, each regional file copied to its `-001`. `#lib/server/content.ts` fails the build
+ * if `src/content/docs.json` holds another set.
+ */
+export const HOME_LOCALES = [
+  "cy-001",
+  "cy-gb",
+  "en-001",
+  "en-gb",
+  "en-gb-oxendict",
+  "en-us",
+  "zh-001",
+  "zh-cn",
+] as const satisfies readonly BriefLocale[];
+
+/** The home the site's own root (`/`) shows: the world English landing page. */
+export const ROOT_HOME_LOCALE = "en-001";
+
+/** The address of the site, for sitemaps. */
+export const SITE_URL = "https://workforce-planning-management.github.io";
+
+/** The comparison pages, `/compare/<slug>/`, from `docs/compare/<slug>/index.md`. English only for now. */
+export const COMPARE_SLUGS = [
+  "adp",
+  "bamboohr",
+  "frappe-hrms",
+  "greenhouse",
+  "gusto",
+  "horilla",
+  "lever",
+  "odoo-hr",
+  "orangehrm",
+  "sap-successfactors",
+  "workday",
+] as const;
+
 /** The locale the navigation's "Role briefs" link opens: the English source the translations defer to. */
 export const DEFAULT_BRIEF_LOCALE: BriefLocale = "en-gb-oxendict";
 
@@ -64,7 +101,7 @@ export const LOCALE_LABELS: Record<BriefLocale, string> = {
   "de-de": "Deutsch - Deutschland",
   "en-001": "English",
   "en-gb": "English - Great Britain",
-  "en-gb-oxendict": "English - Great Britain (Oxford spelling)",
+  "en-gb-oxendict": "English - Great Britain - Oxford spelling",
   "en-us": "English - United States",
   "es-001": "Español",
   "es-es": "Español - España",
@@ -78,6 +115,29 @@ export const LOCALE_LABELS: Record<BriefLocale, string> = {
   "zh-001": "中文",
   "zh-cn": "中文 - 中国",
 };
+
+/**
+ * The locales the language picker offers on a page. `cy-gb` is left out in favour of `cy-001` (the picker bar spec), but
+ * stays on its own pages: a picker must be able to show the locale it is on.
+ */
+export function pickerLocales(pageLocale: BriefLocale | null): BriefLocale[] {
+  return BRIEF_LOCALES.filter((l) => l !== "cy-gb" || l === pageLocale);
+}
+
+/** Whether `locale` has a translated home. */
+export function hasHome(locale: string): boolean {
+  return (HOME_LOCALES as readonly string[]).includes(locale);
+}
+
+/** The best page of `locale` for a page that has no peer there: its home, else its list of briefs. */
+export function localeLanding(locale: BriefLocale): string {
+  return hasHome(locale) ? `/${locale}/` : `/${locale}/for/`;
+}
+
+/** The search page in each locale, for the language picker. */
+export function searchAlternates(): Partial<Record<BriefLocale, string>> {
+  return Object.fromEntries(BRIEF_LOCALES.map((l) => [l, `/${l}/search/`]));
+}
 
 export function isBriefLocale(s: string): s is BriefLocale {
   return (BRIEF_LOCALES as readonly string[]).includes(s);
@@ -109,8 +169,15 @@ export function briefRoute(locale: BriefLocale, slug: string | null): string {
  */
 export function routeOfRepoPath(path: string, hasBrief: (locale: BriefLocale, slug: string) => boolean): string | null {
   const clean = path.replace(/\/+$/, "");
-  for (const d of DOC_PAGES) if (clean === d.path) return d.slug ? `/${d.slug}/` : "/";
+  for (const d of DOC_PAGES) if (clean === d.path) return `/${d.slug}/`;
   if (clean === "spec") return "/spec/";
+  if (clean === "docs/compare" || clean === "docs/compare/index.md") return "/compare/";
+  const compare = /^docs\/compare\/([^/]+)(?:\/(?:index|README)\.md)?$/.exec(clean);
+  if (compare?.[1] && (COMPARE_SLUGS as readonly string[]).includes(compare[1])) return `/compare/${compare[1]}/`;
+  const start = /^locales\/([^/]+)\/start(?:\/(?:index|README)\.md)?$/.exec(clean);
+  if (start?.[1] && hasHome(start[1])) return `/${start[1]}/start/`;
+  const home = /^locales\/([^/]+)(?:\/(?:index|README)\.md)?$/.exec(clean);
+  if (home?.[1] && hasHome(home[1])) return `/${home[1]}/`;
   const m = /^locales\/([^/]+)\/for(?:\/([^/]+))?(?:\/(?:index|README)\.md)?$/.exec(clean);
   if (m && m[1] && isBriefLocale(m[1])) {
     if (!m[2] || m[2] === "index.md" || m[2] === "README.md") return briefRoute(m[1], null);

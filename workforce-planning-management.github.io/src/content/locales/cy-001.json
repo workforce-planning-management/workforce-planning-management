@@ -1,0 +1,64 @@
+{
+  "locale": "cy-001",
+  "brand": "Rheoli Cynllunio'r Gweithlu",
+  "skip": "Neidio i'r cynnwys",
+  "siteNav": "Gwefan",
+  "nav": {
+    "home": "Hafan",
+    "readme": "README",
+    "install": "Gosod",
+    "familyBridges": "Pontydd y teulu",
+    "spec": "Manyleb",
+    "worldwide": "Ledled y byd",
+    "briefs": "Dogfennau rôl",
+    "start": "Dechrau arni",
+    "docs": "Dogfennaeth",
+    "compare": "Cymharu"
+  },
+  "pickers": {
+    "pages": "Tudalennau",
+    "search": "Chwilio'r wefan hon",
+    "searchInput": "Geiriau i'w canfod",
+    "searchSubmit": "Chwilio",
+    "theme": "Thema",
+    "language": "Iaith",
+    "textSize": "Maint testun",
+    "share": "Rhannu"
+  },
+  "textSizes": {
+    "largest": "Mwyaf",
+    "larger": "Mwy",
+    "large": "Mawr",
+    "normal": "Arferol",
+    "small": "Bach",
+    "smaller": "Llai",
+    "smallest": "Lleiaf"
+  },
+  "share": {
+    "copy": "Copïo dolen",
+    "copied": "Dolen wedi'i chopïo",
+    "copyFailed": "Methu copïo'r ddolen",
+    "email": "Anfon y ddolen drwy e-bost",
+    "linkedin": "Rhannu ar LinkedIn",
+    "reddit": "Rhannu ar Reddit",
+    "bluesky": "Rhannu ar Bluesky",
+    "mastodon": "Rhannu ar Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Wedi'i adeiladu o'r dogfennau yn",
+    "repository": "ystorfa Rheoli Cynllunio'r Gweithlu",
+    "counts": "Dogfennau: {documents}; dogfennau rôl: {briefs}; locales: {locales}",
+    "notice": "Meddalwedd arddangos gyda data synthetig yn unig; ysgrifennwyd y cyfieithiadau gan gynorthwyydd deallusrwydd artiffisial ac nid yw siaradwr brodorol wedi'u hadolygu.",
+    "export": "Y wefan hon yw cyfeiriadur {directory} yr ystorfa, wedi'i allforio gyda {tool}."
+  },
+  "translations": "Cyfieithiadau:",
+  "source": "Ffynhonnell:",
+  "search": {
+    "title": "Chwilio",
+    "label": "Geiriau i'w canfod",
+    "submit": "Chwilio",
+    "noscript": "Mae angen JavaScript i chwilio'r wefan hon.",
+    "failed": "Methu llwytho'r mynegai chwilio, felly nid yw'r chwiliad hwn wedi rhedeg.",
+    "count": "Tudalennau gyda phob gair o “{query}”: {count}"
+  }
+}

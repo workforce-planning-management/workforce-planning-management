@@ -5,7 +5,7 @@ import { render } from "#lib/server/content.js";
 import { href } from "#lib/href.js";
 
 export const entries: EntryGenerator = () =>
-  DOC_PAGES.filter((d) => d.slug !== "").map((d) => ({ slug: d.slug }));
+  DOC_PAGES.map((d) => ({ slug: d.slug }));
 
 export const load: PageServerLoad = ({ params }) => {
   const doc = DOC_PAGES.find((d) => d.slug === params.slug);

@@ -455,7 +455,7 @@ jobs:
       - run: pnpm run check
       - run: pnpm run build
       - run: pnpm exec playwright install --with-deps chromium
-      - name: Playwright (every page, axe in light and dark, locale switch, ar-001 and ur-001 right to left, dates)
+      - name: Playwright (every page, axe, every picker and theme, locales, search, sitemaps, ar-001 and ur-001 right to left)
         run: pnpm exec playwright test
         env:
           CI: "true"

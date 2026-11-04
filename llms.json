@@ -496,7 +496,7 @@
       {
         "title": "workforce-planning-management.github.io",
         "path": "workforce-planning-management.github.io/README.md",
-        "description": "The GitHub Pages documentation site: SvelteKit adapter-static, Lily pickers, 258 prerendered pages; the publish steps (make github-pages)"
+        "description": "The GitHub Pages documentation site: SvelteKit adapter-static, the Lily PickerBar, landing pages, a tutorial and comparisons; the publish steps (make github-pages)"
       }
     ],
     "operate": [

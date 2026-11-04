@@ -1,9 +1,11 @@
 # Workforce Planning Management — documentation index
 
+**All-in-one HR for the employee lifecycle, from hire to retire.**
+
 Workforce Planning Management (WPM) is an all-in-one HR platform for the
 employee lifecycle, hire to retire, written as demonstration software with
 synthetic data only. This page is the way in to its documents; it is also the
-home page of the documentation site
+documentation page of the website
 ([`workforce-planning-management.github.io/`](workforce-planning-management.github.io/README.md)).
 
 > ⚠️ **Demo software.** Not a production HR or payroll system. See
