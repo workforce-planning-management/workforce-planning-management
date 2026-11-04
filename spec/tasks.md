@@ -5834,3 +5834,14 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
 - [ ] WPM-T443 **Nightly and weekly local jobs** by `launchd` (gitleaks over history, `cargo deny` advisories, the chaos and mutation runs, ZAP), writing a last-run page. (M)
 - [ ] WPM-T444 **Pilot Dagger** on the `api · fmt, clippy, unit tests` and database stages only, timed against plain cargo; adopt only if it is not slower and removes duplication. (M, optional)
 - [ ] WPM-T445 **A self-managed GitLab runner** (shell executor) on this machine for the GitLab mirror, as a second opinion. Optional; decide after WPM-T436. (S, optional)
+
+## Learning, upskilling and economic viability ([learning-economics.md](learning-economics.md)), proposed 2026-11-04
+
+- [ ] WPM-T446 **A course fee.** *(WPM-R227, WPM-D172)* `skill_courses.fee_minor` and `fee_currency` (both or neither; fee at least 0, currency a known code); no fee is unknown. Catalogue editor field in 13 locales. (S)
+- [ ] WPM-T447 **The pure core `rules::training_economics`.** *(WPM-R227 to WPM-R230, WPM-D172, WPM-D174)* Plan cost (fees per currency, the courses with no fee counted), the hours cost at a loaded hourly rate, the train-or-hire comparison with every input echoed, and NPV and payback by the shared definitions. Clock-free, DB-free, tests for unknown inputs, rounding, mixed currencies. (M)
+- [ ] WPM-T448 **A plan's cost.** *(WPM-R227, WPM-R228)* `GET /api/development-plans/{pid}/cost`: fees, hours cost, unresolved parts, per currency. HR and the plan's owner only; the access table, the registry of routes and the personal data inventory updated. UI on the plan page. (M)
+- [ ] WPM-T449 **Train or hire.** *(WPM-R229)* Parameters `learning.ramp_up_days` and `recruitment.cost_minor` in the jurisdiction registry (by place of work); `GET /api/positions/{pid}/train-or-hire?candidate=` returning both totals and every input. Advisory. (M)
+- [ ] WPM-T450 **A stated benefit and its viability.** *(WPM-R230, WPM-D173)* `development_plan_benefits` (plan, year, amount, currency, source, stated by, date); `GET /api/development-plans/{pid}/viability` at the organization's discount rate. No benefit gives `unmeasured`. (M)
+- [ ] WPM-T451 **Learning spend against a budget.** *(WPM-R227)* A learning budget per department and year and the recorded fees against it, per currency, over the recorded spend only (no actuals are invented). (M)
+- [ ] WPM-T452 **Bridge to the project portfolio.** *(WPM-R230)* A plan's cost and viability offered to the project portfolio service as an investment line for a project that needs the capability; the portfolio's `UE-` tasks consume it. Owner decision on the contract first. (M, blocked)
+- [ ] WPM-T453 **Screens.** The cost, train-or-hire and viability on the plan and seat pages, in 13 locales (AI-written, unreviewed), with Playwright and axe. (M)

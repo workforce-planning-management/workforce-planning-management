@@ -1020,3 +1020,7 @@ alone. Requirements WPM-R224 to WPM-R226; tasks WPM-T428 to WPM-T433 (Phase 27).
 ## Local-first CI/CD (2026-11-04)
 
 Research and advice are in [local-ci-cd.md](local-ci-cd.md); the tasks are WPM-T436 to WPM-T445 in [tasks.md](tasks.md). In one line: make the local machine the place CI runs and records its result, and make hosted runners a weekly second opinion. Order: measure; one entry point; local containers; a pre-push gate; parallel database suites; an attestation and commit status; narrow the hosted workflow; nightly jobs. Not taken: `act` as the plan, a Forgejo runner, a GitHub self-hosted runner.
+
+## Learning, upskilling and economic viability (2026-11-04)
+
+[learning-economics.md](learning-economics.md): WPM knows what people need to learn but not what learning costs or returns. Proposed: a course fee (unknown is never free), the cost of the hours beside the fees, a train-or-hire comparison, and a stated benefit with payback and net present value (no benefit is unmeasured, never not viable). Tasks WPM-T446 to WPM-T453 in [tasks.md](tasks.md). Not taken: valuing a skill from market pay, attributing a business result to a course, ranking people by return on training.
