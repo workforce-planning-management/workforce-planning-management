@@ -417,6 +417,11 @@
         "description": "WPM-R218–R223 and WPM-D154–D162 (decisions confirmed 2026-11-01): minimum wage, overtime, workers' compensation and unemployment insurance: the research with its confidence, what WPM holds today, and the advice (check and record, never decide or file)"
       },
       {
+        "title": "spec/local-ci-cd.md",
+        "path": "spec/local-ci-cd.md",
+        "description": "WPM-D171 and WPM-T436–T445 (proposed): local-first CI/CD: the options assessed (a shared entry point, a pre-push gate, an attestation and commit status, self-managed runners, act, Dagger, Forgejo), the risks, and the order to do them in"
+      },
+      {
         "title": "spec/individual-goals.md",
         "path": "spec/individual-goals.md",
         "description": "WPM-R224–R226 and WPM-D163–D166 (proposed): individual goals with measures and check-ins, tied to the PADR and performance reviews; a signed review keeps a snapshot; no score; team and company OKRs referenced, never held"

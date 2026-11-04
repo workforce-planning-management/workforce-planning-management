@@ -1016,3 +1016,7 @@ Full text: [individual-goals.md](individual-goals.md). **Proposed, not built.** 
 (WPM-R172) and the performance review; a signed review keeps a snapshot (WPM-D165). Goals are review-confidential (WPM-D164), never scored or
 ranked across people (WPM-D163), and team or company OKRs are referenced by an optional alignment reference, never held (WPM-D166), so WPM works
 alone. Requirements WPM-R224 to WPM-R226; tasks WPM-T428 to WPM-T433 (Phase 27).
+
+## Local-first CI/CD (2026-11-04)
+
+Research and advice are in [local-ci-cd.md](local-ci-cd.md); the tasks are WPM-T436 to WPM-T445 in [tasks.md](tasks.md). In one line: make the local machine the place CI runs and records its result, and make hosted runners a weekly second opinion. Order: measure; one entry point; local containers; a pre-push gate; parallel database suites; an attestation and commit status; narrow the hosted workflow; nightly jobs. Not taken: `act` as the plan, a Forgejo runner, a GitHub self-hosted runner.

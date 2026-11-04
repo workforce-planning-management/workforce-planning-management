@@ -168,3 +168,4 @@ announcement read receipts are counts, never names (WPM-D35).
   authentication-sessions,
   authorization-attributes,
   security
+- **Local-first CI/CD (proposed):** [local-ci-cd.md](local-ci-cd.md).

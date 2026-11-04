@@ -5819,3 +5819,18 @@ Spec: [individual-goals.md](individual-goals.md). Decisions WPM-D163 to WPM-D166
 - [ ] WPM-T431 **The review tie-in.** *(WPM-R225, WPM-D165)* A PADR's objectives are goals; a performance review lists the goals of its period with outcomes; a signed review keeps a snapshot.
 - [ ] WPM-T432 **Screens and strings.** *(WPM-R224, WPM-R225)* The person's goals, the manager's view by name, the review's goals panel; strings in every locale.
 - [ ] WPM-T433 **HR roll-up and guards.** *(WPM-R226, WPM-D163)* Counts by status and department with the floor; the scoring guard test covers every new function.
+
+## Local-first CI/CD ([local-ci-cd.md](local-ci-cd.md)), proposed 2026-11-04
+
+Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the options table and the risks are in [local-ci-cd.md](local-ci-cd.md); every decision is the owner's (WPM-D171). Order matters: each task pays for the next.
+
+- [ ] WPM-T436 **Measure first.** Time every CI job's commands on this machine, cold and warm, and tabulate them against the durations in the hosted run history, with the number of runs that were down, queued or failed for reasons other than the code. This is the evidence for WPM-D171. (S)
+- [ ] WPM-T437 **One entry point.** `scripts/ci-check.sh <stage>` (the CRM pattern), one stage per current job; `ci.yml` steps become calls to it; a test fails if a workflow `run:` step is not such a call or a documented exception. (M)
+- [ ] WPM-T438 **A local helper for the service containers.** Start and stop PostgreSQL 18, Redis and Keycloak with the pinned digests under colima or docker, for the database, OIDC, Keycloak, drill and roles stages; `--platform linux/amd64` for the parity-sensitive ones. (M)
+- [ ] WPM-T439 **A pre-push gate** (fmt, clippy, lib tests, the doc scripts) installed by `scripts/install-hooks.sh`, skippable by an explicit variable that is recorded. (S)
+- [ ] WPM-T440 **Parallel database suites.** A throwaway database per test binary, the binaries run concurrently, each with its own flags; compare wall time with the serial run before and after. (M)
+- [ ] WPM-T441 **Attestation.** `scripts/ci-check.sh all` writes `refs/notes/ci` and posts a `local-ci` commit status to each remote that accepts one (GitHub, GitLab, Codeberg), from a clean tree only, with a status-only token. Branch protection requires it. (M)
+- [ ] WPM-T442 **Narrow the hosted workflow** to `workflow_dispatch`, tags and a weekly clean-room run; keep `release.yml` as the manual fallback. Needs WPM-T437 and WPM-T441. (S)
+- [ ] WPM-T443 **Nightly and weekly local jobs** by `launchd` (gitleaks over history, `cargo deny` advisories, the chaos and mutation runs, ZAP), writing a last-run page. (M)
+- [ ] WPM-T444 **Pilot Dagger** on the `api · fmt, clippy, unit tests` and database stages only, timed against plain cargo; adopt only if it is not slower and removes duplication. (M, optional)
+- [ ] WPM-T445 **A self-managed GitLab runner** (shell executor) on this machine for the GitLab mirror, as a second opinion. Optional; decide after WPM-T436. (S, optional)
