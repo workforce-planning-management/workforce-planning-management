@@ -272,6 +272,18 @@ for (const [name, width] of [["desktop", 1280], ["phone", 390], ["small phone", 
       }
     });
 
+test("hovering each picker button changes its colour", async ({ page }) => {
+  await open(page, "/readme/", "light");
+  for (const { button } of PICKERS) {
+    const control = page.getByRole("button", { name: button, exact: true });
+    const colours = () => control.evaluate((e) => getComputedStyle(e).backgroundColor + getComputedStyle(e).color);
+    await page.mouse.move(0, 700);
+    const before = await colours();
+    await control.hover();
+    await expect.poll(colours, button).not.toBe(before);
+  }
+});
+
 test("the bar offers every Lily theme, the UK and US themes last, and every text size", async ({ page }) => {
   await open(page, "/readme/", "light");
   await page.getByRole("button", { name: "Theme", exact: true }).click();

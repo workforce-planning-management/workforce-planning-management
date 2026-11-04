@@ -265,6 +265,21 @@
     height: 2.5rem;
     margin: 0;
   }
+  /* Hover inverts the button, from the theme's own text and panel colours, so it reads in every theme. */
+  .pickers
+    :global(
+      :is(
+        .link-picker-button,
+        .search-picker-button,
+        .theme-picker-button,
+        .locale-picker-button,
+        .text-size-picker-button,
+        .share-picker-button
+      ):hover
+    ) {
+    background: var(--ink);
+    color: var(--panel);
+  }
   .pickers
     :global(
       :is(
