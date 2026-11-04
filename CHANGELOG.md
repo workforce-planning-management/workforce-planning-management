@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the website's wording is neutral (WPM-T455, WPM-D175, 2026-11-04)
+
+The landing pages, tutorial and comparison pages read as a business analyst's description, in English, Welsh and Mandarin (AI-written, unreviewed). The facts are unchanged.
+
 ### Changed — the website welcomes visitors: picker bar, translations, tutorial and comparisons (WPM-T454, WPM-R231, WPM-D175, 2026-11-04)
 
 <https://workforce-planning-management.github.io/> is now a landing page (benefits, features, a comparison, who it is for), with a guided tutorial at `/<locale>/start/`, comparisons at `/compare/<slug>/`, the full Lily picker bar (all 57 themes, search and share), the site's own words in English, Welsh and Mandarin (AI-written, unreviewed), and sitemaps. The document index moved from `/` to `/docs/`. Not done: the other 13 locales have no landing page, and the tutorial was not run end to end.

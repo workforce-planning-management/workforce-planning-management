@@ -422,10 +422,11 @@ for (const slug of COMPARE_SLUGS)
   test(`/compare/${slug}/ is fair: it says when to choose the other product, that WPM is a demo, and its basis`, async ({ page }) => {
     await open(page, `/compare/${slug}/`, "light");
     await expect(page.locator("main h1")).toContainText("WPM compared with");
-    await expect(page.locator("main table")).toContainText("For real HR today?");
+    await expect(page.locator("main")).not.toContainText("!");
+    await expect(page.locator("main table")).toContainText("Suitable for production use");
     await expect(page.locator("main blockquote")).toContainText("demo software");
-    await expect(page.getByRole("heading", { name: /^Choose .+ when$/ })).toHaveCount(2);
-    await expect(page.getByRole("heading", { name: "How this page was written" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^When .+ is the better fit$/ })).toHaveCount(2);
+    await expect(page.getByRole("heading", { name: "Basis for this comparison" })).toBeVisible();
     await expect(page.locator("main p.actions a")).toHaveCount(2);
     await expect(page.locator("main")).toContainText("not affiliated");
   });
@@ -440,16 +441,16 @@ test("/compare/ links to every comparison, and the landing page links to /compar
 test("en-us and en-gb keep their own spelling", async ({ request }) => {
   const us = await (await request.get("/en-us/")).text();
   const gb = await (await request.get("/en-gb/")).text();
-  expect(us).toContain("every behavior traces");
-  expect(gb).toContain("every behaviour traces");
+  expect(us).toContain("each behavior is traced");
+  expect(gb).toContain("each behaviour is traced");
   expect(gb).toContain("localisations");
 });
 
 test("the root home has the hero and Translations line, and the language picker goes to a locale's home", async ({ page }) => {
   await open(page, "/", "light");
   await expect(page.locator("main h1")).toHaveText("Workforce Planning Management");
-  await expect(page.getByRole("heading", { name: "How it compares" })).toBeVisible();
-  await expect(page.locator("main table")).toContainText("No: a demonstration");
+  await expect(page.getByRole("heading", { name: "Comparison", exact: true })).toBeVisible();
+  await expect(page.locator("main table")).toContainText("Suitable for production use");
   await expect(page.getByTestId("translations")).toContainText("Translations: Cymraeg, English, 中文");
   await page.getByTestId("translations").getByRole("link", { name: "中文" }).click();
   await expect(page).toHaveURL(/\/zh-001\/$/);

@@ -95,6 +95,8 @@ Acceptance criteria:
 
 ## WPM-D175 — Promotion that stays honest; content stays Markdown
 
+- **A neutral register.** The site's own pages read as a business analyst's description:
+  no greetings, slogans, exclamation marks or emoji; a claim is stated with its limit.
 - **Promotion does not outrun the evidence.** The demo notice is in every hero, and the
   comparison says the alternatives are for real HR today and WPM is not. A claim about a
   named product rests on [COMPARISONS.md](../COMPARISONS.md) and the dated scan in

@@ -1,35 +1,35 @@
-# Compare WPM
+# Comparison by product
 
-How Workforce Planning Management (WPM) sits beside other HR systems, one page each. Every page says when the other product is the better choice, and for real HR today it usually is: WPM is demonstration software.
+These pages compare Workforce Planning Management (WPM) with other HR systems. WPM is demonstration software, so each page also states when the other product is the better fit.
 
 ## All-in-one suites
 
-Cover similar ground on one commercial platform.
+Commercial platforms with a similar scope to WPM.
 
-- **[Workday](workday/index.md)**
-- **[SAP SuccessFactors](sap-successfactors/index.md)**
-- **[BambooHR](bamboohr/index.md)**
+- [Workday](workday/index.md)
+- [SAP SuccessFactors](sap-successfactors/index.md)
+- [BambooHR](bamboohr/index.md)
 
 ## Open-source HR platforms
 
-Open source, like WPM, and far further along in production use.
+Open-source projects in production use.
 
-- **[frappe/hrms](frappe-hrms/index.md)**
-- **[OrangeHRM](orangehrm/index.md)**
-- **[Horilla](horilla/index.md)**
-- **[Odoo HR](odoo-hr/index.md)**
+- [frappe/hrms](frappe-hrms/index.md)
+- [OrangeHRM](orangehrm/index.md)
+- [Horilla](horilla/index.md)
+- [Odoo HR](odoo-hr/index.md)
 
 ## Point tools
 
-One pillar done well, leaving the handoffs to integration.
+Products that cover one HR function.
 
-- **[Greenhouse](greenhouse/index.md)**
-- **[Lever](lever/index.md)**
-- **[Gusto](gusto/index.md)**
-- **[ADP](adp/index.md)**
+- [Greenhouse](greenhouse/index.md)
+- [Lever](lever/index.md)
+- [Gusto](gusto/index.md)
+- [ADP](adp/index.md)
 
-## The full picture
+## Sources
 
-[COMPARISONS.md](../../COMPARISONS.md) has the written basis for these pages. Know a system we should compare against? [Please tell us](../../RFC.md).
+[COMPARISONS.md](../../COMPARISONS.md) is the written source for these pages. Suggestions for other comparisons are welcome through [the RFC process](../../RFC.md).
 
-[Take the guided tutorial](../../locales/en-001/start/index.md) [See what it means for your role](../../locales/en-001/for/index.md)
+[Run the demo](../../locales/en-001/start/index.md) [Role briefs](../../locales/en-001/for/index.md)

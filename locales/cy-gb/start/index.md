@@ -1,17 +1,17 @@
-# Dechrau arni: taith dywys o WPM
+# Tiwtorial arddangos
 
-Croeso! Yn y tiwtorial hwn byddwch yn rhedeg WPM ar eich peiriant eich hun, yn ei lenwi â phobl ffug, ac yn cerdded trwy bob tudalen gyda chanllaw wrth eich ochr. Nid oes dim yn gadael eich cyfrifiadur.
+Mae'r tiwtorial hwn yn disgrifio sut i redeg WPM ar beiriant lleol, llwytho data ffug a dilyn y daith dywys o bob tudalen.
 
-> ⚠️ **Data ffug yn unig.** Mae'r daith yn rhedeg gyda mewngofnodi wedi'i ddiffodd, felly peidiwch byth â'i chysylltu â gwasanaeth sy'n dal data go iawn.
+> **Data ffug yn unig.** Mae mewngofnodi wedi'i ddiffodd ar gyfer y daith. Peidiwch â'i chysylltu â gwasanaeth sy'n dal data go iawn.
 
-## Beth sydd ei angen arnoch
+## Gofynion
 
-- [Rust](https://www.rust-lang.org/tools/install), sefydlog
+- [Rust](https://www.rust-lang.org/tools/install), fersiwn sefydlog
 - [Node.js](https://nodejs.org/) a [pnpm](https://pnpm.io/)
-- [PostgreSQL](https://www.postgresql.org/) gyda chronfa ddata wag ar gyfer y daith
+- [PostgreSQL](https://www.postgresql.org/), gyda chronfa ddata wag ar gyfer y daith
 - Python 3
 
-Mae gan [y canllaw gosod](../../../INSTALL.md) (yn Saesneg) yr union fersiynau a sut i gysylltu'r gwasanaeth â'ch cronfa ddata.
+Mae'r [canllaw gosod](../../../INSTALL.md) (Saesneg) yn rhoi'r fersiynau gofynnol a gosodiadau'r gronfa ddata.
 
 ## Cam 1: Cael y cod
 
@@ -22,7 +22,7 @@ cd workforce-planning-management
 
 ## Cam 2: Cychwyn y gwasanaeth
 
-Yng nghyfeiriadur y gwasanaeth, paratowch y gronfa ddata wag a chychwyn yr API. Mae mewngofnodi wedi'i ddiffodd ar gyfer yr enghraifft hon yn unig, ac mae'r terfyn cyfradd uwch yn cadw i fyny â thaith gyflym.
+Paratowch y gronfa ddata wag a chychwyn yr API. Mae mewngofnodi wedi'i ddiffodd ar gyfer yr enghraifft hon yn unig, a chodir y terfyn cyfradd ar gyfer y daith.
 
 ```sh
 cd workforce-planning-management-service-with-rust
@@ -31,15 +31,15 @@ cargo run -- task seed
 WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 ```
 
-## Cam 3: Ychwanegu'r bobl ffug
+## Cam 3: Llwytho'r data ffug
 
-Mewn ail derfynell, o frig yr ystorfa:
+Mewn ail derfynell, o wraidd yr ystorfa:
 
 ```sh
 python3 scripts/demo-data.py http://localhost:5150
 ```
 
-## Cam 4: Cychwyn yr ap
+## Cam 4: Cychwyn y rhaglen
 
 ```sh
 cd workforce-planning-management-ui-with-svelte
@@ -47,13 +47,13 @@ pnpm install
 WPM_DEMO_API_URL=http://localhost:5150 pnpm dev
 ```
 
-## Cam 5: Mynd ar y daith
+## Cam 5: Dilyn y daith
 
-Agorwch y cyfeiriad y mae'r ap yn ei argraffu, a mewngofnodwch fel **example@example.com**. Ni anfonir e-bost. Byddwch yn cyrraedd `/demo`, taith o bob tudalen, ac mae baner ar bob tudalen yn eich atgoffa bod y data'n ffug ac yn cynnig Blaenorol a Nesaf.
+Agorwch y cyfeiriad a ddangosir gan y rhaglen a mewngofnodwch fel **example@example.com**. Ni anfonir e-bost. Mae'r mewngofnodi'n agor `/demo`, taith o bob tudalen. Mae baner ar bob tudalen yn nodi bod y data'n ffug ac yn darparu dolenni Blaenorol a Nesaf.
 
-## Ble nesaf
+## Darllen pellach
 
-- Gwelwch beth mae WPM yn ei gynnig i [eich rôl chi](../for/index.md).
-- Darllenwch [sut mae WPM yn cymharu](../../../COMPARISONS.md) (yn Saesneg).
-- Archwiliwch [y fanyleb](../../../spec/index.md) (yn Saesneg), yr unig ffynhonnell wirionedd.
-- Dywedwch wrthym beth yw eich barn: [sut i wneud sylw](../../../RFC.md) (yn Saesneg).
+- [Dogfennau rôl](../for/index.md)
+- [Cymhariaeth fesul cynnyrch](../../../docs/compare/index.md) (Saesneg)
+- [Manyleb](../../../spec/index.md) (Saesneg)
+- [Sut i wneud sylw](../../../RFC.md) (Saesneg)

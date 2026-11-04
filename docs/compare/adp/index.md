@@ -1,42 +1,42 @@
 # WPM compared with ADP
 
-ADP and Workforce Planning Management (WPM) solve overlapping problems in very different positions. This is orientation, not a benchmark: here is an honest way to choose.
+This page compares ADP with Workforce Planning Management (WPM). It is a general orientation, not a benchmark.
 
-> ⚠️ **WPM is demo software**, not a production HR or payroll system. It uses synthetic data only.
+> **WPM is demo software.** It is not a production HR or payroll system and uses synthetic data only.
 
-## At a glance
+## Summary
 
 | | WPM | ADP |
 | --- | --- | --- |
-| **What it is** | All-in-one HR platform, written as a demonstration | Payroll point solution |
-| **Covers** | The whole employee lifecycle, hire to retire | Payroll: one pillar, done well |
-| **Source** | Open source | Commercial |
-| **For real HR today?** | No | Yes |
+| **Type** | All-in-one HR platform, demonstration software | Payroll system |
+| **Scope** | Full employee lifecycle, hire to retire | Payroll |
+| **Licensing** | Open source | Commercial |
+| **Suitable for production use** | No | Yes |
 
-## Choose ADP when
+## When ADP is the better fit
 
-- Paying real people correctly is the problem you need solved: WPM's statutory calculations are illustrative.
-- You are happy to connect it to your other HR systems.
+- Payroll is the main requirement and real employees are paid through it. WPM's statutory calculations are illustrative.
+- The organization can integrate it with other HR systems.
 
-## Choose WPM when
+## When WPM is the better fit
 
-- You want to evaluate, learn from or build on an open, specification-driven design.
-- You want to see how an HR system behaves when privacy rules are built into its data model.
-- You can work with synthetic data, and do not need it for real employees.
+- The aim is to evaluate, study or extend an open, specification-driven design.
+- The aim is to review how privacy rules can be built into an HR data model.
+- Synthetic data is sufficient, and no real employees are involved.
 
-## Where WPM differs
+## Design differences in WPM
 
-- **Open source.** You can read, run and build on all of it.
-- **One system.** WPM trades depth in each pillar for one operational system across the lifecycle, so the handoffs are not left to integration work or spreadsheets.
-- **Privacy by construction.** Sensitive data is unrepresentable or restricted: no diagnosis column, no author on a pulse answer, and emergency contacts visible only to the person and HR.
-- **Honest numbers.** Every roll-up names no one, and an unknown is never shown as zero.
-- **Federated identity.** WPM does not run its own user registry: people, workers, organizations and courses live in separate services and are referenced by URN.
-- **Traceable.** Every behaviour traces to a numbered requirement, design decision and task.
+- **Licensing.** The source code is open.
+- **Scope.** WPM covers the full employee lifecycle in one system, with less depth in each function.
+- **Data minimization.** Sensitive data has no field or is restricted. There is no diagnosis field, pulse survey responses have no author, and emergency contacts are visible only to the person and HR.
+- **Reporting rules.** Aggregates do not identify individuals, and unknown values are not reported as zero.
+- **Federated identity.** WPM has no user registry of its own. People, workers, organizations and courses are held in separate services and referenced by URN.
+- **Traceability.** Each behaviour is traced to a numbered requirement, design decision and task.
 
-## How this page was written
+## Basis for this comparison
 
-This product was not code-scanned: this page compares the kind of system it is, as [COMPARISONS.md](../../../COMPARISONS.md) describes it, and makes no claim about its current features, pricing or roadmap. The written basis is [COMPARISONS.md](../../../COMPARISONS.md); a detail may have changed since. If it has, [please tell us](../../../RFC.md).
+This product was not code-scanned. The page compares the type of system, as described in [COMPARISONS.md](../../../COMPARISONS.md), and makes no statement about its current features, pricing or roadmap. The written source is [COMPARISONS.md](../../../COMPARISONS.md). Details may have changed since it was written; corrections are welcome through [the RFC process](../../../RFC.md).
 
-ADP is a name of its owner, and WPM is not affiliated with or endorsed by them.
+ADP is a name of its owner. WPM is not affiliated with or endorsed by its owner.
 
-[Take the guided tutorial](../../../locales/en-001/start/index.md) [See all comparisons](../index.md)
+[Run the demo](../../../locales/en-001/start/index.md) [All comparisons](../index.md)

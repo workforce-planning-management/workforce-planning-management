@@ -1,17 +1,17 @@
-# Get started: a guided tour of WPM
+# Demo tutorial
 
-Welcome! In this tutorial you run WPM on your own machine, fill it with fictitious people, and walk through every page with a guide at your side. Nothing leaves your computer.
+This tutorial describes how to run WPM on a local machine, load fictitious data and follow the guided tour of each page.
 
-> ⚠️ **Fictitious data only.** The tour runs with sign-in switched off, so never point it at a service that holds real data.
+> **Fictitious data only.** Sign-in is turned off for the tour. Do not connect it to a service that holds real data.
 
-## What you need
+## Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install), stable
 - [Node.js](https://nodejs.org/) and [pnpm](https://pnpm.io/)
-- [PostgreSQL](https://www.postgresql.org/) with an empty database for the tour
+- [PostgreSQL](https://www.postgresql.org/), with an empty database for the tour
 - Python 3
 
-The [install guide](../../../INSTALL.md) has the exact versions and how to point the service at your database.
+The [install guide](../../../INSTALL.md) gives the required versions and the database settings.
 
 ## Step 1: Get the code
 
@@ -22,7 +22,7 @@ cd workforce-planning-management
 
 ## Step 2: Start the service
 
-In the service directory, prepare the empty database and start the API. Sign-in is off for this instance only, and the higher rate limit keeps up with a quick tour.
+Prepare the empty database and start the API. Sign-in is turned off for this instance only, and the rate limit is raised for the tour.
 
 ```sh
 cd workforce-planning-management-service-with-rust
@@ -31,15 +31,15 @@ cargo run -- task seed
 WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 ```
 
-## Step 3: Add the fictitious people
+## Step 3: Load the fictitious data
 
-In a second terminal, from the top of the repository:
+In a second terminal, from the repository root:
 
 ```sh
 python3 scripts/demo-data.py http://localhost:5150
 ```
 
-## Step 4: Start the app
+## Step 4: Start the application
 
 ```sh
 cd workforce-planning-management-ui-with-svelte
@@ -47,13 +47,13 @@ pnpm install
 WPM_DEMO_API_URL=http://localhost:5150 pnpm dev
 ```
 
-## Step 5: Take the tour
+## Step 5: Follow the tour
 
-Open the address the app prints, and sign in as **example@example.com**. No email is sent. You land on `/demo`, a tour of every page, and a banner on each page reminds you that the data is fictitious and offers Previous and Next.
+Open the address shown by the application and sign in as **example@example.com**. No email is sent. The sign-in opens `/demo`, a tour of every page. A banner on each page states that the data is fictitious and provides Previous and Next links.
 
-## Where to go next
+## Further reading
 
-- See what WPM offers [your role](../for/index.md).
-- Read [how WPM compares](../../../COMPARISONS.md).
-- Explore [the specification](../../../spec/index.md), the single source of truth.
-- Tell us what you think: [how to comment](../../../RFC.md).
+- [Role briefs](../for/index.md)
+- [Comparison by product](../../../docs/compare/index.md)
+- [Specification](../../../spec/index.md)
+- [How to comment](../../../RFC.md)
