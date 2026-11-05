@@ -569,6 +569,13 @@ fn add_governance_paths(document: &mut Value) {
         "/api/me/padrs": {
             "get": { "tags": ["development"], "summary": "Your personal development reviews and when the next is due, and the same for everyone below you, by name. No content." }
         },
+        "/api/movements/{pid}/separation-record": {
+            "get": { "tags": ["movements"], "summary": "A leaver's separation record: the last day and reason from the leaver record, the final pay date, the pay summary reference and what is missing. HR. Audited." },
+            "put": { "tags": ["movements"], "summary": "Record the final pay date and the pay summary reference. A reference, never an amount. HR." }
+        },
+        "/api/separation-records/export": {
+            "get": { "tags": ["movements"], "summary": "CSV of every leaver whose last day is in the period (?organization=&from=&to=), with what is missing. For HR and a payroll service to submit: WPM submits nothing. Audited." }
+        },
         "/api/padrs/rollup": {
             "get": { "tags": ["development"], "summary": "People whose PADR is current, overdue or unknown, by department (?organization=), with the floor. Counts only." }
         },

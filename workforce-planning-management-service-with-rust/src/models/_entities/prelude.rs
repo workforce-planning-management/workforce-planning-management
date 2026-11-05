@@ -129,6 +129,7 @@ pub use super::rota_overrides::Entity as RotaOverrides;
 pub use super::rota_swap_requests::Entity as RotaSwapRequests;
 pub use super::rotas::Entity as Rotas;
 pub use super::scim_pushes::Entity as ScimPushes;
+pub use super::separation_records::Entity as SeparationRecords;
 pub use super::sfia_skill_levels::Entity as SfiaSkillLevels;
 pub use super::sfia_skills::Entity as SfiaSkills;
 pub use super::sfiaplus_resources::Entity as SfiaplusResources;

@@ -27,10 +27,10 @@ use crate::models::_entities::{
     policy_acknowledgements, positions, post_fundings, professional_registrations,
     program_placements, qualification_reminders, qualifications, resignations,
     review_goal_outcomes, reviews, rota_members, rota_overrides, rota_swap_requests, scim_pushes,
-    shift_assignments, time_entries, training_enrollments, worker_aspirations, worker_backups,
-    worker_contact_details, worker_contractor_details, worker_framework_roles, worker_goals,
-    worker_health_records, worker_job_levels, worker_pay_positions, worker_skill_history,
-    worker_skills, workers,
+    separation_records, shift_assignments, time_entries, training_enrollments, worker_aspirations,
+    worker_backups, worker_contact_details, worker_contractor_details, worker_framework_roles,
+    worker_goals, worker_health_records, worker_job_levels, worker_pay_positions,
+    worker_skill_history, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -191,6 +191,7 @@ async fn subject_access(
         "on_call_swaps": rows_for!(db, rota_overrides, WorkerPid, epid),
         "announcements_read": rows_for!(db, announcement_reads, WorkerPid, epid),
         "joiner_leaver_records": rows_for!(db, movements, WorkerPid, epid),
+        "separation_records": rows_for!(db, separation_records, WorkerPid, epid),
         "handover_actions_from": rows_for!(db, handover_actions, FromWorker, epid),
         "handover_actions_to": rows_for!(db, handover_actions, ToWorker, epid),
         "on_call_swap_requests_made": rows_for!(db, rota_swap_requests, RequesterPid, epid),
@@ -420,6 +421,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM goal_measures WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_goals WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM padr_versions WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM separation_records WHERE worker_pid = '{epid}'"),
     ]
 }
 

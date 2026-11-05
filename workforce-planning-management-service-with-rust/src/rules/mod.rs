@@ -113,6 +113,7 @@ pub mod scoring;
 #[cfg(test)]
 mod second_profile;
 pub mod self_service;
+pub mod separation;
 pub mod service;
 pub mod sfia;
 pub mod skill_gap;

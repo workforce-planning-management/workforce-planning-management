@@ -3206,5 +3206,21 @@
     "earlier": "Frühere Versionen",
     "rollupTitle": "Entwicklungsgespräche nach Abteilung",
     "rollupNone": "Keine Personen hinterlegt."
+  },
+  "separation": {
+    "title": "Austrittsmeldung",
+    "hint": "Für die Personalabteilung und für einen Lohnabrechnungsdienst zur Übermittlung. Dieser Dienst übermittelt nichts.",
+    "lastDay": "Letzter Arbeitstag",
+    "reason": "Grund",
+    "finalPay": "Datum der letzten Zahlung",
+    "payRef": "Referenz der Entgeltübersicht",
+    "payRefHint": "Wo die Entgeltübersicht abgelegt ist, zum Beispiel payroll:run-42. Niemals ein Betrag.",
+    "missing": "Noch zu erfassen",
+    "complete": "Nichts mehr zu erfassen.",
+    "exportTitle": "Austrittsmeldungen exportieren",
+    "exportHint": "Eine Zeile für jede ausscheidende Person, deren letzter Tag im Zeitraum liegt, mit allem, was noch zu erfassen ist.",
+    "from": "Von",
+    "to": "Bis",
+    "download": "CSV herunterladen"
   }
 }

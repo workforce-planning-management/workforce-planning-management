@@ -74,6 +74,7 @@ Applicants have their own export, `GET /api/candidates/{pid}/subject-access`; er
 | `rota_overrides` | `worker_pid` | yes | yes | none |  |
 | `rota_swap_requests` | `requester_pid`, `taker_pid` | yes | yes | none |  |
 | `scim_pushes` | `worker_pid` | yes | yes | none |  |
+| `separation_records` | `worker_pid` | yes | yes | none |  |
 | `shift_assignments` | `worker_pid` | yes | no | timeandleave |  |
 | `succession_candidates` | `worker_pid` | no | yes | performance | Not exported: Readiness and rank are withheld from the person by design (WPM-D128); a redacted view of the person's own entry is not built yet. Erased with the worker. |
 | `time_entries` | `worker_pid` | yes | yes | timeandleave |  |

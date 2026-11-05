@@ -3215,5 +3215,21 @@
     "earlier": "Versions précédentes",
     "rollupTitle": "Entretiens de développement par service",
     "rollupNone": "Aucune personne enregistrée."
+  },
+  "separation": {
+    "title": "Dossier de fin de contrat",
+    "hint": "Pour les RH et pour qu'un service de paie le transmette. Ce service ne transmet rien.",
+    "lastDay": "Dernier jour travaillé",
+    "reason": "Motif",
+    "finalPay": "Date du paiement final",
+    "payRef": "Référence du récapitulatif de paie",
+    "payRefHint": "Où le récapitulatif de paie est conservé, par exemple payroll:run-42. Jamais un montant.",
+    "missing": "Reste à saisir",
+    "complete": "Plus rien à saisir.",
+    "exportTitle": "Exporter les dossiers de fin de contrat",
+    "exportHint": "Une ligne pour chaque personne quittant l'entreprise dont le dernier jour tombe dans la période, avec ce qui reste à saisir.",
+    "from": "Du",
+    "to": "Au",
+    "download": "Télécharger le CSV"
   }
 }

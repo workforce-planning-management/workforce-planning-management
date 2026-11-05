@@ -90,6 +90,7 @@ pub mod resignations;
 pub mod roles;
 pub mod rota_swaps;
 pub mod rotas;
+pub mod separation;
 pub mod sfia;
 pub mod skill_gaps;
 pub mod skill_mappings;

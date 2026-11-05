@@ -247,7 +247,7 @@ benefit; or ship any default figure marked `read` that a person has not read in 
   reference, minimum cover, validity dates, certificate document reference, with an expiry reminder.
 - **WPM-R221 Work-related injury and illness notification record.** Minimal and without clinical detail: worker reference, date, severity class,
   reported-to-authority flag and reference. Counts to reports at or above the floor.
-- **WPM-R222 Separation record.** From the leaver record: last day worked, a standard reason code, the final pay date, a pay summary reference; an export for HR.
+- **WPM-R222 Separation record.** From the leaver record: last day worked, a standard reason code, the final pay date, a pay summary reference; an export for HR. **Built 2026-11-05 (WPM-T422):** the last day and the reason are read from the leaver record and never stored twice, so the two cannot disagree. HR adds the final pay date and a reference to the pay summary, which is a pointer and never an amount. A field not yet recorded is listed as missing, never blank-and-ready. The export is a CSV for HR's period with one row for every leaver in it, including those with nothing recorded. WPM submits nothing. HR, the service and an administrator read it, audited with the pid and no content; payroll, the person's manager and the person do not, except the person's own subject-access export. A cancelled leaver record has no separation record.
 - **WPM-R223 Employer-side statutory cost lines.** Parameter-driven stub lines, not deducted from net, shown in payroll cost.
 
 ## Decisions (drafted 2026-11-01 by the AI assistant; confirmed by the product owner the same day)
@@ -352,5 +352,5 @@ and 2026 rates; the OpenAPI path and the UI's types; a request test. The answers
 - **No result is kept** beyond the audit entry's counts, so the retention a profile might set (UK: six years) is not met by WPM. That is the rest of WPM-T415.
 - **No screen yet** (WPM-T416). The figures in the `GB` example are `example`, and none has been read in its source (WPM-T411).
 
-**Not built:** WPM-R219 to WPM-R223 (statutory overtime, coverage evidence, the injury record, the separation record, employer cost lines), WPM-T417 to WPM-T426, and the research tasks WPM-T411 and WPM-T412. WPM-R221 and WPM-R222 also wait for
+**Not built:** WPM-R219 to WPM-R221 and WPM-R223 (statutory overtime, coverage evidence, the injury record, employer cost lines), WPM-T417 to WPM-T426, and the research tasks WPM-T411 and WPM-T412. WPM-R221 and WPM-R222 also wait for
 questions 3 and 4.

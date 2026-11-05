@@ -298,6 +298,7 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
   **MobilityInterest**, **ChangeInitiative** (+ role impacts, skill shifts) —
   WPM-T52–T55.
 - **WorkerGoal** (`worker_goals`, WPM-R224) with **GoalMeasure** (`goal_measures`) and **GoalCheckIn** (`goal_check_ins`) — one person's goal for a period, never a score. **ReviewGoalOutcome** (`review_goal_outcomes`, WPM-R225) — a goal in a review: the reviewer's and the reviewee's outcomes and the snapshot frozen on sharing. Not the older `goals`, which are lines inside one review (WPM-R10).
+- **SeparationRecord** (`separation_records`, WPM-R222) — one per leaver record: the final pay date and a pay summary reference. The last day and the reason stay on the movement.
 - **DevelopmentPlanBenefit** (`development_plan_benefits`, WPM-R230) — a stated yearly benefit of a development plan: year, amount, currency, a named source, who stated it. An estimate, never derived. One a year per plan; soft-deleted; in the subject-access export and erased.
 - **LearningBudget** (`learning_budgets`, WPM-R227) — one department's budget for a year and currency. Names nobody.
 - **SkillCourse** (`skill_courses`; `fee_minor` and `fee_currency`, both or neither, WPM-R227: no fee is unknown, never free) and `skills.hours_per_level` — the training

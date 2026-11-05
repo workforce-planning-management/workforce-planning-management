@@ -3206,5 +3206,21 @@
     "earlier": "Earlier versions",
     "rollupTitle": "Development reviews by department",
     "rollupNone": "No people on record."
+  },
+  "separation": {
+    "title": "Separation record",
+    "hint": "For HR, and for a payroll service to submit. This service submits nothing.",
+    "lastDay": "Last day worked",
+    "reason": "Reason",
+    "finalPay": "Final pay date",
+    "payRef": "Pay summary reference",
+    "payRefHint": "Where the pay summary is held, such as payroll:run-42. Never an amount.",
+    "missing": "Still to record",
+    "complete": "Nothing left to record.",
+    "exportTitle": "Export separation records",
+    "exportHint": "One row for every leaver whose last day is in the period, with anything still to record.",
+    "from": "From",
+    "to": "To",
+    "download": "Download CSV"
   }
 }

@@ -65,6 +65,7 @@ State as of 2026-10-07 (WPM-T97).
   deployer's list, an appeal decided by someone else, a counter-proposal, overdue, and that no contract changes.
 - **Individual goals binary** (`tests/individual_goals.rs`, own process, two scenarios): who proposes, agrees and reads; a measure and a check-in; a review's outcomes and frozen snapshot; export and erasure; the roll-up.
 - **PADR binary** (`tests/padr.rs`, own process, two scenarios): who opens, reads, writes and signs a PADR; objectives as goals and their frozen snapshot; a correction; the due date; the roll-up's floor; audit with no content; the export; who a waiting goal tells, a counter-proposal, and checked links.
+- **Separation record binary** (`tests/separation_record.rs`, own process, one scenario): HR only, what the leaver record supplies, named gaps, a cancelled leaver, the export and its formula guard, audit with no content.
 - **Learning economics binary** (`tests/learning_economics.rs`, own process, three scenarios): a plan's fees beside its hours, who may read them, what a masked reader gets, a stated benefit, train or hire with every input, and spend against a budget.
 - **`/api/me` binary** (`tests/enforcement_me.rs`, own process): a plain worker changes their own contact details and
   emergency contacts past a policy that lets only HR write; every other write stays refused; a neighbour, a person

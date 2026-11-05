@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the separation record (WPM-R222, 2026-11-05)
+
+HR adds the final pay date and a pay summary reference to a leaver record and exports a period's leavers as a CSV, with every gap named, for a payroll service to submit. WPM submits nothing.
+
 ### Added — the PADR record and the goals screens (WPM-R172, WPM-R232, 2026-11-05)
 
 A manager opens a personal development review with someone below them, both write it, and both sign. Its objectives are the person's goals in its period, frozen at the first signature; a correction is a new version and never moves the due date. HR reads counts and no content. A manager can now propose a goal from a screen, a goal can link a skill, a plan step and an outside objective, and the other person is told when something waits for them.

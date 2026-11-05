@@ -3242,5 +3242,21 @@
     "earlier": "Fersiynau cynharach",
     "rollupTitle": "Adolygiadau datblygu yn ôl adran",
     "rollupNone": "Dim pobl wedi'u cofnodi."
+  },
+  "separation": {
+    "title": "Cofnod gadael swydd",
+    "hint": "I AD, ac i wasanaeth cyflogres ei gyflwyno. Nid yw'r gwasanaeth hwn yn cyflwyno dim.",
+    "lastDay": "Y diwrnod olaf a weithiwyd",
+    "reason": "Rheswm",
+    "finalPay": "Dyddiad y tâl terfynol",
+    "payRef": "Cyfeirnod crynodeb y tâl",
+    "payRefHint": "Lle mae crynodeb y tâl yn cael ei gadw, fel payroll:run-42. Byth swm.",
+    "missing": "Eto i'w gofnodi",
+    "complete": "Dim ar ôl i'w gofnodi.",
+    "exportTitle": "Allforio cofnodion gadael swydd",
+    "exportHint": "Un rhes ar gyfer pob un sy'n gadael y mae ei ddiwrnod olaf yn y cyfnod, ynghyd ag unrhyw beth sydd eto i'w gofnodi.",
+    "from": "O",
+    "to": "I",
+    "download": "Lawrlwytho CSV"
   }
 }

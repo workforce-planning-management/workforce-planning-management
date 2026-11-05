@@ -4937,6 +4937,46 @@ export function recordGoalOutcome(
   });
 }
 
+// ─── The separation record (WPM-R222) ───────────────────────────────
+
+/** Built from the leaver record. The pay summary is a reference, never an amount. WPM submits nothing. */
+export interface SeparationRecord {
+  movement_pid: string;
+  worker_pid: string;
+  last_day: string;
+  reason_code: string | null;
+  final_pay_on: string | null;
+  pay_summary_ref: string | null;
+  missing: string[];
+}
+
+export function getSeparationRecord(
+  movementPid: string,
+  init?: FetchLike,
+): Promise<SeparationRecord> {
+  return api(`/movements/${movementPid}/separation-record`, init);
+}
+
+export function saveSeparationRecord(
+  movementPid: string,
+  body: { final_pay_on: string | null; pay_summary_ref: string | null },
+): Promise<SeparationRecord> {
+  return api(`/movements/${movementPid}/separation-record`, {
+    method: "PUT",
+    body,
+  });
+}
+
+/** Where the CSV is read (a link; the browser downloads it). */
+export function separationExportUrl(
+  organization: string,
+  from: string,
+  to: string,
+): string {
+  const query = new URLSearchParams({ organization, from, to });
+  return `/api/proxy/separation-records/export?${query}`;
+}
+
 // ─── The personal development review (WPM-R172) ─────────────────────
 
 /** Where someone stands against the twelve-month cycle. `unknown` has no date, and none is invented. */

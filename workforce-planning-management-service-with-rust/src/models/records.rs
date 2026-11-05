@@ -28,6 +28,7 @@ impl ActiveModelBehavior for super::_entities::development_plan_benefits::Active
 impl ActiveModelBehavior for super::_entities::learning_budgets::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::worker_goals::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::padr_versions::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::separation_records::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::goal_measures::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::goal_check_ins::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::review_goal_outcomes::ActiveModel {}

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the separation record (WPM-R222, WPM-T422)
+
+`rules::separation`; `separation_records` (migration `m20261105_000130`); `GET`+`PUT /api/movements/{pid}/separation-record`; `GET /api/separation-records/export`; `tests/separation_record.rs`.
+
 ### Added — the PADR record (WPM-R172, WPM-R225, WPM-D176, WPM-T317, WPM-T431)
 
 `reviews.kind`, a nullable `cycle_pid` and `padr_versions` (migration `m20261105_000129`); `controllers/padr.rs`: `GET /api/me/padrs`, `POST /api/me/reports/{pid}/padrs`, `GET`+`PUT /api/me/padrs/{pid}`, `.../sign`, `.../comment`, `.../versions`, `GET /api/padrs/rollup`; `WPM_PADR_FIRST_AFTER_MONTHS` (no default); `tests/padr.rs`.

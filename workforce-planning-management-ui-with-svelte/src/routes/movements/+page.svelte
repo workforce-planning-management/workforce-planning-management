@@ -10,6 +10,7 @@
   import LoadMore from "#lib/components/LoadMore.svelte";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
+  import SeparationExport from "#lib/components/SeparationExport.svelte";
   import { goto } from "$app/navigation";
   import { listMovementsPage, listWorkers, openMovement } from "#lib/api/wpm.js";
   import type { Movement } from "#lib/api/types.js";
@@ -96,6 +97,8 @@
 <svelte:head><title>{tf("pages.movements.page_title", { movements: t("nav.movements") })}</title></svelte:head>
 
 <h1>{t("nav.movements")}</h1>
+
+<SeparationExport />
 {#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 {#snippet personCell({ row }: { row: DataGridRow })}

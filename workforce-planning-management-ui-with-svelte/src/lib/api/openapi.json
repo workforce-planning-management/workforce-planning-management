@@ -7973,6 +7973,33 @@
         ]
       }
     },
+    "/api/movements/{pid}/separation-record": {
+      "get": {
+        "summary": "A leaver's separation record: the last day and reason from the leaver record, the final pay date, the pay summary reference and what is missing. HR. Audited.",
+        "tags": [
+          "movements"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record the final pay date and the pay summary reference. A reference, never an amount. HR.",
+        "tags": [
+          "movements"
+        ]
+      }
+    },
     "/api/notifications/{pid}/read": {
       "post": {
         "parameters": [
@@ -11049,6 +11076,14 @@
         "summary": "Ask a colleague to take the requester's on-call days in a window",
         "tags": [
           "workforce"
+        ]
+      }
+    },
+    "/api/separation-records/export": {
+      "get": {
+        "summary": "CSV of every leaver whose last day is in the period (?organization=&from=&to=), with what is missing. For HR and a payroll service to submit: WPM submits nothing. Audited.",
+        "tags": [
+          "movements"
         ]
       }
     },

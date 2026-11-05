@@ -3197,5 +3197,21 @@
     "earlier": "早期版本",
     "rollupTitle": "按部门划分的发展评估",
     "rollupNone": "没有登记在册的人员。"
+  },
+  "separation": {
+    "title": "离职记录",
+    "hint": "供人力资源部门使用，并由薪资服务提交。本服务不提交任何内容。",
+    "lastDay": "最后工作日",
+    "reason": "原因",
+    "finalPay": "最后一次发薪日期",
+    "payRef": "薪资摘要编号",
+    "payRefHint": "薪资摘要的存放位置，例如 payroll:run-42。绝不填写金额。",
+    "missing": "仍需记录",
+    "complete": "没有需要记录的内容了。",
+    "exportTitle": "导出离职记录",
+    "exportHint": "每位最后工作日在该期间内的离职人员对应一行，并列出仍需记录的内容。",
+    "from": "从",
+    "to": "至",
+    "download": "下载 CSV"
   }
 }

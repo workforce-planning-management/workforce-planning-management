@@ -144,6 +144,7 @@ pub mod rota_overrides;
 pub mod rota_swap_requests;
 pub mod rotas;
 pub mod scim_pushes;
+pub mod separation_records;
 pub mod sfia_skill_levels;
 pub mod sfia_skills;
 pub mod sfiaplus_resources;

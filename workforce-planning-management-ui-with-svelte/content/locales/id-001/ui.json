@@ -3197,5 +3197,21 @@
     "earlier": "Versi sebelumnya",
     "rollupTitle": "Penilaian pengembangan menurut departemen",
     "rollupNone": "Tidak ada orang yang tercatat."
+  },
+  "separation": {
+    "title": "Catatan pemutusan hubungan kerja",
+    "hint": "Untuk SDM, dan untuk diajukan oleh layanan penggajian. Layanan ini tidak mengajukan apa pun.",
+    "lastDay": "Hari kerja terakhir",
+    "reason": "Alasan",
+    "finalPay": "Tanggal pembayaran akhir",
+    "payRef": "Referensi ringkasan gaji",
+    "payRefHint": "Tempat ringkasan gaji disimpan, misalnya payroll:run-42. Bukan jumlah uang.",
+    "missing": "Masih perlu dicatat",
+    "complete": "Tidak ada lagi yang perlu dicatat.",
+    "exportTitle": "Ekspor catatan pemutusan hubungan kerja",
+    "exportHint": "Satu baris untuk setiap karyawan yang keluar dan hari terakhirnya jatuh dalam periode, beserta hal yang masih perlu dicatat.",
+    "from": "Dari",
+    "to": "Sampai",
+    "download": "Unduh CSV"
   }
 }

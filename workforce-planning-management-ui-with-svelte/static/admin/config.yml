@@ -4304,3 +4304,24 @@ collections:
               - { name: "earlier", label: "Earlier", widget: string, required: false, i18n: true }
               - { name: "rollupTitle", label: "Rollup Title", widget: string, required: false, i18n: true }
               - { name: "rollupNone", label: "Rollup None", widget: string, required: false, i18n: true }
+          - name: "separation"
+            label: "Separation"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: string, required: false, i18n: true }
+              - { name: "lastDay", label: "Last Day", widget: string, required: false, i18n: true }
+              - { name: "reason", label: "Reason", widget: string, required: false, i18n: true }
+              - { name: "finalPay", label: "Final Pay", widget: string, required: false, i18n: true }
+              - { name: "payRef", label: "Pay Ref", widget: string, required: false, i18n: true }
+              - { name: "payRefHint", label: "Pay Ref Hint", widget: string, required: false, i18n: true }
+              - { name: "missing", label: "Missing", widget: string, required: false, i18n: true }
+              - { name: "complete", label: "Complete", widget: string, required: false, i18n: true }
+              - { name: "exportTitle", label: "Export Title", widget: string, required: false, i18n: true }
+              - { name: "exportHint", label: "Export Hint", widget: text, required: false, i18n: true }
+              - { name: "from", label: "From", widget: string, required: false, i18n: true }
+              - { name: "to", label: "To", widget: string, required: false, i18n: true }
+              - { name: "download", label: "Download", widget: string, required: false, i18n: true }

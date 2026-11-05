@@ -3215,5 +3215,21 @@
     "earlier": "Versiones anteriores",
     "rollupTitle": "Evaluaciones de desarrollo por departamento",
     "rollupNone": "No hay personas registradas."
+  },
+  "separation": {
+    "title": "Registro de baja laboral",
+    "hint": "Para RR. HH. y para que un servicio de nómina lo presente. Este servicio no presenta nada.",
+    "lastDay": "Último día trabajado",
+    "reason": "Motivo",
+    "finalPay": "Fecha del pago final",
+    "payRef": "Referencia del resumen de pago",
+    "payRefHint": "Dónde se guarda el resumen de pago, por ejemplo payroll:run-42. Nunca un importe.",
+    "missing": "Pendiente de registrar",
+    "complete": "No queda nada por registrar.",
+    "exportTitle": "Exportar registros de baja laboral",
+    "exportHint": "Una fila por cada persona que se va y cuyo último día cae en el período, con lo que aún falte por registrar.",
+    "from": "Desde",
+    "to": "Hasta",
+    "download": "Descargar CSV"
   }
 }

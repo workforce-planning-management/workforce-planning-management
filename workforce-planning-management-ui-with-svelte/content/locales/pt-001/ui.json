@@ -3215,5 +3215,21 @@
     "earlier": "Versões anteriores",
     "rollupTitle": "Avaliações de desenvolvimento por departamento",
     "rollupNone": "Nenhuma pessoa registada."
+  },
+  "separation": {
+    "title": "Registo de cessação de funções",
+    "hint": "Para os RH e para um serviço de processamento salarial submeter. Este serviço não submete nada.",
+    "lastDay": "Último dia de trabalho",
+    "reason": "Motivo",
+    "finalPay": "Data do pagamento final",
+    "payRef": "Referência do resumo salarial",
+    "payRefHint": "Onde o resumo salarial está guardado, por exemplo payroll:run-42. Nunca um valor.",
+    "missing": "Ainda por registar",
+    "complete": "Nada mais por registar.",
+    "exportTitle": "Exportar registos de cessação de funções",
+    "exportHint": "Uma linha por cada colaborador que sai e cujo último dia cai no período, com o que ainda falta registar.",
+    "from": "De",
+    "to": "Até",
+    "download": "Transferir CSV"
   }
 }

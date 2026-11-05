@@ -11,6 +11,7 @@
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
+  import SeparationPanel from "#lib/components/SeparationPanel.svelte";
   import { page } from "$app/state";
   import {
     addMovementItem,
@@ -181,6 +182,10 @@
       <label>{t("movements.dueOn")} <input type="date" bind:value={newDue} required /></label>
       <button type="submit">{t("movements.addItem")}</button>
     </form>
+  {/if}
+
+  {#if movement.kind === "leaver" && movement.status !== "cancelled"}
+    <SeparationPanel movementPid={movement.pid} />
   {/if}
 
   {#if movement.kind === "leaver"}
